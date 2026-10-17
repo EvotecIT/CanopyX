@@ -31,7 +31,7 @@
     },
     setState(input) { this.restorePreferenceIntent = this.viewPreferenceIntent; return VIEW_STORE_STATE.call(this, input); },
     applyStatePresentation(state) {
-      if (this.restorePreferenceIntent === this.viewPreferenceIntent) VIEW_STORE_PRESENTATION.call(this, state);
+      if (this.restorePreferenceIntent === this.viewPreferenceIntent) return VIEW_STORE_PRESENTATION.call(this, state);
     },
     setQuery(input, paging) {
       const pending = VIEW_STORE_QUERY.call(this, input, paging);

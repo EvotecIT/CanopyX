@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageId>CanopyX.AspNetCore</PackageId>
+    <Version>$(CanopyXProductVersion)</Version>
+    <Authors>Evotec</Authors>
+    <Description>Minimal-API endpoints for the CanopyX remote grid protocol: query, value-list, summary, streamed export and commit routes over IQueryable or a custom data provider, with a separate write policy, plus the browser source script.</Description>
+    <PackageReleaseNotes>First release: MapCanopyRemote endpoint mapping with cancellation, typed client errors and the browser remote source script.</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>data-grid;server-side;aspnetcore;minimal-api;paging;filtering;export;canopyx</PackageTags>
+    <PackageProjectUrl>https://github.com/EvotecIT/CanopyX</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/EvotecIT/CanopyX</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>Copyright (c) Evotec</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\CanopyX.Data\CanopyX.Data.csproj" />
+    <Compile Include="..\CanopyX.Html\CanopyContentSecurity.cs" Link="Shared\CanopyContentSecurity.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
+</Project>

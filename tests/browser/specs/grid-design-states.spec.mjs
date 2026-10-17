@@ -57,8 +57,14 @@ test('closing a drawer during a held adjacent-record load does not reopen it on 
 });
 
 test('phone hidden fields open a full-screen drawer and overflow remains usable',async({page})=>{
- await page.setViewportSize({width:390,height:844});await open(page);await api(page,api=>api.ready);const row=page.locator('.cx-row[data-cx-id="r0"]');await expect(row.locator('.cx-hidden-fields')).toHaveText('+1');
+ await page.setViewportSize({width:390,height:844});await open(page);await api(page,api=>api.ready);const row=page.locator('.cx-row[data-cx-id="r0"]');
+ await expect(row.locator('.cx-hidden-fields')).toBeVisible();
+ const shown=await page.locator('.cx-hcell[data-cx-column]').evaluateAll(cells=>cells.map(cell=>cell.getAttribute('data-cx-column')));
+ const hidden=definition.columns.filter(column=>!shown.includes(column.id)).map(column=>column.id);
+ expect(hidden).toContain('note');await expect(row.locator('.cx-hidden-fields')).toHaveText('+'+hidden.length);
  await row.locator('.p-mono').click();const drawer=page.locator('.cx-drawer');await expect(drawer).toBeVisible();expect(await drawer.evaluate(element=>Math.round(element.getBoundingClientRect().width))).toBe(390);await capture(page,'drawer-phone-light');await page.keyboard.press('Escape');await expect(drawer).toHaveCount(0);
- await row.locator('.cx-hidden-fields').click();await expect(drawer).toBeVisible();await page.keyboard.press('Escape');await expect(drawer).toHaveCount(0);
+ await row.locator('.cx-hidden-fields').click();await expect(drawer).toBeVisible();
+ for(const id of hidden){await expect(drawer.locator('dd[data-cx-field="'+id+'"]').locator('xpath=preceding-sibling::dt[1]')).toHaveText(definition.columns.find(column=>column.id===id).title);}
+ await expect(drawer.getByText('Complete record 0',{exact:true})).toBeVisible();await page.keyboard.press('Escape');await expect(drawer).toHaveCount(0);
  await page.getByRole('button',{name:'More',exact:true}).click();await expect(page.locator('.cx-grid-overflow > .cx-grid-panel')).toBeVisible();await capture(page,'phone-toolbar-overflow-light');
 });

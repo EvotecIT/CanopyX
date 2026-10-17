@@ -9,8 +9,13 @@ namespace CanopyX.Html;
 public sealed class CanopyHtmlOptions {
     private string _assetBaseUrl = "assets/";
     private string _language = "en";
+    private string? _nonce;
 
-    /// <summary>Gets or sets how a full page includes the runtime assets. Fragments never include them.</summary>
+    /// <summary>
+    /// Gets or sets how a full page includes the runtime assets. Fragments never include the runtime itself; with
+    /// <see cref="CanopyAssetMode.Inline"/> (the default) a fragment carries the inert payloads of the optional parts its view
+    /// loads (tree tools, export, filter editor, history presenters), once per <see cref="Document"/> when fragments share one.
+    /// </summary>
     public CanopyAssetMode AssetMode { get; set; }
 
     /// <summary>Gets or sets the browser entry point. Views enabling interaction features automatically use the interactive tree.</summary>
@@ -51,6 +56,25 @@ public sealed class CanopyHtmlOptions {
     public bool AutoMount { get; set; } = true;
 
     /// <summary>
+    /// Gets or sets whether the runtime mounts the view only when it comes near the visible part of the page: within half a
+    /// window height of it, when a hidden tab or a closed panel that holds it opens, or when printing starts (a browser may print such a view before its rows have rendered). Until then
+    /// the view's configuration and rows are not even parsed, so a page with many views, most of them in tabs or below the
+    /// fold, shows its first view sooner and keeps less in memory. Defaults to false. Applies when <see cref="AutoMount"/>
+    /// is true; the fragment is marked <c>data-cx-mount="visible"</c>. A host script reaches such a view after it has mounted
+    /// (<c>host.canopyx</c>), or mounts it at once with <c>CanopyX.mount(host)</c>.
+    /// </summary>
+    public bool MountWhenVisible { get; set; }
+
+    /// <summary>
+    /// Gets or sets how a flat grid with an inline source carries its rows. Null (the default) writes them as objects in the
+    /// grid document. Options write them as compact row data (<see cref="CanopyGridRowData"/>): arrays in column order, in
+    /// chunks inside the grid's host element that the browser decodes one at a time after the first rows have painted,
+    /// optionally gzip-compressed. Single-file fragments then also carry the row data part (<c>canopyx-data.js</c>). Trees
+    /// and hosted grids ignore it.
+    /// </summary>
+    public CanopyRowDataOptions? RowData { get; set; }
+
+    /// <summary>
     /// Gets the ids of the view's filters whose switch the toolbar leaves out on this page, because the host draws its
     /// own control for them (see <see cref="CanopyFilter.Hidden"/>). The view is not changed, so one view can be written
     /// for hosts with and without their own filter bar at the same time. Writing the page fails when an id is not one of
@@ -58,8 +82,40 @@ public sealed class CanopyHtmlOptions {
     /// </summary>
     public ISet<string> HiddenFilterIds { get; } = new HashSet<string>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Gets or sets the HTML document the fragment is written into. Inline fragments that share a document embed the tree
+    /// tools part, the grid export part, the filter editor and the history presenters once, in the first fragment that needs each; without one,
+    /// every inline fragment carries its own copies. Pages ignore it. See <see cref="CanopyHtmlDocument"/>.
+    /// </summary>
+    public CanopyHtmlDocument? Document { get; set; }
+
+    /// <summary>
+    /// Gets the names of parts (<see cref="CanopyHtmlAssets.Parts"/>) a fragment carries besides the ones its view needs, for code
+    /// the page runs itself: for example <c>link</c> when the page links the view to charts or other grids (linked views). With
+    /// <see cref="CanopyAssetMode.Inline"/> the payloads travel with the fragment, once per <see cref="Document"/>; with external
+    /// assets the runtime loads the part files that <c>WriteTo</c> and <c>SaveHtmlBundle</c> write beside it. Writing fails for a
+    /// name that is not a part, or a part that does not ship with the view's runtime.
+    /// </summary>
+    public ISet<string> Parts { get; } = new HashSet<string>(StringComparer.Ordinal);
+
     /// <summary>Gets or sets the colour theme.</summary>
     public CanopyTheme Theme { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Content Security Policy nonce of the response the markup is served in, or null (the default) for
+    /// none. With a nonce, every element CanopyX writes that a strict policy
+    /// (<c>script-src 'self' 'nonce-…'; style-src 'self' 'nonce-…'</c>) would otherwise block carries it: the inline
+    /// runtime script and stylesheet of a page, the script and stylesheet references of a page with external assets, the
+    /// inert payloads of the optional parts, which the runtime inserts with the same nonce when it loads them, and the rule
+    /// that gives a fragment its <see cref="Height"/> in place of a <c>style</c> attribute. The view document is a JSON data
+    /// block, which a policy does not restrict. A nonce must be new for every response, so write the markup per response,
+    /// or put a placeholder here and replace it per response. See <c>docs/security.md</c>.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value is not a valid nonce: base64 or base64url characters, optionally followed by up to two <c>=</c>.</exception>
+    public string? Nonce {
+        get => _nonce;
+        set => _nonce = value == null ? null : CanopyContentSecurity.Validate(value, nameof(value));
+    }
 
     /// <summary>
     /// Gets or sets the height of the view as a CSS length, for example <c>600px</c> or <c>70vh</c>. Fragments without

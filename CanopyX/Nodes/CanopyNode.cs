@@ -145,15 +145,30 @@ public sealed class CanopyNode {
     /// <summary>Gets whether <see cref="Data"/> holds at least one item, without creating the collection.</summary>
     public bool HasData => _data != null && _data.Count > 0;
 
+    /// <summary>Gets the record-only values of the view's record panel (<see cref="CanopyRecordPanel.Fields"/>), by field id. They show
+    /// in the record drawer only and are never searched, sorted or exported.</summary>
+    public IDictionary<string, CanopyCell> Fields => _fields ??= new Dictionary<string, CanopyCell>(StringComparer.Ordinal);
+
+    /// <summary>Gets whether <see cref="Fields"/> holds a value, without creating the collection.</summary>
+    public bool HasFields => _fields != null && _fields.Count > 0;
+
+    private Dictionary<string, CanopyCell>? _fields;
+
+    /// <summary>The record field values, or null when there are none yet.</summary>
+    internal Dictionary<string, CanopyCell>? FieldMap => _fields;
+
     /// <summary>The cells, or null when there are none yet, for walking them without an enumerator object.</summary>
     internal Dictionary<string, CanopyCell>? CellMap => _cells;
 
     internal IReadOnlyList<CanopyNode> ChildNodes => _children ?? (IReadOnlyList<CanopyNode>)Array.Empty<CanopyNode>();
 
     /// <summary>Checks the rules every node must follow, independent of a view.</summary>
-    internal void ValidateShape(bool replacingInlineRef = false) {
+    internal void ValidateShape(bool replacingInlineRef = false, int structureDepth = 0) {
         // Detail collections are public; use their canonical writer validation for every renderer, without the text.
-        if (Detail != null) Detail.WriteJson(CanopyJsonWriter.Discarding());
+        if (Detail != null) {
+            Detail.ValidateStructure(structureDepth);
+            Detail.WriteJson(CanopyJsonWriter.Discarding());
+        }
         if (_ref != null && HasInlineChildren && !replacingInlineRef) {
             throw new InvalidOperationException("Node '" + Id + "' has both inline children and a load reference; inline children must be complete.");
         }
@@ -164,7 +179,7 @@ public sealed class CanopyNode {
             throw new InvalidOperationException("Node '" + Id + "' has a detail and children; a detail row must be a leaf.");
         }
 
-        ValidateContent();
+        ValidateContent(structureDepth);
         if (_childCount.HasValue) {
             if (HasInlineChildren && _childCount.Value != _children!.Count) {
                 throw new InvalidOperationException("Node '" + Id + "' has " + _children.Count + " inline children but a child count of " + _childCount.Value + "; inline children must be complete.");
@@ -181,8 +196,9 @@ public sealed class CanopyNode {
     }
 
     /// <summary>Checks the cells, badges, and flags, which do not depend on how the node's children are delivered.</summary>
-    internal void ValidateContent() {
-        CanopyCell.ValidateEntries(_cells);
+    internal void ValidateContent(int structureDepth = 0) {
+        CanopyCell.ValidateEntries(_cells, structureDepth);
+        CanopyCell.ValidateEntries(_fields, structureDepth);
         if (_badges != null) {
             foreach (var badge in _badges) {
                 if (badge == null) {
@@ -317,6 +333,16 @@ public sealed class CanopyNode {
             writer.Name("data").BeginObject();
             foreach (var item in _data!) {
                 writer.Property(item.Key, item.Value);
+            }
+
+            writer.EndObject();
+        }
+
+        if (HasFields) {
+            writer.Name("fields").BeginObject();
+            foreach (var field in _fields!) {
+                writer.Name(field.Key);
+                if (field.Value == null) writer.Null(); else field.Value.WriteJson(writer);
             }
 
             writer.EndObject();

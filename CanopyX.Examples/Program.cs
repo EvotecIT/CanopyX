@@ -14,6 +14,8 @@ using CanopyX.Rendering;
 //   outline-page.html  the same outline following the theme of the page it is in, without script
 //   filter-bar.html    a host's own filter bar in place of the view's filter switches
 //   live-records.html  fresh record snapshots, selection, and saved view controls
+//   csp/               pages written with a Content Security Policy nonce placeholder (see CspExamples)
+//   large/             100,000-row grids (compact row data, row objects, a bundle) and a report of 24 grids that mount when visible
 //   index.html         links to the pages above
 // With --search-bench it writes the search benchmark bundles instead (deep/ and directory/, see SearchBenchTrees).
 // With --pack-bench it writes the packing benchmark bundle instead (catalog/, see PackBenchTree) and reports the
@@ -79,15 +81,34 @@ Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
 CursorGridExample.Write(output);
 ReportingGridExample.Write(output);
+ExportFormatsExample.Write(output);
 SidecarKeysExample.Write(output);
 GroupedGridExample.Write(output);
 ContainedGridsExample.Write(output);
 ColumnLayoutExample.Write(output);
+TreeParityExample.Write(output);
 WrappedGridExample.Write(output);
 ContentGridExample.Write(output);
 LocalizedGridsExample.Write(output);
 RichGridExample.Write(output);
 GraphiteGridExample.Write(output);
+ServiceStatusExample.Write(output);
+WideTreeExample.Write(output);
+RunsGridExample.Write(output);
+RunsBoardExample.Write(output);
+ScoresGridExample.Write(output);
+PluginsExample.Write(output);
+EnhanceExamples.Write(output);
+CspExamples.Write(output);
+LargeDataExample.Write(output);
+EditingExample.Write(output);
+ConditionalFormattingExample.Write(output);
+LinkedViewsExample.Write(output);
+OrdersByRegionExample.Write(output);
+NestedTreeDetailExample.Write(output);
+SupportTicketsExample.Write(output);
+QuarterlyBudgetExample.Write(output);
+CertificateInventoryExample.Write(output);
 
 var largeTree = new SyntheticFileTree();
 var bundleView = ExampleViews.FileShares("files", largeTree.Build(shares: 26, departments: 8, projects: 10, minFiles: 10, maxFiles: 40, longListFiles: 3_000));

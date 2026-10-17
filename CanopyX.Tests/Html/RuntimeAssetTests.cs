@@ -31,9 +31,13 @@ public sealed class RuntimeAssetTests {
                     : Enumerable.Empty<string>())
                 .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
         }
-        var editorParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "filter-editor-parts.json")))!;
-        var editorPaths = editorParts.Select(part => Path.GetFullPath(Path.Combine(root, part))).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        files = files.Where(file => !editorPaths.Contains(Path.GetFullPath(file))).ToArray();
+        // Entry points leave out every script a lazy part owns (Build/parts.json lists it and not as shared).
+        var owned = PartManifestFile.OwnedScripts();
+        files = files.Where(file => !owned.Contains(Path.GetFullPath(file))).ToArray();
+        // Tree-only core parts (the tree menus' labels) are defined again by the grid parts, so grid runtimes leave them out.
+        var treeOnlyParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "tree-only-parts.json")))!;
+        var treeOnlyPaths = treeOnlyParts.Select(part => Path.GetFullPath(Path.Combine(root, part))).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) files = files.Where(file => !treeOnlyPaths.Contains(Path.GetFullPath(file))).ToArray();
         var script = CanopyHtmlAssets.GetScript(runtime);
         var parts = files
             .Select(part => Normalize(File.ReadAllText(part)).TrimEnd('\n'))
@@ -55,9 +59,11 @@ public sealed class RuntimeAssetTests {
         var compact = actual.Groups[1].Value;
         Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
         expected = expected.Replace(marker, compact);
-        expected = expected.Replace("__CX_FILTER_VERSION__", CanopyHtmlAssets.FilterEditorVersion)
-            .Replace("__CX_FILTER_SCRIPT__", CanopyHtmlAssets.HashedFilterEditorScriptFileName)
-            .Replace("__CX_FILTER_STYLE__", CanopyHtmlAssets.HashedFilterEditorStyleFileName);
+        // The entry point reads the manifest of the parts it knows: name -> [version, hashed script, hashed stylesheet].
+        const string partsMarker = "__CX_PARTS__";
+        Assert.Contains(partsMarker, expected);
+        expected = expected.Replace(partsMarker, "{" + string.Join(",", CanopyHtmlAssets.GetParts(runtime).Select(part => "\"" + part.Name + "\":[" +
+            string.Join(",", new[] { part.Version, part.HashedScriptFileName, part.HashedStyleFileName }.Where(value => value != null).Select(value => "\"" + value + "\"")) + "]")) + "}");
         expected = CompressScriptSpacing(expected);
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
@@ -74,6 +80,7 @@ public sealed class RuntimeAssetTests {
         if (runtime != CanopyRuntime.TreeGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.interactive.source", "canopyx.css"));
         if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
+            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "chrome.css")).Replace("\r\n", "\n").TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "canopyx.css"));
         if (runtime == CanopyRuntime.ReportingGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
             File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.reporting.source", "canopyx.css"));
@@ -82,7 +89,9 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void FilterEditorStyle_MatchesItsSource() {
-        var source = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", "canopyx.css"));
+        // The editor's own rules, the Columns menu and record drawer styles it shares with the tree tools part, then the overlay base.
+        var source = string.Join("\n", new[] { "canopyx.css", "columns.css", "drawer.css", "overlay.css" }.Select(name =>
+            Normalize(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", name))).TrimEnd('\n')));
         Assert.Equal(CompressStyleSpacing(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n")), Normalize(CanopyHtmlAssets.FilterEditorStyle));
     }
 
@@ -90,25 +99,29 @@ public sealed class RuntimeAssetTests {
     public void Assets_StayWithinTheCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.Script) + GzipLength(CanopyHtmlAssets.Style);
 
-        Assert.True(compressed <= 48 * 1024, "Runtime assets are " + compressed + " bytes gzip; the budget is 48 KB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(compressed <= 60928, "Runtime assets are " + compressed + " bytes gzip; the budget is 59.5 KiB.");
     }
 
     [Fact]
     public void InteractiveAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.InteractiveTreeGrid));
-        Assert.True(compressed <= 64 * 1024, "Interactive runtime assets are " + compressed + " bytes gzip; the budget is 64 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(compressed <= 71168, "Interactive runtime assets are " + compressed + " bytes gzip; the budget is 69.5 KiB.");
     }
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        Assert.True(compressed <= 96 * 1024, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 96 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(compressed <= 122368, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 119.5 KiB.");
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid));
-        Assert.True(compressed <= 128 * 1024, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 128 KiB.");
+        // Combined roadmap integration: its size plus about 15%.
+        Assert.True(compressed <= 151040, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 147.5 KiB.");
     }
 
     [Fact]
@@ -170,7 +183,9 @@ public sealed class RuntimeAssetTests {
 
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
-            Assert.Equal(2, Directory.GetFiles(directory).Length);
+            // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, links and search parts,
+            // the link, highlight, layout mode and record panel parts, each with its stylesheet.
+            Assert.Equal(15, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

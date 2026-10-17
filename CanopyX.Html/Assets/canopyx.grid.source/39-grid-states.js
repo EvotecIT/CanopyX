@@ -44,7 +44,7 @@
     async syncGridStatus(){
       if(!this.statusBar)return;const count=this.querySelection?this.querySelection.matched==null?null:Math.max(0,this.querySelection.matched-this.selectionExcluded.size):this.selected.size;
       const number=numberFormat(this.lang);gridCountLabel(this.statusCount,this.labels.gridStatusCount,{count:this.snapshot?.matched==null?"—":number.format(this.snapshot.matched),noun:this.noun,selected:count==null?"—":number.format(count)});
-      const columns=this.columns.filter(column=>column.aggregatable),key=JSON.stringify([this.queryEpoch,this.snapshot?.revision,count,[...this.selected],this.querySelection?.query,[...(this.selectionExcluded||[])],columns.map(column=>column.id)]);
+      const columns=this.columns.filter(column=>column.aggregatable&&column.exportable!==false),key=JSON.stringify([this.queryEpoch,this.snapshot?.revision,count,[...this.selected],this.querySelection?.query,[...(this.selectionExcluded||[])],columns.map(column=>column.id)]);
       if(key===this.statusAggregateKey)return;this.statusAggregateKey=key;this.statusAggregateController?.abort();this.statusAggregates.replaceChildren();
       if(!columns.length||count===0||!this.acceptedQuery)return;
       try{await loadGridFilterEditor();if(!this.destroyed&&this.statusAggregateKey===key)await this.calculateGridAggregates(columns);}

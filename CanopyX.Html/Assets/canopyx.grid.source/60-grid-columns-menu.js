@@ -1,6 +1,7 @@
   // ---------- Columns menu body (optional editor): find, show or hide, and reorder by handle or Alt+Up/Down ----------
   // Pinning, fitting and width live in each header's own menu, so a row here holds a handle, a checkbox and a label.
-  Object.assign(DataGrid.prototype, {
+  // The editor part mixes it into DataGrid, the tree tools part into TreeGrid.
+  const COLUMNS_MENU = {
     // A moved column joins the pinned group of the column it lands next to, as header moves do.
     moveColumnChoice(column, target, after) {
       column.pin = target.pin;
@@ -55,4 +56,4 @@
         if (focus === column.id) (held ? handle : input).focus({ preventScroll: true });
       }
     }
-  });
+  };

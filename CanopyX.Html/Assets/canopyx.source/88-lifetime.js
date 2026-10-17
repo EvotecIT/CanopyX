@@ -12,7 +12,6 @@
       clearTimeout(this.saveTimer);
       clearTimeout(this.layoutTimer);
       if (this.cancelSearch) this.cancelSearch();
-      if (this.disposeColumnChooser) this.disposeColumnChooser();
       if (this.disposeSearchFlyout) this.disposeSearchFlyout();
       cancelAnimationFrame(this.rafId);
       this.resizeObserver.disconnect();
@@ -42,7 +41,7 @@
       this.filter = null; this.declaredFilter = null; this.pendingRestorationToggles = null;
       this.scrolledCell = null; this.focusHandoff = null;
       this.cancelResize = null; this.cancelSearch = null;
-      this.disposeColumnChooser = null; this.disposeSearchFlyout = null;
+      this.disposeSearchFlyout = null;
       this.canvas.replaceChildren(); this.outline.replaceChildren();
     }
   });

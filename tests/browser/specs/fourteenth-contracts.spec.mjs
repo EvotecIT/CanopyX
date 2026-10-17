@@ -209,7 +209,7 @@ test("native summary and focusable host controls retain their keyboard and point
   });
   const summary = page.getByText("Disclosure");
   await summary.focus(); await page.keyboard.press("Enter");
-  await expect(page.locator("details")).toHaveAttribute("open", "");
+  await expect(page.locator(".cx-canvas details")).toHaveAttribute("open", "");
   expect(await page.evaluate(() => api.getSelected().length)).toBe(0);
   await page.getByText("Host control").dblclick();
   expect(await page.evaluate(() => api.getSelected().length)).toBe(0);

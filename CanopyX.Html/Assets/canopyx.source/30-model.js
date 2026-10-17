@@ -10,7 +10,7 @@
       this.host = host;
       this.view = view;
       this.opts = options;
-      for (const name of ["isSelectable", "beforeSelect"]) {
+      for (const name of ["isSelectable", "beforeSelect", "sanitizeHtml"]) {
         if (options[name] !== undefined && typeof options[name] !== "function") throw new Error("CanopyX: " + name + " must be a function.");
       }
       this.id = "cx" + ++instanceSeq;
@@ -30,11 +30,18 @@
       this.lang = document.documentElement.lang || undefined;
       // Every text the grid writes itself: English, then the view's translations, then the host's.
       this.labels = labelsFor(view.labels, options.labels);
+      // Per-control toolbar switches, as on flat grids: the view's toolbar object, then the host's; a missing switch keeps its control.
+      this.tools = Object.assign({}, view.toolbar, options.toolbar);
+      if (Object.entries(this.tools).some(([name, value]) => !/^(search|filters|columns|views|export|more|matches|layout)$/.test(name) || typeof value !== "boolean"))
+        throw new Error("CanopyX: toolbar options are booleans by control name.");
       // Dates show in UTC unless the view, or the host at run time, asks for the reader's own time zone.
       this.local = view.timeZone === "local";
       this.fmt = formatting(this.lang, this.local, this.labels);
-      // A host draws only the columns it names; every other column keeps the default painter and its cell reuse.
-      const renderers = hostRenderers(options.renderers || {}, view.columns);
+      // A host draws only the columns it names, a plugin the columns that name its renderer; every other column keeps the
+      // default painter and its cell reuse.
+      this.kind = "tree";
+      this.plugins = viewPlugins(options, this.kind);
+      const renderers = hostRenderers(options.renderers || {}, view.columns, this.plugins);
       if (!options.formatLink !== !options.parseLink) {
         throw new Error("CanopyX: formatLink and parseLink define one link scheme and are given together.");
       }
@@ -66,9 +73,13 @@
       this.rafId = 0;
       this.iconTemplates = this.buildIcons(view.icons || {});
       this.initializing = true;
+      this.prepareViewModes();
       this.build();
       this.buildToolbar();
-      this.ready = this.init();
+      // The links part (86-links.js) loads beside the data; a failure is reported when the address is first read.
+      if (view.deepLink) loadPart(LINKS).catch(() => {});
+      // The declared view modes (87-view-modes.js) start with the tree tools part; ready waits for them too.
+      this.ready = this.modesReady ? Promise.all([this.init(), this.modesReady]).then(([result]) => result) : this.init();
     }
 
     async search(query, limit) {
@@ -87,7 +98,7 @@
       Object.keys(icons).forEach((key) => {
         const holder = h("span", "cx-icon");
         holder.setAttribute("aria-hidden", "true");
-        holder.innerHTML = icons[key]; // trusted host SVG, declared once per view
+        hostHtml(holder, icons[key], this.opts.sanitizeHtml, "icon"); // trusted host SVG, declared once per view
         templates.set(key, holder);
       });
       return templates;
@@ -97,6 +108,8 @@
       try {
         this.rootsReady = this.loadRoots();
         await this.rootsReady;
+        // The tree tools part restores column order, user widths and the pin; a failed part leaves the plain tree.
+        await this.toolsReady;
         await this.restoreState();
         // A stored expansion set takes precedence over declarative defaults. Neither restoration nor a partial
         // walk of slow defaults may write session state; user clicks made meanwhile are replayed at completion.

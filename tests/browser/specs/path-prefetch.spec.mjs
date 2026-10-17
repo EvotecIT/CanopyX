@@ -70,14 +70,23 @@ test("a search hit loads every pack on its path at once and renders the path onc
   await nextFrames(page);
   await countRenders(page);
   server.hold();
-  await page.evaluate((path) => { window.opening = document.querySelector(".cx-host").canopyx.expandPath(path); }, hit.path);
+  await page.evaluate((path) => {
+    const host = document.querySelector(".cx-host"), focus = [];
+    host.addEventListener("focusin", event => {
+      const id = event.target.closest(".cx-row")?.getAttribute("data-cx-id");
+      if (id) focus.push(id);
+    });
+    // Capture at API completion; a later driver round trip can include the normal overscan repaint.
+    window.opening = host.canopyx.expandPath(path).then(node => ({ node: node.id, renders: window.renders, focus: focus.slice() }));
+  }, hit.path);
   // The first children page of "a", the later page that holds "a/2", and the children of "a/2": three packs, asked
   // for before the first one arrives.
   await expect.poll(() => server.requested.filter((ref) => ref.startsWith("p/")).sort(), { timeout: 1000 }).toEqual(["p/0", "p/1", "p/2"]);
   expect(await page.evaluate(() => window.renders)).toBe(0);
   server.release();
-  expect(await page.evaluate(async () => ({ node: (await window.opening).id, renders: window.renders }))).toEqual({ node: "a/2/x", renders: 1 });
+  expect(await page.evaluate(() => window.opening)).toEqual({ node: "a/2/x", renders: 1, focus: ["a/2/x"] });
   await expect(page.locator('.cx-row[data-cx-id="a/2/x"]')).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator('.cx-row[data-cx-id="a/2/x"]')).toBeFocused();
   expect(server.requested.filter((ref) => ref.startsWith("p/"))).toHaveLength(3);
 });
 

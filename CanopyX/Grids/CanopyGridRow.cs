@@ -27,9 +27,24 @@ public sealed class CanopyGridRow {
     public CanopyTone Tone { get; set; }
     /// <summary>Gets or sets additional row CSS classes, at most 1,024 characters without controls.</summary>
     public string? ClassName { get; set; }
+    /// <summary>Gets or sets the record's detail payload for a reporting grid with <see cref="CanopyGridReporting.Detail"/>: a table,
+    /// properties or trusted HTML, or the data of the definition's nested grid or tree. Null shows no expander for payload details.</summary>
+    public CanopyDetail? Detail { get; set; }
 
-    internal void Validate(ISet<string>? columnIds = null, IDictionary<string, CanopyColumn>? columns = null) {
-        CanopyCell.ValidateEntries(Cells);
+    /// <summary>Gets the record-only values of the view's record panel (<see cref="CanopyRecordPanel.Fields"/>), by field id.</summary>
+    /// <remarks>Record fields show in the record drawer only: they never join queries, search, sorting, column menus, exports or saved
+    /// views. A view whose records load on demand (<see cref="CanopyRecordPanel.Source"/>) leaves them empty.</remarks>
+    public IDictionary<string, CanopyCell> Fields => _fields ??= new Dictionary<string, CanopyCell>(StringComparer.Ordinal);
+
+    /// <summary>Gets whether <see cref="Fields"/> holds a value, without creating the collection.</summary>
+    public bool HasFields => _fields != null && _fields.Count > 0;
+
+    private Dictionary<string, CanopyCell>? _fields;
+
+    internal void Validate(ISet<string>? columnIds = null, IDictionary<string, CanopyColumn>? columns = null, int structureDepth = 0, bool validateDetail = true) {
+        CanopyCell.ValidateEntries(Cells, structureDepth);
+        CanopyCell.ValidateEntries(_fields, structureDepth);
+        if (validateDetail) Detail?.ValidateStructure(structureDepth);
         CanopyGridHighlightRule.ValidateClassName(ClassName);
         foreach (var cell in Cells) {
             CanopyIdentifiers.Require(cell.Key, nameof(Cells));
@@ -48,6 +63,30 @@ public sealed class CanopyGridRow {
             if (cell.Value == null) writer.Null();
             else cell.Value.WriteJson(writer);
         }
-        writer.EndObject().OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName).EndObject();
+        writer.EndObject().OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName);
+        if (Detail != null) { writer.Name("detail"); Detail.WriteJson(writer); }
+        if (HasFields) {
+            writer.Name("fields").BeginObject();
+            foreach (var field in _fields!) { writer.Name(field.Key); if (field.Value == null) writer.Null(); else field.Value.WriteJson(writer); }
+            writer.EndObject();
+        }
+        writer.EndObject();
+    }
+
+    /// <summary>Writes the compact row of <c>rowData</c>: the id (or an object with the id, tone and class) and the cells in column order, without trailing empty cells.</summary>
+    internal void WriteCompactJson(CanopyJsonWriter writer, IReadOnlyList<string> columns) {
+        Validate();
+        writer.BeginArray();
+        if (Tone.Name == null && ClassName == null) writer.String(Id);
+        else writer.BeginObject().Property("id", Id).OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName).EndObject();
+        var last = -1;
+        for (var i = 0; i < columns.Count; i++) {
+            if (Cells.TryGetValue(columns[i], out var cell) && cell != null) last = i;
+        }
+        for (var i = 0; i <= last; i++) {
+            if (Cells.TryGetValue(columns[i], out var cell) && cell != null) cell.WriteJson(writer);
+            else writer.Null();
+        }
+        writer.EndArray();
     }
 }

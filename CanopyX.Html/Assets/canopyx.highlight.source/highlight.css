@@ -1,0 +1,38 @@
+/* Search hits and filter hits. Hosts restyle them with the tokens --cx-hit-search-bg, --cx-hit-filter-bg, --cx-hit-current-bg,
+ * --cx-hit-current-ring and --cx-hit-text; the defaults derive from the tones, so both palettes and host themes follow. */
+mark.cx-hit { color:var(--cx-hit-text,var(--cx-text));background:var(--cx-hit-search-bg,color-mix(in srgb,var(--cx-tone-warning) var(--cx-hit-mix,28%),var(--cx-surface)));border-radius:var(--cx-size-2px);padding:0;box-decoration-break:clone;-webkit-box-decoration-break:clone; }
+mark.cx-hit-filter { background:var(--cx-hit-filter-bg,color-mix(in srgb,var(--cx-tone-info) var(--cx-hit-mix,24%),var(--cx-surface)));box-shadow:inset 0 calc(-1 * var(--cx-size-1px)) 0 color-mix(in srgb,var(--cx-tone-info) 70%,transparent); }
+mark.cx-hit-toned { background:color-mix(in srgb,var(--cx-hit-tone) var(--cx-hit-mix,24%),var(--cx-surface));box-shadow:inset 0 calc(-1 * var(--cx-size-1px)) 0 color-mix(in srgb,var(--cx-hit-tone) 75%,transparent); }
+mark.cx-hit-current { background:var(--cx-hit-current-bg,color-mix(in srgb,var(--cx-tone-warning) calc(var(--cx-hit-mix,28%) + 24%),var(--cx-surface)));outline:var(--cx-size-2px) solid var(--cx-hit-current-ring,var(--cx-accent));outline-offset:0; }
+/* The dark palette mixes more of the tone, so a hit stands out from the dark surface as much as from the light one. */
+/* The current match is a bright fill with the surface colour as text, which keeps its contrast on the dark surface. */
+.cx-host[data-cx-theme="dark"] mark.cx-hit { --cx-hit-mix:36%; }
+.cx-host[data-cx-theme="dark"] mark.cx-hit-current { color:var(--cx-hit-text,var(--cx-surface));background:var(--cx-hit-current-bg,color-mix(in srgb,var(--cx-tone-warning) 88%,var(--cx-text))); }
+@media (prefers-color-scheme:dark) {
+  .cx-host[data-cx-theme="auto"] mark.cx-hit { --cx-hit-mix:36%; }
+  .cx-host[data-cx-theme="auto"] mark.cx-hit-current { color:var(--cx-hit-text,var(--cx-surface));background:var(--cx-hit-current-bg,color-mix(in srgb,var(--cx-tone-warning) 88%,var(--cx-text))); }
+}
+/* The current match in a cell that does not draw it (a list showing its first items) rings the cell. */
+.cx-cell.cx-hit-cell { box-shadow:inset 0 0 0 var(--cx-size-2px) var(--cx-hit-current-ring,var(--cx-accent)); }
+/* The navigator in the search box: the count, then Previous and Next. */
+.cx-search .cx-matches { display:inline-flex;align-items:center;gap:var(--cx-size-2px);flex:none;margin-left:auto;color:var(--cx-muted);font-size:var(--cx-size-12d5px);font-variant-numeric:tabular-nums;white-space:nowrap; }
+.cx-toolbar > .cx-matches { display:inline-flex;align-items:center;gap:var(--cx-size-2px);color:var(--cx-muted);font-size:var(--cx-size-12d5px); }
+.cx-matches-count { padding:0 var(--cx-size-4px); }
+.cx-matches-step { display:inline-grid;place-items:center;width:var(--cx-size-24px);height:var(--cx-size-24px);padding:0;border:0;border-radius:var(--cx-radius-sm);background:transparent;color:var(--cx-text-2);cursor:pointer; }
+.cx-matches-step:hover:not(:disabled) { background:var(--cx-hover-bg);color:var(--cx-text); }
+.cx-matches-step:disabled { opacity:.4;cursor:default; }
+.cx-matches-step:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:0; }
+.cx-search.cx-has-matches kbd { display:none; }
+.cx-phone .cx-matches-step { width:var(--cx-size-36px);height:var(--cx-size-36px); }
+.cx-matches-toggle::before { content:"";flex:none;width:var(--cx-size-14px);height:var(--cx-size-14px);border:var(--cx-size-1px) solid var(--cx-control-border);border-radius:var(--cx-radius-sm);background:var(--cx-surface); }
+.cx-matches-toggle.on::before { border-color:var(--cx-accent);background:var(--cx-accent) center/var(--cx-size-10px) no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m2.5 6.5 2.5 2.5 4.5-6' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E"); }
+@media (forced-colors:active) {
+  mark.cx-hit { forced-color-adjust:none;background:Mark !important;color:MarkText !important; }
+  mark.cx-hit-filter,mark.cx-hit-toned { background:Canvas !important;color:CanvasText !important;box-shadow:none;text-decoration:underline var(--cx-size-2px) CanvasText;text-underline-offset:var(--cx-size-2px); }
+  mark.cx-hit-current { outline:var(--cx-size-2px) solid Highlight !important; }
+  .cx-cell.cx-hit-cell { forced-color-adjust:none;box-shadow:inset 0 0 0 var(--cx-size-2px) Highlight; }
+  .cx-matches-toggle.on::before { forced-color-adjust:none;background:Highlight; }
+}
+@media print {
+  mark.cx-hit { background:transparent;color:inherit;outline:0;box-shadow:none; }
+}

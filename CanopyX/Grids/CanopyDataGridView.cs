@@ -77,6 +77,13 @@ public sealed partial class CanopyDataGridView {
         }
     }
 
+    /// <summary>Gets the pager settings of a paged grid: page-size choices, which controls show, numbered pages and the result text.</summary>
+    /// <remarks>Left at their defaults they keep the built-in pager. Continuous grids ignore them.</remarks>
+    public CanopyGridPager Pager { get; } = new CanopyGridPager();
+
+    /// <summary>Whether the view writes pager settings, which the browser's pager part reads.</summary>
+    internal bool HasPager => Presentation == CanopyGridPresentation.Paged && !Pager.IsDefault;
+
     /// <summary>Gets or sets the visible page length, from 1 to 10,000. Defaults to 50 and is independent of <see cref="PageSize"/>.</summary>
     public int PageLength {
         get => _pageLength;
@@ -129,6 +136,13 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Gets the per-control toolbar switches: Filters, Columns, Views, Export, the more menu and the result count. All default to on.</summary>
     public CanopyGridToolbar Toolbar { get; } = new CanopyGridToolbar();
 
+    /// <summary>Gets how the grid edits when columns are <see cref="CanopyColumn.Editable"/>: read-only, cell or full-row mode, the phone edit form and the edit bar.</summary>
+    public CanopyGridEditing Editing { get; } = new CanopyGridEditing();
+
+    /// <summary>Gets the identities of the export formats the Export menu offers, in this order, after the built-in CSV.</summary>
+    /// <remarks>Each identity names a format the page registers in the browser with <c>CanopyX.registerExportFormat</c>; an identity no page registers is skipped. Empty writes nothing, which offers every registered format; a browser host that offers none passes an empty <c>exportFormats</c> option, which takes precedence over this list. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
+    public IList<string> ExportFormats { get; } = new List<string>();
+
     /// <summary>Gets or sets whether the grid exposes its search control. Defaults to true.</summary>
     public bool Search { get; set; } = true;
 
@@ -163,7 +177,10 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Writes the HTML-safe <c>grid</c> document of the <c>canopyx/2</c> protocol.</summary>
     /// <returns>The serialized flat-grid definition.</returns>
     /// <exception cref="InvalidOperationException">The definition has ambiguous identities or incompatible source data.</exception>
-    public string ToJson() {
+    public string ToJson() => WriteJson(null, null);
+
+    /// <summary>Writes the document; with row data, its compact descriptor (<c>rowData</c>) takes the place of the inline rows.</summary>
+    internal string WriteJson(CanopyGridRowData? rowData, string? rowDataBase) {
         Validate();
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label);
@@ -173,6 +190,12 @@ public sealed partial class CanopyDataGridView {
         writer.OptionalProperty("noun", Noun).OptionalProperty("emptyReason", EmptyReason);
         if (StatusBar) writer.Property("statusBar", true);
         if (!Toolbar.IsDefault) { writer.Name("toolbar"); Toolbar.WriteJson(writer); }
+        if (!Editing.IsDefault) { writer.Name("editing"); Editing.WriteJson(writer); }
+        if (ExportFormats.Count > 0) {
+            writer.Name("exportFormats").BeginArray();
+            foreach (var format in ExportFormats) writer.String(format);
+            writer.EndArray();
+        }
         if (AutoRowHeight) writer.Property("autoRowHeight", true);
         WriteRowPresentationJson(writer);
         writer.Property("pageSize", PageSize)
@@ -182,13 +205,18 @@ public sealed partial class CanopyDataGridView {
             column.WriteJson(writer, grid: true);
         }
         writer.EndArray();
+        WriteColumnGroupsJson(writer);
+        WriteCellRangesJson(writer);
         if (HighlightRules.Count > 0) {
             writer.Name("highlightRules").BeginArray();
             foreach (var rule in HighlightRules) rule.WriteJson(writer);
             writer.EndArray();
         }
+        WriteFormattingJson(writer);
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
+        if (Record != null) { writer.Name("record"); Record.WriteJson(writer, grid: true); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
+        if (HasPager) { writer.Name("pager"); Pager.WriteJson(writer); }
         if (SearchDelayMilliseconds.HasValue) writer.Property("searchDelayMs", SearchDelayMilliseconds.Value);
         if (SearchColumns.Count > 0) {
             writer.Name("searchColumns").BeginArray();
@@ -202,11 +230,14 @@ public sealed partial class CanopyDataGridView {
             writer.Name("query");
             Query.WriteJson(writer, this);
         }
-        if (Labels.HasRuntimeLabels) {
+        if (Labels.HasRuntimeLabels(false)) {
             writer.Name("labels");
-            Labels.WriteJson(writer);
+            Labels.WriteJson(writer, false);
         }
-        if (Source.Kind == CanopyGridSourceKind.Inline) {
+        if (Source.Kind == CanopyGridSourceKind.Inline && rowData != null) {
+            writer.Name("rowData");
+            rowData.WriteDescriptor(writer, rowDataBase);
+        } else if (Source.Kind == CanopyGridSourceKind.Inline) {
             writer.Name("rows").BeginArray();
             foreach (var row in Rows) row.WriteJson(writer);
             writer.EndArray();
@@ -236,23 +267,29 @@ public sealed partial class CanopyDataGridView {
         if (Navigation == CanopyGridNavigation.Cursor && (Source.Kind != CanopyGridSourceKind.Host || Presentation != CanopyGridPresentation.Paged))
             throw new InvalidOperationException("Cursor navigation requires a hosted, paged grid.");
         CanopyJsonNames.TimeZone(TimeZone);
+        Editing.Validate();
+        if (Presentation == CanopyGridPresentation.Paged) Pager.Validate(Source.Kind);
         ValidateRowPresentation();
         var columnIds = new HashSet<string>(StringComparer.Ordinal);
         var visible = 0; var rowHeaders = 0;
         foreach (var column in Columns) {
             if (column == null || !columnIds.Add(column.Id)) throw new InvalidOperationException("Grid columns must have unique identities and cannot be null.");
             CanopyJsonNames.ColumnKind(column.Kind);
-            if (column.Editable) throw new InvalidOperationException("Flat-grid editing is host composition; grid definitions do not expose edit proposals.");
+            if ((column.Editor != null || column.Validation != null) && !column.Editable) throw new InvalidOperationException("Editors and validation need an editable column.");
+            column.Editor?.Validate(column, Columns);
+            column.Validation?.Validate(column);
             column.Presenter?.Validate(column, Columns);
             if (column.Aggregatable && column.Kind != CanopyColumnKind.Number) throw new InvalidOperationException("Status aggregates require numeric columns.");
             if (column.Section != null && (string.IsNullOrWhiteSpace(column.Section) || column.Section.Length > 256)) throw new InvalidOperationException("Drawer sections require bounded nonblank labels.");
-            column.ValidateLayout();
+            column.ValidateLayout(Columns);
             if (column.Ordering != null && (Reporting == null || !column.Sortable || column.Kind != CanopyColumnKind.Text))
                 throw new InvalidOperationException("Ordering requires reporting capabilities and a sortable text column.");
             if (column.RowHeader && ++rowHeaders > 1) throw new InvalidOperationException("A grid has at most one row header column.");
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
+        ValidateColumnGroups();
+        ValidateCellRanges();
         if (HighlightRules.Count > 64) throw new InvalidOperationException("A grid supports at most 64 highlight rules.");
         foreach (var rule in HighlightRules) {
             CanopyColumn? conditionColumn = null;
@@ -260,8 +297,9 @@ public sealed partial class CanopyDataGridView {
             if (rule == null || conditionColumn == null) throw new InvalidOperationException("Highlight rules require a declared condition column.");
             rule.Condition.Validate(conditionColumn);
         }
+        ValidateFormatting();
         Reporting?.Validate(Columns);
-        if ((Reporting?.Grouping != null || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
+        if ((Reporting?.Grouping != null || Reporting?.DynamicGrouping == true || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
             throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");
         if (Reporting?.ViewStorage == CanopyGridViewStorage.Local && (string.IsNullOrWhiteSpace(StateKey) || StateKey!.Length > 512))
             throw new InvalidOperationException("Durable reporting preferences require a state key of 1 to 512 characters.");
@@ -269,9 +307,23 @@ public sealed partial class CanopyDataGridView {
         foreach (var id in SearchColumns) {
             if (id == null || !columnIds.Contains(id) || !searchable.Add(id)) throw new InvalidOperationException("Search columns must identify unique declared columns.");
         }
+        var formats = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var format in ExportFormats) {
+            if (!IsExportFormatId(format) || !formats.Add(format)) throw new InvalidOperationException("Export formats must be unique identities of 1 to 32 lowercase letters, digits and hyphens, starting with a letter; csv is built in.");
+        }
         if (Source.Kind == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
-        CanopyGridRows.Validate(Rows, columnIds, Columns);
+        CanopyGridRows.Validate(Rows, columnIds, Columns, Reporting?.Detail);
+        ValidateRecord();
         Query?.Validate(this);
         return columnIds;
+    }
+
+    internal static bool IsExportFormatId(string? id) {
+        if (id == null || id.Length == 0 || id.Length > 32 || id[0] < 'a' || id[0] > 'z' || id == "csv") return false;
+        foreach (var character in id) {
+            if (!(character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '-')) return false;
+        }
+
+        return true;
     }
 }

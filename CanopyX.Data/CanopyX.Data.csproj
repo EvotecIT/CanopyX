@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net472;netstandard2.0;net8.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageId>CanopyX.Data</PackageId>
+    <Version>$(CanopyXProductVersion)</Version>
+    <Authors>Evotec</Authors>
+    <Description>Server-side execution of the CanopyX remote grid protocol: typed request parsing with safety limits, column allow-lists, IQueryable translation (EF Core, LINQ to objects, any LINQ provider), value lists, multi-level grouping and aggregates, streamed CSV export, a provider interface for raw SQL back ends, and commits of edited rows through a writer with server-side validation and conflict detection.</Description>
+    <PackageReleaseNotes>First release of the remote data adapter: query, value-list, summary, export and commit endpoints over IQueryable or a custom provider.</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>data-grid;server-side;paging;filtering;iqueryable;entity-framework;linq;export;csv;canopyx</PackageTags>
+    <PackageProjectUrl>https://github.com/EvotecIT/CanopyX</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/EvotecIT/CanopyX</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>Copyright (c) Evotec</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CanopyX\CanopyX.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.Runtime.Serialization" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
+</Project>

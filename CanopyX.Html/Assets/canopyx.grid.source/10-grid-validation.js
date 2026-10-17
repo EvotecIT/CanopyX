@@ -1,51 +1,6 @@
   // ---------- flat-grid wire boundaries ----------
   function gridQueryStart(query, patch) { return { ...query, ...patch, offset: 0, cursor: undefined, revision: undefined }; }
 
-  function gridScalar(cell, column) {
-    const value = cellValue(cell);
-    if (value == null) return null;
-    if (column.kind === "number") {
-      if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER)
-        throw new Error("CanopyX: numeric grid cells need finite values within the safe integer magnitude.");
-      return value;
-    }
-    if (column.kind === "datetime") {
-      const date = typeof value === "string" && /^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) ? Date.parse(value) : NaN;
-      if (!Number.isFinite(date))
-        throw new Error("CanopyX: date grid cells need ISO dates with an explicit time zone.");
-      return date;
-    }
-    if (typeof value !== "string" && typeof value !== "boolean") throw new Error("CanopyX: text grid cells need strings or booleans.");
-    return value;
-  }
-
-  function validateGridRows(rows, columns) {
-    if (!Array.isArray(rows)) throw new Error("CanopyX: grid rows must be an array.");
-    const ids = new Set(), declared = new Map(columns.map(column => [column.id, column]));
-    for (const row of rows) {
-      requireIdentifier(row && row.id, "grid row ID");
-      if (ids.has(row.id)) throw new Error("CanopyX: duplicate grid row ID " + row.id);
-      ids.add(row.id);
-      if (!row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
-        throw new Error("CanopyX: invalid flat row fields.");
-      gridDecoration(row.tone, row.className);
-      for (const id of Object.keys(row.cells)) {
-        if (!declared.has(id)) throw new Error("CanopyX: undeclared grid column " + id);
-        const cell = row.cells[id];
-        if (isCellObject(cell)) {
-          if (Array.isArray(cell) ||
-              ["text", "searchText", "title", "tone", "secondary"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
-              cell.secondary !== undefined && cell.secondary.length > 4096 || cell.series !== undefined && !gridSeriesValid(cell.series) ||
-              cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
-                ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
-            throw new Error("CanopyX: malformed grid cell.");
-        }
-        gridScalar(cell, declared.get(id));
-      }
-    }
-    return rows;
-  }
-
   function validateGridView(view) {
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
     if (typeof view.label !== "string" || !view.label.trim() || !Array.isArray(view.columns) || !view.columns.length)
@@ -57,12 +12,12 @@
     const ids = new Set();
     for (const column of view.columns) {
       requireIdentifier(column && column.id, "grid column ID");
-      if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) || column.editable ||
+      if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) ||
           column.width !== undefined && (!Number.isInteger(column.width) || column.width < 40) ||
-          ["wrap", "autoWidth", "fixed", "rowHeader", "alwaysVisible"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
+          ["wrap", "autoWidth", "fixed", "rowHeader", "alwaysVisible", "editable", "filterable", "exportable"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
           column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) || column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
           column.pinned !== undefined && ![null, "left", "right"].includes(column.pinned) || column.priority !== undefined && !gridPriority(column.priority) ||
-          column.fixed && column.width === undefined)
+          column.fixed && column.width === undefined || column.tooltip !== undefined && column.tooltip !== "auto" && !view.columns.some(item => item.id === column.tooltip))
         throw new Error("CanopyX: invalid or duplicate grid column.");
       ids.add(column.id);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
@@ -83,6 +38,7 @@
     if (view.searchColumns !== undefined && (!Array.isArray(view.searchColumns) || !view.searchColumns.length ||
         new Set(view.searchColumns).size !== view.searchColumns.length || view.searchColumns.some(id => !ids.has(id))))
       throw new Error("CanopyX: search columns must identify unique declared columns.");
+    if (view.exportFormats !== undefined && !exportFormatIds(view.exportFormats)) throw new Error("CanopyX: exportFormats lists unique format IDs.");
     if (view.autoRowHeight !== undefined && typeof view.autoRowHeight !== "boolean" ||
         view.rowHeight !== undefined && view.rowHeight !== "auto" && (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64) ||
         view.estimatedRowHeight !== undefined && (!Number.isInteger(view.estimatedRowHeight) || view.estimatedRowHeight < 20 || view.estimatedRowHeight > 64) ||
@@ -96,7 +52,10 @@
     if (view.presentation !== undefined && !["continuous", "paged"].includes(view.presentation) ||
         view.pageLength !== undefined && (!Number.isInteger(view.pageLength) || view.pageLength < 1 || view.pageLength > 10000))
       throw new Error("CanopyX: invalid grid presentation or page length.");
-    if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
+    // rowData replaces an inline grid's rows; the data part (52-grid-row-data.js) decodes and validates it with the first query.
+    if (view.rowData !== undefined) {
+      if (view.source.kind !== "inline" || view.rows !== undefined || !validStructuralCount(view.rowData?.count)) throw new Error("CanopyX: invalid grid rowData.");
+    } else if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
     else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
     return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 28 : view.density === "comfortable" ? 42 : 34) };
@@ -130,9 +89,11 @@
         throw new Error("CanopyX: invalid grid sort column or direction.");
       sorts.add(sort.column); return gridQueryRecord(sort, { column: sort.column, direction: sort.direction }, strict);
     });
-    const budget = { predicates: 0, groups: 0, strict };
+    const budget = { predicates: 0, groups: 0, strict, filterable: true };
     query.filters = (input.filters || []).map(filter => gridPredicate(filter, columns, budget));
     if (input.filterGroup !== undefined) query.filterGroup = gridFilterGroup(input.filterGroup, columns, budget, 1);
+    // Sorting and paging normalize reader queries; preserve their internal origin without adding wire fields.
+    if (input[LINK_IMPL.queryOwn]) query[LINK_IMPL.queryOwn] = true;
     return gridQueryRecord(input, query, strict, cursor);
   }
 

@@ -9,8 +9,8 @@ References to "the TestimoX plan" mean `docs/roadmaps/Reporting-Platform-EndToEn
 - CanopyX is generic. It renders views over data that hosts supply and holds no product logic: nothing about Active Directory, PKI, TestimoX, ADPlayground, CertNoob, or any other product. Rollup counts, change markers, severities, and "only changed" flags are computed by the host and arrive as cells, badges, and flags.
 - Static, non-interactive tables, lists, and KPI cards stay in `ChartForgeX.VisualBlocks`. CanopyX's static renderer exists only as the fallback for its own interactive views.
 - Grid cells provide miniature bar, line and period-strip presenters for host-supplied histories. Full charts and richer visualizations come from ChartForgeX through host-owned rendering and chart actions. Neither CanopyX package references ChartForgeX.
-- CanopyX never performs writes. Context actions (0.5), edits, and drops (1.0) are raised to hooks that the host provides and governs; CanopyX applies nothing on its own.
-- Packages: stay with `CanopyX` and `CanopyX.Html` until size or dependency evidence says otherwise (see [Package Split Policy](#package-split-policy)).
+- CanopyX never performs writes. Context actions, edits and drops are raised to hooks that the host provides and governs; CanopyX applies nothing on its own.
+- Packages: `CanopyX` and `CanopyX.Html` for views and rendering; `CanopyX.Data` and `CanopyX.AspNetCore` for server-side execution of the hosted grid protocol. Further splits need size or dependency evidence (see [Package Split Policy](#package-split-policy)).
 
 ## Contract And Authoring Consolidation
 
@@ -51,7 +51,7 @@ Consumers: HtmlForgeX tree documents and the live and offline tree explorers des
 
 Gate: the library's protocol, static fallback, supported .NET targets, package smoke, browser contracts, and real host workflows pass together. Unloaded selections and query changes have explicit semantics, stalled operations settle, and large datasets stay within measured memory and rendering budgets.
 
-Consumers: the TestimoX GPO explorer (both views, the GPO list and the scope tree; TestimoX plan section 10.2) and the replacement for the HtmlForgeX `FancyTree` component (jQuery plus the fancytree plugin today).
+Consumers: the TestimoX GPO explorer (both views, the GPO list and the scope tree; TestimoX plan section 10.2), and HtmlForgeX, where the CanopyX tree is offered as a second tree choice next to the existing `FancyTree` component, which stays.
 
 Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 
@@ -77,16 +77,16 @@ Scope, taken from the `hfx/archetypes` 07 `tree` checklist:
 - [x] Static fallback renderer: a script-free outline table for email, print, and Word.
 - [x] Examples generated from a synthetic file-system-like tree that scales past 100,000 nodes.
 - [x] Playwright smoke tests, accessibility checks (axe-core plus a keyboard walkthrough), and performance budgets in CI.
-- [ ] A screen-reader pass over the tree grid, including DOM order during scrolling and cell navigation: run `docs/screen-reader-test.md`. NVDA and Narrator are omitted from this release qualification by maintainer decision. Automated checks cover roles, states, focus, and order; spoken announcements remain unverified.
+- [ ] A screen-reader pass over trees, flat grids, menus and the record drawer, including DOM order during scrolling and cell navigation: run the `docs/screen-reader-test.md` checklist with NVDA and Narrator. NVDA and Narrator are omitted from this release qualification by maintainer decision. Automated checks cover roles, states, focus, and order; spoken announcements remain unverified.
 
 Gate:
 
 - In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling. Runtime assets within 48 KB gzip.
-- With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, which was patched Wunderbaum's median in the spike (56 of about 900).
+- With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, which was the median of the patched third-party tree measured in the spike (56 of about 900).
 - In TestimoX, measured there on its own fixture: the GPO explorer design packet renders both views on CanopyX with the L fixture (5 domains, 5,000 GPOs, 200,000 links) within the TestimoX plan section 7.2 budgets.
-- Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) renders on CanopyX with the same content.
+- Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) can also be rendered on CanopyX with the same content, so authors can choose either tree.
 
-If row-cell reuse cannot meet the 4x gate, the D21 decision is revisited in the TestimoX plan. Its fallback, patched Wunderbaum, would live in the consumer behind its own API; CanopyX does not vendor a third-party grid.
+If row-cell reuse cannot meet the 4x gate, the D21 decision is revisited in the TestimoX plan. Its fallback, a patched third-party tree, would live in the consumer behind its own API; CanopyX does not vendor a third-party grid.
 
 Closed for the first consumer (the TestimoX GPO explorer design pages, 2026-09-30), each as a generic API:
 
@@ -173,16 +173,32 @@ Consumer: the TestimoX Monitoring service, which serves the GPO explorer live fr
 
 Gate: the live GPO explorer answers each expand and search within 400 ms round trip at L (TestimoX plan section 7.2).
 
-## HtmlForgeX Bridge and FancyTree Removal
+### Hosted Grid Server
 
-Consumers: HtmlForgeX documents that use `FancyTree` today, and TestimoX reports that HtmlForgeX renders. The work happens in HtmlForgeX and needs CanopyX 0.1; this entry tracks it because it is the first external consumer of `CanopyX.Html`.
+Consumers: ASP.NET Core and other .NET hosts that serve hosted flat grids from a database or a service, starting with the fleet inventory sample and the TestimoX Monitoring grids.
+
+- [x] `CanopyX.Data`: typed request parsing with an explicit column allow-list and safety limits, `IQueryable<T>` execution (sort, every filter operator, filter groups, quick search, paging with counts, value lists, grouping and aggregates), streamed CSV export with an export-format interface, `ICanopyDataProvider` for raw SQL back ends and the `CanopyInMemoryProvider<T>` reference implementation.
+- [x] `CanopyX.AspNetCore`: `MapCanopyRemote` query, value-list, summary, export and view routes with cancellation, typed client errors, authorization by default and the browser source script.
+- [x] Fleet inventory sample over SQLite and EF Core with an end-to-end browser test and `--bench` measurements at 100,000 and 1,000,000 rows (`docs/remote-dotnet.md`).
+- [x] Batch commit of grid edits: `POST commit` with a separate write policy, server-side validation of editable columns, `ICanopyDataWriter` and the `CanopyQueryableWriter<T>` reference writer with conflict detection; the sample's editable page.
+- [x] Multi-level grouping (up to four `groupBy` levels, aggregate-ordered levels, nested summaries) and `distinctCount`; the sample's two-level page.
+- [ ] Custom aggregates in the built-in providers (today a provider of your own computes them).
+- [ ] Cursor (keyset) navigation for very deep pages over large tables.
+
+Gate: random queries give the same documents from EF Core over SQLite, LINQ to objects and the reference implementation, and the sample grid pages, sorts, filters, searches, lists values and exports against its real endpoints.
+
+## HtmlForgeX Bridge: CanopyX as a Tree Choice
+
+Consumers: HtmlForgeX documents and the TestimoX reports that HtmlForgeX renders. The work happens in HtmlForgeX and needs CanopyX 0.1; this entry tracks it because it is the first external consumer of `CanopyX.Html`.
+
+Owner decision (2026-10-15): HtmlForgeX offers choices. `FancyTree` stays and the CanopyX tree is added beside it; nothing is deprecated or removed.
 
 - [ ] `HtmlForgeX.CanopyX` bridge (in HtmlForgeX): registers the CanopyX assets as a library, maps HtmlForgeX design tokens onto the CanopyX base colours, and emits the fragment.
-- [ ] Replace every `FancyTree` usage and mark the `FancyTree` API obsolete for one release. Its `SelectMode` and free-form `Extensions` can reach fancytree features (tri-state checkboxes, drag and drop, editing) and host-specific hooks, so inventory those contracts before migration.
-- [ ] Delete the component and its jQuery and fancytree assets.
+- [ ] Offer the CanopyX tree alongside `FancyTree`, so authors can pick either. Document where each fits; for example, `FancyTree`'s `SelectMode` and free-form `Extensions` reach features of that component (tri-state checkboxes, drag and drop, editing) that CanopyX may not cover yet.
+- [ ] Keep `FancyTree` and its assets maintained, and load them only on pages that use it.
 - [ ] Qualify the bridge's `StaticOutline.Only` output for email and Office delivery. HtmlForgeX has no separate `HtmlForgeX.Email` project; the bridge emits a script-free outline table through CanopyX's static renderer. Actual email-client rendering remains a separate consumer check.
 
-Gate: HtmlForgeX ships no fancytree asset, and a tree authored through the bridge has a script-free outline table with literal colours and inline styles for email and Office delivery. Actual email-client rendering requires that consumer's checks.
+Gate: both trees work side by side on one page without asset conflicts, and a tree authored through the bridge has a script-free outline table with literal colours and inline styles for email and Office delivery. Actual email-client rendering requires that consumer's checks.
 
 ## 0.3 Data Grid View
 
@@ -194,9 +210,9 @@ Standalone examples and a separate HtmlForgeX inventory host have contract, brow
 
 ### Reporting Grid Replacement Scope
 
-Report-engine foundations include hidden-container layout, wrapped automatic rows, stable measured scroll anchoring, pixel-based keyboard paging, bounded first-load content sizing and ordered raw-value row/cell highlight rules. Columns offers per-column and full-grid fitting while saved widths retain precedence. Complete Polish, German and Spanish packs cover browser and static labels. The standalone contained, wrapped, content and localized examples exercise these paths. Consumer: portable inventory reports and TestimoX tables. Host migration still needs each report's workflow qualification.
+Report-engine foundations include hidden-container layout, wrapped automatic rows, stable measured scroll anchoring, pixel-based keyboard paging, bounded first-load content sizing and ordered raw-value row/cell highlight rules. Columns offers per-column and full-grid fitting while saved widths retain precedence. Complete Polish, German, Spanish, French and Italian packs cover browser and static labels. The standalone contained, wrapped, content and localized examples exercise these paths. Consumer: portable inventory reports and TestimoX tables. Host migration still needs each report's workflow qualification.
 
-The replacement target is a complete reporting workflow: readers can find records, change their layout, inspect content, select a defined scope, and export the same accepted results. Existing DataTables callers also depend on formatting, paging controls, responsive hidden-column details, grouping and print behavior. Replacing a table must preserve those outcomes, not merely its row renderer.
+The replacement target is a complete reporting workflow: readers can find records, change their layout, inspect content, select a defined scope, and export the same accepted results. Existing table callers also depend on formatting, paging controls, responsive hidden-column details, grouping and print behavior. Replacing a table must preserve those outcomes, not merely its row renderer.
 
 The following assessment uses the current CanopyX source and the primary reference documentation linked below. It is a product backlog; unchecked capabilities are not implemented. Delivery stages express order rather than promised versions or dates.
 
@@ -207,23 +223,23 @@ The following assessment uses the current CanopyX source and the primary referen
 | Search as users type | Configurable local/remote delay, case-folded substring or word/phrase search, column policy, aliases, IME and cancellation | Qualify input-to-accepted-result latency in representative hosts | A |
 | Typed filters | Active chips, inclusive ranges, category/boolean choices, membership and optional header filters | Qualify the combined report's operators and missing-value behavior during adoption | A |
 | Rich cell content | Safe link/icon/progress/list/boolean/long-text presenters, tones, badges and explicit host renderers | Map each report's formatting and copy/export text through the typed cells | A |
-| Column layout | Pointer/keyboard moves, bounded auto-fit, min/max/flex widths, left/right pins, chooser and sticky headers | Grouped headers and measured column virtualization needs | C |
+| Column layout | Pointer/keyboard moves, bounded auto-fit, min/max/flex widths, left/right pins, grouped headers, chooser and sticky headers | Measure column virtualization needs | C |
 | Responsive records | Priority-based temporary hiding, horizontal scrolling and host-composed record views | Optional host card layout for a demonstrated report need | Adoption |
 | Advanced filtering | Nested AND/OR builder, typed predicates and full-query facets/counts | Host-authorized query presets and consumer-specific facet sources | Adoption |
 | Saved views | Durable local/host storage, schema validation, default/rename/delete/reset and permitted shareable state | Integrate each host's remote storage and access policy | Adoption |
-| Selection | Checkboxes, Shift ranges, page/filtered scopes, counts and revisioned query selection with exclusions | Cell ranges and analytical status summaries | C |
-| Details | Cancellable host hook, focus return and qualified reusable HtmlForgeX record/property drawers | Measured inline expansion when a report requires it | C |
-| Grouping and summaries | Flat headings, collapse, full-query totals and revisioned hosted summaries; paging and exports count records | Grouped headers and summary/footer rows for demonstrated wide reports | C |
+| Selection | Checkboxes, Shift ranges, page/filtered scopes, counts, rectangular cell ranges and revisioned query selection with exclusions | Qualify selection and range workflows during host adoption | C |
+| Details | Cancellable host hook, focus return, qualified reusable HtmlForgeX record/property drawers, and measured inline detail rows (templates, trusted HTML, nested grids and trees) | Adopt detail rows in a real report | C |
+| Grouping and summaries | Multi-level runtime grouping with labelled built-in and plugin aggregates, collapse by group or level, full-query totals and revisioned nested hosted summaries; paging and exports count records | Qualify grouped reporting workflows during host adoption | C |
 | Export and print | Captured scoped requests, bounded snapshots, progress/cancel, metadata, complete host print and qualified typed Office host delivery | Connect approved host formats and preserve each report's standalone download behavior | Adoption |
-| Wide tables | Row virtualization; all visible columns are mounted | Grouped headers, frozen summary rows and measured need for column virtualization | C |
+| Wide tables | Row virtualization and grouped headers; all visible columns are mounted | Frozen summary rows and measured need for column virtualization | C |
 | Live data | Query replacement and view destruction are managed | Revision-aware replace/update/remove operations that preserve focus and reject old cached pages | C |
-| Analytical interaction | Row selection and focused-cell copy | Cell ranges, range copy and scoped status summaries; pivot UI only for a measured consumer need | C |
-| Editing and reordering records | Tree proposal hooks exist; the flat grid does not expose those workflows | Typed flat-grid proposals, validation/conflicts/busy states, batch proposals and host-governed record reordering | D |
+| Analytical interaction | Row selection, rectangular ranges, range copy/paste and a host-governed fill handle | Scoped status summaries and pivot UI for a measured consumer need | C |
+| Editing and reordering records | Typed flat-grid editors, validation, change marks, undo/redo, row/batch commit proposals and tree proposal hooks | Flat-row/context actions and host-governed record reordering | D |
 | Host integration | .NET page/fragment writers, JavaScript grid entry point, local inventory bridge proof | A documented typed HtmlForgeX table migration surface, maintained examples and consumer-specific replacement gates | Adoption |
 
 ### Stage A: Finish Everyday Table Interaction
 
-Consumers: standalone CanopyX examples, HtmlForgeX inventory reports and the existing `DataTablesTable` paging/search/column-control workflows. CanopyX owns generic query and interaction behavior; HtmlForgeX owns report authoring and composition.
+Consumers: standalone CanopyX examples, HtmlForgeX inventory reports and the paging/search/column-control workflows of HtmlForgeX's existing table component, which stays available as a choice. CanopyX owns generic query and interaction behavior; HtmlForgeX owns report authoring and composition.
 
 - [x] Add an optional paged presentation alongside continuous virtual scrolling. Source fetch size and visible page size are independent. Accepted filtered/total counts, page ranges, first/previous/next/last controls and page jump share the existing query, revision, selection and export contracts. Query changes reset or clamp the page.
 - [x] Declare offset and cursor source navigation capabilities. Known-total offset sources offer numbered pages; cursor-only sources offer supported next/previous navigation with independently nullable counts, without fake random access. Database traversal stays in the host/DbaClientX owner. Exports validate contiguous traversal, captured revisions and complete known totals.
@@ -232,6 +248,7 @@ Consumers: standalone CanopyX examples, HtmlForgeX inventory reports and the exi
 - [x] Add documented deterministic ordinal/folded/natural text order and category-order policies, with a reusable host comparer. Missing values stay last and stable identities break ties. Define binary64 numeric limits, exact text representations and UTC millisecond date ordering; shared native/browser fixtures cover policy equivalence.
 - [x] Build a small optional set of safe cell presenters on the existing renderer contract: links with allowed schemes, icons with text alternatives, progress, boolean/status values, compact lists and long-text expansion. Keep trusted custom DOM rendering explicit; export/search text must not be scraped from the mounted viewport. Hosts compute domain facts and conditional tones.
 - [x] Add direct header reordering with visible drag feedback, keyboard move commands and stable focus. Add documented auto-fit sampling/caps, width constraints and optional flex sizing. Keep hidden columns, saved state, sort priorities and export order consistent by column ID.
+- [x] Enhance an existing HTML table in place, and build grids from plain records or a URL in one call (`CanopyX.enhance`, `CanopyX.grid`, docs/enhance.md): per-cell sort and search values, row ids, kinds read from the values, header groups, footers, options in attributes, render functions, URL and server sources, state saving with a duration or in the address, and short event names. Paged views gain pager settings: page-size choices with All, numbered pages and the result sentence (docs/paging.md). Header groups become multi-level headers once column groups land.
 
 Gate: a standalone paged report and the same inventory in continuous mode produce identical full-query sorted/filtered results and export identities. Exercise first/last/empty pages, page-size changes, queued search/reset, rapid remote responses, IME input, numeric/date precision fixtures and pointer/keyboard column changes. Measure input-to-accepted-result separately from render and network time; establish a repeatable latency budget on representative local and hosted datasets before calling search instant.
 
@@ -245,6 +262,10 @@ Consumers: HtmlForgeX inventories with wide content, grouped reports, reusable f
 - [x] Add persistent view storage hooks and a documented state schema: defaults, rename/delete/reset, validation, added/removed columns and schema versions. Sharing omits sensitive searches; query-bearing sharing uses a host-authorized opaque identifier. Loading state is user intent, not authorization to read other records.
 - [x] Add visible row selection controls, Shift ranges and a selected-count summary. Define page selection separately from all filtered results. Large query selection uses an accepted revision/query descriptor plus exclusions instead of materializing a million IDs; exports and host actions validate that descriptor. Define what happens when a selected record leaves the query or the revision changes.
 - [x] Support reusable HtmlForgeX record/property drawers through `onDetails`, with cancellation, focus return, safe long text and related-record content. Responsive fields remain available through the same accepted record; details do not stretch a fixed virtual row.
+- [x] Add runtime multi-level grouping (query `groupBy`, nested `gridSummary` groups, groups ordered by value or aggregate, distinct and plugin aggregates) and detail rows as lazy parts (docs/grouping.md).
+- `CanopyX.Data` serves nested summaries, `groupBy` record order and `distinctCount`; the fleet inventory sample exercises multi-level grouping ([.NET adapter](docs/remote-dotnet.md)).
+- [x] Add the record panel as a lazy part (docs/record-panel.md): record-only fields, sections, tabs and a pinned summary, structured values and collections, related records with a back stack, timelines and changes, record deep links, record actions, and details on demand from record packs, a host loader or a hosted source, for grids and trees.
+- [ ] Serve `gridRecordQuery` (record details and collection pages) from `CanopyX.Data` (data-protocol.md lists what an adapter implements), and offer an Excel export of one record through an export plugin's record action.
 - [x] Add flat grouping and summary descriptors with stable group keys, collapse state and group/leaf count semantics. Paging, selection and record exports count records; collapsed presentation ranges do not trigger hidden-page loading. The grouping key leads sort order, followed by user sorts and stable IDs. Inline complete datasets compute generic aggregates; hosted sources provide complete-query aggregates. Record exports omit synthetic headings and receive the accepted grouping order; a host can add summary metadata deliberately. Domain rollups stay host-owned.
 - [x] Expand delivery over the existing export descriptor: progress/cancel, filename and locale/time-zone metadata, visible vs declared columns, raw vs display values, and print of an accepted query. Bounded snapshots traverse the requested source scope without truncation; hosts use the static renderer for complete print output. Printing the mounted viewport is not a full-query export.
 - [x] Provide captured requests and cancellation for host-supplied OfficeIMO XLSX/PDF generation through HtmlForgeX export hooks. Qualify typed dates/numbers, literal formula-like text, safe hyperlinks, complete ordering, limits, failures and cancellation of an active large-result generator. Office generation remains a host responsibility. Standalone reports use bounded embedded CSV/copy, a host-prepared Office download, or a separately approved optional provider; an HTTP hook does not provide offline Office generation.
@@ -257,11 +278,21 @@ Consumers: the HtmlForgeX DataExplorer's wide datasets and live inventories; the
 
 - [ ] Evaluate inline expandable grid details when a named report needs them, with measured row heights and keyboard/ARIA proof. A fixed row must not grow beyond its containment box; retain the host-composed record drawer as the existing details path.
 
-- [ ] Add grouped headers and summary/footer rows for wide reports, with explicit accessible header associations and ordering rules. Bring this forward into Stage B when an inventoried report already requires complex headers; otherwise keep its complexity behind the wide-table use case.
+- [x] Add grouped headers for wide reports: up to three levels of column groups with ARIA spans, groups kept whole by pins, priority hiding, resizing and moves, a nested Columns menu, drawer sections and the script-free header (docs/column-groups.md).
+- [ ] Add summary/footer rows for wide reports, with explicit accessible header associations. Bring this forward into Stage B when an inventoried report already requires them.
+- [ ] Read `<tfoot>` rows and per-page footer totals when enhancing a table, through the same summary/footer owner.
+- [ ] Offer an always-visible faceted filter panel when a report needs several value lists side by side. Reuse the existing complete-query facet values and counts rather than deriving them from mounted rows.
 - [ ] Measure realistic 50/100/200-column fixtures before implementing column virtualization. If mounted cells dominate cost, extend the shared viewport while retaining pinned columns, logical ARIA indices, offscreen keyboard navigation, details and exports. Do not introduce a second row engine.
 - [ ] Define revision-aware data replacement and row updates/removals, cache invalidation, scroll anchoring, focus/selection retention and optional paused refresh. Sorted/filtered hosted updates may require a fresh accepted query rather than relocating rows from partial cache knowledge.
-- [ ] Add rectangular cell selection and range copy only where DataExplorer readers need comparison workflows. Define ranges across reordered/hidden/virtual columns and rows, escaped clipboard formats and whole-range versus loaded-range limits. Summaries name their scope and never treat a loaded window as the dataset.
+- [x] Add rectangular cell selection, range copy (tab-separated text with a typed table, unloaded rows read first, 200,000-cell limit), paste through the host and the editing part, and an optional fill handle (docs/cell-ranges.md).
+- [ ] Use the editing part for the quarterly budget example's month columns so its pastes show per-cell checks and undo. Enhanced tables already pass their header groups as column groups.
+- [x] Conditional formatting: rules on the filter builder's conditions for cells, rows, chosen columns and the record drawer; tones, icons, badges, cues, data bars, colour scales and threshold bands; a legend, a rule editor and saved-view rules; static fallback and export record formats (docs/conditional-formatting.md).
+- [ ] Map formatting rules into the styled spreadsheet export format once the OfficeIMO-based writer lands: native conditional formatting for conditions, data bars, colour scales and bands, with theme tones resolved to the export palette.
+- [x] Search-hit highlighting: marks for search and column-filter hits in cells, the record drawer and tree nodes, a live match count and next/previous navigation that reaches virtual rows, case and accent options, a saved switch (docs/search-highlight.md).
+- [x] Layout modes: fit, scroll sideways and cards, with compact, normal and comfortable densities, switched from a Layout menu or the API and kept in saved views; trees offer fit and scroll (docs/layout-modes.md).
 - [ ] Evaluate pivot presentation only after a real inventory needs it and grouping/aggregate semantics are stable. Hosted pivot data is computed through the host/data owner; full charts remain ChartForgeX integrations. A 2D categorical matrix remains its own view rather than an overloaded table option.
+- [ ] Compose ChartForgeX charts for a selected range or group and richer chart cells through host renderers. Preserve the existing bar/line/period-strip presenters for small host-supplied histories.
+- [ ] Qualify sticky headers during page scrolling for grids that grow with their rows, and per-column class names when a demonstrated host styling need requires them.
 
 Gate: produce a measured wide/live inventory demonstration. Record DOM/cache bounds, browser memory, query/render/input latency, sustained scroll and update behavior at normal and 4x slowdown. Keyboard navigation, cell identity and frozen headers remain correct when columns/rows leave the mounted window. Ship only the extensions that improve the demonstrated consumer.
 
@@ -269,9 +300,10 @@ Gate: produce a measured wide/live inventory demonstration. Record DOM/cache bou
 
 Consumers: a later HtmlForgeX editable inventory or administrative explorer that actually needs governed changes. TestimoX and other product adoption require their own later scope; existing tree editing is not proof of flat-grid editing.
 
-- [ ] Extend the existing proposal pattern to flat cell editors and row/context actions. Include typed validation, cancellation, busy states, an accessible error surface and host-returned canonical values/revisions. CanopyX raises intent; the host authorizes and executes changes.
-- [ ] Define batch editing/paste and record drag reorder only for a named host workflow. Support partial failure, conflict and cancellation policies; do not silently overwrite newer records or mutate cached rows as an assumed database commit.
-- [ ] Keep undo/redo, audit, conflict resolution and write transactions host-owned. Spreadsheet formulas, automatic fill and merged body cells need separate consumer and design justification before entering the library.
+- [x] Flat cell editors: the editing part (docs/editing.md) has typed editors, validation, cancellation, saving states, an accessible error surface and host-returned canonical cells and revisions. CanopyX raises intent; the host authorizes and executes changes. Row/context actions on flat grids remain open.
+- Paste and fill into editable ranges, validation, undo and redo are implemented by the editing and range parts. Batch commit reports partial failure and conflicts per row (`gridCommit`); audit, conflict resolution and write transactions stay host-owned.
+- [ ] Add flat-record reordering by drag and keyboard only for a named host workflow, raising proposals to the host like tree moves. Preserve current sort order and reject stale or unauthorized writes.
+- [ ] Evaluate formula/computed columns and merged body cells only after a consumer and public-contract design justify them. Automatic fill already uses the host-governed editing path.
 
 Gate: a host example rejects unauthorized and stale proposals, returns validation/partial-failure results, and refreshes the accepted data without losing focus or applying an unconfirmed write. Reordering is tested independently of column reordering and current sort order.
 
@@ -280,7 +312,7 @@ Gate: a host example rejects unauthorized and stale proposals, returns validatio
 Consumers: every CanopyX host, especially standalone .NET/JavaScript users and the HtmlForgeX inventory bridge. These gates apply across stages rather than becoming a separate feature engine.
 
 - [ ] Investigate the retained roughly 55 Hz Edge scrolling failures with a concrete environment hypothesis. Keep every domain/round/outlier, browser/cadence/asset provenance and the unchanged 6% target. Extend proof to search/sort/state/selection/export latency and browser memory where new work affects them; do not replace a failed run with a favorable refresh-rate sample.
-- [ ] Complete actual screen-reader speech checks alongside automated ARIA/axe, keyboard, zoom, forced-colors, RTL/localization and reduced-motion checks. Keep logical row/column counts and focus observable with virtualization, loading, pinned content and details. Automated accessibility checks alone do not establish speech behavior.
+- [ ] Complete actual screen-reader speech checks; the automated ARIA/axe (every example, desktop and phone, light and dark), keyboard, zoom reflow, forced-colors, reduced-motion and target-size checks are in place (`docs/accessibility.md`), RTL is not. Keep logical row/column counts and focus observable with virtualization, loading, pinned content and details. Automated accessibility checks alone do not establish speech behavior.
 - [ ] Exercise request failure/timeout/cancellation, stale revisions, invalid state, source count changes, empty datasets, multiple grids, tab/hidden-container sizing and disposal. Export and selection must preserve accepted-query identity through these transitions.
 - [ ] Maintain source/protocol/schema/native/browser/package contracts together, all four .NET targets, strict JavaScript consumers and core asset budgets. Keep optional interaction/presentation parts out of the ordinary tree runtime where practical. Audit unsafe text/links, renderer lifetime, CSP-compatible hosting and prototype-shaped IDs at the owning boundaries.
 - [ ] Publish a documented HtmlForgeX grid builder and migration map for existing table authoring calls, after owner acceptance and package readiness. The bridge remains thin; database work belongs to DbaClientX, Office formats to OfficeIMO, report layout/forms/details to HtmlForgeX, and charts/static visual blocks to ChartForgeX.
@@ -292,14 +324,13 @@ The first replacement gate is Stages A and B plus the relevant reliability check
 
 ### Reference Capabilities
 
-Primary documentation checked 2026-10-04. These references describe comparison behavior, not dependencies or implementation to copy:
+Reviewed 2026-10-04 and kept as candidates, not dependencies or implementation to copy: reporting controls and nested conditions,
+word and phrase search with a separate remote request rate, separate presentation and query values, complete-result ordering and
+filtering before page windows, export and print controls with a host path for full exports, narrow layouts, direct column
+changes, report grouping, pinning, cell selection, durable layout state, distinct page controls, and full-dataset processing kept
+apart from viewport virtualization. Existing grids having a feature does not prove every combination works; our combination gates are
+explicit, and the larger analytical surface some grids offer is a source of candidates, not an obligation.
 
-- [DataTables extensions](https://datatables.net/manual/extensions/) and [ColumnControl](https://datatables.net/manual/extensions/columncontrol/) establish the reporting-control surface; [SearchBuilder](https://datatables.net/manual/extensions/searchbuilder/) covers nested conditions.
-- [DataTables search](https://datatables.net/ref/core/api/search()) covers word/phrase behavior; [search delay](https://datatables.net/ref/core/option/searchDelay) distinguishes local response from remote request frequency. [Orthogonal data](https://datatables.net/manual/core/data/orthogonal-data) and [renderers](https://datatables.net/manual/core/data/renderers) distinguish presentation from query values.
-- [DataTables server-side processing](https://datatables.net/manual/server-side) defines complete-result ordering/filtering before page windows. [Buttons](https://datatables.net/manual/extensions/buttons/) covers export/print controls; [the server-side export FAQ](https://datatables.net/support/faqs) explains why a client with only a result window needs a host path for full exports.
-- [Responsive](https://datatables.net/manual/extensions/responsive/), [ColReorder](https://datatables.net/manual/extensions/colreorder/) and [RowGroup](https://datatables.net/manual/extensions/rowgroup/) cover narrow layouts, direct column changes and report grouping. Their existence does not prove every combination is supported; our combination gates are explicit.
-- [AG Grid key features](https://www.ag-grid.com/javascript-data-grid/key-features/), [column pinning](https://www.ag-grid.com/javascript-data-grid/column-pinning/), [cell selection](https://www.ag-grid.com/javascript-data-grid/cell-selection/) and [grid state](https://www.ag-grid.com/javascript-data-grid/grid-state/) describe useful advanced-grid workflows. Their larger commercial/analytical surface is a source of candidates, not an obligation to ship them all.
-- [Tabulator pagination](https://www.tabulator.info/docs/6.x/page/) and [persistence](https://www.tabulator.info/docs/6.x/persist/) illustrate distinct page controls and durable layout state. [TanStack's data/rendering distinction](https://tanstack.com/table/latest/docs/guide/client-side-vs-server-side) separates full-dataset processing from viewport virtualization.
 - [WAI-ARIA grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) defines accessible interactive-grid behavior; real assistive-technology qualification remains necessary.
 
 ## 0.4 Matrix View
@@ -323,20 +354,44 @@ Consumers: an Active Directory users and computers browser (ADPlayground and Tes
 
 Gate: the directory browser runs on the TestimoX L directory fixture (1.5 million objects) and the certificates overview on 1 million issued certificates from the TestimoX scale fixtures, both without product code in CanopyX, and every write goes through a host hook.
 
+### Linked Views
+
+Consumers: HtmlForgeX reports that link charts, grids, trees and tables declaratively, and pages that link a CanopyX view to their own controls ([Linked views](docs/linked-views.md)).
+
+- [x] External filters with removable chips, combined with the reader's filters, carried in a host source's query and left out of saved state unless they persist.
+- [x] Highlights that mark rows without filtering and reveal the first, on grids and trees.
+- [x] Neutral `canopyx:linkchange` payloads for the reader's selection and own conditions, in the lazy `link` part.
+- [ ] Server-side external filters for lazy, query-aware trees (today they match loaded nodes).
+
+Gate: the linked views example and HtmlForgeX's linked report pass the browser suites at desktop and phone widths in both palettes, with the link part under its gzip guard.
+
 ## 1.0 Public-Grade
 
 Consumers: external users of the published packages, and write-governed tools such as CA Noob Desktop for editing.
 
 - Tree editing and drag and drop already raise proposals to host hooks; flat-grid action coverage follows Stage D above. CanopyX applies no writes on its own.
-- [ ] Documentation website built with PowerForge.Web.
+- [ ] Documentation website built with PowerForge.Web, with live examples of public entry points.
 - [ ] Published benchmarks with reproducible commands.
 - [x] Optional npm distribution of the built runtime for hosts that are not .NET.
 
 Gate: no breaking changes to the public API or to `canopyx/2` during 1.x, and the website documents every public entry point with a working example.
+
+### Authoring And Delivery Candidates
+
+Consumers: standalone JavaScript and .NET report authors, framework application hosts, and PowerShell report authors using PSWriteHTML. These candidates need a named host workflow before implementation; their order does not promise a version or date.
+
+- [ ] Web components (`<canopy-grid>` and `<canopy-tree>`) with attributes, properties and events, followed by Blazor Server/WebAssembly components with typed definitions and selection/editing binding over the existing .NET adapter.
+- [ ] React, Vue, Angular and Svelte wrappers over the same web-component contract when an application needs one.
+- [ ] A PowerShell module and PSWriteHTML integration through the existing authoring/runtime owners.
+- [ ] A theme builder over the existing design tokens; additional languages and right-to-left layout beyond the current five translated packs.
+- [ ] Evaluate regular-expression quick search only for a demonstrated need, retaining bounded input and execution. The current bounded pattern grammar for filters and formatting remains separate.
+
+Gate: each accepted candidate has a runnable host example, documented public API and applicable typed-consumer, keyboard and desktop/phone light/dark checks. Optional wrappers keep the core dependency and asset boundaries. Accessibility claims require the speech checks above; no WCAG conformance statement follows from automated checks alone.
 
 ## Package Split Policy
 
 - Stay with `CanopyX` and `CanopyX.Html`.
 - When the runtime grows with new views, prefer separate JavaScript entry points (for example a tree grid script and a matrix script) inside `CanopyX.Html` before splitting packages.
 - Split views into separate packages only when package size or dependency evidence requires it, and record that evidence here first.
-- The one planned exception is `CanopyX.AspNetCore` (0.2). Its evidence is the dependency: it needs the ASP.NET Core shared framework, which `CanopyX` must not take, so it targets `net8.0` and `net10.0` only.
+- `CanopyX.AspNetCore` is split by dependency: it needs the ASP.NET Core shared framework, which `CanopyX` must not take, so it targets `net8.0` and `net10.0` only. It serves hosted flat grids today; the tree endpoints of 0.2 belong in it too.
+- `CanopyX.Data` is split by dependency and responsibility: it parses requests with `System.Text.Json` (a package on `net472` and `netstandard2.0`) and translates them to expression trees, which the dependency-free `CanopyX` must not carry. It depends only on `CanopyX`; EF Core and database drivers stay in the host.

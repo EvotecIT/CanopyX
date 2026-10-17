@@ -94,11 +94,14 @@
       const grid = this.grid;
       if (cell.parentNode && cell.parentNode._kind === "node") {
         this.revealInCell(cell, target);
-        const pinned = cell !== treeCell && this.host.classList.contains("cx-pin-tree") ? treeCell.offsetWidth : 0;
+        // Clear of the pinned columns at both edges (the pinned tree column, and data-cx-pin cells); a pinned cell is in view.
+        const pins = cell.dataset.cxPin ? [] : [...cell.parentNode.children].filter(item => item !== cell &&
+          (item.dataset.cxPin || item === treeCell && this.host.classList.contains("cx-pin-tree")));
+        const edge = right => pins.reduce((sum, item) => sum + ((item.dataset.cxPin === "right") === right ? item.offsetWidth : 0), 0), pinned = edge(false), end = edge(true);
         const left = grid.getBoundingClientRect().left + grid.clientLeft;
         const box = cell.getBoundingClientRect();
         if (box.left < left + pinned) grid.scrollLeft -= left + pinned - box.left;
-        else if (box.right > left + grid.clientWidth) grid.scrollLeft += Math.min(box.right - left - grid.clientWidth, box.left - left - pinned);
+        else if (box.right > left + grid.clientWidth - end) grid.scrollLeft += Math.min(box.right - left - grid.clientWidth + end, box.left - left - pinned);
       }
       const body = target.closest(".cx-detail-body");
       if (body && body !== target) {
@@ -189,7 +192,7 @@
       const w = rowEl && rowEl._w;
       const cells = this.rowCells(rowEl);
       const index = cells.findIndex((cell) => cell.contains(e.target));
-      if (!w || w.status || index < 0 || e.isComposing || e.defaultPrevented) return index >= 0;
+      if (!w || w.status && !w.group || index < 0 || e.isComposing || e.defaultPrevented) return index >= 0;
       const cell = cells[index];
       const control = e.target !== cell ? e.target : null;
       if (control && control.matches(OWN_ARROWS)) {

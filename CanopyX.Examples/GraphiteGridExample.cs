@@ -6,6 +6,13 @@ namespace CanopyX.Examples;
 /// <summary>The Graphite cell presentation gallery, with raw values and long histories.</summary>
 internal static class GraphiteGridExample {
     internal static void Write(string output) {
+        var view = View();
+        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) view.SaveHtmlPage(Path.Combine(output, theme == CanopyTheme.Dark ? "graphite-grid-dark.html" : "graphite-grid.html"),
+            new CanopyHtmlOptions { Title = "CanopyX Graphite presenters", Theme = theme });
+    }
+
+    /// <summary>The Graphite inventory: every presenter, history strips and sparklines among them.</summary>
+    internal static CanopyDataGridView View() {
         var view = new CanopyDataGridView("graphite", "Graphite inventory") {
             Noun = "records", StatusBar = true, AutoRowHeight = true,
             Selection = CanopySelectionMode.Multiple, Presentation = CanopyGridPresentation.Paged, PageLength = 10
@@ -44,7 +51,6 @@ internal static class GraphiteGridExample {
             row.Cells["notes"] = problem ? "A longer diagnostic explanation. " + string.Join(" ", Enumerable.Repeat("The host supplies each fact and its plain-text export value.", 10)) : "The record is healthy.";
             view.Rows.Add(row);
         }
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) view.SaveHtmlPage(Path.Combine(output, theme == CanopyTheme.Dark ? "graphite-grid-dark.html" : "graphite-grid.html"),
-            new CanopyHtmlOptions { Title = "CanopyX Graphite presenters", Theme = theme });
+        return view;
     }
 }

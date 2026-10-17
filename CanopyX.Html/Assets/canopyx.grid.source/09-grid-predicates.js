@@ -9,7 +9,7 @@
   function gridPredicate(filter, columns, budget) {
     if (++budget.predicates > 64) throw new Error("CanopyX: at most 64 grid predicates.");
     const column = filter && columns.get(filter.column), values = filter && filter.values;
-    if (!column || !Object.keys(GRID_FILTER_LABELS).includes(filter.operator) ||
+    if (!column || budget.filterable && column.filterable === false || !Object.keys(GRID_FILTER_LABELS).includes(filter.operator) ||
         !Array.isArray(values))
       throw new Error("CanopyX: invalid grid predicate.");
     const nullTest = filter.operator === "isNull" || filter.operator === "isNotNull";

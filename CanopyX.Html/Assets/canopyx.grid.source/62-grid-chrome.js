@@ -20,10 +20,13 @@
       const overflow = this.overflow = this.controlPanel(this.labels.gridMore, "cx-grid-overflow");
       const summary = overflow.details.firstChild; summary.replaceChildren(gridIcon("more"));
       summary.classList.add("icon"); summary.setAttribute("aria-label", this.labels.gridMore);
-      for (const action of this.opts.actions || []) overflow.panel.appendChild(this.gridAction(action, act));
+      for (const action of [...this.opts.actions || [], ...pluginItems(this, "menuItems")]) overflow.panel.appendChild(this.gridAction(action, act));
       overflow.panel.append(this.toolbar.querySelector(".cx-grid-details"), this.toolbar.querySelector(".cx-grid-print") ||
         Object.assign(gridButton(this.labels.gridPrint, () => global.print()), { className: "cx-button cx-grid-print" }));
       (this.toolbar.querySelector(".cx-grid-export") || overflow.details).before(this.spacer, this.selectionBar, this.toolbarSeparator);
+      // Plugin toolbar items ({ label, run }, run as host actions run) follow Columns; Views (built later, and moved by the
+      // phone layout) goes after them.
+      for (const item of pluginItems(this, "toolbarItems")) this.spacer.before(this.gridAction(item, act));
       if (this.tools.more === false) { overflow.details.remove(); this.overflow = null; }
       this.host.addEventListener("canopyx:select", () => this.syncGridChrome(), { signal });
       this.syncGridChrome();
@@ -49,12 +52,7 @@
       this.host.classList.toggle("cx-phone", phone);
       if (phone === this.phone) return;
       this.phone = phone;this.version++;this.scheduleRender();
-      if (this.overflow) for (const selector of [".cx-grid-views", ".cx-grid-export"]) {
-        // A moved menu closes first: moving a shown popover takes it out of the top layer while it stays open.
-        const item = this.toolbar.querySelector(selector); if (!item) continue; item.open = false;
-        if (phone) this.overflow.panel.appendChild(item);
-        else this.toolbar.insertBefore(item, selector === ".cx-grid-views" ? this.slots?.afterViews || this.spacer : this.overflow.details);
-      }
+      this.placeMenus(phone);
       this.syncPinnedShadows();
     },
     syncPinnedShadows() {
@@ -65,6 +63,6 @@
     // The reporting runtime adds content entries (render) to these handler entries.
     gridAction(action, act) {
       if (!action || typeof action.label !== "string" || typeof action.run !== "function") throw new Error("CanopyX: actions need a label and handler.");
-      return gridButton(action.label, () => act(() => this.runGridHook(signal => action.run({query:this.getQuery(),signal}), this.dataLifetime.signal)));
+      return gridButton(action.label, () => act(() => this.runGridHook(signal => action.run({query:this.getQuery(),signal,api:this.host.canopyx}), this.dataLifetime.signal)));
     }
   });

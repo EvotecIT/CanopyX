@@ -1,65 +1,21 @@
-  // ---------- scoped delivery with progress and an explicit cancellation action ----------
-  DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
-    gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export"
-  }));
-  const DELIVERY_CONTROLS = DataGrid.prototype.buildExportControls;
+  // ---------- host print action ----------
+  // Print lives in the more menu and runs through the Export menu's scope, progress and cancellation controls (the export
+  // part draws them). Without the Export menu, a print hook still runs from the more menu, for the filtered result.
+  const DELIVERY_CONTROLS = DataGrid.prototype.buildExportControls, PRINT_CHROME = DataGrid.prototype.buildGridChrome;
+  DataGrid.prototype.exportFromMenu = function (action) { return loadExportPart().then(() => EXPORT_IMPL.exportFromMenu.call(this, action)); };
+  DataGrid.prototype.syncPrintAvailability = function () {
+    if (this.printButton) this.printButton.disabled = !!this.exportControl?.panel?.cxExportBusy?.() || !this.defaultExportColumns().length;
+  };
+  DataGrid.prototype.buildGridChrome = function () {
+    PRINT_CHROME.call(this);
+    const menu = this.overflow?.details;
+    if (menu && this.printButton) menu.addEventListener("toggle", () => { if (menu.open) this.syncPrintAvailability(); }, { signal: this.lifetime.signal });
+    this.syncPrintAvailability();
+  };
   DataGrid.prototype.buildExportControls = function () {
     DELIVERY_CONTROLS.call(this);
-    if (!this.view.reporting) return;
-    const panel = this.toolbar.querySelector(".cx-grid-export .cx-grid-panel");
-    // Without the Export menu, a print hook still runs from the more menu, for the filtered result.
-    if (!panel) {
-      if (typeof this.opts.onPrint === "function") this.toolbar.appendChild(Object.assign(gridButton(this.labels.gridPrint, () =>
-        Promise.resolve().then(() => this.print({ scope: "filtered" })).catch(error => this.emit("error", { error }))), { className: "cx-button cx-grid-print" }));
-      return;
-    }
-    panel.replaceChildren();
-    const scope = h("select"); scope.setAttribute("aria-label", this.labels.gridExport);
-    for (const [value, label] of [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])
-      scope.appendChild(gridOption(value, this.labels[label]));
-    const status = h("p", "cx-grid-delivery-status"); status.setAttribute("role", "status");
-    const meter = h("progress"); meter.setAttribute("aria-label", this.labels.gridExport); meter.hidden = true;
-    let operation = null;
-    const cancel = gridButton(this.labels.gridCancelExport, () => operation?.abort()); cancel.hidden = true;
-    const progress = value => {
-      if (this.destroyed || !operation || operation.signal.aborted) return;
-      setText(status, fill(value.total === null ? this.labels.gridExportReading : this.labels.gridExportProgress,
-        { completed: numberFormat(this.lang).format(value.completed), total: value.total === null ? "" : numberFormat(this.lang).format(value.total) }));
-      if (value.total === null) meter.removeAttribute("value");
-      else { meter.max = Math.max(1, value.total); meter.value = value.completed; }
-    };
-    const run = action => {
-      if (operation) return;
-      // Print lives in the overflow; expose the shared progress and cancellation controls.
-      panel.parentElement.open = true;
-      if (!this.phone && this.overflow) this.overflow.details.open = false;
-      const controller = operation = new AbortController();
-      scope.disabled = true; buttons.forEach(button => button.disabled = true);
-      cancel.hidden = false; meter.hidden = false; meter.removeAttribute("value"); setText(status, this.labels.loading);
-      const options = { scope: scope.value, signal: controller.signal, onProgress: progress };
-      Promise.resolve().then(() => action(options)).then(() => { if (!this.destroyed) setText(status, ""); }, error => {
-        if (!this.destroyed) setText(status, error.name === "AbortError" ? this.labels.gridExportCancelled : error.message);
-        if (error.name !== "AbortError") this.emit("error", { error });
-      }).finally(() => {
-        if (operation === controller) operation = null;
-        if (!this.destroyed) {
-          const returnFocus = document.activeElement === cancel;
-          scope.disabled = false; buttons.forEach(button => button.disabled = false); cancel.hidden = true; meter.hidden = true;
-          if (returnFocus) scope.focus();
-        }
-      });
-    };
-    const csv = gridButton(this.labels.gridDownloadCsv, () => run(async options => {
-      const exported = this.prepareExport(options), fileName = exported.request.fileName;
-      const text = await this.exportText(exported, 50000, ",", options.signal); gridOperationActive(this, options.signal);
-      const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
-      try {
-        const link = h("a"); link.href = url; link.download = fileName + ".csv";
-        document.body.appendChild(link); link.click(); link.remove();
-      } finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
-    }));
-    const copy = gridButton(this.labels.gridCopy, () => run(options => this.copy(options))), buttons = [csv, copy];
-    if (typeof this.opts.onPrint === "function") {const print=gridButton(this.labels.gridPrint,()=>run(options=>this.print(options)));print.classList.add("cx-grid-print");this.toolbar.appendChild(print);buttons.push(print);}
-    panel.append(scope, ...buttons, cancel, meter, status);
+    if (!this.view.reporting || typeof this.opts.onPrint !== "function") return;
+    const print = this.printButton = gridButton(this.labels.gridPrint, () => Promise.resolve().then(() => this.exportControl ?
+      this.exportFromMenu((options, onProgress) => this.print({ ...options, onProgress })) : this.print({ scope: "filtered" })).catch(error => this.emit("error", { error })));
+    print.classList.add("cx-grid-print"); this.toolbar.appendChild(print);
   };

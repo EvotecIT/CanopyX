@@ -166,14 +166,12 @@
       return state;
     }
 
-    toOutline() {
+    outlineElement() {
       const model = this.checks, items = this.rows.filter(w => !w.status).map(w =>
         ({ path: this.pathOf(w), label: w.h.label, detail: !!w.h.detail }));
-      const markup = super.toOutline();
-      if (!this.checkMode) return markup;
-      const holder = h("div");
-      holder.innerHTML = markup;
-      const rows = holder.querySelector("table").tBodies[0].rows;
+      const table = super.outlineElement();
+      if (!this.checkMode || !table) return table;
+      const rows = table.tBodies[0].rows;
       items.forEach((item, index) => {
         if (item.detail) return;
         const value = model.state(item.path), marker = h("span");
@@ -185,7 +183,7 @@
         marker.textContent = value === "mixed" ? "▣ " : value ? "☑ " : "☐ ";
         rows[index].cells[0].prepend(marker);
       });
-      return holder.innerHTML;
+      return table;
     }
 
     readState(state) {

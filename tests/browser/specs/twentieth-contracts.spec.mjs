@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
 const view = { protocol: "canopyx/2", type: "view", id: "twentieth", label: "Contracts",
-  columns: [{ id: "name", title: "Name", width: 300, sortable: true }, { id: "value", title: "Value", width: 160 }],
+  columns: [{ id: "name", title: "Name", width: 300, sortable: true, fixed: true }, { id: "value", title: "Value", width: 160, fixed: true }],
   source: { kind: "inline" }, roots: [{ id: "a", label: "Alpha" }, { id: "b", label: "Beta" }] };
 
 async function open(page, data = view, html = viewPage(data)) {

@@ -3,7 +3,7 @@
   DataGrid.prototype.visibleColumns = function () {
     const requested = this.columns.filter(column => !column.hidden), options = this.view.reporting || {};
     for (const column of this.columns) column.responsiveHidden = false;
-    if (options.responsive && this.grid && this.grid.clientWidth) {
+    if (options.responsive && this.grid && this.grid.clientWidth && (this.layoutMode || "fit") === "fit") {
       let total = requested.reduce((sum, column) => sum + reportingWidth(this, column, column.width), 0), remaining = requested.length;
       const candidates = requested.filter(column => !reportingLayout(this, column).alwaysVisible).sort((a, b) =>
         (reportingLayout(this, b).priority ?? MAX_PROTOCOL_INTEGER) - (reportingLayout(this, a).priority ?? MAX_PROTOCOL_INTEGER) ||

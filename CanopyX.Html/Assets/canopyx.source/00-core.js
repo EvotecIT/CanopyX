@@ -42,6 +42,13 @@
     element.textContent = value == null ? "" : String(value);
   }
 
+  /** A removable chip keeps its text shrinkable and its removal mark visible. */
+  function filterChipContent(button, text) {
+    const label = h("span", "cx-chip-label"), remove = h("span", "cx-chip-remove");
+    setText(label, text); setText(remove, " ×"); remove.setAttribute("aria-hidden", "true");
+    button.classList.add("cx-filter-chip"); button.replaceChildren(label, remove);
+  }
+
   function validStructuralCount(value) {
     return Number.isInteger(value) && value >= 0 && value <= MAX_PROTOCOL_INTEGER;
   }
@@ -218,44 +225,6 @@
     return texts;
   }
 
-  // ---------- labels ----------
-  // Every text the runtime writes itself, in English. A view document can carry translations in "labels", and a host
-  // can pass more in the options; placeholders such as {count} are replaced. Host data (labels of nodes, column
-  // titles, cells) is never translated here.
-  let DEFAULT_LABELS = Object.freeze({
-    searchPlaceholder: "Search", searchResults: "Search results", searchResultCount: "{count} results",
-    searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
-    searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
-    searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
-    columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
-    loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
-    queryFailed: "Could not update the view: {error}",
-    showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",
-    pageLoaded: "{loaded} of {total} loaded", itemsLoaded: "{count} items", yes: "Yes", no: "No",
-    utcTime: "{time} UTC", localTime: "{time} local time", mountError: "This view could not be displayed: {error}"
-  });
-
-  /** The labels of a grid: the English defaults, then the view's, then the host's. A name CanopyX does not know is a mistake. */
-  function labelsFor(...sources) {
-    const labels = Object.assign({}, DEFAULT_LABELS);
-    for (const source of sources) {
-      if (source == null) continue;
-      if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
-      Object.keys(source).forEach((name) => {
-        if (!Object.hasOwn(DEFAULT_LABELS, name)) throw new Error("CanopyX: there is no label '" + name + "'.");
-        if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
-        if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
-        labels[name] = source[name];
-      });
-    }
-    return Object.freeze(labels);
-  }
-
-  /** A label with its {placeholders} replaced; a placeholder without a value stays as it is. */
-  function fill(template, values) {
-    return template.replace(/\{(\w+)\}/g, (match, name) => (values && Object.hasOwn(values, name) ? String(values[name]) : match));
-  }
-
   /**
    * What formatting a grid's cells needs: the page language, the time zone, and the labels, with the date labels
    * split around {time} once, because dates are formatted again on every paint.
@@ -307,9 +276,14 @@
 
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-  /** Sort key: numbers (and parsed dates, booleans) rank 0, strings rank 1, empty rank 2. */
+  /**
+   * Sort key: numbers (and parsed dates, booleans) rank 0, strings rank 1, empty rank 2. A cell's sort field (text or a
+   * number) replaces its value for sorting only; search and filters keep reading the value.
+   */
+  const safeGridNumber = value => Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
   function sortKey(cell, column) {
-    let value = cellValue(cell);
+    // Trees ignore malformed sort keys; flat grids reject them at intake.
+    let value = isCellObject(cell) && (typeof cell.sort === "string" || safeGridNumber(cell.sort)) ? cell.sort : cellValue(cell);
     if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
       value = cell.text;
     }

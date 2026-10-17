@@ -13,7 +13,7 @@ namespace CanopyX.Rendering;
 /// <c>color-mix()</c>, from before 2023, loses the mixed colours: muted text and tints fall back to the inherited
 /// colour and no background, which stays legible.)
 /// </summary>
-internal sealed class CanopyStaticStyles {
+internal sealed partial class CanopyStaticStyles {
     private const string BadgeShape = "display:inline-block;margin-left:6px;padding:0 6px;border-radius:9px;font-size:11px;";
 
     private readonly CanopyStaticHtmlOptions _options;

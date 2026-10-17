@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -26,7 +25,7 @@ public static partial class CanopyStaticHtml {
     /// <param name="view">The grid definition and its typed columns.</param>
     /// <param name="page">An optional accepted query window. Host sources require this explicit snapshot.</param>
     /// <param name="options">Row limit, caption, theme and link to the full report.</param>
-    /// <returns>The table, displayed data rows and matching count before the static row limit.</returns>
+    /// <returns>The table, displayed data and detail rows, and matching count before the static row limit.</returns>
     /// <remarks>Inline rows retain source order. Supplied pages preserve their accepted filtering and ordering.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The definition or page is invalid, or a host source has no snapshot.</exception>
@@ -53,7 +52,7 @@ public static partial class CanopyStaticHtml {
     /// <param name="view">The owning cursor-grid definition.</param>
     /// <param name="page">The accepted cursor page, including its actual offset and nullable counts.</param>
     /// <param name="options">Row limit, caption, theme and link to the full report.</param>
-    /// <returns>The table and displayed data rows. An unknown matching total retains the accepted offset plus page size as a lower bound.</returns>
+    /// <returns>The table and displayed data and detail rows. An unknown matching total retains the accepted offset plus page size as a lower bound.</returns>
     /// <exception cref="ArgumentNullException">The view or page is null.</exception>
     /// <exception cref="InvalidOperationException">The page does not belong to this cursor grid or is inconsistent.</exception>
     public static CanopyStaticHtmlResult RenderGridWithResult(CanopyDataGridView view, CanopyGridCursorPage page, CanopyStaticHtmlOptions? options = null) {
@@ -68,53 +67,60 @@ public static partial class CanopyStaticHtml {
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
         var columns = view.Columns.Where(column => !column.Hidden).ToArray();
-        var rows = supplied.Take(settings.MaxRows).ToArray();
-        var html = new StringBuilder(256 + rows.Length * 160);
-        var printedRows = new List<IReadOnlyList<string>>(rows.Length);
+        var capacity = Math.Min(supplied.Count, settings.MaxRows);
+        var html = new StringBuilder(256 + capacity * 160);
+        var printedRows = new List<IReadOnlyList<string>>(capacity);
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append("\">");
         var caption = settings.Caption ?? view.Label;
         if (caption.Length != 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
-        html.Append("<thead><tr>");
-        foreach (var column in columns) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append(Align(column)).Append("\">").Append(Encode(column.Title)).Append("</th>");
-        html.Append("</tr></thead><tbody>");
-        foreach (var row in rows) {
-            var printedCells = new List<string>(columns.Length);
-            var rowRule = CanopyGridHighlights.Find(view, row, null);
-            var rowTone = rowRule != null && rowRule.Tone != CanopyTone.None ? rowRule.Tone : row.Tone;
-            var rowClasses = string.Join(" ", new[] { row.ClassName, rowRule?.ClassName }.Where(value => !string.IsNullOrEmpty(value)));
-            html.Append("<tr");
-            if (rowClasses.Length != 0) html.Append(" class=\"").Append(Encode(rowClasses)).Append('"');
-            if (rowTone != CanopyTone.None) html.Append(" style=\"").Append(styles.ToneColor(rowTone)).Append('"');
-            html.Append('>');
-            foreach (var column in columns) {
-                row.Cells.TryGetValue(column.Id, out var cell);
-                var rule = CanopyGridHighlights.Find(view, row, column.Id);
-                var tone = rule != null && rule.Tone != CanopyTone.None ? rule.Tone : cell?.Tone ?? CanopyTone.None;
-                html.Append("<td style=\"").Append(styles.Cell).Append(Align(column)).Append(styles.ToneColor(tone));
-                if (column.Wrap) html.Append("white-space:pre-wrap;overflow-wrap:anywhere;");
-                html.Append('"');
-                if (rule?.ClassName != null) html.Append(" class=\"").Append(Encode(rule.ClassName)).Append('"');
-                if (!string.IsNullOrEmpty(cell?.Title)) html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
-                var text = new StringBuilder();
-                html.Append('>');
-                AppendVisibleText(html, GridPresenterText(view, row, column, cell), text);
-                if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
-                html.Append("</td>");
-                printedCells.Add(text.ToString());
+        html.Append("<thead>");
+        AppendGridHeader(html, view, columns, styles);
+        html.Append("</thead><tbody>");
+        var remaining = settings.MaxRows;
+        var shown = AppendGridRecords(html, view, supplied, columns, settings, styles, ref remaining, printedRows, null, out var complete,
+            view.Source.Kind == CanopyGridSourceKind.Inline ? view.Rows : supplied);
+        html.Append("</tbody>");
+        if (!matching.HasValue || shown < matching.Value) {
+            html.Append("<tbody>");
+            AppendOverflow(html, shown, matching, columns.Length, settings, styles, view.Labels);
+            html.Append("</tbody>");
+        }
+        AppendFormatLegend(html, view, columns.Length, styles, settings.Culture);
+        return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(),
+            matching.HasValue ? matching.Value : (long)offset + supplied.Count, !matching.HasValue,
+            complete && matching.HasValue && offset == 0 && shown == matching.Value);
+    }
+
+    /// <summary>
+    /// The header rows: one row per column-group level above the column titles. A group spans its visible columns; a column
+    /// outside a group, or in a shallower one, spans down to the bottom row, as the browser draws it. Group cells are column
+    /// headers with colspan, which the table model associates with every column they cover.
+    /// </summary>
+    private static void AppendGridHeader(StringBuilder html, CanopyDataGridView view, CanopyColumn[] columns, CanopyStaticStyles styles, StringBuilder? text = null) {
+        var paths = columns.Select(column => view.ColumnGroupPath(column.Id)).ToArray();
+        var depth = paths.Length == 0 ? 0 : paths.Max(path => path.Count);
+        for (var level = 0; level <= depth; level++) {
+            html.Append("<tr>");
+            for (var index = 0; index < columns.Length;) {
+                var path = paths[index];
+                if (level < path.Count) {
+                    var group = path[level];
+                    var end = index + 1;
+                    while (end < columns.Length && paths[end].Count > level && paths[end][level] == group) end++;
+                    html.Append("<th scope=\"col\" colspan=\"").Append(end - index).Append("\" style=\"").Append(text == null ? styles.Header : styles.InnerHeader).Append("\">");
+                    AppendVisibleText(html, group.Title, text, true); html.Append("</th>");
+                    index = end;
+                    continue;
+                }
+                if (level == path.Count) {
+                    html.Append("<th scope=\"col\"");
+                    if (depth > level) html.Append(" rowspan=\"").Append(depth - level + 1).Append('"');
+                    html.Append(" style=\"").Append(text == null ? styles.Header : styles.InnerHeader).Append(Align(columns[index])).Append("\">");
+                    AppendVisibleText(html, columns[index].Title, text, true); html.Append("</th>");
+                }
+                index++;
             }
             html.Append("</tr>");
-            printedRows.Add(printedCells.AsReadOnly());
         }
-        html.Append("</tbody>");
-        if (!matching.HasValue || rows.Length < matching.Value) {
-            var note = (settings.OverflowNote ?? view.Labels.OverflowNote).Replace("{shown}", rows.Length.ToString("N0", settings.Culture))
-                .Replace("{total}", matching.HasValue ? matching.Value.ToString("N0", settings.Culture) : view.Labels.UnknownTotal);
-            html.Append("<tbody><tr><td colspan=\"").Append(columns.Length).Append("\" style=\"").Append(styles.Note).Append("\">").Append(Encode(note));
-            if (IsSafeReportUrl(settings.FullReportUrl)) html.Append(" <a href=\"").Append(Encode(settings.FullReportUrl!)).Append("\" style=\"")
-                .Append(styles.Link).Append("\">").Append(Encode(settings.FullReportText ?? view.Labels.FullReport)).Append("</a>");
-            html.Append("</td></tr></tbody>");
-        }
-        return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(),
-            matching.HasValue ? matching.Value : (long)offset + supplied.Count, !matching.HasValue);
     }
 }

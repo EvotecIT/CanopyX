@@ -28,6 +28,8 @@
 
   function foldText(text) {
     const source = String(text == null ? "" : text);
+    // ASCII folds exactly as toLowerCase does; only other code units need the table.
+    if (!/[^\0-\x7f]/.test(source)) return source.toLowerCase();
     let out = "";
     for (let i = 0; i < source.length; i++) {
       out += foldUnit(source.charAt(i));

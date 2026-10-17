@@ -90,7 +90,8 @@
       return this.runGridHook(async signal => {
         const progress = reportingExportProgress(this, exported.request, callback, signal);
         const snapshot = await reportingExportSnapshot(this, exported, maxRows, signal, progress);
-        await this.opts.onPrint({ snapshot, signal }); gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
+        // Print never scrolls: a grid in the card layout asks for stacked records, every other layout for a table.
+        await this.opts.onPrint({ snapshot, signal, layout: this.layoutMode === "cards" ? "stacked" : "table" }); gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
       }, options.signal);
     },
     exportToHost(format, options) {
@@ -101,6 +102,6 @@
         let completed = 0;
         await this.opts.onExport({ format, request, capture: exported, signal, reportProgress: (phase, count) => { completed = progress(phase, count); } });
         gridOperationActive(this, signal); progress("ready", reportingExportTotal(request) ?? completed);
-      }, options.signal);
+      }, options.signal, exportTimeout(this, options));
     }
   });

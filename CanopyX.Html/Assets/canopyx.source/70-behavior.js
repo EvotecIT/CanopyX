@@ -331,10 +331,7 @@
         return;
       }
       this.columns[index].hidden = !visible;
-      const input = Array.from(this.toolbar.querySelectorAll("[data-cx-column]")).find((el) => el.getAttribute("data-cx-column") === columnId);
-      if (input) {
-        input.checked = !!visible;
-      }
+      this.syncColumnControls();
       this.buildHeader();
       this.relayout();
       this.stateChanged();

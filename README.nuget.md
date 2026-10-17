@@ -27,7 +27,7 @@ Turn application data into searchable trees, sortable tables and standalone HTML
 | Presentation | Badges, details, custom cells and light/dark themes | Links, progress, wrapped text, row highlighting and light/dark themes |
 | Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file or hosted data |
 
-Both views use virtual rows and support keyboard navigation. Reporting grids also provide grouping, aggregates, saved views, CSV export and row copying. English labels are built in; Polish, German and Spanish packs are included.
+Both views use virtual rows and support keyboard navigation. Reporting grids also provide grouping, aggregates, saved views, CSV export and row copying. English labels are built in; Polish, German, Spanish, French and Italian packs are included.
 
 ## Installation
 

@@ -81,14 +81,33 @@ export function focusedId(page) {
   return page.evaluate(() => document.activeElement && document.activeElement.getAttribute("data-cx-id"));
 }
 
-/** The runtime assets as shipped in CanopyX.Html, for pages the tests build themselves. */
+/** The tree tools part every tree runtime loads, as shipped in CanopyX.Html. */
+export function treeToolsAssets() {
+  return { script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-tree-tools.js"), "utf8"),
+    style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-tree-tools.css"), "utf8") };
+}
+
+/** The runtime assets as shipped in CanopyX.Html, for pages the tests build themselves; the lazy parts are preloaded. */
 export function runtimeAssets(runtime = "tree") {
   const stem = runtime === "reporting" ? "canopyx-reporting" : runtime === "grid" ? "canopyx-grid" : runtime === "interactive" ? "canopyx-interactive" : "canopyx";
   return {
     script: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".js"), "utf8") +
-      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.js"),"utf8") : ""),
+      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.js"),"utf8") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-history.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-data.js"),"utf8") +
+        // The detail rows and grouping parts every grid runtime loads for grouped or detail views.
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.js"),"utf8") : "") +
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-export.js"),"utf8") + "\n" + treeToolsAssets().script +
+      // The links and search parts every runtime loads for deep links and sidecar searches.
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-links.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-search.js"),"utf8") +
+      // The search highlighting and layout mode parts of views that declare them.
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.js"),"utf8") +
+      // The record panel part every runtime loads for record panels, structured values and record links.
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.js"),"utf8"),
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8") +
-      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") : "")
+      (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.css"),"utf8") : "") +
+      "\n" + treeToolsAssets().style + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.css"),"utf8") +
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.css"),"utf8")
   };
 }
 

@@ -146,6 +146,33 @@ test("hidden fields follow the phone breakpoint in both directions", async ({ pa
   }
 });
 
+// A long second column leaves no spare width at 390 px, so the identity column gets exactly its content width. That width
+// includes the "+N" button the column also holds, so the button never truncates the names.
+test("phone fitting reserves the +N button in the identity column when no width is spare", async ({ page }) => {
+  const names = ["web-01.branch.contoso", "db-02.branch.contoso", "mail-03.branch.contoso", "file-04.branch.contoso"];
+  await open(page, {
+    columns: [
+      { id: "name", title: "Name", kind: "text", sortable: true },
+      { id: "detail", title: "Detail", kind: "text" },
+      { id: "state", title: "State", kind: "text", priority: "optional" },
+      { id: "owner", title: "Owner", kind: "text", priority: "optional" }
+    ],
+    rows: names.map((name, i) => ({ id: "r" + i, cells: { name, detail: "Replication healthy across every site link in the forest " + i, state: "Pass", owner: "Team " + i } }))
+  });
+  await capture(page, "phone-fit-reserves-hidden-fields-390");
+  const cells = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].map(row => {
+    const cell = row.firstElementChild, text = cell.querySelector(".cx-text"), button = cell.querySelector(".cx-hidden-fields");
+    return { name: text.textContent, truncated: text.scrollWidth > text.clientWidth, button: button?.textContent,
+      inside: !!button && button.getBoundingClientRect().right <= cell.getBoundingClientRect().right + 0.5 };
+  }));
+  expect(cells.length).toBe(names.length);
+  expect(cells).toEqual(names.map(name => ({ name, truncated: false, button: "+2", inside: true })));
+  // The second column took the rest of the width and still truncates: nothing was spare, and nothing scrolls.
+  expect(await page.locator('.cx-row[data-cx-id="r0"] .cx-cell').nth(1).evaluate(cell => cell.scrollWidth > cell.clientWidth ||
+    [...cell.querySelectorAll("*")].some(node => node.scrollWidth > node.clientWidth))).toBe(true);
+  expect(await page.locator(".cx-data-grid .cx-grid").evaluate(grid => grid.scrollWidth <= grid.clientWidth)).toBe(true);
+});
+
 for (const theme of ["light", "dark"]) {
   test("phone first column keeps the name readable next to a compact affordance (" + theme + ")", async ({ page }) => {
     await open(page, { presentation: "paged", pageLength: 10 });

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX enhanced table</title>
+<link rel="stylesheet" href="enhance-assets/canopyx-grid.css">
+<style>{{example-style}}
+#servers { border-collapse: collapse; width: 100%; }
+#servers :is(th, td) { padding: 6px 10px; border-bottom: 1px solid var(--example-line); text-align: left; }
+</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>An HTML table, enhanced</h1>
+<p>The table below is plain HTML: a caption, two header rows, row headers, a footer and cells with sort and search values in <code>data-*</code> attributes. One call turns it into a grid with search, filters, sorting, paging, columns and export. Without script, readers see the table itself.</p>
+<p>Sort CPU or Memory to see sort values at work, search for <q>WAW</q> to match a site by its code, and change the page size. The grid keeps its view for this browser session.</p>
+<table id="servers" data-page-length="10" data-order='[[3,"desc"]]' data-state-save="true">
+<caption>Servers by site</caption>
+<thead>
+<tr><th rowspan="2">Server</th><th rowspan="2">Site</th><th rowspan="2">Status</th><th colspan="2">Usage</th><th rowspan="2">Last seen</th><th rowspan="2" data-sortable="false" data-searchable="false">Console</th></tr>
+<tr><th>CPU</th><th>Memory</th></tr>
+</thead>
+<tbody>
+{{rows}}
+</tbody>
+<tfoot>
+{{footer}}
+</tfoot>
+</table>
+<script src="enhance-assets/canopyx-grid.js"></script>
+<script>
+// One call; the table's own attributes carry the page length, the first sort and state saving.
+CanopyX.enhance("#servers", { theme: new URLSearchParams(location.search).get("theme") === "dark" ? "dark" : "light" })
+  .then(grid => { window.exampleGrid = grid; });
+</script>
+</main>
+</body>
+</html>

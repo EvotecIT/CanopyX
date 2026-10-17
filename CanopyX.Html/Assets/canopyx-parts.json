@@ -1,0 +1,320 @@
+{
+  "parts": [
+    {
+      "name": "tree-tools",
+      "label": "tree tools",
+      "version": "9781c04a2f055f6a",
+      "script": "canopyx-tree-tools.js",
+      "style": "canopyx-tree-tools.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree"
+      ]
+    },
+    {
+      "name": "filter-editor",
+      "label": "filter editor",
+      "version": "0a46d4100b6725a5",
+      "script": "canopyx-filter-editor.js",
+      "style": "canopyx-filter-editor.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ]
+    },
+    {
+      "name": "export",
+      "label": "export part",
+      "version": "83554049dc50b9d3",
+      "script": "canopyx-export.js",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ]
+    },
+    {
+      "name": "history",
+      "label": "history presenters",
+      "version": "7d9901d2fe04df72",
+      "script": "canopyx-history.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "presenters": [
+        "statusStrip",
+        "sparklineBars",
+        "sparklineLine"
+      ]
+    },
+    {
+      "name": "pager",
+      "label": "pager controls",
+      "version": "8f804f70b96409f2",
+      "script": "canopyx-pager.js",
+      "style": "canopyx-pager.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "pager"
+      ]
+    },
+    {
+      "name": "enhance",
+      "label": "table enhancement",
+      "version": "31162b1ffa622bf8",
+      "script": "canopyx-enhance.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": []
+    },
+    {
+      "name": "data",
+      "label": "row data",
+      "version": "37aefb2ff94cb423",
+      "script": "canopyx-data.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [],
+      "features": [
+        "rowData"
+      ]
+    },
+    {
+      "name": "editing",
+      "label": "editing",
+      "version": "3502d377f5d377da",
+      "script": "canopyx-editing.js",
+      "style": "canopyx-editing.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "editable"
+      ],
+      "requires": [
+        "filter-editor"
+      ]
+    },
+    {
+      "name": "column-groups",
+      "label": "column groups",
+      "version": "b42238fd108a8614",
+      "script": "canopyx-column-groups.js",
+      "style": "canopyx-column-groups.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "columnGroups"
+      ]
+    },
+    {
+      "name": "cell-range",
+      "label": "cell ranges",
+      "version": "e99a39e7cccc57b1",
+      "script": "canopyx-cell-range.js",
+      "style": "canopyx-cell-range.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "rangeSelection"
+      ]
+    },
+    {
+      "name": "links",
+      "label": "deep links",
+      "version": "f1ab7e32b501ce37",
+      "script": "canopyx-links.js",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree"
+      ],
+      "deepLink": true
+    },
+    {
+      "name": "search",
+      "label": "sidecar search",
+      "version": "521eebd6e1bbbd35",
+      "script": "canopyx-search.js",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree"
+      ],
+      "sources": [
+        "sidecar"
+      ]
+    },
+    {
+      "name": "formatting",
+      "label": "conditional formatting",
+      "version": "6f9f3c51b0ad2a0e",
+      "script": "canopyx-formatting.js",
+      "style": "canopyx-formatting.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "formatting"
+      ]
+    },
+    {
+      "name": "format-editor",
+      "label": "formatting rule editor",
+      "version": "24f176a39c02944a",
+      "script": "canopyx-format-editor.js",
+      "style": "canopyx-format-editor.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "formatEditor"
+      ],
+      "requires": [
+        "filter-editor",
+        "formatting"
+      ]
+    },
+    {
+      "name": "link",
+      "label": "linked views",
+      "version": "485eec306ca57996",
+      "script": "canopyx-link.js",
+      "style": "canopyx-link.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": []
+    },
+    {
+      "name": "detail-rows",
+      "label": "detail rows",
+      "version": "6c96974326d65a4c",
+      "script": "canopyx-detail-rows.js",
+      "style": "canopyx-detail-rows.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "grouping",
+        "detail"
+      ]
+    },
+    {
+      "name": "grouping",
+      "label": "row grouping",
+      "version": "d3dcc662fc3dd11f",
+      "script": "canopyx-grouping.js",
+      "style": "canopyx-grouping.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "grouping"
+      ],
+      "requires": [
+        "detail-rows"
+      ]
+    },
+    {
+      "name": "highlight",
+      "label": "search highlighting",
+      "version": "8008a591bd90c7c1",
+      "script": "canopyx-highlight.js",
+      "style": "canopyx-highlight.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "searchHighlight"
+      ]
+    },
+    {
+      "name": "layouts",
+      "label": "layout modes",
+      "version": "fa8c686f21626884",
+      "script": "canopyx-layouts.js",
+      "style": "canopyx-layouts.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "layout"
+      ]
+    },
+    {
+      "name": "record-panel",
+      "label": "record panel",
+      "version": "bcc06276c7933af6",
+      "script": "canopyx-record-panel.js",
+      "style": "canopyx-record-panel.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "record"
+      ]
+    }
+  ]
+}

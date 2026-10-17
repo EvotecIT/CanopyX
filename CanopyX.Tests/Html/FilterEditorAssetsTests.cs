@@ -11,7 +11,9 @@ public sealed class FilterEditorAssetsTests {
         Assert.Contains(CanopyHtmlAssets.FilterEditorVersion, CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid));
         Assert.DoesNotContain("</script", CanopyHtmlAssets.FilterEditorScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("</script", CanopyHtmlAssets.FilterEditorStyle, StringComparison.OrdinalIgnoreCase);
-        Assert.True(Gzip(CanopyHtmlAssets.FilterEditorScript) + Gzip(CanopyHtmlAssets.FilterEditorStyle) <= 16 * 1024);
+        // Raised from 16 KiB with the generalised record drawer (field fidelity, record panel hooks, drawer: false).
+        var size = Gzip(CanopyHtmlAssets.FilterEditorScript) + Gzip(CanopyHtmlAssets.FilterEditorStyle);
+        Assert.True(size <= 19968, "The filter editor part is " + size + " bytes gzip; the guard is 19.5 KiB.");
         var view = new CanopyDataGridView("grid", "Grid"); view.Columns.Add(new CanopyColumn("name", "Name"));
         var fragment = view.ToHtmlFragment(); Assert.Contains("application/x-canopyx-filter-editor", fragment); Assert.Contains(CanopyHtmlAssets.FilterEditorVersion, fragment);
     }
