@@ -37,7 +37,7 @@
     Root folder of PSPublishModule (overrides $env:POWERFORGE_ROOT).
 
 .PARAMETER CI
-    Force pipeline CI mode locally (equivalent to setting CI=true).
+    Force pipeline CI mode locally (equivalent to setting CI=true). With -Serve, this disables implicit dev and fast modes; explicit -Dev or -Fast still take precedence.
 
 .EXAMPLE
     ./build.ps1
@@ -215,12 +215,12 @@ function Assert-SiteOutput {
 }
 
 try {
-    $UseDev = ($Dev -or ($Serve -and -not $NoDev))
-    $UseFast = ($Fast -or ($Serve -and -not $NoFast))
     $IsCI = $CI -or
             ($env:CI -and $env:CI.ToString().ToLowerInvariant() -eq 'true') -or
             ($env:GITHUB_ACTIONS -and $env:GITHUB_ACTIONS.ToString().ToLowerInvariant() -eq 'true') -or
             ($env:TF_BUILD -and $env:TF_BUILD.ToString().ToLowerInvariant() -eq 'true')
+    $UseDev = ($Dev -or ($Serve -and -not $NoDev -and -not $IsCI))
+    $UseFast = ($Fast -or ($Serve -and -not $NoFast -and -not $IsCI))
 
     $pipelineArgsBase = @('pipeline', '--config', 'pipeline.json', '--profile')
     if ($UseDev) {
@@ -261,11 +261,22 @@ try {
 
         $serveArgs = @($PowerForgeArgs + @('serve', '--path', '_site', '--port', $Port))
         $serveProcess = Start-Process -FilePath $PowerForge -ArgumentList $serveArgs -NoNewWindow -PassThru
+        $watchProcess = $null
         try {
             if ($Watch) {
                 Write-Host 'Watching for changes...' -ForegroundColor Cyan
-                & $PowerForge @PowerForgeArgs @pipelineArgs
-                if ($LASTEXITCODE -ne 0) { throw "Watch failed (exit code $LASTEXITCODE)" }
+                $watchProcess = Start-Process -FilePath $PowerForge -ArgumentList @($PowerForgeArgs + $pipelineArgs) -NoNewWindow -PassThru
+                while ($true) {
+                    if ($serveProcess.WaitForExit(250)) {
+                        if ($serveProcess.ExitCode -ne 0) { throw "Dev server failed (exit code $($serveProcess.ExitCode))" }
+                        break
+                    }
+                    $watchProcess.Refresh()
+                    if ($watchProcess.HasExited) {
+                        if ($watchProcess.ExitCode -ne 0) { throw "Watch failed (exit code $($watchProcess.ExitCode))" }
+                        break
+                    }
+                }
             } else {
                 $serveProcess.WaitForExit()
             }
@@ -274,6 +285,9 @@ try {
                 throw "Dev server failed (exit code $($serveProcess.ExitCode))"
             }
         } finally {
+            if ($watchProcess -and -not $watchProcess.HasExited) {
+                Stop-Process -Id $watchProcess.Id -Force -ErrorAction SilentlyContinue
+            }
             if ($serveProcess -and -not $serveProcess.HasExited) {
                 Stop-Process -Id $serveProcess.Id -Force -ErrorAction SilentlyContinue
             }
