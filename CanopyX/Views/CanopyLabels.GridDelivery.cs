@@ -9,6 +9,8 @@ public sealed partial class CanopyLabels {
     public string GridExportCancelled { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the cancel-delivery action label.</summary>
     public string GridCancelExport { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the explanation when no visible grid column supports export.</summary>
+    public string GridNoExportColumns { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the host-governed print action label.</summary>
     public string GridPrint { get => Get(); set => Set(value); }
 }

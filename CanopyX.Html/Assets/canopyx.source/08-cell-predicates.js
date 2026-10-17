@@ -4,7 +4,7 @@
     const value = cellValue(cell);
     if (value == null) return null;
     if (column.kind === "number") {
-      if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER)
+      if (!safeGridNumber(value))
         throw new Error("CanopyX: numeric grid cells need finite values within the safe integer magnitude.");
       return value;
     }

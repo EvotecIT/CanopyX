@@ -163,6 +163,7 @@
   "GridExportReading": ["Rekordy: {completed}","{completed} Datensätze","{completed} registros","Enregistrements : {completed}","Record: {completed}"],
   "GridExportCancelled": ["Eksport anulowany","Export abgebrochen","Exportación cancelada","Exportation annulée","Esportazione annullata"],
   "GridCancelExport": ["Anuluj eksport","Export abbrechen","Cancelar exportación","Annuler l'exportation","Annulla esportazione"],
+  "GridNoExportColumns": ["Żadna widoczna kolumna nie obsługuje eksportu.","Keine sichtbare Spalte unterstützt den Export.","Ninguna columna visible permite exportar.","Aucune colonne visible ne permet l’exportation.","Nessuna colonna visibile consente l’esportazione."],
   "GridPrint": ["Drukuj","Drucken","Imprimir","Imprimer","Stampa"],
   "GridContains": ["zawiera","enthält","contiene","contient","contiene"],
   "GridStartsWith": ["zaczyna się od","beginnt mit","empieza por","commence par","inizia con"],

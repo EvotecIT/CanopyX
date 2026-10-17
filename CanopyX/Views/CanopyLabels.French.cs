@@ -244,6 +244,7 @@ public sealed partial class CanopyLabels {
         GridExportReading = "Enregistrements : {completed}",
         GridExportCancelled = "Exportation annulée",
         GridCancelExport = "Annuler l'exportation",
+        GridNoExportColumns = "Aucune colonne visible ne permet l’exportation.",
         GridPrint = "Imprimer",
         GridCloseRecord = "Fermer les détails de l'enregistrement",
         GridContains = "contient",

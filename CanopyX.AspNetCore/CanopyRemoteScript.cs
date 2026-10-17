@@ -12,10 +12,11 @@ namespace CanopyX.AspNetCore;
 /// The script calls <c>CanopyX.configure(viewId, …)</c> with a source whose <c>query</c>, <c>facet</c>, <c>summary</c>,
 /// for a view with editable columns <c>commit</c>, and for a record schema <c>record</c> hooks post to the endpoints (with the
 /// grid's cancellation signal), and registers one export format per server format so the Export menu offers a complete
-/// server-side download. After a commit answers with a new dataset revision the grid reloads, because the revision it read
-/// pages at is gone; map a writer (<see cref="CanopyRemoteEndpointOptions.Writer"/>) for views with editable columns. Include
-/// the script after the CanopyX runtime and before the grid mounts. It sends same-origin credentials and expects JSON error
-/// bodies, whose message the grid shows; rejected requests carry the HTTP <c>status</c> and the error <c>code</c>.
+/// server-side download. After a commit saves rows without a revision or answers with a different dataset revision the grid
+/// reloads, because the revision it read pages at may be gone; map a writer (<see cref="CanopyRemoteEndpointOptions.Writer"/>)
+/// for views with editable columns. Include the script after the CanopyX runtime and before the grid mounts. It sends
+/// same-origin credentials and expects JSON error bodies, whose message the grid shows; rejected requests carry the HTTP
+/// <c>status</c> and the error <c>code</c>.
 /// </remarks>
 public static class CanopyRemoteScript {
     private static readonly (string Id, string Label)[] DefaultFormats = { ("csv", "CSV from server (all matching rows)") };
@@ -28,6 +29,17 @@ public static class CanopyRemoteScript {
     /// <returns>A <c>&lt;script&gt;</c> element.</returns>
     public static string Element(CanopyDataSchema schema, string endpoint, params (string Id, string Label)[]? exportFormats) =>
         "<script>" + Script(schema, endpoint, exportFormats) + "</script>";
+
+    /// <summary>Creates the remote source script element with the response's Content Security Policy nonce.</summary>
+    /// <param name="schema">The schema the endpoints serve.</param>
+    /// <param name="endpoint">The route prefix the endpoints were mapped at.</param>
+    /// <param name="nonce">The response's nonce, or null for no nonce. Use the same value as the page's
+    /// <c>CanopyHtmlOptions.Nonce</c>; generate a fresh value for every response.</param>
+    /// <param name="exportFormats">Server export formats with their menu labels; null offers server CSV.</param>
+    /// <returns>A <c>&lt;script&gt;</c> element carrying the nonce when supplied.</returns>
+    /// <exception cref="ArgumentException">The nonce is not base64 or base64url characters with at most two trailing <c>=</c>.</exception>
+    public static string ElementWithNonce(CanopyDataSchema schema, string endpoint, string? nonce, params (string Id, string Label)[]? exportFormats) =>
+        "<script" + CanopyX.Html.CanopyContentSecurity.Attribute(nonce) + ">" + Script(schema, endpoint, exportFormats) + "</script>";
 
     /// <summary>Creates the script text for a grid, without the element.</summary>
     /// <param name="schema">The schema the endpoints serve.</param>
@@ -139,17 +151,14 @@ function reopenAtCurrentRevision(id) {
 if (settings.facets) source.facet = (request, options) => post("/facet", request, options.signal).then(response => response.json());
 if (settings.summary) source.summary = (query, options) => post("/summary", query, options.signal).then(response => response.json());
 if (settings.commit) {
-  // Saving changes a revision the grid still reads pages at; once a commit answers with a new one, the grid reloads.
+  // Saving can retire the snapshot even when the server cannot read its new revision after the rows were committed.
   // Grid events do not bubble, so the document listens in the capture phase.
-  const asked = new Set();
-  source.commit = (batch, options) => post("/commit", batch, options.signal).then(response => response.json()).then(result => {
-    if (result && typeof result.revision === "string" && result.revision !== batch.revision) asked.add(result.revision);
-    return result;
-  });
+  source.commit = (batch, options) => post("/commit", batch, options.signal).then(response => response.json());
   document.addEventListener("canopyx:commit", event => {
-    const grid = event.target && event.target.canopyx, revision = event.detail && event.detail.revision;
-    if (!grid || grid.view.id !== settings.view || !asked.delete(revision)) return;
-    grid.reload();
+    const grid = event.target && event.target.canopyx, result = event.detail, revision = result && result.revision;
+    if (!grid || grid.view.id !== settings.view || !(revision ? revision !== grid.getQuery()?.revision : result && result.saved > 0)) return;
+    // Reload reports its own error through the grid's notice and error event; this automatic caller observes rejection.
+    grid.reload().catch(() => {});
   }, true);
 }
 const ids = settings.formats.map(format => {

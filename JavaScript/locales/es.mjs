@@ -240,6 +240,7 @@ const labels = Object.freeze({
   gridExportReading: "{completed} registros",
   gridExportCancelled: "Exportación cancelada",
   gridCancelExport: "Cancelar exportación",
+  gridNoExportColumns: "Ninguna columna visible permite exportar.",
   gridPrint: "Imprimir",
   gridCloseRecord: "Cerrar detalles del registro",
   gridContains: "contiene",

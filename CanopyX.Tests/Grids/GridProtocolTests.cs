@@ -4,6 +4,22 @@ using CanopyX.Tests.Protocol;
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridProtocolTests {
+    [Fact]
+    public void GridColumnCapabilities_AreOptionalBooleansInTheWireSchema() {
+        var view = View();
+        view.Columns[0].Filterable = view.Columns[0].Exportable = false;
+        var json = view.ToJson();
+        ProtocolSchema.AssertValid(json, "disabled grid column capabilities");
+        using var document = JsonDocument.Parse(json);
+        var column = document.RootElement.GetProperty("columns")[0];
+        Assert.False(column.GetProperty("filterable").GetBoolean());
+        Assert.False(column.GetProperty("exportable").GetBoolean());
+        foreach (var name in new[] { "filterable", "exportable" }) {
+            Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, doc => doc["columns"]![0]![name] = "false")).IsValid);
+            Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, doc => doc["columns"]![0]![name] = 0)).IsValid);
+        }
+    }
+
     [Theory]
     [InlineData(double.NaN)]
     [InlineData(double.PositiveInfinity)]

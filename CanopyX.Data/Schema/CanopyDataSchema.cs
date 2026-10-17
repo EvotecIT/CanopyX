@@ -7,7 +7,8 @@ namespace CanopyX.Data;
 /// <summary>The allow-list of columns a remote grid endpoint serves, bound to its grid definition.</summary>
 /// <remarks>
 /// A request may only reference columns in this schema. Declared view columns that are not allowed stay display-only:
-/// a request that sorts, filters or exports them is rejected. The schema copies the declared column order, sortability,
+/// a request that sorts, filters or exports them is rejected. The advertised definition keeps their display metadata
+/// and omits these unsupported controls. The schema copies the declared column order, sortability,
 /// search columns, facet columns, grouping (fixed or runtime levels), aggregates and editable columns when it is created;
 /// later changes to the view do not apply.
 /// </remarks>
@@ -19,10 +20,11 @@ public sealed class CanopyDataSchema {
     /// <param name="view">The grid definition the browser renders.</param>
     /// <param name="columns">The allowed column identities. Null allows every declared column.</param>
     /// <param name="notFilterable">Allowed columns that requests may read and sort but not filter on.</param>
-    /// <exception cref="ArgumentException">The view uses cursor navigation, or a column is not declared.</exception>
+    /// <exception cref="ArgumentException">The view uses cursor navigation, a column is not declared, or the initial query
+    /// uses a column or operation the remote schema does not allow.</exception>
     public CanopyDataSchema(CanopyDataGridView view, IEnumerable<string>? columns = null, IEnumerable<string>? notFilterable = null) {
         View = view ?? throw new ArgumentNullException(nameof(view));
-        _definitionJson = view.ToJson();
+        var definitionJson = view.ToJson();
         ProtocolView = CanopyDataSnapshot.View(view);
         if (view.Navigation != CanopyGridNavigation.Offset)
             throw new ArgumentException("The remote data adapter serves offset navigation; cursor views are not supported.", nameof(view));
@@ -82,6 +84,18 @@ public sealed class CanopyDataSchema {
             }
         }
         EditableColumns = new ReadOnlyCollection<CanopyDataColumn>(editable);
+        if (view.Query != null) {
+            try {
+                // Authoring validation checks protocol bounds; each endpoint applies its own narrower request limits later.
+                _ = CanopyRequestParser.FromQuery(view.Query, this, new CanopyRemoteLimits {
+                    MaxPageSize = 10000, MaxSearchLength = 16384, MaxSearchTerms = 64,
+                    MaxOperandLength = 65536, MaxRequestBytes = 16777216
+                });
+            } catch (CanopyRequestException error) {
+                throw new ArgumentException("The initial query uses a column or operation this remote schema does not allow.", nameof(view), error);
+            }
+        }
+        _definitionJson = CanopySchemaDefinition.Capture(definitionJson, this);
     }
 
     /// <summary>Gets the original authoring definition. Changes do not alter the captured schema or <see cref="ToJson"/>.</summary>

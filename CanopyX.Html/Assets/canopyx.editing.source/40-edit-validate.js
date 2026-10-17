@@ -6,6 +6,17 @@
   const editErrors = entry => Object.assign(Object.create(null), entry.rowErrors, entry.errors);
   const editInvalid = entry => !!(entry.error || entry.rowError || Object.keys(editErrors(entry)).length);
   const editMessage = value => typeof value === "string" && value.trim() ? value : null;
+  // Completion stamps stay private: public validation results contain only their documented verdict and messages.
+  const EDIT_VALIDATIONS = new WeakMap();
+  function editCurrentValidation(grid, result) {
+    const state = grid.edit, entry = state.changes.get(result.id), stamp = EDIT_VALIDATIONS.get(result);
+    if (!entry) return { id: result.id, valid: !grid.destroyed, errors: {} };
+    const columns = Object.keys(entry.values), fresh = stamp && stamp.entry === entry &&
+      columns.length === Object.keys(stamp.values).length && columns.every(column => editSame(entry.values[column], stamp.values[column])) &&
+      JSON.stringify(entry.row.cells) === stamp.row && columns.every(column => !state.checks.has(result.id + "\u0000" + column));
+    return { id: result.id, valid: !!result.valid && !!fresh && !grid.destroyed && !editInvalid({ ...entry, error: null }),
+      errors: editErrors(entry), error: entry.rowError || null };
+  }
 
   Object.assign(DataGrid.prototype, {
     // Returns the first message, null, or the promise of an asynchronous host validator.
@@ -62,14 +73,17 @@
     },
 
     // Every changed cell of a row, then the row validator, until the values stop changing under the checks (an edit made
-    // while they run is checked too). Resolves with { id, valid, errors, error }.
+    // while they run is checked too). The bounded retry loop never approves a snapshot it has not finished checking.
+    // Resolves with { id, valid, errors, error }.
     async editValidateRow(id, refresh = false) {
       const state = this.edit, same = (left, right) => Object.keys(left).length === Object.keys(right).length && Object.keys(left).every(column => editSame(left[column], right[column]));
-      let entry;
+      let entry, stable = false;
       for (let round = 0; round < 5; round++) {
         entry = state.changes.get(id);
         if (!entry) return { id, valid: true, errors: {} };
+        if (this.destroyed) break;
         const values = { ...entry.values }, shape = JSON.stringify(entry.row.cells), used = new Map();
+        const unchanged = () => !this.destroyed && state.changes.get(id) === entry && same(values, entry.values) && JSON.stringify(entry.row.cells) === shape;
         await Promise.all(Object.keys(values).map(column => {
           const pending = state.checks.get(id + "\u0000" + column), checked = entry.checked?.get(column);
           const matches = token => token && token.row === shape && editSame(token.value, values[column]);
@@ -80,24 +94,28 @@
         }));
         for (const [column, token] of used) if (entry.checked?.get(column) === token) entry.checked.delete(column);
         const validator = state.options.validateRow;
-        if (validator && state.changes.get(id) === entry && same(values, entry.values)) {
+        if (validator && unchanged()) {
           let result;
           try { result = await validator(editCopy(entry.row), this.editChangeOf(entry)); } catch (error) { result = error.message || String(error); }
-          if (state.changes.get(id) === entry && same(values, entry.values)) {
+          if (unchanged()) {
             entry.rowError = editMessage(result); entry.rowErrors = Object.create(null);
             if (result && typeof result === "object") for (const [column, message] of Object.entries(result))
               if (editMessage(message) && this.columns.some(item => item.id === column)) entry.rowErrors[column] = message;
             this.editChanged(); this.editRefreshMessage();
           }
         }
-        if (state.changes.get(id) === entry && same(values, entry.values) && Object.keys(values).every(column => !state.checks.has(id + "\u0000" + column))) break;
+        if (unchanged() && Object.keys(values).every(column => !state.checks.has(id + "\u0000" + column))) { stable = true; break; }
       }
-      const current = state.changes.get(id) || entry;
-      return { id, valid: !editInvalid({ ...current, error: null }), errors: editErrors(current), error: current.rowError || null };
+      const current = state.changes.get(id);
+      if (!current) return { id, valid: true, errors: {} };
+      const result = { id, valid: stable && !editInvalid({ ...current, error: null }), errors: editErrors(current), error: current.rowError || null };
+      EDIT_VALIDATIONS.set(result, { entry: current, values: { ...current.values }, row: JSON.stringify(current.row.cells) });
+      return result;
     },
     async validate(ids) {
       if (ids !== undefined && !Array.isArray(ids)) throw new Error("CanopyX: validate takes an array of row IDs.");
-      const rows = await Promise.all((ids ?? [...this.edit.changes.keys()]).map(id => this.editValidateRow(id, true)));
+      const rows = (await Promise.all((ids ?? [...this.edit.changes.keys()]).map(id => this.editValidateRow(id, true))))
+        .map(result => editCurrentValidation(this, result));
       return editCopy({ valid: rows.every(row => row.valid), rows });
     },
 

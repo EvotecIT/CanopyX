@@ -269,6 +269,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridExportReading)] = "{completed} records",
         [nameof(GridExportCancelled)] = "Export cancelled",
         [nameof(GridCancelExport)] = "Cancel export",
+        [nameof(GridNoExportColumns)] = "No visible columns allow export.",
         [nameof(GridPrint)] = "Print",
         [nameof(GridCloseRecord)] = "Close record details",
         [nameof(GridContains)] = "contains",

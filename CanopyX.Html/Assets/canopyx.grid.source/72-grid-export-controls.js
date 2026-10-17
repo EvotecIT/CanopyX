@@ -3,7 +3,7 @@
     gridExport: "Export", gridFilteredResults: "Filtered results", gridSelectedRows: "Selected rows",
     gridAllResults: "All results", gridVisibleRows: "Visible rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
-    gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export"
+    gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", gridNoExportColumns: "No visible columns allow export."
   }));
   // The Export menu body, CSV, copy, the host export hook and format writers ship in the lazy export part. These methods
   // capture the export synchronously, so the accepted query, columns and selection are the ones at invocation, and finish

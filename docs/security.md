@@ -14,12 +14,13 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'; 
 
 The runtime never evaluates strings: there is no `eval`, no `Function` constructor and no string `setTimeout`. It sets dynamic styles (widths, positions, heights, the print outline's indent) through the style object (`element.style.width = …`), which a policy allows, and never writes a `style` attribute through markup or `setAttribute`.
 
-Three kinds of element need the nonce, because a policy checks them:
+These elements need the nonce, because a policy checks them:
 
 | Element | Written by | How it gets the nonce |
 | --- | --- | --- |
 | The runtime `<script>` and `<style>` of a page with inline assets, or the `<script src>` and `<link rel="stylesheet">` of a page with external assets | `ToHtmlPage`, `SaveHtmlPage`, `SaveHtmlBundle` | `CanopyHtmlOptions.Nonce` |
 | The `<style>` rule that gives a fragment its `Height` | `ToHtmlFragment` | `CanopyHtmlOptions.Nonce` (without a nonce the fragment keeps its `style` attribute) |
+| The remote grid's endpoint configuration script | `CanopyRemoteScript.ElementWithNonce` | Pass the response's nonce as its third argument |
 | The scripts and stylesheets of the optional parts (tree tools, export, filter editor, history, search, links), and a bundle's sidecar scripts | The runtime, when it loads them | The page nonce (below) |
 
 The view document is a `<script type="application/json">` data block, and a part's inert payload is a `<script type="application/x-canopyx-…">` data block. A policy does not run or block data blocks, so they work under any policy.
@@ -52,6 +53,14 @@ var html = view.ToHtmlPage(new CanopyHtmlOptions { Nonce = nonce });
 A host that caches the markup writes it once with a placeholder nonce, such as `Nonce = "CANOPYXNONCE"`, and replaces the placeholder per response; the example pages in `CanopyX.Examples/CspExamples.cs` work that way, and the browser test's server replaces the placeholder. `Nonce` accepts the CSP nonce grammar only (base64 or base64url characters with up to two trailing `=`), so a value can never break out of its attribute.
 
 Fragments that share a `CanopyHtmlDocument` carry each part once; pass the same nonce to every fragment of the response. A host that assembles its own pages calls `CanopyHtmlPart.GetMarkup(nonce)` or `CanopyHtmlDocument.EmbedOnce(part, nonce)`, and puts the nonce on its own `<script>` and `<link>` elements for the runtime files.
+
+For a hosted grid, give its endpoint configuration script the same nonce before the grid mounts:
+
+```csharp
+var source = CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/hosts", nonce);
+```
+
+`CanopyRemoteScript.Script(...)` returns the same script body for a host that writes its own nonced element.
 
 ### JavaScript hosts
 

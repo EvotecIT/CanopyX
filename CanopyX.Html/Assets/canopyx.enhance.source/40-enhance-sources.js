@@ -4,14 +4,38 @@
   // behaves the same; the grid shows its loading state meanwhile and Retry reads it again after a failure. A server source
   // posts each canopyx/2 grid query to the URL and accepts a grid page, or a plain answer with total, matched and records.
 
+  /** A read-once URL follows the current query's bounded hook; retired answers cannot replace newer or explicit rows. */
+  function enhanceReadOnce(store, source, columns, rowId) {
+    store.loaded = false;
+    store.load = signal => {
+      if (store.loading && !store.loading.signal.aborted) return store.loading.promise;
+      const entry = { signal, promise: null }, retire = () => { if (store.loading === entry) store.loading = null; };
+      const active = () => {
+        if (signal.aborted || store.loading !== entry || store.grid?.destroyed) throw new DOMException("Grid cancelled.", "AbortError");
+      };
+      store.loading = entry;
+      signal.addEventListener("abort", retire, { once: true });
+      entry.promise = Promise.resolve().then(() => {
+        active(); return enhanceRequest(source, source.url, enhanceExtra(source), signal);
+      }).then(json => {
+        active();
+        const loaded = enhanceRecordRows(enhanceRecordsOf(json, source.dataSrc), columns, rowId);
+        active();
+        Object.assign(store, loaded, { loaded: true }); store.version++;
+        if (store.grid) store.grid.view.rows = store.rows;
+      }).finally(() => { signal.removeEventListener("abort", retire); retire(); });
+      return entry.promise;
+    };
+  }
+
   /** The browser-side source over a store of rows ({ rows, version, loading }), keeping page order for ties. */
-  function enhanceRowSource(store, view, compare) {
+  function enhanceRowSource(store, view, compare, searchColumns) {
     const columns = new Map(view.columns.map(column => [column.id, column]));
     let shape = null, version = -1, ordered = null;
     const order = query => {
       const key = gridResultShape(query);
       if (key === shape && version === store.version) return ordered;
-      const rows = gridQueryRows({ ...view, rows: store.rows }, query, columns, null);
+      const rows = gridQueryRows({ ...view, searchColumns, rows: store.rows }, query, columns, null);
       if (query.sort.length) rows.sort((a, b) => {
         for (const sort of query.sort) { const result = compare(a, b, columns.get(sort.column), sort.direction); if (result) return result; }
         return 0;
@@ -26,11 +50,9 @@
     };
     return {
       order,
-      // A read that failed before any query is the first query's error; the next query (Retry) reads again.
       query(query, options) {
-        if (store.error) { const error = store.error; store.error = null; return Promise.reject(error); }
-        if (store.failed) store.load();
-        return store.loading ? store.loading.then(() => page(query, options.signal), error => { store.error = null; throw error; }) : page(query, options.signal);
+        const loading = store.load && !store.loaded ? store.load(options.signal) : null;
+        return loading ? loading.then(() => page(query, options.signal)) : page(query, options.signal);
       }
     };
   }

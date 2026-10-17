@@ -1,8 +1,9 @@
   // ---------- tree tools: auto height ----------
   // A tree whose visible rows fit is exactly as tall as its toolbar, header and rows: a max-height equal to that content
   // height removes the empty body below the last row. Longer trees reach the host's own height and scroll inside it, as
-  // before. Expanding and collapsing change the rows; the height follows once they settle (debounced), and the content
-  // height never depends on the tree's own height, so the observers that call this settle after one pass. view.autoHeight
+  // before. Growth fits before its new rows paint, so revealing them cannot leave a pending fit that moves a pressed row.
+  // Reductions follow once they settle (debounced); content height never depends on the tree's own height, so the observers
+  // that call this settle after one pass. view.autoHeight
   // false keeps the host's height.
   const TREE_HEIGHT_DELAY = 60;
 
@@ -11,11 +12,13 @@
       // A loading row can have the same height as the first real row; that row must still finish the initial fit.
       if (!this.fitReady || this.view.autoHeight === false || this.total === this.heightTotal &&
           (this.heightFitted || !this.rows.some(row => !row.status))) return;
+      const growing = this.total > this.heightTotal;
       this.heightTotal = this.total;
       clearTimeout(this.heightTimer);
       // Fit the first measurable rows before their first paint. Delaying that initial shrink can move the page
-      // between a reader's pointer press and release; later expansion changes still settle through the debounce.
-      if (!this.heightFitted) { this.fitHeight(); return; }
+      // between a reader's pointer press and release. Growing later rows must fit here too: the old viewport can scroll
+      // to reveal them, then the delayed growth would clamp that scroll and move the row during the press.
+      if (!this.heightFitted || growing) { this.fitHeight(); return; }
       this.heightTimer = setTimeout(() => this.destroyed || this.fitHeight(), TREE_HEIGHT_DELAY);
     },
 

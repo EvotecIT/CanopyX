@@ -4,7 +4,7 @@ import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import { repo } from "./support.mjs";
+import { repo, nextFrames } from "./support.mjs";
 
 // End to end against the fleet sample's editable page (/edit: gridCommit through POST /commit, saved to SQLite) and its
 // two-level grouped page (/by-site-os: groupBy levels and nested gridSummary documents). The browser side of both comes
@@ -106,6 +106,136 @@ test("saves edits through the commit endpoint, answers canonical cells and reloa
   await expect(await cell(page, id, "memory")).toHaveText("96.5");
   await expect(await cell(page, id, "cores")).not.toHaveClass(/cx-dirty/);
 });
+
+for (const mixed of [false, true]) {
+  test(`reloads after ${mixed ? "mixed" : "successful"} saves when the commit answer has no revision`, async ({ page }) => {
+    await open(page, "/edit");
+    const ids = await page.locator(".cx-row[data-cx-id]").evaluateAll(rows => rows.slice(0, 2).map(row => row.dataset.cxId));
+    const values = await Promise.all(ids.map(async id => Number((await (await cell(page, id, "memory")).textContent()).replace(/,/g, "")) + 1));
+    const before = await page.evaluate(api => eval(api).getQuery().revision, api), queries = [];
+    page.on("request", request => { if (request.url().endsWith("/api/machines-edit/query")) queries.push(JSON.parse(request.postData())); });
+    await page.route("**/api/machines-edit/commit", async route => {
+      const batch = route.request().postDataJSON();
+      // A per-row writer may save one row and reject another. Only the saved row reaches the real sample's writer.
+      const response = await route.fetch({ data: mixed ? { ...batch, rows: batch.rows.slice(0, 1) } : batch });
+      const result = await response.json(); delete result.revision;
+      if (mixed) result.rows.push({ id: batch.rows[1].id, status: "error", error: "The second row was not saved." });
+      await route.fulfill({ response, json: result });
+    });
+    const result = await page.evaluate(async ({ api, ids, values, mixed }) => {
+      const grid = eval(api); await grid.setCellValue(ids[0], "memory", values[0]);
+      if (mixed) await grid.setCellValue(ids[1], "memory", values[1]);
+      return grid.commitChanges();
+    }, { api, ids, values, mixed });
+    expect(result).toMatchObject({ saved: 1, failed: mixed ? 1 : 0 });
+    expect(result.revision).toBeUndefined();
+    await expect.poll(() => page.evaluate(api => eval(api).getQuery().revision, api)).not.toBe(before);
+    expect(queries).toHaveLength(1); expect(queries[0].revision).toBeUndefined();
+    expect(await page.evaluate(api => eval(api).getChanges().map(change => [change.id, change.status]), api))
+      .toEqual(mixed ? [[ids[1], "error"]] : []);
+    await expect(await cell(page, ids[0], "memory")).toHaveText(values[0].toFixed(1));
+  });
+}
+
+for (const outcome of [{ saved: false, revision: false }, { saved: false, revision: true }, { saved: true, revision: true }]) {
+  test(`keeps the accepted snapshot after ${outcome.saved ? "saved" : "failed"} rows with ${outcome.revision ? "the same" : "no"} revision`, async ({ page }) => {
+    await open(page, "/edit");
+    const id = await page.locator(".cx-row[data-cx-id]").first().getAttribute("data-cx-id");
+    const before = await page.evaluate(api => eval(api).getQuery().revision, api), queries = [];
+    page.on("request", request => { if (request.url().endsWith("/api/machines-edit/query")) queries.push(request.url()); });
+    await page.route("**/api/machines-edit/commit", route => route.fulfill({ json: {
+      protocol: "canopyx/2", type: "gridCommitResult", view: "machines-edit", ...(outcome.revision ? { revision: before } : {}),
+      rows: [{ id, status: outcome.saved ? "saved" : "error", ...(!outcome.saved ? { error: "Not saved." } : {}) }]
+    } }));
+    const result = await page.evaluate(async ({ api, id }) => {
+      const grid = eval(api); await grid.setCellValue(id, "memory", 107); return grid.commitChanges();
+    }, { api, id });
+    await nextFrames(page);
+    expect(result).toMatchObject({ saved: outcome.saved ? 1 : 0, failed: outcome.saved ? 0 : 1 });
+    expect(queries).toEqual([]); expect(await page.evaluate(api => eval(api).getQuery().revision, api)).toBe(before);
+    expect(await page.evaluate(api => eval(api).hasChanges(), api)).toBe(!outcome.saved);
+  });
+}
+
+test("reports a failed automatic post-save reload once and retries without an unhandled rejection", async ({ page }) => {
+  // Register a real host callback before the adapter-configured view mounts.
+  await page.route("**/edit", async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace("</head>", `<script>
+      window.reloadErrors = []; window.reloadCallbacks = []; window.reloadRejections = [];
+      document.addEventListener("canopyx:error", event => reloadErrors.push(event.detail.error.message), true);
+      addEventListener("unhandledrejection", event => reloadRejections.push(event.reason.message));
+      CanopyX.configure("machines-edit", { onError: event => reloadCallbacks.push(event.error.message) });
+      </script></head>`) });
+  });
+  await open(page, "/edit");
+  const before = await page.evaluate(api => eval(api).getQuery().revision, api);
+  await page.route("**/api/machines-edit/query", route => route.fulfill({ status: 503, json: { message: "Refresh temporarily unavailable." } }));
+  const result = await page.evaluate(async api => {
+    const grid = eval(api), id = document.querySelector(".cx-row[data-cx-id]").dataset.cxId;
+    await grid.setCellValue(id, "memory", 109); return grid.commitChanges();
+  }, api);
+  expect(result.saved).toBe(1);
+  await expect(page.locator(".cx-grid-notice")).toContainText("Refresh temporarily unavailable.");
+  await nextFrames(page);
+  expect(await page.evaluate(() => ({ errors: reloadErrors, callbacks: reloadCallbacks, rejections: reloadRejections })))
+    .toEqual({ errors: ["Refresh temporarily unavailable."], callbacks: ["Refresh temporarily unavailable."], rejections: [] });
+  await page.unroute("**/api/machines-edit/query");
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect.poll(() => page.evaluate(api => eval(api).getQuery().revision, api)).not.toBe(before);
+  await expect(page.locator(".cx-grid-notice")).not.toBeVisible();
+});
+
+test("post-save reload keeps a newer pending query and retires only its superseded request", async ({ page }) => {
+  await open(page, "/edit");
+  const before = await page.evaluate(api => eval(api).getQuery().revision, api);
+  let releaseCommit, releaseQuery;
+  const heldCommit = new Promise(resolve => { releaseCommit = resolve; }), heldQuery = new Promise(resolve => { releaseQuery = resolve; });
+  let committed = false, queryHeld = false; const queries = [];
+  await page.route("**/api/machines-edit/commit", async route => {
+    const response = await route.fetch(); committed = true; await heldCommit;
+    await route.fulfill({ response });
+  });
+  await page.route("**/api/machines-edit/query", async route => {
+    const query = route.request().postDataJSON(); queries.push(query);
+    if (!queryHeld) { queryHeld = true; await heldQuery; await route.continue().catch(() => {}); }
+    else await route.continue();
+  });
+  try {
+    await page.evaluate(async api => {
+      const grid = eval(api), id = document.querySelector(".cx-row[data-cx-id]").dataset.cxId;
+      await grid.setCellValue(id, "memory", 113); window.postSave = grid.commitChanges();
+    }, api);
+    await expect.poll(() => committed).toBe(true);
+    await page.evaluate(api => { window.pendingSort = eval(api).sort([{ column: "name", direction: "desc" }]).catch(error => error.name); }, api);
+    await expect.poll(() => queryHeld).toBe(true); releaseCommit();
+    expect((await page.evaluate(() => postSave)).saved).toBe(1);
+    await expect.poll(() => page.evaluate(api => eval(api).getQuery().revision, api)).not.toBe(before);
+    expect(await page.evaluate(api => eval(api).getQuery().sort, api)).toEqual([{ column: "name", direction: "desc" }]);
+    expect(await page.evaluate(() => pendingSort)).toBe("AbortError");
+    expect(queries).toHaveLength(2); expect(queries.every(query => query.sort[0].direction === "desc" && query.revision === undefined)).toBe(true);
+  } finally { releaseCommit(); releaseQuery(); }
+});
+
+for (const cancel of ["caller", "destroy"]) {
+  test(`a ${cancel === "caller" ? "caller-cancelled" : "destroyed"} save does not schedule a post-save reload`, async ({ page }) => {
+    await open(page, "/edit");
+    let release, reached = false; const held = new Promise(resolve => { release = resolve; }), queries = [];
+    await page.route("**/api/machines-edit/commit", async route => { reached = true; await held; await route.abort().catch(() => {}); });
+    page.on("request", request => { if (request.url().endsWith("/api/machines-edit/query")) queries.push(request.url()); });
+    try {
+      await page.evaluate(async api => {
+        const grid = eval(api), id = document.querySelector(".cx-row[data-cx-id]").dataset.cxId;
+        await grid.setCellValue(id, "memory", 127); window.saveController = new AbortController();
+        window.cancelledSave = grid.commitChanges({ signal: saveController.signal });
+      }, api);
+      await expect.poll(() => reached).toBe(true);
+      await page.evaluate(({ api, cancel }) => cancel === "caller" ? saveController.abort() : eval(api).destroy(), { api, cancel });
+      expect(await page.evaluate(() => cancelledSave)).toMatchObject({ saved: 0, failed: 1 });
+      await nextFrames(page); expect(queries).toEqual([]);
+    } finally { release(); }
+  });
+}
 
 test("refuses values the server checks again, columns that are not editable and oversized batches", async ({ page }) => {
   test.skip(!parts.editing, "The runtime has no editing part (feature/editing, #69).");

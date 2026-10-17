@@ -51,6 +51,14 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets whether the column can sort cell values; tree views sort siblings.</summary>
     public bool Sortable { get; set; }
 
+    /// <summary>Gets or sets whether a flat-grid column supports query predicates and filter controls. Default true.</summary>
+    /// <remarks>This capability does not hide cell values or change search, supported read-only facets, formatting, or highlight rules.</remarks>
+    public bool Filterable { get; set; } = true;
+
+    /// <summary>Gets or sets whether a flat-grid column can be included in grid exports. Default true.</summary>
+    /// <remarks>Default exports omit disabled columns; explicit requests reject them. This is an operation capability, not a data-access restriction.</remarks>
+    public bool Exportable { get; set; } = true;
+
     /// <summary>Gets or sets whether readers can edit this column.</summary>
     /// <remarks>
     /// <para>
@@ -120,6 +128,8 @@ public sealed partial class CanopyColumn {
         if (Sortable) {
             writer.Property("sortable", true);
         }
+        if (grid && !Filterable) writer.Property("filterable", false);
+        if (grid && !Exportable) writer.Property("exportable", false);
         if (Editable) writer.Property("editable", true);
         if (grid && Editor != null) { writer.Name("editor"); Editor.WriteJson(writer); }
         if (grid && Validation != null) { writer.Name("validation"); Validation.WriteJson(writer); }

@@ -20,6 +20,7 @@
               cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
                 ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
             throw new Error("CanopyX: malformed grid cell.");
+          if (typeof cell.sort === "number") gridScalar(cell.sort, { kind: "number" });
         }
         gridScalar(cell, declared.get(id));
       }

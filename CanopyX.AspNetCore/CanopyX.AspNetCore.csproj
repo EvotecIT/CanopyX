@@ -28,6 +28,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\CanopyX.Data\CanopyX.Data.csproj" />
+    <Compile Include="..\CanopyX.Html\CanopyContentSecurity.cs" Link="Shared\CanopyContentSecurity.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -9,7 +9,7 @@
   Object.assign(DataGrid.prototype,{
     buildGridFilters(){
       this.reportingFacetStops=new Set();this.reportingFacetSequence=0;
-      if(this.tools.filters===false)return;
+      if(this.tools.filters===false||!this.columns.some(column=>column.filterable!==false))return;
       this.reportingFilters=this.controlPanel(this.labels.gridFilters,"cx-grid-filters",panel=>this.renderGridFilters(panel));
     },
     async renderGridFilters(panel){

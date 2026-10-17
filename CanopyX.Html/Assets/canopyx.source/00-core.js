@@ -280,9 +280,10 @@
    * Sort key: numbers (and parsed dates, booleans) rank 0, strings rank 1, empty rank 2. A cell's sort field (text or a
    * number) replaces its value for sorting only; search and filters keep reading the value.
    */
+  const safeGridNumber = value => Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
   function sortKey(cell, column) {
-    // Trees read a sort key that is text or a finite number and ignore any other (flat grids reject it).
-    let value = isCellObject(cell) && (typeof cell.sort === "string" || Number.isFinite(cell.sort)) ? cell.sort : cellValue(cell);
+    // Trees ignore malformed sort keys; flat grids reject them at intake.
+    let value = isCellObject(cell) && (typeof cell.sort === "string" || safeGridNumber(cell.sort)) ? cell.sort : cellValue(cell);
     if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
       value = cell.text;
     }

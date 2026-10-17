@@ -1292,6 +1292,8 @@
         "sortable": {
           "type": "boolean"
         },
+        "filterable": { "type": "boolean", "description": "Supports query predicates and filter controls. Default true; supported read-only facets and presentation rules remain available." },
+        "exportable": { "type": "boolean", "description": "Supports grid exports. Default true. Default exports omit false; explicit requests reject it." },
         "editable": {
           "type": "boolean",
           "description": "Readers can edit the column's cells; the editing part loads with the grid (docs/editing.md)."
@@ -1761,6 +1763,7 @@
             "gridExportProgress": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportReading": { "$ref": "#/$defs/accessibleLabel" },
             "gridExportCancelled": { "$ref": "#/$defs/accessibleLabel" },
+            "gridNoExportColumns": { "$ref": "#/$defs/accessibleLabel" },
             "gridCancelExport": { "$ref": "#/$defs/accessibleLabel" },
             "gridPrint": { "$ref": "#/$defs/accessibleLabel" },
             "formatRules": { "$ref": "#/$defs/accessibleLabel" },

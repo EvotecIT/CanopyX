@@ -1,5 +1,6 @@
   Object.assign(DataGrid.prototype,{
     columnFacetItems(column,search="",signal){
+      if(!column||column.filterable===false)throw new Error("CanopyX: facets require a filterable column.");
       if(this.view.source.kind==="host")return this.getFacets(column.id,{search,includeCurrentFilter:false,limit:200,signal});
       const query=gridColumnProjection(this.queryForChange(false,true),column.id),columns=new Map(this.view.columns.map(item=>[item.id,item])),rows=gridQueryRows(this.view,query,columns,false),buckets=new Map();
       for(const row of rows){const value=cellValue(row.cells[column.id])??null,key=typeof value+":"+foldText(value),item=buckets.get(key);
@@ -11,7 +12,9 @@
     },
     openColumnFilter(id,anchor){
       if(!this.acceptedQuery||this.pendingQuery)return;
-      const column=this.columns.find(item=>item.id===id),panel=this.openGridPopover(anchor,"cx-column-filter",column.title+": "+this.labels.gridFilterColumn,id);
+      const column=this.columns.find(item=>item.id===id);
+      if(!column||column.filterable===false)throw new Error("CanopyX: column filters require a filterable column.");
+      const panel=this.openGridPopover(anchor,"cx-column-filter",column.title+": "+this.labels.gridFilterColumn,id);
       const head=h("div","cx-pop-h"),body=h("div","cx-pop-b"),footer=h("div","cx-pop-f"),error=h("p","cx-grid-control-error");
       setText(head,column.title);error.setAttribute("role","status");panel.append(head,body,error,footer);
       let timer,clauses,draft;const signal=this.gridPopover.controller.signal,filters=this.reportingFilters;

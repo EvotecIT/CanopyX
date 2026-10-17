@@ -9,9 +9,9 @@ namespace CanopyX.Data;
 /// <summary>The built-in CSV writer: UTF-8 with a byte order mark, CRLF lines, quoted fields and formula protection.</summary>
 /// <remarks>
 /// The first line holds the column titles. A field is quoted when it contains the delimiter, a quote or a line break.
-/// Text that would start a spreadsheet formula (<c>=</c>, <c>+</c>, <c>-</c> or <c>@</c> after optional leading
-/// whitespace) is prefixed with an apostrophe; raw numbers stay numeric. The output is flushed in blocks while records
-/// are read.
+/// Text starting with a tab or carriage return, or with a spreadsheet formula prefix (<c>=</c>, <c>+</c>, <c>-</c>,
+/// <c>@</c> or their full-width forms after optional leading whitespace), gets an apostrophe; raw numbers stay numeric.
+/// The output is flushed in blocks while records are read.
 /// </remarks>
 public sealed class CanopyCsvExportFormat : ICanopyExportFormat {
     private readonly char _delimiter;
@@ -74,9 +74,10 @@ public sealed class CanopyCsvExportFormat : ICanopyExportFormat {
     }
 
     private static bool StartsFormula(string text) {
+        if (text.Length > 0 && (text[0] == '\t' || text[0] == '\r')) return true;
         foreach (var unit in text) {
             if (char.IsWhiteSpace(unit) || unit == '﻿') continue;
-            return unit == '=' || unit == '+' || unit == '-' || unit == '@';
+            return unit == '=' || unit == '+' || unit == '-' || unit == '@' || unit == '\uFF1D' || unit == '\uFF0B' || unit == '\uFF0D' || unit == '\uFF20';
         }
         return false;
     }
