@@ -14,6 +14,15 @@
     actual[1]++;
     return parts.every((value, index) => value === actual[index]) ? moment : null;
   }
+  // Native datetime-local inputs carry a wall time, with optional seconds and millisecond precision.
+  // Validate its components before adding the fraction, so DST gaps and calendar rollover cannot move a condition.
+  function gridDateInputMoment(text, local) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(text);
+    if (!match) return null;
+    const moment = gridMomentFromParts(Number(match[1]), Number(match[2]), Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6] || 0), local);
+    if (moment) moment.setTime(moment.getTime() + Number((match[7] || "").padEnd(3, "0")));
+    return moment;
+  }
   function gridFreeze(value) {
     if (value && typeof value === "object" && !Object.isFrozen(value)) {
       Object.values(value).forEach(gridFreeze); Object.freeze(value);

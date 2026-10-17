@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "6875972ae0e45581",
+      "version": "41c183a7564aec7f",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -181,7 +181,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "21031ca54485efce",
+      "version": "6f9f3c51b0ad2a0e",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -197,7 +197,7 @@
     {
       "name": "format-editor",
       "label": "formatting rule editor",
-      "version": "cea74bdba85525bb",
+      "version": "24f176a39c02944a",
       "script": "canopyx-format-editor.js",
       "style": "canopyx-format-editor.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "d0ddb6c6c1bf1539",
+      "version": "cab98a2873ded971",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

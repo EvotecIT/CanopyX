@@ -81,6 +81,8 @@
     if (link !== undefined && link !== true && (!link || typeof link !== "object" || link.key !== undefined && !RECORD_LINK_KEY.test(link.key))) recordFail("a record deep link is true or { key }.");
     if (source !== undefined && (!source || !["inline", "host", "sidecar"].includes(source.kind) || source.kind === "sidecar" &&
         (typeof source.base !== "string" || !Number.isInteger(source.shards) || source.shards < 1 || source.shards > 65536))) recordFail("a record source is inline, host, or a sidecar with a base and 1 to 65,536 shards.");
+    if (source?.kind === "sidecar" && (!source.base || /[?#]/.test(source.base)))
+      recordFail("a record sidecar base must be a non-empty folder path without a query or fragment.");
     for (const name of ["hideEmpty", "jumpList"]) if (spec[name] !== undefined && typeof spec[name] !== "boolean") recordFail("record " + name + " is a boolean.");
     if (spec.actions !== undefined && (!spec.actions || Object.entries(spec.actions).some(([name, value]) => !["copy", "print", "export", "link"].includes(name) || typeof value !== "boolean")))
       recordFail("record actions switch copy, print, export and link on or off.");
