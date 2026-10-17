@@ -182,6 +182,7 @@ Consumers: ASP.NET Core and other .NET hosts that serve hosted flat grids from a
 - [x] Fleet inventory sample over SQLite and EF Core with an end-to-end browser test and `--bench` measurements at 100,000 and 1,000,000 rows (`docs/remote-dotnet.md`).
 - [x] Batch commit of grid edits: `POST commit` with a separate write policy, server-side validation of editable columns, `ICanopyDataWriter` and the `CanopyQueryableWriter<T>` reference writer with conflict detection; the sample's editable page.
 - [x] Multi-level grouping (up to four `groupBy` levels, aggregate-ordered levels, nested summaries) and `distinctCount`; the sample's two-level page.
+- [x] Record details on demand: `POST record` with `CanopyRecordMap<T>` (fields, links, drawer values, paged collections, timelines, changes) looked up by key through the grid's scoped query, a per-request field read check, `ICanopyRecordProvider` and the in-memory reference; the sample's machine record panel.
 - [ ] Custom aggregates in the built-in providers (today a provider of your own computes them).
 - [ ] Cursor (keyset) navigation for very deep pages over large tables.
 
@@ -225,17 +226,17 @@ The following assessment uses the current CanopyX source and the primary referen
 | Rich cell content | Safe link/icon/progress/list/boolean/long-text presenters, tones, badges and explicit host renderers | Map each report's formatting and copy/export text through the typed cells | A |
 | Column layout | Pointer/keyboard moves, bounded auto-fit, min/max/flex widths, left/right pins, grouped headers, chooser and sticky headers | Measure column virtualization needs | C |
 | Responsive records | Priority-based temporary hiding, horizontal scrolling and host-composed record views | Optional host card layout for a demonstrated report need | Adoption |
-| Advanced filtering | Nested AND/OR builder, typed predicates and full-query facets/counts | Host-authorized query presets and consumer-specific facet sources | Adoption |
+| Advanced filtering | Nested AND/OR builder, typed predicates, full-query facets/counts and a side or top facet panel | Host-authorized query presets and consumer-specific facet sources | Adoption |
 | Saved views | Durable local/host storage, schema validation, default/rename/delete/reset and permitted shareable state | Integrate each host's remote storage and access policy | Adoption |
 | Selection | Checkboxes, Shift ranges, page/filtered scopes, counts, rectangular cell ranges and revisioned query selection with exclusions | Qualify selection and range workflows during host adoption | C |
 | Details | Cancellable host hook, focus return, qualified reusable HtmlForgeX record/property drawers, and measured inline detail rows (templates, trusted HTML, nested grids and trees) | Adopt detail rows in a real report | C |
 | Grouping and summaries | Multi-level runtime grouping with labelled built-in and plugin aggregates, collapse by group or level, full-query totals and revisioned nested hosted summaries; paging and exports count records | Qualify grouped reporting workflows during host adoption | C |
 | Export and print | Captured scoped requests, bounded snapshots, progress/cancel, metadata, complete host print and qualified typed Office host delivery | Connect approved host formats and preserve each report's standalone download behavior | Adoption |
 | Wide tables | Row virtualization and grouped headers; all visible columns are mounted | Frozen summary rows and measured need for column virtualization | C |
-| Live data | Query replacement and view destruction are managed | Revision-aware replace/update/remove operations that preserve focus and reject old cached pages | C |
+| Live data | In-place transactions, stable sort prompts, change cues and revision-aware polling | Qualify sustained updates in a real reporting consumer | Adoption |
 | Analytical interaction | Row selection, rectangular ranges, range copy/paste and a host-governed fill handle | Scoped status summaries and pivot UI for a measured consumer need | C |
 | Editing and reordering records | Typed flat-grid editors, validation, change marks, undo/redo, row/batch commit proposals and tree proposal hooks | Flat-row/context actions and host-governed record reordering | D |
-| Host integration | .NET page/fragment writers, JavaScript grid entry point, local inventory bridge proof | A documented typed HtmlForgeX table migration surface, maintained examples and consumer-specific replacement gates | Adoption |
+| Host integration | Typed .NET and TypeScript rows, page/fragment writers, JavaScript grid entry point and local inventory bridge proof | A documented typed HtmlForgeX table migration surface, maintained examples and consumer-specific replacement gates | Adoption |
 
 ### Stage A: Finish Everyday Table Interaction
 

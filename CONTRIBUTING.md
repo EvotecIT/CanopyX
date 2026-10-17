@@ -113,6 +113,8 @@ Pass `--bundle <folder>` to measure a bundle written by the version before the c
 - Keep `CanopyX` free of runtime package dependencies.
 - Preserve `net472`, `netstandard2.0`, `net8.0`, and `net10.0` support in both packages.
 - Do not suppress warnings with `NoWarn`.
+- Update the public API baselines under `api/` in the same change when the C# or TypeScript API changes, and follow
+  [docs/versioning.md](docs/versioning.md) for removals and deprecations.
 
 ## Package Invariants
 

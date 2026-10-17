@@ -69,7 +69,7 @@ internal static class CanopyDataSnapshot {
         return copy;
     }
 
-    private static CanopyRecordPanel? Record(CanopyRecordPanel? source) {
+    internal static CanopyRecordPanel? Record(CanopyRecordPanel? source) {
         if (source == null) return null;
         var copy = new CanopyRecordPanel { Source = source.Source };
         foreach (var field in source.Fields) copy.Fields.Add(Column(field));

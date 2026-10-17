@@ -32,6 +32,7 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `gridRecordQuery` | The browser; `CanopyGridRecordQuery.ToJson()` | A record's drawer opens and its details load on demand ([Record details](#record-details)) |
 | `gridRecord` | `CanopyGridRecord.ToJson(view)` | A host answers a record request |
 | `gridRecordPack` | `CanopyRecordSidecar.Write` | A record's drawer opens and its details are in a record pack beside the page |
+| `gridTransaction` | `CanopyGridTransaction.ToJson(view)` | A host sends rows to add, update or remove to an open grid ([Live data](#live-data)) |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |
@@ -179,6 +180,8 @@ The Filters sentence editor presents that expression with All/Any switches, type
 `reporting.facetColumns` opts declared column IDs into full-query value/count facets. Inline sources count their complete dataset through the existing search/predicate evaluator, ignoring the result window and sort. A hosted source supplies an explicit `facet(request, { signal })` capability; the runtime never estimates counts from cached pages. The column popover shows presenter-rendered values and counts with the current column's predicates excluded. It adds value search above twelve values, applies choices after 200 ms, and cancels superseded or closed requests. Other accepted criteria changes close an outdated list. Hosted columns without a facet capability retain typed conditions.
 
 `api.getFacets(column, { search, limit, includeCurrentFilter, signal })` sends a `gridFacetQuery`: `{ protocol: "canopyx/2", type: "gridFacetQuery", query, column, search, limit, includeCurrentFilter }`. The query includes its accepted revision. Defaults are empty value search, 100 returned buckets, and `includeCurrentFilter: true`; the bound is 1..200 buckets and 16,384 search code units. False replaces every predicate targeting that column with true, including inside nested groups. In particular, an OR containing such a predicate becomes true; removing just that term would incorrectly narrow the expression. Search and all other predicates remain in force. The host keeps its independent authorization constraints when applying this projection.
+
+A grid's optional `facets` field declares a facet panel: `{ columns, position, open, collapsible, width, label }`, where each column is an id or `{ column, kind, label, limit, bins, sort, collapsed }` (`gridFacetPanel` in the schema). Its choices are ordinary column conditions (`in`, `isNull`, `ge`, `le`) of the query. A hosted grid's facets must be declared `reporting.facetColumns`; each sends a `gridFacetQuery` with `includeCurrentFilter: false` and a limit of 200. The grid state keeps the panel's open state as `facets: { open }`. See [facet panel](facets.md).
 
 A `gridFacetPage` echoes `view`, `revision`, `column`, `search` and `includeCurrentFilter`, and contains `matched`, `totalValues`, `truncated` and `items: [{ value, count }]`. `matched` counts projected matching records before value search. `totalValues` counts distinct buckets after value search and before truncation. Items form a bounded nonempty prefix when values exist; `truncated` is exactly `items.length < totalValues`. Counts are positive, their sum cannot exceed `matched`, and an unsearched complete page accounts for every matching record. Invalid or mismatched responses are rejected. The C# `CanopyGridFacetQuery`, `CanopyGridFacetPage` and `CanopyGridFacetValue` writers validate this contract.
 
@@ -331,6 +334,32 @@ The order of the rows in the data never changes what the grid shows: it orders r
 
 C# hosts write row data through `CanopyHtmlOptions.RowData` (fragments and pages carry the chunks inside the host element and the row data part, `canopyx-data.js`), `CanopyDataGridView.SaveHtmlBundle` (sidecar files), or `CanopyGridRowData` directly (`ToJson(base)`, `GetChunk(index)` and `WriteFiles(directory)`). JavaScript hosts pass `rowData` with chunk arrays in the view, or write the same script elements. A compact row has no place for a detail payload or record fields: `CanopyGridRowData` refuses rows that carry them, which stay row objects. A JSON chunk inside an HTML script element must escape `<` (the C# writer escapes `<`, `>` and `&`), and inside a `String.raw` template the backtick and `${`.
 
+### Live data
+
+A grid's optional `live` object turns on live data ([live-data.md](live-data.md)): `{ stableOrder?, flash?, batchMs?,
+pollMs?, announce?, pauseWhenHidden? }`. `stableOrder` (default true) keeps rows whose sort keys change in their places until
+the reader re-sorts; `flash` is `true` or `{ durationMs }` (100 to 10,000); `batchMs` (0 to 60,000) applies changes arriving
+within that time together; `pollMs` (0, or 250 to 86,400,000) polls the source; `announce` and `pauseWhenHidden` default to
+true. A view with `live` loads the `live` part (payload `application/x-canopyx-live`, or `canopyx-live.js` and `.css`); the
+browser API loads it on first use in any grid.
+
+A `gridTransaction` carries changes to an open grid: `add` (complete rows; a row whose id the grid has replaces it), `update`
+(rows whose cells are merged into the existing row's; a `null` cell clears it, and `tone`, `className`, `fields` and
+`detail` replace the row's when given) and `remove` (row ids), at most 100,000 rows in all. Removes apply first, then adds,
+then updates; an update or removal of an id the grid lacks is skipped and reported as missing. Rows are validated against the
+grid's columns as inline rows are, and a transaction with an invalid row changes nothing.
+
+```json
+{ "protocol": "canopyx/2", "type": "gridTransaction", "view": "endpoints",
+  "add": [{ "id": "ep-41", "cells": { "name": "edge-41", "latency": 88 } }],
+  "update": [{ "id": "ep-07", "cells": { "latency": 212, "errors": null } }], "remove": ["ep-12"] }
+```
+
+Hosted grids keep the existing revision contract: a refresh asks for its pages without a revision and compares the answer's
+revision with the accepted one, so a source that changes its revision when its data changes needs nothing new. A hosted grid
+applies only updates of loaded rows; its rows are added and removed at the source. The wire format of queries and pages does
+not change.
+
 ### Record panel
 
 A grid's or tree view's optional `record` is its record panel ([record-panel.md](record-panel.md)): the record drawer with
@@ -397,8 +426,8 @@ sidecar files, `[viewId, "r<n>", document]` with a `gridRecordPack`:
 
 #### What a server adapter implements for gridRecord
 
-A remote adapter (such as `CanopyX.Data`, which serves `gridQuery` today) adds a record endpoint and routes the browser
-source's `record` hook to it:
+A remote adapter adds a record endpoint and routes the browser source's `record` hook to it (`CanopyX.Data` does, see
+[Record details](remote-dotnet.md#record-details)):
 
 1. **Request parsing.** Read `gridRecordQuery`: `view` (a configured grid), `id` (a record identity; bounded, not interpreted
    as a key expression), optional `revision`, `field` with `offset` and `limit` (1 to 10,000), and `row`.

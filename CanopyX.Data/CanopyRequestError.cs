@@ -33,5 +33,11 @@ public enum CanopyRequestError {
     /// <summary>The <c>groupBy</c> levels are malformed, name a column that is not sortable or an undeclared aggregate, or the view does not group at runtime.</summary>
     InvalidGroupBy,
     /// <summary>A commit changes a column that the view does not declare editable or that this endpoint does not write.</summary>
-    ColumnNotEditable
+    ColumnNotEditable,
+    /// <summary>A record request names a field the endpoint does not serve, or one the caller may not read; both answer alike.</summary>
+    UnknownField,
+    /// <summary>A collection page names a record field that is not a collection.</summary>
+    NotCollection,
+    /// <summary>The record does not exist, lies outside what the caller may read, or its identity cannot be a key; all answer alike (HTTP 404).</summary>
+    RecordNotFound
 }

@@ -46,6 +46,7 @@ public static class Bench {
             times.Sort();
             Console.WriteLine("| " + name + " | " + times[times.Count / 2].ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " |");
         }
+        await RecordsAsync(services);
         var export = Stopwatch.StartNew();
         using (var scope = services.CreateScope()) {
             var db = scope.ServiceProvider.GetRequiredService<FleetDb>();
@@ -62,6 +63,37 @@ public static class Bench {
                 export.Elapsed.TotalSeconds.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " s, " +
                 (counter.Length / 1048576d).ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " MiB, peak working set " +
                 (Process.GetCurrentProcess().PeakWorkingSet64 / 1048576d).ToString("F0", System.Globalization.CultureInfo.InvariantCulture) + " MiB");
+        }
+    }
+
+    /// <summary>Times record requests for a machine in the middle of the table (one with a long software list).</summary>
+    private static async Task RecordsAsync(IServiceProvider services) {
+        var view = FleetGrid.View("machines", "Machines", grouped: false);
+        FleetRecords.Panel(view);
+        int count;
+        using (var scope = services.CreateScope()) count = await scope.ServiceProvider.GetRequiredService<FleetDb>().Machines.CountAsync();
+        var middle = Math.Max(1, count / 2 - count / 2 % 7 + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var cases = new (string Name, string Body)[] {
+            ("record: whole record with its row", "{\"view\":\"machines\",\"id\":\"" + middle + "\",\"row\":true}"),
+            ("record: whole record", "{\"view\":\"machines\",\"id\":\"" + middle + "\"}"),
+            ("record: software page at offset 10", "{\"view\":\"machines\",\"id\":\"" + middle + "\",\"field\":\"software\",\"offset\":10,\"limit\":10}"),
+            ("record: not found", "{\"view\":\"machines\",\"id\":\"" + (count + 7).ToString(System.Globalization.CultureInfo.InvariantCulture) + "\"}")
+        };
+        foreach (var (name, body) in cases) {
+            var times = new List<double>();
+            for (var i = 0; i < 6; i++) {
+                using var scope = services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<FleetDb>();
+                var map = FleetGrid.Map(view);
+                var options = new CanopyQueryOptions { Executor = new EfCoreExecutor(), Revision = _ => new ValueTask<string>("bench") };
+                var handler = new CanopyRemoteHandler(map.Schema, new CanopyQueryableProvider<Machine>(() => db.Machines, map, options), null, null,
+                    new CanopyQueryableRecordProvider<Machine>(() => db.Machines, FleetRecords.Map(map), options));
+                var watch = Stopwatch.StartNew();
+                try { await handler.RecordAsync(body); } catch (CanopyRequestException error) when (error.Error == CanopyRequestError.RecordNotFound) { }
+                if (i > 0) times.Add(watch.Elapsed.TotalMilliseconds);
+            }
+            times.Sort();
+            Console.WriteLine("| " + name + " | " + times[times.Count / 2].ToString("F1", System.Globalization.CultureInfo.InvariantCulture) + " |");
         }
     }
 

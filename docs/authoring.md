@@ -110,7 +110,7 @@ var inventory = mapper.CreateView("inventory", "Inventory", records);
 inventory.SaveHtmlPage("inventory.html");
 ```
 
-`FileRecord` and `records` are host-owned. The mapper uses selectors rather than reflection and validates the resulting view. Column definitions remain mutable and are reused by its views. Its optional `configure` callback sets reporting or source options before validation. `MapRow(record)` supplies the same mapping to a hosted page.
+`FileRecord` and `records` are host-owned. The mapper uses selectors rather than reflection and validates the resulting view. Column definitions remain mutable and are reused by its views. Its optional `configure` callback sets reporting or source options before validation. `MapRow(record)` supplies the same mapping to a hosted page. To take columns from member expressions instead (`grid.Column(x => x.Owner)`), use `CanopyDataGridView<T>` ([typed grids](typed-grids.md)).
 
 Choose `CanopyGridSource.Inline()`, `HostedOffset()` or `HostedCursor()` through `view.Source`. Cursor sources select paged presentation and reject continuous presentation. Call `view.Validate()` to check a definition before writing it. `CanopyStaticHtml.RenderGrid(view, cursorPage)` accepts a cursor snapshot, including unknown totals, for script-free fallback.
 

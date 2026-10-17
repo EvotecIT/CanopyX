@@ -51,6 +51,7 @@
         "CanopyX.Html/Assets/canopyx.grid.source/38-grid-text-dialog.js",
         "CanopyX.Html/Assets/canopyx.grid.source/60-grid-columns-menu.js",
         "CanopyX.Html/Assets/canopyx.grid.source/61-grid-filters.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",
         "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-filters.js",
         "CanopyX.Html/Assets/canopyx.grid.source/66-grid-column-conditions.js",
         "CanopyX.Html/Assets/canopyx.grid.source/67-grid-filter-builder.js",
@@ -304,6 +305,40 @@
       "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
       "scripts": ["CanopyX.Html/Assets/canopyx.layouts.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.layouts.source/layouts.css"]
+    },
+    {
+      "name": "facets",
+      "label": "facet panel",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["facets"],
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQueryStart", "gridQueryRows", "gridColumnProjection", "gridScalar",
+        "gridOrder", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",
+        "CanopyX.Html/Assets/canopyx.facets.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.facets.source/facets.css"
+      ]
+    },
+    {
+      "name": "live",
+      "label": "live data",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["live"],
+      "key": "DataGrid.prototype",
+      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQuery", "gridResultShape", "gridQueryRows", "gridCompare", "gridOrder",
+        "validateGridRows", "validateGridPage", "validateGridCursorPage", "gridFreeze", "requireIdentifier", "checkDocument", "cellValue", "PROTOCOL",
+        "GRID_REPORTING", "VIEW_MODES", "inlineGridSource"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.live.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.live.source/live.css"
+      ]
     },
     {
       "name": "record-panel",

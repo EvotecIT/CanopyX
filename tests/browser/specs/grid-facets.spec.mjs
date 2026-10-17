@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { viewPage } from "./support.mjs";
+import { viewPage, nextFrames } from "./support.mjs";
 import AxeBuilder from "@axe-core/playwright";
 
 const filter = (column, operator, ...values) => ({ column, operator, values });
@@ -132,10 +132,62 @@ test('column value counts cover the whole query and distinguish raw boolean, str
  await open(page);const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);
  expect(await pop.locator('.cx-val').evaluateAll(rows=>rows.map(row=>[row.querySelector('.cx-facet-value').textContent,row.querySelector('.cx-val-n').textContent])))
    .toEqual([['No','1'],['Yes','1'],['ALPHA','3'],['Beta','2'],['true','1'],['—','2']]);
- await pop.getByRole('checkbox',{name:'Select all values',exact:true}).check();await pop.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();const bool=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^Yes$/})});await bool.locator('input').check();await pop.getByRole('button',{name:'Done',exact:true}).click();
+ await pop.getByRole('checkbox',{name:'Select all values',exact:true}).check();await pop.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();await expect(page.locator('.cx-grid-result-count')).toHaveText('0 of 10 rows');const bool=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^Yes$/})});await bool.locator('input').check();await pop.getByRole('button',{name:'Done',exact:true}).click();
  await expect(page.locator('.cx-grid-result-count')).toHaveText('1 of 10 rows');expect((await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery())).filterGroup.filters).toEqual([filter('category','in',true)]);
- const next=await editor(page);await expect(next.locator('.cx-val')).toHaveCount(6);await next.getByRole('checkbox',{name:'Select all values',exact:true}).check();await next.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();await next.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input').check();await next.getByRole('button',{name:'Done',exact:true}).click();
+ const next=await editor(page);await expect(next.locator('.cx-val')).toHaveCount(6);await next.getByRole('checkbox',{name:'Select all values',exact:true}).check();await next.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();await expect(page.locator('.cx-grid-result-count')).toHaveText('0 of 10 rows');await next.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input').check();await next.getByRole('button',{name:'Done',exact:true}).click();
  expect((await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery())).filterGroup.filters).toEqual([filter('category','in','true')]);
+});
+test('accepted facet queries keep a held checkbox target until its native click finishes',async({page},testInfo)=>{
+ await open(page,{filterGroup:group('or',[filter('category','in',true)])});
+ const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);
+ const target=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input');
+ const bounds=()=>target.boundingBox();
+ await target.focus();
+ const before=await bounds();await page.mouse.move(before.x+before.width/2,before.y+before.height/2);await page.mouse.down();
+ // WebKit gives focus back to the grid on native checkbox pointerdown. Preserve that native focus just as other engines
+ // preserve the checkbox's focus; accepted queries and deferred positioning must not move it again.
+ await page.evaluate(()=>{window.facetPressFocus=document.activeElement;});
+ try{
+  // Start the public query after pointerdown, so acceptance is deterministically inside the native gesture.
+  await page.evaluate(async()=>{await document.querySelector('[data-canopyx-host]').canopyx.setQuery({});});
+  await expect(page.locator('.cx-grid-result-count')).toHaveText('10 of 10 rows');
+  await page.setViewportSize({width:1200,height:900});
+  await nextFrames(page);
+  expect((await bounds()).y).toBe(before.y);expect(await page.evaluate(()=>document.activeElement===window.facetPressFocus)).toBe(true);
+ }finally{await page.mouse.up();}
+ await expect(target).toBeChecked();
+ await expect.poll(()=>pop.evaluate(panel=>{
+  const header=document.querySelector('[data-cx-column="category"]'),bottom=header.getBoundingClientRect().bottom;
+  return Math.abs(panel.getBoundingClientRect().top-Math.max(8,Math.min(bottom,innerHeight-panel.offsetHeight-8)));
+ })).toBeLessThan(1);
+ expect(await page.evaluate(()=>document.activeElement===window.facetPressFocus)).toBe(true);await page.screenshot({path:testInfo.outputPath('held-facet-query.png')});
+ await pop.getByRole('button',{name:'Done',exact:true}).click();
+ await expect(page.locator('.cx-grid-result-count')).toHaveText('2 of 10 rows');
+ expect((await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery())).filterGroup.filters)
+  .toEqual([filter('category','in',true),filter('category','in','true')]);
+});
+for(const retire of ['Escape','destroy'])test('retiring a held facet popover cancels deferred positioning with '+retire,async({page})=>{
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await open(page,{filterGroup:group('and',[filter('category','in',true)])});
+ const pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(6);
+ const target=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input');
+ const box=await target.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+ try{
+  await page.evaluate(async()=>{await document.querySelector('[data-canopyx-host]').canopyx.setQuery({});});
+  if(retire==='Escape')await page.keyboard.press('Escape');
+  else await page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.destroy());
+  await expect(pop).toHaveCount(0);
+ }finally{await page.mouse.up();}
+ await nextFrames(page);
+ await expect(pop).toHaveCount(0);expect(errors).toEqual([]);
+ if(retire==='Escape'){
+  const next=await editor(page);await expect(next.locator('.cx-val')).toHaveCount(6);
+  await next.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();
+  await expect(page.locator('.cx-grid-result-count')).toHaveText('0 of 10 rows');
+  const text=next.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input');
+  await text.check();await next.getByRole('button',{name:'Done',exact:true}).click();
+  await expect(page.locator('.cx-grid-result-count')).toHaveText('1 of 10 rows');
+ }
 });
 test('phone missing-value filter keeps raw null semantics and accessible typed choices',async({page})=>{
  await page.setViewportSize({width:390,height:700});await open(page);await page.locator('[data-canopyx-host]').evaluate(host=>host.setAttribute('data-cx-theme','dark'));const pop=await editor(page);

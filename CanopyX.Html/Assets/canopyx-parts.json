@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "0a46d4100b6725a5",
+      "version": "116683dc8a0ae28a",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -217,7 +217,7 @@
     {
       "name": "link",
       "label": "linked views",
-      "version": "485eec306ca57996",
+      "version": "3f7066f26d171fba",
       "script": "canopyx-link.js",
       "style": "canopyx-link.css",
       "runtimes": [
@@ -265,7 +265,7 @@
     {
       "name": "highlight",
       "label": "search highlighting",
-      "version": "8008a591bd90c7c1",
+      "version": "f39423961654c1e2",
       "script": "canopyx-highlight.js",
       "style": "canopyx-highlight.css",
       "runtimes": [
@@ -296,6 +296,38 @@
       ],
       "features": [
         "layout"
+      ]
+    },
+    {
+      "name": "facets",
+      "label": "facet panel",
+      "version": "96c8783d1a1f2f7f",
+      "script": "canopyx-facets.js",
+      "style": "canopyx-facets.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "facets"
+      ]
+    },
+    {
+      "name": "live",
+      "label": "live data",
+      "version": "2fa02b9178c6c5df",
+      "script": "canopyx-live.js",
+      "style": "canopyx-live.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "live"
       ]
     },
     {

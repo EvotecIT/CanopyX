@@ -17,9 +17,9 @@ internal static class CanopyRemoteHttp {
     private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false, true);
 
     internal static Task RunJsonAsync(HttpContext context, CanopyRemoteLimits limits, Func<HttpContext, CanopyRemoteHandler> handler,
-        Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> answer) =>
+        Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> answer, int? maxBytes = null) =>
         RunAsync(context, async token => {
-            var body = await ReadJsonBodyAsync(context, limits, token).ConfigureAwait(false);
+            var body = await ReadJsonBodyAsync(context, limits, token, maxBytes).ConfigureAwait(false);
             if (body == null) return;
             await WriteJsonAsync(context, await answer(handler(context), body, token).ConfigureAwait(false), token).ConfigureAwait(false);
         });
@@ -40,14 +40,15 @@ internal static class CanopyRemoteHttp {
     }
 
     /// <summary>Reads a JSON body within the size limit; writes the error and returns null when the body is rejected.</summary>
-    internal static async Task<string?> ReadJsonBodyAsync(HttpContext context, CanopyRemoteLimits limits, CancellationToken token) {
+    internal static async Task<string?> ReadJsonBodyAsync(HttpContext context, CanopyRemoteLimits limits, CancellationToken token, int? maxBytes = null) {
         var request = context.Request;
+        var maximum = maxBytes ?? limits.MaxRequestBytes;
         if (!MediaTypeHeaderValue.TryParse(request.ContentType, out var type) ||
             !(type.MediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase) || type.MediaType.Value?.EndsWith("+json", StringComparison.OrdinalIgnoreCase) == true)) {
             await WriteErrorAsync(context, StatusCodes.Status415UnsupportedMediaType, "invalidDocument", "Send the request as application/json.").ConfigureAwait(false);
             return null;
         }
-        if (request.ContentLength > limits.MaxRequestBytes) {
+        if (request.ContentLength > maximum) {
             await WriteErrorAsync(context, StatusCodes.Status413PayloadTooLarge, "limitExceeded", "The request is too large.").ConfigureAwait(false);
             return null;
         }
@@ -55,7 +56,7 @@ internal static class CanopyRemoteHttp {
         var chunk = new byte[16384];
         int read;
         while ((read = await request.Body.ReadAsync(chunk, 0, chunk.Length, token).ConfigureAwait(false)) > 0) {
-            if (buffer.Length + read > limits.MaxRequestBytes) {
+            if (buffer.Length + read > maximum) {
                 await WriteErrorAsync(context, StatusCodes.Status413PayloadTooLarge, "limitExceeded", "The request is too large.").ConfigureAwait(false);
                 return null;
             }

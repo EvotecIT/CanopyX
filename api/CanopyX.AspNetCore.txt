@@ -1,0 +1,25 @@
+# Public API of CanopyX.AspNetCore, checked by the API tests. Regenerate with CANOPYX_API_UPDATE=1 after an intended change.
+CanopyX.AspNetCore.CanopyRemoteEndpointExtensions : static class
+CanopyX.AspNetCore.CanopyRemoteEndpointExtensions.static Microsoft.AspNetCore.Routing.RouteGroupBuilder MapCanopyRemote(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, System.String pattern, CanopyX.Data.CanopyDataSchema schema, System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.ICanopyDataProvider> provider, System.Action<CanopyX.AspNetCore.CanopyRemoteEndpointOptions>? configure = null)
+CanopyX.AspNetCore.CanopyRemoteEndpointExtensions.static Microsoft.AspNetCore.Routing.RouteGroupBuilder MapCanopyRemote<T>(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, System.String pattern, System.Func<Microsoft.AspNetCore.Http.HttpContext, System.Linq.IQueryable<T>> query, CanopyX.Data.CanopyColumnMap<T> map, System.Action<CanopyX.AspNetCore.CanopyRemoteEndpointOptions>? configure = null)
+CanopyX.AspNetCore.CanopyRemoteEndpointExtensions.static Microsoft.AspNetCore.Routing.RouteGroupBuilder MapCanopyRemote<T>(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, System.String pattern, System.Func<Microsoft.AspNetCore.Http.HttpContext, System.Linq.IQueryable<T>> query, CanopyX.Data.CanopyRecordMap<T> records, System.Action<CanopyX.AspNetCore.CanopyRemoteEndpointOptions>? configure = null)
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions : sealed class
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions..ctor()
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.CanopyX.Data.CanopyQueryOptions Query { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.CanopyX.Data.CanopyRemoteLimits Limits { get; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.CanopyX.Data.CanopyRemoteOptions Remote { get; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.Action<Microsoft.AspNetCore.Builder.IEndpointConventionBuilder>? RecordEndpoint { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.Boolean AllowAnonymous { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.Boolean AllowAnonymousWrites { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.Boolean AllowGetQueries { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.ICanopyDataWriter>? Writer { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.ICanopyRecordProvider>? Records { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.Func<Microsoft.AspNetCore.Http.HttpContext, System.String, System.Boolean>? CanReadRecordField { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.String? AuthorizationPolicy { get; set; }
+CanopyX.AspNetCore.CanopyRemoteEndpointOptions.System.String? WriteAuthorizationPolicy { get; set; }
+CanopyX.AspNetCore.CanopyRemoteScript : static class
+CanopyX.AspNetCore.CanopyRemoteScript.static System.String Element(CanopyX.Data.CanopyDataSchema schema, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
+CanopyX.AspNetCore.CanopyRemoteScript.static System.String Element(CanopyX.Data.CanopyRecordSchema records, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
+CanopyX.AspNetCore.CanopyRemoteScript.static System.String ElementWithNonce(CanopyX.Data.CanopyDataSchema schema, System.String endpoint, System.String? nonce, params System.ValueTuple<System.String, System.String>[]? exportFormats)
+CanopyX.AspNetCore.CanopyRemoteScript.static System.String Script(CanopyX.Data.CanopyDataSchema schema, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
+CanopyX.AspNetCore.CanopyRemoteScript.static System.String Script(CanopyX.Data.CanopyRecordSchema records, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)

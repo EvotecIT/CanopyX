@@ -1,5 +1,6 @@
 using System;
 using CanopyX.Data;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
 namespace CanopyX.AspNetCore;
@@ -37,6 +38,28 @@ public sealed class CanopyRemoteEndpointOptions {
     /// <summary>Gets or sets whether the commit route needs no write policy. Default false; meant for local samples only.
     /// The route still requires the read authorization unless <see cref="AllowAnonymous"/> is set too.</summary>
     public bool AllowAnonymousWrites { get; set; }
+
+    /// <summary>Gets or sets the provider that loads record details, created per request; null maps no record route.</summary>
+    /// <remarks>
+    /// With records, <c>POST record</c> answers <c>gridRecordQuery</c> documents under the same authorization as the reads, with
+    /// bodies bounded by <see cref="CanopyRemoteLimits.MaxRecordRequestBytes"/>. The
+    /// provider must find records only among those the caller may read, as the query callback does: the
+    /// <c>MapCanopyRemote</c> overload that takes a <see cref="CanopyRecordMap{T}"/> sets this to the grid's own query callback.
+    /// </remarks>
+    public Func<HttpContext, ICanopyRecordProvider>? Records { get; set; }
+
+    /// <summary>Gets or sets the per-request read check of record fields and columns' drawer values (by identity); false leaves
+    /// the field out of the answer, as an empty field. Null serves every mapped field.</summary>
+    /// <remarks>It hides whole fields only, never single collection rows, timeline events or changes: restrict those in the
+    /// field's mapping. Grid columns, and so the record's row, follow the column map as page rows do: leave out of the map what
+    /// a caller must not read.</remarks>
+    public Func<HttpContext, string, bool>? CanReadRecordField { get; set; }
+
+    /// <summary>Gets or sets conventions applied to the record route alone, for example
+    /// <c>route =&gt; route.RequireRateLimiting("records")</c>; conventions on the returned group apply to every route.</summary>
+    /// <remarks>Rate-limit the record route in production: each request builds a bounded answer on demand (a key lookup plus
+    /// a count and a window per collection), so an unthrottled caller can make the server build many of them.</remarks>
+    public Action<IEndpointConventionBuilder>? RecordEndpoint { get; set; }
 
     /// <summary>Gets or sets whether a <c>GET</c> route also answers queries given in the query string. Default false.</summary>
     /// <remarks>Query strings end up in access logs, proxies and referrers, so search text and filters travel in POST bodies by default.</remarks>
