@@ -53,6 +53,7 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
         var customRecords = Assets.Records(customColumns);
         _app.MapCanopyRemote("/api/custom", _ => _assets.AsQueryable(), customColumns, options => {
             options.AllowAnonymous = true;
+            options.Limits.MaxRecordPageSize = 4;
             options.Query.Revision = _ => new ValueTask<string>(_customRevision);
             options.Records = http => new Custom(customRecords.Schema, request => {
                 var kind = http.Request.Headers["X-Test-Failure"].ToString();
@@ -64,6 +65,11 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
                 else if (kind == "collection-total") record.Fields["parts"] = CanopyCell.Collection(new CanopyRecordList {
                     Columns = { new CanopyColumn("name", "Name") },
                     Rows = { new CanopyGridRow("part-1") { Cells = { ["name"] = "part" } } }
+                });
+                else if (kind == "collection-default" || kind == "collection-window") record.Fields["parts"] = CanopyCell.Collection(new CanopyRecordList {
+                    Total = 3, PageSize = kind == "collection-window" ? 4 : null,
+                    Columns = { new CanopyColumn("name", "Name") },
+                    Rows = { new CanopyGridRow("part-" + request.Offset) { Cells = { ["name"] = "part" } } }
                 });
                 else {
                     var cell = new CanopyCell();
@@ -213,6 +219,37 @@ public sealed class RecordEndpointTests : IAsyncLifetime {
         Assert.DoesNotContain("Structured values", text);
         Assert.DoesNotContain("Exception", text);
         Assert.DoesNotContain("   at ", text);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CollectionWindow_RejectsAnOversizedDefaultAndAcceptsBoundedLoadMore(bool explicitWindow) {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/custom/record") {
+            Content = new StringContent(Assets.Query("1"), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Add("X-Test-Failure", explicitWindow ? "collection-window" : "collection-default");
+        using var response = await _client.SendAsync(request);
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        if (!explicitWindow) {
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.Equal("serverError", document.RootElement.GetProperty("error").GetString());
+            Assert.False(document.RootElement.TryGetProperty("fields", out _));
+            return;
+        }
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var list = document.RootElement.GetProperty("fields").GetProperty("parts").GetProperty("records");
+        Assert.Equal(3, list.GetProperty("total").GetInt32());
+        var limit = list.GetProperty("pageSize").GetInt32();
+        Assert.Equal(4, limit);
+        using var more = new HttpRequestMessage(HttpMethod.Post, "/api/custom/record") {
+            Content = new StringContent(Assets.Query("1", ",\"field\":\"parts\",\"offset\":1,\"limit\":" + limit), Encoding.UTF8, "application/json")
+        };
+        more.Headers.Add("X-Test-Failure", "collection-window");
+        using var pageResponse = await _client.SendAsync(more);
+        Assert.Equal(HttpStatusCode.OK, pageResponse.StatusCode);
+        using var page = JsonDocument.Parse(await pageResponse.Content.ReadAsStringAsync());
+        Assert.Equal("part-1", page.RootElement.GetProperty("fields").GetProperty("parts").GetProperty("records").GetProperty("rows")[0].GetProperty("id").GetString());
     }
 
     [Fact]

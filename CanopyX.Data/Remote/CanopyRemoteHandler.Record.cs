@@ -39,7 +39,7 @@ public sealed partial class CanopyRemoteHandler {
     /// that is missing, outside the caller's scope, or whose identity cannot be a key answers alike with
     /// <see cref="CanopyRequestError.RecordNotFound"/>. The provider's answer is checked: a field or drawer value that was not
     /// asked for (including fields on its returned parent row), a collection without its list or total, more collection rows
-    /// or items than allowed, or a row of another record fails the request as a server error
+    /// or items than allowed, a collection page size whose explicit or default value exceeds the endpoint's limit, or a row of another record fails the request as a server error
     /// instead of reaching the caller. Text longer than <see cref="CanopyRecordRequest.MaxTextLength"/> is then shortened, ellipsis
     /// included, to that length whatever the provider (identities, link keys, trusted HTML and the record's row never are). An answer larger
     /// than <see cref="CanopyRemoteLimits.MaxRecordBytes"/> is refused.
@@ -105,5 +105,5 @@ public sealed partial class CanopyRemoteHandler {
 
     /// <summary>A collection whose total covers its rows and whose page size (what Load more asks for) the endpoint accepts.</summary>
     private static bool Bounded(CanopyRecordList list, int maxPageSize) =>
-        (list.Total == null || list.Total >= list.Rows.Count) && (list.PageSize == null || list.PageSize <= maxPageSize);
+        (list.Total == null || list.Total >= list.Rows.Count) && (list.PageSize ?? 50) <= maxPageSize;
 }

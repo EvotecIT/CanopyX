@@ -79,9 +79,49 @@ public sealed class RecordProviderAnswerTests {
         return CanopyCell.Collection(list);
     }
 
-    private static CanopyRemoteHandler Handler(Func<CanopyRecordRequest, CanopyGridRecord> answer) {
+    [Theory]
+    [InlineData("whole", null, 4, false)]
+    [InlineData("parent", null, 4, false)]
+    [InlineData("page", null, 4, false)]
+    [InlineData("whole", 4, 4, true)]
+    [InlineData("parent", 4, 4, true)]
+    [InlineData("page", 4, 4, true)]
+    [InlineData("whole", null, 50, true)]
+    [InlineData("parent", null, 50, true)]
+    [InlineData("page", null, 50, true)]
+    public async Task CollectionPageSize_MustFitTheEndpointIncludingItsImplicitDefault(string location, int? pageSize, int maximum, bool accepted) {
+        var options = new CanopyRemoteOptions();
+        options.Limits.MaxRecordPageSize = maximum;
+        var handler = Handler(request => {
+            var cell = Rows(request.Offset == 0 ? 1 : 2, 3, request.Offset);
+            cell.Records!.PageSize = pageSize;
+            var record = new CanopyGridRecord(request.Id);
+            if (location == "parent" && !request.IsPage) record.Row = new CanopyGridRow(request.Id) { Fields = { ["parts"] = cell } };
+            else record.Fields["parts"] = cell;
+            return record;
+        }, options);
+        var extra = location == "parent" ? ",\"row\":true" : location == "page" ? ",\"field\":\"parts\",\"limit\":4" : "";
+        var query = Assets.Query("1", extra);
+        if (!accepted) {
+            // The browser's omitted-pageSize default would make its normal follow-up exceed this endpoint.
+            var error = await Assert.ThrowsAsync<CanopyRequestException>(() => handler.RecordAsync(Assets.Query("1", ",\"field\":\"parts\",\"offset\":1,\"limit\":50")));
+            Assert.Equal(CanopyRequestError.LimitExceeded, error.Error);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => handler.RecordAsync(query));
+            return;
+        }
+        using var document = JsonDocument.Parse(await handler.RecordAsync(query));
+        var fields = location == "parent" ? document.RootElement.GetProperty("row").GetProperty("fields") : document.RootElement.GetProperty("fields");
+        var list = fields.GetProperty("parts").GetProperty("records");
+        Assert.Equal(3, list.GetProperty("total").GetInt32());
+        Assert.Single(list.GetProperty("rows").EnumerateArray());
+        var limit = list.TryGetProperty("pageSize", out var size) ? size.GetInt32() : 50;
+        using var page = JsonDocument.Parse(await handler.RecordAsync(Assets.Query("1", ",\"field\":\"parts\",\"offset\":1,\"limit\":" + limit)));
+        Assert.Equal(new[] { "part-1", "part-2" }, page.RootElement.GetProperty("fields").GetProperty("parts").GetProperty("records").GetProperty("rows").EnumerateArray().Select(row => row.GetProperty("id").GetString()));
+    }
+
+    private static CanopyRemoteHandler Handler(Func<CanopyRecordRequest, CanopyGridRecord> answer, CanopyRemoteOptions? options = null) {
         var records = Assets.Records(Assets.Columns(Assets.View()));
-        return Assets.Handler(records, new Custom(records.Schema, answer));
+        return Assets.Handler(records, new Custom(records.Schema, answer), options);
     }
 
     private sealed class Custom : ICanopyRecordProvider {
