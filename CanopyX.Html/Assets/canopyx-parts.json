@@ -301,7 +301,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "932d946c362d03c2",
+      "version": "bcc06276c7933af6",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
