@@ -234,12 +234,12 @@ for (const depth of [1, 2]) test(`phone group totals use cell navigation and pre
   await expect(visibleSummary).toBeFocused();
   await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Order");
   await expect(dialog.locator("pre")).toHaveText("Orders: 48");
-  await page.keyboard.press("Escape"); await expect(visibleSummary).toBeFocused();
+  await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(visibleSummary).toBeFocused();
   await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
   const summary = page.locator(".cx-summary-row .cx-hidden-aggregates");
   await expect(summary).toBeFocused();
   await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Query totals");
-  await page.keyboard.press("Escape"); await expect(summary).toBeFocused();
+  await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(summary).toBeFocused();
 });
 
 test("group controls finish held pointer actions across a public refresh", async ({ page }) => {
