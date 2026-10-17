@@ -121,7 +121,7 @@ test("numeric value-list facets already share formatted labels and raw selection
 test("aggregate overrides and count defaults use the current shared heading and phone summary helper", async ({ page }, testInfo) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   const view = definition();
-  view.columns.splice(1, 0, { id: "category", title: "Category", kind: "text", width: 140, sortable: true });
+  view.columns.splice(1, 0, { id: "category", title: "Category", kind: "text", width: 140, sortable: true, priority: "optional" });
   view.columns[2].format = { maximumFractionDigits: 0, suffix: "%" };
   view.reporting = { grouping: { column: "category", direction: "asc" }, aggregates: [
     { id: "sum", column: "amount", operation: "sum", label: "Total amount" },
@@ -137,6 +137,10 @@ test("aggregate overrides and count defaults use the current shared heading and 
   await expect(first).toContainText("count 2"); await expect(first).toContainText("distinct 2");
   await expect(first).toContainText("med 15 ms");
   await expect(first).toHaveAttribute("title", /Total amount: 30%.*Average amount: \$15.00.*Amounts present: 2.*Distinct amounts: 2.*Median amount: 15 ms/);
+  await page.evaluate(api + ".setSelection(['r0','r1'])");
+  await expect(page.locator(".cx-grid-status .agg")).toHaveText("Amount: 30%");
+  await expect(page.locator(".cx-grid-status .agg span")).toHaveAttribute("title", /Average: 15%/);
+  await page.evaluate(api + ".clearSelection()");
   if (process.env.CANOPYX_EVIDENCE && testInfo.project.name === "chromium") {
     fs.mkdirSync(process.env.CANOPYX_EVIDENCE, { recursive: true });
     for (const theme of ["light", "dark"]) for (const width of [1440, 390]) {
@@ -147,7 +151,10 @@ test("aggregate overrides and count defaults use the current shared heading and 
       await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, "number-formats-" + width + "-" + theme + ".png"), fullPage: true });
     }
   }
-  await page.setViewportSize({ width: 390, height: 844 }); await nextFrames(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.locator("[data-canopyx-host]").evaluate(element => element.classList.contains("cx-phone"))).toBe(true);
+  await expect(page.locator('.cx-hcell[data-cx-column="amount"]')).toBeVisible();
+  await nextFrames(page);
   const heading = page.locator(".cx-grid-group").first(), phone = heading.locator(".cx-aggregate-button");
   await expect(phone).toContainText("avg $15.00");
   expect(await page.locator(".cx-aggregate-button").evaluateAll(buttons => buttons.every(button => {
@@ -180,7 +187,7 @@ test("aggregate overrides and count defaults use the current shared heading and 
   await page.evaluate(api + ".setQuery({filters:[{column:'amount',operator:'ge',values:[10]}]})");
   await expect(totals).toHaveAttribute("aria-label", /Total amount: 30%.*Amounts present: 2/);
   await page.evaluate(api + ".setColumnVisible('amount',false)"); await nextFrames(page);
-  const hidden = page.locator(".cx-grid-group").first().locator(".cx-grid-group-aggregates");
+  const hidden = page.locator(".cx-grid-group").first().locator(".cx-hidden-aggregates");
   await expect(hidden).toContainText("avg $15.00"); await hidden.click();
   await expect(dialog).toContainText("Average amount: $15.00");
   await page.keyboard.press("Escape"); await expect(hidden).toBeFocused();

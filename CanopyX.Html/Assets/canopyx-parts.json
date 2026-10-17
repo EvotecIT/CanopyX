@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "22bdf42e3c0509cb",
+      "version": "99cafeec3da59ffa",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -246,7 +246,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "de59f1d61404838f",
+      "version": "d942108ffbc023b6",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [

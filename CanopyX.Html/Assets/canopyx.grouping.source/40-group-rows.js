@@ -113,9 +113,9 @@
           if (formatted.text) { parts.push(column.title + " " + formatted.text); details.push(column.title + "\n" + formatted.title); }
         }
       }
-      const previous = target.querySelector(":scope > .cx-grid-group-aggregates");
+      const previous = target.querySelector(":scope > .cx-hidden-aggregates");
       if (!parts.length) { previous?.remove(); return; }
-      const extra = previous || h("button", "cx-grid-group-aggregates"); if (!previous) extra.type = "button";
+      const extra = previous || h("button", "cx-grid-group-aggregates cx-hidden-aggregates"); if (!previous) extra.type = "button";
       extra.setAttribute("aria-haspopup", "dialog"); if (extra.textContent !== parts.join(" · ")) setText(extra, parts.join(" · "));
       extra._cxAggregateText = { title, text: details.join("\n") }; extra.title = details.join("\n");
       extra.setAttribute("aria-label", details.join(", "));

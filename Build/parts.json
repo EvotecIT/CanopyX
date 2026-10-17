@@ -43,7 +43,7 @@
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridDateInputMoment", "gridQuery", "gridQueryStart",
         "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
-        "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "fill", "announceMenu", "reportingRangeRows",
+        "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "numberText", "fill", "announceMenu", "reportingRangeRows",
         "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL"],
       "start": "const buildFilters = DataGrid.prototype.buildGridFilters;",
       "end": "Object.assign(DataGrid.prototype, COLUMNS_MENU, {buildGridFilters:buildFilters});\ncontext.GRID_REPORTING?.installFilters?.({gridDateInput});",
