@@ -382,6 +382,7 @@ CanopyX.CanopyColumn.CanopyX.CanopyCellEditor? Editor { get; set; }
 CanopyX.CanopyColumn.CanopyX.CanopyCellValidation? Validation { get; set; }
 CanopyX.CanopyColumn.CanopyX.CanopyColumnKind Kind { get; set; }
 CanopyX.CanopyColumn.CanopyX.CanopyColumnSizing Sizing { get; set; }
+CanopyX.CanopyColumn.CanopyX.CanopyGridNumberFormat? Format { get; set; }
 CanopyX.CanopyColumn.CanopyX.CanopyGridOrdering? Ordering { get; set; }
 CanopyX.CanopyColumn.CanopyX.CanopyGridPresenter? Presenter { get; set; }
 CanopyX.CanopyColumn.System.Boolean Aggregatable { get; set; }
@@ -706,8 +707,11 @@ CanopyX.CanopyFormatValueType.const CanopyX.CanopyFormatValueType Number = 2
 CanopyX.CanopyFormatValueType.const CanopyX.CanopyFormatValueType Text = 1
 CanopyX.CanopyGridAggregate : sealed class
 CanopyX.CanopyGridAggregate..ctor(System.String id, System.String column, CanopyX.CanopyGridAggregateOperation operation, System.String label)
+CanopyX.CanopyGridAggregate..ctor(System.String id, System.String column, CanopyX.CanopyGridAggregateOperation operation, System.String label, CanopyX.CanopyGridNumberFormat? format)
 CanopyX.CanopyGridAggregate..ctor(System.String id, System.String column, System.String customOperation, System.String label)
+CanopyX.CanopyGridAggregate..ctor(System.String id, System.String column, System.String customOperation, System.String label, CanopyX.CanopyGridNumberFormat? format)
 CanopyX.CanopyGridAggregate.CanopyX.CanopyGridAggregateOperation Operation { get; }
+CanopyX.CanopyGridAggregate.CanopyX.CanopyGridNumberFormat? Format { get; }
 CanopyX.CanopyGridAggregate.System.String Column { get; }
 CanopyX.CanopyGridAggregate.System.String Id { get; }
 CanopyX.CanopyGridAggregate.System.String Label { get; }
@@ -861,6 +865,14 @@ CanopyX.CanopyGridMapper<T>.CanopyX.CanopyGridRow MapRow(T record)
 CanopyX.CanopyGridNavigation : enum System.Int32
 CanopyX.CanopyGridNavigation.const CanopyX.CanopyGridNavigation Cursor = 1
 CanopyX.CanopyGridNavigation.const CanopyX.CanopyGridNavigation Offset = 0
+CanopyX.CanopyGridNumberFormat : sealed class
+CanopyX.CanopyGridNumberFormat..ctor(System.Int32 minimumFractionDigits = 0, System.Int32 maximumFractionDigits = 3, System.String? prefix = null, System.String? suffix = null)
+CanopyX.CanopyGridNumberFormat.System.Int32 MaximumFractionDigits { get; }
+CanopyX.CanopyGridNumberFormat.System.Int32 MinimumFractionDigits { get; }
+CanopyX.CanopyGridNumberFormat.System.String Format(System.Double value)
+CanopyX.CanopyGridNumberFormat.System.String? Prefix { get; }
+CanopyX.CanopyGridNumberFormat.System.String? Suffix { get; }
+CanopyX.CanopyGridNumberFormat.static CanopyX.CanopyGridNumberFormat Fixed(System.Int32 fractionDigits, System.String? prefix = null, System.String? suffix = null)
 CanopyX.CanopyGridOrdering : sealed class (System.Collections.Generic.IComparer<System.String>)
 CanopyX.CanopyGridOrdering..ctor(CanopyX.CanopyGridTextOrder order = Ordinal, System.Collections.Generic.IEnumerable<System.String>? categories = null)
 CanopyX.CanopyGridOrdering.CanopyX.CanopyGridTextOrder Order { get; }
@@ -1206,6 +1218,7 @@ CanopyX.CanopyLabels.System.String CalendarNext { get; set; }
 CanopyX.CanopyLabels.System.String CalendarNoEvents { get; set; }
 CanopyX.CanopyLabels.System.String CalendarNotAllowed { get; set; }
 CanopyX.CanopyLabels.System.String CalendarNow { get; set; }
+CanopyX.CanopyLabels.System.String CalendarOccurrenceReadOnly { get; set; }
 CanopyX.CanopyLabels.System.String CalendarOccurrenceTitle { get; set; }
 CanopyX.CanopyLabels.System.String CalendarOpen { get; set; }
 CanopyX.CanopyLabels.System.String CalendarOutsideHours { get; set; }

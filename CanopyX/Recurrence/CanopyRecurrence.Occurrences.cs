@@ -8,7 +8,7 @@ public sealed partial class CanopyRecurrence {
     /// Expands the series that starts at <paramref name="start"/>: its occurrences in order, as moments with the series' time zone
     /// offset, from the series start (which always counts first) to the end of the rule, or within a range.
     /// </summary>
-    /// <param name="start">The series start: an unspecified time is a wall time in <paramref name="zone"/>; a UTC or local time is a moment.</param>
+    /// <param name="start">The series start: an unspecified time is a wall time in <paramref name="zone"/>; a UTC or local time is a moment whose exact instant is kept.</param>
     /// <param name="zone">The series' time zone, whose wall-clock time the occurrences keep; UTC for all-day series.</param>
     /// <param name="from">The first moment of the range: occurrences that start earlier are left out (they still count toward <see cref="Count"/>);
     /// to keep occurrences that are still running at a range's start, as the browser shows them, pass that start minus the occurrences' duration. Null for none.</param>
@@ -23,11 +23,11 @@ public sealed partial class CanopyRecurrence {
     /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
     public IEnumerable<DateTimeOffset> Occurrences(DateTime start, TimeZoneInfo zone, DateTimeOffset? from = null, DateTimeOffset? to = null, string? exceptions = null) {
         if (zone == null) throw new ArgumentNullException(nameof(zone));
-        return Occurrences(Wall(start, zone), zone, from, to, exceptions, nameof(to));
+        return Occurrences(Wall(start, zone), Moment(start, zone), zone, from, to, exceptions, nameof(to));
     }
 
     /// <summary>Expands the series that starts at a moment, as <see cref="Occurrences(DateTime, TimeZoneInfo, DateTimeOffset?, DateTimeOffset?, string?)"/> does.</summary>
-    /// <param name="start">The series start; its wall-clock time in <paramref name="zone"/> is the time every occurrence keeps.</param>
+    /// <param name="start">The series start, whose exact instant is kept; its wall-clock time in <paramref name="zone"/> is the time later occurrences keep.</param>
     /// <param name="zone">The series' time zone; UTC for all-day series.</param>
     /// <param name="from">The first moment of the range, or null.</param>
     /// <param name="to">The end of the range, exclusive, or null.</param>
@@ -38,14 +38,15 @@ public sealed partial class CanopyRecurrence {
     /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
     public IEnumerable<DateTimeOffset> Occurrences(DateTimeOffset start, TimeZoneInfo zone, DateTimeOffset? from = null, DateTimeOffset? to = null, string? exceptions = null) {
         if (zone == null) throw new ArgumentNullException(nameof(zone));
-        return Occurrences(TimeZoneInfo.ConvertTime(start, zone).DateTime, zone, from, to, exceptions, nameof(to));
+        var first = TimeZoneInfo.ConvertTime(start, zone);
+        return Occurrences(first.DateTime, first, zone, from, to, exceptions, nameof(to));
     }
 
     /// <summary>
     /// Returns the end of the series' last occurrence (its start plus <paramref name="duration"/>), for a host's <c>seriesEnd</c>
     /// column, which lets a server find the series that reach into a range; null for a series without an end.
     /// </summary>
-    /// <param name="start">The series start: an unspecified time is a wall time in <paramref name="zone"/>; a UTC or local time is a moment.</param>
+    /// <param name="start">The series start: an unspecified time is a wall time in <paramref name="zone"/>; a UTC or local time is a moment whose exact instant is kept.</param>
     /// <param name="duration">How long each occurrence lasts; zero for markers.</param>
     /// <param name="zone">The series' time zone; UTC for all-day series.</param>
     /// <param name="exceptions">Excluded occurrences, as a calendar's <c>exceptions</c> column holds them, or null.</param>
@@ -55,7 +56,7 @@ public sealed partial class CanopyRecurrence {
     /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
     public DateTimeOffset? SeriesEnd(DateTime start, TimeSpan duration, TimeZoneInfo zone, string? exceptions = null) {
         if (zone == null) throw new ArgumentNullException(nameof(zone));
-        return LastEnd(Wall(start, zone), duration, zone, exceptions);
+        return LastEnd(Wall(start, zone), Moment(start, zone), duration, zone, exceptions);
     }
 
     /// <summary>Returns the end of the last occurrence of the series that starts at a moment, as <see cref="SeriesEnd(DateTime, TimeSpan, TimeZoneInfo, string?)"/> does.</summary>
@@ -69,21 +70,22 @@ public sealed partial class CanopyRecurrence {
     /// <exception cref="FormatException"><paramref name="exceptions"/> holds something that is neither an ISO instant nor a date.</exception>
     public DateTimeOffset? SeriesEnd(DateTimeOffset start, TimeSpan duration, TimeZoneInfo zone, string? exceptions = null) {
         if (zone == null) throw new ArgumentNullException(nameof(zone));
-        return LastEnd(TimeZoneInfo.ConvertTime(start, zone).DateTime, duration, zone, exceptions);
+        var first = TimeZoneInfo.ConvertTime(start, zone);
+        return LastEnd(first.DateTime, first, duration, zone, exceptions);
     }
 
-    private DateTimeOffset? LastEnd(DateTime wallStart, TimeSpan duration, TimeZoneInfo zone, string? exceptions) {
+    private DateTimeOffset? LastEnd(DateTime wallStart, DateTimeOffset? first, TimeSpan duration, TimeZoneInfo zone, string? exceptions) {
         if (duration < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(duration), duration, "A duration cannot be negative.");
         if (!_count.HasValue && !_until.HasValue) return null;
         DateTimeOffset? last = null;
-        foreach (var occurrence in Occurrences(wallStart, zone, null, null, exceptions, nameof(exceptions))) last = occurrence;
-        var end = (last ?? CanopyRecurrenceZone.Resolve(wallStart, zone)).Add(duration);
+        foreach (var occurrence in Occurrences(wallStart, first, zone, null, null, exceptions, nameof(exceptions))) last = occurrence;
+        var end = (last ?? first ?? CanopyRecurrenceZone.Resolve(wallStart, zone)).Add(duration);
         return TimeZoneInfo.ConvertTime(end, zone);
     }
 
-    private IEnumerable<DateTimeOffset> Occurrences(DateTime wallStart, TimeZoneInfo zone, DateTimeOffset? from, DateTimeOffset? to, string? exceptions, string parameter) {
+    private IEnumerable<DateTimeOffset> Occurrences(DateTime wallStart, DateTimeOffset? first, TimeZoneInfo zone, DateTimeOffset? from, DateTimeOffset? to, string? exceptions, string parameter) {
         if (from.HasValue && to.HasValue && to.Value < from.Value) throw new ArgumentException("The end of the range is before its start.", parameter);
-        return Expand(DateTime.SpecifyKind(wallStart, DateTimeKind.Unspecified), zone, from, to, CanopyRecurrenceExclusions.Parse(exceptions, zone));
+        return Expand(DateTime.SpecifyKind(wallStart, DateTimeKind.Unspecified), first, zone, from, to, CanopyRecurrenceExclusions.Parse(exceptions, zone));
     }
 
     private static DateTime Wall(DateTime start, TimeZoneInfo zone) => start.Kind switch {
@@ -92,7 +94,11 @@ public sealed partial class CanopyRecurrence {
         _ => start
     };
 
-    private IEnumerable<DateTimeOffset> Expand(DateTime wallStart, TimeZoneInfo zone, DateTimeOffset? from, DateTimeOffset? to, CanopyRecurrenceExclusions exclusions) {
+    /// <summary>An explicitly supplied moment keeps its identity, including the second occurrence of a repeated wall time.</summary>
+    private static DateTimeOffset? Moment(DateTime start, TimeZoneInfo zone) => start.Kind == DateTimeKind.Unspecified
+        ? (DateTimeOffset?)null : TimeZoneInfo.ConvertTime(new DateTimeOffset(start), zone);
+
+    private IEnumerable<DateTimeOffset> Expand(DateTime wallStart, DateTimeOffset? first, TimeZoneInfo zone, DateTimeOffset? from, DateTimeOffset? to, CanopyRecurrenceExclusions exclusions) {
         var time = wallStart.TimeOfDay;
         // No period after this wall date can hold an occurrence that is still returned; bounds near the end of the calendar clamp.
         DateTime? lastDate = to.HasValue && to.Value < Far ? NextDay(TimeZoneInfo.ConvertTime(to.Value, zone).Date) : (DateTime?)null;
@@ -113,7 +119,7 @@ public sealed partial class CanopyRecurrence {
                 if (_count.HasValue && ++generated >= _count.Value) yield break;
                 continue;
             }
-            var occurrence = CanopyRecurrenceZone.Resolve(date + time, zone);
+            var occurrence = first.HasValue && date == wallStart.Date ? first.Value : CanopyRecurrenceZone.Resolve(date + time, zone);
             if (untilInstant.HasValue && occurrence > untilInstant.Value) yield break;
             generated++;
             if (to.HasValue && occurrence >= to.Value) yield break;

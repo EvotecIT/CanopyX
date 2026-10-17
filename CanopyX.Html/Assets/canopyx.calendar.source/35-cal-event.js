@@ -27,6 +27,13 @@
       return parts.filter(Boolean).join(", ");
     },
 
+    /** Releases status resources in a replaced container, or the entire paint before repaint and grid destruction. */
+    calDisposeEventRenderers(container) {
+      const slots = this.calHostSlots;
+      if (!container) this.calHostSlots = null;
+      for (const slot of slots || []) if (!container || container.contains(slot.content)) { slots.delete(slot); disposeHostSlot(slot); }
+    },
+
     /** A drawn event: kind is "bar" (a day row), "chip" (a month line), "block" (a time column), "item" (agenda) or "lane" (timeline). */
     calEventElement(event, kind) {
       const element = h("button", "cx-cal-ev cx-cal-ev-" + kind + (event.marker ? " cx-cal-marker" : "") + (event.allDay ? " cx-cal-allday" : ""));
@@ -52,9 +59,16 @@
         if (event.subtitle) { const subtitle = h("span", "cx-cal-ev-sub"); setText(subtitle, event.subtitle); element.appendChild(subtitle); }
         const column = this.cal.status;
         if (column && (kind !== "lane") && cellValue(event.row.cells[column.id]) != null) {
-          const status = h("span", "cx-cal-ev-status" + (event.base?.toneFromStatus ? " cx-cal-status-tone" : ""));
-          if (column.render) { try { column.render(event.row, status, { column: column.id, index: 0, signal: this.lifetime.signal, onDispose() {} }); } catch (error) { this.emit("error", { error }); } }
-          else setText(status, this.calStatusText(event));
+          const statusClass = "cx-cal-ev-status" + (event.base?.toneFromStatus ? " cx-cal-status-tone" : "");
+          let status = h("span", statusClass);
+          let drawn = false;
+          if (column.render) {
+            const slot = { content: status }, context = new HostCellContext(slot, column.id, undefined, undefined, this.columns.indexOf(column));
+            (this.calHostSlots ||= new Set()).add(slot);
+            try { drawn = column.render(event.row, status, context) === true; }
+            catch (error) { disposeHostSlot(slot); this.calHostSlots.delete(slot); status = h("span", statusClass); this.emit("error", { error }); }
+          }
+          if (!drawn) { const text = h("span"); setText(text, this.calStatusText(event)); status.appendChild(text); }
           element.appendChild(status);
         }
       }

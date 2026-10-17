@@ -1,8 +1,9 @@
   // ---------- flat-grid wire boundaries ----------
   function gridQueryStart(query, patch) { return { ...query, ...patch, offset: 0, cursor: undefined, revision: undefined }; }
   function gridNumberFormat(format) {
-    const minimum = format?.minimumFractionDigits ?? 0, maximum = format?.maximumFractionDigits ?? 10;
+    const minimum = format?.minimumFractionDigits ?? 0, maximum = format?.maximumFractionDigits ?? 3;
     if (!format || typeof format !== "object" || Array.isArray(format) || ![minimum, maximum].every(digits => Number.isInteger(digits) && digits >= 0 && digits <= 10) || minimum > maximum ||
+        Object.keys(format).some(key => !["minimumFractionDigits", "maximumFractionDigits", "prefix", "suffix"].includes(key)) ||
         [format.prefix, format.suffix].some(text => text !== undefined && (typeof text !== "string" || !text || text.length > 16))) throw new Error("CanopyX: invalid number format.");
   }
 

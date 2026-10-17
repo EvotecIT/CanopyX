@@ -4,8 +4,8 @@
   // again reads nothing twice. An occurrence is what a view draws: one per plain event, one per expanded instance of a series.
   // All-day events are dates: the yyyy-MM-dd their start and end values are written with, the end exclusive at midnight (an
   // iCalendar DTEND), so a password that expires on 2026-10-16 shows on the 16th in every zone. A missing end, or an end before
-  // the start, makes a zero-length marker; an all-day event without an end lasts its start day. A series expands in the
-  // calendar's fixed series zone (its IANA timeZone, else UTC), never in the zone a reader happens to display.
+  // the start, makes a zero-length marker; an all-day event without an end lasts its start day. Native series expand in the
+  // calendar's fixed series zone (its IANA timeZone, else UTC); imported series keep their own zone, independent of display.
   const CAL_BASES = new WeakMap(), CAL_UTC = () => calZone("utc"), CAL_TONE_NAME = /^[a-z][a-z0-9-]{0,31}$/;
   /** The recurrence part's functions (calRule, calExpand, calSeriesEnd, calExceptions) once it is in; it loads before records are read. */
   const calRec = () => DataGrid.prototype.calKit.calRule ? DataGrid.prototype.calKit : null;
@@ -40,10 +40,11 @@
         source: fields ? row.external : cal.source ? calResourceOf(read(cal.source)) : null, external: !!fields, toneFromStatus: !ownTone && !fields,
         resource: cal.resource ? calResourceOf(read(cal.resource)) : null,
         background: cal.display ? String(read(cal.display) || "").toLowerCase() === "background" : false, rule: null, ruleError: null,
+        seriesZone: allDay ? CAL_UTC() : fields?.seriesZone ? calZone(fields.seriesZone) : view.calSeriesZone,
         series: fields ? fields.series || null : cal.series ? read(cal.series) || null : null, recurrenceId: calInstant(fields ? fields.recurrenceId : read(cal.recurrenceId)) });
       const text = value("recurrence");
       if (typeof text === "string" && text.trim() && !base.series) {
-        try { const rec = calRec(); if (!rec) throw new Error("CanopyX: the calendar recurrence part is not loaded."); base.rule = rec.calRule(text); Object.assign(base, rec.calExceptions(value("exceptions"), allDay ? CAL_UTC() : view.calSeriesZone)); }
+        try { const rec = calRec(); if (!rec) throw new Error("CanopyX: the calendar recurrence part is not loaded."); base.rule = rec.calRule(text); Object.assign(base, rec.calExceptions(value("exceptions"), base.seriesZone)); }
         catch (error) { base.ruleError = error; }
       }
     }
@@ -62,8 +63,8 @@
     return calSafeTone(column.presenter ? gridPresenterTone(column.presenter, raw, own) : own);
   }
   /** The occurrences of a list of records that overlap [from, to), sorted by start, then the longest first, then id. */
-  function calOccurrences(view, rows, from, to) {
-    const zone = view.calSeriesZone, out = [], overrides = new Map(), bases = [], limit = view.cal.limit;
+  function calOccurrences(view, rows, from, to, metadata) {
+    const out = [], overrides = new Map([...(metadata || [])].map(([id, starts]) => [id, new Set(starts)])), bases = [], limit = view.cal.limit;
     for (const row of rows) {
       const base = calBase(view, row);
       if (!base) continue;
@@ -76,14 +77,21 @@
     for (const base of bases) {
       if (base.ruleError && !view.calRuleErrors.has(base.key)) { view.calRuleErrors.add(base.key); view.emit("error", { error: base.ruleError, id: base.key }); }
       if (!base.rule) {
-        if (calOverlaps(base.start, base.end, from, to)) out.push(calOccurrence(view, base, base.start, false));
+        const span = view.calDisplaySpan(base);
+        if (calOverlaps(span.start, span.end, from, to)) out.push(calOccurrence(view, base, base.start, false));
         continue;
       }
       const duration = base.end - base.start, moved = overrides.get(base.key), excluded = moved ? new Set([...base.excluded, ...moved]) : base.excluded;
       // Editing reads it (with calOverridden for records outside these rows): a series cannot shift without detaching them.
       base.overridden = !!moved;
-      const starts = calRec().calExpand(base.rule, base.start, duration, base.allDay ? CAL_UTC() : zone, from - (base.allDay ? CAL_DAY : 0), to + (base.allDay ? CAL_DAY : 0), excluded, base.excludedDays, limit);
-      for (const start of starts) if (calOverlaps(start, start + duration, from, to)) out.push(calOccurrence(view, base, start, true));
+      // Expand dates against the same dates in UTC, then map their presentation span to the display zone. One extra
+      // qualifying occurrence distinguishes an exactly-full result from omitted events, after exceptions and overrides.
+      const first = base.allDay ? view.calZone.day(from) * CAL_DAY : from, last = base.allDay ? (view.calZone.day(to - 1) + 1) * CAL_DAY : to;
+      const starts = calRec().calExpand(base.rule, base.start, duration, base.seriesZone, first, last, excluded, base.excludedDays, limit + 1);
+      for (const start of starts) {
+        const event = calOccurrence(view, base, start, true), span = view.calDisplaySpan(event);
+        if (calOverlaps(span.start, span.end, from, to)) out.push(event);
+      }
     }
     out.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     if (out.length > limit) { out.length = limit; out.truncated = true; }

@@ -82,6 +82,7 @@
             if (day >= first && day <= last) {
               const count = counts.get(day) || 0;
               cell.tabIndex = -1; cell.dataset.cxDay = String(day); setText(cell, fmt.dayNumber(day));
+              if (!this.calAllowsSpan(day * CAL_DAY, (day + 1) * CAL_DAY, true)) { cell.classList.add("cx-cal-invalid"); cell.setAttribute("aria-disabled", "true"); }
               if (count) cell.dataset.cxHeat = String(Math.min(4, Math.ceil(count / most * 4)));
               if (day === today) { cell.classList.add("cx-cal-today"); cell.setAttribute("aria-current", "date"); }
               cell.setAttribute("aria-label", this.calDayName(day, count, this.calBackgroundsOn(day)));
@@ -125,6 +126,7 @@
     },
     calKeyYear(event, cell) {
       const day = Number(cell.dataset.cxDay), key = event.key, range = this.calRange;
+      if (!this.calAllowsSpan(day * CAL_DAY, (day + 1) * CAL_DAY, true)) return;
       let next = null;
       if (key === "ArrowLeft" || key === "ArrowRight") next = day + (key === "ArrowLeft" ? -1 : 1);
       else if (key === "ArrowUp" || key === "ArrowDown") next = day + (key === "ArrowUp" ? -7 : 7);
@@ -134,6 +136,7 @@
       else if (key === "Enter") { event.preventDefault(); if (this.cal.views.includes("day")) this.calGo(day, "day", true).then(() => this.calRestoreFocus(true)); else if (this.cal.views.includes("week")) this.calGo(day, "week", true).then(() => this.calRestoreFocus(true)); return; }
       if (next === null) return;
       event.preventDefault();
+      next = this.calClampDay(next);
       if (next < range.firstDay || next > range.lastDay) { this.calGo(next, "year", next).then(() => this.calRestoreFocus(true)); return; }
       this.calFocus = { day: next, minutes: null, event: null };
       this.calRestoreFocus(true);

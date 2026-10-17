@@ -9,6 +9,7 @@
     /** Events by resource, sorted by start, with their sub-rows; background events apart. */
     tlIndexEvents() {
       const byResource = new Map(), backgrounds = new Map();
+      for (const event of this.calEvents) { const span = this.calDisplaySpan(event); event.tlStart = span.start; event.tlEnd = span.end; }
       if (this.tlSolo) return this.tlIndexSolo(backgrounds);
       for (const event of this.calEvents) {
         const target = event.background ? backgrounds : byResource, key = event.resource ?? "";
@@ -16,12 +17,12 @@
         target.get(key).push(event);
       }
       for (const list of byResource.values()) {
-        list.sort((a, b) => a.start - b.start || b.end - a.end);
+        list.sort((a, b) => a.tlStart - b.tlStart || b.tlEnd - a.tlEnd);
         const ends = [];
         for (const event of list) {
-          let lane = ends.findIndex(end => end <= event.start);
+          let lane = ends.findIndex(end => end <= event.tlStart);
           if (lane < 0) { lane = ends.length; ends.push(0); }
-          ends[lane] = Math.max(event.end, event.start + 1); event.tlLane = lane;
+          ends[lane] = Math.max(event.tlEnd, event.tlStart + 1); event.tlLane = lane;
         }
         list.lanes = Math.max(1, ends.length);
       }
@@ -30,12 +31,12 @@
     },
     /** Without resources: each row is a lane of events that do not overlap, filled first come first served. */
     tlIndexSolo(backgrounds) {
-      const byResource = new Map(), ends = [], tree = this.tlTree, events = this.calEvents.filter(event => !event.background).sort((a, b) => a.start - b.start || b.end - a.end);
+      const byResource = new Map(), ends = [], tree = this.tlTree, events = this.calEvents.filter(event => !event.background).sort((a, b) => a.tlStart - b.tlStart || b.tlEnd - a.tlEnd);
       for (const event of this.calEvents) if (event.background) { if (!backgrounds.has("")) backgrounds.set("", []); backgrounds.get("").push(event); }
       for (const event of events) {
-        let lane = ends.findIndex(end => end <= event.start);
+        let lane = ends.findIndex(end => end <= event.tlStart);
         if (lane < 0) { lane = ends.length; ends.push(0); }
-        ends[lane] = Math.max(event.end, event.start + 1);
+        ends[lane] = Math.max(event.tlEnd, event.tlStart + 1);
         const key = "lane-" + lane; event.tlLane = 0; event.tlRow = key;
         if (!byResource.has(key)) { const list = []; list.lanes = 1; byResource.set(key, list); }
         byResource.get(key).push(event);
@@ -97,6 +98,7 @@
         if (unit.x + axis.width <= left || unit.x > right) return;
         const cell = h("div", "cx-tl-cell"); cell.setAttribute("role", "gridcell"); cell.tabIndex = -1;
         cell.dataset.cxDay = String(unit.first); cell.dataset.cxUnit = String(index); cell.dataset.cxResource = id;
+        if (!this.calInValid({ firstDay: unit.first, lastDay: unit.last })) { cell.classList.add("cx-cal-invalid"); cell.setAttribute("aria-disabled", "true"); }
         cell.style.insetInlineStart = unit.x + "px"; cell.style.width = axis.width + "px";
         cell.setAttribute("aria-label", name + ", " + this.tlUnitLabel(unit));
         cells.push(cell); lane.appendChild(cell);
@@ -107,16 +109,16 @@
       const firstVisible = cells.length ? Number(cells[0].dataset.cxUnit) : 0;
       // The start of the next event in the same sub-row, so a widened short bar never covers its neighbour.
       const nextInRow = new Map(), after = new Map();
-      for (let i = events.length - 1; i >= 0; i--) { const row = Math.min(events[i].tlLane, stack - 1); nextInRow.set(events[i], after.get(row)); after.set(row, events[i].start); }
+      for (let i = events.length - 1; i >= 0; i--) { const row = Math.min(events[i].tlLane, stack - 1); nextInRow.set(events[i], after.get(row)); after.set(row, events[i].tlStart); }
       for (const event of events) {
-        if (event.end < axis.from || event.start >= axis.to) continue;
-        const x1 = axis.x(event.start), x2 = event.end > event.start ? axis.x(event.end) : x1;
+        if (event.tlEnd < axis.from || event.tlStart >= axis.to) continue;
+        const x1 = axis.x(event.tlStart), x2 = event.tlEnd > event.tlStart ? axis.x(event.tlEnd) : x1;
         if (x2 < left || x1 > right) continue;
         // A short event keeps a solid bar of TL_MIN_BAR pixels (its times stay in its name and tooltip); one too short even to
         // span a pixel is drawn as a marker.
         const span = x2 - x1, point = event.marker || span < 1;
         const element = this.calEventElement(event, "lane"), slot = Math.min(event.tlLane, stack - 1), room = nextInRow.get(event) === undefined ? Infinity : axis.x(nextInRow.get(event)) - x1 - 1, width = point ? 0 : Math.max(Math.min(span, 2), Math.min(Math.max(TL_MIN_BAR, span), room));
-        const unit = Math.max(firstVisible, axis.unitOf(event.start)), cell = cells.find(item => Number(item.dataset.cxUnit) === unit) || cells[0];
+        const unit = Math.max(firstVisible, axis.unitOf(event.tlStart)), cell = cells.find(item => Number(item.dataset.cxUnit) === unit) || cells[0];
         const offset = cell ? Number.parseFloat(cell.style.insetInlineStart) : 0;
         element.style.insetInlineStart = (x1 - offset) + "px"; element.style.width = width + "px"; element.style.top = (3 + slot * (inner / stack)) + "px"; element.style.height = bar + "px";
         if (bar < 16) element.classList.add("cx-tl-thin");
@@ -126,8 +128,8 @@
         // Past the hour zoom points sit too close for their names; the name stays in the accessible name and the tooltip.
         if (point && (axis.zoom !== "hour" || !event.marker)) { element.classList.add("cx-tl-bare"); element.title = this.calEventName(event); }
         if (width < 40) element.classList.add("cx-tl-narrow");
-        if (event.start < axis.from) element.classList.add("cx-cal-cont-start");
-        if (event.end > axis.to) element.classList.add("cx-cal-cont-end");
+        if (event.tlStart < axis.from) element.classList.add("cx-cal-cont-start");
+        if (event.tlEnd > axis.to) element.classList.add("cx-cal-cont-end");
         (cell || lane).appendChild(element);
       }
     },
@@ -153,7 +155,7 @@
         if (hours) { let at = 0; for (const span of hours.slice().sort((a, b) => a.start - b.start)) { add(this.calZone.instant(day, at), this.calZone.instant(day, span.start), "cx-tl-off"); at = Math.max(at, span.end); } add(this.calZone.instant(day, at), this.calZone.instant(day, 1440), "cx-tl-off"); }
       }
       for (const range of this.calRanges) if (range.resource === id) add(range.start, range.end, range.kind === "unavailable" ? "cx-tl-unavailable" : "cx-tl-bg", range.label, range.kind === "unavailable" ? null : range.tone);
-      for (const event of this.tlIndex.backgrounds.get(id) || []) add(event.start, event.end, "cx-tl-bg", event.title, event.tone || "info");
+      for (const event of this.tlIndex.backgrounds.get(id) || []) add(event.tlStart, event.tlEnd, "cx-tl-bg", event.title, event.tone || "info");
     },
     /** Shading across every lane: weekend days (day zoom), background ranges for every resource and the now line. */
     tlPaintCanvas(left, right, total) {
@@ -161,7 +163,7 @@
       layer.setAttribute("aria-hidden", "true"); layer.style.height = total + "px";
       const blocks = [];
       for (const cell of this.tlHeader.lower) if (cell.weekend && cell.x + cell.width >= left && cell.x <= right) { const block = h("div", "cx-tl-weekend-col"); block.style.insetInlineStart = cell.x + "px"; block.style.width = cell.width + "px"; blocks.push(block); }
-      const global = [...this.calRanges.filter(range => range.resource == null), ...(this.tlIndex.backgrounds.get("") || []).map(event => ({ start: event.start, end: event.end, label: event.title, tone: event.tone || "info", kind: "background" }))];
+      const global = [...this.calRanges.filter(range => range.resource == null), ...(this.tlIndex.backgrounds.get("") || []).map(event => ({ start: event.tlStart, end: event.tlEnd, label: event.title, tone: event.tone || "info", kind: "background" }))];
       for (const range of global) {
         const x1 = axis.x(range.start), x2 = axis.x(range.end);
         if (x2 <= x1 || x2 < left || x1 > right) continue;
@@ -205,8 +207,8 @@
       if (this.tl.heat.has(id)) return this.tl.heat.get(id);
       const axis = this.tlAxis, units = axis.units, points = [], out = new Array(units.length).fill(0);
       for (const leaf of [id, ...this.tlDescendants(id)]) for (const event of this.tlIndex.byResource.get(leaf) || []) {
-        if (event.end <= axis.from || event.start >= axis.to) continue;
-        points.push([Math.max(event.start, axis.from), 1], [Math.max(event.end, event.start + 1), -1]);
+        if (event.tlEnd <= axis.from || event.tlStart >= axis.to) continue;
+        points.push([Math.max(event.tlStart, axis.from), 1], [Math.max(event.tlEnd, event.tlStart + 1), -1]);
       }
       points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
       let level = 0, unit = 0;
@@ -225,18 +227,16 @@
       const cache = this.tl.stats ||= new Map();
       if (cache.has(id)) return cache.get(id);
       const axis = this.tlAxis, stats = { count: 0, busy: 0, overlaps: 0 };
-      if (this.tl.children.has(id)) for (const child of this.tl.children.get(id)) { const inner = this.tlStats(child); stats.count += inner.count; stats.busy += inner.busy; stats.overlaps += inner.overlaps; }
-      else {
-        let end = -Infinity, lastEnd = -Infinity, lastIndex = -1;
-        const overlapped = new Set(), list = (this.tlIndex.byResource.get(id) || []).filter(event => event.end > axis.from && event.start < axis.to);
-        list.forEach((event, index) => {
-          const from = Math.max(event.start, axis.from), to = Math.min(event.end, axis.to);
-          if (to > end) { stats.busy += to - Math.max(from, end); end = to; }
-          if (event.start < lastEnd) { overlapped.add(index); overlapped.add(lastIndex); }
-          if (event.end > lastEnd) { lastEnd = event.end; lastIndex = index; }
-        });
-        stats.count = list.length; stats.overlaps = overlapped.size;
-      }
+      let end = -Infinity, lastEnd = -Infinity, lastIndex = -1;
+      const overlapped = new Set(), list = (this.tlIndex.byResource.get(id) || []).filter(event => event.tlEnd > axis.from && event.tlStart < axis.to);
+      list.forEach((event, index) => {
+        const from = Math.max(event.tlStart, axis.from), to = Math.min(event.tlEnd, axis.to);
+        if (to > end) { stats.busy += to - Math.max(from, end); end = to; }
+        if (event.tlStart < lastEnd) { overlapped.add(index); overlapped.add(lastIndex); }
+        if (event.tlEnd > lastEnd) { lastEnd = event.tlEnd; lastIndex = index; }
+      });
+      stats.count = list.length; stats.overlaps = overlapped.size;
+      for (const child of this.tl.children.get(id) || []) { const inner = this.tlStats(child); stats.count += inner.count; stats.busy += inner.busy; stats.overlaps += inner.overlaps; }
       cache.set(id, stats);
       return stats;
     },

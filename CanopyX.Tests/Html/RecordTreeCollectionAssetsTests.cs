@@ -89,6 +89,29 @@ public sealed class RecordTreeCollectionAssetsTests {
         return view;
     }
 
+    [Fact]
+    public void NestedCalendarResources_EmbedTheResourceTreesOwnCompanions() {
+        var view = Grid();
+        var nested = new CanopyDataGridView("schedule", "Schedule");
+        nested.Columns.Add(new CanopyColumn("starts", "Starts") { Kind = CanopyColumnKind.DateTime });
+        nested.Columns.Add(new CanopyColumn("resource", "Resource"));
+        var resources = new CanopyTreeView("resources", "Resources") {
+            SearchHighlight = new CanopySearchHighlight(), Layout = new CanopyLayoutOptions(), DeepLink = true
+        };
+        resources.Columns.Add(new CanopyColumn("name", "Name"));
+        resources.Roots.Add(new CanopyNode("host", "Host"));
+        nested.Calendar = new CanopyCalendar("starts") { Resource = "resource", Resources = new CanopyCalendarResources(resources) };
+        view.Reporting = new CanopyGridReporting { Detail = new CanopyGridDetail { View = nested } };
+
+        var names = CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name).ToArray();
+        foreach (var name in new[] { "calendar", "tree-tools", "highlight", "layouts", "links" }) Assert.Contains(name, names);
+        Assert.Equal(names.Distinct(), names);
+        Assert.Equal(CanopyHtmlAssets.Parts.Where(part => names.Contains(part.Name)).Select(part => part.Name), names);
+        var html = view.ToHtmlFragment();
+        foreach (var name in new[] { "calendar", "tree-tools", "highlight", "layouts", "links" })
+            Assert.Contains("type=\"application/x-canopyx-" + name + "\"", html);
+    }
+
     private static CanopyDataGridView View(string location) {
         var view = Grid();
         if (location == "nested-tree-definition") {

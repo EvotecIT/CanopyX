@@ -56,6 +56,7 @@ internal static class CanopyTreeViewValidator {
         for (var index = 0; index < view.Columns.Count; index++) {
             var column = view.Columns[index];
             column.ValidateLayout(view.Columns);
+            if (column.Format != null) throw new InvalidOperationException("View '" + view.Id + "': number formats apply to flat grids only.");
             if (column.RowHeader) throw new InvalidOperationException("View '" + view.Id + "' identifies rows by its tree column; RowHeader applies to flat grids.");
             if (column.Editor != null || column.Validation != null) throw new InvalidOperationException("View '" + view.Id + "': typed editors and validation apply to flat grids; tree edits go through the onEdit proposal hook.");
             // The tree column pins left or scrolls (None); the other columns pin left or right, as on a flat grid.

@@ -28,10 +28,11 @@
 .cx-grid-group-column { color:var(--cx-muted);font-weight:400; }
 .cx-grid-group-select { margin-inline-end:var(--cx-size-6px); }
 .cx-aggregate { font-variant-numeric:tabular-nums; }
-.cx-aggregate:not(:first-child) { overflow:visible;text-overflow:clip; }
+.cx-aggregate:not(:first-child) { overflow:hidden;text-overflow:clip; }
 .cx-grid-group-aggregates { flex:0 1000 auto;min-width:0;margin-inline-start:var(--cx-size-12px);overflow:hidden;text-overflow:ellipsis;color:var(--cx-muted);font:inherit;font-weight:400;font-variant-numeric:tabular-nums;border:0;background:transparent;padding:0;cursor:pointer;white-space:nowrap; }
 .cx-grid-group-aggregates:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-neg-2px); }
 .cx-summary-row .cx-grid-group-aggregates { text-transform:none;letter-spacing:normal;font-size:var(--cx-size-13px); }
+.cx-aggregate > .cx-aggregate-button { max-width:100%;margin-inline-start:0;font:inherit;color:inherit;flex:0 1 auto;text-align:left; }
 /* Phones keep each chip to its column, direction and removal and let the bar wrap, so every chip and both buttons stay in view. */
 .cx-phone .cx-groupbar { padding:var(--cx-size-4px) var(--cx-size-8px);gap:var(--cx-size-6px); }
 .cx-phone .cx-gchip { max-width:100%; }

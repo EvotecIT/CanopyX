@@ -50,16 +50,27 @@
       const at = rows.indexOf(resource);
       return rows[Math.max(0, Math.min(rows.length - 1, (at < 0 ? 0 : at) + sign))] ?? resource;
     },
-    /** The visible leaf resources of a hosted timeline, which its range requests name. */
+    /** Visible resources and their known descendants, bounded to the hosted request's 1,000 identities. */
     calResourceWindow() {
       if (this.calView !== "timeline" || this.tlSolo || this.view.source.kind === "inline" && !this.opts.source) return null;
       // The first load comes before the first paint: the tree is built now, so even that load names only the resources in view,
       // and before the lanes have a height the rows of a tall screen stand in for the visible ones.
       this.tlEnsure();
       if (!this.tlTree?.rows?.length) return null;
-      const range = this.tlMain.clientHeight ? this.tlVisibleRows(40) : { first: 0, last: Math.min(this.tlTree.rows.length - 1, 80) }, ids = [];
-      for (let i = range.first; i <= range.last; i++) { const row = this.tlTree.rows[i]; if (row && !row.status) ids.push(row.key, ...(this.tl.children.get(row.key) || []).slice(0, 200)); }
-      const window = [...new Set(ids)].slice(0, 1000);
+      const range = this.tlMain.clientHeight ? this.tlVisibleRows(40) : { first: 0, last: Math.min(this.tlTree.rows.length - 1, 80) }, ids = new Set();
+      for (let i = range.first; i <= range.last && ids.size < 1000; i++) {
+        const row = this.tlTree.rows[i];
+        if (!row || row.status) continue;
+        const stack = [row.key];
+        while (stack.length && ids.size < 1000) {
+          const id = stack.pop();
+          if (ids.has(id)) continue;
+          ids.add(id);
+          const children = this.tl.children.get(id) || [];
+          for (let at = children.length - 1; at >= 0; at--) stack.push(children[at]);
+        }
+      }
+      const window = [...ids];
       return window.length ? window : null;
     },
     /** A hosted timeline loads again when the resources in view change (scrolling, opening a group), not for every frame. */

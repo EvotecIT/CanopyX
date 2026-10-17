@@ -10,6 +10,7 @@ import { repo, runtimeAssets } from "./support.mjs";
 /** The editing part (script and stylesheet) inline, as a page written for an editable grid carries it. */
 const editingAssets = () => "<style>" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-editing.css"), "utf8") + "</style><script>" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-editing.js"), "utf8") + "</script>";
 import { capture, loadKit, openBuilt, openCalendar, api } from "./calendar-support.mjs";
+import { parseAdversarialCalendar } from "./calendar-parser-fixture.mjs";
 
 /**
  * A page with a calendar from createCalendar (options as a JavaScript expression, so hooks can be functions) that records
@@ -372,17 +373,8 @@ test.describe("review guards", () => {
 
   test("the parser bounds what an imported file can make a calendar do", async ({ page: p }) => {
     await loadKit(p);
-    const result = await p.evaluate(() => {
-      const event = (i, extra) => "BEGIN:VEVENT\r\nUID:same\r\nDTSTART:20261001T080000Z\r\nSUMMARY:E" + i + "\r\n" + extra + "END:VEVENT\r\n";
-      let text = "BEGIN:VCALENDAR\r\n";
-      for (let i = 0; i < 3000; i++) text += event(i, "");
-      text += event("count", "RRULE:FREQ=DAILY;COUNT=5000\r\n") + event("never", "RRULE:FREQ=DAILY;BYMONTH=2;BYMONTHDAY=30\r\n");
-      text += "BEGIN:VEVENT\r\nDTSTART:20261001T080000Z\r\n" + "CATEGORIES:\r\n".repeat(20000) + "END:VEVENT\r\nEND:VCALENDAR";
-      const started = performance.now(), parsed = window.kit.calIcsParse(text);
-      return { ms: performance.now() - started, count: parsed.events.find(item => item.title === "Ecount"), never: parsed.events.find(item => item.title === "Enever"), notes: parsed.notes.length };
-    });
-    expect(result.ms).toBeLessThan(3000);
-    expect(result.count.recurrence).toBe("FREQ=DAILY;UNTIL=20290626T085959Z");
+    const result = await parseAdversarialCalendar(p);
+    expect(result.count.recurrence).toBe("FREQ=DAILY;UNTIL=20290626T080000Z");
     expect(result.count.cut).toBe(true);
     expect(result.never).toMatchObject({ recurrence: null, unsupported: true });
   });

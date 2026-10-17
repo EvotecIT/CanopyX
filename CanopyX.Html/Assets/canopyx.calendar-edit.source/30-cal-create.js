@@ -22,9 +22,8 @@
     },
     /** The problem with creating at a proposal, or null: the valid range and unavailable time. */
     calCreateProblem(proposal) {
-      const valid = this.cal.validRange, labels = this.calLabels, first = proposal.allDay ? Math.floor(proposal.start / CAL_DAY) : this.calZone.day(proposal.start);
-      const last = proposal.allDay ? Math.floor((proposal.end - 1) / CAL_DAY) : this.calZone.day(Math.max(proposal.start, proposal.end - 1));
-      if (valid && (first < valid.first || last > valid.last)) return labels.calendarOutsideRange;
+      const labels = this.calLabels;
+      if (!this.calAllowsSpan(proposal.start, proposal.end, proposal.allDay)) return labels.calendarOutsideRange;
       for (const range of this.calRanges) if (range.kind === "unavailable" && (range.resource == null || range.resource === proposal.resource) && calOverlaps(proposal.start, proposal.end, range.start, range.end)) return labels.calendarUnavailable;
       return null;
     },
@@ -125,7 +124,7 @@
         range.last = cell;
         const proposal = this.calCreateProposal(range.first, cell);
         if (cell.dataset.cxMinutes !== undefined) this.calSelectSlotsQuiet(Number(cell.dataset.cxDay), proposal, cell.dataset.cxResource);
-        else this.calSelectDaysQuiet(Math.min(Number(range.first.dataset.cxDay), Number(cell.dataset.cxDay)), Math.max(Number(range.first.dataset.cxDay), Number(cell.dataset.cxDay)));
+        else this.calSelectDaysQuiet(Math.min(Number(range.first.dataset.cxDay), Number(cell.dataset.cxDay)), Math.max(Number(range.first.dataset.cxDay), Number(cell.dataset.cxDay)), this.calCellResource(range.first));
       }
       pointer.preventDefault();
       return true;
@@ -142,12 +141,14 @@
     /** Marks a range while it is dragged, without reporting it to linked views until it is created. */
     calSelectSlotsQuiet(day, proposal, resource) {
       const zone = this.calZone;
+      if (!this.calAllowsSpan(proposal.start, proposal.end, proposal.allDay)) return;
       this.calSelection = { first: day, last: day, from: proposal.start, to: proposal.end, fromMinutes: zone.parts(proposal.start).minutes, toMinutes: zone.parts(proposal.end).minutes || 1440, resource: resource ?? null };
       this.calMarkSelection();
     },
-    calSelectDaysQuiet(first, last) {
+    calSelectDaysQuiet(first, last, resource) {
       const zone = this.calZone;
-      this.calSelection = { first, last, from: zone.start(first), to: zone.start(last + 1), resource: null };
+      if (!this.calAllowsSpan(first * CAL_DAY, (last + 1) * CAL_DAY, true)) return;
+      this.calSelection = { first, last, from: zone.start(first), to: zone.start(last + 1), resource: resource ?? null };
       this.calMarkSelection();
     }
   });

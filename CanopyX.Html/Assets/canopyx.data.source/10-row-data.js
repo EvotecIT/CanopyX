@@ -21,7 +21,7 @@
   function rowDataSource(grid, outer) {
     const view = grid.view, data = view.rowData, rows = view.rows, ids = new Set(), declared = new Set(view.columns.map(column => column.id));
     const columns = data.columns, chunks = data.chunks, sidecar = data.base !== undefined;
-    if (!Array.isArray(columns) || !columns.length || new Set(columns).size !== columns.length || columns.some(id => !declared.has(id)) ||
+    if (data.version !== 1 || !Array.isArray(columns) || !columns.length || new Set(columns).size !== columns.length || columns.some(id => !declared.has(id)) ||
         ![undefined, "gzip"].includes(data.encoding) || ![undefined, true, false].includes(data.ordered) ||
         sidecar && typeof data.base !== "string" ||
         !(Array.isArray(chunks) ? !sidecar : Number.isInteger(chunks) && chunks >= 0))

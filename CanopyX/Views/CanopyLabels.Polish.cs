@@ -511,6 +511,7 @@ public sealed partial class CanopyLabels {
         CalendarCreated = "Dodano {title} na {time}",
         CalendarReceived = "Zaplanowano {title} na {time}",
         CalendarOccurrenceTitle = "Zmień wydarzenie cykliczne",
+        CalendarOccurrenceReadOnly = "Nie można zapisać tej części serii, ponieważ niektóre wartości są tylko do odczytu.",
         CalendarThisEvent = "To wydarzenie",
         CalendarThisAndFollowing = "To i następne wydarzenia",
         CalendarAllEvents = "Wszystkie wydarzenia",

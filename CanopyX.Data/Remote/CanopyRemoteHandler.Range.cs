@@ -30,6 +30,7 @@ public sealed partial class CanopyRemoteHandler {
                 request.Resources, Options.Limits.MaxRangeRows, request.CalendarView);
         var revision = await RevisionAsync(request.Query.Revision, cancellationToken).ConfigureAwait(false);
         var result = await ranges.RangeAsync(request, cancellationToken).ConfigureAwait(false);
+        await RevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         // Records written between the count and the read change the answer; the client reloads instead of mixing snapshots.
         if (result.Rows.Count != Math.Min(request.Limit, result.Matched)) throw new CanopyRequestException(CanopyRequestError.StaleRevision, "The data changed; reload the grid.");
         var page = new CanopyGridRangePage(Schema.ViewId, revision, request.Start.Id, request.From, request.To, result.Matched);

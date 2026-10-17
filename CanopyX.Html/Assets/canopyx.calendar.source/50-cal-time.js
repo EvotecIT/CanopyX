@@ -49,6 +49,7 @@
       for (const day of days) {
         const cell = h("div", "cx-cal-dayhead" + (day === today ? " cx-cal-today" : "")); cell.setAttribute("role", "columnheader"); cell.dataset.cxDay = String(day);
         cell.style.flexGrow = String(perDay); cell.setAttribute("aria-label", fmt.longDay(day)); if (perDay > 1) cell.setAttribute("aria-colspan", String(perDay));
+        if (!this.calAllowsSpan(day * CAL_DAY, (day + 1) * CAL_DAY, true)) { cell.classList.add("cx-cal-invalid"); cell.setAttribute("aria-disabled", "true"); }
         const name = h("span", "cx-cal-dayname"), number = h("span", "cx-cal-daynum");
         setText(name, fmt.weekday(day, this.calPhone ? "narrow" : "short")); setText(number, fmt.dayNumber(day)); cell.append(name, number);
         if (day === today) cell.setAttribute("aria-current", "date");
@@ -89,6 +90,7 @@
         columns.forEach((column, index) => {
           const cell = h("div", "cx-cal-slot"); cell.setAttribute("role", "gridcell"); cell.tabIndex = -1;
           cell.dataset.cxDay = String(column.day); cell.dataset.cxMinutes = String(minutes); if (column.resource != null) cell.dataset.cxResource = column.resource;
+          if (!this.calAllowsSpan(column.day * CAL_DAY, (column.day + 1) * CAL_DAY, true)) { cell.classList.add("cx-cal-invalid"); cell.setAttribute("aria-disabled", "true"); }
           cell.setAttribute("aria-label", fmt.longDay(column.day) + ", " + fmt.clock(minutes) + (column.label ? ", " + column.label : ""));
           if (column.day === today) cell.classList.add("cx-cal-today");
           this.calSlotCells.set(index + ":" + minutes, cell);
@@ -140,6 +142,7 @@
       const perDay = columns.length / days.length, cells = [];
       columns.forEach((column, at) => {
         const cell = h("div", "cx-cal-allcell"); cell.setAttribute("role", "gridcell"); cell.tabIndex = -1; cell.dataset.cxDay = String(column.day);
+        if (!this.calAllowsSpan(column.day * CAL_DAY, (column.day + 1) * CAL_DAY, true)) { cell.classList.add("cx-cal-invalid"); cell.setAttribute("aria-disabled", "true"); }
         if (column.resource != null) cell.dataset.cxResource = column.resource;
         cells.push(cell); row.appendChild(cell);
         if (perDay === 1) index.set(column.day, at);

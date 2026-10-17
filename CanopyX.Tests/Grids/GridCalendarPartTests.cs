@@ -86,6 +86,21 @@ public sealed class GridCalendarPartTests {
     }
 
     [Fact]
+    public void ExplicitCalendarExportPart_EmbedsItsDependenciesOnce_WithoutChangingRequestedOptions() {
+        var calendar = new CanopyCalendar(new[] { new CanopyCalendarEvent("Planning", new DateTime(2026, 10, 16, 9, 0, 0, DateTimeKind.Utc)) });
+        var options = new CanopyHtmlOptions();
+        options.Parts.Add("calendar-ics");
+        var fragment = calendar.ToHtmlFragment(options);
+        foreach (var name in new[] { "calendar", "calendar-recurrence", "calendar-ics" }) {
+            var marker = "type=\"application/x-canopyx-" + name + "\"";
+            Assert.Equal(1, fragment.Split(new[] { marker }, StringSplitOptions.None).Length - 1);
+        }
+        Assert.Equal(new[] { "calendar-ics" }, options.Parts);
+        Assert.Null(calendar.Recurrence);
+        Assert.Empty(calendar.Sources);
+    }
+
+    [Fact]
     public void TimelinePart_RequiresTheCalendarAndComesWithTheResourceTreeParts() {
         var part = CanopyHtmlAssets.GetPart("timeline");
         Assert.Equal("resource timeline", part.Label);

@@ -69,10 +69,11 @@
 
   /** The iCalendar text of calendar records (row objects with raw cells). */
   function calIcs(view, rows) {
-    const zone = view.calSeriesZone, stamp = calIcsUtc(Date.now()), zones = new Map(), events = [];
+    const stamp = calIcsUtc(Date.now()), zones = new Map(), events = [];
     for (const row of rows) {
       const base = calBase(view, row);
       if (!base) continue;
+      const zone = base.seriesZone;
       const lines = ["BEGIN:VEVENT", "UID:" + calIcsText(view.view.id + "-" + row.id + "@canopyx"), "DTSTAMP:" + stamp];
       const zoned = base.rule && !base.allDay && zone.name !== "utc";
       if (zoned && !zones.has(zone.name)) zones.set(zone.name, calVTimezone(zone, new Date(base.start).getUTCFullYear()));
@@ -92,7 +93,7 @@
       if (base.rule) {
         lines.push("RRULE:" + calIcsRule(base.rule, zone, base.allDay));
         // EXDATE has the type of DTSTART: a day excluded from a timed series is the occurrence at the series' time that day.
-        const minutes = zone.parts(base.start).minutes;
+        const minutes = zone.parts(base.start).minutes + ((base.start % CAL_MINUTE + CAL_MINUTE) % CAL_MINUTE) / CAL_MINUTE;
         for (const day of base.excludedDays) lines.push(base.allDay ? "EXDATE;VALUE=DATE:" + calIcsDate(day) : "EXDATE" + time(zone.instant(day, minutes)));
         for (const value of base.excluded) lines.push("EXDATE" + (base.allDay ? ";VALUE=DATE:" + calIcsDate(Math.floor(value / CAL_DAY)) : time(value)));
       }

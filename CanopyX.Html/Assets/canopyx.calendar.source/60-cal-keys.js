@@ -6,6 +6,7 @@
   Object.assign(DataGrid.prototype, {
     calPaint(options = {}) {
       if (!this.calBody || this.destroyed) return;
+      this.calDisposeEventRenderers();
       // Focus in the body comes back after the repaint; focus in the bar, the legend, a popover or a menu stays where it is.
       const owned = this.calBody.contains(document.activeElement) && !this.calMore;
       this.calCloseMore(false); this.calHideHover();
@@ -37,10 +38,12 @@
         const element = body.querySelector('.cx-tl-cell[data-cx-unit="' + Math.max(0, unit) + '"][data-cx-resource="' + CSS.escape(focus.resource) + '"]'); if (element) return element;
       }
       if (focus?.agendaRow) { const element = body.querySelector('[data-cx-event-row="' + CSS.escape(focus.agendaRow) + '"]'); if (element) return element; }
-      if (focus && focus.minutes != null) { const slot = body.querySelector('[data-cx-day="' + focus.day + '"][data-cx-minutes="' + focus.minutes + '"]'); if (slot) return slot; }
+      const resource = focus?.resource != null ? '[data-cx-resource="' + CSS.escape(focus.resource) + '"]' : "";
+      if (focus && focus.minutes != null) { const slot = body.querySelector('.cx-cal-slot[data-cx-day="' + focus.day + '"][data-cx-minutes="' + focus.minutes + '"]' + resource); if (slot) return slot; }
+      if (focus && focus.minutes == null) { const cell = body.querySelector('.cx-cal-allcell[data-cx-day="' + focus.day + '"]' + resource); if (cell) return cell; }
       if (focus) { const day = body.querySelector('.cx-cal-day[data-cx-day="' + focus.day + '"],.cx-cal-yday[data-cx-day="' + focus.day + '"],[data-cx-day="' + focus.day + '"][data-cx-minutes],.cx-cal-arow[data-cx-day="' + focus.day + '"]');
         if (day) return day; }
-      return body.querySelector('.cx-cal-day:not(.cx-cal-out),.cx-cal-yday,[data-cx-minutes],.cx-cal-arow,.cx-tl-cell') || null;
+      return body.querySelector('.cx-cal-day:not(.cx-cal-out):not(.cx-cal-invalid),.cx-cal-yday:not(.cx-cal-invalid),[data-cx-minutes]:not(.cx-cal-invalid),.cx-cal-arow,.cx-tl-cell:not(.cx-cal-invalid)') || null;
     },
     /** Gives the focus target the tab stop, and DOM focus when the calendar held it (or force). */
     calRestoreFocus(force) {
@@ -107,9 +110,10 @@
       const cell = target.closest("[data-cx-day]");
       if (!cell) return;
       const day = Number(cell.dataset.cxDay);
+      if (!this.calAllowsSpan(day * CAL_DAY, (day + 1) * CAL_DAY, true)) return;
       if (this.calView === "year") { if (this.cal.views.includes("day")) this.calGo(day, "day", true); else this.calFocusDay(day); return; }
       if (cell.dataset.cxMinutes !== undefined) { const minutes = Number(cell.dataset.cxMinutes); this.calSelectSlots(day, minutes, minutes + this.cal.slotMinutes, cell.dataset.cxResource); }
-      else this.calSelectDays(day, day);
+      else this.calSelectDays(day, day, this.calCellResource(cell));
       if (this.calPhone && this.calView === "month" || this.calView === "mini") this.calFocusDay(day);
       // With create on, a click on an empty slot or day proposes an event there (not on a phone's month of dots or the mini month).
       else if (this.cal.create && !cell.classList.contains("cx-cal-invalid")) this.calCreateFromClick?.(cell)?.catch?.(error => this.emit("error", { error }));
@@ -120,18 +124,22 @@
     /** Selects whole days (a click, Space or Enter on an empty day) and reports the range. */
     calSelectDays(first, last, resource) {
       const zone = this.calZone;
+      if (!this.calAllowsSpan(first * CAL_DAY, (last + 1) * CAL_DAY, true)) return false;
       this.calSelection = { first, last, from: zone.start(first), to: zone.start(last + 1), resource: resource ?? null };
       this.calReportSelection(this.calFmt.dayRange(first, last));
     },
     /** Selects slots of a day (from and to in minutes since midnight). */
     calSelectSlots(day, fromMinutes, toMinutes, resource) {
       const zone = this.calZone, from = zone.instant(day, fromMinutes), to = zone.instant(day, toMinutes);
+      if (!this.calAllowsSpan(from, to, false)) return false;
       this.calSelection = { first: day, last: day, from, to, fromMinutes, toMinutes, resource: resource ?? null };
       this.calReportSelection(this.calFmt.longDay(day) + " " + fill(this.calLabels.calendarTimeRange, { start: this.calFmt.time(from), end: this.calFmt.time(to) }));
     },
     calReportSelection(label) {
-      const selection = this.calSelection, events = this.calEvents.filter(event => !event.background && calOverlaps(event.start, event.end, selection.from, selection.to) &&
-        (selection.resource == null || event.resource === selection.resource));
+      const selection = this.calSelection, events = this.calEvents.filter(event => {
+        const span = this.calDisplaySpan(event);
+        return !event.background && calOverlaps(span.start, span.end, selection.from, selection.to) && (selection.resource == null || event.resource === selection.resource);
+      });
       this.calMarkSelection();
       this.calAnnounce(fill(this.calLabels.calendarSelected, { range: label }));
       this.calEmitLink("select", events, label, selection);

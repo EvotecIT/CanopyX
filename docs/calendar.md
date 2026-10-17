@@ -264,6 +264,16 @@ filter group asks for records that overlap the range. Answers are cached per ran
 afresh, and navigating loads the new range. `CanopyX.AspNetCore` answers range queries at `POST {pattern}/range` over
 `IQueryable`, with the same allow-list, scoping, authorization and limits as reads ([remote-dotnet.md](remote-dotnet.md#range-queries)).
 
+When `series` and `recurrenceId` are mapped, selected recurring masters also read their replacement metadata through the
+source's ordinary `query` method. These reads name only selected masters and the original occurrence window, including a
+master's duration. They use the same dataset revision and source authorization, but omit user search and filters: a
+replacement must still suppress its original occurrence after it moves to another date, resource or status. Support records
+are never added to the displayed rows or export input. Inline calendars obtain the same metadata from their owning rows.
+The metadata reads share a budget of ten pages and `limit` records. If that budget cannot certify a batch of masters, those
+masters are withheld and the calendar shows its truncation notice; ordinary events and certified masters remain visible.
+Ordinary query fallback supports both offset and cursor sources. The hosted source must allow filtering on `series` and
+`recurrenceId`; unsupported predicates or a changed revision fail the load.
+
 ## Editing
 
 A calendar is read-only unless `editable` is set (`true`, or `{ move, resize, resources, overlap, workingHours,
@@ -354,6 +364,12 @@ Every way goes through the editing contract: updates, inserts, the writer and th
 the occurrence on its day (another day would leave the rule's weekdays and the exceptions behind); if the new series cannot
 be saved after the old one was cut, it stays unsaved with the reason, so it is not lost.
 
+When a commit writer saves a copied occurrence or a split series, the copied non-null values must belong to editable
+columns. The built-in operation refuses a copy it cannot preserve, before inserting a row or cutting the old series.
+Read-only values stay outside the writer's allow-list. A host that needs to preserve those values can handle the cancelable
+`canopyx:occurrenceChange` event or the `calendar.occurrence` hook, perform its own authorized writes, and cancel the built-in
+operation. A local inline calendar without a commit writer keeps the copied values in its client-side records.
+
 ## Sources and iCalendar
 
 `sources` lists up to 50 event sources: `{ id, label, tone?, ics?, hidden? }`. A legend under the bar shows one switch per
@@ -395,7 +411,9 @@ this subset: `FREQ` `DAILY`, `WEEKLY`, `MONTHLY` or `YEARLY`, with `INTERVAL`, `
   calendar's IANA `timeZone`, otherwise UTC (all-day series always expand in UTC). A series therefore lands on the same instants
   for every reader, whatever their browser's zone or `setTimeZone`, and a 09:00 window in `Europe/Warsaw` stays at 09:00 there
   across DST. Give a calendar with local series its IANA `timeZone`; `CanopyRecurrence.Occurrences` takes the same zone. A wall time a DST change skips uses the offset before the gap
-  (02:30 becomes 03:30); a repeated one means its first occurrence. `UNTIL` as a date includes that whole day.
+  (02:30 becomes 03:30); a repeated unspecified wall time means its first occurrence. An explicit instant, including a
+  `DateTimeOffset` or a UTC/local `DateTime` passed to `CanopyRecurrence`, keeps its exact first occurrence even in the second
+  repeated hour; later occurrences keep its wall-clock time. `UNTIL` as a date includes that whole day.
 - `exceptions` names a text column of EXDATE values, separated by commas, semicolons or white space, at most 1,000: instants
   with `Z` or an offset remove the occurrence starting then, wall times without an offset (`yyyy-MM-ddTHH:mm`, optionally with
   seconds and a fraction) are read in the series zone, and `yyyy-MM-dd` dates remove every occurrence on that day. An invalid
@@ -485,8 +503,8 @@ the core part only (and `calendar-recurrence` when an event repeats); a schedule
 recurrence parts too.
 ## Performance
 
-`tests/browser/specs/calendar-performance.spec.mjs` holds the calendar to these gates on Chromium, timed in the page from the
-mount call to the frame after the first event is painted, as the median of three cold loads:
+`tests/browser/specs/calendar-performance.spec.mjs` records opt-in Chromium measurements. Paint timing runs in the page from
+the mount call to the frame after the first event is painted, as the median of three cold loads. The reference targets are:
 
 - A month of 5,000 events paints within 150 ms (about 100 ms on a workstation).
 - A timeline of 5,000 resources and 100,000 events whose source answers range queries shows its first rows within 300 ms (about
@@ -495,6 +513,17 @@ mount call to the frame after the first event is painted, as the median of three
 - Scrolling that timeline down through the resources and across the month, including the range loads that follow, has no long
   task (over 50 ms).
 - Dragging an event among 1,000 visible events keeps 55 frames a second or more, with no long task.
+- The bounded adversarial iCalendar import completes in less than 3,000 ms.
+
+Run these measurements separately from ordinary correctness CI:
+
+```sh
+cd tests/browser
+node tools/browsers.mjs chromium --benchmarks --project=calendar-performance --no-deps
+```
+
+The original samples, workloads and limits remain in that lane. Runner load affects the measurements, so they do not gate
+normal PR merges. Correctness tests retain range loading, bounded virtual lanes, pointer cancellation and parser limits.
 
 Only the visible lanes, units and events are in the DOM, whatever the number of resources; a month folds busy days into
 "+N more"; each range reads only its occurrences, and a long series is walked, never stored.

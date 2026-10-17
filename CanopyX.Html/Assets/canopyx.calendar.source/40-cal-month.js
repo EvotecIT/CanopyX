@@ -249,7 +249,8 @@
       if (!inside) { this.calGo(monthly || view === "agenda" || view === "months" ? calMonthStart(day) : day, view, day).then(() => this.calRestoreFocus(true)); return; }
       if (this.calPhone && view === "month") {
         // The day's list under the month changes; the live region says which day and how many events it holds.
-        this.calBody.querySelector(".cx-cal-daylist")?.replaceWith(this.calDayList(day));
+        const list = this.calBody.querySelector(".cx-cal-daylist");
+        if (list) { this.calDisposeEventRenderers(list); list.replaceWith(this.calDayList(day)); }
         this.calMarkListedDay(day);
         const count = this.calEventsOn(day).length;
         this.calAnnounce(this.calFmt.longDay(day) + ", " + (count ? calCount(this, this.calLabels.calendarEvents, count) : this.calLabels.calendarNoEvents));

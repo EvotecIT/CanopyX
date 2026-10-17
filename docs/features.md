@@ -207,7 +207,7 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Manual screen-reader script | Grid, Tree | NVDA and Narrator steps | [Screen-reader test](screen-reader-test.md) |
 | Forced colours, reduced motion, 24 px pointer targets (44 px on phones) | Grid, Tree | built in | [accessibility.md](accessibility.md) |
 
-Spoken screen-reader output has not been recorded for a release yet, and right-to-left layout is not supported yet.
+Spoken screen-reader output has not been recorded for a release yet. Calendar and resource-timeline layouts support right-to-left pages; see [Keyboard and screen readers](calendar.md#keyboard-and-screen-readers).
 
 ## Theming
 

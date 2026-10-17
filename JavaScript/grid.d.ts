@@ -391,6 +391,8 @@ export interface InlineGridView<Row extends GridRow = GridRow> extends GridDefin
 export type GridCompactRow = [string | { id: string; tone?: string; className?: string }, ...Cell[]];
 /** Compact row data of an inline grid, in place of `rows` (docs/data-protocol.md, "Row data"). */
 export interface GridRowData {
+  /** Compact row encoding version, preserved within canopyx/2 for independently deployed readers. */
+  version: 1;
   /** Declared column ids, unique, in the order of each compact row's cells. */
   columns: string[];
   /** The number of rows in all chunks. */

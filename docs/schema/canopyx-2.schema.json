@@ -298,8 +298,9 @@
     },
     "gridRowData": {
       "description": "Compact rows of an inline grid in place of rows: each row an array of its id (or { id, tone, className }) and its cells in the order of columns, without trailing empty cells, in chunks the runtime decodes one at a time. chunks is the number of application/x-canopyx-rows scripts inside the host element (or of sidecar files rows/<n>.js under base), or the chunks themselves: arrays of rows, or with encoding gzip base64 text of the gzip-compressed JSON of each chunk. ordered declares the rows in ordinal identity order, which lets the runtime show the first rows before the last chunk is decoded.",
-      "type": "object", "required": ["columns", "count", "chunks"], "additionalProperties": false,
+      "type": "object", "required": ["version", "columns", "count", "chunks"], "additionalProperties": false,
       "properties": {
+        "version": { "const": 1 },
         "columns": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
         "count": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
         "ordered": { "type": "boolean" },
@@ -648,6 +649,19 @@
     "gridNumberFormat": {
       "type": "object", "additionalProperties": false,
       "description": "Display format of binary64 numbers. Defaults are minimum 0 and maximum 3. Minimum must not exceed maximum, so a minimum above 3 requires an explicit maximum. Halfway values round away from zero; literal prefixes follow the sign.",
+      "allOf": [
+        { "if": { "not": { "required": ["maximumFractionDigits"] } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 3 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 0 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 0 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 1 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 1 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 2 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 2 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 3 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 3 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 4 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 4 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 5 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 5 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 6 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 6 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 7 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 7 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 8 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 8 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 9 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 9 } } } }
+      ],
       "properties": {
         "minimumFractionDigits": { "type": "integer", "minimum": 0, "maximum": 10, "default": 0 },
         "maximumFractionDigits": { "type": "integer", "minimum": 0, "maximum": 10, "default": 3 },

@@ -8,7 +8,7 @@ internal static class CanopyDataSnapshot {
         Kind = source.Kind, Sortable = source.Sortable, Ordering = source.Ordering, Hidden = source.Hidden,
         Filterable = source.Filterable, Exportable = source.Exportable,
         Editable = source.Editable, Editor = Editor(source.Editor), Validation = Validation(source.Validation),
-        Sizing = source.Sizing, Wrap = source.Wrap, Presenter = source.Presenter, Aggregatable = source.Aggregatable,
+        Sizing = source.Sizing, Wrap = source.Wrap, Presenter = source.Presenter, Aggregatable = source.Aggregatable, Format = source.Format,
         Section = source.Section, ShowInDrawer = source.ShowInDrawer, Renderer = source.Renderer,
         ResponsivePriority = source.ResponsivePriority, AlwaysVisible = source.AlwaysVisible, Pinned = source.Pinned,
         RowHeader = source.RowHeader, Tooltip = source.Tooltip

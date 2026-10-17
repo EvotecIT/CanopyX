@@ -9,7 +9,7 @@ namespace CanopyX.Data;
 /// <typeparam name="T">The record type.</typeparam>
 public sealed class CanopyQueryableWriterOptions<T> where T : class {
     /// <summary>Gets or sets the records this caller may read, usually the endpoint's query callback (<c>() =&gt; query(http)</c>).
-    /// A row whose key is not in it answers as a missing record and is not written. Null checks nothing: the writer then
+    /// A row whose key is not in it answers as a missing record and is not written. Null adds no further restriction: the writer then
     /// writes any record <see cref="ICanopyWriteStore{T}.Records"/> holds.</summary>
     /// <remarks>Set it whenever callers may read only some records, so a caller cannot change a record it cannot see.</remarks>
     public Func<IQueryable<T>>? Scope { get; set; }
@@ -20,9 +20,9 @@ public sealed class CanopyQueryableWriterOptions<T> where T : class {
     /// <see cref="CanopyCommitMessages.InsertRefused"/>; the store must also implement <see cref="ICanopyInsertStore{T}"/>.
     /// </summary>
     /// <remarks>An insert writes only editable columns, as an update does, and never the key: the store assigns it, or this
-    /// callback does. With <see cref="Scope"/> set, a new record that is not in the scope after saving is rolled back and answers
-    /// as not saved, so a caller cannot add a record it could not read; the scope must then query the same unit of work as the
-    /// store, which sees the unsaved record inside the transaction.</remarks>
+    /// callback does. A new record must be returned by <see cref="ICanopyWriteStore{T}.Records"/> and, when set,
+    /// <see cref="Scope"/> after saving; otherwise it is rolled back and answers as not saved. Both queries must see the
+    /// saved record inside the current transaction, so a caller cannot add a record outside its write scope.</remarks>
     public Func<CanopyCommitRow, T>? NewRecord { get; set; }
 
     /// <summary>Gets or sets whether rows are written in a transaction each (default) or the batch in one, all or nothing.</summary>

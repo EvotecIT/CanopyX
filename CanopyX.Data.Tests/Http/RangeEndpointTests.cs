@@ -20,6 +20,7 @@ public sealed class RangeEndpointTests : IAsyncLifetime {
     private readonly List<Slot> _slots = Schedule.Slots(300);
     private WebApplication? _app;
     private HttpClient _client = null!;
+    private string _calendarRevision = "r1";
 
     public async Task InitializeAsync() {
         var builder = WebApplication.CreateBuilder();
@@ -38,6 +39,9 @@ public sealed class RangeEndpointTests : IAsyncLifetime {
         _app.MapCanopyRemote("/api/open", _ => _slots.AsQueryable(), Schedule.Map(), options => { Configure(options); options.AllowAnonymous = true; });
         _app.MapCanopyRemote("/api/secured", _ => _slots.AsQueryable(), Schedule.Map(), Configure);
         _app.MapCanopyRemote("/api/planned", _ => _slots.AsQueryable(), Schedule.Map(), options => { Configure(options); options.AuthorizationPolicy = "planners"; });
+        _app.MapCanopyRemote("/api/calendar", _ => CalendarOverrideMetadataFixture.Rows().AsQueryable().Where(row => row.Kind == "public"), Schedule.Map(), options => {
+            options.Query.Revision = _ => new ValueTask<string>(_calendarRevision);
+        });
         var plain = Schedule.Map().Schema;
         _app.MapCanopyRemote("/api/plain", plain, _ => new PlainProvider(), options => options.AllowAnonymous = true);
         await _app.StartAsync();
@@ -122,6 +126,26 @@ public sealed class RangeEndpointTests : IAsyncLifetime {
         var response = await Post("/api/plain/range", Body());
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("unsupported", (await Json(response)).GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task CalendarOverrideMetadata_OrdinaryQueriesKeepAuthorizationScopePagingAndRevision() {
+        var request = CalendarOverrideMetadataFixture.Query(offset: 0, limit: 1);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Post("/api/calendar/query", request)).StatusCode);
+        var firstResponse = await Post("/api/calendar/query", request, user: "reader");
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        var first = await Json(firstResponse);
+        Assert.Equal("r1", first.GetProperty("revision").GetString());
+        Assert.Equal(2, first.GetProperty("matched").GetInt32());
+        Assert.Equal("moved-resource", first.GetProperty("items")[0].GetProperty("id").GetString());
+        var nextResponse = await Post("/api/calendar/query", CalendarOverrideMetadataFixture.Query(offset: 1, limit: 1), user: "reader");
+        Assert.Equal(HttpStatusCode.OK, nextResponse.StatusCode);
+        Assert.Equal("moved-window", (await Json(nextResponse)).GetProperty("items")[0].GetProperty("id").GetString());
+
+        _calendarRevision = "r2";
+        var stale = await Post("/api/calendar/query", request, user: "reader");
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        Assert.Equal("staleRevision", (await Json(stale)).GetProperty("error").GetString());
     }
 
     [Fact]

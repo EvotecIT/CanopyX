@@ -10,22 +10,29 @@
     /** Whether an event can be moved (move true) or resized: the settings, the editable columns and the record. */
     calCanEdit(event, resize) {
       const edit = this.cal.editable;
-      if (!edit || !event || event.background || event.base?.external || this.editReadOnly) return false;
+      if (!edit || !event || event.background || event.base?.external || this.editReadOnly || !this.edit || this.destroyed) return false;
       if (resize ? !edit.resize || event.marker : !edit.move) return false;
       const columns = [this.cal.start, resize || !event.marker ? this.cal.end : null].filter(Boolean);
-      return columns.every(column => column.editable) && (!event.recurring || !!this.cal.recurrence);
+      const record = this.editRecord?.(event.key) || event.row;
+      return columns.every(column => column.editable && this.canEditCell(record, column.id)) && (!event.recurring || !!this.cal.recurrence);
     },
 
     /** The proposal's problems, first one wins: null when it may be dropped. */
     calCheck(event, proposal) {
       const edit = this.cal.editable, labels = this.calLabels;
       const resource = proposal.resource;
+      if (!this.edit || this.destroyed) return labels.calendarUnavailable;
+      const resize = proposal.end - proposal.start !== event.end - event.start;
+      if (!this.calCanEdit(event, resize)) return this.edit.labels.gridEditNotSaved;
+      if (resource !== undefined && resource !== event.resource && (!edit.resources || !this.cal.resource ||
+          !this.canEditCell(this.editRecord?.(event.key) || event.row, this.cal.resource.id))) return this.edit.labels.gridEditNotSaved;
+      if (!this.calAllowsSpan(proposal.start, proposal.end, proposal.allDay)) return labels.calendarOutsideRange;
       // A series moves within its own day: changing its day would leave its rule's days, exceptions and moved occurrences behind.
       // When one occurrence may change alone (occurrence "ask", "this" or "following"), the choice comes after the drop.
       if (event.recurring && this.cal.occurrence === "all") {
         const zone = event.allDay ? calZone("utc") : this.calSeriesZone;
         if (zone.day(proposal.start) !== zone.day(event.start) || this.calOverridden(event) === true ||
-            event.base.excluded?.size && !this.cal.exceptions?.editable) return labels.calendarSeriesTime;
+            event.base.excluded?.size && !this.canEditCell(this.editRecord(event.key) || event.row, this.cal.exceptions.id)) return labels.calendarSeriesTime;
       }
       if (edit.allowed && resource != null) {
         const allowed = String(cellValue(event.row.cells[edit.allowed.id]) ?? "").split(/[\s,;]+/).filter(Boolean);
@@ -52,6 +59,8 @@
     /** Applies an accepted proposal through the editing part; resolves true once it is saved (or kept, with commit manual). */
     async calApply(event, proposal) {
       const cal = this.cal, labels = this.calLabels, delta = proposal.start - event.start;
+      await this.loadEditing();
+      calWrapEditRecord();
       const problem = this.calCheck(event, proposal);
       if (problem) { this.calAnnounce(problem); this.calNotice(problem, true, true); return false; }
       if (event.recurring && !this.emit("occurrenceChange", { id: event.key, occurrence: calIso(event.start), start: calIso(proposal.start), end: calIso(proposal.end), resource: proposal.resource ?? null }))
@@ -59,19 +68,20 @@
       if (event.recurring && this.cal.occurrence !== "all") {
         const mode = await this.calOccurrenceMode(event, proposal);
         if (!mode) return false;
+        const currentProblem = this.calCheck(event, proposal);
+        if (currentProblem) { this.calAnnounce(currentProblem); this.calNotice(currentProblem, true, true); return false; }
         if (mode === "this") return this.calApplyThis(event, proposal);
         if (mode === "following" && event.start !== event.base.start) return this.calApplyFollowing(event, proposal);
         // "All events" (or the series' first occurrence and the ones after it): the series rules apply now.
         const zone = event.allDay ? calZone("utc") : this.calSeriesZone;
-        if (zone.day(proposal.start) !== zone.day(event.start) || this.calOverridden(event) === true || event.base.excluded?.size && !this.cal.exceptions?.editable) {
+        if (zone.day(proposal.start) !== zone.day(event.start) || this.calOverridden(event) === true ||
+            event.base.excluded?.size && !this.canEditCell(this.editRecord(event.key) || event.row, this.cal.exceptions.id)) {
           this.calAnnounce(labels.calendarSeriesTime); this.calNotice(labels.calendarSeriesTime, true, true); return false;
         }
       }
       // A hosted calendar cannot see overriding records outside the rows it loaded: unless the host took the occurrence above,
       // a series that may have them stays where it is.
       if (event.recurring && this.calOverridden(event) !== false) { this.calAnnounce(labels.calendarSeriesTime); this.calNotice(labels.calendarSeriesTime, true, true); return false; }
-      await this.loadEditing();
-      calWrapEditRecord();
       // An occurrence of a series moves the series by the same wall-clock minutes in its zone (the day stays; calCheck refuses
       // another), changes its length by the same amount, and takes its excluded instants along.
       const base = event.base, values = [], stretch = (proposal.end - proposal.start) - (event.end - event.start);
@@ -87,6 +97,9 @@
       if (cal.resource && proposal.resource !== undefined && proposal.resource !== event.resource) values.push([cal.resource.id, proposal.resource]);
       // A refused change takes back only the columns this move set, never the record's other unsaved edits.
       const record = this.editRecord(event.key), applied = [];
+      if (values.some(([column]) => !this.canEditCell(record, column))) {
+        this.calAnnounce(this.edit.labels.gridEditNotSaved); this.calNotice(this.edit.labels.gridEditNotSaved, true, true); return false;
+      }
       let failed = null;
       this.editGroup(() => {
         for (const [column, value] of values) {

@@ -30,6 +30,7 @@
     <Compile Include="..\CanopyX.Tests\Protocol\StreamedViewJsonTests.cs" Link="Protocol\StreamedViewJsonTests.cs" />
     <Compile Include="..\CanopyX.Tests\Rendering\StaticGridResultTests.cs" Link="Rendering\StaticGridResultTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\GridFormattingEvaluationTests.cs" Link="Grids\GridFormattingEvaluationTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Grids\GridNumberRoundingTests.cs" Link="Grids\GridNumberRoundingTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\GridColumnGroupTests.cs" Link="Grids\GridColumnGroupTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\TypedGridTests.cs" Link="Grids\TypedGridTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\TypedCalendarTests.cs" Link="Grids\TypedCalendarTests.cs" />

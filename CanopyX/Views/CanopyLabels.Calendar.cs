@@ -197,6 +197,9 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the choice that changes only the moved occurrence. Default "This event".</summary>
     public string CalendarThisEvent { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the note when saving part of a series would lose read-only values. Default "This part of the series cannot be saved because some values are read-only.".</summary>
+    public string CalendarOccurrenceReadOnly { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the choice that changes the moved occurrence and the ones after it. Default "This and following events".</summary>
     public string CalendarThisAndFollowing { get => Get(); set => Set(value); }
 

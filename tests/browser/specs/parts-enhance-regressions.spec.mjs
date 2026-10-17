@@ -136,7 +136,20 @@ test("impossible ISO calendar dates stay text while a real leap day infers datet
 
 const compactView = rowData => ({ protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact", pageSize: 50,
   selection: "none", search: false, columns: [{ id: "name", title: "Name", kind: "text" }, { id: "size", title: "Size", kind: "number" }],
-  source: { kind: "inline" }, rowData });
+  source: { kind: "inline" }, rowData: { version: 1, ...rowData } });
+
+test("compact descriptors keep encoding version one and reject missing or unknown versions", async ({ page }) => {
+  await servePage(page, "<div id='compact'></div>");
+  const results = await page.evaluate(async view => {
+    const errors = [];
+    for (const version of [undefined, 2]) {
+      const api = CanopyX.createDataGrid(document.querySelector("#compact"), { view: { ...view, rowData: { ...view.rowData, version } } });
+      errors.push(await api.ready.then(() => "accepted", error => error.message)); api.destroy();
+    }
+    return errors;
+  }, compactView({ columns: ["name", "size"], count: 1, chunks: [[["ada", "Ada", 7]]] }));
+  expect(results).toEqual(["CanopyX: invalid grid rowData.", "CanopyX: invalid grid rowData."]);
+});
 
 test("compact host chunks preserve invalid numeric values until validation rejects them", async ({ page }) => {
   await servePage(page, "<div id='compact'></div>");
@@ -144,7 +157,7 @@ test("compact host chunks preserve invalid numeric values until validation rejec
     const errors = [];
     for (const value of [NaN, Infinity, undefined]) {
       const api = CanopyX.createDataGrid(document.querySelector("#compact"), { view: { ...view,
-        rowData: { columns: ["name", "size"], count: 1, chunks: [[["bad", "Bad", value]]] } } });
+        rowData: { version: 1, columns: ["name", "size"], count: 1, chunks: [[["bad", "Bad", value]]] } } });
       errors.push(await api.ready.then(() => "accepted", error => error.message)); api.destroy();
     }
     return errors;

@@ -1,6 +1,6 @@
 using System;
 using System.Globalization;
-using System.Text;
+using System.Numerics;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -8,11 +8,12 @@ namespace CanopyX;
 /// <summary>An immutable display format for raw grid numbers: fraction digits and literal text around the digits.</summary>
 /// <remarks>
 /// The browser formats digits and group separators in the reader's language; the static renderer uses the invariant culture.
-/// Formats change display text only. Search, sort, filters, aggregates and exports keep raw values.
+/// Formats change display text only. Search, sort, filters, aggregate calculations and raw exports keep raw values.
+/// The binary64 value read from the protocol is rounded once, halfway away from zero, as JavaScript's fixed-point formatting does.
 /// </remarks>
 public sealed class CanopyGridNumberFormat {
     /// <summary>Creates a number format.</summary>
-    /// <param name="minimumFractionDigits">Fraction digits always shown, from 0 to 10.</param>
+    /// <param name="minimumFractionDigits">Fraction digits always shown, from 0 to 10. A minimum above 3 requires an explicit maximum.</param>
     /// <param name="maximumFractionDigits">Fraction digits shown at most, from the minimum to 10. Values are rounded half away from zero.</param>
     /// <param name="prefix">Optional literal text before the digits and after any minus sign, such as a currency symbol. At most 16 code units.</param>
     /// <param name="suffix">Optional literal text after the digits, such as <c>%</c> or <c> ms</c>. At most 16 code units.</param>
@@ -45,12 +46,16 @@ public sealed class CanopyGridNumberFormat {
     /// <summary>Formats a value with invariant digits, as the script-free renderer shows it.</summary>
     /// <param name="value">A finite value.</param>
     /// <returns>The display text; a value that rounds to zero carries no minus sign.</returns>
-    public string Format(double value) {
+    public string Format(double value) => Format(value, CultureInfo.InvariantCulture);
+
+    internal string Format(double value, CultureInfo culture) {
         if (double.IsNaN(value) || double.IsInfinity(value)) return string.Empty;
-        var pattern = new StringBuilder("#,0");
-        if (MaximumFractionDigits > 0) pattern.Append('.').Append('0', MinimumFractionDigits).Append('#', MaximumFractionDigits - MinimumFractionDigits);
-        var rounded = Math.Round(Math.Abs(value), MaximumFractionDigits, MidpointRounding.AwayFromZero);
-        return (value < 0 && rounded != 0 ? "-" : string.Empty) + Prefix + rounded.ToString(pattern.ToString(), CultureInfo.InvariantCulture) + Suffix;
+        var rounded = CanopyNumericValues.RoundFractionMagnitude(value, MaximumFractionDigits);
+        var whole = BigInteger.DivRem(rounded, BigInteger.Pow(10, MaximumFractionDigits), out var fraction);
+        var decimals = MaximumFractionDigits == 0 ? string.Empty : fraction.ToString(CultureInfo.InvariantCulture).PadLeft(MaximumFractionDigits, '0');
+        while (decimals.Length > MinimumFractionDigits && decimals[decimals.Length - 1] == '0') decimals = decimals.Substring(0, decimals.Length - 1);
+        return (value < 0 && !rounded.IsZero ? culture.NumberFormat.NegativeSign : string.Empty) + Prefix + whole.ToString("N0", culture) +
+            (decimals.Length > 0 ? culture.NumberFormat.NumberDecimalSeparator + decimals : string.Empty) + Suffix;
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {

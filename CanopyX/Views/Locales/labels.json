@@ -506,6 +506,7 @@
   "CalendarCreated": ["Dodano {title} na {time}","{title} hinzugefügt am {time}","{title} añadido el {time}","{title} ajouté le {time}","{title} aggiunto il {time}"],
   "CalendarReceived": ["Zaplanowano {title} na {time}","{title} geplant am {time}","{title} programado el {time}","{title} planifié le {time}","{title} pianificato il {time}"],
   "CalendarOccurrenceTitle": ["Zmień wydarzenie cykliczne","Wiederkehrenden Termin ändern","Cambiar un evento periódico","Modifier un événement récurrent","Modifica un evento ricorrente"],
+  "CalendarOccurrenceReadOnly": ["Nie można zapisać tej części serii, ponieważ niektóre wartości są tylko do odczytu.","Dieser Teil der Serie kann nicht gespeichert werden, weil einige Werte schreibgeschützt sind.","No se puede guardar esta parte de la serie porque algunos valores son de solo lectura.","Cette partie de la série ne peut pas être enregistrée, car certaines valeurs sont en lecture seule.","Questa parte della serie non può essere salvata perché alcuni valori sono di sola lettura."],
   "CalendarThisEvent": ["To wydarzenie","Nur dieser Termin","Este evento","Cet événement","Questo evento"],
   "CalendarThisAndFollowing": ["To i następne wydarzenia","Dieser und alle folgenden Termine","Este evento y los siguientes","Cet événement et les suivants","Questo evento e i successivi"],
   "CalendarAllEvents": ["Wszystkie wydarzenia","Alle Termine","Todos los eventos","Tous les événements","Tutti gli eventi"],

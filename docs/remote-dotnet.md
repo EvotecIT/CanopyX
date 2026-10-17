@@ -621,11 +621,11 @@ writer is not called and every row answers as not saved; the invalid rows retain
   creates the new record and the store implements `ICanopyInsertStore<T>` (`Add(record)`). `NewRecord` runs first, so it sets
   what the caller must not choose (owner, tenant, audit fields); the row's editable values follow (never the key, which the
   store or `NewRecord` assigns), then `Saving`, `Add` and the save. The answer carries the stored key as `newId` and canonical
-  cells. With `Options.Scope`, a new record that is not in the scope after saving is rolled back and answers as not saved, so a
-  caller cannot add a record it could not read; `Scope` must then query the same unit of work as the store (the same
-`DbContext`), which sees the unsaved record inside the transaction. The save runs before the scope check, so store-side effects
-of a rolled-back insert (triggers, identity values) still happen. In a `PerBatch` commit an insert is kept only when every row
-is saved.
+  cells. After saving, the new record must be returned by the store's `Records` query and, when configured, `Options.Scope`.
+  A record excluded by either query is rolled back and answers as not saved without a `newId`. Both queries must see the saved
+  record in the same unit of work (the same `DbContext`) inside the transaction. The save runs before the scope check, so
+  store-side effects of a rolled-back insert (triggers, identity values) still happen. In a `PerBatch` commit an insert is
+  kept only when every row is saved.
 
 The writer reaches the store through `ICanopyWriteStore<T>` (and `ICanopyInsertStore<T>` for inserts), so `CanopyX.Data` stays
 free of EF Core. The EF Core adapter:

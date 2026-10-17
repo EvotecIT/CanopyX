@@ -42,6 +42,7 @@
     tlFocusCell(rowIndex, unitIndex) {
       const tree = this.tlTree, axis = this.tlAxis, main = this.tlMain, row = tree.rows[rowIndex], unit = axis.units[unitIndex];
       if (!row || !unit) return;
+      if (!this.calInValid({ firstDay: unit.first, lastDay: unit.last })) return;
       const top = tree.tops[rowIndex], bottom = tree.tops[rowIndex + 1] ?? top + tree.rowH, head = this.tlHead.offsetHeight;
       if (top < main.scrollTop) main.scrollTop = top;
       else if (bottom > main.scrollTop + main.clientHeight - head) main.scrollTop = bottom - main.clientHeight + head;
@@ -65,6 +66,8 @@
       if (!lane?.dataset.cxResource || !this.tlAxis) return false;
       const box = this.tlCanvas.getBoundingClientRect(), x = this.calRtl ? box.right - event.clientX : event.clientX - box.left, axis = this.tlAxis;
       const index = Math.max(0, Math.min(axis.units.length - 1, Math.floor(x / axis.width)));
+      const unit = axis.units[index];
+      if (!this.calInValid({ firstDay: unit.first, lastDay: unit.last })) return false;
       this.calFocus = { day: axis.units[index].first, minutes: null, event: null, resource: lane.dataset.cxResource, unit: index };
       this.tlSelectUnit(axis.units[index], lane.dataset.cxResource);
       this.calRestoreFocus(true);
@@ -92,13 +95,14 @@
       const ghost = this.calGhost ||= h("div", "cx-cal-ghost");
       ghost.className = "cx-cal-ghost cx-tl-ghost" + (drag.problem ? " cx-cal-conflict" : "");
       ghost.setAttribute("aria-hidden", "true");
-      const label = (drag.drop ? drag.event.title + " · " : "") + this.calTimeText({ ...drag.event, start: proposal.start, end: proposal.end, sd: this.calZone.day(proposal.start), ed: this.calZone.day(Math.max(proposal.start, proposal.end - 1)) });
+      const first = proposal.allDay ? Math.floor(proposal.start / CAL_DAY) : this.calZone.day(proposal.start), last = Math.max(proposal.start, proposal.end - 1);
+      const label = (drag.drop ? drag.event.title + " · " : "") + this.calTimeText({ ...drag.event, start: proposal.start, end: proposal.end, sd: first, ed: proposal.allDay ? Math.floor(last / CAL_DAY) : this.calZone.day(last) });
       // A bar a few pixels wide at day zoom cannot hold its text: the time and any reason sit in a label beside it.
       const text = ghost.querySelector(".cx-tl-ghost-label") || ghost.appendChild(h("span", "cx-tl-ghost-label"));
       if (ghost.firstChild !== text) ghost.replaceChildren(text);
       setText(text, drag.problem ? label + " · " + drag.problem : label); ghost.title = text.textContent;
       if (!lane) { ghost.remove(); return; }
-      const x1 = axis.x(proposal.start), x2 = Math.max(x1 + 3, axis.x(proposal.end));
+      const span = this.calDisplaySpan(proposal), x1 = axis.x(span.start), x2 = Math.max(x1 + 3, axis.x(span.end));
       ghost.style.insetInlineStart = x1 + "px"; ghost.style.width = (x2 - x1) + "px";
       if (ghost.parentNode !== lane) lane.appendChild(ghost);
     }

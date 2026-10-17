@@ -504,6 +504,7 @@ const labels = Object.freeze({
   calendarCreated: "Dodano {title} na {time}",
   calendarReceived: "Zaplanowano {title} na {time}",
   calendarOccurrenceTitle: "Zmień wydarzenie cykliczne",
+  calendarOccurrenceReadOnly: "Nie można zapisać tej części serii, ponieważ niektóre wartości są tylko do odczytu.",
   calendarThisEvent: "To wydarzenie",
   calendarThisAndFollowing: "To i następne wydarzenia",
   calendarAllEvents: "Wszystkie wydarzenia",

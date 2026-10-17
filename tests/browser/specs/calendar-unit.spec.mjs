@@ -55,6 +55,17 @@ test.describe("calendar helpers", () => {
     expect(times).toEqual(["2026-10-30T13:00:00Z", "2026-10-31T13:00:00Z", "2026-11-01T14:00:00Z", "2026-11-02T14:00:00Z"]);
   });
 
+  test("an explicit start in the second DST fold retains its first instant", async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const kit = window.kit, zone = kit.calZone("Europe/Warsaw"), rule = kit.calRule("FREQ=DAILY;COUNT=1"), start = Date.parse("2026-10-25T02:30:00+01:00");
+      return {
+        starts: kit.calExpand(rule, start, 1800000, zone, Date.parse("2026-10-25T01:15:00Z"), Date.parse("2026-10-25T01:45:00Z"), new Set(), new Set(), 10).map(kit.calIso),
+        end: kit.calIso(kit.calSeriesEnd(rule, start, 1800000, zone))
+      };
+    });
+    expect(result).toEqual({ starts: ["2026-10-25T01:30:00Z"], end: "2026-10-25T02:00:00Z" });
+  });
+
   test("days lay out in lanes that keep multi-day bars whole, and overlapping times share columns", async ({ page }) => {
     const layout = await page.evaluate(() => {
       const kit = window.kit, event = (id, sd, ed) => ({ id, sd, ed, allDay: true, start: sd, end: ed });
@@ -80,5 +91,23 @@ test.describe("calendar helpers", () => {
     expect(Math.max(...result.sizes)).toBeLessThanOrEqual(75);
     expect(result.continued).toBe(true);
     expect(result.roundTrip).toBe(true);
+  });
+
+  test("iCalendar leap seconds normalize consistently across every timestamp property", async ({ page }) => {
+    const actual = await page.evaluate(() => {
+      const cases = [{ suffix: "Z", parameter: "", offset: 0 }, { suffix: "", parameter: "", offset: 0 },
+        { suffix: "", parameter: ";TZID=Europe/Warsaw", offset: 3600000 }];
+      return cases.map(item => {
+        const property = (name, text) => name + item.parameter + ":" + text + item.suffix;
+        const text = ["BEGIN:VCALENDAR", "BEGIN:VEVENT", "UID:seconds", "SUMMARY:Leap second", property("DTSTART", "20161231T235960"),
+          property("DTEND", "20170101T000060"), "RRULE:FREQ=DAILY;COUNT=2", property("EXDATE", "20170101T235960"),
+          property("RECURRENCE-ID", "20161231T235960"), "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+        const parsed = window.kit.calIcsParse(text), event = parsed.events[0], iso = value => new Date(Date.parse(value) + item.offset).toISOString();
+        return { count: parsed.events.length, skipped: parsed.skipped, start: iso(event.start), end: iso(event.end),
+          exception: iso(event.exceptions), recurrenceId: iso(event.recurrenceId) };
+      });
+    });
+    expect(actual).toEqual(Array.from({ length: 3 }, () => ({ count: 1, skipped: 0, start: "2016-12-31T23:59:59.000Z",
+      end: "2017-01-01T00:00:59.000Z", exception: "2017-01-01T23:59:59.000Z", recurrenceId: "2016-12-31T23:59:59.000Z" })));
   });
 });

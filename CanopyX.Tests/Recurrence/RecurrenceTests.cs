@@ -160,6 +160,38 @@ public sealed class RecurrenceTests {
         Assert.Equal(fromUtc, fromOffset);
     }
 
+    [Theory]
+    [InlineData(1, "offset")]
+    [InlineData(1, "utc")]
+    [InlineData(1, "local")]
+    [InlineData(2, "offset")]
+    [InlineData(2, "utc")]
+    [InlineData(2, "local")]
+    public void Occurrences_PreserveTheProvidedFoldInstant_ThroughBoundsExceptionsAndSeriesEnd(int offset, string representation) {
+        var warsaw = RecurrenceFixture.Zone("Europe/Warsaw");
+        var start = new DateTimeOffset(2026, 10, 25, 2, 30, 0, TimeSpan.FromHours(offset));
+        var moment = representation == "local" ? start.UtcDateTime.ToLocalTime() : start.UtcDateTime;
+        IEnumerable<DateTimeOffset> Expand(CanopyRecurrence rule, DateTimeOffset? from = null, DateTimeOffset? to = null, string? exceptions = null) =>
+            representation == "offset" ? rule.Occurrences(start, warsaw, from, to, exceptions) : rule.Occurrences(moment, warsaw, from, to, exceptions);
+        DateTimeOffset? End(CanopyRecurrence rule, string? exceptions = null) => representation == "offset"
+            ? rule.SeriesEnd(start, TimeSpan.FromMinutes(30), warsaw, exceptions)
+            : rule.SeriesEnd(moment, TimeSpan.FromMinutes(30), warsaw, exceptions);
+
+        var occurrences = Expand(CanopyRecurrence.Daily().Times(2)).ToList();
+        Assert.Equal(new[] { start, new DateTimeOffset(2026, 10, 26, 2, 30, 0, TimeSpan.FromHours(1)) }, occurrences);
+        Assert.Equal(start.Offset, occurrences[0].Offset);
+        Assert.Equal(start, Assert.Single(Expand(CanopyRecurrence.Daily().Times(1), start.AddMinutes(-15), start.AddMinutes(15))));
+        Assert.Empty(Expand(CanopyRecurrence.Daily().Until(start.AddMinutes(-1))));
+        Assert.Equal(start, Assert.Single(Expand(CanopyRecurrence.Daily().Until(start))));
+        Assert.Empty(Expand(CanopyRecurrence.Daily().Times(1), exceptions: start.ToString("O")));
+        // The other fold is a different recurrence identity, even though its wall clock reads the same.
+        var otherFold = new DateTimeOffset(2026, 10, 25, 2, 30, 0, TimeSpan.FromHours(offset == 1 ? 2 : 1));
+        Assert.Equal(start, Assert.Single(Expand(CanopyRecurrence.Daily().Times(1), exceptions: otherFold.ToString("O"))));
+        var expectedEnd = TimeZoneInfo.ConvertTime(start.AddMinutes(30), warsaw);
+        Assert.Equal(expectedEnd, End(CanopyRecurrence.Daily().Times(1)));
+        Assert.Equal(expectedEnd, End(CanopyRecurrence.Daily().Times(1), start.ToString("O")));
+    }
+
     [Fact]
     public void Occurrences_ExceptionsRemoveInstantsAndWholeDays() {
         var utc = TimeZoneInfo.Utc;

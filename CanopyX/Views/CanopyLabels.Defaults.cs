@@ -514,6 +514,7 @@ public sealed partial class CanopyLabels {
         [nameof(CalendarCreated)] = "{title} added on {time}",
         [nameof(CalendarReceived)] = "{title} scheduled on {time}",
         [nameof(CalendarOccurrenceTitle)] = "Change a repeating event",
+        [nameof(CalendarOccurrenceReadOnly)] = "This part of the series cannot be saved because some values are read-only.",
         [nameof(CalendarThisEvent)] = "This event",
         [nameof(CalendarThisAndFollowing)] = "This and following events",
         [nameof(CalendarAllEvents)] = "All events",

@@ -16,6 +16,7 @@
         const fresh = [...this.calGrid.querySelectorAll(".cx-cal-allcell")], target = fresh[index === "last" ? fresh.length - 1 : Math.max(0, Math.min(fresh.length - 1, index))];
         if (!target) return;
         const day = Number(target.dataset.cxDay);
+        if (!this.calAllowsSpan(day * CAL_DAY, (day + 1) * CAL_DAY, true)) return;
         this.calFocus = { day, minutes: at, event: null, resource: target.dataset.cxResource };
         const element = at === null ? target : this.calGrid.querySelector('.cx-cal-slot[data-cx-day="' + day + '"][data-cx-minutes="' + at + '"]' + (target.dataset.cxResource !== undefined ? '[data-cx-resource="' + CSS.escape(target.dataset.cxResource) + '"]' : ""));
         if (element) { for (const other of this.calBody.querySelectorAll('[tabindex="0"]')) other.tabIndex = -1; element.tabIndex = 0; element.focus(); }

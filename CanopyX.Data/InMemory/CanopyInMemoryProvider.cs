@@ -149,11 +149,11 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
             return last == null || last.Value > from;
         }
         var resources = request.Resources?.Cast<object>().ToList();
-        var matches = Select(Load(cancellationToken), request.Query).Where(record =>
+        var matches = Select(Load(cancellationToken), request.Query, cancellationToken).Where(record =>
             (resources == null || ProtocolSemantics.Matches(record.Values[request.Resource!.Ordinal], request.Resource.Kind, CanopyGridFilterOperator.In, resources)) && Overlaps(record)).ToList();
         var ordered = matches.Select(record => (Record: record, Start: At(record, request.Start)!.Value)).ToArray();
         Array.Sort(ordered, (left, right) => left.Start != right.Start ? left.Start.CompareTo(right.Start) : string.CompareOrdinal(left.Record.Id, right.Record.Id));
-        var rows = ordered.Take(request.Limit).Select(item => Row(item.Record));
+        var rows = ordered.Take(request.Limit).Select(item => Row(item.Record, cancellationToken));
         return new ValueTask<CanopyRangeResult>(new CanopyRangeResult(matches.Count, rows));
     }
 

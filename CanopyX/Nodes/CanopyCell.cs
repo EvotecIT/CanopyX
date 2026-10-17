@@ -185,7 +185,7 @@ public sealed partial class CanopyCell {
         switch (_value) {
             case long whole: return column.Format.Format(whole);
             case double real: return column.Format.Format(real);
-            case decimal exact: return column.Format.Format((double)exact);
+            case decimal exact: return column.Format.Format(CanopyNumericValues.DecimalToDouble(exact));
             default: return FormatValue(column.Kind, labels);
         }
     }

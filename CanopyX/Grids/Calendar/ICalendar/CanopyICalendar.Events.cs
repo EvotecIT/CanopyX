@@ -88,6 +88,9 @@ public static partial class CanopyICalendar {
             }
             var utc = value.EndsWith("Z", StringComparison.OrdinalIgnoreCase);
             var wallText = utc ? value.Substring(0, value.Length - 1) : value;
+            // RFC 5545 permits a leap second. As the browser reader does, represent it by the preceding second;
+            // DateTime has no second 60. Other malformed components still go through the ordinary exact parser.
+            if (wallText.Length == 15 && wallText[13] == '6' && wallText[14] == '0') wallText = wallText.Substring(0, 13) + "59";
             if (wallText.Length != 15 || !DateTime.TryParseExact(wallText, "yyyyMMdd'T'HHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var wall)) return null;
             if (utc) return InRange(DateTime.SpecifyKind(wall, DateTimeKind.Utc), false);
             var name = ZoneName(line);
@@ -191,6 +194,12 @@ public static partial class CanopyICalendar {
         yield return value.Substring(start);
     }
 
+    /// <summary>The browser-facing alias for a known import zone, reusing the reader's IANA-to-Windows aliases.</summary>
+    internal static string? CalendarTimeZone(string name) => Zones.BrowserName(name);
+
+    /// <summary>The system rules of an imported zone; unzoned and floating starts were read as UTC.</summary>
+    internal static TimeZoneInfo? CalendarSystemZone(string? name) => name == null ? TimeZoneInfo.Utc : Zones.Lookup(name);
+
     /// <summary>Finds TZID zones once per import: system zones by IANA or Windows name, and a few common IANA names on .NET Framework.</summary>
     private sealed class Zones {
         private static readonly Dictionary<string, string> Windows = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
@@ -235,7 +244,33 @@ public static partial class CanopyICalendar {
             return true;
         }
 
-        private static TimeZoneInfo? Lookup(string name) {
+        /// <summary>A name the calendar can send to browsers; a Windows alias is used only when its system rules agree.</summary>
+        internal static string? BrowserName(string name) {
+            var zone = Lookup(name);
+            if (zone == null) return null;
+            if (IsIanaName(name)) return name;
+            string? best = null;
+            foreach (var alias in Windows) {
+                if (!string.Equals(alias.Value, name, StringComparison.OrdinalIgnoreCase)) continue;
+                var candidate = Lookup(alias.Key);
+                if (candidate != null && zone.HasSameRules(candidate) && (best == null || string.CompareOrdinal(alias.Key, best) < 0)) best = alias.Key;
+            }
+            return best;
+        }
+
+        /// <summary>Whether a known system name is shaped like a browser IANA name.</summary>
+        private static bool IsIanaName(string name) {
+            if (name.Length == 0 || name.Length > 64 || !(name[0] >= 'A' && name[0] <= 'Z' || name[0] >= 'a' && name[0] <= 'z') || name.EndsWith("/", StringComparison.Ordinal)) return false;
+            var previous = '/';
+            foreach (var character in name) {
+                var allowed = character >= 'A' && character <= 'Z' || character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '_' || character == '-' || character == '+' || character == '/';
+                if (!allowed || character == '/' && previous == '/') return false;
+                previous = character;
+            }
+            return true;
+        }
+
+        internal static TimeZoneInfo? Lookup(string name) {
             var zone = System(name);
             if (zone == null && Windows.TryGetValue(name, out var windows)) zone = System(windows);
             return zone;

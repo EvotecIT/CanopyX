@@ -40,7 +40,7 @@ public static partial class CanopyHtmlAssets {
 
     /// <summary>The parts with every part they require (Build/parts.json requires), in manifest order: a part the page carries
     /// never has to fetch another from beside the page.</summary>
-    private static IReadOnlyList<CanopyHtmlPart> WithRequired(IEnumerable<CanopyHtmlPart> needed) {
+    internal static IReadOnlyList<CanopyHtmlPart> WithRequired(IEnumerable<CanopyHtmlPart> needed) {
         var names = new HashSet<string>(needed.Select(part => part.Name), StringComparer.Ordinal);
         var pending = new Stack<string>(names);
         while (pending.Count > 0) {
@@ -58,8 +58,7 @@ public static partial class CanopyHtmlAssets {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        var required = RequiredGridParts(view);
-        return Parts.Where(required.Contains).ToList().AsReadOnly();
+        return WithRequired(RequiredGridParts(view));
     }
 
     private static HashSet<CanopyHtmlPart> RequiredGridParts(CanopyDataGridView view) {

@@ -76,10 +76,21 @@
       return need > result.width ? Object.freeze({ ...result, width: need }) : result;
     },
     // A cell of aggregates: "avg 36.2 · max 98" in the reporting runtime's labelled format, the declared labels with full
-    // values as its tooltip and accessible name. Aggregate cells may run into the empty cells before them.
+    // values as its tooltip and accessible name. A bounded button opens the complete values without covering other cells.
     paintAggregates(cell, column, aggregates, values) {
       const parts = reportingAggregateParts(this, column, aggregates, values);
-      setText(cell, parts.text); cell.title = parts.title; cell.classList.add("cx-aggregate");
+      cell.title = parts.title; cell.classList.add("cx-aggregate");
       if (parts.text) cell.setAttribute("aria-label", parts.title); else cell.removeAttribute("aria-label");
+      if (!parts.text) { cell.replaceChildren(); return; }
+      let button = cell.querySelector(":scope > .cx-aggregate-button");
+      if (!button) {
+        button = h("button", "cx-grid-group-aggregates cx-aggregate-button"); button.type = "button";
+        button.setAttribute("aria-haspopup", "dialog"); cell.replaceChildren(button);
+        button.addEventListener("click", event => {
+          event.stopPropagation(); this.showReportingText(column, button._cxAggregateText, button);
+        });
+      }
+      if (button.textContent !== parts.text) setText(button, parts.text);
+      button._cxAggregateText = parts.title; button.title = parts.title; button.setAttribute("aria-label", parts.title);
     }
   });

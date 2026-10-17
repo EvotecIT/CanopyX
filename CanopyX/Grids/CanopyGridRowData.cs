@@ -168,7 +168,7 @@ public sealed class CanopyGridRowData {
 
     /// <summary>Writes the <c>rowData</c> descriptor of the grid document.</summary>
     internal void WriteDescriptor(CanopyJsonWriter writer, string? sidecarBase) {
-        writer.BeginObject().StringArray("columns", Columns).Property("count", RowCount).Property("ordered", true);
+        writer.BeginObject().Property("version", 1).StringArray("columns", Columns).Property("count", RowCount).Property("ordered", true);
         if (Gzip) writer.Property("encoding", "gzip");
         writer.OptionalProperty("base", sidecarBase).Property("chunks", ChunkCount).EndObject();
     }

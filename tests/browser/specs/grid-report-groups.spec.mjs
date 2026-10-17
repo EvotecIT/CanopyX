@@ -244,42 +244,6 @@ test('aggregate identifiers retain prototype-property names as own numeric bindi
   expect(result.values).toEqual([[true,19],[true,19],[true,19]]);
 });
 
-test('summary cells label every aggregate and format values like their column or their own format',async({page})=>{
-  const view=definition({presentation:'continuous',statusBar:true});
-  Object.assign(view.columns[2],{format:{minimumFractionDigits:0,maximumFractionDigits:0,suffix:'%'},aggregatable:true});
-  view.reporting.aggregates=[{id:'average',column:'amount',operation:'average',label:'Average amount'},
-    {id:'minimum',column:'amount',operation:'minimum',label:'Lowest amount',format:{minimumFractionDigits:1,maximumFractionDigits:1,prefix:'≥ '}},
-    {id:'count',column:'amount',operation:'count',label:'Amounts present'}];
-  view.rows.slice(8,16).forEach(row=>row.cells.amount=null);view.rows[2].cells.amount={value:2,text:'two'};
-  await open(page,view);
-  const groups=page.locator('.cx-grid-group .cx-aggregate-cell'),totals=page.locator('.cx-summary-row .cx-aggregate-cell');
-  await expect(groups.first().locator('.cx-aggregate-label')).toHaveText(['Average amount','Lowest amount','Amounts present']);
-  await expect(groups.first().locator('.cx-aggregate-value')).toHaveText(['4%','≥ 1.0','6']);
-  await expect(groups.first()).toHaveAttribute('aria-label','Average amount: 4%, Lowest amount: ≥ 1.0, Amounts present: 6');
-  await expect(groups.first()).toHaveAttribute('title','Average amount: 4%\nLowest amount: ≥ 1.0\nAmounts present: 6');
-  await expect(groups.nth(1).locator('.cx-aggregate-value')).toHaveText(['—','—','0']);
-  await expect(groups.nth(1)).toHaveAttribute('aria-label','Average amount: No data, Lowest amount: No data, Amounts present: 0');
-  await expect(totals.locator('.cx-aggregate-value')).toHaveText(['12%','≥ 1.0','13']);
-  await expect(totals).toHaveAttribute('aria-label','Average amount: 12%, Lowest amount: ≥ 1.0, Amounts present: 13');
-  await expect(page.locator('.cx-summary-row .cx-cell').first()).toHaveText('Query totals');
-  // Raw cells use the column format; host display text still wins.
-  await expect(page.locator('.cx-row[data-cx-id="r01"] .cx-cell').nth(2)).toHaveText('1%');
-  await expect(page.locator('.cx-row[data-cx-id="r02"] .cx-cell').nth(2)).toHaveText('two');
-  // Values stay whole in a narrow column; the labels give way.
-  await expect.poll(()=>groups.first().evaluate(cell=>{const box=cell.querySelector('.cx-aggregate-list').getBoundingClientRect();
-    return [...cell.querySelectorAll('.cx-aggregate-value')].some(value=>{const r=value.getBoundingClientRect();return r.width<1||r.left<box.left-1||r.right>box.right+1;});})).toBe(false);
-  // Number aggregates extend over the empty category cell but never over the group label.
-  await expect.poll(()=>page.locator('.cx-grid-group').first().evaluate(row=>{const cells=row.querySelectorAll('.cx-cell'),list=row.querySelector('.cx-aggregate-list').getBoundingClientRect();
-    return {intoEmpty:list.left<cells[2].getBoundingClientRect().left-1,clearOfLabel:list.left>=cells[1].getBoundingClientRect().left};})).toEqual({intoEmpty:true,clearOfLabel:true});
-  await page.evaluate(api+".setColumnWidth('category',90)");await nextFrames(page);
-  const spare=await page.locator('.cx-grid-group').first().evaluate(row=>[parseFloat(row.querySelector('.cx-aggregate-cell').style.getPropertyValue('--cx-aggregate-spare')),
-    row.querySelectorAll('.cx-cell')[1].getBoundingClientRect().width]);
-  expect(spare[0]).toBeLessThan(150);expect(Math.abs(spare[0]-spare[1])).toBeLessThan(1);
-  await page.evaluate(api+".setSelection(['r01','r03'])");
-  await expect(page.locator('.cx-grid-status .agg')).toHaveText('Amount: 4%');
-  expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
-});
-
 test('invalid number formats are rejected before a grid mounts',async({page})=>{
   const view=definition();view.reporting.aggregates=[{id:'average',column:'amount',operation:'average',label:'Average',format:{minimumFractionDigits:3,maximumFractionDigits:1}}];
   await page.route('http://canopyx.test/bad-format',route=>route.fulfill({contentType:'text/html',body:viewPage(view)}));

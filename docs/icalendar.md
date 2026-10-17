@@ -21,7 +21,7 @@ calendar.SaveHtmlPage("holidays.html");
 | --- | --- |
 | `Events` | The `CanopyICalendarEvent`s, in the order of the text. |
 | `Skipped` | How many events were skipped because they were malformed or had no readable start. |
-| `TimeZone` | The IANA zone of the first repeating event whose start names one, or null. Set it as the calendar's `TimeZone`: series repeat in that zone, so occurrences keep their wall time across daylight saving changes and match the exceptions and moved occurrences, which are UTC instants. Without it, series repeat in UTC. |
+| `TimeZone` | A browser-compatible IANA zone for the first active timed series with a supported zone, or null. A supported Windows name uses an equivalent alias from the reader's existing mapping. Set it as the calendar's `TimeZone` so series keep their wall time across daylight saving changes. Without it, series repeat in UTC. |
 | `Notes` | At most 100 notes about events read differently (an unknown time zone read as UTC, a repeat rule outside the supported subset). They name events by position and never repeat the text. |
 | `ToCalendarEvents(source)` | The events as `CanopyCalendarEvent`s for a basic calendar, each with the optional source id. |
 
@@ -45,6 +45,14 @@ with a `RECURRENCE-ID`) becomes an exception of the series and an event of its o
 keeps at most 1,000 exceptions (moved occurrences past that show twice), and an event that replaces an occurrence of a series
 whose rule fell back to a single event shows beside it.
 
+A basic calendar has one recurrence time zone. `ToCalendarEvents` accepts timed series whose zones have the same system
+rules, including equivalent IANA and Windows aliases. It throws `InvalidOperationException` when active timed series use
+incompatible zones (for example UTC and `Europe/Warsaw`), or a known Windows zone has no equivalent browser alias in the
+reader's mapping. This prevents an import from silently shifting later occurrences across a daylight saving change.
+Cancelled series, moved occurrences, all-day series and single events do not need a common recurrence zone. For a mixed-zone
+file, read `Events` and place timed series in separate calendars with their corresponding zones; parsing and the raw events
+remain available even when conversion is refused.
+
 ## In the browser
 
 A calendar source with `ics` reads a file on the page's own site ([Sources and iCalendar](calendar.md#sources-and-icalendar)):
@@ -58,6 +66,10 @@ The `calendar-ics` part fetches it once with the page's credentials, refuses a r
 occurrence of a series becomes an exception of it. A failure shows "Could not read Public holidays: ..." in the calendar's
 notice and raises the grid's `error` event; `canopyx:calendarImport` reports `{ source, events, skipped, notes }`. Time zones
 are the browser's own IANA zones; Windows zone names are not read there.
+
+Each imported timed series keeps its own IANA or UTC recurrence zone, including when a file mixes zones. Changing the
+calendar's display zone changes how its times are shown; recurrence, excluded dates and iCalendar export keep the imported
+series' wall time across daylight saving changes. Imported all-day events keep their dates.
 
 Because a calendar expands series on every paint, the browser also bounds imported repeat rules: at most 1,000 repeating
 events a file (later ones show once), a rule must repeat within its first thousand periods (a rule that never matches shows

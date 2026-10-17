@@ -86,3 +86,19 @@
       calInvalid("calendar span is { count (1 to 366), unit (day, week or month) }.");
     return { count: value.count, unit: value.unit };
   }
+
+  Object.assign(DataGrid.prototype, {
+    /** Whether every covered date of a selection or edit is inside the end-exclusive valid range. */
+    calAllowsSpan(start, end, allDay) {
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return false;
+      const valid = this.cal.validRange;
+      if (!valid) return true;
+      const last = Math.max(start, end - 1), firstDay = allDay ? Math.floor(start / CAL_DAY) : this.calZone.day(start);
+      const lastDay = allDay ? Math.floor(last / CAL_DAY) : this.calZone.day(last);
+      return firstDay >= valid.first && lastDay <= valid.last;
+    },
+    /** All-day values are dates: only presentation and day selection map them onto the display zone's midnight axis. */
+    calDisplaySpan(event) {
+      return event.allDay ? { start: this.calZone.start(Math.floor(event.start / CAL_DAY)), end: this.calZone.start(Math.floor(event.end / CAL_DAY)) } : event;
+    }
+  });

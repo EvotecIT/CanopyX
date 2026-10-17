@@ -168,6 +168,17 @@ public sealed class RangeParserTests {
         Assert.Equal(CanopyRequestError.StaleRevision, (await Assert.ThrowsAsync<CanopyRequestException>(() => handler.RangeAsync(Doc("")))).Error);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RangeAsync_RevisionChangedDuringSameCountRead_AnswersStale(bool suppliedRevision) {
+        var handler = new CanopyRemoteHandler(Schema, new ChangingRevisionProvider());
+        var json = Doc("", suppliedRevision ? "{\"revision\":\"r1\"}" : "{}");
+        var error = await Assert.ThrowsAsync<CanopyRequestException>(() => handler.RangeAsync(json));
+        Assert.Equal(CanopyRequestError.StaleRevision, error.Error);
+        Assert.Equal(409, error.StatusCode);
+    }
+
     [Fact]
     public async Task FromRangeQuery_TypedRequest_RoundTripsThroughTheWire() {
         var query = new CanopyGridQuery("schedule") { Search = "patch", Revision = "r1" };
@@ -245,5 +256,21 @@ public sealed class RangeParserTests {
     private sealed class ShortProvider : PlainProvider, ICanopyRangeProvider {
         public ValueTask<CanopyRangeResult> RangeAsync(CanopyRangeRequest request, CancellationToken cancellationToken) =>
             new ValueTask<CanopyRangeResult>(new CanopyRangeResult(3, Array.Empty<CanopyGridRow>()));
+    }
+
+    /// <summary>Changes the revision during a valid same-count read, which a row-count check alone cannot detect.</summary>
+    private sealed class ChangingRevisionProvider : ICanopyDataProvider, ICanopyRangeProvider {
+        private string _revision = "r1";
+        public ValueTask<string> GetRevisionAsync(CancellationToken cancellationToken) => new ValueTask<string>(_revision);
+        public ValueTask<CanopyRangeResult> RangeAsync(CanopyRangeRequest request, CancellationToken cancellationToken) {
+            _revision = "r2";
+            var row = new CanopyGridRow("same-count") { Cells = { ["starts"] = Schedule.Epoch } };
+            return new ValueTask<CanopyRangeResult>(new CanopyRangeResult(1, new[] { row }));
+        }
+        public ValueTask<CanopyPageResult> QueryAsync(CanopyDataRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<int> CountAsync(CanopyDataRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public IAsyncEnumerable<CanopyGridRow> ReadAsync(CanopyDataRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<CanopyFacetResult> FacetAsync(CanopyFacetRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<CanopySummaryResult> SummarizeAsync(CanopySummaryRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }

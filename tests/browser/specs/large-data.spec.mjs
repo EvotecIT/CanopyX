@@ -8,7 +8,7 @@ import { exampleUrl, nextFrames, repo, runtimeAssets, viewPage } from "./support
 const read = (file) => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets", file), "utf8");
 const columns = [{ id: "name", title: "Name", kind: "text", sortable: true }, { id: "size", title: "Size", kind: "number", sortable: true }];
 const compactView = (rowData, extra) => Object.assign({ protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact rows", rowHeight: 32, pageSize: 50,
-  selection: "multiple", search: true, columns, source: { kind: "inline" }, rowData }, extra);
+  selection: "multiple", search: true, columns, source: { kind: "inline" }, rowData: { version: 1, ...rowData } }, extra);
 const chunk = (from, to) => Array.from({ length: to - from }, (_, i) => ["r" + String(from + i).padStart(5, "0"), "Item " + (from + i), (from + i) % 97]);
 const ids = (page) => page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].sort((a, b) => a.getAttribute("aria-rowindex") - b.getAttribute("aria-rowindex")).map((row) => row.getAttribute("data-cx-id")));
 
@@ -61,7 +61,7 @@ test("a compact single-file grid shows what the row objects show", async ({ page
     });
     results.push(result);
   }
-  expect(formats).toEqual([{ rowData: "gzip", version: false, scripts: 20 }, { rows: 100000 }]);
+  expect(formats).toEqual([{ rowData: "gzip", version: true, scripts: 20 }, { rows: 100000 }]);
   expect(results[0].first).toBe("100001");
   expect(results[0].rows).toBe(100000);
   expect(results[0]).toEqual(results[1]);
@@ -161,9 +161,9 @@ test("formatting bars over compact row data take their bounds from every row, no
   await expect.poll(() => page.evaluate(() => document.querySelector('.cx-row[data-cx-id="r09"] .cx-fmt-bar')?.style.getPropertyValue("--cx-fmt-w"))).toBe("0.9%");
 });
 
-test("row data has no version of its own: the runtime ignores unknown members, as elsewhere", async ({ page }) => {
-  // The schema refuses members it does not know (a version among them); the runtime reads the rows regardless.
-  const view = compactView({ columns: ["name"], count: 2, chunks: [[["a", "Alpha"], ["b", "Beta"]]], version: 7, future: { kind: "x" } });
+test("version one row data remains readable with unknown optional members", async ({ page }) => {
+  // The strict schema refuses unknown members; tolerant runtime readers keep known version-one semantics.
+  const view = compactView({ columns: ["name"], count: 2, chunks: [[["a", "Alpha"], ["b", "Beta"]]], future: { kind: "x" } });
   await page.route("http://canopyx.test/unknown", (route) => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
   await page.goto("http://canopyx.test/unknown");
   await page.waitForSelector(".cx-row[data-cx-id]");

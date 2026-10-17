@@ -4,12 +4,12 @@
 // call to the frame after the first event is in the DOM, as the median of three cold loads, on Chromium, whose long task
 // observer and DevTools timing they need. The 300 ms timeline reads its events from a source with the range capability, as
 // a server-backed timeline of that size does; the same data inline has a looser budget. The data is generated in the page
-// before the clock starts, and the timings are printed for pull requests. The gates run as their own project after the
-// others (playwright.config.mjs), never beside them; alone: `node node_modules/@playwright/test/cli.js test
-// --project=calendar-performance --no-deps`.
+// before the clock starts, and all timings are printed. The optional project runs after the other benchmark projects;
+// opt in with `node tools/browsers.mjs chromium --benchmarks --project=calendar-performance --no-deps`.
 import { expect, test } from "@playwright/test";
 import { median, runtimeAssets } from "./support.mjs";
-import { openBuilt, timelinePage } from "./calendar-support.mjs";
+import { loadKit, openBuilt, timelinePage } from "./calendar-support.mjs";
+import { parseAdversarialCalendar } from "./calendar-parser-fixture.mjs";
 
 const MONTH_FIRST_PAINT_MS = 150;
 const TIMELINE_FIRST_ROWS_MS = 300;
@@ -61,9 +61,16 @@ const record = page => page.evaluate(() => {
   requestAnimationFrame(tick);
 });
 
-test.describe("calendar performance gates", () => {
+test.describe("calendar performance measurements", { tag: "@benchmark" }, () => {
   test.skip(({ browserName }) => browserName !== "chromium", "The long task observer and stable timings need Chromium.");
   test.setTimeout(240000);
+
+  test("the bounded adversarial iCalendar import finishes within 3,000 ms", async ({ page }) => {
+    await loadKit(page);
+    const result = await parseAdversarialCalendar(page);
+    console.log("adversarial iCalendar import: " + result.ms + " ms");
+    expect(result.ms).toBeLessThan(3000);
+  });
 
   test("a month of 5,000 events paints within " + MONTH_FIRST_PAINT_MS + " ms", async ({ browser }) => {
     const ms = await firstPaint(browser, "month.html", monthPage());

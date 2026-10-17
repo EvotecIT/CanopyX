@@ -71,6 +71,11 @@
       for (const [id, cell] of Object.entries(event.base.row.cells)) if (!skip.has(id)) values[id] = cellValue(cell) ?? null;
       return values;
     },
+    /** A local insert keeps all its cells; a writer receives only editable values, so it cannot copy a read-only value. */
+    calOccurrenceCopyProblem(cells) {
+      if (this.editOwnsRows() && !this.edit.options.commit && typeof this.source.commit !== "function") return null;
+      return Object.keys(cells).some(id => cells[id] != null && !this.edit.specs.has(id)) ? this.calLabels.calendarOccurrenceReadOnly : null;
+    },
     /** "This event": an overriding record for the occurrence at the proposal's times. */
     async calApplyThis(event, proposal) {
       const cal = this.cal, cells = this.calSeriesValues(event);
@@ -79,6 +84,8 @@
       if (cal.end) cells[cal.end.id] = calIso(proposal.end);
       if (cal.resource?.editable && proposal.resource !== undefined) cells[cal.resource.id] = proposal.resource;
       await this.loadEditing();
+      const problem = this.calCheck(event, proposal) || this.calOccurrenceCopyProblem(cells);
+      if (problem) { this.calAnnounce(problem); this.calNotice(problem, true, true); return false; }
       const result = await this.insertRow({ cells });
       if (!result.applied) return false;
       this.calVersion++;
@@ -114,8 +121,11 @@
       if (cal.resource?.editable && proposal.resource !== undefined) cells[cal.resource.id] = proposal.resource;
       await this.loadEditing();
       calWrapEditRecord();
+      const problem = this.calCheck(event, proposal) || this.calOccurrenceCopyProblem(cells);
+      if (problem) { this.calAnnounce(problem); this.calNotice(problem, true, true); return false; }
       const spec = this.edit.specs.get(cal.recurrence.id);
       if (!spec) { this.emit("error", { error: new Error("CanopyX: the calendar recurrence column is not editable.") }); this.calNotice(labels.calendarSeriesTime, true, true); return false; }
+      if (!this.canEditCell(this.editRecord(event.key), cal.recurrence.id)) { this.calAnnounce(this.edit.labels.gridEditNotSaved); this.calNotice(this.edit.labels.gridEditNotSaved, true, true); return false; }
       // Both changes are one undo step, made at once: the new series first, then the old one's end; a refusal of either keeps neither.
       let inserted = null;
       const done = this.editGroupIf(() => {

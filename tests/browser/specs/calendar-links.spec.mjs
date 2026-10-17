@@ -191,7 +191,7 @@ test.describe("calendar links and data", () => {
     const rows = Array.from({ length: 12 }, (_, index) => [String(index).padStart(3, "0"), "Window " + index, "2026-10-" + String(1 + index * 2).padStart(2, "0") + "T09:00:00Z"]);
     const view = { protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact", rowHeight: 34, pageSize: 100, selection: "single", search: false,
       columns: [{ id: "title", title: "Title", kind: "text", rowHeader: true }, { id: "starts", title: "Starts", kind: "datetime" }],
-      source: { kind: "inline" }, rowData: { columns: ["title", "starts"], count: 12, ordered: true, chunks: [rows.slice(0, 4), rows.slice(4, 8), rows.slice(8)] },
+      source: { kind: "inline" }, rowData: { version: 1, columns: ["title", "starts"], count: 12, ordered: true, chunks: [rows.slice(0, 4), rows.slice(4, 8), rows.slice(8)] },
       calendar: { start: "starts", title: "title", date: "2026-10-16", view: "month", views: ["month"] } };
     await page.clock.setFixedTime(NOW);
     await page.route("http://canopyx.test/compact.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));

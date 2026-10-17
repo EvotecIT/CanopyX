@@ -13,13 +13,14 @@ public sealed class EfCoreInsertTests : IDisposable {
 
     public void Dispose() => _sqlite.Dispose();
 
-    private (CanopyRemoteHandler Handler, FleetDb Db) Handler(Action<CanopyQueryableWriterOptions<Host>, FleetDb>? configure = null) {
+    private (CanopyRemoteHandler Handler, FleetDb Db) Handler(Action<CanopyQueryableWriterOptions<Host>, FleetDb>? configure = null, Func<FleetDb, ICanopyWriteStore<Host>>? store = null) {
         var map = Fleet.Map(Fleet.EditableView());
         var db = _sqlite.Create();
         var options = new CanopyQueryableWriterOptions<Host> { NewRecord = _ => new Host { OwnerId = 1 } };
         configure?.Invoke(options, db);
-        var writer = new CanopyQueryableWriter<Host>(map, new EfCoreWriteStore<Host>(db), options);
-        var provider = new CanopyQueryableProvider<Host>(() => db.Hosts, map, new CanopyQueryOptions { Executor = new EfExecutor(), Revision = _ => new ValueTask<string>("r1") });
+        var writeStore = store?.Invoke(db) ?? new EfCoreWriteStore<Host>(db);
+        var writer = new CanopyQueryableWriter<Host>(map, writeStore, options);
+        var provider = new CanopyQueryableProvider<Host>(() => writeStore.Records, map, new CanopyQueryOptions { Executor = new EfExecutor(), Revision = _ => new ValueTask<string>("r1") });
         return (new CanopyRemoteHandler(map.Schema, provider, null, writer), db);
     }
 
@@ -84,6 +85,41 @@ public sealed class EfCoreInsertTests : IDisposable {
         using (allowedDb) {
             Assert.Equal("saved", Assert.Single(Rows(await allowed.CommitAsync(Commit(Insert("new-1", "{\"name\":\"host-new\"}"))))).GetProperty("status").GetString());
         }
+    }
+
+    [Theory]
+    [InlineData(CanopyCommitTransaction.PerRow)]
+    [InlineData(CanopyCommitTransaction.PerBatch)]
+    public async Task Inserts_RespectFilteredStoreRecordsWithoutAnAdditionalScope(CanopyCommitTransaction transaction) {
+        var (handler, db) = Handler((options, _) => {
+            options.Transaction = transaction;
+            options.NewRecord = row => new Host { OwnerId = row.Id == "new-2" ? 1 : 2 };
+        }, context => new ScopedInsertStore(context));
+        using (db) {
+            var rows = Rows(await handler.CommitAsync(Commit(
+                Insert("new-1", "{\"name\":\"scope-first\"}"),
+                Insert("new-2", "{\"name\":\"scope-deny\"}"),
+                Insert("new-3", "{\"name\":\"scope-later\"}"))));
+            // Query a fresh context so tracked state cannot masquerade as committed persistence.
+            using var check = _sqlite.Create();
+            var persisted = check.Hosts.AsNoTracking().Where(host => host.Name.StartsWith("scope-")).OrderBy(host => host.Id).ToList();
+            var actual = string.Join(",", rows.Select(row => row.GetProperty("status").GetString())) + " | " + string.Join(",", persisted.Select(host => host.Name));
+            Assert.Equal(transaction == CanopyCommitTransaction.PerRow ? "saved,error,saved | scope-first,scope-later" : "error,error,error | ", actual);
+            Assert.False(rows[1].TryGetProperty("newId", out _));
+            Assert.All(persisted, host => Assert.Equal(2, host.OwnerId));
+            Assert.Equal(_hosts.Count + (transaction == CanopyCommitTransaction.PerRow ? 2 : 0), check.Hosts.Count());
+        }
+    }
+
+    private sealed class ScopedInsertStore : ICanopyInsertStore<Host> {
+        private readonly FleetDb _db;
+        private readonly EfCoreWriteStore<Host> _inner;
+        internal ScopedInsertStore(FleetDb db) { _db = db; _inner = new EfCoreWriteStore<Host>(db); }
+        public IQueryable<Host> Records => _db.Hosts.Where(host => host.OwnerId == 2).AsTracking();
+        public ValueTask<ICanopyWriteTransaction> BeginTransactionAsync(CancellationToken token) => _inner.BeginTransactionAsync(token);
+        public ValueTask SaveChangesAsync(CancellationToken token) => _inner.SaveChangesAsync(token);
+        public void DiscardChanges() => _inner.DiscardChanges();
+        public void Add(Host record) => _inner.Add(record);
     }
 
     [Fact]

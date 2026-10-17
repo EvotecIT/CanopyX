@@ -4,8 +4,8 @@
   // canopyx-calendar-edit.js and canopyx-calendar-ics.js for definitions that use them (Build/parts.json). The part loads
   // before the first query, so the first paint is the calendar; until it is in, the calendar methods load it first.
   const GRID_CALENDAR = definePart(DataGrid, "calendar", "calendar", () => ({ DataGrid, h, setText, fill, plural, gridButton, gridIcon, gridFreeze, cellText,
-    cellValue, isCellObject, gridQuery, gridQueryRows, gridResultShape, gridPresenterTone, validateGridRows, validateGridPage, validStructuralCount, checkDocument,
-    numberFormat, loadPart, PROTOCOL }));
+    cellValue, isCellObject, gridQuery, gridQueryRows, gridResultShape, gridPresenterTone, validateGridRows, validateGridPage, validateGridCursorPage, validStructuralCount, checkDocument,
+    numberFormat, loadPart, HostCellContext, disposeHostSlot, PROTOCOL }));
   definePart(DataGrid, "timeline", "resource timeline", () => ({ DataGrid, TreeGrid, h, setText, fill, numberFormat }));
   // What a basic calendar does not use loads only for definitions that need it: recurrence, editing and iCalendar.
   definePart(DataGrid, "calendar-recurrence", "calendar recurrence", () => ({ DataGrid }));

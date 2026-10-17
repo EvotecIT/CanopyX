@@ -53,10 +53,16 @@ test.describe("calendar editing", () => {
     expect(await startOf(page, "op-010")).toBe("2026-10-16T09:00:00Z");
   });
 
-  test("F2 moves an event from the keyboard, Shift with arrows changes its end, Escape cancels", async ({ page }) => {
+  test("pointer and F2 moves cancel with Escape; Shift with arrows changes the end", async ({ page }) => {
     await openCalendar(page, "calendar.html");
     await api(page, "api => api.setCalendarView('week')");
     const event = page.locator('.cx-cal-ev[data-cx-record="op-010"]');
+    await drag(page, event, 0, 48, { drop: false });
+    await expect(page.locator(".cx-cal-ghost")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.mouse.up();
+    await expect(page.locator(".cx-cal-ghost")).toHaveCount(0);
+    expect(await startOf(page, "op-010")).toBe("2026-10-16T09:00:00Z");
     await event.focus();
     await page.keyboard.press("F2");
     await expect(page.locator(".cx-cal .cx-live")).toHaveText(/^Arrow keys move/);

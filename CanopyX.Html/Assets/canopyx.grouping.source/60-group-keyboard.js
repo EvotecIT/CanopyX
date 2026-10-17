@@ -57,7 +57,7 @@
     const nested = (groups, depth) => groups.map(group => {
       const column = grid.columns.find(item => item.id === levels[depth].column);
       return { key: group.key, value: group.value, offset: group.offset, count: group.count, aggregates: group.aggregates,
-        text: group.value === null ? grid.labels.gridGroupMissing : formatValue(group.value, column.kind, grid.fmt), ...(group.groups ? { groups: nested(group.groups, depth + 1) } : {}) };
+        text: group.value === null ? grid.labels.gridGroupMissing : formatValue(group.value, column.kind, grid.fmt, column.format), ...(group.groups ? { groups: nested(group.groups, depth + 1) } : {}) };
     });
     return { ...extra, grouping: { levels, aggregates: grid.view.reporting.aggregates || [], totals: grid.summary.aggregates, groups: nested(grid.summary.groups, 0) } };
   };

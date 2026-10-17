@@ -26,7 +26,7 @@ public sealed class RowDataTests {
         using var input = new GZipStream(new MemoryStream(Convert.FromBase64String(data.GetChunk(0))), CompressionMode.Decompress);
         using var reader = new StreamReader(input, Encoding.UTF8);
         Assert.Equal("[[\"r0\",\"Item 0\"],[\"r1\",\"Item 1\"],[\"r2\",\"Item 2\"]]", reader.ReadToEnd());
-        Assert.Contains("\"rowData\":{\"columns\":[\"name\"],\"count\":3,\"ordered\":true,\"encoding\":\"gzip\",\"chunks\":1}", data.ToJson());
+        Assert.Contains("\"rowData\":{\"version\":1,\"columns\":[\"name\"],\"count\":3,\"ordered\":true,\"encoding\":\"gzip\",\"chunks\":1}", data.ToJson());
     }
 
     [Fact]

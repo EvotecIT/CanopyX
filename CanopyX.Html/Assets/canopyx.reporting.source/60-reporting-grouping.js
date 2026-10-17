@@ -52,6 +52,7 @@
       if (!column || ids.has(aggregate.id) || typeof aggregate.operation !== "string" || custom && !/^[a-z][a-zA-Z\d]{0,31}$/.test(aggregate.operation) ||
           GROUP_NUMERIC.includes(aggregate.operation) && column.kind !== "number" || typeof aggregate.label !== "string" ||
           !aggregate.label.trim() || aggregate.label.length > 512) throw new Error("CanopyX: invalid aggregate binding.");
+      if (aggregate.format !== undefined) gridNumberFormat(aggregate.format);
       ids.add(aggregate.id);
     }
     if (options.groupBy !== undefined) reportingGroupLevels(view, options.groupBy);

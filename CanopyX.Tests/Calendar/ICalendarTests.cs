@@ -87,6 +87,37 @@ public sealed class ICalendarTests {
         Assert.Empty(CanopyICalendar.Parse("BEGIN:VEVENT\r\nDTSTART:20261019T090000Z\r\nEND:VEVENT\r\nBEGIN:VCALENDAR\r\nEND:VCALENDAR").Events);
     }
 
+    [Theory]
+    [InlineData("", "Z", 0)]
+    [InlineData("", "", 0)]
+    [InlineData(";TZID=Europe/Warsaw", "", -1)]
+    public void Parse_NormalizesLeapSecondsInEveryDateTimeProperty(string parameters, string suffix, int utcOffsetHours) {
+        var item = Assert.Single(CanopyICalendar.Parse(Calendar(Event(
+            "DTSTART" + parameters + ":20161231T235960" + suffix,
+            "DTEND" + parameters + ":20170101T000060" + suffix,
+            "RRULE:FREQ=DAILY;COUNT=2",
+            "EXDATE" + parameters + ":20170101T235960" + suffix,
+            "RECURRENCE-ID" + parameters + ":20161231T235960" + suffix))).Events);
+
+        var start = new DateTime(2016, 12, 31, 23, 59, 59, DateTimeKind.Utc).AddHours(utcOffsetHours);
+        Assert.Equal(start, item.Start);
+        Assert.Equal(new DateTime(2017, 1, 1, 0, 0, 59, DateTimeKind.Utc).AddHours(utcOffsetHours), item.End);
+        Assert.Equal(start, item.RecurrenceId);
+        Assert.Equal(start.AddDays(1).ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture), item.Exceptions);
+        Assert.False(item.AllDay);
+    }
+
+    [Theory]
+    [InlineData("20161231T235961Z")]
+    [InlineData("20161231T245960Z")]
+    [InlineData("20161231T236060Z")]
+    [InlineData("20160230T235960Z")]
+    public void Parse_LeapSecondNormalizationDoesNotAcceptOtherInvalidComponents(string value) {
+        var result = CanopyICalendar.Parse(Calendar(Event("DTSTART:" + value)));
+        Assert.Empty(result.Events);
+        Assert.Equal(1, result.Skipped);
+    }
+
     [Fact]
     public void Parse_EnforcesTheSizeLimits() {
         Refused(Calendar(Event("DTSTART:20261019T090000Z", "DESCRIPTION:" + Marker + new string('x', CanopyICalendar.MaxTextLength))));
@@ -286,6 +317,76 @@ public sealed class ICalendarTests {
         Assert.Contains("\"recurrence\":\"FREQ=WEEKLY;UNTIL=20261231T000000Z;BYDAY=MO\"", json);
         Assert.Contains("\"source\":\"work\"", json);
         Assert.Throws<ArgumentException>(() => result.ToCalendarEvents(""));
+    }
+
+    [Theory]
+    [InlineData("W. Europe Standard Time", "W. Europe Standard Time")]
+    [InlineData("W. Europe Standard Time", "Europe/Berlin")]
+    [InlineData("Europe/Berlin", "W. Europe Standard Time")]
+    [InlineData("UTC", "Etc/UTC")]
+    public void ToCalendarEvents_PreservesUniformAndEquivalentRecurrenceZones(string first, string second) {
+        var result = CanopyICalendar.Parse(Calendar(
+            Event("DTSTART;TZID=" + first + ":20261019T090000", "RRULE:FREQ=WEEKLY;COUNT=2"),
+            Event("DTSTART;TZID=" + second + ":20261019T100000", "RRULE:FREQ=WEEKLY;COUNT=2")));
+        Assert.Equal(0, result.Skipped);
+        Assert.Empty(result.Notes);
+        Assert.NotNull(result.TimeZone);
+        // The selected name must also be accepted by the basic calendar's browser-facing contract.
+        var converted = result.ToCalendarEvents();
+        var calendar = new CanopyCalendar(converted) { TimeZone = result.TimeZone };
+        Assert.Contains("\"timeZone\":\"" + result.TimeZone + "\"", calendar.Grid!.ToJson());
+#if NET6_0_OR_GREATER
+        var zone = TimeZoneInfo.FindSystemTimeZoneById(result.TimeZone!);
+#else
+        var zone = first == "UTC" ? TimeZoneInfo.Utc : TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+#endif
+        var expectedHour = first == "UTC" ? 9 : 7;
+        Assert.Equal(new[] {
+            new DateTimeOffset(2026, 10, 19, expectedHour, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 10, 26, first == "UTC" ? 9 : 8, 0, 0, TimeSpan.Zero)
+        }, converted[0].Recurrence!.Occurrences(converted[0].Start, zone).Select(item => item.ToUniversalTime()));
+    }
+
+    [Theory]
+    [InlineData("DTSTART:20261019T090000Z", "DTSTART;TZID=Europe/Warsaw:20261019T090000")]
+    [InlineData("DTSTART;TZID=Europe/Warsaw:20261019T090000", "DTSTART:20261019T090000Z")]
+    [InlineData("DTSTART:20261019T090000", "DTSTART;TZID=Europe/Warsaw:20261019T090000")]
+    [InlineData("DTSTART;TZID=America/New_York:20261019T090000", "DTSTART;TZID=Europe/Warsaw:20261019T090000")]
+    public void ToCalendarEvents_RejectsIncompatibleTimedSeries_ButKeepsRawEvents(string first, string second) {
+        var result = CanopyICalendar.Parse(Calendar(Event(first, "RRULE:FREQ=WEEKLY;COUNT=2"), Event(second, "RRULE:FREQ=WEEKLY;COUNT=2")));
+        Assert.Equal(2, result.Events.Count);
+        Assert.Empty(result.Notes);
+        var error = Assert.Throws<InvalidOperationException>(() => result.ToCalendarEvents());
+        Assert.Contains("time zone", error.Message);
+        Assert.DoesNotContain("New_York", error.Message);
+        Assert.All(result.Events, item => Assert.Equal("FREQ=WEEKLY;COUNT=2", item.Recurrence));
+    }
+
+    [Fact]
+    public void ToCalendarEvents_RejectsAKnownWindowsZoneWithoutAnExistingBrowserAlias() {
+        if (Environment.OSVersion.Platform != PlatformID.Win32NT) return;
+        var result = CanopyICalendar.Parse(Calendar(Event("DTSTART;TZID=Dateline Standard Time:20261019T090000", "RRULE:FREQ=WEEKLY;COUNT=2")));
+        Assert.Equal("Dateline Standard Time", Assert.Single(result.Events).TimeZone);
+        Assert.Empty(result.Notes);
+        Assert.Throws<InvalidOperationException>(() => result.ToCalendarEvents());
+    }
+
+    [Fact]
+    public void ToCalendarEvents_OnlyActiveTimedMastersRequireACommonRecurrenceZone() {
+        var result = CanopyICalendar.Parse(Calendar(
+            Event("DTSTART;TZID=Europe/Warsaw:20261019T090000", "RRULE:FREQ=WEEKLY;COUNT=2", "STATUS:CANCELLED"),
+            Event("DTSTART;TZID=Europe/Warsaw:20261019T090000", "RRULE:FREQ=WEEKLY;COUNT=2", "RECURRENCE-ID:20261019T070000Z"),
+            Event("DTSTART;TZID=Europe/Warsaw:20261019T090000"),
+            Event("DTSTART;VALUE=DATE:20261019", "RRULE:FREQ=WEEKLY;COUNT=2"),
+            Event("DTSTART:20261019T090000Z", "RRULE:FREQ=WEEKLY;COUNT=2")));
+        Assert.Null(result.TimeZone);
+        var converted = result.ToCalendarEvents();
+        Assert.Equal(4, converted.Count);
+        Assert.Null(converted[0].Recurrence);
+        Assert.Null(converted[1].Recurrence);
+        Assert.True(converted[2].AllDay);
+        Assert.Equal(new[] { new DateTimeOffset(2026, 10, 19, 9, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 10, 26, 9, 0, 0, TimeSpan.Zero) },
+            converted[3].Recurrence!.Occurrences(converted[3].Start, TimeZoneInfo.Utc));
     }
 
     [Fact]

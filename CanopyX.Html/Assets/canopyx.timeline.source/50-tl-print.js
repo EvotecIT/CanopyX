@@ -26,9 +26,9 @@
           this.tlHeat(row.key).forEach((value, index) => { if (!value) return; const unit = axis.units[index], mark = h("span", "cx-tl-print-heat");
             mark.style.insetInlineStart = (unit.x / axis.total * 100) + "%"; mark.style.width = (axis.width / axis.total * 100) + "%"; setText(mark, String(value)); lane.appendChild(mark); });
         } else for (const event of this.tlIndex.byResource.get(row.key) || []) {
-          if (event.end <= axis.from || event.start >= axis.to) continue;
+          if (event.tlEnd <= axis.from || event.tlStart >= axis.to) continue;
           const bar = h("span", "cx-tl-print-bar");
-          const from = Math.max(event.start, axis.from), to = Math.min(event.end, axis.to), pixels = (axis.x(to) - axis.x(from)) / axis.total * TL_PRINT_LANE;
+          const from = Math.max(event.tlStart, axis.from), to = Math.min(event.tlEnd, axis.to), pixels = (axis.x(to) - axis.x(from)) / axis.total * TL_PRINT_LANE;
           bar.style.insetInlineStart = share(from); bar.style.width = "max(6px, calc(" + share(to) + " - " + share(from) + "))";
           if (event.tone) bar.style.setProperty("--cx-ev", "var(--cx-tone-" + event.tone + ",var(--cx-accent))");
           // A short bar is solid; a title is printed only where it fits whole.

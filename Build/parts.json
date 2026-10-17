@@ -364,8 +364,8 @@
       "features": ["calendar"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
-        "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "validateGridPage", "validStructuralCount", "checkDocument", "numberFormat",
-        "loadPart", "PROTOCOL"],
+        "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "validateGridPage", "validateGridCursorPage", "validStructuralCount", "checkDocument", "numberFormat",
+        "HostCellContext", "disposeHostSlot", "loadPart", "PROTOCOL"],
       "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar.source"

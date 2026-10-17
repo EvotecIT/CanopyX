@@ -32,7 +32,7 @@ namespace CanopyX.Data;
 /// <see cref="CanopyQueryableWriterOptions{T}.NewRecord"/> is set and the store implements <see cref="ICanopyInsertStore{T}"/>;
 /// otherwise it answers <see cref="CanopyCommitMessages.InsertRefused"/>. The new record gets the editable values of the row
 /// (never the key), runs <see cref="CanopyQueryableWriterOptions{T}.Saving"/>, is added and saved, and answers its stored key
-/// as <see cref="CanopyCommitRowResult.NewId"/>; with a scope, a new record outside it is rolled back.
+/// as <see cref="CanopyCommitRowResult.NewId"/>. A new record outside the store's query or the optional scope is rolled back.
 /// </para>
 /// <para>
 /// A saved row answers with canonical cells of its changed columns, read back from the record and formatted like page rows.
@@ -252,12 +252,12 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
             var id = RecordKeys.Format(_readKey(record));
             // A record without an identity, or outside what the caller may read, is not kept: the transaction rolls it back.
             if (id == null) throw new InvalidOperationException("The new record has no key after saving.");
-            if (_options.Scope != null && await LoadAsync(id, cancellationToken).ConfigureAwait(false) == null) return CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
+            if (await LoadAsync(id, cancellationToken).ConfigureAwait(false) == null) return CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
             return CanopyCommitRowResult.Saved(row.Id, Cells(record, row), id);
         } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
             throw;
         } catch (Exception error) {
-            _options.Failed?.Invoke(row, error);
+            ReportFailure(row, error);
             return Concurrency(error) ? CanopyCommitRowResult.Conflict(row.Id, Messages.Conflict) : CanopyCommitRowResult.Failed(row.Id, Messages.NotSaved);
         }
     }

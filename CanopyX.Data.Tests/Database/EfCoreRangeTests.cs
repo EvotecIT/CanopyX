@@ -74,6 +74,25 @@ public sealed class EfCoreRangeTests : IClassFixture<EfCoreRangeTests.Database> 
     }
 
     [Fact]
+    public async Task CalendarOverrideMetadata_OrdinaryQueryTranslatesAndKeepsTheScopedSource() {
+        var map = Schedule.Map();
+        var records = CalendarOverrideMetadataFixture.Rows();
+        using var sqlite = new SqliteSchedule(records);
+        using var db = sqlite.Create();
+        var scoped = Ef(map, () => db.Slots.Where(row => row.Kind == "public"));
+        var reference = Schedule.Reference(map.Schema, records.Where(row => row.Kind == "public").ToList());
+        var linq = Schedule.Linq(map, records.Where(row => row.Kind == "public").ToList());
+        var query = CalendarOverrideMetadataFixture.Query();
+
+        var answer = await scoped.QueryAsync(query);
+
+        Assert.Equal(await reference.QueryAsync(query), answer);
+        Assert.Equal(await linq.QueryAsync(query), answer);
+        using var document = System.Text.Json.JsonDocument.Parse(answer);
+        Assert.Equal(new[] { "moved-resource", "moved-window" }, document.RootElement.GetProperty("items").EnumerateArray().Select(row => row.GetProperty("id").GetString()));
+    }
+
+    [Fact]
     public async Task HostileOperands_ReachTheDatabaseOnlyAsParameters_InOneCountAndOneRead() {
         var map = Schedule.Map();
         lock (_database.Sqlite.Sql) _database.Sqlite.Sql.Clear();

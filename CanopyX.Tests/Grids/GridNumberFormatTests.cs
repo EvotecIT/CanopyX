@@ -54,6 +54,19 @@ public sealed class GridNumberFormatTests {
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Schema_RejectsAMinimumAboveTheEffectiveMaximum(bool explicitMaximum) {
+        var json = ProtocolSchema.Mutate(View().ToJson(), root => {
+            var format = root["columns"]![1]!["format"]!.AsObject();
+            format["minimumFractionDigits"] = 4;
+            if (explicitMaximum) format["maximumFractionDigits"] = 3;
+            else format.Remove("maximumFractionDigits");
+        });
+        Assert.False(ProtocolSchema.Evaluate(json).IsValid);
+    }
+
     [Fact]
     public void StaticGrid_FormatsRawNumbersWithTheColumnFormatAndKeepsHostText() {
         var view = View();
@@ -62,5 +75,11 @@ public sealed class GridNumberFormatTests {
         var result = CanopyStaticHtml.RenderGridWithResult(view);
         Assert.Equal("88%", result.Rows[0][1]);
         Assert.Equal("Fifty-five", result.Rows[1][1]);
+    }
+
+    [Fact]
+    public void MaximumFiniteNumber_PreservesTheExactIntegerWithoutScientificRounding() {
+        var expected = new System.Numerics.BigInteger(double.MaxValue).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + ".00";
+        Assert.Equal(expected, CanopyGridNumberFormat.Fixed(2).Format(double.MaxValue));
     }
 }

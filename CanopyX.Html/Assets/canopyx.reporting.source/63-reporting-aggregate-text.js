@@ -44,16 +44,17 @@
   // Visible text "sum 12.7M" or "avg 36.2" (translatable templates); the tooltip gives the aggregate's label and the full value.
   // A custom aggregate shows the {value} template its plugin registers (the grouping part keeps them in groupAggregates).
   function reportingAggregateParts(grid, column, aggregates, values) {
-    const precision = aggregates.some(item => !reportingCounting(item.operation)) ? reportingColumnPrecision(grid, column) : 0;
+    const precision = aggregates.some(item => !item.format && !column.format && !reportingCounting(item.operation)) ? reportingColumnPrecision(grid, column) : 0;
     const text = [], titles = [];
     for (const aggregate of aggregates) {
       const value = values[aggregate.id];
       if (value === null || value === undefined) continue;
       const known = precision !== null, digits = reportingCounting(aggregate.operation) ? 0 : !known ? 3 : aggregate.operation === "average" ? Math.min(3, precision + 1) : precision;
-      const shown = reportingAggregateFormat(grid.lang, digits, Math.abs(value) >= 1e6, known || reportingCounting(aggregate.operation)).format(value);
+      const explicit = aggregate.format || (!reportingCounting(aggregate.operation) && column.format);
+      const shown = explicit ? numberText(value, grid.lang, explicit) : reportingAggregateFormat(grid.lang, digits, Math.abs(value) >= 1e6, known || reportingCounting(aggregate.operation)).format(value);
       const label = AGGREGATE_LABELS[aggregate.operation];
       text.push(fill(label ? grid.labels[label] : grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation + " {value}", { value: shown }));
-      titles.push(aggregate.label + ": " + reportingAggregateFormat(grid.lang, 3, false, false).format(value));
+      titles.push(aggregate.label + ": " + (explicit ? shown : reportingAggregateFormat(grid.lang, 3, false, false).format(value)));
     }
     return { text: text.join(" · "), title: titles.join(" · ") };
   }

@@ -7,6 +7,7 @@
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
       requireIdentifier(view.id, "view ID");
+      if (view.columns.some(column => column.format !== undefined)) throw new Error("CanopyX: number formats apply to flat grids only.");
       this.host = host;
       this.view = view;
       this.opts = options;

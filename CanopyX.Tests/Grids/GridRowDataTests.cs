@@ -68,7 +68,7 @@ public sealed class GridRowDataTests {
         using var document = JsonDocument.Parse(json);
         Assert.False(document.RootElement.TryGetProperty("rows", out _));
         var rowData = document.RootElement.GetProperty("rowData");
-        Assert.Equal("{\"columns\":[\"name\",\"size\",\"notes\"],\"count\":250,\"ordered\":true,\"chunks\":3}", rowData.GetRawText());
+        Assert.Equal("{\"version\":1,\"columns\":[\"name\",\"size\",\"notes\"],\"count\":250,\"ordered\":true,\"chunks\":3}", rowData.GetRawText());
         Assert.Equal(100, Chunk(data, 1).GetArrayLength());
         Assert.Equal(50, Chunk(data, 2).GetArrayLength());
         Assert.Equal("r0100", Chunk(data, 1)[0][0].GetString());
@@ -85,8 +85,9 @@ public sealed class GridRowDataTests {
         var json = new CanopyGridRowData(Grid()).ToJson();
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rows"] = new System.Text.Json.Nodes.JsonArray())).IsValid);
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["source"]!["kind"] = "host")).IsValid);
-        // rowData has no version of its own (canopyx/2 is the only version): a version member is an unknown one.
-        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rowData"]!["version"] = 1)).IsValid);
+        // Every canopyx/2 compact descriptor keeps encoding version 1 for independently deployed readers.
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rowData"]!.AsObject().Remove("version"))).IsValid);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rowData"]!["version"] = 2)).IsValid);
     }
 
     [Fact]

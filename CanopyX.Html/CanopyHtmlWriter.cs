@@ -35,8 +35,8 @@ internal static class CanopyHtmlWriter {
         return builder.ToString();
     }
 
-    /// <summary>The parts a view needs, then the parts the host asked for (<see cref="CanopyHtmlOptions.Parts"/>), in manifest order.</summary>
-    private static List<CanopyHtmlPart> WithRequested(IReadOnlyList<CanopyHtmlPart> required, CanopyHtmlOptions options, CanopyRuntime runtime) {
+    /// <summary>The parts a view needs, the parts the host asked for and all their dependencies, in manifest order.</summary>
+    private static IReadOnlyList<CanopyHtmlPart> WithRequested(IReadOnlyList<CanopyHtmlPart> required, CanopyHtmlOptions options, CanopyRuntime runtime) {
         var parts = new List<CanopyHtmlPart>(required);
         foreach (var name in options.Parts) {
             var part = CanopyHtmlAssets.GetPart(name);
@@ -45,7 +45,7 @@ internal static class CanopyHtmlWriter {
         foreach (var part in CanopyHtmlAssets.Parts) {
             if (options.Parts.Contains(part.Name) && !parts.Contains(part)) parts.Add(part);
         }
-        return parts;
+        return CanopyHtmlAssets.WithRequired(parts);
     }
 
     /// <summary>The options of the fragment inside a grid page.</summary>

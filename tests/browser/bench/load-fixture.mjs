@@ -126,7 +126,7 @@ export function writeCompactChunks(count, seed, chunkSize, gzip, emit) {
 }
 /** The rowData descriptor that takes the place of rows in the grid document. */
 export function rowData(count, chunks, gzip, base) {
-  return Object.assign({ columns: COLUMN_IDS, count, ordered: true }, gzip ? { encoding: "gzip" } : {}, base ? { base } : {}, { chunks });
+  return Object.assign({ version: 1, columns: COLUMN_IDS, count, ordered: true }, gzip ? { encoding: "gzip" } : {}, base ? { base } : {}, { chunks });
 }
 export const CHUNK_ROWS = 5000;
 

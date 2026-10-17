@@ -41,7 +41,7 @@ const compactRows: GridCompactRow[] = [["r1", "Item 1", 10], [{ id: "r2", tone: 
 const compactView: CompactGridView = { protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact rows",
   source: { kind: "inline" }, pageSize: 100, selection: "none", search: true, rowHeight: 32,
   columns: [{ id: "name", title: "Name", kind: "text" }, { id: "size", title: "Size", kind: "number" }, { id: "notes", title: "Notes", kind: "text" }],
-  rowData: { columns: ["name", "size", "notes"], count: 2, ordered: true, chunks: [compactRows] } };
+  rowData: { version: 1, columns: ["name", "size", "notes"], count: 2, ordered: true, chunks: [compactRows] } };
 createDataGrid(document.createElement("div"), { view: compactView });
 const sidecarRows: CompactGridView["rowData"] = { columns: ["name"], count: 10000, encoding: "gzip", base: "data/compact/", chunks: 2 };
 // @ts-expect-error A compact grid has no rows beside its row data.

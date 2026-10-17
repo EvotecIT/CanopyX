@@ -11,6 +11,8 @@
   const CAL_ICS_CONTROL = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g, CAL_ICS_DATE = /^(\d{4})(\d\d)(\d\d)$/, CAL_ICS_TIME = /^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)(Z?)$/;
   const CAL_ICS_DURATION = /^([+-])?P(?:(\d{1,5})W)?(?:(\d{1,5})D)?(?:T(?:(\d{1,5})H)?(?:(\d{1,6})M)?(?:(\d{1,7})S)?)?$/, CAL_ICS_ZONE = /^(?!.*\.\.)[A-Za-z0-9 /_+\-.()]{1,64}$/;
   const calIcsLimit = what => new Error("more than " + what);
+  // Imported series keep their own recurrence zone without adding fields to the parser's result or the public event model.
+  const CAL_ICS_SERIES_ZONES = new WeakMap();
 
   /** A text value: escapes undone, control characters other than tab and line feed dropped, unpaired surrogates replaced. */
   function calIcsUnescape(value) {
@@ -153,8 +155,7 @@
     if (rule.count === null) return { recurrence: text, cut: false };
     const all = calExpand(rule, at, 0, zone, -Infinity, Infinity, new Set(), new Set(), Math.min(rule.count, limits.count)), last = all[all.length - 1];
     const parts = text.replace(/^RRULE:/i, "").split(";").filter(part => part && !/^(COUNT|UNTIL)=/i.test(part.trim()));
-    // A timed UNTIL just under an hour after the last occurrence keeps it when the calendar's series zone moves it by a DST hour.
-    const until = allDay ? calDayText(Math.floor(last / CAL_DAY)).replace(/-/g, "") : new Date(last + 3599000).toISOString().slice(0, 19).replace(/[-:]/g, "") + "Z";
+    const until = allDay ? calDayText(Math.floor(last / CAL_DAY)).replace(/-/g, "") : new Date(last).toISOString().slice(0, 19).replace(/[-:]/g, "") + "Z";
     return { recurrence: [...parts, "UNTIL=" + until].join(";"), cut: rule.count > limits.count };
   }
 
@@ -203,13 +204,15 @@
     }
     const recurrenceId = item["RECURRENCE-ID"] ? when(item["RECURRENCE-ID"]) : null;
     if (item["RECURRENCE-ID"] && !recurrenceId) return null;
-    return {
+    const event = {
       uid, title, description, location, categories: (item.categoryList || []).join(","), status,
       // All-day values are dates written as UTC midnights, as the calendar reads all-day records.
       start: allDay ? calDayText(start.day) + "T00:00:00Z" : calIso(start.time), end: endText,
       allDay, recurrence, unsupported, cut, exceptions: exceptions.join(","),
       recurrenceId: recurrenceId ? (recurrenceId.time === undefined ? calDayText(recurrenceId.day) + "T00:00:00Z" : calIso(recurrenceId.time)) : null
     };
+    if (recurrence && !allDay) CAL_ICS_SERIES_ZONES.set(event, start.zone?.name || "utc");
+    return event;
   }
   Object.assign(DataGrid.prototype, {
     /** Loads every iCalendar source once: its events become read-only rows of the calendar; a failure becomes a notice. */
@@ -268,7 +271,8 @@
       used.set(base, seen + 1); emitted.add(id);
       const row = { id, cells: Object.create(null), external: source, fields: {
         title: event.title, start: event.start, end: event.end, allDay: event.allDay, recurrence: event.recurrenceId ? null : event.recurrence, exceptions: event.exceptions,
-        series: event.recurrenceId ? series : null, recurrenceId: event.recurrenceId, description: event.description, location: event.location } };
+        series: event.recurrenceId ? series : null, recurrenceId: event.recurrenceId, description: event.description, location: event.location,
+        seriesZone: CAL_ICS_SERIES_ZONES.get(event) } };
       if (!event.recurrenceId && !byUid.has(series)) byUid.set(series, row);
       rows.push(row);
     });

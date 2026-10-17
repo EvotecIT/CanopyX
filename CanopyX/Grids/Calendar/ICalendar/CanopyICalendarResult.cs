@@ -11,29 +11,24 @@ public sealed class CanopyICalendarResult {
         Events = new ReadOnlyCollection<CanopyICalendarEvent>(new List<CanopyICalendarEvent>(events));
         Skipped = skipped;
         Notes = new ReadOnlyCollection<string>(new List<string>(notes));
+        var aliases = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var item in Events) {
-            if (item.Recurrence != null && item.TimeZone != null && IsIanaName(item.TimeZone)) { TimeZone = item.TimeZone; break; }
+            if (!TimedSeries(item) || item.TimeZone == null) continue;
+            if (!aliases.TryGetValue(item.TimeZone, out var alias)) {
+                alias = CanopyICalendar.CalendarTimeZone(item.TimeZone);
+                aliases[item.TimeZone] = alias;
+            }
+            if (alias != null) { TimeZone = alias; break; }
         }
     }
 
     /// <summary>
-    /// Gets the IANA time zone of the first repeating event whose start names one (for example <c>Europe/Warsaw</c>), or null. Set it as
-    /// the calendar's <see cref="CanopyCalendar.TimeZone"/>: series repeat in that zone, so their occurrences keep their wall time
-    /// across daylight saving changes and match the exceptions and moved occurrences, which are read as UTC instants.
+    /// Gets a browser-compatible IANA time zone for the first active timed series that names a supported zone, or null when none names a supported zone.
+    /// Supported Windows names use an equivalent alias from the reader's existing mapping. Set this as the calendar's
+    /// <see cref="CanopyCalendar.TimeZone"/> so occurrences keep their wall time across daylight saving changes.
+    /// <see cref="ToCalendarEvents"/> rejects timed series that cannot faithfully share this one recurrence zone.
     /// </summary>
     public string? TimeZone { get; }
-
-    /// <summary>Whether a zone name is shaped like an IANA name the calendar accepts: <c>Area/Location</c> or <c>UTC</c>.</summary>
-    private static bool IsIanaName(string name) {
-        if (name.Length == 0 || name.Length > 64 || !(name[0] >= 'A' && name[0] <= 'Z' || name[0] >= 'a' && name[0] <= 'z') || name.EndsWith("/", StringComparison.Ordinal)) return false;
-        var previous = '/';
-        foreach (var character in name) {
-            var allowed = character >= 'A' && character <= 'Z' || character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '_' || character == '-' || character == '+' || character == '/';
-            if (!allowed || character == '/' && previous == '/') return false;
-            previous = character;
-        }
-        return true;
-    }
 
     /// <summary>Gets the events, in the order of the text.</summary>
     public IReadOnlyList<CanopyICalendarEvent> Events { get; }
@@ -53,8 +48,11 @@ public sealed class CanopyICalendarResult {
     /// line of its own, the times, and the repeat rule with its exceptions. An event replacing one occurrence of a series (with a
     /// <c>RECURRENCE-ID</c>) becomes an exception of the series and an event of its own; cancelled events are left out.</returns>
     /// <exception cref="ArgumentException"><paramref name="source"/> is empty.</exception>
+    /// <exception cref="InvalidOperationException">Active timed series have incompatible recurrence zones, or a known Windows
+    /// zone has no equivalent browser alias in the reader's mapping. Read <see cref="Events"/> to place such series in separate calendars.</exception>
     public IList<CanopyCalendarEvent> ToCalendarEvents(string? source = null) {
         CanopyIdentifiers.Require(source, nameof(source), allowNull: true);
+        RequireCommonRecurrenceZone();
         // Overrides add their original occurrence to the exceptions of the series with the same UID.
         var masters = new Dictionary<string, CanopyICalendarEvent>(StringComparer.Ordinal);
         foreach (var item in Events) if (item.Uid != null && item.Recurrence != null && !item.RecurrenceId.HasValue && !masters.ContainsKey(item.Uid)) masters[item.Uid] = item;
@@ -88,4 +86,23 @@ public sealed class CanopyICalendarResult {
         }
         return result;
     }
+
+    /// <summary>Only active timed masters repeat in the basic calendar's one fixed zone.</summary>
+    private static bool TimedSeries(CanopyICalendarEvent item) => item.Status != "CANCELLED" && !item.AllDay && item.Recurrence != null && !item.RecurrenceId.HasValue;
+
+    private void RequireCommonRecurrenceZone() {
+        var reference = CanopyICalendar.CalendarSystemZone(TimeZone);
+        var checkedNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var item in Events) {
+            if (!TimedSeries(item)) continue;
+            var name = item.TimeZone ?? "UTC";
+            if (!checkedNames.Add(name)) continue;
+            // The reader retains at most 100 known TZIDs. Repeated rows check each one's rules just once.
+            var zone = CanopyICalendar.CalendarSystemZone(name);
+            if (reference == null || zone == null || CanopyICalendar.CalendarTimeZone(name) == null || !reference.HasSameRules(zone)) {
+                throw new InvalidOperationException("These timed series cannot share one calendar recurrence time zone. Read Events to place them in separate calendars.");
+            }
+        }
+    }
+
 }

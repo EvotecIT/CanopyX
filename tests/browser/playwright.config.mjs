@@ -17,10 +17,10 @@ const customChromium = !!(process.env.CANOPYX_BROWSER_CHANNEL || process.env.CAN
 const visual = !benchmarks && (process.env.CANOPYX_VISUAL === "1" ||
   (process.env.CANOPYX_VISUAL !== "0" && browserNames.includes("chromium") && process.platform === "win32" && !customChromium));
 const visualSpec = /visual-baselines\.spec\.mjs$/;
-// The calendar performance gates time first paints and long tasks, so they run on Chromium after the other projects finish,
-// never beside them. Run them alone with `--project=calendar-performance --no-deps`.
+// Explicit benchmark runs include the calendar measurements on Chromium after the other selected projects finish.
+// Ordinary correctness CI does not create this project.
 const calendarPerformanceSpec = /calendar-performance\.spec\.mjs$/;
-const calendarPerformance = browserNames.includes("chromium") && !customChromium;
+const calendarPerformance = benchmarks && browserNames.includes("chromium") && !customChromium;
 
 export default defineConfig({
   testDir: "specs",

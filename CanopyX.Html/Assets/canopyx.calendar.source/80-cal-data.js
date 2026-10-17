@@ -24,24 +24,26 @@
           const plain = !query.search && !query.filters.length && !query.filterGroup;
           this.calRowsCache = { rows, key, source: this.source, shape: rows.length + ":" + this.calVersion, matched: plain ? rows : gridQueryRows(this.view, query, new Map(this.view.columns.map(column => [column.id, column])), null) };
         }
-        return { rows: this.calEdited(this.calRowsCache.matched), truncated: false };
+        const matched = this.calEdited(this.calRowsCache.matched);
+        return { rows: matched, overrides: this.calInlineOverrides(matched, from, to), truncated: false };
       }
       // All-day records start at the midnight their date is written with, which lies outside a range of zone days west of UTC:
       // hosted requests ask for a day more on each side, and the occurrences are clipped to the range as inline ones are.
       if (this.cal.allDay) { from -= CAL_DAY; to += CAL_DAY; }
       // A hosted timeline names the resources in view, so its resource tree has its first rows before the first request.
       if (this.calResourcesReady) await this.calResourcesReady();
-      const resources = this.calResourceWindow?.() || null, key = JSON.stringify([gridResultShape(query), query.revision, from, to, resources]);
+      const resources = this.calResourceWindow?.() || null, key = JSON.stringify([gridResultShape(query), query.revision, this.calVersion, from, to, resources]);
       this.calWindowKey = JSON.stringify(resources);
       const cache = this.calCache ||= new Map();
       if (cache.has(key)) { const hit = cache.get(key); cache.delete(key); cache.set(key, hit); return { ...hit, rows: this.calEdited(hit.rows, true) }; }
       let answer;
-      if (typeof this.source.range === "function" && !this.calNoRange) {
+      if (!this.cursor && typeof this.source.range === "function" && !this.calNoRange) {
         // A server that cannot answer ranges (code "unsupported") is asked through ordinary queries from then on.
         try { answer = await this.calRangeRequest(query, from, to, resources, signal); }
         catch (error) { if (error?.code !== "unsupported") throw error; this.calNoRange = true; }
       }
-      answer ||= await this.calFallbackRequest(query, from, to, signal);
+      answer ||= await this.calFallbackRequest(query, from, to, resources, signal);
+      answer = await this.calHostedOverrides(answer, from, to, signal);
       cache.set(key, answer);
       while (cache.size > CAL_CACHE) cache.delete(cache.keys().next().value);
       return { ...answer, rows: this.calEdited(answer.rows, true) };
@@ -65,38 +67,33 @@
       if (resources && cal.resource) request.resources = resources;
       return this.runGridHook(hook => this.source.range(gridFreeze(request), { signal: hook }), signal).then(page => {
         checkDocument(page, "gridRangePage");
-        if (page.view !== this.view.id || !Array.isArray(page.items) || !validStructuralCount(page.matched) || page.items.length > request.limit || page.items.length > page.matched ||
+        if (page.view !== this.view.id || typeof page.revision !== "string" || !page.revision || !Array.isArray(page.items) || !validStructuralCount(page.matched) || page.items.length > request.limit || page.items.length > page.matched ||
             typeof page.truncated !== "boolean" || page.truncated !== page.items.length < page.matched)
           throw new Error("CanopyX: the range page does not answer its query.");
         if (query.revision !== undefined && page.revision !== query.revision) throw new Error("CanopyX: grid page snapshot changed.");
         validateGridRows(page.items, this.view.columns);
-        return { rows: page.items, truncated: page.truncated, matched: page.matched };
+        return { rows: page.items, truncated: page.truncated, matched: page.matched, revision: page.revision };
       });
     },
 
     /** Sources without range read ordinary pages of the records overlapping the range (at most ten pages). */
-    async calFallbackRequest(query, from, to, signal) {
+    async calFallbackRequest(query, from, to, resources, signal) {
       const cal = this.cal, iso = value => calIso(value), groups = [];
       const plain = { operator: "or", filters: [{ column: cal.start.id, operator: "ge", values: [iso(from)] }], groups: [] };
       if (cal.end) plain.filters.push({ column: cal.end.id, operator: "gt", values: [iso(from)] });
       if (cal.recurrence) {
-        const series = { operator: "and", filters: [{ column: cal.recurrence.id, operator: "isNotNull", values: [] }], groups: [] };
+        const series = { operator: "and", filters: [{ column: cal.recurrence.id, operator: "isNotNull", values: [] }, { column: cal.recurrence.id, operator: "ne", values: [""] }], groups: [] };
         if (cal.seriesEnd) series.groups.push({ operator: "or", filters: [{ column: cal.seriesEnd.id, operator: "isNull", values: [] }, { column: cal.seriesEnd.id, operator: "gt", values: [iso(from)] }], groups: [] });
         plain.groups.push(series);
       }
       groups.push(plain);
       if (query.filterGroup) groups.push(query.filterGroup);
-      const limit = Math.min(10000, this.pageSize), rows = [];
+      const filters = [{ column: cal.start.id, operator: "lt", values: [iso(to)] }];
+      if (resources && cal.resource) filters.push({ column: cal.resource.id, operator: "in", values: resources });
       // Pages are ordered by start (then identity), so offset paging over a database never repeats or skips a record.
-      let input = gridQuery(this.view, { ...query, offset: 0, limit, sort: cal.start.sortable ? [{ column: cal.start.id, direction: "asc" }] : [],
-        filterGroup: { operator: "and", filters: [{ column: cal.start.id, operator: "lt", values: [iso(to)] }], groups } }), matched = 0;
-      for (let page = 0; page < CAL_FALLBACK_PAGES; page++) {
-        const answer = validateGridPage(await this.runGridHook(hook => this.source.query(input, { signal: hook }), signal), this.view, input, null);
-        rows.push(...answer.items); matched = answer.matched;
-        if (rows.length >= answer.matched || rows.length >= cal.limit) break;
-        input = gridQuery(this.view, { ...input, offset: rows.length, revision: answer.revision });
-      }
-      return { rows, truncated: rows.length < matched, matched };
+      const input = { ...query, cursor: undefined, offset: undefined, sort: cal.start.sortable ? [{ column: cal.start.id, direction: "asc" }] : [],
+        filterGroup: { operator: "and", filters, groups } };
+      return this.calQueryPages(input, signal, { pages: CAL_FALLBACK_PAGES, rows: cal.limit });
     },
 
     /** Loads the occurrences of the current range and paints the view; a newer load or query wins. */
@@ -120,7 +117,7 @@
       }
       clearTimeout(slow);
       if (epoch !== this.calEpoch || this.destroyed) return;
-      const events = calOccurrences(this, this.calIcsRows?.length ? [...answer.rows, ...this.calIcsRows] : answer.rows, from, to);
+      const events = calOccurrences(this, this.calIcsRows?.length ? [...answer.rows, ...this.calIcsRows] : answer.rows, from, to, answer.overrides);
       this.calAllEvents = events; this.calEvents = this.calShownEvents(events); this.calRanges = calStaticRanges(this, from, to);
       // A refused or failed edit stays said while the same period reloads around it (a commit, live data); another period
       // or view drops it. A truncated period says so as well.
