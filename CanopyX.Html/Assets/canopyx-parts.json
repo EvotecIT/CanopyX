@@ -217,7 +217,7 @@
     {
       "name": "link",
       "label": "linked views",
-      "version": "3f7066f26d171fba",
+      "version": "fa0c9e888463553b",
       "script": "canopyx-link.js",
       "style": "canopyx-link.css",
       "runtimes": [

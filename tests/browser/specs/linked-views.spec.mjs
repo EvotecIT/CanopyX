@@ -159,6 +159,74 @@ test.describe("linked views", () => {
     await expect.poll(() => ids(page, "linked-sites").then(list => list.length)).toBeGreaterThan(4);
   });
 
+  test("tree filter completion and notifications already contain the rendered result", async ({ page }) => {
+    await open(page);
+    const result = await api(page, "linked-sites", `async (api, element) => {
+      const statuses = () => [...new Set([...element.querySelectorAll('.cx-row[data-cx-id^="svc"]')].map(row => row.children[2].textContent))].sort();
+      const events = [];
+      element.addEventListener('canopyx:externalfilter', () => events.push(statuses()));
+      const initial = statuses();
+      const applied = await api.setExternalFilter('status-chart', { field: 'status', values: ['Down'] });
+      const afterApply = statuses();
+      const cleared = await api.clearExternalFilters('status-chart');
+      const afterClear = statuses();
+      const replaced = await Promise.all([
+        api.setExternalFilter('status-chart', { field: 'status', values: ['Down'] }),
+        api.setExternalFilter('status-chart', { field: 'status', values: ['Healthy'] })
+      ]);
+      const afterReplace = statuses();
+      api.destroy();
+      const afterDestroy = await api.setExternalFilter('status-chart', { field: 'status', values: ['Down'] });
+      return { initial, applied, afterApply, cleared, afterClear, replaced, afterReplace, events, afterDestroy,
+        remainingRows: element.querySelectorAll('.cx-row').length };
+    }`);
+    const all = ["Degraded", "Down", "Healthy"];
+    expect(result).toEqual({ initial: all, applied: true, afterApply: ["Down"], cleared: true, afterClear: all,
+      replaced: [true, true], afterReplace: ["Healthy"], events: [["Down"], all, ["Down"], ["Healthy"]],
+      afterDestroy: false, remainingRows: 0 });
+    await nextFrames(page);
+    await expect(view(page, "linked-sites").locator(".cx-row,.cx-link-bar")).toHaveCount(0);
+  });
+
+  test("a linked filter renders while an unrelated lazy path holds its layout", async ({ page }) => {
+    await open(page);
+    await page.evaluate(async () => {
+      const host = document.createElement("div"); host.id = "held-linked-tree"; host.style.height = "300px";
+      document.body.appendChild(host);
+      let started;
+      window.linkedChildStarted = new Promise(resolve => { started = resolve; });
+      window.heldLinkedTree = CanopyX.createTreeGrid(host, { view: {
+        protocol: "canopyx/2", type: "view", id: "held-linked", label: "Held linked tree", source: { kind: "inline" }, roots: [],
+        columns: [{ id: "name", title: "Name" }, { id: "status", title: "Status" }]
+      }, source: { page(node) {
+        if (!node) return { items: [{ id: "down", label: "Down", cells: { status: "Down" } },
+          { id: "healthy", label: "Healthy", cells: { status: "Healthy" } }, { id: "lazy", label: "Lazy", hasChildren: true }] };
+        started();
+        return new Promise(resolve => { window.finishLinkedChild = resolve; });
+      } } });
+      await window.heldLinkedTree.ready;
+      await window.heldLinkedTree.startLinkEvents();
+    });
+    const held = page.locator("#held-linked-tree");
+    await expect(held.locator('.cx-row[data-cx-id="healthy"]')).toBeVisible();
+    const result = await page.evaluate(async () => {
+      const api = window.heldLinkedTree, host = document.getElementById("held-linked-tree");
+      const rows = () => [...host.querySelectorAll(".cx-row[data-cx-id]")].map(row => row.dataset.cxId);
+      const events = [];
+      host.addEventListener("canopyx:externalfilter", () => events.push(rows()));
+      const path = api.expandPath(["lazy", "child"], { select: false, focus: false, reveal: false });
+      await window.linkedChildStarted;
+      const applied = await api.setExternalFilter("status-chart", { field: "status", values: ["Down"] });
+      const completed = { applied, model: api.visibleRows().map(row => row.node.id), dom: rows(), events };
+      window.finishLinkedChild({ items: [{ id: "child", label: "Child", cells: { status: "Down" } }], total: 1, next: null });
+      await path;
+      return completed;
+    });
+    expect(result).toEqual({ applied: true, model: ["down"], dom: ["down"], events: [["down"]] });
+    await expect(held.locator('.cx-row[data-cx-id="child"]')).toBeVisible();
+    await expect(held.locator('.cx-row[data-cx-id="healthy"]')).toHaveCount(0);
+  });
+
   test("phones keep the chips readable and the page without sideways scroll", async ({ page }) => {
     await open(page, false, 390);
     await page.getByRole("button", { name: /^Warsaw:/ }).click();
