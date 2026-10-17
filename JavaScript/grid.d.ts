@@ -17,6 +17,10 @@ import type { GridColumnGroup, GridColumnGroupApi } from "./column-groups.js";
 import type { GridRangeSelection, GridClipboardSettings, GridCellRange, GridPasteEvent, GridCellRangeApi } from "./cell-ranges.js";
 export * from "./column-groups.js";
 export * from "./cell-ranges.js";
+import type { GridLiveDefinition, GridLiveOptions, GridLiveApi, GridLiveResult } from "./live.js";
+import type { GridFacetPanelDefinition, GridFacetPanelOptions, GridFacetPanelApi } from "./facets.js";
+export * from "./facets.js";
+export * from "./live.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string;
@@ -63,7 +67,14 @@ export interface GridExportColumn {
   readonly presenter?: GridPresenter;
   readonly diagnostics?: readonly string[];
 }
-export type GridColumn = Omit<CanopyColumn, "editable" | "width"> & {
+/**
+ * The column ids of a row type: the keys of its cells, so `createDataGrid<Server>(…)` checks column ids, facets and column
+ * methods against the row. Untyped rows (the default) take any string.
+ */
+export type GridColumnId<Row extends GridRow = GridRow> = string extends keyof Row["cells"] ? string : Extract<keyof Row["cells"], string>;
+export type GridColumn<Row extends GridRow = GridRow> = Omit<CanopyColumn, "id" | "editable" | "width"> & {
+  /** The column's id; for a typed row, one of its cells. */
+  id: GridColumnId<Row>;
   /** Supports query predicates and filter controls. Default true; does not hide values, supported read-only facets, or presentation rules. */
   filterable?: boolean;
   /** Supports grid exports. Default true. Default export selection omits false; explicit requests reject it. */
@@ -281,12 +292,12 @@ export type AcceptedGridQuery = GridQuery | GridCursorQuery;
 export type GridQueryInput<Q extends AcceptedGridQuery = GridQuery> = Partial<Q>;
 type GridCount<Q extends AcceptedGridQuery> = Q extends GridCursorQuery ? number | null : number;
 
-interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
+interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> {
   protocol: "canopyx/2";
   type: "grid";
   id: string;
   label: string;
-  columns: GridColumn[];
+  columns: GridColumn<Row>[];
   /** Fixed CSS pixel height (20..64), or content measurement. Fixed is the default writer behavior. */
   rowHeight?: number | "auto";
   /** Graphite spacing; an explicit rowHeight remains authoritative. */
@@ -336,7 +347,7 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   /** Search-input debounce (0..5000). Absent uses 0 for inline and 300 for host sources. */
   searchDelayMs?: number;
   /** Unique declared IDs; absent searches every column, including hidden columns. */
-  searchColumns?: string[];
+  searchColumns?: GridColumnId<Row>[];
   reporting?: GridReporting;
   /** Header rows above the columns, up to three levels (docs/column-groups.md). */
   columnGroups?: readonly GridColumnGroup[];
@@ -346,6 +357,10 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   clipboard?: GridClipboardSettings;
   /** The record panel: record fields, sections, tabs, a pinned summary, deep links, record details on demand (records.d.ts). */
   record?: RecordPanelDefinition;
+  /** Live data: rows that change in place, the stable order, flashing cells, batching and polling (live.d.ts). */
+  live?: GridLiveDefinition;
+  /** A facet panel beside or above the grid: value lists with counts and ranges with histograms (facets.d.ts). */
+  facets?: GridFacetPanelDefinition<Row>;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
@@ -353,7 +368,7 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery> {
   sanitizeHtml?: HostOptions["sanitizeHtml"];
   query?: Q;
 }
-export interface InlineGridView extends GridDefinition { source: { kind: "inline"; navigation?: "offset" }; rows: GridRow[]; rowData?: never; }
+export interface InlineGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "inline"; navigation?: "offset" }; rows: Row[]; rowData?: never; }
 /**
  * A compact row: the row id (or `{ id, tone?, className? }`) followed by its cells in the order of `GridRowData.columns`.
  * Trailing empty cells may be left out; `null` is an empty cell.
@@ -379,17 +394,17 @@ export interface GridRowData {
   chunks: number | Array<GridCompactRow[] | string>;
 }
 /** An inline grid whose rows the data part decodes from compact row data, chunk by chunk, after the first paint. */
-export interface CompactGridView extends GridDefinition { source: { kind: "inline"; navigation?: "offset" }; rowData: GridRowData; rows?: never; }
-export interface HostGridView extends GridDefinition { source: { kind: "host"; navigation?: "offset" }; rows?: never; }
-export interface CursorGridView extends GridDefinition<GridCursorQuery> {
+export interface CompactGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "inline"; navigation?: "offset" }; rowData: GridRowData; rows?: never; }
+export interface HostGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "host"; navigation?: "offset" }; rows?: never; }
+export interface CursorGridView<Row extends GridRow = GridRow> extends GridDefinition<GridCursorQuery, Row> {
   source: { kind: "host"; navigation: "cursor" };
   presentation: "paged";
   rows?: never;
 }
-export type GridView = InlineGridView | CompactGridView | HostGridView | CursorGridView;
+export type GridView<Row extends GridRow = GridRow> = InlineGridView<Row> | CompactGridView<Row> | HostGridView<Row> | CursorGridView<Row>;
 
 /** A complete requested window from one dataset revision, with full and matching counts. */
-export interface GridPage {
+export interface GridPage<Row extends GridRow = GridRow> {
   protocol: "canopyx/2";
   type: "gridPage";
   view: string;
@@ -397,7 +412,7 @@ export interface GridPage {
   offset: number;
   total: number;
   matched: number;
-  items: GridRow[];
+  items: Row[];
 }
 /** Hosts own data access, authorization and query execution; cancellation does not grant write authority. */
 export interface GridFacetOptions { readonly search?: string; readonly limit?: number; readonly includeCurrentFilter?: boolean; readonly signal?: AbortSignal; }
@@ -415,9 +430,9 @@ export interface GridFacetPage {
 export interface GridFacetSource<Q extends AcceptedGridQuery = AcceptedGridQuery> {
   facet?(request: GridFacetQuery<Q>, options: { signal: AbortSignal }): GridFacetPage | PromiseLike<GridFacetPage>;
 }
-export interface GridSource extends GridFacetSource<GridQuery> {
+export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSource<GridQuery> {
   readonly navigation?: "offset";
-  query(query: GridQuery, options: { signal: AbortSignal }): GridPage | PromiseLike<GridPage>;
+  query(query: GridQuery, options: { signal: AbortSignal }): GridPage<Row> | PromiseLike<GridPage<Row>>;
   /** Complete-query metadata, echoing the normalized accepted request, revision and matched count. */
   summary?(query: GridQuery & { readonly revision: string }, options: { signal: AbortSignal }): GridSummary | PromiseLike<GridSummary>;
   /** Saves changed rows (a remote source posts the gridCommit document to its commit endpoint) and answers per row. */
@@ -459,18 +474,18 @@ export interface GridNestedDetail {
   readonly view: object; readonly source?: unknown; readonly options?: Readonly<Record<string, unknown>>;
 }
 /** Host detail rows (the detail option): one callback draws the content; hasDetail limits which records offer it. */
-export interface GridDetailOptions {
+export interface GridDetailOptions<Row extends GridRow = GridRow> {
   /** A host template: draws into element (the body inside the visible width). */
-  render?(row: Readonly<GridRow>, element: HTMLElement, context: GridDetailContext): void | PromiseLike<void>;
+  render?(row: Readonly<Row>, element: HTMLElement, context: GridDetailContext): void | PromiseLike<void>;
   /** Trusted markup inserted as HTML: encode the record text you put into it. */
-  html?(row: Readonly<GridRow>, context: GridDetailContext): string | PromiseLike<string>;
-  grid?(row: Readonly<GridRow>, context: GridDetailContext): GridNestedDetail | PromiseLike<GridNestedDetail>;
-  tree?(row: Readonly<GridRow>, context: GridDetailContext): GridNestedDetail | PromiseLike<GridNestedDetail>;
+  html?(row: Readonly<Row>, context: GridDetailContext): string | PromiseLike<string>;
+  grid?(row: Readonly<Row>, context: GridDetailContext): GridNestedDetail | PromiseLike<GridNestedDetail>;
+  tree?(row: Readonly<Row>, context: GridDetailContext): GridNestedDetail | PromiseLike<GridNestedDetail>;
   /** A host source for the definition's nested view. */
-  source?(row: Readonly<GridRow>, context: GridDetailContext): unknown;
-  hasDetail?(row: Readonly<GridRow>): boolean;
+  source?(row: Readonly<Row>, context: GridDetailContext): unknown;
+  hasDetail?(row: Readonly<Row>): boolean;
   /** The detail exports and print snapshots carry for a record. */
-  export?(row: Readonly<GridRow>): Extract<GridRowDetail, { type: "table" | "properties" | "html" }> | null;
+  export?(row: Readonly<Row>): Extract<GridRowDetail, { type: "table" | "properties" | "html" }> | null;
 }
 export interface GridGroup {
   readonly key: string; readonly value: CellValue; readonly offset: number; readonly count: number;
@@ -486,16 +501,16 @@ export interface GridSummary {
   readonly groups: readonly GridGroup[]; readonly aggregates: Readonly<Record<string, number | null>>;
 }
 /** One complete visible page. Null counts remain unknown; ordinal positions do not grant random access. */
-export interface GridCursorPage extends Omit<GridPage, "type" | "total" | "matched"> {
+export interface GridCursorPage<Row extends GridRow = GridRow> extends Omit<GridPage<Row>, "type" | "total" | "matched"> {
   type: "gridCursorPage";
   total: number | null;
   matched: number | null;
   nextCursor?: string;
   previousCursor?: string;
 }
-export interface GridCursorSource extends GridFacetSource<GridCursorQuery> {
+export interface GridCursorSource<Row extends GridRow = GridRow> extends GridFacetSource<GridCursorQuery> {
   readonly navigation: "cursor";
-  query(query: GridCursorQuery, options: { signal: AbortSignal }): GridCursorPage | PromiseLike<GridCursorPage>;
+  query(query: GridCursorQuery, options: { signal: AbortSignal }): GridCursorPage<Row> | PromiseLike<GridCursorPage<Row>>;
 }
 /** Accepted presentation; indices are zero based, while the visible range is one based (0–0 when empty). */
 export interface GridPaging<Q extends AcceptedGridQuery = GridQuery> {
@@ -556,20 +571,20 @@ export interface GridExportProgress {
   readonly total: number | null;
 }
 /** The detail of canopyx:link and the argument of onLink: a link presenter cell the user follows (by click, Enter or the row's link action). */
-export interface GridLinkActivation {
+export interface GridLinkActivation<Row extends GridRow = GridRow> {
   readonly id: string;
   /** A frozen copy of the loaded row. */
-  readonly row: Readonly<GridRow>;
+  readonly row: Readonly<Row>;
   /** The id of the column whose link it is. */
-  readonly column: string;
+  readonly column: GridColumnId<Row>;
   /** The resolved address. */
   readonly href: string;
 }
 /** The detail of canopyx:rowActivate and the argument of onRowActivate on a flat grid. */
-export interface GridRowActivation {
+export interface GridRowActivation<Row extends GridRow = GridRow> {
   readonly id: string;
   /** A frozen copy of the loaded row. */
-  readonly row: Readonly<GridRow>;
+  readonly row: Readonly<Row>;
   /** True for Enter or Ctrl/Command+Enter, false for a click or double click. */
   readonly keyboard: boolean;
 }
@@ -626,6 +641,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   layout?: LayoutState;
   /** The reader's Highlight matches switch, in a grid with searchHighlight. */
   highlight?: boolean;
+  /** Whether the reader left the facet panel open, in a grid with facets. */
+  facets?: { open: boolean };
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -650,15 +667,15 @@ export interface GridViewStore<Q extends AcceptedGridQuery = GridQuery> {
   load(event: { key: string; view: string; signal: AbortSignal }): GridViewSettings<Q> | null | PromiseLike<GridViewSettings<Q> | null>;
   save(event: { key: string; view: string; settings: GridViewSettings<Q>; signal: AbortSignal }): void | PromiseLike<void>;
 }
-interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
+interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> {
   /** False hides the whole toolbar so a host can compose controls around the same grid controller; an object switches
    * single controls off (overriding the view's toolbar switches). Switched-off controls are not built. */
   toolbar?: boolean | GridToolbarOptions;
   /** Overrides the view's search-input debounce (0..5000); Enter always applies immediately. */
   searchDelayMs?: number;
-  source?: Q extends GridCursorQuery ? GridCursorSource : GridSource;
+  source?: Q extends GridCursorQuery ? GridCursorSource<Row> : GridSource<Row>;
   labels?: Partial<CanopyLabels>;
-  renderers?: Record<string, (row: GridRow, element: HTMLElement, context: GridCellContext) => boolean | void>;
+  renderers?: Record<string, (row: Row, element: HTMLElement, context: GridCellContext) => boolean | void>;
   cachePageLimit?: number;
   requestTimeoutMs?: number;
   /** Formats the Export menu lists after CSV: ids of registered formats or provider objects, in order. Wins over the view's exportFormats; absent offers every registered format. */
@@ -668,8 +685,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   onQuery?: (event: GridQueryEvent<Q>) => void;
   onSelect?: (event: { ids: string[]; selection?: GridSelection<Q> }) => void;
   onError?: (event: { error: Error }) => void;
-  onColumnResize?: (event: { column: string; width: number }) => void;
-  onColumnPin?: (event: { column: string; pin: GridColumnPin }) => void;
+  onColumnResize?: (event: { column: GridColumnId<Row>; width: number }) => void;
+  onColumnPin?: (event: { column: GridColumnId<Row>; pin: GridColumnPin }) => void;
   onState?: (event: { query: Q | null; state: GridState<Q> }) => void;
   /** The grid's formatting rules changed (setFormatRules, the rule editor or a restored view); canopyx:format carries the same detail. */
   onFormat?: (event: { rules: readonly GridFormatRule[] }) => void;
@@ -685,7 +702,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   /** layout asks for stacked records from a grid in the card layout and a table otherwise; print never scrolls. */
   onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal; layout: "table" | "stacked" }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
-  onDetails?: (event: { row: Readonly<GridRow>; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
+  onDetails?: (event: { row: Readonly<Row>; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
   /** Loads a record's details when its record panel opens; used whatever the view's record source declares. */
   loadRecord?: RecordLoader;
   /** Record panel section renderers by name, beside the plugins' drawerSections. */
@@ -699,10 +716,10 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   /** Row activation: a double click, Enter on a focused row, Ctrl/Command+Enter in a cell, or a click with rowAction (or on a
    * phone). Runs before the row's own action (onDetails or the drawer, or the row's link); returning false keeps that from
    * running, so the host can open its own view of the row. The cancelable canopyx:rowActivate event carries the same detail. */
-  onRowActivate?: (event: GridRowActivation) => boolean | void;
+  onRowActivate?: (event: GridRowActivation<Row>) => boolean | void;
   /** A link cell being followed. Returning false (or cancelling the canopyx:link event) keeps the browser from following it,
    * so the host can route the address itself. */
-  onLink?: (event: GridLinkActivation) => boolean | void;
+  onLink?: (event: GridLinkActivation<Row>) => boolean | void;
   /** Adds Chart to the selection bar. The host owns chart generation. */
   onChart?: (event: { query: Q | null; selection: GridSelection<Q>; signal: AbortSignal }) => void | PromiseLike<void>;
   /** Host-owned secondary actions in the more menu. Content entries (render) need the reporting runtime: render fills the
@@ -713,7 +730,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   /** Loads the link part when the grid is created and reports its selection and own conditions as canopyx:linkchange (LinkChange). */
   linkEvents?: boolean;
   /** Reporting detail rows drawn by the host (a template, trusted HTML or a nested grid or tree). */
-  detail?: GridDetailOptions;
+  detail?: GridDetailOptions<Row>;
   /** Editing of editable columns: read-only rules, checks, lookups, editors and the batch writer (docs/editing.md). */
   editing?: GridEditingOptions<Q>;
   /** Before a value changes; returning false (or cancelling canopyx:cellValueChanging) keeps the old value. */
@@ -730,25 +747,35 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery> {
   rangeSelection?: GridRangeSelection;
   /** Overrides the view's clipboard settings, switch by switch. */
   clipboard?: GridClipboardSettings;
+  /** Live data settings, over the view's live object; true turns live data on with the defaults, false keeps the view's
+   * settings from applying while the live methods still work (live.d.ts). */
+  live?: boolean | GridLiveOptions<Row, Q>;
+  /** After rows changed in place (a transaction, a poll, a refresh); canopyx:rowsChanged carries the same detail. */
+  onRowsChanged?: (event: GridLiveResult) => void;
+  /** Facet panel settings over the view's facets, and an element the panel renders into (facets.d.ts). */
+  facets?: GridFacetPanelOptions<Row>;
+  /** After the reader opened or collapsed the facet panel; canopyx:facetPanel carries the same detail. */
+  onFacetPanel?: (event: { open: boolean }) => void;
   /** Cells pasted or filled into the grid, before anything changes; returning false (or cancelling canopyx:paste) refuses them all. */
   onPaste?: (event: GridPasteEvent) => boolean | void;
   /** After the cell ranges changed. */
   onCellRangeChange?: (event: { ranges: readonly GridCellRange[] }) => void;
 }
 /** A host store binds to an explicit keyed reporting definition; ordinary grids have no store option. */
-export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery> = GridHostBehavior<Q> & (
+export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> = GridHostBehavior<Q, Row> & (
   { viewStore?: never } | {
     viewStore: GridViewStore<Q>;
-    view: (Q extends GridCursorQuery ? CursorGridView : InlineGridView | CompactGridView | HostGridView) & { stateKey: string; reporting: GridReporting };
+    view: (Q extends GridCursorQuery ? CursorGridView<Row> : InlineGridView<Row> | CompactGridView<Row> | HostGridView<Row>) & { stateKey: string; reporting: GridReporting };
   }
 );
-export type GridOptions = GridHostOptions & ({ view: InlineGridView | CompactGridView } | { view: HostGridView; source: GridSource });
-export type CursorGridOptions = GridHostOptions<GridCursorQuery> & { view: CursorGridView; source: GridCursorSource };
+/** A flat grid's options; Row types the rows, columns, facets, events and live API (createDataGrid<Row>). */
+export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQuery, Row> & ({ view: InlineGridView<Row> | CompactGridView<Row> } | { view: HostGridView<Row>; source: GridSource<Row> });
+export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
-/** Presentation controller. Selection uses stable IDs independently of cached or visible rows. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi {
+/** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi {
   readonly element: HTMLElement;
-  readonly view: GridView;
+  readonly view: GridView<Row>;
   readonly ready: Promise<Q>;
   getQuery(): Q | null;
   setQuery(query: GridQueryInput<Q>): Promise<Q>;
@@ -760,15 +787,15 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridE
   previousPage(): Promise<Q>;
   nextPage(): Promise<Q>;
   setPageLength(length: number | "all"): Promise<Q>;
-  setColumnWidth(id: string, width: number): void;
+  setColumnWidth(id: GridColumnId<Row>, width: number): void;
   /** Samples at most 200 cached accepted-query records and 512 display code units per value, capped at 420 CSS pixels or maxWidth, and sets a sticky user width. No fetching or viewport scraping. */
-  autoFitColumn(id: string): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
+  autoFitColumn(id: GridColumnId<Row>): Readonly<{ width: number; sampled: number; scope: "loaded" }>;
   /** Fits every declared column from the same bounded loaded sample, including hidden columns. */
   autoFitColumns(): Readonly<Record<string, Readonly<{ width: number; sampled: number; scope: "loaded" }>>>;
-  setColumnPinned(id: string, pin: GridColumnPin): void;
+  setColumnPinned(id: GridColumnId<Row>, pin: GridColumnPin): void;
   /** Drops user widths so the columns return to automatic content sizing. */
-  autoSizeColumns(ids?: readonly string[]): void;
-  setColumnPriority(id: string, priority: GridColumnPriority): void;
+  autoSizeColumns(ids?: readonly GridColumnId<Row>[]): void;
+  setColumnPriority(id: GridColumnId<Row>, priority: GridColumnPriority): void;
   /** Restores the declared order, visibility, widths and pins; keeps the query. */
   resetColumns(): void;
   /** Reporting runtime only: effective layout for every declared column, with the reason a column is out of view. */
@@ -777,9 +804,9 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridE
    * data-cx-slot move into their slot when the grid mounts and return to the host element on destroy. */
   toolbarSlot?(name: GridToolbarSlot): HTMLElement;
   /** Reporting runtime only: revisioned, bounded full-query aggregation. Never reads the viewport cache for counts. */
-  getFacets?(column: string, options?: GridFacetOptions): Promise<GridFacetPage>;
-  setColumnVisible(id: string, visible: boolean): void;
-  setColumnOrder(ids: string[]): void;
+  getFacets?(column: GridColumnId<Row>, options?: GridFacetOptions): Promise<GridFacetPage>;
+  setColumnVisible(id: GridColumnId<Row>, visible: boolean): void;
+  setColumnOrder(ids: GridColumnId<Row>[]): void;
   getState(): GridState<Q>;
   setState(state: GridState<Q> | GridPreferenceState<Q>): Promise<Q>;
   resetView(): Promise<Q>;
@@ -862,9 +889,15 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery> extends GridE
   reload(): Promise<Q>;
   destroy(): void;
 }
-/** Requires a browser DOM. The grid runtime also hosts both existing tree variants. */
-export function createDataGrid(host: HTMLElement, options: GridOptions): DataGrid;
-export function createDataGrid(host: HTMLElement, options: CursorGridOptions): DataGrid<GridCursorQuery>;
+/**
+ * Requires a browser DOM. The grid runtime also hosts both existing tree variants. Name a row type to check columns, rows,
+ * facets, events and the live API against it: `createDataGrid<Server>(element, { view })`, where `Server extends GridRow`.
+ */
+/** Keeps a type parameter from being inferred from an argument (the deferred form works on every supported compiler). */
+type GridNamedRow<Row> = [Row][Row extends unknown ? 0 : never];
+// The row type is named, never inferred from the options: without one, rows are plain GridRow.
+export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement, options: GridOptions<GridNamedRow<Row>>): DataGrid<GridQuery, Row>;
+export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement, options: CursorGridOptions<GridNamedRow<Row>>): DataGrid<GridCursorQuery, Row>;
 /** Registers options before either a tree or flat-grid fragment mounts. */
 export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery>): () => void;
 /**

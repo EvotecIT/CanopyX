@@ -24,6 +24,7 @@ right runtime automatically.
 - [Pin columns to the edges](#pin-columns-to-the-edges)
 - [Group rows with totals](#group-rows-with-totals)
 - [Filter by values with counts](#filter-by-values-with-counts)
+- [Keep a grid up to date while it is open](#keep-a-grid-up-to-date-while-it-is-open)
 - [Remember the reader's view](#remember-the-readers-view)
 - [Translate the controls](#translate-the-controls)
 
@@ -292,6 +293,33 @@ source: {
 
 Read the same counts from code with `grid.getFacets("status", { limit: 100 })` (reporting). See the
 [flat grid protocol](data-protocol.md#flat-grid-documents).
+
+To keep those values in view, show a facet panel beside the grid; ranges get a histogram, and the facets filter each other:
+
+```csharp
+view.FacetPanel = new CanopyFacetPanel().Add("status").Add("region").Add("amount");
+```
+
+See [facet panel](facets.md).
+
+## Keep a grid up to date while it is open
+
+Apply changes in place instead of reloading: the reader keeps their sort, filters, selection, focus and scroll position.
+Rows keep their places while their values change, and an **Order changed · Re-sort** prompt offers to move them.
+
+```javascript
+const grid = createDataGrid(element, { view: { ...view, live: { flash: true, batchMs: 250 } } });
+socket.onmessage = message => grid.applyTransaction(JSON.parse(message.data));   // { add, update, remove }
+grid.element.addEventListener("canopyx:rowsChanged", event => console.log(event.detail.updated.length, "rows changed"));
+```
+
+A hosted grid polls its source and refreshes only when the revision changed:
+
+```csharp
+view.Live = new CanopyGridLive { PollMilliseconds = 10000, Flash = true };
+```
+
+See [live data](live-data.md).
 
 ## Remember the reader's view
 

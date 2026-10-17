@@ -113,6 +113,8 @@
     hlSync(view);
     return view.hl.counting.then(() => undefined);
   };
+  // Rows that change in place (the live part) are counted and marked again, as a new result would be.
+  VIEW_MODES.refresh = view => { if (view.hl) hlRefresh(view); };
   VIEW_MODES.matches = view => {
     const state = view.hl;
     return Object.freeze(state ? { enabled: !!view.highlightOn, total: state.active ? state.total : 0, current: state.active ? hlPosition(view) : 0, complete: !state.active || state.complete } :

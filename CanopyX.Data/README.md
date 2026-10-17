@@ -20,7 +20,10 @@ string page = await handler.QueryAsync(requestBody, cancellationToken);
 - `ICanopyDataProvider` lets raw SQL back ends implement the same endpoint; `CanopyInMemoryProvider<T>` is the reference implementation.
 - `ICanopyDataWriter` saves commits; `CanopyQueryableWriter<T>` writes editable columns through the column map to a store
   you adapt (`ICanopyWriteStore<T>`, a few lines for EF Core), with server-side validation and conflict detection.
-- `CanopyRemoteLimits` bounds page size, export rows, filter depth and terms, membership size, value lists, commit batches and request size.
+- `CanopyRecordMap<T>` serves the record panel's details on demand (fields, paged collections, timelines, changes and
+  links) by key through the grid's own query; `ICanopyRecordProvider` lets other back ends answer `gridRecordQuery` too.
+- `CanopyRemoteLimits` bounds page size, export rows, filter depth and terms, membership size, value lists, commit batches,
+  record answers and request size.
 - `CanopyCsvExportFormat` streams CSV; register further `ICanopyExportFormat` writers for other formats.
 
 `CanopyX.AspNetCore` maps the handler to minimal-API endpoints. See `docs/remote-dotnet.md` in the repository.

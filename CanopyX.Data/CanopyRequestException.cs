@@ -26,8 +26,9 @@ public sealed class CanopyRequestException : Exception {
         }
     }
 
-    /// <summary>Gets the HTTP status code: 409 for a stale revision or changed export count, 400 otherwise.</summary>
-    public int StatusCode => Error == CanopyRequestError.StaleRevision ? 409 : 400;
+    /// <summary>Gets the HTTP status code: 409 for a stale revision or changed export count, 404 for a record that is not
+    /// available, 400 otherwise.</summary>
+    public int StatusCode => Error == CanopyRequestError.StaleRevision ? 409 : Error == CanopyRequestError.RecordNotFound ? 404 : 400;
 
     internal static CanopyRequestException Limit(string message) => new CanopyRequestException(CanopyRequestError.LimitExceeded, message);
 

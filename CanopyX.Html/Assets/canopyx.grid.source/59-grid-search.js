@@ -99,5 +99,7 @@
         const target = [...this.queryChips.children].find(button => button.getAttribute("data-cx-condition") === key);
         (target || this.queryChips.lastElementChild || this.searchInput || this.grid).focus({ preventScroll: true });
       }
+      // Header menus are rebuilt before this summary changes the header's position. Anchor to its final layout.
+      this.gridPopover?.position();
     }
   });

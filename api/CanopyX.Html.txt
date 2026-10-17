@@ -1,0 +1,124 @@
+# Public API of CanopyX.Html, checked by the API tests. Regenerate with CANOPYX_API_UPDATE=1 after an intended change.
+CanopyX.Html.CanopyAssetMode : enum System.Int32
+CanopyX.Html.CanopyAssetMode.const CanopyX.Html.CanopyAssetMode External = 1
+CanopyX.Html.CanopyAssetMode.const CanopyX.Html.CanopyAssetMode Inline = 0
+CanopyX.Html.CanopyAssetNaming : enum System.Int32
+CanopyX.Html.CanopyAssetNaming.const CanopyX.Html.CanopyAssetNaming ContentHash = 0
+CanopyX.Html.CanopyAssetNaming.const CanopyX.Html.CanopyAssetNaming Plain = 1
+CanopyX.Html.CanopyHtmlAssets : static class
+CanopyX.Html.CanopyHtmlAssets.const System.String ExportScriptFileName = "canopyx-export.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String FilterEditorScriptFileName = "canopyx-filter-editor.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String FilterEditorStyleFileName = "canopyx-filter-editor.css"
+CanopyX.Html.CanopyHtmlAssets.const System.String GridScriptFileName = "canopyx-grid.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String GridStyleFileName = "canopyx-grid.css"
+CanopyX.Html.CanopyHtmlAssets.const System.String HistoryScriptFileName = "canopyx-history.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String InteractiveScriptFileName = "canopyx-interactive.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String InteractiveStyleFileName = "canopyx-interactive.css"
+CanopyX.Html.CanopyHtmlAssets.const System.String ReportingScriptFileName = "canopyx-reporting.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String ReportingStyleFileName = "canopyx-reporting.css"
+CanopyX.Html.CanopyHtmlAssets.const System.String ScriptFileName = "canopyx.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String StyleFileName = "canopyx.css"
+CanopyX.Html.CanopyHtmlAssets.const System.String TreeToolsScriptFileName = "canopyx-tree-tools.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String TreeToolsStyleFileName = "canopyx-tree-tools.css"
+CanopyX.Html.CanopyHtmlAssets.static CanopyX.Html.CanopyHtmlPart GetPart(System.String name)
+CanopyX.Html.CanopyHtmlAssets.static CanopyX.Html.CanopyRuntime GetRuntime(CanopyX.CanopyDataGridView view)
+CanopyX.Html.CanopyHtmlAssets.static CanopyX.Html.CanopyRuntime GetRuntime(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyRuntime preferred = TreeGrid)
+CanopyX.Html.CanopyHtmlAssets.static System.Collections.Generic.IReadOnlyList<CanopyX.Html.CanopyHtmlPart> GetParts(CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlAssets.static System.Collections.Generic.IReadOnlyList<CanopyX.Html.CanopyHtmlPart> GetRequiredParts(CanopyX.CanopyDataGridView view)
+CanopyX.Html.CanopyHtmlAssets.static System.Collections.Generic.IReadOnlyList<CanopyX.Html.CanopyHtmlPart> GetRequiredParts(CanopyX.CanopyTreeView view)
+CanopyX.Html.CanopyHtmlAssets.static System.Collections.Generic.IReadOnlyList<CanopyX.Html.CanopyHtmlPart> Parts { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.Collections.Generic.IReadOnlyList<System.String> WriteTo(System.String directory)
+CanopyX.Html.CanopyHtmlAssets.static System.Collections.Generic.IReadOnlyList<System.String> WriteTo(System.String directory, CanopyX.Html.CanopyAssetNaming naming)
+CanopyX.Html.CanopyHtmlAssets.static System.Collections.Generic.IReadOnlyList<System.String> WriteTo(System.String directory, CanopyX.Html.CanopyAssetNaming naming, CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlAssets.static System.String ExportMarkup { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String ExportScript { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String ExportVersion { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String FilterEditorMarkup { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String FilterEditorScript { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String FilterEditorStyle { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String FilterEditorVersion { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String GetScript(CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlAssets.static System.String GetScriptFileName(CanopyX.Html.CanopyAssetNaming naming)
+CanopyX.Html.CanopyHtmlAssets.static System.String GetScriptFileName(CanopyX.Html.CanopyAssetNaming naming, CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlAssets.static System.String GetScriptHash(CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlAssets.static System.String GetStyle(CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlAssets.static System.String GetStyleFileName(CanopyX.Html.CanopyAssetNaming naming)
+CanopyX.Html.CanopyHtmlAssets.static System.String GetStyleFileName(CanopyX.Html.CanopyAssetNaming naming, CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlAssets.static System.String GetStyleHash(CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlAssets.static System.String HashedExportScriptFileName { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HashedFilterEditorScriptFileName { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HashedFilterEditorStyleFileName { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HashedHistoryScriptFileName { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HashedScriptFileName { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HashedStyleFileName { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HashedTreeToolsScriptFileName { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HashedTreeToolsStyleFileName { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HistoryMarkup { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HistoryScript { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String HistoryVersion { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String Script { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String ScriptHash { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String Style { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String StyleHash { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String TreeToolsMarkup { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String TreeToolsScript { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String TreeToolsStyle { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String TreeToolsVersion { get; }
+CanopyX.Html.CanopyHtmlDocument : sealed class
+CanopyX.Html.CanopyHtmlDocument..ctor()
+CanopyX.Html.CanopyHtmlDocument.System.Collections.Generic.IReadOnlyCollection<System.String> EmbeddedParts { get; }
+CanopyX.Html.CanopyHtmlDocument.System.String EmbedOnce(CanopyX.Html.CanopyHtmlPart part)
+CanopyX.Html.CanopyHtmlDocument.System.String EmbedOnce(CanopyX.Html.CanopyHtmlPart part, System.String? nonce)
+CanopyX.Html.CanopyHtmlExtensions : static class
+CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyBundleResult SaveHtmlBundle(CanopyX.CanopyTreeView view, System.String directory, CanopyX.Html.CanopyHtmlOptions? options = null, CanopyX.Bundles.CanopyBundleOptions? bundleOptions = null)
+CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyBundleResult SaveHtmlBundle(CanopyX.CanopyTreeView view, System.String directory, System.Collections.Generic.IEnumerable<CanopyX.CanopyNode> roots, System.Func<CanopyX.CanopyNode, System.Collections.Generic.IEnumerable<CanopyX.CanopyNode>?> children, CanopyX.Html.CanopyHtmlOptions? options = null, CanopyX.Bundles.CanopyBundleOptions? bundleOptions = null)
+CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyGridBundleResult SaveHtmlBundle(CanopyX.CanopyDataGridView view, System.String directory, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyDataGridView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyTreeView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlOptions : sealed class
+CanopyX.Html.CanopyHtmlOptions..ctor()
+CanopyX.Html.CanopyHtmlOptions.CanopyX.CanopyRowDataOptions? RowData { get; set; }
+CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyAssetMode AssetMode { get; set; }
+CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyAssetNaming AssetNaming { get; set; }
+CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyHtmlDocument? Document { get; set; }
+CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyRuntime Runtime { get; set; }
+CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyTheme Theme { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.Boolean AutoMount { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.Boolean MountWhenVisible { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.Collections.Generic.ISet<System.String> HiddenFilterIds { get; }
+CanopyX.Html.CanopyHtmlOptions.System.Collections.Generic.ISet<System.String> Parts { get; }
+CanopyX.Html.CanopyHtmlOptions.System.String AssetBaseUrl { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.String Language { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.String? Height { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.String? Nonce { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.String? Title { get; set; }
+CanopyX.Html.CanopyHtmlPart : sealed class
+CanopyX.Html.CanopyHtmlPart.System.Boolean IsShippedWith(CanopyX.Html.CanopyRuntime runtime)
+CanopyX.Html.CanopyHtmlPart.System.Collections.Generic.IReadOnlyList<CanopyX.Html.CanopyRuntime> Runtimes { get; }
+CanopyX.Html.CanopyHtmlPart.System.Collections.Generic.IReadOnlyList<System.String> Requires { get; }
+CanopyX.Html.CanopyHtmlPart.System.String GetMarkup(System.String? nonce)
+CanopyX.Html.CanopyHtmlPart.System.String GetScriptFileName(CanopyX.Html.CanopyAssetNaming naming)
+CanopyX.Html.CanopyHtmlPart.System.String HashedScriptFileName { get; }
+CanopyX.Html.CanopyHtmlPart.System.String Label { get; }
+CanopyX.Html.CanopyHtmlPart.System.String Markup { get; }
+CanopyX.Html.CanopyHtmlPart.System.String Name { get; }
+CanopyX.Html.CanopyHtmlPart.System.String Script { get; }
+CanopyX.Html.CanopyHtmlPart.System.String ScriptFileName { get; }
+CanopyX.Html.CanopyHtmlPart.System.String Version { get; }
+CanopyX.Html.CanopyHtmlPart.System.String? GetStyleFileName(CanopyX.Html.CanopyAssetNaming naming)
+CanopyX.Html.CanopyHtmlPart.System.String? HashedStyleFileName { get; }
+CanopyX.Html.CanopyHtmlPart.System.String? Style { get; }
+CanopyX.Html.CanopyHtmlPart.System.String? StyleFileName { get; }
+CanopyX.Html.CanopyRuntime : enum System.Int32
+CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime DataGrid = 2
+CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime InteractiveTreeGrid = 1
+CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime ReportingGrid = 3
+CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime TreeGrid = 0
+CanopyX.Html.CanopyTheme : enum System.Int32
+CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Auto = 0
+CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Dark = 2
+CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Light = 1

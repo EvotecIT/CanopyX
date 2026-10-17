@@ -594,6 +594,83 @@ CanopyX.configure("linked-tree", { linkEvents: true });
 void linked.setExternalFilter("open", { field: "load", range: [null, null] });
 // @ts-expect-error An external filter has values or a range, not both.
 void linked.setExternalFilter("both", { field: "load", values: [1], range: [1, 2] });
+// Live data: transactions, the batched update rate, polling and the revision-aware refresh (docs/live-data.md).
+import type { GridLiveResult, GridLiveState, GridPoller, GridTransaction } from "@evotecit/canopyx/grid";
+const liveGrid = createDataGrid(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "live", label: "Live", pageSize: 100, selection: "multiple", search: true, source: { kind: "inline" },
+    columns: [{ id: "name", title: "Name", kind: "text" }, { id: "load", title: "Load", kind: "number" }], rows: [],
+    live: { stableOrder: true, flash: { durationMs: 900 }, batchMs: 250, announce: true } },
+  live: { load: ({ signal }) => signal.aborted ? null : [{ id: "a", cells: { name: "A", load: 1 } }] },
+  onRowsChanged: (event: GridLiveResult) => void [event.added, event.updated, event.removed, event.missing, event.orderChanged, event.source] });
+const liveChange: GridTransaction = { add: [{ id: "b", cells: { name: "B", load: 2 } }], update: [{ id: "a", cells: { load: null } }], remove: ["c", { id: "d" }] };
+void liveGrid.applyTransaction(liveChange).then((result: GridLiveResult) => result.updated.length);
+void liveGrid.addRows([{ id: "e", cells: { name: "E" } }]);
+void liveGrid.updateRows([{ id: "e", cells: { load: 4 }, tone: null }]);
+void liveGrid.removeRows(["e"]);
+void liveGrid.setRows([]);
+void liveGrid.flushTransactions();
+void liveGrid.refreshRows();
+void liveGrid.resort();
+void liveGrid.poll({ intervalMs: 5000, immediate: true }).then((poller: GridPoller) => { poller.pause(); poller.resume(); void poller.refresh(); poller.stop(); return poller.active && !poller.paused; });
+const liveState: GridLiveState = liveGrid.getLiveState();
+void [liveState.orderChanged, liveState.pending, liveState.polling, liveState.revision];
+// @ts-expect-error A transaction lists rows to add, not a single row.
+void liveGrid.applyTransaction({ add: { id: "x", cells: {} } });
+// Typed rows (docs/typed-grids.md): a named row type checks column ids, rows, facets, events and the live API.
+import type { GridRow as TypedGridRow, GridRowUpdate, GridColumnId, InlineGridView as TypedInlineView } from "@evotecit/canopyx/grid";
+interface ServerRow extends TypedGridRow { cells: { host: string; load: number; site: string | null } }
+const serverView: TypedInlineView<ServerRow> = { protocol: "canopyx/2", type: "grid", id: "servers", label: "Servers", pageSize: 100, selection: "multiple", search: true,
+  source: { kind: "inline" }, columns: [{ id: "host", title: "Host", kind: "text" }, { id: "load", title: "Load", kind: "number" }, { id: "site", title: "Site", kind: "text" }],
+  rows: [{ id: "s1", cells: { host: "web-01", load: 0.4, site: "Oslo" } }], facets: { columns: ["site", { column: "load", kind: "range" }] }, searchColumns: ["host"] };
+const servers = createDataGrid<ServerRow>(document.createElement("div"), { view: serverView,
+  onDetails: event => void event.row.cells.host.toUpperCase(), onColumnResize: event => void (event.column satisfies GridColumnId<ServerRow>) });
+servers.setColumnVisible("load", false);
+void servers.addRows([{ id: "s2", cells: { host: "db-01", load: 2, site: null } }]);
+void servers.updateRows([{ id: "s2", cells: { load: 3 } }]);
+void servers.updateRows([{ id: "s2", cells: { site: null } }]);
+// @ts-expect-error A typed live update cannot clear a required non-null cell.
+void servers.updateRows([{ id: "s2", cells: { host: null } }]);
+interface DetailedServerRow extends ServerRow { detail?: { type: "properties"; items: { name: string; value: string }[] } }
+const typedDetailUpdate: GridRowUpdate<DetailedServerRow> = { id: "s2", detail: { type: "properties", items: [{ name: "Owner", value: "Team" }] } };
+// @ts-expect-error A typed live update preserves a specialized detail payload.
+const wrongDetailUpdate: GridRowUpdate<DetailedServerRow> = { id: "s2", detail: { type: "html", html: "Wrong payload" } };
+void typedDetailUpdate; void wrongDetailUpdate;
+const typedColumn: GridColumnId<ServerRow> = "site";
+void typedColumn;
+// @ts-expect-error A typed grid knows its columns.
+servers.setColumnVisible("owner", false);
+// @ts-expect-error Rows carry the row type's cells.
+void servers.addRows([{ id: "s3", cells: { host: "x", load: "high", site: null } }]);
+// @ts-expect-error Columns name the row type's cells.
+const badServerView: TypedInlineView<ServerRow> = { ...serverView, columns: [{ id: "owner", title: "Owner", kind: "text" }] };
+void badServerView;
+// Without a row type, rows stay plain GridRow and any column id goes.
+// The rows and columns here are literals, so a grid that inferred its row type from them would refuse the calls below.
+const plainGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "plain", label: "Plain", pageSize: 100, selection: "none", search: false,
+  source: { kind: "inline" }, columns: [{ id: "any", title: "Any", kind: "text" }], rows: [{ id: "p0", cells: { any: "x" } }] } });
+plainGrid.setColumnVisible("anything", true);
+void plainGrid.addRows([{ id: "p1", cells: { other: 1 } }]);
+void plainGrid.updateRows([{ id: "p1", cells: { other: null } }]);
+// Row activation, links and detail callbacks carry the row type too.
+createDataGrid<ServerRow>(document.createElement("div"), { view: serverView,
+  onRowActivate: event => void event.row.cells.load.toFixed(1), onLink: event => void (event.column satisfies GridColumnId<ServerRow>),
+  detail: { hasDetail: row => row.cells.site !== null } });
+// The facet panel (docs/facets.md): a definition in the view, host options and the panel API.
+import type { GridFacetPanelDefinition, GridFacetPanelState } from "@evotecit/canopyx/grid";
+const facetPanel: GridFacetPanelDefinition = { columns: ["region", { column: "load", kind: "range", bins: 12, sort: "value", collapsed: false }], position: "side", open: true, collapsible: true, width: 280, label: "Refine" };
+const facetGrid = createDataGrid(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "facets", label: "Facets", pageSize: 100, selection: "single", search: true, source: { kind: "inline" },
+    columns: [{ id: "region", title: "Region", kind: "text" }, { id: "load", title: "Load", kind: "number" }], rows: [], facets: facetPanel },
+  facets: { position: "top", target: document.createElement("div") },
+  onFacetPanel: event => void event.open });
+const facetState: GridFacetPanelState = facetGrid.getFacetPanel();
+void [facetState.open, facetState.columns, facetState.active];
+void facetGrid.setFacetPanelOpen(false).then(state => state.open);
+const facetSaved: boolean | undefined = facetGrid.getState().facets?.open;
+void facetSaved;
+// @ts-expect-error A facet is a list or a range.
+const badFacet: GridFacetPanelDefinition = { columns: [{ column: "region", kind: "chart" }] };
+void badFacet;
 // Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
 ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
   detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });

@@ -8,7 +8,8 @@ These two packages answer those queries from .NET:
   allow-list and safety limits, executes it, and writes the `gridPage`, `gridFacetPage`, `gridSummary` and
   `gridCommitResult` documents the browser runtime accepts. It runs requests over any `IQueryable<T>` (EF Core, LINQ to
   objects, any LINQ provider), over a provider you write for another back end, streams exports, serves grouping with up to
-  four levels, and saves edited rows through a writer you choose ([Saving edits](#saving-edits)).
+  four levels, saves edited rows through a writer you choose ([Saving edits](#saving-edits)), and loads one record's details
+  for the record panel on demand ([Record details](#record-details)).
 - **`CanopyX.AspNetCore`** (`net8.0`, `net10.0`) maps it to minimal-API endpoints and writes the small browser script that
   connects the grid to them.
 
@@ -25,6 +26,13 @@ browser grid ── gridCommit ──▶ commit endpoint (write policy) ──�
                                                                    ▼
                                                         ICanopyDataWriter (CanopyQueryableWriter<T> │ your writer)
 browser grid ◀── gridCommitResult (saved │ error │ conflict per row, new revision) ┘
+
+record panel ── gridRecordQuery ──▶ record endpoint ──▶ CanopyRemoteHandler
+                                                         │ fields allowed + readable, revision, limits
+                                                         ▼
+                                              ICanopyRecordProvider (CanopyQueryableRecordProvider<T> │ your provider)
+                                                         │ Where(key == id) on the grid's own query, children through it
+record panel ◀── gridRecord (fields, cells, row │ one collection page) ┘
 ```
 
 ## Quick start
@@ -86,7 +94,9 @@ CanopyX.configure("machines", { source: {
   facet: (request, { signal }) => post("/facet", request, signal).then(r => r.json()),
   summary: (query, { signal }) => post("/summary", query, signal).then(r => r.json()),
   // Views with editable columns save through the commit endpoint.
-  commit: (batch, { signal }) => post("/commit", batch, signal).then(r => r.json())
+  commit: (batch, { signal }) => post("/commit", batch, signal).then(r => r.json()),
+  // Views whose record panel loads details on demand (CanopyRemoteScript also answers null for a 404 recordNotFound).
+  record: (request, { signal }) => post("/record", request, signal).then(r => r.json())
 } });
 document.addEventListener("canopyx:commit", event => {
   const grid = event.target.canopyx, result = event.detail, revision = result && result.revision;
@@ -134,14 +144,16 @@ and export to the server without changing what readers see:
 | `POST {pattern}/export/{format}` | the grid's export request (`scope`, `query`, `revision`, `selection`, `querySelection`, `columns`, `values`, …) | the file, streamed |
 | `GET {pattern}/view` | | the `grid` definition document |
 | `POST {pattern}/commit` (with `options.Writer`) | `gridCommit` document | `gridCommitResult` |
+| `POST {pattern}/record` (with a record map or `options.Records`) | `gridRecordQuery` document | `gridRecord` (404 `recordNotFound` when the caller has no such record) |
 
 The GET form is off by default because query strings reach access logs, proxies and referrers. POST bodies must be `application/json` (or `+json`); other content types get 415, which also means cross-origin pages
 cannot post without passing a CORS preflight. Responses carry `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
 Every handler observes `HttpContext.RequestAborted`; the token flows into the provider and the database command.
 
 Outside ASP.NET Core, use `CanopyRemoteHandler` directly: `QueryAsync(json)`, `FacetAsync(json)`, `SummaryAsync(json)`,
-`PrepareExportAsync(json, format)` and, with a writer (`new CanopyRemoteHandler(schema, provider, options, writer)`),
-`CommitAsync(json)` return documents (or an export job) and throw `CanopyRequestException` for client errors.
+`PrepareExportAsync(json, format)`, with a writer (`new CanopyRemoteHandler(schema, provider, options, writer)`)
+`CommitAsync(json)`, and with a record provider (`new CanopyRemoteHandler(schema, provider, options, writer, records)`)
+`RecordAsync(json, canRead)` return documents (or an export job) and throw `CanopyRequestException` for client errors.
 `CanopyRequestParser` exposes the parsing step on its own, and `CanopyRequestParser.FromQuery(CanopyGridQuery, schema)`
 validates a typed C# query with the same rules.
 
@@ -189,6 +201,7 @@ returned by the column descriptors do not change the endpoint contract; create a
 | Value lists | `gridFacetQuery` → `gridFacetPage` | Full: case-insensitive buckets, counts over the complete query, value search, `includeCurrentFilter: false` projection, deterministic order, ≤ 200 buckets. |
 | Grouping and aggregates | `source.summary` → `gridSummary` | Full: a fixed grouping or up to four runtime `groupBy` levels (ordered by value or by an aggregate), nested groups with absolute ranges and keys unique across levels, `count`/`distinctCount`/`sum`/`average`/`minimum`/`maximum`; pages and exports read group by group. Custom aggregates need a provider of your own (see [Grouping levels](#grouping-levels)). |
 | Editing | `gridCommit` → `gridCommitResult` | Full with a writer: editable columns only, values checked again with the view's validation, rows saved independently (or all or nothing), conflicts from original values, the new revision (see [Saving edits](#saving-edits)). |
+| Record details | `gridRecordQuery` → `gridRecord` | Full with a record map or provider: record fields, columns' drawer values (`cells`), the row, collections that page with totals, timelines, change lists and links to related records (see [Record details](#record-details)). |
 | Revisions | `revision` | Full: a stale revision answers 409 `staleRevision`. |
 | Exports | export request → file | Full: `filtered`, `selected` (ids or all-matching with exclusions) and `all` scopes, chosen columns, raw or display values, streamed. |
 | Cursor navigation | `gridCursorQuery` | Not served; rejected with `unsupported`. Offset navigation covers the protocol's hosted grids. |
@@ -312,19 +325,28 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 | `MaxGroups` (across all grouping levels) | 10,000 | 10,000 |
 | `MaxCommitRows` | 100 | — |
 | `MaxCommitTextLength` (one written text value) | 65,536 | — |
+| `MaxRecordPageSize` (rows of a collection page, and first rows of each collection in a whole record) | 200 | 10,000 |
+| `MaxRecordItems` (timeline events or changes of one record field) | 200 | 10,000 (changes 512) |
+| `MaxRecordBytes` (one serialized record answer; refused, never cut short) | 1 MiB | — |
+| `MaxRecordTextLength` (one text value of a record answer, held for every provider; longer text ends with an ellipsis and fits the limit) | 8,192 | — |
+| `MaxRecordOffset` (offset of a collection page) | 10,000 | — |
+| `MaxRecordRequestBytes` (one record request body, within `MaxRequestBytes`) | 16 KiB | — |
 
 - **Typed errors.** Rejections throw `CanopyRequestException` and answer `{ "error": code, "message": text }` with status 400
-  (409 for `staleRevision`, 413 for an oversized body, 415 for a non-JSON body). Codes: `invalidJson`, `invalidDocument`,
+  (409 for `staleRevision`, 404 for `recordNotFound`, 413 for an oversized body, 415 for a non-JSON body). Codes: `invalidJson`, `invalidDocument`,
   `unknownColumn`, `invalidSort`, `columnNotFilterable`, `invalidOperator`, `invalidOperand`, `limitExceeded`,
   `offsetOutOfRange`, `staleRevision`, `unsupported`, `notFacetable`, `invalidExport`, `unknownFormat`, `invalidGroupBy`,
-  `columnNotEditable`. Messages never echo
+  `columnNotEditable`, `unknownField`, `notCollection`, `recordNotFound`. Messages never echo
   request text or server internals. Any other exception is logged and answered with a generic 500 `serverError`.
 - **Authorization.** Endpoints require authorization by default (the default policy, or `AuthorizationPolicy`); set
   `AllowAnonymous` only for public data. Row-level restrictions belong in the query callback, which runs per request.
   The commit route requires `WriteAuthorizationPolicy` on top of the read authorization, and mapping a writer without
   one (or with a blank name) fails: the default policy would let every reader write. `AllowAnonymousWrites` exists for
   local samples. A route group opened with `.AllowAnonymous()` makes ASP.NET Core skip every policy, so the commit route
-  then refuses with 403 `writeNotAllowed` unless `AllowAnonymousWrites` is set.
+  then refuses with 403 `writeNotAllowed` unless `AllowAnonymousWrites` is set. The record route requires the read
+  authorization like the other reads; `CanReadRecordField` decides per request which record fields a caller sees.
+- **Rate limiting** belongs to the host: `MapCanopyRemote(...).RequireRateLimiting("grid")` limits every route, and
+  `options.RecordEndpoint = route => route.RequireRateLimiting("records")` the record route alone.
 - **Writes.** Only columns the view declares editable and the schema allows can be written; any other column fails the
   whole batch with `columnNotEditable`. Every value is checked again (kind, the view's validation, the editor's step and
   choices) before a writer sees it, so a modified client cannot write what the grid would refuse. The reference writer
@@ -514,6 +536,163 @@ reloads after a commit reports a different revision, or after rows were saved wi
 not read it after the write. Reload keeps the reader's latest query and page length. If it fails, the grid displays the
 error and offers Retry. Readers of an older revision elsewhere get `staleRevision` and reload too.
 
+## Record details
+
+A grid with a [record panel](record-panel.md) whose details load on demand (`CanopyRecordSource.Host()`) keeps its rows
+small: the drawer asks for one record's details when it opens, for the next rows of a collection when the reader presses
+Load more, and for the record's row when a deep link or a related record names a record the grid has not loaded. Each is a
+`gridRecordQuery` ([data-protocol.md](data-protocol.md#record-details)); the record route answers it with a `gridRecord`.
+
+```csharp
+// 1. The record panel the drawer shows: record-only fields, with their details loaded from the server.
+view.RowAction = CanopyGridRowAction.Details;
+var panel = view.Record = new CanopyRecordPanel { Source = CanopyRecordSource.Host(), DeepLink = true };
+panel.Fields.Add(new CanopyColumn("serial", "Serial number"));
+panel.Fields.Add(new CanopyColumn("purchased", "Purchased") { Kind = CanopyColumnKind.DateTime });
+panel.Fields.Add(new CanopyColumn("replaces", "Replaces"));
+panel.Fields.Add(new CanopyColumn("software", "Installed software"));
+panel.Fields.Add(new CanopyColumn("maintenance", "Maintenance"));
+panel.Fields.Add(new CanopyColumn("changes", "Configuration changes"));
+panel.Fields.Add(new CanopyColumn("rack", "Machines in the same rack"));
+
+// 2. The record allow-list, next to the column map: only these fields are read, and only through these expressions.
+var records = new CanopyRecordMap<Machine>(map)
+    .Field("serial", m => m.SerialNumber)
+    .Field("purchased", m => m.PurchasedOn)
+    .Link("replaces", m => m.ReplacesId, m => m.Replaces!.Name)   // a link into this grid: empty when the caller cannot read it
+    .Collection("software", m => m.Software, list => list.Key(s => s.Id).OrderBy(s => s.Name)
+        .Column(new CanopyColumn("name", "Program"), s => s.Name)
+        .Column(new CanopyColumn("installed", "Installed") { Kind = CanopyColumnKind.DateTime }, s => s.InstalledOn)
+        .PageSize(10))
+    .Timeline("maintenance", m => m.Maintenance, events => events.Key(e => e.Id).Time(e => e.At)
+        .Summary(e => e.Summary).Actor(e => e.Technician).Kind(e => e.Kind, kind => kind == "Failure" ? CanopyTone.Danger : CanopyTone.Neutral))
+    .Changes("changes", m => m.Changes, changes => changes.Key(c => c.Id).Name(c => c.Setting)
+        .Before(c => c.Before).After(c => c.After).OrderBy(c => c.At, descending: true))
+    // Machines of this grid: by default only those the caller's query reads are shown (and counted).
+    .Collection("rack", m => m.Rack!.Machines, list => list.Key(peer => peer.Id).OrderBy(peer => peer.Name)
+        .Column(new CanopyColumn("name", "Machine"), peer => peer.Name).Target("machines"));
+
+// 3. The endpoints: the record map carries the column map, and the record route looks records up through the same query
+//    callback as the grid.
+app.MapCanopyRemote("/api/machines", Readable, records, options => {
+    options.AuthorizationPolicy = "Inventory.Read";
+    options.CanReadRecordField = (http, field) => field != "serial" || http.User.IsInRole("Inventory.Assets");
+    options.RecordEndpoint = route => route.RequireRateLimiting("records");   // limit the record route (see Safety)
+});
+
+// 4. The page script: a record schema wires the grid source's record hook to the route.
+html = html.Replace("</head>", CanopyRemoteScript.Element(records.Schema, "/api/machines") + "</head>");
+```
+
+**Mapping.** Every mapped field must be a record panel field of the view (`CanopyRecordPanel.Fields`), every drawer value a
+declared view column; nothing else is reachable.
+
+| Method | Answer | Notes |
+| --- | --- | --- |
+| `Field(id, value, format?)` | a scalar field | Text, booleans, enumerations, numbers and dates, whose kind fits the field's as column values do; `format` builds the cell (display text, tone, badges). |
+| `Link(id, key, text?, view?, withinGrid?)` | `CanopyCell.Link` | A related record: no key is an empty field, no text shows the identity; `view` names another grid on the page. A link into this grid (no `view`, or this grid's) shows only when the related record belongs to the caller's query, otherwise it is an empty field, and its key must have the grid key's type. `withinGrid: false` opts out and reveals related records outside the caller's scope; links into other grids show what they reach. |
+| `Cell(column, value, format?)` | `cells` | A fuller value of a grid column for the drawer, for example a whole list whose grid cell shows a count. |
+| `Collection(id, items, list => …)` | `CanopyRecordList` | `Key` (unique among the rows, the row identity and the last order key), `Column(column, value, format?)`, `OrderBy` (missing values last), `PageSize` (default 50), `PageLength`, `Target(view, column?)` so rows open their records and "Open all in grid" filters that grid. Rows of the grid's own record type are kept to those the caller's query reads (and so is the total); `Unscoped()` opts out and reveals records outside the caller's scope. Rows of other types show what the navigation reaches. Rows without a key are left out. |
+| `Timeline(id, items, events => …)` | `CanopyCell.Timeline` | `Key`, `Time`, `Summary` (blank shows an em dash), `Actor`, `Kind` with a tone, newest first unless `OldestFirst`, missing times last, `Limit` (default 50). |
+| `Changes(id, items, changes => …)` | `CanopyCell.Diff` | `Key`, `Name`, `Before`, `After`, `OrderBy`, `Limit` (default 50, at most 512). |
+
+The record's `row` is the row the page route writes for it: the column map's columns, cell formats and `DecorateRows`.
+Records are found by the column map's key, which must be text, a GUID or an integer up to 64 bits.
+
+**How a request is answered.**
+
+1. **Parsing** (`CanopyRequestParser.ParseRecord`, or `FromRecordQuery` for a `CanopyGridRecordQuery` built in C#): the
+   `view` must be the grid's; `id` is 1 to 4,096 characters of well-formed text that is never interpreted as an expression;
+   `revision` and `row` are optional. A collection page names its `field`, an `offset` (default 0) and a `limit` (1 to 10,000,
+   at most `MaxRecordPageSize`; default the field's page size) and an `offset` of at most `MaxRecordOffset`. `offset` or
+   `limit` without `field`, and `row` with `field`, are `invalidDocument`; a field the endpoint does not serve is
+   `unknownField`, and one that is not a collection `notCollection`. The body may hold at most `MaxRecordRequestBytes`.
+2. **Read check.** `CanReadRecordField(http, id)` (`canRead` outside ASP.NET Core) runs for every record field and drawer
+   value; one the caller may not read is left out of the answer, which the drawer shows as an empty field, and is not queried.
+   A collection page of such a field answers `unknownField`, exactly as a field the endpoint does not serve. The check hides
+   whole fields only, never single collection rows, events or changes: restrict those in the field's mapping.
+3. **Revision.** A stale `revision` answers 409 `staleRevision` before the record is looked up, so it reveals nothing about
+   the record; the answer echoes the revision it was read at.
+4. **Lookup.** `CanopyQueryableRecordProvider<T>` runs `Where(key == id)` on the query callback (the caller's scope) with
+   the identity converted to the key type as a parameter, and reads every readable value field, drawer value and, when asked,
+   the row in one projection. An identity converts only when it is the key's own invariant text: `007`, `+7`, ` 7`, an
+   upper-case or braced GUID, or a number the key type cannot hold find nothing, without a query. A store collation that
+   matches other spellings of a text key finds nothing either: the found key's text must equal the identity. A record that is
+   missing, outside the caller's scope or whose identity is not a key answers the same 404 `recordNotFound`, with the same
+   message, so callers cannot tell them apart.
+5. **Children.** Collections, timelines and change lists read the rows of the record found (`SelectMany` over its
+   navigation), never a table of their own: a collection costs a count and a window, a timeline or change list one window, in
+   the same order every time (the order keys, then the child key). A whole record carries each collection's first
+   `PageSize` rows (at most `MaxRecordPageSize`) with its total, and each timeline or change list its first `Limit` items (at
+   most `MaxRecordItems`). A collection page checks that the record exists, then answers its rows from `offset` and the total;
+   past the end it answers an empty page. Rows written between the count and the window answer 409 `staleRevision`, as pages
+   do. The `pageSize` a collection carries (what Load more asks for) is its page size within `MaxRecordPageSize`. Text orders
+   by the column's collation in a database and ordinally in memory; the child key decides every tie. Child rows without a key
+   (null, or empty text) are left out of the rows and the total.
+6. **Text.** Text in record fields, drawer values, collection cells, timelines and changes longer than `MaxRecordTextLength`
+   (8,192 by default) is shortened so that it ends with an ellipsis (…) and, ellipsis included, fits the limit, never inside
+   a surrogate pair; a database reads at most one character more, enough to tell longer text apart. The handler applies the
+   same bound to every provider's answer, custom `ICanopyRecordProvider` implementations included (values, display text,
+   tooltips, badges, list items, object fields, collection rows, events and changes). Identities, link keys and the row are
+   never shortened.
+7. **Answer.** The handler checks the provider's answer and fails the request (500) instead of sending a field or drawer
+   value that was not asked for, more rows or items than allowed, a collection whose total is below its rows or whose page
+   size the endpoint would refuse, or a row of another record; then it writes the document with
+   `CanopyGridRecord.ToJson(view)`, which checks it against the view, and refuses one larger than `MaxRecordBytes` with
+   `limitExceeded` instead of cutting it short.
+
+**In the browser.** `CanopyRemoteScript.Element(records.Schema, endpoint)` (a record schema instead of the column schema)
+wires the source's `record` hook to `{endpoint}/record`; rejected requests carry the HTTP `status` and the error `code`. A
+404 `recordNotFound` answers `null`: the drawer shows the row without details, and a deep link or related record the grid
+has not loaded stays unopened (the runtime rejects `openRecord` with "not available"). A 409 `staleRevision` (the data
+changed since the grid read its rows, for example after a save here or elsewhere) reloads the grid at the current revision
+and opens the same record again there: details always belong to the rows they open from, so the drawer never mixes two
+revisions. Any other error
+rejects, so the drawer shows the message with Retry; a failed Load more says so and keeps its button.
+
+**Safety.**
+
+- **Scope.** The lookup composes on the query callback, so a record a caller cannot see in the grid cannot be opened, and
+  child rows come only through it. A navigation that reaches *other* records of the grid (related records, rack peers, a
+  replaced record's name) is kept within the grid by default: a collection of the grid's own record type keeps its rows
+  (and its total) to records the caller's query reads, and a link into this grid answers an empty field for a related
+  record outside it. Both test `source.Any(visible => visible.Key == key)` on the query callback (an `EXISTS` key lookup per
+  row or link in a database). Opting out is explicit and named: `Unscoped()` on a collection and `withinGrid: false` on a
+  link answer records outside the caller's scope, so use them only when every caller may see every record they reach.
+  Navigations to records of other kinds (links into other grids, collections of other types) show what they reach: when
+  those records have a scope of their own, restrict them in their expression, with `CanReadRecordField`, or leave the field
+  out of the map.
+- **Keys.** The column map's key must be unique under the store's own comparison: a text key in a case-insensitive column
+  needs values that differ beyond case, or two records answer one identity and the request fails as a server error.
+- **Fields.** Only mapped fields are read; `CanReadRecordField` hides whole fields and drawer values per caller (record
+  field identities never equal column identities). Grid columns, and so the record's `row`, follow the column map exactly
+  as page rows do: leave out of the map what a caller must not read.
+- **Bounds.** Record request bodies are bounded by `MaxRecordRequestBytes` (16 KiB); answers by `MaxRecordPageSize`,
+  `MaxRecordItems`, `MaxRecordTextLength` and `MaxRecordBytes`. An answer is built in memory before `MaxRecordBytes` is
+  checked, so the largest answer the endpoint builds is the mapped collections' rows times their columns of bounded text
+  (an answer whose text alone exceeds `MaxRecordBytes` is refused before it is serialized). Keep `MaxRecordTextLength`
+  and `MaxRecordPageSize` near what the drawer shows. A record request is a key lookup plus one count and one window per
+  collection, so its cost does not grow with the table; offsets into one record's collection cost their distance, up to
+  `MaxRecordOffset`.
+- **Rate limiting.** Rate-limit the record route in production: it is cheap per request but answers on demand, so an
+  unthrottled caller can make the server build many bounded answers. Register a policy with `AddRateLimiter` and
+  `UseRateLimiter`, then apply it with `options.RecordEndpoint = route => route.RequireRateLimiting("records")`.
+- **Errors** never echo the identity, the field or other request text.
+
+**Other back ends.** `ICanopyRecordProvider` is the seam for stores without a LINQ provider: describe the served fields with
+a `CanopyRecordSchema` and answer each `CanopyRecordRequest` with a `CanopyGridRecord` (null when the caller has no such
+record), following the contract above; `CanopyInMemoryRecordProvider<T>` is the reference implementation the tests compare
+EF Core and LINQ to objects with. The handler checks the answer's shape and shortens its text to `MaxTextLength` whatever
+the provider, but it cannot scope it: a custom provider keeps related records within the caller's scope itself. A
+hand-built `CanopyRecordSchema` refuses a record field whose identity is a column's, as the record map does.
+
+```csharp
+var schema = new CanopyRecordSchema(map.Schema, new[] { CanopyRecordField.Value("serial"), CanopyRecordField.Collection("software", 10) });
+app.MapCanopyRemote("/api/machines", map.Schema, http => new SqlMachineProvider(http), options => {
+    options.Records = http => new SqlMachineRecords(schema, http);   // WHERE Id = @id AND <the caller's scope>, children by machine
+});
+```
+
 ## Performance
 
 Each page request runs two counts (dataset and matches; one when there are no criteria) and one windowed query that
@@ -536,6 +715,8 @@ five runs after warm-up, on a shared 16-core workstation, so treat the numbers a
 | Three-level summary with a distinct count | 0.6 s | 7 s |
 | Two-level page in the middle (index on site, operating system, name) | 15–20 ms | 115–120 ms |
 | CSV export of every row | 0.75 s, 7 MiB | 7 s, 72 MiB, flat 130 MiB working set |
+| Record details with the row (key lookup, a count and a window per collection, one window per timeline and change list, rack peers and a link checked against the caller's query) | 1.5 ms | — |
+| Collection page of one record (offset 10) | 0.6 ms | — |
 
 Notes:
 
@@ -572,19 +753,23 @@ Notes:
 ## Sample application
 
 `samples/FleetInventory` serves a generic fleet inventory (machines with site, operating system, model, cores, memory,
-online state, last seen and team) from SQLite through EF Core, seeded with 100,000 deterministic rows on first start:
+online state, last seen and team, and record details: serial number, purchase date, notes, the machine each replaces,
+installed software, maintenance visits, configuration changes and racks) from SQLite through EF Core, seeded with 100,000
+deterministic machines on first start (about 130 MB with their details; a database from an earlier sample version is rebuilt):
 
 ```powershell
 dotnet run --project samples/FleetInventory -- --urls http://127.0.0.1:5199 --rows 100000
 ```
 
-`/` shows every machine with value lists, the filter builder, selection, aggregates and the server CSV export;
+`/` shows every machine with value lists, the filter builder, selection, aggregates and the server CSV export, and opens
+each machine in a record panel (Overview, Software, History and Related tabs, deep links such as `/#record=machines:42`)
+whose details load from the record route;
 `/by-site` shows the same data grouped by site; `/by-site-os` groups by site (busiest sites first, ordered by the machine
 count) and operating system with a distinct count of models, and readers can regroup; `/edit` edits names, sites,
 operating systems, models, cores, memory and the online state and saves them to SQLite through `CanopyQueryableWriter`
 and an EF Core store. Every saved row increments a revision counter in the database inside its transaction, and the
 page's *Simulate another user's change* button changes the selected machine behind the reader's back, so saving shows a
-conflict. Add `?theme=dark` for the dark theme. The browser tests `tests/browser/specs/remote-dotnet.spec.mjs` and
-`remote-dotnet-commit-groups.spec.mjs` start the built sample against a temporary database and check paging, sorting,
-searching, filtering, value lists, exports, grouping (one and two levels), commits, conflicts and error answers against
-the real endpoints.
+conflict. Add `?theme=dark` for the dark theme. The browser tests `tests/browser/specs/remote-dotnet.spec.mjs`,
+`remote-dotnet-commit-groups.spec.mjs` and `remote-dotnet-records.spec.mjs` start the built sample against a temporary
+database and check paging, sorting, searching, filtering, value lists, exports, grouping (one and two levels), commits,
+conflicts, record details (Load more, related records, deep links, Retry) and error answers against the real endpoints.

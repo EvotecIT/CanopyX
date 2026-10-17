@@ -50,10 +50,12 @@
   }
 
   /** What a chip says about a filter's values: its label, or the values (and ranges) themselves, shortened past three. */
-  function linkValuesText(grid, filter) {
-    if (filter.label) return filter.label;
+  function linkValuesText(grid, filter, describeRange = false) {
     const shown = filter.values ? filter.values.slice(0, 3).map(String) : [filter.range.map(value => value == null ? "…" : String(value)).join(" – ")];
-    return shown.join(", ") + (filter.values && filter.values.length > 3 ? " +" + numberFormat(grid.lang).format(filter.values.length - 3) : "");
+    const values = shown.join(", ") + (filter.values && filter.values.length > 3 ? " +" + numberFormat(grid.lang).format(filter.values.length - 3) : "");
+    // A host caption can name a category or an approximate interval. Keep its visible label, and describe the
+    // actual range as well in tooltips and accessible names, using the same raw-value text as an unlabelled range.
+    return !filter.label ? values : describeRange && filter.range && filter.label !== values ? filter.label + " (" + values + ")" : filter.label;
   }
 
   /** The keys or values a node or row has in a column: the label of a tree's first column, the cell value otherwise. */
@@ -113,11 +115,12 @@
     linkChip(source, run) {
       const filters = this.linkCommitted.filter(item => item.source === source), first = filters[0];
       const values = filters.map(item => linkValuesText(this, item)).join("; ");
+      const description = filters.map(item => linkValuesText(this, item, true)).join("; ");
       const text = fill(this.labels.linkFilteredBy, { source: first.sourceLabel, values });
       const button = h("button", "cx-button cx-link-chip" + (this.kind === "grid" ? " cx-grid-chip" : ""));
       button.type = "button"; filterChipContent(button, text);
-      button.title = text;
-      button.setAttribute("aria-label", fill(this.labels.linkRemoveFilter, { source: first.sourceLabel, values }));
+      button.title = fill(this.labels.linkFilteredBy, { source: first.sourceLabel, values: description });
+      button.setAttribute("aria-label", fill(this.labels.linkRemoveFilter, { source: first.sourceLabel, values: description }));
       button.setAttribute("data-cx-condition", "link-" + source); button.setAttribute("data-cx-link-source", source);
       button.onclick = () => { button.focus({ preventScroll: true }); run(); };
       return button;

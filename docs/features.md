@@ -15,16 +15,20 @@ but not built yet, see [planned work](../TODO.md). For short how-tos, see the [r
 |---|---|---|---|
 | Inline records in the page | Grid, Tree | `rows` / `roots` in the definition; C# `Rows`, `Roots` | [Flat data grid](authoring.md#flat-data-grid) |
 | Typed record mapping in C# | Grid | `CanopyGridMapper<T>` with selectors, no reflection | [Flat data grid](authoring.md#flat-data-grid) |
+| Columns from member expressions and rows from typed records in C# | Grid | `CanopyDataGridView<T>`: `Column(x => x.Owner)`, `Field`, `AddRows` | [typed-grids.md](typed-grids.md) |
+| Typed rows in TypeScript: columns, rows, facets, events and the live API checked against a row type | Grid | `createDataGrid<Row>(…)`, `GridColumnId<Row>` | [typed-grids.md](typed-grids.md#typescript-a-row-type) |
 | Your own query function (server-side sort, filter, search and paging) | Grid | `source.query(query, { signal })` returns a `gridPage`; C# `CanopyGridSource.HostedOffset()` | [Protocol](data-protocol.md#flat-grid-documents) |
 | Cursor (keyset) navigation with unknown totals | Grid | `CanopyGridSource.HostedCursor()`, `source: { kind: "host", navigation: "cursor" }` | [Sequential sources](data-protocol.md#sequential-sources-and-unknown-counts) |
 | Lazy children from an HTTP endpoint | Tree | `source: { kind: "remote", children, search, counts }` URL templates | [Remote](data-protocol.md#remote) |
 | Bundles that load branches on demand from disk or a file share | Tree | `SaveHtmlBundle` (sidecar files and a search index) | [Quick start](authoring.md#quick-start), [Sidecar](data-protocol.md#sidecar) |
 | Revisioned results, stale responses rejected, cancellation and timeouts | Grid, Tree | `revision`, `signal`, `requestTimeoutMs` | [Protocol](data-protocol.md#flat-grid-documents) |
 | Loading, empty, error and retry states | Grid, Tree | Built in; accepted rows stay visible while a new query loads | [Flat data grid](authoring.md#flat-data-grid) |
-| Reload with the current query | Grid, Tree | `reload()`; `refresh()` repaints | [Flat data grid](authoring.md#flat-data-grid) |
+| Reload with the current query | Grid, Tree | `reload()`; `refresh()` repaints; `refreshRows()` updates rows in place | [Flat data grid](authoring.md#flat-data-grid) |
 | Enhance an existing `<table>`, or build a grid from records or a URL in one call | Grid | `CanopyX.enhance(table, options)`, `CanopyX.grid(element, options)` | [enhance.md](enhance.md) |
 | Compact row data, views that mount when visible, and grid bundles for large reports | Grid | `rowData`, `MountWhenVisible`, `SaveHtmlBundle` | [large-data.md](large-data.md) |
 | Server-side data for .NET over `IQueryable<T>` or a provider, with saving edits | Grid | `CanopyX.Data`, `MapCanopyRemote` | [remote-dotnet.md](remote-dotnet.md) |
+| Rows added, changed and removed in place with a stable order, flashing cells, batching and polling | Grid | `applyTransaction`, `addRows`, `updateRows`, `removeRows`, `setRows`, `poll`, `live`; C# `CanopyGridLive`, `CanopyGridTransaction` | [live-data.md](live-data.md) |
+| Revision-aware refresh of hosted grids | Grid | `refreshRows()`, `live.pollMs` | [live-data.md](live-data.md#hosted-grids) |
 
 ## Values, rendering and formatting
 
@@ -56,6 +60,7 @@ but not built yet, see [planned work](../TODO.md). For short how-tos, see the [r
 | Typed column filters (equals, contains, ranges, is any of, is empty) | Grid | Header ⋮ menu, `query.filters` | [Flat data grid](authoring.md#flat-data-grid) |
 | Value lists with full-query counts for inline text columns | Grid | Column filter popover | [Flat data grid](authoring.md#flat-data-grid) |
 | Value lists with counts from your server; facet API | Reporting | `reporting.facetColumns` with `source.facet`; `getFacets()` | [Flat data grid](authoring.md#flat-data-grid) |
+| Facet panel beside or above the grid: value lists and range histograms that filter each other, a sheet on phones | Grid (hosted: Reporting) | `facets`, `getFacetPanel()`, `setFacetPanelOpen()`; C# `CanopyFacetPanel` | [facets.md](facets.md) |
 | Condition builder with nested All/Any groups and date presets | Grid | Filters menu, `query.filterGroup`; C# `CanopyGridFilterGroup` | [Flat data grid](authoring.md#flat-data-grid) |
 | Active search and filter chips, result count, clear all | Grid | Built in | [Flat data grid](authoring.md#flat-data-grid) |
 | Named filters that keep the ancestors of matches | Tree | `filters`, `ancestorFlag`, `setFilter({ match, keep })` | [Hosted filtering](authoring.md#hosted-filtering) |
@@ -109,6 +114,7 @@ but not built yet, see [planned work](../TODO.md). For short how-tos, see the [r
 | Detail rows with a table, a property list or trusted HTML | Tree | `detail` on a node, `renderDetail` | [Detail rows](data-protocol.md#detail-rows) |
 | Row links and link cells the host can route | Grid | `rowAction: "link"`, `onLink`, `canopyx:link` | [Flat data grid](authoring.md#flat-data-grid) |
 | Record panel: record-only fields, sections, tabs, related records, history, deep links and details on demand | Grid, Tree | `record`; C# `CanopyRecordPanel` | [record-panel.md](record-panel.md) |
+| Record details served from .NET: fields, paged collections, timelines, changes and links, by key through the grid's own scoped query | Grid | `CanopyRecordMap<T>`, `POST {pattern}/record`; `ICanopyRecordProvider` for other back ends | [Record details](remote-dotnet.md#record-details) |
 
 ## Editing and host actions
 
@@ -215,6 +221,7 @@ Spoken screen-reader output has not been recorded for a release yet, and right-t
 |---|---|---|
 | .NET packages with no third-party runtime dependencies (net472, netstandard2.0, net8.0, net10.0) | `CanopyX`, `CanopyX.Html` | [README](../README.md#installation) |
 | npm package with ES modules, classic scripts, styles and TypeScript types | `@evotecit/canopyx` | [JavaScript hosts](authoring.md#javascript-hosts) |
+| Public API baselines for C# and TypeScript, checked on every build, and a versioning and deprecation policy | `api/`, `ApiSurfaceTests`, `npm run test:api` | [versioning.md](versioning.md) |
 | Single-file pages, fragments and content-hashed asset files | `SaveHtmlPage`, `ToHtmlFragment`, `CanopyHtmlAssets.WriteTo` | [Assets and caching](architecture.md#assets-and-caching) |
 | Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 119.5 KiB, reporting 147.5 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
 | A strict Content Security Policy with a nonce, and Trusted Types | Grid, Tree | `CanopyHtmlOptions.Nonce`, `CanopyX.setNonce` | [security.md](security.md) |

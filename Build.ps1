@@ -273,6 +273,10 @@ try {
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('restore', $solution) -Description 'Solution restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('build', $solution, '-c', $Configuration, '--no-restore') -Description 'Solution build' -TimeoutSeconds $DotNetCommandTimeoutSeconds
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('test', $solution, '-c', $Configuration, '--no-build', '--no-restore', '--filter', 'Category!=Benchmark') -Description 'Correctness tests' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+    # The TypeScript API report needs only node, so it runs with or without the browser tests (docs/versioning.md).
+    if (Get-Command node -CommandType Application -ErrorAction SilentlyContinue) {
+        Invoke-ToolCommand -FileName 'node' -Arguments @((Join-Path $root 'tests/browser/tools/api-report.mjs')) -Description 'TypeScript API report check' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+    }
 
     if (-not $SkipExamples) {
         $examplesOutput = Join-Path $root "CanopyX.Examples/bin/$Configuration/net10.0/output"

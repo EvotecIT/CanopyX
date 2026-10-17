@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json;
 
 namespace CanopyX.Data;
@@ -21,7 +22,12 @@ public static partial class CanopyRequestParser {
     private static string? OptionalString(JsonElement element, string name) {
         if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null) return null;
         if (value.ValueKind != JsonValueKind.String) throw new CanopyRequestException(CanopyRequestError.InvalidJson, "The field '" + name + "' must be text.");
-        return value.GetString();
+        try {
+            return value.GetString();
+        } catch (InvalidOperationException) {
+            // An escaped lone surrogate (\ud800) is valid JSON but not text.
+            throw new CanopyRequestException(CanopyRequestError.InvalidJson, "The field '" + name + "' must be well-formed text.");
+        }
     }
 
     private static int? OptionalInteger(JsonElement element, string name) {
