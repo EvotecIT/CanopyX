@@ -14,7 +14,7 @@ jobs:
   build-test-pack:
     name: Build, test, examples, browser tests, pack (${{ matrix.name }})
     runs-on: ${{ fromJSON(matrix.runner) }}
-    timeout-minutes: 75
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -64,9 +64,9 @@ jobs:
       - name: Run quality loop
         shell: pwsh
         run: |
-          # Windows' serial browser suite needs 25 minutes per engine; individual test timeouts stay unchanged.
+          # Windows and Linux run serial browser suites; individual test timeouts stay unchanged.
           $browserCount = @($env:CANOPYX_TEST_BROWSERS -split ',').Count
-          $secondsPerBrowser = if ('${{ matrix.name }}' -eq 'Windows') { 1500 } else { 1200 }
+          $secondsPerBrowser = if ('${{ matrix.name }}' -in @('Windows', 'Linux')) { 1500 } else { 1200 }
           ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds ($secondsPerBrowser * $browserCount)
 
       - name: Upload packages
