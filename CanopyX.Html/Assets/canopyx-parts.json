@@ -135,7 +135,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "4681ea89f2547dfc",
+      "version": "7beff2956980af5f",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [

@@ -81,12 +81,14 @@ CanopyX.configure("machines", { source: {
   query: (query, { signal }) => post("/query", query, signal).then(r => r.json()),
   facet: (request, { signal }) => post("/facet", request, signal).then(r => r.json()),
   summary: (query, { signal }) => post("/summary", query, signal).then(r => r.json()),
-  // Views with editable columns: save through the commit endpoint, and reload once the revision changed.
+  // Views with editable columns save through the commit endpoint.
   commit: (batch, { signal }) => post("/commit", batch, signal).then(r => r.json())
 } });
 document.addEventListener("canopyx:commit", event => {
-  const grid = event.target.canopyx;
-  if (event.detail.revision && event.detail.revision !== grid.getQuery().revision) grid.reload();
+  const grid = event.target.canopyx, result = event.detail, revision = result && result.revision;
+  if (!grid || grid.view.id !== "machines") return;
+  if (revision ? revision !== grid.getQuery()?.revision : result && result.saved > 0)
+    grid.reload().catch(() => {}); // The grid displays the reload error and calls onError.
 }, true); // grid events do not bubble, so listen in the capture phase
 ```
 
@@ -503,9 +505,10 @@ public sealed class EfCoreWriteStore<T>(DbContext db) : ICanopyWriteStore<T> whe
 ```
 
 **Revisions.** A commit changes the data, so give the dataset a revision the writer changes (`Saving` above, a row
-version, a change counter) and answer it. The grid keeps reading pages at the revision it accepted; once a commit answers
-with a new one, `CanopyRemoteScript` reloads the grid, and readers of an older revision elsewhere get `staleRevision` and
-reload too.
+version, a change counter) and answer it. The grid keeps reading pages at the revision it accepted. `CanopyRemoteScript`
+reloads after a commit reports a different revision, or after rows were saved without a revision because the server could
+not read it after the write. Reload keeps the reader's latest query and page length. If it fails, the grid displays the
+error and offers Retry. Readers of an older revision elsewhere get `staleRevision` and reload too.
 
 ## Performance
 

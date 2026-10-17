@@ -12,7 +12,7 @@ namespace CanopyX.AspNetCore;
 /// The script calls <c>CanopyX.configure(viewId, …)</c> with a source whose <c>query</c>, <c>facet</c>, <c>summary</c> and,
 /// for a view with editable columns, <c>commit</c> hooks post to the endpoints (with the grid's cancellation signal), and
 /// registers one export format per server format so the Export menu offers a complete server-side download. After a commit
-/// answers with a new dataset revision the grid reloads, because the revision it read pages at is gone; map a writer
+/// saves rows without a revision or answers with a different dataset revision the grid reloads, because the revision it read pages at may be gone; map a writer
 /// (<see cref="CanopyRemoteEndpointOptions.Writer"/>) for views with editable columns. Include the script after the CanopyX
 /// runtime and before the grid mounts. It sends same-origin credentials and expects JSON error bodies, whose message the grid shows.
 /// </remarks>
@@ -85,17 +85,14 @@ const source = { query: (query, options) => post("/query", query, options.signal
 if (settings.facets) source.facet = (request, options) => post("/facet", request, options.signal).then(response => response.json());
 if (settings.summary) source.summary = (query, options) => post("/summary", query, options.signal).then(response => response.json());
 if (settings.commit) {
-  // Saving changes a revision the grid still reads pages at; once a commit answers with a new one, the grid reloads.
+  // Saving can retire the snapshot even when the server cannot read its new revision after the rows were committed.
   // Grid events do not bubble, so the document listens in the capture phase.
-  const asked = new Set();
-  source.commit = (batch, options) => post("/commit", batch, options.signal).then(response => response.json()).then(result => {
-    if (result && typeof result.revision === "string" && result.revision !== batch.revision) asked.add(result.revision);
-    return result;
-  });
+  source.commit = (batch, options) => post("/commit", batch, options.signal).then(response => response.json());
   document.addEventListener("canopyx:commit", event => {
-    const grid = event.target && event.target.canopyx, revision = event.detail && event.detail.revision;
-    if (!grid || grid.view.id !== settings.view || !asked.delete(revision)) return;
-    grid.reload();
+    const grid = event.target && event.target.canopyx, result = event.detail, revision = result && result.revision;
+    if (!grid || grid.view.id !== settings.view || !(revision ? revision !== grid.getQuery()?.revision : result && result.saved > 0)) return;
+    // Reload reports its own error through the grid's notice and error event; this automatic caller observes rejection.
+    grid.reload().catch(() => {});
   }, true);
 }
 const ids = settings.formats.map(format => {
