@@ -83,7 +83,8 @@ case adds a note. An identity or status longer than its limit is dropped, as in 
 - `VTIMEZONE` is skipped. A `TZID` names a system time zone: an IANA name (`Europe/Warsaw`; .NET Framework maps about fifty
   common IANA names to Windows zones), or a Windows zone name on Windows. A name that is not found, or is not shaped like a
   zone name (1 to 64 letters, digits, spaces and `/ _ + - . ( )`, without `..`), is read as UTC with one note per event. At most
-  100 distinct names are looked up per import. Times without a zone (floating times) are read as UTC.
+  100 distinct names are looked up per import. A single leading `/` on a globally scoped `TZID` is removed before lookup.
+  Times without a zone (floating times) are read as UTC.
 - Daylight saving: a wall time the clocks skip moves forward by the gap, a repeated wall time is its first occurrence.
 - Text values are unescaped: `\n` and `\N` become a line feed, `\\`, `\;` and `\,` their character; any other backslash stays.
 - Control characters other than tab and line feed are dropped, and unpaired surrogates become U+FFFD. Other invisible format
@@ -108,4 +109,6 @@ Every limit fails the whole import with a `FormatException` whose message names 
 | Nesting of components (`MaxDepth`) | 16 |
 
 Text without a `VCALENDAR` fails too. A malformed event (a line without a colon, an unterminated quote, a start that is not a
-date or a date-time, an event left open) is skipped and counted in `Skipped`; the rest of the import continues.
+date or a date-time, an event left open) is skipped and counted in `Skipped`; the rest of the import continues. A present
+`DTEND`, `RECURRENCE-ID` or nonempty `EXDATE` value that is not a readable date or date-time also makes the event malformed.
+An absent end or recurrence ID and empty `EXDATE` list entries remain valid.

@@ -6,6 +6,7 @@
   // splitting a character. The Export menu offers "iCalendar (.ics)" on calendar grids with the menu's scopes; the API also
   // exports the records of the visible range.
   const CAL_ENCODER = new TextEncoder();
+  const CAL_ICS_ZONE_YEARS = 100;
 
   function calIcsText(value) {
     return String(value ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r\n|\r|\n/g, "\\n");
@@ -29,24 +30,45 @@
   /** The IANA name of a zone ("local" asks the browser which zone the reader is in). */
   function calIcsZoneName(zone) { return zone.name === "local" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" : zone.name; }
 
-  /** A VTIMEZONE for a zone around a year: its standard and daylight offsets with yearly rules from that year's changes. */
-  function calVTimezone(zone, year) {
-    const name = calIcsZoneName(zone), start = Date.UTC(year, 0, 1), changes = [];
+  /** A finite zoned series' final year, certified before its actual transition table is written. */
+  function calIcsLastYear(base) {
+    const rule = base.rule, zone = base.seriesZone;
+    if (rule.count === null && rule.until === null) return Infinity;
+    const firstYear = new Date(base.start).getUTCFullYear(), bound = Date.UTC(firstYear + CAL_ICS_ZONE_YEARS, 0, 1), duration = Math.max(0, base.end - base.start);
+    let end;
+    if (rule.until) end = (rule.until.time ?? (rule.until.minutes === undefined ? zone.instant(rule.until.day + 1, 0) - 1 : zone.instant(rule.until.day, rule.until.minutes))) + duration;
+    else {
+      const starts = calExpand(rule, base.start, 0, zone, -Infinity, bound, new Set(), new Set(), rule.count);
+      if (starts.length !== rule.count) throw new Error("CanopyX: zoned iCalendar recurrence export needs a COUNT or UNTIL ending within 100 calendar years.");
+      end = starts[starts.length - 1] + duration;
+    }
+    if (!Number.isFinite(end) || end > bound) throw new Error("CanopyX: zoned iCalendar recurrence export needs a COUNT or UNTIL ending within 100 calendar years.");
+    return new Date(Math.max(base.start, base.end, end - 1)).getUTCFullYear();
+  }
+
+  /** Actual transitions across finite series' years; the repeating form retains the unbounded-series path. */
+  function calVTimezone(zone, year, lastYear) {
+    const repeat = lastYear === Infinity;
+    if (!repeat && lastYear - year >= CAL_ICS_ZONE_YEARS) throw new Error("CanopyX: zoned iCalendar recurrence export is limited to 100 calendar years per time zone.");
+    const name = calIcsZoneName(zone), start = Date.UTC(year, 0, 1), finish = Date.UTC((repeat ? year : lastYear) + 1, 0, 1), changes = [];
     let previous = zone.offset(start);
-    for (let day = 1; day <= 366; day++) {
-      const time = start + day * CAL_DAY, offset = zone.offset(time);
+    const initial = previous;
+    for (let time = start + CAL_DAY; time <= finish; time += CAL_DAY) {
+      const offset = zone.offset(time);
       if (offset === previous) continue;
       let low = time - CAL_DAY, high = time;
       while (high - low > CAL_MINUTE) { const mid = low + Math.max(CAL_MINUTE, Math.floor((high - low) / 2 / CAL_MINUTE) * CAL_MINUTE); if (zone.offset(mid) === previous) low = mid; else high = mid; }
       changes.push({ at: high, from: previous, to: offset }); previous = offset;
     }
     const lines = ["BEGIN:VTIMEZONE", "TZID:" + calIcsText(name)];
-    if (!changes.length) lines.push("BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:" + calIcsOffset(previous), "TZOFFSETTO:" + calIcsOffset(previous), "END:STANDARD");
+    if (!repeat || !changes.length) lines.push("BEGIN:STANDARD", "DTSTART:" + (repeat ? "19700101T000000" : calIcsWall(zone, start)),
+      "TZOFFSETFROM:" + calIcsOffset(initial), "TZOFFSETTO:" + calIcsOffset(initial), "END:STANDARD");
     for (const change of changes) {
       const local = change.at + change.from, date = new Date(local), dow = date.getUTCDay(), d = date.getUTCDate(), month = date.getUTCMonth() + 1;
       const last = d + 7 > calMonthDays(date.getUTCFullYear(), month), ordinal = last ? -1 : Math.ceil(d / 7), kind = change.to > change.from ? "DAYLIGHT" : "STANDARD";
-      lines.push("BEGIN:" + kind, "DTSTART:" + calIcsDate(calDayNumber(date.getUTCFullYear(), month, d)) + "T" + String(date.getUTCHours()).padStart(2, "0") + String(date.getUTCMinutes()).padStart(2, "0") + "00",
-        "RRULE:FREQ=YEARLY;BYMONTH=" + month + ";BYDAY=" + ordinal + CAL_WEEKDAYS[dow], "TZOFFSETFROM:" + calIcsOffset(change.from), "TZOFFSETTO:" + calIcsOffset(change.to), "END:" + kind);
+      lines.push("BEGIN:" + kind, "DTSTART:" + calIcsDate(calDayNumber(date.getUTCFullYear(), month, d)) + "T" + String(date.getUTCHours()).padStart(2, "0") + String(date.getUTCMinutes()).padStart(2, "0") + "00");
+      if (repeat) lines.push("RRULE:FREQ=YEARLY;BYMONTH=" + month + ";BYDAY=" + ordinal + CAL_WEEKDAYS[dow]);
+      lines.push("TZOFFSETFROM:" + calIcsOffset(change.from), "TZOFFSETTO:" + calIcsOffset(change.to), "END:" + kind);
     }
     lines.push("END:VTIMEZONE");
     return lines;
@@ -76,7 +98,10 @@
       const zone = base.seriesZone;
       const lines = ["BEGIN:VEVENT", "UID:" + calIcsText(view.view.id + "-" + row.id + "@canopyx"), "DTSTAMP:" + stamp];
       const zoned = base.rule && !base.allDay && zone.name !== "utc";
-      if (zoned && !zones.has(zone.name)) zones.set(zone.name, calVTimezone(zone, new Date(base.start).getUTCFullYear()));
+      if (zoned) {
+        const first = new Date(base.start).getUTCFullYear(), last = calIcsLastYear(base), prior = zones.get(zone.name);
+        zones.set(zone.name, { zone, first: Math.min(first, prior?.first ?? first), last: Math.max(last, prior?.last ?? last) });
+      }
       const tz = zoned ? ";TZID=" + calIcsText(calIcsZoneName(zone)) : "";
       const time = value => base.allDay ? ";VALUE=DATE:" + calIcsDate(Math.floor(value / CAL_DAY)) : zoned ? tz + ":" + calIcsWall(zone, value) : ":" + calIcsUtc(value);
       lines.push("DTSTART" + time(base.start));
@@ -103,7 +128,7 @@
     }
     const all = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//CanopyX//Calendar//EN", "CALSCALE:GREGORIAN"];
     if (view.view.label) all.push("X-WR-CALNAME:" + calIcsText(view.view.label));
-    for (const lines of zones.values()) all.push(...lines);
+    for (const item of zones.values()) all.push(...calVTimezone(item.zone, item.first, item.last));
     for (const lines of events) all.push(...lines);
     all.push("END:VCALENDAR");
     return all.map(calIcsFold).join("\r\n") + "\r\n";
@@ -131,11 +156,19 @@
       if (!["visible", "filtered", "selected", "all"].includes(scope)) throw new Error("CanopyX: calendar export scopes are visible, filtered, selected and all.");
       let text;
       if (scope === "visible") {
+        const answer = this.calAnswer;
+        if (!answer || answer.signal.aborted || answer.epoch !== this.calEpoch || answer.query !== this.acceptedQuery || answer.source !== this.source || this.pendingQuery)
+          throw new Error("CanopyX: visible iCalendar export needs the current calendar answer; wait for the range to finish loading.");
         const seen = new Set(), rows = [];
         for (const event of this.calEvents) {
           if (!seen.has(event.key)) { seen.add(event.key); rows.push(event.row); }
           // An override of a series' occurrence travels with its series.
-          if (event.base.series && !seen.has(event.base.series)) { const series = this.calRowsCache?.rows?.find(row => row.id === event.base.series); if (series) { seen.add(series.id); rows.push(series); } }
+          if (event.base.series && !seen.has(event.base.series)) {
+            const inline = this.view.source.kind === "inline" && !this.opts.source;
+            const series = answer.rows.find(row => row.id === event.base.series) || (inline ? this.calRowsCache?.rows?.find(row => row.id === event.base.series) : null);
+            if (!series) throw new Error("CanopyX: visible iCalendar export needs the recurring master in the current calendar answer.");
+            seen.add(series.id); rows.push(series);
+          }
         }
         text = calIcs(this, rows);
       } else {

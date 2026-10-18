@@ -108,7 +108,7 @@
    * excludedDays the days it removes. At most limit starts are returned.
    */
   function calExpand(rule, start, duration, zone, from, to, excluded, excludedDays, limit) {
-    const first = zone.parts(start), out = [], minutes = first.minutes + (start % CAL_MINUTE) / CAL_MINUTE;
+    const first = zone.parts(start), out = [], minutes = first.minutes + (start % CAL_MINUTE + CAL_MINUTE) % CAL_MINUTE / CAL_MINUTE;
     const until = rule.until ? rule.until.time ?? (rule.until.minutes === undefined ? zone.instant(rule.until.day + 1, 0) - 1 : zone.instant(rule.until.day, rule.until.minutes)) : Infinity;
     let count = 0, period;
     if (rule.freq === "DAILY") period = first.day;

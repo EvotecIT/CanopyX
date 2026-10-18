@@ -65,6 +65,8 @@
     const notes = [], events = [], zones = new Map(), note = (index, text) => { if (notes.length < limits.notes) notes.push("Event " + index + ": " + text); };
     let index = 0;
     const zoneOf = tzid => {
+      // A single leading slash marks a globally scoped TZID; lookup uses its zone name, as the .NET reader does.
+      tzid = tzid.trim().replace(/^\//, "");
       if (!zones.has(tzid)) {
         const known = zones.size < limits.zones && CAL_ICS_ZONE.test(tzid) && calIcsZoneKnown(tzid);
         zones.set(tzid, known ? calZone(tzid) : null);

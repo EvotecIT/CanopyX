@@ -351,7 +351,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "d3ddbdb24b179b8d",
+      "version": "7fffd9fc79e4f10e",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -367,7 +367,7 @@
     {
       "name": "calendar-recurrence",
       "label": "calendar recurrence",
-      "version": "a73a9cabdeb1079d",
+      "version": "64bcc24d785bd1af",
       "script": "canopyx-calendar-recurrence.js",
       "runtimes": [
         "grid"
@@ -385,7 +385,7 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "version": "4ac9ca57a306cc1b",
+      "version": "505792b52f874c1b",
       "script": "canopyx-calendar-edit.js",
       "runtimes": [
         "grid"
@@ -403,7 +403,7 @@
     {
       "name": "calendar-ics",
       "label": "iCalendar",
-      "version": "61b9188c781bcae8",
+      "version": "46d8549dfbbf165f",
       "script": "canopyx-calendar-ics.js",
       "runtimes": [
         "grid"
