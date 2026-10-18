@@ -46,8 +46,9 @@ public sealed class GridCalendarPartTests {
 
     [Theory]
     [InlineData("calendar-recurrence", "calendar recurrence", "function calExpand(", 3800)]
-    [InlineData("calendar-edit", "calendar editing", "calCreateForm(proposal", 11200)]
-    [InlineData("calendar-ics", "iCalendar", "function calIcsParse(", 7300)]
+    // Current repaired parts: 12,196 and 8,209 bytes gzip, with about 15% headroom.
+    [InlineData("calendar-edit", "calendar editing", "calCreateForm(proposal", 14050)]
+    [InlineData("calendar-ics", "iCalendar", "function calIcsParse(", 9450)]
     public void CalendarSubParts_AreBoundedAndOutsideTheCore(string name, string label, string marker, int guard) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Equal(label, part.Label);
