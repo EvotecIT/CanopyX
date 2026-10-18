@@ -6,7 +6,7 @@ layout: docs
 meta.wide: true
 ---
 
-The C# types write these documents and the browser runtime reads them. A host that is not .NET can write the same JSON by hand. Every top-level document carries `"protocol": "canopyx/2"` and a `type`; readers ignore fields they do not know, so a newer writer's document still loads. The complete field reference is the [protocol document in the repository](https://github.com/EvotecIT/CanopyX/blob/main/docs/data-protocol.md), with a JSON schema.
+The C# types write these documents and the browser runtime reads them. A host that is not .NET can write the same JSON by hand. Every top-level document carries `"protocol": "canopyx/2"` and a `type`; readers ignore fields they do not know, so a newer writer's document still loads. The examples below show the main document shapes beside the grids they produce.
 
 ## A view and the tree it produces
 
