@@ -8,9 +8,9 @@
       "views": ["tree"],
       "key": "TreeGrid.prototype",
       "context": ["TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
-        "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems",
+        "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "exportFormatsOf", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems",
         "applyTone", "toneOf", "badgeElement", "RECORD_IMPL", "svgIcon", "gridExportField"],
-      "start": "const EXPORT_IMPL = {};",
+      "start": "const EXPORT_IMPL = { formatsOf: exportFormatsOf };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
         "CanopyX.Html/Assets/canopyx.grid.source/33-column-fit-core.js",
