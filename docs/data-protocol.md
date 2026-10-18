@@ -27,6 +27,8 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `grid` | `CanopyDataGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
 | `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
 | `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
+| `gridRangeQuery` | The browser; `CanopyGridRangeQuery.ToJson(view)` | A calendar or timeline asks a host for the records that overlap a period ([Date ranges](#date-ranges)) |
+| `gridRangePage` | `CanopyGridRangePage.ToJson(view)` | A host answers a range request with the overlapping records in start order |
 | `gridCommit` | The editing part | A grid asks its writer to save changed rows ([Editing and commit](#editing-and-commit)) |
 | `gridCommitResult` | The host's writer | The writer answers per row: saved, error or conflict |
 | `gridRecordQuery` | The browser; `CanopyGridRecordQuery.ToJson()` | A record's drawer opens and its details load on demand ([Record details](#record-details)) |
@@ -125,6 +127,8 @@ The grid state carries `formatRules` when the grid's rules differ from the view'
 #### Wrapped cells and measured grid rows
 
 Grid columns accept `wrap: true` to retain line breaks and wrap long text. The wire document retains numeric `rowHeight`, an integer from 20 to 64. Optional `autoRowHeight: true` enables measured records and uses that height as both the minimum and the estimate for unseen rows. Without the flag, rows retain their fixed height. The JavaScript API also accepts `rowHeight: "auto"` with optional `estimatedRowHeight` (20 to 64, default 28) as shorthand. In .NET, use `CanopyColumn.Wrap` and `CanopyDataGridView.AutoRowHeight`; `RowHeight` supplies the estimate. Automatic height applies to continuous, paged and grouped grids. Group/status rows retain the minimum height.
+
+Optional `dragRows: true` (default false; .NET `CanopyDataGridView.DragRows`) lets readers drag rows out of the grid to a calendar that accepts drops (`calendar.drop`), or pick a row up with F2 from row focus and drop it with Enter (`gridRowPicked` is announced).
 
 Measurements preserve the first visible row and its offset while overscan rows grow or shrink. ResizeObserver also measures host-rendered content that changes later. Page Up/Down moves by the viewport's pixel height. Logical offsets remain independent of the native scrollbar's 8,000,000-pixel cap. Previously measured offscreen rows retain their last height as an estimate after a column width changes and are remeasured when recycled into view. Automatic mode retains sparse height information for visited rows; fixed mode avoids that work.
 
@@ -225,6 +229,52 @@ Named preference edits wait for the initial host load to complete, so saving bef
 
 `getShareState()` returns layout, sorting, time zone and page length with search/filters/group conditions, selection, revision/cursor, page offset and scroll position removed. It writes nothing to the address bar. To share a query-bearing view, use a host-authorized opaque identifier rather than putting its search or record IDs in a URL. Applying any snapshot queries the current data source and remains subject to its authorization.
 
+### Date ranges
+
+A calendar or timeline presentation of a hosted flat grid reads the records of a visible period through the optional source
+capability `range(request, { signal })`, as value lists use `facet`. Without the capability the runtime falls back to
+`query()` with equivalent predicates. The request is a `gridRangeQuery`:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRangeQuery", "view": "maintenance",
+  "query": { "protocol": "canopyx/2", "type": "gridQuery", "view": "maintenance", "offset": 0, "limit": 100, "search": "",
+             "revision": "r1", "sort": [], "filters": [] },
+  "from": "2026-10-01T00:00:00Z", "to": "2026-11-01T00:00:00Z",
+  "start": "starts", "end": "ends", "recurrence": "rule", "seriesEnd": "seriesEnd",
+  "resource": "host", "resources": ["host-1", "host-2"], "calendarView": "month", "limit": 5000 }
+```
+
+- `query` is a complete `gridQuery` (offset zero). Its search, predicates and filter group select the records; its window,
+  sort and grouping do not apply. Its optional `revision` follows the `gridQuery` rules: a stale revision is rejected
+  (`staleRevision`, HTTP 409).
+- `from` < `to` are ISO 8601 UTC instants ending in `Z`, compared at millisecond precision, at most 3,700 days apart.
+- `start` (a date column, required), `end` and `seriesEnd` (date columns), `recurrence` and `resource` (text columns) are
+  column ids of the view. A server accepts only columns on its allow-list that it allows filtering on, with the right kind.
+- `resources` (optional, 1..1,000 unique nonempty strings of at most 4,096 code units) requires `resource` and keeps the
+  records whose resource is one of them, with the semantics of an `in` predicate on that column.
+- `calendarView` (optional: `month`, `week`, `day`, `days`, `agenda`, `year`, `timeline`, `mini`, `weekList`, `dayList` or `months`) is informational; servers never
+  let it change the answer.
+- `limit` is 1..10,000; a server lowers it to its own maximum.
+
+After the query's criteria and the resource restriction, a record without a recurrence (no `recurrence` column, or a null or
+empty value) overlaps when `start < to` and (`start >= from` or `end > from`); a null end, or no `end` column, is a
+zero-length marker at its start. A record with a recurrence overlaps when `start < to` and, when `seriesEnd` is given, its
+series end is null or after `from`. A record without a start never overlaps. Overlapping records are ordered by start
+ascending, then by record identity (ordinal in memory; a database orders equal starts by the key column in its own collation);
+the query's sort is ignored.
+
+The answer is a `gridRangePage`:
+
+```json
+{ "protocol": "canopyx/2", "type": "gridRangePage", "view": "maintenance", "revision": "r1",
+  "from": "2026-10-01T00:00:00Z", "to": "2026-11-01T00:00:00Z",
+  "matched": 1234, "truncated": false, "items": [ { "id": "evt-1", "cells": { "starts": "2026-10-02T08:00:00Z" } } ] }
+```
+
+`view`, `revision`, `from` and `to` echo the accepted request. `matched` counts every overlapping record; `items` are the
+first `limit` of them in order, written as `gridPage` rows; `truncated` is exactly `items.length < matched`. Every item
+starts before `to`, and no item starts before the one it follows. The C# `CanopyGridRangeQuery` and `CanopyGridRangePage`
+writers validate this contract, and `CanopyX.Data` answers it ([Range queries](remote-dotnet.md#range-queries)).
 ### Record selection scopes
 
 `reporting.selectionControls: true` adds native row checkboxes, selected counts and explicit page/all-matching/clear commands. It also enables `getSelectionDescriptor`, `setRowSelected`, `selectPage`, `selectRange` and `selectAllMatching`; views without this flag retain the existing ID-list selection API. Single selection supports record toggles; page, range and all-matching commands require multiple selection. These controls use existing columns and logical ARIA indices, without a synthetic data column. Space toggles the focused record; Shift+Space and Shift-click extend from the selection anchor, and Ctrl/Command-click toggles a record. Ctrl/Command adds a range to existing identities. Without these controls, selection comes from Space and the API; a plain row click never selects.
@@ -241,7 +291,7 @@ Reporting definitions opt in through a fixed `grouping: { column, direction }`, 
 
 Queries of a runtime-grouping definition always carry `groupBy`, the ordered levels (an empty array when ungrouped); input without it takes the declared levels. The levels' columns lead `sort`, each with its level's direction, or ascending for a level ordered by an aggregate; a sort entry for a grouped column that the reader sets turns that level's groups around. A level with `aggregate` orders its groups by that declared aggregate's value in `direction`, missing values last and equal values by raw value ascending; its records stay contiguous by value. Fixed-grouping queries keep their earlier shape, without `groupBy`.
 
-Each aggregate declares `{ id, column, operation, label }`. `count` counts nonmissing cells and `distinctCount` distinct nonmissing raw values in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Any other operation name (a lowercase letter and up to 31 letters and digits) is a custom aggregate: a browser plugin computes it for inline data and a host source computes it itself; its value is a finite number or null. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
+Each aggregate declares `{ id, column, operation, label }` and an optional `format`. Explicit aggregate formats take precedence over the column format; counts and distinct counts without their own format use whole numbers. Without an explicit format, the existing compact labels and inferred precision apply. `count` counts nonmissing cells and `distinctCount` distinct nonmissing raw values in any raw column; `sum`, `average`, `minimum` and `maximum` require a number column. Any other operation name (a lowercase letter and up to 31 letters and digits) is a custom aggregate: a browser plugin computes it for inline data and a host source computes it itself; its value is a finite number or null. Display text and mounted cells do not supply values. Inline complete datasets compute binary64 aggregates using compensated summation; empty noncount aggregates are null. Values must remain finite and within `±Number.MAX_SAFE_INTEGER`. Monetary or other domain-specific calculations remain host-owned.
 
 Groups optionally carry `cells`, a map of declared column IDs to ordinary display cells. These cells use the column presenter; numeric aggregates and the first-column group label take precedence. Hosts supply complete-group states or other display facts. Inline summaries choose the worst semantic tone from each group's `state` and `enum` columns across the complete query, including records outside the current page. The severity order is danger, warning, info, success, neutral; unknown host tones rank with info. Display cells never become records or alter filtering, sorting, selection or export.
 
@@ -316,7 +366,6 @@ An inline grid can carry its rows as compact row data, `rowData`, instead of `ro
 
 | Field | Meaning |
 | --- | --- |
-| `version` | `1`. The runtime rejects other values. |
 | `columns` | Declared column ids, unique, in the order of each row's cells. Columns not listed have no cells. |
 | `count` | The number of rows in all chunks; the runtime fails the load when the chunks hold another number. |
 | `ordered` | Optional. `true` declares the rows in ordinal order of their ids (UTF-16 code units), the order the grid shows when no sort applies. The runtime then answers the windows of an unsorted, unfiltered query without search as soon as the chunks that hold them are decoded, and fails the load when a row breaks the order. Without it, every query waits for all rows. |
@@ -332,7 +381,7 @@ A row is `[key, cell, cell, ...]`. `key` is the row id, or `{ "id": "...", "tone
 
 The order of the rows in the data never changes what the grid shows: it orders rows by their sort keys and then by id. `CanopyGridRowData` (the C# writer) therefore writes them in id order and declares `ordered`. While chunks are decoding, `view.rows` of the grid's API holds the rows decoded so far; reporting grids (which total and group the complete rows) and every sorted, filtered or searched query wait until all rows are decoded. Destroying the grid stops the decoding. A chunk that fails to load or decode fails the queries waiting for it, and a retry decodes from the first chunk again; the host request deadline (`requestTimeoutMs`) does not bound decoding unless the host sets it. The value lists of column filters and the facets of reporting grids wait for all rows.
 
-C# hosts write row data through `CanopyHtmlOptions.RowData` (fragments and pages carry the chunks inside the host element and the row data part, `canopyx-data.js`), `CanopyDataGridView.SaveHtmlBundle` (sidecar files), or `CanopyGridRowData` directly (`ToJson(base)`, `GetChunk(index)` and `WriteFiles(directory)`). JavaScript hosts pass `rowData` with chunk arrays in the view, or write the same script elements. A compact row has no place for a detail payload or record fields: `CanopyGridRowData` refuses rows that carry them, which stay row objects. A JSON chunk inside an HTML script element must escape `<` (the C# writer escapes `<`, `>` and `&`), and inside a `String.raw` template the backtick and `${`.
+Every compact descriptor keeps `version: 1` within `canopyx/2`, so independently deployed or cached readers can decode newly generated row data. C# fragments and pages write row data by themselves for inline grids of more than 5,000 rows, compressed above 5 MiB of JSON (`CanopyHtmlOptions.RowData` and its `Format` choose otherwise; see [large-data.md](large-data.md#how-canopyx-chooses)), and carry the chunks inside the host element and the row data part, `canopyx-data.js`. Hosts also write it through `CanopyDataGridView.SaveHtmlBundle` (sidecar files), or `CanopyGridRowData` directly (`ToJson(base)`, `GetChunk(index)` and `WriteFiles(directory)`). JavaScript hosts pass `rowData` with chunk arrays in the view, or write the same script elements. A compact row has no place for a detail payload or record fields: `CanopyGridRowData` refuses rows that carry them, which stay row objects. A JSON chunk inside an HTML script element must escape `<` (the C# writer escapes `<`, `>` and `&`), and inside a `String.raw` template the backtick and `${`.
 
 ### Live data
 
@@ -359,6 +408,58 @@ Hosted grids keep the existing revision contract: a refresh asks for its pages w
 revision with the accepted one, so a source that changes its revision when its data changes needs nothing new. A hosted grid
 applies only updates of loaded rows; its rows are added and removed at the source. The wire format of queries and pages does
 not change.
+
+### Calendar
+
+A grid's optional `calendar` object presents its records as events ([calendar.md](calendar.md)): month, week, day, N-day
+(`days`), agenda, year, mini month (`mini`), week and day lists (`weekList`, `dayList`) and stacked months (`months`) views, and a timeline. Only `start` is required; every other key is written only when it
+differs from its default. Column references are ids of the same grid: `start`, `end`, `recurrenceId` and `seriesEnd` name
+date-and-time columns; `allDay` (booleans), `resource`, `recurrence` (rule text), `exceptions` (ISO instants or `yyyy-MM-dd`
+dates), `series`, `display`, `description`, `tone` (tone names), `source` (source ids) and `editable.allowedResources` name text columns; `title`, `subtitle` and `status` may name any
+column. `series` and `recurrenceId` (an override record replacing one occurrence) go together.
+
+```json
+"calendar": { "start": "starts", "end": "ends", "resource": "host", "recurrence": "rule", "seriesEnd": "seriesEnd",
+  "views": ["month", "week", "agenda", "timeline"], "slotMinutes": 15, "workingHours": { "start": "08:00", "end": "17:00" },
+  "editable": { "commit": "manual" }, "resources": { "view": { "protocol": "canopyx/2", "type": "view", "...": "..." } } }
+```
+
+The presentation keys are `view` (first view; default the first of `views`), `views` (default `month`, `week`, `day`,
+`agenda`, plus `timeline` with `resources`), `date` (`yyyy-MM-dd`), `days` (2 to 14), `firstDay` and `hiddenDays` (0 is
+Sunday), `slotMinutes` (5, 10, 15, 20, 30 or 60), `minTime`, `maxTime` and `scrollTime` (`HH:mm`, the visible hours on slot
+boundaries), `workingHours`, `nowIndicator`, `eventLimit` (1 to 20 or `auto`), `eventStyle` (`quiet` or `strong`), `timeZone`
+(`utc`, `local` or an IANA zone; default the grid's) and `phone` (the view phones start in). `editable` is `true` or an object
+of `move`, `resize`, `resources`, `overlap`, `workingHours`, `allowedResources`, `snapMinutes` and `commit` (`auto` or
+`manual`); without it the calendar is read-only. `resources` holds a complete tree `view` document (inline roots or a remote
+source) whose node ids are the resource ids, with `width` (120 to 800), `label` and per-column `aggregates` (`count`, `busy`,
+`overlap`); without it the timeline packs the events into rows by overlap. `zoom` and `zooms` choose the timeline's scale (`hour` to `quarter`), `capacity` adds a
+concurrency lane with rising tone `thresholds`, `ranges` (at most 1,000) draws static background or unavailable ranges (`inverse: true` shades everything outside the inverse ranges of the same resource instead),
+`availability` (at most 10,000) sets business hours per resource, and `limit` (1 to 100,000, default 20,000) caps the
+occurrences one range shows.
+
+The chrome and interaction keys are `toolbar` (`true`, `false` for the calendar's own bar only, or the grid toolbar controls
+to show: `search`, `filters`, `columns`, `views`, `export`, `more`), `details` (`drawer` or `popover`), `print` (a Print
+button), `sources` (1 to 50 `{ id, label, tone?, ics?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
+iCalendar file read within the limits of [icalendar.md](icalendar.md); without `ics` on every source, `source` is required),
+`create` (`true` or `{ minutes, allDay }`, minutes 5 to 1,440, default 60) and `drop` (external drops), both needing editable
+start and title columns and saved as inserts ([Editing and commit](#editing-and-commit)), `occurrence` (`ask`, `this`,
+`following` or `all`; default `ask` with `series` and `recurrenceId`, else `all`; `this` and `following` need them),
+`weekNumbers` (`false`, `iso` or `locale`), `navLinks`, `validRange` (`{ start?, end? }` dates, end exclusive),
+`fixedWeeks`, `outsideDays`, `span` (`{ count: 1..366, unit: day|week|month }` for the timeline), `menu`, `hover`,
+`yearEvents`, `agendaSpan` (`day`, `week`, `month` or `year`; default `month`) and `months` (2 to 24, default 6). The
+C# presets (`CanopyCalendarPreset`) and basic calendars built from events (`new CanopyCalendar(events)`) only write these keys.
+
+Recurrence rules are the RRULE subset of RFC 5545 that `CanopyRecurrence` (C#) and the browser share: `FREQ` (`DAILY`,
+`WEEKLY`, `MONTHLY`, `YEARLY`), `INTERVAL`, `COUNT` or `UNTIL`, `BYDAY` (numbered weekdays only in monthly and yearly rules),
+`BYMONTHDAY` (not in weekly rules), `BYMONTH`, `BYSETPOS` and `WKST`; any other part is an error. The series start always counts
+as the first occurrence, occurrences keep its wall-clock time in the series zone (the calendar's IANA `timeZone`, otherwise UTC;
+a skipped time moves forward by the daylight saving gap, a repeated time is its first occurrence), and all-day series expand in
+UTC. `exceptions` values are separated by commas, semicolons or white space (at most 1,000): instants with `Z` or an offset,
+wall times without one in the series zone, or `yyyy-MM-dd` dates. `tests/fixtures/recurrence-cases.json`
+holds the cases both implementations check. A view with `calendar` loads the `calendar` part; the `calendar-recurrence` part
+with a `recurrence` column, a recurring range or an iCalendar source; the `calendar-edit` part with `editable`, `create` or
+`drop`; the `calendar-ics` part with an iCalendar source or the Export control in the toolbar (otherwise on first export); and
+the `timeline` part with `resources` or the `timeline` view.
 
 ### Record panel
 
@@ -443,6 +544,8 @@ A remote adapter adds a record endpoint and routes the browser source's `record`
 
 ### Safe cell presenters
 
+Flat-grid number columns optionally declare `format: { minimumFractionDigits, maximumFractionDigits, prefix, suffix }`. Digits are 0 to 10 (defaults 0 and 3, minimum not above maximum; a minimum above 3 requires an explicit maximum); `prefix` and `suffix` are literal text of 1 to 16 code units, and the prefix follows any minus sign. The format applies to raw numbers without cell `text` in cells, presenters, facets, record details, copy, exports, group headings of a numeric grouping column, selection totals and summaries. Readers format the digits in the page `lang`; the static outline uses the invariant culture. Explicit formats round the binary64 value once, halfway away from zero, matching JavaScript fixed-point formatting. For example, `2.675` is represented just below the decimal midpoint and shows `2.67` with two digits; exact `0.125` shows `0.13`. A value that rounds to zero shows no minus sign. Raw values still drive search, filters, sorting and raw exports. Server display exports use the trusted schema column format and the request locale, rather than accepting a client-supplied format override.
+
 Flat-grid columns optionally declare `presenter`; `reporting.presenters` remains supported. The column declaration takes precedence over the reporting map, and an explicit trusted host renderer takes precedence over both. These descriptors preserve raw values, display/export text, search aliases, typed predicates and sorting:
 
 Graphite also provides `enum` and `state` with an optional raw-value `tones` map, `change` with a numeric `deltaColumn` and `higherIsGood`, `statusStrip`, `sparklineBars`, `sparklineLine`, `identifier` with `secondaryColumn` and `mono`, `tags` with a literal `separator`, and `missing`. Booleans accept `inverted`. Progress and sparklines accept up to 32 ascending `thresholds` (`upperBound`, `tone`); the first inclusive bound wins, and unmatched values use the cell tone. Sparkline `minimum` and `scaleMaximum` must be supplied together for a shared scale; otherwise each cell scales independently. `mark: "last"` selects the last point; the default marks the worst tone, then the least healthy value according to `higherIsGood`.
@@ -511,6 +614,10 @@ or the source's `commit(batch, { signal })`. A remote source posts it, for examp
 - `revision` is the dataset revision the grid read (the accepted query's), or `null` before one was accepted.
 - `rows` holds at least one row: its `id`, the raw `values` of its changed columns, and the raw `original` values the reader
   started from for those columns (`null` for a missing value). Only rows whose checks passed are sent.
+- A row may carry `op`: `update` (the default) or `insert`. An insert adds a record (a calendar's created or dropped event, for
+  example): `{ "op": "insert", "id": "new-1", "values": { ... } }` with every value of the new record and no `original`. Its
+  `id` is a client id the runtime chooses, always starting with `new-` (`new-1`, `new-2`, ...), so it can never name a stored
+  record; only editable columns may be written, as for updates.
 
 The writer answers with a `gridCommitResult`, one entry per row it handled:
 
@@ -524,6 +631,10 @@ The writer answers with a `gridCommitResult`, one entry per row it handled:
 - `status` is `saved`, `error` or `conflict`. A saved row may carry canonical `cells` (grid cells, validated like page rows)
   that replace the shown ones; other rows may carry an `error` message and `errors` by column. A row the answer leaves out
   was not saved.
+- A saved insert may carry `newId`, the stored identity of the new record (an identifier); the runtime then replaces the
+  client id with it. Without `newId` the row keeps the client id, which a later session may issue again for another new row,
+so a writer that stores records under its own identities should always answer `newId`. Only saved rows carry `newId`; an
+identity another row of the grid already has is refused (the row keeps its client id and the grid reports an error).
 - `revision` is optional: the dataset revision after the commit. The grid reports it in the commit result and keeps
   reading pages at the revision it accepted; a host whose source no longer serves that revision reloads the grid.
 - A transport failure (a non-success status, invalid JSON, a document that does not answer the batch: another view, an
@@ -532,7 +643,9 @@ The writer answers with a `gridCommitResult`, one entry per row it handled:
 
 **What a writer does.** It authorizes the caller and every changed column (editable columns are a presentation contract,
 not authority), validates the values with its own rules (the view's `validation` mirrors them), and executes each row
-independently, so one row's failure does not discard the others. For concurrency it checks the batch `revision` against
+independently, so one row's failure does not discard the others. It authorizes inserts as updates (every written column must
+be one the caller may write; fields the caller must not choose, such as the key, owner or tenant, come from the writer), and
+checks the required values an insert leaves out. For concurrency it checks the batch `revision` against
 its current one and, where they differ, compares each row's `original` values with what it stores: a row whose stored
 values differ is a `conflict` and is not written. A writer that cannot check rows individually may answer every row of a
 stale batch with `conflict`. It answers with the revision after the commit. Writes are the writer's own, governed by its
@@ -776,7 +889,7 @@ The runtime and the static outline show a cell without `text` the same way:
 
 | Value | `number` column | `datetime` column | `text` column |
 | --- | --- | --- | --- |
-| number | thousands separators, up to 3 decimals | as written | as written |
+| number | thousands separators, up to 3 decimals, or the flat-grid column `format` | as written | as written |
 | string | as written | ISO date shown as `yyyy-MM-dd HH:mm UTC`, or as `yyyy-MM-dd HH:mm` in the reader's time zone | as written |
 | boolean | `Yes` or `No` | `Yes` or `No` | `Yes` or `No` |
 | null or absent | empty | empty | empty |

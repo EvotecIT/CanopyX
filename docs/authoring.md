@@ -205,9 +205,14 @@ Grouped reporting views retain record-based paging and export scope:
 inventory.Reporting = new CanopyGridReporting {
     Grouping = new CanopyGridGrouping("category"), SelectionControls = true
 };
+inventory.GetColumn("amount").Format = CanopyGridNumberFormat.Fixed(2);
 inventory.Reporting.Aggregates.Add(new CanopyGridAggregate(
-    "total", "amount", CanopyGridAggregateOperation.Sum, "Total amount"));
+    "total", "amount", CanopyGridAggregateOperation.Sum, "Total"));
+inventory.Reporting.Aggregates.Add(new CanopyGridAggregate(
+    "smallest", "amount", CanopyGridAggregateOperation.Minimum, "Smallest"));
 ```
+
+A number column's `Format` / `format` formats raw cell values without host `Text` and the aggregates over that column; a `CanopyGridAggregate` format overrides it for one aggregate. Counts and distinct counts default to whole numbers. Declare `Fixed(0, suffix: "%")` instead of writing per-cell text such as `88%`, so the grid, summaries, record details and display exports use the same format. Headings and the totals row keep their translated operation labels (`sum`, `avg`, and so on); tooltips and accessible names carry the full configured labels. Aggregate cells stay within their columns and shorten with an ellipsis when necessary; activate an aggregate to read its complete configured labels and values. The same dialog works with a keyboard or touch, including phone summaries of hidden columns.
 
 The grouping column leads ordering, followed by user sorts and stable record IDs. Group headings show full group counts, column-aligned totals and the worst declared state tone; collapsing a group hides its rows without removing records from selections or exports. Hosted summaries supply optional `CanopyGridGroup.Cells` / `groups[].cells` for group display facts. The pinned summary row follows the complete filtered query. Inline data computes generic aggregates; hosted sources provide revisioned `gridSummary` metadata through `source.summary`. See the [group and summary contract](data-protocol.md#flat-groups-and-complete-query-totals) for ordering, bounds and host validation. The generated `grouped-grid.html` and continuous/dark variants combine grouping with responsive columns, filters, saved views and selection.
 

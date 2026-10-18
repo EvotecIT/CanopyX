@@ -73,10 +73,13 @@ CanopyX.Html.CanopyHtmlExtensions : static class
 CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyBundleResult SaveHtmlBundle(CanopyX.CanopyTreeView view, System.String directory, CanopyX.Html.CanopyHtmlOptions? options = null, CanopyX.Bundles.CanopyBundleOptions? bundleOptions = null)
 CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyBundleResult SaveHtmlBundle(CanopyX.CanopyTreeView view, System.String directory, System.Collections.Generic.IEnumerable<CanopyX.CanopyNode> roots, System.Func<CanopyX.CanopyNode, System.Collections.Generic.IEnumerable<CanopyX.CanopyNode>?> children, CanopyX.Html.CanopyHtmlOptions? options = null, CanopyX.Bundles.CanopyBundleOptions? bundleOptions = null)
 CanopyX.Html.CanopyHtmlExtensions.static CanopyX.Bundles.CanopyGridBundleResult SaveHtmlBundle(CanopyX.CanopyDataGridView view, System.String directory, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyCalendar calendar, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyCalendar calendar, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyCalendar calendar, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyDataGridView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyTreeView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlOptions : sealed class
@@ -86,6 +89,7 @@ CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyAssetMode AssetMode { get; set
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyAssetNaming AssetNaming { get; set; }
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyHtmlDocument? Document { get; set; }
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyRuntime Runtime { get; set; }
+CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyTextDirection Direction { get; set; }
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyTheme Theme { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.Boolean AutoMount { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.Boolean MountWhenVisible { get; set; }
@@ -118,6 +122,10 @@ CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime DataGrid = 2
 CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime InteractiveTreeGrid = 1
 CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime ReportingGrid = 3
 CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime TreeGrid = 0
+CanopyX.Html.CanopyTextDirection : enum System.Int32
+CanopyX.Html.CanopyTextDirection.const CanopyX.Html.CanopyTextDirection Auto = 0
+CanopyX.Html.CanopyTextDirection.const CanopyX.Html.CanopyTextDirection Ltr = 1
+CanopyX.Html.CanopyTextDirection.const CanopyX.Html.CanopyTextDirection Rtl = 2
 CanopyX.Html.CanopyTheme : enum System.Int32
 CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Auto = 0
 CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Dark = 2

@@ -24,6 +24,7 @@ CanopyX.Data.CanopyCommitMessages.System.String BatchNotSaved { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Choice { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Conflict { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Date { get; set; }
+CanopyX.Data.CanopyCommitMessages.System.String InsertRefused { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Maximum { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String MaximumLength { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Minimum { get; set; }
@@ -36,24 +37,31 @@ CanopyX.Data.CanopyCommitMessages.System.String Required { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Step { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Type { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String WholeNumber { get; set; }
+CanopyX.Data.CanopyCommitOperation : enum System.Int32
+CanopyX.Data.CanopyCommitOperation.const CanopyX.Data.CanopyCommitOperation Insert = 1
+CanopyX.Data.CanopyCommitOperation.const CanopyX.Data.CanopyCommitOperation Update = 0
 CanopyX.Data.CanopyCommitResult : sealed class
 CanopyX.Data.CanopyCommitResult..ctor(System.Collections.Generic.IEnumerable<CanopyX.Data.CanopyCommitRowResult> rows, System.String? revision = null)
 CanopyX.Data.CanopyCommitResult.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyCommitRowResult> Rows { get; }
 CanopyX.Data.CanopyCommitResult.System.String? Revision { get; }
 CanopyX.Data.CanopyCommitRow : sealed class
 CanopyX.Data.CanopyCommitRow..ctor(System.String id, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> values, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> original)
+CanopyX.Data.CanopyCommitRow.CanopyX.Data.CanopyCommitOperation Operation { get; }
 CanopyX.Data.CanopyCommitRow.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> Original { get; }
 CanopyX.Data.CanopyCommitRow.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> Values { get; }
 CanopyX.Data.CanopyCommitRow.System.String Id { get; }
+CanopyX.Data.CanopyCommitRow.static CanopyX.Data.CanopyCommitRow Insert(System.String id, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> values)
 CanopyX.Data.CanopyCommitRowResult : sealed class
 CanopyX.Data.CanopyCommitRowResult.CanopyX.Data.CanopyCommitStatus Status { get; }
 CanopyX.Data.CanopyCommitRowResult.System.Collections.Generic.IReadOnlyDictionary<System.String, CanopyX.CanopyCell> Cells { get; }
 CanopyX.Data.CanopyCommitRowResult.System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> Errors { get; }
 CanopyX.Data.CanopyCommitRowResult.System.String Id { get; }
 CanopyX.Data.CanopyCommitRowResult.System.String? Error { get; }
+CanopyX.Data.CanopyCommitRowResult.System.String? NewId { get; }
 CanopyX.Data.CanopyCommitRowResult.static CanopyX.Data.CanopyCommitRowResult Conflict(System.String id, System.String? error = null)
 CanopyX.Data.CanopyCommitRowResult.static CanopyX.Data.CanopyCommitRowResult Failed(System.String id, System.String? error, System.Collections.Generic.IDictionary<System.String, System.String>? errors = null)
 CanopyX.Data.CanopyCommitRowResult.static CanopyX.Data.CanopyCommitRowResult Saved(System.String id, System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyCell>? cells = null)
+CanopyX.Data.CanopyCommitRowResult.static CanopyX.Data.CanopyCommitRowResult Saved(System.String id, System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyCell>? cells, System.String? newId)
 CanopyX.Data.CanopyCommitStatus : enum System.Int32
 CanopyX.Data.CanopyCommitStatus.const CanopyX.Data.CanopyCommitStatus Conflict = 2
 CanopyX.Data.CanopyCommitStatus.const CanopyX.Data.CanopyCommitStatus Error = 1
@@ -196,12 +204,13 @@ CanopyX.Data.CanopyFilterNodeKind.const CanopyX.Data.CanopyFilterNodeKind Group 
 CanopyX.Data.CanopyFilters : static class
 CanopyX.Data.CanopyFilters.static CanopyX.Data.CanopyFilterNode? All(params CanopyX.Data.CanopyFilterNode?[] filters)
 CanopyX.Data.CanopyFilters.static CanopyX.Data.CanopyFilterNode? WithoutColumn(CanopyX.Data.CanopyFilterNode? filter, System.String columnId)
-CanopyX.Data.CanopyInMemoryProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider)
+CanopyX.Data.CanopyInMemoryProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider, CanopyX.Data.ICanopyRangeProvider)
 CanopyX.Data.CanopyInMemoryProvider<T>..ctor(CanopyX.Data.CanopyDataSchema schema, System.Func<System.Collections.Generic.IEnumerable<T>> records, System.Func<T, System.String> id, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Func<T, System.Object?>> values, System.Func<System.String>? revision = null)
 CanopyX.Data.CanopyInMemoryProvider<T>.CanopyX.Data.CanopyDataSchema Schema { get; }
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Collections.Generic.IAsyncEnumerable<CanopyX.CanopyGridRow> ReadAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyFacetResult> FacetAsync(CanopyX.Data.CanopyFacetRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyPageResult> QueryAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
+CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyRangeResult> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopySummaryResult> SummarizeAsync(CanopyX.Data.CanopySummaryRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<System.Int32> CountAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<System.String> GetRevisionAsync(System.Threading.CancellationToken cancellationToken)
@@ -226,7 +235,7 @@ CanopyX.Data.CanopyQueryOptions..ctor()
 CanopyX.Data.CanopyQueryOptions.CanopyX.Data.CanopyQueryExecutor Executor { get; set; }
 CanopyX.Data.CanopyQueryOptions.CanopyX.Data.CanopyTextComparison TextComparison { get; set; }
 CanopyX.Data.CanopyQueryOptions.System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.String>>? Revision { get; set; }
-CanopyX.Data.CanopyQueryableProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider)
+CanopyX.Data.CanopyQueryableProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider, CanopyX.Data.ICanopyRangeProvider)
 CanopyX.Data.CanopyQueryableProvider<T>..ctor(System.Func<System.Linq.IQueryable<T>> source, CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.CanopyQueryOptions? options = null)
 CanopyX.Data.CanopyQueryableProvider<T>..ctor(System.Linq.IQueryable<T> source, CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.CanopyQueryOptions? options = null)
 CanopyX.Data.CanopyQueryableProvider<T>.CanopyX.Data.CanopyColumnMap<T> Map { get; }
@@ -234,6 +243,7 @@ CanopyX.Data.CanopyQueryableProvider<T>.CanopyX.Data.CanopyDataSchema Schema { g
 CanopyX.Data.CanopyQueryableProvider<T>.System.Collections.Generic.IAsyncEnumerable<CanopyX.CanopyGridRow> ReadAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyFacetResult> FacetAsync(CanopyX.Data.CanopyFacetRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyPageResult> QueryAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
+CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyRangeResult> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopySummaryResult> SummarizeAsync(CanopyX.Data.CanopySummaryRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<System.Int32> CountAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<System.String> GetRevisionAsync(System.Threading.CancellationToken cancellationToken)
@@ -243,9 +253,10 @@ CanopyX.Data.CanopyQueryableRecordProvider<T>..ctor(System.Linq.IQueryable<T> so
 CanopyX.Data.CanopyQueryableRecordProvider<T>.CanopyX.Data.CanopyRecordMap<T> Map { get; }
 CanopyX.Data.CanopyQueryableRecordProvider<T>.CanopyX.Data.CanopyRecordSchema Schema { get; }
 CanopyX.Data.CanopyQueryableRecordProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.CanopyGridRecord?> GetRecordAsync(CanopyX.Data.CanopyRecordRequest request, System.Threading.CancellationToken cancellationToken)
-CanopyX.Data.CanopyQueryableWriter<T> : sealed class (CanopyX.Data.ICanopyDataWriter) where T : class
+CanopyX.Data.CanopyQueryableWriter<T> : sealed class (CanopyX.Data.ICanopyDataWriter, CanopyX.Data.ICanopyInsertWriter) where T : class
 CanopyX.Data.CanopyQueryableWriter<T>..ctor(CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.ICanopyWriteStore<T> store, CanopyX.Data.CanopyQueryableWriterOptions<T>? options = null)
 CanopyX.Data.CanopyQueryableWriter<T>.CanopyX.Data.CanopyCommitTransaction Transaction { get; }
+CanopyX.Data.CanopyQueryableWriter<T>.System.Boolean AcceptsInserts { get; }
 CanopyX.Data.CanopyQueryableWriter<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyCommitResult> CommitAsync(CanopyX.Data.CanopyCommitBatch batch, System.String revision, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableWriterOptions<T> : sealed class where T : class
 CanopyX.Data.CanopyQueryableWriterOptions<T>..ctor()
@@ -254,9 +265,28 @@ CanopyX.Data.CanopyQueryableWriterOptions<T>.CanopyX.Data.CanopyCommitTransactio
 CanopyX.Data.CanopyQueryableWriterOptions<T>.CanopyX.Data.CanopyQueryExecutor Executor { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Action<CanopyX.Data.CanopyCommitRow, System.Exception>? Failed { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Boolean AlwaysCompareOriginals { get; set; }
+CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<CanopyX.Data.CanopyCommitRow, T>? NewRecord { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<CanopyX.Data.CanopyWriteContext<T>, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.String?>>? Saving { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<System.Linq.IQueryable<T>>? Scope { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.String>>? Revision { get; set; }
+CanopyX.Data.CanopyRangeRequest : sealed class
+CanopyX.Data.CanopyRangeRequest..ctor(CanopyX.Data.CanopyDataRequest query, System.DateTime from, System.DateTime to, CanopyX.Data.CanopyDataColumn start, CanopyX.Data.CanopyDataColumn? end = null, CanopyX.Data.CanopyDataColumn? recurrence = null, CanopyX.Data.CanopyDataColumn? seriesEnd = null, CanopyX.Data.CanopyDataColumn? resource = null, System.Collections.Generic.IEnumerable<System.String>? resources = null, System.Int32 limit = 5000, System.String? calendarView = null)
+CanopyX.Data.CanopyRangeRequest.CanopyX.Data.CanopyDataColumn Start { get; }
+CanopyX.Data.CanopyRangeRequest.CanopyX.Data.CanopyDataColumn? End { get; }
+CanopyX.Data.CanopyRangeRequest.CanopyX.Data.CanopyDataColumn? Recurrence { get; }
+CanopyX.Data.CanopyRangeRequest.CanopyX.Data.CanopyDataColumn? Resource { get; }
+CanopyX.Data.CanopyRangeRequest.CanopyX.Data.CanopyDataColumn? SeriesEnd { get; }
+CanopyX.Data.CanopyRangeRequest.CanopyX.Data.CanopyDataRequest Query { get; }
+CanopyX.Data.CanopyRangeRequest.CanopyX.Data.CanopyDataRequest Selection { get; }
+CanopyX.Data.CanopyRangeRequest.System.Collections.Generic.IReadOnlyList<System.String>? Resources { get; }
+CanopyX.Data.CanopyRangeRequest.System.DateTime From { get; }
+CanopyX.Data.CanopyRangeRequest.System.DateTime To { get; }
+CanopyX.Data.CanopyRangeRequest.System.Int32 Limit { get; }
+CanopyX.Data.CanopyRangeRequest.System.String? CalendarView { get; }
+CanopyX.Data.CanopyRangeResult : sealed class
+CanopyX.Data.CanopyRangeResult..ctor(System.Int32 matched, System.Collections.Generic.IEnumerable<CanopyX.CanopyGridRow> rows)
+CanopyX.Data.CanopyRangeResult.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyGridRow> Rows { get; }
+CanopyX.Data.CanopyRangeResult.System.Int32 Matched { get; }
 CanopyX.Data.CanopyRecordChangesMap<TChild> : sealed class
 CanopyX.Data.CanopyRecordChangesMap<TChild>.CanopyX.Data.CanopyRecordChangesMap<TChild> After<TValue>(System.Linq.Expressions.Expression<System.Func<TChild, TValue>> after)
 CanopyX.Data.CanopyRecordChangesMap<TChild>.CanopyX.Data.CanopyRecordChangesMap<TChild> Before<TValue>(System.Linq.Expressions.Expression<System.Func<TChild, TValue>> before)
@@ -338,6 +368,8 @@ CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> Face
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> QueryAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> QueryAsync(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String, System.String?>> parameters, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> QueryAsync(System.String json, System.Threading.CancellationToken cancellationToken = null)
+CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken = null)
+CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> RangeAsync(System.String json, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> RecordAsync(CanopyX.Data.CanopyRecordRequest request, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> RecordAsync(System.String json, System.Func<System.String, System.Boolean>? canRead, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> RecordAsync(System.String json, System.Threading.CancellationToken cancellationToken = null)
@@ -355,6 +387,7 @@ CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxGroups { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxInValues { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxOperandLength { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxPageSize { get; set; }
+CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxRangeRows { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxRecordBytes { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxRecordItems { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxRecordOffset { get; set; }
@@ -404,6 +437,8 @@ CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyDataRequest ParseQuer
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyDataRequest ParseQuery(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyExportRequest ParseExport(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyFacetRequest ParseFacet(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
+CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyRangeRequest FromRangeQuery(CanopyX.CanopyGridRangeQuery query, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
+CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyRangeRequest ParseRange(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyRecordRequest FromRecordQuery(CanopyX.CanopyGridRecordQuery query, CanopyX.Data.CanopyRecordSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null, System.Func<System.String, System.Boolean>? canRead = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyRecordRequest ParseRecord(System.String json, CanopyX.Data.CanopyRecordSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null, System.Func<System.String, System.Boolean>? canRead = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopySummaryRequest ParseSummary(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
@@ -463,6 +498,12 @@ CanopyX.Data.ICanopyExportFormat.System.String ContentType { get; }
 CanopyX.Data.ICanopyExportFormat.System.String Extension { get; }
 CanopyX.Data.ICanopyExportFormat.System.String Id { get; }
 CanopyX.Data.ICanopyExportFormat.abstract System.Threading.Tasks.Task WriteAsync(CanopyX.Data.CanopyExportContext context, System.IO.Stream output, System.Threading.CancellationToken cancellationToken)
+CanopyX.Data.ICanopyInsertStore<T> : interface (CanopyX.Data.ICanopyWriteStore<T>) where T : class
+CanopyX.Data.ICanopyInsertStore<T>.abstract System.Void Add(T record)
+CanopyX.Data.ICanopyInsertWriter : interface (CanopyX.Data.ICanopyDataWriter)
+CanopyX.Data.ICanopyInsertWriter.System.Boolean AcceptsInserts { get; }
+CanopyX.Data.ICanopyRangeProvider : interface
+CanopyX.Data.ICanopyRangeProvider.abstract System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyRangeResult> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.ICanopyRecordProvider : interface
 CanopyX.Data.ICanopyRecordProvider.CanopyX.Data.CanopyRecordSchema Schema { get; }
 CanopyX.Data.ICanopyRecordProvider.abstract System.Threading.Tasks.ValueTask<CanopyX.CanopyGridRecord?> GetRecordAsync(CanopyX.Data.CanopyRecordRequest request, System.Threading.CancellationToken cancellationToken)

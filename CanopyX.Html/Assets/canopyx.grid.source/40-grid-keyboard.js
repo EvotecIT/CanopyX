@@ -83,8 +83,9 @@
           if (at >= 0 && at < controls.length - 1) nextControl = at + 1;
           else nextColumn = Math.min(columnCount - 1, column + 1);
           break;
-        case "Escape": this.setFocus(row, true); event.preventDefault(); return;
+        case "Escape": this.gridPickKey(event, row, column); this.setFocus(row, true); event.preventDefault(); return;
         case "F2":
+          if (this.gridPickKey(event, row, column)) return;
           if (column >= 0) { this.setFocus(row, true); event.preventDefault(); return; }
           // F2 enters the first cell from row focus.
         case "Enter":

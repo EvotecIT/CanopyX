@@ -112,7 +112,9 @@ public sealed class GridEditingContractTests {
         """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"id":"a1","values":{"cost":12.5,"insured":false},"original":{"cost":900.5,"insured":true}}]}""",
         """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":null,"rows":[{"id":"a1","values":{"owner":null},"original":{"owner":"Ada"}}]}""",
         """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","revision":"r2","rows":[{"id":"a1","status":"saved","cells":{"cost":{"value":12.5,"text":"12.50"}}},{"id":"a2","status":"error","errors":{"cost":"Over budget."}},{"id":"a3","status":"conflict","error":"Changed by someone else."}]}""",
-        """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[]}"""
+        """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[]}""",
+        """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"op":"insert","id":"new-1","values":{"title":"Launch","start":"2026-10-19T09:00:00Z"}},{"op":"update","id":"a1","values":{"cost":1},"original":{"cost":2}}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","revision":"r2","rows":[{"id":"new-1","status":"saved","newId":"481","cells":{"title":"Launch"}},{"id":"new-2","status":"saved"}]}"""
     };
 
     [Theory]
@@ -124,7 +126,14 @@ public sealed class GridEditingContractTests {
         """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"id":"a1","values":{},"original":{}}]}""",
         """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","rows":[{"id":"a1","values":{"cost":1},"original":{"cost":2}}]}""",
         """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[{"id":"a1","status":"done"}]}""",
-        """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[{"id":"a1","status":"error","cells":{"cost":1}}]}"""
+        """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[{"id":"a1","status":"error","cells":{"cost":1}}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"op":"insert","id":"new-1","values":{"title":"x"},"original":{"title":null}}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"op":"insert","id":"new-1","values":{}}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"op":"delete","id":"a1","values":{"cost":1},"original":{"cost":2}}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"id":"new-1","values":{"title":"x"}}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommit","view":"assets","revision":"r1","rows":[{"op":"insert","id":"a1","values":{"title":"x"}}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[{"id":"new-1","status":"conflict","newId":"7"}]}""",
+        """{"protocol":"canopyx/2","type":"gridCommitResult","view":"assets","rows":[{"id":"new-1","status":"saved","newId":""}]}"""
     };
 
     [Theory]

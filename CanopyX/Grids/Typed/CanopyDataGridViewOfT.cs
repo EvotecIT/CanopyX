@@ -21,7 +21,7 @@ namespace CanopyX;
 /// <para><see cref="View"/> is the untyped <see cref="CanopyDataGridView"/> underneath; every other setting (reporting, the record
 /// panel, live data, formatting) is set there, and the untyped API keeps working on it.</para>
 /// </remarks>
-public sealed class CanopyDataGridView<T> {
+public sealed partial class CanopyDataGridView<T> {
     private readonly Func<T, string> _identity;
     private readonly List<KeyValuePair<CanopyColumn, Func<T, CanopyCell?>>> _cells = new List<KeyValuePair<CanopyColumn, Func<T, CanopyCell?>>>();
     private readonly List<KeyValuePair<string, Func<T, CanopyCell?>>> _fields = new List<KeyValuePair<string, Func<T, CanopyCell?>>>();

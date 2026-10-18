@@ -10,22 +10,10 @@
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
-  // The host option wins, then the view's declared ids, then every registered format and the formats of the grid's plugins,
-  // which replace a registered format with the same id on this grid. An id nobody registered is skipped.
-  function exportFormatsOf(grid) {
-    const list = grid.opts.exportFormats ?? grid.view.exportFormats, known = new Map(EXPORT_FORMATS);
-    for (const format of grid.plugins.filter(item => (grid.opts.plugins || []).some(local => local.name === item.name))
-      .flatMap(item => item.exportFormats || [])) known.set(format.id, exportFormat(format));
-    if (list === undefined) return [...known.values()];
-    const formats = Array.isArray(list) ? list.map(item => typeof item === "string" ? known.get(item) : exportFormat(item)).filter(Boolean) : null;
-    if (!formats || new Set(formats.map(format => format.id)).size !== formats.length) throw new Error("CanopyX: invalid exportFormats.");
-    return formats;
-  }
   Object.assign(EXPORT_IMPL, {
     // The capture was taken at invocation. Page reads keep their own request deadlines; the writer has the export timeout,
     // and cancellation, timeout or destruction settle the export even when a writer ignores its signal.
-    async run(grid, id, options, capture) {
-      const format = exportFormatsOf(grid).find(item => item.id === id);
+    async run(grid, id, options, capture, format) {
       if (!format) throw new Error("CanopyX: export format '" + id + "' is not available.");
       const total = capture.request.recordCount, onProgress = options.onProgress;
       if (onProgress !== undefined && typeof onProgress !== "function" || options.download !== undefined && typeof options.download !== "boolean")

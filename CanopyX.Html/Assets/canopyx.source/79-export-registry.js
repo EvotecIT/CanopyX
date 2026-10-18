@@ -18,6 +18,17 @@
     format = exportFormat(format); EXPORT_FORMATS.set(format.id, format);
     return () => EXPORT_FORMATS.get(format.id) === format && EXPORT_FORMATS.delete(format.id);
   }
+  // Resolve once before a capture is taken. A format's writer and its captured fields then travel together, including
+  // while a lazy export part loads. The host option wins, then declared ids, then registered and per-grid plugin formats.
+  EXPORT_IMPL.formatsOf = function (grid) {
+    const list = grid.opts.exportFormats ?? grid.view.exportFormats, known = new Map(EXPORT_FORMATS);
+    for (const format of grid.plugins.filter(item => (grid.opts.plugins || []).some(local => local.name === item.name))
+      .flatMap(item => item.exportFormats || [])) known.set(format.id, exportFormat(format));
+    if (list === undefined) return [...known.values()];
+    const formats = Array.isArray(list) ? list.map(item => typeof item === "string" ? known.get(item) : exportFormat(item)).filter(Boolean) : null;
+    if (!formats || new Set(formats.map(format => format.id)).size !== formats.length) throw new Error("CanopyX: invalid exportFormats.");
+    return formats;
+  };
   // Writers and host export hooks run under this safety timeout, separately from each source request's deadline.
   function exportTimeout(grid, options) {
     const timeout = options?.timeoutMs ?? grid.opts.exportTimeoutMs ?? 600000;

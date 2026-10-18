@@ -260,7 +260,7 @@ export default CanopyX;
     if ($Grid) {
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
-        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, enhance, grid, configure')
+        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, createCalendar, enhance, grid, configure')
     }
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }

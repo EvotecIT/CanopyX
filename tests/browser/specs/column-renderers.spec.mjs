@@ -187,3 +187,30 @@ test("a hidden column can have a renderer, which draws it once the column is sho
   await nextFrames(page);
   await expect(page.locator('[data-cx-id="n0"] [aria-colindex="4"]')).toHaveText("spare 3");
 });
+
+test("host renderer cells keep fitted geometry after refresh, state restoration and resize", async ({ page }) => {
+  await open(page);
+  await remount(page, `{ view: { ...data, columns: data.columns.map(({ width, ...column }) => ({ ...column, autoWidth: true })) },
+    renderers: { state(node, element) { element.textContent = node.cells.state.value; return true; },
+      size(node, element) { element.textContent = String(node.cells.size); return true; } } }`);
+  await page.evaluate(() => { document.querySelector(".cx-host").style.width = "520px"; });
+  await expect.poll(() => page.locator('.cx-hcell[data-cx-column="state"]').evaluate(cell => cell.getBoundingClientRect().width)).toBeLessThan(140);
+  const mismatches = () => page.evaluate(() => {
+    const row = document.querySelector('.cx-row[data-cx-id="n0"]');
+    const headers = [...document.querySelectorAll('.cx-head .cx-hcell')];
+    if (headers.length < 2) return ["missing headers"];
+    return headers.flatMap(head => {
+      const cell = row?.querySelector('[aria-colindex="' + head.getAttribute("aria-colindex") + '"]');
+      if (!cell) return ["missing cell"];
+      const h = head.getBoundingClientRect(), c = cell.getBoundingClientRect();
+      return Math.abs(h.left - c.left) > 1 || Math.abs(h.width - c.width) > 1 ? [head.dataset.cxColumn + ":" + Math.round(h.width) + "/" + Math.round(c.width)] : [];
+    });
+  });
+  await page.evaluate(() => window.api.refresh());
+  await nextFrames(page);
+  await expect.poll(mismatches).toEqual([]);
+  await page.evaluate(() => window.api.setState(window.api.getState()));
+  await expect.poll(mismatches).toEqual([]);
+  await page.evaluate(() => { document.querySelector(".cx-host").style.width = "440px"; window.api.refresh(); });
+  await expect.poll(mismatches).toEqual([]);
+});

@@ -29,6 +29,8 @@
     <EmbeddedResource Include="Templates\enhance-data.html" LogicalName="CanopyX.Examples.Templates.enhance-data.html" />
     <EmbeddedResource Include="Templates\enhance-server.html" LogicalName="CanopyX.Examples.Templates.enhance-server.html" />
     <EmbeddedResource Include="Templates\linked-views.html" LogicalName="CanopyX.Examples.Templates.linked-views.html" />
+    <EmbeddedResource Include="Templates\calendar-linked.html" LogicalName="CanopyX.Examples.Templates.calendar-linked.html" />
+    <EmbeddedResource Include="Templates\calendar-scheduler.html" LogicalName="CanopyX.Examples.Templates.calendar-scheduler.html" />
     <EmbeddedResource Include="Templates\live-data.html" LogicalName="CanopyX.Examples.Templates.live-data.html" />
   </ItemGroup>
 </Project>

@@ -22,7 +22,7 @@ public sealed class RowDataTests {
 
     [Fact]
     public void GzipChunks_InflateToTheCompactRowsInIdentityOrder() {
-        var data = new CanopyGridRowData(Grid(), new CanopyRowDataOptions { Compression = CanopyRowCompression.Gzip });
+        var data = new CanopyGridRowData(Grid(), new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip });
         using var input = new GZipStream(new MemoryStream(Convert.FromBase64String(data.GetChunk(0))), CompressionMode.Decompress);
         using var reader = new StreamReader(input, Encoding.UTF8);
         Assert.Equal("[[\"r0\",\"Item 0\"],[\"r1\",\"Item 1\"],[\"r2\",\"Item 2\"]]", reader.ReadToEnd());

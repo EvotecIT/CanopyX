@@ -85,6 +85,8 @@
       grid.version++; grid.scheduleRender();
     })();
     done.catch(() => outer.reset());
+    // Whatever was worked out from the rows decoded so far (bounds of formatting bars and scales) is worked out again.
+    done.then(() => { if (!grid.destroyed) { grid.version++; grid.scheduleRender?.(); } }, () => { });
     let complete = null;
     // Saved values invalidate the completed result cache while an active decoder keeps its remaining chunks.
     outer.invalidate = () => { complete = null; };

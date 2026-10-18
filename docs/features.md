@@ -139,6 +139,28 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Grouping by up to four columns, from the column menus or a group-by bar, with labelled aggregates | Reporting | `reporting.groupBy`, `reporting.groupable`, `setGroupBy()` | [grouping.md](grouping.md) |
 | Expandable detail rows: a template, HTML, or a nested grid or tree | Reporting | `reporting.detail` | [grouping.md](grouping.md#detail-rows) |
 
+## Calendar and resource timeline
+
+| Feature | Views | How | Reference |
+|---|---|---|---|
+| Month, week, day, N-day, agenda and year views of a grid's records | Grid | `calendar: { start, end, title, … }`; C# `CanopyCalendar`, typed `Calendar().Start(x => x.Starts)` | [calendar.md](calendar.md) |
+| All-day, multi-day, overlapping and zero-length events; "+N more" in month cells | Grid | `allDay`, `end`, `eventLimit` | [Views](calendar.md#views) |
+| Time zones with correct DST, first weekday, working hours, hidden days, slots and visible hours | Grid | `timeZone`, `firstDay`, `workingHours`, `hiddenDays`, `slotMinutes`, `minTime`, `maxTime` | [Time zones](calendar.md#time-zones) |
+| Recurring events (an RFC 5545 RRULE subset) with exceptions and moved occurrences | Grid | `recurrence`, `exceptions`, `series`, `recurrenceId`; C# `CanopyRecurrence` | [Recurrence](calendar.md#recurrence) |
+| Resource timeline with a resource tree, zoom from hours to quarters, capacity per group and aggregates | Grid | `resources`, `zoom`, `capacity`, `aggregates` | [resource-timeline.md](resource-timeline.md) |
+| Resource columns in day and week views, business hours per resource, unavailable time and background ranges | Grid | `availability`, `ranges`, `display: "background"` | [Resource columns](resource-timeline.md#resource-columns-in-day-and-week-views) |
+| Drag to move and resize, across resources, with keyboard moves, conflict rules, commit and undo | Grid | `editable: { overlap, allowedResources, workingHours, commit }` | [Editing](calendar.md#editing) |
+| Record panel, linked views, facets, saved views and live data on calendar events | Grid | the grid's own options | [calendar.md](calendar.md#the-record-panel) |
+| Server data by visible date range over `IQueryable` | Grid | `source.range`; `POST {pattern}/range` | [Server data](calendar.md#server-data), [Range queries](remote-dotnet.md#range-queries) |
+| iCalendar export, and print layouts for month, agenda and timeline | Grid | Export menu, `exportCalendar()` | [Export and print](calendar.md#export-and-print) |
+| A basic calendar from a list of events, read-only with a details popover; presets basic, standard and scheduler | Grid | `CanopyX.createCalendar(host, { events, preset })`; C# `new CanopyCalendar(events)`, `CanopyCalendar.From(...)` | [Quick start](calendar.md#quick-start), [Levels and options](calendar.md#levels-and-options) |
+| Creating events by click, drag and keyboard; dropping grid rows and marked page elements | Grid | `create`, `drop`, `dragRows`; inserts in `gridCommit` | [Creating events](calendar.md#creating-events), [Dropping events](calendar.md#dropping-events) |
+| This event, this and following, or all events of a series | Grid | `occurrence`, `series`, `recurrenceId` | [Changing one occurrence](calendar.md#changing-one-occurrence) |
+| Mini month, week and day lists, stacked months, a year with its events, a timeline without resources and custom spans | Grid | `views`, `yearEvents`, `months`, `span` | [Views](calendar.md#views) |
+| Week numbers, day links, a valid range, six fixed weeks, right to left | Grid | `weekNumbers`, `navLinks`, `validRange`, `fixedWeeks`, `dir="rtl"` | [The calendar definition](calendar.md#the-calendar-definition) |
+| Several sources with a legend; iCalendar import (browser and .NET) | Grid | `sources`, `source`; `CanopyICalendar.Parse` | [Sources and iCalendar](calendar.md#sources-and-icalendar), [icalendar.md](icalendar.md) |
+| Shading outside ranges; context menus and hover cards | Grid | `ranges[].inverse`, `menu`, `hover`, `calendar.menu` hook | [Context menus](calendar.md#context-menus-and-hover-cards) |
+
 ## Export, copy and print
 
 | Feature | Views | How | Reference |
@@ -185,7 +207,7 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Manual screen-reader script | Grid, Tree | NVDA and Narrator steps | [Screen-reader test](screen-reader-test.md) |
 | Forced colours, reduced motion, 24 px pointer targets (44 px on phones) | Grid, Tree | built in | [accessibility.md](accessibility.md) |
 
-Spoken screen-reader output has not been recorded for a release yet, and right-to-left layout is not supported yet.
+Spoken screen-reader output has not been recorded for a release yet. Calendar and resource-timeline layouts support right-to-left pages; see [Keyboard and screen readers](calendar.md#keyboard-and-screen-readers).
 
 ## Theming
 

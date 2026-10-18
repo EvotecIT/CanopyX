@@ -49,7 +49,9 @@ public static partial class CanopyHtmlExtensions {
     /// Without <paramref name="options"/>, the page references the data-grid runtime and its parts under <c>assets/</c> by their
     /// content-hashed names and they are written next to it; with options, their asset mode applies, and assets are written
     /// when the base URL is a relative folder inside <paramref name="directory"/>. <see cref="CanopyHtmlOptions.RowData"/> sets
-    /// the chunk size and compression (default: chunks of 5,000 uncompressed rows). Republish the page and its data together,
+    /// the chunk size and the format: <see cref="CanopyRowFormat.Compact"/> or <see cref="CanopyRowFormat.CompactGzip"/>, or
+    /// by default <see cref="CanopyRowFormat.Auto"/>, which compresses rows whose JSON comes to more than
+    /// <see cref="CanopyRowDataOptions.GzipAboveBytes"/> (default: chunks of 5,000 rows). Republish the page and its data together,
     /// into a folder of their own.
     /// </remarks>
     /// <param name="view">The grid. Its source must be inline.</param>
@@ -58,7 +60,9 @@ public static partial class CanopyHtmlExtensions {
     /// <returns>The data folder and the sizes of the data files, for checking against budgets.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="directory"/> is null or empty, or the asset folder is not portable.</exception>
-    /// <exception cref="InvalidOperationException">The grid has a host source or an invalid definition.</exception>
+    /// <exception cref="InvalidOperationException">The grid has a host source or an invalid definition, a row carries a detail
+    /// payload or record fields (which compact rows have no place for), or the options ask for <see cref="CanopyRowFormat.Objects"/>,
+    /// which a bundle cannot write.</exception>
     public static CanopyGridBundleResult SaveHtmlBundle(this CanopyDataGridView view, string directory, CanopyHtmlOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (string.IsNullOrEmpty(directory)) throw new ArgumentException("Directory is required.", nameof(directory));
@@ -66,6 +70,7 @@ public static partial class CanopyHtmlExtensions {
         var pageOptions = options ?? new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External };
         var runtime = CanopyHtmlAssets.GetRuntime(view);
         var assetFolder = LocalAssetFolder(pageOptions);
+        if (pageOptions.RowData?.Format == CanopyRowFormat.Objects) throw new InvalidOperationException("A grid bundle writes its rows as compact row data files; CanopyRowFormat.Objects does not apply.");
         var data = new CanopyGridRowData(view, pageOptions.RowData);
         ValidateBundleLayout(data.DataFolder, assetFolder, runtime);
         var result = data.WriteFiles(directory);

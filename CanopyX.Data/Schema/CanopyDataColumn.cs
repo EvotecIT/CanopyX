@@ -39,6 +39,8 @@ public sealed class CanopyDataColumn {
     /// <summary>Gets the declared text ordering policy, if any.</summary>
     public CanopyGridOrdering? Ordering => _definition.Ordering;
 
+    internal CanopyGridNumberFormat? NumberFormat => _definition.Format;
+
     /// <summary>Gets the position of this column among the allowed columns.</summary>
     public int Ordinal { get; }
 

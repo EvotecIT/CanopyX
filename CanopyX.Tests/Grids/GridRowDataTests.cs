@@ -85,6 +85,8 @@ public sealed class GridRowDataTests {
         var json = new CanopyGridRowData(Grid()).ToJson();
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rows"] = new System.Text.Json.Nodes.JsonArray())).IsValid);
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["source"]!["kind"] = "host")).IsValid);
+        // Every canopyx/2 compact descriptor keeps encoding version 1 for independently deployed readers.
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rowData"]!.AsObject().Remove("version"))).IsValid);
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rowData"]!["version"] = 2)).IsValid);
     }
 
@@ -92,7 +94,7 @@ public sealed class GridRowDataTests {
     public void GzipChunks_AreBase64OfTheCompressedJson() {
         var view = Grid(120);
         var plain = new CanopyGridRowData(view, new CanopyRowDataOptions { ChunkSize = 100 });
-        var packed = new CanopyGridRowData(view, new CanopyRowDataOptions { ChunkSize = 100, Compression = CanopyRowCompression.Gzip });
+        var packed = new CanopyGridRowData(view, new CanopyRowDataOptions { ChunkSize = 100, Format = CanopyRowFormat.CompactGzip });
 
         using (var input = new GZipStream(new MemoryStream(Convert.FromBase64String(packed.GetChunk(1))), CompressionMode.Decompress))
         using (var reader = new StreamReader(input, Encoding.UTF8)) Assert.Equal(plain.GetChunk(1), reader.ReadToEnd());
@@ -116,7 +118,7 @@ public sealed class GridRowDataTests {
     public void Options_AndSources_AreChecked() {
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { ChunkSize = 99 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { ChunkSize = 100001 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { Compression = (CanopyRowCompression)7 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyRowDataOptions { Format = (CanopyRowFormat)7 });
         var hosted = new CanopyDataGridView("hosted", "Hosted") { Source = CanopyGridSource.HostedOffset() };
         hosted.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Throws<InvalidOperationException>(() => new CanopyGridRowData(hosted));

@@ -34,7 +34,12 @@
       this.linkFilters = next; this.linkCommitted = next.slice();
       SET_FILTER.call(this, linkTreeFilter(this), { autoExpand: true });
       if (declared) this.declaredFilter = this.filter;
-      this.linkChips(); this.linkChanged(reason);
+      this.linkChips();
+      this.flushLayout();
+      // Consume the pending paint before this immediate pass. Detail measurement may queue its own follow-up below.
+      if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = 0; }
+      this.render();
+      this.linkChanged(reason);
       return Promise.resolve(true);
     },
     linkCount() { return this.rows.filter(row => !row.status && (!this.filter || row._fm === 2)).length; },

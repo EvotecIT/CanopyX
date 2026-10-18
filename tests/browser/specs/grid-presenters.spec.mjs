@@ -68,6 +68,41 @@ test("text and list dialogs escape markup, return focus and leave fixed row heig
   await page.getByRole("button", { name: "Close complete text" }).click(); await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
+for (const width of [1440, 390]) test(`first-column long text stays readable beside native selection at ${width}`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  const text = "Complete operational notes and the recommended next action. ".repeat(12);
+  for (const selectionControls of [false, true]) {
+    await open(page, { reporting: { selectionControls },
+      columns: [{ id: "notes", title: "Notes", width: 260, kind: "text", presenter: { kind: "longText" } },
+        { id: "amount", title: "Amount", width: 100, kind: "number" }],
+      rows: [{ id: "a", cells: { notes: text, amount: 1 } }] });
+    const first = row(page, "a"), more = first.getByRole("button", { name: "Notes: show complete text" });
+    const geometry = await more.evaluate(button => {
+      const cell = button.closest(".cx-cell").getBoundingClientRect(), target = button.getBoundingClientRect();
+      const preview = button.parentElement.querySelector(".cx-wrapped-text").getBoundingClientRect();
+      return { rowHeight: button.closest(".cx-row").getBoundingClientRect().height,
+        targetHeight: target.height, visibleTargetHeight: Math.max(0, Math.min(target.bottom, cell.bottom) - Math.max(target.top, cell.top)),
+        previewInside: preview.top >= cell.top - 0.5 && preview.bottom <= cell.bottom + 0.5 };
+    });
+    expect(geometry.rowHeight).toBe(28); expect(geometry.targetHeight).toBeGreaterThanOrEqual(24);
+    expect(geometry.visibleTargetHeight).toBeGreaterThanOrEqual(24); expect(geometry.previewInside).toBe(true);
+    if (selectionControls) {
+      await first.focus(); await page.keyboard.press("F2");
+      const check = first.locator(".cx-grid-row-select"), held = await check.elementHandle();
+      await page.keyboard.down("Space");
+      try { await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.refresh()); await nextFrames(page); }
+      finally { await page.keyboard.up("Space"); }
+      await nextFrames(page);
+      expect(await check.evaluate((current, previous) => current === previous, held)).toBe(true);
+      await expect(check).toBeChecked(); await expect(check).toBeFocused();
+    }
+    await more.click();
+    const dialog = page.getByRole("dialog", { name: "Notes", exact: true });
+    await expect(dialog.locator("pre")).toHaveText(text);
+    await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(more).toBeFocused();
+  }
+});
+
 test("retiring a query or destroying a grid closes complete text and recycled links do not retain unsafe destinations", async ({ page }) => {
   await open(page);
   await row(page, "a").getByRole("button", { name: "Notes: show complete text" }).click();

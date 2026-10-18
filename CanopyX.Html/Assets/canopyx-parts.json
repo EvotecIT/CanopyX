@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "9781c04a2f055f6a",
+      "version": "ce442e100494535d",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "116683dc8a0ae28a",
+      "version": "99cafeec3da59ffa",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -30,7 +30,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "83554049dc50b9d3",
+      "version": "5673e642f32c2f4e",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "37aefb2ff94cb423",
+      "version": "40fe19a1046d6813",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "3502d377f5d377da",
+      "version": "01965774e28f70bf",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -217,7 +217,7 @@
     {
       "name": "link",
       "label": "linked views",
-      "version": "3f7066f26d171fba",
+      "version": "fa0c9e888463553b",
       "script": "canopyx-link.js",
       "style": "canopyx-link.css",
       "runtimes": [
@@ -246,7 +246,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "d3dcc662fc3dd11f",
+      "version": "d942108ffbc023b6",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -301,7 +301,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "96c8783d1a1f2f7f",
+      "version": "f9219d35a87635f8",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -346,6 +346,96 @@
       ],
       "features": [
         "record"
+      ]
+    },
+    {
+      "name": "calendar",
+      "label": "calendar",
+      "version": "2f44e057443bc649",
+      "script": "canopyx-calendar.js",
+      "style": "canopyx-calendar.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendar"
+      ]
+    },
+    {
+      "name": "calendar-recurrence",
+      "label": "calendar recurrence",
+      "version": "64bcc24d785bd1af",
+      "script": "canopyx-calendar-recurrence.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarRecurrence"
+      ],
+      "requires": [
+        "calendar"
+      ]
+    },
+    {
+      "name": "calendar-edit",
+      "label": "calendar editing",
+      "version": "505792b52f874c1b",
+      "script": "canopyx-calendar-edit.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarEditing"
+      ],
+      "requires": [
+        "calendar"
+      ]
+    },
+    {
+      "name": "calendar-ics",
+      "label": "iCalendar",
+      "version": "feb3ed2cd67d057f",
+      "script": "canopyx-calendar-ics.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarIcs"
+      ],
+      "requires": [
+        "calendar",
+        "calendar-recurrence"
+      ]
+    },
+    {
+      "name": "timeline",
+      "label": "resource timeline",
+      "version": "3f04ba99401e9ebd",
+      "script": "canopyx-timeline.js",
+      "style": "canopyx-timeline.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarResources"
+      ],
+      "requires": [
+        "calendar"
       ]
     }
   ]

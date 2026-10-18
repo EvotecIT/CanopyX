@@ -93,7 +93,7 @@
       const specs = new Map(this.columns.filter(column => column.editable).map(column => [column.id, editSpec(column, editors, this.columns)]));
       const limit = options.undoLimit ?? 100;
       if (!Number.isInteger(limit) || limit < 0 || limit > 10000) throw new Error("CanopyX: editing.undoLimit must be an integer from 0 to 10000.");
-      this.edit = { options, mode, drawer, labels, editors, specs, limit, changes: new Map(), undo: [], redo: [], session: null, group: null,
+      this.edit = { options, mode, drawer, labels, editors, specs, limit, changes: new Map(), inserted: new Map(), undo: [], redo: [], session: null, group: null,
         checks: new Map(), messages: new Map(), sequence: 0, bar: options.editBar ?? view.editBar ?? true };
       this.editReadOnly ??= !!(options.readOnly ?? view.readOnly);
       this.buildEditing();
@@ -109,7 +109,7 @@
     // The loaded record with an id: the cached row, else the record its changes were made on, else an inline row.
     editRecord(id) {
       for (const row of this.rowCache.values()) if (row.key === id) return row.h;
-      const change = this.edit.changes.get(id)?.row;
+      const change = this.edit.changes.get(id)?.row ?? this.edit.inserted.get(id);
       if (change || this.view.source.kind !== "inline") return change;
       // A copy: unsaved values never reach the inline dataset that queries read.
       const row = this.view.rows.find(item => item.id === id);
@@ -126,9 +126,13 @@
       // Range batches preflight their changing hooks before their final validation and any mutation.
       if (!checked?.prepared && !this.emit("cellValueChanging", detail)) return false;
       const entry = state.changes.get(id) || { id, original: Object.create(null), values: Object.create(null), errors: Object.create(null), error: null };
-      if (!Object.hasOwn(entry.original, spec.id)) entry.original[spec.id] = cells[spec.id];
+      if (!entry.inserted && !Object.hasOwn(entry.original, spec.id)) entry.original[spec.id] = cells[spec.id];
       const original = entry.original[spec.id];
-      if (editSame(cellValue(original), value)) {
+      if (entry.inserted) {
+        // A new row keeps every value: there is nothing stored to take it back to.
+        cells[spec.id] = editCell(cells[spec.id], value, this.editText(spec, value, record));
+        entry.values[spec.id] = value;
+      } else if (editSame(cellValue(original), value)) {
         if (original === undefined) delete cells[spec.id]; else cells[spec.id] = original;
         delete entry.original[spec.id]; delete entry.values[spec.id]; delete entry.errors[spec.id];
         state.checks.delete(id + "\u0000" + spec.id); entry.checked?.delete(spec.id);
@@ -177,8 +181,8 @@
 
     getChanges() {
       return this.editEntries().map(entry => {
-        const change = { id: entry.id, values: entry.values, original: Object.create(null) };
-        for (const id of Object.keys(entry.values)) change.original[id] = cellValue(entry.original[id]);
+        const change = entry.inserted ? { op: "insert", id: entry.id, values: entry.values } : { id: entry.id, values: entry.values, original: Object.create(null) };
+        if (!entry.inserted) for (const id of Object.keys(entry.values)) change.original[id] = cellValue(entry.original[id]);
         const errors = editErrors(entry), error = entry.error || entry.rowError;
         if (Object.keys(errors).length) change.errors = errors;
         if (error) change.error = error;
@@ -211,6 +215,8 @@
       this.editGroup(() => {
         for (const id of ids ?? [...this.edit.changes.keys()]) {
           const entry = this.edit.changes.get(id);
+          // A new row taken back is removed.
+          if (entry?.inserted) { this.editRemoveInserted(id, true); continue; }
           if (entry) for (const column of Object.keys(entry.values))
             this.editApply(id, this.edit.specs.get(column), cellValue(entry.original[column]), "revert", entry.row);
         }
@@ -223,14 +229,18 @@
     redo() { return this.editHistory(this.edit.redo, this.edit.undo, "after", "redo"); },
     editHistory(from, to, key, source) {
       if (!from.length || this.destroyed) return false;
+      // A new row being saved cannot be taken back yet: the step stays until the writer answers.
+      if (key === "before" && from[from.length - 1].some(step => step.insert && this.edit.changes.get(step.id)?.status === "saving")) return false;
       this.cancelEdit();
       const steps = from.pop(), order = key === "before" ? [...steps].reverse() : steps;
       for (const step of order) {
+        // A new row: undo removes it, redo puts it back.
+        if (step.insert) { if (key === "before") this.editRemoveInserted(step.id); else this.editInsert(step.insert, source); continue; }
         const record = this.editRecord(step.id), spec = this.edit.specs.get(step.column);
         if (record && spec) this.editApply(step.id, spec, step[key], source, record);
       }
       to.push(steps);
-      const last = this.edit.specs.get(order[order.length - 1].column);
+      const last = this.edit.specs.get(order.findLast(step => !step.insert)?.column);
       this.editAnnounce(fill(this.edit.labels[source === "undo" ? "gridEditUndone" : "gridEditRedone"], { column: last ? last.column.title : "" }));
       this.syncEditBar();
       return true;

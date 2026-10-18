@@ -15,7 +15,11 @@ const examples = [
   { name: "plugins", dark: "plugins-dark" },
   { name: "inline", dark: "inline" },
   { name: "tree-parity", dark: "tree-parity-dark" },
-  { name: "plugins-tree", dark: "plugins-tree-dark" }
+  { name: "plugins-tree", dark: "plugins-tree-dark" },
+  // Calendars read the clock for today and the now line, so they open at a fixed moment.
+  { name: "calendar", dark: "calendar-dark", calendar: true },
+  { name: "calendar-timeline", dark: "calendar-timeline-dark", calendar: true },
+  { name: "calendar-certificates", dark: "calendar-certificates-dark", calendar: true }
 ];
 const sizes = [{ width: 1440, height: 900, crop: 420 }, { width: 390, height: 844, crop: 600 }];
 
@@ -46,8 +50,9 @@ for (const size of sizes) for (const theme of ["light", "dark"]) {
     for (const example of examples) {
       test(`${example.name} matches its baseline (${size.width}, ${theme})`, async ({ page }) => {
         await pinTestFont(page);
+        if (example.calendar) await page.clock.setFixedTime(new Date("2026-10-16T10:30:00Z"));
         await page.goto(exampleUrl((theme === "dark" ? example.dark : example.name) + ".html"));
-        await page.waitForSelector("[data-cx-ready]");
+        await page.waitForSelector(example.calendar ? "[data-cx-calendar-ready]" : "[data-cx-ready]");
         expect(await testFontState(page), "the test font must be ready before the views mount").toEqual({ atMount: "loaded", now: "loaded" });
         await nextFrames(page);
         await page.evaluate(() => { scrollTo(0, 0); document.activeElement?.blur?.(); });

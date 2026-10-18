@@ -19,7 +19,9 @@ export * from "./column-groups.js";
 export * from "./cell-ranges.js";
 import type { GridLiveDefinition, GridLiveOptions, GridLiveApi, GridLiveResult } from "./live.js";
 import type { GridFacetPanelDefinition, GridFacetPanelOptions, GridFacetPanelApi } from "./facets.js";
+import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, GridCalendarState, GridCalendarSavedState, GridOccurrenceChange, GridRangeSource, GridEventCreate, GridEventReceive, CalendarOptions } from "./calendar.js";
 export * from "./facets.js";
+export * from "./calendar.js";
 export * from "./live.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
@@ -65,6 +67,8 @@ export interface GridExportColumn {
   readonly width?: { readonly unit: "css-px"; readonly preferred: number; readonly minimum: number; readonly maximum?: number };
   readonly wrap?: boolean; readonly alignment?: "left" | "right";
   readonly presenter?: GridPresenter;
+  /** The column number format that produced the display text. */
+  readonly format?: GridNumberFormat;
   readonly diagnostics?: readonly string[];
 }
 /**
@@ -72,6 +76,11 @@ export interface GridExportColumn {
  * methods against the row. Untyped rows (the default) take any string.
  */
 export type GridColumnId<Row extends GridRow = GridRow> = string extends keyof Row["cells"] ? string : Extract<keyof Row["cells"], string>;
+/** Fraction digits from 0 to 10 (defaults 0 and 3); a minimum above 3 requires an explicit maximum. Literal affixes have 1 to 16 code units. */
+export interface GridNumberFormat {
+  readonly minimumFractionDigits?: number; readonly maximumFractionDigits?: number;
+  readonly prefix?: string; readonly suffix?: string;
+}
 export type GridColumn<Row extends GridRow = GridRow> = Omit<CanopyColumn, "id" | "editable" | "width"> & {
   /** The column's id; for a typed row, one of its cells. */
   id: GridColumnId<Row>;
@@ -88,6 +97,8 @@ export type GridColumn<Row extends GridRow = GridRow> = Omit<CanopyColumn, "id" 
   wrap?: boolean;
   /** Declarative presentation; explicit host renderers take precedence. */
   presenter?: GridPresenter;
+  /** Number columns: display format of raw numbers without cell text, also used by summaries and selection totals. */
+  format?: GridNumberFormat;
   /** Include selected numeric values in the optional status bar. */
   aggregatable?: boolean;
   /** Record drawer section label. */
@@ -361,6 +372,10 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   live?: GridLiveDefinition;
   /** A facet panel beside or above the grid: value lists with counts and ranges with histograms (facets.d.ts). */
   facets?: GridFacetPanelDefinition<Row>;
+  /** Shows the records as a calendar: month, week, day, N days, agenda, year and the resource timeline (calendar.d.ts). */
+  calendar?: GridCalendarDefinition<Row>;
+  /** Rows can be dragged out (or picked up with F2) onto a calendar that accepts drops. */
+  dragRows?: boolean;
   stateKey?: string;
   timeZone?: TimeZone;
   labels?: Partial<CanopyLabels>;
@@ -376,6 +391,7 @@ export interface InlineGridView<Row extends GridRow = GridRow> extends GridDefin
 export type GridCompactRow = [string | { id: string; tone?: string; className?: string }, ...Cell[]];
 /** Compact row data of an inline grid, in place of `rows` (docs/data-protocol.md, "Row data"). */
 export interface GridRowData {
+  /** Compact row encoding version, preserved within canopyx/2 for independently deployed readers. */
   version: 1;
   /** Declared column ids, unique, in the order of each compact row's cells. */
   columns: string[];
@@ -430,7 +446,7 @@ export interface GridFacetPage {
 export interface GridFacetSource<Q extends AcceptedGridQuery = AcceptedGridQuery> {
   facet?(request: GridFacetQuery<Q>, options: { signal: AbortSignal }): GridFacetPage | PromiseLike<GridFacetPage>;
 }
-export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSource<GridQuery> {
+export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSource<GridQuery>, GridRangeSource<Row> {
   readonly navigation?: "offset";
   query(query: GridQuery, options: { signal: AbortSignal }): GridPage<Row> | PromiseLike<GridPage<Row>>;
   /** Complete-query metadata, echoing the normalized accepted request, revision and matched count. */
@@ -445,8 +461,11 @@ export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSour
 /** Built-in operations, or the name of a custom aggregate a plugin registers (inline data) or the host source computes. */
 export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | (string & {});
 export interface GridAggregate {
+  /** The label is shown beside the value in group headings and the query totals row. */
   readonly id: string; readonly column: string; readonly label: string;
   readonly operation: GridAggregateOperation;
+  /** Explicit value format; otherwise the column format applies, except that count and distinctCount use whole numbers. */
+  readonly format?: GridNumberFormat;
 }
 /** One runtime grouping level: groups order by value, or by a declared aggregate (nulls last, ties by value). */
 export interface GridGroupLevel {
@@ -643,6 +662,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   highlight?: boolean;
   /** Whether the reader left the facet panel open, in a grid with facets. */
   facets?: { open: boolean };
+  /** The calendar's view, date, zoom and collapsed resources, in a grid with a calendar. */
+  calendar?: GridCalendarSavedState;
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -756,6 +777,16 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   facets?: GridFacetPanelOptions<Row>;
   /** After the reader opened or collapsed the facet panel; canopyx:facetPanel carries the same detail. */
   onFacetPanel?: (event: { open: boolean }) => void;
+  /** Calendar options: the template hook that draws event content (calendar.d.ts). */
+  calendar?: GridCalendarOptions;
+  /** After the calendar painted a view or range; canopyx:calendar carries the same detail. */
+  onCalendar?: (event: GridCalendarState) => void;
+  /** Before one occurrence of a series moves; returning false (or cancelling canopyx:occurrenceChange) keeps the series. */
+  onOccurrenceChange?: (event: GridOccurrenceChange) => boolean | void;
+  /** Before the calendar proposes a new event; returning false (or cancelling canopyx:eventCreate) lets the host open its own form. */
+  onCreate?: (event: GridEventCreate) => boolean | void;
+  /** Before a dropped item becomes a record; returning false (or cancelling canopyx:eventReceive) lets the host schedule it. */
+  onReceive?: (event: GridEventReceive) => boolean | void;
   /** Cells pasted or filled into the grid, before anything changes; returning false (or cancelling canopyx:paste) refuses them all. */
   onPaste?: (event: GridPasteEvent) => boolean | void;
   /** After the cell ranges changed. */
@@ -773,7 +804,7 @@ export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQue
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi {
   readonly element: HTMLElement;
   readonly view: GridView<Row>;
   readonly ready: Promise<Q>;
@@ -898,6 +929,8 @@ type GridNamedRow<Row> = [Row][Row extends unknown ? 0 : never];
 // The row type is named, never inferred from the options: without one, rows are plain GridRow.
 export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement, options: GridOptions<GridNamedRow<Row>>): DataGrid<GridQuery, Row>;
 export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement, options: CursorGridOptions<GridNamedRow<Row>>): DataGrid<GridCursorQuery, Row>;
+/** A calendar from a list of events, with no grid schema to write: a preset (basic by default) and options over it (calendar.d.ts). */
+export function createCalendar(host: HTMLElement, options?: CalendarOptions): DataGrid<GridQuery, GridRow>;
 /** Registers options before either a tree or flat-grid fragment mounts. */
 export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery>): () => void;
 /**
@@ -907,5 +940,5 @@ export function configure(viewId: string, options: HostOptions | GridHostOptions
  */
 export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery>>;
 
-declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;

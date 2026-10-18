@@ -35,8 +35,8 @@ internal static class CanopyHtmlWriter {
         return builder.ToString();
     }
 
-    /// <summary>The parts a view needs, then the parts the host asked for (<see cref="CanopyHtmlOptions.Parts"/>), in manifest order.</summary>
-    private static List<CanopyHtmlPart> WithRequested(IReadOnlyList<CanopyHtmlPart> required, CanopyHtmlOptions options, CanopyRuntime runtime) {
+    /// <summary>The parts a view needs, the parts the host asked for and all their dependencies, in manifest order.</summary>
+    private static IReadOnlyList<CanopyHtmlPart> WithRequested(IReadOnlyList<CanopyHtmlPart> required, CanopyHtmlOptions options, CanopyRuntime runtime) {
         var parts = new List<CanopyHtmlPart>(required);
         foreach (var name in options.Parts) {
             var part = CanopyHtmlAssets.GetPart(name);
@@ -45,7 +45,7 @@ internal static class CanopyHtmlWriter {
         foreach (var part in CanopyHtmlAssets.Parts) {
             if (options.Parts.Contains(part.Name) && !parts.Contains(part)) parts.Add(part);
         }
-        return parts;
+        return CanopyHtmlAssets.WithRequired(parts);
     }
 
     /// <summary>The options of the fragment inside a grid page.</summary>
@@ -59,6 +59,7 @@ internal static class CanopyHtmlWriter {
     private static string FragmentDocument(string json, CanopyHtmlOptions options, string? content = null) {
         var builder = new StringBuilder(json.Length + (content?.Length ?? 0) + 160);
         builder.Append("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
+        builder.Append(DirectionAttribute(options.Direction));
         if (!options.AutoMount) {
             builder.Append(" data-cx-mount=\"manual\"");
         } else if (options.MountWhenVisible) {
@@ -89,6 +90,7 @@ internal static class CanopyHtmlWriter {
         fragmentOptions.Parts.UnionWith(options.Parts);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
+            ["dir"] = DirectionAttribute(options.Direction),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(RuntimeFor(view, options), options),
@@ -107,7 +109,8 @@ internal static class CanopyHtmlWriter {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
         // Compact row data travels in scripts inside the host element, after the configuration, or in a bundle's sidecar files.
-        var data = bundled ?? (options.RowData != null && view.Source.Kind == CanopyGridSourceKind.Inline ? new CanopyGridRowData(view, options.RowData) : null);
+        // The format is chosen from the rows unless the host set one (CanopyRowFormat.Auto, docs/large-data.md).
+        var data = bundled ?? (CanopyGridRowData.ShouldWrite(view, options.RowData) ? new CanopyGridRowData(view, options.RowData) : null);
         string html;
         if (data == null) {
             html = FragmentDocument(view.ToJson(), options);
@@ -132,6 +135,7 @@ internal static class CanopyHtmlWriter {
         if (view == null) throw new ArgumentNullException(nameof(view));
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
+            ["dir"] = DirectionAttribute(options.Direction),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(CanopyHtmlAssets.GetRuntime(view), options),
@@ -151,6 +155,13 @@ internal static class CanopyHtmlWriter {
 
         return "<style" + nonce + ">\n" + CanopyHtmlAssets.GetStyle(runtime) + "</style>\n<script" + nonce + ">\n" + CanopyHtmlAssets.GetScript(runtime) + "</script>";
     }
+
+    /// <summary>The <c>dir</c> attribute of a direction, with its leading space; empty for <see cref="CanopyTextDirection.Auto"/>.</summary>
+    private static string DirectionAttribute(CanopyTextDirection direction) => direction switch {
+        CanopyTextDirection.Ltr => " dir=\"ltr\"",
+        CanopyTextDirection.Rtl => " dir=\"rtl\"",
+        _ => string.Empty
+    };
 
     private static string ThemeName(CanopyTheme theme) => theme switch {
         CanopyTheme.Light => "light",

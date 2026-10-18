@@ -189,7 +189,7 @@ test("grouping keeps first-column aggregates and clears collapse keys after regr
   const view = groupedDefinition(); view.reporting.groupBy = [{ column: "region", direction: "asc" }];
   view.rows.forEach(row => { row.cells.region = "Open"; row.cells.status = "Open"; });
   await openGroups(page, view);
-  await expect(page.locator(".cx-grid-group").first().locator(".cx-grid-group-aggregates")).toContainText("Order count 48");
+  await expect(page.locator(".cx-grid-group").first().locator(".cx-hidden-aggregates")).toContainText("Order count 48");
   await page.evaluate(api + ".setGroupCollapsed(" + JSON.stringify((await page.evaluate(api + ".getSummary()")).groups[0].key) + ", true)");
   await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(0);
   await page.evaluate(api + ".setGroupBy([{ column: 'status', direction: 'asc' }])");
@@ -204,8 +204,7 @@ for (const depth of [1, 2]) test(`phone group totals use cell navigation and pre
   view.columns[1].priority = "essential";
   await openGroups(page, view);
   const heading = page.locator(".cx-grid-group").first(), toggle = heading.locator(".cx-grid-group-toggle");
-  const selection = heading.locator(".cx-grid-group-select"), totals = heading.locator(".cx-grid-group-aggregates");
-  const full = await totals.textContent();
+  const selection = heading.locator(".cx-grid-group-select"), totals = heading.locator(".cx-hidden-aggregates");
   expect(await page.locator(".cx-grid-group").evaluateAll(rows => rows.flatMap(row => [...row.querySelectorAll("button,input,a[href]")]
     .filter(control => control.tabIndex >= 0)))).toEqual([]);
   await heading.focus(); await page.keyboard.press("F2"); await expect(toggle).toBeFocused();
@@ -214,7 +213,7 @@ for (const depth of [1, 2]) test(`phone group totals use cell navigation and pre
   await page.keyboard.press("Enter");
   const dialog = page.locator("dialog.cx-reporting-text");
   await expect(dialog).toBeVisible(); await expect(dialog.locator("h4")).toContainText("Region:");
-  for (const part of full.split(" · ")) await expect(dialog.locator("pre")).toContainText(part);
+  await expect(dialog.locator("pre")).toHaveText("Order\nOrders: 12\nAmount\nTotal amount: 6,568 · Average amount: 547.333");
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(totals).toBeFocused();
   await page.keyboard.press("ArrowRight");
   const plain = heading.getByRole("gridcell").nth(1); await expect(plain).toBeFocused();
@@ -231,10 +230,16 @@ for (const depth of [1, 2]) test(`phone group totals use cell navigation and pre
   }
   // macOS WebKit uses Option+Tab to include native buttons when Keyboard Navigation is off.
   await nextFrames(page); await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
-  const summary = page.locator(".cx-summary-row .cx-grid-group-aggregates");
+  const visibleSummary = page.locator(".cx-summary-row .cx-aggregate-button");
+  await expect(visibleSummary).toBeFocused();
+  await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Order");
+  await expect(dialog.locator("pre")).toHaveText("Orders: 48");
+  await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(visibleSummary).toBeFocused();
+  await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
+  const summary = page.locator(".cx-summary-row .cx-hidden-aggregates");
   await expect(summary).toBeFocused();
   await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Query totals");
-  await page.keyboard.press("Escape"); await expect(summary).toBeFocused();
+  await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(summary).toBeFocused();
 });
 
 test("group controls finish held pointer actions across a public refresh", async ({ page }) => {
@@ -252,7 +257,7 @@ test("group controls finish held pointer actions across a public refresh", async
   await expect(selection).toBeChecked();
   await selection.click(); await expect.poll(() => page.evaluate(api + ".getSelection().length")).toBe(0);
   await expect(selection).not.toBeChecked();
-  await heldRefresh(heading.locator(".cx-grid-group-aggregates"));
+  await heldRefresh(heading.locator(".cx-hidden-aggregates"));
   await expect(page.locator("dialog.cx-reporting-text h4")).toContainText("Region: East");
 });
 

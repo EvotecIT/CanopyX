@@ -11,7 +11,7 @@
     const minimum = column.minWidth ?? policy?.minimum ?? 40, maximum = column.maxWidth ?? policy?.maximum;
     return { id: column.id, title: column.title, kind: column.kind,
       width: { unit: "css-px", preferred: column.width, minimum, ...(maximum === undefined ? {} : { maximum }) },
-      wrap: !!column.wrap, alignment: column.kind === "number" ? "right" : "left",
+      wrap: !!column.wrap, alignment: column.kind === "number" ? "right" : "left", ...(column.format ? { format: { ...column.format } } : {}),
       ...(presenter ? { presenter: JSON.parse(JSON.stringify(presenter)) } : {}),
       ...(column.render && column.hostRenderer !== false ? { diagnostics: ["custom-renderer"] } : {}) };
   };

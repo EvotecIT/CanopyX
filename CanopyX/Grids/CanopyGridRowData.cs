@@ -23,7 +23,7 @@ namespace CanopyX;
 /// <para>
 /// A host writes the grid document with <see cref="ToJson"/> and each chunk with <see cref="GetChunk"/>: into
 /// <c>application/x-canopyx-rows</c> scripts inside the grid's host element (CanopyX.Html does this for
-/// <c>CanopyHtmlOptions.RowData</c>), or into sidecar files with <see cref="WriteFiles"/> for a bundle.
+/// <c>CanopyHtmlOptions.RowData</c> when it chooses compact rows), or into sidecar files with <see cref="WriteFiles"/> for a bundle.
 /// </para>
 /// </remarks>
 public sealed class CanopyGridRowData {
@@ -32,16 +32,18 @@ public sealed class CanopyGridRowData {
 
     /// <summary>Takes the rows of an inline grid.</summary>
     /// <param name="view">The grid. Its source must be inline.</param>
-    /// <param name="options">Chunk size and compression; defaults to chunks of 5,000 uncompressed rows.</param>
+    /// <param name="options">Chunk size and format; defaults to chunks of 5,000 rows, compressed when their JSON comes to more than
+    /// <see cref="CanopyRowDataOptions.GzipAboveBytes"/> (<see cref="CanopyRowFormat.Auto"/>).</param>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="options"/> asks for <see cref="CanopyRowFormat.Objects"/>, which writes no row data.</exception>
     /// <exception cref="InvalidOperationException">The grid has a host source, its definition is invalid, or a row carries a detail payload or record fields, which compact rows have no place for.</exception>
     public CanopyGridRowData(CanopyDataGridView view, CanopyRowDataOptions? options = null) {
         View = view ?? throw new ArgumentNullException(nameof(view));
         if (view.Source.Kind != CanopyGridSourceKind.Inline) throw new InvalidOperationException("Row data holds the rows of an inline grid.");
         view.Validate();
         var settings = options ?? new CanopyRowDataOptions();
+        if (settings.Format == CanopyRowFormat.Objects) throw new ArgumentException("Row data is compact; CanopyRowFormat.Objects writes row objects instead.", nameof(options));
         _chunkSize = settings.ChunkSize;
-        Compression = settings.Compression;
         var rows = view.Rows.ToArray();
         // A compact row is its key and its cells: detail payloads and record fields would be lost, so such rows stay row objects.
         var carried = rows.FirstOrDefault(row => row.Detail != null || row.HasFields);
@@ -54,6 +56,30 @@ public sealed class CanopyGridRowData {
             row.WriteCompactJson(writer, Columns);
             return writer.ToString();
         }).ToArray();
+        // Auto compresses large row data: the UTF-8 bytes of the rows and their separators (the JSON writer keeps non-ASCII text as it is).
+        Gzip = settings.Format == CanopyRowFormat.CompactGzip ||
+            settings.Format == CanopyRowFormat.Auto && _rows.Sum(row => (long)Encoding.UTF8.GetByteCount(row) + 1) > CanopyRowDataOptions.GzipAboveBytes;
+    }
+
+    /// <summary>
+    /// Whether a page writes the rows of an inline grid as compact row data with these options: always for
+    /// <see cref="CanopyRowFormat.Compact"/> and <see cref="CanopyRowFormat.CompactGzip"/>, never for
+    /// <see cref="CanopyRowFormat.Objects"/> or a hosted grid, and for <see cref="CanopyRowFormat.Auto"/> (the default) when
+    /// the grid has more than <see cref="CanopyRowDataOptions.CompactAboveRows"/> rows and none of them carries record fields or
+    /// a detail payload. CanopyX.Html asks this for every fragment and page it writes.
+    /// </summary>
+    /// <param name="view">The grid.</param>
+    /// <param name="options">The options; null for the defaults.</param>
+    /// <returns>True to write compact row data, false to write row objects.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
+    public static bool ShouldWrite(CanopyDataGridView view, CanopyRowDataOptions? options = null) {
+        if (view == null) throw new ArgumentNullException(nameof(view));
+        if (view.Source.Kind != CanopyGridSourceKind.Inline) return false;
+        return (options?.Format ?? CanopyRowFormat.Auto) switch {
+            CanopyRowFormat.Objects => false,
+            CanopyRowFormat.Auto => view.Rows.Count > CanopyRowDataOptions.CompactAboveRows && !view.Rows.Any(row => row.Detail != null || row.HasFields),
+            _ => true
+        };
     }
 
     /// <summary>Gets the grid whose rows these are.</summary>
@@ -68,8 +94,8 @@ public sealed class CanopyGridRowData {
     /// <summary>Gets the number of chunks.</summary>
     public int ChunkCount => (_rows.Length + _chunkSize - 1) / _chunkSize;
 
-    /// <summary>Gets how each chunk is stored.</summary>
-    public CanopyRowCompression Compression { get; }
+    /// <summary>Gets whether each chunk is the base64 text of its gzip-compressed JSON (<c>encoding: "gzip"</c>) rather than JSON text.</summary>
+    public bool Gzip { get; }
 
     /// <summary>
     /// Gets the folder <see cref="WriteFiles"/> writes the chunk files into, relative to the page, with forward slashes and a
@@ -87,7 +113,7 @@ public sealed class CanopyGridRowData {
         writer.BeginArray();
         for (var i = index * _chunkSize; i < Math.Min(_rows.Length, (index + 1) * _chunkSize); i++) writer.Raw(_rows[i]);
         var json = writer.EndArray().ToString();
-        if (Compression == CanopyRowCompression.None) return json;
+        if (!Gzip) return json;
         using var output = new MemoryStream();
         using (var gzip = new GZipStream(output, CompressionLevel.Optimal, true)) {
             var bytes = Encoding.UTF8.GetBytes(json);
@@ -143,7 +169,7 @@ public sealed class CanopyGridRowData {
     /// <summary>Writes the <c>rowData</c> descriptor of the grid document.</summary>
     internal void WriteDescriptor(CanopyJsonWriter writer, string? sidecarBase) {
         writer.BeginObject().Property("version", 1).StringArray("columns", Columns).Property("count", RowCount).Property("ordered", true);
-        if (Compression == CanopyRowCompression.Gzip) writer.Property("encoding", "gzip");
+        if (Gzip) writer.Property("encoding", "gzip");
         writer.OptionalProperty("base", sidecarBase).Property("chunks", ChunkCount).EndObject();
     }
 }

@@ -2,7 +2,7 @@ import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
 import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
-import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow, GridFormatRule, GridExportFormat, GridGroupLevel as GroupLevel, GridGroup,
+import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow, GridFormatRule, GridExportFormat, GridGroupLevel as GroupLevel, GridGroup, GridAggregate, GridNumberFormat,
   GridColumnGroup, GridCellRange, GridPasteEvent, GridPasteResult, GridColumnGroupState } from "@evotecit/canopyx/grid";
 import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, type GridPager } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
@@ -59,7 +59,7 @@ const graphiteView: InlineGridView = {
     { id: "name", title: "Name", kind: "text", presenter: { kind: "identifier", mono: true }, section: "Identity" },
     { id: "enabled", title: "Enabled", kind: "text", presenter: { kind: "boolean", inverted: true } },
     { id: "state", title: "State", kind: "text", presenter: { kind: "state", tones: { Healthy: "success" } } },
-    { id: "amount", title: "Amount", kind: "number", aggregatable: true,
+    { id: "amount", title: "Amount", kind: "number", aggregatable: true, format: { maximumFractionDigits: 1, suffix: "%" },
       presenter: { kind: "sparklineLine", minimum: 0, scaleMaximum: 100, mark: "last", thresholds: [{ upperBound: 50, tone: "success" }] } },
     { id: "history", title: "History", kind: "text", presenter: { kind: "statusStrip" } }
   ], rows: [{ id: "one", cells: { name: { value: "Service", secondary: "Region" }, amount: { value: 20,
@@ -85,6 +85,11 @@ await kbTree.previousMatch();
 const treeLayout: string = kbTree.getLayout().mode;
 // @ts-expect-error Trees offer the fit and scroll layouts.
 const cardsTree: CanopyView = { protocol: "canopyx/2", type: "view", id: "bad", label: "Bad", rowHeight: 28, pageSize: 100, selection: "single", columns: [], layout: { mode: "cards" } };
+const amountSummary: GridAggregate = { id: "average", column: "amount", operation: "average", label: "Average amount",
+  format: { minimumFractionDigits: 0, maximumFractionDigits: 0, prefix: "~", suffix: "%" } };
+// @ts-expect-error Number format affixes are text.
+const badFormat: GridNumberFormat = { suffix: 1 };
+createDataGrid(document.createElement("div"), { view: { ...graphiteView, id: "graphite-summary", reporting: { aggregates: [amountSummary] } } });
 const graphite = createDataGrid(document.createElement("div"), { view: graphiteView,
   onChart: ({ signal, selection }) => { if (signal.aborted) return; }, onUngroup: ({ signal }) => {} });
 await graphite.setPageLength("all");
@@ -671,6 +676,52 @@ void facetSaved;
 // @ts-expect-error A facet is a list or a range.
 const badFacet: GridFacetPanelDefinition = { columns: [{ column: "region", kind: "chart" }] };
 void badFacet;
+// The calendar (docs/calendar.md): a definition in the view, resources, the template hook, the API, range sources and state.
+import type { GridCalendarDefinition, GridCalendarState, GridCalendarEvent, GridRangeQuery, GridRangePage, GridOccurrenceChange } from "@evotecit/canopyx/grid";
+type ShiftRow = { id: string; cells: { title: string; starts: string; ends: string | null; host: string; rule: string | null } };
+const shiftCalendar: GridCalendarDefinition<ShiftRow> = { start: "starts", end: "ends", title: "title", resource: "host", recurrence: "rule", view: "week",
+  views: ["month", "week", "day", "days", "agenda", "year", "timeline"], days: 4, firstDay: 1, hiddenDays: [0, 6], slotMinutes: 15, minTime: "06:00", maxTime: "22:00",
+  workingHours: { start: "08:00", end: "17:00" }, eventLimit: "auto", eventStyle: "strong", timeZone: "Europe/Warsaw", zoom: "day", zooms: ["hour", "day", "week"],
+  editable: { move: true, resize: true, overlap: false, snapMinutes: 15, commit: "manual" }, capacity: { thresholds: [{ at: 3, tone: "warning" }] },
+  ranges: [{ start: "2026-10-26T00:00:00Z", end: "2026-10-31T00:00:00Z", label: "Freeze", kind: "background" }], availability: [{ resource: "h1", start: "07:00", end: "15:00" }],
+  resources: { view: { protocol: "canopyx/2", type: "view", id: "hosts", label: "Hosts", rowHeight: 34, pageSize: 200, selection: "single", columns: [{ id: "name", title: "Host", width: 150, kind: "text" }], source: { kind: "inline" }, roots: [{ id: "h1", label: "h1" }] },
+    aggregates: { name: "count" } } };
+const calendarGrid = createDataGrid<ShiftRow>(document.createElement("div"), {
+  view: { protocol: "canopyx/2", type: "grid", id: "shifts", label: "Shifts", pageSize: 100, selection: "single", search: true, source: { kind: "inline" },
+    columns: [{ id: "title", title: "Title", kind: "text" }, { id: "starts", title: "Starts", kind: "datetime" }, { id: "ends", title: "Ends", kind: "datetime" },
+      { id: "host", title: "Host", kind: "text" }, { id: "rule", title: "Rule", kind: "text" }], rows: [], calendar: shiftCalendar },
+  calendar: { render: ({ event, element }) => { element.textContent = event.title; return true; } },
+  onCalendar: (state: GridCalendarState) => void state.view, onOccurrenceChange: (change: GridOccurrenceChange) => change.start !== change.end });
+void calendarGrid.setCalendarView("timeline").then(state => state.zoom);
+void calendarGrid.setCalendarDate("2026-10-16"); void calendarGrid.calendarStep(-1); void calendarGrid.setCalendarZoom("hour");
+void calendarGrid.exportCalendar({ scope: "visible" }).then(file => file.text.startsWith("BEGIN:VCALENDAR"));
+void Promise.resolve(calendarGrid.getCalendarEvents()).then((events: readonly GridCalendarEvent[]) => events[0]?.record);
+const calendarSaved = calendarGrid.getState().calendar?.view;
+void calendarSaved;
+const rangeSource = { query: () => { throw new Error("unused"); }, range: (request: GridRangeQuery): GridRangePage<ShiftRow> =>
+  ({ protocol: "canopyx/2", type: "gridRangePage", view: request.view, revision: "r1", from: request.from, to: request.to, matched: 0, truncated: false, items: [] }) };
+void rangeSource;
+// A basic calendar from events, the presets and the opt-in options, the hooks, inserts and the sources API.
+import { createCalendar, type CalendarEventInput, type GridCalendarMenuContext, type GridEventCreate } from "@evotecit/canopyx/grid";
+const basicEvents: CalendarEventInput[] = [{ title: "Planning", start: new Date(), end: "2026-10-16T10:00:00Z", tone: "info" }, { id: "trip", title: "Trip", start: "2026-10-20" }];
+const basicCalendar = createCalendar(document.createElement("div"), { events: basicEvents, preset: "basic", views: ["month", "mini", "weekList", "dayList", "months"],
+  sources: [{ id: "team", label: "Team", tone: "info" }, { id: "ext", label: "Company", ics: "holidays.ics", hidden: true }],
+  calendar: { weekNumbers: "iso", validRange: { start: "2026-01-01" }, menu: (context: GridCalendarMenuContext, defaults) => context.kind === "event" ? [...defaults, { label: "Copy", run: () => undefined }] : null },
+  onCreate: (proposal: GridEventCreate) => proposal.allDay });
+void Promise.resolve(basicCalendar.setCalendarSource("team", false)).then((visible: boolean) => visible);
+void basicCalendar.insertRow({ cells: { title: "New" } }).then(result => result.id);
+const schedulerDefinition: GridCalendarDefinition<ShiftRow> = { start: "starts", create: { minutes: 30 }, drop: true, occurrence: "ask", toolbar: ["search", "export"], details: "popover",
+  span: { count: 2, unit: "week" }, agendaSpan: "week", months: 3, ranges: [{ start: "2026-10-05T08:00:00Z", end: "2026-10-05T18:00:00Z", label: "Closed", inverse: true, recurrence: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR" }] };
+void schedulerDefinition;
+// @ts-expect-error The toolbar lists known controls.
+const badToolbar: GridCalendarDefinition<ShiftRow> = { start: "starts", toolbar: ["print"] };
+void badToolbar;
+// @ts-expect-error A calendar names its start column.
+const badCalendar: GridCalendarDefinition<ShiftRow> = { end: "ends" };
+void badCalendar;
+// @ts-expect-error Calendar columns are the row type's columns.
+const wrongColumn: GridCalendarDefinition<ShiftRow> = { start: "opened" };
+void wrongColumn;
 // Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
 ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
   detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });

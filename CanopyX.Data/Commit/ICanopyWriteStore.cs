@@ -23,7 +23,8 @@ public interface ICanopyWriteStore<T> where T : class {
     /// <remarks>
     /// <b>Write scope.</b> The writer can change any record this query returns. When callers may read only some records,
     /// restrict this query to the records the caller may change, or set <see cref="CanopyQueryableWriterOptions{T}.Scope"/>
-    /// to the endpoint's query callback, so that a commit cannot change a record its caller cannot see.
+    /// to the endpoint's query callback, so that a commit cannot change a record its caller cannot see. An inserted record
+    /// must be returned by this query after saving inside the transaction; an excluded record is rolled back.
     /// </remarks>
     IQueryable<T> Records { get; }
 

@@ -141,16 +141,27 @@ test('selection controls recover after a failed query and query selections remai
 });
 
 test('selection checkboxes retain focus across custom host cell paints and recycled records',async({page})=>{
-  await open(page,definition(),`CanopyX.configure('selections',{renderers:{name(row,cell){
+  await open(page,definition(),`window.rendererDisposals=0;CanopyX.configure('selections',{renderers:{name(row,cell,context){
+    if(row.id==='r0001')return false;
+    context.onDispose(()=>rendererDisposals++);
+    if(row.id==='r0002'){cell.dataset.decorated='true';return false;}
     const link=document.createElement('a');link.href='#'+row.id;link.textContent='Inspect '+row.id;cell.appendChild(link);return true;
   }}});`);
   const first=page.locator('.cx-row[data-cx-id="r0000"]');
   await first.focus();await page.keyboard.press('F2');
   await expect(first.locator('.cx-grid-row-select')).toBeFocused();
-  await page.keyboard.press('Space');await nextFrames(page);
+  const checkbox=await first.locator('.cx-grid-row-select').elementHandle();
+  await page.keyboard.down('Space');
+  try{await page.evaluate(api+'.refresh()');await nextFrames(page);}
+  finally{await page.keyboard.up('Space');}
+  await nextFrames(page);
+  expect(await first.locator('.cx-grid-row-select').evaluate((current,held)=>current===held,checkbox)).toBe(true);
   await expect(first.locator('.cx-grid-row-select')).toBeChecked();
   await expect(first.locator('.cx-grid-row-select')).toBeFocused();
   await expect(first.getByRole('link')).toHaveText('Inspect r0000');
+  await expect(page.locator('.cx-row[data-cx-id="r0001"] .cx-content')).toHaveText('Archive');
+  await expect(page.locator('.cx-row[data-cx-id="r0002"] .cx-content[data-decorated="true"]')).toHaveText('Source');
+  expect(await page.evaluate('rendererDisposals')).toBeGreaterThan(0);
   await page.evaluate(api+'.selectAllMatching()');await nextFrames(page);
   await expect(first.locator('.cx-grid-row-select')).toBeFocused();
   await page.evaluate(api+'.nextPage()');await nextFrames(page);

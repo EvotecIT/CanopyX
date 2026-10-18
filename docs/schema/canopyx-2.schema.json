@@ -12,6 +12,8 @@
     { "$ref": "#/$defs/gridCursorQuery" },
     { "$ref": "#/$defs/gridFacetQuery" },
     { "$ref": "#/$defs/gridFacetPage" },
+    { "$ref": "#/$defs/gridRangeQuery" },
+    { "$ref": "#/$defs/gridRangePage" },
     { "$ref": "#/$defs/gridSummary" },
     { "$ref": "#/$defs/gridCommit" },
     { "$ref": "#/$defs/gridCommitResult" }, { "$ref": "#/$defs/gridTransaction" },
@@ -75,7 +77,7 @@
       }
     },
     "gridCommit": {
-      "description": "Changed rows a grid asks its writer to save: the new values and the values the reader started from, with the revision the grid read. The writer authorizes and executes each row (docs/data-protocol.md#editing-and-commit).",
+      "description": "Changed and new rows a grid asks its writer to save: an update carries the new values and the values the reader started from; an insert (op insert) carries every value of the new record under the client's temporary id and no original. The revision is the one the grid read. The writer authorizes and executes each row (docs/data-protocol.md#editing-and-commit).",
       "type": "object",
       "required": ["protocol", "type", "view", "revision", "rows"],
       "additionalProperties": false,
@@ -84,14 +86,20 @@
         "type": { "const": "gridCommit" },
         "view": { "$ref": "#/$defs/identifier" },
         "revision": { "oneOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
-        "rows": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["id", "values", "original"], "additionalProperties": false, "properties": {
-          "id": { "$ref": "#/$defs/identifier" },
-          "values": { "type": "object", "minProperties": 1, "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } },
-          "original": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } } } } }
+        "rows": { "type": "array", "minItems": 1, "items": { "oneOf": [
+          { "type": "object", "required": ["id", "values", "original"], "additionalProperties": false, "properties": {
+            "op": { "const": "update" },
+            "id": { "$ref": "#/$defs/identifier" },
+            "values": { "type": "object", "minProperties": 1, "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } },
+            "original": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } } } },
+          { "type": "object", "required": ["op", "id", "values"], "additionalProperties": false, "properties": {
+            "op": { "const": "insert" },
+            "id": { "allOf": [{ "$ref": "#/$defs/identifier" }, { "pattern": "^new-" }], "description": "The runtime's temporary id of the new row: new-1, new-2, ..." },
+            "values": { "type": "object", "minProperties": 1, "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cellValue" } } } }] } }
       }
     },
     "gridCommitResult": {
-      "description": "A writer's answer to gridCommit, per row: saved (with optional canonical cells), error (with a message or messages by column) or conflict. A row the answer leaves out was not saved; revision is the dataset's revision after the commit.",
+      "description": "A writer's answer to gridCommit, per row: saved (with optional canonical cells, and for an insert an optional newId, the stored identity that replaces the client id), error (with a message or messages by column) or conflict. A row the answer leaves out was not saved; revision is the dataset's revision after the commit.",
       "type": "object",
       "required": ["protocol", "type", "view", "rows"],
       "additionalProperties": false,
@@ -104,11 +112,12 @@
           "properties": {
             "id": { "$ref": "#/$defs/identifier" },
             "status": { "enum": ["saved", "error", "conflict"] },
+            "newId": { "$ref": "#/$defs/identifier" },
             "cells": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "$ref": "#/$defs/cell" } },
             "error": { "type": "string" },
             "errors": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "type": "string" } } },
           "if": { "properties": { "status": { "not": { "const": "saved" } } } },
-          "then": { "not": { "required": ["cells"] } } } }
+          "then": { "not": { "anyOf": [{ "required": ["cells"] }, { "required": ["newId"] }] } } } }
       }
     },
     "gridLive": {
@@ -155,6 +164,99 @@
         "width": { "type": "integer", "minimum": 180, "maximum": 480 },
         "label": { "$ref": "#/$defs/nonEmptyString" }
       }
+    },
+    "gridCalendarTime": { "type": "string", "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$", "description": "A time of day, HH:mm." },
+    "gridCalendarEndTime": { "type": "string", "pattern": "^(?:(?:[01][0-9]|2[0-3]):[0-5][0-9]|24:00)$", "description": "A time of day, HH:mm, or 24:00 for the end of the day." },
+    "gridCalendarWeekdays": { "type": "array", "minItems": 1, "maxItems": 7, "uniqueItems": true, "items": { "type": "integer", "minimum": 0, "maximum": 6 }, "description": "Weekdays, 0 (Sunday) to 6." },
+    "gridCalendarView": { "enum": ["month", "week", "day", "days", "agenda", "year", "timeline", "mini", "weekList", "dayList", "months"] },
+    "gridCalendarDate": { "type": "string", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$", "description": "A date, yyyy-MM-dd." },
+    "gridCalendarZoom": { "enum": ["hour", "day", "week", "month", "quarter"] },
+    "gridCalendar": {
+      "description": "A calendar of a flat grid's records (docs/calendar.md): each record is an event starting at its start cell, shown in month, week, day, N-day, agenda, year, mini month, week and day list and stacked months views or a timeline. Column references are column ids of the same grid: start, end, recurrenceId and seriesEnd are date-and-time columns; allDay, resource, recurrence, exceptions, series, display, description, tone, source and editable.allowedResources are text columns; title, subtitle and status may be any kind. series and recurrenceId go together. A timeline without resources packs the events into rows by overlap; view and phone are views the calendar offers. sources need the source column unless every source has an ics file; create and drop need editable start and title columns; occurrence this and following need series and recurrenceId; validRange starts before it ends. Absent settings keep their defaults.",
+      "type": "object",
+      "required": ["start"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "$ref": "#/$defs/identifier" },
+        "end": { "$ref": "#/$defs/identifier" },
+        "title": { "$ref": "#/$defs/identifier" },
+        "subtitle": { "$ref": "#/$defs/identifier" },
+        "allDay": { "$ref": "#/$defs/identifier" },
+        "resource": { "$ref": "#/$defs/identifier" },
+        "status": { "$ref": "#/$defs/identifier" },
+        "recurrence": { "$ref": "#/$defs/identifier" },
+        "exceptions": { "$ref": "#/$defs/identifier" },
+        "series": { "$ref": "#/$defs/identifier" },
+        "recurrenceId": { "$ref": "#/$defs/identifier" },
+        "display": { "$ref": "#/$defs/identifier" },
+        "seriesEnd": { "$ref": "#/$defs/identifier" },
+        "description": { "$ref": "#/$defs/identifier" },
+        "tone": { "$ref": "#/$defs/identifier" },
+        "source": { "$ref": "#/$defs/identifier" },
+        "view": { "$ref": "#/$defs/gridCalendarView", "description": "The first view; default the first of views." },
+        "views": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/gridCalendarView" }, "description": "Views offered in this order; default month, week, day, agenda, plus timeline with resources." },
+        "date": { "type": "string", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$", "description": "The first date shown, yyyy-MM-dd; default today in the display zone." },
+        "days": { "type": "integer", "minimum": 2, "maximum": 14, "description": "Length of the days view; default 3." },
+        "firstDay": { "type": "integer", "minimum": 0, "maximum": 6, "description": "First weekday, 0 (Sunday) to 6; default the page language's." },
+        "hiddenDays": { "type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true, "items": { "type": "integer", "minimum": 0, "maximum": 6 } },
+        "slotMinutes": { "enum": [5, 10, 15, 20, 30, 60], "description": "Time slot size of the week and day views; default 30." },
+        "minTime": { "$ref": "#/$defs/gridCalendarTime", "description": "First visible hour, on a slot boundary; default 00:00." },
+        "maxTime": { "$ref": "#/$defs/gridCalendarEndTime", "description": "End of the visible hours, on a slot boundary, after minTime; default 24:00." },
+        "scrollTime": { "$ref": "#/$defs/gridCalendarTime", "description": "First hour scrolled into view; default 08:00." },
+        "workingHours": { "type": "object", "required": ["start", "end"], "additionalProperties": false, "description": "Working hours; slots outside them are shaded. days default Monday to Friday.",
+          "properties": { "days": { "$ref": "#/$defs/gridCalendarWeekdays" }, "start": { "$ref": "#/$defs/gridCalendarTime" }, "end": { "$ref": "#/$defs/gridCalendarEndTime" } } },
+        "nowIndicator": { "type": "boolean", "description": "A line at the current time; default true." },
+        "eventLimit": { "anyOf": [{ "type": "integer", "minimum": 1, "maximum": 20 }, { "const": "auto" }], "description": "Events per month cell before +N more; default auto." },
+        "eventStyle": { "enum": ["quiet", "strong"] },
+        "timeZone": { "type": "string", "maxLength": 64, "pattern": "^(?:utc|local|[A-Za-z][A-Za-z0-9_+-]*(?:/[A-Za-z0-9_+-]+)*)$", "description": "Display zone: utc, local or an IANA zone name; default the grid's timeZone." },
+        "editable": { "anyOf": [{ "const": true }, { "type": "object", "additionalProperties": false, "properties": {
+          "move": { "type": "boolean" }, "resize": { "type": "boolean" }, "resources": { "type": "boolean" }, "overlap": { "type": "boolean" },
+          "workingHours": { "type": "boolean" }, "allowedResources": { "$ref": "#/$defs/identifier" },
+          "snapMinutes": { "enum": [1, 5, 10, 15, 20, 30, 60] }, "commit": { "enum": ["auto", "manual"] } } }],
+          "description": "Moving and resizing events; absent is read-only. move, resize, resources and overlap default true, workingHours false, snapMinutes slotMinutes, commit auto." },
+        "resources": { "type": "object", "required": ["view"], "additionalProperties": false, "description": "Resources of the timeline: a complete tree view document (inline roots or a remote source) whose node ids are resource ids.",
+          "properties": { "view": { "$ref": "#/$defs/view" }, "width": { "type": "integer", "minimum": 120, "maximum": 800 }, "label": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" },
+            "aggregates": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "enum": ["count", "busy", "overlap"] } } } },
+        "zoom": { "$ref": "#/$defs/gridCalendarZoom", "description": "Timeline zoom; default day." },
+        "zooms": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/gridCalendarZoom" }, "description": "Zooms offered; default all five." },
+        "capacity": { "type": "object", "required": ["thresholds"], "additionalProperties": false, "description": "A concurrency lane for resource groups; thresholds rise.",
+          "properties": { "thresholds": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "object", "required": ["at", "tone"], "additionalProperties": false,
+            "properties": { "at": { "type": "integer", "minimum": 1 }, "tone": { "$ref": "#/$defs/tone" } } } },
+            "label": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" } } },
+        "ranges": { "type": "array", "maxItems": 1000, "description": "Static background ranges; end after start.", "items": { "type": "object", "required": ["start", "end", "label"], "additionalProperties": false,
+          "properties": { "start": { "type": "string", "format": "date-time" }, "end": { "type": "string", "format": "date-time" }, "label": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" },
+            "tone": { "$ref": "#/$defs/tone" }, "resource": { "$ref": "#/$defs/identifier" }, "kind": { "enum": ["background", "unavailable"] }, "recurrence": { "type": "string", "minLength": 1 },
+            "inverse": { "type": "boolean", "description": "Shades everything outside the union of the inverse ranges of the same resource (or of those without a resource); default false." } } } },
+        "availability": { "type": "array", "maxItems": 10000, "description": "Business hours per resource (no resource = every resource); days default Monday to Friday.", "items": { "type": "object", "required": ["start", "end"], "additionalProperties": false,
+          "properties": { "resource": { "$ref": "#/$defs/identifier" }, "days": { "$ref": "#/$defs/gridCalendarWeekdays" }, "start": { "$ref": "#/$defs/gridCalendarTime" }, "end": { "$ref": "#/$defs/gridCalendarEndTime" } } } },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 100000, "description": "Most occurrences one range shows; default 20000." },
+        "phone": { "$ref": "#/$defs/gridCalendarView", "description": "The view phones start in; default agenda when offered." },
+        "sources": { "type": "array", "minItems": 1, "maxItems": 50, "description": "Event sources with a legend that switches each off; ids are unique.", "items": { "type": "object", "required": ["id", "label"], "additionalProperties": false,
+          "properties": { "id": { "$ref": "#/$defs/identifier" }, "label": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" }, "tone": { "$ref": "#/$defs/tone" },
+            "ics": { "type": "string", "minLength": 1, "maxLength": 2048, "pattern": "^(?:https?://\\S+|(?!//)(?![A-Za-z][A-Za-z0-9+.-]*:)[^\\s\\\\]+)$", "description": "A relative or same-origin http(s) URL of an iCalendar file whose events join the calendar read-only." },
+            "hidden": { "type": "boolean" } } } },
+        "toolbar": { "anyOf": [{ "type": "boolean" }, { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["search", "filters", "columns", "views", "export", "more"] } }], "description": "Grid toolbar controls above the calendar: true (all), false (calendar chrome only) or only those listed; default true." },
+        "details": { "enum": ["drawer", "popover"], "description": "What activating an event opens; default drawer." },
+        "create": { "anyOf": [{ "const": true }, { "type": "object", "additionalProperties": false, "properties": { "minutes": { "type": "integer", "minimum": 5, "maximum": 1440 }, "allDay": { "type": "boolean" } } }],
+          "description": "Creating events by clicking, dragging and from the keyboard; absent is off. minutes default 60, allDay default true." },
+        "drop": { "type": "boolean", "description": "Accepts external drops; default false." },
+        "occurrence": { "enum": ["ask", "this", "following", "all"], "description": "What moving or resizing an occurrence changes; default ask with series and recurrenceId, else all." },
+        "weekNumbers": { "enum": [false, "iso", "locale"], "description": "Week numbers; default false." },
+        "navLinks": { "type": "boolean", "description": "Day names and numbers open that day; default true." },
+        "validRange": { "type": "object", "minProperties": 1, "additionalProperties": false, "description": "Dates navigation, selection, creation and drops stay inside: start inclusive, end exclusive.",
+          "properties": { "start": { "$ref": "#/$defs/gridCalendarDate" }, "end": { "$ref": "#/$defs/gridCalendarDate" } } },
+        "fixedWeeks": { "type": "boolean", "description": "The month always shows six weeks; default false." },
+        "outsideDays": { "type": "boolean", "description": "The month shows the days of the months around it; default true." },
+        "span": { "type": "object", "required": ["count", "unit"], "additionalProperties": false, "description": "The timeline's span instead of the zoom's default.",
+          "properties": { "count": { "type": "integer", "minimum": 1, "maximum": 366 }, "unit": { "enum": ["day", "week", "month"] } } },
+        "menu": { "type": "boolean", "description": "Context menus; default true." },
+        "hover": { "type": "boolean", "description": "A hover card with an event's details; default true." },
+        "yearEvents": { "type": "boolean", "description": "The year view lists each day's events; default false." },
+        "agendaSpan": { "enum": ["day", "week", "month", "year"], "description": "The period of the agenda; default month." },
+        "months": { "type": "integer", "minimum": 2, "maximum": 24, "description": "Months of the stacked months view; default 6." },
+        "print": { "type": "boolean", "description": "A Print button that prints the current view; default false." }
+      },
+      "dependentRequired": { "series": ["recurrenceId"], "recurrenceId": ["series"] }
     },
     "gridTransaction": {
       "description": "Changes a host sends to an open flat grid: add (complete rows; a row whose id the grid has replaces it), update (rows whose cells merge into the existing row's; a null cell clears it) and remove (row ids). Removes apply first, then adds, then updates; at most 100,000 rows in all.",
@@ -338,6 +440,7 @@
         "label": { "$ref": "#/$defs/accessibleLabel" },
         "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
         "autoRowHeight": { "type": "boolean", "description": "Measure record heights; rowHeight supplies the minimum and unseen-row estimate." },
+        "dragRows": { "type": "boolean", "description": "Rows can be dragged out of the grid (to a calendar that accepts drops) and picked up with F2 from row focus; default false." },
         "density": { "enum": ["compact", "default", "comfortable"], "description": "Graphite spacing; explicit rowHeight wins." },
         "zebra": { "type": "boolean", "description": "Optional alternate-row backgrounds; off by default." },
         "noun": { "type": "string", "minLength": 1, "maxLength": 256 },
@@ -357,6 +460,7 @@
         "layout": { "$ref": "#/$defs/layoutOptions" },
         "live": { "$ref": "#/$defs/gridLive" },
         "facets": { "$ref": "#/$defs/gridFacetPanel" },
+        "calendar": { "$ref": "#/$defs/gridCalendar" },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
         "formatRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatRule" }, "description": "Conditional formatting rules in priority order (docs/conditional-formatting.md)." },
         "formatting": { "type": "object", "additionalProperties": false, "description": "A legend of the labelled rules and the rule editor in the more menu.", "properties": { "legend": { "type": "boolean" }, "editor": { "type": "boolean" } } },
@@ -420,6 +524,35 @@
       },
       "$comment": "Runtime checks the request identity/projection/revision, raw column kind, distinct typed canonical buckets and count relations. Without value search a complete response accounts for every matching row, including one missing/null bucket."
     },
+    "gridRangeQuery": {
+      "description": "The records of the complete accepted query that overlap a UTC window [from, to), for calendar and timeline views. Column references name allowed, filterable columns of the view: start, end and seriesEnd are date columns; recurrence and resource are text columns.",
+      "type": "object", "required": ["protocol", "type", "view", "query", "from", "to", "start", "limit"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridRangeQuery" }, "view": { "$ref": "#/$defs/identifier" },
+        "query": { "$ref": "#/$defs/gridQuery" },
+        "from": { "$ref": "#/$defs/rangeInstant" }, "to": { "$ref": "#/$defs/rangeInstant" },
+        "start": { "$ref": "#/$defs/identifier" }, "end": { "$ref": "#/$defs/identifier" }, "recurrence": { "$ref": "#/$defs/identifier" },
+        "seriesEnd": { "$ref": "#/$defs/identifier" }, "resource": { "$ref": "#/$defs/identifier" },
+        "resources": { "type": "array", "minItems": 1, "maxItems": 1000, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 4096 } },
+        "calendarView": { "$ref": "#/$defs/gridCalendarView" },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 10000 }
+      },
+      "dependentRequired": { "resources": ["resource"] },
+      "$comment": "from < to, at most 3,700 days apart. A record without a recurrence (no recurrence column, or a null or empty value) overlaps when start < to and (start >= from or end > from); a null end is a marker at its start. A recurring record overlaps when start < to and, with seriesEnd, its series end is null or after from. resources restricts with in-predicate semantics on the resource column. The query's search, predicates and filter group apply; its window, sort and grouping do not. Servers lower limit to their own maximum; calendarView is informational."
+    },
+    "gridRangePage": {
+      "description": "The answer to a gridRangeQuery: the overlapping records ordered by start ascending, then record identity.",
+      "type": "object", "required": ["protocol", "type", "view", "revision", "from", "to", "matched", "truncated", "items"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridRangePage" },
+        "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" },
+        "from": { "$ref": "#/$defs/rangeInstant" }, "to": { "$ref": "#/$defs/rangeInstant" },
+        "matched": { "type": "integer", "minimum": 0, "maximum": 2147483647 }, "truncated": { "type": "boolean" },
+        "items": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/gridRow" } }
+      },
+      "$comment": "matched counts every overlapping record after the query's criteria and the resource restriction; items are the first of them (at most the request's limit); truncated is exactly items.length < matched. Revision rules are the gridQuery rules."
+    },
+    "rangeInstant": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,7})?)?Z$", "maxLength": 64, "description": "An ISO 8601 UTC instant ending in Z; compared at millisecond precision." },
     "gridSelection": {
       "oneOf": [
         { "type": "object", "required": ["kind", "revision", "ids"], "additionalProperties": false,
@@ -510,7 +643,31 @@
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
         "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
-        "label": { "type": "string", "minLength": 1, "maxLength": 512 } }
+        "label": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "format": { "$ref": "#/$defs/gridNumberFormat", "description": "Explicit value format; otherwise the column format applies, except that counts default to whole numbers." } }
+    },
+    "gridNumberFormat": {
+      "type": "object", "additionalProperties": false,
+      "description": "Display format of binary64 numbers. Defaults are minimum 0 and maximum 3. Minimum must not exceed maximum, so a minimum above 3 requires an explicit maximum. Halfway values round away from zero; literal prefixes follow the sign.",
+      "allOf": [
+        { "if": { "not": { "required": ["maximumFractionDigits"] } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 3 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 0 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 0 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 1 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 1 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 2 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 2 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 3 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 3 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 4 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 4 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 5 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 5 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 6 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 6 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 7 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 7 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 8 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 8 } } } },
+        { "if": { "required": ["maximumFractionDigits"], "properties": { "maximumFractionDigits": { "const": 9 } } }, "then": { "properties": { "minimumFractionDigits": { "maximum": 9 } } } }
+      ],
+      "properties": {
+        "minimumFractionDigits": { "type": "integer", "minimum": 0, "maximum": 10, "default": 0 },
+        "maximumFractionDigits": { "type": "integer", "minimum": 0, "maximum": 10, "default": 3 },
+        "prefix": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "suffix": { "type": "string", "minLength": 1, "maxLength": 16 }
+      }
     },
     "gridAggregateValues": {
       "type": "object", "maxProperties": 32, "propertyNames": { "$ref": "#/$defs/identifier" },
@@ -1309,6 +1466,10 @@
         "presenter": {
           "$ref": "#/$defs/gridPresenter"
         },
+        "format": {
+          "$ref": "#/$defs/gridNumberFormat",
+          "description": "Number columns only: display format of raw numbers without cell text, also used by summaries and selection totals."
+        },
         "aggregatable": {
           "type": "boolean"
         },
@@ -1658,6 +1819,7 @@
             "gridCellsFilled": { "$ref": "#/$defs/accessibleLabel" },
             "gridCellMenu": { "$ref": "#/$defs/accessibleLabel" },
             "gridClearCellRanges": { "$ref": "#/$defs/accessibleLabel" },
+            "gridRowPicked": { "type": "string" },
             "gridColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridOperator": { "$ref": "#/$defs/accessibleLabel" },
             "gridValue": { "$ref": "#/$defs/accessibleLabel" },
@@ -1868,7 +2030,27 @@
             "linkFiltered": { "$ref": "#/$defs/accessibleLabel" },
             "linkHighlighted": { "$ref": "#/$defs/accessibleLabel" },
             "linkHighlightedRows": { "$ref": "#/$defs/accessibleLabel" },
-            "linkCleared": { "$ref": "#/$defs/accessibleLabel" }
+            "linkCleared": { "$ref": "#/$defs/accessibleLabel" },
+            "calendarToday": { "type": "string" }, "calendarPrevious": { "type": "string" }, "calendarNext": { "type": "string" }, "calendarViews": { "type": "string" },
+            "calendarMonth": { "type": "string" }, "calendarWeek": { "type": "string" }, "calendarDay": { "type": "string" }, "calendarDays": { "type": "string" },
+            "calendarAgenda": { "type": "string" }, "calendarYear": { "type": "string" }, "calendarTimeline": { "type": "string" }, "calendarGoTo": { "type": "string" },
+            "calendarAllDay": { "type": "string" }, "calendarMore": { "type": "string" }, "calendarMoreLabel": { "type": "string" }, "calendarDayEvents": { "type": "string" },
+            "calendarNoEvents": { "type": "string" }, "calendarEvents": { "type": "string" }, "calendarShowing": { "type": "string" }, "calendarRepeats": { "type": "string" },
+            "calendarTruncated": { "type": "string" }, "calendarLoading": { "type": "string" }, "calendarLoadError": { "type": "string" }, "calendarNow": { "type": "string" },
+            "calendarZoom": { "type": "string" }, "calendarZoomHour": { "type": "string" }, "calendarZoomDay": { "type": "string" }, "calendarZoomWeek": { "type": "string" },
+            "calendarZoomMonth": { "type": "string" }, "calendarZoomQuarter": { "type": "string" }, "calendarResources": { "type": "string" }, "calendarCapacity": { "type": "string" },
+            "calendarCapacityAt": { "type": "string" }, "calendarBusy": { "type": "string" }, "calendarOverlaps": { "type": "string" }, "calendarUnavailable": { "type": "string" },
+            "calendarOutsideHours": { "type": "string" }, "calendarConflict": { "type": "string" }, "calendarNotAllowed": { "type": "string" }, "calendarMoved": { "type": "string" },
+            "calendarResized": { "type": "string" }, "calendarSeriesMoved": { "type": "string" }, "calendarSeriesTime": { "type": "string" }, "calendarMoveHelp": { "type": "string" }, "calendarEdit": { "type": "string" },
+            "calendarSaveFailed": { "type": "string" }, "calendarExport": { "type": "string" }, "calendarTimeRange": { "type": "string" }, "calendarSelected": { "type": "string" },
+            "calendarLane": { "type": "string" }, "calendarHighlighted": { "type": "string" },
+            "calendarMini": { "type": "string" }, "calendarWeekList": { "type": "string" }, "calendarDayList": { "type": "string" }, "calendarMonths": { "type": "string" },
+            "calendarWeekNumber": { "type": "string" }, "calendarWeekShort": { "type": "string" }, "calendarNewEvent": { "type": "string" }, "calendarEventTitle": { "type": "string" },
+            "calendarCreate": { "type": "string" }, "calendarCancel": { "type": "string" }, "calendarCreated": { "type": "string" }, "calendarReceived": { "type": "string" },
+            "calendarOccurrenceReadOnly": { "type": "string" }, "calendarOccurrenceTitle": { "type": "string" }, "calendarThisEvent": { "type": "string" }, "calendarThisAndFollowing": { "type": "string" }, "calendarAllEvents": { "type": "string" },
+            "calendarSources": { "type": "string" }, "calendarImportFailed": { "type": "string" }, "calendarActions": { "type": "string" }, "calendarOpen": { "type": "string" },
+            "calendarMove": { "type": "string" }, "calendarNewHere": { "type": "string" }, "calendarOutsideRange": { "type": "string" }, "calendarClose": { "type": "string" },
+            "calendarDetailsOf": { "type": "string" }
           }
         },
         "source": { "$ref": "#/$defs/source" },

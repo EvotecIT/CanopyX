@@ -244,6 +244,13 @@ test('aggregate identifiers retain prototype-property names as own numeric bindi
   expect(result.values).toEqual([[true,19],[true,19],[true,19]]);
 });
 
+test('invalid number formats are rejected before a grid mounts',async({page})=>{
+  const view=definition();view.reporting.aggregates=[{id:'average',column:'amount',operation:'average',label:'Average',format:{minimumFractionDigits:3,maximumFractionDigits:1}}];
+  await page.route('http://canopyx.test/bad-format',route=>route.fulfill({contentType:'text/html',body:viewPage(view)}));
+  await page.goto('http://canopyx.test/bad-format');
+  await expect(page.locator('[data-canopyx-host]')).toContainText('invalid number format');
+});
+
 test('host summary cancellation and stale responses cannot replace the accepted query',async({page})=>{
   await open(page,hostedView(),hostedSetup);
   await page.evaluate(`(()=>{holdSummary=true;window.retired=${api}.setQuery({search:'old'}).catch(e=>e.name);})()`);

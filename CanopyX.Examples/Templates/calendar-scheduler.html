@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX team scheduler</title>
+<style>{{style}}</style>
+<script>{{script}}</script>
+<style>{{example-style}}
+.calendar-scheduler { display: grid; gap: 20px; margin-top: 20px; }
+.calendar-scheduler > * { min-width: 0; }
+</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>Team scheduler</h1>
+<p>Click or drag over empty time to add an event, drag one to move it, and drag a task from the list below onto the calendar to schedule it (or press F2 on a task, then Enter on a slot). Switch sources in the legend. Right-click, long-press or press Shift+F10 for an event's or a slot's actions. Time outside office hours is shaded.</p>
+<div class="calendar-scheduler">
+{{calendar}}
+{{grid}}
+</div>
+</main>
+</body>
+</html>
