@@ -7,10 +7,20 @@
       "id": "build-llms",
       "dependsOn": "build-site",
       "siteRoot": "./_site",
+      "contentKind": "Site",
       "name": "CanopyX",
-      "packageId": "CanopyX",
+      "discovery": "./config/llms-discovery.md",
       "license": "MIT",
       "targets": ".NET Framework 4.7.2, .NET Standard 2.0, .NET 8, .NET 10, npm @evotecit/canopyx"
+    },
+    {
+      "task": "agent-ready",
+      "id": "prepare-agent-discovery",
+      "dependsOn": ["build-llms", "sitemap"],
+      "operation": "prepare",
+      "config": "./site.json",
+      "siteRoot": "./_site",
+      "failOnFailures": true
     },
     {
       "task": "optimize",

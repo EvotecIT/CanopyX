@@ -119,6 +119,9 @@
       "AiInput": true,
       "AiTrain": false
     },
+    "ApiCatalog": {
+      "Enabled": false
+    },
     "AgentSkills": {
       "Enabled": true,
       "Skills": [
@@ -130,7 +133,7 @@
         }
       ]
     },
-    "MarkdownNegotiation": true
+    "MarkdownNegotiation": false
   },
   "EditLinks": {
     "Enabled": false
