@@ -4,6 +4,7 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { api } from "./calendar-support.mjs";
 import { calendarRangePage, calendarRow } from "./calendar-range-support.mjs";
+import { nextFrames, openGridControl } from "./support.mjs";
 
 let server, origin, pages = new Map(), sequence = 0;
 test.beforeAll(async () => {
@@ -18,9 +19,9 @@ test.beforeAll(async () => {
 test.afterAll(async () => { await new Promise(resolve => server.close(resolve)); });
 test.afterEach(async ({ page }) => { await page.evaluate(() => document.querySelector("[data-canopyx-host]")?.canopyx?.destroy()); pages.clear(); });
 
-async function open(page, rows, options = {}, holdRange = false) {
+async function open(page, rows, options = {}, holdRange = false, decorate = html => html) {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
-  let html = calendarRangePage(rows, options);
+  let html = decorate(calendarRangePage(rows, options));
   if (holdRange) {
     const decorated = html.replace(/CanopyX.configure\("calendar-contract",\s*\{\s*source,/, call => "(" + interceptRange.toString() + ")(source); " + call);
     if (decorated === html) throw new Error("Calendar export fixture could not decorate its public source boundary.");
@@ -153,16 +154,122 @@ for (const [name, rule] of [["COUNT", "FREQ=YEARLY;INTERVAL=101;COUNT=2"], ["UNT
   });
 }
 
+test("unbounded named-zone series need an actionable finite limit in both export paths", async ({ page }) => {
+  for (const timeZone of ["Africa/Casablanca", "Europe/Warsaw"]) {
+    const errors = await open(page, [morocco("FREQ=MONTHLY")], { inline: true, calendar: { ...moroccoCalendar, timeZone } });
+    expect(await api(page, "api => api.getCalendarEvents().length")).toBe(1);
+    for (const scope of ["visible", "all"])
+      await expect(exportText(page, scope)).rejects.toThrow("needs COUNT or UNTIL ending within 100 calendar years. Add either limit to its recurrence rule.");
+    expect(errors).toEqual([]);
+    await api(page, "api => api.destroy()");
+  }
+});
+
+test("an imported unbounded named-zone series cannot be exported through a UTC display zone", async ({ page }) => {
+  pages.set("/export-unbounded.ics", ["BEGIN:VCALENDAR", "BEGIN:VEVENT", "UID:unbounded", "DTSTART;TZID=Africa/Casablanca:20200115T090000",
+    "DURATION:PT1H", "SUMMARY:Unbounded imported series", "RRULE:FREQ=MONTHLY", "END:VEVENT", "END:VCALENDAR"].join("\r\n"));
+  const errors = await open(page, [], { inline: true, calendar: { ...moroccoCalendar, timeZone: "utc", sources: [{ id: "imported", label: "Imported", ics: "/export-unbounded.ics" }] } });
+  expect(await api(page, "api => api.getCalendarEvents().map(event => event.start)")).toEqual(["2021-04-15T09:00:00Z"]);
+  await expect(exportText(page)).rejects.toThrow("needs COUNT or UNTIL ending within 100 calendar years");
+  expect(errors).toEqual([]);
+});
+
+test("the iCalendar Export menu shows the finite-limit error without downloading a file", async ({ page }, testInfo) => {
+  const downloads = [];
+  page.on("download", download => downloads.push(download.suggestedFilename()));
+  for (const width of [1400, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const errors = await open(page, [morocco("FREQ=MONTHLY")], { inline: true, calendar: moroccoCalendar });
+    await nextFrames(page);
+    await openGridControl(page, "export");
+    const panel = page.locator(".cx-grid-export > .cx-grid-panel");
+    await expect(panel).toBeVisible();
+    await page.locator(".cx-grid-export select").selectOption("all");
+    const button = page.getByRole("button", { name: "iCalendar (.ics)", exact: true });
+    await button.click();
+    try {
+      await expect(page.locator(".cx-grid-export .cx-grid-delivery-status")).toContainText("needs COUNT or UNTIL ending within 100 calendar years. Add either limit to its recurrence rule.");
+    } finally {
+      await testInfo.attach("export-menu-state-" + width, { body: JSON.stringify({ width, downloads, status: await page.locator(".cx-grid-export .cx-grid-delivery-status").innerText(), events: await api(page, "api => api.getCalendarEvents()") }), contentType: "application/json" });
+    }
+    await expect(button).toBeEnabled();
+    expect(downloads).toEqual([]);
+    if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, testInfo.project.name + "-bounded-export-menu-" + width + ".png") });
+    await button.press("Escape");
+    await expect(panel).toBeHidden();
+    await page.getByRole("button", { name: "Next period", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "May 2021", exact: true })).toBeVisible();
+    expect(errors).toEqual([]);
+  }
+});
+
+test("one export bounds the combined finite horizons of the same time zone", async ({ page }) => {
+  const early = calendarRow("early", "1900-01-15T08:00:00Z", "1900-01-15T09:00:00Z", { rule: "FREQ=MONTHLY;COUNT=1" });
+  const errors = await open(page, [early, morocco("FREQ=MONTHLY;COUNT=16")], { inline: true, calendar: moroccoCalendar });
+  expect(eventCount(await exportText(page))).toBe(1);
+  await expect(exportText(page, "all")).rejects.toThrow("limited to 100 calendar years per time zone");
+  expect(errors).toEqual([]);
+});
+
+test("phone iCalendar captures preserve finite, UTC and all-day recurrence fields", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  for (const [name, row, calendar, expected] of [
+    ["finite", morocco("FREQ=MONTHLY;COUNT=16"), moroccoCalendar, "RRULE:FREQ=MONTHLY;COUNT=16\r\n"],
+    ["UTC", morocco("FREQ=MONTHLY"), { ...moroccoCalendar, timeZone: "utc" }, "DTSTART:20200115T080000Z\r\n"],
+    ["all-day", { ...morocco("FREQ=MONTHLY"), cells: { ...morocco("FREQ=MONTHLY").cells, resource: "true" } }, { ...moroccoCalendar, allDay: "resource" }, "DTSTART;VALUE=DATE:20200115\r\n"]
+  ]) {
+    const errors = await open(page, [row], { inline: true, calendar });
+    await nextFrames(page);
+    const text = await exportText(page, "all"); evidence(testInfo, "phone-" + name, text);
+    expect(text).toContain(expected);
+    expect(text).toContain("RRULE:FREQ=MONTHLY");
+    expect(eventCount(text)).toBe(1);
+    if (name === "finite") expect(zones(text)[0]).toContain("DTSTART:20210411T030000");
+    else expect(zones(text)).toHaveLength(0);
+    expect(errors).toEqual([]);
+  }
+});
+
+test("iCalendar rejects missing or unauthorized mapped fields for captured and visible records", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await open(page, [morocco("FREQ=MONTHLY;COUNT=16")], { inline: true, calendar: moroccoCalendar });
+  await expect(api(page, "api => api.exportAs('ics', { scope: 'all', columns: ['title', 'starts', 'ends'], download: false })")).rejects.toThrow("needs all mapped calendar columns");
+  expect(eventCount(await exportText(page, "all"))).toBe(1);
+  await open(page, [morocco("FREQ=MONTHLY;COUNT=16")], { inline: true, calendar: moroccoCalendar }, false, html => {
+    const original = '"id":"rule","title":"Rule","kind":"text"', replaced = html.replace(original, original + ',"exportable":false');
+    if (replaced === html) throw new Error("Calendar export fixture did not find its recurrence column.");
+    return replaced;
+  });
+  for (const scope of ["visible", "all"])
+    await expect(exportText(page, scope)).rejects.toThrow("needs every mapped calendar column to allow export");
+});
+
+test("a custom ICS writer keeps its phone projection, captured query and invocation-time provider", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  const other = calendarRow("other", "2021-04-15T10:00:00Z", "2021-04-15T11:00:00Z");
+  const errors = await open(page, [morocco("FREQ=MONTHLY;COUNT=16"), other], { inline: true, calendar: moroccoCalendar }, false, html => html.replace("</head>", "<script>window.customIcsFormat = { id: 'ics', label: 'Custom ICS', extension: 'ics', async write(capture) { await new Promise(resolve => { window.releaseCustomIcs = resolve; }); const ids = []; for await (const row of capture.rows()) ids.push(row.id); return new Blob([JSON.stringify({ columns: capture.request.columns.map(column => column.id), query: capture.request.query.search, ids })]); } }; CanopyX.configure('calendar-contract', { exportFormats: [window.customIcsFormat] });</script></head>"));
+  await nextFrames(page);
+  await api(page, "api => api.setQuery({ search: 'morocco' })");
+  await api(page, "api => { window.pendingCustomIcs = api.exportAs('ics', { scope: 'filtered', download: false }); window.customIcsFormat.write = () => new Blob(['replacement writer']); }");
+  await expect.poll(() => page.evaluate(() => typeof window.releaseCustomIcs)).toBe("function");
+  await api(page, "api => api.setQuery({ search: 'other' })");
+  const result = await page.evaluate(async () => { window.releaseCustomIcs(); return JSON.parse(await (await window.pendingCustomIcs).blob.text()); });
+  expect(result).toEqual({ columns: ["title", "starts", "ends"], query: "morocco", ids: ["morocco"] });
+  expect(errors).toEqual([]);
+});
+
 test("UTC and all-day unbounded recurrence exports retain their rules", async ({ page }, testInfo) => {
   const row = morocco("FREQ=MONTHLY");
   for (const [timeZone, label] of [["utc", "literal-utc"], ["UTC", "iana-UTC"], ["Etc/UTC", "iana-Etc-UTC"], ["local", "native-local"]]) {
     await open(page, [row], { inline: true, calendar: { ...moroccoCalendar, timeZone } });
     const utc = await exportText(page); expect(utc).toContain("RRULE:FREQ=MONTHLY\r\n");
-    if (timeZone === "utc" || timeZone === "local") expect(zones(utc)).toHaveLength(0);
+    expect(zones(utc)).toHaveLength(0);
+    expect(utc).toContain("DTSTART:20200115T080000Z\r\n");
     evidence(testInfo, "unbounded-" + label, utc);
     await api(page, "api => api.destroy()");
   }
   await open(page, [{ ...row, cells: { ...row.cells, resource: "true" } }], { inline: true, calendar: { ...moroccoCalendar, allDay: "resource" } });
   const date = await exportText(page); expect(date).toContain("DTSTART;VALUE=DATE:20200115\r\n");
   expect(date).toContain("RRULE:FREQ=MONTHLY\r\n"); expect(zones(date)).toHaveLength(0);
+  evidence(testInfo, "unbounded-all-day", date);
 });

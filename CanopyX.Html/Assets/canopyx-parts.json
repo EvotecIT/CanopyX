@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "9781c04a2f055f6a",
+      "version": "ea14a24909a3f0e2",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -30,7 +30,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "83554049dc50b9d3",
+      "version": "5673e642f32c2f4e",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -351,7 +351,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "7fffd9fc79e4f10e",
+      "version": "2f44e057443bc649",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -403,7 +403,7 @@
     {
       "name": "calendar-ics",
       "label": "iCalendar",
-      "version": "46d8549dfbbf165f",
+      "version": "cdda240a01480077",
       "script": "canopyx-calendar-ics.js",
       "runtimes": [
         "grid"

@@ -1,4 +1,4 @@
-# iCalendar import
+# iCalendar import and export
 
 CanopyX reads the events of iCalendar text (RFC 5545) for a calendar: in the browser, a calendar source with an `ics` URL
 ([calendar.md](calendar.md)); in .NET, `CanopyICalendar.Parse`. Both read the same subset within the same limits. The text is
@@ -53,7 +53,7 @@ Cancelled series, moved occurrences, all-day series and single events do not nee
 file, read `Events` and place timed series in separate calendars with their corresponding zones; parsing and the raw events
 remain available even when conversion is refused.
 
-## In the browser
+## Browser import
 
 A calendar source with `ics` reads a file on the page's own site ([Sources and iCalendar](calendar.md#sources-and-icalendar)):
 
@@ -75,6 +75,34 @@ Because a calendar expands series on every paint, the browser also bounds import
 events a file (later ones show once), a rule must repeat within its first thousand periods (a rule that never matches shows
 once), and a `COUNT` becomes the `UNTIL` of its last occurrence, at most the 1,000th (a note says when a count was cut). Each
 case adds a note. An identity or status longer than its limit is dropped, as in .NET; an empty `EXDATE` value is ignored.
+
+## Browser export
+
+A calendar's Export menu offers **iCalendar (.ics)**. The grid API also exports the current visible range:
+
+```js
+const { text, blob, fileName } = await grid.exportCalendar({ scope: "visible" });
+```
+
+`scope` defaults to `"visible"`; `"filtered"`, `"selected"` and `"all"` use the grid's corresponding export scopes. Pass
+`download: true` to save the file. A series keeps its `RRULE` and excluded dates, and a moved occurrence carries its
+`RECURRENCE-ID`. Exporting a visible moved occurrence includes its master from the current calendar answer. Wait for a
+pending range load to finish before exporting the visible range.
+
+The built-in iCalendar format uses every field mapped by the calendar, including columns hidden by the phone layout or
+column controls. Each mapped column must allow export (`exportable` must not be `false`). An explicit `columns` list passed
+to `exportAs("ics", ...)` must include all mapped calendar columns; otherwise the export fails instead of dropping event
+data such as recurrence, exceptions or the all-day flag. Custom format writers keep their own column projection.
+
+A timed series in a named time zone needs a finite `COUNT` or `UNTIL` that the calendar can resolve within 100 calendar
+years. All series in the same time zone must also fit within a combined span of 100 calendar years in one export. The file
+contains the actual timezone transitions over that span, so later years keep their correct offsets. If a rule is unbounded,
+its last occurrence cannot be resolved within the limit, or the combined span is too large, the whole export fails with an
+error. Add `COUNT` or `UNTIL` to the recurrence rule, or shorten its horizon; no occurrences are silently cut from the file.
+
+UTC series, including names the browser resolves to `UTC` or `Etc/UTC`, and all-day series may remain unbounded. They do not need a
+timezone transition table. An imported timed series uses its own recurrence zone for these checks, even when the calendar
+displays another zone. A calendar using the reader's local display zone keeps its native series' recurrence in UTC.
 
 ## What is read
 
