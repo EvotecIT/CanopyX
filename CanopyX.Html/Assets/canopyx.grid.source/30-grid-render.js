@@ -116,8 +116,10 @@
         element._cells = (row.status ? [null] : this.cols).map((column, index) => {
           const cell = this.cell(element, index, column ? column.width : this.rowWidth, column ? column.kind : null);
           if (!column) cell.setAttribute("aria-colspan", String(this.cols.length));
-          const slot = { cell, content: cell, base: cell.className + (column?.wrap ? " cx-wrap" : ""), cls: null, title: null, badges: [], mode: "default" };
-          slot.textSpan = cell.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
+          // Native selection chrome keeps its cell while a host renderer replaces only its owned content.
+          const content = index === 0 && column?.render && this.view.reporting?.selectionControls ? cell.appendChild(h("span", "cx-content")) : cell;
+          const slot = { cell, content, base: cell.className + (column?.wrap ? " cx-wrap" : ""), cls: null, title: null, badges: [], mode: "default" };
+          slot.textSpan = content.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
         });
       }
       setClass(element, "cx-row" + (row.status ? " cx-status cx-" + row.status : this.autoRows ? " cx-auto-row" : ""));

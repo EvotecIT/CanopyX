@@ -57,7 +57,7 @@ public static partial class CanopyICalendar {
                         if (text.Length > 0) _categories.Add(text);
                     }
                     break;
-                case "DTSTART": _start = Read(line, true); if (_start == null) Bad = true; break;
+                case "DTSTART": _start = Read(line, true); break;
                 case "DTEND": _end = Read(line, false); break;
                 case "DURATION": _duration = line.Value.Trim(); break;
                 case "RRULE": _rule = Clean(line.Value).Trim(); break;
@@ -68,6 +68,7 @@ public static partial class CanopyICalendar {
                         if (_exceptions.Count >= MaxExceptions) throw new FormatException("An iCalendar event has more than 1,000 EXDATE values.");
                         var moment = Moment(value.Trim(), line);
                         if (moment.HasValue) _exceptions.Add(moment.Value.Text);
+                        else Bad = true;
                     }
                     break;
             }
@@ -75,6 +76,7 @@ public static partial class CanopyICalendar {
 
         private Moment? Read(ContentLine line, bool start) {
             var moment = Moment(line.Value.Trim(), line);
+            if (!moment.HasValue) Bad = true;
             if (start && moment.HasValue && !moment.Value.IsDate) _zone = ZoneName(line);
             return moment;
         }

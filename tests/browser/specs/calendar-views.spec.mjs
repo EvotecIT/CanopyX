@@ -254,6 +254,7 @@ test.describe("calendar views", () => {
   test("Polish and German pages write every date and label in their language", async ({ page }) => {
     for (const [name, month, today, english] of [["calendar-pl.html", "październik 2026", "Dzisiaj", /October|Monday|Today/], ["calendar-de.html", "Oktober 2026", "Heute", /October|Monday|Today/]]) {
       await openCalendar(page, name);
+      await api(page, "api => api.resetView()");
       await expect(page.locator(".cx-cal-title")).toHaveText(month);
       await expect(page.locator(".cx-cal-gotoday")).toHaveText(today);
       expect(await page.locator(".cx-cal").innerText()).not.toMatch(english);

@@ -71,12 +71,11 @@ test("unsafe pattern rules are rejected before evaluating cells", async ({ page 
 test("phone group totals open a readable detail dialog", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openGroups(page, definition());
-  const totals = page.locator(".cx-grid-group .cx-grid-group-aggregates").first();
-  const full = await totals.textContent();
+  const totals = page.locator(".cx-grid-group .cx-hidden-aggregates").first();
   await totals.click();
   await expect(page.locator("dialog.cx-reporting-text")).toBeVisible();
   await expect(page.locator("dialog.cx-reporting-text h4")).toContainText("Region:");
-  for (const part of full.split(" · ")) await expect(page.locator("dialog.cx-reporting-text pre")).toContainText(part);
+  await expect(page.locator("dialog.cx-reporting-text pre")).toHaveText("Order\nOrders: 12\nAmount\nTotal amount: 6,568 · Average amount: 547.333");
 });
 
 test("tree columns accept explicit unpinned null from the schema", async ({ page }) => {

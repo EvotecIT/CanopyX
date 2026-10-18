@@ -152,6 +152,67 @@ public sealed class ICalendarTests {
             string.Join("\r\n", Enumerable.Range(0, 10).Select(chunk => "EXDATE:" + string.Join(",", Enumerable.Range(chunk * 100, 100).Select(day => new DateTime(2026, 1, 1).AddDays(day).ToString("yyyyMMdd") + "T090000Z"))))))).Events).Exceptions!.Split(',').Length);
     }
 
+    [Theory]
+    [InlineData("DTSTART:")]
+    [InlineData("DTSTART:20260230T090000Z")]
+    [InlineData("DTSTART;VALUE=DATE:20261030T090000Z")]
+    [InlineData("DTEND:")]
+    [InlineData("DTEND:20260230T090000Z")]
+    [InlineData("DTEND;VALUE=DATE:20261030T090000Z")]
+    [InlineData("RECURRENCE-ID:")]
+    [InlineData("RECURRENCE-ID:20260230T090000Z")]
+    [InlineData("RECURRENCE-ID;VALUE=DATE:20261030T090000Z")]
+    [InlineData("EXDATE:20260230T090000Z")]
+    [InlineData("EXDATE;VALUE=DATE:20261030T090000Z")]
+    public void Parse_SkipsMalformedPresentDateProperties_AndContinuesWithOtherEvents(string property) {
+        var lines = property.StartsWith("DTSTART", StringComparison.Ordinal)
+            ? new[] { "UID:bad", "SUMMARY:Bad", property }
+            : new[] { "UID:bad", "SUMMARY:Bad", "DTSTART:20261030T090000Z", property };
+        var parsed = CanopyICalendar.Parse(Calendar(Event(lines), Event("UID:good", "SUMMARY:Good", "DTSTART:20261030T090000Z")));
+        Assert.Equal("Good", Assert.Single(parsed.Events).Summary);
+        Assert.Equal(1, parsed.Skipped);
+    }
+
+    [Fact]
+    public void Parse_PreservesAbsentDates_EmptyExceptions_AndZeroInstants() {
+        var parsed = CanopyICalendar.Parse(Calendar(
+            Event("DTSTART;VALUE=DATE-TIME:19700101T000000Z", "DTEND:19700101T000000Z", "RECURRENCE-ID:19700101T000000Z", "EXDATE:, ,", "RRULE:FREQ=DAILY;COUNT=1"),
+            Event("DTSTART;VALUE=DATE:19700101", "RECURRENCE-ID;VALUE=DATE:19700101"),
+            Event("DTSTART:20261030T090000Z")));
+        Assert.Equal(0, parsed.Skipped);
+        Assert.Equal(3, parsed.Events.Count);
+        var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(epoch, parsed.Events[0].Start);
+        Assert.Equal(epoch, parsed.Events[0].RecurrenceId);
+        Assert.Null(parsed.Events[0].End);
+        Assert.Null(parsed.Events[0].Exceptions);
+        Assert.False(parsed.Events[0].AllDay);
+        Assert.False(parsed.Events[0].RecurrenceIdIsDate);
+        Assert.True(parsed.Events[1].AllDay);
+        Assert.True(parsed.Events[1].RecurrenceIdIsDate);
+        Assert.Equal(epoch.AddDays(1), parsed.Events[1].End);
+        Assert.Null(parsed.Events[1].TimeZone);
+        Assert.Null(parsed.Events[2].End);
+        Assert.Null(parsed.Events[2].RecurrenceId);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("/")]
+    public void Parse_NormalizesGlobalTimeZoneIds_InEveryDateProperty(string prefix) {
+        var zone = ";TZID=" + prefix + "America/New_York:";
+        var parsed = CanopyICalendar.Parse(Calendar(Event("DTSTART" + zone + "20261030T090000", "DTEND" + zone + "20261030T100000",
+            "RRULE:FREQ=DAILY;COUNT=4", "EXDATE" + zone + "20261101T090000", "RECURRENCE-ID" + zone + "20261031T090000")));
+        var item = Assert.Single(parsed.Events);
+        Assert.Equal(0, parsed.Skipped);
+        Assert.Empty(parsed.Notes);
+        Assert.Equal("America/New_York", item.TimeZone);
+        Assert.Equal(new DateTime(2026, 10, 30, 13, 0, 0, DateTimeKind.Utc), item.Start);
+        Assert.Equal(new DateTime(2026, 10, 30, 14, 0, 0, DateTimeKind.Utc), item.End);
+        Assert.Equal(new DateTime(2026, 10, 31, 13, 0, 0, DateTimeKind.Utc), item.RecurrenceId);
+        Assert.Equal("2026-11-01T14:00:00Z", item.Exceptions);
+    }
+
     [Fact]
     public void Parse_RefusesDeepNesting_AndIgnoresOtherComponents() {
         var deep = new StringBuilder("BEGIN:VCALENDAR\r\n");

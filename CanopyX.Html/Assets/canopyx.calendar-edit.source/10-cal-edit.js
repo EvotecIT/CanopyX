@@ -18,7 +18,7 @@
     },
 
     /** The proposal's problems, first one wins: null when it may be dropped. */
-    calCheck(event, proposal) {
+    calCheck(event, proposal, plan) {
       const edit = this.cal.editable, labels = this.calLabels;
       const resource = proposal.resource;
       if (!this.edit || this.destroyed) return labels.calendarUnavailable;
@@ -27,26 +27,14 @@
       if (resource !== undefined && resource !== event.resource && (!edit.resources || !this.cal.resource ||
           !this.canEditCell(this.editRecord?.(event.key) || event.row, this.cal.resource.id))) return this.edit.labels.gridEditNotSaved;
       if (!this.calAllowsSpan(proposal.start, proposal.end, proposal.allDay)) return labels.calendarOutsideRange;
-      // A series moves within its own day: changing its day would leave its rule's days, exceptions and moved occurrences behind.
-      // When one occurrence may change alone (occurrence "ask", "this" or "following"), the choice comes after the drop.
-      if (event.recurring && this.cal.occurrence === "all") {
-        const zone = event.allDay ? calZone("utc") : this.calSeriesZone;
-        if (zone.day(proposal.start) !== zone.day(event.start) || this.calOverridden(event) === true ||
-            event.base.excluded?.size && !this.canEditCell(this.editRecord(event.key) || event.row, this.cal.exceptions.id)) return labels.calendarSeriesTime;
-      }
+      // Series-only constraints wait for the host's final occurrence choice, including when the preset is "all".
       if (edit.allowed && resource != null) {
         const allowed = String(cellValue(event.row.cells[edit.allowed.id]) ?? "").split(/[\s,;]+/).filter(Boolean);
         if (allowed.length && !allowed.includes(resource)) return fill(labels.calendarNotAllowed, { resource: this.calResourceName ? this.calResourceName(resource) : resource });
       }
-      if (edit.working && !proposal.allDay) {
-        const zone = this.calZone, first = zone.day(proposal.start), last = zone.day(Math.max(proposal.start, proposal.end - 1));
-        for (let day = first; day <= last; day++) {
-          const from = day === first ? zone.parts(proposal.start).minutes : 0, to = day === last ? zone.parts(proposal.end).minutes || 1440 : 1440;
-          const hours = this.calHoursFor?.(resource, calDow(day)) ?? (this.cal.working ? (this.cal.working.days.has(calDow(day)) ? [this.cal.working] : []) : null);
-          if (hours && !hours.some(span => from >= span.start && to <= span.end)) return labels.calendarOutsideHours;
-        }
-      }
-      for (const range of this.calRanges) if (range.kind === "unavailable" && (range.resource == null || range.resource === resource) && calOverlaps(proposal.start, proposal.end, range.start, range.end)) return labels.calendarUnavailable;
+      const spanProblem = this.calSpanProblem(proposal);
+      if (spanProblem) return spanProblem;
+      if (plan) return plan.problem || this.calOccurrenceProblem(event, proposal, plan);
       if (!edit.overlap) {
         for (const other of this.calEvents) {
           if (other.key === event.key || other.background || (this.cal.resource && other.resource !== resource)) continue;
@@ -56,45 +44,73 @@
       return null;
     },
 
+    /** The shared span rules; selected proposals retain their earlier range check for the same refusal precedence. */
+    calSpanProblem(proposal) {
+      const labels = this.calLabels, resource = proposal.resource;
+      if (!this.calAllowsSpan(proposal.start, proposal.end, proposal.allDay)) return labels.calendarOutsideRange;
+      if (this.cal.editable.working && !proposal.allDay) {
+        const zone = this.calZone, first = zone.day(proposal.start), last = zone.day(Math.max(proposal.start, proposal.end - 1));
+        for (let day = first; day <= last; day++) {
+          const from = day === first ? zone.parts(proposal.start).minutes : 0, to = day === last ? zone.parts(proposal.end).minutes || 1440 : 1440;
+          const hours = this.calHoursFor?.(resource, calDow(day)) ?? (this.cal.working ? (this.cal.working.days.has(calDow(day)) ? [this.cal.working] : []) : null);
+          if (hours && !hours.some(span => from >= span.start && to <= span.end)) return labels.calendarOutsideHours;
+        }
+      }
+      for (const range of this.calRanges) if (range.kind === "unavailable" && (range.resource == null || range.resource === resource) && calOverlaps(proposal.start, proposal.end, range.start, range.end)) return labels.calendarUnavailable;
+      return null;
+    },
+
+    /** Checks the resolved recurrence change once, against the accepted occurrences in the loaded range. */
+    calOccurrenceProblem(event, proposal, plan) {
+      const items = this.calEvents.filter(other => !other.background && (other.key !== event.key ||
+        plan.mode === "this" && other.id !== event.id || plan.mode === "following" && other.start < event.start))
+        .map(other => ({ ...other, changed: false }));
+      items.push(...plan.spans.map(span => ({ ...span, title: event.title, changed: true })));
+      for (const item of items) if (item.changed) {
+        const problem = this.calSpanProblem({ ...item, allDay: proposal.allDay });
+        if (problem) return problem;
+      }
+      if (this.cal.editable.overlap) return null;
+      items.sort((a, b) => a.start - b.start || b.end - a.end);
+      const active = new Map();
+      for (const item of items) {
+        const resource = this.cal.resource ? item.resource : null, previous = active.get(resource) || { any: null, changed: null };
+        const other = item.changed ? previous.any : previous.changed;
+        if (other && (calOverlaps(item.start, item.end, other.start, other.end) || calOverlaps(other.start, other.end, item.start, item.end)))
+          return fill(this.calLabels.calendarConflict, { title: item.changed ? other.title : item.title });
+        if (!previous.any || item.end > previous.any.end) previous.any = item;
+        if (item.changed && (!previous.changed || item.end > previous.changed.end)) previous.changed = item;
+        active.set(resource, previous);
+      }
+      return null;
+    },
+
     /** Applies an accepted proposal through the editing part; resolves true once it is saved (or kept, with commit manual). */
     async calApply(event, proposal) {
-      const cal = this.cal, labels = this.calLabels, delta = proposal.start - event.start;
+      const cal = this.cal, labels = this.calLabels, delta = proposal.start - event.start, decision = this.calEditSnapshot(event);
       await this.loadEditing();
       calWrapEditRecord();
+      event = this.calEditCurrent(event, decision);
+      if (!event) return this.calRefuseDecision();
       const problem = this.calCheck(event, proposal);
       if (problem) { this.calAnnounce(problem); this.calNotice(problem, true, true); return false; }
       if (event.recurring && !this.emit("occurrenceChange", { id: event.key, occurrence: calIso(event.start), start: calIso(proposal.start), end: calIso(proposal.end), resource: proposal.resource ?? null }))
         return false;
-      if (event.recurring && this.cal.occurrence !== "all") {
-        const mode = await this.calOccurrenceMode(event, proposal);
-        if (!mode) return false;
-        const currentProblem = this.calCheck(event, proposal);
-        if (currentProblem) { this.calAnnounce(currentProblem); this.calNotice(currentProblem, true, true); return false; }
-        if (mode === "this") return this.calApplyThis(event, proposal);
-        if (mode === "following" && event.start !== event.base.start) return this.calApplyFollowing(event, proposal);
-        // "All events" (or the series' first occurrence and the ones after it): the series rules apply now.
-        const zone = event.allDay ? calZone("utc") : this.calSeriesZone;
-        if (zone.day(proposal.start) !== zone.day(event.start) || this.calOverridden(event) === true ||
-            event.base.excluded?.size && !this.canEditCell(this.editRecord(event.key) || event.row, this.cal.exceptions.id)) {
-          this.calAnnounce(labels.calendarSeriesTime); this.calNotice(labels.calendarSeriesTime, true, true); return false;
-        }
-      }
-      // A hosted calendar cannot see overriding records outside the rows it loaded: unless the host took the occurrence above,
-      // a series that may have them stays where it is.
-      if (event.recurring && this.calOverridden(event) !== false) { this.calAnnounce(labels.calendarSeriesTime); this.calNotice(labels.calendarSeriesTime, true, true); return false; }
-      // An occurrence of a series moves the series by the same wall-clock minutes in its zone (the day stays; calCheck refuses
-      // another), changes its length by the same amount, and takes its excluded instants along.
-      const base = event.base, values = [], stretch = (proposal.end - proposal.start) - (event.end - event.start);
-      let start = proposal.start, end = proposal.end;
+      let plan = null;
       if (event.recurring) {
-        const zone = event.allDay ? calZone("utc") : this.calSeriesZone, minutes = zone.parts(proposal.start).minutes - zone.parts(event.start).minutes;
-        const shift = time => zone.instant(zone.day(time), zone.parts(time).minutes + minutes);
-        start = shift(base.start); end = start + (base.end - base.start) + stretch;
-        if (minutes && base.excluded?.size) values.push([cal.exceptions.id, [...[...base.excludedDays].map(calDayText), ...[...base.excluded].map(time => calIso(shift(time)))].join(",")]);
+        const mode = await this.calOccurrenceMode(event, proposal, decision);
+        event = this.calEditCurrent(event, decision);
+        if (!event) return this.calRefuseDecision();
+        if (!mode) return false;
+        plan = this.calOccurrencePlan(event, proposal, mode);
+        const currentProblem = this.calCheck(event, proposal, plan);
+        if (currentProblem) { this.calAnnounce(currentProblem); this.calNotice(currentProblem, true, true); return false; }
+        if (plan.mode === "this") return this.calApplyThis(event, proposal, plan, decision);
+        if (plan.mode === "following") return this.calApplyFollowing(event, proposal, plan, decision);
       }
-      values.unshift([cal.start.id, calIso(start)]);
-      if (cal.end && (end !== base.end || start !== base.start)) values.push([cal.end.id, end > start || !base.marker ? calIso(end) : null]);
-      if (cal.resource && proposal.resource !== undefined && proposal.resource !== event.resource) values.push([cal.resource.id, proposal.resource]);
+      const base = event.base, values = plan ? plan.values : [[cal.start.id, calIso(proposal.start)]];
+      if (!plan && cal.end && (proposal.end !== base.end || proposal.start !== base.start)) values.push([cal.end.id, proposal.end > proposal.start || !base.marker ? calIso(proposal.end) : null]);
+      if (!plan && cal.resource && proposal.resource !== undefined && proposal.resource !== event.resource) values.push([cal.resource.id, proposal.resource]);
       // A refused change takes back only the columns this move set, never the record's other unsaved edits.
       const record = this.editRecord(event.key), applied = [];
       if (values.some(([column]) => !this.canEditCell(record, column))) {

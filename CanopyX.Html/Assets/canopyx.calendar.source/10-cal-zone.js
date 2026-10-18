@@ -52,14 +52,14 @@
       try { format = new Intl.DateTimeFormat("en-US", { timeZone: name, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" }); }
       catch (_) { return null; }
       const cache = new Map();
-      // Offsets change on whole minutes; one Intl call per quarter hour of the instants asked about is cached.
+      // Keep minute precision for transitions such as St John's historical 00:01 changes; reuse a bounded cache of minute offsets.
       offset = time => {
-        const bucket = Math.floor(time / 900000);
+        const bucket = Math.floor(time / CAL_MINUTE);
         let value = cache.get(bucket);
         if (value === undefined) {
           const parts = {};
-          for (const part of format.formatToParts(new Date(bucket * 900000))) parts[part.type] = part.value;
-          value = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute, +parts.second) - bucket * 900000;
+          for (const part of format.formatToParts(new Date(bucket * CAL_MINUTE))) parts[part.type] = part.value;
+          value = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute, +parts.second) - bucket * CAL_MINUTE;
           if (cache.size > 4096) cache.clear();
           cache.set(bucket, value);
         }

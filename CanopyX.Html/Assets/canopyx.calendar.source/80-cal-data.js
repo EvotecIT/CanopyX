@@ -100,6 +100,7 @@
     async calReload(options = {}) {
       if (this.destroyed || !this.calBody) return;
       const epoch = ++this.calEpoch, range = this.calRange = this.calRangeOf(this.calView, this.calDate);
+      this.calAnswer = null;
       this.calSyncBar(!!options.announce);
       const from = this.calZone.start(range.firstDay), to = this.calZone.start(range.lastDay + 1);
       const lifetime = this.calLifetime = new AbortController(), signal = AbortSignal.any ? AbortSignal.any([lifetime.signal, this.dataLifetime.signal]) : lifetime.signal;
@@ -116,8 +117,11 @@
         return;
       }
       clearTimeout(slow);
-      if (epoch !== this.calEpoch || this.destroyed) return;
-      const events = calOccurrences(this, this.calIcsRows?.length ? [...answer.rows, ...this.calIcsRows] : answer.rows, from, to, answer.overrides);
+      if (epoch !== this.calEpoch || signal.aborted || this.destroyed) return;
+      const rows = this.calIcsRows?.length ? [...answer.rows, ...this.calIcsRows] : answer.rows;
+      // Export can need a master that produced no visible occurrence. Retain only this winning answer, never support rows.
+      this.calAnswer = { rows, query: this.acceptedQuery, source: this.source, signal, epoch };
+      const events = calOccurrences(this, rows, from, to, answer.overrides);
       this.calAllEvents = events; this.calEvents = this.calShownEvents(events); this.calRanges = calStaticRanges(this, from, to);
       // A refused or failed edit stays said while the same period reloads around it (a commit, live data); another period
       // or view drops it. A truncated period says so as well.

@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "9781c04a2f055f6a",
+      "version": "ce442e100494535d",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "22bdf42e3c0509cb",
+      "version": "99cafeec3da59ffa",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -30,7 +30,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "83554049dc50b9d3",
+      "version": "5673e642f32c2f4e",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -246,7 +246,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "de59f1d61404838f",
+      "version": "d942108ffbc023b6",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -351,7 +351,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "d3ddbdb24b179b8d",
+      "version": "2f44e057443bc649",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -367,7 +367,7 @@
     {
       "name": "calendar-recurrence",
       "label": "calendar recurrence",
-      "version": "a73a9cabdeb1079d",
+      "version": "64bcc24d785bd1af",
       "script": "canopyx-calendar-recurrence.js",
       "runtimes": [
         "grid"
@@ -385,7 +385,7 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "version": "4ac9ca57a306cc1b",
+      "version": "505792b52f874c1b",
       "script": "canopyx-calendar-edit.js",
       "runtimes": [
         "grid"
@@ -403,7 +403,7 @@
     {
       "name": "calendar-ics",
       "label": "iCalendar",
-      "version": "61b9188c781bcae8",
+      "version": "feb3ed2cd67d057f",
       "script": "canopyx-calendar-ics.js",
       "runtimes": [
         "grid"

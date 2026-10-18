@@ -106,7 +106,7 @@
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .cx-clamped { display:flex; flex-direction:column; align-items:stretch; justify-content:center; }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .cx-clamped .cx-wrapped-text { mask-image:linear-gradient(to bottom, var(--cx-shadow-ink) 65%, transparent); }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .cx-presenter-expand { align-self:flex-start; padding:0; border:0; background:transparent; color:var(--cx-accent); font:inherit; cursor:pointer; min-width:var(--cx-size-24px); min-height:var(--cx-size-24px); }
-.cx-data-grid .cx-cell.cx-fixed-text { flex-direction:row; align-items:center; gap:var(--cx-size-6px); }
+.cx-data-grid .cx-fixed-text { flex-direction:row; align-items:center; gap:var(--cx-size-6px); }
 .cx-data-grid .cx-fixed-text .cx-wrapped-text { -webkit-line-clamp:1; flex:1; min-width:0; }
 .cx-data-grid .cx-fixed-text .cx-presenter-expand { flex:none; align-self:center; }
 .cx-data-grid .cx-list-cell { display:flex; align-items:center; gap:var(--cx-size-6px); }

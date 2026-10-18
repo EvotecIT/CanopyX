@@ -16,12 +16,14 @@ export function calendarEditPage(options = {}) {
 function installCalendarEditHost() {
   const o = window.editOptions, recurring = !!o.occurrence;
   window.policy = { denied: o.denied || [] }; window.commits = []; window.errors = []; window.occurrenceCalls = 0;
-  window.records = [{ id: "event", cells: { title: "Planning", starts: recurring ? "2026-10-14T09:00:00Z" : "2026-10-16T09:00:00Z",
-    ends: recurring ? "2026-10-14T10:00:00Z" : "2026-10-16T10:00:00Z", resource: "Room A", allDay: "false", business: "Keep me",
-    ...(recurring ? { rule: "FREQ=DAILY;COUNT=5" } : {}) } }];
+  window.records = [{ id: "event", cells: { title: "Planning", starts: o.starts || (recurring ? "2026-10-14T09:00:00Z" : "2026-10-16T09:00:00Z"),
+    ends: o.ends || (recurring ? "2026-10-14T10:00:00Z" : "2026-10-16T10:00:00Z"), resource: "Room A", allDay: "false", business: "Keep me",
+    ...(recurring ? { rule: o.rule || "FREQ=DAILY;COUNT=5" } : {}) } }];
   if (o.allDay) Object.assign(window.records[0].cells, { starts: "2026-10-14T00:00:00Z", ends: "2026-10-15T00:00:00Z", allDay: "true" });
   if (o.nullBusiness) window.records[0].cells.business = null;
-  if (o.exceptions) window.records[0].cells.exceptions = "2026-10-15T09:00:00Z";
+  if (o.exceptions) window.records[0].cells.exceptions = typeof o.exceptions === "string" ? o.exceptions : "2026-10-15T09:00:00Z";
+  if (o.cells) Object.assign(window.records[0].cells, o.cells);
+  if (o.extraRows) window.records.push(...o.extraRows);
   const readonly = new Set(o.readonly || []), columns = [
     ["title", "Title", "text"], ["starts", "Starts", "datetime"], ["ends", "Ends", "datetime"], ["resource", "Resource", "text"],
     ["allDay", "All day", "text"], ["business", "Business", "text"], ["rule", "Recurrence", "text"], ["exceptions", "Exceptions", "text"], ["series", "Series", "text"], ["rid", "Original start", "datetime"]
@@ -29,9 +31,11 @@ function installCalendarEditHost() {
   const view = { protocol: "canopyx/2", type: "grid", id: "calendar-edit-contract", label: "Planning", pageSize: 20, rowHeight: 34, selection: "single",
     source: { kind: o.inline ? "inline" : "host" }, ...(o.inline ? { rows: JSON.parse(JSON.stringify(window.records)) } : {}), columns,
     calendar: { start: "starts", end: "ends", title: "title", resource: "resource", allDay: "allDay", recurrence: "rule", exceptions: "exceptions", series: "series", recurrenceId: "rid",
-      occurrence: o.occurrence || "all", date: "2026-10-16", view: "week", views: ["week", "month"], firstDay: 1, timeZone: "utc",
+      occurrence: o.occurrence || "all", date: o.date || "2026-10-16", view: o.view || "week", views: ["week", "month"], firstDay: 1, timeZone: o.timeZone || "utc",
+      ...(o.scrollTime ? { scrollTime: o.scrollTime } : {}),
       ...(o.validRange ? { validRange: o.validRange } : {}),
-      editable: { overlap: true, resources: true, ...(o.manual ? { commit: "manual" } : {}) } } };
+      ...(o.ranges ? { ranges: o.ranges } : {}),
+      editable: { overlap: o.overlap ?? true, resources: true, ...(o.manual ? { commit: "manual" } : {}) } } };
   if (o.resources) view.calendar.resources = { view: { protocol: "canopyx/2", type: "view", id: "rooms", label: "Rooms", rowHeight: 34,
     selection: "single", columns: [{ id: "name", title: "Room", kind: "text", rowHeader: true }], source: { kind: "inline" },
     roots: ["Room A", "Room B"].map(id => ({ id, label: id, cells: { name: id } })) } };
@@ -81,7 +85,7 @@ function installCalendarEditHost() {
       window.occurrenceCalls++;
       if (o.holdOccurrence) await new Promise(resolve => { window.releaseOccurrence = resolve; });
       if (o.takeOccurrence) return false;
-      return o.occurrence;
+      return o.mode || o.occurrence;
     } } });
   window.api = mount();
   window.readSaved = async () => {

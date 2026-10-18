@@ -1,4 +1,4 @@
-# iCalendar import
+# iCalendar import and export
 
 CanopyX reads the events of iCalendar text (RFC 5545) for a calendar: in the browser, a calendar source with an `ics` URL
 ([calendar.md](calendar.md)); in .NET, `CanopyICalendar.Parse`. Both read the same subset within the same limits. The text is
@@ -53,7 +53,7 @@ Cancelled series, moved occurrences, all-day series and single events do not nee
 file, read `Events` and place timed series in separate calendars with their corresponding zones; parsing and the raw events
 remain available even when conversion is refused.
 
-## In the browser
+## Browser import
 
 A calendar source with `ics` reads a file on the page's own site ([Sources and iCalendar](calendar.md#sources-and-icalendar)):
 
@@ -76,6 +76,44 @@ events a file (later ones show once), a rule must repeat within its first thousa
 once), and a `COUNT` becomes the `UNTIL` of its last occurrence, at most the 1,000th (a note says when a count was cut). Each
 case adds a note. An identity or status longer than its limit is dropped, as in .NET; an empty `EXDATE` value is ignored.
 
+## Browser export
+
+A calendar's Export menu offers **iCalendar (.ics)**. The grid API also exports the current visible range:
+
+```js
+const { text, blob, fileName } = await grid.exportCalendar({ scope: "visible" });
+```
+
+`scope` defaults to `"visible"`; `"filtered"`, `"selected"` and `"all"` use the grid's corresponding export scopes. Pass
+`download: true` to save the file. A series keeps its `RRULE` and excluded dates, and a moved occurrence carries its
+`RECURRENCE-ID`. Exporting a visible moved occurrence includes its master from the current calendar answer. Wait for a
+pending range load to finish before exporting the visible range.
+
+The built-in iCalendar format uses every field mapped by the calendar, including columns hidden by the phone layout or
+column controls. Each mapped column must allow export (`exportable` must not be `false`). An explicit `columns` list passed
+to `exportAs("ics", ...)` must include all mapped calendar columns; otherwise the export fails instead of dropping event
+data such as recurrence, exceptions or the all-day flag. Custom format writers keep their own column projection.
+
+A timed series in a named time zone needs a finite `COUNT` or `UNTIL` that the calendar can resolve within 100 calendar
+years. All series in the same time zone must also fit within a combined span of 100 calendar years in one export. The file
+contains the actual timezone transitions over that span, so later years keep their correct offsets. If a rule is unbounded,
+its last occurrence cannot be resolved within the limit, or the combined span is too large, the whole export fails with an
+error. Add `COUNT` or `UNTIL` to the recurrence rule, or shorten its horizon; no occurrences are silently cut from the file.
+
+Named-zone export uses the calendar's minute-precision time zone support. Every offset in the exported calendar-year span,
+including its initial offset, must be a whole number of minutes. Historical spans with second-based offsets are refused.
+A series' start, end and exact excluded instants must also survive conversion to a zoned wall time: an instant in the
+second occurrence of a repeated daylight saving hour cannot be written faithfully with `TZID` and fails the whole export.
+Use a supported date range or an unambiguous series time, or prepare separate UTC events. These errors do not change stored
+events. Date-times keep whole-second precision; ordinary millisecond-bearing timestamps are written without milliseconds.
+
+UTC series, including names the browser resolves to `UTC` or `Etc/UTC`, and all-day series may remain unbounded. They do not need a
+timezone transition table. An imported timed series uses its own recurrence zone for these checks, even when the calendar
+displays another zone. A calendar using the reader's local display zone keeps its native series' recurrence in UTC.
+
+`DESCRIPTION` includes the mapped description followed by the subtitle and status when present. Imported events retain
+their description and location; native events use their resource label as `LOCATION`. These values remain escaped plain text.
+
 ## What is read
 
 - `VCALENDAR` > `VEVENT`: only events directly inside the calendar. Other components (`VTODO`, `VJOURNAL`, `VALARM`, ...) are ignored, and the properties of a
@@ -83,7 +121,8 @@ case adds a note. An identity or status longer than its limit is dropped, as in 
 - `VTIMEZONE` is skipped. A `TZID` names a system time zone: an IANA name (`Europe/Warsaw`; .NET Framework maps about fifty
   common IANA names to Windows zones), or a Windows zone name on Windows. A name that is not found, or is not shaped like a
   zone name (1 to 64 letters, digits, spaces and `/ _ + - . ( )`, without `..`), is read as UTC with one note per event. At most
-  100 distinct names are looked up per import. Times without a zone (floating times) are read as UTC.
+  100 distinct names are looked up per import. A single leading `/` on a globally scoped `TZID` is removed before lookup.
+  Times without a zone (floating times) are read as UTC.
 - Daylight saving: a wall time the clocks skip moves forward by the gap, a repeated wall time is its first occurrence.
 - Text values are unescaped: `\n` and `\N` become a line feed, `\\`, `\;` and `\,` their character; any other backslash stays.
 - Control characters other than tab and line feed are dropped, and unpaired surrogates become U+FFFD. Other invisible format
@@ -108,4 +147,6 @@ Every limit fails the whole import with a `FormatException` whose message names 
 | Nesting of components (`MaxDepth`) | 16 |
 
 Text without a `VCALENDAR` fails too. A malformed event (a line without a colon, an unterminated quote, a start that is not a
-date or a date-time, an event left open) is skipped and counted in `Skipped`; the rest of the import continues.
+date or a date-time, an event left open) is skipped and counted in `Skipped`; the rest of the import continues. A present
+`DTEND`, `RECURRENCE-ID` or nonempty `EXDATE` value that is not a readable date or date-time also makes the event malformed.
+An absent end or recurrence ID and empty `EXDATE` list entries remain valid.

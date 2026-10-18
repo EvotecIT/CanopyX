@@ -15,8 +15,22 @@
     /** The Export menu's iCalendar format for this grid; the iCalendar part loads when it is chosen. */
     calExportFormat() {
       const grid = this;
-      return { id: "ics", label: this.calLabels.calendarExport, extension: "ics", mime: "text/calendar",
-        async write(capture, context) { await grid.calLoadPart("calendar-ics"); return grid.calIcsWrite(capture, context); } };
+      const write = this.calIcsFormatWriter = async (capture, context) => { await grid.calLoadPart("calendar-ics"); return grid.calIcsWrite(capture, context); };
+      return { id: "ics", label: this.calLabels.calendarExport, extension: "ics", mime: "text/calendar", write };
+    },
+    /** Calendar settings hold the actual column objects; hidden or phone-fit fields still define the serialized event. */
+    calIcsExportColumns(explicit) {
+      const mapped = new Set(Object.values(this.cal)), columns = this.columns.filter(column => mapped.has(column));
+      if (columns.some(column => column.exportable === false)) throw new Error("CanopyX: iCalendar export needs every mapped calendar column to allow export.");
+      const ids = columns.map(column => column.id);
+      if (explicit !== undefined && (!Array.isArray(explicit) || ids.some(id => !explicit.includes(id))))
+        throw new Error("CanopyX: iCalendar export needs all mapped calendar columns; include their ids in the export columns.");
+      return ids;
+    },
+    /** The built-in writer captures complete authorized fields at invocation, with the ordinary query/selection owner. */
+    calPrepareIcsExport(options) {
+      const columns = this.calIcsExportColumns(options.columns);
+      return this.prepareExport({ ...options, columns: options.columns === undefined ? columns : options.columns, values: "raw" });
     },
     /**
      * Exports iCalendar text: scope "visible" (the default) takes the records of the occurrences shown, "filtered", "selected" and

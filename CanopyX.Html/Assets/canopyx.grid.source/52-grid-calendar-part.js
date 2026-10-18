@@ -10,7 +10,7 @@
   // What a basic calendar does not use loads only for definitions that need it: recurrence, editing and iCalendar.
   definePart(DataGrid, "calendar-recurrence", "calendar recurrence", () => ({ DataGrid }));
   definePart(DataGrid, "calendar-edit", "calendar editing", () => ({ DataGrid, h, setText, fill, cellValue, GRID_DRAG }));
-  definePart(DataGrid, "calendar-ics", "iCalendar", () => ({ DataGrid, h, fill }));
+  definePart(DataGrid, "calendar-ics", "iCalendar", () => ({ DataGrid, h, fill, cellText }));
   const GRID_CALENDAR_API = ["getCalendar", "setCalendarView", "setCalendarDate", "setCalendarZoom", "calendarStep", "calendarToday", "getCalendarEvents",
     "exportCalendar", "openCalendarEvent", "clearCalendarSelection", "setCalendarSource"];
   for (const name of GRID_CALENDAR_API) DataGrid.prototype[name] = function (...args) { return this.loadCalendar().then(() => this[name](...args)); };

@@ -488,17 +488,18 @@ a calendar loads its parts before its first query, so the first paint is the cal
 stubs. Single-file pages carry the parts' payloads for views that need them: a calendar whose toolbar shows Export carries
 `calendar-ics`, so a page from disk can still export ([plugins.md](plugins.md)).
 
-| Asset | gzip | Guard |
+| Asset | gzip baseline | Guard |
 | --- | --- | --- |
 | `canopyx-calendar.js` | 34,796 bytes | 40,000 |
 | `canopyx-calendar.css` | 5,522 bytes | 6,400 |
 | `canopyx-calendar-recurrence.js` | 3,304 bytes | 3,800 |
-| `canopyx-calendar-edit.js` | 9,688 bytes | 11,200 |
-| `canopyx-calendar-ics.js` | 6,335 bytes | 7,300 |
+| `canopyx-calendar-edit.js` | 12,196 bytes | 14,050 |
+| `canopyx-calendar-ics.js` | 8,209 bytes | 9,450 |
 | `canopyx-timeline.js` | 10,883 bytes | 11,450 |
 | `canopyx-timeline.css` | 2,046 bytes | 2,256 |
 
-The guards, in `GridCalendarPartTests`, are the measured sizes plus 15%. A basic calendar page (`calendar-basic.html`) carries
+The guards in `GridCalendarPartTests` bound compressed asset growth. The editing and iCalendar budgets use the current
+measured sizes plus about 15%; the other parts retain their existing budgets. A basic calendar page (`calendar-basic.html`) carries
 the core part only (and `calendar-recurrence` when an event repeats); a scheduler page carries the editing, iCalendar and
 recurrence parts too.
 ## Performance
