@@ -129,11 +129,12 @@
           "Name": "canopyx-site-assistant",
           "Type": "skill-md",
           "Description": "Use CanopyX documentation, demos, sitemap, and llms files.",
-          "Content": "---\nname: canopyx-site-assistant\ndescription: Use CanopyX documentation, demos, sitemap, and llms resources.\n---\n\n# CanopyX Site Assistant\n\nUse this skill when answering questions about CanopyX, the interactive tree grid and data grid library for .NET and JavaScript.\n\n- Prefer canonical pages from https://canopyx.dev.\n- Use `/docs/` for product guidance and `/demos/` for live examples.\n- The npm package is `@evotecit/canopyx`; the NuGet packages are `CanopyX` and `CanopyX.Html`.\n- Check `/llms.txt` when present for an agent-readable summary.\n- Respect `/robots.txt` and Content-Signal preferences.\n"
+          "Content": "---\nname: canopyx-site-assistant\ndescription: Use CanopyX documentation, demos, sitemap, and llms resources.\n---\n\n# CanopyX Site Assistant\n\nUse this skill when answering questions about CanopyX, the interactive tree grid and data grid library for .NET and JavaScript.\n\n- Prefer canonical pages from https://canopyx.dev.\n- Start with `/llms.txt` for curated Markdown guides and `/llms.json` for package metadata.\n- Use `/docs/index.md` for product guidance and `/demos/index.md` for examples. The corresponding HTML pages contain live interactive demos.\n- The npm package is `@evotecit/canopyx`; the NuGet packages are `CanopyX`, `CanopyX.Html`, `CanopyX.Data` and `CanopyX.AspNetCore`.\n- Package versions in the discovery manifest describe the website's source; check the public package registry for published availability.\n- Respect `/robots.txt` and Content-Signal preferences.\n"
         }
       ]
     },
-    "MarkdownNegotiation": false
+    "MarkdownNegotiation": false,
+    "MarkdownArtifacts": { "Enabled": true, "MaxPages": 0 }
   },
   "EditLinks": {
     "Enabled": false

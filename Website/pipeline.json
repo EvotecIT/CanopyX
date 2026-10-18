@@ -7,8 +7,16 @@
       "id": "build-llms",
       "dependsOn": "build-site",
       "siteRoot": "./_site",
-      "contentKind": "Site",
+      "contentKind": "Package",
       "name": "CanopyX",
+      "project": "../CanopyX/CanopyX.csproj",
+      "packageFiles": [
+        "../CanopyX/CanopyX.csproj",
+        "../CanopyX.Html/CanopyX.Html.csproj",
+        "../CanopyX.Data/CanopyX.Data.csproj",
+        "../CanopyX.AspNetCore/CanopyX.AspNetCore.csproj"
+      ],
+      "overview": "CanopyX builds interactive tree grids and data tables from .NET or JavaScript, with offline HTML reports, script-free tables and optional server-side data providers.",
       "discovery": "./config/llms-discovery.md",
       "license": "MIT",
       "targets": ".NET Framework 4.7.2, .NET Standard 2.0, .NET 8, .NET 10, npm @evotecit/canopyx"
@@ -34,6 +42,16 @@
       "minifyCss": true,
       "minifyJs": true,
       "exclude": "live/**"
+    },
+    {
+      "task": "agent-ready",
+      "id": "verify-agent-discovery-ci",
+      "operation": "verify",
+      "dependsOn": ["prepare-agent-discovery", "optimize-site"],
+      "modes": ["ci"],
+      "config": "./site.json",
+      "siteRoot": "./_site",
+      "failOnFailures": true
     }
   ]
 }
