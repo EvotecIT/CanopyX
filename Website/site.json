@@ -1,0 +1,453 @@
+{
+  "$schema": "https://raw.githubusercontent.com/EvotecIT/PSPublishModule/main/Schemas/powerforge.web.sitespec.schema.json",
+  "SchemaVersion": 1,
+  "Name": "CanopyX",
+  "BaseUrl": "https://canopyx.dev",
+  "DefaultTheme": "canopyx",
+  "ThemeEngine": "scriban",
+  "Features": [
+    "docs",
+    "notFound"
+  ],
+  "TrailingSlash": "always",
+  "ContentRoot": "content",
+  "ThemesRoot": "themes",
+  "DataRoot": "data",
+  "StaticAssets": [
+    {
+      "Source": "static"
+    }
+  ],
+  "Collections": [
+    {
+      "Name": "pages",
+      "Input": "content/pages",
+      "Output": "/",
+      "DefaultLayout": "page",
+      "UseToc": false,
+      "Include": [
+        "*.md",
+        "**/*.md"
+      ],
+      "Seo": {
+        "Templates": {
+          "Title": "{title} | {site}"
+        }
+      }
+    },
+    {
+      "Name": "docs",
+      "Input": "content/docs",
+      "Output": "/docs",
+      "DefaultLayout": "docs",
+      "UseToc": false,
+      "Include": [
+        "*.md",
+        "**/*.md"
+      ],
+      "Seo": {
+        "Templates": {
+          "Title": "{title} | {site} documentation"
+        }
+      }
+    }
+  ],
+  "Head": {
+    "Links": [
+      {
+        "Href": "/favicon.svg",
+        "Rel": "icon",
+        "Type": "image/svg+xml"
+      },
+      {
+        "Href": "/apple-touch-icon.png",
+        "Rel": "apple-touch-icon"
+      },
+      {
+        "Href": "/fonts/schibsted-grotesk-latin.woff2",
+        "Crossorigin": "anonymous",
+        "As": "font",
+        "Rel": "preload",
+        "Type": "font/woff2"
+      },
+      {
+        "Href": "/fonts/fraunces-latin.woff2",
+        "Crossorigin": "anonymous",
+        "As": "font",
+        "Rel": "preload",
+        "Type": "font/woff2"
+      }
+    ],
+    "Meta": [
+      {
+        "Name": "robots",
+        "Content": "index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1"
+      },
+      {
+        "Name": "theme-color",
+        "Content": "#0e2419"
+      }
+    ]
+  },
+  "Social": {
+    "Enabled": true,
+    "SiteName": "CanopyX",
+    "Image": "/social-card.png",
+    "TwitterCard": "summary_large_image"
+  },
+  "StructuredData": {
+    "Enabled": true,
+    "Breadcrumbs": true,
+    "Website": true,
+    "Organization": true,
+    "WebPage": true,
+    "OrganizationName": "Evotec",
+    "OrganizationUrl": "https://evotec.xyz/"
+  },
+  "AgentReadiness": {
+    "Enabled": true,
+    "HeadersPath": "_headers",
+    "LinkHeaders": true,
+    "Robots": true,
+    "SecurityHeaders": {
+      "Enabled": true,
+      "ContentSecurityPolicyValue": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+    },
+    "ContentSignals": {
+      "Enabled": true,
+      "Search": true,
+      "AiInput": true,
+      "AiTrain": false
+    },
+    "ApiCatalog": {
+      "Enabled": false
+    },
+    "AgentSkills": {
+      "Enabled": true,
+      "Skills": [
+        {
+          "Name": "canopyx-site-assistant",
+          "Type": "skill-md",
+          "Description": "Use CanopyX documentation, demos, sitemap, and llms files.",
+          "Content": "---\nname: canopyx-site-assistant\ndescription: Use CanopyX documentation, demos, sitemap, and llms resources.\n---\n\n# CanopyX Site Assistant\n\nUse this skill when answering questions about CanopyX, the interactive tree grid and data grid library for .NET and JavaScript.\n\n- Prefer canonical pages from https://canopyx.dev.\n- Use `/docs/` for product guidance and `/demos/` for live examples.\n- The npm package is `@evotecit/canopyx`; the NuGet packages are `CanopyX` and `CanopyX.Html`.\n- Check `/llms.txt` when present for an agent-readable summary.\n- Respect `/robots.txt` and Content-Signal preferences.\n"
+        }
+      ]
+    },
+    "MarkdownNegotiation": false
+  },
+  "EditLinks": {
+    "Enabled": false
+  },
+  "AssetRegistry": {
+    "CssStrategy": "blocking",
+    "Bundles": [
+      {
+        "Js": [
+          "/themes/canopyx/assets/site.js"
+        ],
+        "Css": [
+          "/themes/canopyx/assets/base.css",
+          "/themes/canopyx/assets/nav.css"
+        ],
+        "Name": "global"
+      },
+      {
+        "Name": "home",
+        "Css": [
+          "/themes/canopyx/assets/home.css"
+        ]
+      },
+      {
+        "Name": "pages",
+        "Css": [
+          "/themes/canopyx/assets/pages.css"
+        ]
+      },
+      {
+        "Name": "docs",
+        "Css": [
+          "/themes/canopyx/assets/docs.css"
+        ]
+      }
+    ],
+    "RouteBundles": [
+      {
+        "Match": "/**",
+        "Bundles": [
+          "global"
+        ]
+      },
+      {
+        "Match": "/",
+        "Bundles": [
+          "home"
+        ]
+      },
+      {
+        "Match": "/demos/**",
+        "Bundles": [
+          "docs",
+          "pages"
+        ]
+      },
+      {
+        "Match": "/docs/**",
+        "Bundles": [
+          "docs"
+        ]
+      }
+    ],
+    "CriticalCss": [
+      {
+        "Name": "canopyx",
+        "Path": "themes/canopyx/critical.css"
+      }
+    ]
+  },
+  "Prism": {
+    "Mode": "auto",
+    "Source": "local",
+    "DefaultLanguage": "csharp",
+    "Local": {
+      "ThemeLight": "/assets/prism/prism-cnx.css",
+      "ThemeDark": "/assets/prism/prism-cnx.css"
+    }
+  },
+  "A11y": {
+    "SkipLinkLabel": "Skip to content",
+    "ExternalLinkLabel": "Opens in a new tab",
+    "NavToggleLabel": "Toggle navigation",
+    "SearchLabel": "Search"
+  },
+  "LinkRules": {
+    "ExternalRel": "noopener",
+    "ExternalTarget": "_blank",
+    "AddExternalIcon": false
+  },
+  "Navigation": {
+    "HomeLinkInBrand": true,
+    "Auto": [
+      {
+        "Collection": "docs",
+        "Menu": "docs",
+        "MaxDepth": 2,
+        "IncludeIndex": true,
+        "IncludeDrafts": false
+      }
+    ],
+    "Surfaces": [
+      {
+        "Name": "main",
+        "Path": "/",
+        "PrimaryMenu": "main"
+      },
+      {
+        "Name": "docs",
+        "Path": "/docs/",
+        "Collection": "docs",
+        "Layout": "docs",
+        "PrimaryMenu": "main"
+      },
+      {
+        "Name": "notFound",
+        "Path": "/404/",
+        "PrimaryMenu": "main"
+      }
+    ],
+    "Menus": [
+      {
+        "Name": "main",
+        "Items": [
+          {
+            "Id": "demos",
+            "Title": "Demos",
+            "Url": "/demos/"
+          },
+          {
+            "Id": "docs",
+            "Title": "Docs",
+            "Description": "Every page of the documentation, each with the output it produces.",
+            "Items": [
+              {
+                "Id": "overview",
+                "Title": "Documentation",
+                "Url": "/docs/",
+                "Description": "Every topic next to the output it produces.",
+                "Meta": {
+                  "thumb": "docs"
+                }
+              },
+              {
+                "Id": "getting-started",
+                "Title": "Getting started",
+                "Url": "/docs/getting-started/",
+                "Description": "Install, then build a file explorer and an inventory table in C#.",
+                "Meta": {
+                  "thumb": "getting-started",
+                  "group": "Start",
+                  "api": "CanopyTreeView, CanopyDataGridView"
+                }
+              },
+              {
+                "Id": "javascript",
+                "Title": "JavaScript",
+                "Url": "/docs/javascript/",
+                "Description": "Mount the same runtime from npm and translate its controls.",
+                "Meta": {
+                  "thumb": "javascript",
+                  "group": "Start",
+                  "api": "createTreeGrid, createDataGrid"
+                }
+              },
+              {
+                "Id": "reporting",
+                "Title": "Reporting grids",
+                "Url": "/docs/reporting/",
+                "Description": "Group, filter, aggregate and export records with presenters.",
+                "Meta": {
+                  "thumb": "reporting",
+                  "group": "Build",
+                  "api": "CanopyGridReporting, CanopyGridPresenter"
+                }
+              },
+              {
+                "Id": "static-tables",
+                "Title": "Email and print",
+                "Url": "/docs/static-tables/",
+                "Description": "Script-free tables from the same views for mail, print and Word.",
+                "Meta": {
+                  "thumb": "static-tables",
+                  "group": "Build",
+                  "api": "CanopyStaticHtml"
+                }
+              },
+              {
+                "Id": "delivery",
+                "Title": "Delivery modes",
+                "Url": "/docs/delivery/",
+                "Description": "Single file, sidecar bundle or hosted data, and what each writes.",
+                "Meta": {
+                  "thumb": "delivery",
+                  "group": "Ship",
+                  "api": "SaveHtmlPage, SaveHtmlBundle"
+                }
+              },
+              {
+                "Id": "data-protocol",
+                "Title": "Data protocol",
+                "Url": "/docs/data-protocol/",
+                "Description": "The canopyx/2 documents beside the grids they produce.",
+                "Meta": {
+                  "thumb": "data-protocol",
+                  "group": "Ship",
+                  "api": "canopyx/2 view, page, grid"
+                }
+              }
+            ]
+          },
+          {
+            "Id": "javascript-link",
+            "Title": "JavaScript",
+            "Url": "/docs/javascript/"
+          }
+        ]
+      },
+      {
+        "Name": "footer-product",
+        "Items": [
+          {
+            "Url": "/demos/",
+            "Title": "Live demos"
+          },
+          {
+            "Url": "/docs/",
+            "Title": "Documentation"
+          },
+          {
+            "Url": "/docs/getting-started/",
+            "Title": "Getting started"
+          },
+          {
+            "Url": "/docs/javascript/",
+            "Title": "JavaScript"
+          },
+          {
+            "Url": "/docs/reporting/",
+            "Title": "Reporting grids"
+          },
+          {
+            "Url": "/docs/static-tables/",
+            "Title": "Email and print"
+          },
+          {
+            "Url": "/docs/delivery/",
+            "Title": "Delivery modes"
+          },
+          {
+            "Url": "/docs/data-protocol/",
+            "Title": "Data protocol"
+          }
+        ]
+      },
+      {
+        "Name": "footer-resources",
+        "Items": [
+          {
+            "Title": "NuGet packages",
+            "Url": "https://www.nuget.org/packages?q=CanopyX",
+            "External": true
+          },
+          {
+            "Title": "npm package",
+            "Url": "https://www.npmjs.com/package/@evotecit/canopyx",
+            "External": true
+          },
+          {
+            "Title": "Data protocol",
+            "Url": "/docs/data-protocol/"
+          },
+          {
+            "Title": "Discord community",
+            "Url": "https://evo.yt/discord",
+            "External": true
+          }
+        ]
+      },
+      {
+        "Name": "footer-company",
+        "Items": [
+          {
+            "Title": "Evotec",
+            "Url": "https://evotec.xyz/",
+            "External": true
+          },
+          {
+            "Title": "All products",
+            "Url": "https://evotec.xyz/products/",
+            "External": true
+          },
+          {
+            "Title": "Privacy notice",
+            "Url": "https://evotec.xyz/privacy-notice/",
+            "External": true
+          }
+        ]
+      }
+    ],
+    "Actions": [
+      {
+        "Title": "Evotec Discord",
+        "Url": "https://evo.yt/discord",
+        "External": true,
+        "CssClass": "cnx-icon-link",
+        "AriaLabel": "Join the Evotec Discord",
+        "IconHtml": "<svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" aria-hidden=\"true\" fill=\"currentColor\"><path d=\"M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52.07.07 0 0 0-.08.04c-.21.38-.44.86-.61 1.25a18.3 18.3 0 0 0-5.49 0 12.6 12.6 0 0 0-.62-1.25.08.08 0 0 0-.08-.04 19.7 19.7 0 0 0-4.89 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 5.99 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-1.99a.08.08 0 0 0-.04-.11 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.07.07 0 0 1 .08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 0 1 .08.01l.37.29a.08.08 0 0 1-.01.13c-.6.35-1.22.65-1.87.89a.08.08 0 0 0-.04.11c.36.7.77 1.36 1.22 1.99a.08.08 0 0 0 .09.03 19.8 19.8 0 0 0 6-3.03.08.08 0 0 0 .03-.05c.5-5.18-.84-9.68-3.55-13.66a.06.06 0 0 0-.03-.03zM8.02 15.33c-1.18 0-2.16-1.09-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.33-.96 2.42-2.16 2.42zm7.98 0c-1.18 0-2.16-1.09-2.16-2.42 0-1.33.95-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.33-.95 2.42-2.16 2.42z\"/></svg>"
+      },
+      {
+        "Title": "Get started",
+        "Url": "/docs/getting-started/",
+        "CssClass": "cnx-btn cnx-btn--small"
+      }
+    ]
+  }
+}

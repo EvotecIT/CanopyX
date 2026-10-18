@@ -1,0 +1,78 @@
+{
+  "files": [
+    {
+      "feature": "Lazy branches",
+      "try": "Expand a share, then one of its departments.",
+      "watch": "Each branch opens from one pack file in data/, read the first time you open it. The page never downloads the whole tree."
+    },
+    {
+      "feature": "Search shards",
+      "try": "Type budget into Search files and folders and pick a hit.",
+      "watch": "Only the shards for the words you typed are read; the tree then opens every branch on the path to the hit."
+    },
+    {
+      "feature": "Filters",
+      "try": "Turn on Only changed in the last 7 days.",
+      "watch": "Folders above a changed file stay visible, so the tree keeps its shape around the matches."
+    },
+    {
+      "feature": "Detail rows",
+      "try": "Expand a file that has an arrow, then its History and a version.",
+      "watch": "The version's changes open as a before and after table inside the tree, under the file they belong to."
+    },
+    {
+      "feature": "Deep links",
+      "try": "Select a row and look at the address bar of the full-screen page.",
+      "watch": "The hash carries the row's path. Opening that address expands straight to the row."
+    }
+  ],
+  "inventory": [
+    {
+      "feature": "Grouping",
+      "try": "Collapse the Berlin group heading.",
+      "watch": "The heading keeps its count and its patch level summary; collapsed rows still count in selections and exports."
+    },
+    {
+      "feature": "Facets",
+      "try": "Open the filter in the Site or Operating system header and tick a few values.",
+      "watch": "The value counts come from all 1,200 devices that match, not from the rows on screen."
+    },
+    {
+      "feature": "Aggregates",
+      "try": "Read the totals row under the grid, then filter.",
+      "watch": "Average and lowest patch level follow the filtered query."
+    },
+    {
+      "feature": "Selection",
+      "try": "Tick a few rows, then use Select all matching.",
+      "watch": "The status bar counts the selection. Select all matching captures the query instead of every record ID."
+    },
+    {
+      "feature": "CSV export",
+      "try": "Open Export and choose Download CSV.",
+      "watch": "Pick filtered, selected or all records. The file follows the accepted query and the column order, not the visible rows."
+    },
+    {
+      "feature": "Saved views",
+      "try": "Hide a column, then open Views and save the layout.",
+      "watch": "Named views keep columns, filters and sorting, and Reset view returns to the definition."
+    }
+  ],
+  "outline": [
+    {
+      "feature": "No script",
+      "try": "Switch the site theme in the header.",
+      "watch": "The outline follows it through the page's --cx-* properties. In a mail client its literal colours apply."
+    },
+    {
+      "feature": "Row limits",
+      "try": "Look for the counts after a cut branch.",
+      "watch": "MaxRows and MaxDepth cut the outline, and each cut branch shows how many rows it hides."
+    },
+    {
+      "feature": "Print",
+      "try": "Print this page or save it as PDF.",
+      "watch": "The table is plain HTML with inline styles, so it prints and pastes into Word as it looks here."
+    }
+  ]
+}

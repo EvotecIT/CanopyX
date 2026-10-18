@@ -1,0 +1,204 @@
+/* Header navigation: groups that open panels of destinations, each with a small CanopyX render. The panel is drawn
+   as an expanded branch: a trunk under the group's description with an elbow down to every destination, and the
+   current page carries the selected-row treatment of the docs tree (a tint and an accent bar on its left edge). */
+
+.cnx-header__inner { position: relative; }
+
+.cnx-nav {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 0;
+}
+
+.cnx-nav__groups { display: flex; align-items: center; gap: 4px; margin: 0; padding: 0; list-style: none; }
+
+/* Every top-level item is the same box in every state: plain links, the Docs button, hovered, open or current.
+   Only colours change, so switching pages or opening the panel never moves the header. */
+.cnx-navgroup__trigger {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cnx-ink-2);
+  font: inherit;
+  font-size: .9375rem;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cnx-navgroup__trigger:hover { color: var(--cnx-ink); background: color-mix(in srgb, var(--cnx-ink) 5%, transparent); }
+.cnx-navgroup__trigger[aria-expanded="true"] { color: var(--cnx-ink); border-color: var(--cnx-line-strong); background: var(--cnx-card); }
+/* The current page or section: the selected row of the docs tree, drawn inside the same box. */
+.cnx-navgroup__trigger.is-current { color: var(--cnx-ink); background: var(--cnx-select); box-shadow: inset 2px 0 0 var(--cnx-accent); }
+.cnx-navgroup__chev { width: 14px; height: 14px; margin-right: -2px; color: var(--cnx-ink-3); -webkit-mask-size: 14px; mask-size: 14px; transition: transform .18s ease; }
+.cnx-navgroup__trigger[aria-expanded="true"] .cnx-navgroup__chev { transform: rotate(180deg); color: var(--cnx-accent); }
+.cnx-nav__actions { display: flex; align-items: center; gap: 8px; }
+
+/* Panel */
+.cnx-navpanel {
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 0;
+  z-index: 30;
+  display: none;
+  width: min(100%, 1040px);
+  padding: 18px 20px 20px;
+  border: 1px solid var(--cnx-line-strong);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: var(--cnx-card);
+  box-shadow: 0 28px 48px -28px rgba(10, 30, 20, .45);
+}
+.cnx-navpanel--2, .cnx-navpanel--3 { width: min(100%, 820px); }
+.cnx-navgroup__trigger[aria-expanded="true"] + .cnx-navpanel { display: block; }
+:root:not(.cnx-js) .cnx-navgroup:is(:hover, :focus-within) .cnx-navpanel { display: block; }
+
+.cnx-navpanel__lede {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  color: var(--cnx-ink-2);
+  font-size: .875rem;
+}
+.cnx-navpanel__lede::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: var(--cnx-accent);
+  -webkit-mask: var(--cnx-chevron) center / 16px 16px no-repeat;
+  mask: var(--cnx-chevron) center / 16px 16px no-repeat;
+}
+.cnx-navpanel__lede::after { content: ""; position: absolute; left: 7px; top: 22px; bottom: 0; border-left: 1px solid var(--cnx-guide); }
+
+.cnx-navpanel__items {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cnx-navpanel--3 .cnx-navpanel__items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cnx-navpanel--2 .cnx-navpanel__items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* The trunk across the first row, and an elbow from it to each destination of that row. */
+.cnx-navpanel__items::before { content: ""; position: absolute; left: 7px; right: 12%; top: 0; border-top: 1px solid var(--cnx-guide); }
+.cnx-navitem {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 18px 10px 12px;
+  border-radius: 8px;
+}
+.cnx-navitem::before { content: ""; position: absolute; left: 7px; top: 0; height: 12px; border-left: 1px solid var(--cnx-guide); }
+.cnx-navitem:hover { background: color-mix(in srgb, var(--cnx-accent) 6%, transparent); }
+.cnx-navitem.is-current { background: var(--cnx-select); box-shadow: inset 2px 0 0 var(--cnx-accent); border-radius: 0 8px 8px 0; }
+.cnx-navitem.is-current::before { border-left-color: var(--cnx-accent); }
+
+.cnx-navitem__thumb { height: 104px; margin-bottom: 8px; }
+.cnx-navitem__link {
+  color: var(--cnx-ink);
+  font-size: .9375rem;
+  font-weight: 680;
+  line-height: 1.3;
+  text-decoration: none;
+}
+.cnx-navitem__link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.cnx-navitem__link:focus-visible { outline: 0; }
+.cnx-navitem:has(.cnx-navitem__link:focus-visible) { outline: 2px solid var(--cnx-focus); outline-offset: 1px; }
+.cnx-navitem:hover .cnx-navitem__link, .cnx-navitem.is-current .cnx-navitem__link { color: var(--cnx-accent); }
+.cnx-navitem:hover .cnx-thumb { border-color: color-mix(in srgb, var(--cnx-accent) 50%, var(--cnx-line-strong)); }
+.cnx-navitem__desc { color: var(--cnx-ink-2); font-size: .8125rem; line-height: 1.45; }
+
+/* Thumbnail: a CanopyX render shown small, clipped like a window onto the top left of the output. */
+.cnx-thumb {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--cnx-line);
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 17px, var(--cnx-line) 17px 18px),
+    var(--cnx-card-alt);
+  transition: border-color .15s ease;
+}
+.cnx-thumb:not(:empty) { background: var(--cnx-card); }
+.cnx-thumb__render { zoom: .62; padding: 6px 4px; pointer-events: none; }
+.cnx-thumb__render table { width: 100%; }
+.cnx-thumb__render--dark { min-height: 100%; background: #111a15; }
+.cnx-thumb:has(.cnx-thumb__render--dark) { background: #111a15; }
+
+/* Compact: a sheet under the header with every group open as a tree of links. */
+@media (max-width: 900px) {
+  .cnx-nav-toggle__label {
+    display: grid;
+    gap: 5px;
+    margin-left: auto;
+    padding: 12px 10px;
+    cursor: pointer;
+  }
+  .cnx-nav-toggle__label span { display: block; width: 20px; height: 2px; border-radius: 2px; background: var(--cnx-ink); transition: transform .18s ease; }
+  .cnx-nav-toggle:checked + .cnx-nav-toggle__label span:first-child { transform: translateY(3.5px) rotate(45deg); }
+  .cnx-nav-toggle:checked + .cnx-nav-toggle__label span:last-child { transform: translateY(-3.5px) rotate(-45deg); }
+  .cnx-nav-toggle:focus-visible + .cnx-nav-toggle__label { outline: 2px solid var(--cnx-focus); border-radius: 8px; }
+  .cnx-nav {
+    position: absolute;
+    top: 100%;
+    left: calc(-1 * clamp(16px, 4vw, 40px));
+    right: calc(-1 * clamp(16px, 4vw, 40px));
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    padding: 12px clamp(16px, 4vw, 40px) 22px;
+    border-bottom: 1px solid var(--cnx-line);
+    background: var(--cnx-page);
+    box-shadow: 0 24px 40px -28px rgba(10, 30, 20, .5);
+  }
+  .cnx-nav-toggle:checked ~ .cnx-nav { display: flex; }
+  .cnx-nav__groups { flex-direction: column; align-items: stretch; gap: 10px; }
+  .cnx-navgroup__trigger { width: 100%; height: 44px; padding-left: 10px; }
+  .cnx-navgroup__trigger[aria-expanded="true"] { border-color: transparent; background: transparent; }
+  .cnx-navgroup__trigger[aria-expanded="true"].is-current { background: var(--cnx-select); }
+  .cnx-navgroup__chev { order: -1; margin-right: 0; transform: rotate(-90deg); }
+  .cnx-navgroup__trigger[aria-expanded="true"] .cnx-navgroup__chev { transform: none; }
+  .cnx-navpanel { position: static; width: auto; padding: 0 0 0 6px; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  :root:not(.cnx-js) .cnx-navpanel { display: block; }
+  .cnx-navpanel__lede { display: none; }
+  .cnx-navpanel__items, .cnx-navpanel--2 .cnx-navpanel__items, .cnx-navpanel--3 .cnx-navpanel__items { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .cnx-navpanel__items::before { display: none; }
+  .cnx-navitem { padding: 9px 10px 9px 30px; border-radius: 0 6px 6px 0; }
+  .cnx-navitem::before { top: 0; bottom: 0; height: auto; }
+  .cnx-navitem:last-child::before { bottom: auto; height: 21px; }
+  .cnx-navitem::after { content: ""; position: absolute; left: 7px; top: 21px; width: 14px; border-top: 1px solid var(--cnx-guide); }
+  .cnx-navitem.is-current::after { border-top-color: var(--cnx-accent); }
+  .cnx-navitem__thumb { display: none; }
+  .cnx-nav__actions { padding-top: 12px; border-top: 1px solid var(--cnx-line); }
+}
+.cnx-thumb__render td, .cnx-thumb__render th { white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .cnx-navgroup--link .cnx-navgroup__trigger { padding-left: 30px; }
+}
+
+@media (min-width: 901px) {
+  .cnx-navitem:nth-child(n+5)::before { display: none; }
+}

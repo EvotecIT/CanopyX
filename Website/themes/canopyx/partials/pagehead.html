@@ -1,0 +1,13 @@
+<header class="cnx-pagehead">
+  <nav class="cnx-crumbs" aria-label="Breadcrumb">
+    <ol>
+      {{~ for b in breadcrumbs ~}}
+      <li>{{ if for.first }}<span class="cnx-chev" aria-hidden="true"></span>{{ end }}{{ if b.is_current }}<span aria-current="page">{{ b.title }}</span>{{ else }}<a href="{{ b.url }}">{{ if for.first }}CanopyX{{ else }}{{ b.title }}{{ end }}</a>{{ end }}</li>
+      {{~ end ~}}
+    </ol>
+  </nav>
+  <h1>{{ page.title }}</h1>
+  {{~ if page.description != "" ~}}
+  <p class="cnx-lede">{{ page.description }}</p>
+  {{~ end ~}}
+</header>

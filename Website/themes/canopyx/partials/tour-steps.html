@@ -1,0 +1,16 @@
+{{~ ## The steps of a demo tour (set "tour" before including): the numbered rows of a small grid with a "Try" header. ## ~}}
+<div class="cnx-steps">
+  <p class="cnx-steps__head" aria-hidden="true"><span>#</span><span>Try this</span></p>
+  <ol class="cnx-steps__rows">
+    {{~ for s in tour ~}}
+    <li class="cnx-step">
+      <span class="cnx-step__num" aria-hidden="true">{{ for.index + 1 }}</span>
+      <div class="cnx-step__text">
+        <strong class="cnx-step__feature">{{ s.feature }}</strong>
+        <p class="cnx-step__try">{{ s.try }}</p>
+        <p class="cnx-step__watch">{{ s.watch }}</p>
+      </div>
+    </li>
+    {{~ end ~}}
+  </ol>
+</div>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{ include "head" }}
+  {{ assets.preloads_html }}
+  {{ assets.critical_css_html }}
+  {{ include "theme-tokens" }}
+  {{ extra_css_html }}
+  {{ assets.css_html }}
+  {{ opengraph_html }}
+  {{ structured_data_html }}
+  {{ head_html }}</head>
+<body class="cnx-body cnx-body--docsmap{{ if body_class != "" }} {{ body_class }}{{ end }}">
+{{ include "site-header" }}
+{{~ ## The documentation index: a forest band with the install command, then every topic as a row of a tree grid,
+     grouped by what a reader is doing, with the output that topic produces rendered by CanopyX. Topics, their groups
+     and their thumbnails come from the "Docs" group of the main menu in site.json. ## ~}}
+{{~ dev = null; for g in (pf.menu "main").items; if g.id == "docs"; dev = g; end; end ~}}
+<main id="main" class="cnx-main cnx-map">
+  <section class="cnx-maphero" aria-labelledby="cnx-map-title">
+    <div class="cnx-maphero__inner">
+      <div class="cnx-maphero__copy">
+        <nav class="cnx-crumbs" aria-label="Breadcrumb"><ol><li><span class="cnx-chev" aria-hidden="true"></span><a href="/">CanopyX</a></li><li><span aria-current="page">Documentation</span></li></ol></nav>
+        <h1 id="cnx-map-title" class="cnx-display">CanopyX documentation</h1>
+        <p class="cnx-maphero__lede">{{ page.description }}</p>
+        <div class="cnx-codeblock cnx-install" data-cnx-tabs>
+          <div class="cnx-codeblock__bar">
+            <div class="cnx-tabs cnx-tabs--code" role="tablist" aria-label="Package">
+              {{~ for i in data.home.install ~}}
+              <button type="button" role="tab" class="cnx-tab" id="cnx-map-tab-{{ i.id }}" aria-controls="cnx-map-{{ i.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}">{{ i.label }}<span class="cnx-tab__sort" aria-hidden="true"></span></button>
+              {{~ end ~}}
+            </div>
+          </div>
+          {{~ for i in data.home.install ~}}
+          <div class="cnx-install__line" role="tabpanel" id="cnx-map-{{ i.id }}" aria-labelledby="cnx-map-tab-{{ i.id }}"{{ if !for.first }} hidden{{ end }}>
+            <code><span class="cnx-install__prompt" aria-hidden="true">&gt;</span> {{ i.command }}</code>
+            <button type="button" class="cnx-copy" data-cnx-copy="{{ i.command }}" aria-label="Copy {{ i.command }}">Copy</button>
+          </div>
+          {{~ end ~}}
+        </div>
+      </div>
+      <figure class="cnx-frame cnx-maphero__render">
+        <div class="cnx-frame__bar">
+          <span class="cnx-frame__title">This documentation</span>
+          <span class="cnx-frame__path">CanopyStaticHtml.Render(map)</span>
+        </div>
+        <div class="cnx-frame__body">{{ include data.docs.thumbs.docs.partial }}</div>
+        <figcaption class="cnx-frame__caption">The topics below as a CanopyX tree, rendered without script during the build.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="cnx-topics" aria-labelledby="cnx-topics-title">
+    <div class="cnx-section__head cnx-node">
+      <h2 id="cnx-topics-title">Topics</h2>
+      <p>Each topic is shown with the output its page produces. The renders are CanopyX output from the same build as this site.</p>
+    </div>
+    <div class="cnx-topics__grid">
+      <div class="cnx-topics__cols" aria-hidden="true"><span class="cnx-topics__sorted">Topic<span class="cnx-tab__sort"></span></span><span>You write</span><span>What it produces</span></div>
+      {{~ for name in ["Start", "Build", "Ship", "Reference"] ~}}
+      {{~ rows = []; for item in dev.items; if item.meta.group == name; rows = rows | array.add item; end; end ~}}
+      <section class="cnx-topics__group" aria-labelledby="cnx-topics-{{ name | string.downcase }}">
+        <h3 class="cnx-topics__name" id="cnx-topics-{{ name | string.downcase }}"><span class="cnx-chev" aria-hidden="true"></span>{{ name }}<span class="cnx-topics__count">{{ rows.size }} {{ if rows.size == 1 }}topic{{ else }}topics{{ end }}</span></h3>
+        <ul class="cnx-topics__rows">
+          {{~ for item in rows; t = data.docs.thumbs[item.meta.thumb] ~}}
+          <li class="cnx-topic">
+            <div class="cnx-topic__text">
+              <a class="cnx-topic__title" href="{{ item.url }}">{{ item.title }}{{ if item.external }}<span class="cnx-topic__where"> on GitHub</span>{{ end }}</a>
+              <p>{{ item.description }}</p>
+            </div>
+            <div class="cnx-topic__api">{{ for api in (item.meta.api | string.split ", ") }}<code>{{ api }}</code>{{ end }}</div>
+            <div class="cnx-topic__thumb cnx-thumb" aria-hidden="true">{{ if t }}{{ include t.partial }}{{ end }}</div>
+          </li>
+          {{~ end ~}}
+        </ul>
+      </section>
+      {{~ end ~}}
+    </div>
+  </section>
+
+  {{~ if content != "" ~}}
+  <div class="cnx-prose cnx-map__about">
+{{ content }}
+  </div>
+  {{~ end ~}}
+</main>
+{{ include "site-footer" }}
+{{ assets.js_html }}
+{{ extra_scripts_html }}
+</body>
+</html>

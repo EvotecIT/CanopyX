@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/EvotecIT/PSPublishModule/main/Schemas/powerforge.web.pipelinespec.schema.json",
+  "steps": [
+    {
+      "task": "exec",
+      "id": "site-demos",
+      "command": "dotnet",
+      "argsList": ["run", "--project", "./tools/SiteDemos/SiteDemos.csproj", "-c", "Release", "--", "."],
+      "workingDirectory": ".",
+      "timeoutSeconds": 900
+    }
+  ]
+}

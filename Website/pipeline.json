@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/EvotecIT/PSPublishModule/main/Schemas/powerforge.web.pipelinespec.schema.json",
+  "extends": ["./config/presets/pipeline.demos.json", "./config/presets/pipeline.web-quality.json"],
+  "steps": [
+    {
+      "task": "llms",
+      "id": "build-llms",
+      "dependsOn": "build-site",
+      "siteRoot": "./_site",
+      "contentKind": "Site",
+      "name": "CanopyX",
+      "discovery": "./config/llms-discovery.md",
+      "license": "MIT",
+      "targets": ".NET Framework 4.7.2, .NET Standard 2.0, .NET 8, .NET 10, npm @evotecit/canopyx"
+    },
+    {
+      "task": "agent-ready",
+      "id": "prepare-agent-discovery",
+      "dependsOn": ["build-llms", "sitemap"],
+      "operation": "prepare",
+      "config": "./site.json",
+      "siteRoot": "./_site",
+      "failOnFailures": true
+    },
+    {
+      "task": "optimize",
+      "id": "optimize-site",
+      "dependsOn": "build-site",
+      "modes": ["ci"],
+      "siteRoot": "./_site",
+      "config": "./site.json",
+      "criticalCss": "./themes/canopyx/critical.css",
+      "minifyHtml": true,
+      "minifyCss": true,
+      "minifyJs": true,
+      "exclude": "live/**"
+    }
+  ]
+}

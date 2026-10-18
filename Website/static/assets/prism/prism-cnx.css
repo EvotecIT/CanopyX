@@ -1,0 +1,16 @@
+/* Prism tokens mapped to the CanopyX code palette. Code blocks keep a dark surface in both themes,
+   so every token colour is checked against --cnx-code-bg for AA contrast. */
+pre[class*="language-"], code[class*="language-"] { color: var(--cnx-code-ink); background: none; text-shadow: none; font-family: var(--cnx-mono); }
+.token.comment, .token.prolog, .token.doctype, .token.cdata { color: var(--cnx-code-muted); font-style: italic; }
+.token.punctuation { color: #9fb5a8; }
+.token.operator { color: #b6c9bd; }
+.token.keyword, .token.boolean, .token.important, .token.atrule, .token.selector, .token.tag { color: var(--cnx-code-key); }
+.token.string, .token.char, .token.attr-value, .token.regex, .token.url { color: var(--cnx-code-str); }
+.token.number, .token.constant, .token.symbol, .token.variable { color: var(--cnx-code-num); }
+.token.class-name, .token.builtin, .token.attr-name, .token.parameter { color: var(--cnx-code-type); }
+.token.function { color: #c7ecd5; }
+.token.property { color: #d6e4db; }
+.token.namespace { color: var(--cnx-code-ink); opacity: .82; }
+.token.tag .token.punctuation, .token.attr-value .token.punctuation { color: inherit; opacity: .8; }
+.token.bold { font-weight: 700; }
+.token.italic { font-style: italic; }

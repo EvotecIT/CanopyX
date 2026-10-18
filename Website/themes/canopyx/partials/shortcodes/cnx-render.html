@@ -1,0 +1,3 @@
+{{~ ## A reference table or layout rendered by CanopyStaticHtml during the build (partials/generated/docs/<id>). ## ~}}
+{{~ a = shortcode.attrs ~}}
+<figure class="cnx-render"><div class="cnx-example__bar"><span class="cnx-example__tag">Rendered</span><code class="cnx-example__label">{{ a.label ?? "CanopyStaticHtml.RenderGrid(view)" }}</code><span class="cnx-example__meta">Script-free HTML</span></div><div class="cnx-example__body">{{ include ("generated/docs/" + a.id) }}</div>{{ if a.caption }}<figcaption class="cnx-example__caption">{{ a.caption }}</figcaption>{{ end }}</figure>
