@@ -202,4 +202,3 @@
 @media (min-width: 901px) {
   .cnx-navitem:nth-child(n+5)::before { display: none; }
 }
-

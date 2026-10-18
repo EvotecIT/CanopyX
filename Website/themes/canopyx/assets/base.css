@@ -703,4 +703,3 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 
 .cnx-codeblock__bar:has(> .cnx-tabs) { padding-block: 0; padding-left: 0; }
 .cnx-codeblock__bar > .cnx-tabs { align-self: stretch; margin-right: auto; }
-
