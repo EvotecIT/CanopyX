@@ -403,7 +403,7 @@
     {
       "name": "calendar-ics",
       "label": "iCalendar",
-      "version": "cdda240a01480077",
+      "version": "feb3ed2cd67d057f",
       "script": "canopyx-calendar-ics.js",
       "runtimes": [
         "grid"

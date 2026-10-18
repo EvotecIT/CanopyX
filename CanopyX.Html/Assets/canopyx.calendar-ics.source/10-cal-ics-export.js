@@ -26,7 +26,21 @@
   function calIcsUtc(time) { return new Date(time).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""); }
   function calIcsDate(day) { return calDayText(day).replace(/-/g, ""); }
   function calIcsWall(zone, time) { const p = zone.parts(time), s = Math.floor((time % CAL_MINUTE + CAL_MINUTE) % CAL_MINUTE / 1000); return calIcsDate(p.day) + "T" + String(p.h).padStart(2, "0") + String(p.mi).padStart(2, "0") + String(s).padStart(2, "0"); }
-  function calIcsOffset(ms) { const sign = ms < 0 ? "-" : "+", minutes = Math.abs(ms) / CAL_MINUTE; return sign + String(Math.floor(minutes / 60)).padStart(2, "0") + String(minutes % 60).padStart(2, "0"); }
+  /** Named-zone export uses the calendar's minute-precision zone owner. */
+  function calIcsMinuteOffset(ms) {
+    if (ms % CAL_MINUTE !== 0) throw new Error("CanopyX: named-zone iCalendar export needs whole-minute time zone offsets throughout its calendar-year span. Use a supported date range or prepare a separate UTC series.");
+    return ms;
+  }
+  /** A TZID wall time must read back to the same instant, at the writer's existing whole-second precision. */
+  function calIcsZonedWall(zone, time) {
+    const whole = Math.floor(time / 1000) * 1000;
+    calIcsMinuteOffset(zone.offset(whole));
+    const parts = zone.parts(whole), remainder = (whole % CAL_MINUTE + CAL_MINUTE) % CAL_MINUTE;
+    if (zone.instant(parts.day, parts.minutes) + remainder !== whole)
+      throw new Error("CanopyX: named-zone iCalendar export cannot preserve an instant in the second occurrence of a repeated wall time. Use an unambiguous series time or prepare separate UTC events.");
+    return calIcsWall(zone, whole);
+  }
+  function calIcsOffset(ms) { const sign = ms < 0 ? "-" : "+", minutes = Math.abs(calIcsMinuteOffset(ms)) / CAL_MINUTE; return sign + String(Math.floor(minutes / 60)).padStart(2, "0") + String(minutes % 60).padStart(2, "0"); }
   /** The browser's canonical IANA name; this also recognizes its UTC aliases. */
   function calIcsZoneName(zone) {
     const name = zone.name === "local" ? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" : zone.name;
@@ -56,13 +70,13 @@
   function calVTimezone(zone, name, year, lastYear) {
     if (lastYear - year >= CAL_ICS_ZONE_YEARS) throw new Error("CanopyX: zoned iCalendar recurrence export is limited to 100 calendar years per time zone.");
     const start = Date.UTC(year, 0, 1), finish = Date.UTC(lastYear + 1, 0, 1), changes = [];
-    let previous = zone.offset(start);
+    let previous = calIcsMinuteOffset(zone.offset(start));
     const initial = previous;
     for (let time = start + CAL_DAY; time <= finish; time += CAL_DAY) {
-      const offset = zone.offset(time);
+      const offset = calIcsMinuteOffset(zone.offset(time));
       if (offset === previous) continue;
       let low = time - CAL_DAY, high = time;
-      while (high - low > CAL_MINUTE) { const mid = low + Math.max(CAL_MINUTE, Math.floor((high - low) / 2 / CAL_MINUTE) * CAL_MINUTE); if (zone.offset(mid) === previous) low = mid; else high = mid; }
+      while (high - low > CAL_MINUTE) { const mid = low + Math.max(CAL_MINUTE, Math.floor((high - low) / 2 / CAL_MINUTE) * CAL_MINUTE); if (calIcsMinuteOffset(zone.offset(mid)) === previous) low = mid; else high = mid; }
       changes.push({ at: high, from: previous, to: offset }); previous = offset;
     }
     const lines = ["BEGIN:VTIMEZONE", "TZID:" + calIcsText(name)];
@@ -111,7 +125,7 @@
         zones.set(name, { zone, name, first: Math.min(first, prior?.first ?? first), last: Math.max(last, prior?.last ?? last) });
       }
       const tz = zoned ? ";TZID=" + calIcsText(name) : "";
-      const time = value => base.allDay ? ";VALUE=DATE:" + calIcsDate(Math.floor(value / CAL_DAY)) : zoned ? tz + ":" + calIcsWall(zone, value) : ":" + calIcsUtc(value);
+      const time = value => base.allDay ? ";VALUE=DATE:" + calIcsDate(Math.floor(value / CAL_DAY)) : zoned ? tz + ":" + calIcsZonedWall(zone, value) : ":" + calIcsUtc(value);
       lines.push("DTSTART" + time(base.start));
       if (base.end > base.start) lines.push("DTEND" + time(base.end));
       if (base.series && Number.isFinite(base.recurrenceId)) {
@@ -120,9 +134,12 @@
         lines.push("RECURRENCE-ID" + time(base.recurrenceId));
       }
       lines.push("SUMMARY:" + calIcsText(base.title));
-      const description = [base.subtitle, view.calStatusText({ row })].filter(Boolean).join("\n");
+      const fields = base.external ? row.fields : null;
+      const detail = fields ? fields.description || "" : view.cal.description ? cellText(row.cells[view.cal.description.id], view.cal.description, view.fmt) : "";
+      const description = [detail, base.subtitle, view.calStatusText({ row })].filter(Boolean).join("\n");
       if (description) lines.push("DESCRIPTION:" + calIcsText(description));
-      if (base.resource) lines.push("LOCATION:" + calIcsText(view.calResourceName ? view.calResourceName(base.resource) : base.resource));
+      const location = fields ? fields.location : base.resource ? (view.calResourceName ? view.calResourceName(base.resource) : base.resource) : "";
+      if (location) lines.push("LOCATION:" + calIcsText(location));
       if (base.rule) {
         lines.push("RRULE:" + calIcsRule(base.rule, zone, base.allDay));
         // EXDATE has the type of DTSTART: a day excluded from a timed series is the occurrence at the series' time that day.

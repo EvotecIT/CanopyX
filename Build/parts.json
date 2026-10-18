@@ -411,7 +411,7 @@
       "features": ["calendarIcs"],
       "key": "DataGrid.prototype",
       "requires": ["calendar", "calendar-recurrence"],
-      "context": ["DataGrid", "h", "fill"],
+      "context": ["DataGrid", "h", "fill", "cellText"],
       "start": "const { CAL_DAY, CAL_MINUTE, calBase, calDayNumber, calDayText, calMonthDays, CAL_WEEKDAYS, calZone, calIso, calParseDay, calRule, calExpand } = DataGrid.prototype.calKit;",
       "end": "Object.assign(DataGrid.prototype.calKit, { calIcsText, calIcsFold, calIcsParse });",
       "scripts": [

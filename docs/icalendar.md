@@ -100,9 +100,19 @@ contains the actual timezone transitions over that span, so later years keep the
 its last occurrence cannot be resolved within the limit, or the combined span is too large, the whole export fails with an
 error. Add `COUNT` or `UNTIL` to the recurrence rule, or shorten its horizon; no occurrences are silently cut from the file.
 
+Named-zone export uses the calendar's minute-precision time zone support. Every offset in the exported calendar-year span,
+including its initial offset, must be a whole number of minutes. Historical spans with second-based offsets are refused.
+A series' start, end and exact excluded instants must also survive conversion to a zoned wall time: an instant in the
+second occurrence of a repeated daylight saving hour cannot be written faithfully with `TZID` and fails the whole export.
+Use a supported date range or an unambiguous series time, or prepare separate UTC events. These errors do not change stored
+events. Date-times keep whole-second precision; ordinary millisecond-bearing timestamps are written without milliseconds.
+
 UTC series, including names the browser resolves to `UTC` or `Etc/UTC`, and all-day series may remain unbounded. They do not need a
 timezone transition table. An imported timed series uses its own recurrence zone for these checks, even when the calendar
 displays another zone. A calendar using the reader's local display zone keeps its native series' recurrence in UTC.
+
+`DESCRIPTION` includes the mapped description followed by the subtitle and status when present. Imported events retain
+their description and location; native events use their resource label as `LOCATION`. These values remain escaped plain text.
 
 ## What is read
 
