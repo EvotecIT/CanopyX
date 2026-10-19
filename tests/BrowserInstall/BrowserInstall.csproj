@@ -7,7 +7,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="HtmlTinkerX" Version="3.0.3" />
+    <PackageReference Include="HtmlTinkerX" Version="3.0.5" />
     <None Include="../browser/package.json" Link="browser-package.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
