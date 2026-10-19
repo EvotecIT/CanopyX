@@ -1,5 +1,6 @@
 // Browser tests for the CanopyX runtime. They open the pages CanopyX.Examples generates (see specs/support.mjs).
 // CANOPYX_TEST_BROWSERS picks the engines (default chromium; "all" or chromium,firefox,webkit); see tools/browsers.mjs.
+// CANOPYX_TEST_SHARD optionally selects an isolated current/total shard without changing in-file execution order.
 // Set CANOPYX_BROWSER_CHANNEL=msedge (or chrome) to use an installed browser instead of Playwright's Chromium.
 // The visual baselines run as their own "visual" project on Playwright's Chromium on Windows, the baseline platform;
 // CANOPYX_VISUAL=0 leaves them out and CANOPYX_VISUAL=1 runs them anyway (expect differences on other platforms).
@@ -7,6 +8,15 @@ import { defineConfig } from "@playwright/test";
 
 const engines = ["chromium", "firefox", "webkit"];
 const benchmarks = process.env.CANOPYX_BENCHMARKS === "1";
+const shardText = process.env.CANOPYX_TEST_SHARD || "";
+let shard;
+if (shardText) {
+  const parts = /^([1-9]\d*)\/([1-9]\d*)$/.exec(shardText);
+  if (!parts || parts.slice(1).some(value => !Number.isSafeInteger(Number(value))) || Number(parts[1]) > Number(parts[2])) {
+    throw new Error("CANOPYX_TEST_SHARD must be current/total with 1 <= current <= total.");
+  }
+  shard = { current: Number(parts[1]), total: Number(parts[2]) };
+}
 const requested = (process.env.CANOPYX_TEST_BROWSERS || "chromium").trim();
 const browserNames = requested === "all" ? engines : requested.split(",").map(name => name.trim());
 if (new Set(browserNames).size !== browserNames.length || browserNames.some(name => !engines.includes(name))) {
@@ -35,6 +45,7 @@ export default defineConfig({
   },
   snapshotPathTemplate: "{testDir}/__screenshots__/{arg}{ext}",
   fullyParallel: false,
+  shard,
   forbidOnly: !!process.env.CI,
   workers: process.env.CI ? 1 : 2,
   retries: 0,

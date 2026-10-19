@@ -23,8 +23,8 @@ const alignment = page => page.evaluate(() => {
 const live = page => page.locator(".cx-cal > .cx-live");
 
 test.describe("resource timeline", () => {
-  test("zooms from hours to quarters, each with its scale, with lanes level with the tree rows", async ({ page }) => {
-    for (const dark of [false, true]) {
+  for (const dark of [false, true]) {
+    test("zooms from hours to quarters, each with its scale, with lanes level with the tree rows in " + (dark ? "dark" : "light"), async ({ page }) => {
       await openCalendar(page, "calendar-timeline.html", { dark });
       for (const zoom of ["hour", "day", "week", "month", "quarter"]) {
         await api(page, "(api, element, zoom) => api.setCalendarZoom(zoom)", zoom);
@@ -35,8 +35,8 @@ test.describe("resource timeline", () => {
         if (zoom !== "quarter" && zoom !== "month") await capture(page, "timeline/" + zoom + "-" + (dark ? "dark" : "light") + "-1440");
       }
       expect(await axe(page)).toEqual([]);
-    }
-  });
+    });
+  }
 
   test("groups show their capacity and add up their resources; collapsing a group removes its lanes", async ({ page }) => {
     await openCalendar(page, "calendar-timeline.html");

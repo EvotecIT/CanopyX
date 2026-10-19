@@ -29,9 +29,11 @@ jobs:
           if ($env:MATRIX_RESULT -ne 'success') { throw "The browser/platform matrix did not pass: $env:MATRIX_RESULT" }
 
   build-test-pack:
-    # Every platform runs the browser suite in all three engines, one engine per job. The Chromium job of each platform
+    # Every platform runs the full browser suite in all three engines. Windows Firefox uses two isolated shards;
+    # its serial suite outgrew the process deadline. Every shard keeps one worker and the same test/time limits.
+    # The Chromium job of each platform
     # also packs; the Windows Chromium job also checks the visual baselines (tests/browser/playwright.config.mjs).
-    name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }})
+    name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }}${{ matrix.shard && format(', shard {0}/2', matrix.shard) || '' }})
     runs-on: ${{ fromJSON(matrix.platform.runner) }}
     timeout-minutes: 135
     strategy:
@@ -45,11 +47,28 @@ jobs:
           - name: macOS
             runner: '["self-hosted","macOS","ARM64"]'
         engine: [chromium, firefox, webkit]
+        exclude:
+          - platform:
+              name: Windows
+              runner: '["self-hosted","Windows","X64"]'
+            engine: firefox
+        include:
+          - platform:
+              name: Windows
+              runner: '["self-hosted","Windows","X64"]'
+            engine: firefox
+            shard: 1
+          - platform:
+              name: Windows
+              runner: '["self-hosted","Windows","X64"]'
+            engine: firefox
+            shard: 2
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
       CANOPYX_TEST_BROWSERS: ${{ matrix.engine }}
+      CANOPYX_TEST_SHARD: ${{ matrix.shard && format('{0}/2', matrix.shard) || '' }}
       CANOPYX_BENCHMARKS: "0"
     steps:
       - name: Checkout
@@ -81,7 +100,7 @@ jobs:
       - name: Run quality loop
         shell: pwsh
         run: |
-          # Each engine runs serially on a shared runner. This process deadline catches a stalled suite.
+          # Each engine/shard runs serially on a shared runner. This deadline catches a stalled suite.
           # Performance measurements run only by explicit opt-in.
           $seconds = 7200
           if ($env:CANOPYX_TEST_BROWSERS -eq 'chromium') {
@@ -115,7 +134,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: canopyx-playwright-report-${{ matrix.platform.name }}-${{ matrix.engine }}
+          name: canopyx-playwright-report-${{ matrix.platform.name }}-${{ matrix.engine }}-${{ matrix.shard || 'full' }}
           path: |
             tests/browser/playwright-report
             tests/browser/test-results
