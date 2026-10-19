@@ -102,6 +102,8 @@ export interface ExportFormat<C extends ExportCapture = ExportCapture> {
   readonly extension: string;
   /** The Blob type for bytes a writer returns; default application/octet-stream. */
   readonly mime?: string;
+  /** False omits this writer from the Export menu; exportAs still runs it. Default true. */
+  readonly showInMenu?: boolean;
   /** Returns the file: a Blob (a File names the download itself), or bytes typed with mime. */
   write(capture: C, context: ExportFormatContext): Blob | ArrayBuffer | ArrayBufferView | PromiseLike<Blob | ArrayBuffer | ArrayBufferView>;
 }

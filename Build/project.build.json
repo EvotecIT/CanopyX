@@ -3,10 +3,10 @@
   "RootPath": "..",
   "ExpectedVersion": null,
   "ExpectedVersionMap": {
-    "CanopyX": "0.2.X",
-    "CanopyX.Html": "0.2.X",
-    "CanopyX.Data": "0.2.X",
-    "CanopyX.AspNetCore": "0.2.X"
+    "CanopyX": "0.3.X",
+    "CanopyX.Html": "0.3.X",
+    "CanopyX.Data": "0.3.X",
+    "CanopyX.AspNetCore": "0.3.X"
   },
   "ExpectedVersionMapAsInclude": true,
   "ExpectedVersionMapUseWildcards": false,

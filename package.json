@@ -1,6 +1,6 @@
 {
   "name": "@evotecit/canopyx",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Interactive tree grids and data tables with virtual rows, search, filters and offline HTML reports.",
   "type": "module",
   "license": "MIT",

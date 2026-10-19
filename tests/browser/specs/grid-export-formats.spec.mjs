@@ -152,7 +152,8 @@ test("formats register globally, per grid and as declared view IDs, and invalid 
   const result = await page.evaluate(async api => {
     const grid = eval(api), errors = [];
     for (const format of [null, { id: "csv", label: "CSV", extension: "csv", write() {} }, { id: "Bad", label: "X", extension: "x", write() {} },
-      { id: "ok", label: " ", extension: "x", write() {} }, { id: "ok", label: "X", extension: "x.y", write() {} }, { id: "ok", label: "X", extension: "x" }])
+      { id: "ok", label: " ", extension: "x", write() {} }, { id: "ok", label: "X", extension: "x.y", write() {} }, { id: "ok", label: "X", extension: "x" },
+      { id: "ok", label: "X", extension: "x", showInMenu: "false", write() {} }])
       try { CanopyX.registerExportFormat(format); errors.push(null); } catch (error) { errors.push(error.message); }
     const dispose = CanopyX.registerExportFormat(fakeFormat("later", "Download later", "txt", "text/plain"));
     const missing = await grid.exportAs("xlsx", { scope: "all" }).then(() => null, error => error.message);
@@ -161,16 +162,21 @@ test("formats register globally, per grid and as declared view IDs, and invalid 
     dispose();
     return { errors, missing, scope, type: result.blob.type, name: result.fileName, format: result.format, modules: typeof CanopyX.registerExportFormat };
   }, api);
-  expect(result.errors).toEqual(Array(6).fill("CanopyX: invalid export format."));
+  expect(result.errors).toEqual(Array(7).fill("CanopyX: invalid export format."));
   expect(result.missing).toBe("CanopyX: export format 'xlsx' is not available.");
   expect(result.scope).toBe("CanopyX: explicit export scope required.");
   expect(result).toMatchObject({ type: "application/pdf", name: "records.pdf", format: "pdf", modules: "function" });
   // A host option wins over the view's declared IDs and can carry its own provider objects.
-  await open(page, definition({ exportFormats: ["pdf"] }), fakeFormats + "CanopyX.configure('records',{exportFormats:['xlsx',fakeFormat('own','Download own','own','text/plain')]});");
+  await open(page, definition({ exportFormats: ["pdf"] }), fakeFormats + "CanopyX.configure('records',{exportFormats:['xlsx',fakeFormat('own','Download own','own','text/plain'),{...fakeFormat('private','Host export','txt','text/plain'),showInMenu:false}]});");
   await openGridControl(page, "export");
   await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download own", "Copy"]);
   const download = page.waitForEvent("download"); await page.getByRole("button", { name: "Download own", exact: true }).click();
   expect((await download).suggestedFilename()).toBe("records.own");
+  const privateExport = await page.evaluate(async api => {
+    const result = await eval(api).exportAs("private", { scope: "all", download: false });
+    return { text: await result.blob.text(), format: result.format };
+  }, api);
+  expect(privateExport).toEqual({ text: "private:" + rows.map(row => row.id).join(","), format: "private" });
   // A writer that names its file returns a File.
   const named = await page.evaluate(async api => { CanopyX.registerExportFormat({ id: "named", label: "Named", extension: "txt", write: () => new File(["named"], "Quarterly report.txt", { type: "text/plain" }) });
     const grid = eval(api), result = await grid.exportAs("named", { scope: "all", download: false }).catch(error => error.message); return result.fileName || result; }, api);
@@ -196,6 +202,29 @@ const tree = (extra = {}) => ({ protocol: "canopyx/2", type: "view", id: "files"
       { id: "a1", label: "Alpha one", cells: { size: 10, owner: "bo" } },
       { id: "a2", label: "Alpha two", cells: { size: 20, owner: "cy" }, children: [{ id: "a2x", label: "Deep", cells: { size: 5, owner: "di" } }] }] },
     { id: "b", label: "Beta", cells: { size: 7, owner: "ed" }, children: [{ id: "b1", label: "Beta one", cells: { size: 7, owner: "fa" } }] }], ...extra });
+
+for (const [name, view, runtime] of [["ordinary", definition()], ["reporting", definition({ reporting: {} })],
+  ["tree", tree(), "interactive"], ["tree on grid", tree(), "grid"]])
+test("hidden providers remain callable while default and visible providers stay in the Export menu (" + name + ")", async ({ page }) => {
+  await open(page, view, fakeFormats + `
+    CanopyX.registerExportFormat({...fakeFormat('hidden','Host-only export','txt','text/plain'),showInMenu:false});
+    CanopyX.registerExportFormat({...fakeFormat('visible','Visible export','txt','text/plain'),showInMenu:true});`, runtime);
+  await openGridControl(page, "export");
+  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Visible export", ...(view.type === "grid" ? ["Copy"] : [])]);
+  await expect(page.getByRole("button", { name: "Host-only export", exact: true })).toHaveCount(0);
+  const result = await page.evaluate(async api => {
+    const grid = eval(api), hidden = await grid.exportAs("hidden", { scope: "all", values: "raw", download: false });
+    return { format: hidden.format, text: await hidden.blob.text(), write: window.writes.at(-1) };
+  }, api);
+  const expected = view.type === "grid" ? rows.map(row => row.id) : ["a", "a1", "a2", "a2x", "b", "b1"];
+  expect(result.format).toBe("hidden"); expect(result.text).toBe("hidden:" + expected.join(","));
+  expect(result.write.request.values).toBe("raw"); expect(result.write.rows).toEqual(expected);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Visible export", exact: true }).click();
+  expect((await download).suggestedFilename()).toMatch(/\.txt$/);
+  await expect(page.locator(".cx-grid-export .cx-grid-delivery-status")).toHaveText("");
+  expect(await page.evaluate(() => window.errors)).toEqual([]);
+});
 
 for (const runtime of ["interactive", "grid"]) test("tree grids capture visible rows with level and path and write them through providers (" + runtime + " runtime)", async ({ page }) => {
   await open(page, tree(), fakeFormats, runtime);
@@ -272,7 +301,7 @@ for (const mode of ["embedded", "plain", "hashed", "module"]) test("the export p
 // The Export menu with formats and its scope picker, in both themes at desktop and phone widths.
 for (const theme of ["light", "dark"]) for (const width of [1440, 390]) test("the Export menu with formats fits " + theme + " at " + width + " pixels", async ({ page }) => {
   await page.setViewportSize({ width, height: 900 });
-  await open(page, definition({ reporting: {} }), fakeFormats);
+  await open(page, definition({ reporting: {} }), fakeFormats + "CanopyX.registerExportFormat({...fakeFormat('hidden','Host-only export','txt','text/plain'),showInMenu:false});");
   await page.locator("[data-canopyx-host]").evaluate((host, theme) => host.setAttribute("data-cx-theme", theme), theme);
   await openGridControl(page, "export");
   const panel = page.locator(".cx-grid-export .cx-grid-panel");

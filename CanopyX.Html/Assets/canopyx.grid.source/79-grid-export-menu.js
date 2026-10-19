@@ -63,7 +63,7 @@
       if (operation) return;
       formats.forEach(button => button.remove());
       try {
-        formats = EXPORT_IMPL.formatsOf(this).map(format => Object.assign(gridButton(format.label, () =>
+        formats = EXPORT_IMPL.formatsOf(this).filter(format => format.showInMenu).map(format => Object.assign(gridButton(format.label, () =>
           panel.cxRun((options, onProgress) => this.exportAs(format.id, { ...options, onProgress }))), { value: format.id }));
       } catch (error) { formats = []; this.emit("error", { error }); }
       copy.before(...formats);

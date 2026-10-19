@@ -1729,6 +1729,7 @@ export interface ExportFormat<C extends ExportCapture=ExportCapture>{
   readonly label:string;
   readonly extension:string;
   readonly mime?:string;
+  readonly showInMenu?:boolean;
   write(capture:C,context:ExportFormatContext):Blob|ArrayBuffer|ArrayBufferView|PromiseLike<Blob|ArrayBuffer|ArrayBufferView>;
 }
 export interface ExportProgress{
