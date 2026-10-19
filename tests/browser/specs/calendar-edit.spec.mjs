@@ -53,6 +53,29 @@ test.describe("calendar editing", () => {
     expect(await startOf(page, "op-010")).toBe("2026-10-16T09:00:00Z");
   });
 
+  for (const mode of ["resize", "move", "cancel"]) test(`a ${mode} released before its last preview frame uses the final pointer state`, async ({ page }) => {
+    await openCalendar(page, "calendar.html");
+    await api(page, "api => api.setCalendarView('day')");
+    const event = page.locator('.cx-cal-ev[data-cx-record="op-010"]');
+    await page.evaluate(() => document.addEventListener("pointerdown", pointer => {
+      window.releasePointer = { id: pointer.pointerId, x: pointer.clientX, y: pointer.clientY };
+    }, { once: true }));
+    await drag(page, event, 0, 36, { from: mode === "move" ? "middle" : "bottom", drop: false });
+    await expect(page.locator(".cx-cal-ghost")).toContainText(mode === "move" ? "9:45" : "11:45");
+    // Deliver the final motion and release in one browser turn, before requestAnimationFrame can paint that motion.
+    await page.evaluate(mode => {
+      const element = document.querySelector('.cx-cal-ev[data-cx-record="op-010"]'), pointer = window.releasePointer;
+      const options = { bubbles: true, pointerType: "mouse", pointerId: pointer.id, button: 0, buttons: 1, clientX: pointer.x, clientY: pointer.y + 48 };
+      element.dispatchEvent(new PointerEvent("pointermove", options));
+      element.dispatchEvent(new PointerEvent(mode === "cancel" ? "pointercancel" : "pointerup", { ...options, buttons: 0 }));
+    }, mode);
+    const expected = mode === "cancel" ? ["2026-10-16T09:00:00Z", "2026-10-16T11:00:00Z"] :
+      [mode === "move" ? "2026-10-16T10:00:00Z" : "2026-10-16T09:00:00Z", "2026-10-16T12:00:00Z"];
+    await expect.poll(() => api(page, "api => { const event = api.getCalendarEvents().find(event => event.record === 'op-010'); return [event.start, event.end]; }")).toEqual(expected);
+    await expect(page.locator(".cx-cal-ghost")).toHaveCount(0);
+    await page.mouse.up();
+  });
+
   test("pointer and F2 moves cancel with Escape; Shift with arrows changes the end", async ({ page }) => {
     await openCalendar(page, "calendar.html");
     await api(page, "api => api.setCalendarView('week')");

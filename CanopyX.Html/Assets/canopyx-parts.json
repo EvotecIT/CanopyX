@@ -385,7 +385,7 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "version": "505792b52f874c1b",
+      "version": "bdde26d4b7de2096",
       "script": "canopyx-calendar-edit.js",
       "runtimes": [
         "grid"

@@ -95,10 +95,10 @@ test("a group shrinks to its visible columns and disappears with the last of the
   expect(await groupSpans(page)).toEqual(["h1:3", "h2:6", "q2:3", "q3:3", "q4:3"]);
   expect((await page.evaluate(`${budgetApi}.getColumnGroups()`))[0].groups[0].visibleColumns).toEqual([]);
   await page.evaluate(`${budgetApi}.setColumnGroupVisible("h1", false); ${budgetApi}.setColumnGroupVisible("h2", false)`);
-  expect(await page.locator(".cx-hgroup-row").count()).toBe(0);
-  expect(await page.locator(".cx-canvas .cx-row").first().getAttribute("aria-rowindex")).toBe("2");
+  await expect(page.locator(".cx-hgroup-row")).toHaveCount(0);
+  await expect(page.locator(".cx-canvas .cx-row").first()).toHaveAttribute("aria-rowindex", "2");
   await page.evaluate(`${budgetApi}.setColumnGroupVisible("h1", true)`);
-  expect(await page.locator(".cx-hgroup-row").count()).toBe(2);
+  await expect(page.locator(".cx-hgroup-row")).toHaveCount(2);
 });
 
 test("responsive priority hiding shrinks the groups of the columns that give way", async ({ page }) => {

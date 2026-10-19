@@ -177,8 +177,9 @@ for (const control of ["button", "input"]) test("API reordering retains the ente
     } } }); return host.canopyx.ready;
   }, control);
   const entered = page.locator('.cx-row[data-cx-id="r0"]').getByLabel("A", { exact: true }); await entered.focus();
+  if (control === "input") await entered.evaluate(input => input.setSelectionRange(input.value.length, input.value.length));
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnOrder(["notes", "amount", "name", "hidden"])); await nextFrames(page);
   await expect(entered).toBeFocused();
   if (control === "button") { await page.keyboard.press("Enter"); expect(await page.evaluate(() => window.activated)).toBe("A"); }
-  else { await page.keyboard.press("End"); await page.keyboard.type("x"); await expect(entered).toHaveValue("Ax"); }
+  else { await page.keyboard.type("x"); await expect(entered).toHaveValue("Ax"); }
 });
