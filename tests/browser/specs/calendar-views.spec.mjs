@@ -43,8 +43,8 @@ async function enterTimeScroller(page) {
 test.describe("calendar views", () => {
   for (const view of ["month", "week", "day", "days", "agenda", "year"]) {
     for (const width of [1440, 390]) {
-      test(view + " view at " + width + " paints in both palettes and passes axe", async ({ page }) => {
-        for (const dark of [false, true]) {
+      for (const dark of [false, true]) {
+        test(view + " view at " + width + " paints in " + (dark ? "dark" : "light") + " and passes axe", async ({ page }) => {
           await openCalendar(page, "calendar.html", { dark, width });
           await api(page, "(api, element, view) => api.setCalendarView(view)", view);
           await nextFrames(page);
@@ -57,8 +57,8 @@ test.describe("calendar views", () => {
           // Nothing overflows the page sideways at phone width.
           expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
           await capture(page, "views/" + view + "-" + (dark ? "dark" : "light") + "-" + width);
-        }
-      });
+        });
+      }
     }
   }
 
