@@ -179,8 +179,10 @@ test("pin changes preserve the same reachable host control and reject after disp
     } } }); return host.canopyx.ready;
   });
   const note = page.locator('.cx-row[data-cx-id="r0"]').getByLabel("Owner note"); await note.focus();
+  // Native End scrolls on macOS; arrange the caret before testing focus across the pin change.
+  await note.evaluate(input => input.setSelectionRange(input.value.length, input.value.length));
   await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.setColumnPinned("owner", "right"));
-  await expect(note).toBeFocused(); await note.press("End"); await note.press("x"); await expect(note).toHaveValue("Alexx");
+  await expect(note).toBeFocused(); await page.keyboard.type("x"); await expect(note).toHaveValue("Alexx");
   expect(await api(page, () => { const grid = document.querySelector('[data-canopyx-host]').canopyx; grid.destroy();
     try { grid.setColumnPinned("owner", "none"); return false; } catch { return true; } })).toBe(true);
 });

@@ -28,7 +28,11 @@ function answer(request, options) {
   }
   const fields = records[request.id];
   if (!fields) return Promise.resolve(null);
-  return new Promise(resolve => setTimeout(() => resolve({ ...base, fields, ...(request.row ? { row: rows.find(row => row.id === request.id) } : {}) }), window.slow || 20));
+  return new Promise(resolve => {
+    const complete = () => resolve({ ...base, fields, ...(request.row ? { row: rows.find(row => row.id === request.id) } : {}) });
+    if (window.holdRecord) window.releaseRecord = () => { window.holdRecord = false; complete(); };
+    else setTimeout(complete, 20);
+  });
 }
 const source = { query(query) { const matched = rows.filter(row => row.cells.cn.value.includes(query.search)), items = matched.slice(query.offset, query.offset + query.limit);
   return { protocol: "canopyx/2", type: "gridPage", view: "certificates", revision: "r7", offset: query.offset, total: rows.length, matched: matched.length, items }; },
@@ -46,11 +50,12 @@ async function openOnDemand(page, mode, extra) {
 }
 
 for (const mode of ["loader", "hosted"]) test("load on demand (" + mode + "): the drawer shows the row at once and the record's fields when they arrive", async ({ page }) => {
-  await openOnDemand(page, mode);
-  await page.evaluate("window.slow = 300");
+  await openOnDemand(page, mode, "window.holdRecord = true;");
   await page.evaluate(api + ".openDetails('c001')");
   await expect(drawer(page).locator(".cx-record-note")).toHaveText("Loading…");
   await expect(drawer(page).locator(".cx-record-status")).toHaveText("Expiring");
+  await expect(drawer(page).locator('dd[data-cx-field="team"]')).toHaveCount(0);
+  await page.evaluate("window.releaseRecord()");
   await expect(drawer(page).locator('dd[data-cx-field="team"]')).toHaveText("Platform");
   await expect(drawer(page).locator(".cx-record-note")).toHaveCount(0);
   const request = await page.evaluate("window.requests[0]");

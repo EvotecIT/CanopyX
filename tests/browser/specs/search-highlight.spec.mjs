@@ -84,7 +84,10 @@ test("search hits and filter hits are marked apart, with whole-cell marks for va
 });
 
 test("marks wrap text only: links, pills and the painters' text nodes come back intact", async ({ page }) => {
-  await open(page, ticketView(60));
+  // Keep every fixture row mounted; viewport recycling is covered separately below.
+  await open(page, ticketView(60), { height: 2400 });
+  const rows = page.locator(".cx-canvas .cx-row[data-cx-id]");
+  await expect(rows).toHaveCount(60);
   const snapshot = () => page.evaluate(() => [...document.querySelectorAll(".cx-canvas .cx-row[data-cx-id]")].map(row => row.innerHTML).join("\n"));
   const before = await snapshot();
   await call(page, "setQuery", { search: "article 1" });
@@ -96,6 +99,7 @@ test("marks wrap text only: links, pills and the painters' text nodes come back 
   // Clearing the search unmarks every row: the same rows render the same markup as before.
   await call(page, "setQuery", { search: "" });
   await settle(page);
+  await expect(rows).toHaveCount(60);
   expect(await page.locator("mark").count()).toBe(0);
   expect(await snapshot()).toBe(before);
 });
