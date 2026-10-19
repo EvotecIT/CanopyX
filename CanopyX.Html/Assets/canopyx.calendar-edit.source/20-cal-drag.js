@@ -43,6 +43,11 @@
       const drag = this.calDrag;
       if (!drag || pointer && pointer.pointerId !== drag.id) return;
       if (cancel) this.calCancelGesture();
+      // A release can precede the queued preview frame: commit the last pointer position, not the previous preview.
+      if (!drag.cancelled && drag.started && drag.frame) {
+        const point = this.calPointAt(drag.lastX, drag.lastY);
+        if (point) this.calPropose(drag, point);
+      }
       this.calDrag = null; cancelAnimationFrame(drag.frame);
       drag.element.classList.remove("cx-cal-dragging"); this.host.classList.remove("cx-cal-drag");
       this.calGhost?.remove(); this.calGhost = null;

@@ -138,8 +138,8 @@ test.describe("resource timeline", () => {
     await expect(page.locator(".cx-tl-print")).toHaveCount(0);
   });
 
-  test("phones keep a narrow resource pane and the page never scrolls sideways", async ({ page }) => {
-    for (const dark of [false, true]) {
+  for (const dark of [false, true]) {
+    test("phones keep a narrow resource pane and the page never scrolls sideways in " + (dark ? "dark" : "light"), async ({ page }) => {
       await openCalendar(page, "calendar-timeline.html", { dark, width: 390, height: 844 });
       await api(page, "api => api.setCalendarView('timeline')");
       await nextFrames(page);
@@ -154,6 +154,6 @@ test.describe("resource timeline", () => {
       for (const [id, rowTop, laneTop] of await alignment(page)) expect(laneTop, "lane of " + id).toBe(rowTop);
       expect(await axe(page)).toEqual([]);
       await capture(page, "timeline/day-" + (dark ? "dark" : "light") + "-390");
-    }
-  });
+    });
+  }
 });

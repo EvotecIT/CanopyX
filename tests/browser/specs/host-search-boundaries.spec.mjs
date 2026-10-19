@@ -57,15 +57,24 @@ for (const semantic of [true,false]) test(`search option ${semantic?"semantic":"
 
 for(const queued of [true,false]) test(`sidecar pair identity is unambiguous (${queued?"queued":"pending"})`, async({page})=>{
   await open(page);
-  const result=await page.evaluate(async queued=>{
-    const entries=[["a\nb","c",{protocol:"canopyx/2",type:"page",parent:null,offset:0,items:[{id:"first",label:"First"}],next:null}],["a","b\nc",{protocol:"canopyx/2",type:"page",parent:null,offset:0,items:[{id:"second",label:"Second"}],next:null}]];
+  const entries=[["a\nb","c",{protocol:"canopyx/2",type:"page",parent:null,offset:0,items:[{id:"first",label:"First"}],next:null}],["a","b\nc",{protocol:"canopyx/2",type:"page",parent:null,offset:0,items:[{id:"second",label:"Second"}],next:null}]];
+  const requests=[];
+  await page.route("https://canopyx.test/pair*/**", route=>{
+    requests.push(route);
+    // Keep both loads pending until their distinct identities have registered, without an unrouted network race.
+    if(requests.length===2) return Promise.all(requests.map(request=>{
+      const index=Number(new URL(request.request().url()).pathname.match(/\/pair(\d)\//)[1]);
+      return request.fulfill({contentType:"application/javascript",body:`CanopyXSidecar.push(${JSON.stringify(entries[index])});`});
+    }));
+  });
+  const result=await page.evaluate(async({queued,entries})=>{
     const sources=entries.map(([id,ref],i)=>{CanopyXSidecar.push([id,"manifest",{protocol:"canopyx/2",type:"manifest",view:id,root:ref}]);return CanopyX.sources.sidecar({id,source:{base:"/pair"+i+"/"}});});
     if(queued) entries.forEach(e=>CanopyXSidecar.push(e));
     const pending=sources.map(s=>s.page(null,null));
-    if(!queued){await new Promise(r=>setTimeout(r,0));entries.forEach(e=>CanopyXSidecar.push(e));}
     return (await Promise.all(pending)).map(p=>p.items[0].id);
-  },queued);
+  },{queued,entries});
   expect(result).toEqual(["first","second"]);
+  expect(requests).toHaveLength(queued?0:2);
 });
 
 for(const id of ["\u0000","line\nbreak","quote\"","emoji😀"]) test(`toolbar controls preserve exact identifier ${JSON.stringify(id)}`,async({page})=>{
