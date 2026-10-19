@@ -1,5 +1,5 @@
   // ---------- export format registry ----------
-  // A format provider turns a prepared export capture into a file: { id, label, extension, mime?, write(capture, context) },
+  // A format provider turns a prepared export capture into a file: { id, label, extension, mime?, showInMenu?, write(capture, context) },
   // where write returns a Blob (or bytes) or a promise of one. Formats register for the page (CanopyX.registerExportFormat)
   // or per grid (the exportFormats option, ids of registered formats or provider objects); a view can declare the ids
   // of the registered formats it offers. Every runtime keeps the registry, so a host registers its writers before or after
@@ -9,9 +9,11 @@
   function exportFormat(format) {
     if (!format || !exportFormatId(format.id) || format.id === "csv" ||
         typeof format.label !== "string" || !format.label.trim() || typeof format.extension !== "string" || !/^[a-z\d]{1,16}$/i.test(format.extension) ||
-        format.mime !== undefined && typeof format.mime !== "string" || typeof format.write !== "function")
+        format.mime !== undefined && typeof format.mime !== "string" ||
+        format.showInMenu !== undefined && typeof format.showInMenu !== "boolean" || typeof format.write !== "function")
       throw new Error("CanopyX: invalid export format.");
-    return Object.freeze({ id: format.id, label: format.label, extension: format.extension, mime: format.mime || "application/octet-stream", write: format.write });
+    return Object.freeze({ id: format.id, label: format.label, extension: format.extension, mime: format.mime || "application/octet-stream",
+      showInMenu: format.showInMenu !== false, write: format.write });
   }
   /** Registers a format for every grid on the page that does not choose its own; returns a disposer for this registration. */
   function registerExportFormat(format) {

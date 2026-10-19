@@ -407,7 +407,7 @@ const lazySource: DataSource = { queryAware: true,
 if (view.contextActions?.[0]) view.contextActions[0].label = "Inspect record";
 
 // Export format providers: one writer for tree and flat-grid captures, registered for the page or per grid.
-const workbook: import("@evotecit/canopyx").ExportFormat = { id: "xlsx", label: "Download Excel", extension: "xlsx",
+const workbook: import("@evotecit/canopyx").ExportFormat = { id: "xlsx", label: "Download Excel", extension: "xlsx", showInMenu: false,
   mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   async write(capture, { signal, progress, fileName }) {
     const lines: string[] = [fileName];
@@ -438,6 +438,8 @@ activatingTree.closeMenus();
 createTreeGrid(document.createElement("div"), { view, onRowActivate: (event: { id: number }) => false });
 // @ts-expect-error Format writers return a Blob or bytes.
 CanopyX.registerExportFormat({ id: "bad", label: "Bad", extension: "txt", write: () => 42 });
+// @ts-expect-error Menu visibility is a boolean.
+CanopyX.registerExportFormat({ ...workbook, showInMenu: "false" });
 
 // Column tooltips, the column menu switch and tree pins.
 const tipGrid = createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "tip-grid", label: "Grid", source: { kind: "inline" }, rows: [], pageSize: 50,
