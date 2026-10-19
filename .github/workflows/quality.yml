@@ -16,7 +16,7 @@ jobs:
     name: Build, test, examples, browser tests, pack (${{ matrix.platform }})
     needs: build-test-pack
     if: always()
-    runs-on: [self-hosted, Linux, X64, root]
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         platform: [Linux, Windows, macOS]
@@ -34,33 +34,33 @@ jobs:
     # The Chromium job of each platform
     # also packs; the Windows Chromium job also checks the visual baselines (tests/browser/playwright.config.mjs).
     name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }}${{ matrix.shard && format(', shard {0}/2', matrix.shard) || '' }})
-    runs-on: ${{ fromJSON(matrix.platform.runner) }}
+    runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 135
     strategy:
       fail-fast: false
       matrix:
         platform:
           - name: Linux
-            runner: '["self-hosted","Linux","X64","root"]'
+            runner: ubuntu-24.04
           - name: Windows
-            runner: '["self-hosted","Windows","X64"]'
+            runner: windows-2025
           - name: macOS
-            runner: '["self-hosted","macOS","ARM64"]'
+            runner: macos-15
         engine: [chromium, firefox, webkit]
         exclude:
           - platform:
               name: Windows
-              runner: '["self-hosted","Windows","X64"]'
+              runner: windows-2025
             engine: firefox
         include:
           - platform:
               name: Windows
-              runner: '["self-hosted","Windows","X64"]'
+              runner: windows-2025
             engine: firefox
             shard: 1
           - platform:
               name: Windows
-              runner: '["self-hosted","Windows","X64"]'
+              runner: windows-2025
             engine: firefox
             shard: 2
     env:
@@ -83,7 +83,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
-          # Five test packages install in seconds; transferring the runner's shared npm cache can exhaust this job.
+          # The small test dependency set does not need a restored npm cache.
           package-manager-cache: false
 
       - name: Install browser test dependencies
@@ -91,6 +91,8 @@ jobs:
         shell: pwsh
         env:
           PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "120000"
+          # Hosted Linux jobs are non-root; let HtmlTinkerX install the selected browser's OS prerequisites.
+          HTMLTINKERX_PLAYWRIGHT_WITH_DEPS: "1"
         run: |
           npm ci --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -100,7 +102,7 @@ jobs:
       - name: Run quality loop
         shell: pwsh
         run: |
-          # Each engine/shard runs serially on a shared runner. This deadline catches a stalled suite.
+          # Each engine/shard runs with one worker. This deadline catches a stalled suite.
           # Performance measurements run only by explicit opt-in.
           $seconds = 7200
           if ($env:CANOPYX_TEST_BROWSERS -eq 'chromium') {
