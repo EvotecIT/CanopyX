@@ -20,12 +20,12 @@ try {
   const run = (file, args, cwd) => execute(file, args, { cwd, timeout: 120000, maxBuffer: 2 * 1024 * 1024 });
   const result = await run(process.execPath, [npmCli, "pack", "--ignore-scripts", "--json", "--pack-destination", output], repo);
   const [packed] = JSON.parse(result.stdout);
-  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts", "JavaScript/enhance.d.ts", "JavaScript/editing.d.ts", "JavaScript/formatting.d.ts", "JavaScript/column-groups.d.ts", "JavaScript/cell-ranges.d.ts", "JavaScript/records.d.ts", "JavaScript/live.d.ts", "JavaScript/facets.d.ts", "JavaScript/calendar.d.ts",
+  const expected = ["LICENSE", "README.md", "README.nuget.md", "package.json", "docs/images/tree-grid-light.png", "docs/images/tree-grid-dark.png", "docs/images/static-outline.png", "JavaScript/index.d.ts", "JavaScript/hosts.d.ts", "JavaScript/protocol.d.ts", "JavaScript/plugins.d.ts", "JavaScript/enhance.d.ts", "JavaScript/editing.d.ts", "JavaScript/formatting.d.ts", "JavaScript/column-groups.d.ts", "JavaScript/cell-ranges.d.ts", "JavaScript/records.d.ts", "JavaScript/live.d.ts", "JavaScript/facets.d.ts", "JavaScript/calendar.d.ts", "JavaScript/flow.d.ts",
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
     "CanopyX.Html/Assets/canopyx-reporting-module.mjs", "CanopyX.Html/Assets/canopyx-reporting.js", "CanopyX.Html/Assets/canopyx-reporting.css",
-    "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css", "CanopyX.Html/Assets/canopyx-export.js", "CanopyX.Html/Assets/canopyx-history.js", "CanopyX.Html/Assets/canopyx-pager.js", "CanopyX.Html/Assets/canopyx-pager.css", "CanopyX.Html/Assets/canopyx-enhance.js", "CanopyX.Html/Assets/canopyx-data.js", "CanopyX.Html/Assets/canopyx-editing.js", "CanopyX.Html/Assets/canopyx-editing.css", "CanopyX.Html/Assets/canopyx-tree-tools.js", "CanopyX.Html/Assets/canopyx-tree-tools.css", "CanopyX.Html/Assets/canopyx-detail-rows.js", "CanopyX.Html/Assets/canopyx-detail-rows.css", "CanopyX.Html/Assets/canopyx-grouping.js", "CanopyX.Html/Assets/canopyx-grouping.css",
+    "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css", "CanopyX.Html/Assets/canopyx-export.js", "CanopyX.Html/Assets/canopyx-history.js", "CanopyX.Html/Assets/canopyx-pager.js", "CanopyX.Html/Assets/canopyx-pager.css", "CanopyX.Html/Assets/canopyx-enhance.js", "CanopyX.Html/Assets/canopyx-data.js", "CanopyX.Html/Assets/canopyx-editing.js", "CanopyX.Html/Assets/canopyx-editing.css", "CanopyX.Html/Assets/canopyx-forms.js", "CanopyX.Html/Assets/canopyx-forms.css", "CanopyX.Html/Assets/canopyx-flow.js", "CanopyX.Html/Assets/canopyx-flow.css", "CanopyX.Html/Assets/canopyx-flow-module.mjs", "CanopyX.Html/Assets/canopyx-flow-entry.js", "CanopyX.Html/Assets/canopyx-flow-entry.css", "CanopyX.Html/Assets/canopyx-tree-tools.js", "CanopyX.Html/Assets/canopyx-tree-tools.css", "CanopyX.Html/Assets/canopyx-detail-rows.js", "CanopyX.Html/Assets/canopyx-detail-rows.css", "CanopyX.Html/Assets/canopyx-grouping.js", "CanopyX.Html/Assets/canopyx-grouping.css",
     "CanopyX.Html/Assets/canopyx-links.js", "CanopyX.Html/Assets/canopyx-search.js", "CanopyX.Html/Assets/canopyx-link.js", "CanopyX.Html/Assets/canopyx-link.css",
     "CanopyX.Html/Assets/canopyx-formatting.js", "CanopyX.Html/Assets/canopyx-formatting.css", "CanopyX.Html/Assets/canopyx-format-editor.js", "CanopyX.Html/Assets/canopyx-format-editor.css",
     "CanopyX.Html/Assets/canopyx-column-groups.js", "CanopyX.Html/Assets/canopyx-column-groups.css", "CanopyX.Html/Assets/canopyx-cell-range.js", "CanopyX.Html/Assets/canopyx-cell-range.css",
@@ -50,6 +50,7 @@ try {
     import CanopyX, * as runtime from '@evotecit/canopyx';
     import GridRuntime, { createDataGrid, createCalendar, enhance, grid } from '@evotecit/canopyx/grid';
     import ReportingRuntime from '@evotecit/canopyx/reporting';
+    import FlowRuntime, { createFlow } from '@evotecit/canopyx/flow';
     import polish, { staticLabels } from '@evotecit/canopyx/locales/pl';
     import german from '@evotecit/canopyx/locales/de';
     import spanish from '@evotecit/canopyx/locales/es';
@@ -63,13 +64,14 @@ try {
     assert.equal(createDataGrid, GridRuntime.createDataGrid); assert.equal(createCalendar, GridRuntime.createCalendar);
     assert.equal(enhance, GridRuntime.enhance); assert.equal(grid, GridRuntime.grid); assert.equal(typeof ReportingRuntime.enhance, 'function');
     assert.equal(typeof ReportingRuntime.createDataGrid, 'function');
+    assert.equal(createFlow, FlowRuntime.createFlow); assert.equal(typeof GridRuntime.createFlow, 'function');
     assert.equal(typeof runtime.use, 'function'); assert.equal(runtime.registerPart, CanopyX.registerPart);
     assert.equal(Object.hasOwn(globalThis, 'CanopyX'), false);
     assert.equal(Object.hasOwn(globalThis, 'CanopyXSidecar'), false);
     const view = { pageSize: 2, roots: [{id:'a',label:'Atlas'}] };
     const page = await runtime.sources.inline(view).page(null, null);
     assert.deepEqual(page.items, view.roots);
-    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js','filter-editor.js','filter-editor.css','export.js','history.js','pager.js','pager.css','enhance.js','data.js','editing.js','editing.css','tree-tools.js','tree-tools.css','links.js','search.js','formatting.js','formatting.css','format-editor.js','format-editor.css','link.js','link.css','detail-rows.js','detail-rows.css','grouping.js','grouping.css','column-groups.js','column-groups.css','cell-range.js','cell-range.css','highlight.js','highlight.css','layouts.js','layouts.css','record-panel.js','record-panel.css','locales/pl.js','locales/de.js','locales/es.js','locales/fr.js','locales/it.js']) {
+    for (const name of ['styles.css','core.css','classic.js','core.js','grid.css','grid.js','reporting.css','reporting.js','filter-editor.js','filter-editor.css','export.js','history.js','pager.js','pager.css','enhance.js','data.js','editing.js','editing.css','tree-tools.js','tree-tools.css','links.js','search.js','formatting.js','formatting.css','format-editor.js','format-editor.css','link.js','link.css','detail-rows.js','detail-rows.css','grouping.js','grouping.css','column-groups.js','column-groups.css','cell-range.js','cell-range.css','highlight.js','highlight.css','layouts.js','layouts.css','record-panel.js','record-panel.css','forms.js','forms.css','flow.js','flow.css','flow-entry.js','flow-entry.css','locales/pl.js','locales/de.js','locales/es.js','locales/fr.js','locales/it.js']) {
       assert.ok(import.meta.resolve('@evotecit/canopyx/' + name).startsWith('file:'));
     }`;
   await fs.writeFile(path.join(consumer, "import-check.mjs"), importCheck);

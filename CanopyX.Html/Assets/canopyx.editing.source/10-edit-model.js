@@ -2,35 +2,19 @@
   // CanopyX never writes data itself. Edits stay in the grid's change set, shown over the loaded rows, until a row or batch
   // commit hands them to the host (onRowCommit, editing.commit or the source's commit) and the host confirms them.
 
-  // The English texts of the editing labels. A view's or a host's gridEdit… labels replace them; the core accepts the names.
-  const EDIT_LABELS = {
+  // The English texts of the editing labels: the forms part's messages and the grid's own. A view's or a host's gridEdit…
+  // labels replace them; the core accepts the names.
+  const EDIT_LABELS = { ...FORM_LABELS,
     gridEditCell: "Edit {column}", gridEditSave: "Save", gridEditCancel: "Cancel", gridEditDiscard: "Discard",
     gridEditUndo: "Undo", gridEditRedo: "Redo", gridEditEdited: "Edited", gridEditChanges: "Unsaved changes: {count}",
     gridEditErrors: "Errors: {count}", gridEditSaving: "Saving…", gridEditSaved: "Saved rows: {count}", gridEditFailed: "Rows not saved: {count}",
-    gridEditRequired: "{column} is required.", gridEditNumber: "{column} must be a number.", gridEditDate: "{column} must be a valid date.",
-    gridEditMin: "{column} must be at least {min}.", gridEditMax: "{column} must be at most {max}.", gridEditStep: "{column} must be a multiple of {step}.",
-    gridEditMinLength: "{column} needs at least {min} characters.", gridEditMaxLength: "{column} allows at most {max} characters.",
-    gridEditPattern: "{column} does not have the expected format.", gridEditChoice: "Choose {column} from the list.",
     gridEditConflict: "Someone else changed this row. Reload it and try again.", gridEditRejected: "Not saved: {error}", gridEditNotSaved: "Not saved.",
-    gridEditNoMatches: "No matches", gridEditSearching: "Searching…", gridEditUndone: "Undone: {column}", gridEditRedone: "Redone: {column}",
-    gridEditNone: "(none)"
+    gridEditUndone: "Undone: {column}", gridEditRedone: "Redone: {column}"
   };
   const editCopy = value => gridFreeze(JSON.parse(JSON.stringify(value === undefined ? null : value)));
   const editSame = (left, right) => left === right || left == null && right == null;
   const editScalar = value => value === null || typeof value === "string" || typeof value === "boolean" || Number.isFinite(value);
   const editBad = (id, problem) => { throw new Error("CanopyX: column " + id + " " + problem + "."); };
-
-  // A select or lookup list: scalars or { value, label }, at most 1,000.
-  function editOptions(list, id) {
-    if (list === undefined) return null;
-    if (!Array.isArray(list) || list.length > 1000) editBad(id, "needs an array of at most 1000 editor options");
-    return list.map(item => {
-      const option = item !== null && typeof item === "object" ? item : { value: item };
-      if (!["string", "number", "boolean"].includes(typeof option.value) || option.label !== undefined && typeof option.label !== "string")
-        editBad(id, "has an invalid editor option");
-      return Object.freeze({ value: option.value, label: option.label ?? String(option.value) });
-    });
-  }
 
   // A column's editor and validation, checked once: the editor type (the kind's own editor by default), its options and
   // limits, and the validation rules the C# authoring mirrors (required, min, max, minLength, maxLength, pattern).
@@ -43,22 +27,14 @@
     // The built-in editors write values of their kind: numbers, text and booleans, or moments and text.
     const fits = { number: ["number"], text: ["text"], toggle: ["text"], date: ["datetime", "text"], datetime: ["datetime", "text"], time: ["datetime", "text"] }[type];
     if (fits && !fits.includes(column.kind)) editBad(id, "cannot use a " + type + " editor for its kind");
-    const bound = value => value === undefined || Number.isFinite(value) || typeof value === "string" && !Number.isNaN(Date.parse(value));
-    const count = value => value === undefined || Number.isInteger(value) && value >= 0 && value <= 1000000;
-    if (raw.step !== undefined && !(Number.isFinite(raw.step) && raw.step > 0) || ![raw.min, raw.max, rules.min, rules.max].every(bound) ||
-        !count(rules.minLength) || !count(rules.maxLength) || rules.required !== undefined && typeof rules.required !== "boolean" ||
-        [rules.pattern, rules.message, raw.placeholder].some(text => text !== undefined && typeof text !== "string")) editBad(id, "has invalid editor or validation settings");
-    let pattern = null;
-    // The pattern must compile on its own too, so a stray parenthesis cannot escape the anchors around it.
-    if (rules.pattern !== undefined) try { pattern = boundedPattern(rules.pattern, true, true); } catch (error) { editBad(id, "has an invalid or unsafe pattern"); }
+    // The limits and rules every form checks the same way (the forms part).
+    const { pattern, rules: checks } = formRuleSpec(raw, rules, problem => editBad(id, problem));
     const lookup = raw.lookup ?? (type === "lookup" ? {} : null);
     if (lookup && (!object(lookup) || lookup.column !== undefined && !columns.some(item => item.id === lookup.column) ||
         lookup.limit !== undefined && !(Number.isInteger(lookup.limit) && lookup.limit >= 1 && lookup.limit <= 50) ||
         lookup.minLength !== undefined && !(Number.isInteger(lookup.minLength) && lookup.minLength >= 0 && lookup.minLength <= 16))) editBad(id, "has invalid lookup settings");
     return Object.freeze({ id, column, type, editor: gridFreeze({ ...raw, type }), options: editOptions(raw.options, id),
-      lookup: lookup && Object.freeze({ column: lookup.column ?? id, limit: lookup.limit ?? 20, minLength: lookup.minLength ?? 1 }), pattern,
-      rules: Object.freeze({ required: !!rules.required, min: rules.min ?? raw.min, max: rules.max ?? raw.max, step: raw.step,
-        minLength: rules.minLength, maxLength: rules.maxLength, message: rules.message }) });
+      lookup: lookup && Object.freeze({ column: lookup.column ?? id, limit: lookup.limit ?? 20, minLength: lookup.minLength ?? 1 }), pattern, rules: checks });
   }
 
   // The cell that shows a new value. An object cell keeps its tone, badges and title, and drops text that described the old

@@ -1,0 +1,1588 @@
+[
+  {
+    "name": "eq text folds case",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "eq",
+          "values": [
+            "TLS"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": "tls"
+    },
+    "expected": true
+  },
+  {
+    "name": "eq text differs",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "eq",
+          "values": [
+            "tls"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": "starttls"
+    },
+    "expected": false
+  },
+  {
+    "name": "eq text folds non-ASCII letters",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "city",
+          "operator": "eq",
+          "values": [
+            "ÉCOLE ŁÓDŹ"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "city": "école łódź"
+    },
+    "expected": true
+  },
+  {
+    "name": "eq text same value",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "eq",
+          "values": [
+            "none"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": "none"
+    },
+    "expected": true
+  },
+  {
+    "name": "ne text different value",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "ne",
+          "values": [
+            "none"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": "tls"
+    },
+    "expected": true
+  },
+  {
+    "name": "ne text same value folded",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "ne",
+          "values": [
+            "NONE"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": "none"
+    },
+    "expected": false
+  },
+  {
+    "name": "ne on a missing answer is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "ne",
+          "values": [
+            "none"
+          ]
+        }
+      ]
+    },
+    "values": {},
+    "expected": false
+  },
+  {
+    "name": "ne on null is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "ne",
+          "values": [
+            "none"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": null
+    },
+    "expected": false
+  },
+  {
+    "name": "eq number",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "eq",
+          "values": [
+            587
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 587
+    },
+    "expected": true
+  },
+  {
+    "name": "eq number with fraction",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "ratio",
+          "operator": "eq",
+          "values": [
+            1
+          ]
+        }
+      ]
+    },
+    "values": {
+      "ratio": 1.0
+    },
+    "expected": true
+  },
+  {
+    "name": "eq number against text never converts",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "eq",
+          "values": [
+            "587"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 587
+    },
+    "expected": false
+  },
+  {
+    "name": "ne number against text is true",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "ne",
+          "values": [
+            "587"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 587
+    },
+    "expected": true
+  },
+  {
+    "name": "gt number",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "gt",
+          "values": [
+            1024
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 2000
+    },
+    "expected": true
+  },
+  {
+    "name": "gt number equal is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "gt",
+          "values": [
+            1024
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 1024
+    },
+    "expected": false
+  },
+  {
+    "name": "ge number equal",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "ge",
+          "values": [
+            1024
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 1024
+    },
+    "expected": true
+  },
+  {
+    "name": "lt number",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "lt",
+          "values": [
+            1024
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 80
+    },
+    "expected": true
+  },
+  {
+    "name": "le number equal",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "le",
+          "values": [
+            80
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 80
+    },
+    "expected": true
+  },
+  {
+    "name": "gt number against text operand is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "gt",
+          "values": [
+            "100"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 2000
+    },
+    "expected": false
+  },
+  {
+    "name": "gt text orders folded code units",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "name",
+          "operator": "gt",
+          "values": [
+            "Alpha"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "name": "beta"
+    },
+    "expected": true
+  },
+  {
+    "name": "lt text orders folded code units",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "name",
+          "operator": "lt",
+          "values": [
+            "a"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "name": "B"
+    },
+    "expected": false
+  },
+  {
+    "name": "contains text folds case",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "contains",
+          "values": [
+            "EXAMPLE"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "mail.Example.com"
+    },
+    "expected": true
+  },
+  {
+    "name": "contains on a number answer is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "contains",
+          "values": [
+            "5"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 587
+    },
+    "expected": false
+  },
+  {
+    "name": "notContains text",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "notContains",
+          "values": [
+            "local"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "mail.example.com"
+    },
+    "expected": true
+  },
+  {
+    "name": "notContains on empty text is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "notContains",
+          "values": [
+            "local"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": ""
+    },
+    "expected": false
+  },
+  {
+    "name": "notContains on a number answer is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "notContains",
+          "values": [
+            "9"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 587
+    },
+    "expected": false
+  },
+  {
+    "name": "startsWith folds case",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "startsWith",
+          "values": [
+            "MAIL."
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "mail.example.com"
+    },
+    "expected": true
+  },
+  {
+    "name": "endsWith",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "endsWith",
+          "values": [
+            ".COM"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "mail.example.com"
+    },
+    "expected": true
+  },
+  {
+    "name": "endsWith differs",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "endsWith",
+          "values": [
+            ".org"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "mail.example.com"
+    },
+    "expected": false
+  },
+  {
+    "name": "matches a bounded pattern without case",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "matches",
+          "values": [
+            "^mail[0-9]+"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "MAIL42.example.com"
+    },
+    "expected": true
+  },
+  {
+    "name": "matches searches anywhere",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "matches",
+          "values": [
+            "example\\.com"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "smtp.EXAMPLE.com"
+    },
+    "expected": true
+  },
+  {
+    "name": "matches fails",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "matches",
+          "values": [
+            "^smtp"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "mail.example.com"
+    },
+    "expected": false
+  },
+  {
+    "name": "notMatches",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "notMatches",
+          "values": [
+            "^smtp"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "host": "mail.example.com"
+    },
+    "expected": true
+  },
+  {
+    "name": "notMatches on a missing answer is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "notMatches",
+          "values": [
+            "^smtp"
+          ]
+        }
+      ]
+    },
+    "values": {},
+    "expected": false
+  },
+  {
+    "name": "matches on a number answer is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "matches",
+          "values": [
+            "5"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 587
+    },
+    "expected": false
+  },
+  {
+    "name": "in text folds case",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "in",
+          "values": [
+            "tls",
+            "starttls"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": "STARTTLS"
+    },
+    "expected": true
+  },
+  {
+    "name": "in text not listed",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "in",
+          "values": [
+            "tls",
+            "starttls"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": "none"
+    },
+    "expected": false
+  },
+  {
+    "name": "notIn text",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "security",
+          "operator": "notIn",
+          "values": [
+            "tls",
+            "starttls"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "security": "none"
+    },
+    "expected": true
+  },
+  {
+    "name": "notIn with another type is true",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "notIn",
+          "values": [
+            "5",
+            "25"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 25
+    },
+    "expected": true
+  },
+  {
+    "name": "notIn on a missing answer is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "notIn",
+          "values": [
+            25
+          ]
+        }
+      ]
+    },
+    "values": {},
+    "expected": false
+  },
+  {
+    "name": "between numbers includes the lower value",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "between",
+          "values": [
+            1,
+            1024
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 1
+    },
+    "expected": true
+  },
+  {
+    "name": "between numbers includes the upper value",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "between",
+          "values": [
+            1,
+            1024
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 1024
+    },
+    "expected": true
+  },
+  {
+    "name": "between numbers outside",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "between",
+          "values": [
+            1,
+            1024
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 1025
+    },
+    "expected": false
+  },
+  {
+    "name": "between numbers with fractions",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "ratio",
+          "operator": "between",
+          "values": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    "values": {
+      "ratio": 1.5
+    },
+    "expected": true
+  },
+  {
+    "name": "between text",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "name",
+          "operator": "between",
+          "values": [
+            "a",
+            "n"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "name": "Mike"
+    },
+    "expected": true
+  },
+  {
+    "name": "isNull on a missing answer",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "isNull"
+        }
+      ]
+    },
+    "values": {},
+    "expected": true
+  },
+  {
+    "name": "isNull on null",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "isNull"
+        }
+      ]
+    },
+    "values": {
+      "host": null
+    },
+    "expected": true
+  },
+  {
+    "name": "isNull on empty text",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "isNull"
+        }
+      ]
+    },
+    "values": {
+      "host": ""
+    },
+    "expected": true
+  },
+  {
+    "name": "isNull on an empty array",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "isNull"
+        }
+      ]
+    },
+    "values": {
+      "tags": []
+    },
+    "expected": true
+  },
+  {
+    "name": "isNull on text",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "isNull"
+        }
+      ]
+    },
+    "values": {
+      "host": "x"
+    },
+    "expected": false
+  },
+  {
+    "name": "isNull on false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "verify",
+          "operator": "isNull"
+        }
+      ]
+    },
+    "values": {
+      "verify": false
+    },
+    "expected": false
+  },
+  {
+    "name": "isNotNull on text",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "host",
+          "operator": "isNotNull"
+        }
+      ]
+    },
+    "values": {
+      "host": "x"
+    },
+    "expected": true
+  },
+  {
+    "name": "isNotNull on an empty array",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "isNotNull"
+        }
+      ]
+    },
+    "values": {
+      "tags": []
+    },
+    "expected": false
+  },
+  {
+    "name": "isNotNull on zero",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "port",
+          "operator": "isNotNull"
+        }
+      ]
+    },
+    "values": {
+      "port": 0
+    },
+    "expected": true
+  },
+  {
+    "name": "eq boolean",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "verify",
+          "operator": "eq",
+          "values": [
+            true
+          ]
+        }
+      ]
+    },
+    "values": {
+      "verify": true
+    },
+    "expected": true
+  },
+  {
+    "name": "eq boolean against text never converts",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "verify",
+          "operator": "eq",
+          "values": [
+            "true"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "verify": true
+    },
+    "expected": false
+  },
+  {
+    "name": "ne boolean",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "verify",
+          "operator": "ne",
+          "values": [
+            false
+          ]
+        }
+      ]
+    },
+    "values": {
+      "verify": true
+    },
+    "expected": true
+  },
+  {
+    "name": "gt on a boolean answer is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "verify",
+          "operator": "gt",
+          "values": [
+            0
+          ]
+        }
+      ]
+    },
+    "values": {
+      "verify": true
+    },
+    "expected": false
+  },
+  {
+    "name": "contains on an array tests one item",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "contains",
+          "values": [
+            "SMTP"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns",
+        "smtp"
+      ]
+    },
+    "expected": true
+  },
+  {
+    "name": "contains on an array does not search inside items",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "contains",
+          "values": [
+            "mt"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns",
+        "smtp"
+      ]
+    },
+    "expected": false
+  },
+  {
+    "name": "notContains on an array",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "notContains",
+          "values": [
+            "smtp"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns",
+        "smtp"
+      ]
+    },
+    "expected": false
+  },
+  {
+    "name": "notContains on an array without the item",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "notContains",
+          "values": [
+            "ftp"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns",
+        "smtp"
+      ]
+    },
+    "expected": true
+  },
+  {
+    "name": "contains on an array of numbers",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "days",
+          "operator": "contains",
+          "values": [
+            2
+          ]
+        }
+      ]
+    },
+    "values": {
+      "days": [
+        1,
+        2,
+        3
+      ]
+    },
+    "expected": true
+  },
+  {
+    "name": "in on an array tests any item",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "in",
+          "values": [
+            "ftp",
+            "dns"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns",
+        "smtp"
+      ]
+    },
+    "expected": true
+  },
+  {
+    "name": "notIn on an array",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "notIn",
+          "values": [
+            "ftp",
+            "dns"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns",
+        "smtp"
+      ]
+    },
+    "expected": false
+  },
+  {
+    "name": "notIn on an array with no listed item",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "notIn",
+          "values": [
+            "ftp"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns",
+        "smtp"
+      ]
+    },
+    "expected": true
+  },
+  {
+    "name": "eq on an array is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "eq",
+          "values": [
+            "dns"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns"
+      ]
+    },
+    "expected": false
+  },
+  {
+    "name": "ne on an array is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "ne",
+          "values": [
+            "ftp"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns"
+      ]
+    },
+    "expected": false
+  },
+  {
+    "name": "startsWith on an array is false",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "tags",
+          "operator": "startsWith",
+          "values": [
+            "d"
+          ]
+        }
+      ]
+    },
+    "values": {
+      "tags": [
+        "dns"
+      ]
+    },
+    "expected": false
+  },
+  {
+    "name": "or holds when one holds",
+    "condition": {
+      "operator": "or",
+      "filters": [
+        {
+          "field": "a",
+          "operator": "eq",
+          "values": [
+            1
+          ]
+        },
+        {
+          "field": "b",
+          "operator": "eq",
+          "values": [
+            2
+          ]
+        }
+      ]
+    },
+    "values": {
+      "a": 0,
+      "b": 2
+    },
+    "expected": true
+  },
+  {
+    "name": "or fails when none holds",
+    "condition": {
+      "operator": "or",
+      "filters": [
+        {
+          "field": "a",
+          "operator": "eq",
+          "values": [
+            1
+          ]
+        },
+        {
+          "field": "b",
+          "operator": "eq",
+          "values": [
+            2
+          ]
+        }
+      ]
+    },
+    "values": {
+      "a": 0,
+      "b": 0
+    },
+    "expected": false
+  },
+  {
+    "name": "and fails when one fails",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "a",
+          "operator": "eq",
+          "values": [
+            1
+          ]
+        },
+        {
+          "field": "b",
+          "operator": "eq",
+          "values": [
+            2
+          ]
+        }
+      ]
+    },
+    "values": {
+      "a": 1,
+      "b": 0
+    },
+    "expected": false
+  },
+  {
+    "name": "none holds when no condition holds",
+    "condition": {
+      "operator": "none",
+      "filters": [
+        {
+          "field": "a",
+          "operator": "eq",
+          "values": [
+            1
+          ]
+        },
+        {
+          "field": "b",
+          "operator": "eq",
+          "values": [
+            2
+          ]
+        }
+      ]
+    },
+    "values": {
+      "a": 0,
+      "b": 0
+    },
+    "expected": true
+  },
+  {
+    "name": "none fails when one holds",
+    "condition": {
+      "operator": "none",
+      "filters": [
+        {
+          "field": "a",
+          "operator": "eq",
+          "values": [
+            1
+          ]
+        },
+        {
+          "field": "b",
+          "operator": "eq",
+          "values": [
+            2
+          ]
+        }
+      ]
+    },
+    "values": {
+      "a": 1,
+      "b": 0
+    },
+    "expected": false
+  },
+  {
+    "name": "nested groups",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "mode",
+          "operator": "eq",
+          "values": [
+            "advanced"
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "operator": "or",
+          "filters": [
+            {
+              "field": "port",
+              "operator": "lt",
+              "values": [
+                1024
+              ]
+            },
+            {
+              "field": "host",
+              "operator": "endsWith",
+              "values": [
+                ".local"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 2525,
+      "mode": "Advanced",
+      "host": "relay.LOCAL"
+    },
+    "expected": true
+  },
+  {
+    "name": "nested groups failing inner group",
+    "condition": {
+      "operator": "and",
+      "filters": [
+        {
+          "field": "mode",
+          "operator": "eq",
+          "values": [
+            "advanced"
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "operator": "or",
+          "filters": [
+            {
+              "field": "port",
+              "operator": "lt",
+              "values": [
+                1024
+              ]
+            },
+            {
+              "field": "host",
+              "operator": "endsWith",
+              "values": [
+                ".local"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "values": {
+      "port": 2525,
+      "mode": "advanced",
+      "host": "relay.example.com"
+    },
+    "expected": false
+  },
+  {
+    "name": "none inside or",
+    "condition": {
+      "operator": "or",
+      "filters": [
+        {
+          "field": "a",
+          "operator": "eq",
+          "values": [
+            1
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "operator": "none",
+          "filters": [
+            {
+              "field": "b",
+              "operator": "isNull"
+            }
+          ]
+        }
+      ]
+    },
+    "values": {
+      "a": 0,
+      "b": "x"
+    },
+    "expected": true
+  },
+  {
+    "name": "group of groups only",
+    "condition": {
+      "operator": "and",
+      "groups": [
+        {
+          "operator": "or",
+          "filters": [
+            {
+              "field": "a",
+              "operator": "eq",
+              "values": [
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "operator": "or",
+          "filters": [
+            {
+              "field": "b",
+              "operator": "eq",
+              "values": [
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "values": {
+      "a": 1,
+      "b": 2
+    },
+    "expected": true
+  }
+]

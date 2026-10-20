@@ -22,6 +22,12 @@
       "types": "./JavaScript/grid.d.ts",
       "import": "./CanopyX.Html/Assets/canopyx-grid-module.mjs"
     },
+    "./flow": {
+      "types": "./JavaScript/flow.d.ts",
+      "import": "./CanopyX.Html/Assets/canopyx-flow-module.mjs"
+    },
+    "./flow-entry.js": "./CanopyX.Html/Assets/canopyx-flow-entry.js",
+    "./flow-entry.css": "./CanopyX.Html/Assets/canopyx-flow-entry.css",
     "./grid.css": "./CanopyX.Html/Assets/canopyx-grid.css",
     "./grid.js": "./CanopyX.Html/Assets/canopyx-grid.js",
     "./reporting": {
@@ -38,6 +44,10 @@
     "./pager.css": "./CanopyX.Html/Assets/canopyx-pager.css",
     "./enhance.js": "./CanopyX.Html/Assets/canopyx-enhance.js",
     "./data.js": "./CanopyX.Html/Assets/canopyx-data.js",
+    "./forms.js": "./CanopyX.Html/Assets/canopyx-forms.js",
+    "./forms.css": "./CanopyX.Html/Assets/canopyx-forms.css",
+    "./flow.js": "./CanopyX.Html/Assets/canopyx-flow.js",
+    "./flow.css": "./CanopyX.Html/Assets/canopyx-flow.css",
     "./editing.js": "./CanopyX.Html/Assets/canopyx-editing.js",
     "./editing.css": "./CanopyX.Html/Assets/canopyx-editing.css",
     "./column-groups.js": "./CanopyX.Html/Assets/canopyx-column-groups.js",
@@ -111,6 +121,13 @@
     "CanopyX.Html/Assets/canopyx-pager.css",
     "CanopyX.Html/Assets/canopyx-enhance.js",
     "CanopyX.Html/Assets/canopyx-data.js",
+    "CanopyX.Html/Assets/canopyx-flow-module.mjs",
+    "CanopyX.Html/Assets/canopyx-flow-entry.js",
+    "CanopyX.Html/Assets/canopyx-flow-entry.css",
+    "CanopyX.Html/Assets/canopyx-forms.js",
+    "CanopyX.Html/Assets/canopyx-forms.css",
+    "CanopyX.Html/Assets/canopyx-flow.js",
+    "CanopyX.Html/Assets/canopyx-flow.css",
     "CanopyX.Html/Assets/canopyx-editing.js",
     "CanopyX.Html/Assets/canopyx-editing.css",
     "CanopyX.Html/Assets/canopyx-column-groups.js",
@@ -149,6 +166,6 @@
     "CanopyX.Html/Assets/canopyx-timeline.js",
     "CanopyX.Html/Assets/canopyx-timeline.css"
   ],
-  "keywords": ["treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
+  "keywords": ["forms", "wizard", "treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }
 }

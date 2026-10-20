@@ -333,6 +333,44 @@ on your server, pass `viewStore: { load({ key, view, signal }), save({ key, view
 `stateKey`). For your own save button, use `grid.getState()` and `await grid.setState(state)`; `getShareState()` leaves out
 searches, filters and selection. See [flat data grid](authoring.md#flat-data-grid).
 
+## Ask for settings step by step
+
+A flow asks a few questions per step, shows a review page and hands the answers to your code. Fields can depend on other
+answers, and secrets never come back to the page ([flow.md](flow.md)).
+
+```csharp
+var flow = new CanopyFlow("mail-server", "Connect a mail server") { Submit = new CanopyFlowSubmit("Save settings") };
+flow.Step("server", "Which server sends the mail?", step => step
+    .Text("host", "Server name", f => f.Required().Path("mail.host"))
+    .Choice("security", "Connection security", f => f.Option("starttls", "STARTTLS").Option("none", "No encryption").Default("starttls")));
+flow.Step("sign-in", "How does it sign in?", step => step
+    .Secret("password", "Password", f => f.Required())
+    .Toggle("verify", "Check the server certificate", f => f.Default(true).When(CanopyFlowCondition.NotEqual("security", "none"))));
+flow.Review();
+flow.SaveHtmlPage("mail-server.html");
+```
+
+```js
+CanopyX.configure("mail-server", { onSubmit: detail =>
+  fetch("/api/mail", { method: "POST", body: JSON.stringify({ values: detail.values, password: detail.secret("password") }) })
+    .then(response => response.ok ? { status: "saved", message: "Saved." } : { status: "error", message: "Not saved." }) });
+```
+
+## Edit existing settings and send only the changes
+
+Give the flow the current values; the review page then shows what changed, and the proposal carries a JSON patch built from
+the fields' paths.
+
+```csharp
+flow.Initial["host"] = "old.example.com";
+flow.StoredSecrets.Add("password");   // the password stays unless the reader types a new one
+flow.Baseline = "rev-41";             // echoed in the proposal, for your concurrency check
+```
+
+The proposal's `patch` then holds `{ "op": "replace", "path": "/mail/host", "value": "smtp.example.com" }`, and `secrets`
+says `{ "password": { "state": "keep" } }`. Answer `{ status: "conflict" }` when the baseline moved on; the flow offers to
+reload the current settings.
+
 ## Translate the controls
 
 ```javascript

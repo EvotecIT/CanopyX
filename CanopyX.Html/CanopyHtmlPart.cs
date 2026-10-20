@@ -140,6 +140,9 @@ public sealed class CanopyHtmlPart {
         (_presenters.Length == 0 || view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column?.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
         (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
 
+    /// <summary>Whether a flow loads this part: a part for flows (<c>"views": ["flow"]</c>), such as the flow and forms parts.</summary>
+    internal bool IsNeededBy(CanopyFlow flow) => flow != null && Array.IndexOf(_views, "flow") >= 0;
+
     /// <summary>
     /// Whether a grid uses a view feature: pager settings, an editable column, formatting rules or the rule editor, column
     /// groups, cell ranges, grouping or aggregates, detail rows, search highlighting, layout modes, the record panel, live data, a facet panel, or a calendar and its resources. Compact
@@ -215,6 +218,7 @@ public sealed class CanopyHtmlPart {
     private static IEnumerable<CanopyRuntime> RuntimesOf(string kind) => kind switch {
         "tree" => new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid },
         "grid" => new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid },
+        "flow" => new[] { CanopyRuntime.Flow },
         _ => throw new InvalidOperationException("Unknown CanopyX part runtime '" + kind + "'.")
     };
 

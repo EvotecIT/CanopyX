@@ -197,8 +197,10 @@
       try {
         view = JSON.parse(config.textContent);
         if (view === Object(view)) parsedViews.add(view);
-        const create = view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
-        const api = create(host, Object.assign({}, view && configured.get(view.id), { view }));
+        // Grid entry points also mount flow documents (docs/flow.md); a tree entry point has no flows.
+        const flow = view && view.kind === "flow" && typeof FLOW_API === "object";
+        const create = flow ? FLOW_API.createFlow : view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
+        const api = create(host, Object.assign({}, view && configured.get(view.id), flow ? { flow: view } : { view }));
         created.push(api);
         api.ready.catch((err) => {
           // Grid query failures keep their retryable loading/error surface and accepted snapshot.
@@ -229,7 +231,7 @@
     registerPart,
     // The Content Security Policy nonce for the scripts and stylesheets the runtime inserts (docs/security.md).
     setNonce
-  }, typeof GRID_API === "object" ? GRID_API : {}));
+  }, typeof GRID_API === "object" ? GRID_API : {}, typeof FLOW_API === "object" ? FLOW_API : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it

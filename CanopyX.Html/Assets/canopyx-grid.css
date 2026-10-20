@@ -574,3 +574,5 @@ body .cx-host.cx-chrome{padding:0;}
 .cx-phone .cx-hcell :is(.cx-grid-column-menu,.cx-grid-header-filter){min-width:var(--cx-size-44px);min-height:var(--cx-size-44px);}
 .cx-grid-overlay :focus-visible{outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-2px);}
 .cx-grid-overlay [data-cx-pointer-focus]:focus-visible{outline:none;}
+.cx-host.cx-flow-host{min-height:0;display:block;background:transparent;}
+.cx-host:where(.cx-flow-host:not([data-cx-height])){height:auto;}

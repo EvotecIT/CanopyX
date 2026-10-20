@@ -10,12 +10,12 @@ namespace CanopyX.Tests.Html;
 /// C# writers handle them alike, so a new part needs no host code.
 /// </summary>
 public sealed class RuntimePartTests {
-    private static readonly CanopyRuntime[] AllRuntimes = { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid };
+    private static readonly CanopyRuntime[] AllRuntimes = { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid, CanopyRuntime.Flow };
 
     [Fact]
     public void Parts_FollowTheBuildListInOrder() {
         Assert.Equal(PartManifestFile.Read().Select(part => part.Name), CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
         Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[2]);
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("missing"));
     }
@@ -39,7 +39,9 @@ public sealed class RuntimePartTests {
             }
         }
         Assert.Equal(new[] { "tree-tools", "export", "links", "search", "link", "highlight", "layouts", "record-panel" }, CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid).Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
+        // The flow entry point knows only the forms and flow parts; the grid entry points know them too, so a grid page can host a flow.
+        Assert.Equal(new[] { "forms", "flow" }, CanopyHtmlAssets.GetParts(CanopyRuntime.Flow).Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
     }
 
     [Fact]
@@ -49,8 +51,9 @@ public sealed class RuntimePartTests {
             var script = CanopyHtmlAssets.GetScript(runtime);
             Assert.DoesNotContain("function entryFile(", script);
             Assert.DoesNotContain("writeDeepLink(w,revision=this.selectionRevision)", script);
-            Assert.Contains("function checkSearchIndex(", script);
             Assert.Contains("function registerPart(", script);
+            // The flow entry point has no trees, so it has no sidecar search to check.
+            Assert.Equal(runtime != CanopyRuntime.Flow, script.Contains("function checkSearchIndex(", StringComparison.Ordinal));
         }
         Assert.Contains("function entryFile(", CanopyHtmlAssets.GetPart("search").Script);
         Assert.Contains("writeDeepLink(w,revision=this.selectionRevision)", CanopyHtmlAssets.GetPart("links").Script);
@@ -76,9 +79,14 @@ public sealed class RuntimePartTests {
         Assert.Equal(new[] { "filter-editor", "export", "history" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         // An editable column brings the editing part; a tree's editable column keeps the tree's own proposals.
         grid.Columns[0].Editable = true;
-        Assert.Equal(new[] { "filter-editor", "export", "history", "editing" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
+        Assert.Equal(new[] { "filter-editor", "export", "history", "forms", "editing" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         tree.Columns[0].Editable = true;
         Assert.DoesNotContain("editing", Names(CanopyHtmlAssets.GetRequiredParts(tree)));
+        Assert.DoesNotContain("forms", Names(CanopyHtmlAssets.GetRequiredParts(tree)));
+
+        // A flow loads the flow part and the forms part it requires, and nothing of the grids or trees.
+        var flow = new CanopyFlow("flow", "Flow").Step("step", "Step", step => step.Text("name", "Name"));
+        Assert.Equal(new[] { "forms", "flow" }, Names(CanopyHtmlAssets.GetRequiredParts(flow)));
     }
 
     [Fact]

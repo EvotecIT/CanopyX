@@ -98,9 +98,44 @@
       ]
     },
     {
+      "name": "forms",
+      "label": "forms",
+      "version": "a8c60f205d9babca",
+      "script": "canopyx-forms.js",
+      "style": "canopyx-forms.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "grid",
+        "flow"
+      ],
+      "features": [
+        "editable"
+      ]
+    },
+    {
+      "name": "flow",
+      "label": "flow view",
+      "version": "75b9643b282dddb7",
+      "script": "canopyx-flow.js",
+      "style": "canopyx-flow.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "requires": [
+        "forms"
+      ]
+    },
+    {
       "name": "editing",
       "label": "editing",
-      "version": "01965774e28f70bf",
+      "version": "c82648dfaa7e5ee5",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -113,7 +148,8 @@
         "editable"
       ],
       "requires": [
-        "filter-editor"
+        "filter-editor",
+        "forms"
       ]
     },
     {

@@ -693,6 +693,199 @@ export interface GridFacetPanelApi{
   setFacetPanelOpen(open:boolean):Promise<GridFacetPanelState>;
 }
 
+// ---- JavaScript/flow.d.ts ----
+import type{
+  CanopyPlugin
+}
+from "./plugins.js";
+export type FlowValue=string|number|boolean|null|readonly(string|number|boolean)[];
+export type FlowFieldType="text"|"number"|"date"|"datetime"|"time"|"select"|"toggle"|"lookup"|"choice"|"multiChoice"|"textarea"|"list"|"secret"|"duration"|"custom";
+export type FlowOperator="eq"|"ne"|"gt"|"ge"|"lt"|"le"|"contains"|"notContains"|"startsWith"|"endsWith"|"matches"|"notMatches"|"in"|"notIn"|"between"|"isNull"|"isNotNull";
+export interface FlowCondition{
+  operator:"and"|"or"|"none";
+  filters?:readonly{field:string;operator:FlowOperator;values?:readonly(string|number|boolean)[]}[];
+  groups?:readonly FlowCondition[];
+}
+export interface FlowOption{
+  value:string|number|boolean;
+  label?:string;
+  description?:string;
+  badge?:string;
+  disabledReason?:string;
+  group?:string;
+}
+export interface FlowValidation{
+  min?:number|string;
+  max?:number|string;
+  minLength?:number;
+  maxLength?:number;
+  pattern?:string;
+  message?:string;
+  minItems?:number;
+  maxItems?:number;
+  item?:"email"|"host"|"ip"|"cidr"|"url";
+  itemPattern?:string;
+}
+export interface FlowField{
+  id:string;
+  type:FlowFieldType;
+  label:string;
+  help?:string;
+  placeholder?:string;
+  required?:boolean;
+  readOnly?:boolean;
+  default?:FlowValue;
+  when?:FlowCondition;
+  width?:"full"|"half";
+  parameter?:string;
+  path?:string;
+  sensitive?:boolean;
+  validation?:FlowValidation;
+  options?:readonly FlowOption[];
+  display?:"cards"|"list";
+  onText?:string;
+  offText?:string;
+  rows?:number;
+  step?:number;
+  keepWhenBlank?:boolean;
+  reveal?:boolean;
+  units?:readonly("seconds"|"minutes"|"hours"|"days")[];
+  editor?:string;
+}
+export interface FlowSection{
+  id:string;
+  label:string;
+  description?:string;
+  fields:readonly FlowField[];
+  when?:FlowCondition
+}
+export interface FlowStep{
+  id:string;
+  title?:string;
+  description?:string;
+  type?:"form"|"info"|"review";
+  fields?:readonly FlowField[];
+  sections?:readonly FlowSection[];
+  when?:FlowCondition;
+  optional?:boolean;
+  declaration?:string;
+  changesOnly?:boolean;
+}
+export interface FlowDocument{
+  kind:"flow";
+  version:1;
+  id:string;
+  title:string;
+  description?:string;
+  mode?:"linear"|"free";
+  layout?:{orientation?:"auto"|"horizontal"|"vertical"};
+  density?:"compact"|"normal"|"comfortable";
+  timeZone?:"utc"|"local";
+  steps:readonly FlowStep[];
+  initial?:Readonly<Record<string,FlowValue>>;
+  storedSecrets?:readonly string[];
+  baseline?:string;
+  submit?:{label?:string};
+  labels?:Readonly<Record<string,string>>;
+}
+export interface FlowSubmission{
+  kind:"flowSubmission";
+  flow:string;
+  version:1;
+  mode:"create"|"edit";
+  baseline?:string;
+  values:Record<string,FlowValue>;
+  secrets:Record<string,{state:"set"|"keep"}>;
+  changes:{field:string;path?:string;from:FlowValue;to:FlowValue}[];
+  patch:({op:"add"|"replace";path:string;value:FlowValue}|{op:"remove";path:string})[];
+}
+export interface FlowSubmitDetail extends Readonly<FlowSubmission>{
+  respondWith(answer:FlowAnswer|Promise<FlowAnswer>):void;
+  secret(fieldId:string):string|null;
+}
+export interface FlowAnswer{
+  status:"saved"|"accepted"|"error"|"conflict";
+  message?:string;
+  fieldErrors?:Record<string,string>;
+  stepErrors?:Record<string,string>;
+  result?:{label:string;value:string|number|boolean;once?:boolean}[];
+  links?:{label:string;href:string}[];
+}
+export type FlowRuleResult=string|null|undefined|{
+  errors?:string[];
+  warnings?:string[];
+  fieldErrors?:Record<string,string>
+}
+;
+export interface FlowHooks{
+  validators?:Record<string,(value:FlowValue,values:Record<string,FlowValue>) => string|null|undefined|Promise<string|null|undefined>>;
+  validateStep?(stepId:string,values:Record<string,FlowValue>):FlowRuleResult|Promise<FlowRuleResult>;
+  validateFlow?(values:Record<string,FlowValue>):FlowRuleResult|Promise<FlowRuleResult>;
+  submit?(detail:FlowSubmitDetail):FlowAnswer|Promise<FlowAnswer>;
+}
+export interface FlowOptions{
+  flow:FlowDocument;
+  values?:Record<string,FlowValue>;
+  labels?:Record<string,string>;
+  hooks?:FlowHooks;
+  editors?:CanopyPlugin["editors"];
+  onReady?(detail:{flow:string;step:string}):void;
+  onStepChange?(detail:{from:string;to:string}):void;
+  onValueChange?(detail:{field:string;value?:FlowValue;previous?:FlowValue;source:string}):void;
+  onSubmit?(detail:FlowSubmitDetail):FlowAnswer|Promise<FlowAnswer>|void;
+  onSubmitted?(answer:FlowAnswer):void;
+  onReload?(detail:{baseline:string|null}):void;
+}
+export interface FlowValidationResult{
+  valid:boolean;
+  errors:{field?:string;step?:string;message:string}[];
+  warnings:{step?:string;message:string}[];
+}
+export interface FlowState{
+  step:string;
+  values:Record<string,FlowValue>;
+  completed:string[]
+}
+export interface FlowApi{
+  readonly element:HTMLElement;
+  readonly flow:FlowDocument;
+  readonly ready:Promise<FlowApi>;
+  next():Promise<boolean>;
+  back():Promise<boolean>;
+  goTo(stepId:string):Promise<boolean>;
+  getStep():string;
+  getValues():Record<string,FlowValue>;
+  setValues(values:Record<string,FlowValue>):void;
+  getState():FlowState;
+  setState(state:Partial<FlowState>):Promise<boolean>;
+  isDirty():boolean;
+  reset():boolean;
+  validate(stepId?:string):Promise<FlowValidationResult>;
+  setFieldError(fieldId:string,message:string|null):void;
+  submit():Promise<FlowAnswer|null>;
+  setProgress(progress:{done?:number;total?:number;message?:string}):boolean;
+  complete(answer:FlowAnswer):boolean;
+  destroy():void;
+}
+export declare function createFlow(host:HTMLElement,options:FlowOptions):FlowApi;
+export declare function configure(flowId:string,options:Partial<Omit<FlowOptions,"flow">>):() => void;
+export declare function unconfigure(flowId:string):boolean;
+export declare function mount(root?:ParentNode):FlowApi[];
+export declare function use(plugin:Pick<CanopyPlugin,"name"|"editors">):() => void;
+export declare function registerPart(name:string,part:{version:string;requires?:string[];install(context:object):void}):void;
+export declare function setNonce(nonce:string):void;
+declare const CanopyX:{
+  createFlow:typeof createFlow;
+  configure:typeof configure;
+  unconfigure:typeof unconfigure;
+  mount:typeof mount;
+  use:typeof use;
+  registerPart:typeof registerPart;
+  setNonce:typeof setNonce
+}
+;
+export default CanopyX;
+
 // ---- JavaScript/formatting.d.ts ----
 export type GridFormatOperator="eq"|"ne"|"gt"|"ge"|"lt"|"le"|"contains"|"notContains"|"startsWith"|"endsWith"|"like"|"notLike"|"matches"|"notMatches"|"in"|"notIn"|"between"|"betweenExclusive"|"isNull"|"isNotNull"|"olderThan"|"withinLast";
 export type GridFormatValue=string|number|boolean;
@@ -1597,11 +1790,24 @@ type GridNamedRow<Row>=[Row][Row extends unknown?0:never];
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:GridOptions<GridNamedRow<Row>>):DataGrid<GridQuery,Row>;
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:CursorGridOptions<GridNamedRow<Row>>):DataGrid<GridCursorQuery,Row>;
 export function createCalendar(host:HTMLElement,options?:CalendarOptions):DataGrid<GridQuery,GridRow>;
-export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>):() => void;
-export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>>;
+export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>|Partial<Omit<FlowOptions,"flow">>):() => void;
+export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>|FlowApi>;
+import type{
+  createFlow,FlowApi,FlowOptions
+}
+from "./flow.js";
+export{
+  createFlow
+}
+from "./flow.js";
+export type{
+  FlowDocument,FlowField,FlowStep,FlowSection,FlowOption,FlowCondition,FlowValidation,FlowValue,FlowSubmission,FlowSubmitDetail,FlowAnswer,FlowHooks,FlowOptions,FlowApi,FlowState,FlowValidationResult
+}
+from "./flow.js";
 declare const gridRuntime:Omit<typeof CanopyX,"configure"|"mount">&{
   createDataGrid:typeof createDataGrid;
   createCalendar:typeof createCalendar;
+  createFlow:typeof createFlow;
   enhance:typeof enhance;
   grid:typeof grid;
   configure:typeof configure;

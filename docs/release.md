@@ -4,6 +4,13 @@ The JavaScript package publishes automatically after a pull request merges into
 `main` and that commit passes **Quality**. The .NET packages use a separate manual,
 signed deployment through PowerForge.
 
+## Qualification
+
+Qualify the library packages, the public feed's availability and the version a host has installed as three separate facts:
+a package that built and passed here is not yet on the feed, and a published version is not yet what a host runs. Remove an
+old table component or vendored asset from a host only after its callers migrate and its generated reports and consumer CI
+pass. Do not add compatibility shims for shared changes that are not published.
+
 ## Pull requests
 
 Repository writers and maintainers can merge pull requests when Linux, Windows

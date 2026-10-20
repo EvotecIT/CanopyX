@@ -21,26 +21,10 @@
   Object.assign(DataGrid.prototype, {
     // Returns the first message, null, or the promise of an asynchronous host validator.
     editRules(spec, value, record) {
-      const rules = spec.rules, column = spec.column, labels = this.edit.labels;
-      const say = (name, values) => rules.message || fill(labels[name], { column: column.title, ...values });
+      const column = spec.column;
       const shown = bound => column.kind === "datetime" ? cellText(bound, column, this.fmt) : typeof bound === "number" ? numberFormat(this.lang).format(bound) : String(bound);
-      if (value == null || value === "") { if (rules.required) return say("gridEditRequired"); }
-      else {
-        if (column.kind === "number" && !(typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER)) return say("gridEditNumber");
-        if (column.kind === "datetime" && !(typeof value === "string" && /^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) && Number.isFinite(Date.parse(value)))) return say("gridEditDate");
-        if (typeof value === "number" || column.kind === "datetime") {
-          const at = column.kind === "datetime" ? Date.parse(value) : value, of = bound => typeof bound === "string" ? Date.parse(bound) : bound;
-          if (rules.min !== undefined && at < of(rules.min)) return say("gridEditMin", { min: shown(rules.min) });
-          if (rules.max !== undefined && at > of(rules.max)) return say("gridEditMax", { max: shown(rules.max) });
-          const base = typeof rules.min === "number" ? rules.min : 0, steps = rules.step && (value - base) / rules.step;
-          if (typeof value === "number" && rules.step && Math.abs(steps - Math.round(steps)) > 1e-9) return say("gridEditStep", { step: shown(rules.step) });
-        }
-        if (typeof value === "string" && column.kind !== "datetime") {
-          if (rules.minLength !== undefined && value.length < rules.minLength) return say("gridEditMinLength", { min: rules.minLength });
-          if (rules.maxLength !== undefined && value.length > rules.maxLength) return say("gridEditMaxLength", { max: rules.maxLength });
-          if (spec.pattern && !spec.pattern.test(value)) return say("gridEditPattern");
-        }
-      }
+      const failed = formCheck(spec, value, column.kind, column.title, this.edit.labels, shown);
+      if (failed) return failed;
       const validators = this.edit.options.validators, validator = validators && Object.hasOwn(validators, spec.id) ? validators[spec.id] : null;
       if (typeof validator !== "function") return null;
       let result;

@@ -12,5 +12,8 @@ public enum CanopyRuntime {
     DataGrid,
 
     /// <summary>The optional reporting grid, ordinary flat grid, and both tree runtimes.</summary>
-    ReportingGrid
+    ReportingGrid,
+
+    /// <summary>The slim flow entry point: forms and guided flows, no grid code.</summary>
+    Flow
 }

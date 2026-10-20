@@ -1,13 +1,15 @@
 # CanopyX features
 
 CanopyX has two interactive views: a **data grid** for flat records and a **tree grid** for hierarchies. Both can be written
-from typed C# or mounted from JavaScript, and both can render as a script-free table for email and print. This page lists
+from typed C# or mounted from JavaScript, and both can render as a script-free table for email and print. A **flow** is a guided
+form for setup and edit tasks that raises one proposal to the host (see [Flows](#flows)). This page lists
 what each view does today, grouped by capability, with links to the reference for each feature. For work that is planned
 but not built yet, see [planned work](../TODO.md). For short how-tos, see the [recipes](recipes.md).
 
 - **Grid**: the flat data grid (`@evotecit/canopyx/grid`, `CanopyDataGridView`).
 - **Reporting**: the data grid with its reporting capabilities (`@evotecit/canopyx/reporting`, `CanopyDataGridView.Reporting`).
 - **Tree**: the tree grid (`@evotecit/canopyx`, `CanopyTreeView`).
+- **Flow**: guided forms (`@evotecit/canopyx/flow`, `CanopyFlow`); the grid entry points create flows too.
 
 ## Data sources
 
@@ -161,6 +163,23 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Several sources with a legend; iCalendar import (browser and .NET) | Grid | `sources`, `source`; `CanopyICalendar.Parse` | [Sources and iCalendar](calendar.md#sources-and-icalendar), [icalendar.md](icalendar.md) |
 | Shading outside ranges; context menus and hover cards | Grid | `ranges[].inverse`, `menu`, `hover`, `calendar.menu` hook | [Context menus](calendar.md#context-menus-and-hover-cards) |
 
+## Flows
+
+CanopyX never writes: a flow collects answers, checks them and raises one proposal; the host applies it and answers.
+
+| Feature | How | Reference |
+|---|---|---|
+| Steps with typed fields, sections and descriptions, from C# or a JSON document | `CanopyFlow`, `flow.Step(...)`; `CanopyX.createFlow(host, { flow })`; `ToContract`, `FromContract` | [flow.md](flow.md) |
+| The grid's editors in forms: text, number, date, date and time, time, select, toggle (as a switch), lookup and custom editors | `type` on a field; one implementation with grid editing (the `forms` part) | [Fields](flow.md#fields) |
+| Choice cards with descriptions, badges and disabled reasons; multiple choice with groups, Select all and a count; text areas; lists with item rules; durations | `choice`, `multiChoice`, `textarea`, `list`, `secret`, `duration` | [Fields](flow.md#fields) |
+| Secrets that never echo: masked with reveal, kept when blank in edit mode, sent once through an accessor | `secret`, `keepWhenBlank`, `storedSecrets`, `detail.secret(id)` | [Secrets](flow.md#secrets) |
+| Conditions as data in the filter builder's grammar, for steps, sections and fields; hidden answers left out | `when`; C# `CanopyFlowCondition` with the same evaluator | [Conditions](flow.md#conditions) |
+| Field, step and flow validation with host validators, a step error summary and messages in place | `validation`, `hooks.validators`, `validateStep`, `validateFlow` | [Validation](flow.md#validation) |
+| Horizontal and vertical steppers; stacked steps on narrow hosts; linear or free order | `layout.orientation`, `mode` | [Layouts](flow.md#layouts) |
+| A review page with change links, "Not provided", a ready banner and a declaration; changes only in edit mode, with what each answer was | the `review` step, `initial`, `changesOnly` | [The review page](flow.md#the-review-page) |
+| One proposal with the visible answers, each secret's state, the changes and a JSON patch from field paths; saved, accepted, error and conflict answers | `canopyx:flowSubmit`, `respondWith`, `setProgress`, `complete` | [The proposal](flow.md#the-proposal-and-the-hosts-answer) |
+| Labels in six languages and right-to-left pages | `CanopyLabels.Polish()` and the other packs; `dir="rtl"` | [Labels](flow.md#labels-and-right-to-left) |
+| A page of forms loads no grid code | the flow entry point and the lazily loaded `forms` and `flow` parts | [Packaging](flow.md#packaging-and-size) |
 ## Export, copy and print
 
 | Feature | Views | How | Reference |
@@ -223,7 +242,7 @@ Spoken screen-reader output has not been recorded for a release yet. Calendar an
 | Feature | Views | How | Reference |
 |---|---|---|---|
 | Every built-in text is a named label | Grid, Tree | `labels`; C# `CanopyLabels` | [Labels](data-protocol.md#labels) |
-| Polish, German, Spanish, French and Italian packs, with plural forms where a label counts | Grid, Tree | `@evotecit/canopyx/locales/pl`, `/de`, `/es`, `/fr`, `/it`; `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()`, `Italian()` | [Label packs](labels.md) |
+| Polish, German, Spanish, French and Italian packs, with plural forms where a label counts | Grid, Tree, Flow | `@evotecit/canopyx/locales/pl`, `/de`, `/es`, `/fr`, `/it`; `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()`, `Italian()` | [Label packs](labels.md) |
 | Locale-aware number and date formatting | Grid, Tree | Browser `Intl` | [Default formatting and sorting](data-protocol.md#default-formatting-and-sorting) |
 
 ## Extension points
@@ -245,5 +264,5 @@ Spoken screen-reader output has not been recorded for a release yet. Calendar an
 | npm package with ES modules, classic scripts, styles and TypeScript types | `@evotecit/canopyx` | [JavaScript hosts](authoring.md#javascript-hosts) |
 | Public API baselines for C# and TypeScript, checked on every build, and a versioning and deprecation policy | `api/`, `ApiSurfaceTests`, `npm run test:api` | [versioning.md](versioning.md) |
 | Single-file pages, fragments and content-hashed asset files | `SaveHtmlPage`, `ToHtmlFragment`, `CanopyHtmlAssets.WriteTo` | [Assets and caching](architecture.md#assets-and-caching) |
-| Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 119.5 KiB, reporting 147.5 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
+| Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 119.5 KiB, reporting 147.5 KiB, flow 10 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
 | A strict Content Security Policy with a nonce, and Trusted Types | Grid, Tree | `CanopyHtmlOptions.Nonce`, `CanopyX.setNonce` | [security.md](security.md) |

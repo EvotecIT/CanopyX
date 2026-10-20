@@ -11,12 +11,12 @@ public sealed class EditingPartAssetsTests {
         var part = CanopyHtmlAssets.GetPart("editing");
         Assert.Matches("^[a-f0-9]{16}$", part.Version);
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }, part.Runtimes);
-        Assert.Equal(new[] { "filter-editor" }, part.Requires);
+        Assert.Equal(new[] { "filter-editor", "forms" }, part.Requires);
         Assert.NotNull(part.Style);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         var size = Gzip(part.Script) + Gzip(part.Style!);
-        // Wave 3's combined editing and insertion contracts: 21,085 bytes plus about 15%, rounded to KiB.
-        Assert.True(size <= 24 * 1024, "The editing part is " + size + " bytes gzip; the guard is 24 KiB.");
+        // Flow wave F1 moved the typed editors to the forms part (its own guard): 16,740 bytes plus about 15%, rounded to KiB.
+        Assert.True(size <= 19 * 1024, "The editing part is " + size + " bytes gzip; the guard is 19 KiB.");
     }
 
     [Fact]
@@ -28,6 +28,11 @@ public sealed class EditingPartAssetsTests {
             Assert.DoesNotContain("const EDIT_EDITORS", script);
         }
         Assert.Contains("function editSpec(", CanopyHtmlAssets.GetPart("editing").Script);
+        // The typed editors and the lookup combobox moved to the forms part, which grid editing and flows share.
+        Assert.DoesNotContain("const EDIT_EDITORS", CanopyHtmlAssets.GetPart("editing").Script);
+        Assert.DoesNotContain("function editLookupEditor(", CanopyHtmlAssets.GetPart("editing").Script);
+        Assert.Contains("const EDIT_EDITORS", CanopyHtmlAssets.GetPart("forms").Script);
+        Assert.Contains("function editLookupEditor(", CanopyHtmlAssets.GetPart("forms").Script);
         // Tree entry points know nothing of flat-grid editing.
         Assert.DoesNotContain("\"editing\":[", CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid));
     }
@@ -42,6 +47,7 @@ public sealed class EditingPartAssetsTests {
         Assert.Contains("application/x-canopyx-editing\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("editing").Version, fragment);
         Assert.Contains("application/x-canopyx-editing-style", fragment);
         Assert.Contains("application/x-canopyx-filter-editor", fragment);
+        Assert.Contains("application/x-canopyx-forms\" data-cx-version=\"" + CanopyHtmlAssets.GetPart("forms").Version, fragment);
     }
 
     private static long Gzip(string value) {

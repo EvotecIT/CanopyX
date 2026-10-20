@@ -56,9 +56,9 @@ internal static class CanopyHtmlWriter {
         return fragment;
     }
 
-    private static string FragmentDocument(string json, CanopyHtmlOptions options, string? content = null) {
+    private static string FragmentDocument(string json, CanopyHtmlOptions options, string? content = null, string hostClass = "cx-host") {
         var builder = new StringBuilder(json.Length + (content?.Length ?? 0) + 160);
-        builder.Append("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
+        builder.Append("<div class=\"").Append(hostClass).Append("\" data-canopyx-host data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
         builder.Append(DirectionAttribute(options.Direction));
         if (!options.AutoMount) {
             builder.Append(" data-cx-mount=\"manual\"");
@@ -142,6 +142,31 @@ internal static class CanopyHtmlWriter {
             ["body"] = Fragment(view, PageFragmentOptions(options), bundled, bundleBase)
         };
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flat grids use typed query predicates, not tree filter IDs.");
+        return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
+    }
+
+    /// <summary>A flow fragment: the flow document in a host without a fixed height, and with inline assets the forms and flow parts.</summary>
+    internal static string Fragment(CanopyFlow flow, CanopyHtmlOptions options) {
+        if (flow == null) throw new ArgumentNullException(nameof(flow));
+        if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flows have no tree filter IDs.");
+        var html = FragmentDocument(flow.ToContract(), options, null, "cx-host cx-flow-host");
+        var parts = WithRequested(CanopyHtmlAssets.GetRequiredParts(flow), options, CanopyRuntime.Flow);
+        return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, parts);
+    }
+
+    internal static string Page(CanopyFlow flow, CanopyHtmlOptions options) {
+        if (flow == null) throw new ArgumentNullException(nameof(flow));
+        if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flows have no tree filter IDs.");
+        var fragmentOptions = PageFragmentOptions(options);
+        fragmentOptions.Height = options.Height;
+        var values = new Dictionary<string, string>(StringComparer.Ordinal) {
+            ["lang"] = WebUtility.HtmlEncode(options.Language),
+            ["dir"] = DirectionAttribute(options.Direction),
+            ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
+            ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? flow.Title : options.Title),
+            ["head"] = Head(CanopyRuntime.Flow, options),
+            ["body"] = Fragment(flow, fragmentOptions)
+        };
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
     }
 

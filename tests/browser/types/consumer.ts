@@ -250,7 +250,11 @@ createDataGrid(document.createElement("div"), { view: inlineGrid });
 for (const controller of [...mountViews(document), ...GridRuntime.mount(document)]) {
   // @ts-expect-error A mixed fragment mount does not promise tree controllers.
   controller.expandPath(["row-1"]);
-  if ("getSelection" in controller) controller.getSelection();
+  if ("getStep" in controller) {
+    const flow: import("@evotecit/canopyx/flow").FlowApi = controller;
+    void flow.ready.then(api => api.getStep());
+  }
+  else if ("getSelection" in controller) controller.getSelection();
   else controller.expandPath(["tree-1"]);
 }
 
@@ -789,3 +793,39 @@ const recordTree = createTreeGrid(document.createElement("div"), { view: { proto
 void recordTree.openRecord("a", { path: ["a"] });
 // @ts-expect-error A structured presenter displays a count, chips or the first item.
 ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "bad", label: "Bad", rowHeight: 34, pageSize: 100, selection: "single", search: false, source: { kind: "inline" }, rows: [], columns: [{ id: "a", title: "A", kind: "text", presenter: { kind: "structured", display: "table" } }] } });
+
+// Flows: the document, hooks, the submit detail and the API are typed (docs/flow.md).
+import FlowRuntime, { createFlow, type FlowDocument, type FlowAnswer, type FlowSubmitDetail } from "@evotecit/canopyx/flow";
+const flowDocument: FlowDocument = { kind: "flow", version: 1, id: "mail", title: "Connect a mail server",
+  steps: [{ id: "server", title: "Which server?", fields: [{ id: "host", type: "text", label: "Server", required: true, path: "mail.host" },
+    { id: "password", type: "secret", label: "Password" }, { id: "timeout", type: "duration", label: "Timeout", default: "PT30S", units: ["seconds", "minutes"] },
+    { id: "security", type: "choice", label: "Security", options: [{ value: "tls", label: "TLS", badge: "Recommended" }, { value: "none", label: "None" }],
+      when: { operator: "and", filters: [{ field: "host", operator: "isNotNull" }] } }] }, { id: "review", type: "review", declaration: "Applies at once." }],
+  initial: { host: "old.example.com" }, storedSecrets: ["password"], baseline: "rev-1" };
+const flowApi = createFlow(document.createElement("div"), {
+  flow: flowDocument,
+  hooks: { validators: { host: value => typeof value === "string" && value.includes(" ") ? "No spaces." : null }, validateStep: () => ({ warnings: ["Check the port."] }) },
+  onSubmit: (detail: FlowSubmitDetail): Promise<FlowAnswer> => {
+    const password: string | null = detail.secret("password");
+    const state: "set" | "keep" | undefined = detail.secrets.password?.state;
+    return Promise.resolve({ status: password || state === "keep" ? "saved" : "error", message: detail.patch.map(change => change.op).join(), fieldErrors: { host: "Unreachable." } });
+  }
+});
+flowApi.ready.then(api => api.validate("server")).then(result => result.errors.map(error => error.message));
+flowApi.ready.then(api => {
+  const step: string = api.getStep();
+  const values: Record<string, import("@evotecit/canopyx/flow").FlowValue> = api.getValues();
+  const state: import("@evotecit/canopyx/flow").FlowState = api.getState();
+  const dirty: boolean = api.isDirty();
+  const reset: boolean = api.reset();
+  const progress: boolean = api.setProgress({ done: 1, total: 2 });
+  const complete: boolean = api.complete({ status: "saved" });
+  const setValues: void = api.setValues({ host: "smtp.example.com" });
+  const setError: void = api.setFieldError("host", null);
+  void [step, values, state, dirty, reset, progress, complete, setValues, setError];
+});
+const flowAnswer: Promise<FlowAnswer | null> = flowApi.submit();
+FlowRuntime.configure("mail", { onReload: detail => detail.baseline });
+GridRuntime.configure("mail", { onSubmit: detail => ({ status: detail.patch.length ? "saved" : "error" }) });
+GridRuntime.createFlow(document.createElement("div"), { flow: flowDocument }).destroy();
+void flowAnswer;

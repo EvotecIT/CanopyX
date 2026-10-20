@@ -23,6 +23,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\docs\schema\canopyx-2.schema.json" Link="Schema\canopyx-2.schema.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\docs\schema\canopyx-flow-1.schema.json" Link="Schema\canopyx-flow-1.schema.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\tests\fixtures\flow-conditions.json" Link="Fixtures\flow-conditions.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\tests\fixtures\recurrence-cases.json" Link="Fixtures\recurrence-cases.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\CanopyX\Views\Locales\labels.json" Link="Fixtures\labels.json" CopyToOutputDirectory="PreserveNewest" />

@@ -53,6 +53,8 @@ for ($foldOffset = 0; $foldOffset -lt $foldEntries.Count;) {
 }
 $foldPairs = $foldRecords -join ','
 
+$flowShell = 'CanopyX.Html/Assets/canopyx.flow-entry.source/50-flow-shell.js'
+$flowHostStyle = 'CanopyX.Html/Assets/canopyx.flow-entry.source/flow-host.css'
 $assets = @(
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source'
@@ -60,7 +62,8 @@ $assets = @(
         Folding = $true
     }
     @{
-        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
+        Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
+        Extension = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
         Target = 'CanopyX.Html/Assets/canopyx.css'
     }
     @{
@@ -70,8 +73,8 @@ $assets = @(
         Folding = $true
     }
     @{
-        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
-        Extension = 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css'
+        Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
+        Extension = @('CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css')
         Target = 'CanopyX.Html/Assets/canopyx-interactive.css'
     }
     @{
@@ -83,18 +86,18 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source'
-        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source')
+        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source', $flowShell)
         Target = 'CanopyX.Html/Assets/canopyx-grid.js'
         Folding = $true
     }
     @{
-        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css')
+        Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
+        Extension = @('CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', $flowHostStyle)
         Target = 'CanopyX.Html/Assets/canopyx-grid.css'
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source'
-        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source')
+        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source', $flowShell)
         Target = 'CanopyX.Html/Assets/canopyx-grid-module.mjs'
         Folding = $true
         Module = $true
@@ -102,22 +105,48 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source'
-        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source', 'CanopyX.Html/Assets/canopyx.reporting.source')
+        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source', 'CanopyX.Html/Assets/canopyx.reporting.source', $flowShell)
         Target = 'CanopyX.Html/Assets/canopyx-reporting.js'
         Folding = $true
     }
     @{
-        Source = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css')
+        Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
+        Extension = @('CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css', $flowHostStyle)
         Target = 'CanopyX.Html/Assets/canopyx-reporting.css'
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source'
-        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source', 'CanopyX.Html/Assets/canopyx.reporting.source')
+        Extension = @('CanopyX.Html/Assets/canopyx.grid.source', 'CanopyX.Html/Assets/canopyx.interactive.source', 'CanopyX.Html/Assets/canopyx.reporting.source', $flowShell)
         Target = 'CanopyX.Html/Assets/canopyx-reporting-module.mjs'
         Folding = $true
         Module = $true
         Grid = $true
+    }
+    # The flow entry point: forms and flows without grid or tree code. It takes the core's small shared parts by name and the
+    # flow shell the grid entry points also carry; the forms and flow parts load beside it (Build/parts.json, runtime "flow").
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.flow-entry.source/00-flow-entry.js'
+        Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js',
+            'CanopyX.Html/Assets/canopyx.source/05-patterns.js', 'CanopyX.Html/Assets/canopyx.source/05-search-folding.js', 'CanopyX.Html/Assets/canopyx.grid.source/00-grid-pure.js',
+            'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell, 'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
+        Target = 'CanopyX.Html/Assets/canopyx-flow-entry.js'
+        Folding = $true
+        Kind = 'flow'
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
+        Extension = $flowHostStyle
+        Target = 'CanopyX.Html/Assets/canopyx-flow-entry.css'
+    }
+    @{
+        Source = 'CanopyX.Html/Assets/canopyx.flow-entry.source/00-flow-entry.js'
+        Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js',
+            'CanopyX.Html/Assets/canopyx.source/05-patterns.js', 'CanopyX.Html/Assets/canopyx.source/05-search-folding.js', 'CanopyX.Html/Assets/canopyx.grid.source/00-grid-pure.js',
+            'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell, 'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
+        Target = 'CanopyX.Html/Assets/canopyx-flow-module.mjs'
+        Folding = $true
+        Module = $true
+        Kind = 'flow'
     }
 )
 
@@ -231,7 +260,7 @@ function Remove-CommentLines {
 }
 
 function ConvertTo-Module {
-    param([string] $Content, [switch] $Grid)
+    param([string] $Content, [switch] $Grid, [switch] $Flow)
 
     # The module uses the same implementation as the interactive classic script. Only its host, automatic
     # browser mount, and exports differ; importing it on a server neither needs a DOM nor changes global state.
@@ -260,7 +289,13 @@ export default CanopyX;
     if ($Grid) {
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
-        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, createCalendar, enhance, grid, configure')
+        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, createCalendar, createFlow, enhance, grid, configure')
+    }
+    if ($Flow) {
+        # The flow module needs only an entry point that creates flows: the flow entry or a grid entry point.
+        $header = $header.Replace('(runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)', '!runtimeHost.CanopyX.createFlow')
+        $header = $header.Replace('interactive runtime or module before the core script', 'flow or grid runtime, or this module, before the core script')
+        $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'createFlow, configure, unconfigure, mount, use, registerPart, setNonce')
     }
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }
@@ -380,13 +415,13 @@ foreach ($asset in $assets) {
     $generated = if ($asset.Generated) { $asset.Generated } else { Join-AssetSource -SourcePath $sourcePath -ExtensionPath $extensionPath -GridRuntime:$grid }
     if ($asset.Folding) {
         if (-not $generated.Contains('__CX_PARTS__')) { throw 'The part manifest marker is missing.' }
-        $generated = $generated.Replace('__CX_PARTS__', (Get-PartManifest $(if ($grid) { 'grid' } else { 'tree' })))
+        $generated = $generated.Replace('__CX_PARTS__', (Get-PartManifest $(if ($asset.Kind) { $asset.Kind } elseif ($grid) { 'grid' } else { 'tree' })))
     }
     if ($asset.Folding) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
     }
-    if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) }
+    if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) -Flow:($asset.Kind -eq 'flow') }
     if ($asset.Folding) { $generated = Compress-ScriptSpacing -Content $generated }
     if (-not $asset.Generated -and $asset.Target.EndsWith('.css')) { $generated = Compress-StyleSpacing -Content $generated }
 

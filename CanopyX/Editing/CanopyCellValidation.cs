@@ -13,7 +13,7 @@ namespace CanopyX;
 /// These are presentation checks that mirror the host's rules; the host still validates and authorizes every change it
 /// receives. A browser host adds its own checks with <c>editing.validators</c> and <c>editing.validateRow</c>. See docs/editing.md.
 /// </remarks>
-public sealed class CanopyCellValidation {
+public sealed partial class CanopyCellValidation {
     private int? _minLength;
     private int? _maxLength;
 

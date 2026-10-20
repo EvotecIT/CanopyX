@@ -3,7 +3,7 @@
 CanopyX grows through two kinds of extension that share one loader:
 
 - **Plugins** are what page and application code writes. A plugin is a plain object with a name, lifecycle hooks and extension points (cell renderers, toolbar items, menu entries, export formats, event handlers). `CanopyX.use(plugin)` registers one for every grid and tree created afterwards; the `plugins` option adds one to a single grid or tree.
-- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, editing, column groups, cell ranges, conditional formatting, deep links, the sidecar search, linked views, detail rows, row grouping, search highlighting, layout modes, the record panel, live data, the facet panel, the calendar and the resource timeline. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part.
+- **Parts** are pieces of the runtime itself that load only when a view needs them: the tree tools, the export menu and writers, the filter editor, the history presenters, the pager controls, table enhancement, compact row data, the forms (editors and field checks), flows, editing, column groups, cell ranges, conditional formatting, deep links, the sidecar search, linked views, detail rows, row grouping, search highlighting, layout modes, the record panel, live data, the facet panel, the calendar and the resource timeline. Each is a separate file (`canopyx-<name>.js`, sometimes with a stylesheet) that registers its code with `CanopyX.registerPart`. A plugin can require a part.
 
 Both work on every entry point (`canopyx.js`, `canopyx-interactive.js`, `canopyx-grid.js`, `canopyx-reporting.js` and the ES modules). The core of every entry point stays within its size budget because new capability lives in parts.
 
@@ -73,7 +73,7 @@ The context is frozen and the same object for every hook and handler of a plugin
 
 **Detail renderers.** `detailRenderers` maps a name to `renderer(row, element, context)`, which draws a reporting grid's detail row into `element` when the definition names it (`reporting.detail.renderer`). `context` has `id`, `signal` (aborted when the detail is disposed), `onDispose(cleanup)`, `api` and `labels`. See [grouping.md](grouping.md#detail-rows).
 
-**Editors.** `editors` maps an editor name to `{ create(context) }`. An editable flat-grid column chooses one by name (`"editor": { "type": "stars" }`, `CanopyCellEditor.Custom("stars")` in .NET); a host's `editing.editors` for the grid wins, and a plugin editor replaces a built-in one with the same name. See [Custom editors](editing.md#custom-editors) for the contract.
+**Editors.** `editors` maps an editor name to `{ create(context) }`. An editable flat-grid column chooses one by name (`"editor": { "type": "stars" }`, `CanopyCellEditor.Custom("stars")` in .NET); a host's `editing.editors` for the grid wins, and a plugin editor replaces a built-in one with the same name. A flow's `custom` field chooses one the same way (`"type": "custom", "editor": "stars"`), and the flow's own `editors` option wins over plugins. See [Custom editors](editing.md#custom-editors) for the contract.
 
 **Column types.** `columnTypes` is a map a plugin can register today; CanopyX validates that it is an object and keeps it on the plugin. Later features read it.
 
@@ -137,7 +137,9 @@ A part is runtime code that loads when a view needs it. The runtime's build mani
 | `cell-range` | a grid with `rangeSelection` starts, or calls a cell range method | cell ranges by mouse, keyboard and touch, copy, paste, the fill handle and the cell menu ([cell-ranges.md](cell-ranges.md)) |
 | `links` | a tree with `deepLink` is created | deep links in the default scheme or the host's own |
 | `search` | a sidecar source answers its first query | the bundle's search index reader |
-| `editing` | a grid with an editable column starts, or an editing method runs | typed editors, validation, the change set, row and batch commit, undo and redo, the phone edit form ([editing.md](editing.md)); it requires the filter editor |
+| `forms` | a part that needs it loads: editing or a flow | the typed editors, number and date parsing, the lookup combobox and the field checks every form shares ([editing.md](editing.md), [flow.md](flow.md)) |
+| `flow` | `CanopyX.createFlow` runs, or a flow fragment mounts | steps, the flow's own field types, conditions, validation, the review page and the proposal ([flow.md](flow.md)); it requires forms |
+| `editing` | a grid with an editable column starts, or an editing method runs | validation, the change set, row and batch commit, undo and redo, the phone edit form ([editing.md](editing.md)); it requires the filter editor and forms |
 | `formatting` | a grid with `formatRules` or `formatting` starts, or a formatting API method runs | rule evaluation, painting, the legend, saved-view rules and export record formats ([conditional formatting](conditional-formatting.md)) |
 | `format-editor` | the rule editor opens | the rule editor, on the filter editor part's condition rows |
 | `link` | a host calls a link method (`setExternalFilter`, `setHighlight`, …) or creates a view with `linkEvents` | external filter chips, highlights and `canopyx:linkchange` ([Linked views](linked-views.md)) |
