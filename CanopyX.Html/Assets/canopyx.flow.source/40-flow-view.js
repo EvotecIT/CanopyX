@@ -21,9 +21,18 @@
       this.lifetime = new AbortController();
       this.fields = new Map(); this.sections = new Map(); this.visibility = new Map();
       this.secrets = new Map(); this.errors = new Map(); this.hostErrors = new Map(); this.hostStepErrors = new Map(); this.stepErrors = new Map(); this.completed = new Set();
-      this.banner = null; this.phase = "form"; this.returnToReview = false;
-      this.begin(options.values);
-      this.build();
+      this.banner = null; this.phase = "form"; this.returnToReview = false; this.generation = 0; this.answerRevision = 0;
+      try { this.begin(options.values); this.build(); }
+      catch (error) { this.destroy(); throw error; }
+    }
+
+    /** Releases a complete or partially constructed view. */
+    destroy() {
+      if (this.destroyed) return;
+      this.destroyed = true;
+      this.closeSubmission?.(); this.lifetime.abort(); this.resize?.disconnect();
+      for (const fv of this.fields.values()) fv.destroy();
+      this.secrets.clear(); this.root?.remove(); this.host.removeAttribute("data-cx-ready");
     }
 
     /** The starting answers: initial values in edit mode, else defaults, then the host's values. */
@@ -32,7 +41,7 @@
       this.values = new Map();
       for (const field of model.fields.values()) {
         if (field.type === "secret") continue;
-        const initial = model.initial && Object.hasOwn(model.initial, field.id) ? model.initial[field.id] : field.start;
+        const initial = model.initial ? Object.hasOwn(model.initial, field.id) ? model.initial[field.id] : null : field.start;
         this.values.set(field.id, flowCopy(initial));
       }
       for (const [id, value] of Object.entries(values || {})) this.assign(id, value);
@@ -47,6 +56,7 @@
     assign(id, value) {
       const field = this.model.fields.get(id);
       if (!field || field.type === "secret" || !flowFits(field, value)) flowFail("no field '" + id + "' takes that value");
+      if (!flowSameValue(this.values.get(id), value) || this.fields.get(id)?.pending) { this.answerRevision++; this.forgetHost(field); }
       this.values.set(id, flowCopy(value));
     }
 
@@ -76,17 +86,20 @@
     /** Reads a field's input after the reader changed it, updates visibility and tells the host. */
     changed(field, source) {
       const fv = this.fields.get(field.id);
-      if (!fv || this.destroyed) return;
+      if (!fv || this.destroyed || field.readOnly) return;
       const result = fv.read();
+      if (fv.pending !== (result.error || null)) this.answerRevision++;
       fv.pending = result.error || null;
+      if (result.error) this.completed.delete(field.step.id);
       if (field.type === "secret") {
         const before = this.secrets.get(field.id) ?? null;
         if (result.value) this.secrets.set(field.id, result.value); else this.secrets.delete(field.id);
         // A host's message about a field stands until the reader changes that field.
-        if (before !== (result.value || null)) { this.forgetHost(field); this.emit("flowValueChanged", { field: field.id, source: "edit" }, "onValueChange"); }
+        if (before !== (result.value || null)) { this.answerRevision++; this.forgetHost(field); this.emit("flowValueChanged", { field: field.id, source: "edit" }, "onValueChange"); }
       } else if (!result.error) {
         const previous = this.values.get(field.id) ?? null;
         if (!flowSameValue(previous, result.value)) {
+          this.answerRevision++;
           this.values.set(field.id, result.value);
           this.forgetHost(field);
           this.emit("flowValueChanged", { field: field.id, value: flowCopy(result.value), previous: flowCopy(previous), source: "edit" }, "onValueChange");
@@ -99,6 +112,16 @@
 
     /** A host's messages about a field and its step stand until the reader changes an answer there. */
     forgetHost(field) {
+      this.completed.delete(field.step.id);
+      // Visibility dependencies can expose required answers in other, already completed steps, including through chains.
+      const affected = new Set([field.id]);
+      let changed;
+      do {
+        changed = false;
+        for (const other of this.model.fields.values()) if (!affected.has(other.id) && [...other.refs].some(id => affected.has(id))) {
+          affected.add(other.id); this.completed.delete(other.step.id); changed = true;
+        }
+      } while (changed);
       if (this.hostStepErrors.delete(field.step.id)) { const summary = this.sections.get(field.step.id)?._cxSummary; if (summary) summary.hidden = true; }
       this.hostErrors.delete(field.id); this.reviewStale = true;
     }
@@ -150,6 +173,8 @@
       return this.go(target && this.stepVisible(target) ? target : this.visibleSteps()[0], "jump", true);
     }
     reset() {
+      this.generation++; this.answerRevision++; this.busy = false;
+      this.closeSubmission?.(); this.checks?.clear(); this.reviewTicket = null; this.reviewChecking = false;
       for (const fv of this.fields.values()) fv.destroy();
       this.fields.clear(); this.sections.clear();
       this.begin(this.options.values);

@@ -59,7 +59,7 @@ export interface FlowField {
   when?: FlowCondition;
   width?: "full" | "half";
   parameter?: string;
-  /** The setting it writes, as dot-separated names; the proposal's JSON patch uses it. */
+  /** The setting it writes, as dot-separated names; the host prepares parent objects before applying the JSON patch. */
   path?: string;
   sensitive?: boolean;
   validation?: FlowValidation;
@@ -188,10 +188,14 @@ export interface FlowValidationResult {
 /** A flow's state: the current step, the answers (never secrets) and the completed steps. */
 export interface FlowState { step: string; values: Record<string, FlowValue>; completed: string[] }
 
-/** The flow's API. Calls made before ready resolve once it has. */
+/**
+ * The flow's API. Async methods wait for ready; synchronous methods throw a not-ready error until the implementation loads.
+ * After destroy, synchronous calls throw a destroyed error and async calls reject with it. Calls still waiting for ready also reject.
+ */
 export interface FlowApi {
   readonly element: HTMLElement;
   readonly flow: FlowDocument;
+  /** Resolves after the first step is painted; rejects on mount failure or destruction before readiness. */
   readonly ready: Promise<FlowApi>;
   next(): Promise<boolean>;
   back(): Promise<boolean>;
@@ -208,6 +212,7 @@ export interface FlowApi {
   submit(): Promise<FlowAnswer | null>;
   setProgress(progress: { done?: number; total?: number; message?: string }): boolean;
   complete(answer: FlowAnswer): boolean;
+  /** Releases the flow and its host's mount state, even before ready or after mount failure. Repeated calls do nothing. */
   destroy(): void;
 }
 

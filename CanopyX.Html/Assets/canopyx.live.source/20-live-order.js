@@ -14,7 +14,7 @@
     const sorts = query.sort.map(sort => [columns.get(sort.column), sort.direction]);
     return (a, b) => {
       for (const [column, direction] of sorts) { const result = compare(a, b, column, direction); if (result) return result; }
-      return gridOrder(a.id, b.id);
+      return gridIdOrder(a.id, b.id);
     };
   }
 

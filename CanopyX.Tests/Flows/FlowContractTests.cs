@@ -7,6 +7,134 @@ namespace CanopyX.Tests.Flows;
 /// <summary>The flow document: its shape, the round trip through <see cref="CanopyFlow.FromContract"/>, the schema and the strict reader.</summary>
 public sealed class FlowContractTests {
     [Fact]
+    public void FromContract_EmptyInitial_PreservesEditModeBaseline() {
+        const string json = "{\"kind\":\"flow\",\"version\":1,\"id\":\"edit\",\"title\":\"Edit settings\",\"steps\":[{\"id\":\"settings\",\"title\":\"Settings\"}],\"initial\":{}}";
+        var flow = CanopyFlow.FromContract(json);
+
+        Assert.Empty(flow.Initial);
+        var roundTrip = flow.ToContract();
+        using var document = JsonDocument.Parse(roundTrip);
+        Assert.True(document.RootElement.TryGetProperty("initial", out var initial));
+        Assert.Equal(JsonValueKind.Object, initial.ValueKind);
+        Assert.Empty(initial.EnumerateObject());
+        Assert.Equal(json, roundTrip);
+        Assert.True(flow.IsEditMode);
+        FlowSamples.AssertValid(roundTrip, "An edit flow with an empty baseline");
+    }
+
+    [Fact]
+    public void ToContract_EditMode_WritesEmptyBaselineAndPreservesPopulatedInitialBehavior() {
+        var flow = new CanopyFlow("edit", "Edit settings").Step("settings", "Settings", step => step.Text("host", "Host"));
+        Assert.False(flow.IsEditMode);
+        using (var create = JsonDocument.Parse(flow.ToContract())) {
+            Assert.False(create.RootElement.TryGetProperty("initial", out _));
+            Assert.False(CanopyFlow.FromContract(create.RootElement.GetRawText()).IsEditMode);
+        }
+
+        flow.IsEditMode = true;
+        var json = flow.ToContract();
+        using (var edit = JsonDocument.Parse(json)) {
+            Assert.Equal("{}", edit.RootElement.GetProperty("initial").GetRawText());
+        }
+        FlowSamples.AssertValid(json, "An explicitly empty edit baseline");
+
+        flow.IsEditMode = false;
+        flow.Initial["host"] = "mail.example.com";
+        var read = CanopyFlow.FromContract(flow.ToContract());
+        Assert.True(read.IsEditMode);
+        Assert.Equal("mail.example.com", read.Initial["host"]);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void ToContract_EditMetadata_WritesEmptyInitialWithoutExplicitEditMode(bool storedSecret, bool baseline) {
+        var flow = new CanopyFlow("edit", "Edit credentials").Step("credentials", "Credentials", step => step.Secret("token", "Token"));
+        if (storedSecret) flow.StoredSecrets.Add("token");
+        if (baseline) flow.Baseline = "revision-1";
+        Assert.False(flow.IsEditMode);
+        Assert.Empty(flow.Initial);
+
+        var json = flow.ToContract();
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal("{}", document.RootElement.GetProperty("initial").GetRawText());
+        FlowSamples.AssertValid(json, "An edit flow identified by its metadata");
+        var read = CanopyFlow.FromContract(json);
+        Assert.True(read.IsEditMode);
+        Assert.Equal(flow.Baseline, read.Baseline);
+        Assert.Equal(flow.StoredSecrets, read.StoredSecrets);
+        Assert.Equal(json, read.ToContract());
+
+        var withoutInitial = JsonNode.Parse(json)!.AsObject();
+        withoutInitial.Remove("initial");
+        Assert.Equal(json, CanopyFlow.FromContract(withoutInitial.ToJsonString()).ToContract());
+    }
+
+    [Theory]
+    [InlineData(CanopyFlowFieldKind.List)]
+    [InlineData(CanopyFlowFieldKind.MultiChoice)]
+    public void ToContract_CollectionDefault_OmitsNullAndWritesArrays(CanopyFlowFieldKind kind) {
+        var field = new CanopyFlowField("items", kind, "Items") { DefaultValue = null };
+        if (kind == CanopyFlowFieldKind.MultiChoice) field.Option("one");
+        var flow = new CanopyFlow("create", "Create settings").Step("settings", "Settings");
+        flow.Steps[0].Fields.Add(field);
+
+        var json = flow.ToContract();
+        using (var document = JsonDocument.Parse(json)) {
+            Assert.False(document.RootElement.GetProperty("steps")[0].GetProperty("fields")[0].TryGetProperty("default", out _));
+        }
+        FlowSamples.AssertValid(json, "A collection field with no default");
+
+        foreach (var values in new[] { Array.Empty<string>(), new[] { "one" } }) {
+            field.DefaultValue = values;
+            json = flow.ToContract();
+            using var document = JsonDocument.Parse(json);
+            var start = document.RootElement.GetProperty("steps")[0].GetProperty("fields")[0].GetProperty("default");
+            Assert.Equal(JsonValueKind.Array, start.ValueKind);
+            Assert.Equal(values, start.EnumerateArray().Select(item => item.GetString()));
+            FlowSamples.AssertValid(json, "A collection field with an array default");
+            Assert.Equal(json, CanopyFlow.FromContract(json).ToContract());
+        }
+    }
+
+    [Theory]
+    [InlineData(CanopyFlowFieldKind.List)]
+    [InlineData(CanopyFlowFieldKind.MultiChoice)]
+    public void FromContract_NullCollectionDefault_RejectsSchemaInvalidDocument(CanopyFlowFieldKind kind) {
+        var field = new CanopyFlowField("items", kind, "Items");
+        if (kind == CanopyFlowFieldKind.MultiChoice) field.Option("one");
+        var flow = new CanopyFlow("create", "Create settings").Step("settings", "Settings");
+        flow.Steps[0].Fields.Add(field);
+        var json = Mutate(flow.ToContract(), root => root["steps"]![0]!["fields"]![0]!["default"] = null);
+
+        Assert.False(FlowSamples.Evaluate(json).IsValid);
+        var error = Assert.Throws<InvalidOperationException>(() => CanopyFlow.FromContract(json));
+        Assert.Contains("default", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("items", error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(CanopyFlowFieldKind.List)]
+    [InlineData(CanopyFlowFieldKind.MultiChoice)]
+    public void ToContract_NullCollectionInitial_RemainsNullAndMatchesSchema(CanopyFlowFieldKind kind) {
+        var field = new CanopyFlowField("items", kind, "Items");
+        if (kind == CanopyFlowFieldKind.MultiChoice) field.Option("one");
+        var flow = new CanopyFlow("edit", "Edit settings").Step("settings", "Settings");
+        flow.Steps[0].Fields.Add(field);
+        flow.Initial["items"] = null;
+
+        var json = flow.ToContract();
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("initial").GetProperty("items").ValueKind);
+        FlowSamples.AssertValid(json, "A null collection baseline");
+        var read = CanopyFlow.FromContract(json);
+        Assert.True(read.Initial.ContainsKey("items"));
+        Assert.Null(read.Initial["items"]);
+        Assert.Equal(json, read.ToContract());
+    }
+
+    [Fact]
     public void ToContract_QuickStart_WritesTheDocumentedShape() {
         var json = FlowSamples.MailServer().ToContract();
         Assert.StartsWith("{\"kind\":\"flow\",\"version\":1,\"id\":\"mail-server\",\"title\":\"Connect a mail server\",\"steps\":[", json);

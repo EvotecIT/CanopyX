@@ -13,6 +13,8 @@ internal sealed partial class QueryTranslator<T> {
         method.Name == nameof(Queryable.ThenBy) || method.Name == nameof(Queryable.ThenByDescending)).ToArray();
 
     /// <summary>Orders by the sort keys (missing values last in both directions), then by the record key.</summary>
+    private static readonly IComparer<string> IdentityOrder = Comparer<string>.Create(CanopyRowIdentity.Compare);
+
     internal IQueryable<T> Order(IQueryable<T> source, IEnumerable<CanopySortKey> sort, Expression? lead = null) {
         ValidateOrder(sort);
         var first = true;
@@ -26,7 +28,8 @@ internal sealed partial class QueryTranslator<T> {
                 first = false;
             }
         }
-        var keyComparer = Comparison == CanopyTextComparison.Canonical && Key.Type == typeof(string) ? StringComparer.Ordinal : null;
+        // Text keys break ties in row identity order (canonical integers as numbers first), as the browser and the in-memory provider do.
+        var keyComparer = Comparison == CanopyTextComparison.Canonical && Key.Type == typeof(string) ? IdentityOrder : null;
         return ApplyOrder(source, Key, false, keyComparer, first);
     }
 

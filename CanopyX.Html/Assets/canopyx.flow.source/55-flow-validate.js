@@ -53,8 +53,9 @@
 
     /** Checks one field and shows its message; resolves with the message. */
     async checkField(field) {
+      const revision = this.answerRevision, generation = this.generation;
       const ticket = (this.checks ||= new Map()).set(field.id, {}).get(field.id), message = await this.problem(field);
-      if (this.checks.get(field.id) !== ticket || this.destroyed) return message;
+      if (this.checks.get(field.id) !== ticket || this.destroyed || revision !== this.answerRevision || generation !== this.generation) return message;
       this.setError(field, message || this.hostErrors.get(field.id) || null);
       this.renderRail();
       return message;
@@ -73,7 +74,7 @@
 
     /** The answers of a step's visible fields (secrets as set or not), to tell whether they changed while checks ran. */
     answerKey(step) {
-      return JSON.stringify(this.stepFields(step).map(field => field.type === "secret" ? this.secrets.has(field.id) : [this.values.get(field.id) ?? null, this.fields.get(field.id)?.pending || null]));
+      return JSON.stringify([this.answerRevision, this.stepFields(step).map(field => field.type === "secret" ? this.secrets.has(field.id) : [this.values.get(field.id) ?? null, this.fields.get(field.id)?.pending || null])]);
     },
 
     stepErrorCount(step) {
@@ -82,7 +83,7 @@
 
     /** Reads a validateStep or validateFlow answer: a message, or { errors, warnings, fieldErrors }. */
     bucket(answer) {
-      const result = { errors: [], warnings: [], fields: {} }, text = value => typeof value === "string" && /\S/.test(value);
+      const result = { errors: [], warnings: [], fields: Object.create(null) }, text = value => typeof value === "string" && /\S/.test(value);
       if (answer.failed) { result.errors.push(answer.failed); return result; }
       const value = answer.value;
       if (text(value)) result.errors.push(value);
@@ -96,14 +97,17 @@
     /** Validates a step's visible fields and the host's step rule; with show, messages appear in place. */
     async validateStep(step, show) {
       // Answers that change while asynchronous checks run are checked again, so a late result never lands on a newer answer.
-      let fields, messages, result, moved = false;
+      const generation = this.generation;
+      let fields, messages, result, moved = false, stable = false;
       for (let round = 0; round < 4; round++, moved = true) {
         const before = this.answerKey(step);
         fields = this.stepFields(step); messages = await Promise.all(fields.map(field => this.problem(field)));
-        result = { errors: [], warnings: [], fields: {} };
+        if (this.destroyed || this.generation !== generation) return { valid: false, errors: [], warnings: [], moved: true };
+        result = { errors: [], warnings: [], fields: Object.create(null) };
         if (!messages.some(Boolean) && typeof this.hooks.validateStep === "function")
           result = this.bucket(await this.hook("validateStep", () => this.hooks.validateStep(step.id, this.getValues())));
-        if (this.destroyed || this.answerKey(step) === before) break;
+        if (this.destroyed || this.generation !== generation) return { valid: false, errors: [], warnings: [], moved: true };
+        if (this.answerKey(step) === before) { stable = true; break; }
       }
       if (this.destroyed) return { valid: false, errors: [], warnings: [] };
       // A host's message from its last answer shows until the field changes, but never blocks submitting again.
@@ -117,24 +121,39 @@
       if (result.errors.length) this.stepErrors.set(step.id, result.errors.join(" ")); else this.stepErrors.delete(step.id);
       const errors = failing;
       for (const message of result.errors) errors.push({ step: step.id, message });
-      return { valid: !errors.length, errors, warnings: result.warnings.map(message => ({ step: step.id, message })), moved };
+      return { valid: stable && !errors.length, errors, warnings: result.warnings.map(message => ({ step: step.id, message })), moved };
     },
 
     /** Validates every visible step, then the host's flow rule. */
     async validateAll() {
-      const results = [];
-      for (const step of this.visibleSteps()) if (step.type === "form") results.push(await this.validateStep(step, false));
+      const generation = this.generation;
+      for (let round = 0; round < 4; round++) {
+        const revision = this.answerRevision, result = await this.validateAllOnce(generation);
+        if (this.destroyed || generation !== this.generation) return { valid: false, errors: [], warnings: [] };
+        if (revision === this.answerRevision) return result;
+      }
+      return { valid: false, errors: [{ message: this.labels.flowNotSubmitted }], warnings: [] };
+    },
+
+    async validateAllOnce(generation) {
+      const results = [], steps = this.visibleSteps().filter(step => step.type === "form");
+      for (const step of steps) {
+        results.push(await this.validateStep(step, false));
+        if (this.destroyed || generation !== this.generation) return { valid: false, errors: [], warnings: [] };
+      }
+      if (this.destroyed || generation !== this.generation) return { valid: false, errors: [], warnings: [] };
       const errors = results.flatMap(result => result.errors), warnings = results.flatMap(result => result.warnings);
-      for (const step of this.visibleSteps()) if (step.type === "form" && !results.find(result => result.errors.some(error => error.step === step.id))) this.completed.add(step.id);
+      steps.forEach((step, index) => { if (results[index].valid) this.completed.add(step.id); else this.completed.delete(step.id); });
       if (!errors.length && typeof this.hooks.validateFlow === "function") {
         const result = this.bucket(await this.hook("validateFlow", () => this.hooks.validateFlow(this.getValues())));
+        if (this.destroyed || generation !== this.generation) return { valid: false, errors: [], warnings: [] };
         for (const [id, message] of Object.entries(result.fields)) if (this.visible(this.model.fields.get(id))) {
           this.setError(this.model.fields.get(id), message); errors.push({ field: id, step: this.model.fields.get(id).step.id, message });
         }
         errors.push(...result.errors.map(message => ({ message })));
         warnings.push(...result.warnings.map(message => ({ message })));
       }
-      return { valid: !errors.length, errors, warnings };
+      return { valid: results.every(result => result.valid) && !errors.length, errors, warnings };
     },
 
     /** The public validate(stepId?): { valid, errors, warnings } for a step or the whole flow, with messages in place. */

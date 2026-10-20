@@ -103,6 +103,28 @@ public sealed class FlowValidationTests {
         Invalid(One(step => step.Text("f", "F", f => f.Parameter("bad name"))), "parameter");
     }
 
+    [Theory]
+    [InlineData("mail", "mail-host", "mail.host")]
+    [InlineData("mail.host", "mail-host", "mail")]
+    [InlineData("mail.server", "mail.server-host", "mail.server.host.name")]
+    public void Paths_RejectAncestorOverlapWithInterveningSibling(string parent, string sibling, string child) {
+        var flow = One(step => step
+            .Text("a", "A", field => field.Path(parent))
+            .Text("b", "B", field => field.Path(sibling))
+            .Text("c", "C", field => field.Path(child)));
+
+        Invalid(flow, "holds the path");
+    }
+
+    [Fact]
+    public void Paths_AllowDistinctOrdinalSegments() {
+        One(step => step
+            .Text("a", "A", field => field.Path("mail-host"))
+            .Text("b", "B", field => field.Path("mail.host"))
+            .Text("c", "C", field => field.Path("Mail")))
+            .Validate();
+    }
+
     [Fact]
     public void Options_FitTheirKinds() {
         Invalid(One(step => step.Select("f", "F")), "at least one option");

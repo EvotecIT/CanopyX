@@ -61,7 +61,7 @@ public sealed partial class CanopyFlowField {
     /// Gets or sets the starting value in create mode, of the field's kind: text, a number, true or false, a date
     /// (<see cref="DateTime"/> or <c>yyyy-MM-dd</c>), a time (<see cref="TimeSpan"/> or <c>HH:mm</c>), a moment
     /// (<see cref="DateTimeOffset"/>, <see cref="DateTime"/> or ISO 8601), a duration (<see cref="TimeSpan"/> or ISO 8601), an
-    /// option value, or a sequence of option values or texts. A secret field has none.
+    /// option value, or a sequence of option values or texts. Null omits the default. A secret field has none.
     /// </summary>
     public object? DefaultValue { get; set; }
 
@@ -75,6 +75,7 @@ public sealed partial class CanopyFlowField {
     public string? ParameterName { get; set; }
 
     /// <summary>Gets or sets the setting the field writes, as dot-separated names (<c>mail.smtp.host</c>); the proposal's JSON patch uses it.</summary>
+    /// <remarks>The host prepares any missing parent objects before applying the patch to its configuration.</remarks>
     public string? ConfigPath { get; set; }
 
     /// <summary>Gets or sets whether a non-secret value stays out of the host's drafts and exports. It still shows on the review page.</summary>

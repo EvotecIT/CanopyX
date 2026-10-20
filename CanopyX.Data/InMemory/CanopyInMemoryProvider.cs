@@ -347,7 +347,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
                 var compared = ProtocolSemantics.Compare(a, b, key.Column.Kind, key.Column.Ordering);
                 if (compared != 0) return key.Descending && a != null && b != null ? -compared : compared;
             }
-            return string.CompareOrdinal(left.Id, right.Id);
+            return CanopyRowIdentity.Compare(left.Id, right.Id);
         });
         cancellationToken.ThrowIfCancellationRequested();
         return ordered.ToList();

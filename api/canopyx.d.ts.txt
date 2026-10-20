@@ -1790,10 +1790,10 @@ type GridNamedRow<Row>=[Row][Row extends unknown?0:never];
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:GridOptions<GridNamedRow<Row>>):DataGrid<GridQuery,Row>;
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:CursorGridOptions<GridNamedRow<Row>>):DataGrid<GridCursorQuery,Row>;
 export function createCalendar(host:HTMLElement,options?:CalendarOptions):DataGrid<GridQuery,GridRow>;
-export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>):() => void;
-export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>>;
+export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>|Partial<Omit<FlowOptions,"flow">>):() => void;
+export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>|FlowApi>;
 import type{
-  createFlow
+  createFlow,FlowApi,FlowOptions
 }
 from "./flow.js";
 export{
@@ -1804,10 +1804,23 @@ export type{
   FlowDocument,FlowField,FlowStep,FlowSection,FlowOption,FlowCondition,FlowValidation,FlowValue,FlowSubmission,FlowSubmitDetail,FlowAnswer,FlowHooks,FlowOptions,FlowApi,FlowState,FlowValidationResult
 }
 from "./flow.js";
+import type{
+  createMatrix
+}
+from "./matrix.js";
+export{
+  createMatrix
+}
+from "./matrix.js";
+export type{
+  MatrixDocument,MatrixAxis,MatrixItem,MatrixAttribute,MatrixState,MatrixSort,MatrixNote,MatrixQueryState,MatrixStateInput,MatrixCellDetail,MatrixOptions,MatrixApi
+}
+from "./matrix.js";
 declare const gridRuntime:Omit<typeof CanopyX,"configure"|"mount">&{
   createDataGrid:typeof createDataGrid;
   createCalendar:typeof createCalendar;
   createFlow:typeof createFlow;
+  createMatrix:typeof createMatrix;
   enhance:typeof enhance;
   grid:typeof grid;
   configure:typeof configure;
@@ -2270,6 +2283,126 @@ export interface GridLiveApi<Row extends GridRow=GridRow,Q extends AcceptedGridQ
   poll(options?:GridPollOptions<Row,Q>):Promise<GridPoller>;
   getLiveState():GridLiveState;
 }
+
+// ---- JavaScript/matrix.d.ts ----
+import type{
+  CellValue
+}
+from "./protocol.js";
+export interface MatrixState{
+  id:string;
+  label:string;
+  tone?:string;
+  symbol:"check"|"cross"|"warning"|"info"|"dot"|"dash"|"question"|"clock"|"pause";
+  attention?:boolean;
+}
+export interface MatrixAttribute{
+  id:string;
+  title:string;
+  kind?:"text"|"number"|"datetime";
+  facet?:boolean;
+}
+export interface MatrixItem{
+  id:string;
+  label:string;
+  secondary?:string;
+  href?:string;
+  values?:Record<string,CellValue|{value:CellValue;text?:string}>;
+}
+export interface MatrixAxis{
+  title?:string;
+  noun?:string;
+  attributes?:MatrixAttribute[];
+  items:MatrixItem[];
+  groupBy?:string;
+  sort?:MatrixSort;
+}
+export interface MatrixSort{
+  by:"#label"|"#total"|(string&{});
+  direction?:"asc"|"desc";
+}
+export type MatrixNote=[number,number,number|null,(string|null)?,(string|null)?,([string,string][]|null)?];
+export interface MatrixDocument{
+  protocol:"canopyx/2";
+  type:"matrix";
+  id:string;
+  label:string;
+  rows:MatrixAxis;
+  columns?:MatrixAxis;
+  square?:boolean;
+  columnTitle?:string;
+  diagonal?:"self"|"data";
+  states:MatrixState[];
+  cells:string[];
+  notes?:MatrixNote[];
+  totals?:{states?:string[];rows?:boolean;columns?:boolean};
+  attentionOnly?:boolean;
+  hideEmpty?:boolean;
+  cellWidth?:number;
+  density?:"compact"|"normal"|"comfortable";
+  details?:"dialog"|"host";
+  phone?:"scroll"|"cards";
+  legend?:boolean;
+  autoHeight?:boolean;
+  labels?:Record<string,string>;
+}
+export interface MatrixQueryState{
+  search:string;
+  attentionOnly:boolean;
+  hideEmpty:boolean;
+  filters:{rows:Record<string,string[]>;columns:Record<string,string[]>};
+  sort:{rows:MatrixSort|null;columns:MatrixSort|null};
+  group:{rows:string|null;columns:string|null};
+  collapsed:{rows:string[];columns:string[]};
+}
+export interface MatrixCellDetail{
+  matrix:string;
+  row:string|null;
+  rowGroup:string|null;
+  column:string|null;
+  columnGroup:string|null;
+  state:string|null;
+  value:number|null;
+  text:string|null;
+  title:string|null;
+  details:[string,string][];
+  members:number;
+  attention:number;
+}
+export interface MatrixStateInput{
+  search?:string;
+  attentionOnly?:boolean;
+  hideEmpty?:boolean;
+  filters?:{rows?:Record<string,string[]|null>;columns?:Record<string,string[]|null>};
+  sort?:{rows?:MatrixSort|null;columns?:MatrixSort|null};
+  group?:{rows?:string|null;columns?:string|null};
+  collapsed?:{rows?:string[];columns?:string[]};
+}
+export interface MatrixOptions{
+  view:MatrixDocument;
+  labels?:Record<string,string>;
+  state?:MatrixStateInput;
+  onReady?:(detail:{matrix:string}) => void;
+  onCell?:(detail:MatrixCellDetail,event:CustomEvent<MatrixCellDetail>) => void;
+  onStateChange?:(state:MatrixQueryState) => void;
+}
+export interface MatrixApi{
+  readonly element:HTMLElement;
+  readonly view:MatrixDocument;
+  readonly ready:Promise<MatrixApi>;
+  sort(axis:"rows"|"columns",by:MatrixSort["by"]|null,direction?:"asc"|"desc"):void;
+  group(axis:"rows"|"columns",attribute:string|null):void;
+  filter(axis:"rows"|"columns",attribute:string,values:string[]|null):void;
+  setSearch(text:string):void;
+  setAttentionOnly(on:boolean):void;
+  getState():Readonly<MatrixQueryState>;
+  setState(state:MatrixStateInput):void;
+  getVisible():Readonly<{rows:string[];columns:string[]}>;
+  focusCell(row:string,column:string):boolean;
+  update(view:MatrixDocument):void;
+  destroy():void;
+}
+export declare function createMatrix(host:HTMLElement,options:MatrixOptions):MatrixApi;
 
 // ---- JavaScript/plugins.d.ts ----
 import type{

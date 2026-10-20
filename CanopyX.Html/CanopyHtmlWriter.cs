@@ -170,6 +170,31 @@ internal static class CanopyHtmlWriter {
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
     }
 
+    /// <summary>A matrix fragment: the matrix document in a host whose height bounds the scrolling cells, and with inline assets the matrix part.</summary>
+    internal static string Fragment(CanopyMatrix matrix, CanopyHtmlOptions options) {
+        if (matrix == null) throw new ArgumentNullException(nameof(matrix));
+        if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Matrices have no tree filter IDs.");
+        var html = FragmentDocument(matrix.ToJson(), options, null, "cx-host cx-matrix-host");
+        var parts = WithRequested(CanopyHtmlAssets.GetRequiredParts(matrix), options, CanopyRuntime.DataGrid);
+        return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, parts);
+    }
+
+    internal static string Page(CanopyMatrix matrix, CanopyHtmlOptions options) {
+        if (matrix == null) throw new ArgumentNullException(nameof(matrix));
+        if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Matrices have no tree filter IDs.");
+        var fragmentOptions = PageFragmentOptions(options);
+        fragmentOptions.Height = options.Height;
+        var values = new Dictionary<string, string>(StringComparer.Ordinal) {
+            ["lang"] = WebUtility.HtmlEncode(options.Language),
+            ["dir"] = DirectionAttribute(options.Direction),
+            ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
+            ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? matrix.Label : options.Title),
+            ["head"] = Head(CanopyRuntime.DataGrid, options),
+            ["body"] = Fragment(matrix, fragmentOptions)
+        };
+        return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);
+    }
+
     private static string Head(CanopyRuntime runtime, CanopyHtmlOptions options) {
         // With a nonce, every element a strict Content Security Policy checks carries it (docs/security.md).
         var nonce = CanopyContentSecurity.Attribute(options.Nonce);

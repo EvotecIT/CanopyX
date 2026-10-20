@@ -132,7 +132,7 @@
   const DETAIL_ROWS = definePart(DataGrid, "detail-rows", "detail rows", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, gridButton, gridFreeze,
     cellText, formatting, labelsFor, requireIdentifier, GridRowOffsets, TreeGrid, createDataGrid, createTreeGrid, disposeRowHostCells, OWN_ARROWS, hostHtml }));
   const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, numberFormat,
-    formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridQueryRows, gridButton, gridDecorateButton,
+    formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridIdOrder, gridQueryRows, gridButton, gridDecorateButton,
     gridCellRenderer, gridPresenterTone, GRID_TONE_RANK, validateGridRows, validateGridPage, checkDocument, requireIdentifier, validStructuralCount, PROTOCOL,
     gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, disposeRowHostCells, quietControls, TreeGrid }));
   GRID_ROWS.base.requestPage = DataGrid.prototype.requestPage;

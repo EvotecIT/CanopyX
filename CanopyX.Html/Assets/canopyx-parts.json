@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "ce442e100494535d",
+      "version": "dbc7cd1bfd91ce63",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "40fe19a1046d6813",
+      "version": "21e2a9677e4ec451",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "forms",
       "label": "forms",
-      "version": "84a17bf008e558fa",
+      "version": "f3b10c7b5c7572f0",
       "script": "canopyx-forms.js",
       "style": "canopyx-forms.css",
       "runtimes": [
@@ -118,7 +118,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "2101c8cf53441212",
+      "version": "dd7d5245eb31f06d",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -130,6 +130,19 @@
       ],
       "requires": [
         "forms"
+      ]
+    },
+    {
+      "name": "matrix",
+      "label": "matrix view",
+      "version": "c57633602e375743",
+      "script": "canopyx-matrix.js",
+      "style": "canopyx-matrix.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "matrix"
       ]
     },
     {
@@ -282,7 +295,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "d942108ffbc023b6",
+      "version": "0970f2edbcb32de8",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -353,7 +366,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "2fa02b9178c6c5df",
+      "version": "e49f69556b65916b",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

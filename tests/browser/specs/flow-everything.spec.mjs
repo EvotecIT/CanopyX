@@ -48,7 +48,7 @@ test("the browser mounts the document C# writes with every feature", async ({ pa
   expect(opened).toEqual(everything.steps.map(step => step.id).filter(id => id !== "delivery"));
   const values = await page.evaluate(() => window.__everything.getValues());
   expect(Object.keys(values).sort()).toEqual([...visibleFields].sort());
-  expect(values).toMatchObject({ name: "Weekly summary", format: "html", sections: ["summary", "trends"], retries: 3, window: "PT2H", weekends: false, rating: 3 });
+  expect(values).toMatchObject({ name: "Weekly summary", format: "html", sections: ["summary", "trends"], retries: 3, window: "PT2H", weekends: false, rating: null });
   expect(values).not.toHaveProperty("token");
   expect(values).not.toHaveProperty("recipients");
   expect(errors).toEqual([]);

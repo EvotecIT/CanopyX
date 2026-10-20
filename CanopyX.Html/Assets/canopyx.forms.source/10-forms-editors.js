@@ -111,6 +111,7 @@
       const read = () => input.value.trim() === "" ? null : editParseNumber(input.value, context.locale);
       input.addEventListener("keydown", event => {
         if (event.key !== "ArrowUp" && event.key !== "ArrowDown" || event.altKey) return;
+        if (context.readOnly) { event.preventDefault(); return; }
         const value = read();
         if (!Number.isNaN(value)) {
           let next = (value ?? 0) + (event.key === "ArrowUp" ? step : -step);
@@ -134,7 +135,11 @@
       if (context.value != null && !options.some(option => option.value === context.value))
         options.unshift({ value: context.value, label: context.text || String(context.value) });
       if (!context.rules.required || context.value == null) select.appendChild(new Option(context.labels.gridEditNone, ""));
-      options.forEach((option, index) => select.appendChild(new Option(option.label, String(index))));
+      options.forEach((option, index) => {
+        const item = new Option(option.label, String(index));
+        item.disabled = !!option.disabledReason;
+        select.appendChild(item);
+      });
       const at = options.findIndex(option => option.value === context.value);
       select.value = at < 0 ? "" : String(at);
       return { element: select, getValue: () => select.value === "" ? null : options[Number(select.value)].value };

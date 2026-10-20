@@ -70,7 +70,7 @@
   GRID_ROWS.order = (view, query) => {
     const grid = GROUP_GRIDS.get(view), columns = new Map(view.columns.map(column => [column.id, column])), levels = query.groupBy;
     const compare = GRID_REPORTING.compare(view), rest = query.sort.filter(sort => !levels.some(level => level.column === sort.column));
-    const within = (a, b) => { for (const sort of rest) { const result = compare(a, b, columns.get(sort.column), sort.direction); if (result) return result; } return gridOrder(a.id, b.id); };
+    const within = (a, b) => { for (const sort of rest) { const result = compare(a, b, columns.get(sort.column), sort.direction); if (result) return result; } return gridIdOrder(a.id, b.id); };
     const arrange = (rows, depth) => {
       if (depth === levels.length) return rows.sort(within);
       const level = levels[depth], column = columns.get(level.column), buckets = new Map();

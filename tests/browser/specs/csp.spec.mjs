@@ -112,6 +112,19 @@ for (const [label, policy] of Object.entries(POLICIES)) {
       await expectClean(page, report);
     });
 
+    test("a matrix loads its part, draws its cells and opens a cell's details without a violation", async ({ page }) => {
+      const report = await serve(page, policy);
+      await open(page, "matrix.html");
+      await expect(page.locator(".cx-mx-row canvas").first()).toBeAttached();
+      await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.focusCell("srv01", "dns"));
+      await page.keyboard.press("Enter");
+      await expect(page.locator("dialog.cx-mx-dialog")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+      await expect(page.locator(".cx-mx-print table")).toBeAttached();
+      await expectClean(page, report);
+    });
+
     test("a bundle loads external assets, part files, sidecar files and the search part without a violation", async ({ page }) => {
       const report = await serve(page, policy);
       await open(page, "bundle/index.html");
