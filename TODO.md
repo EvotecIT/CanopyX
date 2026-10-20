@@ -351,9 +351,9 @@ JSON shape that CanopyX owns; nothing is synced to other repositories.
   and drawer layouts; drafts (session, local, host) with the stale-baseline warning; presets with "changed" marks; deep
   links; the host's preview, typed confirmation and a conditional acknowledgement; the equivalent command with variants,
   the JSON patch and Copy (shared fixture `tests/fixtures/flow-commands.json`); `CanopyFlowSubmission` and the hook requests
-  and answers in `CanopyX.Data`; `MapCanopyFlow` in `CanopyX.AspNetCore`.
-- [ ] Follow-ups of F2: move the host-connected features into a lazy part of their own, so a plain form loads about half of
-  today's flow part (49.1 KiB gzip against F1's 24.8 KiB); records fields on the grid's editing rows once a flow needs
+  and answers in `CanopyX.Data`; `MapCanopyFlow` in `CanopyX.AspNetCore`. Each host-connected feature ships in a lazy part of
+  its own, loaded only for a flow that uses it, so a plain form stays under F1's 29 KiB guard.
+- [ ] Follow-ups of F2: records fields on the grid's editing rows once a flow needs
   hundreds of rows (today the forms editors in a table); "Select all matching" in pick steps (it names a query, so a pick step
   keeps records it can list); conditions on a check's result; removing a saved preset (`presetStore.remove`); host predicates
   in conditions; reloading a host section's fields only when the reader reaches its step (today as the step is built).
@@ -365,7 +365,8 @@ JSON shape that CanopyX owns; nothing is synced to other repositories.
 
 Gate: the condition fixtures (`tests/fixtures/flow-conditions.json`) agree in C# and the browser (the fixtures stay in CanopyX; nothing is synced to ConsoleMonster, by the owner's decision), the secrets leak test
 passes, the flow examples pass the browser suites on Chromium, Firefox and WebKit at desktop and phone widths in both
-palettes with axe, and the forms part, the flow part and the flow entry point stay under their gzip guards.
+palettes with axe, and the forms part, the flow part, the flow's feature parts and the flow entry point stay under their
+gzip guards.
 ## 0.4 Matrix View
 
 Consumers: the status matrix (services × DCs), the relationship matrix (DC × DC), and the consistency matrix (object × DC, mismatches only) from the TestimoX plan section 9; the DomainDetective domains × controls matrix.
@@ -445,6 +446,6 @@ Gate: each accepted candidate has a runnable host example, documented public API
 - Stay with `CanopyX` and `CanopyX.Html`.
 - When the runtime grows with new views, prefer separate JavaScript entry points (for example a tree grid script and a matrix script) inside `CanopyX.Html` before splitting packages.
 - Split views into separate packages only when package size or dependency evidence requires it, and record that evidence here first.
-- The flow ships inside `CanopyX.Html` as the `forms` and `flow` parts and the flow entry point (`@evotecit/canopyx/flow`); it needs no package of its own. `MapCanopyFlow` (wave F2) belongs in `CanopyX.AspNetCore`.
+- The flow ships inside `CanopyX.Html` as the `forms` and `flow` parts, the feature parts of host-connected flows (`flow-checks`, `flow-tasks`, …) and the flow entry point (`@evotecit/canopyx/flow`); it needs no package of its own. `MapCanopyFlow` (wave F2) belongs in `CanopyX.AspNetCore`.
 - `CanopyX.AspNetCore` is split by dependency: it needs the ASP.NET Core shared framework, which `CanopyX` must not take, so it targets `net8.0` and `net10.0` only. It serves hosted flat grids today; the tree endpoints of 0.2 belong in it too.
 - `CanopyX.Data` is split by dependency and responsibility: it parses requests with `System.Text.Json` (a package on `net472` and `netstandard2.0`) and translates them to expression trees, which the dependency-free `CanopyX` must not carry. It depends only on `CanopyX`; EF Core and database drivers stay in the host.

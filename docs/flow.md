@@ -137,6 +137,7 @@ Every text in the document is plain text; nothing is read as HTML.
 | `optional` | The rail marks the step optional. Its fields still follow their own `required`. |
 | `declaration`, `changesOnly` | Review steps only: text above the submit button, and whether edit mode shows only changed answers first (default true). |
 | `confirm`, `acknowledge` | Review steps only: [typed confirmation and an acknowledgement](#the-preview-and-consent-on-the-review-page). |
+| `preview` | Review steps only: `true` says the page shows the [host's preview](#the-preview-and-consent-on-the-review-page) (C# `review.Preview()`). |
 
 Branching is ordered steps with conditions, not jumps. A hidden step or field keeps its answer while the reader goes back
 and forth, and is left out of the proposal. The rail shows only visible steps, so "Step 3 of 5" stays true.
@@ -348,7 +349,9 @@ and the details; field messages show beside their fields. Changing any field the
 | `pass` | Runs the check when it has no current result, then needs a pass. |
 
 `secret(id)` reads, once per run, a secret the check names; it is the only way a secret reaches a check, and only secret
-fields the check lists. The review page lists each check with its last result, and the proposal's `checks` carries
+fields the check lists. The review page lists each check with its last result and Run again, which runs the check right
+there on the answers the page shows (a check is no answer, so it has no Change link); the page then checks itself again.
+The proposal's `checks` carries
 `{ status, at }` for the results that are still current. Those are what the browser saw: a host that relies on a check runs
 it again on the submitted answers. `api.runCheck(id)` runs one from script; `canopyx:flowCheck` reports each result.
 
@@ -482,6 +485,9 @@ flow included; in a linear flow a step past one whose answers are missing opens 
 
 `hooks.preview(values, { signal })` answers what submitting will do, as rows `[{ label, value, tone }]` or `{ title, rows,
 notes }` (`tone`: `info`, `success`, `warning`, `danger`). The review page shows it under "Preview", loading as it opens.
+A document that relies on it says so with `"preview": true` on its review step (C# `review.Preview()`), and an endpoint
+with the preview route does the same: the page then loads the preview part with the flow. A preview hook alone loads the
+part too, but a page that cannot load it still shows the review page, without the preview.
 
 A destructive flow asks for consent before its submit button works:
 
@@ -636,7 +642,8 @@ TypeScript types: `FlowDocument`, `FlowField`, `FlowCondition`, `FlowSubmission`
 
 The texts the flow writes itself are the `flow…` labels, translated in the five label packs (`CanopyLabels.Polish()` and
 the others, `@evotecit/canopyx/locales/pl` and the others) together with the shared `gridEdit…` messages. A flow written
-with `Labels = CanopyLabels.German()` carries them in its document. The stylesheet uses logical properties only, so a page
+with `Labels = CanopyLabels.German()` carries them in its document. The labels of a host-connected feature come with its
+part; a flow that does not use the feature ignores them. The stylesheet uses logical properties only, so a page
 with `dir="rtl"` mirrors the rail, the fields and the action bar.
 
 ## Accessibility
@@ -657,11 +664,31 @@ covered by the automated checks.
 
 | Asset | What it holds | Size guard (gzip) |
 | --- | --- | --- |
-| `canopyx-flow-entry.js`, `canopyx-flow-entry.css` | The flow entry point: the theme tokens, the part loader, `createFlow`, `configure` and the fragment mount. No grid or tree code. `@evotecit/canopyx/flow` is its ES module. | 10 KiB (8.4 KiB measured) |
+| `canopyx-flow-entry.js`, `canopyx-flow-entry.css` | The flow entry point: the theme tokens, the part loader, `createFlow`, `configure`, the fragment mount, and which feature parts a document needs. No grid or tree code. `@evotecit/canopyx/flow` is its ES module. | 10 KiB (9.7 KiB measured) |
 | `canopyx-forms.js`, `canopyx-forms.css` | The `forms` part: the typed editors, number and date parsing, the lookup combobox and the field checks. Grid editing requires it too. | 7 KiB (5.4 KiB) |
-| `canopyx-flow.js`, `canopyx-flow.css` | The `flow` part: the document reader, conditions, fields, steps, validation, the review page and the proposal, and the host-connected features: checks, host options and sections, records, pick steps, task lists, dialogs, the command, presets, drafts, deep links and the endpoint. | 57 KiB (49.1 KiB) |
+| `canopyx-flow.js`, `canopyx-flow.css` | The `flow` part: the document reader, conditions, fields, steps, validation, the review page and the proposal. | 29 KiB (28.9 KiB) |
+| `canopyx-flow-host.js`, `.css` | What the host-connected parts share: hooks with a timeout, answers the flow sets itself, loading lines. The parts marked † require it. | 3 KiB (1.9 KiB) |
+| `canopyx-flow-checks.js`, `.css` † | [Server checks](#server-checks). | 6 KiB (4.4 KiB) |
+| `canopyx-flow-options.js` † | [Host options, dependent fields](#host-options-and-dependent-fields) and host sections. | 4 KiB (3.2 KiB) |
+| `canopyx-flow-pick.js`, `.css` † | [Pick steps](#pick-steps) and their tray. | 5 KiB (3.8 KiB) |
+| `canopyx-flow-records.js`, `.css` | [Records fields](#records-fields). | 5 KiB (3.5 KiB) |
+| `canopyx-flow-drafts.js`, `.css` † | [Drafts](#drafts) and [presets](#presets). | 6 KiB (4.6 KiB) |
+| `canopyx-flow-preview.js`, `.css` † | The host's [preview](#the-preview-and-consent-on-the-review-page). | 2 KiB (1.7 KiB) |
+| `canopyx-flow-command.js`, `.css` | The [equivalent command](#the-equivalent-command) and the JSON patch. | 4 KiB (3.4 KiB) |
+| `canopyx-flow-tasks.js`, `.css` † | [Task lists](#task-lists). | 5 KiB (4.0 KiB) |
+| `canopyx-flow-dialog.js`, `.css` † | [Dialogs and drawers](#dialogs-and-drawers). | 3 KiB (2.1 KiB) |
+| `canopyx-flow-links.js` † | [Deep links](#deep-links). | 2 KiB (1.1 KiB) |
+| `canopyx-flow-endpoint.js` † | [An endpoint](#an-endpoint-mapcanopyflow) that answers the hooks. | 2 KiB (1.6 KiB) |
+| `canopyx-flow-consent.js`, `.css` | The review page's [typed confirmation and acknowledgement](#the-preview-and-consent-on-the-review-page). | 3 KiB (1.9 KiB) |
+
+A plain form loads the entry point, `forms` and `flow` only. A feature part loads with them when the document uses its
+keys (a step's `checks`, a field's `source` or `dependsOn`, a pick step, a records field, `presets` or `draft`, a review
+step's `"preview": true`, `command`, `"mode": "tasks"`, a layout `container`, `deepLinks`, `endpoint`, a review step's
+`confirm` or `acknowledge`). `CanopyHtmlAssets.GetRequiredParts(CanopyFlow)` makes the same decisions, so a single-file page
+carries exactly those payloads. A preview hook or a preset store alone loads its part too; a page that cannot load it shows
+the flow without the feature.
 
 A page with only flows includes the flow entry point; the parts load on first use from the files beside it, or from the
-payloads a single-file page carries. The data-grid and reporting entry points know the same two parts, so a grid page creates
-flows with `CanopyX.createFlow` and mounts flow fragments without a second entry point. A single-file grid page that creates flows from script carries the parts too: add `"flow"` to `CanopyHtmlOptions.Parts` (it brings `forms`), since there are no files beside the page to load them from. Include one entry point per page.
+payloads a single-file page carries. The data-grid and reporting entry points know the same parts, so a grid page creates
+flows with `CanopyX.createFlow` and mounts flow fragments without a second entry point. A single-file grid page that creates flows from script carries the parts too: add `"flow"` to `CanopyHtmlOptions.Parts` (it brings `forms`), and the feature parts its flows use (`"flow-checks"`, which brings `flow-host`, …), since there are no files beside the page to load them from. Include one entry point per page.
 `CanopyX.Html` writes flow pages with the flow entry point (`CanopyRuntime.Flow`), or with the reporting entry point when a pick step embeds a grid or tree (`CanopyHtmlAssets.GetRuntime(CanopyFlow)`); `CanopyHtmlAssets.GetRequiredParts(CanopyFlow)` adds the parts the embedded views need.
