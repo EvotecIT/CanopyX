@@ -1902,8 +1902,8 @@ type GridNamedRow<Row>=[Row][Row extends unknown?0:never];
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:GridOptions<GridNamedRow<Row>>):DataGrid<GridQuery,Row>;
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:CursorGridOptions<GridNamedRow<Row>>):DataGrid<GridCursorQuery,Row>;
 export function createCalendar(host:HTMLElement,options?:CalendarOptions):DataGrid<GridQuery,GridRow>;
-export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>|Partial<Omit<FlowOptions,"flow">>):() => void;
-export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>|FlowApi>;
+export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>|Partial<Omit<FlowOptions,"flow">>|Partial<Omit<MatrixOptions,"view">>):() => void;
+export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>|FlowApi|MatrixApi>;
 import type{
   createFlow,FlowApi,FlowOptions
 }
@@ -1917,7 +1917,7 @@ export type{
 }
 from "./flow.js";
 import type{
-  createMatrix
+  createMatrix,MatrixOptions,MatrixApi
 }
 from "./matrix.js";
 export{

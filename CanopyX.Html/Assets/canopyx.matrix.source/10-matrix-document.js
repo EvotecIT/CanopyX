@@ -20,6 +20,10 @@
     if (typeof value !== "string" || !value.length || value.length > 256 || /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(value)) matrixFail(what + " must be a nonempty id of at most 256 characters");
     return value;
   }
+  // Match the C# reader: an omitted zone means UTC, and ordering uses millisecond instants as grids do.
+  function matrixMoment(value) {
+    return typeof value === "string" ? Date.parse(value.includes("T") && !/(?:Z|[+-]\d\d:\d\d)$/.test(value) ? value + "Z" : value) : NaN;
+  }
   /** An http, https or mailto address, or a relative one; never //host, control characters or backslashes. */
   function matrixHref(value) {
     if (typeof value !== "string" || !value.length || value.length > 2048 || value.startsWith("//") || /[\u0000- \u007f\\]/.test(value)) return false;
@@ -45,7 +49,7 @@
       const id = matrixId(item.id, "an item id");
       if (ids.has(id)) matrixFail("the item '" + id + "' appears twice on " + what);
       if (item.href !== undefined && !matrixHref(item.href)) matrixFail("the link of '" + id + "' is not an http, https, mailto or relative address");
-      const values = {};
+      const values = Object.create(null);
       if (item.values !== undefined) {
         if (!matrixObject(item.values)) matrixFail("the values of '" + id + "' must be an object");
         for (const [key, raw] of Object.entries(item.values)) {
@@ -54,7 +58,7 @@
           const cell = matrixObject(raw) ? matrixKeys(raw, ["value", "text"], "a value") : { value: raw };
           const value = cell.value ?? null;
           const fits = value === null || (attribute.kind === "number" ? typeof value === "number" && Number.isFinite(value) : attribute.kind === "datetime" ?
-            typeof value === "string" && /^\d{4}-\d\d-\d\d(?:T\d\d:\d\d(?::\d\d(?:\.\d{1,7})?)?(?:Z|[+-]\d\d:\d\d)?)?$/.test(value) : typeof value === "string" || typeof value === "boolean");
+            typeof value === "string" && /^\d{4}-\d\d-\d\d(?:T\d\d:\d\d(?::\d\d(?:\.\d{1,7})?)?(?:Z|[+-]\d\d:\d\d)?)?$/.test(value) && Number.isFinite(matrixMoment(value)) : typeof value === "string" || typeof value === "boolean");
           if (!fits || cell.text !== undefined && typeof cell.text !== "string") matrixFail("the value of '" + key + "' of '" + id + "' does not fit its kind");
           values[key] = { value, text: cell.text ?? null };
         }

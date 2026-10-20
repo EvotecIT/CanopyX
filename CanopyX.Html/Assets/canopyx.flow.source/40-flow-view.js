@@ -39,7 +39,7 @@
     destroy() {
       if (this.destroyed) return;
       this.destroyed = true;
-      this.closeSubmission?.(); this.lifetime.abort(); this.resize?.disconnect();
+      this.retireOperation(); this.lifetime.abort(); this.resize?.disconnect();
       for (const fv of this.fields.values()) fv.destroy();
       this.releaseHostWork?.();
       this.secrets.clear(); this.root?.remove(); this.shell?.remove(); this.host.removeAttribute("data-cx-ready");
@@ -66,7 +66,7 @@
     assign(id, value) {
       const field = this.model.fields.get(id);
       if (!field || field.type === "secret" || !flowFits(field, value)) flowFail("no field '" + id + "' takes that value");
-      if (!flowSameValue(this.values.get(id), value) || this.fields.get(id)?.pending) { this.answerRevision++; this.forgetHost(field); }
+      if (!flowSameValue(this.values.get(id), value) || this.fields.get(id)?.pending) { this.answersChanged(); this.forgetHost(field); }
       this.values.set(id, flowCopy(value));
     }
 
@@ -97,23 +97,45 @@
     }
 
     // ---------- answers changing ----------
+    /** Advances answer ownership and releases a submission that no longer describes the form. */
+    answersChanged() { this.answerRevision++; this.retireOperation(); }
+
+    /** Owns busy state and asynchronous waits for one navigation or submission operation. */
+    beginOperation() {
+      let cancel;
+      const cancelled = new Promise(resolve => { cancel = resolve; });
+      const generation = this.generation, revision = this.answerRevision, ticket = { cancel };
+      ticket.current = () => !this.destroyed && generation === this.generation && revision === this.answerRevision && this.operation === ticket;
+      ticket.wait = work => Promise.race([work, cancelled]);
+      this.operation = ticket; this.busy = true;
+      return ticket;
+    }
+
+    /** Retires only the active operation, closing its accessor and releasing its waits and busy state. */
+    retireOperation(render = true) {
+      const ticket = this.operation;
+      if (!ticket) return;
+      this.operation = null; ticket.close?.(); this.busy = false; ticket.cancel();
+      if (render && !this.destroyed && this.phase === "form" && this.actions) this.renderActions();
+    }
+
     /** Reads a field's input after the reader changed it, updates visibility and tells the host. */
     changed(field, source) {
       const fv = this.fields.get(field.id);
       if (!fv || this.destroyed || field.readOnly) return;
       const result = fv.read();
-      if (fv.pending !== (result.error || null)) this.answerRevision++;
+      if (fv.pending !== (result.error || null)) this.answersChanged();
       fv.pending = result.error || null;
       if (result.error) this.completed.delete(field.step.id);
       if (field.type === "secret") {
         const before = this.secrets.get(field.id) ?? null;
         if (result.value) this.secrets.set(field.id, result.value); else this.secrets.delete(field.id);
         // A host's message about a field stands until the reader changes that field.
-        if (before !== (result.value || null)) { this.answerRevision++; this.forgetHost(field); this.emit("flowValueChanged", { field: field.id, source: "edit" }, "onValueChange"); this.afterChange?.(field); }
+        if (before !== (result.value || null)) { this.answersChanged(); this.forgetHost(field); this.emit("flowValueChanged", { field: field.id, source: "edit" }, "onValueChange"); this.afterChange?.(field); }
       } else if (!result.error) {
         const previous = this.values.get(field.id) ?? null;
         if (!flowSameValue(previous, result.value)) {
-          this.answerRevision++;
+          this.answersChanged();
           this.values.set(field.id, result.value);
           this.forgetHost(field);
           this.emit("flowValueChanged", { field: field.id, value: flowCopy(result.value), previous: flowCopy(previous), source: "edit" }, "onValueChange");
@@ -194,8 +216,8 @@
       return this.go(target && this.stepVisible(target) ? target : this.hub || this.visibleSteps()[0], "jump", true);
     }
     reset() {
-      this.generation++; this.answerRevision++; this.busy = false;
-      this.closeSubmission?.(); this.checks?.clear(); this.reviewTicket = null; this.reviewChecking = false;
+      this.generation++; this.answersChanged(); this.busy = false;
+      this.checks?.clear(); this.reviewTicket = null; this.reviewChecking = false;
       for (const fv of this.fields.values()) fv.destroy();
       this.fields.clear(); this.sections.clear();
       this.releaseHostWork?.(); this.preset = null;

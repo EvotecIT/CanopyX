@@ -29,11 +29,16 @@ public sealed class MatrixTests {
         return matrix;
     }
 
-    [Fact]
-    public void ToJson_WritesTheSharedFixture() {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ToJson_WritesTheSharedFixture(bool windowsLineEndings) {
         var json = Small().ToJson();
-        Assert.Equal(System.Text.Json.JsonDocument.Parse(Fixture()).RootElement.ToString().Replace(" ", string.Empty).Replace("\n", string.Empty),
-            System.Text.Json.JsonDocument.Parse(json).RootElement.ToString().Replace(" ", string.Empty).Replace("\n", string.Empty));
+        ProtocolSchema.AssertValid(json, "Matrix writer");
+        ProtocolSchema.AssertValid(Fixture(), "Shared matrix fixture");
+        using var expected = System.Text.Json.JsonDocument.Parse(Fixture().ReplaceLineEndings(windowsLineEndings ? "\r\n" : "\n"));
+        using var actual = System.Text.Json.JsonDocument.Parse(json);
+        Assert.True(System.Text.Json.JsonElement.DeepEquals(expected.RootElement, actual.RootElement));
         Assert.Contains("\"cells\":[\"2202\",\"2222\",\"0..2\",\"1220\",\"2222\",\"....\"]", json);
     }
 
@@ -56,10 +61,12 @@ public sealed class MatrixTests {
         matrix.Rows.Item("a", "A").Item("b", "B");
         matrix.Set("a", "a", "bad"); matrix.Set("a", "b", "bad");
         var json = matrix.ToJson();
+        ProtocolSchema.AssertValid(json, "Square matrix writer");
         Assert.Contains("\"square\":true,\"columnTitle\":\"Source\"", json);
         Assert.Contains("\"cells\":[\".0\",\"..\"]", json);
         Assert.DoesNotContain("\"columns\"", json);
         matrix.Diagonal = CanopyMatrixDiagonal.Data;
+        ProtocolSchema.AssertValid(matrix.ToJson(), "Square matrix with diagonal data");
         Assert.Contains("\"cells\":[\"00\",\"..\"]", matrix.ToJson());
         Assert.Equal(matrix.ToJson(), CanopyMatrix.FromJson(matrix.ToJson()).ToJson());
         matrix.Diagonal = CanopyMatrixDiagonal.Self;
@@ -83,6 +90,7 @@ public sealed class MatrixTests {
         matrix.Rows.GroupBy = "site"; matrix.Rows.SortBy = CanopyMatrix.SortByTotal; matrix.Rows.SortDescending = true;
         matrix.Labels = CanopyLabels.Polish();
         var json = matrix.ToJson();
+        ProtocolSchema.AssertValid(json, "Matrix with all options");
         foreach (var part in new[] { "\"totals\":{\"states\":[\"bad\"],\"rows\":false}", "\"attentionOnly\":true", "\"cellWidth\":44", "\"density\":\"compact\"", "\"details\":\"host\"",
             "\"phone\":\"cards\"", "\"legend\":false", "\"hideEmpty\":true", "\"autoHeight\":false", "\"groupBy\":\"site\"", "\"sort\":{\"by\":\"#total\",\"direction\":\"desc\"}", "\"matrixSearch\":\"Szukaj wierszy i kolumn\"" })
             Assert.Contains(part, json);
@@ -179,5 +187,18 @@ public sealed class MatrixTests {
         var page = Small().ToHtmlPage(new CanopyHtmlOptions { Nonce = "abc123" });
         Assert.Contains("<title>Small matrix</title>", page);
         Assert.Contains("nonce=\"abc123\"", page);
+    }
+
+    [Theory]
+    [InlineData(false, 5)]
+    [InlineData(true, 6)]
+    public void StaticFallback_OverflowSpansOnlyTheRenderedColumns(bool rowTotals, int columns) {
+        var matrix = Small();
+        matrix.RowTotals = rowTotals;
+        matrix.Legend = false;
+        var html = CanopyStaticHtml.RenderMatrix(matrix, new CanopyStaticHtmlOptions { MaxRows = 1 });
+        var header = html.Substring(0, html.IndexOf("</thead>", StringComparison.Ordinal));
+        Assert.Equal(columns, System.Text.RegularExpressions.Regex.Matches(header, "<th\\s").Count);
+        Assert.Contains("colspan=\"" + columns + "\"", html);
     }
 }

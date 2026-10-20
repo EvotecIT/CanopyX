@@ -28,7 +28,7 @@
     /** The query a new matrix starts from: the document's sorts, groups and only-problems switch. */
     initialQuery() {
       const doc = this.doc, axis = name => doc[name];
-      return { search: "", attentionOnly: doc.attentionOnly, hideEmpty: doc.hideEmpty, filters: { rows: {}, columns: {} },
+      return { search: "", attentionOnly: doc.attentionOnly, hideEmpty: doc.hideEmpty, filters: { rows: Object.create(null), columns: Object.create(null) },
         sort: { rows: axis("rows").sort, columns: axis("columns").sort }, group: { rows: axis("rows").groupBy, columns: axis("columns").groupBy },
         collapsed: { rows: [], columns: [] } };
     }
@@ -90,7 +90,7 @@
       return (a, b) => {
         const x = a.values[attribute.id]?.value ?? null, y = b.values[attribute.id]?.value ?? null;
         if (x === null || y === null) return x === y ? a.index - b.index : x === null ? 1 : -1;
-        const result = attribute.kind === "number" ? x - y : attribute.kind === "datetime" ? (x < y ? -1 : x > y ? 1 : 0) : matrixNatural(String(x), String(y));
+        const result = attribute.kind === "number" ? x - y : attribute.kind === "datetime" ? matrixMoment(x) - matrixMoment(y) : matrixNatural(String(x), String(y));
         return sign * result || a.index - b.index;
       };
     }

@@ -30,6 +30,21 @@ public sealed class EfCoreSqliteTests : IClassFixture<EfCoreSqliteTests.Database
     }
 
     [Fact]
+    public async Task AutoComparison_StringKeysRemainDatabaseTranslated() {
+        var map = Fleet.Map(Fleet.View()).Key(host => host.Name);
+        using var db = _database.Sqlite.Create(log: true);
+        var provider = new CanopyQueryableProvider<Host>(() => db.Hosts, map,
+            new CanopyQueryOptions { Executor = new EfExecutor() });
+        var handler = new CanopyRemoteHandler(map.Schema, provider);
+        foreach (var sort in new[] { "[]", "[{\"column\":\"cores\",\"direction\":\"asc\"}]" }) {
+            using var page = JsonDocument.Parse(await handler.QueryAsync("{\"offset\":7,\"limit\":13,\"sort\":" + sort + "}"));
+            var ordered = sort == "[]" ? db.Hosts.OrderBy(host => host.Name) : db.Hosts.OrderBy(host => host.Cores == null).ThenBy(host => host.Cores).ThenBy(host => host.Name);
+            Assert.Equal(ordered.Skip(7).Take(13).Select(host => host.Name).ToArray(),
+                page.RootElement.GetProperty("items").EnumerateArray().Select(row => row.GetProperty("id").GetString()));
+        }
+    }
+
+    [Fact]
     public async Task RandomQueries_EfCoreMatchesReference() {
         var (reference, ef, db) = Handlers();
         using (db) {

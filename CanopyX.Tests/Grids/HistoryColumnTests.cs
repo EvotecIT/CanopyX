@@ -7,6 +7,37 @@ namespace CanopyX.Tests.Grids;
 
 /// <summary>History cells and columns: status strips and sparklines written from a member that holds periods.</summary>
 public sealed class HistoryColumnTests {
+    private sealed class LazyTarget {
+        public IEnumerable<CanopyCellPeriod>? Periods { get; set; }
+    }
+
+    [Theory]
+    [InlineData("status")]
+    [InlineData("value")]
+    [InlineData("typed status")]
+    [InlineData("typed value")]
+    public void Histories_StopOversizedIteratorsBeforeCallingHostSummaries(string path) {
+        var read = 0;
+        IEnumerable<CanopyCellPeriod> Periods() {
+            while (true) {
+                if (++read > 4097) throw new InvalidOperationException("Read beyond the declared history bound.");
+                yield return new CanopyCellPeriod("p" + read, read, "Up");
+            }
+        }
+
+        var summaryCalled = false;
+        if (path == "status") Assert.Throws<ArgumentException>(() => CanopyCell.StatusHistory(Periods()));
+        else if (path == "value") Assert.Throws<ArgumentException>(() => CanopyCell.ValueHistory(Periods()));
+        else {
+            var grid = new CanopyDataGridView<LazyTarget>("lazy", "Lazy history", _ => "row");
+            if (path == "typed status") grid.StatusStrip(x => x.Periods, state: periods => { summaryCalled = true; return "summary"; });
+            else grid.Sparkline(x => x.Periods, value: periods => { summaryCalled = true; return 1; });
+            Assert.Throws<ArgumentException>(() => grid.Row(new LazyTarget { Periods = Periods() }));
+        }
+        Assert.Equal(4097, read);
+        Assert.False(summaryCalled);
+    }
+
     public sealed class Target {
         public string Name { get; set; } = "";
         public List<CanopyCellPeriod>? Hours { get; set; }

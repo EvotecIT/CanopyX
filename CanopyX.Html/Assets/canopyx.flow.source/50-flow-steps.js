@@ -98,9 +98,13 @@
       if (this.busy || this.phase !== "form" || this.step === this.hub) return false;
       const step = this.step, steps = this.visibleSteps(), pressed = document.activeElement, generation = this.generation;
       if (step.asks) {
-        this.busy = true;
+        const ticket = this.beginOperation();
+        this.renderActions();
         let result;
-        try { result = await this.validateStep(step, true); } finally { if (generation === this.generation) this.busy = false; }
+        try {
+          result = await ticket.wait(this.validateStep(step, true, ticket.current));
+          if (!ticket.current()) return false;
+        } finally { if (ticket.current()) this.retireOperation(); }
         // An answer changed while Next checked the step: the reader is still working on it, so the step stays.
         if (this.destroyed || generation !== this.generation || this.step !== step || result.moved) return false;
         if (!result.valid) {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CanopyX;
 
@@ -42,9 +43,9 @@ public sealed partial class CanopyCell {
     /// <summary>Whether the cell holds history periods, without creating the list.</summary>
     internal bool HasSeries => _series != null && _series.Count > 0;
 
-    private static List<CanopyCellPeriod> History(IEnumerable<CanopyCellPeriod> periods) {
+    internal static List<CanopyCellPeriod> History(IEnumerable<CanopyCellPeriod> periods) {
         if (periods == null) throw new ArgumentNullException(nameof(periods));
-        var list = new List<CanopyCellPeriod>(periods);
+        var list = periods.Take(4097).ToList();
         if (list.Count > 4096) throw new ArgumentException("A cell history holds at most 4096 periods.", nameof(periods));
         if (list.Exists(period => period == null)) throw new ArgumentException("A cell history has no null periods.", nameof(periods));
         return list;

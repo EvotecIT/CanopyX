@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "21e2a9677e4ec451",
+      "version": "f07aebe37f3d1bb4",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -100,7 +100,7 @@
     {
       "name": "forms",
       "label": "forms",
-      "version": "f3b10c7b5c7572f0",
+      "version": "a8c60f205d9babca",
       "script": "canopyx-forms.js",
       "style": "canopyx-forms.css",
       "runtimes": [
@@ -118,7 +118,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "117839f90d550823",
+      "version": "6489519f1246169e",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -135,7 +135,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "c57633602e375743",
+      "version": "a02d6881b70019b4",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [

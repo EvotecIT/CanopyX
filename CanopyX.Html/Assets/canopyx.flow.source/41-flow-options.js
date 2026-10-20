@@ -27,7 +27,7 @@
     /** Sets an answer the flow itself decided (dependencies, options, presets): the input shows it and the host hears it. */
     setAnswer(field, value, source) {
       const previous = this.values.get(field.id) ?? null;
-      this.answerRevision++;
+      this.answersChanged();
       this.values.set(field.id, flowCopy(value));
       this.forgetHost(field);
       this.fields.get(field.id)?.mount(flowCopy(value));
@@ -131,7 +131,7 @@
         if (kept === undefined || !flowFits(field, kept)) this.values.set(field.id, flowCopy(model.initial && Object.hasOwn(model.initial, field.id) && flowFits(field, model.initial[field.id]) ? model.initial[field.id] : field.start));
       }
       block.fields.splice(0, block.fields.length, ...fields);
-      this.answerRevision++; this.visibility.clear(); this.reviewStale = true;
+      this.answersChanged(); this.visibility.clear(); this.reviewStale = true;
       const element = this.sections.get(step.id)?._cxBlocks?.find(entry => entry.fields === block.fields)?.element, grid = element?.querySelector(".cx-flow-grid");
       if (grid) {
         grid.replaceChildren(...fields.map(field => {

@@ -41,12 +41,11 @@
       if (this.busy || this.phase !== "form") return null;
       // The typed confirmation and the acknowledgement come first: they take focus and say what is missing.
       if (this.consentProblem()) return null;
-      const generation = this.generation, revision = this.answerRevision, ticket = this.submissionTicket = {};
-      const current = () => !this.destroyed && generation === this.generation && this.submissionTicket === ticket;
-      this.busy = true; this.banner = null; this.hostErrors.clear(); this.hostStepErrors.clear(); this.renderActions();
+      const ticket = this.beginOperation(), current = ticket.current, wait = ticket.wait;
+      this.banner = null; this.hostErrors.clear(); this.hostStepErrors.clear(); this.renderActions();
       try {
-        const result = await this.validateAll();
-        if (!current() || revision !== this.answerRevision) return null;
+        const result = await wait(this.validateAll(current));
+        if (!current()) return null;
         if (!result.valid) {
           const review = this.reviewStep();
           if (review && this.stepVisible(review)) { if (this.step !== review) await this.go(review, "forward"); else { this.reviewStale = true; this.render(); } }
@@ -56,29 +55,47 @@
         // Only the secrets of visible fields travel: one typed into a field that is hidden now is left behind, as its answer is.
         const proposal = this.submission(), secrets = new Map([...this.secrets].filter(([id]) => this.visible(this.model.fields.get(id)))), read = new Set();
         let answer, answered = false, open = true;
-        const close = this.closeSubmission = () => { open = false; secrets.clear(); };
+        const close = ticket.close = () => { open = false; secrets.clear(); };
         const detail = Object.assign(flowCopy(proposal), {
-          respondWith: value => { if (!answered && open) { answered = true; answer = value; } },
+          respondWith: value => {
+            if (!answered && open) {
+              answered = true; answer = Promise.resolve(value);
+              // Observe rejection even if cancellation, reset or changed answers retire this proposal before it is awaited.
+              answer.catch(() => {});
+            }
+          },
           secret: id => { if (!open || read.has(id) || !secrets.has(id)) return null; read.add(id); return secrets.get(id); }
         });
         Object.freeze(detail);
         const go = this.emit("flowSubmit", detail, null, true);
         if (!go || !current()) { close(); return null; }
-        if (!answered && typeof this.options.onSubmit === "function") { const value = await this.hook("onSubmit", () => this.options.onSubmit(detail)); if (value.failed) { answered = true; answer = { status: "error", message: value.failed }; } else if (value.value !== undefined) { answered = true; answer = value.value; } }
+        if (!answered && typeof this.options.onSubmit === "function") {
+          const value = await wait(this.hook("onSubmit", () => this.options.onSubmit(detail)));
+          if (!current()) { close(); return null; }
+          if (value.failed) { answered = true; answer = { status: "error", message: value.failed }; }
+          else if (value.value !== undefined) { answered = true; answer = value.value; }
+        }
         if (!current()) { close(); return null; }
-        if (!answered && typeof this.hooks.submit === "function") { const value = await this.hook("submit", () => this.hooks.submit(detail)); answered = true; answer = value.failed ? { status: "error", message: value.failed } : value.value; }
+        if (!answered && typeof this.hooks.submit === "function") {
+          const value = await wait(this.hook("submit", () => this.hooks.submit(detail)));
+          if (!current()) { close(); return null; }
+          answered = true; answer = value.failed ? { status: "error", message: value.failed } : value.value;
+        }
         if (!current()) { close(); return null; }
         let settled;
         if (!answered || answer === undefined) settled = { status: "error", message: this.labels.flowNoHost };
-        else { const value = await this.hook("respondWith", () => answer); settled = value.failed ? { status: "error", message: value.failed } : this.answerOf(value.value); }
+        else {
+          const value = await wait(this.hook("respondWith", () => answer));
+          if (!current()) { close(); return null; }
+          settled = value.failed ? { status: "error", message: value.failed } : this.answerOf(value.value);
+        }
         close();
         if (!current()) return null;
-        this.busy = false;
         // Retire this operation before callbacks can start correction/navigation work of their own.
-        this.submissionTicket = null; this.closeSubmission = null;
+        this.retireOperation(false);
         this.settle(settled);
         return settled;
-      } finally { if (current()) { this.busy = false; this.closeSubmission?.(); this.closeSubmission = null; if (this.phase === "form") this.renderActions(); } }
+      } finally { if (current()) this.retireOperation(); }
     },
 
     /** Checks a host answer; anything malformed reads as an error with the generic message. */
