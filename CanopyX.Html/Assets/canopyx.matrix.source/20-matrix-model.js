@@ -28,7 +28,7 @@
     /** The query a new matrix starts from: the document's sorts, groups and only-problems switch. */
     initialQuery() {
       const doc = this.doc, axis = name => doc[name];
-      return { search: "", attentionOnly: doc.attentionOnly, hideEmpty: doc.hideEmpty, filters: { rows: {}, columns: {} },
+      return { search: "", attentionOnly: doc.attentionOnly, hideEmpty: doc.hideEmpty, filters: { rows: Object.create(null), columns: Object.create(null) },
         sort: { rows: axis("rows").sort, columns: axis("columns").sort }, group: { rows: axis("rows").groupBy, columns: axis("columns").groupBy },
         collapsed: { rows: [], columns: [] } };
     }

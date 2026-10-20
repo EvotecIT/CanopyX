@@ -16,7 +16,8 @@
         const found = saved.id !== null ? entries.findIndex(entry => entry.kind === "item" && entry.item.id === saved.id) :
           saved.group && saved.group.attribute === this.query.group[axis] ? entries.findIndex(entry => entry.group?.key === saved.group.key) : -1;
         // If an entity disappears, stay at the nearest surviving position; keep header and total focus on their edges.
-        this.focus[index ? "column" : "row"] = saved.end ? entries.length : found >= 0 ? found : Math.max(-1, Math.min(saved.at, entries.length - 1));
+        const last = entries.length - ((index ? this.doc.rowTotals : this.doc.columnTotals) ? 0 : 1);
+        this.focus[index ? "column" : "row"] = Math.max(-1, Math.min(last, saved.end ? entries.length : found >= 0 ? found : Math.min(saved.at, entries.length - 1)));
       });
     },
     focusElement(r, c) {

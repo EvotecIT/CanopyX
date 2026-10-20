@@ -427,11 +427,32 @@ test("sort state defaults to ascending and filters preserve supported dictionary
   doc.rows.attributes.push({ id: "__proto__", title: "Region", facet: true });
   doc.rows.items.forEach((item, index) => { item.values = { ...item.values, ["__proto__"]: index < 3 ? "North" : "South" }; });
   await mountMatrix(page, doc, { options: "{state:{sort:{columns:{by:'#label'}}}}" });
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.getByRole("button", { name: "Server", exact: true }).click();
+  const panel = page.getByRole("dialog", { name: "Server", exact: true });
+  await expect(panel.getByRole("checkbox", { name: "North", exact: false }).last()).toBeVisible();
+  expect(errors).toEqual([]);
+  await panel.getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate(() => { api.setState({ sort: { rows: { by: "#label" } } }); api.filter("rows", "__proto__", ["North"]); });
   expect(await page.evaluate(() => api.getVisible().rows)).toEqual(["a", "b", "c"]);
   // Serialize inside the page so the automation transport cannot reinterpret the __proto__ property.
   expect(JSON.parse(await page.evaluate(() => JSON.stringify(api.getState().filters.rows)))).toEqual({ ["__proto__"]: ["North"] });
   expect(await page.evaluate(() => api.getState().sort)).toEqual({ rows: { by: "#label", direction: "asc" }, columns: { by: "#label", direction: "asc" } });
+});
+
+test("removing totals during refresh preserves a visible keyboard entry point", async ({ page }) => {
+  await mountMatrix(page, matrixDoc());
+  await page.locator('.cx-mx-scroll [tabindex="0"]').focus();
+  await page.keyboard.press("Control+End");
+  await expect(page.locator(":focus")).toHaveClass(/cx-mx-grand/);
+  await page.getByRole("searchbox").focus();
+  await page.evaluate(doc => api.update(doc), matrixDoc({ totals: { rows: false, columns: false } }));
+  const entry = page.locator('.cx-mx-scroll [tabindex="0"]');
+  await expect(entry).toHaveCount(1);
+  await expect(entry).toBeVisible();
+  await entry.focus();
+  await expect(page.locator(":focus")).toHaveAttribute("aria-label", "Row F and Col W: No data");
 });
 
 test("printing draws a table of the visible matrix", async ({ page }) => {
