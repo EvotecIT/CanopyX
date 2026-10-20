@@ -10,7 +10,7 @@
   const flowFail = problem => { throw new Error("CanopyX: " + problem + "."); };
   const flowIs = value => value !== null && typeof value === "object" && !Array.isArray(value);
   const flowEmpty = value => value == null || value === "" || Array.isArray(value) && !value.length;
-  const flowScalar = value => typeof value === "string" || typeof value === "boolean" || Number.isFinite(value);
+  const flowScalar = value => typeof value === "string" || typeof value === "boolean" || Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
 
   function flowKeys(object, allowed, what) {
     if (!flowIs(object)) flowFail(what + " must be an object");
@@ -40,7 +40,7 @@
 
   /** Whether a value fits a field: its type's shape and, for choices, one of its options. Secrets never have values. */
   function flowFits(field, value) {
-    if (value === null) return field.type !== "multiChoice" && field.type !== "list";
+    if (value === null) return field.type !== "secret";
     const listed = item => field.options.some(option => option.value === item);
     switch (field.type) {
       case "number": return Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
@@ -95,7 +95,7 @@
     field.options = (raw.options || []).map(option => {
       flowKeys(flowIs(option) ? option : { value: option }, ["value", "label", "description", "badge", "disabledReason", "group"], "An option of field " + id);
       const item = flowIs(option) ? option : { value: option };
-      if (!["string", "number", "boolean"].includes(typeof item.value) || typeof item.value === "number" && !Number.isFinite(item.value)) bad("has an invalid option value");
+      if (!flowScalar(item.value)) bad("has an invalid option value");
       return Object.freeze({ value: item.value, label: flowString(item.label, 200, "An option label") ?? String(item.value), description: flowString(item.description, 1000, "An option description"),
         badge: flowString(item.badge, 40, "An option badge"), disabledReason: flowString(item.disabledReason, 400, "A disabled reason"), group: flowString(item.group, 200, "An option group") });
     });
@@ -126,7 +126,7 @@
     const units = raw.units ?? ["minutes", "hours", "days"];
     if (raw.units !== undefined && type !== "duration" || !Array.isArray(units) || !units.length || units.some(unit => !Object.hasOwn(FLOW_UNITS, unit)) || new Set(units).size !== units.length) bad("has invalid duration units");
     field.units = Object.keys(FLOW_UNITS).filter(unit => units.includes(unit));
-    if (raw.default !== undefined && (type === "secret" || !flowFits(field, raw.default))) bad("has a default that does not fit it");
+    if (raw.default !== undefined && (type === "secret" || list && !Array.isArray(raw.default) || !flowFits(field, raw.default))) bad("has a default that does not fit it");
     field.start = raw.default === undefined ? (list ? [] : null) : raw.default;
     model.fields.set(id, field);
     return field;
@@ -195,4 +195,5 @@
     model.stored = new Set(doc.storedSecrets || []);
     if (doc.baseline !== undefined && (typeof doc.baseline !== "string" || !doc.baseline.length || doc.baseline.length > 256)) flowFail("the baseline is 1 to 256 characters");
     model.baseline = doc.baseline ?? null;
+    if (!model.initial && (model.stored.size || model.baseline !== null)) model.initial = {};
   }

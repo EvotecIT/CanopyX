@@ -569,6 +569,7 @@ CanopyX.CanopyFlow.CanopyX.CanopyFlowOrientation Orientation { get; set; }
 CanopyX.CanopyFlow.CanopyX.CanopyFlowSubmit? Submit { get; set; }
 CanopyX.CanopyFlow.CanopyX.CanopyLabels? Labels { get; set; }
 CanopyX.CanopyFlow.CanopyX.CanopyTimeZone TimeZone { get; set; }
+CanopyX.CanopyFlow.System.Boolean IsEditMode { get; set; }
 CanopyX.CanopyFlow.System.Collections.Generic.IDictionary<System.String, System.Object?> Initial { get; }
 CanopyX.CanopyFlow.System.Collections.Generic.IList<CanopyX.CanopyFlowStep> Steps { get; }
 CanopyX.CanopyFlow.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> VisibleValues(System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> answers)

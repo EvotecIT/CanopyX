@@ -63,8 +63,17 @@ public sealed class CanopyFlow {
     public IList<CanopyFlowStep> Steps { get; } = new List<CanopyFlowStep>();
 
     /// <summary>
+    /// Gets or sets whether to preserve edit mode when <see cref="Initial"/> is empty. Reading a document with an
+    /// <c>initial</c> property sets this to true. Non-empty <see cref="Initial"/> or <see cref="StoredSecrets"/>, or a
+    /// <see cref="Baseline"/>, also enable edit mode when this is false.
+    /// </summary>
+    public bool IsEditMode { get; set; }
+
+    /// <summary>
     /// Gets the values an edit-mode flow edits, by field id, as <see cref="CanopyFlowField.DefaultValue"/> takes them; empty in
-    /// create mode. Secret fields never have one: list them in <see cref="StoredSecrets"/>.
+    /// create mode or when <see cref="IsEditMode"/>, <see cref="StoredSecrets"/> or <see cref="Baseline"/> identifies an edit
+    /// with no non-secret initial values.
+    /// Secret fields never have one: list them in <see cref="StoredSecrets"/>.
     /// </summary>
     public IDictionary<string, object?> Initial { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 
@@ -169,7 +178,7 @@ public sealed class CanopyFlow {
         writer.Name("steps").BeginArray();
         foreach (var step in Steps) step.WriteJson(writer);
         writer.EndArray();
-        if (Initial.Count > 0) {
+        if (IsEditMode || Initial.Count > 0 || StoredSecrets.Count > 0 || Baseline != null) {
             writer.Name("initial").BeginObject();
             foreach (var field in CanopyFlowValidator.Fields(this)) {
                 if (!Initial.TryGetValue(field.Id, out var value)) continue;
@@ -219,6 +228,7 @@ public sealed class CanopyFlow {
         foreach (var item in CanopyFlowContract.Items(map, "steps", what, MaxSteps)) flow.Steps.Add(CanopyFlowStep.Read(item));
         if (map.TryGetValue("initial", out var initial)) {
             if (!(initial is Dictionary<string, object?> values)) throw new InvalidOperationException(what + " needs an object in 'initial'.");
+            flow.IsEditMode = true;
             foreach (var entry in values) flow.Initial[entry.Key] = entry.Value;
         }
 

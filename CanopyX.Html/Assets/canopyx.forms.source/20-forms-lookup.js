@@ -37,8 +37,9 @@
       if (!popup.matches(":popover-open")) popup.showPopover();
       input.setAttribute("aria-expanded", "true"); paint();
     };
-    const pick = index => { chosen = options[index]; input.value = chosen.label; context.remember(chosen); close(); };
+    const pick = index => { if (context.readOnly) return; chosen = options[index]; input.value = chosen.label; context.remember(chosen); close(); };
     const search = () => {
+      if (context.readOnly) return;
       clearTimeout(timer); request?.abort();
       const text = input.value;
       if (text.length < context.lookupMinLength) { close(); return; }

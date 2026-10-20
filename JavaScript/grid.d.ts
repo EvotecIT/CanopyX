@@ -931,16 +931,16 @@ export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement,
 export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement, options: CursorGridOptions<GridNamedRow<Row>>): DataGrid<GridCursorQuery, Row>;
 /** A calendar from a list of events, with no grid schema to write: a preset (basic by default) and options over it (calendar.d.ts). */
 export function createCalendar(host: HTMLElement, options?: CalendarOptions): DataGrid<GridQuery, GridRow>;
-/** Registers options before either a tree or flat-grid fragment mounts. */
-export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery>): () => void;
+/** Registers options before a tree, flat-grid or flow fragment mounts. */
+export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery> | Partial<Omit<FlowOptions, "flow">>): () => void;
 /**
- * Mounts tree and flat-grid fragments below root, or root itself when it is a fragment. Fragments marked
+ * Mounts tree, flat-grid and flow fragments below root, or root itself when it is a fragment. Fragments marked
  * `data-cx-mount="visible"` below root wait until they come near the viewport; passing such a fragment as root mounts it at once.
  * Narrow a controller before using view-specific methods.
  */
-export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery>>;
+export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery> | FlowApi>;
 
-import type { createFlow } from "./flow.js";
+import type { createFlow, FlowApi, FlowOptions } from "./flow.js";
 export { createFlow } from "./flow.js";
 export type { FlowDocument, FlowField, FlowStep, FlowSection, FlowOption, FlowCondition, FlowValidation, FlowValue, FlowSubmission, FlowSubmitDetail, FlowAnswer, FlowHooks, FlowOptions, FlowApi, FlowState, FlowValidationResult } from "./flow.js";
 declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };

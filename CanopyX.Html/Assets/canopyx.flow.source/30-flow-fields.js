@@ -23,6 +23,13 @@
       const context = flowEditorContext(view, field, id, value, fv.abort.signal);
       const instance = flowEditor(view, field, context);
       if (!instance || !(instance.element instanceof Element) || typeof instance.getValue !== "function") flowFail("the editor of field " + field.id + " must return an element and getValue");
+      // Empty toggles and collections stay null while focus passes through them; only an actual edit supplies a value.
+      if (value == null && ["toggle", "list", "multiChoice"].includes(field.type)) {
+        let touched = false;
+        const read = instance.getValue;
+        for (const event of ["input", "change"]) instance.element.addEventListener(event, () => { touched = true; }, { signal: fv.abort.signal });
+        instance.getValue = () => touched ? read() : null;
+      }
       return instance;
     };
     fv.mount = value => {
@@ -52,7 +59,7 @@
       if (parse) return { error: parse };
       let value = fv.instance.getValue();
       if (value === "" || value === undefined) value = null;
-      if (field.type === "multiChoice" || field.type === "list") value = Array.isArray(value) ? value : [];
+      if (field.type !== "secret" && !flowFits(field, value)) return { error: fill(view.labels.gridEditPattern, { column: field.label }) };
       return { value };
     };
     fv.message = text => { setText(message, text || ""); message.hidden = !text; fv.describe(); wrapper.classList.toggle("cx-flow-invalid", !!text); };
@@ -75,7 +82,7 @@
       editor: Object.freeze({ type: field.type, placeholder: field.placeholder, step: field.raw.step }), options: field.options.length ? field.options : null,
       rules: field.spec.rules, labels: view.labels, locale: view.lang, timeZone: view.model.local ? "local" : "utc", mode: "flow", initial: undefined, signal,
       lookupMinLength: 1, commit: () => view.changed(field, "edit"), cancel: () => {},
-      lookup: search => { const folded = foldText(search.trim()); return field.options.filter(option => foldText(option.label).includes(folded)).slice(0, 20); },
+      lookup: search => { const folded = foldText(search.trim()); return field.options.filter(option => !option.disabledReason && foldText(option.label).includes(folded)).slice(0, 20); },
       // A picked suggestion is an answer at once, not only when focus leaves the field.
       remember: () => queueMicrotask(() => view.changed(field, "edit")) });
   }

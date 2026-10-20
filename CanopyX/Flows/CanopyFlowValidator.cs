@@ -75,12 +75,16 @@ internal static class CanopyFlowValidator {
 
     /// <summary>Paths are unique, and none is the parent of another, so the proposal's JSON patch never writes a setting twice.</summary>
     private static void ValidatePaths(List<string> paths) {
-        paths.Sort(StringComparer.Ordinal);
-        for (var index = 1; index < paths.Count; index++) {
-            var before = paths[index - 1];
-            var path = paths[index];
-            if (path == before) throw new InvalidOperationException("Two fields write the path " + path + ".");
-            if (path.StartsWith(before + ".", StringComparison.Ordinal)) throw new InvalidOperationException("The path " + before + " holds the path " + path + " of another field.");
+        var allPaths = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var path in paths) {
+            if (!allPaths.Add(path)) throw new InvalidOperationException("Two fields write the path " + path + ".");
+        }
+
+        foreach (var path in paths) {
+            for (var separator = path.IndexOf('.'); separator >= 0; separator = path.IndexOf('.', separator + 1)) {
+                var ancestor = path.Substring(0, separator);
+                if (allPaths.Contains(ancestor)) throw new InvalidOperationException("The path " + ancestor + " holds the path " + path + " of another field.");
+            }
         }
     }
 

@@ -293,7 +293,7 @@ test.describe("dates and times", () => {
     await flowCall(page, "goTo", "review");
     await expect(answerRow(page, "Day").locator(".cx-flow-now")).toHaveText("Nov 2, 2026");
     await expect(answerRow(page, "At").locator(".cx-flow-now")).toHaveText("07:30");
-    await expect(answerRow(page, "Until").locator(".cx-flow-now")).toHaveText(/^Jun 30, 2027,? 12:00\sPM UTC$/);
+    await expect(answerRow(page, "Until").locator(".cx-flow-now")).toHaveText(/^Jun 30, 2027(?:,| at)? 12:00\sPM UTC$/);
   });
 });
 
