@@ -1,4 +1,24 @@
 # Public API of CanopyX.AspNetCore, checked by the API tests. Regenerate with CANOPYX_API_UPDATE=1 after an intended change.
+CanopyX.AspNetCore.CanopyFlowEndpointExtensions : static class
+CanopyX.AspNetCore.CanopyFlowEndpointExtensions.static Microsoft.AspNetCore.Routing.RouteGroupBuilder MapCanopyFlow(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, System.String pattern, System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.CanopyFlow> flow, CanopyX.AspNetCore.CanopyFlowHandlers handlers, System.Action<CanopyX.AspNetCore.CanopyFlowEndpointOptions>? configure = null)
+CanopyX.AspNetCore.CanopyFlowEndpointOptions : sealed class
+CanopyX.AspNetCore.CanopyFlowEndpointOptions..ctor()
+CanopyX.AspNetCore.CanopyFlowEndpointOptions.System.Boolean AllowAnonymous { get; set; }
+CanopyX.AspNetCore.CanopyFlowEndpointOptions.System.Boolean RejectStaleBaseline { get; set; }
+CanopyX.AspNetCore.CanopyFlowEndpointOptions.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.CanopyFlowField, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?>, System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowOption>>? HostOptions { get; set; }
+CanopyX.AspNetCore.CanopyFlowEndpointOptions.System.Int32 MaxRequestBytes { get; set; }
+CanopyX.AspNetCore.CanopyFlowEndpointOptions.System.String? AuthorizationPolicy { get; set; }
+CanopyX.AspNetCore.CanopyFlowHandlers : sealed class
+CanopyX.AspNetCore.CanopyFlowHandlers..ctor()
+CanopyX.AspNetCore.CanopyFlowHandlers.CanopyX.AspNetCore.ICanopyFlowDraftStore? Drafts { get; set; }
+CanopyX.AspNetCore.CanopyFlowHandlers.CanopyX.CanopyFlowRoutes Routes { get; }
+CanopyX.AspNetCore.CanopyFlowHandlers.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.CanopyFlowRequest, System.Threading.Tasks.Task<CanopyX.Data.CanopyFlowCheckResult>>? Check { get; set; }
+CanopyX.AspNetCore.CanopyFlowHandlers.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.CanopyFlowRequest, System.Threading.Tasks.Task<CanopyX.Data.CanopyFlowPreview>>? Preview { get; set; }
+CanopyX.AspNetCore.CanopyFlowHandlers.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.CanopyFlowRequest, System.Threading.Tasks.Task<CanopyX.Data.CanopyFlowValidationResult>>? Validate { get; set; }
+CanopyX.AspNetCore.CanopyFlowHandlers.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.CanopyFlowRequest, System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowField>>>? Fields { get; set; }
+CanopyX.AspNetCore.CanopyFlowHandlers.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.CanopyFlowRequest, System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowOption>>>? Options { get; set; }
+CanopyX.AspNetCore.CanopyFlowHandlers.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.CanopyFlowRequest, System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyDictionary<System.String, CanopyX.Data.CanopyFlowStepStatus>>>? Status { get; set; }
+CanopyX.AspNetCore.CanopyFlowHandlers.System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.CanopyFlowSubmission, System.Threading.Tasks.Task<CanopyX.Data.CanopyFlowAnswer>>? Submit { get; set; }
 CanopyX.AspNetCore.CanopyRemoteEndpointExtensions : static class
 CanopyX.AspNetCore.CanopyRemoteEndpointExtensions.static Microsoft.AspNetCore.Routing.RouteGroupBuilder MapCanopyRemote(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, System.String pattern, CanopyX.Data.CanopyDataSchema schema, System.Func<Microsoft.AspNetCore.Http.HttpContext, CanopyX.Data.ICanopyDataProvider> provider, System.Action<CanopyX.AspNetCore.CanopyRemoteEndpointOptions>? configure = null)
 CanopyX.AspNetCore.CanopyRemoteEndpointExtensions.static Microsoft.AspNetCore.Routing.RouteGroupBuilder MapCanopyRemote<T>(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder endpoints, System.String pattern, System.Func<Microsoft.AspNetCore.Http.HttpContext, System.Linq.IQueryable<T>> query, CanopyX.Data.CanopyColumnMap<T> map, System.Action<CanopyX.AspNetCore.CanopyRemoteEndpointOptions>? configure = null)
@@ -23,3 +43,7 @@ CanopyX.AspNetCore.CanopyRemoteScript.static System.String Element(CanopyX.Data.
 CanopyX.AspNetCore.CanopyRemoteScript.static System.String ElementWithNonce(CanopyX.Data.CanopyDataSchema schema, System.String endpoint, System.String? nonce, params System.ValueTuple<System.String, System.String>[]? exportFormats)
 CanopyX.AspNetCore.CanopyRemoteScript.static System.String Script(CanopyX.Data.CanopyDataSchema schema, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
 CanopyX.AspNetCore.CanopyRemoteScript.static System.String Script(CanopyX.Data.CanopyRecordSchema records, System.String endpoint, params System.ValueTuple<System.String, System.String>[]? exportFormats)
+CanopyX.AspNetCore.ICanopyFlowDraftStore : interface
+CanopyX.AspNetCore.ICanopyFlowDraftStore.abstract System.Threading.Tasks.Task ClearAsync(Microsoft.AspNetCore.Http.HttpContext context, System.String flowId, System.Threading.CancellationToken cancellationToken)
+CanopyX.AspNetCore.ICanopyFlowDraftStore.abstract System.Threading.Tasks.Task SaveAsync(Microsoft.AspNetCore.Http.HttpContext context, System.String flowId, System.String draftJson, System.Threading.CancellationToken cancellationToken)
+CanopyX.AspNetCore.ICanopyFlowDraftStore.abstract System.Threading.Tasks.Task<System.String?> LoadAsync(Microsoft.AspNetCore.Http.HttpContext context, System.String flowId, System.Threading.CancellationToken cancellationToken)
