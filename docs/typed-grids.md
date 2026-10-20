@@ -23,6 +23,7 @@ grid.AddRows(servers).View.SaveHtmlPage("servers.html");
 
 | Member | What it does |
 | --- | --- |
+| `new CanopyDataGridView<T>(id, label, x => x.Key)` | The identity is a string, or a number (`Func<T, long>`), written as invariant digits; numeric keys keep their natural order (2 before 10) when no sort applies. A `null` identity now needs a cast to pick the overload. |
 | `Column(x => x.Member, title, configure, cell)` | Adds a column. Its id is the member path in camel case (`x => x.Owner.Team` is `ownerTeam`), its title the path as words unless you give one, and its kind follows the member type: numbers are number columns; `DateTime`, `DateTimeOffset` and `DateOnly` are date columns; everything else is text. `configure` sets any other column option; `cell` writes a value's cell (display text, tone) instead of the raw value. |
 | `Column("id", x => …, …)` | The same with an explicit id, for any expression of the record. |
 | `StatusStrip(x => x.Hours, title, configure, state)` | A status strip column for a member holding `CanopyCellPeriod`s (one toned segment per period). It is a text column whose raw value is the latest period's state, or the summary `state` returns ("3 of 24 failing"), so it sorts, filters, searches and exports by that. |

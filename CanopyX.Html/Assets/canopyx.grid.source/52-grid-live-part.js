@@ -11,7 +11,7 @@
     gridLiveRecordRemoved: "This record was removed."
   }));
   const GRID_LIVE = definePart(DataGrid, "live", "live data", () => ({ DataGrid, h, setText, fill, gridButton, gridIcon, gridQuery, gridResultShape,
-    gridQueryRows, gridCompare, gridOrder, validateGridRows, validateGridPage, validateGridCursorPage, gridFreeze, requireIdentifier, checkDocument,
+    gridQueryRows, gridCompare, gridOrder, gridIdOrder, validateGridRows, validateGridPage, validateGridCursorPage, gridFreeze, requireIdentifier, checkDocument,
     cellValue, PROTOCOL, GRID_REPORTING, VIEW_MODES, inlineGridSource }));
   // The API members the part implements; createDataGrid looks them up on each call, so they switch to the part once it is in.
   const GRID_LIVE_API = ["applyTransaction", "addRows", "updateRows", "removeRows", "setRows", "flushTransactions", "refreshRows", "resort", "poll"];

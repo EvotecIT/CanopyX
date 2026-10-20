@@ -498,6 +498,7 @@ CanopyX.CanopyDataGridView.System.String? Noun { get; set; }
 CanopyX.CanopyDataGridView.System.String? StateKey { get; set; }
 CanopyX.CanopyDataGridView.System.Void Validate()
 CanopyX.CanopyDataGridView<T> : sealed class
+CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, System.Func<T, System.Int64> identity)
 CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, System.Func<T, System.String> identity)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyCalendar<T> Calendar()
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Column<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
@@ -1291,6 +1292,7 @@ CanopyX.CanopyGridReporting.System.Collections.Generic.IList<CanopyX.CanopyGridG
 CanopyX.CanopyGridReporting.System.Collections.Generic.IList<System.String> FacetColumns { get; }
 CanopyX.CanopyGridReporting.System.Int32 MinimumCenterWidth { get; set; }
 CanopyX.CanopyGridRow : sealed class
+CanopyX.CanopyGridRow..ctor(System.Int64 id)
 CanopyX.CanopyGridRow..ctor(System.String id)
 CanopyX.CanopyGridRow.CanopyX.CanopyDetail? Detail { get; set; }
 CanopyX.CanopyGridRow.CanopyX.CanopyTone Tone { get; set; }
@@ -2201,6 +2203,10 @@ CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Auto = 0
 CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Compact = 2
 CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat CompactGzip = 3
 CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Objects = 1
+CanopyX.CanopyRowIdentity : static class
+CanopyX.CanopyRowIdentity.static System.Boolean IsInteger(System.String? id)
+CanopyX.CanopyRowIdentity.static System.Int32 Compare(System.String? left, System.String? right)
+CanopyX.CanopyRowIdentity.static System.String Format(System.Int64 key)
 CanopyX.CanopySearchHighlight : sealed class
 CanopyX.CanopySearchHighlight..ctor()
 CanopyX.CanopySearchHighlight.System.Boolean Enabled { get; set; }

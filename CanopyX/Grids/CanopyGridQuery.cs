@@ -7,7 +7,7 @@ namespace CanopyX;
 /// <summary>The accepted full-dataset query and requested result window of a flat data grid.</summary>
 /// <remarks>
 /// Search, all flat column predicates and the optional nested group are combined with AND, followed by the ordered sort keys and a stable
-/// ordinal row-identity tie-breaker. Missing values sort last in either direction. Paging is applied last.
+/// row-identity tie-breaker (<see cref="CanopyRowIdentity.Compare"/>). Missing values sort last in either direction. Paging is applied last.
 /// Host query engines implement this contract without transferring their domain logic to CanopyX.
 /// </remarks>
 public sealed class CanopyGridQuery {

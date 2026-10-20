@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "40fe19a1046d6813",
+      "version": "21e2a9677e4ec451",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -282,7 +282,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "d942108ffbc023b6",
+      "version": "0970f2edbcb32de8",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -353,7 +353,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "2fa02b9178c6c5df",
+      "version": "e49f69556b65916b",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

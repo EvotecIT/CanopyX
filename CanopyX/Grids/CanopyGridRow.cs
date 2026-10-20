@@ -17,6 +17,11 @@ public sealed class CanopyGridRow {
         Id = id;
     }
 
+    /// <summary>Creates a row from a numeric key, written with <see cref="CanopyRowIdentity.Format"/> (invariant digits).</summary>
+    /// <param name="id">The stable numeric key, unique throughout the dataset. Non-negative keys keep their numeric order in the grid.</param>
+    public CanopyGridRow(long id) : this(CanopyRowIdentity.Format(id)) {
+    }
+
     /// <summary>Gets the stable dataset identity.</summary>
     public string Id { get; }
 

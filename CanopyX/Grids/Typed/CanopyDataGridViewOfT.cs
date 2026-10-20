@@ -36,6 +36,19 @@ public sealed partial class CanopyDataGridView<T> {
         View = new CanopyDataGridView(id, label);
     }
 
+    /// <summary>Creates a typed grid whose records are keyed by a number, written as invariant digits (<see cref="CanopyRowIdentity.Format"/>).</summary>
+    /// <param name="id">The grid's identity.</param>
+    /// <param name="label">The grid's visible label.</param>
+    /// <param name="identity">Returns each record's stable numeric key, unique in the dataset; non-negative keys keep their numeric order.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="identity"/> is null.</exception>
+    public CanopyDataGridView(string id, string label, Func<T, long> identity) : this(id, label, NumericIdentity(identity)) {
+    }
+
+    private static Func<T, string> NumericIdentity(Func<T, long> identity) {
+        if (identity == null) throw new ArgumentNullException(nameof(identity));
+        return record => CanopyRowIdentity.Format(identity(record));
+    }
+
     /// <summary>Gets the untyped grid definition the typed members write to.</summary>
     public CanopyDataGridView View { get; }
 
