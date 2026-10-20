@@ -81,6 +81,19 @@ public sealed class FlowHostContractTests {
         Assert.Equal(CanopyRuntime.Flow, CanopyHtmlAssets.GetRuntime(FlowSamples.MailServer()));
     }
 
+    [Fact]
+    public void Html_RequiredParts_AreTheFeaturePartsTheFlowUses() {
+        // Every host-connected feature but the preview, and the shared flow-host part they require.
+        var parts = CanopyHtmlAssets.GetRequiredParts(Everything()).Select(part => part.Name).Where(name => name.StartsWith("flow-", StringComparison.Ordinal)).OrderBy(name => name, StringComparer.Ordinal);
+        Assert.Equal(new[] { "flow-checks", "flow-command", "flow-consent", "flow-dialog", "flow-drafts", "flow-endpoint", "flow-host", "flow-links", "flow-options", "flow-pick", "flow-records", "flow-tasks" }, parts);
+        // A plain form loads none of them.
+        Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(FlowSamples.MailServer()), part => part.Name.StartsWith("flow-", StringComparison.Ordinal));
+        // A review page that shows the host's preview loads the preview part.
+        var previewing = FlowSamples.MailServer();
+        previewing.Steps[^1].Preview();
+        Assert.Contains(CanopyHtmlAssets.GetRequiredParts(previewing), part => part.Name == "flow-preview");
+    }
+
     public static IEnumerable<object[]> Problems() {
         static CanopyFlowField Field(CanopyFlow flow, string id) => flow.Steps.SelectMany(step => step.Fields).First(field => field.Id == id);
         yield return Case(flow => Field(flow, "region").DependsOnIds.Add("password"), "depends on the secret field");

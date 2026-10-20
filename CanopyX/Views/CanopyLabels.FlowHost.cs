@@ -13,6 +13,10 @@ public sealed partial class CanopyLabels {
     public string FlowOptionsFailed { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the text for the button that asks the host again. Default "Try again".</summary>
     public string FlowRetry { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the text for the review page's button that runs a server check again. Default "Run again".</summary>
+    public string FlowRunAgain { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the accessible name of the review page's button that runs a server check again, <c>{check}</c> the check. Default "Run “{check}” again".</summary>
+    public string FlowRunCheckAgain { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the text for the line in a host section while its fields load. Default "Loading fields…".</summary>
     public string FlowFieldsLoading { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the text for the line in a host section whose fields failed, including <c>{message}</c>. Default "The fields could not load: {message}".</summary>
@@ -131,8 +135,6 @@ public sealed partial class CanopyLabels {
     public string FlowPatchTab { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the text for the title of the equivalent command panel. Default "Equivalent command".</summary>
     public string FlowCommandTitle { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the text for the title of the panel when a flow has no command. Default "Changes as JSON patch".</summary>
-    public string FlowPatchTitle { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the text for the heading of the host's preview. Default "Preview".</summary>
     public string FlowPreview { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the text for the host's preview while it loads. Default "Loading the preview…".</summary>

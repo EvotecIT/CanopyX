@@ -24,7 +24,7 @@
       }
       const value = this.values.get(field.id) ?? null;
       if (field.type === "toggle") return field.required && value !== true ? fill(labels.gridEditRequired, { column: title }) : null;
-      if (field.kind === "records") return flowRecordsProblem(this, field, value || []);
+      if (field.kind === "records") return flowHost("records").problem(this, field, value || []);
       if (field.kind === "list" || field.kind === "pick") {
         const items = value || [], rules = field.items;
         if (!items.length) return field.required ? field.spec.rules.message || fill(labels.gridEditRequired, { column: title }) : null;
@@ -120,13 +120,14 @@
         else this.errors.set(field.id, message);
         if (local) failing.push({ field: field.id, step: step.id, message: local });
       });
-      // Required checks gate the step: Next runs the ones that have not run on these answers (53-flow-checks.js).
-      const gate = step.checks.length ? await this.checkGate(step, show && !failing.length && !result.errors.length) : [];
-      if (this.destroyed || this.generation !== generation || !current()) return { valid: false, errors: [], warnings: [], moved: true };
-      const stepMessages = [...result.errors, ...gate];
-      if (stepMessages.length) this.stepErrors.set(step.id, stepMessages.join(" ")); else this.stepErrors.delete(step.id);
+      // Required checks gate the step: Next runs the ones that have not run on these answers (the flow-checks part).
+      if (step.checks.length) {
+        result.errors.push(...await this.checkGate(step, show && !failing.length && !result.errors.length));
+        if (this.destroyed || this.generation !== generation || !current()) return { valid: false, errors: [], warnings: [], moved: true };
+      }
+      if (result.errors.length) this.stepErrors.set(step.id, result.errors.join(" ")); else this.stepErrors.delete(step.id);
       const errors = failing;
-      for (const message of stepMessages) errors.push({ step: step.id, message });
+      for (const message of result.errors) errors.push({ step: step.id, message });
       return { valid: stable && !errors.length, errors, warnings: result.warnings.map(message => ({ step: step.id, message })), moved };
     },
 

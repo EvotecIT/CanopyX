@@ -1,13 +1,66 @@
-  // ---------- flow: task lists (mode "tasks", docs/flow.md#task-lists) ----------
+  // ---------- the flow-tasks part: task lists (mode "tasks", docs/flow.md#task-lists) ----------
   // The flow opens on a hub: its visible steps as task rows (grouped by their group), each a full-width button with its state
   // in words and an icon, the host's one-line summary and its blockers, under an "X of Y complete" line. A task opens as a
   // step and Save and return brings the reader back. The host can set states through hooks.status(values, { signal }) or
   // setStepState(stepId, { state, summary, blockers }): complete, needsAction, blocked or notStarted. Review and submit opens
   // once every required task (not optional) is complete and none needs action or is blocked.
+  const FLOW_PART_LABELS = {
+    flowTasks: "Tasks",
+    flowTasksProgress: "{done} of {count} tasks complete",
+    flowTaskNeedsAction: "Needs action",
+    flowTaskBlocked: "Cannot start yet",
+    flowTasksReview: "Review and submit",
+    flowTasksIncomplete: "Complete the required tasks first.",
+    flowBackToTasks: "Back to tasks",
+    flowSaveAndReturn: "Save and return"
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
   const FLOW_TASK_STATES = ["complete", "needsAction", "blocked", "notStarted"];
   const FLOW_TASK_MARKS = { complete: "✓", error: "!", needsAction: "!", blocked: "—", notStarted: "" };
+  // The stepper's navigation, which a flow that is not a task list keeps.
+  const { back: flowStepBack, goTo: flowStepGoTo, renderStage: flowStepStage, renderRail: flowStepRail, renderActions: flowStepActions, lastStep: flowLastStep,
+    orientation: flowOrientation, begin: flowTaskBegin } = FlowView.prototype;
 
   Object.assign(FlowView.prototype, {
+    /** A task list opens on its hub, a page of its own that is not one of the document's steps. */
+    begin(values) {
+      this.hub ??= this.model.mode === "tasks" ? { id: "#tasks", type: "hub", title: null, asks: false, blocks: [], checks: [] } : null;
+      flowTaskBegin.call(this, values);
+    },
+    orientation() { return this.hub ? "tasks" : flowOrientation.call(this); },
+    /** A task list submits from its review page. */
+    lastStep() { return this.hub ? this.step.type === "review" : flowLastStep.call(this); },
+    /** The hub has its own actions; a task's Back returns to the hub and its Next saves and returns. */
+    renderActions() {
+      if (!this.hub || this.phase !== "form") return flowStepActions.call(this);
+      if (this.step === this.hub) { this.actions.replaceChildren(); this.actions.hidden = false; this.hubActions(); return; }
+      flowStepActions.call(this);
+      const back = this.actions.querySelector(".cx-flow-back");
+      setText(back, this.labels.flowBackToTasks); back.hidden = false;
+      if (!this.lastStep()) setText(this.actions.querySelector(".cx-flow-next"), this.labels.flowSaveAndReturn);
+    },
+    /** The hub's button of a task, where focus returns from it, as a list does after its item's page. */
+    taskButton(step) { return step !== this.hub && this.stage.querySelector('[data-cx-task="' + CSS.escape(step.id) + '"] button'); },
+    /** Back returns a task to the hub. */
+    async back() { return this.hub ? !this.busy && this.phase === "form" && this.step !== this.hub && this.go(this.hub, "back") : flowStepBack.call(this); },
+    /** Opens the hub ("#tasks"), a task that is not blocked, or the review page once every required task is complete. */
+    async goTo(id) {
+      if (!this.hub) return flowStepGoTo.call(this, id);
+      if (this.busy || this.phase !== "form") return false;
+      if (id === this.hub.id) return this.go(this.hub, "back");
+      const target = this.visibleSteps().find(step => step.id === id);
+      return target && this.taskOpens(target) ? this.go(target, "forward") : false;
+    },
+    /** The hub is drawn afresh each time it opens, from the answers and the host's states. */
+    renderStage() { if (this.hub && this.step === this.hub && this.phase === "form") this.stage.replaceChildren(this.hubSection()); else flowStepStage.call(this); },
+    /** A task list has its hub instead of a rail; the hub follows the answers. It keeps the key of the visible steps too, so an
+     *  answer that leaves them alone never repaints the page mid-click. */
+    renderRail() {
+      if (!this.hub) return flowStepRail.call(this);
+      if (!this.root) return;
+      this.railKey = this.visibleSteps().map(step => step.id).join();
+      if (this.step === this.hub && this.phase === "form") this.paintHub();
+    },
     tasks() { return this.visibleSteps().filter(step => step.type !== "review"); },
     counted(step) { return step.asks && !step.optional; },
 
@@ -96,7 +149,7 @@
         (review ? this.goTo(review.id) : this.submit()).catch(error => this.report(error, review ? "goTo" : "submit"));
       });
       if (this.busy) { go.disabled = true; go.setAttribute("aria-busy", "true"); }
-      this.actions.append(...this.quietActions(), note, h("span", "cx-flow-spacer"), go);
+      this.actions.append(...[this.draftButton?.(), this.cancelButton?.()].filter(Boolean), note, h("span", "cx-flow-spacer"), go);
     },
 
     /** Asks the host for the tasks' states (hooks.status); a later answer replaces an earlier one. */
@@ -114,6 +167,7 @@
 
     /** Sets a task's state as the host sees it (api.setStepState); null returns it to what the answers say. */
     setStepState(id, state) {
+      if (!this.hub) flowFail("this flow does not use setStepState");
       if (!this.model.steps.some(step => step.id === id)) flowFail("there is no step '" + id + "'");
       this.applyStepState(id, state);
       if (this.step === this.hub) this.paintHub(); else this.renderRail();

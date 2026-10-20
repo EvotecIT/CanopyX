@@ -22,7 +22,7 @@ const DOC = {
 
 /** Serves the flow page over http, answers the endpoint's routes with answer(route, method, body), and mounts the document. */
 async function mount(page, answer) {
-  const html = fs.readFileSync(new URL(exampleUrl("flow-mail-checks.html")), "utf8");
+  const html = fs.readFileSync(new URL(exampleUrl("flow-workbench.html")), "utf8");
   const requests = [];
   await page.route(ORIGIN + "/page.html", route => route.fulfill({ contentType: "text/html", body: html }));
   await page.route(ORIGIN + "/api/flows/relay/*", async route => {

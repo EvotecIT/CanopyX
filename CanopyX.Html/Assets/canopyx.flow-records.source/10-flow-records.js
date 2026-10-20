@@ -1,7 +1,61 @@
-  // ---------- flow: records fields, rows of typed cells edited as a small table (docs/flow.md#records) ----------
+  // ---------- the flow-records part: records fields, rows of typed cells edited as a small table (docs/flow.md#records-fields) ----------
   // Each cell uses the forms part's editor for its column type, as grid editing does, so a records field needs no grid
   // runtime and works on a flow-only page. Rows are added and removed with buttons; the value is a list of { column: value }.
   // Every cell's control is named "<column>, row <n>", so a reader always knows where they are.
+  const FLOW_PART_LABELS = {
+    flowRecordActions: "Actions",
+    flowRecordCell: "{column}, row {row}",
+    flowRecordRemove: "Remove row {row}",
+    flowRecordAdd: "Add row",
+    flowRecordsEmpty: "No rows yet.",
+    flowRecordProblem: "Row {row}: {message}",
+    flowRecordsCount: "[one]{count} row[other]{count} rows"
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
+  const FLOW_RECORD_TYPES = ["text", "number", "date", "time", "select", "toggle"];
+
+  /** The columns of a records field: a typed cell each, with the forms part's checks. */
+  function flowRecordColumns(raw, bad) {
+    if (!Array.isArray(raw) || !raw.length || raw.length > 16) bad("needs 1 to 16 columns");
+    const ids = new Set();
+    return raw.map(column => {
+      flowKeys(column, ["id", "title", "type", "required", "options", "validation", "width"], "A records column");
+      const id = flowName(column.id, "A column id"), type = column.type ?? "text", rules = column.validation ?? {};
+      if (ids.has(id)) bad("has two columns named " + id);
+      ids.add(id);
+      if (!FLOW_RECORD_TYPES.includes(type)) bad("has a column of an unknown type");
+      flowKeys(rules, ["min", "max", "minLength", "maxLength", "pattern", "message"], "The validation of column " + id);
+      if ((rules.min !== undefined || rules.max !== undefined) && type !== "number" || [rules.minLength, rules.maxLength, rules.pattern].some(value => value !== undefined) && type !== "text") bad("has checks its column type does not take");
+      if ((column.options !== undefined) !== (type === "select") || type === "select" && !(Array.isArray(column.options) && column.options.length)) bad("needs options as a select column only");
+      if (column.width !== undefined && (!Number.isInteger(column.width) || column.width < 60 || column.width > 480)) bad("needs a column width of 60 to 480 pixels");
+      const required = flowFlag(column.required, "required"), shared = formRuleSpec({}, { required, min: rules.min, max: rules.max, minLength: rules.minLength, maxLength: rules.maxLength,
+        pattern: rules.pattern, message: rules.message }, bad);
+      return Object.freeze({ id, title: flowString(column.title, 200, "A column title", true), type, required, width: column.width ?? null,
+        options: type === "select" ? flowOptions(column.options, bad) : [], spec: Object.freeze({ id, pattern: shared.pattern, rules: shared.rules }) });
+    });
+  }
+
+  /** Whether one cell value fits its records column. */
+  function flowCellFits(column, value) {
+    if (value === null) return true;
+    switch (column.type) {
+      case "number": return Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
+      case "toggle": return typeof value === "boolean";
+      case "date": return flowFits({ type: "date" }, value);
+      case "time": return flowFits({ type: "time" }, value);
+      case "select": return column.options.some(option => option.value === value);
+      default: return typeof value === "string" && value.length <= 4096;
+    }
+  }
+
+  FLOW_HOST.records = {
+    columns: flowRecordColumns,
+    fits: (field, value) => Array.isArray(value) && value.length <= 1000 && value.every(row => flowIs(row) &&
+      Object.keys(row).every(key => field.columns.some(column => column.id === key)) && field.columns.every(column => flowCellFits(column, row[column.id] ?? null))),
+    input: (context, field, view) => flowRecordsInput(context, field, view),
+    problem: (view, field, rows) => flowRecordsProblem(view, field, rows),
+    display: (view, value) => fill(plural(view.labels.flowRecordsCount, value.length, view.lang), { count: numberFormat(view.lang, 0, 0).format(value.length) })
+  };
   function flowRecordsInput(context, field, view) {
     const labels = view.labels, group = h("div", "cx-flow-records"), table = h("table", "cx-flow-records-table"), head = h("thead"), body = h("tbody");
     const add = h("button", "cx-flow-btn cx-flow-list-add"), rows = [], max = field.items.max ?? 1000;

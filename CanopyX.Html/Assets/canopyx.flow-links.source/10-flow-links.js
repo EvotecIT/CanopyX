@@ -1,13 +1,12 @@
-  // ---------- flow: deep links per step (deepLinks, docs/flow.md#deep-links) ----------
+  // ---------- the flow-links part: deep links per step (deepLinks, docs/flow.md#deep-links) ----------
   // With deepLinks the page's own address names the open step, #<flow id>/<step id> (#<flow id> for a task list's hub), the
   // way trees write theirs: replaceState, so steps do not fill the browser history. Opening the page, or following such a
   // link later, opens that step; in a linear flow a later step than the first incomplete one opens that step instead. A host
   // with a scheme of its own supplies formatLink(stepId) and parseLink(fragment). Answers never go in the address.
+  FLOW_HOST.links = { document(doc, model) { model.deepLinks = flowFlag(doc.deepLinks, "deepLinks"); } };
   Object.assign(FlowView.prototype, {
-    /** What follows the first paint: drafts, presets the host keeps, deep links and a dialog a link opens. */
-    startHostFeatures() {
-      this.loadPresets?.();
-      this.loadDraft?.();
+    /** After the first paint: the step the address names opens, now and whenever the address changes. */
+    startLinks() {
       if (!this.model.deepLinks) return;
       const read = () => this.followLink();
       global.addEventListener("hashchange", read, { signal: this.lifetime.signal });
@@ -37,9 +36,8 @@
       this.goTo(id).catch(error => this.report(error, "goTo"));
     },
 
-    /** After a step change: the address names the open step, and the draft follows. */
-    stepMoved() {
-      this.draftChanged?.(true);
+    /** After a step change: the address names the open step. */
+    linkMoved() {
       if (!this.model.deepLinks || this.phase !== "form") return;
       const link = this.linkFor(this.step);
       if (link === null || global.location.hash === "#" + link) return;

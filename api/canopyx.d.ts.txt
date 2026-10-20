@@ -814,6 +814,7 @@ export interface FlowStep{
   pick?:FlowPick;
   confirm?:{label:string;text?:string;field?:string};
   acknowledge?:{label:string;when?:FlowCondition};
+  preview?:boolean;
 }
 export interface FlowDocument{
   kind:"flow";

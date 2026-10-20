@@ -919,10 +919,12 @@ CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Declaration(System.String text)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Describe(System.String text)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Group(System.String label)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Optional()
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Preview()
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Section(System.String id, System.String label, System.Action<CanopyX.CanopyFlowSection> configure)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep When(CanopyX.CanopyFlowCondition condition)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStepKind Kind { get; set; }
 CanopyX.CanopyFlowStep.System.Boolean IsOptional { get; set; }
+CanopyX.CanopyFlowStep.System.Boolean ShowsPreview { get; set; }
 CanopyX.CanopyFlowStep.System.Collections.Generic.IList<CanopyX.CanopyFlowCheck> Checks { get; }
 CanopyX.CanopyFlowStep.System.Collections.Generic.IList<CanopyX.CanopyFlowSection> Sections { get; }
 CanopyX.CanopyFlowStep.System.Nullable<System.Boolean> ShowChangesOnly { get; set; }
@@ -1710,7 +1712,6 @@ CanopyX.CanopyLabels.System.String FlowOptional { get; set; }
 CanopyX.CanopyLabels.System.String FlowOptionsFailed { get; set; }
 CanopyX.CanopyLabels.System.String FlowOptionsLoading { get; set; }
 CanopyX.CanopyLabels.System.String FlowPatchTab { get; set; }
-CanopyX.CanopyLabels.System.String FlowPatchTitle { get; set; }
 CanopyX.CanopyLabels.System.String FlowPickChosen { get; set; }
 CanopyX.CanopyLabels.System.String FlowPickCount { get; set; }
 CanopyX.CanopyLabels.System.String FlowPickMore { get; set; }
@@ -1742,6 +1743,8 @@ CanopyX.CanopyLabels.System.String FlowReload { get; set; }
 CanopyX.CanopyLabels.System.String FlowRemoveItem { get; set; }
 CanopyX.CanopyLabels.System.String FlowRetry { get; set; }
 CanopyX.CanopyLabels.System.String FlowReviewTitle { get; set; }
+CanopyX.CanopyLabels.System.String FlowRunAgain { get; set; }
+CanopyX.CanopyLabels.System.String FlowRunCheckAgain { get; set; }
 CanopyX.CanopyLabels.System.String FlowSaveAndReturn { get; set; }
 CanopyX.CanopyLabels.System.String FlowSaveDraft { get; set; }
 CanopyX.CanopyLabels.System.String FlowSaved { get; set; }

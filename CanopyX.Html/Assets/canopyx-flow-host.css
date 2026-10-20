@@ -1,0 +1,5 @@
+/* Flow-host part: what the host-connected parts share,loading lines and quiet buttons. Each feature part brings its own */
+.cx-flow-loading{margin-top:var(--cx-size-4px);font-size:var(--cx-size-13px);color:var(--cx-muted);}
+.cx-flow-loading.cx-flow-error{color:var(--cx-tone-danger);}
+.cx-flow-btn.cx-flow-quiet{border-color:transparent;background:transparent;color:var(--cx-text-2);}
+.cx-flow-btn.cx-flow-quiet:hover{background:var(--cx-hover-bg);color:var(--cx-text);}

@@ -60,6 +60,16 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
     /// <summary>Gets or sets the acknowledgement of a review step.</summary>
     public CanopyFlowAcknowledgement? Acknowledgement { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether a review step shows the host's preview of what submitting does (the <c>preview</c> hook or an
+    /// endpoint's route), so a page written as one file carries the preview part.
+    /// </summary>
+    public bool ShowsPreview { get; set; }
+
+    /// <summary>Shows the host's preview on a review step (<see cref="ShowsPreview"/>).</summary>
+    /// <returns>The step.</returns>
+    public CanopyFlowStep Preview() { ShowsPreview = true; return this; }
+
     /// <summary>Adds a server check to a form step (<see cref="Checks"/>).</summary>
     /// <param name="id">The check id, unique among the flow's checks.</param>
     /// <param name="label">The button's text.</param>
@@ -180,6 +190,7 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
 
         writer.OptionalProperty("declaration", DeclarationText);
         if (ShowChangesOnly.HasValue) writer.Property("changesOnly", ShowChangesOnly.Value);
+        if (ShowsPreview) writer.Property("preview", true);
         if (Confirmation != null) {
             writer.Name("confirm");
             Confirmation.WriteJson(writer);
@@ -195,7 +206,7 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
 
     internal static CanopyFlowStep Read(object? node) {
         var map = CanopyFlowContract.Object(node, "A step", "id", "type", "title", "description", "optional", "when", "fields", "sections", "declaration", "changesOnly",
-            "checks", "group", "pick", "confirm", "acknowledge");
+            "checks", "group", "pick", "confirm", "acknowledge", "preview");
         var id = CanopyFlowContract.RequiredText(map, "id", "A step");
         if (!CanopyFlowValues.IsIdentifier(id)) throw new InvalidOperationException("A step has an invalid id.");
         var what = "Step " + id;
@@ -204,7 +215,8 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
             IsOptional = CanopyFlowContract.Boolean(map, "optional", what) ?? false,
             DeclarationText = CanopyFlowContract.Text(map, "declaration", what),
             ShowChangesOnly = CanopyFlowContract.Boolean(map, "changesOnly", what),
-            GroupLabel = CanopyFlowContract.Text(map, "group", what)
+            GroupLabel = CanopyFlowContract.Text(map, "group", what),
+            ShowsPreview = CanopyFlowContract.Boolean(map, "preview", what) ?? false
         };
         var type = CanopyFlowContract.Text(map, "type", what);
         if (type != null) step.Kind = CanopyFlowContract.Choose(type, what, "type", ("form", CanopyFlowStepKind.Form), ("info", CanopyFlowStepKind.Info), ("review", CanopyFlowStepKind.Review), ("pick", CanopyFlowStepKind.Pick));

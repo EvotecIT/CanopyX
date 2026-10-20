@@ -1,5 +1,5 @@
 {
-  "about": "The equivalent command of a flow's answers. C# (CanopyFlowCommandLine, FlowCommandFixtureTests and the server's CanopyFlowSubmission) and the browser (64-flow-command.js, flow-host-commands.spec.mjs) both write every case's command from its document, values and typed secrets.",
+  "about": "The equivalent command of a flow's answers. C# (CanopyFlowCommandLine, FlowCommandFixtureTests and the server's CanopyFlowSubmission) and the browser (the flow-command part, flow-host-commands.spec.mjs) both write every case's command from its document, values and typed secrets.",
   "cases": [
     {
       "name": "PowerShell, create mode: defaults left out, a switch turned off, a list and a typed secret",

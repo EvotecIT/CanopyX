@@ -1,0 +1,14 @@
+/* The flow-dialog part: dialogs and drawers. */
+.cx-flow { --cx-size-560px:560px; }
+.cx-flow-launcher { display:contents; }
+.cx-flow-launcher > .cx-flow-launch { height:auto;min-height:var(--cx-size-36px);padding:0 var(--cx-size-16px); }
+.cx-flow-dialog { box-sizing:border-box;width:min(var(--cx-size-640px),calc(var(--cx-size-100vw) - var(--cx-size-32px)));max-height:calc(var(--cx-size-100vh) - var(--cx-size-32px));padding:0;border:0;border-radius:var(--cx-size-8px);
+  background:transparent;color:var(--cx-text);overflow:auto;box-shadow:0 var(--cx-size-24px) var(--cx-size-64px) color-mix(in srgb,var(--cx-shadow-ink,#000) 32%,transparent); }
+.cx-flow-dialog::backdrop { background:color-mix(in srgb,var(--cx-shadow-ink,#000) 38%,transparent); }
+.cx-flow-dialog.cx-flow-drawer { margin:0 0 0 auto;inset-inline-end:0;inset-inline-start:auto;width:min(var(--cx-size-560px,560px),var(--cx-size-100vw));height:var(--cx-size-100vh);max-height:none;border-radius:0; }
+.cx-flow-dialog.cx-flow-drawer > .cx-flow { min-height:100%;border-radius:0;border-block:0;border-inline-end:0; }
+.cx-flow-head-close { position:relative;padding-inline-end:calc(var(--cx-flow-pad) + var(--cx-size-36px)); }
+.cx-flow-close { position:absolute;inset-block-start:var(--cx-size-10px);inset-inline-end:var(--cx-size-10px);border-color:transparent;background:transparent; }
+.cx-flow-discard { display:flex;flex-wrap:wrap;align-items:center;gap:var(--cx-size-8px) var(--cx-size-12px);padding:var(--cx-size-10px) var(--cx-flow-pad);border-bottom:var(--cx-size-1px) solid var(--cx-line);background:var(--cx-tone-warning-bg); }
+.cx-flow-discard p { flex:1;font-weight:600; }
+@media (max-width:639.98px) { .cx-flow-dialog,.cx-flow-dialog.cx-flow-drawer { width:var(--cx-size-100vw);max-width:none;height:var(--cx-size-100vh);max-height:none;margin:0;border-radius:0; } .cx-flow-dialog > .cx-flow { min-height:100%;border-radius:0;border:0; } }

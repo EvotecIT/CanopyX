@@ -39,7 +39,7 @@ internal static class FlowMailChecksExample {
                 .Column("address", "Send to", CanopyFlowRecordColumnKind.Text, column => column.Required())
                 .Column("quiet", "Quiet hours", CanopyFlowRecordColumnKind.Toggle)
                 .Count(null, 10).Help("Extra recipients by severity. Quiet hours hold information messages until the morning.").Path("mail.rules")));
-        flow.Review(review => review.Declaration("Saving applies the settings to new messages. Messages in the queue keep their old route."));
+        flow.Review(review => review.Preview().Declaration("Saving applies the settings to new messages. Messages in the queue keep their old route."));
         flow.Preset("office", "Office relay", preset => preset.Value("host", "relay.office.example.com").Value("port", 25d).Value("security", "none").Value("region", "eu"));
         flow.Preset("cloud", "Cloud mail service", preset => preset.Value("host", "smtp.mail.example.net").Value("port", 587d).Value("security", "starttls").Value("region", "us"));
         flow.Initial["host"] = "mail.example.com";

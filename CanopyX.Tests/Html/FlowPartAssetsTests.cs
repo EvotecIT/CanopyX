@@ -29,9 +29,35 @@ public sealed class FlowPartAssetsTests {
         Assert.NotNull(part.Style);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         var size = Gzip(part.Script) + Gzip(part.Style!);
-        // Flow wave F2 (host checks, options, pickers, records, task lists, dialogs, command, drafts, presets, links, endpoint):
-        // 50,304 bytes plus about 15%, rounded up to KiB. F1 was 25,419; TODO.md tracks moving the host features to a part of their own.
-        Assert.True(size <= 57 * 1024, "The flow part is " + size + " bytes gzip; the guard is 57 KiB.");
+        // The guard of flow wave F1 (28,120 bytes at F1). Wave F2 keeps it: the host-connected features ship in parts of their
+        // own (below), loaded only for a flow that uses them, and the flow part keeps only their seams.
+        Assert.True(size <= 29 * 1024, "The flow part is " + size + " bytes gzip; the guard is 29 KiB.");
+    }
+
+    /// <summary>The host-connected feature parts of flow wave F2: what each requires, and its guard (its size at F2 plus about 15%,
+    /// rounded up to KiB).</summary>
+    [Theory]
+    [InlineData("flow-host", 3, "flow")]
+    [InlineData("flow-checks", 6, "flow,flow-host")]
+    [InlineData("flow-options", 4, "flow,flow-host")]
+    [InlineData("flow-pick", 5, "flow,flow-host")]
+    [InlineData("flow-records", 5, "flow")]
+    [InlineData("flow-drafts", 6, "flow,flow-host")]
+    [InlineData("flow-preview", 2, "flow,flow-host")]
+    [InlineData("flow-command", 4, "flow")]
+    [InlineData("flow-tasks", 5, "flow,flow-host")]
+    [InlineData("flow-dialog", 3, "flow,flow-host")]
+    [InlineData("flow-links", 2, "flow,flow-host")]
+    [InlineData("flow-endpoint", 2, "flow,flow-host")]
+    [InlineData("flow-consent", 3, "flow")]
+    public void FlowFeaturePart_IsVersionedInlineSafeAndBounded(string name, int guardKiB, string requires) {
+        var part = CanopyHtmlAssets.GetPart(name);
+        Assert.Matches("^[a-f0-9]{16}$", part.Version);
+        Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid, CanopyRuntime.Flow }, part.Runtimes);
+        Assert.Equal(requires.Split(',', StringSplitOptions.None), part.Requires);
+        Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
+        var size = Gzip(part.Script) + (part.Style == null ? 0 : Gzip(part.Style));
+        Assert.True(size <= guardKiB * 1024, "The " + name + " part is " + size + " bytes gzip; the guard is " + guardKiB + " KiB.");
     }
 
     [Fact]

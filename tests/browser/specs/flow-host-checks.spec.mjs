@@ -100,3 +100,33 @@ test("the proposal carries the checks that ran on the submitted answers", async 
   expect(checks.connection.status).toBe("pass");
   expect(Date.parse(checks.connection.at)).not.toBeNaN();
 });
+
+test("a plain flow beside a host-connected flow stays plain: it edits, resets and goes away without errors", async ({ page }) => {
+  // Both mount as the page loads; the plain flow needs only the forms and flow parts, so it is usually built before the
+  // feature parts its neighbour loads, and those parts must leave it alone.
+  await page.addInitScript(() => document.addEventListener("DOMContentLoaded", () => {
+    const host = window.__plainHost = document.createElement("div");
+    document.body.appendChild(host);
+    window.__plain = window.CanopyX.createFlow(host, { flow: { kind: "flow", version: 1, id: "plain", title: "Plain", steps: [
+      { id: "one", title: "What is it called?", fields: [{ id: "name", type: "text", label: "Name" }] }, { id: "review", type: "review" }] } });
+  }));
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await openFlow(page, "flow-mail-checks.html");
+  const result = await page.evaluate(async () => {
+    const api = window.__plain;
+    await api.ready;
+    await api.setValues({ name: "Relay" });
+    const moved = await api.next();
+    const review = window.__plainHost.querySelector(".cx-flow-stage");
+    const extras = [".cx-flow-review-checks", ".cx-flow-command", ".cx-flow-preview", ".cx-flow-preset-line"].filter(selector => review.querySelector(selector));
+    let stepState = null;
+    try { api.setStepState("one", { state: "complete" }); } catch (error) { stepState = error.message; }
+    api.reset();
+    const step = api.getStep();
+    api.destroy();
+    return { moved, extras, stepState, step, left: window.__plainHost.children.length };
+  });
+  expect(result).toEqual({ moved: true, extras: [], stepState: "CanopyX: this flow does not use setStepState.", step: "one", left: 0 });
+  expect(errors).toEqual([]);
+});

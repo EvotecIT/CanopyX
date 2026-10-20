@@ -1,12 +1,83 @@
-  // ---------- flow: drafts and presets (docs/flow.md#drafts and #presets) ----------
+  // ---------- the flow-drafts part: drafts and presets (docs/flow.md#drafts and #presets) ----------
   // Drafts keep the answers (never secrets, never sensitive fields), the open step, the completed steps, the preset and the
   // edit baseline: in the session, in local storage when the page opts in, or in the host's draftStore { load, save, clear }.
   // A flow that finds a draft offers to resume it, and warns when the settings changed since (another baseline). Presets are
   // named starting answers from the document or the host's presetStore { list, save }; answers changed from the
   // preset carry a quiet "changed" mark, and the review page says how many changed.
+  const FLOW_PART_LABELS = {
+    flowChangedMark: "Changed",
+    flowSaveDraft: "Save draft",
+    flowDraftSaved: "Draft saved",
+    flowDraftFailed: "The draft was not saved.",
+    flowDraftFound: "Saved draft",
+    flowDraftFrom: "You have a draft saved {time}.",
+    flowDraftStale: "The settings changed after this draft was saved.",
+    flowDraftResume: "Resume where you left off",
+    flowDraftRestart: "Start again",
+    flowStartFrom: "Start from",
+    flowPresetSave: "Save as preset",
+    flowPresetNone: "Defaults",
+    flowPresetsSaved: "Saved presets",
+    flowPresetApplied: "Started from {preset}",
+    flowPresetName: "Preset name",
+    flowPresetFailed: "The preset was not saved.",
+    flowPresetSaved: "Saved the preset {preset}",
+    flowPresetChanges: "[one]Based on {preset}, {count} change[other]Based on {preset}, {count} changes",
+    flowPresetCurrent: "Current settings"
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
   const FLOW_DRAFT_DELAY = 800;
 
+  /** A preset: named starting answers. Never secrets; only fields that exist, with values that fit them. */
+  function flowPreset(raw, model) {
+    flowKeys(raw, ["id", "label", "description", "values"], "A preset");
+    const preset = { id: flowName(raw.id, "A preset id"), label: flowString(raw.label, 200, "A preset label", true), description: flowString(raw.description, 1000, "A preset description"), values: {} };
+    if (!flowIs(raw.values)) flowFail("preset " + preset.id + " needs an object of values");
+    for (const [id, value] of Object.entries(raw.values)) {
+      const field = model.fields.get(id);
+      if (!field || field.type === "secret" || !flowFits(field, value)) flowFail("preset " + preset.id + " has no value for '" + id + "' that fits a field");
+      preset.values[id] = value;
+    }
+    return Object.freeze(preset);
+  }
+
+  /** The quiet "changed" mark beside a field's label; it joins the label only while it shows. */
+  function flowMark(view, fv, on) {
+    if (on && !fv.mark) { fv.mark = h("span", "cx-flow-mark-changed"); setText(fv.mark, view.labels.flowChangedMark); }
+    if (on && fv.mark.parentNode !== fv.label) fv.label.appendChild(fv.mark); else if (!on) fv.mark?.remove();
+  }
+
+  const flowStateOf = FlowView.prototype.getState;
+  FLOW_HOST.drafts = {
+    /** The document's presets: at most 32, with distinct ids. */
+    presets(raw, model) {
+      if (!Array.isArray(raw) || raw.length > 32) flowFail("a flow has at most 32 presets");
+      const presets = raw.map(item => flowPreset(item, model));
+      if (new Set(presets.map(preset => preset.id)).size !== presets.length) flowFail("two presets share an id");
+      return presets;
+    },
+    /** The document's presets and draft store. */
+    document(doc, model) {
+      if (doc.presets !== undefined) model.presets = this.presets(doc.presets, model);
+      model.draft = doc.draft ?? "none";
+      if (!["none", "session", "local", "host"].includes(model.draft)) flowFail("the flow's draft store is unknown");
+    },
+    review: (view, section) => view.reviewPreset(section),
+    /** The preset the answers started from joins the proposal; a saved or accepted proposal ends the draft. */
+    proposal(view, proposal) { if (view.preset) proposal.preset = view.preset.id; },
+    settled: (view, answer) => view.draftSettled(answer)
+  };
   Object.assign(FlowView.prototype, {
+    /** The state names the preset the answers started from. */
+    getState() { const state = flowStateOf.call(this); if (this.preset) state.preset = this.preset.id; return state; },
+    /** Save draft, quiet beside Back, when the flow keeps drafts. */
+    draftButton() {
+      if (!this.draftStore()) return null;
+      const save = h("button", "cx-flow-btn cx-flow-quiet"); save.type = "button"; setText(save, this.labels.flowSaveDraft);
+      save.addEventListener("click", () => this.saveDraft(true).catch(error => this.report(error, "draft")));
+      return save;
+    },
+
     /** The draft store in use, or null: session or local storage, or the host's. */
     draftStore() {
       if (this.storeCache !== undefined) return this.storeCache;
@@ -98,6 +169,13 @@
     },
 
     // ---------- presets ----------
+    /** The review page's line: the preset the answers started from, and how many changed since. */
+    reviewPreset(section) {
+      if (!this.preset) return;
+      const line = h("p", "cx-flow-preset-line"), count = this.presetChanges();
+      setText(line, fill(plural(this.labels.flowPresetChanges, count, this.lang), { preset: this.preset.label, count }));
+      section.appendChild(line);
+    },
     buildPresets() {
       const store = this.hooks.presetStore;
       if (!this.model.presets.length && !(store && typeof store.list === "function")) return;
@@ -135,6 +213,8 @@
     presetBase(field) { return this.preset && Object.hasOwn(this.preset.values, field.id) ? this.preset.values[field.id] : this.startValues.get(field.id) ?? null; },
 
     /** Starts from a preset: the starting answers with the preset's on top. null goes back to the plain start. */
+    /** api.setPreset: the preset's answers, or none (null). */
+    setPreset(id) { this.applyPreset(id ?? null); },
     applyPreset(id) {
       const preset = id === null ? null : [...this.model.presets, ...this.userPresets || []].find(item => item.id === id);
       if (id !== null && !preset) flowFail("there is no preset '" + id + "'");
@@ -150,7 +230,7 @@
     },
     /** The quiet "changed" marks: answers that differ from the preset the reader started from. */
     markPreset() {
-      for (const fv of this.fields.values()) fv.changedMark?.(!!this.preset && fv.field.type !== "secret" && !flowSameValue(flowNormal(this.values.get(fv.field.id)), flowNormal(this.presetBase(fv.field))));
+      for (const fv of this.fields.values()) flowMark(this, fv, !!this.preset && fv.field.type !== "secret" && !flowSameValue(flowNormal(this.values.get(fv.field.id)), flowNormal(this.presetBase(fv.field))));
     },
     presetChanges() {
       return [...this.model.fields.values()].filter(field => field.type !== "secret" && this.visible(field) && !flowSameValue(flowNormal(this.values.get(field.id)), flowNormal(this.presetBase(field)))).length;

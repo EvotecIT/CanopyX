@@ -1,0 +1,6 @@
+/* The flow-consent part: the typed confirmation and the acknowledgement. */
+.cx-flow { --cx-size-560px:560px; }
+.cx-flow-confirm .cx-flow-input { margin-top:var(--cx-size-6px); }
+.cx-flow-acknowledge { align-items:flex-start;max-width:var(--cx-size-560px); }
+.cx-flow-acknowledge input { margin-top:var(--cx-size-2px); }
+.cx-flow-step > :is(.cx-flow-confirm,.cx-flow-acknowledge) { margin-top:var(--cx-flow-gap); }

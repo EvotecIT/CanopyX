@@ -125,6 +125,7 @@ FlowEditSettingsExample.Write(output);
 FlowMailChecksExample.Write(output);
 FlowSetupTasksExample.Write(output);
 FlowActOnRowsExample.Write(output);
+FlowWorkbenchExample.Write(output);
 MatrixExamples.Write(output);
 
 var largeTree = new SyntheticFileTree();

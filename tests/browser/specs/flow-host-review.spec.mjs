@@ -43,6 +43,27 @@ test("the review page shows the host's preview, the command with its variant and
   }
 });
 
+test("a check on the review page runs again in place, keeping the reader and focus on the review page", async ({ page }) => {
+  await openFlow(page, "flow-mail-checks.html");
+  await toReview(page);
+  const checks = page.locator(".cx-flow-review-checks");
+  const row = checks.locator(".cx-flow-answer").filter({ hasText: "Test the connection" });
+  await expect(row).toHaveAttribute("data-cx-state", "pass");
+  // A check is no answer: its row offers Run again, never Change.
+  await expect(checks.getByRole("button", { name: /^Change/ })).toHaveCount(0);
+  await flowCall(page, "setValues", { host: "other.example.com" });
+  await expect(row).toHaveAttribute("data-cx-state", "stale");
+  const again = page.getByRole("button", { name: "Run “Test the connection” again" });
+  await expect(again).toHaveText("Run again");
+  // From the keyboard (WebKit does not focus a clicked button): the repainted rows keep focus on the same check's button.
+  await again.focus();
+  await page.keyboard.press("Enter");
+  await expect(row).toHaveAttribute("data-cx-state", "pass");
+  await expect(stepTitle(page)).toHaveText("Check your answers");
+  expect(await page.evaluate(() => document.activeElement?.dataset.cxCheck)).toBe("connection");
+  // The page checked itself again after the run: its status line has an answer, not the ellipsis of a running check.
+  await expect(page.locator(".cx-flow-stage .cx-flow-banner").first()).not.toHaveText("…");
+});
 test("a preset sets its answers, edits after it carry a changed mark, and the review and proposal name it", async ({ page }) => {
   await openFlow(page, "flow-mail-checks.html");
   await page.evaluate(() => document.addEventListener("canopyx:flowSubmit", event => { window.__preset = event.detail.preset; }, { capture: true }));

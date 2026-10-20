@@ -30,10 +30,12 @@ internal static class FlowExamplePage {
 """;
 
     internal static void Write(string output, string name, CanopyFlow flow, string title, string? script = null, int width = 960,
-        CanopyLabels? labels = null, string language = "en", CanopyTextDirection direction = CanopyTextDirection.Auto, bool dark = true) {
+        CanopyLabels? labels = null, string language = "en", CanopyTextDirection direction = CanopyTextDirection.Auto, bool dark = true, IEnumerable<string>? parts = null) {
         if (labels != null) flow.Labels = labels;
         foreach (var theme in dark ? new[] { CanopyTheme.Light, CanopyTheme.Dark } : new[] { CanopyTheme.Light }) {
-            var page = flow.ToHtmlPage(new CanopyHtmlOptions { Title = title, Theme = theme, Language = language, Direction = direction });
+            var options = new CanopyHtmlOptions { Title = title, Theme = theme, Language = language, Direction = direction };
+            foreach (var part in parts ?? Enumerable.Empty<string>()) options.Parts.Add(part);
+            var page = flow.ToHtmlPage(options);
             File.WriteAllText(Path.Combine(output, name + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), Inject(page, theme, width, script));
         }
     }

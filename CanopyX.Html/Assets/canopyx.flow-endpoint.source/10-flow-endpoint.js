@@ -1,8 +1,22 @@
-  // ---------- flow: an endpoint answers the hooks (docs/flow.md#an-endpoint-mapcanopyflow) ----------
+  // ---------- the flow-endpoint part: an endpoint answers the hooks (docs/flow.md#an-endpoint-mapcanopyflow) ----------
   // A document with endpoint { url, routes } (CanopyX.AspNetCore's MapCanopyFlow writes the routes it maps) needs no script:
   // each route the host left without a hook of its own becomes one, posting JSON to <url>/<route> on the page's own origin
   // with the page's cookies and the host's headers (an antiforgery token, for example). The server re-validates everything
   // it receives; secrets travel only to check and submit, and only those the check or the proposal names.
+  // The routes MapCanopyFlow (CanopyX.AspNetCore) serves below an endpoint, each answering one hook.
+  const FLOW_ROUTES = ["options", "fields", "check", "validate", "preview", "status", "draft", "submit"];
+
+  FLOW_HOST.endpoint = {
+    read(raw) {
+      flowKeys(raw, ["url", "routes"], "The endpoint");
+      const url = raw.url, routes = raw.routes;
+      if (typeof url !== "string" || url.length > 512 || !/^\/(?!\/)[\w\-./~%]*$/.test(url)) flowFail("the endpoint is a path on the page's own origin");
+      if (!Array.isArray(routes) || !routes.length || routes.some(route => !FLOW_ROUTES.includes(route)) || new Set(routes).size !== routes.length) flowFail("the endpoint lists some of its routes: " + FLOW_ROUTES.join(", "));
+      return Object.freeze({ url: url.replace(/\/+$/, ""), routes: Object.freeze(routes.slice()) });
+    },
+    hooks: (model, hooks, headers) => flowEndpointHooks(model, hooks, headers),
+    document(doc, model) { if (doc.endpoint !== undefined) model.endpoint = this.read(doc.endpoint); }
+  };
   function flowEndpointHooks(model, hooks, headers) {
     const endpoint = model.endpoint, has = route => endpoint.routes.includes(route), merged = Object.assign({}, hooks);
     const request = async (method, route, body, signal) => {

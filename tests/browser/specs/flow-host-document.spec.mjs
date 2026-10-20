@@ -9,7 +9,7 @@ const DOC = JSON.parse(fs.readFileSync(new URL("../../fixtures/flow-document-hos
 
 test("the C# host document mounts, opens as a dialog task list, and its pick step picks", async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
-  await openFlow(page, "flow-act-on-rows.html");
+  await openFlow(page, "flow-workbench.html");
   await page.evaluate(doc => {
     window.__errors = [];
     document.addEventListener("canopyx:error", event => window.__errors.push(String(event.detail?.error?.message || event.detail?.error)), true);
@@ -50,7 +50,7 @@ test("the C# host document mounts, opens as a dialog task list, and its pick ste
 });
 
 test("what hooks answer is text: markup in options, fields, checks, previews and task states never becomes elements", async ({ page }) => {
-  await openFlow(page, "flow-act-on-rows.html");
+  await openFlow(page, "flow-workbench.html");
   const HTML = "<img src=x onerror=\"window.__xss=1\"><b>bold</b>";
   await page.evaluate(([doc, html]) => {
     const old = document.querySelector("[data-canopyx-host]");

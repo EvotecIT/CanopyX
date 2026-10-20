@@ -168,6 +168,9 @@ export interface FlowStep {
   confirm?: { label: string; text?: string; field?: string };
   /** Review steps: a box the reader ticks before submitting, while the condition holds. */
   acknowledge?: { label: string; when?: FlowCondition };
+  /** Review steps: true says the review page shows the host's preview (hooks.preview), so the page loads the preview part with
+   *  the flow; without it, a preview hook loads the part on its own. */
+  preview?: boolean;
 }
 
 /** A flow document, the contract C# writes with CanopyFlow and any host can map. */
@@ -365,15 +368,16 @@ export interface FlowApi {
   submit(): Promise<FlowAnswer | null>;
   setProgress(progress: { done?: number; total?: number; message?: string }): boolean;
   complete(answer: FlowAnswer): boolean;
-  /** Runs a check now; resolves with its result as the flow keeps it (field messages show in place), or null when it was cancelled. */
+  /** Runs a check now; resolves with its result as the flow keeps it (field messages show in place), or null when it was cancelled.
+   *  Rejects for a check the flow does not have. */
   runCheck(checkId: string): Promise<{ status: FlowCheckStatus; message: string | null; details: { label: string; value: string }[]; at: string } | null>;
-  /** Loads a host-option field's options again. */
+  /** Loads a host-option field's options again. Rejects for any other field. */
   refreshOptions(fieldId: string): Promise<void>;
-  /** Sets a task's state as the host sees it; null returns it to what the answers say. */
+  /** Sets a task's state as the host sees it; null returns it to what the answers say. Throws for a flow that is no task list. */
   setStepState(stepId: string, state: FlowStepState | null): void;
-  /** Saves the draft now; resolves with whether it was saved. */
+  /** Saves the draft now; resolves with whether it was saved (false for a flow without a draft store). */
   saveDraft(): Promise<boolean>;
-  /** Starts from a preset, or from the plain start with null. */
+  /** Starts from a preset, or from the plain start with null. Rejects for a preset the flow does not have. */
   setPreset(presetId: string | null): Promise<void>;
   /** Dialog and drawer flows: opens the container; true once it is open, false for an inline flow. */
   open(): boolean;

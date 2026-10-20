@@ -8,7 +8,7 @@ public sealed class PartManifestTests {
     [Fact]
     public void Parts_AreReadFromTheEmbeddedManifestOnNetFramework() {
         var names = CanopyHtmlAssets.Parts.Select(part => part.Name).ToArray();
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "matrix", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, names);
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-consent", "matrix", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, names);
         foreach (var part in CanopyHtmlAssets.Parts) {
             Assert.Matches("^[a-f0-9]{16}$", part.Version);
             Assert.Contains("version:\"" + part.Version + "\"", part.Script);

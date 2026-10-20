@@ -1,10 +1,55 @@
-  // ---------- flow: server checks, named host actions such as "Test sign-in" (docs/flow.md#server-checks) ----------
+  // ---------- the flow-checks part: server checks, named host actions such as "Test sign-in" (docs/flow.md#server-checks) ----------
   // A check runs on its button, or on Next when the step requires it, through hooks.check(checkId, values, { signal, secret }),
   // where secret(id) reads a secret the check names. The host answers { status: pass | warning | fail, message, details,
   // fieldErrors }. Changing any field the check names marks its result stale. required "pass" blocks Next until the check
   // passes; required "run" needs it to have run on the current answers, and a warning to be acknowledged. Exceptions,
   // rejections and timeouts become a failed result with the host's message; Cancel stops a running check.
+  const FLOW_PART_LABELS = {
+    flowRunAgain: "Run again",
+    flowRunCheckAgain: "Run “{check}” again",
+    flowChecks: "Checks",
+    flowCheckAcknowledge: "Continue despite the warning",
+    flowCheckRunning: "Checking…",
+    flowCheckNotRun: "Not run",
+    flowCheckStale: "The answers changed since the check",
+    flowCheckPassed: "Passed at {time}",
+    flowCheckWarning: "Warning at {time}",
+    flowCheckFailed: "Failed at {time}",
+    flowCheckInvalid: "The check gave no usable answer.",
+    flowCheckNeeded: "Run “{check}” on these answers.",
+    flowCheckNotPassed: "“{check}” did not pass.",
+    flowCheckConfirmWarning: "Confirm the warning of “{check}”."
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
   const FLOW_CHECK_MARKS = { pass: "✓", warning: "!", fail: "×", running: "…" };
+
+  FLOW_HOST.checks = {
+    /** A step's server checks: named host actions that test some of its answers. */
+    read(raw, step, model) {
+      if (step.type !== "form" || !Array.isArray(raw) || !raw.length || raw.length > 8) flowFail("step " + step.id + " has 1 to 8 checks, as a form step only");
+      for (const entry of raw) {
+        flowKeys(entry, ["id", "label", "description", "fields", "required"], "A check");
+        const id = flowName(entry.id, "A check id");
+        if (model.checks.has(id)) flowFail("the check id '" + id + "' is used twice");
+        if (!Array.isArray(entry.fields) || !entry.fields.length || entry.fields.length > 64 || entry.fields.some(name => typeof name !== "string")) flowFail("check " + id + " needs 1 to 64 field ids");
+        if (entry.required !== undefined && !["pass", "run"].includes(entry.required)) flowFail("check " + id + " requires pass or run");
+        const check = Object.freeze({ id, step, label: flowString(entry.label, 200, "A check label", true), description: flowString(entry.description, 1000, "A check description"),
+          fields: Object.freeze([...new Set(entry.fields)]), required: entry.required ?? null });
+        model.checks.set(id, check); step.checks.push(check);
+      }
+    },
+    /** Checks name fields of the flow. */
+    finish(model) {
+      for (const check of model.checks.values()) for (const id of check.fields) if (!model.fields.has(id)) flowFail("check " + check.id + " names the unknown field '" + id + "'");
+    },
+    /** A step with checks shows their block below its fields. */
+    built(view, step, section) {
+      if (step.checks.length) { section.appendChild(view.checkBlock(step)); queueMicrotask(() => step.checks.forEach(check => view.paintCheck(check))); }
+    },
+    review: (view, section) => view.reviewChecks(section),
+    /** The checks that ran on these answers join the proposal. */
+    proposal(view, proposal) { const checks = view.checkSummary(); if (Object.keys(checks).length) proposal.checks = checks; }
+  };
 
   Object.assign(FlowView.prototype, {
     /** The block of a step's checks, built with the step and painted from the check state. */
@@ -71,18 +116,18 @@
       const state = this.checkState.get(id) || {}, controller = new AbortController(), ticket = {};
       state.controller?.abort();
       Object.assign(state, { controller, ticket, running: true });
-      this.checkState.set(id, state); this.paintCheck(check);
+      this.checkState.set(id, state); this.paintCheck(check); this.paintReview();
       const secrets = new Map(check.fields.map(name => this.model.fields.get(name)).filter(field => field.type === "secret" && this.visible(field) && this.secrets.has(field.id)).map(field => [field.id, this.secrets.get(field.id)]));
       const run = typeof this.hooks.check === "function" ? signal => this.hooks.check(id, this.getValues(), { signal, secret: name => secrets.get(name) ?? null }) : () => { throw new Error(this.labels.flowNoHostHook); };
       const answer = await this.timed("check", run, controller);
       secrets.clear();
       if (state.ticket !== ticket || this.destroyed) return null;
       state.running = false;
-      if (answer.cancelled) { this.paintCheck(check); return null; }
+      if (answer.cancelled) { this.paintCheck(check); this.paintReview(); return null; }
       const result = answer.failed ? { status: "fail", message: answer.failed, details: [], fieldErrors: {} } : this.checkResult(answer.value);
       Object.assign(state, { result, at: new Date().toISOString(), stale: false, acknowledged: false });
       for (const [field, message] of Object.entries(result.fieldErrors)) { this.hostErrors.set(field, message); this.setError(this.model.fields.get(field), message); }
-      this.paintCheck(check); this.renderRail(); this.reviewStale = true;
+      this.paintCheck(check); this.renderRail(); this.reviewStale = true; this.paintReview(true);
       const detail = flowCopy({ check: id, result: { status: result.status, message: result.message, details: result.details, at: state.at } });
       this.emit("flowCheck", detail, "onCheck");
       return detail.result;
@@ -111,6 +156,47 @@
         else if (result.status === "warning" && !state.acknowledged) problems.push(fill(labels.flowCheckConfirmWarning, { check: check.label }));
       }
       return problems;
+    },
+
+    /** On the review page, its check rows follow a run (from Run again or api.runCheck); once a run ends, the page checks
+     *  itself again. */
+    paintReview(ended) {
+      if (this.step.type !== "review" || this.phase !== "form") return;
+      this.reviewCheckRows?.();
+      if (ended) this.reviewRecheck?.();
+    },
+
+    /** The review page's checks, each with its last result. A check is no answer: Run again runs it here, on the answers the
+     *  page shows, and the page checks itself again. A repaint keeps focus on the button it was on. */
+    reviewChecks(section) {
+      const labels = this.labels, checks = [...this.model.checks.values()].filter(check => this.stepVisible(check.step));
+      this.reviewCheckRows = null;
+      if (!checks.length) return;
+      const group = h("section", "cx-flow-review-group cx-flow-review-checks"), heading = h("h4", "cx-flow-review-title"), list = h("dl", "cx-flow-answers");
+      heading.id = this.id + "-rc"; setText(heading, labels.flowChecks); group.setAttribute("aria-labelledby", heading.id);
+      const paint = this.reviewCheckRows = () => {
+        const focused = list.contains(document.activeElement) ? document.activeElement.dataset.cxCheck : null;
+        list.replaceChildren(...checks.map(check => {
+          const state = this.checkState.get(check.id), result = state?.result, row = h("div", "cx-flow-answer"), term = h("dt"), value = h("dd", "cx-flow-answer-value"), action = h("dd", "cx-flow-answer-action");
+          const phase = state?.running ? "running" : !result ? "none" : state.stale ? "stale" : result.status;
+          setText(term, check.label);
+          setText(value, phase === "running" ? labels.flowCheckRunning : phase === "none" ? labels.flowCheckNotRun : phase === "stale" ? labels.flowCheckStale :
+            fill(phase === "pass" ? labels.flowCheckPassed : phase === "warning" ? labels.flowCheckWarning : labels.flowCheckFailed, { time: this.checkTime(state.at) }) + (result.message ? " · " + result.message : ""));
+          row.dataset.cxState = phase;
+          const again = h("button", "cx-flow-link cx-flow-check-again");
+          again.type = "button"; again.dataset.cxCheck = check.id; setText(again, labels.flowRunAgain);
+          again.setAttribute("aria-label", fill(labels.flowRunCheckAgain, { check: check.label }));
+          if (phase === "running") again.setAttribute("aria-disabled", "true");
+          // Not while it runs, and not while the answers are being submitted.
+          again.addEventListener("click", () => { if (again.getAttribute("aria-disabled") !== "true" && !this.busy) this.runCheck(check.id).catch(error => this.report(error, "check")); });
+          action.appendChild(again);
+          row.append(term, value, action);
+          return row;
+        }));
+        if (focused) list.querySelector('[data-cx-check="' + CSS.escape(focused) + '"]')?.focus();
+      };
+      paint();
+      group.append(heading, list); section.appendChild(group);
     },
 
     /** The checks of visible steps with a current result, for the proposal and the review page. */

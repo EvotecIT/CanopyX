@@ -158,15 +158,226 @@
       "views": ["flow"],
       "key": "FLOW_IMPL",
       "requires": ["forms"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "foldText", "boundedPattern", "numberFormat", "gridFreeze", "FLOW_VIEWS"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "foldText", "boundedPattern", "numberFormat", "gridFreeze"],
       "start": "const { editParseNumber, EDIT_EDITORS, formRuleSpec, formCheck, FORM_LABELS } = FORMS_IMPL;",
-      "end": "FLOW_IMPL.create = flowCreate;",
+      "end": "Object.assign(FLOW_IMPL, { create: flowCreate, core: { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } });",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow.source"
       ],
       "styles": [
-        "CanopyX.Html/Assets/canopyx.flow.source/flow.css",
-        "CanopyX.Html/Assets/canopyx.flow.source/flow-host.css"
+        "CanopyX.Html/Assets/canopyx.flow.source/flow.css"
+      ]
+    },
+    {
+      "name": "flow-host",
+      "label": "flow host hooks",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowHost"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-host.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-host.source/flow-host.css"
+      ]
+    },
+    {
+      "name": "flow-checks",
+      "label": "flow checks",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowChecks"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-checks.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-checks.source/flow-checks.css"
+      ]
+    },
+    {
+      "name": "flow-options",
+      "label": "flow host options",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowHostOptions"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-options.source"
+      ]
+    },
+    {
+      "name": "flow-pick",
+      "label": "flow pick steps",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowPick"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat", "FLOW_VIEWS"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-pick.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-pick.source/flow-pick.css"
+      ]
+    },
+    {
+      "name": "flow-records",
+      "label": "flow records",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowRecords"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-records.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-records.source/flow-records.css"
+      ]
+    },
+    {
+      "name": "flow-drafts",
+      "label": "flow drafts and presets",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowDrafts"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-drafts.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-drafts.source/flow-drafts.css"
+      ]
+    },
+    {
+      "name": "flow-preview",
+      "label": "flow preview",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowPreview"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-preview.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-preview.source/flow-preview.css"
+      ]
+    },
+    {
+      "name": "flow-command",
+      "label": "flow command",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowCommand"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-command.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-command.source/flow-command.css"
+      ]
+    },
+    {
+      "name": "flow-tasks",
+      "label": "flow task lists",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowTasks"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-tasks.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-tasks.source/flow-tasks.css"
+      ]
+    },
+    {
+      "name": "flow-dialog",
+      "label": "flow dialogs",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowDialog"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-dialog.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-dialog.source/flow-dialog.css"
+      ]
+    },
+    {
+      "name": "flow-links",
+      "label": "flow deep links",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowLinks"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-links.source"
+      ]
+    },
+    {
+      "name": "flow-endpoint",
+      "label": "flow endpoint",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowEndpoint"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow", "flow-host"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-endpoint.source"
+      ]
+    },
+    {
+      "name": "flow-consent",
+      "label": "flow consent",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "features": ["flowConsent"],
+      "key": "FLOW_IMPL",
+      "requires": ["flow"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-consent.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-consent.source/flow-consent.css"
       ]
     },
     {

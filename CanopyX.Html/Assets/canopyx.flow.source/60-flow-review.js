@@ -37,25 +37,29 @@
       }
       section.appendChild(lists);
       this.fillReview(lists, changesOnly);
-      // The preset line, the checks, the host's preview and the equivalent command (62-flow-review-extras.js).
-      this.reviewExtras(section);
+      // What the feature parts add: the preset line, the checks, the host's preview and the equivalent command.
+      flowEach("review", this, section);
       if (step.declaration) { const declaration = h("p", "cx-flow-declaration"); setText(declaration, step.declaration); section.appendChild(declaration); }
-      // A typed confirmation and an acknowledgement the conditions ask for sit right above the submit button.
-      this.reviewConsent(section, step);
-      // The checks run as the page opens; the banner follows them, and the rail shows the steps that need attention.
-      const ticket = this.reviewTicket = {};
-      setText(status, "…");
-      // After the host answered with an error or a conflict, its banner speaks; the status shows only local problems.
-      if (this.banner) status.hidden = true;
-      this.reviewChecking = true;
-      this.validateAll().finally(() => { if (this.reviewTicket === ticket) this.reviewChecking = false; }).then(result => {
-        if (this.reviewTicket !== ticket || this.destroyed) return;
-        this.reviewResult = result;
-        this.fillBanner(status, result);
-        status.hidden = !!this.banner && result.valid;
-        this.fillReview(lists, changesOnly);
-        this.renderRail();
-      }, error => this.report(error, "validate"));
+      // A typed confirmation and an acknowledgement the conditions ask for sit right above the submit button (the flow-consent part).
+      flowEach("confirm", this, section, step);
+      // The checks run as the page opens, and again when a server check runs on it; the banner follows them, and the rail
+      // shows the steps that need attention.
+      const recheck = this.reviewRecheck = () => {
+        const ticket = this.reviewTicket = {};
+        setText(status, "…");
+        // After the host answered with an error or a conflict, its banner speaks; the status shows only local problems.
+        if (this.banner) status.hidden = true;
+        this.reviewChecking = true;
+        return this.validateAll().finally(() => { if (this.reviewTicket === ticket) this.reviewChecking = false; }).then(result => {
+          if (this.reviewTicket !== ticket || this.destroyed) return;
+          this.reviewResult = result;
+          this.fillBanner(status, result);
+          status.hidden = !!this.banner && result.valid;
+          this.fillReview(lists, changesOnly);
+          this.renderRail();
+        }, error => this.report(error, "validate"));
+      };
+      recheck();
       return section;
     },
 

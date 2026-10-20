@@ -1,11 +1,41 @@
-  // ---------- flow: the equivalent command (command, docs/flow.md#the-equivalent-command) ----------
+  // ---------- the flow-command part: the equivalent command (command, docs/flow.md#the-equivalent-command) ----------
   // The answers as a command line, by the fields' parameter names, with ConsoleMonster's rules (CommandLine.cs) and C#'s
   // CanopyFlowCommandLine, which the shared fixture tests/fixtures/flow-commands.json keeps in step: hidden, empty and
   // unchanged answers are left out (the default in create mode, the edited value in edit mode), a switch that was on and is
   // now off becomes -Name:$false or --no-name, lists join with commas, values are quoted for the style, and a secret that
   // was typed is <secret>, never its value. Records answers have no command-line form and are left out.
+  const FLOW_PART_LABELS = {
+    flowCommandTab: "Command",
+    flowPatchTab: "JSON patch",
+    flowCommandTitle: "Equivalent command"
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
   const FLOW_PLAIN_CHARACTERS = { powershell: "-_./:\\=+%", posix: "-_./:=@%+,", windows: "-_./:\\=@%+," };
+  const FLOW_COMMAND_STYLES = ["powershell", "posix", "windows"];
 
+  FLOW_HOST.command = {
+    /** The document's command: a name, a style and the variants the host writes. */
+    read(raw) {
+      flowKeys(raw, ["name", "style", "variants"], "The command");
+      const name = flowString(raw.name, 200, "The command name", true), style = raw.style ?? "powershell";
+      if (!FLOW_COMMAND_STYLES.includes(style) || /[\u0000-\u001f]/.test(name)) flowFail("the command has an unknown style or a control character");
+      const variants = raw.variants ?? [];
+      if (!Array.isArray(variants) || variants.length > 8) flowFail("a command has at most 8 variants");
+      const ids = new Set(["command", "patch"]);
+      return { name, style, variants: variants.map(variant => {
+        flowKeys(variant, ["id", "label"], "A command variant");
+        const id = flowName(variant.id, "A variant id");
+        if (ids.has(id)) flowFail("the command variant '" + id + "' is used twice");
+        ids.add(id);
+        return Object.freeze({ id, label: flowString(variant.label, 60, "A variant label", true) });
+      }) };
+    },
+    line: view => flowCommandLine(view),
+    document(doc, model) { if (doc.command !== undefined) model.command = this.read(doc.command); },
+    /** The review page's panel of the equivalent command, and the command line in the proposal. */
+    review(view, section) { if (view.model.command) section.appendChild(view.commandPanel()); },
+    proposal(view, proposal) { if (view.model.command) proposal.command = flowCommandLine(view); }
+  };
   function flowCommandParameter(name, style) {
     const bare = name.replace(/^[-/]+/, "");
     return style === "posix" ? (name.startsWith("-") ? name : (bare.length === 1 ? "-" : "--") + bare) : style === "windows" ? "/" + bare : "-" + bare;
@@ -46,18 +76,16 @@
   }
 
   Object.assign(FlowView.prototype, {
-    /** The equivalent command panel: the command, the host's variants and the JSON patch, each with Copy. */
+    /** The equivalent command panel of a flow with a command: the command, the host's variants and the JSON patch, each with Copy. */
     commandPanel() {
-      const labels = this.labels, proposal = this.submission(), tabs = [];
-      if (this.model.command) tabs.push({ id: "command", label: labels.flowCommandTab, text: () => Promise.resolve(flowCommandLine(this)) });
-      for (const variant of this.model.command?.variants || []) {
+      const labels = this.labels, proposal = this.submission(), tabs = [{ id: "command", label: labels.flowCommandTab, text: () => Promise.resolve(flowCommandLine(this)) }];
+      for (const variant of this.model.command.variants) {
         const format = this.hooks.commands?.[variant.id];
         if (typeof format === "function") tabs.push({ id: variant.id, label: variant.label, text: () => this.hook("commands." + variant.id, () => format(this.getValues())).then(answer => answer.failed || (typeof answer.value === "string" ? answer.value : "")) });
       }
       if (proposal.patch.length) tabs.push({ id: "patch", label: labels.flowPatchTab, text: () => Promise.resolve(JSON.stringify(proposal.patch, null, 2)) });
-      if (!tabs.length) return null;
       const panel = h("details", "cx-flow-command"), summary = h("summary"), list = h("div", "cx-flow-tabs"), code = h("pre", "cx-flow-code"), copy = h("button", "cx-flow-btn");
-      setText(summary, this.model.command ? labels.flowCommandTitle : labels.flowPatchTitle);
+      setText(summary, labels.flowCommandTitle);
       list.setAttribute("role", "tablist"); list.setAttribute("aria-label", labels.flowCommandTitle);
       code.id = this.id + "-command"; code.tabIndex = 0; code.setAttribute("role", "tabpanel");
       let current = null, ticket = 0;

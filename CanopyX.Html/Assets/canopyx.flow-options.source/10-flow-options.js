@@ -1,44 +1,79 @@
-  // ---------- flow: host options, dependent fields and dynamic sections (docs/flow.md#host-options-and-dependent-fields) ----------
+  // ---------- the flow-options part: host options and host sections (docs/flow.md#host-options-and-dependent-fields) ----------
   // A field with source "host" asks hooks.options(fieldId, values, { signal }) for its options as the reader reaches it, and
   // again when a field it depends on changes. Earlier requests are cancelled and late answers dropped; a previous answer that
-  // is still allowed is kept. A field that depends on others without host options starts empty again when they change. A
-  // section with source "host" asks hooks.fields(sectionId, values, { signal }) for its fields, read as strictly as the
-  // document's; their answers join the proposal like any other.
+  // is still allowed is kept; a field that depends on others without host options starts empty again. A section with source "host" asks hooks.fields(sectionId, values, { signal }) for its fields,
+  // read as strictly as the document's; their answers join the proposal like any other.
+  const FLOW_PART_LABELS = {
+    flowOptionsLoading: "Loading options…",
+    flowOptionsFailed: "The options could not load: {message}",
+    flowFieldsLoading: "Loading fields…",
+    flowFieldsFailed: "The fields could not load: {message}"
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
   const FLOW_DYNAMIC_TYPES = ["text", "number", "date", "datetime", "time", "select", "toggle", "lookup", "choice", "multiChoice", "textarea", "list", "duration"];
 
-  Object.assign(FlowView.prototype, {
-    /** What follows an answer that changed: dependent fields, dynamic sections, checks, preset marks and the draft. */
-    afterChange(field) {
-      if (!field || this.destroyed) return;
-      this.checksChanged?.(field);
-      for (const other of [...this.model.fields.values()]) if (other.dependsOn.includes(field.id)) this.dependentChanged(other);
-      for (const step of this.model.steps) for (const block of step.blocks) if (block.section?.host && block.section.dependsOn.includes(field.id) && this.sections.has(step.id)) this.loadFields(step, block);
-      this.markPreset?.();
-      this.draftChanged?.();
+  FLOW_HOST.options = {
+    /** A section whose fields the host supplies (source "host"), reloaded when the fields it depends on change. */
+    section(section, raw) {
+      section.host = raw.source === "host";
+      if (raw.source !== undefined && !section.host) flowFail("section " + section.id + " has an unknown source");
+      if (section.host ? raw.fields !== undefined && (!Array.isArray(raw.fields) || raw.fields.length) : !Array.isArray(raw.fields)) flowFail("section " + section.id + " needs an array of fields, or source \"host\" and none");
+      if (raw.dependsOn !== undefined && (!section.host || !Array.isArray(raw.dependsOn) || !raw.dependsOn.length || raw.dependsOn.length > 16 || raw.dependsOn.some(name => typeof name !== "string")))
+        flowFail("section " + section.id + " depends on 1 to 16 fields, as a host section only");
+      section.dependsOn = raw.dependsOn ? [...new Set(raw.dependsOn)] : [];
     },
+    /** A field's source "host" (a field that chooses only) and the fields it depends on. */
+    field(field, raw, choosing, bad) {
+      if (raw.source !== undefined && (raw.source !== "host" || !choosing)) bad("takes source \"host\" as a field that chooses only");
+      field.host = raw.source === "host";
+      if (raw.dependsOn !== undefined && (!Array.isArray(raw.dependsOn) || !raw.dependsOn.length || raw.dependsOn.length > 16 || raw.dependsOn.some(name => typeof name !== "string"))) bad("needs 1 to 16 field ids in dependsOn");
+      field.dependsOn = raw.dependsOn ? [...new Set(raw.dependsOn)] : [];
+    },
+    /** What depends on what: dependsOn names fields that exist, never secrets, never in a circle. */
+    finish(model) {
+      const known = (id, what) => { const field = model.fields.get(id); if (!field) flowFail(what + " names the unknown field '" + id + "'"); return field; };
+      for (const field of model.fields.values()) for (const id of field.dependsOn) {
+        if (id === field.id || known(id, "field " + field.id).type === "secret") flowFail("field " + field.id + " cannot depend on itself or on a secret");
+      }
+      const state = new Map(), visit = field => {
+        if (state.get(field.id) === 2) return;
+        if (state.get(field.id) === 1) flowFail("field " + field.id + " depends on itself through dependsOn");
+        state.set(field.id, 1); field.dependsOn.forEach(id => visit(model.fields.get(id))); state.set(field.id, 2);
+      };
+      model.fields.forEach(visit);
+      for (const step of model.steps) for (const block of step.blocks) if (block.section?.host) for (const id of block.section.dependsOn) if (known(id, "section " + block.section.id).type === "secret") flowFail("section " + block.section.id + " cannot depend on a secret");
+    },
+    /** Host sections and host options load as a step is first built. */
+    built(view, step) {
+      for (const block of step.blocks) if (block.section?.host) queueMicrotask(() => view.destroyed || view.loadFields(step, block));
+      queueMicrotask(() => view.destroyed || view.prepareVisible());
+    }
+  };
 
+  /** A host field's loading line, or its failure with Try again, under the input; made the first time it shows. */
+  function flowNote(view, fv, text, retry, failed) {
+    let note = fv.note;
+    if (!note) {
+      if (!text) return;
+      note = fv.note = h("p", "cx-flow-loading"); note.id = view.id + "-f-" + fv.field.id + "-note"; note.setAttribute("role", "status");
+      // Above the field's message, the last line of the field.
+      fv.element.querySelector(":scope > .cx-flow-error").before(note);
+    }
+    note.replaceChildren(); note.hidden = !text; note.classList.toggle("cx-flow-error", !!failed);
+    if (text) { note.append(text); if (retry) { const again = h("button", "cx-flow-link"); again.type = "button"; setText(again, view.labels.flowRetry); again.addEventListener("click", retry); note.append(" ", again); } }
+    if (fv.instance) fv.describe();
+  }
+  Object.assign(FlowView.prototype, {
     /** A field whose source changed: host options load again; any other dependent field starts empty again. */
     dependentChanged(field) {
       if (field.host) { this.loadOptions(field); return; }
       const empty = field.kind === "list" || field.kind === "records" || field.kind === "pick" ? [] : null;
       if (!flowSameValue(this.values.get(field.id) ?? null, empty)) this.setAnswer(field, empty, "depends");
     },
-
-    /** Sets an answer the flow itself decided (dependencies, options, presets): the input shows it and the host hears it. */
-    setAnswer(field, value, source) {
-      const previous = this.values.get(field.id) ?? null;
-      this.answersChanged();
-      this.values.set(field.id, flowCopy(value));
-      this.forgetHost(field);
-      this.fields.get(field.id)?.mount(flowCopy(value));
-      this.errors.delete(field.id); this.fields.get(field.id)?.message(null);
-      this.emit("flowValueChanged", { field: field.id, value: flowCopy(value), previous: flowCopy(previous), source }, "onValueChange");
-      this.afterChange(field);
-      this.refreshVisibility();
-    },
-
     /** Loads the options of host fields the reader can see and that have none yet. */
     prepareVisible() {
+      // A host section whose fields have not loaded shows while its condition holds, with its loading line.
+      for (const section of this.sections.values()) for (const block of section._cxBlocks || []) if (block.section?.host && !block.fields.length && flowTest(block.section.when, id => this.read(id))) block.element.hidden = false;
       for (const field of this.model.fields.values()) if (field.host && this.fields.has(field.id) && this.visible(field) && !this.optionState.has(field.id)) this.loadOptions(field);
     },
 
@@ -74,7 +109,7 @@
     paintOptions(field) {
       const fv = this.fields.get(field.id), state = this.optionState.get(field.id);
       if (!fv || !state) return;
-      fv.status(state.loading ? this.labels.flowOptionsLoading : state.error ? fill(this.labels.flowOptionsFailed, { message: state.error }) : null,
+      flowNote(this, fv, state.loading ? this.labels.flowOptionsLoading : state.error ? fill(this.labels.flowOptionsFailed, { message: state.error }) : null,
         state.error ? () => this.loadOptions(field) : null, !!state.error);
     },
 
@@ -153,16 +188,5 @@
       note.replaceChildren(text);
       note.classList.toggle("cx-flow-error", !!retry);
       if (retry) { const again = h("button", "cx-flow-link"); again.type = "button"; setText(again, this.labels.flowRetry); again.addEventListener("click", retry); note.append(" ", again); }
-    },
-
-    /** Cancels what the host is still answering: options, fields, checks, previews and pickers. */
-    releaseHostWork() {
-      for (const state of this.optionState.values()) state.controller?.abort();
-      for (const state of this.sectionState?.values() || []) state.controller?.abort();
-      for (const state of this.checkState.values()) state.controller?.abort();
-      this.previewController?.abort();
-      for (const picker of this.pickers.values()) { try { picker.api?.destroy(); } catch (error) { this.report(error, "picker"); } }
-      this.optionState.clear(); this.sectionState?.clear(); this.checkState.clear(); this.pickers.clear();
-      clearTimeout(this.draftTimer);
     }
   });

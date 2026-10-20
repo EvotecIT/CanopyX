@@ -1,0 +1,14 @@
+/* The flow-command part: the equivalent command with its tabs and Copy. */
+.cx-flow-command { border:var(--cx-size-1px) solid var(--cx-line);border-radius:var(--cx-radius); }
+.cx-flow-command > summary { padding:var(--cx-size-8px) var(--cx-size-12px);font-weight:600;cursor:pointer; }
+.cx-flow-command[open] > summary { border-bottom:var(--cx-size-1px) solid var(--cx-line); }
+.cx-flow-command-tools { display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--cx-size-8px);padding:var(--cx-size-8px) var(--cx-size-12px) 0; }
+.cx-flow-tabs { display:flex;flex-wrap:wrap;gap:var(--cx-size-4px); }
+.cx-flow-tab { min-height:var(--cx-size-28px);padding:0 var(--cx-size-10px);border:var(--cx-size-1px) solid transparent;border-radius:var(--cx-radius-sm);background:transparent;color:var(--cx-text-2);font:inherit;font-size:var(--cx-size-13px);cursor:pointer; }
+.cx-flow-tab[aria-selected="true"] { border-color:var(--cx-line-strong);background:var(--cx-surface);color:var(--cx-text);font-weight:600; }
+.cx-flow-tab:focus-visible,.cx-flow-code:focus-visible,.cx-flow-command > summary:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-1px); }
+.cx-flow-code { margin:var(--cx-size-8px) var(--cx-size-12px) var(--cx-size-12px);padding:var(--cx-size-10px) var(--cx-size-12px);border-radius:var(--cx-radius-sm);background:var(--cx-head-bg);
+  font:var(--cx-size-12d5px)/1.5 var(--cx-font-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:var(--cx-size-320px);overflow:auto; }
+.cx-flow-step > .cx-flow-command { margin-top:var(--cx-flow-gap); }
+@media (forced-colors:active) { .cx-flow-tab[aria-selected="true"] { border-color:Highlight; } }
+@media print { .cx-flow-command-tools { display:none; } .cx-flow-command { break-inside:avoid; } }

@@ -7,7 +7,7 @@ using CanopyX.Json;
 namespace CanopyX;
 
 /// <summary>
-/// The equivalent command of a flow's answers, with the browser's rules (64-flow-command.js) and ConsoleMonster's
+/// The equivalent command of a flow's answers, with the browser's rules (the flow-command part) and ConsoleMonster's
 /// (<c>CommandLine</c>): hidden, empty and unchanged answers are left out (the default in create mode, the edited value in edit
 /// mode), a switch that was on and is now off becomes <c>-Name:$false</c> or <c>--no-name</c>, lists join with commas, values are
 /// quoted for the style, and a secret that was typed is <c>&lt;secret&gt;</c>. tests/fixtures/flow-commands.json keeps both in step.

@@ -40,7 +40,7 @@ internal static class CanopyFlowHostValidator {
         CanopyFlowValues.CheckShort(step.GroupLabel, what + " (group)");
         var review = step.Kind == CanopyFlowStepKind.Review;
         if (review && step.GroupLabel != null) throw new InvalidOperationException(what + ": the review step belongs to no group.");
-        if (!review && (step.Confirmation != null || step.Acknowledgement != null)) throw new InvalidOperationException(what + ": a confirmation and an acknowledgement apply to the review step.");
+        if (!review && (step.Confirmation != null || step.Acknowledgement != null || step.ShowsPreview)) throw new InvalidOperationException(what + ": a confirmation, an acknowledgement and the preview apply to the review step.");
         if (step.Confirmation != null) {
             step.Confirmation.Validate();
             if (step.Confirmation.FieldId != null && !(fields.TryGetValue(step.Confirmation.FieldId, out var source) &&

@@ -1,7 +1,8 @@
   // ---------- flows: createFlow and the forms and flow parts (docs/flow.md) ----------
   // The flow entry point and the grid entry points both carry this shell. The steps, fields, review and proposal ship in the
   // flow part (canopyx-flow.js) and the editors and field checks in the forms part (canopyx-forms.js), which grid editing
-  // shares (Build/parts.json). createFlow answers at once with the flow's API; its ready promise settles once the parts are in
+  // shares (Build/parts.json); the host-connected features each ship in a part of their own. createFlow answers at once with
+  // the flow's API; its ready promise settles once the parts are in
   // and the first step is painted. Async calls wait for it; synchronous calls require the implementation to be available.
   class FlowHost {}
   const FORMS_IMPL = {}, FLOW_IMPL = {}, activeFlows = new WeakMap();
@@ -9,9 +10,37 @@
   // Pick steps embed a grid or a tree: the grid entry points lend the flow part their factories (88-grid-flow-views.js); the
   // flow entry has neither.
   const FLOW_VIEWS = typeof FLOW_GRID_VIEWS === "object" ? FLOW_GRID_VIEWS : Object.freeze({ grid: null, tree: null, reporting: false });
-  const FLOW_PART = definePart(FlowHost, "flow", "flow view", () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, foldText, boundedPattern, numberFormat, gridFreeze, FLOW_VIEWS }));
+  const FLOW_PART = definePart(FlowHost, "flow", "flow view", () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, foldText, boundedPattern, numberFormat, gridFreeze }));
+  // The host-connected features ship in parts of their own, each loaded only for a flow that uses it (Build/parts.json).
+  const FLOW_FEATURES = {};
+  for (const name of ["host", "checks", "options", "pick", "records", "drafts", "preview", "command", "tasks", "dialog", "links", "endpoint", "consent"])
+    FLOW_FEATURES[name] = definePart(FlowHost, "flow-" + name, "flow " + name, () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, numberFormat, FLOW_VIEWS }));
   // Grid editing requires the same forms part: one definition, one load, one install.
   if (typeof DataGrid === "function") DataGrid.prototype.parts.forms = FORMS_PART;
+  // The flow-wide keys of host-connected flows, the parts that read them, and the values that need no part.
+  const FLOW_DOC_PARTS = { command: "command", presets: "drafts", draft: "drafts", deepLinks: "links", endpoint: "endpoint" }, FLOW_DOC_PLAIN = { draft: "none", deepLinks: false };
+
+  /**
+   * The feature parts a flow loads with the flow part, before its document is read: the ones whose keys the document uses (the
+   * same decisions as C#'s CanopyHtmlPart), and the ones the host's hooks add. Parts the document names are required; a part
+   * only a hook asks for (a preview, a preset store) is optional, so a page that cannot load it still shows the flow without
+   * the feature. The strict reading of the document comes after.
+   */
+  function flowFeatures(doc, hooks) {
+    const names = new Set(), add = (name, on) => on && names.add(name), list = value => Array.isArray(value) ? value : [];
+    const object = value => value !== null && typeof value === "object" && !Array.isArray(value), has = (value, ...keys) => object(value) && keys.some(key => value[key] !== undefined);
+    for (const [key, name] of Object.entries(FLOW_DOC_PARTS)) add(name, doc[key] !== undefined && doc[key] !== FLOW_DOC_PLAIN[key]);
+    add("tasks", doc.mode === "tasks"); add("dialog", has(doc.layout, "launch") || has(doc.layout, "container") && doc.layout.container !== "inline"); add("preview", list(doc.endpoint?.routes).includes("preview"));
+    for (const step of list(doc.steps).filter(object)) {
+      add("checks", step.checks !== undefined); add("pick", step.type === "pick"); add("preview", step.preview === true); add("consent", has(step, "confirm", "acknowledge"));
+      for (const block of [step, ...list(step.sections)]) {
+        if (block !== step) add("options", has(block, "source", "dependsOn"));
+        for (const field of object(block) ? list(block.fields) : []) { add("options", has(field, "source", "dependsOn")); add("records", object(field) && field.type === "records"); }
+      }
+    }
+    hooks = object(hooks) ? hooks : {};
+    return { required: [...names], optional: [typeof hooks.preview === "function" && "preview", object(hooks.presetStore) && "drafts"].filter(name => name && !names.has(name)) };
+  }
   const FLOW_ASYNC_METHODS = ["next", "back", "goTo", "setState", "validate", "submit", "runCheck", "refreshOptions", "saveDraft", "setPreset"];
   const FLOW_SYNC_METHODS = ["getStep", "getValues", "setValues", "getState", "isDirty", "reset", "setFieldError", "setProgress", "complete", "setStepState", "open", "close"];
 
@@ -34,7 +63,10 @@
     };
     // Plugins registered on the page lend their editors; the flow's own editors option wins over them.
     const editors = Object.assign({}, ...[...PLUGINS.values()].map(item => item.editors || {}));
-    const ready = loadPart(FLOW_PART).then(() => {
+    // The feature parts the document names load with the flow part; one that only a hook asks for may fail without stopping the flow.
+    const { required, optional } = flowFeatures(options.flow, options.hooks);
+    const ready = Promise.all([loadPart(FLOW_PART), ...required.map(name => loadPart(FLOW_FEATURES[name])), ...optional.map(name => loadPart(FLOW_FEATURES[name])
+      .catch(error => host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error, hook: "part" }, bubbles: true }))))]).then(async () => {
       if (destroyed) throw destroyedError();
       impl = FLOW_IMPL.create(host, options, editors);
       return impl.ready;

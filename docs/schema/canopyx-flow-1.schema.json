@@ -277,6 +277,7 @@
         "confirm": { "type": "object", "required": ["label"], "additionalProperties": false, "properties": {
           "label": { "$ref": "#/$defs/shortText" }, "text": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" }, "field": { "$ref": "#/$defs/identifier" } },
           "oneOf": [{ "required": ["text"] }, { "required": ["field"] }] },
+        "preview": { "type": "boolean", "description": "Review steps: the page shows the host's preview, so it carries the preview part." },
         "acknowledge": { "type": "object", "required": ["label"], "additionalProperties": false, "properties": {
           "label": { "type": "string", "minLength": 1, "maxLength": 400, "pattern": "\\S" }, "when": { "$ref": "#/$defs/condition" } } }
       },
@@ -284,7 +285,7 @@
         {
           "if": { "required": ["type"], "properties": { "type": { "const": "review" } } },
           "then": { "not": { "anyOf": [{ "required": ["fields"] }, { "required": ["sections"] }, { "required": ["when"] }, { "required": ["optional"] }, { "required": ["group"] }] } },
-          "else": { "required": ["title"], "not": { "anyOf": [{ "required": ["declaration"] }, { "required": ["changesOnly"] }, { "required": ["confirm"] }, { "required": ["acknowledge"] }] } }
+          "else": { "required": ["title"], "not": { "anyOf": [{ "required": ["declaration"] }, { "required": ["changesOnly"] }, { "required": ["confirm"] }, { "required": ["acknowledge"] }, { "required": ["preview"] }] } }
         },
         {
           "if": { "required": ["type"], "properties": { "type": { "enum": ["info", "pick"] } } },

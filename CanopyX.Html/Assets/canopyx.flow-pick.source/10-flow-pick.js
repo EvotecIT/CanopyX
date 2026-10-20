@@ -1,10 +1,47 @@
-  // ---------- flow: pick steps, a grid or tree whose selection is the answer (docs/flow.md#pick-steps) ----------
+  // ---------- the flow-pick part: pick steps, a grid or tree whose selection is the answer (docs/flow.md#pick-steps) ----------
   // The step embeds an ordinary CanopyX view: its search, facets, filters, saved views and record drawer all work. The
   // selection is the answer: the selected ids with a display snapshot (the label column's text), so the review page and the
   // proposal can list them without the view. A tray lists what is chosen with Remove buttons and survives searches and
   // paging. The view is built once per flow and kept across steps; pick steps need an entry point with grids and trees (the
   // data-grid or reporting entry), which the C# writer chooses for flows that have one.
+  const FLOW_PART_LABELS = {
+    flowPickMore: "and {count} more",
+    flowPickCount: "[one]{count} chosen[other]{count} chosen",
+    flowPickChosen: "Chosen",
+    flowPickNone: "Nothing chosen yet.",
+    flowPickOneByOne: "Choose the records one by one or a page at a time."
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
   const FLOW_PICK_VISIBLE = 60;
+
+  FLOW_HOST.pick = {
+    /** A pick step: a grid or tree view whose selection is the answer of the step's one field. */
+    read(raw, step, model) {
+      flowKeys(raw, ["field", "view", "label", "tray", "height"], "The pick of step " + step.id);
+      if (!flowIs(raw.view) || raw.view.protocol !== "canopyx/2" || !["grid", "view"].includes(raw.view.type)) flowFail("the pick of step " + step.id + " needs a grid or tree view document");
+      if (raw.tray !== undefined && typeof raw.tray !== "boolean") flowFail("the tray of step " + step.id + " is true or false");
+      flowKeys(raw.field, ["id", "label", "help", "required", "when", "parameter", "path", "sensitive", "validation", "default"], "The field of pick step " + step.id);
+      const field = flowField(Object.assign({}, raw.field, { type: "pick" }), step, null, model), columns = Array.isArray(raw.view.columns) ? raw.view.columns : [];
+      const label = raw.label ?? (columns[0] && columns[0].id);
+      if (typeof label !== "string" || !columns.some(column => column && column.id === label)) flowFail("the pick of step " + step.id + " needs a label column the view declares");
+      if (raw.height !== undefined && (!Number.isInteger(raw.height) || raw.height < 160 || raw.height > 1200)) flowFail("the pick of step " + step.id + " needs a height of 160 to 1200 pixels");
+      step.pick = Object.freeze({ view: raw.view, kind: raw.view.type === "grid" ? "grid" : "tree", label, tray: raw.tray !== false, height: raw.height ?? 420, field });
+      step.blocks.push({ section: null, fields: [field] });
+    },
+    /** A pick step's heading already asks what its field does; a label that repeats it stays for screen readers only. */
+    built(view, step, section) { if (step.pick?.field.label === step.title) section.querySelector(".cx-flow-label")?.classList.add("cx-flow-label-quiet"); },
+    input: (context, field, view) => flowPickInput(context, field, view),
+    fits: (field, value) => Array.isArray(value) && value.length <= 1000 && value.every(item => flowIs(item) && Object.keys(item).every(key => key === "id" || key === "label") &&
+      typeof item.id === "string" && item.id.length > 0 && item.id.length <= 256 && typeof item.label === "string" && item.label.length <= 400) && new Set(value.map(item => item.id)).size === value.length,
+    /** The review page's text: up to 12 labels, then how many more. */
+    display: (view, value) => value.slice(0, 12).map(item => item.label || item.id).join("\n") + (value.length > 12 ? "\n" + fill(view.labels.flowPickMore, { count: value.length - 12 }) : "")
+  };
+
+  const flowAnswer = FlowView.prototype.read;
+  Object.assign(FlowView.prototype, {
+    /** Conditions read a picker's answer as its record ids. */
+    read(id) { const value = flowAnswer.call(this, id); return this.model.fields.get(id)?.type === "pick" && Array.isArray(value) ? value.map(item => item.id) : value; }
+  });
 
   function flowPickText(cell, fallback) {
     if (cell !== null && typeof cell === "object") return typeof cell.text === "string" ? cell.text : cell.value == null ? fallback : String(cell.value);

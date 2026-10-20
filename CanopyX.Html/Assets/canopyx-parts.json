@@ -118,7 +118,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "4e805f9c07937d72",
+      "version": "509177d3f0f5f0a9",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -130,6 +130,272 @@
       ],
       "requires": [
         "forms"
+      ]
+    },
+    {
+      "name": "flow-host",
+      "label": "flow host hooks",
+      "version": "47a04ff0e733aa93",
+      "script": "canopyx-flow-host.js",
+      "style": "canopyx-flow-host.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowHost"
+      ],
+      "requires": [
+        "flow"
+      ]
+    },
+    {
+      "name": "flow-checks",
+      "label": "flow checks",
+      "version": "4d6cc908702a2e3e",
+      "script": "canopyx-flow-checks.js",
+      "style": "canopyx-flow-checks.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowChecks"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-options",
+      "label": "flow host options",
+      "version": "c3c98b45aab1fd87",
+      "script": "canopyx-flow-options.js",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowHostOptions"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-pick",
+      "label": "flow pick steps",
+      "version": "f4cb517f41f9ef07",
+      "script": "canopyx-flow-pick.js",
+      "style": "canopyx-flow-pick.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowPick"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-records",
+      "label": "flow records",
+      "version": "f3c09661bdffb8d0",
+      "script": "canopyx-flow-records.js",
+      "style": "canopyx-flow-records.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowRecords"
+      ],
+      "requires": [
+        "flow"
+      ]
+    },
+    {
+      "name": "flow-drafts",
+      "label": "flow drafts and presets",
+      "version": "02630fcc42340fe5",
+      "script": "canopyx-flow-drafts.js",
+      "style": "canopyx-flow-drafts.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowDrafts"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-preview",
+      "label": "flow preview",
+      "version": "f4fb5c42743873c0",
+      "script": "canopyx-flow-preview.js",
+      "style": "canopyx-flow-preview.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowPreview"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-command",
+      "label": "flow command",
+      "version": "a987505e0b52f35e",
+      "script": "canopyx-flow-command.js",
+      "style": "canopyx-flow-command.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowCommand"
+      ],
+      "requires": [
+        "flow"
+      ]
+    },
+    {
+      "name": "flow-tasks",
+      "label": "flow task lists",
+      "version": "0b64266e2835c97d",
+      "script": "canopyx-flow-tasks.js",
+      "style": "canopyx-flow-tasks.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowTasks"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-dialog",
+      "label": "flow dialogs",
+      "version": "ebb432cd6e34aba6",
+      "script": "canopyx-flow-dialog.js",
+      "style": "canopyx-flow-dialog.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowDialog"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-links",
+      "label": "flow deep links",
+      "version": "2c14b19c9236e90d",
+      "script": "canopyx-flow-links.js",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowLinks"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-endpoint",
+      "label": "flow endpoint",
+      "version": "f5cddfc9545e0920",
+      "script": "canopyx-flow-endpoint.js",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowEndpoint"
+      ],
+      "requires": [
+        "flow",
+        "flow-host"
+      ]
+    },
+    {
+      "name": "flow-consent",
+      "label": "flow consent",
+      "version": "22121778bc0d07c5",
+      "script": "canopyx-flow-consent.js",
+      "style": "canopyx-flow-consent.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowConsent"
+      ],
+      "requires": [
+        "flow"
       ]
     },
     {
