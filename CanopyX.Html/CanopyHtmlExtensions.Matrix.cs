@@ -12,7 +12,8 @@ public static partial class CanopyHtmlExtensions {
     /// <returns>The fragment markup.</returns>
     /// <remarks>
     /// Include a data-grid or reporting entry point (<see cref="CanopyRuntime.DataGrid"/>) once per page. Without a
-    /// <see cref="CanopyHtmlOptions.Height"/> the matrix takes its natural height, and its cells scroll within 80% of the window height.
+    /// <see cref="CanopyHtmlOptions.Height"/> the host takes the stylesheet default as its bound, and a full page fills the window. With
+    /// <see cref="CanopyMatrix.AutoHeight"/> (the default) a matrix whose content fits is only as tall as its toolbar, legend and cells.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The matrix is invalid, tree filter IDs are specified, or a requested part does not ship with the data-grid entry point.</exception>

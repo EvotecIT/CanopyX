@@ -610,6 +610,7 @@ public sealed partial class CanopyLabels {
         [nameof(MatrixNoGrouping)] = "No groups",
         [nameof(MatrixDescending)] = "Descending",
         [nameof(MatrixOnlyProblems)] = "Only problems",
+        [nameof(MatrixHideEmpty)] = "Hide empty rows and columns",
         [nameof(MatrixSize)] = "{rows} × {columns}",
         [nameof(MatrixShown)] = "Rows: {rows} of {totalRows}, columns: {columns} of {totalColumns}",
         [nameof(MatrixAttention)] = "Need attention: {count}",

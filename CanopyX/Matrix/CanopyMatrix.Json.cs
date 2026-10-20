@@ -64,11 +64,13 @@ public sealed partial class CanopyMatrix {
         }
 
         if (AttentionOnly) writer.Property("attentionOnly", true);
+        if (HideEmpty) writer.Property("hideEmpty", true);
         writer.OptionalProperty("cellWidth", CellWidth);
         if (Density.HasValue) writer.Property("density", Density.Value == CanopyGridDensity.Compact ? "compact" : Density.Value == CanopyGridDensity.Comfortable ? "comfortable" : "normal");
         if (Details == CanopyMatrixDetails.Host) writer.Property("details", "host");
         if (Phone == CanopyMatrixPhoneLayout.Cards) writer.Property("phone", "cards");
         if (!Legend) writer.Property("legend", false);
+        if (!AutoHeight) writer.Property("autoHeight", false);
         if (Labels != null && Labels.HasMatrixLabels) { writer.Name("labels"); Labels.WriteMatrixJson(writer); }
         return writer.EndObject().ToString();
     }
@@ -133,7 +135,7 @@ public sealed partial class CanopyMatrix {
     public static CanopyMatrix FromJson(string json) {
         const string what = "The matrix document";
         var map = CanopyFlowContract.Object(CanopyJsonReader.Parse(json), what, "protocol", "type", "id", "label", "rows", "columns", "square", "columnTitle", "diagonal", "states",
-            "cells", "notes", "totals", "attentionOnly", "cellWidth", "density", "details", "phone", "legend", "labels");
+            "cells", "notes", "totals", "attentionOnly", "hideEmpty", "cellWidth", "density", "details", "phone", "legend", "autoHeight", "labels");
         if (CanopyFlowContract.Text(map, "protocol", what) != CanopyProtocol.Version || CanopyFlowContract.Text(map, "type", what) != "matrix")
             throw new InvalidOperationException(what + " must have protocol " + CanopyProtocol.Version + " and type \"matrix\".");
         var id = CanopyFlowContract.RequiredText(map, "id", what);
@@ -177,6 +179,7 @@ public sealed partial class CanopyMatrix {
         }
 
         matrix.AttentionOnly = CanopyFlowContract.Boolean(map, "attentionOnly", what) ?? false;
+        matrix.HideEmpty = CanopyFlowContract.Boolean(map, "hideEmpty", what) ?? false;
         matrix.CellWidth = CanopyFlowContract.Integer(map, "cellWidth", what);
         var density = CanopyFlowContract.Text(map, "density", what);
         if (density != null) matrix.Density = CanopyFlowContract.Choose(density, what, "density", ("compact", CanopyGridDensity.Compact), ("normal", CanopyGridDensity.Default), ("comfortable", CanopyGridDensity.Comfortable));
@@ -185,6 +188,7 @@ public sealed partial class CanopyMatrix {
         var phone = CanopyFlowContract.Text(map, "phone", what);
         if (phone != null) matrix.Phone = CanopyFlowContract.Choose(phone, what, "phone", ("scroll", CanopyMatrixPhoneLayout.Scroll), ("cards", CanopyMatrixPhoneLayout.Cards));
         matrix.Legend = CanopyFlowContract.Boolean(map, "legend", what) ?? true;
+        matrix.AutoHeight = CanopyFlowContract.Boolean(map, "autoHeight", what) ?? true;
         if (map.TryGetValue("labels", out var labels)) matrix.Labels = CanopyLabels.ReadMatrixLabels(labels);
         matrix.Validate();
         return matrix;

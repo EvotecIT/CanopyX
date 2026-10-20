@@ -602,6 +602,7 @@
   "MatrixNoGrouping": ["Bez grup","Keine Gruppen","Sin grupos","Aucun groupe","Nessun gruppo"],
   "MatrixDescending": ["Malejąco","Absteigend","Descendente","Décroissant","Decrescente"],
   "MatrixOnlyProblems": ["Tylko problemy","Nur Probleme","Solo problemas","Problèmes uniquement","Solo problemi"],
+  "MatrixHideEmpty": ["Ukryj puste wiersze i kolumny","Leere Zeilen und Spalten ausblenden","Ocultar filas y columnas vacías","Masquer les lignes et colonnes vides","Nascondi righe e colonne vuote"],
   "MatrixSize": ["{rows} × {columns}","{rows} × {columns}","{rows} × {columns}","{rows} × {columns}","{rows} × {columns}"],
   "MatrixShown": ["Wiersze: {rows} z {totalRows}, kolumny: {columns} z {totalColumns}","Zeilen: {rows} von {totalRows}, Spalten: {columns} von {totalColumns}","Filas: {rows} de {totalRows}, columnas: {columns} de {totalColumns}","Lignes : {rows} sur {totalRows}, colonnes : {columns} sur {totalColumns}","Righe: {rows} di {totalRows}, colonne: {columns} di {totalColumns}"],
   "MatrixAttention": ["Wymaga uwagi: {count}","Erfordert Aufmerksamkeit: {count}","Requieren atención: {count}","À examiner : {count}","Richiedono attenzione: {count}"],

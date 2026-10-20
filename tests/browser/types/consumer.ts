@@ -839,5 +839,5 @@ const matrixDocument: MatrixDocument = { protocol: "canopyx/2", type: "matrix", 
 const matrixApi = createMatrix(document.createElement("div"), { view: matrixDocument, onCell: (detail: MatrixCellDetail, event) => { if (detail.state === "fail") event.preventDefault(); } });
 matrixApi.sort("rows", "#total", "desc"); matrixApi.filter("columns", "site", ["Oslo"]);
 const matrixRows: string[] = matrixApi.getVisible().rows;
-GridRuntime.createMatrix(document.createElement("div"), { view: matrixDocument, state: { attentionOnly: true } }).destroy();
+GridRuntime.createMatrix(document.createElement("div"), { view: { ...matrixDocument, hideEmpty: true, autoHeight: false }, state: { attentionOnly: true, hideEmpty: false } }).destroy();
 void matrixRows;

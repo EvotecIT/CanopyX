@@ -607,6 +607,7 @@ public sealed partial class CanopyLabels {
         MatrixNoGrouping = "Sin grupos",
         MatrixDescending = "Descendente",
         MatrixOnlyProblems = "Solo problemas",
+        MatrixHideEmpty = "Ocultar filas y columnas vacías",
         MatrixSize = "{rows} × {columns}",
         MatrixShown = "Filas: {rows} de {totalRows}, columnas: {columns} de {totalColumns}",
         MatrixAttention = "Requieren atención: {count}",

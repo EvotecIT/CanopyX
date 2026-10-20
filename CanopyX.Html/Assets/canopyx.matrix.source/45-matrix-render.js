@@ -24,14 +24,16 @@
     },
     render() {
       if (this.destroyed || this.scroll.hidden) return;
-      const { rows, columns } = this.windows(), model = this.model, focus = this.focus;
+      const { rows, columns } = this.windows(), model = this.model, focus = this.focus, scroll = this.scroll, top = scroll.scrollTop;
+      const below = scroll.scrollHeight - scroll.clientHeight - top > 1;
+      this.head.classList.toggle("cx-mx-raised", top > 0); this.foot.classList.toggle("cx-mx-raised", below);
       const columnList = [];
       for (let c = columns.first; c <= columns.last; c++) columnList.push(c);
       if (focus.column >= 0 && focus.column < model.columns.length && (focus.column < columns.first || focus.column > columns.last)) columnList.push(focus.column);
       const rowList = [];
       for (let r = rows.first; r <= rows.last; r++) rowList.push(r);
       if (focus.row >= 0 && focus.row < model.rows.length && (focus.row < rows.first || focus.row > rows.last)) rowList.push(focus.row);
-      this.paintHeader(columnList); this.paintBand(columns); this.paintFoot(columnList);
+      this.paintHeader(columnList); this.paintBand(columns); this.placeBands(); this.paintFoot(columnList);
       const keep = new Set();
       for (const r of rowList) {
         const entry = model.rows[r];
@@ -121,15 +123,29 @@
         seen.add(entry.band.key);
         if (mounted.has(entry.band.key)) continue;
         const band = entry.band, first = model.columns.findIndex(item => item.band === band), element = h("div", "cx-mx-bcell");
-        element.style.insetInlineStart = this.rowHeadW + this.columnWindow.offset(first) + "px"; element.style.width = band.members.length * this.cellW + "px";
+        element._from = this.columnWindow.offset(first); element._width = band.members.length * this.cellW;
+        element.style.insetInlineStart = this.rowHeadW + element._from + "px"; element.style.width = element._width + "px";
         element.setAttribute("role", "columnheader"); element.setAttribute("aria-colindex", String(first + 2)); element.setAttribute("aria-colspan", String(band.members.length));
         // The band's button takes no tab stop: the grid keeps one, and Enter on a column header rolls its group up.
         const toggle = h("button", "cx-mx-toggle"); toggle.type = "button"; toggle.tabIndex = -1; toggle.setAttribute("aria-expanded", "true");
         toggle.setAttribute("aria-label", fill(this.labels.matrixCollapseGroup, { group: band.label })); toggle._group = { axis: "columns", key: band.key };
         const text = h("span", "cx-mx-label"); setText(text, band.label); toggle.appendChild(text); element.appendChild(toggle);
+        // A narrow band shortens its name; the whole name is its tooltip.
+        element.title = band.label;
         mounted.set(band.key, element); this.band.appendChild(element);
       }
       for (const [key, element] of mounted) if (!seen.has(key)) { element.remove(); mounted.delete(key); }
+    },
+    /** A band's name starts where the band meets the view, so a band scrolled under the row headers still names itself; a band
+     *  cut to a sliver at the edge shows no name rather than a lone arrow; a narrow band wholly in view keeps its button. */
+    placeBands() {
+      if (!this.bandH) return;
+      const start = Math.abs(this.scroll.scrollLeft), end = start + Math.max(0, this.scroll.clientWidth - this.rowHeadW - this.totalW);
+      for (const element of this.bandMounted.values()) {
+        const from = element._from, shown = Math.min(end, from + element._width) - Math.max(start, from), toggle = element.firstChild;
+        toggle.style.marginInlineStart = Math.max(0, start - from) + "px"; toggle.style.maxWidth = Math.max(0, shown - 8) + "px";
+        element.classList.toggle("cx-mx-bclip", shown < Math.min(40, element._width));
+      }
     },
     paintFoot(columnList) {
       if (!this.footH) return;

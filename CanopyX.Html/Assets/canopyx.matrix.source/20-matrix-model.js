@@ -1,5 +1,5 @@
   // ---------- matrix: what the reader sees, derived from the document and the query ----------
-  // Each axis is filtered (search, facet values, only problems), totalled over the other axis's visible items, sorted and
+  // Each axis is filtered (search, facet values, only problems or hide empty), totalled over the other axis's visible items, sorted and
   // grouped. An expanded row group is a heading row and its members; a collapsed group is one rolled-up row or column whose
   // cells show the worst state of their members and how many need attention. Self cells of a square matrix count nowhere.
   const MATRIX_AXES = ["rows", "columns"];
@@ -28,7 +28,7 @@
     /** The query a new matrix starts from: the document's sorts, groups and only-problems switch. */
     initialQuery() {
       const doc = this.doc, axis = name => doc[name];
-      return { search: "", attentionOnly: doc.attentionOnly, filters: { rows: {}, columns: {} },
+      return { search: "", attentionOnly: doc.attentionOnly, hideEmpty: doc.hideEmpty, filters: { rows: {}, columns: {} },
         sort: { rows: axis("rows").sort, columns: axis("columns").sort }, group: { rows: axis("rows").groupBy, columns: axis("columns").groupBy },
         collapsed: { rows: [], columns: [] } };
     }
@@ -54,11 +54,13 @@
         else if (rows.hits && !columns.hits) columns = this.candidates(doc.columns, query.filters.columns, "");
       }
       let rowItems = rows.items, columnItems = columns.items;
-      if (query.attentionOnly) {
-        const attention = doc.attention, keepRow = new Uint8Array(doc.rows.items.length), keepColumn = new Uint8Array(C);
+      // Only problems keeps the rows and columns with a cell that needs attention; hide empty those with any cell that has data.
+      // Each axis is judged against the other's visible items, so a search or facet on one axis keeps the partners on the other.
+      if (query.attentionOnly || query.hideEmpty) {
+        const attention = doc.attention, only = query.attentionOnly, keepRow = new Uint8Array(doc.rows.items.length), keepColumn = new Uint8Array(C);
         for (const row of rowItems) for (const column of columnItems) {
           const state = grid[row.index * C + column.index];
-          if (state < MATRIX_SELF && attention[state]) { keepRow[row.index] = 1; keepColumn[column.index] = 1; }
+          if (state < MATRIX_SELF && (!only || attention[state])) { keepRow[row.index] = 1; keepColumn[column.index] = 1; }
         }
         rowItems = rowItems.filter(item => keepRow[item.index]); columnItems = columnItems.filter(item => keepColumn[item.index]);
       }

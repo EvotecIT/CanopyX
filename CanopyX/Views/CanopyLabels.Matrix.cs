@@ -24,6 +24,8 @@ public sealed partial class CanopyLabels {
     public string MatrixDescending { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the switch that keeps the rows and columns with cells that need attention. Default "Only problems".</summary>
     public string MatrixOnlyProblems { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the switch that hides the rows and columns whose visible cells all lack data. Default "Hide empty rows and columns".</summary>
+    public string MatrixHideEmpty { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the size of the matrix, including <c>{rows}</c> and <c>{columns}</c>. Default "{rows} × {columns}".</summary>
     public string MatrixSize { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the size while filters hide items, including <c>{rows}</c>, <c>{totalRows}</c>, <c>{columns}</c> and <c>{totalColumns}</c>. Default "Rows: {rows} of {totalRows}, columns: {columns} of {totalColumns}".</summary>

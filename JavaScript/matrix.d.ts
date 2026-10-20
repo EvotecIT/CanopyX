@@ -72,18 +72,23 @@ export interface MatrixDocument {
   notes?: MatrixNote[];
   totals?: { states?: string[]; rows?: boolean; columns?: boolean };
   attentionOnly?: boolean;
+  /** Opens hiding the rows and columns whose visible cells all lack data. */
+  hideEmpty?: boolean;
   cellWidth?: number;
   density?: "compact" | "normal" | "comfortable";
   details?: "dialog" | "host";
   phone?: "scroll" | "cards";
   legend?: boolean;
+  /** As tall as the content when it fits, with the host's height as the bound. Default true. */
+  autoHeight?: boolean;
   labels?: Record<string, string>;
 }
 
-/** The reader's query: search, filters by attribute value, only problems, and each axis's sort, groups and collapsed groups. */
+/** The reader's query: search, filters by attribute value, only problems, hide empty, and each axis's sort, groups and collapsed groups. */
 export interface MatrixQueryState {
   search: string;
   attentionOnly: boolean;
+  hideEmpty: boolean;
   filters: { rows: Record<string, string[]>; columns: Record<string, string[]> };
   sort: { rows: MatrixSort | null; columns: MatrixSort | null };
   group: { rows: string | null; columns: string | null };
@@ -112,6 +117,7 @@ export interface MatrixCellDetail {
 export interface MatrixStateInput {
   search?: string;
   attentionOnly?: boolean;
+  hideEmpty?: boolean;
   filters?: { rows?: Record<string, string[] | null>; columns?: Record<string, string[] | null> };
   sort?: { rows?: MatrixSort | null; columns?: MatrixSort | null };
   group?: { rows?: string | null; columns?: string | null };

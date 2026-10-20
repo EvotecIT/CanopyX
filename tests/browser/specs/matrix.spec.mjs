@@ -168,6 +168,69 @@ test("search, facet values and only problems filter both axes, and the totals fo
   await expect(page.locator(".cx-mx-empty")).toHaveText("No rows or columns match.");
 });
 
+test("hide empty drops the rows and columns without data, keeps the partners of a search, and empty cells show a faint dot", async ({ page }) => {
+  await mountMatrix(page, matrixDoc());
+  // A cell without data draws a small dot at its centre and nothing at its edge.
+  const empty = await page.evaluate(() => {
+    const row = [...document.querySelectorAll(".cx-mx-row")].find(item => item.querySelector(".cx-mx-rowhead").textContent === "Row C"), canvas = row.querySelector("canvas");
+    const head = document.querySelector('.cx-mx-hcell[aria-colindex="3"]').getBoundingClientRect(), box = canvas.getBoundingClientRect(), ratio = canvas.width / box.width, ctx = canvas.getContext("2d");
+    const at = (x, y) => ctx.getImageData(Math.round((head.left - box.left + x) * ratio), Math.round(y * ratio), 1, 1).data[3];
+    return { centre: at(head.width / 2, box.height / 2), edge: at(4, 4) };
+  });
+  expect(empty.centre).toBeGreaterThan(0); expect(empty.edge).toBe(0);
+  const toggle = page.getByRole("checkbox", { name: "Hide empty rows and columns" });
+  await toggle.check();
+  expect(await rowLabels(page)).toEqual(["Row A", "Row B", "Row C", "Row D", "Row E"]);
+  expect(await headLabels(page)).toHaveLength(4);
+  await page.getByRole("searchbox", { name: "Find rows and columns" }).fill("row c");
+  await expect.poll(() => headLabels(page)).toEqual(["Col X", "Col W"]);
+  expect(await page.evaluate(() => api.getState())).toMatchObject({ search: "row c", hideEmpty: true });
+  await page.evaluate(() => api.setState({ hideEmpty: false }));
+  await expect.poll(() => headLabels(page)).toHaveLength(4);
+  await expect(toggle).not.toBeChecked();
+  // A matrix with data in every cell offers no switch; a document can open with it on.
+  await page.unrouteAll();
+  await mountMatrix(page, matrixDoc({ cells: Array.from({ length: 6 }, () => "2222"), notes: [] }));
+  await expect(toggle).toBeHidden();
+  await page.unrouteAll();
+  await mountMatrix(page, matrixDoc({ hideEmpty: true }));
+  await expect(toggle).toBeChecked();
+  expect(await rowLabels(page)).toHaveLength(5);
+});
+
+test("a matrix whose rows fit is as tall as they are, and a long one fills its host and scrolls", async ({ page }) => {
+  await mountMatrix(page, matrixDoc(), { height: 520 });
+  const sizes = () => page.evaluate(() => {
+    const host = document.getElementById("host").getBoundingClientRect(), scroll = document.querySelector(".cx-mx-scroll");
+    return { host: Math.round(host.height), gap: Math.round(host.bottom - scroll.getBoundingClientRect().bottom), overflow: scroll.scrollHeight - scroll.clientHeight };
+  });
+  const fitted = await sizes();
+  expect(fitted.host).toBeLessThan(470); expect(Math.abs(fitted.gap)).toBeLessThanOrEqual(2); expect(fitted.overflow).toBe(0);
+  await page.evaluate(doc => api.update(doc), matrixDoc({ autoHeight: false }));
+  await nextFrames(page);
+  expect((await sizes()).host).toBe(520);
+  const items = Array.from({ length: 60 }, (_, i) => ({ id: "r" + i, label: "Row " + i }));
+  await page.evaluate(doc => api.update(doc), matrixDoc({ rows: { title: "Server", items }, cells: items.map(() => "2222"), notes: [] }));
+  await nextFrames(page);
+  const long = await sizes();
+  expect(long.host).toBe(520); expect(Math.abs(long.gap)).toBeLessThanOrEqual(2); expect(long.overflow).toBeGreaterThan(0);
+  // Rows passing under the totals row raise it with a shadow, and under the header once scrolled.
+  await expect(page.locator(".cx-mx-foot")).toHaveClass(/cx-mx-raised/);
+  await expect(page.locator(".cx-mx-head")).not.toHaveClass(/cx-mx-raised/);
+  await page.locator(".cx-mx-scroll").evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await expect(page.locator(".cx-mx-head")).toHaveClass(/cx-mx-raised/);
+  await expect(page.locator(".cx-mx-foot")).not.toHaveClass(/cx-mx-raised/);
+  // A host that was hidden fits once it shows.
+  await page.locator("#host").evaluate(host => { host.style.display = "none"; });
+  await page.evaluate(doc => api.update(doc), matrixDoc());
+  await page.locator("#host").evaluate(host => { host.style.display = ""; });
+  await nextFrames(page); await nextFrames(page);
+  const shown = await sizes();
+  expect(shown.host).toBeLessThan(470); expect(Math.abs(shown.gap)).toBeLessThanOrEqual(2); expect(shown.overflow).toBe(0);
+  await page.evaluate(() => api.destroy());
+  expect(await page.locator("#host").evaluate(host => [host.style.height, host.style.maxHeight])).toEqual(["520px", ""]);
+});
+
 test("the self cells of a square matrix count nowhere, unless the diagonal holds data", async ({ page }) => {
   const square = { protocol: "canopyx/2", type: "matrix", id: "square", label: "Square", square: true, columnTitle: "Source",
     rows: { title: "Destination", items: ["a", "b", "c"].map(id => ({ id, label: id.toUpperCase() })) }, states: STATES, cells: ["000", "201", "220"] };
@@ -202,6 +265,33 @@ test("both axes are windowed: a 150 by 150 matrix mounts a viewport of cells, wi
   expect(Math.abs(geometry.head)).toBeLessThanOrEqual(2); expect(Math.abs(geometry.rowHead)).toBeLessThanOrEqual(2); expect(Math.abs(geometry.foot)).toBeLessThanOrEqual(2);
   await expect(page.locator(".cx-mx-hcell").last()).toContainText("DC");
   await expect(page.locator('.cx-mx-hcell[aria-colindex="151"]')).toHaveCount(1);
+});
+
+test("a column band names itself from where it meets the view, and a sliver of a band shows no name", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(exampleUrl("matrix-replication.html"));
+  await page.waitForSelector("[data-cx-ready]");
+  await nextFrames(page);
+  const bands = () => page.evaluate(() => {
+    const start = document.querySelector(".cx-mx-bandcorner").getBoundingClientRect().right, end = document.querySelector(".cx-mx-bandend").getBoundingClientRect().left;
+    return [...document.querySelectorAll(".cx-mx-bcell")].map(band => {
+      const box = band.getBoundingClientRect(), toggle = band.querySelector(".cx-mx-toggle").getBoundingClientRect();
+      return { x: box.left, width: box.width, shown: Math.min(end, box.right) - Math.max(start, box.left), clipped: band.classList.contains("cx-mx-bclip"), left: Math.round(toggle.left - start), right: Math.round(end - toggle.right) };
+    }).filter(band => band.shown > 0).sort((a, b) => a.x - b.x);
+  });
+  // Every band in view either shows its whole button inside the view, or (a sliver at the edge) no name at all.
+  const check = list => { for (const band of list) if (!band.clipped) { expect(band.left).toBeGreaterThanOrEqual(-1); expect(band.right).toBeGreaterThanOrEqual(-1); } else expect(band.shown).toBeLessThan(Math.min(40, band.width)); };
+  const initial = await bands();
+  expect(initial.length).toBeGreaterThan(1);
+  check(initial);
+  // Scroll halfway into the first band, so it passes under the row headers.
+  await page.locator(".cx-mx-scroll").evaluate(element => { element.scrollLeft = Math.floor(element.querySelector(".cx-mx-bcell").getBoundingClientRect().width / 2); });
+  await nextFrames(page);
+  const scrolled = await bands();
+  check(scrolled);
+  // The band scrolled under the row headers names itself at the start of the view.
+  expect(scrolled[0].clipped).toBe(false);
+  expect(scrolled[0].left).toBeGreaterThanOrEqual(0); expect(scrolled[0].left).toBeLessThanOrEqual(6);
 });
 
 test("right to left mirrors the sticky sides and the arrow keys", async ({ page }) => {

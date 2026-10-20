@@ -35,7 +35,7 @@ foreach (var link in links) {
     if (link.Failures > 0) cell.Text = link.Failures.ToString(CultureInfo.InvariantCulture);
     cell.Detail("Last success", link.LastSuccess.ToString("u", CultureInfo.InvariantCulture));
 }
-matrix.SaveHtmlPage("replication.html", new CanopyHtmlOptions { Height = "680px" });
+matrix.SaveHtmlPage("replication.html");                // a page fills the window; a fragment takes CanopyHtmlOptions.Height
 ```
 
 `AddCells(records, row, column, state, configure)` adds a cell per record. In JavaScript, `CanopyX.createMatrix(host, { view })`
@@ -70,10 +70,12 @@ and `large/matrix-400.html`.
 | `notes` | Sparse extras, `[row, column, value, text, title, details]` by position: a number the cell shows, short text instead (at most 64 characters), a longer title for the tooltip and the dialog, and up to 16 `[label, value]` details. Trailing items can be left out. |
 | `totals` | `states` the totals count (by default those marked `attention`), and `rows: false` or `columns: false` to hide the totals column or row. |
 | `attentionOnly` | Opens on the rows and columns that have a cell needing attention. |
+| `hideEmpty` | Opens hiding the rows and columns whose visible cells all lack data. |
 | `cellWidth`, `density` | 24 to 120 pixels (32 by default); compact, normal or comfortable. |
 | `details` | `dialog` (the default) shows a cell's details unless the host handles `canopyx:matrixCell`; `host` only raises the event. |
 | `phone` | `scroll` (the default) keeps row headers pinned while the columns scroll; `cards` shows a card per row below 640 pixels. |
 | `legend`, `labels` | Hide the legend; the matrix labels that differ from English. |
+| `autoHeight` | `false` keeps the host's height. By default a matrix whose content fits is only as tall as its toolbar, legend and cells, with the host's height as the bound, as trees and flat grids are; longer matrices fill the host and scroll inside it. |
 
 The document is checked strictly in C# (`Validate`, `ToJson`, `FromJson`) and in the browser: unknown properties, duplicate ids,
 cells that name no state, and links that are not http, https, mailto or relative fail the whole document with a message.
@@ -87,7 +89,12 @@ cell's accessible name ("DC05 and DC07: Failing, 3"). The legend lists each stat
 
 The totals column counts, per row, the cells of the visible columns whose state the totals count ("DC05: 3"), the totals row
 does the same per column, and its last cell holds the grand total. A collapsed group's row or column shows the worst state of its
-members' cells and how many need attention. In a square matrix the self cells are hatched and never counted.
+members' cells and how many need attention. In a square matrix the self cells are hatched and never counted. A cell without data
+shows a faint dot, quieter than the hatch, so a sparse matrix reads as drawn rather than unfinished.
+
+The header and the totals row stay in view while the cells scroll; a soft shadow under the header and above the totals row
+shows when rows pass beneath them. A column group's name starts where its band meets the view, and a band with too little in
+view, cut to a sliver at its edge, shows no name rather than a lone arrow; a band's full name is its tooltip.
 
 ## Sorting, filtering and grouping
 
@@ -101,7 +108,10 @@ Each axis has a panel (the Rows and Columns buttons, named after the axis titles
 
 **Search** finds rows and columns by label, secondary text and attribute values: it filters each axis it matches (only the
 rows of a square matrix). **Only problems** keeps the rows and columns that have a cell needing attention among the other
-axis's visible items. Totals, the legend and the summary ("Rows: 35 of 400, columns: 40 of 40 · Need attention: 459") follow.
+axis's visible items. **Hide empty rows and columns**, offered when some cells have no data, keeps those with a cell that has
+data among the other axis's visible items: on its own it drops the empty rows and columns, and with a search or a facet it keeps
+the partners of what was found (search for DC010 in a replication matrix to see only its sources). Totals, the legend and the
+summary ("Rows: 35 of 400, columns: 40 of 40 · Need attention: 459") follow.
 The query is plain data, raised as `canopyx:matrixState` and accepted by `setState`.
 
 ## Details and events
@@ -158,7 +168,7 @@ the visible matrix.
 | `group(axis, attribute)` | Groups an axis by an attribute, or null for none. |
 | `filter(axis, attribute, values)` | Keeps the items whose attribute value is among `values`; null clears it. |
 | `setSearch(text)`, `setAttentionOnly(on)` | The search and the only-problems switch. |
-| `getState()`, `setState(state)` | The query: search, filters, only problems, sorts, groups and collapsed groups. |
+| `getState()`, `setState(state)` | The query: search, filters, only problems, hide empty (`hideEmpty`), sorts, groups and collapsed groups. |
 | `getVisible()` | The ids of the visible rows and columns, members of collapsed groups included. |
 | `focusCell(row, column)` | Moves focus to a cell. |
 | `update(document)` | Replaces the document and keeps the query that still applies, for live refresh. |

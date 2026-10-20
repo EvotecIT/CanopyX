@@ -1968,6 +1968,7 @@ CanopyX.CanopyLabels.System.String MatrixExpandGroup { get; set; }
 CanopyX.CanopyLabels.System.String MatrixFilter { get; set; }
 CanopyX.CanopyLabels.System.String MatrixGroupBy { get; set; }
 CanopyX.CanopyLabels.System.String MatrixGroupCount { get; set; }
+CanopyX.CanopyLabels.System.String MatrixHideEmpty { get; set; }
 CanopyX.CanopyLabels.System.String MatrixItemTotal { get; set; }
 CanopyX.CanopyLabels.System.String MatrixLegend { get; set; }
 CanopyX.CanopyLabels.System.String MatrixNoData { get; set; }
@@ -2069,7 +2070,9 @@ CanopyX.CanopyMatrix.CanopyX.CanopyMatrixDetails Details { get; set; }
 CanopyX.CanopyMatrix.CanopyX.CanopyMatrixDiagonal Diagonal { get; set; }
 CanopyX.CanopyMatrix.CanopyX.CanopyMatrixPhoneLayout Phone { get; set; }
 CanopyX.CanopyMatrix.System.Boolean AttentionOnly { get; set; }
+CanopyX.CanopyMatrix.System.Boolean AutoHeight { get; set; }
 CanopyX.CanopyMatrix.System.Boolean ColumnTotals { get; set; }
+CanopyX.CanopyMatrix.System.Boolean HideEmpty { get; set; }
 CanopyX.CanopyMatrix.System.Boolean Legend { get; set; }
 CanopyX.CanopyMatrix.System.Boolean RowTotals { get; set; }
 CanopyX.CanopyMatrix.System.Boolean Square { get; set; }

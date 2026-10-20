@@ -79,16 +79,21 @@ public sealed class MatrixTests {
         var matrix = Small();
         matrix.TotalStates.Add("bad"); matrix.RowTotals = false; matrix.AttentionOnly = true; matrix.CellWidth = 44; matrix.Density = CanopyGridDensity.Compact;
         matrix.Details = CanopyMatrixDetails.Host; matrix.Phone = CanopyMatrixPhoneLayout.Cards; matrix.Legend = false;
+        matrix.HideEmpty = true; matrix.AutoHeight = false;
         matrix.Rows.GroupBy = "site"; matrix.Rows.SortBy = CanopyMatrix.SortByTotal; matrix.Rows.SortDescending = true;
         matrix.Labels = CanopyLabels.Polish();
         var json = matrix.ToJson();
         foreach (var part in new[] { "\"totals\":{\"states\":[\"bad\"],\"rows\":false}", "\"attentionOnly\":true", "\"cellWidth\":44", "\"density\":\"compact\"", "\"details\":\"host\"",
-            "\"phone\":\"cards\"", "\"legend\":false", "\"groupBy\":\"site\"", "\"sort\":{\"by\":\"#total\",\"direction\":\"desc\"}", "\"matrixSearch\":\"Szukaj wierszy i kolumn\"" })
+            "\"phone\":\"cards\"", "\"legend\":false", "\"hideEmpty\":true", "\"autoHeight\":false", "\"groupBy\":\"site\"", "\"sort\":{\"by\":\"#total\",\"direction\":\"desc\"}", "\"matrixSearch\":\"Szukaj wierszy i kolumn\"" })
             Assert.Contains(part, json);
         Assert.DoesNotContain("\"flowNext\"", json);
         var back = CanopyMatrix.FromJson(json);
         Assert.Equal(json, back.ToJson());
         Assert.Equal("Szukaj wierszy i kolumn", back.Labels!.MatrixSearch);
+        Assert.True(back.HideEmpty); Assert.False(back.AutoHeight);
+        Assert.Equal("Ukryj puste wiersze i kolumny", back.Labels.MatrixHideEmpty);
+        var defaults = Small().ToJson();
+        Assert.DoesNotContain("\"hideEmpty\"", defaults); Assert.DoesNotContain("\"autoHeight\"", defaults);
     }
 
     [Fact]

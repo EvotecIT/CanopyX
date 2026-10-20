@@ -1,4 +1,4 @@
-  // ---------- matrix: the toolbar (search, the Rows and Columns panels, only problems) and the legend ----------
+  // ---------- matrix: the toolbar (search, the Rows and Columns panels, only problems, hide empty) and the legend ----------
   // Each axis panel sorts (name, total, an attribute or as listed), groups by an attribute and filters by the values of the
   // attributes marked facet, with their counts. Filters are the grid's "in" filters on attribute values, kept in the state.
   Object.assign(MatrixView.prototype, {
@@ -17,6 +17,10 @@
       toggle.type = "checkbox"; setText(switchText, labels.matrixOnlyProblems); switchLabel.append(toggle, switchText);
       toggle.addEventListener("change", () => this.setQuery({ attentionOnly: toggle.checked }), { signal });
       this.attentionSwitch = switchLabel; this.attentionText = switchText;
+      // Hide empty shows on sparse matrices only: it drops the rows and columns without data, or keeps the partners of a search.
+      const empty = this.emptyToggle = h("input", "cx-mx-check"), emptyLabel = this.emptySwitch = h("label", "cx-mx-switch"), emptyText = this.emptyText = h("span");
+      empty.type = "checkbox"; setText(emptyText, labels.matrixHideEmpty); emptyLabel.append(empty, emptyText);
+      empty.addEventListener("change", () => this.setQuery({ hideEmpty: empty.checked }), { signal });
       const clear = this.clearButton = h("button", "cx-mx-button cx-mx-clear"); clear.type = "button"; setText(clear, labels.matrixClearFilters);
       clear.addEventListener("click", () => { search.value = ""; this.setQuery({ search: "", filters: { rows: {}, columns: {} }, attentionOnly: false }); search.focus(); }, { signal });
       this.summary = h("span", "cx-mx-summary"); this.summary.setAttribute("aria-live", "off");
@@ -24,7 +28,7 @@
       // Escape closes the panel wherever focus is (a checkbox click does not focus it in every browser).
       document.addEventListener("keydown", event => { if (event.key === "Escape" && !this.panel.hidden && !event.defaultPrevented) { event.preventDefault(); this.closePanel(true); } }, { signal });
       document.addEventListener("pointerdown", event => { if (!this.panel.hidden && !this.panel.contains(event.target) && !Object.values(this.axisButtons).includes(event.target.closest("button"))) this.closePanel(false); }, { signal });
-      bar.append(search, this.axisButtons.rows, this.axisButtons.columns, switchLabel, clear, this.summary, this.panel);
+      bar.append(search, this.axisButtons.rows, this.axisButtons.columns, switchLabel, emptyLabel, clear, this.summary, this.panel);
     },
     /** The bar's texts and the only-problems switch, from the labels and the document. */
     refreshBar() {
@@ -32,6 +36,7 @@
       this.searchInput.placeholder = labels.matrixSearch; this.searchInput.setAttribute("aria-label", labels.matrixSearch);
       setText(this.attentionText, labels.matrixOnlyProblems); setText(this.clearButton, labels.matrixClearFilters);
       this.attentionSwitch.hidden = !this.doc.states.some(state => state.attention);
+      setText(this.emptyText, labels.matrixHideEmpty); this.emptySwitch.hidden = !this.doc.sparse;
     },
     axisTitle(axis) { return axis === "rows" ? this.doc.rows.title || this.labels.matrixRows : this.doc.columnTitle || this.labels.matrixColumns; },
     activeFilters(axis) { return Object.values(this.query.filters[axis]).reduce((sum, values) => sum + (values && values.length ? 1 : 0), 0); },
@@ -42,7 +47,7 @@
         setText(button, this.axisTitle(axis) + (count ? " (" + count + ")" : ""));
         button.classList.toggle("cx-mx-active", !!count || !!query.group[axis]);
       }
-      this.attentionToggle.checked = query.attentionOnly;
+      this.attentionToggle.checked = query.attentionOnly; this.emptyToggle.checked = query.hideEmpty;
       if (this.searchInput.value !== query.search && document.activeElement !== this.searchInput) this.searchInput.value = query.search;
       this.clearButton.hidden = !(query.search || query.attentionOnly || this.activeFilters("rows") || this.activeFilters("columns"));
       setText(this.summary, this.summaryText());

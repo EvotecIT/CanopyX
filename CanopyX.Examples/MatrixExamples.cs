@@ -13,11 +13,12 @@ internal static class MatrixExamples {
     private static readonly string[] Sites = { "Oslo", "Lyon", "Rome", "Porto", "Gdansk", "Vienna", "Dublin", "Tallinn", "Malmo", "Brno", "Ghent", "Turku" };
 
     internal static void Write(string output) {
+        // The pages set no height: each matrix fills the window, and a matrix whose rows fit is only as tall as they are (AutoHeight).
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
-            Replication().SaveHtmlPage(Path.Combine(output, "matrix-replication" + suffix + ".html"), new CanopyHtmlOptions { Title = "Inbound replication", Theme = theme, Height = "680px" });
-            Services().SaveHtmlPage(Path.Combine(output, "matrix-services" + suffix + ".html"), new CanopyHtmlOptions { Title = "Services by server", Theme = theme, Height = "620px" });
-            Consistency().SaveHtmlPage(Path.Combine(output, "matrix-consistency" + suffix + ".html"), new CanopyHtmlOptions { Title = "Policy consistency", Theme = theme, Height = "640px" });
+            Replication().SaveHtmlPage(Path.Combine(output, "matrix-replication" + suffix + ".html"), new CanopyHtmlOptions { Title = "Inbound replication", Theme = theme });
+            Services().SaveHtmlPage(Path.Combine(output, "matrix-services" + suffix + ".html"), new CanopyHtmlOptions { Title = "Services by server", Theme = theme });
+            Consistency().SaveHtmlPage(Path.Combine(output, "matrix-consistency" + suffix + ".html"), new CanopyHtmlOptions { Title = "Policy consistency", Theme = theme });
         }
 
         // Plain N by N matrices for the scroll benchmarks (tests/browser/bench/matrix-benchmark.mjs, matrix-performance.spec.mjs).

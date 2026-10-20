@@ -79,6 +79,12 @@ public sealed partial class CanopyMatrix {
     /// <summary>Gets or sets whether the matrix opens showing only the rows and columns with cells that need attention.</summary>
     public bool AttentionOnly { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether the matrix opens hiding the rows and columns whose visible cells all lack data, so a sparse matrix shows
+    /// only the pairs that exist. With a search or a facet on one axis, the other axis keeps only the partners of what was found.
+    /// </summary>
+    public bool HideEmpty { get; set; }
+
     /// <summary>Gets or sets the width of a cell in pixels, 24 to 120; null for 32 (wide enough for a symbol and two digits).</summary>
     public int? CellWidth { get; set; }
 
@@ -93,6 +99,12 @@ public sealed partial class CanopyMatrix {
 
     /// <summary>Gets or sets whether the legend of states and their counts shows above the cells.</summary>
     public bool Legend { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether a matrix whose rows fit is only as tall as its toolbar, legend and cells, with the host's height as the
+    /// bound, as trees and flat grids are. Longer matrices fill the host and scroll inside it. Default true; false keeps the host height.
+    /// </summary>
+    public bool AutoHeight { get; set; } = true;
 
     /// <summary>Gets or sets the translations of the texts the matrix writes itself; the document carries those that differ from English.</summary>
     public CanopyLabels? Labels { get; set; }

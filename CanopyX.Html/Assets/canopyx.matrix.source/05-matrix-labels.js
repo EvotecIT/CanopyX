@@ -3,7 +3,7 @@
   const MATRIX_LABELS = {
     matrixRows: "Rows", matrixColumns: "Columns", matrixSearch: "Find rows and columns", matrixSortBy: "Sort by", matrixGroupBy: "Group by",
     matrixByLabel: "Name", matrixByTotal: "Total", matrixAsListed: "As listed", matrixNoGrouping: "No groups", matrixDescending: "Descending",
-    matrixOnlyProblems: "Only problems", matrixSize: "{rows} × {columns}", matrixShown: "Rows: {rows} of {totalRows}, columns: {columns} of {totalColumns}",
+    matrixOnlyProblems: "Only problems", matrixHideEmpty: "Hide empty rows and columns", matrixSize: "{rows} × {columns}", matrixShown: "Rows: {rows} of {totalRows}, columns: {columns} of {totalColumns}",
     matrixAttention: "Need attention: {count}", matrixLegend: "States", matrixFilter: "Filter", matrixClearFilters: "Clear filters",
     matrixNoMatches: "No rows or columns match.", matrixSelf: "Same item", matrixNoData: "No data", matrixCell: "{row} and {column}: {state}",
     matrixTotal: "Total", matrixItemTotal: "{item}: {count}", matrixExpandGroup: "Expand {group}", matrixCollapseGroup: "Collapse {group}",

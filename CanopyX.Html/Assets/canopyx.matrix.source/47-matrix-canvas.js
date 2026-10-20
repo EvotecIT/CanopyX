@@ -24,7 +24,7 @@
         const tone = toneOf(state.tone), look = read("cx-mx-cell" + (state.attention ? " cx-mx-attn" : "") + tone.cls, tone);
         items.set(index, Object.assign(look, { symbol: state.symbol, name: state.label, attention: state.attention, forced }));
       });
-      items.set(MATRIX_NONE, Object.assign(read("cx-mx-cell cx-mx-none", toneOf(null)), { symbol: null, name: this.labels.matrixNoData }));
+      items.set(MATRIX_NONE, Object.assign(read("cx-mx-cell cx-mx-none", toneOf(null)), { symbol: null, name: this.labels.matrixNoData, none: true }));
       items.set(MATRIX_SELF, Object.assign(read("cx-mx-cell cx-mx-self", toneOf(null)), { symbol: null, name: this.labels.matrixSelf, self: true }));
       probe.className = "cx-mx-gridline"; this.lineColor = getComputedStyle(probe).color;
       probe.remove();
@@ -65,6 +65,9 @@
           ctx.save(); ctx.beginPath(); ctx.rect(x, 0, cellW, height); ctx.clip(); ctx.beginPath();
           for (let d = -height; d < cellW; d += 5) { ctx.moveTo(x + d, height); ctx.lineTo(x + d + height, 0); }
           ctx.strokeStyle = this.lineColor; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+        } else if (look.none) {
+          // A cell without data shows a faint dot, quieter than the hatch, so a sparse matrix reads as drawn, not unfinished.
+          ctx.fillStyle = look.ink; ctx.beginPath(); ctx.arc(x + cellW / 2, height / 2, 1.25, 0, Math.PI * 2); ctx.fill();
         } else if (look.fill) {
           ctx.fillStyle = look.fill; ctx.fillRect(x, 0, cellW, height);
           if (look.forced) { ctx.strokeStyle = look.ink; ctx.lineWidth = 1; ctx.strokeRect(x + 1.5, 1.5, cellW - 3, height - 3); }

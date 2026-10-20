@@ -152,5 +152,35 @@
       this.headTotal.setAttribute("aria-colindex", String(this.model.columns.length + 2));
       this.scroll.setAttribute("aria-colcount", String(this.model.columns.length + 1 + (this.totalW ? 1 : 0)));
       if (cards) this.renderCards();
+      this.fitHeight();
+    }
+    /** Auto height: a matrix whose content fits is as tall as its toolbar, legend and cells, and the host's height stays the
+     *  bound, as on trees and flat grids (32-grid-auto-height.js). The content height never depends on the host's, so the
+     *  resize observer settles after one pass; the host is resized in the next frame, never while the observer delivers. */
+    fitHeight() {
+      if (this.fitFrame) return;
+      this.fitFrame = requestAnimationFrame(() => { this.fitFrame = 0; if (!this.destroyed) this.fitNow(); });
+    }
+    fitNow() {
+      const host = this.host, style = host.style;
+      if (this.fitInline === undefined) {
+        // The host's own max-height stays a bound; one that is not in pixels (a percentage, a calc) is left to the host alone.
+        const own = getComputedStyle(host).maxHeight;
+        this.fitInline = style.maxHeight; this.fitMax = own === "none" ? Infinity : /px$/.test(own) ? parseFloat(own) : NaN;
+      }
+      if (this.doc.autoHeight === false || Number.isNaN(this.fitMax)) { if (style.maxHeight !== this.fitInline) style.maxHeight = this.fitInline; return; }
+      // A hidden host has no sizes to read; the observer calls again when it shows.
+      if (!host.offsetHeight) return;
+      const parts = [this.bar, this.legend, this.scroll, this.empty, this.cards].filter(part => !part.hidden), hostStyle = getComputedStyle(host);
+      let content = (parts.length - 1) * (parseFloat(getComputedStyle(this.root).rowGap) || 0);
+      for (const part of parts) {
+        let height = part.getBoundingClientRect().height;
+        // The scrolling parts count their whole content, up to their own bound (the window's height).
+        if (part === this.scroll || part === this.cards) height = Math.min(height + part.scrollHeight - part.clientHeight, parseFloat(getComputedStyle(part).maxHeight) || Infinity);
+        content += height;
+      }
+      const chrome = ["paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth"].reduce((sum, name) => sum + (parseFloat(hostStyle[name]) || 0), 0);
+      const value = Math.min(this.fitMax, Math.ceil(chrome + content)) + "px";
+      if (style.maxHeight !== value) style.maxHeight = value;
     }
   }

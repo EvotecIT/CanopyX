@@ -4,7 +4,7 @@
   const MATRIX_DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz", MATRIX_NONE = 255, MATRIX_SELF = 254;
   const MATRIX_SYMBOLS = ["check", "cross", "warning", "info", "dot", "dash", "question", "clock", "pause"];
   const MATRIX_KEYS = ["protocol", "type", "id", "label", "rows", "columns", "square", "columnTitle", "diagonal", "states", "cells", "notes", "totals", "attentionOnly",
-    "cellWidth", "density", "details", "phone", "legend", "labels"];
+    "hideEmpty", "cellWidth", "density", "details", "phone", "legend", "autoHeight", "labels"];
   const matrixObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
   function matrixKeys(value, keys, what) {
     if (!matrixObject(value)) matrixFail(what + " must be an object");
@@ -127,12 +127,12 @@
     }
     const totals = doc.totals === undefined ? {} : matrixKeys(doc.totals, ["states", "rows", "columns"], "totals");
     if (totals.states !== undefined && (!Array.isArray(totals.states) || totals.states.some(state => !stateIds.has(state)))) matrixFail("totals count undeclared states");
-    if ([totals.rows, totals.columns, doc.attentionOnly, doc.legend].some(value => value !== undefined && typeof value !== "boolean")) matrixFail("totals, attentionOnly and legend take true or false");
+    if ([totals.rows, totals.columns, doc.attentionOnly, doc.hideEmpty, doc.legend, doc.autoHeight].some(value => value !== undefined && typeof value !== "boolean")) matrixFail("totals, attentionOnly, hideEmpty, legend and autoHeight take true or false");
     if (doc.cellWidth !== undefined && (!Number.isInteger(doc.cellWidth) || doc.cellWidth < 24 || doc.cellWidth > 120)) matrixFail("cellWidth is 24 to 120 pixels");
     if (![undefined, "compact", "normal", "comfortable"].includes(doc.density) || ![undefined, "dialog", "host"].includes(doc.details) || ![undefined, "scroll", "cards"].includes(doc.phone)) matrixFail("density, details or phone has an unknown value");
     const counted = totals.states ? states.filter(state => totals.states.includes(state.id)) : states.filter(state => state.attention);
     return Object.freeze({ id, label, square, diagonal, rows, columns, columnTitle: square ? matrixText(doc.columnTitle, "the column title", 200, true) || rows.title : columns.title, states: Object.freeze(states), stateById: new Map(states.map(state => [state.id, state])),
       grid, notes, total: new Uint8Array(states.map(state => counted.includes(state) ? 1 : 0)), attention: new Uint8Array(states.map(state => state.attention ? 1 : 0)),
-      rowTotals: totals.rows !== false, columnTotals: totals.columns !== false, attentionOnly: doc.attentionOnly === true, cellWidth: doc.cellWidth || 32,
-      density: doc.density || "normal", details: doc.details || "dialog", phone: doc.phone || "scroll", legend: doc.legend !== false, labels: doc.labels });
+      rowTotals: totals.rows !== false, columnTotals: totals.columns !== false, attentionOnly: doc.attentionOnly === true, hideEmpty: doc.hideEmpty === true, sparse: grid.includes(MATRIX_NONE), cellWidth: doc.cellWidth || 32,
+      density: doc.density || "normal", details: doc.details || "dialog", phone: doc.phone || "scroll", legend: doc.legend !== false, autoHeight: doc.autoHeight !== false, labels: doc.labels });
   }

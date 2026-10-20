@@ -1,5 +1,5 @@
   // ---------- matrix: the state, the API and the implementation createMatrix uses (MATRIX_IMPL.create) ----------
-  // The state is the reader's query: search, filters by attribute value, only problems, the sort and the grouping of each
+  // The state is the reader's query: search, filters by attribute value, only problems, hide empty, the sort and the grouping of each
   // axis and the collapsed groups. It is plain data, raised as canopyx:matrixState and accepted back by setState.
   function matrixAxisName(axis) { if (!MATRIX_AXES.includes(axis)) throw new Error("CanopyX: a matrix axis is \"rows\" or \"columns\"."); return axis; }
   Object.assign(MatrixView.prototype, {
@@ -25,6 +25,7 @@
       const query = this.query, next = { ...query, filters: { ...query.filters }, sort: { ...query.sort }, group: { ...query.group }, collapsed: { rows: [...query.collapsed.rows], columns: [...query.collapsed.columns] } };
       if (state.search !== undefined) { if (typeof state.search !== "string" || state.search.length > 256) throw new Error("CanopyX: a matrix search is text of at most 256 characters."); next.search = state.search; }
       if (state.attentionOnly !== undefined) next.attentionOnly = !!state.attentionOnly;
+      if (state.hideEmpty !== undefined) next.hideEmpty = !!state.hideEmpty;
       for (const axis of MATRIX_AXES) {
         if (state.filters && state.filters[axis] !== undefined) next.filters[axis] = this.checkFilters(axis, state.filters[axis]);
         if (state.sort && state.sort[axis] !== undefined) next.sort[axis] = this.checkSort(axis, state.sort[axis]);
@@ -48,7 +49,7 @@
     filter(axis, attribute, values) { this.applyState({ filters: { [matrixAxisName(axis)]: { ...this.query.filters[axis], [attribute]: values ?? null } } }); },
     getState() {
       const query = this.query, copy = value => JSON.parse(JSON.stringify(value));
-      return gridFreeze({ search: query.search, attentionOnly: query.attentionOnly, filters: copy(query.filters), sort: copy(query.sort), group: copy(query.group), collapsed: copy(query.collapsed) });
+      return gridFreeze({ search: query.search, attentionOnly: query.attentionOnly, hideEmpty: query.hideEmpty, filters: copy(query.filters), sort: copy(query.sort), group: copy(query.group), collapsed: copy(query.collapsed) });
     },
     stateChanged() { this.emit("matrixState", this.getState(), "onStateChange"); },
     getVisible() {
@@ -86,10 +87,11 @@
       destroy: () => {
         if (view.destroyed) return;
         view.destroyed = true; view.lifetime.abort(); view.resize?.disconnect(); view.themeWatch?.disconnect();
-        cancelAnimationFrame(view.frame); clearTimeout(view.searchTimer); clearTimeout(view.tipTimer);
+        cancelAnimationFrame(view.frame); cancelAnimationFrame(view.fitFrame); clearTimeout(view.searchTimer); clearTimeout(view.tipTimer);
         view.root.remove(); host.removeAttribute("data-cx-ready");
-        // The host is as it was before createMatrix: its classes, mount mark and the theme the matrix added.
+        // The host is as it was before createMatrix: its classes, mount mark, the theme the matrix added and its own max-height.
         host.classList.remove("cx-matrix-host"); if (view.addedTheme) host.removeAttribute("data-cx-theme");
+        if (view.fitInline !== undefined) { host.style.maxHeight = view.fitInline; if (!host.getAttribute("style")) host.removeAttribute("style"); }
       }
     };
     return impl;

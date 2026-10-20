@@ -92,7 +92,7 @@ but not built yet, see [planned work](../TODO.md). For short how-tos, see the [r
 | Continuous scrolling or pages | Grid | `presentation: "paged"`, `pageLength`; C# `Presentation`, `PageLength` | [Flat data grid](authoring.md#flat-data-grid) |
 | Pager with first/previous/next/last, page number, rows per page and range text | Grid | Built in; `goToPage`, `setPageLength`, `getPaging` | [Flat data grid](authoring.md#flat-data-grid) |
 | "Show more" for long child lists | Tree | Paged children | [Tree grid features](authoring.md#tree-grid-features) |
-| Auto height when the rows fit | Grid, Tree | `autoHeight` (default on) | [Flat data grid](authoring.md#flat-data-grid) |
+| Auto height when the rows fit | Grid, Tree, Matrix | `autoHeight` (default on) | [Flat data grid](authoring.md#flat-data-grid), [Matrix](matrix.md#the-document) |
 | Works in hidden tabs and accordions | Grid, Tree | Renders when first shown | [Assets and caching](architecture.md#assets-and-caching) |
 | Numbered pages, page-size choices with All, and the result sentence | Grid | `pager`; C# `CanopyGridPager` | [paging.md](paging.md) |
 
@@ -188,8 +188,8 @@ A matrix shows a state for each row and column pair, such as replication between
 | Feature | How | Docs |
 | --- | --- | --- |
 | Rows and columns as items with attributes; a square matrix whose rows are its columns; one string of state digits per row | `CanopyMatrix`, `Rows`, `Columns`, `Square`, `Set`, `AddCells`; `CanopyX.createMatrix(host, { view })` | [The document](matrix.md#the-document) |
-| States drawn with a tone and a symbol, a value or short text, details, a legend; self cells hatched and counted nowhere | `State(...)`, `Diagonal`, `notes` | [States](matrix.md#states-totals-and-the-diagonal) |
-| Row and column totals, sorting by name, total or attribute, grouping into collapsible rows and column bands, facets, search and only problems on both axes | `SortBy`, `GroupBy`, `facet`, the Rows and Columns panels | [Sorting, filtering and grouping](matrix.md#sorting-filtering-and-grouping) |
+| States drawn with a tone and a symbol, a value or short text, details, a legend; self cells hatched and counted nowhere, cells without data a faint dot | `State(...)`, `Diagonal`, `notes` | [States](matrix.md#states-totals-and-the-diagonal) |
+| Row and column totals, sorting by name, total or attribute, grouping into collapsible rows and column bands, facets, search, only problems and hide empty rows and columns on both axes | `SortBy`, `GroupBy`, `facet`, `HideEmpty`, the Rows and Columns panels | [Sorting, filtering and grouping](matrix.md#sorting-filtering-and-grouping) |
 | Sticky headers and totals, both axes windowed; 150 by 150 and 400 by 400 scroll within budget | `AxisWindow`, canvas rows | [Performance](matrix.md#performance) |
 | An ARIA grid with one tab stop, a tooltip on hover and focus, a cell event and a details dialog | `canopyx:matrixCell`, `details` | [Keyboard](matrix.md#keyboard) |
 | Phones: pinned row headers, or a card per row | `phone: "cards"` | [Phones](matrix.md#phones) |

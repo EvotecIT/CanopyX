@@ -599,6 +599,7 @@ const labels = Object.freeze({
   matrixNoGrouping: "Bez grup",
   matrixDescending: "Malejąco",
   matrixOnlyProblems: "Tylko problemy",
+  matrixHideEmpty: "Ukryj puste wiersze i kolumny",
   matrixSize: "{rows} × {columns}",
   matrixShown: "Wiersze: {rows} z {totalRows}, kolumny: {columns} z {totalColumns}",
   matrixAttention: "Wymaga uwagi: {count}",

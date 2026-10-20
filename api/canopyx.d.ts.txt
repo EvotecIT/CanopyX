@@ -2337,16 +2337,19 @@ export interface MatrixDocument{
   notes?:MatrixNote[];
   totals?:{states?:string[];rows?:boolean;columns?:boolean};
   attentionOnly?:boolean;
+  hideEmpty?:boolean;
   cellWidth?:number;
   density?:"compact"|"normal"|"comfortable";
   details?:"dialog"|"host";
   phone?:"scroll"|"cards";
   legend?:boolean;
+  autoHeight?:boolean;
   labels?:Record<string,string>;
 }
 export interface MatrixQueryState{
   search:string;
   attentionOnly:boolean;
+  hideEmpty:boolean;
   filters:{rows:Record<string,string[]>;columns:Record<string,string[]>};
   sort:{rows:MatrixSort|null;columns:MatrixSort|null};
   group:{rows:string|null;columns:string|null};
@@ -2369,6 +2372,7 @@ export interface MatrixCellDetail{
 export interface MatrixStateInput{
   search?:string;
   attentionOnly?:boolean;
+  hideEmpty?:boolean;
   filters?:{rows?:Record<string,string[]|null>;columns?:Record<string,string[]|null>};
   sort?:{rows?:MatrixSort|null;columns?:MatrixSort|null};
   group?:{rows?:string|null;columns?:string|null};
