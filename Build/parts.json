@@ -136,15 +136,49 @@
       ]
     },
     {
+      "name": "forms",
+      "label": "forms",
+      "runtimes": ["grid", "flow"],
+      "views": ["grid", "flow"],
+      "features": ["editable"],
+      "key": "FORMS_IMPL",
+      "context": ["FORMS_IMPL", "h", "setText", "fill", "gridFreeze", "gridMomentFromParts", "boundedPattern", "foldText"],
+      "end": "Object.assign(FORMS_IMPL, { editPad, editInput, editParseNumber, editMoment, editFromParts, editDateEditor, editNumberPlaces, EDIT_EDITORS, editLookupEditor, editOptions, formRuleSpec, formCheck, FORM_LABELS });",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.forms.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.forms.source/forms.css"
+      ]
+    },
+    {
+      "name": "flow",
+      "label": "flow view",
+      "runtimes": ["grid", "flow"],
+      "views": ["flow"],
+      "key": "FLOW_IMPL",
+      "requires": ["forms"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "foldText", "boundedPattern", "numberFormat", "gridFreeze"],
+      "start": "const { editParseNumber, EDIT_EDITORS, formRuleSpec, formCheck, FORM_LABELS } = FORMS_IMPL;",
+      "end": "FLOW_IMPL.create = flowCreate;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow.source/flow.css"
+      ]
+    },
+    {
       "name": "editing",
       "label": "editing",
       "runtimes": ["grid"],
       "views": ["grid"],
       "features": ["editable"],
       "key": "DataGrid.prototype",
-      "requires": ["filter-editor"],
-      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridDecorateButton", "GRID_ICONS", "cellValue", "cellText", "isCellObject",
+      "requires": ["filter-editor", "forms"],
+      "context": ["DataGrid", "FORMS_IMPL", "h", "setText", "fill", "gridButton", "gridDecorateButton", "GRID_ICONS", "cellValue", "cellText", "isCellObject",
         "gridFreeze", "gridMomentFromParts", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL", "boundedPattern", "validateGridFacetPage", "RECORD_IMPL"],
+      "start": "const { EDIT_EDITORS, editOptions, formRuleSpec, formCheck, FORM_LABELS } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.editing.source"
       ],

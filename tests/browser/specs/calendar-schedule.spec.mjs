@@ -7,8 +7,8 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { repo, runtimeAssets } from "./support.mjs";
 
-/** The editing part (script and stylesheet) inline, as a page written for an editable grid carries it. */
-const editingAssets = () => "<style>" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-editing.css"), "utf8") + "</style><script>" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-editing.js"), "utf8") + "</script>";
+/** The editing part and the forms part it requires (scripts and stylesheets) inline, as a page written for an editable grid carries them. */
+const editingAssets = () => ["forms", "editing"].map(name => "<style>" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".css"), "utf8") + "</style><script>" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".js"), "utf8") + "</script>").join("");
 import { capture, loadKit, openBuilt, openCalendar, api } from "./calendar-support.mjs";
 import { parseAdversarialCalendar } from "./calendar-parser-fixture.mjs";
 

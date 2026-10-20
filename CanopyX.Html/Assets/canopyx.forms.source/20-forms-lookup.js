@@ -1,4 +1,4 @@
-  // ---------- editing: the lookup editor, a combobox that searches as the reader types ----------
+  // ---------- forms: the lookup editor, a combobox that searches as the reader types ----------
   // context.lookup(text, signal) answers [{ value, label }]: the host's editing.lookups function for the column, else the
   // editor's own options, else the values of the lookup column (inline rows, or the data source's facet search). The list
   // is a popover, so the cell's clipping never cuts it; Up and Down move through it, Enter picks and Escape closes it.

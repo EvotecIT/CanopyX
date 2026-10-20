@@ -6,7 +6,8 @@ import { repo, runtimeAssets } from "./support.mjs";
 
 export function calendarEditPage(options = {}) {
   const { script, style } = runtimeAssets("grid");
-  const editing = fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-editing.js"), "utf8");
+  // The editing part and the forms part it requires (its editors and checks), preloaded as generated pages carry them.
+  const editing = ["forms", "editing"].map(name => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".js"), "utf8")).join("\n");
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Calendar edit contracts</title><style>' + style +
     'body{margin:0;padding:16px}#cal{height:760px}</style><script>' + script + "\n" + editing + '</script></head><body class="cx-page"><div id="cal"></div><script>window.editOptions=' +
     JSON.stringify(options).replace(/</g, "\\u003c") + ";(" + installCalendarEditHost.toString() + ")();</script></body></html>";

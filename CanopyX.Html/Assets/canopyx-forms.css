@@ -1,0 +1,7 @@
+/* Forms part: what every form's editors share, here the lookup combobox's suggestion list (a popover above any clipping). */
+.cx-editor-list{position:fixed;inset:auto;margin:0;box-sizing:border-box;background:var(--cx-surface);color:var(--cx-text);border:var(--cx-size-1px) solid var(--cx-line-strong);border-radius:var(--cx-radius);box-shadow:var(--cx-panel-shadow);font:var(--cx-size-13d5px)/1.4 var(--cx-font);}
+.cx-editor-list{max-height:var(--cx-size-240px);overflow:auto;padding:var(--cx-size-4px);}
+.cx-editor-option,.cx-editor-note{padding:var(--cx-size-6px) var(--cx-size-8px);border-radius:var(--cx-radius-sm);white-space:nowrap;}
+.cx-editor-option{cursor:pointer;}
+.cx-editor-option[aria-selected="true"],.cx-editor-option:hover{background:var(--cx-selected-bg);}
+.cx-editor-note{color:var(--cx-muted);}

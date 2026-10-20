@@ -81,7 +81,9 @@ public sealed class LabelsTests {
         var written = JsonNode.Parse(grid.ToJson())!["labels"]!.AsObject().Select(item => item.Key).OrderBy(name => name, StringComparer.Ordinal).ToList();
         var outlineOnly = new[] { nameof(CanopyLabels.OverflowNote), nameof(CanopyLabels.UnknownTotal), nameof(CanopyLabels.HiddenRows), nameof(CanopyLabels.FullReport) };
         string Wire(string name) => char.ToLowerInvariant(name[0]) + name.Substring(1);
-        var browser = properties.Where(property => !outlineOnly.Contains(property.Name)).ToList();
+        // Flow labels are read only by flows: grids and trees never write them (a flow document carries them, below).
+        bool IsFlowLabel(string name) => name.StartsWith("Flow", StringComparison.Ordinal);
+        var browser = properties.Where(property => !outlineOnly.Contains(property.Name) && !IsFlowLabel(property.Name)).ToList();
         Assert.Equal(browser.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), written);
 
         // A tree writes the labels the tree runtimes read: the core and interaction texts and its toolbar menus' grid labels,
@@ -103,6 +105,12 @@ public sealed class LabelsTests {
         Assert.All(editing.Keys, name => Assert.StartsWith("gridEdit", name));
         Assert.All(editing.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
         foreach (var (name, text) in editing) runtime.Add(name, text);
+        // The forms part brings the shared field messages the editing part and flows both use.
+        var forms = PartLabels("forms", "FORM_LABELS");
+        Assert.NotEmpty(forms);
+        Assert.All(forms.Keys, name => Assert.StartsWith("gridEdit", name));
+        Assert.All(forms.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
+        foreach (var (name, text) in forms) runtime.Add(name, text);
         // The calendar part brings its calendar… labels the same way.
         var calendar = PartLabels("calendar", "CALENDAR_LABELS");
         Assert.NotEmpty(calendar);
@@ -122,6 +130,19 @@ public sealed class LabelsTests {
         var schema = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Schema", "canopyx-2.schema.json")))!;
         var declared = schema["$defs"]!["view"]!["properties"]!["labels"]!["properties"]!.AsObject().Select(item => item.Key);
         Assert.Equal(written, declared.OrderBy(name => name, StringComparer.Ordinal));
+
+        // A flow writes exactly the flow labels and the shared field messages, under the names the flow and forms parts define,
+        // with the same English texts.
+        var flow = new CanopyFlow("labelled", "Labelled") { Labels = labels }.Step("step", "Step");
+        var flowWritten = JsonNode.Parse(flow.ToContract())!["labels"]!.AsObject().Select(item => item.Key).OrderBy(name => name, StringComparer.Ordinal).ToList();
+        var flowLabels = PartLabels("flow", "FLOW_LABELS");
+        Assert.NotEmpty(flowLabels);
+        Assert.All(flowLabels.Keys, name => Assert.StartsWith("flow", name));
+        var flowRuntime = flowLabels.Concat(forms).ToDictionary(item => item.Key, item => item.Value);
+        Assert.Equal(flowRuntime.Keys.OrderBy(name => name, StringComparer.Ordinal), flowWritten);
+        var flowProperties = properties.Where(property => IsFlowLabel(property.Name)).ToList();
+        Assert.Equal(flowProperties.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), flowLabels.Keys.OrderBy(name => name, StringComparer.Ordinal));
+        foreach (var property in flowProperties) Assert.Equal(property.GetValue(english), flowRuntime[Wire(property.Name)]);
     }
 
     [Fact]

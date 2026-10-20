@@ -1,4 +1,7 @@
-  // ---------- editing: the built-in typed editors ----------
+  // ---------- forms: the built-in typed editors ----------
+  // The forms part (Build/parts.json) is the one implementation of editors and field checks behind grid editing, the record
+  // drawer's edit form, the calendar's event form and flows (docs/flow.md). It installs into FORMS_IMPL; the parts that
+  // need it require it and read their helpers from there.
   // An editor is { create(context) } returning { element, getValue(), focus?(), error?(), destroy?() } (docs/editing.md).
   // getValue returns the raw cell value; error returns a message while the input is not a value yet (text in a number
   // field, half a date). The editor consumes the keys it needs by calling preventDefault (an open lookup list takes Enter

@@ -15,11 +15,21 @@ public sealed class RuntimeAssetTests {
     [InlineData(CanopyRuntime.InteractiveTreeGrid)]
     [InlineData(CanopyRuntime.DataGrid)]
     [InlineData(CanopyRuntime.ReportingGrid)]
+    [InlineData(CanopyRuntime.Flow)]
     public void Script_MatchesItsSourceParts(CanopyRuntime runtime) {
         var root = RepositoryPaths.Root;
         var files = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
             .OrderBy(Path.GetFileName, StringComparer.Ordinal).ToArray();
-        if (runtime != CanopyRuntime.TreeGrid) {
+        // The grid entry points carry the flow shell (createFlow loads the flow parts); the flow entry point takes the core's small
+        // shared parts by name, the grid's pure helpers, the part loader and the same shell, without any grid or tree code.
+        var flowShell = Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.flow-entry.source", "50-flow-shell.js");
+        var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
+        if (runtime == CanopyRuntime.Flow) {
+            files = new[] { "canopyx.flow-entry.source/00-flow-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-number-format.js", "canopyx.source/01-trust.js",
+                "canopyx.source/05-patterns.js", "canopyx.source/05-search-folding.js", "canopyx.grid.source/00-grid-pure.js", "canopyx.source/82-parts.js",
+                "canopyx.flow-entry.source/50-flow-shell.js", "canopyx.flow-entry.source/90-flow-boot.js" }
+                .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
+        } else if (runtime != CanopyRuntime.TreeGrid) {
             var extensions = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid
                 ? Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.grid.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal)
                 : Enumerable.Empty<string>();
@@ -29,6 +39,7 @@ public sealed class RuntimeAssetTests {
                 .Concat(runtime == CanopyRuntime.ReportingGrid
                     ? Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.reporting.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal)
                     : Enumerable.Empty<string>())
+                .Concat(grid ? new[] { flowShell } : Enumerable.Empty<string>())
                 .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
         }
         // Entry points leave out every script a lazy part owns (Build/parts.json lists it and not as shared).
@@ -37,7 +48,7 @@ public sealed class RuntimeAssetTests {
         // Tree-only core parts (the tree menus' labels) are defined again by the grid parts, so grid runtimes leave them out.
         var treeOnlyParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "tree-only-parts.json")))!;
         var treeOnlyPaths = treeOnlyParts.Select(part => Path.GetFullPath(Path.Combine(root, part))).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) files = files.Where(file => !treeOnlyPaths.Contains(Path.GetFullPath(file))).ToArray();
+        if (grid) files = files.Where(file => !treeOnlyPaths.Contains(Path.GetFullPath(file))).ToArray();
         var script = CanopyHtmlAssets.GetScript(runtime);
         var parts = files
             .Select(part => Normalize(File.ReadAllText(part)).TrimEnd('\n'))
@@ -75,18 +86,20 @@ public sealed class RuntimeAssetTests {
     [InlineData(CanopyRuntime.InteractiveTreeGrid)]
     [InlineData(CanopyRuntime.DataGrid)]
     [InlineData(CanopyRuntime.ReportingGrid)]
+    [InlineData(CanopyRuntime.Flow)]
     public void Style_MatchesItsSource(CanopyRuntime runtime) {
-        var source = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.source", "canopyx.css"));
-        if (runtime != CanopyRuntime.TreeGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
-            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.interactive.source", "canopyx.css"));
-        if (runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
-            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "chrome.css")).Replace("\r\n", "\n").TrimEnd('\n') + "\n" +
-            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.grid.source", "canopyx.css"));
-        if (runtime == CanopyRuntime.ReportingGrid) source = Normalize(source).TrimEnd('\n') + "\n" +
-            File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.reporting.source", "canopyx.css"));
-        Assert.Equal(CompressStyleSpacing(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n")), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
+        // Every entry point starts from the shared theme tokens (base.css); the flow entry point adds only its host rules, which the
+        // grid entry points carry too so they can host a flow.
+        var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
+        var names = new List<string> { "canopyx.source/base.css" };
+        if (runtime != CanopyRuntime.Flow) names.Add("canopyx.source/canopyx.css");
+        if (runtime != CanopyRuntime.TreeGrid && runtime != CanopyRuntime.Flow) names.Add("canopyx.interactive.source/canopyx.css");
+        if (grid) names.AddRange(new[] { "canopyx.grid.source/chrome.css", "canopyx.grid.source/canopyx.css" });
+        if (runtime == CanopyRuntime.ReportingGrid) names.Add("canopyx.reporting.source/canopyx.css");
+        if (grid || runtime == CanopyRuntime.Flow) names.Add("canopyx.flow-entry.source/flow-host.css");
+        var source = string.Join("\n", names.Select(name => Normalize(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar)))).TrimEnd('\n')));
+        Assert.Equal(CompressStyleSpacing(WithoutCommentLines(source + "\n")), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
     }
-
     [Fact]
     public void FilterEditorStyle_MatchesItsSource() {
         // The editor's own rules, the Columns menu and record drawer styles it shares with the tree tools part, then the overlay base.

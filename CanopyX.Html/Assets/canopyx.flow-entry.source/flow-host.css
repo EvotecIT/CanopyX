@@ -1,0 +1,2 @@
+/* ---------- flow hosts: natural height, unlike a grid's bounded one (docs/flow.md) ---------- */
+.cx-host.cx-flow-host { height:auto;min-height:0;display:block;background:transparent; }

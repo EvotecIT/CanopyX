@@ -23,6 +23,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.InteractiveTreeGrid => InteractiveScriptResource.Value,
         CanopyRuntime.DataGrid => GridScriptResource.Value,
         CanopyRuntime.ReportingGrid => ReportingScriptResource.Value,
+        CanopyRuntime.Flow => FlowScriptResource.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -35,6 +36,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.InteractiveTreeGrid => InteractiveStyleResource.Value,
         CanopyRuntime.DataGrid => GridStyleResource.Value,
         CanopyRuntime.ReportingGrid => ReportingStyleResource.Value,
+        CanopyRuntime.Flow => FlowStyleResource.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -47,6 +49,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.InteractiveTreeGrid => InteractiveScriptHash.Value,
         CanopyRuntime.DataGrid => GridScriptHash.Value,
         CanopyRuntime.ReportingGrid => ReportingScriptHash.Value,
+        CanopyRuntime.Flow => FlowScriptHash.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -59,6 +62,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.InteractiveTreeGrid => InteractiveStyleHash.Value,
         CanopyRuntime.DataGrid => GridStyleHash.Value,
         CanopyRuntime.ReportingGrid => ReportingStyleHash.Value,
+        CanopyRuntime.Flow => FlowStyleHash.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -88,6 +92,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.TreeGrid => "canopyx",
         CanopyRuntime.DataGrid => "canopyx-grid",
         CanopyRuntime.ReportingGrid => "canopyx-reporting",
+        CanopyRuntime.Flow => "canopyx-flow-entry",
         _ => "canopyx-interactive"
     };
 }

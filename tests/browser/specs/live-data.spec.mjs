@@ -266,8 +266,8 @@ test.describe("live data", () => {
       columns: [{ id: "name", title: "Name", kind: "text", sortable: true }, { id: "score", title: "Score", kind: "number", sortable: true },
         { id: "note", title: "Note", kind: "text", editable: true }],
       source: { kind: "inline" }, rows, query: { sort: [{ column: "score", direction: "desc" }] }, live: { stableOrder: false } };
-    // The editing part, preloaded as the support page preloads the others.
-    const editing = ["js", "css"].map(type => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-editing." + type), "utf8"));
+    // The editing part and the forms part it requires, preloaded as the support page preloads the others.
+    const editing = ["js", "css"].map(type => ["forms", "editing"].map(name => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + "." + type), "utf8")).join("\n"));
     await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html",
       body: viewPage(view).replace("</head>", () => "<style>" + editing[1] + "</style><script>" + editing[0] + "</script></head>") }));
     await page.goto("https://canopyx.test/");

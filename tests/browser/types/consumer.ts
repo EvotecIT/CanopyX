@@ -789,3 +789,26 @@ const recordTree = createTreeGrid(document.createElement("div"), { view: { proto
 void recordTree.openRecord("a", { path: ["a"] });
 // @ts-expect-error A structured presenter displays a count, chips or the first item.
 ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "bad", label: "Bad", rowHeight: 34, pageSize: 100, selection: "single", search: false, source: { kind: "inline" }, rows: [], columns: [{ id: "a", title: "A", kind: "text", presenter: { kind: "structured", display: "table" } }] } });
+
+// Flows: the document, hooks, the submit detail and the API are typed (docs/flow.md).
+import FlowRuntime, { createFlow, type FlowDocument, type FlowAnswer, type FlowSubmitDetail } from "@evotecit/canopyx/flow";
+const flowDocument: FlowDocument = { kind: "flow", version: 1, id: "mail", title: "Connect a mail server",
+  steps: [{ id: "server", title: "Which server?", fields: [{ id: "host", type: "text", label: "Server", required: true, path: "mail.host" },
+    { id: "password", type: "secret", label: "Password" }, { id: "timeout", type: "duration", label: "Timeout", default: "PT30S", units: ["seconds", "minutes"] },
+    { id: "security", type: "choice", label: "Security", options: [{ value: "tls", label: "TLS", badge: "Recommended" }, { value: "none", label: "None" }],
+      when: { operator: "and", filters: [{ field: "host", operator: "isNotNull" }] } }] }, { id: "review", type: "review", declaration: "Applies at once." }],
+  initial: { host: "old.example.com" }, storedSecrets: ["password"], baseline: "rev-1" };
+const flowApi = createFlow(document.createElement("div"), {
+  flow: flowDocument,
+  hooks: { validators: { host: value => typeof value === "string" && value.includes(" ") ? "No spaces." : null }, validateStep: () => ({ warnings: ["Check the port."] }) },
+  onSubmit: (detail: FlowSubmitDetail): Promise<FlowAnswer> => {
+    const password: string | null = detail.secret("password");
+    const state: "set" | "keep" | undefined = detail.secrets.password?.state;
+    return Promise.resolve({ status: password || state === "keep" ? "saved" : "error", message: detail.patch.map(change => change.op).join(), fieldErrors: { host: "Unreachable." } });
+  }
+});
+flowApi.ready.then(api => api.validate("server")).then(result => result.errors.map(error => error.message));
+const flowAnswer: Promise<FlowAnswer | null> = flowApi.submit();
+FlowRuntime.configure("mail", { onReload: detail => detail.baseline });
+GridRuntime.createFlow(document.createElement("div"), { flow: flowDocument }).destroy();
+void flowAnswer;

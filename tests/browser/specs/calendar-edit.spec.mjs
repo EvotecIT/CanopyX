@@ -162,9 +162,9 @@ test.describe("calendar editing", () => {
       columns: [{ id: "title", title: "Title", kind: "text", rowHeader: true }, { id: "starts", title: "Starts", kind: "datetime", editable: true }, { id: "ends", title: "Ends", kind: "datetime", editable: true }],
       source: { kind: "inline" }, rows: [{ id: "g1", cells: { title: "Guarded window", starts: "2026-10-16T09:00:00Z", ends: "2026-10-16T10:00:00Z" } }],
       calendar: { start: "starts", end: "ends", title: "title", date: "2026-10-16", view: "day", views: ["day"], editable: true } };
-    // A page the test builds preloads the editing part, which generated pages load on demand.
+    // A page the test builds preloads the editing part and the forms part it requires, which generated pages load on demand.
     const assets = new URL("../../../CanopyX.Html/Assets/", import.meta.url);
-    const editing = "<style>" + fs.readFileSync(new URL("canopyx-editing.css", assets), "utf8") + "</style><script>" + fs.readFileSync(new URL("canopyx-editing.js", assets), "utf8") + "</script>";
+    const editing = ["forms", "editing"].map(name => "<style>" + fs.readFileSync(new URL("canopyx-" + name + ".css", assets), "utf8") + "</style><script>" + fs.readFileSync(new URL("canopyx-" + name + ".js", assets), "utf8") + "</script>").join("");
     const setup = editing + "<script>CanopyX.configure('guarded', { editing: { commit(batch) { return { protocol: 'canopyx/2', type: 'gridCommitResult', view: batch.view, rows: batch.rows.map(row => ({ id: row.id, status: 'conflict' })) }; } } });</script>";
     await page.clock.setFixedTime(NOW);
     await page.route("http://canopyx.test/guarded.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("</head>", setup + "</head>") }));
