@@ -39,6 +39,9 @@ public sealed partial class CanopyCell {
         return cell;
     }
 
+    /// <summary>Whether the cell holds history periods, without creating the list.</summary>
+    internal bool HasSeries => _series != null && _series.Count > 0;
+
     private static List<CanopyCellPeriod> History(IEnumerable<CanopyCellPeriod> periods) {
         if (periods == null) throw new ArgumentNullException(nameof(periods));
         var list = new List<CanopyCellPeriod>(periods);
