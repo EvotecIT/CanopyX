@@ -6,5 +6,8 @@ public enum CanopyFlowMode {
     Linear,
 
     /// <summary>Any visible step opens at any time; the review page checks every step.</summary>
-    Free
+    Free,
+
+    /// <summary>A hub lists the steps as tasks with their states; each opens on its own, and the review page opens once every required task is complete.</summary>
+    Tasks
 }

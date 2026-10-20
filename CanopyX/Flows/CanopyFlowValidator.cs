@@ -32,6 +32,7 @@ internal static class CanopyFlowValidator {
 
             foreach (var (field, _) in step.AllFields()) {
                 if (field == null) throw new InvalidOperationException("Step " + step.Id + " holds a null field.");
+                if ((field.Kind == CanopyFlowFieldKind.Pick) != (step.Kind == CanopyFlowStepKind.Pick)) throw new InvalidOperationException("Field " + field.Id + ": pick fields belong to pick steps, which hold only theirs.");
                 if (fields.ContainsKey(field.Id)) throw new InvalidOperationException("The flow has two fields with the id " + field.Id + ".");
                 fields.Add(field.Id, field);
                 if (fields.Count > CanopyFlow.MaxFields) throw new InvalidOperationException("A flow holds at most 1000 fields.");
@@ -54,6 +55,7 @@ internal static class CanopyFlowValidator {
 
         if (flow.Baseline != null && (flow.Baseline.Length == 0 || flow.Baseline.Length > 256)) throw new InvalidOperationException("A baseline has 1 to 256 characters.");
         CanopyFlowValues.CheckText(flow.Submit?.Label, "The submit label", 80);
+        CanopyFlowHostValidator.Validate(flow, fields);
     }
 
     private static void ValidateStep(CanopyFlowStep step, bool last) {
@@ -172,10 +174,40 @@ internal static class CanopyFlowValidator {
         return result;
     }
 
+    /// <summary>The ids of the visible fields, secrets included, for the given answers. The flow is valid.</summary>
+    internal static HashSet<string> VisibleFieldIds(CanopyFlow flow, IReadOnlyDictionary<string, object?> answers) {
+        // A secret is visible when its step, section and condition are; VisibleValues decides the same for every other field.
+        var shown = new HashSet<string>(VisibleValues(flow, WithSecrets(flow, answers)).Keys, StringComparer.Ordinal);
+        foreach (var step in flow.Steps) {
+            foreach (var (field, section) in step.AllFields()) {
+                if (field.Kind != CanopyFlowFieldKind.Secret) continue;
+                object? Read(string id) => shown.Contains(id) && answers.TryGetValue(id, out var value) ? Generic(Find(flow, id), value) : null;
+                if ((step.Condition == null || step.Condition.EvaluateWith(Read)) && (section?.Condition == null || section.Condition.EvaluateWith(Read)) &&
+                    (field.Condition == null || field.Condition.EvaluateWith(Read))) shown.Add(field.Id);
+            }
+        }
+
+        return shown;
+    }
+
+    /// <summary>The answers with every field present (missing ones null), so visibility covers fields without an answer too.</summary>
+    private static IReadOnlyDictionary<string, object?> WithSecrets(CanopyFlow flow, IReadOnlyDictionary<string, object?> answers) {
+        var all = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var field in Fields(flow)) all[field.Id] = answers.TryGetValue(field.Id, out var value) ? value : null;
+        return all;
+    }
+
+    private static CanopyFlowField Find(CanopyFlow flow, string id) {
+        foreach (var field in Fields(flow)) if (field.Id == id) return field;
+        throw new InvalidOperationException("The flow has no field " + id + ".");
+    }
+
     /// <summary>An answer as conditions read it: the field kind's canonical value when it fits, otherwise its generic reading.</summary>
     private static object? Generic(CanopyFlowField field, object? value) {
         if (value == null) return null;
         var canonical = CanopyFlowValues.TryCanonical(field, value, out var error);
+        // Conditions read a picker's answer as its record ids, as the browser does.
+        if (error == null && field.Kind == CanopyFlowFieldKind.Pick) return CanopyFlowRecordValues.PickIds(canonical);
         return error == null ? canonical : CanopyFlowValues.Generic(value);
     }
 }

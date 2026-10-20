@@ -11,7 +11,8 @@ public sealed partial class CanopyFlowField {
         ("datetime", CanopyFlowFieldKind.DateTime), ("time", CanopyFlowFieldKind.Time), ("select", CanopyFlowFieldKind.Select),
         ("toggle", CanopyFlowFieldKind.Toggle), ("lookup", CanopyFlowFieldKind.Lookup), ("choice", CanopyFlowFieldKind.Choice),
         ("multiChoice", CanopyFlowFieldKind.MultiChoice), ("textarea", CanopyFlowFieldKind.TextArea), ("list", CanopyFlowFieldKind.List),
-        ("secret", CanopyFlowFieldKind.Secret), ("duration", CanopyFlowFieldKind.Duration), ("custom", CanopyFlowFieldKind.Custom)
+        ("secret", CanopyFlowFieldKind.Secret), ("duration", CanopyFlowFieldKind.Duration), ("custom", CanopyFlowFieldKind.Custom),
+        ("records", CanopyFlowFieldKind.Records), ("pick", CanopyFlowFieldKind.Pick)
     };
 
     private static readonly (string Wire, CanopyFlowItemRule Value)[] RuleNames = {
@@ -26,7 +27,7 @@ public sealed partial class CanopyFlowField {
 
     private static readonly string[] Properties = {
         "id", "type", "editor", "label", "help", "placeholder", "required", "readOnly", "sensitive", "default", "width", "parameter",
-        "path", "when", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "validation"
+        "path", "when", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "validation", "source", "dependsOn", "columns"
     };
 
     private static readonly string[] ValidationProperties = { "min", "max", "minLength", "maxLength", "pattern", "message", "minItems", "maxItems", "item", "itemPattern" };
@@ -73,7 +74,9 @@ public sealed partial class CanopyFlowField {
             throw new InvalidOperationException(what + ": an editor name applies to custom fields.");
         }
 
-        if ((MinItems.HasValue || MaxItems.HasValue) && !Is(CanopyFlowFieldKind.MultiChoice, CanopyFlowFieldKind.List)) throw new InvalidOperationException(what + ": item counts apply to multiple-choice and list fields.");
+        if ((MinItems.HasValue || MaxItems.HasValue) && !Is(CanopyFlowFieldKind.MultiChoice, CanopyFlowFieldKind.List, CanopyFlowFieldKind.Records, CanopyFlowFieldKind.Pick))
+            throw new InvalidOperationException(what + ": item counts apply to multiple-choice, list, records and pick fields.");
+        ValidateHostSettings(what);
         if (MinItems > MaxItems) throw new InvalidOperationException(what + ": the fewest items cannot exceed the most.");
         if ((ItemRule != CanopyFlowItemRule.None || ListItemPattern != null) && Kind != CanopyFlowFieldKind.List) throw new InvalidOperationException(what + ": item checks apply to list fields.");
         if (!Enum.IsDefined(typeof(CanopyFlowItemRule), ItemRule)) throw new InvalidOperationException(what + " has an unknown item rule.");
@@ -85,7 +88,9 @@ public sealed partial class CanopyFlowField {
     private void ValidateOptions(string what) {
         var takesOptions = Is(CanopyFlowFieldKind.Select, CanopyFlowFieldKind.Choice, CanopyFlowFieldKind.MultiChoice, CanopyFlowFieldKind.Lookup);
         if (!takesOptions && Options.Count > 0) throw new InvalidOperationException(what + ": options apply to select, choice, multiple-choice and lookup fields.");
-        if (takesOptions && Options.Count == 0) throw new InvalidOperationException(what + " needs at least one option: a flow's lookup suggests from its options.");
+        if (!Enum.IsDefined(typeof(CanopyFlowOptionsSource), OptionsSource)) throw new InvalidOperationException(what + " has an unknown options source.");
+        if (OptionsSource == CanopyFlowOptionsSource.Host && !takesOptions) throw new InvalidOperationException(what + ": options from the host apply to select, choice, multiple-choice and lookup fields.");
+        if (takesOptions && Options.Count == 0 && OptionsSource != CanopyFlowOptionsSource.Host) throw new InvalidOperationException(what + " needs at least one option: a flow's lookup suggests from its options.");
         if (Options.Count > CanopyFlowValues.MaxOptions) throw new InvalidOperationException(what + " has more than 1000 options.");
         for (var index = 0; index < Options.Count; index++) {
             var option = Options[index] ?? throw new InvalidOperationException(what + " has a null option.");
@@ -111,13 +116,34 @@ public sealed partial class CanopyFlowField {
         if (MinimumDuration > MaximumDuration) throw new InvalidOperationException(what + ": the shortest duration cannot exceed the longest.");
     }
 
+    /// <summary>Checks the settings host-connected flows add: dependencies, records columns and a pick field's limits.</summary>
+    private void ValidateHostSettings(string what) {
+        if (DependsOnIds.Count > 16) throw new InvalidOperationException(what + " depends on at most 16 fields.");
+        var depends = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var id in DependsOnIds) {
+            if (id == null || id == Id || !depends.Add(id)) throw new InvalidOperationException(what + " depends on a field twice, on itself or on none.");
+        }
+
+        if ((Kind == CanopyFlowFieldKind.Records) != (Columns.Count > 0)) throw new InvalidOperationException(what + ": a records field needs columns, and only a records field has them.");
+        if (Columns.Count > 16) throw new InvalidOperationException(what + " has more than 16 columns.");
+        var columns = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var column in Columns) {
+            if (column == null || !columns.Add(column.Id)) throw new InvalidOperationException(what + " has a null column or two columns with the same id.");
+            column.Validate(Id);
+        }
+
+        if (Kind == CanopyFlowFieldKind.Pick && (PlaceholderText != null || IsReadOnly)) throw new InvalidOperationException(what + ": a pick field has no placeholder and is never read-only.");
+    }
+
     private bool HasValidation => Validation.Minimum.HasValue || Validation.Maximum.HasValue || Validation.Earliest.HasValue || Validation.Latest.HasValue ||
         Validation.MinLength.HasValue || Validation.MaxLength.HasValue || Validation.Pattern != null || Validation.Message != null || MinItems.HasValue ||
         MaxItems.HasValue || ItemRule != CanopyFlowItemRule.None || ListItemPattern != null || MinimumDuration.HasValue || MaximumDuration.HasValue;
 
-    internal void WriteJson(CanopyJsonWriter writer) {
-        writer.BeginObject().Property("id", Id).Property("type", WireType).OptionalProperty("editor", EditorName).Property("label", Label)
-            .OptionalProperty("help", HelpText).OptionalProperty("placeholder", PlaceholderText);
+    /// <summary>Writes the field; a pick step's field leaves out its type, which the step gives.</summary>
+    internal void WriteJson(CanopyJsonWriter writer, bool pick = false) {
+        writer.BeginObject().Property("id", Id);
+        if (!pick) writer.Property("type", WireType);
+        writer.OptionalProperty("editor", EditorName).Property("label", Label).OptionalProperty("help", HelpText).OptionalProperty("placeholder", PlaceholderText);
         if (IsRequired) writer.Property("required", true);
         if (IsReadOnly) writer.Property("readOnly", true);
         if (IsSensitive) writer.Property("sensitive", true);
@@ -136,6 +162,14 @@ public sealed partial class CanopyFlowField {
         if (Options.Count > 0) {
             writer.Name("options").BeginArray();
             foreach (var option in Options) option.WriteJson(writer);
+            writer.EndArray();
+        }
+
+        if (OptionsSource == CanopyFlowOptionsSource.Host) writer.Property("source", "host");
+        if (DependsOnIds.Count > 0) writer.StringArray("dependsOn", DependsOnIds);
+        if (Columns.Count > 0) {
+            writer.Name("columns").BeginArray();
+            foreach (var column in Columns) column.WriteJson(writer);
             writer.EndArray();
         }
 
@@ -191,7 +225,7 @@ public sealed partial class CanopyFlowField {
             ShowsReveal = CanopyFlowContract.Boolean(map, "reveal", what)
         };
         if (map.TryGetValue("default", out var value)) {
-            if (value == null && (kind == CanopyFlowFieldKind.List || kind == CanopyFlowFieldKind.MultiChoice))
+            if (value == null && (kind == CanopyFlowFieldKind.List || kind == CanopyFlowFieldKind.MultiChoice || kind == CanopyFlowFieldKind.Records || kind == CanopyFlowFieldKind.Pick))
                 throw new InvalidOperationException(what + ": a collection default must be an array; omit 'default' for no starting value.");
             field.DefaultValue = value;
         }
@@ -207,10 +241,14 @@ public sealed partial class CanopyFlowField {
         });
         foreach (var unit in CanopyFlowContract.Items(map, "units", what, 4)) field.DurationUnits.Add(CanopyFlowContract.Choose(unit as string, what, "units", UnitNames));
         if (map.TryGetValue("validation", out var validation)) field.ReadValidation(validation, what);
+        var source = CanopyFlowContract.Text(map, "source", what);
+        if (source != null) field.OptionsSource = CanopyFlowContract.Choose(source, what, "source", ("host", CanopyFlowOptionsSource.Host));
+        foreach (var item in CanopyFlowContract.Items(map, "dependsOn", what, 16)) field.DependsOnIds.Add(item as string ?? throw new InvalidOperationException(what + " depends on a field id that is not text."));
+        foreach (var item in CanopyFlowContract.Items(map, "columns", what, 16)) field.Columns.Add(CanopyFlowRecordColumn.Read(item, what));
         return field;
     }
 
-    private static CanopyFlowOption ReadOption(object? node, string what) {
+    internal static CanopyFlowOption ReadOption(object? node, string what) {
         var map = CanopyFlowContract.Object(node, what + " (option)", "value", "label", "description", "badge", "disabledReason", "group");
         if (!map.TryGetValue("value", out var value) || !CanopyFlowValues.TryScalar(value, out var scalar)) throw new InvalidOperationException(what + " has an option without a text, number or boolean value.");
         return new CanopyFlowOption(scalar, CanopyFlowContract.Text(map, "label", what)) {

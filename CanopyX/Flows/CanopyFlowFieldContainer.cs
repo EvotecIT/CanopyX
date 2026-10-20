@@ -127,6 +127,14 @@ public abstract class CanopyFlowFieldContainer<TContainer> where TContainer : Ca
     /// <exception cref="ArgumentException"><paramref name="id"/> is not a valid id.</exception>
     public TContainer Duration(string id, string label, Action<CanopyFlowField>? configure = null) => Add(id, CanopyFlowFieldKind.Duration, label, configure);
 
+    /// <summary>Adds a records field: rows of typed cells, edited as a small table; add its columns in <paramref name="configure"/>.</summary>
+    /// <param name="id">The field id, unique in the flow.</param>
+    /// <param name="label">The label.</param>
+    /// <param name="configure">Adds the columns (<see cref="CanopyFlowField.Column"/>) and sets the field's other settings.</param>
+    /// <returns>This step or section.</returns>
+    /// <exception cref="ArgumentException"><paramref name="id"/> is not a valid id.</exception>
+    public TContainer Records(string id, string label, Action<CanopyFlowField>? configure = null) => Add(id, CanopyFlowFieldKind.Records, label, configure);
+
     /// <summary>Adds a field drawn by an editor a browser plugin or the host registers.</summary>
     /// <param name="id">The field id, unique in the flow.</param>
     /// <param name="label">The label.</param>

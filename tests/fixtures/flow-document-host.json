@@ -1,0 +1,232 @@
+{
+  "kind": "flow",
+  "version": 1,
+  "id": "relay",
+  "title": "Relay",
+  "mode": "tasks",
+  "layout": {
+    "container": "dialog",
+    "launch": "Set up the relay"
+  },
+  "steps": [
+    {
+      "id": "server",
+      "title": "Which server relays the mail?",
+      "group": "Connect",
+      "checks": [
+        {
+          "id": "connect",
+          "label": "Test the connection",
+          "description": "Opens a connection.",
+          "fields": [
+            "host",
+            "password"
+          ],
+          "required": "pass"
+        }
+      ],
+      "fields": [
+        {
+          "id": "host",
+          "type": "text",
+          "label": "Host",
+          "required": true,
+          "parameter": "host",
+          "path": "relay.host"
+        },
+        {
+          "id": "password",
+          "type": "secret",
+          "label": "Password",
+          "parameter": "password"
+        },
+        {
+          "id": "region",
+          "type": "select",
+          "label": "Region",
+          "path": "relay.region",
+          "source": "host",
+          "dependsOn": [
+            "host"
+          ]
+        },
+        {
+          "id": "rules",
+          "type": "records",
+          "label": "Rules",
+          "path": "relay.rules",
+          "columns": [
+            {
+              "id": "name",
+              "title": "Name",
+              "required": true
+            },
+            {
+              "id": "level",
+              "title": "Level",
+              "type": "select",
+              "options": [
+                {
+                  "value": "high",
+                  "label": "High"
+                },
+                {
+                  "value": "low",
+                  "label": "Low"
+                }
+              ]
+            },
+            {
+              "id": "limit",
+              "title": "Limit",
+              "type": "number",
+              "width": 120,
+              "validation": {
+                "min": 1
+              }
+            }
+          ],
+          "validation": {
+            "maxItems": 5
+          }
+        }
+      ],
+      "sections": [
+        {
+          "id": "engine",
+          "label": "Engine options",
+          "description": "What the engine needs.",
+          "source": "host",
+          "dependsOn": [
+            "region"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "servers",
+      "type": "pick",
+      "title": "Which servers?",
+      "pick": {
+        "field": {
+          "id": "servers",
+          "label": "Which servers?",
+          "required": true,
+          "parameter": "servers",
+          "validation": {
+            "minItems": 1,
+            "maxItems": 3
+          }
+        },
+        "view": {
+          "protocol": "canopyx/2",
+          "type": "grid",
+          "id": "servers",
+          "label": "Servers",
+          "rowHeight": 34,
+          "pageSize": 100,
+          "selection": "single",
+          "search": true,
+          "columns": [
+            {
+              "id": "name",
+              "title": "Server",
+              "width": 160,
+              "autoWidth": true,
+              "kind": "text"
+            },
+            {
+              "id": "site",
+              "title": "Site",
+              "width": 160,
+              "autoWidth": true,
+              "kind": "text"
+            }
+          ],
+          "source": {
+            "kind": "inline",
+            "navigation": "offset"
+          },
+          "rows": [
+            {
+              "id": "s1",
+              "cells": {
+                "name": "SRV-1",
+                "site": "Lyon"
+              }
+            },
+            {
+              "id": "s2",
+              "cells": {
+                "name": "SRV-2",
+                "site": "Oslo"
+              }
+            },
+            {
+              "id": "s3",
+              "cells": {
+                "name": "SRV-3",
+                "site": "Lyon"
+              }
+            }
+          ]
+        },
+        "label": "name",
+        "height": 360
+      }
+    },
+    {
+      "id": "review",
+      "type": "review",
+      "confirm": {
+        "label": "Type {text} to confirm",
+        "text": "RELAY"
+      },
+      "acknowledge": {
+        "label": "I understand that mail moves to this relay.",
+        "when": {
+          "operator": "and",
+          "filters": [
+            {
+              "field": "host",
+              "operator": "eq",
+              "values": [
+                "relay.example.com"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "command": {
+    "name": "set-relay",
+    "style": "posix",
+    "variants": [
+      {
+        "id": "csharp",
+        "label": "C#"
+      }
+    ]
+  },
+  "presets": [
+    {
+      "id": "office",
+      "label": "Office relay",
+      "values": {
+        "host": "office.example.com"
+      }
+    }
+  ],
+  "draft": "host",
+  "deepLinks": true,
+  "endpoint": {
+    "url": "/api/flows/relay",
+    "routes": [
+      "options",
+      "fields",
+      "check",
+      "submit"
+    ]
+  }
+}

@@ -12,10 +12,14 @@
     "id": { "$ref": "#/$defs/identifier" },
     "title": { "$ref": "#/$defs/shortText" },
     "description": { "$ref": "#/$defs/longText" },
-    "mode": { "enum": ["linear", "free"], "description": "Default linear." },
+    "mode": { "enum": ["linear", "free", "tasks"], "description": "Default linear. tasks opens on a task list." },
     "layout": {
       "type": "object", "additionalProperties": false,
-      "properties": { "orientation": { "enum": ["auto", "horizontal", "vertical"], "description": "Default auto." } }
+      "properties": {
+        "orientation": { "enum": ["auto", "horizontal", "vertical"], "description": "Default auto." },
+        "container": { "enum": ["inline", "dialog", "drawer"], "description": "Default inline." },
+        "launch": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "\\S", "description": "The launch button of a dialog or drawer flow." }
+      }
     },
     "density": { "enum": ["compact", "normal", "comfortable"], "description": "Default normal." },
     "timeZone": { "enum": ["utc", "local"], "description": "Default utc." },
@@ -32,6 +36,25 @@
       "type": "object", "description": "Translations of the flow labels (flow…) and the shared field messages (gridEdit…).",
       "propertyNames": { "pattern": "^(flow[A-Z][A-Za-z0-9]*|gridEdit(Required|Number|Date|Min|Max|Step|MinLength|MaxLength|Pattern|Choice|NoMatches|Searching|None))$" },
       "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "command": {
+      "type": "object", "required": ["name"], "additionalProperties": false, "description": "The equivalent command the review page shows.",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[^\\u0000-\\u001f]*\\S[^\\u0000-\\u001f]*$" },
+        "style": { "enum": ["powershell", "posix", "windows"], "description": "Default powershell." },
+        "variants": { "type": "array", "maxItems": 8, "items": { "type": "object", "required": ["id", "label"], "additionalProperties": false,
+          "properties": { "id": { "$ref": "#/$defs/identifier" }, "label": { "type": "string", "minLength": 1, "maxLength": 60, "pattern": "\\S" } } } }
+      }
+    },
+    "presets": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/preset" } },
+    "draft": { "enum": ["none", "session", "local", "host"], "description": "Default none." },
+    "deepLinks": { "type": "boolean" },
+    "endpoint": {
+      "type": "object", "required": ["url", "routes"], "additionalProperties": false,
+      "properties": {
+        "url": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "^/(?!/)[A-Za-z0-9_./~%-]*$" },
+        "routes": { "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": { "enum": ["options", "fields", "check", "validate", "preview", "status", "draft", "submit"] } }
+      }
     }
   },
   "$defs": {
@@ -40,11 +63,67 @@
     "longText": { "type": "string", "minLength": 1, "maxLength": 1000, "pattern": "\\S" },
     "scalar": { "oneOf": [{ "type": "string", "maxLength": 4096 }, { "type": "number" }, { "type": "boolean" }] },
     "value": {
-      "description": "A field value: text, a number, true or false, a list of them, or null for empty.",
+      "description": "A field value: text, a number, true or false, a list of them, rows of a records field, picked records, or null for empty.",
       "oneOf": [
         { "type": "null" }, { "type": "string" }, { "type": "number" }, { "type": "boolean" },
-        { "type": "array", "maxItems": 1000, "items": { "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }] } }
+        { "type": "array", "maxItems": 1000, "items": { "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" },
+          { "type": "object", "additionalProperties": { "oneOf": [{ "type": "null" }, { "type": "string" }, { "type": "number" }, { "type": "boolean" }] } }] } }
       ]
+    },
+    "picked": {
+      "type": "array", "maxItems": 1000, "description": "Records a pick step chose.",
+      "items": { "type": "object", "required": ["id", "label"], "additionalProperties": false,
+        "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 256 }, "label": { "type": "string", "maxLength": 400 } } }
+    },
+    "recordColumn": {
+      "type": "object", "required": ["id", "title"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "title": { "$ref": "#/$defs/shortText" },
+        "type": { "enum": ["text", "number", "date", "time", "select", "toggle"], "description": "Default text." },
+        "required": { "type": "boolean" },
+        "width": { "type": "integer", "minimum": 60, "maximum": 480 },
+        "options": { "type": "array", "minItems": 1, "maxItems": 1000, "items": { "$ref": "#/$defs/option" } },
+        "validation": { "type": "object", "additionalProperties": false, "properties": {
+          "min": { "type": "number" }, "max": { "type": "number" }, "minLength": { "type": "integer", "minimum": 0 }, "maxLength": { "type": "integer", "minimum": 0 },
+          "pattern": { "type": "string", "minLength": 1, "maxLength": 256 }, "message": { "type": "string", "minLength": 1, "maxLength": 1024 } } }
+      },
+      "allOf": [{ "if": { "required": ["type"], "properties": { "type": { "const": "select" } } }, "then": { "required": ["options"] }, "else": { "not": { "required": ["options"] } } }]
+    },
+    "check": {
+      "type": "object", "required": ["id", "label", "fields"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "$ref": "#/$defs/shortText" },
+        "description": { "$ref": "#/$defs/longText" },
+        "fields": { "type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+        "required": { "enum": ["pass", "run"] }
+      }
+    },
+    "pick": {
+      "type": "object", "required": ["field", "view", "label"], "additionalProperties": false,
+      "properties": {
+        "field": { "type": "object", "required": ["id"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/identifier" }, "label": { "$ref": "#/$defs/shortText" }, "help": { "$ref": "#/$defs/longText" }, "required": { "type": "boolean" },
+          "when": { "$ref": "#/$defs/condition" }, "parameter": { "$ref": "#/$defs/identifier" }, "path": { "type": "string", "maxLength": 256, "pattern": "^[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*$" },
+          "sensitive": { "type": "boolean" }, "default": { "$ref": "#/$defs/picked" },
+          "validation": { "type": "object", "additionalProperties": false, "properties": {
+            "minItems": { "type": "integer", "minimum": 0, "maximum": 1000 }, "maxItems": { "type": "integer", "minimum": 0, "maximum": 1000 }, "message": { "type": "string", "minLength": 1, "maxLength": 1024 } } } } },
+        "view": { "type": "object", "required": ["protocol", "type"], "description": "A grid (type grid) or tree (type view) document of docs/schema/canopyx-2.schema.json.",
+          "properties": { "protocol": { "const": "canopyx/2" }, "type": { "enum": ["grid", "view"] } } },
+        "label": { "type": "string", "minLength": 1, "description": "The view column whose text labels a picked record." },
+        "tray": { "type": "boolean", "description": "Default true." },
+        "height": { "type": "integer", "minimum": 160, "maximum": 1200 }
+      }
+    },
+    "preset": {
+      "type": "object", "required": ["id", "label", "values"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "$ref": "#/$defs/shortText" },
+        "description": { "$ref": "#/$defs/longText" },
+        "values": { "type": "object", "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "anyOf": [{ "$ref": "#/$defs/value" }, { "$ref": "#/$defs/picked" }] } }
+      }
     },
     "isoDuration": { "type": "string", "pattern": "^P(?=[0-9T])([0-9]{1,9}D)?(T(?=[0-9])([0-9]{1,9}H)?([0-9]{1,9}M)?([0-9]{1,9}S)?)?$" },
     "isoMoment": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]{1,7})?)?(Z|[+-][0-9]{2}:[0-9]{2})$" },
@@ -107,7 +186,7 @@
       "type": "object", "required": ["id", "type", "label"], "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
-        "type": { "enum": ["text", "number", "date", "datetime", "time", "select", "toggle", "lookup", "choice", "multiChoice", "textarea", "list", "secret", "duration", "custom"] },
+        "type": { "enum": ["text", "number", "date", "datetime", "time", "select", "toggle", "lookup", "choice", "multiChoice", "textarea", "list", "secret", "duration", "records", "custom"] },
         "editor": { "$ref": "#/$defs/identifier" },
         "label": { "$ref": "#/$defs/shortText" },
         "help": { "$ref": "#/$defs/longText" },
@@ -129,11 +208,16 @@
         "keepWhenBlank": { "type": "boolean" },
         "reveal": { "type": "boolean" },
         "units": { "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": { "enum": ["seconds", "minutes", "hours", "days"] } },
-        "validation": { "$ref": "#/$defs/validation" }
+        "validation": { "$ref": "#/$defs/validation" },
+        "source": { "enum": ["document", "host"], "description": "Select, choice, multiple-choice and lookup fields: host takes the options from the host. Default document." },
+        "dependsOn": { "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
+        "columns": { "type": "array", "minItems": 1, "maxItems": 16, "items": { "$ref": "#/$defs/recordColumn" } }
       },
       "allOf": [
         { "if": { "properties": { "type": { "const": "custom" } } }, "then": { "required": ["editor"] }, "else": { "not": { "required": ["editor"] } } },
-        { "if": { "properties": { "type": { "enum": ["select", "choice", "multiChoice", "lookup"] } } }, "then": { "required": ["options"], "properties": { "options": { "minItems": 1 } } } },
+        { "if": { "properties": { "type": { "enum": ["select", "choice", "multiChoice", "lookup"] } }, "not": { "required": ["source"], "properties": { "source": { "const": "host" } } } }, "then": { "required": ["options"], "properties": { "options": { "minItems": 1 } } } },
+        { "if": { "properties": { "type": { "not": { "enum": ["select", "choice", "multiChoice", "lookup"] } } } }, "then": { "not": { "required": ["source"] } } },
+        { "if": { "properties": { "type": { "const": "records" } } }, "then": { "required": ["columns"] }, "else": { "not": { "required": ["columns"] } } },
         { "if": { "properties": { "type": { "not": { "enum": ["select", "choice", "multiChoice", "lookup"] } } } }, "then": { "not": { "required": ["options"] } } },
         { "if": { "properties": { "type": { "not": { "const": "choice" } } } }, "then": { "not": { "required": ["display"] } } },
         { "if": { "properties": { "type": { "not": { "const": "toggle" } } } }, "then": { "not": { "anyOf": [{ "required": ["onText"] }, { "required": ["offText"] }] } } },
@@ -148,7 +232,7 @@
         { "if": { "properties": { "type": { "const": "duration" } } }, "then": { "properties": { "default": { "$ref": "#/$defs/isoDuration" }, "validation": { "properties": { "min": { "$ref": "#/$defs/isoDuration" }, "max": { "$ref": "#/$defs/isoDuration" } } } } } },
         { "if": { "properties": { "type": { "not": { "enum": ["number", "datetime", "duration"] } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["min"] }, { "required": ["max"] }] } } } } },
         { "if": { "properties": { "type": { "not": { "enum": ["text", "textarea", "secret"] } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["minLength"] }, { "required": ["maxLength"] }, { "required": ["pattern"] }] } } } } },
-        { "if": { "properties": { "type": { "not": { "enum": ["multiChoice", "list"] } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["minItems"] }, { "required": ["maxItems"] }] } } } } },
+        { "if": { "properties": { "type": { "not": { "enum": ["multiChoice", "list", "records"] } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["minItems"] }, { "required": ["maxItems"] }] } } } } },
         { "if": { "properties": { "type": { "not": { "const": "list" } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["item"] }, { "required": ["itemPattern"] }] } } } } },
         { "if": { "properties": { "type": { "const": "date" } } }, "then": { "properties": { "default": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" } } } },
         { "if": { "properties": { "type": { "const": "time" } } }, "then": { "properties": { "default": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$" } } } },
@@ -156,24 +240,29 @@
         { "if": { "properties": { "type": { "const": "toggle" } } }, "then": { "properties": { "default": { "type": "boolean" } } } },
         { "if": { "properties": { "type": { "const": "number" } } }, "then": { "properties": { "default": { "type": "number" } } } },
         { "if": { "properties": { "type": { "enum": ["text", "textarea"] } } }, "then": { "properties": { "default": { "type": "string" } } } },
-        { "if": { "properties": { "type": { "enum": ["multiChoice", "list"] } } }, "then": { "properties": { "default": { "type": "array" } } } }
+        { "if": { "properties": { "type": { "enum": ["multiChoice", "list", "records"] } } }, "then": { "properties": { "default": { "type": "array" } } } }
       ]
     },
     "section": {
-      "type": "object", "required": ["id", "label", "fields"], "additionalProperties": false,
+      "type": "object", "required": ["id", "label"], "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
         "label": { "$ref": "#/$defs/shortText" },
         "description": { "$ref": "#/$defs/longText" },
         "when": { "$ref": "#/$defs/condition" },
-        "fields": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/field" } }
-      }
+        "fields": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/field" } },
+        "source": { "const": "host", "description": "The host supplies the section's fields; it has none of its own." },
+        "dependsOn": { "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } }
+      },
+      "if": { "required": ["source"] },
+      "then": { "properties": { "fields": { "maxItems": 0 } } },
+      "else": { "required": ["fields"], "not": { "required": ["dependsOn"] } }
     },
     "step": {
       "type": "object", "required": ["id"], "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
-        "type": { "enum": ["form", "info", "review"], "description": "Default form." },
+        "type": { "enum": ["form", "info", "pick", "review"], "description": "Default form." },
         "title": { "$ref": "#/$defs/shortText" },
         "description": { "$ref": "#/$defs/longText" },
         "optional": { "type": "boolean" },
@@ -181,17 +270,30 @@
         "fields": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/field" } },
         "sections": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/section" } },
         "declaration": { "$ref": "#/$defs/longText" },
-        "changesOnly": { "type": "boolean" }
+        "changesOnly": { "type": "boolean" },
+        "checks": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/check" } },
+        "group": { "$ref": "#/$defs/shortText" },
+        "pick": { "$ref": "#/$defs/pick" },
+        "confirm": { "type": "object", "required": ["label"], "additionalProperties": false, "properties": {
+          "label": { "$ref": "#/$defs/shortText" }, "text": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" }, "field": { "$ref": "#/$defs/identifier" } },
+          "oneOf": [{ "required": ["text"] }, { "required": ["field"] }] },
+        "acknowledge": { "type": "object", "required": ["label"], "additionalProperties": false, "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 400, "pattern": "\\S" }, "when": { "$ref": "#/$defs/condition" } } }
       },
       "allOf": [
         {
           "if": { "required": ["type"], "properties": { "type": { "const": "review" } } },
-          "then": { "not": { "anyOf": [{ "required": ["fields"] }, { "required": ["sections"] }, { "required": ["when"] }, { "required": ["optional"] }] } },
-          "else": { "required": ["title"], "not": { "anyOf": [{ "required": ["declaration"] }, { "required": ["changesOnly"] }] } }
+          "then": { "not": { "anyOf": [{ "required": ["fields"] }, { "required": ["sections"] }, { "required": ["when"] }, { "required": ["optional"] }, { "required": ["group"] }] } },
+          "else": { "required": ["title"], "not": { "anyOf": [{ "required": ["declaration"] }, { "required": ["changesOnly"] }, { "required": ["confirm"] }, { "required": ["acknowledge"] }] } }
         },
         {
-          "if": { "required": ["type"], "properties": { "type": { "const": "info" } } },
-          "then": { "not": { "anyOf": [{ "required": ["fields"] }, { "required": ["sections"] }] } }
+          "if": { "required": ["type"], "properties": { "type": { "enum": ["info", "pick"] } } },
+          "then": { "not": { "anyOf": [{ "required": ["fields"] }, { "required": ["sections"] }, { "required": ["checks"] }] } }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "pick" } } },
+          "then": { "required": ["pick"] },
+          "else": { "not": { "required": ["pick"] } }
         }
       ]
     }

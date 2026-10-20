@@ -225,14 +225,15 @@ internal static class CanopyFlowValues {
             case CanopyFlowFieldKind.Select:
             case CanopyFlowFieldKind.Choice:
             case CanopyFlowFieldKind.Lookup:
-                if (TryScalar(value, out var choice) && (field.Kind == CanopyFlowFieldKind.Lookup && field.Options.Count == 0 || IsOption(field, choice))) return choice;
+                // Options the host loads can change: a value of theirs fits by its shape (the host checks it against its own options).
+                if (TryScalar(value, out var choice) && (field.OptionsSource == CanopyFlowOptionsSource.Host || field.Kind == CanopyFlowFieldKind.Lookup && field.Options.Count == 0 || IsOption(field, choice))) return choice;
                 error = "must be one of the field's option values.";
                 return null;
             case CanopyFlowFieldKind.MultiChoice: {
                 if (value is string || !(value is IEnumerable items)) { error = "must be a list of the field's option values."; return null; }
                 var chosen = new List<object>();
                 foreach (var item in items) {
-                    if (!TryScalar(item, out var option) || !IsOption(field, option)) { error = "must be a list of the field's option values."; return null; }
+                    if (!TryScalar(item, out var option) || field.OptionsSource != CanopyFlowOptionsSource.Host && !IsOption(field, option)) { error = "must be a list of the field's option values."; return null; }
                     foreach (var earlier in chosen) if (SameScalar(earlier, option)) { error = "lists an option twice."; return null; }
                     chosen.Add(option);
                 }
@@ -262,6 +263,10 @@ internal static class CanopyFlowValues {
                 if (list.Count > MaxItems) { error = "holds at most 1000 items."; return null; }
                 return list;
             }
+            case CanopyFlowFieldKind.Records:
+                return CanopyFlowRecordValues.Canonical(field, value, out error);
+            case CanopyFlowFieldKind.Pick:
+                return CanopyFlowRecordValues.CanonicalPick(value, out error);
             default:
                 error = "cannot carry a value: secrets reach the host only through the submit handler.";
                 return null;
@@ -304,6 +309,11 @@ internal static class CanopyFlowValues {
             case string text: writer.String(text); break;
             case bool flag: writer.Boolean(flag); break;
             case double number: writer.Number(number); break;
+            case IDictionary<string, object?> record:
+                writer.BeginObject();
+                foreach (var entry in record) { writer.Name(entry.Key); Write(writer, entry.Value); }
+                writer.EndObject();
+                break;
             case IList list:
                 writer.BeginArray();
                 foreach (var item in list) Write(writer, item);
