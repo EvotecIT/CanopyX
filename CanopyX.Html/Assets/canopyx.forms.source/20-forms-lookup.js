@@ -23,6 +23,7 @@
       input.setAttribute("aria-expanded", "false"); input.removeAttribute("aria-activedescendant");
       if (popup.matches(":popover-open")) popup.hidePopover();
     };
+    input.addEventListener("blur", close);
     const show = (items, message) => {
       options = items; active = items.length ? 0 : -1; list.replaceChildren(); list.hidden = !items.length;
       setText(note, message || ""); note.hidden = !message;
