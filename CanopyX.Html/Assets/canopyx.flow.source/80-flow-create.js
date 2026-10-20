@@ -9,6 +9,9 @@
       getValues: () => view.getValues(), setValues: values => view.setValues(values), getState: () => view.getState(), setState: state => view.setState(state),
       isDirty: () => view.isDirty(), reset: () => view.reset(), validate: id => view.validate(id), setFieldError: (id, message) => view.setFieldError(id, message),
       submit: () => view.submit(), setProgress: progress => view.setProgress(progress), complete: answer => view.complete(answer),
+      runCheck: id => view.runCheck(id), refreshOptions: id => view.refreshOptions(id), setStepState: (id, state) => view.setStepState(id, state),
+      saveDraft: () => view.saveDraft(true), setPreset: id => Promise.resolve().then(() => view.applyPreset(id ?? null)),
+      open: () => view.open(), close: () => view.close(),
       destroy: () => view.destroy()
     };
     return impl;

@@ -122,6 +122,9 @@ FlowScheduleReportExample.Write(output);
 FlowPauseExample.Write(output);
 FlowHeightExamples.Write(output);
 FlowEditSettingsExample.Write(output);
+FlowMailChecksExample.Write(output);
+FlowSetupTasksExample.Write(output);
+FlowActOnRowsExample.Write(output);
 MatrixExamples.Write(output);
 
 var largeTree = new SyntheticFileTree();

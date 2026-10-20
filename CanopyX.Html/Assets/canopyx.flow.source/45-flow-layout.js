@@ -18,16 +18,21 @@
       this.live = h("div", "cx-sr-only"); this.live.setAttribute("aria-live", "polite");
       this.layout.append(this.rail, this.main);
       root.append(head, this.layout, this.live);
-      this.host.appendChild(root);
+      this.head = head;
+      // A dialog or drawer flow opens from a launch button in the host (48-flow-dialog.js); an inline flow sits in the host.
+      if (this.model.container !== "inline") this.buildContainer(); else this.host.appendChild(root);
+      this.sizer = this.dialog || this.host;
       const signal = this.lifetime.signal;
       root.addEventListener("input", event => this.fieldEvent(event, "edit"), { signal });
       root.addEventListener("change", event => this.fieldEvent(event, "edit"), { signal });
       root.addEventListener("focusout", event => this.fieldEvent(event, "blur"), { signal });
       root.addEventListener("keydown", event => this.key(event), { signal });
       this.narrow = false;
-      if (global.ResizeObserver) { this.resize = new ResizeObserver(() => this.measure()); this.resize.observe(this.host); }
+      if (global.ResizeObserver) { this.resize = new ResizeObserver(() => this.measure()); this.resize.observe(this.sizer); }
+      this.buildPresets?.();
       this.measure(true);
       this.render();
+      this.startHostFeatures?.();
     },
 
     fieldEvent(event, source) {
@@ -40,7 +45,7 @@
     },
 
     measure(first) {
-      const width = this.host.clientWidth || global.innerWidth, narrow = width < FLOW_NARROW;
+      const width = this.sizer.clientWidth || global.innerWidth, narrow = width < FLOW_NARROW;
       if (!first && width === this.width) return;
       // A wider host may fit the horizontal rail an automatic orientation gave up on; a narrower one may not fit it any more.
       const changed = narrow !== this.narrow || this.railTooWide && width > this.width;
@@ -52,6 +57,8 @@
     /** The orientation in use: the stacked steps on narrow hosts, else the document's; auto takes the horizontal rail for up
      * to six steps whose titles fit the width, and the vertical rail otherwise. */
     orientation() {
+      // A task list has its hub instead of a rail (47-flow-tasks.js).
+      if (this.model.mode === "tasks") return "tasks";
       // A flow of one step needs no rail; its heading says what the step asks.
       if (this.visibleSteps().length <= 1) return "single";
       if (this.narrow) return "stack";
@@ -68,7 +75,7 @@
       const active = document.activeElement;
       // An answer that hides the current step moves the reader to the next visible step (or the last) before anything paints.
       const steps = this.visibleSteps();
-      if (this.phase === "form" && !steps.includes(this.step)) {
+      if (this.phase === "form" && this.step !== this.hub && !steps.includes(this.step)) {
         const from = this.step;
         this.step = steps.find(step => this.model.steps.indexOf(step) > this.model.steps.indexOf(from)) || steps[steps.length - 1];
         this.reviewStale = true;
@@ -77,7 +84,7 @@
       const orientation = this.orientation();
       this.layout.className = "cx-flow-layout cx-flow-" + orientation;
       this.root.classList.toggle("cx-flow-narrow", this.narrow);
-      if (orientation === "stack" || orientation === "single") { this.rail.removeAttribute("role"); this.rail.removeAttribute("aria-label"); }
+      if (orientation === "stack" || orientation === "single" || orientation === "tasks") { this.rail.removeAttribute("role"); this.rail.removeAttribute("aria-label"); }
       else { this.rail.setAttribute("role", "navigation"); this.rail.setAttribute("aria-label", this.labels.flowSteps); }
       this.renderStage();
       this.renderRail();
@@ -97,12 +104,15 @@
     },
     reachable(step, steps = this.visibleSteps()) {
       if (this.model.mode === "free") return true;
-      for (const before of steps) { if (before === step) return true; if (before.type === "form" && !this.completed.has(before.id)) return false; }
+      for (const before of steps) { if (before === step) return true; if (before.asks && !this.completed.has(before.id)) return false; }
       return false;
     },
 
     renderRail() {
       if (!this.root) return;
+      // A task list shows its hub instead (47-flow-tasks.js); its page follows the hub's state.
+      // It keeps the key of the visible steps too, so an answer that leaves them alone never repaints the page mid-click.
+      if (this.model.mode === "tasks") { this.railKey = this.visibleSteps().map(step => step.id).join(); if (this.step === this.hub && this.phase === "form") this.paintHub?.(); return; }
       const steps = this.visibleSteps(), stack = this.orientation() === "stack", labels = this.labels;
       if (!steps.includes(this.step)) this.step = steps.find(step => this.model.steps.indexOf(step) > this.model.steps.indexOf(this.step)) || steps[steps.length - 1];
       // The items stay while the visible steps stay, so a repaint during a click (a field checked as focus leaves it) never
@@ -142,19 +152,39 @@
     },
 
     renderActions() {
-      const labels = this.labels, steps = this.visibleSteps(), at = steps.indexOf(this.step), last = at === steps.length - 1;
+      const labels = this.labels, steps = this.visibleSteps(), tasks = this.model.mode === "tasks", at = steps.indexOf(this.step);
       this.actions.replaceChildren();
       this.actions.hidden = this.phase !== "form";
       if (this.phase !== "form") return;
+      // The hub of a task list has its own actions; a task returns to it (47-flow-tasks.js).
+      if (this.step === this.hub) { this.hubActions(); return; }
+      const last = tasks ? this.step.type === "review" : at === steps.length - 1;
       const back = h("button", "cx-flow-btn cx-flow-back"), next = h("button", "cx-flow-btn cx-primary cx-flow-next");
       back.type = next.type = "button";
-      setText(back, labels.flowBack); back.hidden = at <= 0;
+      setText(back, tasks ? labels.flowBackToTasks : labels.flowBack); back.hidden = !tasks && at <= 0;
       back.addEventListener("click", () => this.back().catch(error => this.report(error, "back")));
-      setText(next, last ? this.model.submitLabel || labels.flowSubmit : labels.flowNext);
+      setText(next, last ? this.model.submitLabel || labels.flowSubmit : tasks ? labels.flowSaveAndReturn : labels.flowNext);
       next.addEventListener("click", () => (last ? this.submit() : this.next()).catch(error => this.report(error, last ? "submit" : "next")));
       if (this.busy) { next.disabled = back.disabled = true; next.setAttribute("aria-busy", "true"); if (last) setText(next, labels.flowSubmitting); }
       const spacer = h("span", "cx-flow-spacer");
-      this.actions.append(back, spacer, next);
+      // Save draft and Cancel sit in a quiet group beside Back (66-flow-drafts.js, 48-flow-dialog.js).
+      this.actions.append(back, ...this.quietActions(), spacer, next);
+    },
+
+    /** Save draft (when the flow keeps drafts) and Cancel (in a dialog or drawer), quiet beside Back. */
+    quietActions() {
+      const buttons = [];
+      if (this.draftStore?.()) {
+        const save = h("button", "cx-flow-btn cx-flow-quiet"); save.type = "button"; setText(save, this.labels.flowSaveDraft);
+        save.addEventListener("click", () => this.saveDraft(true).catch(error => this.report(error, "draft")));
+        buttons.push(save);
+      }
+      if (this.dialog) {
+        const cancel = h("button", "cx-flow-btn cx-flow-quiet"); cancel.type = "button"; setText(cancel, this.labels.flowCancel);
+        cancel.addEventListener("click", () => this.close());
+        buttons.push(cancel);
+      }
+      return buttons;
     },
 
     key(event) {
@@ -163,10 +193,10 @@
       if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && this.step.type === "review") { event.preventDefault(); this.submit().catch(error => this.report(error, "submit")); return; }
       // Enter in a single-line field moves on; text areas, lists, buttons and open suggestion lists keep their own Enter.
       if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.shiftKey || target.tagName !== "INPUT" || /^(button|submit|checkbox|radio|file)$/.test(target.type) ||
-          target.closest(".cx-flow-list") || !target.closest(".cx-flow-stage")) return;
+          target.closest(".cx-flow-list,.cx-flow-records,.cx-flow-pick,.cx-flow-confirm") || !target.closest(".cx-flow-stage")) return;
       event.preventDefault();
-      const steps = this.visibleSteps();
-      (steps.indexOf(this.step) === steps.length - 1 ? this.submit() : this.next()).catch(error => this.report(error, "next"));
+      const steps = this.visibleSteps(), last = this.model.mode === "tasks" ? this.step.type === "review" : steps.indexOf(this.step) === steps.length - 1;
+      (last ? this.submit() : this.next()).catch(error => this.report(error, "next"));
     },
 
     announce(text) { setText(this.live, ""); setTimeout(() => setText(this.live, text), 30); }

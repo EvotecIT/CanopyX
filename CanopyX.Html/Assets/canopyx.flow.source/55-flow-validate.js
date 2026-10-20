@@ -24,7 +24,8 @@
       }
       const value = this.values.get(field.id) ?? null;
       if (field.type === "toggle") return field.required && value !== true ? fill(labels.gridEditRequired, { column: title }) : null;
-      if (field.kind === "list") {
+      if (field.kind === "records") return flowRecordsProblem(this, field, value || []);
+      if (field.kind === "list" || field.kind === "pick") {
         const items = value || [], rules = field.items;
         if (!items.length) return field.required ? field.spec.rules.message || fill(labels.gridEditRequired, { column: title }) : null;
         if (rules.min !== undefined && items.length < rules.min) return fill(labels.flowItemsMin, { field: title, min: rules.min });
@@ -118,9 +119,13 @@
         else this.errors.set(field.id, message);
         if (local) failing.push({ field: field.id, step: step.id, message: local });
       });
-      if (result.errors.length) this.stepErrors.set(step.id, result.errors.join(" ")); else this.stepErrors.delete(step.id);
+      // Required checks gate the step: Next runs the ones that have not run on these answers (53-flow-checks.js).
+      const gate = step.checks.length ? await this.checkGate(step, show && !failing.length && !result.errors.length) : [];
+      if (this.destroyed || this.generation !== generation) return { valid: false, errors: [], warnings: [], moved: true };
+      const stepMessages = [...result.errors, ...gate];
+      if (stepMessages.length) this.stepErrors.set(step.id, stepMessages.join(" ")); else this.stepErrors.delete(step.id);
       const errors = failing;
-      for (const message of result.errors) errors.push({ step: step.id, message });
+      for (const message of stepMessages) errors.push({ step: step.id, message });
       return { valid: stable && !errors.length, errors, warnings: result.warnings.map(message => ({ step: step.id, message })), moved };
     },
 
@@ -136,7 +141,7 @@
     },
 
     async validateAllOnce(generation) {
-      const results = [], steps = this.visibleSteps().filter(step => step.type === "form");
+      const results = [], steps = this.visibleSteps().filter(step => step.asks);
       for (const step of steps) {
         results.push(await this.validateStep(step, false));
         if (this.destroyed || generation !== this.generation) return { valid: false, errors: [], warnings: [] };
@@ -161,7 +166,7 @@
       if (stepId === undefined) { const result = await this.validateAll(); this.renderRail(); return result; }
       const step = this.model.steps.find(item => item.id === stepId);
       if (!step) flowFail("there is no step '" + stepId + "'");
-      const result = step.type === "form" && this.stepVisible(step) ? await this.validateStep(step, true) : { valid: true, errors: [], warnings: [] };
+      const result = step.asks && this.stepVisible(step) ? await this.validateStep(step, true) : { valid: true, errors: [], warnings: [] };
       this.renderRail();
       return { valid: result.valid, errors: result.errors, warnings: result.warnings };
     },

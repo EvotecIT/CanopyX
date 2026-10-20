@@ -29,8 +29,9 @@ public sealed class FlowPartAssetsTests {
         Assert.NotNull(part.Style);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         var size = Gzip(part.Script) + Gzip(part.Style!);
-        // Flow wave F1: 25,419 bytes plus about 15%, rounded up to KiB.
-        Assert.True(size <= 29 * 1024, "The flow part is " + size + " bytes gzip; the guard is 29 KiB.");
+        // Flow wave F2 (host checks, options, pickers, records, task lists, dialogs, command, drafts, presets, links, endpoint):
+        // 49,914 bytes plus about 15%, rounded up to KiB. F1 was 25,419; TODO.md tracks moving the host features to a part of their own.
+        Assert.True(size <= 57 * 1024, "The flow part is " + size + " bytes gzip; the guard is 57 KiB.");
     }
 
     [Fact]

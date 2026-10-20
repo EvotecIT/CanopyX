@@ -4,16 +4,22 @@
   let FLOW_SEQUENCE = 0;
   const flowCopy = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
   const flowSameValue = (left, right) => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
-  const FLOW_HOOKS = ["validateStep", "validateFlow", "submit"], FLOW_CALLBACKS = ["onReady", "onStepChange", "onValueChange", "onSubmit", "onSubmitted", "onReload"];
+  const FLOW_HOOKS = ["validateStep", "validateFlow", "submit", "options", "fields", "check", "preview", "status"];
+  const FLOW_HOOK_GROUPS = ["validators", "commands", "draftStore", "presetStore", "pickers"];
+  const FLOW_CALLBACKS = ["onReady", "onStepChange", "onValueChange", "onSubmit", "onSubmitted", "onReload", "onCheck", "onLeaving", "formatLink", "parseLink"];
 
   class FlowView {
     constructor(host, options, editors) {
       const hooks = options.hooks ?? {};
-      if (!flowIs(hooks) || FLOW_HOOKS.some(name => hooks[name] != null && typeof hooks[name] !== "function") || hooks.validators != null && !flowIs(hooks.validators) ||
+      if (!flowIs(hooks) || FLOW_HOOKS.some(name => hooks[name] != null && typeof hooks[name] !== "function") || FLOW_HOOK_GROUPS.some(name => hooks[name] != null && !flowIs(hooks[name])) ||
           FLOW_CALLBACKS.some(name => options[name] != null && typeof options[name] !== "function") || options.editors != null && !flowIs(options.editors) ||
-          options.values != null && !flowIs(options.values)) flowFail("invalid flow options");
-      this.host = host; this.options = options; this.hooks = hooks;
+          options.values != null && !flowIs(options.values) || options.timeout != null && !(Number.isInteger(options.timeout) && options.timeout >= 100 && options.timeout <= 600000) ||
+          options.headers != null && !(flowIs(options.headers) && Object.values(options.headers).every(value => typeof value === "string"))) flowFail("invalid flow options");
+      this.host = host; this.options = options;
       this.model = flowRead(options.flow);
+      // An endpoint (CanopyX.AspNetCore's MapCanopyFlow) answers the hooks the host leaves out (69-flow-endpoint.js).
+      this.hooks = this.model.endpoint ? flowEndpointHooks(this.model, hooks, options.headers || {}) : hooks;
+      this.timeout = options.timeout ?? 30000;
       this.labels = flowLabels(this.model.labels, options.labels);
       this.editors = Object.assign({}, editors, options.editors);
       this.id = "cx-flow-" + ++FLOW_SEQUENCE;
@@ -22,6 +28,9 @@
       this.fields = new Map(); this.sections = new Map(); this.visibility = new Map();
       this.secrets = new Map(); this.errors = new Map(); this.hostErrors = new Map(); this.hostStepErrors = new Map(); this.stepErrors = new Map(); this.completed = new Set();
       this.banner = null; this.phase = "form"; this.returnToReview = false; this.generation = 0; this.answerRevision = 0;
+      this.optionState = new Map(); this.checkState = new Map(); this.pickers = new Map(); this.stepStatus = new Map(); this.preset = null;
+      // A task list opens on its hub, a page of its own that is not one of the document's steps (47-flow-tasks.js).
+      this.hub = this.model.mode === "tasks" ? { id: "#tasks", type: "hub", title: null, asks: false, blocks: [], checks: [] } : null;
       try { this.begin(options.values); this.build(); }
       catch (error) { this.destroy(); throw error; }
     }
@@ -32,7 +41,8 @@
       this.destroyed = true;
       this.closeSubmission?.(); this.lifetime.abort(); this.resize?.disconnect();
       for (const fv of this.fields.values()) fv.destroy();
-      this.secrets.clear(); this.root?.remove(); this.host.removeAttribute("data-cx-ready");
+      this.releaseHostWork?.();
+      this.secrets.clear(); this.root?.remove(); this.shell?.remove(); this.host.removeAttribute("data-cx-ready");
     }
 
     /** The starting answers: initial values in edit mode, else defaults, then the host's values. */
@@ -47,10 +57,10 @@
       for (const [id, value] of Object.entries(values || {})) this.assign(id, value);
       this.startValues = new Map([...this.values].map(([id, value]) => [id, flowCopy(value)]));
       this.secrets.clear(); this.errors.clear(); this.hostErrors.clear(); this.hostStepErrors.clear(); this.stepErrors.clear(); this.showAll = undefined; this.reviewStale = true; this.completed.clear(); this.visibility.clear();
-      this.banner = null; this.returnToReview = false;
-      this.step = this.visibleSteps()[0];
+      this.banner = null; this.returnToReview = false; this.confirmText = ""; this.acknowledged = false;
+      this.step = this.hub || this.visibleSteps()[0];
       // Edit mode starts from settings that were valid when saved: steps whose fields pass their own checks count as complete.
-      if (model.initial) for (const step of this.visibleSteps()) if (step.type === "form" && this.stepFields(step).every(field => !this.problemNow(field))) this.completed.add(step.id);
+      if (model.initial) for (const step of this.visibleSteps()) if (step.asks && this.stepFields(step).every(field => !this.problemNow(field))) this.completed.add(step.id);
     }
 
     assign(id, value) {
@@ -63,7 +73,11 @@
     keeps(field) { return field.type === "secret" && this.model.stored.has(field.id) && field.keepWhenBlank !== false; }
 
     // ---------- visibility ----------
-    read(id) { const field = this.model.fields.get(id); return field && this.visible(field) ? this.values.get(id) ?? null : null; }
+    read(id) {
+      const field = this.model.fields.get(id), value = field && this.visible(field) ? this.values.get(id) ?? null : null;
+      // Conditions read a picker's answer as its record ids.
+      return field?.type === "pick" && Array.isArray(value) ? value.map(item => item.id) : value;
+    }
     stepVisible(step) { return flowTest(step.when, id => this.read(id)); }
     visible(field) {
       if (this.visibility.has(field.id)) return this.visibility.get(field.id);
@@ -95,7 +109,7 @@
         const before = this.secrets.get(field.id) ?? null;
         if (result.value) this.secrets.set(field.id, result.value); else this.secrets.delete(field.id);
         // A host's message about a field stands until the reader changes that field.
-        if (before !== (result.value || null)) { this.answerRevision++; this.forgetHost(field); this.emit("flowValueChanged", { field: field.id, source: "edit" }, "onValueChange"); }
+        if (before !== (result.value || null)) { this.answerRevision++; this.forgetHost(field); this.emit("flowValueChanged", { field: field.id, source: "edit" }, "onValueChange"); this.afterChange?.(field); }
       } else if (!result.error) {
         const previous = this.values.get(field.id) ?? null;
         if (!flowSameValue(previous, result.value)) {
@@ -103,6 +117,7 @@
           this.values.set(field.id, result.value);
           this.forgetHost(field);
           this.emit("flowValueChanged", { field: field.id, value: flowCopy(result.value), previous: flowCopy(previous), source: "edit" }, "onValueChange");
+          this.afterChange?.(field);
         }
       }
       // Leaving the field checks it once (the caller); while typing, a field already showing a problem is checked again.
@@ -130,7 +145,9 @@
     refreshVisibility() {
       this.visibility.clear();
       for (const fv of this.fields.values()) fv.element.hidden = !this.visible(fv.field);
-      for (const [stepId, section] of this.sections) for (const block of section._cxBlocks || []) block.element.hidden = !block.fields.some(field => this.visible(field));
+      for (const [stepId, section] of this.sections) for (const block of section._cxBlocks || [])
+        block.element.hidden = !block.fields.some(field => this.visible(field)) && !(block.section?.host && !block.fields.length && flowTest(block.section.when, id => this.read(id)));
+      this.prepareVisible?.();
       // The rail (and an automatic orientation) follows the steps an answer shows or hides.
       if (!this.root) return;
       if (this.visibleSteps().map(step => step.id).join() + (this.orientation() === "stack" ? "|stack" : "") !== this.railKey) { this.railTooWide = false; this.render(); }
@@ -145,7 +162,7 @@
         this.assign(id, value);
         this.fields.get(id)?.mount(flowCopy(value));
         this.errors.delete(id); this.hostErrors.delete(id); this.fields.get(id)?.message(null);
-        if (!flowSameValue(previous, value)) this.emit("flowValueChanged", { field: id, value: flowCopy(value), previous: flowCopy(previous), source: "api" }, "onValueChange");
+        if (!flowSameValue(previous, value)) { this.emit("flowValueChanged", { field: id, value: flowCopy(value), previous: flowCopy(previous), source: "api" }, "onValueChange"); this.afterChange?.(this.model.fields.get(id)); }
       }
       this.refreshVisibility();
       this.refreshReview();
@@ -160,7 +177,11 @@
 
     isDirty() { return this.secrets.size > 0 || [...this.values].some(([id, value]) => !flowSameValue(value, this.startValues.get(id))); }
     getStep() { return this.step.id; }
-    getState() { return { step: this.step.id, values: Object.fromEntries([...this.values].map(([id, value]) => [id, flowCopy(value)])), completed: [...this.completed] }; }
+    getState() {
+      const state = { step: this.step.id, values: Object.fromEntries([...this.values].map(([id, value]) => [id, flowCopy(value)])), completed: [...this.completed] };
+      if (this.preset) state.preset = this.preset.id;
+      return state;
+    }
     setState(state) {
       if (!flowIs(state) || state.values != null && !flowIs(state.values) || state.completed != null && !Array.isArray(state.completed)) flowFail("setState takes a flow state");
       for (const [id, value] of Object.entries(state.values || {})) {
@@ -169,14 +190,15 @@
       }
       this.completed = new Set((state.completed || []).filter(id => this.model.steps.some(step => step.id === id)));
       this.refreshVisibility();
-      const target = this.model.steps.find(step => step.id === state.step);
-      return this.go(target && this.stepVisible(target) ? target : this.visibleSteps()[0], "jump", true);
+      const target = this.hub && state.step === this.hub.id ? this.hub : this.model.steps.find(step => step.id === state.step);
+      return this.go(target && this.stepVisible(target) ? target : this.hub || this.visibleSteps()[0], "jump", true);
     }
     reset() {
       this.generation++; this.answerRevision++; this.busy = false;
       this.closeSubmission?.(); this.checks?.clear(); this.reviewTicket = null; this.reviewChecking = false;
       for (const fv of this.fields.values()) fv.destroy();
       this.fields.clear(); this.sections.clear();
+      this.releaseHostWork?.(); this.preset = null;
       this.begin(this.options.values);
       this.phase = "form";
       this.render();
@@ -187,8 +209,9 @@
     /** Dispatches canopyx:<name> on the host and calls the matching callback; false when a cancelable event was cancelled. */
     emit(name, detail, callback, cancelable = false) {
       const event = new CustomEvent("canopyx:" + name, { detail, bubbles: true, cancelable });
-      const go = this.host.dispatchEvent(event);
-      if (callback && typeof this.options[callback] === "function") try { this.options[callback](detail); } catch (error) { this.report(error, callback); }
+      let go = this.host.dispatchEvent(event);
+      // A callback of a cancelable event vetoes it by returning false, as preventDefault does on the event.
+      if (callback && typeof this.options[callback] === "function") try { if (this.options[callback](detail) === false && cancelable) go = false; } catch (error) { this.report(error, callback); }
       return go;
     }
     report(error, hook) {
@@ -198,5 +221,18 @@
     async hook(name, run) {
       try { return { value: await run() }; }
       catch (error) { this.report(error, name); return { failed: error && error.message ? error.message : String(error) }; }
+    }
+    /** Runs an asynchronous host hook with an AbortSignal and the host's timeout. A call its owner aborted (a newer request,
+     *  Cancel, destroy) answers { cancelled } without an error event; a timeout aborts the signal and fails in place. */
+    timed(name, run, controller = new AbortController()) {
+      const relay = () => controller.abort(), lifetime = this.lifetime.signal;
+      lifetime.addEventListener("abort", relay, { once: true });
+      let timer = 0, timedOut = false;
+      const expired = new Promise((resolve, reject) => { timer = setTimeout(() => { timedOut = true; controller.abort(); reject(new Error(this.labels.flowTimedOut)); }, this.timeout); });
+      return Promise.race([Promise.resolve().then(() => run(controller.signal)), expired]).then(value => controller.signal.aborted && !timedOut ? { cancelled: true } : { value }, error => {
+        if (controller.signal.aborted && !timedOut) return { cancelled: true };
+        this.report(error, name);
+        return { failed: error && error.message ? error.message : String(error), timedOut };
+      }).finally(() => { clearTimeout(timer); lifetime.removeEventListener("abort", relay); });
     }
   }

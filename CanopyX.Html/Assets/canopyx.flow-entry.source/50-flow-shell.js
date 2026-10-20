@@ -6,11 +6,14 @@
   class FlowHost {}
   const FORMS_IMPL = {}, FLOW_IMPL = {}, activeFlows = new WeakMap();
   const FORMS_PART = definePart(FlowHost, "forms", "forms", () => ({ FORMS_IMPL, h, setText, fill, gridFreeze, gridMomentFromParts, boundedPattern, foldText }));
-  const FLOW_PART = definePart(FlowHost, "flow", "flow view", () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, foldText, boundedPattern, numberFormat, gridFreeze }));
+  // Pick steps embed a grid or a tree: the grid entry points lend the flow part their factories (88-grid-flow-views.js); the
+  // flow entry has neither.
+  const FLOW_VIEWS = typeof FLOW_GRID_VIEWS === "object" ? FLOW_GRID_VIEWS : Object.freeze({ grid: null, tree: null, reporting: false });
+  const FLOW_PART = definePart(FlowHost, "flow", "flow view", () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, foldText, boundedPattern, numberFormat, gridFreeze, FLOW_VIEWS }));
   // Grid editing requires the same forms part: one definition, one load, one install.
   if (typeof DataGrid === "function") DataGrid.prototype.parts.forms = FORMS_PART;
-  const FLOW_ASYNC_METHODS = ["next", "back", "goTo", "setState", "validate", "submit"];
-  const FLOW_SYNC_METHODS = ["getStep", "getValues", "setValues", "getState", "isDirty", "reset", "setFieldError", "setProgress", "complete"];
+  const FLOW_ASYNC_METHODS = ["next", "back", "goTo", "setState", "validate", "submit", "runCheck", "refreshOptions", "saveDraft", "setPreset"];
+  const FLOW_SYNC_METHODS = ["getStep", "getValues", "setValues", "getState", "isDirty", "reset", "setFieldError", "setProgress", "complete", "setStepState", "open", "close"];
 
   /**
    * Creates a flow in a host element from a flow document (docs/flow.md).

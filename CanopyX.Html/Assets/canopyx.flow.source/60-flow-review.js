@@ -37,7 +37,11 @@
       }
       section.appendChild(lists);
       this.fillReview(lists, changesOnly);
+      // The preset line, the checks, the host's preview and the equivalent command (62-flow-review-extras.js).
+      this.reviewExtras(section);
       if (step.declaration) { const declaration = h("p", "cx-flow-declaration"); setText(declaration, step.declaration); section.appendChild(declaration); }
+      // A typed confirmation and an acknowledgement the conditions ask for sit right above the submit button.
+      this.reviewConsent(section, step);
       // The checks run as the page opens; the banner follows them, and the rail shows the steps that need attention.
       const ticket = this.reviewTicket = {};
       setText(status, "…");
@@ -87,7 +91,7 @@
       lists.replaceChildren();
       let shown = 0;
       for (const step of this.visibleSteps()) {
-        if (step.type !== "form") continue;
+        if (!step.asks) continue;
         const fields = this.stepFields(step).filter(field => !changesOnly || this.isChanged(field));
         const stepMessage = this.stepErrors.get(step.id) || this.hostStepErrors.get(step.id);
         if (!fields.length && !stepMessage) continue;

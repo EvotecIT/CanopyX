@@ -12,12 +12,28 @@
     const label = h(FLOW_SHARED_EDITORS.has(field.type) || ["textarea", "secret", "custom"].includes(field.type) ? "label" : "div", "cx-flow-label");
     label.id = id + "-label";
     setText(label, field.label);
+    // A pick step's heading already asks what its field does; a label that repeats it stays for screen readers only.
+    if (field.type === "pick" && field.label === field.step.title) label.classList.add("cx-flow-label-quiet");
     if (!field.required && field.type !== "toggle" && !field.readOnly) { const optional = h("span", "cx-flow-optional"); setText(optional, " " + view.labels.flowOptional); label.appendChild(optional); }
-    const help = field.help ? h("p", "cx-flow-help") : null, hint = h("p", "cx-flow-help cx-flow-hint"), message = h("p", "cx-flow-error");
+    const help = field.help ? h("p", "cx-flow-help") : null, hint = h("p", "cx-flow-help cx-flow-hint"), message = h("p", "cx-flow-error"), note = h("p", "cx-flow-loading");
     if (help) { help.id = id + "-help"; setText(help, field.help); }
     hint.id = id + "-hint"; hint.hidden = true;
     message.id = id + "-error"; message.hidden = true;
+    note.id = id + "-note"; note.hidden = true; note.setAttribute("role", "status");
     const fv = { field, element: wrapper, label, message, instance: null, abort: null };
+    // A changed mark beside the label, in flows with presets: the answer differs from the preset the reader started from
+    // (66-flow-drafts.js). It joins the label only while it shows.
+    let mark = null;
+    fv.changedMark = on => {
+      if (on && !mark) { mark = h("span", "cx-flow-mark-changed"); setText(mark, view.labels.flowChangedMark); }
+      if (on && mark.parentNode !== label) label.appendChild(mark); else if (!on) mark?.remove();
+    };
+    /** A loading line, or a failure with Retry, under the input (host options). */
+    fv.status = (text, retry, failed) => {
+      note.replaceChildren(); note.hidden = !text; note.classList.toggle("cx-flow-error", !!failed);
+      if (text) { note.append(text); if (retry) { const again = h("button", "cx-flow-link"); again.type = "button"; setText(again, view.labels.flowRetry); again.addEventListener("click", retry); note.append(" ", again); } }
+      if (fv.instance) fv.describe();
+    };
     const create = value => {
       fv.abort?.abort(); fv.abort = new AbortController();
       const context = flowEditorContext(view, field, id, value, fv.abort.signal);
@@ -49,7 +65,7 @@
     fv.describe = () => {
       // A group's own input (a duration's amount) carries the description and state, so focusing it announces them.
       const target = fv.instance.describes || fv.control;
-      const ids = [help && help.id, !hint.hidden && hint.id, !message.hidden && message.id].filter(Boolean);
+      const ids = [help && help.id, !hint.hidden && hint.id, !note.hidden && note.id, !message.hidden && message.id].filter(Boolean);
       if (ids.length) target.setAttribute("aria-describedby", ids.join(" ")); else target.removeAttribute("aria-describedby");
       if (message.hidden) target.removeAttribute("aria-invalid"); else target.setAttribute("aria-invalid", "true");
     };
@@ -70,7 +86,7 @@
     if (help) wrapper.appendChild(help);
     wrapper.append(hint);
     if (field.type !== "toggle") wrapper.append(holder);
-    wrapper.append(message);
+    wrapper.append(note, message);
     return fv;
   }
 
@@ -96,6 +112,8 @@
       case "list": return flowListInput(context, field, view.labels);
       case "secret": return flowSecretInput(context, field, view.labels, view.keeps(field));
       case "duration": return flowDurationInput(context, field, view.labels);
+      case "records": return flowRecordsInput(context, field, view);
+      case "pick": return flowPickInput(context, field, view);
       case "custom": {
         const editor = view.editors[field.raw.editor];
         if (!editor || typeof editor.create !== "function") flowFail("the field " + field.id + " names the editor '" + field.raw.editor + "', which nobody registered");
@@ -121,6 +139,8 @@
       case "select": case "choice": case "lookup": return option(value);
       case "multiChoice": return value.map(option).join(", ");
       case "list": return value.join("\n");
+      case "pick": return value.length > 12 ? value.slice(0, 12).map(item => item.label || item.id).join("\n") + "\n" + fill(labels.flowPickMore, { count: value.length - 12 }) : value.map(item => item.label || item.id).join("\n");
+      case "records": return fill(plural(labels.flowRecordsCount, value.length, view.lang), { count: numberFormat(view.lang, 0, 0).format(value.length) });
       case "date": return flowDate(view, value + "T00:00:00Z", { dateStyle: "medium", timeZone: "UTC" });
       case "datetime": return flowDate(view, value, { dateStyle: "medium", timeStyle: "short", timeZone: view.model.local ? undefined : "UTC" }) + (view.model.local ? "" : " UTC");
       case "duration": return flowWords(view, flowSeconds(value), field.units[0]);

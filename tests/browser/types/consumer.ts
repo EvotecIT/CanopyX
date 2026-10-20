@@ -830,6 +830,47 @@ GridRuntime.configure("mail", { onSubmit: detail => ({ status: detail.patch.leng
 GridRuntime.createFlow(document.createElement("div"), { flow: flowDocument }).destroy();
 void flowAnswer;
 
+// Host-connected flows: checks, host options and sections, records, pick steps, tasks, dialogs, the command, presets, drafts, links and an endpoint.
+import type { FlowCheckResult, FlowStepState, FlowPreview, FlowDraft, FlowPickedRecord } from "@evotecit/canopyx/flow";
+const hostFlow: FlowDocument = { kind: "flow", version: 1, id: "relay", title: "Relay", mode: "tasks", layout: { container: "dialog", launch: "Set up" },
+  steps: [{ id: "server", title: "Server", group: "Connection", checks: [{ id: "connect", label: "Test", fields: ["host"], required: "pass" }],
+    fields: [{ id: "host", type: "text", label: "Host" }, { id: "region", type: "select", label: "Region", source: "host", dependsOn: ["host"] },
+      { id: "rules", type: "records", label: "Rules", columns: [{ id: "name", title: "Name", required: true }, { id: "limit", title: "Limit", type: "number", validation: { min: 1 } }] }],
+    sections: [{ id: "engine", label: "Engine", source: "host", dependsOn: ["region"] }] },
+  { id: "servers", type: "pick", title: "Which servers?", pick: { field: { id: "servers", required: true }, view: { protocol: "canopyx/2", type: "grid" }, label: "name", tray: true } },
+  { id: "review", type: "review", confirm: { label: "Type RELAY", text: "RELAY" }, acknowledge: { label: "I understand." } }],
+  command: { name: "Set-Relay", style: "powershell", variants: [{ id: "csharp", label: "C#" }] }, presets: [{ id: "office", label: "Office", values: { host: "smtp.office.example" } }],
+  draft: "host", deepLinks: true, endpoint: { url: "/api/flows/relay", routes: ["check", "submit"] } };
+const hostApi = createFlow(document.createElement("div"), {
+  flow: hostFlow, timeout: 5000, headers: { "X-CSRF": "token" },
+  hooks: {
+    options: (field, values, { signal }) => (signal.aborted ? [] : [{ value: "eu", label: field + String(values.host) }]),
+    fields: () => [{ id: "folder", type: "text", label: "Folder" }],
+    check: async (id, values, { secret }): Promise<FlowCheckResult> => ({ status: secret("password") ? "pass" : "warning", message: id, details: [{ label: "Host", value: String(values.host) }] }),
+    preview: (): FlowPreview => ({ title: "Changes", rows: [{ label: "Host", value: "smtp", tone: "warning" }], notes: ["Restarts."] }),
+    status: (): Record<string, FlowStepState> => ({ server: { state: "blocked", blockers: ["No licence."] } }),
+    commands: { csharp: values => "relay.Set(" + JSON.stringify(values) + ");" },
+    draftStore: { load: (): FlowDraft | null => null, save: () => undefined, clear: () => undefined },
+    presetStore: { list: () => [], save: () => undefined },
+    pickers: { servers: { pageSize: 50 } }
+  },
+  onCheck: detail => detail.result.status, onLeaving: () => false, formatLink: step => "relay/" + step, parseLink: fragment => fragment.split("/")[1] ?? null,
+  onSubmit: detail => ({ status: detail.checks?.connect?.status === "pass" && detail.command ? "saved" : "error", message: detail.preset })
+});
+void hostApi.ready.then(async api => {
+  const picked = api.getValues().servers as readonly FlowPickedRecord[];
+  const result = await api.runCheck("connect");
+  const status: FlowCheckResult["status"] | undefined = result?.status;
+  await api.refreshOptions("region");
+  api.setStepState("server", { state: "complete", summary: "Ready" });
+  const saved: boolean = await api.saveDraft();
+  await api.setPreset(null);
+  const opened: boolean = api.open() && api.close();
+  void [picked, result, status, saved, opened];
+});
+const loaded: { id: string; cells: Record<string, unknown> }[] = dataGrid.getLoadedRows(["1"]);
+void loaded;
+
 // The matrix view: the document, the state and the cell event are typed (docs/matrix.md).
 import { createMatrix, type MatrixDocument, type MatrixCellDetail } from "@evotecit/canopyx/grid";
 const matrixDocument: MatrixDocument = { protocol: "canopyx/2", type: "matrix", id: "replication", label: "Replication", square: true, columnTitle: "Source",

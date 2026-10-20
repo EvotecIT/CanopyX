@@ -7,6 +7,8 @@
     renderStage() {
       const step = this.step;
       if (this.phase === "result" || this.phase === "progress") { this.stage.replaceChildren(this.panel); return; }
+      // A task list's hub is drawn afresh each time it opens, from the answers and the host's states (47-flow-tasks.js).
+      if (step === this.hub) { this.stage.replaceChildren(this.hubSection()); return; }
       // The review page is built when it opens and kept while only the layout changes, so its checks run once per visit.
       if (step.type === "review") {
         if (this.reviewStale || !this.reviewNode) { this.reviewNode = this.reviewSection(); this.reviewStale = false; }
@@ -57,10 +59,15 @@
           grid.appendChild(fv.element);
         }
         element.appendChild(grid);
-        element.hidden = !block.fields.some(field => this.visible(field));
-        section._cxBlocks.push({ element, fields: block.fields });
+        // A host section shows while its fields load; an empty static block stays hidden.
+        element.hidden = !block.section?.host && !block.fields.some(field => this.visible(field));
+        section._cxBlocks.push({ element, fields: block.fields, section: block.section });
         section.appendChild(element);
       }
+      if (step.checks.length) { section.appendChild(this.checkBlock(step)); queueMicrotask(() => step.checks.forEach(check => this.paintCheck(check))); }
+      // Host sections and host options load as the step is first built (41-flow-options.js).
+      for (const block of step.blocks) if (block.section?.host) queueMicrotask(() => this.destroyed || this.loadFields(step, block));
+      queueMicrotask(() => this.destroyed || this.prepareVisible());
       return section;
     },
 
@@ -77,18 +84,20 @@
       this.render();
       const steps = this.visibleSteps(), heading = this.stage.querySelector(".cx-flow-step-title");
       if (!quiet) {
-        heading?.focus({ preventScroll: true });
+        // Back on a task list's hub, focus returns to the task the reader left, as a list does after its item's page.
+        const task = target === this.hub && from !== this.hub ? this.stage.querySelector('[data-cx-task="' + CSS.escape(from.id) + '"] button') : null;
+        (task || heading)?.focus({ preventScroll: true });
         this.root.scrollIntoView?.({ block: "nearest" });
-        this.announce(fill(this.labels.flowStepAnnounce, { current: steps.indexOf(target) + 1, count: steps.length, title: target.title || this.labels.flowReviewTitle }));
+        this.announce(target === this.hub ? this.hubAnnouncement() : fill(this.labels.flowStepAnnounce, { current: steps.indexOf(target) + 1, count: steps.length, title: target.title || this.labels.flowReviewTitle }));
       }
-      if (target !== from) this.emit("flowStepChanged", { from: from.id, to: target.id }, "onStepChange");
+      if (target !== from) { this.emit("flowStepChanged", { from: from.id, to: target.id }, "onStepChange"); this.stepMoved?.(); }
       return true;
     },
 
     async next() {
-      if (this.busy || this.phase !== "form") return false;
+      if (this.busy || this.phase !== "form" || this.step === this.hub) return false;
       const step = this.step, steps = this.visibleSteps(), pressed = document.activeElement, generation = this.generation;
-      if (step.type === "form") {
+      if (step.asks) {
         this.busy = true;
         let result;
         try { result = await this.validateStep(step, true); } finally { if (generation === this.generation) this.busy = false; }
@@ -105,23 +114,28 @@
         this.completed.add(step.id);
       } else this.completed.add(step.id);
       const review = this.reviewStep();
-      const target = this.returnToReview && review && this.stepVisible(review) ? review : steps[steps.indexOf(step) + 1];
+      // A task returns to the hub of its task list, unless it was opened from the review page.
+      const target = this.returnToReview && review && this.stepVisible(review) ? review : this.hub || steps[steps.indexOf(step) + 1];
       if (target === review) this.returnToReview = false;
       return this.go(target, "forward");
     },
 
     async back() {
       if (this.busy || this.phase !== "form") return false;
+      if (this.hub) return this.step === this.hub ? false : this.go(this.hub, "back");
       const steps = this.visibleSteps(), at = steps.indexOf(this.step);
       return at > 0 ? this.go(steps[at - 1], "back") : false;
     },
 
-    /** Opens a visible step; in a linear flow a later step than the first incomplete one opens that step instead. */
+    /** Opens a visible step; in a linear flow a later step than the first incomplete one opens that step instead. A task list
+     *  opens any task that is not blocked, its hub ("#tasks"), and its review page once every required task is complete. */
     async goTo(id) {
       if (this.busy || this.phase !== "form") return false;
+      if (this.hub && id === this.hub.id) return this.go(this.hub, "back");
       const steps = this.visibleSteps(), target = steps.find(step => step.id === id);
       if (!target) return false;
-      const open = this.reachable(target, steps) ? target : steps.find(step => step.type === "form" && !this.completed.has(step.id)) || target;
+      if (this.hub) return this.taskOpens(target) ? this.go(target, "forward") : false;
+      const open = this.reachable(target, steps) ? target : steps.find(step => step.asks && !this.completed.has(step.id)) || target;
       return this.go(open, steps.indexOf(open) < steps.indexOf(this.step) ? "back" : "forward");
     },
 

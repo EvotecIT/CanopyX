@@ -5,7 +5,9 @@
   const FLOW_NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
   // A field type's value kind for the shared checks (forms part): numbers, date-and-time moments, lists, durations or text.
   const FLOW_KINDS = { text: "text", number: "number", date: "text", datetime: "datetime", time: "text", select: "text", toggle: "text", lookup: "text",
-    choice: "text", multiChoice: "list", textarea: "text", list: "list", secret: "text", duration: "duration", custom: "text" };
+    choice: "text", multiChoice: "list", textarea: "text", list: "list", secret: "text", duration: "duration", custom: "text", records: "records", pick: "pick" };
+  // Fields that choose among options; with source "host" their options come from the host's options hook.
+  const FLOW_CHOOSING = ["select", "choice", "multiChoice", "lookup"];
   const FLOW_UNITS = { seconds: 1, minutes: 60, hours: 3600, days: 86400 };
   const flowFail = problem => { throw new Error("CanopyX: " + problem + "."); };
   const flowIs = value => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -41,7 +43,8 @@
   /** Whether a value fits a field: its type's shape and, for choices, one of its options. Secrets never have values. */
   function flowFits(field, value) {
     if (value === null) return field.type !== "secret";
-    const listed = item => field.options.some(option => option.value === item);
+    // Options a host loads can change: a value of theirs fits by its shape, and the loaded options decide the rest.
+    const listed = item => field.host ? flowScalar(item) : field.options.some(option => option.value === item);
     switch (field.type) {
       case "number": return Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
       case "toggle": return typeof value === "boolean";
@@ -54,13 +57,16 @@
       case "list": return Array.isArray(value) && value.length <= 1000 && value.every(item => typeof item === "string");
       case "duration": return flowSeconds(value) !== null;
       case "secret": return false;
+      case "pick": return Array.isArray(value) && value.length <= 1000 && value.every(item => flowIs(item) && Object.keys(item).every(key => key === "id" || key === "label") &&
+        typeof item.id === "string" && item.id.length > 0 && item.id.length <= 256 && typeof item.label === "string" && item.label.length <= 400) && new Set(value.map(item => item.id)).size === value.length;
+      case "records": return flowRecordsFit(field, value);
       case "custom": return flowScalar(value) || Array.isArray(value) && value.length <= 1000 && value.every(flowScalar);
       default: return typeof value === "string";
     }
   }
 
   const FLOW_FIELD_KEYS = ["id", "type", "label", "help", "placeholder", "required", "readOnly", "default", "when", "width", "parameter", "path", "sensitive",
-    "validation", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "editor"];
+    "validation", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "editor", "source", "dependsOn", "columns"];
   const FLOW_RULE_KEYS = ["min", "max", "minLength", "maxLength", "pattern", "message", "minItems", "maxItems", "item", "itemPattern"];
 
   function flowField(raw, step, section, model) {
@@ -68,7 +74,7 @@
     const id = flowName(raw.id, "A field id");
     if (model.fields.has(id)) flowFail("the field id '" + id + "' is used twice");
     if (model.fields.size >= 1000) flowFail("a flow holds at most 1000 fields");
-    if (!Object.hasOwn(FLOW_KINDS, raw.type)) flowFail("field " + id + " has an unknown type");
+    if (!Object.hasOwn(FLOW_KINDS, raw.type) || (raw.type === "pick") !== (step.type === "pick")) flowFail("field " + id + " has an unknown type");
     const type = raw.type, rules = raw.validation === undefined ? {} : raw.validation, bad = problem => flowFail("field " + id + " " + problem);
     flowKeys(rules, FLOW_RULE_KEYS, "The validation of field " + id);
     const field = { id, type, kind: FLOW_KINDS[type], step, section, label: flowString(raw.label, 200, "Field " + id + "'s label", true),
@@ -87,21 +93,22 @@
     if (raw.editor !== undefined ? type !== "custom" || typeof raw.editor !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(raw.editor) : type === "custom") bad("needs an editor name as a custom field only");
     if (raw.step !== undefined && type !== "number") bad("has a step but is not a number");
     if (raw.placeholder !== undefined && !["text", "number", "lookup", "textarea", "list"].includes(type)) bad("has a placeholder, which text, number, lookup, text area and list fields take");
-    // Options: the choices of select, choice and multiple choice fields, and a lookup's fixed suggestions.
-    const choosing = ["select", "choice", "multiChoice", "lookup"].includes(type);
+    // Options: the choices of select, choice and multiple choice fields, and a lookup's fixed suggestions. With source "host"
+    // the host's options hook supplies them (as the reader reaches the field, and again when a field it depends on changes).
+    const choosing = FLOW_CHOOSING.includes(type);
+    if (raw.source !== undefined && (raw.source !== "host" || !choosing)) bad("takes source \"host\" as a field that chooses only");
+    field.host = raw.source === "host";
     if (raw.options !== undefined && !choosing) bad("has options but does not choose");
-    if (choosing && !(Array.isArray(raw.options) && raw.options.length)) bad("needs options");
-    if (Array.isArray(raw.options) && raw.options.length > 1000) bad("needs at most 1000 options");
-    field.options = (raw.options || []).map(option => {
-      flowKeys(flowIs(option) ? option : { value: option }, ["value", "label", "description", "badge", "disabledReason", "group"], "An option of field " + id);
-      const item = flowIs(option) ? option : { value: option };
-      if (!flowScalar(item.value)) bad("has an invalid option value");
-      return Object.freeze({ value: item.value, label: flowString(item.label, 200, "An option label") ?? String(item.value), description: flowString(item.description, 1000, "An option description"),
-        badge: flowString(item.badge, 40, "An option badge"), disabledReason: flowString(item.disabledReason, 400, "A disabled reason"), group: flowString(item.group, 200, "An option group") });
-    });
-    if (field.options.length > 1000 || new Set(field.options.map(option => option.value)).size !== field.options.length) bad("needs at most 1000 options with distinct values");
+    if (choosing && !field.host && !(Array.isArray(raw.options) && raw.options.length)) bad("needs options");
+    if (raw.options !== undefined && !Array.isArray(raw.options)) bad("needs a list of options");
+    field.options = flowOptions(raw.options || [], bad);
+    // A records field: rows of typed cells, edited as a small table (36-flow-records.js).
+    if ((raw.columns !== undefined) !== (type === "records")) bad("needs columns as a records field only");
+    if (type === "records") field.columns = flowRecordColumns(raw.columns, bad);
+    if (raw.dependsOn !== undefined && (!Array.isArray(raw.dependsOn) || !raw.dependsOn.length || raw.dependsOn.length > 16 || raw.dependsOn.some(name => typeof name !== "string"))) bad("needs 1 to 16 field ids in dependsOn");
+    field.dependsOn = raw.dependsOn ? [...new Set(raw.dependsOn)] : [];
     // The shared rule settings, then the rules only lists, multiple choices and durations know.
-    const list = type === "list" || type === "multiChoice";
+    const list = type === "list" || type === "multiChoice" || type === "records" || type === "pick";
     if (list && [rules.min, rules.max, rules.minLength, rules.maxLength, rules.pattern].some(value => value !== undefined)) bad("checks items, not lengths or ranges");
     if (!list && [rules.minItems, rules.maxItems].some(value => value !== undefined) || type !== "list" && (rules.item !== undefined || rules.itemPattern !== undefined)) bad("has rules only lists take");
     if ((rules.min !== undefined || rules.max !== undefined) && !["number", "datetime", "duration"].includes(type)) bad("has a range but is not a number, date and time or duration");
@@ -134,38 +141,44 @@
 
   /** Reads and checks a flow document; returns the flow's model. */
   function flowRead(doc) {
-    flowKeys(doc, ["kind", "version", "id", "title", "description", "mode", "layout", "density", "timeZone", "steps", "initial", "storedSecrets", "baseline", "submit", "labels"], "A flow document");
+    flowKeys(doc, ["kind", "version", "id", "title", "description", "mode", "layout", "density", "timeZone", "steps", "initial", "storedSecrets", "baseline", "submit", "labels",
+      "command", "presets", "draft", "deepLinks", "endpoint"], "A flow document");
     if (doc.kind !== "flow" || doc.version !== 1) flowFail("a flow document needs kind \"flow\" and version 1");
     const model = { id: flowName(doc.id, "The flow id"), title: flowString(doc.title, 200, "The flow title", true), description: flowString(doc.description, 1000, "The flow description"),
-      mode: doc.mode ?? "linear", density: doc.density ?? "normal", local: doc.timeZone === "local", fields: new Map(), steps: [], sections: new Set() };
-    if (!["linear", "free"].includes(model.mode) || !["compact", "normal", "comfortable"].includes(model.density) || doc.timeZone !== undefined && !["utc", "local"].includes(doc.timeZone)) flowFail("the flow's mode, density or time zone is unknown");
-    if (doc.layout !== undefined) flowKeys(doc.layout, ["orientation"], "The flow layout");
-    model.orientation = doc.layout?.orientation ?? "auto";
-    if (!["auto", "horizontal", "vertical"].includes(model.orientation)) flowFail("the flow layout has an unknown orientation");
+      mode: doc.mode ?? "linear", density: doc.density ?? "normal", local: doc.timeZone === "local", fields: new Map(), steps: [], sections: new Set(), checks: new Map() };
+    if (!["linear", "free", "tasks"].includes(model.mode) || !["compact", "normal", "comfortable"].includes(model.density) || doc.timeZone !== undefined && !["utc", "local"].includes(doc.timeZone)) flowFail("the flow's mode, density or time zone is unknown");
+    flowLayout(doc.layout, model);
     if (!Array.isArray(doc.steps) || !doc.steps.length || doc.steps.length > 64) flowFail("a flow needs 1 to 64 steps");
     for (const [index, raw] of doc.steps.entries()) {
-      flowKeys(raw, ["id", "title", "description", "type", "fields", "sections", "when", "optional", "declaration", "changesOnly"], "A flow step");
+      flowKeys(raw, ["id", "title", "description", "type", "fields", "sections", "when", "optional", "declaration", "changesOnly", "checks", "group", "pick", "confirm", "acknowledge"], "A flow step");
       const step = { id: flowName(raw.id, "A step id"), title: flowString(raw.title, 200, "A step title", raw.type !== "review"), description: flowString(raw.description, 1000, "A step description"),
-        type: raw.type ?? "form", optional: flowFlag(raw.optional, "optional"), declaration: flowString(raw.declaration, 1000, "The declaration"), changesOnly: raw.changesOnly !== false, blocks: [], raw };
+        type: raw.type ?? "form", optional: flowFlag(raw.optional, "optional"), declaration: flowString(raw.declaration, 1000, "The declaration"), changesOnly: raw.changesOnly !== false,
+        group: flowString(raw.group, 200, "A step group"), blocks: [], checks: [], raw };
       if (model.steps.some(other => other.id === step.id)) flowFail("the step id '" + step.id + "' is used twice");
-      if (!["form", "info", "review"].includes(step.type)) flowFail("step " + step.id + " has an unknown type");
+      if (!["form", "info", "review", "pick"].includes(step.type)) flowFail("step " + step.id + " has an unknown type");
+      // Form and pick steps ask for answers: they validate on Next and count towards a linear flow's progress.
+      step.asks = step.type === "form" || step.type === "pick";
       if (step.type === "review" && index !== doc.steps.length - 1) flowFail("the review step must be the last step");
-      if (step.type === "review" && (raw.when !== undefined || raw.optional === true)) flowFail("the review step takes no condition and is never optional");
-      if (step.type !== "review" && (raw.declaration !== undefined || raw.changesOnly !== undefined)) flowFail("only a review step has a declaration or changesOnly");
+      if (step.type === "review" && (raw.when !== undefined || raw.optional === true || raw.group !== undefined)) flowFail("the review step takes no condition or group and is never optional");
+      if (step.type !== "review" && ["declaration", "changesOnly", "confirm", "acknowledge"].some(key => raw[key] !== undefined)) flowFail("only a review step has a declaration, changesOnly, confirm or acknowledge");
       if (raw.changesOnly !== undefined && typeof raw.changesOnly !== "boolean") flowFail("changesOnly must be true or false");
       if (step.type !== "form" && (raw.fields !== undefined || raw.sections !== undefined)) flowFail("only a form step has fields and sections");
+      if ((raw.pick !== undefined) !== (step.type === "pick")) flowFail("step " + step.id + " has a pick only as a pick step, and a pick step needs one");
       if (raw.fields !== undefined && !Array.isArray(raw.fields) || raw.sections !== undefined && !Array.isArray(raw.sections)) flowFail("step " + step.id + " needs arrays of fields and sections");
       if (raw.fields?.length) step.blocks.push({ section: null, fields: raw.fields.map(field => flowField(field, step, null, model)) });
       if ((raw.sections || []).length > 64) flowFail("step " + step.id + " holds at most 64 sections");
       for (const rawSection of raw.sections || []) {
-        flowKeys(rawSection, ["id", "label", "description", "fields", "when"], "A flow section");
+        flowKeys(rawSection, ["id", "label", "description", "fields", "when", "source", "dependsOn"], "A flow section");
         const section = { id: flowName(rawSection.id, "A section id"), label: flowString(rawSection.label, 200, "A section label", true),
-          description: flowString(rawSection.description, 1000, "A section description"), raw: rawSection };
+          description: flowString(rawSection.description, 1000, "A section description"), host: rawSection.source === "host", raw: rawSection };
         if (model.sections.has(section.id)) flowFail("the section id '" + section.id + "' is used twice");
         model.sections.add(section.id);
-        if (!Array.isArray(rawSection.fields)) flowFail("section " + section.id + " needs an array of fields");
-        step.blocks.push({ section, fields: rawSection.fields.map(field => flowField(field, step, section, model)) });
+        flowDynamicSection(section, rawSection);
+        step.blocks.push({ section, fields: (rawSection.fields || []).map(field => flowField(field, step, section, model)) });
       }
+      if (step.type === "pick") flowPickStep(raw.pick, step, model);
+      if (step.type === "review") flowReviewExtras(raw, step);
+      flowChecks(raw.checks, step, model);
       model.steps.push(step);
     }
     // Paths name distinct settings: none repeats and none lies inside another, so the patch never writes a setting twice.
@@ -173,7 +186,9 @@
     for (const path of [...model.fields.values()].map(field => field.path).filter(Boolean)) { if (paths.has(path)) flowFail("the path '" + path + "' is used twice"); paths.add(path); }
     for (const path of paths) for (let at = path.indexOf("."); at > 0; at = path.indexOf(".", at + 1)) if (paths.has(path.slice(0, at))) flowFail("the path '" + path + "' lies inside '" + path.slice(0, at) + "'");
     flowConditions(model);
+    flowLinks(model);
     flowEditMode(doc, model);
+    flowHostDocument(doc, model);
     if (doc.submit !== undefined) flowKeys(doc.submit, ["label"], "The flow's submit");
     model.submitLabel = flowString(doc.submit?.label, 80, "The submit label");
     model.labels = doc.labels;

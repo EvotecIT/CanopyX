@@ -1,3 +1,5 @@
 /* ---------- flow hosts: natural height, unlike a grid's bounded one (docs/flow.md) ---------- */
 .cx-host.cx-flow-host { min-height:0;display:block;background:transparent; }
 .cx-host:where(.cx-flow-host:not([data-cx-height])) { height:auto; }
+/* A grid entry's full page gives its host the window's height; a flow keeps its natural height there too. */
+body.cx-page > .cx-host.cx-flow-host:not([data-cx-height]),body.cx-page > .cx-main > .cx-host.cx-flow-host:not([data-cx-height]) { height:auto;padding:0; }

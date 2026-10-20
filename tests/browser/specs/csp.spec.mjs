@@ -112,6 +112,29 @@ for (const [label, policy] of Object.entries(POLICIES)) {
       await expectClean(page, report);
     });
 
+    test("a dialog flow picks rows in its embedded grid and reaches its review without a violation", async ({ page }) => {
+      const report = await serve(page, policy);
+      await open(page, "flow.html");
+      await page.getByRole("button", { name: "Retire servers…" }).click();
+      await page.locator(".cx-flow-pick-view .cx-grid-row-select").first().check();
+      await expect(page.locator(".cx-flow-tray-item")).toHaveCount(1);
+      await page.locator(".cx-flow-actions .cx-flow-next").click();
+      await page.locator('[data-cx-field="reason"] textarea').fill("Replaced");
+      await page.locator(".cx-flow-actions .cx-flow-next").click();
+      await expect(page.locator(".cx-flow-confirm input")).toBeVisible();
+      await expectClean(page, report);
+    });
+
+    test("a task list opens a task whose section the host would supply without a violation", async ({ page }) => {
+      const report = await serve(page, policy);
+      await open(page, "flow-tasks.html");
+      await page.locator('.cx-flow-task[data-cx-task="database"] button').click();
+      // No host answers here: the section says so in place, which is the point under the policy.
+      await expect(page.locator(".cx-flow-error, .cx-flow-loading").first()).toBeAttached();
+      await page.getByRole("button", { name: "Back to tasks" }).click();
+      await expectClean(page, report);
+    });
+
     test("a matrix loads its part, draws its cells and opens a cell's details without a violation", async ({ page }) => {
       const report = await serve(page, policy);
       await open(page, "matrix.html");

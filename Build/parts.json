@@ -158,14 +158,15 @@
       "views": ["flow"],
       "key": "FLOW_IMPL",
       "requires": ["forms"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "foldText", "boundedPattern", "numberFormat", "gridFreeze"],
+      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "foldText", "boundedPattern", "numberFormat", "gridFreeze", "FLOW_VIEWS"],
       "start": "const { editParseNumber, EDIT_EDITORS, formRuleSpec, formCheck, FORM_LABELS } = FORMS_IMPL;",
       "end": "FLOW_IMPL.create = flowCreate;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow.source"
       ],
       "styles": [
-        "CanopyX.Html/Assets/canopyx.flow.source/flow.css"
+        "CanopyX.Html/Assets/canopyx.flow.source/flow.css",
+        "CanopyX.Html/Assets/canopyx.flow.source/flow-host.css"
       ]
     },
     {

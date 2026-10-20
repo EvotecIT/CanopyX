@@ -25,6 +25,10 @@ const examples = [
   { name: "flow-schedule-report", dark: "flow-schedule-report-dark" },
   { name: "flow-edit-settings", dark: "flow-edit-settings-dark" },
   { name: "flow-pause", dark: "flow-pause-dark" },
+  // Host-connected flows: checks and presets on an edit, a task list with host states, and a dialog flow's launcher.
+  { name: "flow-mail-checks", dark: "flow-mail-checks-dark" },
+  { name: "flow-setup-tasks", dark: "flow-setup-tasks-dark" },
+  { name: "flow-act-on-rows", dark: "flow-act-on-rows-dark" },
   // Matrices: a square matrix grouped by site, services by servers (cards on phones), and a large matrix opening on its problems.
   { name: "matrix-replication", dark: "matrix-replication-dark" },
   { name: "matrix-services", dark: "matrix-services-dark" },
