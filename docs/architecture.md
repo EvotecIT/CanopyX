@@ -139,12 +139,13 @@ The standard tree entry point stays within its 59.5 KiB gzip guard. Checking, ed
 
 Checking stores a trie of explicit node-ID paths rather than references to loaded wrappers. Branch intent therefore survives lazy paging, sorting, queries, and inactive-cache retirement. Reads are not needed to check a branch. The current path and its exceptions determine native checkbox state; a complete loaded sibling set can fold into an ancestor rule. Synchronous host vetoes and proposal revisions prevent a nested newer change from being overwritten. Saved-state validation includes checking before applying presentation, and the script-free C# outline evaluates the same path semantics.
 
-The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`, which leaves out whole-line comments and trims indentation while preserving line boundaries. The same assembly writes `canopyx.css` from the documented stylesheet in that source folder. The sources retain their comments, and both assets keep their opening header. The first JavaScript part opens a single closure and the last part closes it, so parts share private helpers without globals.
+The runtime is plain modern JavaScript with no dependencies. Its source parts live in `CanopyX.Html/Assets/canopyx.source/` and are concatenated in file-name order into `canopyx.js` by `Build/Sync-Assets.ps1`, which leaves out whole-line comments and trims indentation while preserving line boundaries. The same assembly writes `canopyx.css` from the documented stylesheets in that source folder: `base.css` (the theme tokens, the host element, scrollbars and the screen-reader class, which the flow entry point's stylesheet shares) and `canopyx.css`. The flow entry point (`canopyx-flow-entry.js`) is assembled from its own folder, `canopyx.flow-entry.source`, and a named list of shared core parts (docs/flow.md#packaging-and-size). The sources retain their comments, and both assets keep their opening header. The first JavaScript part opens a single closure and the last part closes it, so parts share private helpers without globals.
 
 | Part | Responsibility |
 | --- | --- |
 | `00-core.js` | Closure start, constants, tones, text, number and date formatting, DOM helpers |
-| `01-labels.js` | The English labels, label validation (with the label names parts bring), placeholders and plural forms |
+| `01-fill.js` | Placeholders and plural forms in label texts (the flow entry point shares it) |
+| `01-labels.js` | The English labels and label validation, with the label names parts bring |
 | `05-search-folding.js` | Search text folding shared with the C# bundle writer |
 | `10-sidecar.js` | Sidecar registry: sidecar files push into a queue, so they work whether they load before or after the runtime |
 | `15-search-index.js` | The manifest's search index check, the shared document cache, and the query front of a bundle's search (the search part reads the index) |
@@ -168,7 +169,8 @@ The runtime is plain modern JavaScript with no dependencies. Its source parts li
 | `80-toolbar.js` | Built-in search box and filter switches |
 | `83-view-state.js` | Versioned view snapshots, validation, presentation, and restoration position |
 | `85-api.js` | Remembered state, outline and visible rows, counts |
-| `82-parts.js` | Part loader, build manifest, `registerPart` and the per-view part definitions |
+| `82-parts.js` | Part loader, build manifest and `registerPart` (the flow entry point shares it) |
+| `82-tree-parts.js` | The tree view kind's part definitions: tree tools and sidecar search |
 | `84-plugins.js` | Plugin registry (`use`), per-grid plugin resolution in requires order, and the plugin lifecycle |
 | `86-links.js` | `readLocation` and the loader of the links part, which holds deep links |
 | `88-lifetime.js` | Grid teardown and release of owned loaded data |

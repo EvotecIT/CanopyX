@@ -5,7 +5,7 @@ inline messages, a change set with changed-cell marks, undo and redo, and commit
 never writes data itself. Edits stay in the grid until the host saves them and confirms each row; the host authorizes and
 executes every change it receives.
 
-Editing ships as the `editing` part (`canopyx-editing.js` and `canopyx-editing.css`, see [Plugins and Parts](plugins.md)).
+Editing ships as the `editing` part (`canopyx-editing.js` and `canopyx-editing.css`, see [Plugins and Parts](plugins.md)). The editors and the field checks come from the `forms` part (`canopyx-forms.js`), which editing requires and [flows](flow.md) share, so a column and a flow field with the same editor and rules behave alike.
 A grid with an editable column loads it with its first query; the grid entry points keep only the hooks.
 
 ## Making columns editable

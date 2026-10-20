@@ -107,6 +107,10 @@ Pass `--bundle <folder>` to measure a bundle written by the version before the c
 
 ## Change Expectations
 
+- Keep the source, protocol, schema, native, browser and package contracts together, with all four .NET targets, strict JavaScript
+  consumers and the asset budgets. Keep optional interaction and presentation parts out of the ordinary tree runtime where
+  practical, and audit unsafe text and links, renderer lifetime, CSP-compatible hosting and prototype-shaped IDs at the boundary
+  that owns them.
 - Add or update contract tests for new behavior.
 - Update `docs/data-protocol.md`, the JSON schema, and the schema tests together when the protocol changes.
 - Add or update an example when a change affects visible output.
