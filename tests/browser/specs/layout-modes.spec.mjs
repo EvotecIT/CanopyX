@@ -122,7 +122,10 @@ test("the layout and density are part of saved views and the remembered state", 
   await call(page, "resetView"); await settle(page);
   expect(await call(page, "getLayout")).toMatchObject({ mode: "fit", density: "default" });
   await call(page, "setLayout", { mode: "scroll" });
-  await page.waitForTimeout(300);
+  // Wait for the debounced state write before navigating away.
+  await expect.poll(() => page.evaluate(() =>
+    JSON.parse(sessionStorage.getItem("cx:grid:tickets:tickets") || "null")?.current?.layout))
+    .toEqual({ mode: "scroll", density: "default" });
   await page.reload(); await page.waitForSelector("[data-cx-ready]"); await settle(page);
   expect(await call(page, "getLayout")).toMatchObject({ mode: "scroll" });
   // The remembered layout is in place for the first rows: every column, the identity pinned.
