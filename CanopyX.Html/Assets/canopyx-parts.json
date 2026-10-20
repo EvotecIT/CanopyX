@@ -100,7 +100,7 @@
     {
       "name": "forms",
       "label": "forms",
-      "version": "a7cbdc5708538f4b",
+      "version": "f3b10c7b5c7572f0",
       "script": "canopyx-forms.js",
       "style": "canopyx-forms.css",
       "runtimes": [

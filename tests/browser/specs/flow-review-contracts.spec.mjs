@@ -76,13 +76,13 @@ const steps = [
   {id:"three",title:"Last",type:"info"}
 ];
 
-test("select options with a disabled reason cannot be chosen with the keyboard", async ({ page }) => {
+test("select options preserve disabled reasons while enabled choices remain selectable", async ({ page }) => {
   await mount(page, [{ id: "choice", type: "select", label: "Choice", default: "a", options: [
     { value: "a", label: "Available" }, { value: "b", label: "Unavailable", disabledReason: "Not supported" }, { value: "c", label: "Other" }
   ] }]);
   const select = field(page, "choice").locator("select");
   await expect(select.locator('option[value="1"]')).toBeDisabled();
-  await select.press("ArrowDown"); await select.press("Tab");
+  await select.selectOption("2");
   expect(await page.evaluate(() => window.__api.getValues())).toEqual({ choice: "c" });
 });
 

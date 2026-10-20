@@ -49,7 +49,7 @@
         const controller = request = new AbortController();
         Promise.resolve(context.lookup(text, controller.signal)).then(items => {
           if (!controller.signal.aborted) show(items, items.length ? null : labels.gridEditNoMatches);
-        }, error => { if (!controller.signal.aborted && error.name !== "AbortError") show([], error.message); });
+        }, error => { if (!controller.signal.aborted && error?.name !== "AbortError") show([], error?.message || String(error)); });
       }, 200);
     };
     input.addEventListener("input", () => { chosen = null; search(); });

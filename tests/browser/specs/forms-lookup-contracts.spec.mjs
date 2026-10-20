@@ -2,13 +2,14 @@ import { test, expect } from "@playwright/test";
 import { serveGrid, cell } from "./editing-support.mjs";
 import { mountContract as mountFlow } from "./flow-contract-support.mjs";
 
-test("a synchronous host lookup failure is shown without an uncaught exception", async ({ page }) => {
+for (const [kind, failure, message] of [["Error", "new Error('Lookup unavailable')", "Lookup unavailable"], ["text", "'Lookup offline'", "Lookup offline"], ["null", "null", "null"]])
+test(`a synchronous ${kind} host lookup failure is shown without an uncaught exception`, async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  await serveGrid(page, { script: "CanopyX.configure('assets',{editing:{lookups:{owner:()=>{throw new Error('Lookup unavailable');}}}});" });
+  await serveGrid(page, { script: `CanopyX.configure('assets',{editing:{lookups:{owner:()=>{throw ${failure};}}}});` });
   await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.beginEdit("a0", "owner"));
   await cell(page, "a0", 7).getByRole("combobox").fill("Al");
-  await expect(page.locator(".cx-editor-note")).toHaveText("Lookup unavailable");
+  await expect(page.locator(".cx-editor-note")).toHaveText(message);
   expect(errors).toEqual([]);
 });
 
@@ -42,6 +43,9 @@ test("leaving a lookup aborts its pending host request and a late result stays c
   await page.waitForFunction(() => !!window.__release);
   await input.blur();
   expect(await page.evaluate(() => window.__signal.aborted)).toBe(true);
-  await page.evaluate(() => window.__release([{ value: "Alex", label: "Alex" }]));
+  await page.evaluate(async () => {
+    window.__release([{ value: "Alex", label: "Alex" }]);
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
   await expect(page.locator(".cx-editor-list")).toBeHidden();
 });
