@@ -47,7 +47,7 @@
       show([], labels.gridEditSearching);
       timer = setTimeout(() => {
         const controller = request = new AbortController();
-        Promise.resolve(context.lookup(text, controller.signal)).then(items => {
+        Promise.resolve().then(() => context.lookup(text, controller.signal)).then(items => {
           if (!controller.signal.aborted) show(items, items.length ? null : labels.gridEditNoMatches);
         }, error => { if (!controller.signal.aborted && error?.name !== "AbortError") show([], error?.message || String(error)); });
       }, 200);

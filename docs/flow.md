@@ -333,6 +333,16 @@ destroying a flow also releases its host so `CanopyX.mount(host)` can mount it a
 | `setProgress({ done, total, message })`, `complete(answer)` | Drive an `accepted` answer to its end. |
 | `destroy()`, `ready` | Removes the flow; a promise for the first paint. |
 
+If answers change while a submission is waiting for the host, its response does not settle the changed form. The host may
+already have applied the captured proposal; it remains responsible for authorization and persistence. The reader can submit
+the current answers immediately, even if the earlier response is still pending. Next retires obsolete validation in the same
+way. Reset and destruction also retire pending navigation and submission waits. Retiring browser state does not cancel the
+host's work or undo a write. Public validation retries changing answers a bounded number of times; if it cannot obtain a
+stable snapshot, it reports a generic failure and does not attach errors from an earlier answer.
+
+`setProgress` and `complete` target the flow's current accepted operation. If host work can outlive `reset()` or reuse of the
+flow, the host must stop forwarding that earlier work's progress and completion callbacks.
+
 | Event | Cancelable | Detail |
 | --- | --- | --- |
 | `canopyx:flowReady` | | `{ flow, step }` |

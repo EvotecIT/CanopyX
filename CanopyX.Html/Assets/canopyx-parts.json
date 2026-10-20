@@ -100,7 +100,7 @@
     {
       "name": "forms",
       "label": "forms",
-      "version": "f3b10c7b5c7572f0",
+      "version": "a8c60f205d9babca",
       "script": "canopyx-forms.js",
       "style": "canopyx-forms.css",
       "runtimes": [
@@ -118,7 +118,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "dd7d5245eb31f06d",
+      "version": "75b9643b282dddb7",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
