@@ -5,6 +5,58 @@ import { mountContract as mount } from "./flow-contract-support.mjs";
 
 const name = { id: "name", type: "text", label: "Name", required: true, default: "valid" };
 
+for (const action of ["change", "reset", "destroy", "cancel"]) test(`a rejected event response stays observed after ${action}`, async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await mount(page, [name]);
+  await page.evaluate(action => {
+    const host = document.querySelector("[data-canopyx-host]");
+    host.addEventListener("canopyx:flowSubmit", event => {
+      event.detail.respondWith(new Promise((resolve, reject) => window.__reject = reject));
+      if (action === "change") window.__api.setValues({ name: "new answer" });
+      else if (action === "cancel") event.preventDefault();
+      else window.__api[action]();
+    });
+    window.__pending = window.__api.submit();
+  }, action);
+  expect(await page.evaluate(() => window.__pending)).toBeNull();
+  await page.evaluate(async () => { window.__reject(new Error("Superseded host failure")); await new Promise(resolve => setTimeout(resolve, 0)); });
+  expect(errors).toEqual([]);
+  await expect(page.locator(".cx-flow-result, .cx-flow-progress, .cx-flow-answer-banner")).toHaveCount(0);
+});
+
+for (const [boundary, source] of [["callback", "api"], ["callback", "typing"], ["hook", "api"], ["event", "api"]])
+test(`a pending ${boundary} submission cannot settle newer ${source} answers`, async ({ page }) => {
+  const wait = "detail => new Promise(resolve => { window.__proposal = detail; window.__release = resolve; })";
+  const options = boundary === "callback" ? `({ onSubmit: ${wait} })` : boundary === "hook" ? `({ hooks: { submit: ${wait} } })` : "({})";
+  await mount(page, [name], options);
+  await page.evaluate(boundary => {
+    window.__settlements = 0;
+    const host = document.querySelector("[data-canopyx-host]");
+    host.addEventListener("canopyx:flowSubmitted", () => window.__settlements++);
+    if (boundary === "event") host.addEventListener("canopyx:flowSubmit", event => {
+      window.__proposal = event.detail;
+      event.detail.respondWith(new Promise(resolve => window.__release = resolve));
+    });
+    window.__pending = window.__api.submit();
+  }, boundary);
+  await page.waitForFunction(() => !!window.__release);
+  expect(await page.evaluate(() => window.__proposal.values.name)).toBe("valid");
+  if (source === "typing") await field(page, "name").locator("input").fill("new answer");
+  else await page.evaluate(() => window.__api.setValues({ name: "new answer" }));
+  await page.evaluate(() => window.__release({ status: "saved", message: "Previous answer saved" }));
+  expect(await page.evaluate(() => window.__pending)).toBeNull();
+  expect(await page.evaluate(() => window.__settlements)).toBe(0);
+  await expect(field(page, "name").locator("input")).toHaveValue("new answer");
+  await expect(page.locator(".cx-flow-result")).toHaveCount(0);
+  await page.evaluate(() => { window.__release = null; window.__pending = window.__api.submit(); });
+  await page.waitForFunction(() => !!window.__release);
+  expect(await page.evaluate(() => window.__proposal.values.name)).toBe("new answer");
+  await page.evaluate(() => window.__release({ status: "saved", message: "Current answer saved" }));
+  await page.evaluate(() => window.__pending);
+  await expect(page.locator(".cx-flow-result")).toContainText("Current answer saved");
+});
+
 test("submit never proposes answers changed during the whole-flow check", async ({ page }) => {
   await mount(page, [name], `({ hooks: { validateFlow: () => new Promise(resolve => window.__release = resolve) },
     onSubmit: detail => { window.__proposal = detail; return { status: "saved" }; } })`);

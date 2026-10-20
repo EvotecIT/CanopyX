@@ -35,10 +35,11 @@
       if (this.busy || this.phase !== "form") return null;
       const generation = this.generation, revision = this.answerRevision, ticket = this.submissionTicket = {};
       const current = () => !this.destroyed && generation === this.generation && this.submissionTicket === ticket;
+      const sameAnswers = () => current() && revision === this.answerRevision;
       this.busy = true; this.banner = null; this.hostErrors.clear(); this.hostStepErrors.clear(); this.renderActions();
       try {
         const result = await this.validateAll();
-        if (!current() || revision !== this.answerRevision) return null;
+        if (!sameAnswers()) return null;
         if (!result.valid) {
           const review = this.reviewStep();
           if (review && this.stepVisible(review)) { if (this.step !== review) await this.go(review, "forward"); else { this.reviewStale = true; this.render(); } }
@@ -50,21 +51,27 @@
         let answer, answered = false, open = true;
         const close = this.closeSubmission = () => { open = false; secrets.clear(); };
         const detail = Object.assign(flowCopy(proposal), {
-          respondWith: value => { if (!answered && open) { answered = true; answer = value; } },
+          respondWith: value => {
+            if (!answered && open) {
+              answered = true; answer = Promise.resolve(value);
+              // Observe rejection even if cancellation, reset or changed answers retire this proposal before it is awaited.
+              answer.catch(() => {});
+            }
+          },
           secret: id => { if (!open || read.has(id) || !secrets.has(id)) return null; read.add(id); return secrets.get(id); }
         });
         Object.freeze(detail);
         const go = this.emit("flowSubmit", detail, null, true);
-        if (!go || !current()) { close(); return null; }
+        if (!go || !sameAnswers()) { close(); return null; }
         if (!answered && typeof this.options.onSubmit === "function") { const value = await this.hook("onSubmit", () => this.options.onSubmit(detail)); if (value.failed) { answered = true; answer = { status: "error", message: value.failed }; } else if (value.value !== undefined) { answered = true; answer = value.value; } }
-        if (!current()) { close(); return null; }
+        if (!sameAnswers()) { close(); return null; }
         if (!answered && typeof this.hooks.submit === "function") { const value = await this.hook("submit", () => this.hooks.submit(detail)); answered = true; answer = value.failed ? { status: "error", message: value.failed } : value.value; }
-        if (!current()) { close(); return null; }
+        if (!sameAnswers()) { close(); return null; }
         let settled;
         if (!answered || answer === undefined) settled = { status: "error", message: this.labels.flowNoHost };
         else { const value = await this.hook("respondWith", () => answer); settled = value.failed ? { status: "error", message: value.failed } : this.answerOf(value.value); }
         close();
-        if (!current()) return null;
+        if (!sameAnswers()) return null;
         this.busy = false;
         // Retire this operation before callbacks can start correction/navigation work of their own.
         this.submissionTicket = null; this.closeSubmission = null;
