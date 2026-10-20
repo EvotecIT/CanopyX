@@ -19,7 +19,12 @@ const examples = [
   // Calendars read the clock for today and the now line, so they open at a fixed moment.
   { name: "calendar", dark: "calendar-dark", calendar: true },
   { name: "calendar-timeline", dark: "calendar-timeline-dark", calendar: true },
-  { name: "calendar-certificates", dark: "calendar-certificates-dark", calendar: true }
+  { name: "calendar-certificates", dark: "calendar-certificates-dark", calendar: true },
+  // Flows: the horizontal and vertical steppers, edit mode with its mock-host switch, and a dialog-sized single step.
+  { name: "flow-mail-server", dark: "flow-mail-server-dark" },
+  { name: "flow-schedule-report", dark: "flow-schedule-report-dark" },
+  { name: "flow-edit-settings", dark: "flow-edit-settings-dark" },
+  { name: "flow-pause", dark: "flow-pause-dark" }
 ];
 const sizes = [{ width: 1440, height: 900, crop: 420 }, { width: 390, height: 844, crop: 600 }];
 
