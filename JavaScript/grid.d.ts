@@ -887,6 +887,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   getSelection(): string[];
   setSelection(ids: string[]): void;
   clearSelection(): void;
+  /** The loaded records among ids, as copies of { id, cells }; a record that is not loaded now is left out. Never fetches. */
+  getLoadedRows(ids: readonly string[]): { id: string; cells: Record<string, Cell> }[];
   prepareExport(options: GridExportOptions): GridExport<Q>;
   toCsv(options: GridExportOptions): Promise<string>;
   copy(options: GridExportOptions): Promise<string>;

@@ -11,8 +11,13 @@
   DataGrid.prototype.fitHeight = function () {
     if (this.view.autoHeight === false || !this.sized || this.pendingQuery) return;
     // The host's own max-height, read before the first change, stays a bound; without rows the host's own value returns.
+    // Pixels bound the fit as a number; a relative bound (a percentage, calc()) stays CSS, so the browser keeps resolving it.
     const grid = this.grid, style = this.host.style, content = [...grid.children].reduce((sum, child) => sum + child.offsetHeight, grid.offsetHeight - grid.clientHeight);
-    if (this.fitInline === undefined) { this.fitInline = style.maxHeight; this.fitMax = parseFloat(getComputedStyle(this.host).maxHeight) || Infinity; }
-    const value = this.rowCount() ? Math.min(this.fitMax, Math.ceil(this.host.offsetHeight - grid.offsetHeight + content)) + "px" : this.fitInline;
+    if (this.fitInline === undefined) {
+      const own = getComputedStyle(this.host).maxHeight;
+      this.fitInline = style.maxHeight; this.fitMax = own === "none" || !own ? Infinity : /^-?[\d.]+px$/.test(own) ? parseFloat(own) : own;
+    }
+    const height = Math.ceil(this.host.offsetHeight - grid.offsetHeight + content), bound = this.fitMax;
+    const value = !this.rowCount() ? this.fitInline : typeof bound === "number" ? Math.min(bound, height) + "px" : "min(" + height + "px, " + bound + ")";
     if (this.host.style.maxHeight !== value) this.host.style.maxHeight = value;
   };

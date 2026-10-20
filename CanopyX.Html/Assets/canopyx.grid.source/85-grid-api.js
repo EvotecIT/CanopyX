@@ -10,6 +10,12 @@
       element: host, view: grid.view, ready: startPlugins(grid, () => api),
       getTimeZone: () => grid.local ? "local" : "utc",
       getSelection: () => [...grid.selected], clearSelection: () => grid.setSelection([]),
+      // The loaded records among ids, as copies of { id, cells }; a record not loaded now is left out. Never fetches.
+      getLoadedRows: ids => {
+        const wanted = new Set(Array.isArray(ids) ? ids : []), rows = [];
+        for (const row of grid.rowCache.values()) if (wanted.has(row.key)) rows.push({ id: row.key, cells: JSON.parse(JSON.stringify(row.h.cells || {})) });
+        return rows;
+      },
       focus: () => grid.setFocus(grid.focused || grid.rowItem(grid.rowAt(grid.logicalTop())), true),
       refresh: () => { grid.version++; grid.scheduleRender(); },
       reload: () => grid.setQuery(gridQueryStart(grid.queryForChange(true)), grid.pendingPaging &&

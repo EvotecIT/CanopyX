@@ -27,11 +27,14 @@
       if (!grid.clientWidth) { this.heightTotal = undefined; return; }
       // The host's own max-height, read before the first change, stays a bound; without rows the host's own value returns.
       if (this.heightInline === undefined) {
-        this.heightInline = style.maxHeight; this.heightMax = parseFloat(getComputedStyle(this.host).maxHeight) || Infinity;
+        // Pixels bound the fit as a number; a relative bound (a percentage, calc()) stays CSS, so the browser keeps resolving it.
+        const own = getComputedStyle(this.host).maxHeight;
+        this.heightInline = style.maxHeight; this.heightMax = own === "none" || !own ? Infinity : /^-?[\d.]+px$/.test(own) ? parseFloat(own) : own;
         this.lifetime.signal.addEventListener("abort", () => { clearTimeout(this.heightTimer); style.maxHeight = this.heightInline; }, { once: true });
       }
       const content = [...grid.children].reduce((sum, child) => sum + child.offsetHeight, grid.offsetHeight - grid.clientHeight);
-      const value = this.rows.length ? Math.min(this.heightMax, Math.ceil(this.host.offsetHeight - grid.offsetHeight + content)) + "px" : this.heightInline;
+      const height = Math.ceil(this.host.offsetHeight - grid.offsetHeight + content), bound = this.heightMax;
+      const value = !this.rows.length ? this.heightInline : typeof bound === "number" ? Math.min(bound, height) + "px" : "min(" + height + "px, " + bound + ")";
       if (style.maxHeight !== value) {
         style.maxHeight = value;
         // Fitting expanded rows can clamp the reveal scroll; keep a newly opened editor or menu on its row.
