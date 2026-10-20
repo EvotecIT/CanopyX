@@ -29,13 +29,16 @@ public sealed class MatrixTests {
         return matrix;
     }
 
-    [Fact]
-    public void ToJson_WritesTheSharedFixture() {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ToJson_WritesTheSharedFixture(bool windowsLineEndings) {
         var json = Small().ToJson();
         ProtocolSchema.AssertValid(json, "Matrix writer");
         ProtocolSchema.AssertValid(Fixture(), "Shared matrix fixture");
-        Assert.Equal(System.Text.Json.JsonDocument.Parse(Fixture()).RootElement.ToString().Replace(" ", string.Empty).Replace("\n", string.Empty),
-            System.Text.Json.JsonDocument.Parse(json).RootElement.ToString().Replace(" ", string.Empty).Replace("\n", string.Empty));
+        using var expected = System.Text.Json.JsonDocument.Parse(Fixture().ReplaceLineEndings(windowsLineEndings ? "\r\n" : "\n"));
+        using var actual = System.Text.Json.JsonDocument.Parse(json);
+        Assert.True(System.Text.Json.JsonElement.DeepEquals(expected.RootElement, actual.RootElement));
         Assert.Contains("\"cells\":[\"2202\",\"2222\",\"0..2\",\"1220\",\"2222\",\"....\"]", json);
     }
 
