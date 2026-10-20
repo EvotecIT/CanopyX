@@ -40,7 +40,7 @@
       if (items.length > FLOW_PICK_VISIBLE) { const more = h("li", "cx-flow-tray-more"); setText(more, fill(labels.flowPickMore, { count: items.length - FLOW_PICK_VISIBLE })); trayList.appendChild(more); }
       clear.hidden = !items.length || context.readOnly;
       const none = !items.length;
-      trayList.hidden = none; tray.querySelector(".cx-flow-tray-empty").hidden = !none;
+      trayList.hidden = none; count.hidden = none; tray.querySelector(".cx-flow-tray-empty").hidden = !none;
     };
     if (tray) {
       setText(trayHead, labels.flowPickChosen); clear.type = "button"; setText(clear, labels.flowSelectNone);

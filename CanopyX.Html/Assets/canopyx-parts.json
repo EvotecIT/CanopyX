@@ -118,7 +118,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "6489519f1246169e",
+      "version": "4e805f9c07937d72",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [

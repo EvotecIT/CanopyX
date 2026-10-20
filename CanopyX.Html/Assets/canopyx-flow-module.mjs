@@ -54,7 +54,7 @@ function gridDateInputMoment(text,local){const match=/^(\d{4})-(\d{2})-(\d{2})T(
 if(!match)return null;const moment=gridMomentFromParts(Number(match[1]),Number(match[2]),Number(match[3]),Number(match[4]),Number(match[5]),Number(match[6]||0),local);if(moment)moment.setTime(moment.getTime()+ Number((match[7]||"").padEnd(3,"0")));return moment}
 function gridFreeze(value){if(value&&typeof value==="object"&&!Object.isFrozen(value)){Object.values(value).forEach(gridFreeze);Object.freeze(value)}
 return value}
-const PART_URL=typeof document!=="undefined"&&document.currentScript?.src;const PARTS={"forms":["a8c60f205d9babca","canopyx-forms.16987de1cdf9bda9.js","canopyx-forms.29058ce3c88af96e.css"],"flow":["6489519f1246169e","canopyx-flow.470d3f0b4b61e7a8.js","canopyx-flow.e20af0a1285b0175.css"]},PART_CODE=new Map(),partName=name=>typeof name==="string"&&/^[a-z][a-z\d-]{0,31}$/.test(name);
+const PART_URL=typeof document!=="undefined"&&document.currentScript?.src;const PARTS={"forms":["a8c60f205d9babca","canopyx-forms.16987de1cdf9bda9.js","canopyx-forms.29058ce3c88af96e.css"],"flow":["4e805f9c07937d72","canopyx-flow.6a45ed0d6337fcb2.js","canopyx-flow.e20af0a1285b0175.css"]},PART_CODE=new Map(),partName=name=>typeof name==="string"&&/^[a-z][a-z\d-]{0,31}$/.test(name);
 function registerPart(name,part){if(!partName(name)||!part||typeof part.version!=="string"||typeof part.install!=="function"||
 part.requires!==undefined&&!(Array.isArray(part.requires)&&part.requires.every(partName)))throw new Error("CanopyX: invalid part.");PART_CODE.set(name,part)}
 function definePart(View,name,label,context){const parts=View.prototype.parts||={};return parts[name]={name,label,context,parts}}
