@@ -250,7 +250,11 @@ createDataGrid(document.createElement("div"), { view: inlineGrid });
 for (const controller of [...mountViews(document), ...GridRuntime.mount(document)]) {
   // @ts-expect-error A mixed fragment mount does not promise tree controllers.
   controller.expandPath(["row-1"]);
-  if ("getSelection" in controller) controller.getSelection();
+  if ("getStep" in controller) {
+    const flow: import("@evotecit/canopyx/flow").FlowApi = controller;
+    void flow.ready.then(api => api.getStep());
+  }
+  else if ("getSelection" in controller) controller.getSelection();
   else controller.expandPath(["tree-1"]);
 }
 
@@ -808,8 +812,21 @@ const flowApi = createFlow(document.createElement("div"), {
   }
 });
 flowApi.ready.then(api => api.validate("server")).then(result => result.errors.map(error => error.message));
+flowApi.ready.then(api => {
+  const step: string = api.getStep();
+  const values: Record<string, import("@evotecit/canopyx/flow").FlowValue> = api.getValues();
+  const state: import("@evotecit/canopyx/flow").FlowState = api.getState();
+  const dirty: boolean = api.isDirty();
+  const reset: boolean = api.reset();
+  const progress: boolean = api.setProgress({ done: 1, total: 2 });
+  const complete: boolean = api.complete({ status: "saved" });
+  const setValues: void = api.setValues({ host: "smtp.example.com" });
+  const setError: void = api.setFieldError("host", null);
+  void [step, values, state, dirty, reset, progress, complete, setValues, setError];
+});
 const flowAnswer: Promise<FlowAnswer | null> = flowApi.submit();
 FlowRuntime.configure("mail", { onReload: detail => detail.baseline });
+GridRuntime.configure("mail", { onSubmit: detail => ({ status: detail.patch.length ? "saved" : "error" }) });
 GridRuntime.createFlow(document.createElement("div"), { flow: flowDocument }).destroy();
 void flowAnswer;
 

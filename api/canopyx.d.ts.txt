@@ -1790,10 +1790,10 @@ type GridNamedRow<Row>=[Row][Row extends unknown?0:never];
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:GridOptions<GridNamedRow<Row>>):DataGrid<GridQuery,Row>;
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:CursorGridOptions<GridNamedRow<Row>>):DataGrid<GridCursorQuery,Row>;
 export function createCalendar(host:HTMLElement,options?:CalendarOptions):DataGrid<GridQuery,GridRow>;
-export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>):() => void;
-export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>>;
+export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>|Partial<Omit<FlowOptions,"flow">>):() => void;
+export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>|FlowApi>;
 import type{
-  createFlow
+  createFlow,FlowApi,FlowOptions
 }
 from "./flow.js";
 export{

@@ -190,7 +190,11 @@ public sealed partial class CanopyFlowField {
             KeepsWhenBlank = CanopyFlowContract.Boolean(map, "keepWhenBlank", what),
             ShowsReveal = CanopyFlowContract.Boolean(map, "reveal", what)
         };
-        if (map.TryGetValue("default", out var value)) field.DefaultValue = value;
+        if (map.TryGetValue("default", out var value)) {
+            if (value == null && (kind == CanopyFlowFieldKind.List || kind == CanopyFlowFieldKind.MultiChoice))
+                throw new InvalidOperationException(what + ": a collection default must be an array; omit 'default' for no starting value.");
+            field.DefaultValue = value;
+        }
         var width = CanopyFlowContract.Text(map, "width", what);
         if (width != null) field.Width = CanopyFlowContract.Choose(width, what, "width", ("full", CanopyFlowFieldWidth.Full), ("half", CanopyFlowFieldWidth.Half));
         if (map.TryGetValue("when", out var when)) field.Condition = CanopyFlowCondition.Read(when, what + " (when)");

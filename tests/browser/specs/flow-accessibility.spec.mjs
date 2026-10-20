@@ -46,12 +46,14 @@ for (const state of STATES) for (const theme of ["light", "dark"]) {
   });
 }
 
-test("Tab moves through the rail, then the fields, then the actions", async ({ page }) => {
+test("Tab moves through the rail, then the fields, then the actions", async ({ page, browserName }) => {
   await openFlow(page, "flow-mail-server.html");
   await page.evaluate(() => document.activeElement?.blur());
   const regions = [];
+  // macOS WebKit uses Option+Tab to include buttons and selects, as in the other keyboard traversal specs.
+  const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
   for (let press = 0; press < 40; press++) {
-    await page.keyboard.press("Tab");
+    await page.keyboard.press(tab);
     const region = await page.evaluate(() => {
       const element = document.activeElement;
       if (!element || !element.closest(".cx-flow")) return null;

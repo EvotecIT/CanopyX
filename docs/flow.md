@@ -174,6 +174,13 @@ A flow that edits existing settings carries their current values in `initial` (a
 fields start from those values, the review page shows what changed as "was / now" and, by default, only the changes, and
 the proposal carries the changes and a JSON patch. In create mode fields start from their `default`.
 
+An empty `initial: {}` also selects edit mode, for example when only stored secrets are being edited. In C#, set
+`IsEditMode = true` to write that empty baseline; adding values to `Initial` also selects edit mode. Optional collection
+answers can be `null` or an empty array, both of which count as empty during validation.
+
+Stored secrets or a baseline revision also select edit mode. Missing edit-mode fields start empty; create-mode defaults
+do not become changes to existing settings. A host can supply explicit starting answers through `values`.
+
 ## Conditions
 
 Conditions are data, never script. They use the filter builder's grammar (the same groups and operators as grid filter
@@ -253,8 +260,14 @@ On submit the flow validates everything and raises **`canopyx:flowSubmit`** (can
 - `secrets` holds each visible secret field's state: `set` (a new value was typed) or `keep` (left blank, a stored value
   stays). An optional secret left blank without a stored value is left out.
 - `changes` (edit mode) lists each visible field whose answer differs from `initial`.
-- `patch` is a JSON Patch built from field `path`s: `add`, `replace` and `remove` against `initial` in edit mode, `add` for
+- `patch` is a JSON Patch built from field `path`s: `add`, `replace` and `remove` using the field baseline in edit mode, `add` for
   every answered field in create mode. Secret fields never appear in it.
+
+The host applies `patch` to its configuration object. Every parent object in a path must already exist, as JSON Patch
+requires: an `add` at `/mail/host` works against `{ "mail": {} }`, but not against `{}`. In create mode, and when enabling
+a new settings section in edit mode, the host prepares the required containers before applying the proposal. CanopyX
+does not add parent objects: replacing one could discard settings that the flow does not describe. The host also checks
+the baseline and authorizes the write before applying any operation.
 
 The detail also has `respondWith(answer)` and `secret(id)`. The host answers with an object, or a promise of one, through
 `respondWith`, the `onSubmit` callback's return value, or `hooks.submit`:
@@ -300,6 +313,11 @@ const flow = CanopyX.createFlow(host, {
 
 Fragments written by C# mount automatically and take options through `CanopyX.configure(flowId, options)`;
 `data-cx-mount="manual"` waits for `CanopyX.mount`.
+
+Await `api.ready` before calling synchronous members such as `getValues()`, `setValues()` or `reset()`. They throw a clear
+not-ready error while the lazy implementation is loading. Asynchronous members (`next`, `back`, `goTo`, `setState`,
+`validate` and `submit`) wait for readiness. After destruction, synchronous calls throw and asynchronous calls reject;
+destroying a flow also releases its host so `CanopyX.mount(host)` can mount it again.
 
 | Member | Result |
 | --- | --- |

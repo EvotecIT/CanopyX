@@ -33,10 +33,12 @@
     /** Validates everything, raises flowSubmit and waits for the host's answer; resolves with the answer, or null. */
     async submit() {
       if (this.busy || this.phase !== "form") return null;
+      const generation = this.generation, revision = this.answerRevision, ticket = this.submissionTicket = {};
+      const current = () => !this.destroyed && generation === this.generation && this.submissionTicket === ticket;
       this.busy = true; this.banner = null; this.hostErrors.clear(); this.hostStepErrors.clear(); this.renderActions();
       try {
         const result = await this.validateAll();
-        if (this.destroyed) return null;
+        if (!current() || revision !== this.answerRevision) return null;
         if (!result.valid) {
           const review = this.reviewStep();
           if (review && this.stepVisible(review)) { if (this.step !== review) await this.go(review, "forward"); else { this.reviewStale = true; this.render(); } }
@@ -46,24 +48,29 @@
         // Only the secrets of visible fields travel: one typed into a field that is hidden now is left behind, as its answer is.
         const proposal = this.submission(), secrets = new Map([...this.secrets].filter(([id]) => this.visible(this.model.fields.get(id)))), read = new Set();
         let answer, answered = false, open = true;
+        const close = this.closeSubmission = () => { open = false; secrets.clear(); };
         const detail = Object.assign(flowCopy(proposal), {
           respondWith: value => { if (!answered && open) { answered = true; answer = value; } },
           secret: id => { if (!open || read.has(id) || !secrets.has(id)) return null; read.add(id); return secrets.get(id); }
         });
         Object.freeze(detail);
         const go = this.emit("flowSubmit", detail, null, true);
-        if (!go) { open = false; return null; }
+        if (!go || !current()) { close(); return null; }
         if (!answered && typeof this.options.onSubmit === "function") { const value = await this.hook("onSubmit", () => this.options.onSubmit(detail)); if (value.failed) { answered = true; answer = { status: "error", message: value.failed }; } else if (value.value !== undefined) { answered = true; answer = value.value; } }
+        if (!current()) { close(); return null; }
         if (!answered && typeof this.hooks.submit === "function") { const value = await this.hook("submit", () => this.hooks.submit(detail)); answered = true; answer = value.failed ? { status: "error", message: value.failed } : value.value; }
+        if (!current()) { close(); return null; }
         let settled;
         if (!answered || answer === undefined) settled = { status: "error", message: this.labels.flowNoHost };
         else { const value = await this.hook("respondWith", () => answer); settled = value.failed ? { status: "error", message: value.failed } : this.answerOf(value.value); }
-        open = false; secrets.clear();
-        if (this.destroyed) return settled;
+        close();
+        if (!current()) return null;
         this.busy = false;
+        // Retire this operation before callbacks can start correction/navigation work of their own.
+        this.submissionTicket = null; this.closeSubmission = null;
         this.settle(settled);
         return settled;
-      } finally { this.busy = false; if (!this.destroyed && this.phase === "form") this.renderActions(); }
+      } finally { if (current()) { this.busy = false; this.closeSubmission?.(); this.closeSubmission = null; if (this.phase === "form") this.renderActions(); } }
     },
 
     /** Checks a host answer; anything malformed reads as an error with the generic message. */
@@ -82,19 +89,24 @@
     settle(answer) {
       // Answers the flow builds itself (no host, a failed hook) carry only a status and a message.
       answer = Object.assign({ message: null, fieldErrors: {}, stepErrors: {}, result: [], links: [] }, answer);
-      this.emit("flowSubmitted", flowCopy(answer), "onSubmitted");
-      if (answer.status === "saved") { this.phase = "result"; this.panel = this.resultPanel(answer); this.render(); this.panel.querySelector("h3")?.focus(); return; }
-      if (answer.status === "accepted") { this.phase = "progress"; this.panel = this.progressPanel(answer); this.render(); this.panel.querySelector("h3")?.focus(); return; }
+      if (answer.status === "saved" || answer.status === "accepted") {
+        this.phase = answer.status === "saved" ? "result" : "progress";
+        this.panel = answer.status === "saved" ? this.resultPanel(answer) : this.progressPanel(answer);
+        this.render(); this.panel.querySelector("h3")?.focus();
+        this.emit("flowSubmitted", flowCopy(answer), "onSubmitted");
+        return;
+      }
       this.phase = "form";
       for (const [id, message] of Object.entries(answer.fieldErrors)) { this.hostErrors.set(id, message); this.setError(this.model.fields.get(id), message); }
       for (const [id, message] of Object.entries(answer.stepErrors)) this.hostStepErrors.set(id, message);
       this.reviewStale = true;
       this.banner = answer;
       const review = this.reviewStep();
-      const target = review && this.stepVisible(review) ? review : this.step;
+      const target = review && this.stepVisible(review) ? review : this.visibleSteps().find(step => this.hostStepErrors.has(step.id) || this.stepFields(step).some(field => this.hostErrors.has(field.id))) || this.step;
       // Without a review page the step's summary lists the host's field and step messages too.
       if (target === this.step) { this.render(); if (!review) this.showSummary(this.step); this.stage.querySelector(".cx-flow-answer-banner")?.focus(); }
-      else this.go(target, "forward").then(() => this.stage.querySelector(".cx-flow-answer-banner")?.focus());
+      else this.go(target, "forward").then(() => { if (!review) this.showSummary(target); else this.stage.querySelector(".cx-flow-answer-banner")?.focus(); });
+      this.emit("flowSubmitted", flowCopy(answer), "onSubmitted");
     },
 
     /** The host's error or conflict on the review page; a conflict offers to reload the current settings. */

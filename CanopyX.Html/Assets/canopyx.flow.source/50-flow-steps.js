@@ -67,8 +67,9 @@
     /** Moves to a step: the cancelable flowStepChanging first, then the page, focus and the announcement. */
     async go(target, direction, quiet) {
       if (!target || this.destroyed) return false;
-      const from = this.step;
+      const from = this.step, generation = this.generation;
       if (target !== from && !this.emit("flowStepChanging", { from: from.id, to: target.id, direction }, null, true)) return false;
+      if (this.destroyed || this.generation !== generation || this.step !== from) return false;
       for (const fv of this.fields.values()) fv.instance?.conceal?.();
       this.step = target; this.reviewStale = true;
       // Checks made elsewhere (the review page) left messages the rail counts; the step shows the same ones.
@@ -86,13 +87,13 @@
 
     async next() {
       if (this.busy || this.phase !== "form") return false;
-      const step = this.step, steps = this.visibleSteps(), pressed = document.activeElement;
+      const step = this.step, steps = this.visibleSteps(), pressed = document.activeElement, generation = this.generation;
       if (step.type === "form") {
         this.busy = true;
         let result;
-        try { result = await this.validateStep(step, true); } finally { this.busy = false; }
+        try { result = await this.validateStep(step, true); } finally { if (generation === this.generation) this.busy = false; }
         // An answer changed while Next checked the step: the reader is still working on it, so the step stays.
-        if (this.destroyed || this.step !== step || result.moved) return false;
+        if (this.destroyed || generation !== this.generation || this.step !== step || result.moved) return false;
         if (!result.valid) {
           // The summary takes focus only when the reader is still where Next left them, never from a field they moved on to.
           const stayed = document.activeElement === pressed || !this.root.contains(document.activeElement);

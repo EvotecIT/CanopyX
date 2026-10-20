@@ -9,16 +9,7 @@
       getValues: () => view.getValues(), setValues: values => view.setValues(values), getState: () => view.getState(), setState: state => view.setState(state),
       isDirty: () => view.isDirty(), reset: () => view.reset(), validate: id => view.validate(id), setFieldError: (id, message) => view.setFieldError(id, message),
       submit: () => view.submit(), setProgress: progress => view.setProgress(progress), complete: answer => view.complete(answer),
-      destroy: () => {
-        if (view.destroyed) return;
-        view.destroyed = true;
-        view.lifetime.abort();
-        view.resize?.disconnect();
-        for (const fv of view.fields.values()) fv.destroy();
-        view.secrets.clear();
-        view.root.remove();
-        host.removeAttribute("data-cx-ready");
-      }
+      destroy: () => view.destroy()
     };
     return impl;
   }

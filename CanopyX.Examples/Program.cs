@@ -120,6 +120,7 @@ CalendarLinkedExample.Write(output);
 FlowMailServerExample.Write(output);
 FlowScheduleReportExample.Write(output);
 FlowPauseExample.Write(output);
+FlowHeightExamples.Write(output);
 FlowEditSettingsExample.Write(output);
 MatrixExamples.Write(output);
 

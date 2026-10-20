@@ -88,9 +88,10 @@
         item.remove(); if (!rows.children.length) row("", false);
         renumber(); (next || add).focus(); group.dispatchEvent(new Event("change", { bubbles: true }));
       });
-      input.addEventListener("keydown", event => { if (event.key === "Enter" && !event.isComposing) { event.preventDefault(); row("", true); } });
+      input.addEventListener("keydown", event => { if (event.key === "Enter" && !event.isComposing) { event.preventDefault(); if (!context.readOnly) row("", true); } });
       input.addEventListener("input", renumber);
       input.addEventListener("paste", event => {
+        if (context.readOnly) { event.preventDefault(); return; }
         const text = event.clipboardData?.getData("text") || "", lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
         if (lines.length < 2) return;
         event.preventDefault();
@@ -148,6 +149,6 @@
     group.append(amount, unit);
     const read = () => amount.value.trim() === "" ? null : editParseNumber(amount.value, context.locale);
     return { element: group, control: group, group: true, amount, describes: amount, focus: () => amount.focus(),
-      error: () => { const value = read(); return value !== null && !(Number.isInteger(value) && value >= 0 && value <= 999999) ? fill(labels.flowDurationInvalid, { field: field.label }) : null; },
+      error: () => { const value = read(), seconds = value * FLOW_UNITS[unit.value]; return value !== null && !(Number.isSafeInteger(value) && value >= 0 && Number.isSafeInteger(seconds) && flowSeconds(flowDuration(seconds)) !== null) ? fill(labels.flowDurationInvalid, { field: field.label }) : null; },
       getValue: () => { const value = read(); return value === null ? null : flowDuration(value * FLOW_UNITS[unit.value]); } };
   }

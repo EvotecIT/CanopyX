@@ -23,6 +23,7 @@
       input.setAttribute("aria-expanded", "false"); input.removeAttribute("aria-activedescendant");
       if (popup.matches(":popover-open")) popup.hidePopover();
     };
+    input.addEventListener("blur", close);
     const show = (items, message) => {
       options = items; active = items.length ? 0 : -1; list.replaceChildren(); list.hidden = !items.length;
       setText(note, message || ""); note.hidden = !message;
@@ -37,8 +38,9 @@
       if (!popup.matches(":popover-open")) popup.showPopover();
       input.setAttribute("aria-expanded", "true"); paint();
     };
-    const pick = index => { chosen = options[index]; input.value = chosen.label; context.remember(chosen); close(); };
+    const pick = index => { if (context.readOnly) return; chosen = options[index]; input.value = chosen.label; context.remember(chosen); close(); };
     const search = () => {
+      if (context.readOnly) return;
       clearTimeout(timer); request?.abort();
       const text = input.value;
       if (text.length < context.lookupMinLength) { close(); return; }
@@ -47,7 +49,7 @@
         const controller = request = new AbortController();
         Promise.resolve(context.lookup(text, controller.signal)).then(items => {
           if (!controller.signal.aborted) show(items, items.length ? null : labels.gridEditNoMatches);
-        }, error => { if (!controller.signal.aborted && error.name !== "AbortError") show([], error.message); });
+        }, error => { if (!controller.signal.aborted && error?.name !== "AbortError") show([], error?.message || String(error)); });
       }, 200);
     };
     input.addEventListener("input", () => { chosen = null; search(); });
