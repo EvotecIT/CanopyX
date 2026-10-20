@@ -282,7 +282,8 @@ Consumers: the HtmlForgeX DataExplorer's wide datasets and live inventories; the
 - [ ] Verify the explicit accessible header associations of footer cells in the pinned summary row (the summary row with reporting aggregates exists).
 - [x] Read `<tfoot>` rows when enhancing a table (`enhance` reads `tFoot`, docs/enhance.md). Per-page footer totals stay with the summary row item above.
 - [x] An always-visible faceted filter panel (the `facets` part, `CanopyFacetPanel`, docs/facets.md) when a report needs several value lists side by side. Reuse the existing complete-query facet values and counts rather than deriving them from mounted rows.
-- [ ] Measure realistic 50/100/200-column fixtures before implementing column virtualization. If mounted cells dominate cost, extend the shared viewport while retaining pinned columns, logical ARIA indices, offscreen keyboard navigation, details and exports. Do not introduce a second row engine.
+- [x] Measure realistic 50/100/200-column fixtures before implementing column virtualization (`tests/browser/bench/columns-benchmark.mjs`): mounted cells grow with the columns, and from about 100 columns scrolling drops frames at 1x CPU (200 columns: 13 frames over 50 ms in 40 steps), so windowing columns pays off. `AxisWindow` (the grid runtimes' `31-axis-window.js`) windows one axis; the matrix uses it for both.
+- [ ] Window flat-grid columns with `AxisWindow` when a wide consumer needs it, retaining pinned columns, logical ARIA indices, offscreen keyboard navigation, details and exports. Do not introduce a second row engine.
 - [x] Revision-aware data replacement and row updates/removals (the live data part: transactions, polling, a stable sort prompt; docs/live-data.md), cache invalidation, scroll anchoring, focus/selection retention and optional paused refresh. Sorted/filtered hosted updates may require a fresh accepted query rather than relocating rows from partial cache knowledge.
 - [x] Add rectangular cell selection, range copy (tab-separated text with a typed table, unloaded rows read first, 200,000-cell limit), paste through the host and the editing part, and an optional fill handle (docs/cell-ranges.md).
 - [ ] Use the editing part for the quarterly budget example's month columns so its pastes show per-cell checks and undo. Enhanced tables already pass their header groups as column groups.
@@ -360,8 +361,10 @@ palettes with axe, and the forms part, the flow part and the flow entry point st
 
 Consumers: the status matrix (services × DCs), the relationship matrix (DC × DC), and the consistency matrix (object × DC, mismatches only) from the TestimoX plan section 9; the DomainDetective domains × controls matrix.
 
-- [ ] 2D virtualization: rows and columns both windowed, with sticky row and column headers.
-- [ ] Categorical cells with tones and links, and grouping of rows by a host-supplied group key above a host-set row threshold (the status matrix groups DCs by site).
+- [x] 2D virtualization: rows and columns both windowed (`AxisWindow`), with sticky row and column headers and totals; cells drawn on canvas tiles per row with one focusable gridcell (docs/matrix.md). 150 by 150 and 400 by 400 scroll within budget (`matrix-performance.spec.mjs`, `bench/matrix-benchmark.mjs`).
+- [x] Categorical cells with tones, symbols, values and details; linked row and column headers; grouping of rows and columns by an attribute into collapsible groups that roll up; sorting by name, total or attribute; facets, search and only problems on both axes; totals, the diagonal of square matrices, a legend, the keyboard, phones (pinned headers or cards), labels in six languages, right to left, and the static table for email, print and Office.
+- [ ] Host paging of matrices larger than inline data allows (windows of cells requested as the reader scrolls, CanopyX.Data answering them), when a consumer needs more than about 1,000,000 cells.
+- [ ] Adoption in TestimoX Monitoring (DC-level replication at the L tier, the GPO by DC consistency matrix) belongs to the product; the HtmlForgeX bridge maps its matrix types onto `CanopyMatrix`.
 
 Gate: a 150 × 25 status matrix and a DC × DC relationship matrix at L meet the plan section 7.2 interaction budget and pass the accessibility checks.
 

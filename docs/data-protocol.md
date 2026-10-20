@@ -35,6 +35,7 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `gridRecord` | `CanopyGridRecord.ToJson(view)` | A host answers a record request |
 | `gridRecordPack` | `CanopyRecordSidecar.Write` | A record's drawer opens and its details are in a record pack beside the page |
 | `gridTransaction` | `CanopyGridTransaction.ToJson(view)` | A host sends rows to add, update or remove to an open grid ([Live data](#live-data)) |
+| `matrix` | `CanopyMatrix.ToJson()` | A status matrix: two axes of items, states, one string of state digits per row and sparse notes ([matrix.md](matrix.md#the-document)) |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |

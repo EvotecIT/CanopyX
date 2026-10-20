@@ -10,6 +10,7 @@ but not built yet, see [planned work](../TODO.md). For short how-tos, see the [r
 - **Reporting**: the data grid with its reporting capabilities (`@evotecit/canopyx/reporting`, `CanopyDataGridView.Reporting`).
 - **Tree**: the tree grid (`@evotecit/canopyx`, `CanopyTreeView`).
 - **Flow**: guided forms (`@evotecit/canopyx/flow`, `CanopyFlow`); the grid entry points create flows too.
+- **Matrix**: a state for each pair of two sets of entities (`CanopyMatrix`, `CanopyX.createMatrix`), from the grid and reporting entry points.
 
 ## Data sources
 
@@ -180,6 +181,20 @@ CanopyX never writes: a flow collects answers, checks them and raises one propos
 | One proposal with the visible answers, each secret's state, the changes and a JSON patch from field paths; saved, accepted, error and conflict answers | `canopyx:flowSubmit`, `respondWith`, `setProgress`, `complete` | [The proposal](flow.md#the-proposal-and-the-hosts-answer) |
 | Labels in six languages and right-to-left pages | `CanopyLabels.Polish()` and the other packs; `dir="rtl"` | [Labels](flow.md#labels-and-right-to-left) |
 | A page of forms loads no grid code | the flow entry point and the lazily loaded `forms` and `flow` parts | [Packaging](flow.md#packaging-and-size) |
+## Matrices
+
+A matrix shows a state for each row and column pair, such as replication between domain controllers or services by servers.
+
+| Feature | How | Docs |
+| --- | --- | --- |
+| Rows and columns as items with attributes; a square matrix whose rows are its columns; one string of state digits per row | `CanopyMatrix`, `Rows`, `Columns`, `Square`, `Set`, `AddCells`; `CanopyX.createMatrix(host, { view })` | [The document](matrix.md#the-document) |
+| States drawn with a tone and a symbol, a value or short text, details, a legend; self cells hatched and counted nowhere | `State(...)`, `Diagonal`, `notes` | [States](matrix.md#states-totals-and-the-diagonal) |
+| Row and column totals, sorting by name, total or attribute, grouping into collapsible rows and column bands, facets, search and only problems on both axes | `SortBy`, `GroupBy`, `facet`, the Rows and Columns panels | [Sorting, filtering and grouping](matrix.md#sorting-filtering-and-grouping) |
+| Sticky headers and totals, both axes windowed; 150 by 150 and 400 by 400 scroll within budget | `AxisWindow`, canvas rows | [Performance](matrix.md#performance) |
+| An ARIA grid with one tab stop, a tooltip on hover and focus, a cell event and a details dialog | `canopyx:matrixCell`, `details` | [Keyboard](matrix.md#keyboard) |
+| Phones: pinned row headers, or a card per row | `phone: "cards"` | [Phones](matrix.md#phones) |
+| A script-free table for email, print and Office, or the cells that need attention past 2,500 cells | `CanopyStaticHtml.RenderMatrix` | [Static output](matrix.md#static-output-print-and-email) |
+
 ## Export, copy and print
 
 | Feature | Views | How | Reference |
