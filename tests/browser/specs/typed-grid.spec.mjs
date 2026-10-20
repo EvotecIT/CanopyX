@@ -18,7 +18,11 @@ test("columns come from the record's members with their titles and kinds", async
   await open(page);
   const view = await api(page, "api => api.view.columns.map(column => [column.id, column.title, column.kind])");
   expect(view).toEqual([["hostName", "Server", "text"], ["site", "Site", "text"], ["ownerTeam", "Team", "text"], ["health", "Health", "text"],
-    ["cores", "Cores", "number"], ["loadAverage", "Load", "number"], ["diskBytes", "Disk", "number"], ["lastSeenUtc", "Last seen", "datetime"]]);
+    ["cores", "Cores", "number"], ["loadAverage", "Load", "number"], ["diskBytes", "Disk", "number"], ["lastSeenUtc", "Last seen", "datetime"], ["uptime", "Last 12 hours", "text"]]);
+  // The history member is a status strip: one toned segment per hour, and a summary as its raw value.
+  expect(await api(page, "api => api.view.columns.find(column => column.id === 'uptime').presenter.kind")).toBe("statusStrip");
+  expect(await api(page, "api => api.view.rows[0].cells.uptime.series.length")).toBe(12);
+  expect(await api(page, "api => api.view.rows[0].cells.uptime.value")).toMatch(/^\d+ of 12 not up$/);
   expect(await api(page, "api => api.view.facets.columns")).toEqual(["site", "health", "loadAverage"]);
   expect(await api(page, "api => api.getPaging().matched")).toBe(120);
   // Sorting a number column orders by value.

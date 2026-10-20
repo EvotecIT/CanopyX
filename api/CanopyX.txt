@@ -305,7 +305,9 @@ CanopyX.CanopyCell.static CanopyX.CanopyCell Link(System.String text, System.Str
 CanopyX.CanopyCell.static CanopyX.CanopyCell List(System.Collections.Generic.IEnumerable<CanopyX.CanopyCell> items, System.String separator = ", ")
 CanopyX.CanopyCell.static CanopyX.CanopyCell List(params System.String[] items)
 CanopyX.CanopyCell.static CanopyX.CanopyCell Object(params CanopyX.CanopyCellField[] fields)
+CanopyX.CanopyCell.static CanopyX.CanopyCell StatusHistory(System.Collections.Generic.IEnumerable<CanopyX.CanopyCellPeriod> periods, System.String? state = null)
 CanopyX.CanopyCell.static CanopyX.CanopyCell Timeline(System.Collections.Generic.IEnumerable<CanopyX.CanopyRecordEvent> events)
+CanopyX.CanopyCell.static CanopyX.CanopyCell ValueHistory(System.Collections.Generic.IEnumerable<CanopyX.CanopyCellPeriod> periods, System.Nullable<System.Double> value = null)
 CanopyX.CanopyCell.static CanopyX.CanopyCell op_Implicit(System.Boolean value)
 CanopyX.CanopyCell.static CanopyX.CanopyCell op_Implicit(System.DateTime value)
 CanopyX.CanopyCell.static CanopyX.CanopyCell op_Implicit(System.DateTimeOffset value)
@@ -502,6 +504,8 @@ CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Column<TValue>(System.Linq.Ex
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Column<TValue>(System.String id, System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Field<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Field<TValue>(System.String id, System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
+CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Sparkline(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<CanopyX.CanopyCellPeriod>?>> member, System.String? title = null, CanopyX.CanopyGridPresenter? presenter = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<System.Collections.Generic.IReadOnlyList<CanopyX.CanopyCellPeriod>, System.Nullable<System.Double>>? value = null)
+CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn StatusStrip(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<CanopyX.CanopyCellPeriod>?>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<System.Collections.Generic.IReadOnlyList<CanopyX.CanopyCellPeriod>, System.String?>? state = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyDataGridView View { get; }
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyDataGridView<T> AddRows(System.Collections.Generic.IEnumerable<T> records)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyGridRow Row(T record)
