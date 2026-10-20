@@ -11,7 +11,7 @@ internal static class FlowMailServerExample {
             Submit = new CanopyFlowSubmit("Save settings")
         };
         flow.Step("server", "Which server sends the mail?", step => step
-            .Text("host", "Server name", f => f.Required().Placeholder("mail.example.com").Help("A host name or an IP address the service can reach.").Path("mail.host"))
+            .Text("host", "Server name", f => f.Required().Help("A host name, such as mail.example.com, or an IP address the service can reach.").Path("mail.host"))
             .Number("port", "Port", f => f.Default(587d).Range(1, 65535).Half().Path("mail.port"))
             .Duration("timeout", "Give up after", f => f.Default(TimeSpan.FromSeconds(30)).Units(CanopyFlowDurationUnit.Seconds, CanopyFlowDurationUnit.Minutes)
                 .Range(TimeSpan.FromSeconds(5), TimeSpan.FromMinutes(5)).Half().Path("mail.timeout"))
@@ -32,11 +32,11 @@ internal static class FlowMailServerExample {
                 .AsList().Required().Default("password").Path("mail.auth"))
             .Section("account", "Account", section => section
                 .When(CanopyFlowCondition.Equal("auth", "password"))
-                .Text("user", "User name", f => f.Required().Placeholder("alerts@example.com").Path("mail.user"))
+                .Text("user", "User name", f => f.Required().Help("Often the sender address, such as alerts@example.com.").Path("mail.user"))
                 .Secret("password", "Password", f => f.Required().Help("Kept by the host. It is never shown again on this page."))));
         flow.Step("recipients", "Who receives the mail?", step => step
             .Text("from", "Sender address", f => f.Required().Default("alerts@example.com").Length(3, 254).Path("mail.from"))
-            .List("to", "Recipients", f => f.Required().Items(CanopyFlowItemRule.Email).Count(1, 20).Placeholder("name@example.com")
+            .List("to", "Recipients", f => f.Required().Items(CanopyFlowItemRule.Email).Count(1, 20).Placeholder("For example: name@example.com")
                 .Help("One address per row. Paste several lines to add them at once.").Path("mail.to")));
         flow.Review(review => review.Declaration("Saving sends a test message to the first recipient."));
         return flow;

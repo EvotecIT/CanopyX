@@ -44,7 +44,7 @@ public sealed class CanopyCellEditor {
             ? throw new ArgumentOutOfRangeException(nameof(value), value, "A step must be a positive finite number.") : value;
     }
 
-    /// <summary>Gets or sets the hint an empty text, number or lookup editor shows.</summary>
+    /// <summary>Gets or sets the hint an empty text, number or lookup editor shows, drawn fainter and in italics so it never reads as a value.</summary>
     public string? Placeholder { get; set; }
 
     /// <summary>Gets the choices of a select editor, or the fixed suggestions of a lookup editor (at most 1,000).</summary>

@@ -83,7 +83,8 @@
 .cx-flow .cx-flow-input { box-sizing:border-box;width:100%;max-width:var(--cx-size-440px);min-height:var(--cx-flow-control);height:var(--cx-flow-control);margin:0;padding:0 var(--cx-size-10px);
   font:inherit;color:var(--cx-text);background:var(--cx-surface);border:var(--cx-size-1px) solid var(--cx-control-border);border-radius:var(--cx-radius-sm);color-scheme:inherit; }
 .cx-flow-half .cx-flow-input { max-width:100%; }
-.cx-flow .cx-flow-input::placeholder { color:var(--cx-muted);opacity:1; }
+/* A hint, never mistaken for an answer: fainter than values and help (4.7:1 light, 6.4:1 dark on the surface), and italic. */
+.cx-flow .cx-flow-input::placeholder { color:color-mix(in srgb,var(--cx-text) 60%,var(--cx-surface));font-style:italic;opacity:1; }
 .cx-flow .cx-flow-input:focus-visible { outline:none;border-color:var(--cx-accent);box-shadow:0 0 0 var(--cx-size-2px) var(--cx-accent-soft); }
 .cx-flow .cx-flow-input[aria-invalid="true"],.cx-flow :not(.cx-flow-list)[aria-invalid="true"] .cx-flow-input { border-color:var(--cx-tone-danger); }
 .cx-flow .cx-flow-input:read-only:not(select) { background:var(--cx-head-bg);color:var(--cx-text-2); }

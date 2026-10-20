@@ -5,3 +5,4 @@
 .cx-editor-option{cursor:pointer;}
 .cx-editor-option[aria-selected="true"],.cx-editor-option:hover{background:var(--cx-selected-bg);}
 .cx-editor-note{color:var(--cx-muted);}
+.cx-editor::placeholder{color:color-mix(in srgb,var(--cx-text) 60%,var(--cx-surface));font-style:italic;opacity:1;}

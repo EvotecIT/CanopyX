@@ -35,7 +35,7 @@ calendar's event form through the `forms` part.
 var flow = new CanopyFlow("mail-server", "Connect a mail server") { Submit = new CanopyFlowSubmit("Save settings") };
 
 flow.Step("server", "Which server sends the mail?", step => step
-    .Text("host", "Server name", f => f.Required().Placeholder("mail.example.com").Path("mail.host"))
+    .Text("host", "Server name", f => f.Required().Help("A host name or an IP address, such as mail.example.com").Path("mail.host"))
     .Number("port", "Port", f => f.Default(587).Range(1, 65535).Half().Path("mail.port"))
     .Choice("security", "Connection security", f => f
         .Option("starttls", "STARTTLS", "Upgrades a plain connection. Port 587 is usual.")
@@ -134,7 +134,7 @@ Every field has `id` (unique in the flow), `type` and `label`, and optionally:
 | Field | Meaning |
 | --- | --- |
 | `help` | A line under the label, before the input. |
-| `placeholder` | The empty input's hint (text, number, lookup, text area, list). |
+| `placeholder` | The empty input's hint (text, number, lookup, text area, list), drawn fainter and in italics. Keep it a short hint about the expected format, such as "For example: name@example.com"; a sample answer belongs in `help`. |
 | `required` | An empty answer is an error. Optional fields say "(optional)" in their label; nothing gets an asterisk. |
 | `default` | The starting value in create mode. |
 | `readOnly` | Shown, not changed. |

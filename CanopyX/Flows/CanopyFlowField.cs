@@ -9,7 +9,7 @@ namespace CanopyX;
 /// </summary>
 /// <remarks>
 /// Properties are named as nouns and the fluent methods that set them as verbs, so a field reads as a sentence:
-/// <c>f =&gt; f.Required().Placeholder("mail.example.com").Path("mail.host")</c>. The flow checks every setting when it is
+/// <c>f =&gt; f.Required().Help("A host name, such as mail.example.com").Path("mail.host")</c>. The flow checks every setting when it is
 /// written, and throws <see cref="InvalidOperationException"/> for a setting that does not fit the field's kind.
 /// </remarks>
 public sealed partial class CanopyFlowField {
@@ -51,6 +51,10 @@ public sealed partial class CanopyFlowField {
     public string? HelpText { get; set; }
 
     /// <summary>Gets or sets the empty input's hint (text, number, lookup, text area and list fields). At most 256 characters.</summary>
+    /// <remarks>
+    /// A placeholder is drawn fainter and in italics, and disappears as soon as the user types. Keep it a short hint about the expected format, such as
+    /// "For example: name@example.com"; a sample answer the user has to read while typing belongs in <see cref="HelpText"/>.
+    /// </remarks>
     public string? PlaceholderText { get; set; }
 
     /// <summary>
@@ -161,7 +165,7 @@ public sealed partial class CanopyFlowField {
     /// <returns>The field.</returns>
     public CanopyFlowField Help(string text) { HelpText = text; return this; }
 
-    /// <summary>Sets the empty input's hint (<see cref="PlaceholderText"/>).</summary>
+    /// <summary>Sets the empty input's hint (<see cref="PlaceholderText"/>): a short hint such as the expected format, not a full sample answer, which belongs in <see cref="Help"/>.</summary>
     /// <param name="text">Plain text.</param>
     /// <returns>The field.</returns>
     public CanopyFlowField Placeholder(string text) { PlaceholderText = text; return this; }

@@ -5,3 +5,5 @@
 .cx-editor-option { cursor:pointer; }
 .cx-editor-option[aria-selected="true"],.cx-editor-option:hover { background:var(--cx-selected-bg); }
 .cx-editor-note { color:var(--cx-muted); }
+/* An editor's placeholder is a hint, fainter than any value (4.7:1 light, 6.4:1 dark) and italic, in cells, the drawer form and flows alike. */
+.cx-editor::placeholder { color:color-mix(in srgb,var(--cx-text) 60%,var(--cx-surface));font-style:italic;opacity:1; }
