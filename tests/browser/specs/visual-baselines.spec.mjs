@@ -24,7 +24,11 @@ const examples = [
   { name: "flow-mail-server", dark: "flow-mail-server-dark" },
   { name: "flow-schedule-report", dark: "flow-schedule-report-dark" },
   { name: "flow-edit-settings", dark: "flow-edit-settings-dark" },
-  { name: "flow-pause", dark: "flow-pause-dark" }
+  { name: "flow-pause", dark: "flow-pause-dark" },
+  // Matrices: a square matrix grouped by site, services by servers (cards on phones), and a large matrix opening on its problems.
+  { name: "matrix-replication", dark: "matrix-replication-dark" },
+  { name: "matrix-services", dark: "matrix-services-dark" },
+  { name: "matrix-consistency", dark: "matrix-consistency-dark" }
 ];
 const sizes = [{ width: 1440, height: 900, crop: 420 }, { width: 390, height: 844, crop: 600 }];
 

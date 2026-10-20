@@ -812,3 +812,15 @@ const flowAnswer: Promise<FlowAnswer | null> = flowApi.submit();
 FlowRuntime.configure("mail", { onReload: detail => detail.baseline });
 GridRuntime.createFlow(document.createElement("div"), { flow: flowDocument }).destroy();
 void flowAnswer;
+
+// The matrix view: the document, the state and the cell event are typed (docs/matrix.md).
+import { createMatrix, type MatrixDocument, type MatrixCellDetail } from "@evotecit/canopyx/grid";
+const matrixDocument: MatrixDocument = { protocol: "canopyx/2", type: "matrix", id: "replication", label: "Replication", square: true, columnTitle: "Source",
+  rows: { title: "Destination", attributes: [{ id: "site", title: "Site", facet: true }], items: [{ id: "dc1", label: "DC1", values: { site: "Oslo" } }, { id: "dc2", label: "DC2" }], groupBy: "site" },
+  states: [{ id: "fail", label: "Failing", tone: "danger", symbol: "cross", attention: true }, { id: "ok", label: "Healthy", tone: "success", symbol: "check" }],
+  cells: [".0", "1."], notes: [[0, 1, 3, "3 errors"]] };
+const matrixApi = createMatrix(document.createElement("div"), { view: matrixDocument, onCell: (detail: MatrixCellDetail, event) => { if (detail.state === "fail") event.preventDefault(); } });
+matrixApi.sort("rows", "#total", "desc"); matrixApi.filter("columns", "site", ["Oslo"]);
+const matrixRows: string[] = matrixApi.getVisible().rows;
+GridRuntime.createMatrix(document.createElement("div"), { view: matrixDocument, state: { attentionOnly: true } }).destroy();
+void matrixRows;
