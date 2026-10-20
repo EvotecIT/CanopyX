@@ -353,7 +353,7 @@ JSON shape that CanopyX owns; nothing is synced to other repositories.
   the JSON patch and Copy (shared fixture `tests/fixtures/flow-commands.json`); `CanopyFlowSubmission` and the hook requests
   and answers in `CanopyX.Data`; `MapCanopyFlow` in `CanopyX.AspNetCore`.
 - [ ] Follow-ups of F2: move the host-connected features into a lazy part of their own, so a plain form loads about half of
-  today's flow part (48.8 KiB gzip against F1's 24.8 KiB); records fields on the grid's editing rows once a flow needs
+  today's flow part (49.1 KiB gzip against F1's 24.8 KiB); records fields on the grid's editing rows once a flow needs
   hundreds of rows (today the forms editors in a table); "Select all matching" in pick steps (it names a query, so a pick step
   keeps records it can list); conditions on a check's result; removing a saved preset (`presetStore.remove`); host predicates
   in conditions; reloading a host section's fields only when the reader reaches its step (today as the step is built).

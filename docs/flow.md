@@ -659,7 +659,7 @@ covered by the automated checks.
 | --- | --- | --- |
 | `canopyx-flow-entry.js`, `canopyx-flow-entry.css` | The flow entry point: the theme tokens, the part loader, `createFlow`, `configure` and the fragment mount. No grid or tree code. `@evotecit/canopyx/flow` is its ES module. | 10 KiB (8.4 KiB measured) |
 | `canopyx-forms.js`, `canopyx-forms.css` | The `forms` part: the typed editors, number and date parsing, the lookup combobox and the field checks. Grid editing requires it too. | 7 KiB (5.4 KiB) |
-| `canopyx-flow.js`, `canopyx-flow.css` | The `flow` part: the document reader, conditions, fields, steps, validation, the review page and the proposal, and the host-connected features: checks, host options and sections, records, pick steps, task lists, dialogs, the command, presets, drafts, deep links and the endpoint. | 57 KiB (48.8 KiB) |
+| `canopyx-flow.js`, `canopyx-flow.css` | The `flow` part: the document reader, conditions, fields, steps, validation, the review page and the proposal, and the host-connected features: checks, host options and sections, records, pick steps, task lists, dialogs, the command, presets, drafts, deep links and the endpoint. | 57 KiB (49.1 KiB) |
 
 A page with only flows includes the flow entry point; the parts load on first use from the files beside it, or from the
 payloads a single-file page carries. The data-grid and reporting entry points know the same two parts, so a grid page creates
