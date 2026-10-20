@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/EvotecIT/CanopyX/main/docs/schema/canopyx-flow-1.schema.json",
+  "title": "CanopyX flow document, version 1",
+  "description": "The flow contract of docs/flow.md: a guided form with steps, typed fields, conditions and a review page. The schema lists every field and rejects unknown ones, so it doubles as a writer check. Rules across the document (unique ids, condition references, values that fit their field and options, path conflicts) are checked by CanopyFlow.Validate and the browser reader.",
+  "type": "object",
+  "required": ["kind", "version", "id", "title", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": { "const": "flow" },
+    "version": { "const": 1 },
+    "id": { "$ref": "#/$defs/identifier" },
+    "title": { "$ref": "#/$defs/shortText" },
+    "description": { "$ref": "#/$defs/longText" },
+    "mode": { "enum": ["linear", "free"], "description": "Default linear." },
+    "layout": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "orientation": { "enum": ["auto", "horizontal", "vertical"], "description": "Default auto." } }
+    },
+    "density": { "enum": ["compact", "normal", "comfortable"], "description": "Default normal." },
+    "timeZone": { "enum": ["utc", "local"], "description": "Default utc." },
+    "steps": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/step" } },
+    "initial": {
+      "type": "object", "description": "Edit mode: the edited values by field id. Never a secret field.",
+      "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": { "$ref": "#/$defs/value" }
+    },
+    "storedSecrets": { "type": "array", "uniqueItems": true, "maxItems": 1000, "items": { "$ref": "#/$defs/identifier" }, "description": "Ids of secret fields with a stored value. Never the values." },
+    "baseline": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "submit": { "type": "object", "additionalProperties": false, "properties": { "label": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "\\S" } } },
+    "labels": {
+      "type": "object", "description": "Translations of the flow labels (flow…) and the shared field messages (gridEdit…).",
+      "propertyNames": { "pattern": "^(flow[A-Z][A-Za-z0-9]*|gridEdit(Required|Number|Date|Min|Max|Step|MinLength|MaxLength|Pattern|Choice|NoMatches|Searching|None))$" },
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "identifier": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
+    "shortText": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S" },
+    "longText": { "type": "string", "minLength": 1, "maxLength": 1000, "pattern": "\\S" },
+    "scalar": { "oneOf": [{ "type": "string", "maxLength": 4096 }, { "type": "number" }, { "type": "boolean" }] },
+    "value": {
+      "description": "A field value: text, a number, true or false, a list of them, or null for empty.",
+      "oneOf": [
+        { "type": "null" }, { "type": "string" }, { "type": "number" }, { "type": "boolean" },
+        { "type": "array", "maxItems": 1000, "items": { "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }] } }
+      ]
+    },
+    "isoDuration": { "type": "string", "pattern": "^P(?=[0-9T])([0-9]{1,9}D)?(T(?=[0-9])([0-9]{1,9}H)?([0-9]{1,9}M)?([0-9]{1,9}S)?)?$" },
+    "isoMoment": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(:[0-9]{2}(\\.[0-9]{1,7})?)?(Z|[+-][0-9]{2}:[0-9]{2})$" },
+    "condition": {
+      "description": "A condition group in the filter builder's grammar: at most eight levels, 64 groups and 64 predicates.",
+      "type": "object", "required": ["operator"], "additionalProperties": false,
+      "properties": {
+        "operator": { "enum": ["and", "or", "none"] },
+        "filters": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/predicate" } },
+        "groups": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/condition" } }
+      },
+      "anyOf": [
+        { "required": ["filters"], "properties": { "filters": { "minItems": 1 } } },
+        { "required": ["groups"], "properties": { "groups": { "minItems": 1 } } }
+      ]
+    },
+    "predicate": {
+      "type": "object", "required": ["field", "operator"], "additionalProperties": false,
+      "properties": {
+        "field": { "$ref": "#/$defs/identifier" },
+        "operator": { "enum": ["eq", "ne", "gt", "ge", "lt", "le", "contains", "notContains", "startsWith", "endsWith", "matches", "notMatches", "in", "notIn", "between", "isNull", "isNotNull"] },
+        "values": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/scalar" } }
+      },
+      "allOf": [
+        { "if": { "properties": { "operator": { "enum": ["isNull", "isNotNull"] } } }, "then": { "properties": { "values": { "maxItems": 0 } } } },
+        { "if": { "properties": { "operator": { "enum": ["in", "notIn"] } } }, "then": { "required": ["values"], "properties": { "values": { "minItems": 1 } } } },
+        { "if": { "properties": { "operator": { "const": "between" } } }, "then": { "required": ["values"], "properties": { "values": { "minItems": 2, "maxItems": 2 } } } },
+        { "if": { "properties": { "operator": { "enum": ["eq", "ne", "gt", "ge", "lt", "le", "contains", "notContains", "startsWith", "endsWith", "matches", "notMatches"] } } },
+          "then": { "required": ["values"], "properties": { "values": { "minItems": 1, "maxItems": 1 } } } },
+        { "if": { "properties": { "operator": { "enum": ["startsWith", "endsWith", "matches", "notMatches"] } } }, "then": { "properties": { "values": { "items": { "type": "string" } } } } }
+      ]
+    },
+    "option": {
+      "type": "object", "required": ["value"], "additionalProperties": false,
+      "properties": {
+        "value": { "$ref": "#/$defs/scalar" },
+        "label": { "$ref": "#/$defs/shortText" },
+        "description": { "$ref": "#/$defs/longText" },
+        "badge": { "type": "string", "minLength": 1, "maxLength": 40, "pattern": "\\S" },
+        "disabledReason": { "type": "string", "minLength": 1, "maxLength": 400, "pattern": "\\S" },
+        "group": { "$ref": "#/$defs/shortText" }
+      }
+    },
+    "validation": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "min": { "oneOf": [{ "type": "number" }, { "type": "string" }], "description": "A number (number), an ISO moment (datetime) or an ISO duration (duration)." },
+        "max": { "oneOf": [{ "type": "number" }, { "type": "string" }], "description": "As min." },
+        "minLength": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "maxLength": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "pattern": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "minItems": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "maxItems": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "item": { "enum": ["email", "host", "ip", "cidr", "url"] },
+        "itemPattern": { "type": "string", "minLength": 1, "maxLength": 256 }
+      }
+    },
+    "field": {
+      "type": "object", "required": ["id", "type", "label"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "enum": ["text", "number", "date", "datetime", "time", "select", "toggle", "lookup", "choice", "multiChoice", "textarea", "list", "secret", "duration", "custom"] },
+        "editor": { "$ref": "#/$defs/identifier" },
+        "label": { "$ref": "#/$defs/shortText" },
+        "help": { "$ref": "#/$defs/longText" },
+        "placeholder": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "required": { "type": "boolean" },
+        "readOnly": { "type": "boolean" },
+        "sensitive": { "type": "boolean" },
+        "default": { "$ref": "#/$defs/value" },
+        "width": { "enum": ["full", "half"] },
+        "parameter": { "$ref": "#/$defs/identifier" },
+        "path": { "type": "string", "maxLength": 256, "pattern": "^[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*$" },
+        "when": { "$ref": "#/$defs/condition" },
+        "options": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/option" } },
+        "display": { "enum": ["cards", "list"] },
+        "onText": { "type": "string", "minLength": 1, "maxLength": 60, "pattern": "\\S" },
+        "offText": { "type": "string", "minLength": 1, "maxLength": 60, "pattern": "\\S" },
+        "rows": { "type": "integer", "minimum": 2, "maximum": 20 },
+        "step": { "type": "number", "exclusiveMinimum": 0 },
+        "keepWhenBlank": { "type": "boolean" },
+        "reveal": { "type": "boolean" },
+        "units": { "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": { "enum": ["seconds", "minutes", "hours", "days"] } },
+        "validation": { "$ref": "#/$defs/validation" }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "custom" } } }, "then": { "required": ["editor"] }, "else": { "not": { "required": ["editor"] } } },
+        { "if": { "properties": { "type": { "enum": ["select", "choice", "multiChoice", "lookup"] } } }, "then": { "required": ["options"], "properties": { "options": { "minItems": 1 } } } },
+        { "if": { "properties": { "type": { "not": { "enum": ["select", "choice", "multiChoice", "lookup"] } } } }, "then": { "not": { "required": ["options"] } } },
+        { "if": { "properties": { "type": { "not": { "const": "choice" } } } }, "then": { "not": { "required": ["display"] } } },
+        { "if": { "properties": { "type": { "not": { "const": "toggle" } } } }, "then": { "not": { "anyOf": [{ "required": ["onText"] }, { "required": ["offText"] }] } } },
+        { "if": { "properties": { "type": { "not": { "const": "textarea" } } } }, "then": { "not": { "required": ["rows"] } } },
+        { "if": { "properties": { "type": { "not": { "const": "number" } } } }, "then": { "not": { "required": ["step"] } } },
+        { "if": { "properties": { "type": { "not": { "const": "secret" } } } }, "then": { "not": { "anyOf": [{ "required": ["keepWhenBlank"] }, { "required": ["reveal"] }] } } },
+        { "if": { "properties": { "type": { "const": "secret" } } }, "then": { "not": { "required": ["default"] } } },
+        { "if": { "properties": { "type": { "not": { "const": "duration" } } } }, "then": { "not": { "required": ["units"] } } },
+        { "if": { "properties": { "type": { "not": { "enum": ["text", "number", "lookup", "textarea", "list"] } } } }, "then": { "not": { "required": ["placeholder"] } } },
+        { "if": { "properties": { "type": { "const": "number" } } }, "then": { "properties": { "validation": { "properties": { "min": { "type": "number" }, "max": { "type": "number" } } } } } },
+        { "if": { "properties": { "type": { "const": "datetime" } } }, "then": { "properties": { "validation": { "properties": { "min": { "$ref": "#/$defs/isoMoment" }, "max": { "$ref": "#/$defs/isoMoment" } } } } } },
+        { "if": { "properties": { "type": { "const": "duration" } } }, "then": { "properties": { "default": { "$ref": "#/$defs/isoDuration" }, "validation": { "properties": { "min": { "$ref": "#/$defs/isoDuration" }, "max": { "$ref": "#/$defs/isoDuration" } } } } } },
+        { "if": { "properties": { "type": { "not": { "enum": ["number", "datetime", "duration"] } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["min"] }, { "required": ["max"] }] } } } } },
+        { "if": { "properties": { "type": { "not": { "enum": ["text", "textarea", "secret"] } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["minLength"] }, { "required": ["maxLength"] }, { "required": ["pattern"] }] } } } } },
+        { "if": { "properties": { "type": { "not": { "enum": ["multiChoice", "list"] } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["minItems"] }, { "required": ["maxItems"] }] } } } } },
+        { "if": { "properties": { "type": { "not": { "const": "list" } } } }, "then": { "properties": { "validation": { "not": { "anyOf": [{ "required": ["item"] }, { "required": ["itemPattern"] }] } } } } },
+        { "if": { "properties": { "type": { "const": "date" } } }, "then": { "properties": { "default": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" } } } },
+        { "if": { "properties": { "type": { "const": "time" } } }, "then": { "properties": { "default": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$" } } } },
+        { "if": { "properties": { "type": { "const": "datetime" } } }, "then": { "properties": { "default": { "$ref": "#/$defs/isoMoment" } } } },
+        { "if": { "properties": { "type": { "const": "toggle" } } }, "then": { "properties": { "default": { "type": "boolean" } } } },
+        { "if": { "properties": { "type": { "const": "number" } } }, "then": { "properties": { "default": { "type": "number" } } } },
+        { "if": { "properties": { "type": { "enum": ["text", "textarea"] } } }, "then": { "properties": { "default": { "type": "string" } } } },
+        { "if": { "properties": { "type": { "enum": ["multiChoice", "list"] } } }, "then": { "properties": { "default": { "type": "array" } } } }
+      ]
+    },
+    "section": {
+      "type": "object", "required": ["id", "label", "fields"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "$ref": "#/$defs/shortText" },
+        "description": { "$ref": "#/$defs/longText" },
+        "when": { "$ref": "#/$defs/condition" },
+        "fields": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/field" } }
+      }
+    },
+    "step": {
+      "type": "object", "required": ["id"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "enum": ["form", "info", "review"], "description": "Default form." },
+        "title": { "$ref": "#/$defs/shortText" },
+        "description": { "$ref": "#/$defs/longText" },
+        "optional": { "type": "boolean" },
+        "when": { "$ref": "#/$defs/condition" },
+        "fields": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/field" } },
+        "sections": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/section" } },
+        "declaration": { "$ref": "#/$defs/longText" },
+        "changesOnly": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "review" } } },
+          "then": { "not": { "anyOf": [{ "required": ["fields"] }, { "required": ["sections"] }, { "required": ["when"] }, { "required": ["optional"] }] } },
+          "else": { "required": ["title"], "not": { "anyOf": [{ "required": ["declaration"] }, { "required": ["changesOnly"] }] } }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "info" } } },
+          "then": { "not": { "anyOf": [{ "required": ["fields"] }, { "required": ["sections"] }] } }
+        }
+      ]
+    }
+  }
+}

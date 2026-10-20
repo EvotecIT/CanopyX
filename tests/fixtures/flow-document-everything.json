@@ -1,0 +1,365 @@
+{
+  "kind": "flow",
+  "version": 1,
+  "id": "schedule-report",
+  "title": "Schedule a report",
+  "description": "Sends a summary on a schedule.",
+  "mode": "free",
+  "layout": {
+    "orientation": "vertical"
+  },
+  "density": "compact",
+  "timeZone": "local",
+  "steps": [
+    {
+      "id": "welcome",
+      "type": "info",
+      "title": "Before you start",
+      "description": "You need a recipient list."
+    },
+    {
+      "id": "basics",
+      "title": "What does the report hold?",
+      "description": "Name the report and pick its content.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "text",
+          "label": "Report name",
+          "help": "Shown in the subject line.",
+          "required": true,
+          "parameter": "Name",
+          "path": "report.name",
+          "validation": {
+            "minLength": 3,
+            "maxLength": 80,
+            "pattern": "[A-Za-z0-9 ]+",
+            "message": "Letters, digits and spaces."
+          }
+        },
+        {
+          "id": "notes",
+          "type": "textarea",
+          "label": "Notes",
+          "placeholder": "Anything the readers should know",
+          "path": "report.notes",
+          "rows": 6
+        },
+        {
+          "id": "format",
+          "type": "select",
+          "label": "Format",
+          "default": "pdf",
+          "path": "report.format",
+          "options": [
+            {
+              "value": "pdf",
+              "label": "PDF"
+            },
+            {
+              "value": "html",
+              "label": "Web page"
+            }
+          ]
+        },
+        {
+          "id": "audience",
+          "type": "choice",
+          "label": "Audience",
+          "path": "report.audience",
+          "options": [
+            {
+              "value": "team",
+              "label": "My team",
+              "description": "People you manage.",
+              "badge": "Recommended"
+            },
+            {
+              "value": "all",
+              "label": "Everyone",
+              "disabledReason": "Needs approval."
+            }
+          ],
+          "display": "cards"
+        },
+        {
+          "id": "sections",
+          "type": "multiChoice",
+          "label": "Sections",
+          "default": [
+            "summary"
+          ],
+          "path": "report.sections",
+          "options": [
+            {
+              "value": "summary",
+              "label": "Summary",
+              "group": "Overview"
+            },
+            {
+              "value": "trends",
+              "label": "Trends",
+              "group": "Overview"
+            },
+            {
+              "value": "details",
+              "label": "Details",
+              "group": "Data"
+            }
+          ],
+          "validation": {
+            "minItems": 1,
+            "maxItems": 3
+          }
+        },
+        {
+          "id": "owner",
+          "type": "lookup",
+          "label": "Owner",
+          "placeholder": "Type a name",
+          "path": "report.owner",
+          "options": [
+            {
+              "value": "alex"
+            },
+            {
+              "value": "sam"
+            }
+          ]
+        },
+        {
+          "id": "rating",
+          "type": "custom",
+          "editor": "stars",
+          "label": "Priority",
+          "default": 3,
+          "path": "report.priority"
+        }
+      ]
+    },
+    {
+      "id": "when",
+      "title": "When does it run?",
+      "fields": [
+        {
+          "id": "start",
+          "type": "date",
+          "label": "First run",
+          "default": "2026-11-02",
+          "width": "half",
+          "path": "schedule.start"
+        },
+        {
+          "id": "at",
+          "type": "time",
+          "label": "Time of day",
+          "default": "07:30",
+          "width": "half",
+          "path": "schedule.at"
+        },
+        {
+          "id": "until",
+          "type": "datetime",
+          "label": "Stop after",
+          "path": "schedule.until",
+          "validation": {
+            "min": "2026-01-01T00:00:00Z",
+            "max": "2030-01-01T00:00:00Z"
+          }
+        },
+        {
+          "id": "window",
+          "type": "duration",
+          "label": "Delivery window",
+          "default": "PT1H30M",
+          "path": "schedule.window",
+          "units": [
+            "minutes",
+            "hours"
+          ],
+          "validation": {
+            "min": "PT5M",
+            "max": "PT12H"
+          }
+        },
+        {
+          "id": "retries",
+          "type": "number",
+          "label": "Retries",
+          "default": 2,
+          "path": "schedule.retries",
+          "step": 1,
+          "validation": {
+            "min": 0,
+            "max": 10
+          }
+        },
+        {
+          "id": "weekends",
+          "type": "toggle",
+          "label": "Run on weekends",
+          "path": "schedule.weekends",
+          "onText": "Yes, also on weekends",
+          "offText": "Weekdays only"
+        }
+      ],
+      "sections": [
+        {
+          "id": "advanced",
+          "label": "Advanced",
+          "description": "Only for unusual schedules.",
+          "when": {
+            "operator": "and",
+            "filters": [
+              {
+                "field": "weekends",
+                "operator": "eq",
+                "values": [
+                  true
+                ]
+              }
+            ]
+          },
+          "fields": [
+            {
+              "id": "calendar",
+              "type": "text",
+              "label": "Holiday calendar",
+              "path": "schedule.calendar"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "delivery",
+      "title": "Where does it go?",
+      "optional": true,
+      "when": {
+        "operator": "or",
+        "filters": [
+          {
+            "field": "format",
+            "operator": "eq",
+            "values": [
+              "pdf"
+            ]
+          }
+        ],
+        "groups": [
+          {
+            "operator": "and",
+            "filters": [
+              {
+                "field": "owner",
+                "operator": "isNotNull"
+              }
+            ],
+            "groups": [
+              {
+                "operator": "none",
+                "filters": [
+                  {
+                    "field": "audience",
+                    "operator": "in",
+                    "values": [
+                      "all"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "fields": [
+        {
+          "id": "recipients",
+          "type": "list",
+          "label": "Recipients",
+          "placeholder": "name@example.com",
+          "required": true,
+          "path": "delivery.recipients",
+          "validation": {
+            "minItems": 1,
+            "maxItems": 50,
+            "item": "email"
+          }
+        },
+        {
+          "id": "hosts",
+          "type": "list",
+          "label": "Relay hosts",
+          "path": "delivery.hosts",
+          "validation": {
+            "itemPattern": "[a-z0-9.-]+"
+          }
+        },
+        {
+          "id": "token",
+          "type": "secret",
+          "label": "Access token",
+          "path": "delivery.token",
+          "keepWhenBlank": true,
+          "reveal": false,
+          "validation": {
+            "minLength": 8,
+            "maxLength": 128
+          }
+        },
+        {
+          "id": "relay",
+          "type": "text",
+          "label": "Relay",
+          "readOnly": true,
+          "sensitive": true,
+          "path": "delivery.relay",
+          "when": {
+            "operator": "and",
+            "filters": [
+              {
+                "field": "owner",
+                "operator": "matches",
+                "values": [
+                  "^a"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "type": "review",
+      "declaration": "The schedule starts with the next run.",
+      "changesOnly": false
+    }
+  ],
+  "initial": {
+    "name": "Weekly summary",
+    "notes": null,
+    "format": "html",
+    "sections": [
+      "summary",
+      "trends"
+    ],
+    "until": "2027-06-30T10:00:00Z",
+    "window": "PT2H",
+    "retries": 3,
+    "weekends": false,
+    "recipients": [
+      "ops@example.com"
+    ]
+  },
+  "storedSecrets": [
+    "token"
+  ],
+  "baseline": "rev-12",
+  "submit": {
+    "label": "Save schedule"
+  },
+  "labels": {
+    "gridEditRequired": "Pole {column} jest wymagane."
+  }
+}
