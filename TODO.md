@@ -346,10 +346,19 @@ JSON shape that CanopyX owns; nothing is synced to other repositories.
   vertical steppers, the review page with change links and changes-only edit mode, the proposal with secret states, changes
   and a JSON patch, the host's saved, accepted, error and conflict answers, labels in six languages, right-to-left CSS, the
   lazily loaded `flow` part and the slim flow entry point.
-- [ ] Wave F2: dependent options and dynamic fields through hooks; server checks with gating and invalidation; `pick` steps
-  over a grid or tree with a selection tray; `records` fields; task-list mode; the dialog layout; drafts, presets and deep
-  links; host preview, typed confirmation; the equivalent command; `CanopyFlowSubmission` in `CanopyX.Data` and
-  `MapCanopyFlow` in `CanopyX.AspNetCore`. Extend the failure, timeout and cancellation gate to flow hooks.
+- [x] Wave F2: host options with dependencies and host sections; server checks with gating, staleness, secrets read once,
+  Cancel and the hook timeout; `pick` steps over a grid or tree with facets and a tray; `records` fields; task lists; dialog
+  and drawer layouts; drafts (session, local, host) with the stale-baseline warning; presets with "changed" marks; deep
+  links; the host's preview, typed confirmation and a conditional acknowledgement; the equivalent command with variants,
+  the JSON patch and Copy (shared fixture `tests/fixtures/flow-commands.json`); `CanopyFlowSubmission` and the hook requests
+  and answers in `CanopyX.Data`; `MapCanopyFlow` in `CanopyX.AspNetCore`.
+- [ ] Follow-ups of F2: move the host-connected features into a lazy part of their own, so a plain form loads about half of
+  today's flow part (48.8 KiB gzip against F1's 24.8 KiB); records fields on the grid's editing rows once a flow needs
+  hundreds of rows (today the forms editors in a table); "Select all matching" in pick steps (it names a query, so a pick step
+  keeps records it can list); conditions on a check's result; removing a saved preset (`presetStore.remove`); host predicates
+  in conditions; reloading a host section's fields only when the reader reaches its step (today as the step is built).
+- [ ] The matrix sizes a relative host max-height the way grids and trees now do (a percentage or calc() stays a CSS bound,
+  `min(<rows>px, <bound>)`, not a pixel number read from it). Matrix code belongs to the matrix wave.
 - [ ] Wave F3: the progress step's items, the `schedule` field on the calendar's RRULE subset, the `file` field and column
   mapping, the answers export and print stylesheet; the HtmlForgeX bridge and the ConsoleMonster importer in their own
   repositories.

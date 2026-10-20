@@ -180,6 +180,13 @@ CanopyX never writes: a flow collects answers, checks them and raises one propos
 | A review page with change links, "Not provided", a ready banner and a declaration; changes only in edit mode, with what each answer was | the `review` step, `initial`, `changesOnly` | [The review page](flow.md#the-review-page) |
 | One proposal with the visible answers, each secret's state, the changes and a JSON patch from field paths; saved, accepted, error and conflict answers | `canopyx:flowSubmit`, `respondWith`, `setProgress`, `complete` | [The proposal](flow.md#the-proposal-and-the-hosts-answer) |
 | Labels in six languages and right-to-left pages | `CanopyLabels.Polish()` and the other packs; `dir="rtl"` | [Labels](flow.md#labels-and-right-to-left) |
+| Server checks such as "Test sign-in": running, pass, warning and fail with details, stale when a tested answer changes, gating Next, secrets read once | `checks`, `hooks.check`, `runCheck`; C# `step.Check(...)` | [Server checks](flow.md#server-checks) |
+| Options and fields the host supplies, reloaded when the fields they depend on change; late answers dropped | `source: "host"`, `dependsOn`, `hooks.options`, `hooks.fields` | [Host options](flow.md#host-options-and-dependent-fields) |
+| Records fields (rows of typed cells) and pick steps whose answer is a grid's or tree's selection, with facets and a tray | `records`, `columns`; `pick`; C# `flow.Pick(...)` | [Records](flow.md#records-fields), [Pick steps](flow.md#pick-steps) |
+| Task lists with host states and blockers; dialog and drawer flows that ask before discarding | `mode: "tasks"`, `hooks.status`, `setStepState`; `layout.container` | [Task lists](flow.md#task-lists), [Dialogs](flow.md#dialogs-and-drawers) |
+| The equivalent command with variants, the JSON patch and Copy; presets with "changed" marks; drafts with a stale-baseline warning; deep links per step | `command`, `presets`, `draft`, `deepLinks` | [Host-connected flows](flow.md#host-connected-flows) |
+| The host's preview, typed confirmation and a conditional acknowledgement on the review page | `hooks.preview`, `confirm`, `acknowledge` | [The review page](flow.md#the-preview-and-consent-on-the-review-page) |
+| Server side: proposals read and checked against the server's own flow, hook requests and answers, and every hook as an authorized route | `CanopyFlowSubmission` (CanopyX.Data); `MapCanopyFlow` (CanopyX.AspNetCore) | [An endpoint](flow.md#an-endpoint-mapcanopyflow) |
 | A page of forms loads no grid code | the flow entry point and the lazily loaded `forms` and `flow` parts | [Packaging](flow.md#packaging-and-size) |
 ## Matrices
 

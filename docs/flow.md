@@ -24,6 +24,11 @@ calendar's event form through the `forms` part.
 - [The review page](#the-review-page)
 - [The proposal and the host's answer](#the-proposal-and-the-hosts-answer)
 - [Secrets](#secrets)
+- [Host-connected flows](#host-connected-flows): [server checks](#server-checks), [host options and dependent fields](#host-options-and-dependent-fields),
+  [records fields](#records-fields), [pick steps](#pick-steps), [task lists](#task-lists), [dialogs and drawers](#dialogs-and-drawers),
+  [the equivalent command](#the-equivalent-command), [presets](#presets), [drafts](#drafts), [deep links](#deep-links),
+  [the preview and consent on the review page](#the-preview-and-consent-on-the-review-page)
+- [An endpoint: MapCanopyFlow](#an-endpoint-mapcanopyflow) and [reading a proposal on the server](#reading-a-proposal-on-the-server)
 - [JavaScript API](#javascript-api)
 - [Labels and right to left](#labels-and-right-to-left)
 - [Accessibility](#accessibility)
@@ -93,8 +98,8 @@ const flow = createFlow(document.getElementById("setup"), { flow: documentFromSe
 | `kind`, `version` | `"flow"` and `1`. A reader rejects any other pair. |
 | `id` | The flow's identifier: a letter, then up to 63 letters, digits, `-` and `_`. |
 | `title`, `description` | The flow's heading and an optional line under it. Plain text. |
-| `mode` | `linear` (default): a step opens when the steps before it are valid. `free`: any visible step opens at any time and the review page checks everything. |
-| `layout` | `{ "orientation": "auto" \| "horizontal" \| "vertical" }`. `auto` (default) uses the horizontal stepper for up to six visible steps whose titles fit the width, and the vertical one otherwise. Narrow hosts (below 640 px) stack the steps; a flow with one visible step shows no rail. |
+| `mode` | `linear` (default): a step opens when the steps before it are valid. `free`: any visible step opens at any time and the review page checks everything. `tasks`: a [task list](#task-lists). |
+| `layout` | `{ "orientation": "auto" \| "horizontal" \| "vertical", "container": "inline" \| "dialog" \| "drawer", "launch" }`. `auto` (default) uses the horizontal stepper for up to six visible steps whose titles fit the width, and the vertical one otherwise. Narrow hosts (below 640 px) stack the steps; a flow with one visible step shows no rail. `container` opens the flow [in a dialog or drawer](#dialogs-and-drawers) from a button labelled `launch` (default the title). |
 | `density` | `compact`, `normal` (default) or `comfortable`, as the grid densities. |
 | `timeZone` | `utc` (default) or `local`: the zone date-and-time fields show and enter. |
 | `steps` | 1 to 64 steps. A `review` step, when present, is the last. |
@@ -103,6 +108,11 @@ const flow = createFlow(document.getElementById("setup"), { flow: documentFromSe
 | `baseline` | Edit mode: the host's revision of the edited settings, echoed in the proposal. |
 | `submit` | `{ "label" }`: the submit button's text. Default "Submit". |
 | `labels` | Translations of the texts the flow writes itself (`flow…` and the shared `gridEdit…` messages). |
+| `command` | `{ "name", "style", "variants" }`: [the equivalent command](#the-equivalent-command) the review page shows. |
+| `presets` | Up to 32 [presets](#presets): `{ "id", "label", "description", "values" }`. |
+| `draft` | `none` (default), `session`, `local` or `host`: where the [draft](#drafts) lives. |
+| `deepLinks` | `true`: the page's address names the open step ([deep links](#deep-links)). |
+| `endpoint` | `{ "url", "routes" }`: routes that answer the hooks ([an endpoint](#an-endpoint-mapcanopyflow)). |
 
 Every text in the document is plain text; nothing is read as HTML.
 
@@ -118,11 +128,15 @@ Every text in the document is plain text; nothing is read as HTML.
 | --- | --- |
 | `id`, `title` | Required. Titles are questions or nouns ("Which server sends the mail?"), never "Step 3". |
 | `description` | A line under the title. |
-| `type` | `form` (default), `info` (text only) or `review` (the [review page](#the-review-page)). |
-| `fields`, `sections` | The step's fields, then its sections. A section has `id`, `label`, optional `description`, `fields` and `when`, and uses the record panel's label/value layout. |
+| `type` | `form` (default), `info` (text only), `pick` (a [pick step](#pick-steps)) or `review` (the [review page](#the-review-page)). |
+| `fields`, `sections` | The step's fields, then its sections. A section has `id`, `label`, optional `description`, `fields` and `when`, and uses the record panel's label/value layout. A section with `"source": "host"` takes its fields from the host ([host sections](#host-sections)). |
+| `checks` | Form steps: up to 8 [server checks](#server-checks). |
+| `group` | Task lists: the heading the task sits under. |
+| `pick` | Pick steps: the picker. |
 | `when` | A [condition](#conditions): the step shows only while it holds. |
 | `optional` | The rail marks the step optional. Its fields still follow their own `required`. |
 | `declaration`, `changesOnly` | Review steps only: text above the submit button, and whether edit mode shows only changed answers first (default true). |
+| `confirm`, `acknowledge` | Review steps only: [typed confirmation and an acknowledgement](#the-preview-and-consent-on-the-review-page). |
 
 Branching is ordered steps with conditions, not jumps. A hidden step or field keeps its answer while the reader goes back
 and forth, and is left out of the proposal. The rail shows only visible steps, so "Step 3 of 5" stays true.
@@ -140,10 +154,11 @@ Every field has `id` (unique in the flow), `type` and `label`, and optionally:
 | `readOnly` | Shown, not changed. |
 | `when` | A [condition](#conditions) for the field. |
 | `width` | `full` (default) or `half`: two half fields share a row on wide forms. |
-| `parameter` | The parameter name in an equivalent command (used by hosts and later waves). |
+| `parameter` | The parameter name in [the equivalent command](#the-equivalent-command). |
 | `path` | The setting the field writes, as dot-separated names (`mail.smtp.host`): the JSON patch of the proposal uses it. |
 | `sensitive` | A non-secret value the host keeps out of drafts and exports. It still shows on the review page. |
 | `validation` | The checks below. |
+| `source`, `dependsOn` | `"source": "host"` loads the options of a select, choice, multiple-choice or lookup field from the host; `dependsOn` names up to 16 fields whose change reloads them, or empties a field without host options ([host options](#host-options-and-dependent-fields)). |
 
 | `type` | Value | Notes |
 | --- | --- | --- |
@@ -161,6 +176,7 @@ Every field has `id` (unique in the flow), `type` and `label`, and optionally:
 | `list` | array of strings | One value per row with Add and Remove; pasted lines become rows. `validation`: `minItems`, `maxItems` (at most 1,000), `item` (`email`, `host`, `ip`, `cidr`, `url`), `itemPattern`. |
 | `secret` | never in values | A masked input with a reveal button (`reveal: false` leaves it out). `keepWhenBlank` (default true when `storedSecrets` lists it); `validation`: `minLength`, `maxLength`, `pattern`. See [Secrets](#secrets). |
 | `duration` | ISO 8601 duration (`PT15M`) | A number and a unit. `units`: some of `seconds`, `minutes`, `hours`, `days` (default minutes, hours, days); `validation`: `min`, `max` as durations. |
+| `records` | array of rows | A small table of typed rows with Add and Remove ([records fields](#records-fields)). `columns`; `validation`: `minItems`, `maxItems`. |
 | `custom` | the editor's | `editor` names an editor a plugin or the host registers (`editors`, as in [grid editing](editing.md#custom-editors)). |
 
 Options are `{ "value", "label", "description", "badge", "disabledReason", "group" }`, where `value` is a string, number or
@@ -298,6 +314,252 @@ which returns each value once and nothing after the answer settles. They are nev
 With `keepWhenBlank` (the default for a field listed in `storedSecrets`) the input starts empty with the hint "A value is
 saved. Leave blank to keep it.", and a blank answer is `keep`. A required secret without a stored value must be typed.
 
+## Host-connected flows
+
+The flows above run on the document alone. A flow can also ask its host while the reader works: run a check, load options
+or fields, list task states, preview what submitting does, keep a draft. Each is a hook of `createFlow`'s `hooks` (or
+`CanopyX.configure`), or a route of an [endpoint](#an-endpoint-mapcanopyflow) that answers them without script. Every
+asynchronous hook receives an `AbortSignal` that a newer request, Cancel, `destroy()` or the timeout aborts; the timeout is
+the `timeout` option (30 seconds by default, 100 ms to 10 minutes). A late answer to an aborted request is dropped, and a
+hook that throws, rejects or times out fails in place with its message and an `error` event.
+
+### Server checks
+
+```csharp
+flow.Step("sign-in", "How does it sign in?", step => step
+    .Text("user", "User name", f => f.Required().Path("mail.user"))
+    .Secret("password", "Password", f => f.Required())
+    .Check("sign-in-test", "Test sign-in", check => check.Fields("host", "user", "password").RequirePass()));
+```
+
+```json
+"checks": [{ "id": "sign-in-test", "label": "Test sign-in", "fields": ["host", "user", "password"], "required": "pass" }]
+```
+
+A check is a named host action on a form step, such as "Send a test message" or "Test sign-in". Its button runs
+`hooks.check(checkId, values, { signal, secret })`, which answers `{ status: "pass" | "warning" | "fail", message, details:
+[{ label, value }], fieldErrors }`. The step shows running (with Cancel), passed, warning or failed with the time, the message
+and the details; field messages show beside their fields. Changing any field the check names marks its result stale.
+
+| `required` | Next on the step |
+| --- | --- |
+| (none) | Never waits for the check. |
+| `run` | Runs the check when it has no current result, then needs it not to have failed; a warning needs "Continue despite the warning" ticked. |
+| `pass` | Runs the check when it has no current result, then needs a pass. |
+
+`secret(id)` reads, once per run, a secret the check names; it is the only way a secret reaches a check, and only secret
+fields the check lists. The review page lists each check with its last result, and the proposal's `checks` carries
+`{ status, at }` for the results that are still current. Those are what the browser saw: a host that relies on a check runs
+it again on the submitted answers. `api.runCheck(id)` runs one from script; `canopyx:flowCheck` reports each result.
+
+### Host options and dependent fields
+
+```csharp
+.Select("region", "Data centre", f => f.Option("eu", "Europe").Option("us", "United States"))
+.Select("relay", "Relay", f => f.FromHost().DependsOn("region"))
+```
+
+A field with `"source": "host"` asks `hooks.options(fieldId, values, { signal })` for its options as the reader reaches it,
+and again when a field in `dependsOn` changes. The field says "Loading options…" meanwhile; a failure says why, with Try
+again. An answer the new options still allow (and do not disable) is kept; any other is cleared. A field with `dependsOn`
+but document options starts empty again when what it depends on changes. `api.refreshOptions(id)` loads again from script.
+Conditions and dependencies never read secrets, and dependencies never run in a circle.
+
+#### Host sections
+
+```csharp
+.Section("engine-options", "Engine options", section => section.FromHost("engine"))
+```
+
+A section with `"source": "host"` has no fields of its own: `hooks.fields(sectionId, values, { signal })` answers up to 64
+field definitions as the step opens, and again when a field in `dependsOn` changes. They are read as strictly as the
+document's, of the plain types (text, number, date, date-and-time, time, select, toggle, lookup, choice, multiple choice,
+text area, list, duration), without `path`, `parameter`, `source` or `dependsOn`; their conditions may read the flow's own fields. Their
+answers join the proposal like any other, and the server checks them against the same definitions
+([reading a proposal](#reading-a-proposal-on-the-server)).
+
+### Records fields
+
+```csharp
+.Records("rules", "Routing rules", f => f
+    .Column("severity", "Severity", CanopyFlowRecordColumnKind.Select, c => c.Option("error", "Errors").Option("info", "Information").Required())
+    .Column("address", "Send to", CanopyFlowRecordColumnKind.Text, c => c.Required())
+    .Column("quiet", "Quiet hours", CanopyFlowRecordColumnKind.Toggle)
+    .Count(null, 10).Path("mail.rules"))
+```
+
+A records field is a small table: up to 16 typed columns (`text`, `number`, `date`, `time`, `select`, `toggle`) and up to
+1,000 rows, each `{ column: value }`, with Add row and a Remove button per row. Each cell uses the shared editor of its
+type, labelled "Severity, row 2". Columns take `required`, `options` (select), `width` and `validation` (`min`, `max`,
+`minLength`, `maxLength`, `pattern`, `message`); the field takes `minItems` and `maxItems`. A failing cell's message names its
+row ("Row 2: Send to is required."), and the review page says "3 rows". Records answers have no command-line form.
+
+### Pick steps
+
+```csharp
+flow.Pick("servers", "Which servers?", servers, picker => {
+    picker.Label("name");
+    picker.Field.Count(1, 20).Required();
+});
+```
+
+A pick step embeds an ordinary grid or tree view: its search, facets, filters, saved views and record drawer all work.
+The selection is the answer of the step's one field: the picked records as `[{ id, label }]`, where `label` is the text of
+the `label` column when the record was picked, so the review page and the proposal can list them without the view. A tray
+beside the view lists what is chosen, with Remove buttons and Clear; it survives searches and paging (`tray: false` leaves
+it out). `minItems` and `maxItems` count the picks; `maxItems: 1` picks one record. Conditions read the picked ids.
+"Select all matching" names a query rather than records, so a pick step returns to the records it can list. A host gives
+the view options of its own (a remote source, for example) with `hooks.pickers[stepId]`.
+
+A pick step needs grids and trees: C# writes a flow with one for the reporting entry point, whose grids pick with row
+check boxes; on a grid page `CanopyX.createFlow` uses the page's entry point. The flow entry point carries no grid code and
+refuses a pick step.
+
+### Task lists
+
+```csharp
+var flow = new CanopyFlow("service-setup", "Set up the reporting service") { Mode = CanopyFlowMode.Tasks };
+flow.Step("database", "Connect the database", step => step.Group("Connect") /* fields */);
+```
+
+`"mode": "tasks"` opens the flow on a hub: its visible steps as task rows under their `group` headings, each a button with
+its state in words ("Not started", "Complete", "Needs action", "Cannot start yet", "Optional"), the host's one-line summary
+and its blockers, under "2 of 4 tasks complete". A task opens as a step; Save and return validates it and comes back, with
+focus on the task's row. The host sets states through `hooks.status(values, { signal })`, which answers
+`{ stepId: { state, summary, blockers } }` as the hub opens and after answers change, or `api.setStepState(id, state)`.
+A blocked task does not open. Review and submit opens once every required task (not optional) is complete.
+
+### Dialogs and drawers
+
+`"layout": { "container": "dialog" }` (or `"drawer"`) puts a launch button in the host; it opens the flow as a modal
+dialog, centred, or along the inline end for a drawer, full screen on phones. Focus stays inside and returns to the launch
+button when it closes. Escape, the close button and Cancel ask "Discard your answers?" in place when answers changed: the
+host hears the cancelable `canopyx:flowLeaving` (or `onLeaving` returning false) first. A flow that saved starts afresh the
+next time it opens. `api.open()` and `api.close()` drive it from script.
+
+### The equivalent command
+
+```csharp
+flow.Command = new CanopyFlowCommand("Set-MailServer").Variant("csharp", "C#");
+```
+
+The review page shows the answers as a command line in a collapsible "Equivalent command" panel, with tabs for the
+variants the host writes (`hooks.commands[variantId](values)`), the JSON patch, and Copy. The command uses each visible
+field's `parameter` and leaves out hidden, empty and unchanged answers (the default in create mode, the edited value in
+edit mode). Lists join with commas, values are quoted for the `style` (`powershell`, the default, `posix` or `windows`), a
+switch that was on and is now off becomes `-Name:$false` or `--no-name`, and a typed secret is `<secret>`, never its value.
+The proposal's `command` carries the line. C# writes the same line with `CanopyFlow.FormatCommand`, and the server computes
+it again from the answers; the shared fixture `tests/fixtures/flow-commands.json` keeps the browser and C# in step.
+
+### Presets
+
+```csharp
+flow.Preset("office", "Office relay", preset => preset.Value("host", "relay.office.example.com").Value("port", 25d));
+```
+
+A "Start from" menu above the steps lists the presets (and, with `hooks.presetStore.list(flowId)`, the host's saved ones).
+Choosing one sets its answers on top of the plain start; answers the reader changes afterwards carry a quiet "Changed" mark,
+and the review page says "Based on Office relay, 2 changes". With `presetStore.save(flowId, preset)`, "Save as preset" keeps
+the current answers (never secrets or sensitive fields). The proposal's `preset` names the preset the answers started from.
+
+### Drafts
+
+`"draft": "session"` (or `"local"`, or `"host"` with `hooks.draftStore { load, save, clear }`) keeps a draft: the answers,
+never secrets or sensitive fields, the open step, the completed steps, the preset and the baseline. It saves a moment after
+each change and on Save draft. A flow that finds a draft offers "Resume where you left off" or "Start again"; when the draft's
+baseline is not the flow's, it warns that the settings changed after the draft was saved. Answers that no longer fit their
+field are left out. A saved or accepted answer clears the draft. Storage that a browser refuses leaves the flow working
+without drafts.
+
+### Deep links
+
+With `"deepLinks": true` the page's address names the open step, `#flow-id/step-id` (`#flow-id` for a task list's hub),
+replacing the history entry rather than adding one. Opening the page or following such a link opens that step, a dialog
+flow included; in a linear flow a step past one whose answers are missing opens that step instead. `formatLink(stepId)` and
+`parseLink(fragment)` give a host a scheme of its own. Answers never go in the address.
+
+### The preview and consent on the review page
+
+`hooks.preview(values, { signal })` answers what submitting will do, as rows `[{ label, value, tone }]` or `{ title, rows,
+notes }` (`tone`: `info`, `success`, `warning`, `danger`). The review page shows it under "Preview", loading as it opens.
+
+A destructive flow asks for consent before its submit button works:
+
+```csharp
+flow.Review(review => review
+    .Confirm("Type {text} to confirm", "RETIRE")
+    .Acknowledge("I understand that their history is removed.", CanopyFlowCondition.Equal("history", "remove")));
+```
+
+`confirm` asks the reader to type a text exactly (`text`), or the answer of a field (`field`, such as the domain being
+removed); `acknowledge` asks for a ticked box, only while its condition holds. Submitting without them says what is missing
+and moves focus there. They are the reader's consent in the browser and do not travel in the proposal.
+
+## An endpoint: MapCanopyFlow
+
+`CanopyX.AspNetCore` maps a flow's hooks to routes, so a page needs no script of its own:
+
+```csharp
+var handlers = new CanopyFlowHandlers {
+    Check = async (context, request) => await mail.TestAsync(request.Values, request.ReadSecret("password")),
+    Options = (context, request) => Task.FromResult(relays.For(request.Values.TryGetValue("region", out var region) ? region as string : null)),
+    Preview = (context, request) => Task.FromResult(new CanopyFlowPreview().Row("Applies", "At once", CanopyFlowTone.Success)),
+    Drafts = new MyDraftStore(),
+    Submit = async (context, submission) => submission.IsCurrent
+        ? await settings.ApplyAsync(submission.Patch, submission.ReadSecret("password"))
+        : CanopyFlowAnswer.Conflict()
+};
+app.MapCanopyFlow("/api/flows/mail", context => MailFlow(context), handlers, options => options.AuthorizationPolicy = "Mail.Admin");
+// The page: flow.UseEndpoint("/api/flows/mail", handlers.Routes)
+```
+
+Each handler that is set maps its route below the pattern: `POST options`, `fields`, `check`, `validate`, `preview`, `status`
+and `submit`, and `GET`/`PUT`/`DELETE draft`. The document's `endpoint` names the routes, and the browser posts JSON to
+`<url>/<route>` on the page's own origin with the page's cookies and the `headers` option (an antiforgery token, for
+example) for every hook the host left unset. Secrets travel only to `check` (the ones the check tests) and `submit` (the
+ones the proposal sets).
+
+The flow callback builds the flow for each request as the page did (edit-mode values, stored secrets and baseline
+included): the server reads every request against it and never trusts the browser's copy. The routes require
+authorization (the default policy, or `AuthorizationPolicy`) unless `AllowAnonymous` is set; bodies must be JSON
+(`application/json`, 1 MiB by default, `MaxRequestBytes`), so cross-origin pages go through a CORS preflight. Malformed
+requests answer 400 with `{ "error", "message" }`, an oversized body 413, another content type 415; server failures answer
+a generic 500 and are logged. Apply rate limiting, CORS and antiforgery to the returned route group.
+
+The submit route reads the proposal with `CanopyFlowSubmission.ParseRequestAsync`, using the `Fields` handler for host
+sections and the `Options` handler (or the endpoint's `HostOptions` callback) for host options, so an answer the host no
+longer offers is refused. Answers that fail the flow's checks answer an error with the messages beside
+the fields, without calling the handler; a proposal whose baseline is not the flow's answers a conflict
+(`RejectStaleBaseline`, on by default). A `PUT draft` keeps only a well-formed draft of the flow without secrets or
+sensitive answers (`CanopyFlowResponses.Draft`).
+
+## Reading a proposal on the server
+
+`CanopyX.Data` reads proposals without ASP.NET Core:
+
+```csharp
+var submission = CanopyFlowSubmission.Parse(flow, proposalJson, secrets, new CanopyFlowReadOptions { SectionFields = EngineFields });
+```
+
+| Member | What it holds |
+| --- | --- |
+| `Values` | The answers of the visible, non-secret fields (host-section fields included), in their canonical form. |
+| `Secrets`, `ReadSecret(id)` | Each visible secret's state (`Set`, `Keep`, `Clear`), and a typed value, once. |
+| `Changes`, `Patch`, `PatchToJson()` | Edit-mode changes and the JSON patch, computed from `CanopyFlow.Initial` and the answers. |
+| `Command` | The equivalent command, computed from the answers. |
+| `Checks` | The check results the browser reports: claims, to run again before relying on them. |
+| `Baseline`, `IsCurrent` | The baseline the proposal echoes, and whether it is the flow's. |
+| `PresetId`, `IsEdit` | The preset the answers started from, and the mode. |
+
+Parse reads the proposal against the flow: answers of hidden, unknown or secret fields, values of the wrong type, secrets
+the proposal does not set and anything outside the contract throw `CanopyRequestException` (400). Every visible field is
+checked with the browser's rules (required, ranges and steps, lengths and patterns, counts, item rules, records cells,
+current host options); failures throw `CanopyFlowSubmissionException`, whose `ToAnswer()` is the error answer the browser
+shows beside the fields; they use the flow's labels, with numbers and moments written invariantly (the browser writes them
+in the page's language). The browser's own `changes`, `patch` and `command` are never used. `CanopyFlowRequest.Parse` reads
+the hooks' requests the same way, and `CanopyFlowAnswer`, `CanopyFlowCheckResult`, `CanopyFlowValidationResult`,
+`CanopyFlowPreview`, `CanopyFlowStepStatus` and `CanopyFlowResponses` write their answers.
+
 ## JavaScript API
 
 ```js
@@ -305,9 +567,12 @@ const flow = CanopyX.createFlow(host, {
   flow,                     // the document
   values,                   // starting values on top of defaults or initial
   labels,
-  hooks: { validators: { host(value, values) {} }, validateStep(stepId, values) {}, validateFlow(values) {}, submit(detail) {} },
+  hooks: { validators: { host(value, values) {} }, validateStep(stepId, values) {}, validateFlow(values) {}, submit(detail) {},
+           options, fields, check, preview, status, commands: {}, draftStore: {}, presetStore: {}, pickers: {} },
   editors: { stars: { create(context) {} } },
-  onReady, onStepChange, onValueChange, onSubmit, onSubmitted, onReload
+  timeout: 30000,           // asynchronous hooks, in milliseconds
+  headers: {},              // an endpoint's requests
+  onReady, onStepChange, onValueChange, onSubmit, onSubmitted, onReload, onCheck, onLeaving, formatLink, parseLink
 });
 ```
 
@@ -331,6 +596,11 @@ destroying a flow also releases its host so `CanopyX.mount(host)` can mount it a
 | `setFieldError(fieldId, message)` | Shows a host message on a field (null clears it). |
 | `submit()` | Validates and raises `flowSubmit`; resolves with the host's answer. |
 | `setProgress({ done, total, message })`, `complete(answer)` | Drive an `accepted` answer to its end. |
+| `runCheck(checkId)` | Runs a check; resolves with its result, or null when it was cancelled. |
+| `refreshOptions(fieldId)` | Loads a host-option field's options again. |
+| `setStepState(stepId, state)` | Sets a task's state as the host sees it; null returns it to what the answers say. |
+| `saveDraft()`, `setPreset(presetId)` | Saves the draft now; starts from a preset (null for the plain start). |
+| `open()`, `close()` | Opens and closes a dialog or drawer flow; `close` asks first when answers would be lost. |
 | `destroy()`, `ready` | Removes the flow; a promise for the first paint. |
 
 | Event | Cancelable | Detail |
@@ -342,13 +612,15 @@ destroying a flow also releases its host so `CanopyX.mount(host)` can mount it a
 | `canopyx:flowSubmit` | yes | the `flowSubmission` with `respondWith(answer)` and `secret(id)` |
 | `canopyx:flowSubmitted` | | the host's answer |
 | `canopyx:flowReload` | | `{ baseline }` |
+| `canopyx:flowCheck` | | `{ check, result: { status, message, details, at } }` |
+| `canopyx:flowLeaving` | yes | `{ reason: "close" }`: a dialog or drawer flow is closing with changed answers |
 | `canopyx:error` | | `{ error, hook }` |
 
 Every hook runs isolated: an exception or rejection becomes an `error` event and a message in place, and the flow keeps
 working. Cancelling `flowSubmit` with `preventDefault()` leaves the flow on the review page.
 
-TypeScript types: `FlowDocument`, `FlowField`, `FlowCondition`, `FlowSubmission`, `FlowAnswer`, `FlowApi` and `FlowOptions`
-from `@evotecit/canopyx/flow`.
+TypeScript types: `FlowDocument`, `FlowField`, `FlowCondition`, `FlowSubmission`, `FlowAnswer`, `FlowApi`, `FlowOptions`,
+`FlowHooks`, `FlowCheckResult`, `FlowStepState`, `FlowPreview`, `FlowDraft` and `FlowPickedRecord` from `@evotecit/canopyx/flow`.
 
 ## Labels and right to left
 
@@ -375,11 +647,11 @@ covered by the automated checks.
 
 | Asset | What it holds | Size guard (gzip) |
 | --- | --- | --- |
-| `canopyx-flow-entry.js`, `canopyx-flow-entry.css` | The flow entry point: the theme tokens, the part loader, `createFlow`, `configure` and the fragment mount. No grid or tree code. `@evotecit/canopyx/flow` is its ES module. | 10 KiB (8.1 KiB measured) |
-| `canopyx-forms.js`, `canopyx-forms.css` | The `forms` part: the typed editors, number and date parsing, the lookup combobox and the field checks. Grid editing requires it too. | 7 KiB (5.2 KiB) |
-| `canopyx-flow.js`, `canopyx-flow.css` | The `flow` part: the document reader, conditions, fields, steps, validation, the review page and the proposal. | 29 KiB (24.8 KiB) |
+| `canopyx-flow-entry.js`, `canopyx-flow-entry.css` | The flow entry point: the theme tokens, the part loader, `createFlow`, `configure` and the fragment mount. No grid or tree code. `@evotecit/canopyx/flow` is its ES module. | 10 KiB (8.4 KiB measured) |
+| `canopyx-forms.js`, `canopyx-forms.css` | The `forms` part: the typed editors, number and date parsing, the lookup combobox and the field checks. Grid editing requires it too. | 7 KiB (5.4 KiB) |
+| `canopyx-flow.js`, `canopyx-flow.css` | The `flow` part: the document reader, conditions, fields, steps, validation, the review page and the proposal, and the host-connected features: checks, host options and sections, records, pick steps, task lists, dialogs, the command, presets, drafts, deep links and the endpoint. | 57 KiB (48.8 KiB) |
 
 A page with only flows includes the flow entry point; the parts load on first use from the files beside it, or from the
 payloads a single-file page carries. The data-grid and reporting entry points know the same two parts, so a grid page creates
 flows with `CanopyX.createFlow` and mounts flow fragments without a second entry point. A single-file grid page that creates flows from script carries the parts too: add `"flow"` to `CanopyHtmlOptions.Parts` (it brings `forms`), since there are no files beside the page to load them from. Include one entry point per page.
-`CanopyX.Html` writes flow pages with the flow entry point (`CanopyRuntime.Flow`, `CanopyHtmlAssets.GetRequiredParts(CanopyFlow)`).
+`CanopyX.Html` writes flow pages with the flow entry point (`CanopyRuntime.Flow`), or with the reporting entry point when a pick step embeds a grid or tree (`CanopyHtmlAssets.GetRuntime(CanopyFlow)`); `CanopyHtmlAssets.GetRequiredParts(CanopyFlow)` adds the parts the embedded views need.
