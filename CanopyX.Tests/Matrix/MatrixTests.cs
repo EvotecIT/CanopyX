@@ -188,4 +188,17 @@ public sealed class MatrixTests {
         Assert.Contains("<title>Small matrix</title>", page);
         Assert.Contains("nonce=\"abc123\"", page);
     }
+
+    [Theory]
+    [InlineData(false, 5)]
+    [InlineData(true, 6)]
+    public void StaticFallback_OverflowSpansOnlyTheRenderedColumns(bool rowTotals, int columns) {
+        var matrix = Small();
+        matrix.RowTotals = rowTotals;
+        matrix.Legend = false;
+        var html = CanopyStaticHtml.RenderMatrix(matrix, new CanopyStaticHtmlOptions { MaxRows = 1 });
+        var header = html.Substring(0, html.IndexOf("</thead>", StringComparison.Ordinal));
+        Assert.Equal(columns, System.Text.RegularExpressions.Regex.Matches(header, "<th\\s").Count);
+        Assert.Contains("colspan=\"" + columns + "\"", html);
+    }
 }

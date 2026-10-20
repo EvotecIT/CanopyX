@@ -15,7 +15,7 @@ test.afterEach(async ({ page }) => {
 async function open(page, timeZone) {
   const view = budgetView({ rangeSelection: true, timeZone, columnGroups: [], editing: { drawer: "never" },
     columns: [{ id: "line", title: "Appointment", kind: "text", rowHeader: true },
-      { id: "reviewed", title: "Reviewed", kind: "datetime", editable: true, editor: "datetime" }] }, 10);
+      { id: "reviewed", title: "Reviewed", kind: "datetime", editable: true, editor: "datetime", priority: "essential" }] }, 10);
   for (const row of view.rows) row.cells = { line: row.cells.line, reviewed: row.cells.reviewed };
   await serveGrid(page, view, { lang: "pl", options: "{ onPaste(detail) { events.push({ cells: detail.cells, refused: detail.refused }); } }" });
 }
@@ -45,6 +45,9 @@ for (const timeZone of ["utc", "local"]) {
       await page.evaluate(() => api.cancelEdit());
     }
     await page.setViewportSize({ width: 390, height: 844 });
+    // This test exercises the inline native control; keep its column visible and wait for the phone layout.
+    await expect(page.locator("#host")).toHaveClass(/cx-phone/);
+    await expect(page.locator('.cx-head [data-cx-column="reviewed"]')).toBeVisible();
     await page.evaluate(() => api.beginEdit("r0000", "reviewed"));
     await expect(page.locator(".cx-editor")).toHaveValue("2026-03-28T12:34:56.789");
     await expect(page.locator(".cx-editor")).toBeInViewport();

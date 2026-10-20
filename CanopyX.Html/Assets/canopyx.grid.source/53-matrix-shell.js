@@ -16,32 +16,46 @@
     if (!host || !options || !options.view || typeof options.view !== "object") throw new Error("CanopyX: createMatrix needs a host element and a matrix document.");
     const existing = activeMatrices.get(host);
     if (existing) return existing;
-    let impl = null, destroyed = false;
+    const addedClasses = ["cx-host", "cx-matrix-host"].filter(name => !host.classList.contains(name)), hadClass = host.hasAttribute("class");
+    const previousError = host.getAttribute("data-cx-error");
+    let impl = null, destroyed = false, notice = null, errorText = null;
+    const cancelled = () => new DOMException("Matrix was destroyed.", "AbortError");
     const ready = loadPart(MATRIX_PART).then(() => {
-      if (destroyed) return null;
+      if (destroyed) throw cancelled();
       impl = MATRIX_IMPL.create(host, options);
       return impl.ready;
     });
     // view is the document the matrix shows now: update replaces it.
     const api = { element: host };
     Object.defineProperty(api, "view", { enumerable: true, get: () => impl ? impl.document() : options.view });
-    for (const name of MATRIX_METHODS) api[name] = (...args) => impl ? impl[name](...args) : ready.then(() => impl ? impl[name](...args) : undefined);
-    api.ready = ready.then(() => api);
+    for (const name of MATRIX_METHODS) api[name] = (...args) => {
+      const invoke = () => { if (destroyed) throw cancelled(); return impl[name](...args); };
+      if (destroyed) throw cancelled();
+      return impl ? invoke() : ready.then(invoke);
+    };
+    api.ready = ready.then(() => { if (destroyed) throw cancelled(); return api; });
     api.ready.catch(() => {});
     api.destroy = () => {
+      if (destroyed) return;
       destroyed = true;
       impl?.destroy();
       if (activeMatrices.get(host) === api) activeMatrices.delete(host);
       if (host.canopyx === api) delete host.canopyx;
       host.removeAttribute("data-canopyx-mounted");
+      notice?.remove();
+      if (errorText !== null && host.getAttribute("data-cx-error") === errorText) {
+        if (previousError === null) host.removeAttribute("data-cx-error"); else host.setAttribute("data-cx-error", previousError);
+      }
+      for (const name of addedClasses) host.classList.remove(name);
+      if (!hadClass && !host.classList.length) host.removeAttribute("class");
     };
     ready.catch(error => {
       if (destroyed) return;
-      const notice = h("div", "cx-mount-error");
+      notice = h("div", "cx-mount-error");
       notice.setAttribute("role", "alert");
       setText(notice, error && error.message ? error.message : String(error));
       host.appendChild(notice);
-      host.setAttribute("data-cx-error", notice.textContent);
+      errorText = notice.textContent; host.setAttribute("data-cx-error", errorText);
       host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true }));
     });
     Object.freeze(api);

@@ -66,7 +66,7 @@ public static partial class CanopyStaticHtml {
                 html.Append("</tr>");
             }
             html.Append("</tbody>");
-            if (shown < rows.Count) { html.Append("<tbody>"); AppendOverflow(html, shown, rows.Count, columns.Count + 2, settings, styles, labels); html.Append("</tbody>"); }
+            if (shown < rows.Count) { html.Append("<tbody>"); AppendOverflow(html, shown, rows.Count, columns.Count + 1 + (matrix.RowTotals ? 1 : 0), settings, styles, labels); html.Append("</tbody>"); }
         } else {
             html.Append("<thead><tr>");
             foreach (var title in new[] { matrix.Rows.Title ?? labels.MatrixRows, matrix.Columns.Title ?? labels.MatrixColumns, labels.MatrixState, labels.MatrixValue })

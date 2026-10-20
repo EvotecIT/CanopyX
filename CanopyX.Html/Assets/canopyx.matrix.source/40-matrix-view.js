@@ -28,7 +28,6 @@
     reportError(error, hook) { this.host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error, hook }, bubbles: true })); }
     build() {
       const host = this.host, doc = this.doc, signal = this.lifetime.signal;
-      host.classList.add("cx-host", "cx-matrix-host");
       if (!host.hasAttribute("data-cx-theme")) { host.setAttribute("data-cx-theme", "auto"); this.addedTheme = true; }
       const root = this.root = h("div", "cx-matrix cx-mx-" + doc.density);
       this.bar = h("div", "cx-mx-bar"); this.legend = h("div", "cx-mx-legend");

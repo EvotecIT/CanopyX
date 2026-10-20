@@ -323,6 +323,7 @@ test("on a phone the row headers stay pinned, or a card per row lists what needs
   await expect(page.locator(".cx-mx-scroll")).toBeHidden();
   await expect(page.locator(".cx-mx-card")).toHaveCount(6);
   await expect(page.locator(".cx-mx-card").nth(3)).toContainText("Col X · Slow · 42");
+  await expect(page.locator(".cx-mx-card").nth(3).locator(".cx-mx-total")).toHaveAttribute("aria-label", "Row D: 2");
   await expect(page.locator(".cx-mx-card").nth(1)).toContainText("Nothing needs attention");
 });
 

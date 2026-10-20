@@ -97,7 +97,7 @@
         cancelAnimationFrame(view.frame); cancelAnimationFrame(view.fitFrame); clearTimeout(view.searchTimer); clearTimeout(view.tipTimer);
         view.root.remove(); host.removeAttribute("data-cx-ready");
         // The host is as it was before createMatrix: its classes, mount mark, the theme the matrix added and its own max-height.
-        host.classList.remove("cx-matrix-host"); if (view.addedTheme) host.removeAttribute("data-cx-theme");
+        if (view.addedTheme) host.removeAttribute("data-cx-theme");
         if (view.fitInline !== undefined) { host.style.maxHeight = view.fitInline; if (!host.getAttribute("style")) host.removeAttribute("style"); }
       }
     };

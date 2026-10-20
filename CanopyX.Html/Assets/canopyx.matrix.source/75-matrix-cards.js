@@ -20,7 +20,7 @@
         if (entry.band && entry.band !== group) { group = entry.band; const heading = h("li", "cx-mx-cardgroup"); setText(heading, group.label); list.appendChild(heading); }
         const card = h("li", "cx-mx-card"), head = h("div", "cx-mx-cardhead"), title = h("span", "cx-mx-label"), total = h("span", "cx-mx-total" + (entry.total ? "" : " cx-mx-zero"));
         setText(title, entry.label); setText(total, this.format.format(entry.total || 0));
-        total.setAttribute("aria-label", fill(labels.matrixItemTotal, { item: labels.matrixTotal, count: this.format.format(entry.total || 0) }));
+        total.setAttribute("aria-label", fill(labels.matrixItemTotal, { item: entry.label, count: this.format.format(entry.total || 0) }));
         head.append(title, total); card.appendChild(head);
         if (entry.kind === "item" && entry.item.secondary) { const sub = h("div", "cx-mx-sub"); setText(sub, entry.item.secondary); card.appendChild(sub); }
         const cells = this.attentionCells(entry), items = h("ul", "cx-mx-cardcells");

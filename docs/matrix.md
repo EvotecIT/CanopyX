@@ -188,22 +188,24 @@ matrix keeps its grid semantics without a node per cell. Colours, fonts and symb
 tones and forced colours apply, and a theme switch draws the cells again.
 
 `tests/browser/bench/matrix-benchmark.mjs` scrolls the 150 by 150 and 400 by 400 benchmark pages down, sideways and diagonally;
-`matrix-performance.spec.mjs` holds the budgets at four times slowed CPU. Measured on a workstation (1680 by 950, 40 wheel steps):
+`matrix-performance.spec.mjs` holds the budgets at four times slowed CPU. Each scroll direction retires its animation-frame
+sampler before the next begins. Measured on a workstation (1680 by 950, 40 wheel steps, medians of three runs):
 
 | Matrix | CPU | Ready | Frames over 50 ms: down, sideways, diagonal |
 | --- | --- | --- | --- |
-| 150 × 150 | 1x | 120 ms | 0, 0, 0 |
-| 150 × 150 | 4x | 620 ms | 3, 2, 4 |
-| 400 × 400 | 1x | 130 ms | 0, 0, 0 |
-| 400 × 400 | 4x | 590 ms | 2, 0, 3 |
+| 150 × 150 | 1x | 139 ms | 0, 0, 0 |
+| 150 × 150 | 4x | 810 ms | 4, 2, 9 |
+| 400 × 400 | 1x | 185 ms | 0, 0, 0 |
+| 400 × 400 | 4x | 698 ms | 6, 3, 16 |
 
-Runs vary: earlier runs on the same machine reached 7, 2 and 13 frames for the 400 matrix at 4x, which the budgets allow for.
+Runs vary with workstation activity; these measurements include concurrent correctness validation. The opt-in budgets allow
+1,500 ms to become ready and at most 11, 4 and 20 frames over 50 ms for the three scroll directions.
 
 The grid scroll benchmark at 4x (5,000 rows, nine columns) drops 3 frames in 40 steps for comparison.
 
 ## Packaging and size
 
-The matrix ships as the lazy `matrix` part (`canopyx-matrix.js` and `.css`, about 24 KB gzip, guard 27 KiB), loaded by the grid
+The matrix ships as the lazy `matrix` part (`canopyx-matrix.js` and `.css`, about 25 KB gzip, guard 27 KiB), loaded by the grid
 and reporting entry points when a matrix document mounts. The grid entry points carry only the `createMatrix` shell and
 `AxisWindow`. CanopyX.Html writes a matrix page with the data-grid entry point and embeds the matrix part in single-file pages.
 

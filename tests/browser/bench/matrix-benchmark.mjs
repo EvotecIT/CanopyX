@@ -27,8 +27,8 @@ async function pass(page, dx, dy) {
     window.__frames = []; window.__rec = true; window.__blank = 0; window.__samples = 0;
     const probes = [[0.5, 0.4], [0.7, 0.6], [0.9, 0.8]].map(([x, y]) => [box.left + box.width * x, box.top + box.height * y]);
     let last = performance.now(), pending = false;
-    const frame = time => { window.__frames.push(time - last); last = time; if (window.__rec) requestAnimationFrame(frame); };
-    requestAnimationFrame(frame);
+    const frame = time => { window.__frames.push(time - last); last = time; if (window.__rec) window.__frameId = requestAnimationFrame(frame); };
+    window.__frameId = requestAnimationFrame(frame);
     scroll.onscroll = () => {
       if (pending || !window.__rec) return;
       pending = true;
@@ -38,7 +38,7 @@ async function pass(page, dx, dy) {
   for (let step = 0; step < steps; step++) { await page.mouse.wheel(dx, dy); await page.waitForTimeout(16); }
   await page.waitForTimeout(300);
   return page.evaluate(() => {
-    window.__rec = false; const sorted = window.__frames.slice().sort((a, b) => a - b);
+    window.__rec = false; cancelAnimationFrame(window.__frameId); const sorted = window.__frames.slice().sort((a, b) => a - b);
     return { frames: sorted.length, over33: sorted.filter(f => f > 33.4).length, over50: sorted.filter(f => f > 50).length, p95: sorted[Math.floor(sorted.length * 0.95)] || 0,
       max: sorted[sorted.length - 1] || 0, blank: window.__blank, samples: window.__samples,
       // Cells are drawn on canvas tiles: the cells mounted are the tiles' widths over the cell width.

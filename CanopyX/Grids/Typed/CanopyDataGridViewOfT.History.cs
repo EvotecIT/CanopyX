@@ -20,7 +20,7 @@ public sealed partial class CanopyDataGridView<T> {
     public CanopyColumn StatusStrip(Expression<Func<T, IEnumerable<CanopyCellPeriod>?>> member, string? title = null, Action<CanopyColumn>? configure = null,
         Func<IReadOnlyList<CanopyCellPeriod>, string?>? state = null) =>
         Column(member, title, column => { column.Kind = CanopyColumnKind.Text; column.Presenter = CanopyGridPresenter.StatusStrip(); configure?.Invoke(column); },
-            periods => { if (periods == null) return null; var list = new List<CanopyCellPeriod>(periods); return CanopyCell.StatusHistory(list, state?.Invoke(list)); });
+            periods => { if (periods == null) return null; var list = CanopyCell.History(periods); return CanopyCell.StatusHistory(list, state?.Invoke(list)); });
 
     /// <summary>
     /// Adds a sparkline column for a member holding a history of numeric samples, and returns it. Its raw value is the latest
@@ -41,6 +41,6 @@ public sealed partial class CanopyDataGridView<T> {
         if (chosen.Kind != CanopyGridPresenterKind.SparklineBars && chosen.Kind != CanopyGridPresenterKind.SparklineLine)
             throw new ArgumentException("A sparkline column takes a SparklineBars or SparklineLine presenter.", nameof(presenter));
         return Column(member, title, column => { column.Kind = CanopyColumnKind.Number; column.Presenter = chosen; configure?.Invoke(column); },
-            periods => { if (periods == null) return null; var list = new List<CanopyCellPeriod>(periods); return CanopyCell.ValueHistory(list, value?.Invoke(list)); });
+            periods => { if (periods == null) return null; var list = CanopyCell.History(periods); return CanopyCell.ValueHistory(list, value?.Invoke(list)); });
     }
 }

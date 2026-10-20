@@ -48,7 +48,13 @@
       if (key.className !== undefined) record.className = key.className;
       return record;
     };
-    let previous = null, finished = false, ordered = data.ordered === true, advance, progress;
+    let previous = null, finished = false, ordered = data.ordered === true, legacyOrder = false, advance, progress;
+    const retirePrefix = () => {
+      // Wire positions are invalid even if a replacement request later times out. Retire them before that request.
+      grid.pages.clear(); grid.rowCache.clear(); grid.placeholders.clear(); grid.focused = null;
+      if (grid.snapshot && !grid.pendingQuery) grid.setQuery(grid.queryForChange(true), { pageLength: grid.pageLength, allRows: grid.pageAll }).catch(() => {});
+      grid.version++; grid.scheduleRender();
+    };
     const waitForChunk = () => progress = new Promise(resolve => advance = resolve);
     waitForChunk();
     const done = (async () => {
@@ -71,7 +77,10 @@
         if (ordered) for (const row of decoded) {
           if (previous !== null && gridIdOrder(previous, row.id) >= 0) {
             if (!(previous < row.id)) throw new Error("CanopyX: row data is not in its declared identity order.");
-            ordered = false; break;
+            ordered = false; legacyOrder = true;
+            // setQuery retires page loads; an existing pending query has already done so and must keep its own promise.
+            retirePrefix();
+            break;
           }
           previous = row.id;
         }
@@ -85,6 +94,9 @@
       if (rows.length !== data.count) throw new Error("CanopyX: row data holds " + rows.length + " rows, not " + data.count + ".");
       // The grid's copies of chunks given in the document are released once all rows are decoded.
       finished = true; ids.clear();
+      // A pending query may have expired while the final sidecar loaded. Retry the accepted query with the complete source,
+      // dropping error pages too, while preserving a newer user query if one is still pending.
+      if (legacyOrder) retirePrefix();
       if (Array.isArray(chunks)) chunks.fill(null);
       scripts?.forEach(script => { script.textContent = ""; });
       // The first ordered window may already be visible with only a prefix decoded. Refresh once with the complete rows.

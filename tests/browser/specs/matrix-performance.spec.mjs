@@ -6,8 +6,8 @@ import { expect, test } from "@playwright/test";
 import { exampleUrl, median } from "./support.mjs";
 
 const CPU = 4, STEPS = 40;
-// Measured at 4x on a workstation (docs/matrix.md#performance): ready in about 0.6 s; at most 7 frames over 50 ms in 40
-// steps down, 2 sideways and 13 diagonally on the 400 matrix. The budgets are about one and a half times that, so a regression shows.
+// The budgets allow ordinary workstation variation while guarding readiness and each independent scroll direction
+// (docs/matrix.md#performance). Each direction retires its sampler, so a later pass cannot count an earlier loop.
 const READY_MS = 1500, OVER_50 = { down: 11, sideways: 4, diagonal: 20 };
 
 async function run(browser, size) {
@@ -22,10 +22,10 @@ async function run(browser, size) {
   const result = { ready };
   for (const [name, dx, dy] of [["down", 0, 500], ["sideways", 400, 0], ["diagonal", 300, 300]]) {
     await page.locator(".cx-mx-scroll").evaluate(scroll => { scroll.scrollTop = 0; scroll.scrollLeft = 0; });
-    await page.evaluate(() => { window.__frames = []; window.__rec = true; let last = performance.now(); const frame = time => { window.__frames.push(time - last); last = time; if (window.__rec) requestAnimationFrame(frame); }; requestAnimationFrame(frame); });
+    await page.evaluate(() => { window.__frames = []; window.__rec = true; let last = performance.now(); const frame = time => { window.__frames.push(time - last); last = time; if (window.__rec) window.__frameId = requestAnimationFrame(frame); }; window.__frameId = requestAnimationFrame(frame); });
     for (let step = 0; step < STEPS; step++) { await page.mouse.wheel(dx, dy); await page.waitForTimeout(16); }
     await page.waitForTimeout(300);
-    result[name] = await page.evaluate(() => { window.__rec = false; return window.__frames.filter(frame => frame > 50).length; });
+    result[name] = await page.evaluate(() => { window.__rec = false; cancelAnimationFrame(window.__frameId); return window.__frames.filter(frame => frame > 50).length; });
   }
   await page.close();
   return result;

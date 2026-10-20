@@ -87,7 +87,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "21e2a9677e4ec451",
+      "version": "f07aebe37f3d1bb4",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -135,7 +135,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "c9b1fbdaeb9b7139",
+      "version": "a02d6881b70019b4",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
