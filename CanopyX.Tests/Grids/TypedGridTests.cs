@@ -86,7 +86,7 @@ public sealed class TypedGridTests {
         Assert.Throws<ArgumentException>(() => grid.Column(x => "constant"));
         grid.Column(x => x.Cores);
         Assert.Throws<ArgumentException>(() => grid.Column(x => x.Cores));
-        Assert.Throws<ArgumentNullException>(() => new CanopyDataGridView<Server>("servers", "Servers", null!));
+        Assert.Throws<ArgumentNullException>(() => new CanopyDataGridView<Server>("servers", "Servers", (Func<Server, string>)null!));
         Assert.Throws<ArgumentNullException>(() => grid.AddRows(null!));
     }
 

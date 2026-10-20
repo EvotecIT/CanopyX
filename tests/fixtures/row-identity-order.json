@@ -1,0 +1,5 @@
+{
+  "comment": "Row identity order, shared by the browser runtime and C#: canonical integers (ASCII digits, no sign, no leading zero) first, as numbers; then every other id by UTF-16 code unit.",
+  "ids": ["b", "10", "a7", "2", "0", "042", "-1", "100", "9007199254740993", "9007199254740992", "1e3", "\u0663", "item10", "item9"],
+  "ordered": ["0", "2", "10", "100", "9007199254740992", "9007199254740993", "-1", "042", "1e3", "a7", "b", "item10", "item9", "\u0663"]
+}

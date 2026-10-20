@@ -48,7 +48,13 @@
       if (key.className !== undefined) record.className = key.className;
       return record;
     };
-    let previous = null, finished = false, advance, progress;
+    let previous = null, finished = false, ordered = data.ordered === true, legacyOrder = false, advance, progress;
+    const retirePrefix = () => {
+      // Wire positions are invalid even if a replacement request later times out. Retire them before that request.
+      grid.pages.clear(); grid.rowCache.clear(); grid.placeholders.clear(); grid.focused = null;
+      if (grid.snapshot && !grid.pendingQuery) grid.setQuery(grid.queryForChange(true), { pageLength: grid.pageLength, allRows: grid.pageAll }).catch(() => {});
+      grid.version++; grid.scheduleRender();
+    };
     const waitForChunk = () => progress = new Promise(resolve => advance = resolve);
     waitForChunk();
     const done = (async () => {
@@ -65,8 +71,17 @@
         if (!Array.isArray(chunk)) throw new Error("CanopyX: a row data chunk is not an array of rows.");
         const decoded = chunk.map(expand);
         validateGridRows(decoded, view.columns, ids);
-        if (data.ordered) for (const row of decoded) {
-          if (previous !== null && !(previous < row.id)) throw new Error("CanopyX: row data is not in its declared identity order.");
+        // Identity order puts canonical integer ids first, as numbers. Rows written by an older writer in plain code-unit order
+        // are still read: from the first row out of order on, queries wait for every chunk, like unordered rows, and the windows
+        // answered before it are drawn again in identity order when decoding finishes.
+        if (ordered) for (const row of decoded) {
+          if (previous !== null && gridIdOrder(previous, row.id) >= 0) {
+            if (!(previous < row.id)) throw new Error("CanopyX: row data is not in its declared identity order.");
+            ordered = false; legacyOrder = true;
+            // setQuery retires page loads; an existing pending query has already done so and must keep its own promise.
+            retirePrefix();
+            break;
+          }
           previous = row.id;
         }
         for (const row of decoded) rows.push(row);
@@ -79,6 +94,9 @@
       if (rows.length !== data.count) throw new Error("CanopyX: row data holds " + rows.length + " rows, not " + data.count + ".");
       // The grid's copies of chunks given in the document are released once all rows are decoded.
       finished = true; ids.clear();
+      // A pending query may have expired while the final sidecar loaded. Retry the accepted query with the complete source,
+      // dropping error pages too, while preserving a newer user query if one is still pending.
+      if (legacyOrder) retirePrefix();
       if (Array.isArray(chunks)) chunks.fill(null);
       scripts?.forEach(script => { script.textContent = ""; });
       // The first ordered window may already be visible with only a prefix decoded. Refresh once with the complete rows.
@@ -99,11 +117,11 @@
       async query(query, options) {
         // Without search, filters or sort the order is the identity order, which ordered rows already have: the first windows
         // need only the chunks that hold them. Reporting grids also total and group the complete rows, so they wait for all.
-        if (data.ordered && !view.reporting && !query.search && !query.filters.length && !query.filterGroup && !query.sort.length) {
+        if (ordered && !view.reporting && !query.search && !query.filters.length && !query.filterGroup && !query.sort.length) {
           const end = Math.min(data.count, query.offset + query.limit);
           while (rows.length < end && !finished) await Promise.race([progress, done]);
           if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
-          if (!finished) return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
+          if (!finished && ordered) return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
             total: data.count, matched: data.count, items: rows.slice(query.offset, end) };
         }
         return (await all()).query(query, options);

@@ -23,8 +23,11 @@ grid.AddRows(servers).View.SaveHtmlPage("servers.html");
 
 | Member | What it does |
 | --- | --- |
+| `new CanopyDataGridView<T>(id, label, x => x.Key)` | The identity is a string, or a number (`Func<T, long>`), written as invariant digits; numeric keys keep their natural order (2 before 10) when no sort applies. A `null` identity now needs a cast to pick the overload. |
 | `Column(x => x.Member, title, configure, cell)` | Adds a column. Its id is the member path in camel case (`x => x.Owner.Team` is `ownerTeam`), its title the path as words unless you give one, and its kind follows the member type: numbers are number columns; `DateTime`, `DateTimeOffset` and `DateOnly` are date columns; everything else is text. `configure` sets any other column option; `cell` writes a value's cell (display text, tone) instead of the raw value. |
 | `Column("id", x => …, …)` | The same with an explicit id, for any expression of the record. |
+| `StatusStrip(x => x.Hours, title, configure, state)` | A status strip column for a member holding `CanopyCellPeriod`s (one toned segment per period). It is a text column whose raw value is the latest period's state, or the summary `state` returns ("3 of 24 failing"), so it sorts, filters, searches and exports by that. |
+| `Sparkline(x => x.Latency, title, presenter, configure, value)` | A sparkline column for a member holding numeric `CanopyCellPeriod`s: `SparklineBars()` by default, or `SparklineLine()`, with their thresholds and scale. It is a number column whose raw value is the latest sample, or the number `value` returns. |
 | `Field(x => x.Member, …)`, `Field("id", x => …, …)` | A record panel field (drawer only); its id may not be a column's. |
 | `ColumnId(x => x.Member)` | The id a member's column has, for settings that name columns: facets, search columns, sorts, formatting rules. |
 | `Row(record)`, `AddRows(records)` | One record as a row, or the records as the grid's inline rows. A null value, or a null link of a member chain (`x => x.Owner.Team` with no owner), leaves its cell empty; dates without a kind are UTC; `DateOnly` (on .NET 6 or later) is UTC midnight; enumerations write their names. |
@@ -39,6 +42,13 @@ is written. Values are read through the compiled member expressions (interpreted
 Explicit conversions keep their C# behavior: `grid.Column("load", x => (double)x.Cores)` writes a double, and a checked
 conversion reports overflow when a row is read. The result type determines the column kind; boxing a member as `object`
 keeps its underlying kind. Member chains with converted receivers still leave null links empty.
+
+### History columns from other models
+
+A host or a bridge that writes rows without a typed record builds the same cells with `CanopyCell.StatusHistory(periods,
+state)` and `CanopyCell.ValueHistory(periods, value)`, and declares the column with `CanopyGridPresenter.StatusStrip()` (a text
+column) or `SparklineBars()` / `SparklineLine()` (a number column). A dataset column type such as "status history" maps onto
+exactly these two calls, so the strip renders, sizes, sorts and falls back to text in static output like any other column.
 
 `TypedGridExample` in `CanopyX.Examples` writes `typed-grid.html` (and a dark palette).
 

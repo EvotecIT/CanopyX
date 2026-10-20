@@ -254,6 +254,7 @@ for (const controller of [...mountViews(document), ...GridRuntime.mount(document
     const flow: import("@evotecit/canopyx/flow").FlowApi = controller;
     void flow.ready.then(api => api.getStep());
   }
+  else if ("focusCell" in controller) controller.focusCell("dc1", "dc2");
   else if ("getSelection" in controller) controller.getSelection();
   else controller.expandPath(["tree-1"]);
 }
@@ -829,3 +830,19 @@ FlowRuntime.configure("mail", { onReload: detail => detail.baseline });
 GridRuntime.configure("mail", { onSubmit: detail => ({ status: detail.patch.length ? "saved" : "error" }) });
 GridRuntime.createFlow(document.createElement("div"), { flow: flowDocument }).destroy();
 void flowAnswer;
+
+// The matrix view: the document, the state and the cell event are typed (docs/matrix.md).
+import { createMatrix, type MatrixDocument, type MatrixCellDetail, type MatrixApi } from "@evotecit/canopyx/grid";
+const matrixDocument: MatrixDocument = { protocol: "canopyx/2", type: "matrix", id: "replication", label: "Replication", square: true, columnTitle: "Source",
+  rows: { title: "Destination", attributes: [{ id: "site", title: "Site", facet: true }], items: [{ id: "dc1", label: "DC1", values: { site: "Oslo" } }, { id: "dc2", label: "DC2" }], groupBy: "site" },
+  states: [{ id: "fail", label: "Failing", tone: "danger", symbol: "cross", attention: true }, { id: "ok", label: "Healthy", tone: "success", symbol: "check" }],
+  cells: [".0", "1."], notes: [[0, 1, 3, "3 errors"]] };
+const matrixApi = createMatrix(document.createElement("div"), { view: matrixDocument, onCell: (detail: MatrixCellDetail, event) => { if (detail.state === "fail") event.preventDefault(); } });
+matrixApi.sort("rows", "#total", "desc"); matrixApi.filter("columns", "site", ["Oslo"]);
+const matrixRows: string[] = matrixApi.getVisible().rows;
+GridRuntime.createMatrix(document.createElement("div"), { view: { ...matrixDocument, hideEmpty: true, autoHeight: false }, state: { attentionOnly: true, hideEmpty: false } }).destroy();
+void matrixRows;
+GridRuntime.configure("replication", { onCell: (detail: MatrixCellDetail, event: CustomEvent<MatrixCellDetail>) => { if (detail.state === "fail") event.preventDefault(); } });
+const mountedMatrix: MatrixApi | undefined = GridRuntime.mount().find((view): view is MatrixApi => "focusCell" in view);
+matrixApi.setState({ sort: { rows: { by: "#label" } } });
+void mountedMatrix;

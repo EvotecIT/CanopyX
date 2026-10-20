@@ -118,7 +118,7 @@ Before 1.0, the C# authoring API uses `CanopyTreeView` and `CanopyDataGridView` 
 
 JavaScript export rows now contain normalized cells with both `value` and `text`. Use `row.cells[id].value` for typed data and `row.cells[id].text` for captured display text. The `onExport` event supplies `capture`; enumerate `capture.rows({ signal: event.signal })` directly instead of preparing another export from current UI state. Reporting captures also carry semantic tones, links and diagnostics; ordinary grid captures declare `presentation: "text"`.
 
-Sorting, search and typed predicates use raw values; display text and badges remain presentation. Missing values sort last in either direction, with ordinal record identity as the final tie-breaker. Filters and sort keys apply to the full dataset before returning a window.
+Sorting, search and typed predicates use raw values; display text and badges remain presentation. Missing values sort last in either direction, with record identity as the final tie-breaker (canonical integer ids as numbers, before other ids in code-unit order). Filters and sort keys apply to the full dataset before returning a window.
 
 Set `inventory.Presentation = CanopyGridPresentation.Paged` and `inventory.PageLength = 50` to show pages with first/previous/next/last controls, direct page entry and a visible range. `PageSize` remains the source fetch size; it does not set the visible page length. Continuous mode remains the default. The `inventory-grid-paged.html` example uses the same full-query results and exports as the continuous inventory.
 

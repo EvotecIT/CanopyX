@@ -37,8 +37,9 @@ for (const [language,labels,staticLabels] of packs) {
     const flow = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-flow.js'),'utf8');
     const formatting = ['formatting','format-editor'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
     const calendar = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-calendar.js'),'utf8');
+    const matrix = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-matrix.js'),'utf8');
     expect(partNames.length).toBeGreaterThan(0);
-    for (const name of partNames) { expect(name).toMatch(/^(gridEdit|format|calendar|flow)[A-Z]/); expect(/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:editing).toMatch(new RegExp('\\b'+name+':\\s?"')); }
+    for (const name of partNames) { expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix)[A-Z]/); expect(/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:editing).toMatch(new RegExp('\\b'+name+':\\s?"')); }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});
     await expect(page.getByPlaceholder(labels.searchPlaceholder,{exact:true})).toBeVisible();
     await expect(page.locator('.cx-grid-columns > summary')).toHaveText(labels.columns);

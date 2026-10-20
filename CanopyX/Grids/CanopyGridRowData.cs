@@ -16,9 +16,9 @@ namespace CanopyX;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The rows are taken when the instance is created and written in ordinal order of their identities, which is the order the
-/// grid shows when no sort applies, so the browser shows the first rows as soon as their chunk is decoded. The grid always
-/// orders rows by its sort keys and then by identity, so the order of rows in the data never changes what it shows.
+/// The rows are taken when the instance is created and written in ordinal string order, as version 1 requires for
+/// existing readers. The grid orders the decoded rows by its sort keys and then by <see cref="CanopyRowIdentity"/>,
+/// so numeric identities still display in numeric order.
 /// </para>
 /// <para>
 /// A host writes the grid document with <see cref="ToJson"/> and each chunk with <see cref="GetChunk"/>: into

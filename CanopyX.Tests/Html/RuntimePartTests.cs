@@ -15,7 +15,7 @@ public sealed class RuntimePartTests {
     [Fact]
     public void Parts_FollowTheBuildListInOrder() {
         Assert.Equal(PartManifestFile.Read().Select(part => part.Name), CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "matrix", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
         Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[2]);
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("missing"));
     }
@@ -41,7 +41,7 @@ public sealed class RuntimePartTests {
         Assert.Equal(new[] { "tree-tools", "export", "links", "search", "link", "highlight", "layouts", "record-panel" }, CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid).Select(part => part.Name));
         // The flow entry point knows only the forms and flow parts; the grid entry points know them too, so a grid page can host a flow.
         Assert.Equal(new[] { "forms", "flow" }, CanopyHtmlAssets.GetParts(CanopyRuntime.Flow).Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "matrix", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
     }
 
     [Fact]

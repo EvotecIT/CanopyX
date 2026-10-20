@@ -69,10 +69,12 @@
         const style = getComputedStyle(this.grid), head = this.headCells?.[0] && getComputedStyle(this.headCells[0]), family = " " + style.fontFamily;
         this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
           parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 12];
+        // Monospace identifiers and their secondary text are drawn in their own fonts, so they are measured in them.
+        this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"));
         this.fitNumericVariant = gridNumericVariant(this.grid);
         context.font = this.fitFont[0]; this.fitCh = Math.ceil(gridMeasureText(context, "00000000000", this.fitNumericVariant));
       }
-      const [, small, headFont, pad] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
+      const [, small, headFont, pad, mono, sub] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
       // The title is a 24 px pointer target at least, and a move handle takes its 24 px target plus the gap beside it.
       const head = Math.ceil(Math.max(24, text(column.title, headFont, false)) + 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 28 : 0) +
@@ -86,12 +88,15 @@
         if (sampled === 200) break;
         const cell = row.h.cells[column.id], value = cellText(cell, column, this.fmt) || "—", series = gridSeries(cell).length;
         const quiet = options.quietTones?.includes(gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone));
-        values = Math.max(values, kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
+        const secondary = kind === "identifier" && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);
+        values = Math.max(values, kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
           Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value, kind === "enum" && !quiet ? small : undefined)) +
           (kind === "progress" ? 80 : kind === "enum" ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }
       // A row checkbox takes its 16 px box, its 6 px margin and the cell's 6 px gap before the value, in every density.
       const cap = columnWidth(column, 420);
+      // The values alone (without the header or aggregates): the floor of a date, number or graphic column.
+      column.contentNeed = none || !sampled ? 0 : Math.min(cap, Math.ceil(values + 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0)));
       const need = none ? column.pref || column.width : Math.min(cap, Math.max(head,
         Math.ceil(values + (sampled ? 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0) : 0))));
       return Object.freeze({ width: Math.max(column.minW, need), head: Math.min(head, cap), sampled, scope: "loaded" });

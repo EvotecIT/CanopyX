@@ -129,7 +129,7 @@
       "views": [],
       "features": ["rowData"],
       "key": "GRID_DATA_IMPL",
-      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "inlineGridSource", "loadSidecar"],
+      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "inlineGridSource", "loadSidecar", "gridIdOrder"],
       "end": "GRID_DATA_IMPL.source = rowDataSource;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.data.source/10-row-data.js"
@@ -166,6 +166,21 @@
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.flow.source/flow.css"
+      ]
+    },
+    {
+      "name": "matrix",
+      "label": "matrix view",
+      "runtimes": ["grid"],
+      "views": ["matrix"],
+      "key": "MATRIX_IMPL",
+      "context": ["MATRIX_IMPL", "h", "setText", "fill", "foldText", "numberFormat", "gridFreeze", "toneOf", "applyTone", "toneColors", "AxisWindow", "PROTOCOL"],
+      "end": "MATRIX_IMPL.create = matrixCreate;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.matrix.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.matrix.source/matrix.css"
       ]
     },
     {
@@ -308,7 +323,7 @@
       "requires": ["detail-rows"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "h", "setText", "fill", "numberFormat", "formatValue", "cellValue", "cellText", "isCellObject",
-        "gridScalar", "gridQuery", "gridFreeze", "gridOrder", "gridQueryRows", "gridButton", "gridDecorateButton", "gridCellRenderer", "gridPresenterTone",
+        "gridScalar", "gridQuery", "gridFreeze", "gridOrder", "gridIdOrder", "gridQueryRows", "gridButton", "gridDecorateButton", "gridCellRenderer", "gridPresenterTone",
         "GRID_TONE_RANK", "validateGridRows", "validateGridPage", "checkDocument", "requireIdentifier", "validStructuralCount", "PROTOCOL", "gridOperationActive",
         "reportingGroupKey", "reportingGroupCompare", "reportingSummaryEnabled", "reportingDynamicGroups", "GROUP_OPERATIONS", "reportingAggregateParts", "disposeRowHostCells", "quietControls", "TreeGrid"],
       "scripts": [
@@ -364,7 +379,7 @@
       "views": ["grid"],
       "features": ["live"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQuery", "gridResultShape", "gridQueryRows", "gridCompare", "gridOrder",
+      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQuery", "gridResultShape", "gridQueryRows", "gridCompare", "gridOrder", "gridIdOrder",
         "validateGridRows", "validateGridPage", "validateGridCursorPage", "gridFreeze", "requireIdentifier", "checkDocument", "cellValue", "PROTOCOL",
         "GRID_REPORTING", "VIEW_MODES", "inlineGridSource"],
       "scripts": [

@@ -27,6 +27,13 @@
     if (owned) sample.remove();
     return variant;
   }
+  // The canvas font a presenter class draws with (weight, size and family), read from a hidden probe inside the grid.
+  function gridClassFont(grid, className) {
+    const probe = document.createElement("span"); probe.className = className; probe.style.display = "none"; grid.appendChild(probe);
+    const style = getComputedStyle(probe), font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
+    probe.remove();
+    return font;
+  }
   function gridMeasureText(context, value, variant = "normal") {
     const text = String(value).slice(0, 512), measured = context.measureText(text).width;
     if (!variant.includes("tabular-nums") || !COLUMN_HAS_NUMERIC.test(text)) return measured;
@@ -89,8 +96,10 @@
       // The default identity yields last, only when that can avoid scrolling. Explicit or user-sized widths stay.
       if (level === 0) return column.identity && column.priority === undefined && !column.fixed && !column.sized ?
         Math.max(column.minW, column.headNeed || 0) : column.renderWidth;
+      // Dates, numbers and graphics are fixed-format: cut short they would read wrong ("2026-09-21 01:…"), so their values keep
+      // their width (an aggregate summary still gives way); optional columns hide, and then the grid scrolls, before a value is cut.
       return Math.round(columnWidth(column, column.fixed || column.sized ? column.width : !level ? Math.max(need, column.pref) : level > 1 || !gridLevel(column) ? need :
-        Math.min(need, Math.max(column.headNeed || 0, gridTextual(column) ? this.fitCh || 88 : 0))));
+        Math.min(need, Math.max(column.headNeed || 0, gridTextual(column) ? this.fitCh || 88 : column.contentNeed ?? need))));
     },
     // Sets renderWidth on the shown columns for a viewport of the given width. A shortfall first takes the preferred width
     // above content (so long values keep their measured width before short columns keep their declared one), then content

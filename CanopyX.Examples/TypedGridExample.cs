@@ -24,6 +24,7 @@ internal static class TypedGridExample {
         public long DiskBytes { get; set; }
         public DateTime LastSeenUtc { get; set; }
         public string? Notes { get; set; }
+        public List<CanopyCellPeriod> Uptime { get; set; } = new List<CanopyCellPeriod>();
     }
 
     private static readonly string[] Sites = { "Oslo", "Lyon", "Rome", "Porto", "Gdansk" };
@@ -54,6 +55,9 @@ internal static class TypedGridExample {
         grid.Column(x => x.LoadAverage, "Load", column => column.Sortable = true, load => new CanopyCell(load) { Text = load.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) });
         grid.Column(x => x.DiskBytes, "Disk", column => column.Sortable = true, bytes => new CanopyCell(bytes) { Text = (bytes / 1_000_000_000L).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + " GB" });
         grid.Column(x => x.LastSeenUtc, "Last seen", column => column.Sortable = true);
+        // A history member becomes a status strip whose raw value is a summary, so it sorts and filters by it.
+        grid.StatusStrip(x => x.Uptime, "Last 12 hours", column => column.Sortable = true,
+            periods => periods.Count(period => period.State != "Up") + " of " + periods.Count + " not up");
         // Drawer-only values, and settings that name columns through the same members.
         grid.Field(x => x.Owner.Contact, "Contact");
         grid.Field(x => x.Notes);
@@ -63,6 +67,7 @@ internal static class TypedGridExample {
 
     private static IEnumerable<Server> Servers() {
         var random = new Random(41);
+        var history = new Random(97);
         var start = new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc);
         for (var i = 1; i <= 120; i++) {
             var roll = random.Next(20);
@@ -75,7 +80,12 @@ internal static class TypedGridExample {
                 LoadAverage = Math.Round(random.NextDouble() * 6, 2),
                 DiskBytes = (long)(random.Next(200, 8000)) * 1_000_000_000L,
                 LastSeenUtc = start.AddMinutes(random.Next(60 * 24 * 30)),
-                Notes = roll < 4 ? "Watch the fan speed after the last firmware update." : null
+                Notes = roll < 4 ? "Watch the fan speed after the last firmware update." : null,
+                Uptime = Enumerable.Range(0, 12).Select(hour => {
+                    var state = history.Next(30) == 0 ? "Down" : history.Next(12) == 0 ? "Degraded" : "Up";
+                    return new CanopyCellPeriod(start.AddHours(hour).ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture), state: state,
+                        tone: state == "Down" ? CanopyTone.Danger : state == "Degraded" ? CanopyTone.Warning : CanopyTone.Success);
+                }).ToList()
             };
         }
     }

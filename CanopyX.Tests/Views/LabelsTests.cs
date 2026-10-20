@@ -83,7 +83,9 @@ public sealed class LabelsTests {
         string Wire(string name) => char.ToLowerInvariant(name[0]) + name.Substring(1);
         // Flow labels are read only by flows: grids and trees never write them (a flow document carries them, below).
         bool IsFlowLabel(string name) => name.StartsWith("Flow", StringComparison.Ordinal);
-        var browser = properties.Where(property => !outlineOnly.Contains(property.Name) && !IsFlowLabel(property.Name)).ToList();
+        // Matrix labels likewise: a matrix document carries them (MatrixTests).
+        bool IsMatrixLabel(string name) => name.StartsWith("Matrix", StringComparison.Ordinal);
+        var browser = properties.Where(property => !outlineOnly.Contains(property.Name) && !IsFlowLabel(property.Name) && !IsMatrixLabel(property.Name)).ToList();
         Assert.Equal(browser.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), written);
 
         // A tree writes the labels the tree runtimes read: the core and interaction texts and its toolbar menus' grid labels,

@@ -1,0 +1,35 @@
+{
+  "protocol": "canopyx/2",
+  "type": "matrix",
+  "id": "small",
+  "label": "Small matrix",
+  "rows": {
+    "title": "Server",
+    "attributes": [{ "id": "site", "title": "Site", "kind": "text", "facet": true }],
+    "items": [
+      { "id": "a", "label": "Row A", "values": { "site": "North" } },
+      { "id": "b", "label": "Row B", "values": { "site": "North" } },
+      { "id": "c", "label": "Row C", "values": { "site": "North" } },
+      { "id": "d", "label": "Row D", "values": { "site": "South" } },
+      { "id": "e", "label": "Row E", "values": { "site": "South" } },
+      { "id": "f", "label": "Row F", "values": { "site": "South" } }
+    ]
+  },
+  "columns": {
+    "title": "Service",
+    "attributes": [{ "id": "tier", "title": "Tier", "kind": "text", "facet": true }],
+    "items": [
+      { "id": "x", "label": "Col X", "values": { "tier": "Core" } },
+      { "id": "y", "label": "Col Y", "values": { "tier": "Core" } },
+      { "id": "z", "label": "Col Z", "values": { "tier": "Edge" } },
+      { "id": "w", "label": "Col W", "values": { "tier": "Edge" } }
+    ]
+  },
+  "states": [
+    { "id": "bad", "label": "Failing", "tone": "danger", "symbol": "cross", "attention": true },
+    { "id": "slow", "label": "Slow", "tone": "warning", "symbol": "clock", "attention": true },
+    { "id": "ok", "label": "Healthy", "tone": "success", "symbol": "check" }
+  ],
+  "cells": ["2202", "2222", "0..2", "1220", "2222", "...."],
+  "notes": [[2, 0, 3, null, "Three probes failed.", [["Last success", "06:00"]]], [3, 0, 42]]
+}

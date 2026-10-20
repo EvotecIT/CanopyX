@@ -305,7 +305,9 @@ CanopyX.CanopyCell.static CanopyX.CanopyCell Link(System.String text, System.Str
 CanopyX.CanopyCell.static CanopyX.CanopyCell List(System.Collections.Generic.IEnumerable<CanopyX.CanopyCell> items, System.String separator = ", ")
 CanopyX.CanopyCell.static CanopyX.CanopyCell List(params System.String[] items)
 CanopyX.CanopyCell.static CanopyX.CanopyCell Object(params CanopyX.CanopyCellField[] fields)
+CanopyX.CanopyCell.static CanopyX.CanopyCell StatusHistory(System.Collections.Generic.IEnumerable<CanopyX.CanopyCellPeriod> periods, System.String? state = null)
 CanopyX.CanopyCell.static CanopyX.CanopyCell Timeline(System.Collections.Generic.IEnumerable<CanopyX.CanopyRecordEvent> events)
+CanopyX.CanopyCell.static CanopyX.CanopyCell ValueHistory(System.Collections.Generic.IEnumerable<CanopyX.CanopyCellPeriod> periods, System.Nullable<System.Double> value = null)
 CanopyX.CanopyCell.static CanopyX.CanopyCell op_Implicit(System.Boolean value)
 CanopyX.CanopyCell.static CanopyX.CanopyCell op_Implicit(System.DateTime value)
 CanopyX.CanopyCell.static CanopyX.CanopyCell op_Implicit(System.DateTimeOffset value)
@@ -496,12 +498,15 @@ CanopyX.CanopyDataGridView.System.String? Noun { get; set; }
 CanopyX.CanopyDataGridView.System.String? StateKey { get; set; }
 CanopyX.CanopyDataGridView.System.Void Validate()
 CanopyX.CanopyDataGridView<T> : sealed class
+CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, System.Func<T, System.Int64> identity)
 CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, System.Func<T, System.String> identity)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyCalendar<T> Calendar()
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Column<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Column<TValue>(System.String id, System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Field<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Field<TValue>(System.String id, System.Linq.Expressions.Expression<System.Func<T, TValue>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<TValue, CanopyX.CanopyCell?>? cell = null)
+CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn Sparkline(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<CanopyX.CanopyCellPeriod>?>> member, System.String? title = null, CanopyX.CanopyGridPresenter? presenter = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<System.Collections.Generic.IReadOnlyList<CanopyX.CanopyCellPeriod>, System.Nullable<System.Double>>? value = null)
+CanopyX.CanopyDataGridView<T>.CanopyX.CanopyColumn StatusStrip(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<CanopyX.CanopyCellPeriod>?>> member, System.String? title = null, System.Action<CanopyX.CanopyColumn>? configure = null, System.Func<System.Collections.Generic.IReadOnlyList<CanopyX.CanopyCellPeriod>, System.String?>? state = null)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyDataGridView View { get; }
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyDataGridView<T> AddRows(System.Collections.Generic.IEnumerable<T> records)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyGridRow Row(T record)
@@ -1288,6 +1293,7 @@ CanopyX.CanopyGridReporting.System.Collections.Generic.IList<CanopyX.CanopyGridG
 CanopyX.CanopyGridReporting.System.Collections.Generic.IList<System.String> FacetColumns { get; }
 CanopyX.CanopyGridReporting.System.Int32 MinimumCenterWidth { get; set; }
 CanopyX.CanopyGridRow : sealed class
+CanopyX.CanopyGridRow..ctor(System.Int64 id)
 CanopyX.CanopyGridRow..ctor(System.String id)
 CanopyX.CanopyGridRow.CanopyX.CanopyDetail? Detail { get; set; }
 CanopyX.CanopyGridRow.CanopyX.CanopyTone Tone { get; set; }
@@ -1946,6 +1952,39 @@ CanopyX.CanopyLabels.System.String MatchesNext { get; set; }
 CanopyX.CanopyLabels.System.String MatchesNone { get; set; }
 CanopyX.CanopyLabels.System.String MatchesPosition { get; set; }
 CanopyX.CanopyLabels.System.String MatchesPrevious { get; set; }
+CanopyX.CanopyLabels.System.String MatrixAllClear { get; set; }
+CanopyX.CanopyLabels.System.String MatrixAsListed { get; set; }
+CanopyX.CanopyLabels.System.String MatrixAttention { get; set; }
+CanopyX.CanopyLabels.System.String MatrixByLabel { get; set; }
+CanopyX.CanopyLabels.System.String MatrixByTotal { get; set; }
+CanopyX.CanopyLabels.System.String MatrixCell { get; set; }
+CanopyX.CanopyLabels.System.String MatrixClearFilters { get; set; }
+CanopyX.CanopyLabels.System.String MatrixClose { get; set; }
+CanopyX.CanopyLabels.System.String MatrixCollapseGroup { get; set; }
+CanopyX.CanopyLabels.System.String MatrixColumns { get; set; }
+CanopyX.CanopyLabels.System.String MatrixDescending { get; set; }
+CanopyX.CanopyLabels.System.String MatrixDetails { get; set; }
+CanopyX.CanopyLabels.System.String MatrixExpandGroup { get; set; }
+CanopyX.CanopyLabels.System.String MatrixFilter { get; set; }
+CanopyX.CanopyLabels.System.String MatrixGroupBy { get; set; }
+CanopyX.CanopyLabels.System.String MatrixGroupCount { get; set; }
+CanopyX.CanopyLabels.System.String MatrixHideEmpty { get; set; }
+CanopyX.CanopyLabels.System.String MatrixItemTotal { get; set; }
+CanopyX.CanopyLabels.System.String MatrixLegend { get; set; }
+CanopyX.CanopyLabels.System.String MatrixNoData { get; set; }
+CanopyX.CanopyLabels.System.String MatrixNoGrouping { get; set; }
+CanopyX.CanopyLabels.System.String MatrixNoMatches { get; set; }
+CanopyX.CanopyLabels.System.String MatrixOnlyProblems { get; set; }
+CanopyX.CanopyLabels.System.String MatrixRows { get; set; }
+CanopyX.CanopyLabels.System.String MatrixSearch { get; set; }
+CanopyX.CanopyLabels.System.String MatrixSelf { get; set; }
+CanopyX.CanopyLabels.System.String MatrixShowMore { get; set; }
+CanopyX.CanopyLabels.System.String MatrixShown { get; set; }
+CanopyX.CanopyLabels.System.String MatrixSize { get; set; }
+CanopyX.CanopyLabels.System.String MatrixSortBy { get; set; }
+CanopyX.CanopyLabels.System.String MatrixState { get; set; }
+CanopyX.CanopyLabels.System.String MatrixTotal { get; set; }
+CanopyX.CanopyLabels.System.String MatrixValue { get; set; }
 CanopyX.CanopyLabels.System.String MountError { get; set; }
 CanopyX.CanopyLabels.System.String MoveAfter { get; set; }
 CanopyX.CanopyLabels.System.String MoveBefore { get; set; }
@@ -2019,6 +2058,100 @@ CanopyX.CanopyLayoutOptions..ctor()
 CanopyX.CanopyLayoutOptions.CanopyX.CanopyLayoutMode Mode { get; set; }
 CanopyX.CanopyLayoutOptions.System.Collections.Generic.IList<CanopyX.CanopyLayoutMode> Modes { get; }
 CanopyX.CanopyLayoutOptions.System.Nullable<CanopyX.CanopyGridDensity> Density { get; set; }
+CanopyX.CanopyMatrix : sealed class
+CanopyX.CanopyMatrix..ctor(System.String id, System.String label)
+CanopyX.CanopyMatrix.CanopyX.CanopyLabels? Labels { get; set; }
+CanopyX.CanopyMatrix.CanopyX.CanopyMatrix AddCells<T>(System.Collections.Generic.IEnumerable<T> records, System.Func<T, System.String> row, System.Func<T, System.String> column, System.Func<T, System.String> state, System.Action<T, CanopyX.CanopyMatrixCell>? configure = null)
+CanopyX.CanopyMatrix.CanopyX.CanopyMatrix State(System.String id, System.String label, CanopyX.CanopyTone tone, CanopyX.CanopyMatrixSymbol symbol, System.Boolean attention = False)
+CanopyX.CanopyMatrix.CanopyX.CanopyMatrixAxis Columns { get; }
+CanopyX.CanopyMatrix.CanopyX.CanopyMatrixAxis Rows { get; }
+CanopyX.CanopyMatrix.CanopyX.CanopyMatrixCell Set(System.String row, System.String column, System.String state)
+CanopyX.CanopyMatrix.CanopyX.CanopyMatrixDetails Details { get; set; }
+CanopyX.CanopyMatrix.CanopyX.CanopyMatrixDiagonal Diagonal { get; set; }
+CanopyX.CanopyMatrix.CanopyX.CanopyMatrixPhoneLayout Phone { get; set; }
+CanopyX.CanopyMatrix.System.Boolean AttentionOnly { get; set; }
+CanopyX.CanopyMatrix.System.Boolean AutoHeight { get; set; }
+CanopyX.CanopyMatrix.System.Boolean ColumnTotals { get; set; }
+CanopyX.CanopyMatrix.System.Boolean HideEmpty { get; set; }
+CanopyX.CanopyMatrix.System.Boolean Legend { get; set; }
+CanopyX.CanopyMatrix.System.Boolean RowTotals { get; set; }
+CanopyX.CanopyMatrix.System.Boolean Square { get; set; }
+CanopyX.CanopyMatrix.System.Collections.Generic.IList<CanopyX.CanopyMatrixCell> Cells { get; }
+CanopyX.CanopyMatrix.System.Collections.Generic.IList<CanopyX.CanopyMatrixState> States { get; }
+CanopyX.CanopyMatrix.System.Collections.Generic.IList<System.String> TotalStates { get; }
+CanopyX.CanopyMatrix.System.Nullable<CanopyX.CanopyGridDensity> Density { get; set; }
+CanopyX.CanopyMatrix.System.Nullable<System.Int32> CellWidth { get; set; }
+CanopyX.CanopyMatrix.System.String Id { get; }
+CanopyX.CanopyMatrix.System.String Label { get; set; }
+CanopyX.CanopyMatrix.System.String ToJson()
+CanopyX.CanopyMatrix.System.Void Validate()
+CanopyX.CanopyMatrix.const System.Int32 MaxCells = 1000000
+CanopyX.CanopyMatrix.const System.Int32 MaxItems = 10000
+CanopyX.CanopyMatrix.const System.Int32 MaxStates = 36
+CanopyX.CanopyMatrix.const System.String SortByLabel = "#label"
+CanopyX.CanopyMatrix.const System.String SortByTotal = "#total"
+CanopyX.CanopyMatrix.static CanopyX.CanopyMatrix FromJson(System.String json)
+CanopyX.CanopyMatrixAttribute : sealed class
+CanopyX.CanopyMatrixAttribute..ctor(System.String id, System.String title, CanopyX.CanopyColumnKind kind = Text)
+CanopyX.CanopyMatrixAttribute.CanopyX.CanopyColumnKind Kind { get; set; }
+CanopyX.CanopyMatrixAttribute.System.Boolean Facet { get; set; }
+CanopyX.CanopyMatrixAttribute.System.String Id { get; }
+CanopyX.CanopyMatrixAttribute.System.String Title { get; set; }
+CanopyX.CanopyMatrixAxis : sealed class
+CanopyX.CanopyMatrixAxis..ctor()
+CanopyX.CanopyMatrixAxis.CanopyX.CanopyMatrixAxis Attribute(System.String id, System.String title, CanopyX.CanopyColumnKind kind = Text, System.Boolean facet = False)
+CanopyX.CanopyMatrixAxis.CanopyX.CanopyMatrixAxis Item(System.String id, System.String label, System.Action<CanopyX.CanopyMatrixItem>? configure = null)
+CanopyX.CanopyMatrixAxis.System.Boolean SortDescending { get; set; }
+CanopyX.CanopyMatrixAxis.System.Collections.Generic.IList<CanopyX.CanopyMatrixAttribute> Attributes { get; }
+CanopyX.CanopyMatrixAxis.System.Collections.Generic.IList<CanopyX.CanopyMatrixItem> Items { get; }
+CanopyX.CanopyMatrixAxis.System.String? GroupBy { get; set; }
+CanopyX.CanopyMatrixAxis.System.String? Noun { get; set; }
+CanopyX.CanopyMatrixAxis.System.String? SortBy { get; set; }
+CanopyX.CanopyMatrixAxis.System.String? Title { get; set; }
+CanopyX.CanopyMatrixCell : sealed class
+CanopyX.CanopyMatrixCell..ctor(System.String row, System.String column, System.String state)
+CanopyX.CanopyMatrixCell.CanopyX.CanopyMatrixCell Detail(System.String label, System.String value)
+CanopyX.CanopyMatrixCell.System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<System.String, System.String>> Details { get; }
+CanopyX.CanopyMatrixCell.System.Nullable<System.Double> Value { get; set; }
+CanopyX.CanopyMatrixCell.System.String Column { get; }
+CanopyX.CanopyMatrixCell.System.String Row { get; }
+CanopyX.CanopyMatrixCell.System.String State { get; set; }
+CanopyX.CanopyMatrixCell.System.String? Text { get; set; }
+CanopyX.CanopyMatrixCell.System.String? Title { get; set; }
+CanopyX.CanopyMatrixDetails : enum System.Int32
+CanopyX.CanopyMatrixDetails.const CanopyX.CanopyMatrixDetails Dialog = 0
+CanopyX.CanopyMatrixDetails.const CanopyX.CanopyMatrixDetails Host = 1
+CanopyX.CanopyMatrixDiagonal : enum System.Int32
+CanopyX.CanopyMatrixDiagonal.const CanopyX.CanopyMatrixDiagonal Data = 1
+CanopyX.CanopyMatrixDiagonal.const CanopyX.CanopyMatrixDiagonal Self = 0
+CanopyX.CanopyMatrixItem : sealed class
+CanopyX.CanopyMatrixItem..ctor(System.String id, System.String label)
+CanopyX.CanopyMatrixItem.CanopyX.CanopyMatrixItem Value(System.String attribute, CanopyX.CanopyCell value)
+CanopyX.CanopyMatrixItem.System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyCell> Values { get; }
+CanopyX.CanopyMatrixItem.System.String Id { get; }
+CanopyX.CanopyMatrixItem.System.String Label { get; set; }
+CanopyX.CanopyMatrixItem.System.String? Href { get; set; }
+CanopyX.CanopyMatrixItem.System.String? Secondary { get; set; }
+CanopyX.CanopyMatrixPhoneLayout : enum System.Int32
+CanopyX.CanopyMatrixPhoneLayout.const CanopyX.CanopyMatrixPhoneLayout Cards = 1
+CanopyX.CanopyMatrixPhoneLayout.const CanopyX.CanopyMatrixPhoneLayout Scroll = 0
+CanopyX.CanopyMatrixState : sealed class
+CanopyX.CanopyMatrixState..ctor(System.String id, System.String label, CanopyX.CanopyTone tone, CanopyX.CanopyMatrixSymbol symbol)
+CanopyX.CanopyMatrixState.CanopyX.CanopyMatrixSymbol Symbol { get; set; }
+CanopyX.CanopyMatrixState.CanopyX.CanopyTone Tone { get; set; }
+CanopyX.CanopyMatrixState.System.Boolean Attention { get; set; }
+CanopyX.CanopyMatrixState.System.String Id { get; }
+CanopyX.CanopyMatrixState.System.String Label { get; set; }
+CanopyX.CanopyMatrixSymbol : enum System.Int32
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Check = 0
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Clock = 7
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Cross = 1
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Dash = 5
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Dot = 4
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Info = 3
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Pause = 8
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Question = 6
+CanopyX.CanopyMatrixSymbol.const CanopyX.CanopyMatrixSymbol Warning = 2
 CanopyX.CanopyNode : sealed class
 CanopyX.CanopyNode..ctor(System.String id, System.String label)
 CanopyX.CanopyNode.CanopyX.CanopyDetail? Detail { get; set; }
@@ -2198,6 +2331,10 @@ CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Auto = 0
 CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Compact = 2
 CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat CompactGzip = 3
 CanopyX.CanopyRowFormat.const CanopyX.CanopyRowFormat Objects = 1
+CanopyX.CanopyRowIdentity : static class
+CanopyX.CanopyRowIdentity.static System.Boolean IsInteger(System.String? id)
+CanopyX.CanopyRowIdentity.static System.Int32 Compare(System.String? left, System.String? right)
+CanopyX.CanopyRowIdentity.static System.String Format(System.Int64 key)
 CanopyX.CanopySearchHighlight : sealed class
 CanopyX.CanopySearchHighlight..ctor()
 CanopyX.CanopySearchHighlight.System.Boolean Enabled { get; set; }
@@ -2326,12 +2463,14 @@ CanopyX.CanopyTreeView.System.Void WriteJson(System.IO.Stream stream, System.Col
 CanopyX.CanopyTreeView.System.Void WriteJson(System.IO.TextWriter writer)
 CanopyX.CanopyTreeView.System.Void WriteJson(System.IO.TextWriter writer, System.Collections.Generic.ICollection<System.String>? hiddenFilterIds)
 CanopyX.Rendering.CanopyStaticHtml : static class
+CanopyX.Rendering.CanopyStaticHtml.const System.Int32 MaxStaticMatrixCells = 2500
 CanopyX.Rendering.CanopyStaticHtml.static CanopyX.Rendering.CanopyStaticHtmlResult RenderGridWithResult(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridCursorPage page, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static CanopyX.Rendering.CanopyStaticHtmlResult RenderGridWithResult(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridPage? page = null, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static CanopyX.Rendering.CanopyStaticHtmlResult RenderWithResult(CanopyX.CanopyTreeView view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String Render(CanopyX.CanopyTreeView view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGrid(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridCursorPage page, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGrid(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridPage? page = null, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
+CanopyX.Rendering.CanopyStaticHtml.static System.String RenderMatrix(CanopyX.CanopyMatrix matrix, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtmlOptions : sealed class
 CanopyX.Rendering.CanopyStaticHtmlOptions..ctor()
 CanopyX.Rendering.CanopyStaticHtmlOptions.CanopyX.Rendering.CanopyStaticTheme Theme { get; set; }

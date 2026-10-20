@@ -57,7 +57,8 @@ as one cell ("Overall ⋮"), and so does an active header filter.
 ## How a width is chosen
 
 1. **Need.** Each column measures its header and up to 200 loaded values with the grid font (canvas `measureText`, no
-   DOM reads). Presenters count with their drawn size: status strips and sparklines by their periods, enum chips and
+   DOM reads). Monospace identifiers (`identifier` with `mono`) are measured in the monospace font they are drawn in,
+   together with their secondary text. Presenters count with their drawn size: status strips and sparklines by their periods, enum chips and
    state dots with their padding, progress bars with their track, tags and lists capped like long text. The need is
    capped at 420 pixels or `maxWidth`, and is never below the header, so a header is not truncated while any column
    has slack. Wrapping columns and long-text, tag and list presenters with an assigned width keep it: they show more
@@ -73,7 +74,9 @@ as one cell ("Overall ⋮"), and so does an active header filter.
 4. **Short width** gives way in this order:
    1. normal and optional columns lose their slack, long free text first: `flex` columns, then the text columns from the
       widest down (levelled to one width), and only then the others, so dates, numbers, states and short names keep their
-      whole width while the total allows; no column goes below its header width or about eleven characters for text;
+      whole width while the total allows; no text column goes below its header width or about eleven characters, and
+      the values of date, number and graphic columns keep their whole width (an aggregate summary still gives way), because a cut date ("2026-09-21 01:…") or number
+      reads wrong;
    2. optional columns hide (on phones, at 640 pixels and below, normal columns hide too); hidden columns stay in the
       record drawer, exports and the phone "+N" button, and the Columns menu marks them "Hidden at this width";
    3. only then the grid scrolls horizontally inside itself, with pinned columns in place.

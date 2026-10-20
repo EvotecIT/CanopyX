@@ -1,5 +1,18 @@
   // ---------- inline full-dataset queries ----------
   function gridOrder(left, right) { return left === right ? 0 : left < right ? -1 : 1; }
+  // Row identities order by UTF-16 code unit, except canonical integers ("0", "42": no sign, no leading zero), which order as
+  // numbers and before every other identity, so numeric keys keep their natural order (2 before 10) without padding.
+  function gridIntegerId(id) {
+    if (id.length > 1 && id.charCodeAt(0) === 48) return false;
+    for (let index = 0; index < id.length; index++) { const code = id.charCodeAt(index); if (code < 48 || code > 57) return false; }
+    return id.length > 0;
+  }
+  function gridIdOrder(left, right) {
+    if (left === right) return 0;
+    const a = gridIntegerId(left), b = gridIntegerId(right);
+    if (a !== b) return a ? -1 : 1;
+    return a && left.length !== right.length ? left.length - right.length : left < right ? -1 : 1;
+  }
 
   // A cell's sort field (text or a number) orders it; its value stays what filters, value lists and search read.
   function gridSortScalar(cell, column) { return isCellObject(cell) && cell.sort != null ? cell.sort : gridScalar(cell, column); }
@@ -33,7 +46,7 @@
         const compared = compare(a, b, columns.get(sort.column), sort.direction);
         if (compared) return compared;
       }
-      return gridOrder(a.id, b.id);
+      return gridIdOrder(a.id, b.id);
     }) : rows;
     // The built-in order reads each row's keys once, not in every comparison: a date key parses its text.
     const sorts = query.sort.map(sort => [columns.get(sort.column), sort.direction]),
@@ -43,7 +56,7 @@
         const compared = gridKeyCompare(keys[s][a], keys[s][b], sorts[s][0], sorts[s][1]);
         if (compared) return compared;
       }
-      return gridOrder(rows[a].id, rows[b].id);
+      return gridIdOrder(rows[a].id, rows[b].id);
     }).map(index => rows[index]);
   }
 

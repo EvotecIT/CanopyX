@@ -7,7 +7,7 @@ namespace CanopyX.Tests.Grids;
 
 /// <summary>
 /// Compact row data carries an inline grid's rows as arrays in column order, in chunks the browser decodes one at a time,
-/// written in ordinal identity order so the first rows can show before the last chunk is decoded.
+/// written in identity order so the first rows can show before the last chunk is decoded.
 /// </summary>
 public sealed class GridRowDataTests {
     private static CanopyDataGridView Grid(int rows = 3) {
