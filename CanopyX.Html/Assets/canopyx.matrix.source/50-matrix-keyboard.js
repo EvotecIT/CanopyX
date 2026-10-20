@@ -3,6 +3,22 @@
   // headers and the column after the last the row totals. Arrows move (mirrored right to left), Home and End go to the row's
   // ends (with Ctrl, the matrix's), Page Up and Page Down move by a viewport, Enter opens a cell or toggles a group.
   Object.assign(MatrixView.prototype, {
+    captureFocus() {
+      return MATRIX_AXES.map((axis, index) => {
+        const entries = this.model[axis] || [], at = index ? this.focus.column : this.focus.row, entry = entries[at];
+        return { at, end: entries.length > 0 && at === entries.length, id: entry?.kind === "item" ? entry.item.id : null,
+          group: entry?.group ? { attribute: this.model.query?.group[axis], key: entry.group.key } : null };
+      });
+    },
+    restoreFocus(anchor) {
+      MATRIX_AXES.forEach((axis, index) => {
+        const entries = this.model[axis], saved = anchor[index];
+        const found = saved.id !== null ? entries.findIndex(entry => entry.kind === "item" && entry.item.id === saved.id) :
+          saved.group && saved.group.attribute === this.query.group[axis] ? entries.findIndex(entry => entry.group?.key === saved.group.key) : -1;
+        // If an entity disappears, stay at the nearest surviving position; keep header and total focus on their edges.
+        this.focus[index ? "column" : "row"] = saved.end ? entries.length : found >= 0 ? found : Math.max(-1, Math.min(saved.at, entries.length - 1));
+      });
+    },
     focusElement(r, c) {
       const model = this.model, last = model.columns.length;
       if (r === -1) return c === -1 ? this.corner : c === last ? this.headTotal : this.headMounted.get(c) || null;

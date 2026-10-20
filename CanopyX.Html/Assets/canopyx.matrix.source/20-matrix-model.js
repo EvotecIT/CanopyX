@@ -90,7 +90,7 @@
       return (a, b) => {
         const x = a.values[attribute.id]?.value ?? null, y = b.values[attribute.id]?.value ?? null;
         if (x === null || y === null) return x === y ? a.index - b.index : x === null ? 1 : -1;
-        const result = attribute.kind === "number" ? x - y : attribute.kind === "datetime" ? (x < y ? -1 : x > y ? 1 : 0) : matrixNatural(String(x), String(y));
+        const result = attribute.kind === "number" ? x - y : attribute.kind === "datetime" ? matrixMoment(x) - matrixMoment(y) : matrixNatural(String(x), String(y));
         return sign * result || a.index - b.index;
       };
     }

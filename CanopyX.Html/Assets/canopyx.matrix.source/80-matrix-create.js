@@ -6,12 +6,12 @@
     axisData(axis) { return matrixAxisName(axis) === "rows" ? this.doc.rows : this.doc.columns; },
     checkSort(axis, sort) {
       if (sort == null) return null;
-      if (typeof sort !== "object" || (sort.by !== "#label" && sort.by !== "#total" && !this.axisData(axis).attributeById.has(sort.by)) || !["asc", "desc"].includes(sort.direction))
+      if (typeof sort !== "object" || (sort.by !== "#label" && sort.by !== "#total" && !this.axisData(axis).attributeById.has(sort.by)) || ![undefined, "asc", "desc"].includes(sort.direction))
         throw new Error("CanopyX: a matrix sort is { by: \"#label\" | \"#total\" | an attribute, direction: \"asc\" | \"desc\" }.");
-      return { by: sort.by, direction: sort.direction };
+      return { by: sort.by, direction: sort.direction || "asc" };
     },
     checkFilters(axis, filters) {
-      const data = this.axisData(axis), result = {};
+      const data = this.axisData(axis), result = Object.create(null);
       if (filters == null) return result;
       if (typeof filters !== "object" || Array.isArray(filters)) throw new Error("CanopyX: matrix filters are values by attribute id.");
       for (const [id, values] of Object.entries(filters)) {
@@ -64,14 +64,21 @@
       return true;
     },
     update(view) {
-      const doc = matrixDocument(view), state = this.getState();
+      const doc = matrixDocument(view), state = JSON.parse(JSON.stringify(this.getState())), focus = this.captureFocus();
       this.doc = doc; this.labels = matrixLabels(doc.labels, this.options.labels); this.model = new MatrixModel(doc, this.format);
       this.query = this.model.initialQuery();
       // Keep what still applies: filters, sorts and groups of attributes the new document declares.
-      try { this.applyState(state, false); } catch (error) { this.query = this.model.initialQuery(); }
+      for (const axis of MATRIX_AXES) {
+        const attributes = this.axisData(axis).attributeById;
+        state.filters[axis] = Object.fromEntries(Object.entries(state.filters[axis]).filter(([id]) => attributes.has(id)));
+        const sort = state.sort[axis];
+        if (sort && !["#label", "#total"].includes(sort.by) && !attributes.has(sort.by)) state.sort[axis] = null;
+        if (state.group[axis] !== null && !attributes.has(state.group[axis])) { state.group[axis] = null; state.collapsed[axis] = []; }
+      }
+      this.applyState(state, false);
       this.root.className = "cx-matrix cx-mx-" + doc.density; this.source = view;
       this.closePanel(false); this.refreshChrome(); this.geometry = undefined;
-      this.derive(false);
+      this.derive(false, focus);
     }
   });
 

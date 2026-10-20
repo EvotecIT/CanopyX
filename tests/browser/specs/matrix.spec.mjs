@@ -18,7 +18,7 @@ function matrixDoc(extra = {}) {
     asset("canopyx-grid.css") + asset("canopyx-matrix.css") + "</style><script>" + asset("canopyx-grid.js") + "\n" + asset("canopyx-matrix.js") + "\n" + script + "</script></head>" +
     "<body style=\"margin:0;padding:16px\"><div id=\"frame\" style=\"width:" + width + "px;max-width:100%\"><div id=\"host\" style=\"height:" + height + "px\"></div></div>" +
     "<script>window.events=[];document.addEventListener('canopyx:matrixCell',e=>events.push(e.detail));document.addEventListener('canopyx:matrixState',e=>events.push({state:e.detail}));" +
-    "window.api=CanopyX.createMatrix(document.getElementById('host'),Object.assign({view:" + json + "}," + (options || "{}") + "));</script></body></html>";
+    "window.api=CanopyX.createMatrix(document.getElementById('host'),Object.assign({view:JSON.parse(" + JSON.stringify(json) + ")}," + (options || "{}") + "));</script></body></html>";
   await page.route("http://canopyx.test/matrix", route => route.fulfill({ contentType: "text/html", body }));
   await page.goto("http://canopyx.test/matrix");
   await page.evaluate(() => api.ready);
@@ -389,7 +389,49 @@ test("focus stays on its cell when the matrix is updated or its state changes", 
   await page.evaluate(doc => api.update(doc), matrixDoc({ notes: [[3, 0, 43]] }));
   await expect(page.locator(":focus")).toHaveAttribute("aria-label", "Row D and Col X: Slow, 43");
   await page.evaluate(() => api.sort("columns", "#label", "desc"));
-  await expect(page.locator(":focus")).toHaveAttribute("role", "gridcell");
+  await expect(page.locator(":focus")).toHaveAttribute("aria-label", "Row D and Col X: Slow, 43");
+  const replacement = matrixDoc({ notes: [[0, 0, 44]], cells: ["1220", "2202", "2222", "0..2", "2222", "...."] });
+  replacement.rows.items = [3, 0, 1, 2, 4, 5].map(index => replacement.rows.items[index]);
+  await page.evaluate(doc => api.update(doc), replacement);
+  await expect(page.locator(":focus")).toHaveAttribute("aria-label", "Row D and Col X: Slow, 44");
+});
+
+test("live refresh keeps valid query components when one axis loses an attribute", async ({ page }) => {
+  await mountMatrix(page, matrixDoc());
+  await page.evaluate(() => api.setState({ search: "Row", hideEmpty: true, attentionOnly: true,
+    group: { rows: "site", columns: "tier" }, filters: { rows: { site: ["South"] }, columns: { tier: ["Core"] } },
+    sort: { rows: { by: "site", direction: "desc" }, columns: { by: "#label", direction: "desc" } }, collapsed: { columns: ["Core"] } }));
+  const doc = matrixDoc();
+  delete doc.rows.attributes;
+  doc.rows.items.forEach(item => { delete item.values; });
+  await page.evaluate(doc => api.update(doc), doc);
+  expect(await page.evaluate(() => api.getState())).toEqual({ search: "Row", hideEmpty: true, attentionOnly: true,
+    group: { rows: null, columns: "tier" }, filters: { rows: {}, columns: { tier: ["Core"] } },
+    sort: { rows: null, columns: { by: "#label", direction: "desc" } }, collapsed: { rows: [], columns: ["Core"] } });
+  expect(await page.evaluate(() => api.getVisible().rows)).toEqual(["c", "d"]);
+});
+
+test("datetime attributes sort by instant on both axes, including fractional seconds and offsets", async ({ page }) => {
+  const doc = matrixDoc(), times = ["2026-10-20T08:00:00.500Z", "2026-10-20T08:00:00Z", "2026-10-20T09:00:00+02:00", "2026-10-20T10:00:00Z"];
+  for (const axis of [doc.rows, doc.columns]) {
+    axis.attributes.push({ id: "at", title: "At", kind: "datetime" });
+    axis.items.forEach((item, index) => { item.values.at = times[index % times.length]; });
+  }
+  await mountMatrix(page, doc);
+  await page.evaluate(() => { api.sort("rows", "at"); api.sort("columns", "at"); });
+  expect(await page.evaluate(() => api.getVisible())).toEqual({ rows: ["c", "b", "f", "a", "e", "d"], columns: ["z", "y", "x", "w"] });
+});
+
+test("sort state defaults to ascending and filters preserve supported dictionary keys", async ({ page }) => {
+  const doc = matrixDoc();
+  doc.rows.attributes.push({ id: "__proto__", title: "Region", facet: true });
+  doc.rows.items.forEach((item, index) => { item.values = { ...item.values, ["__proto__"]: index < 3 ? "North" : "South" }; });
+  await mountMatrix(page, doc, { options: "{state:{sort:{columns:{by:'#label'}}}}" });
+  await page.evaluate(() => { api.setState({ sort: { rows: { by: "#label" } } }); api.filter("rows", "__proto__", ["North"]); });
+  expect(await page.evaluate(() => api.getVisible().rows)).toEqual(["a", "b", "c"]);
+  // Serialize inside the page so the automation transport cannot reinterpret the __proto__ property.
+  expect(JSON.parse(await page.evaluate(() => JSON.stringify(api.getState().filters.rows)))).toEqual({ ["__proto__"]: ["North"] });
+  expect(await page.evaluate(() => api.getState().sort)).toEqual({ rows: { by: "#label", direction: "asc" }, columns: { by: "#label", direction: "asc" } });
 });
 
 test("printing draws a table of the visible matrix", async ({ page }) => {

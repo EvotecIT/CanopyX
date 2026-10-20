@@ -99,16 +99,14 @@
       this.refreshBar?.();
     }
     /** Re-derives what the reader sees from the query, then lays it out and paints it; keyboard focus stays on its cell. */
-    derive(announce) {
+    derive(announce, anchor = this.captureFocus()) {
       const focused = this.scroll.contains(document.activeElement);
       this.model.derive(this.query);
-      const rows = this.model.rows, columns = this.model.columns;
-      this.focus.row = Math.max(-1, Math.min(this.focus.row, rows.length - 1));
-      this.focus.column = Math.max(-1, Math.min(this.focus.column, columns.length - 1));
+      this.restoreFocus(anchor);
       this.syncBar(); this.paintLegend();
       this.layout(); this.recycleAll(); this.render();
-      // Focus goes back to its cell without scrolling to it, so a live update never moves the reader's view.
-      if (focused && !this.scroll.hidden) this.moveTo(this.focus.row, this.focus.column, true, false, false);
+      // Retain the same entities after sorting or refresh. Reveal them only when the matrix already owns focus.
+      if (focused && !this.scroll.hidden) this.moveTo(this.focus.row, this.focus.column, true, false);
       if (announce) setText(this.live, this.summaryText());
     }
     layout() {

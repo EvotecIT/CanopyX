@@ -16,9 +16,9 @@ namespace CanopyX;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The rows are taken when the instance is created and written in identity order (<see cref="CanopyRowIdentity"/>), which is the order the
-/// grid shows when no sort applies, so the browser shows the first rows as soon as their chunk is decoded. The grid always
-/// orders rows by its sort keys and then by identity, so the order of rows in the data never changes what it shows.
+/// The rows are taken when the instance is created and written in ordinal string order, as version 1 requires for
+/// existing readers. The grid orders the decoded rows by its sort keys and then by <see cref="CanopyRowIdentity"/>,
+/// so numeric identities still display in numeric order.
 /// </para>
 /// <para>
 /// A host writes the grid document with <see cref="ToJson"/> and each chunk with <see cref="GetChunk"/>: into
@@ -48,7 +48,7 @@ public sealed class CanopyGridRowData {
         // A compact row is its key and its cells: detail payloads and record fields would be lost, so such rows stay row objects.
         var carried = rows.FirstOrDefault(row => row.Detail != null || row.HasFields);
         if (carried != null) throw new InvalidOperationException("Row data cannot carry the detail payload or record fields of row '" + carried.Id + "'; write these rows as row objects.");
-        Array.Sort(rows, (left, right) => CanopyRowIdentity.Compare(left.Id, right.Id));
+        Array.Sort(rows, (left, right) => string.CompareOrdinal(left.Id, right.Id));
         Columns = view.Columns.Select(column => column.Id).ToList().AsReadOnly();
         // Capture the compact wire values, including nested structured cells, rather than mutable authoring objects.
         _rows = rows.Select(row => {

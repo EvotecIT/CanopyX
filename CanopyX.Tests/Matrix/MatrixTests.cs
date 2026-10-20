@@ -32,6 +32,8 @@ public sealed class MatrixTests {
     [Fact]
     public void ToJson_WritesTheSharedFixture() {
         var json = Small().ToJson();
+        ProtocolSchema.AssertValid(json, "Matrix writer");
+        ProtocolSchema.AssertValid(Fixture(), "Shared matrix fixture");
         Assert.Equal(System.Text.Json.JsonDocument.Parse(Fixture()).RootElement.ToString().Replace(" ", string.Empty).Replace("\n", string.Empty),
             System.Text.Json.JsonDocument.Parse(json).RootElement.ToString().Replace(" ", string.Empty).Replace("\n", string.Empty));
         Assert.Contains("\"cells\":[\"2202\",\"2222\",\"0..2\",\"1220\",\"2222\",\"....\"]", json);
@@ -56,10 +58,12 @@ public sealed class MatrixTests {
         matrix.Rows.Item("a", "A").Item("b", "B");
         matrix.Set("a", "a", "bad"); matrix.Set("a", "b", "bad");
         var json = matrix.ToJson();
+        ProtocolSchema.AssertValid(json, "Square matrix writer");
         Assert.Contains("\"square\":true,\"columnTitle\":\"Source\"", json);
         Assert.Contains("\"cells\":[\".0\",\"..\"]", json);
         Assert.DoesNotContain("\"columns\"", json);
         matrix.Diagonal = CanopyMatrixDiagonal.Data;
+        ProtocolSchema.AssertValid(matrix.ToJson(), "Square matrix with diagonal data");
         Assert.Contains("\"cells\":[\"00\",\"..\"]", matrix.ToJson());
         Assert.Equal(matrix.ToJson(), CanopyMatrix.FromJson(matrix.ToJson()).ToJson());
         matrix.Diagonal = CanopyMatrixDiagonal.Self;
@@ -83,6 +87,7 @@ public sealed class MatrixTests {
         matrix.Rows.GroupBy = "site"; matrix.Rows.SortBy = CanopyMatrix.SortByTotal; matrix.Rows.SortDescending = true;
         matrix.Labels = CanopyLabels.Polish();
         var json = matrix.ToJson();
+        ProtocolSchema.AssertValid(json, "Matrix with all options");
         foreach (var part in new[] { "\"totals\":{\"states\":[\"bad\"],\"rows\":false}", "\"attentionOnly\":true", "\"cellWidth\":44", "\"density\":\"compact\"", "\"details\":\"host\"",
             "\"phone\":\"cards\"", "\"legend\":false", "\"hideEmpty\":true", "\"autoHeight\":false", "\"groupBy\":\"site\"", "\"sort\":{\"by\":\"#total\",\"direction\":\"desc\"}", "\"matrixSearch\":\"Szukaj wierszy i kolumn\"" })
             Assert.Contains(part, json);

@@ -931,19 +931,19 @@ export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement,
 export function createDataGrid<Row extends GridRow = GridRow>(host: HTMLElement, options: CursorGridOptions<GridNamedRow<Row>>): DataGrid<GridCursorQuery, Row>;
 /** A calendar from a list of events, with no grid schema to write: a preset (basic by default) and options over it (calendar.d.ts). */
 export function createCalendar(host: HTMLElement, options?: CalendarOptions): DataGrid<GridQuery, GridRow>;
-/** Registers options before a tree, flat-grid or flow fragment mounts. */
-export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery> | Partial<Omit<FlowOptions, "flow">>): () => void;
+/** Registers options before a tree, flat-grid, flow or matrix fragment mounts. */
+export function configure(viewId: string, options: HostOptions | GridHostOptions | GridHostOptions<GridCursorQuery> | Partial<Omit<FlowOptions, "flow">> | Partial<Omit<MatrixOptions, "view">>): () => void;
 /**
- * Mounts tree, flat-grid and flow fragments below root, or root itself when it is a fragment. Fragments marked
+ * Mounts tree, flat-grid, flow and matrix fragments below root, or root itself when it is a fragment. Fragments marked
  * `data-cx-mount="visible"` below root wait until they come near the viewport; passing such a fragment as root mounts it at once.
  * Narrow a controller before using view-specific methods.
  */
-export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery> | FlowApi>;
+export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGridQuery> | FlowApi | MatrixApi>;
 
 import type { createFlow, FlowApi, FlowOptions } from "./flow.js";
 export { createFlow } from "./flow.js";
 export type { FlowDocument, FlowField, FlowStep, FlowSection, FlowOption, FlowCondition, FlowValidation, FlowValue, FlowSubmission, FlowSubmitDetail, FlowAnswer, FlowHooks, FlowOptions, FlowApi, FlowState, FlowValidationResult } from "./flow.js";
-import type { createMatrix } from "./matrix.js";
+import type { createMatrix, MatrixOptions, MatrixApi } from "./matrix.js";
 export { createMatrix } from "./matrix.js";
 export type { MatrixDocument, MatrixAxis, MatrixItem, MatrixAttribute, MatrixState, MatrixSort, MatrixNote, MatrixQueryState, MatrixStateInput, MatrixCellDetail, MatrixOptions, MatrixApi } from "./matrix.js";
 declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };

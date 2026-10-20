@@ -62,7 +62,7 @@ and `large/matrix-400.html`.
 
 | Property | Meaning |
 | --- | --- |
-| `rows`, `columns` | The axes: `title`, `noun`, up to 32 `attributes` (`id`, `title`, `kind` text, number or datetime, `facet`), 1 to 10,000 `items` (`id`, `label`, `secondary`, `href`, `values` by attribute: a value, or `{ value, text }`; datetime values are ISO 8601), and the first `groupBy` and `sort` (`by` is `#label`, `#total` or an attribute; `direction` asc or desc). |
+| `rows`, `columns` | The axes: `title`, `noun`, up to 32 `attributes` (`id`, `title`, `kind` text, number or datetime, `facet`), 1 to 10,000 `items` (`id`, `label`, `secondary`, `href`, `values` by attribute: a value, or `{ value, text }`; datetime values are ISO 8601, sorted by instant at millisecond precision; an omitted zone means UTC), and the first `groupBy` and `sort` (`by` is `#label`, `#total` or an attribute; `direction` asc or desc). |
 | `square`, `columnTitle` | A square matrix has no `columns`: its rows are also its columns, and `columnTitle` names them (for example Source beside Destination). |
 | `diagonal` | The self cells of a square matrix: `self` (the default) draws them hatched and counts them nowhere; `data` treats them as ordinary cells. |
 | `states` | 1 to 36 states, **worst first**: `id`, `label`, `tone` (a CanopyX or host tone), the required `symbol` (check, cross, warning, info, dot, dash, question, clock, pause) so no state relies on colour alone, and `attention`. |
