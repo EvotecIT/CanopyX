@@ -169,6 +169,21 @@
       ]
     },
     {
+      "name": "matrix",
+      "label": "matrix view",
+      "runtimes": ["grid"],
+      "views": ["matrix"],
+      "key": "MATRIX_IMPL",
+      "context": ["MATRIX_IMPL", "h", "setText", "fill", "foldText", "numberFormat", "gridFreeze", "toneOf", "applyTone", "toneColors", "AxisWindow", "PROTOCOL"],
+      "end": "MATRIX_IMPL.create = matrixCreate;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.matrix.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.matrix.source/matrix.css"
+      ]
+    },
+    {
       "name": "editing",
       "label": "editing",
       "runtimes": ["grid"],

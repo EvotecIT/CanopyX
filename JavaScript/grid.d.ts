@@ -943,5 +943,8 @@ export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGrid
 import type { createFlow } from "./flow.js";
 export { createFlow } from "./flow.js";
 export type { FlowDocument, FlowField, FlowStep, FlowSection, FlowOption, FlowCondition, FlowValidation, FlowValue, FlowSubmission, FlowSubmitDetail, FlowAnswer, FlowHooks, FlowOptions, FlowApi, FlowState, FlowValidationResult } from "./flow.js";
-declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
+import type { createMatrix } from "./matrix.js";
+export { createMatrix } from "./matrix.js";
+export type { MatrixDocument, MatrixAxis, MatrixItem, MatrixAttribute, MatrixState, MatrixSort, MatrixNote, MatrixQueryState, MatrixStateInput, MatrixCellDetail, MatrixOptions, MatrixApi } from "./matrix.js";
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;
