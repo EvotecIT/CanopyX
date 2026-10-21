@@ -17,6 +17,19 @@ internal static partial class ReportGridLayoutExample {
             phone.View.Columns[4].ResponsivePriority = 1;
             phone.View.SaveHtmlPage(Path.Combine(output, "report-grid-essential-fields" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Title = "Essential fields on phones", Theme = theme, Height = "480px" });
+            var context = new CanopyDataGridView<ReviewRecord>("phone-context", "Observation records", row => row.Id);
+            context.View.Reporting = new CanopyGridReporting();
+            context.View.Selection = CanopySelectionMode.None;
+            context.Column(row => row.Name, "Check", column => column.Sizing = CanopyColumnSizing.Preferred(240));
+            context.Column(row => row.State, "Outcome", column => column.ResponsivePriority = 1);
+            context.Column(row => row.Team, "Domain", column => column.ResponsivePriority = 2);
+            context.Column(row => row.Review, "Evidence");
+            context.AddRows(new[] {
+                new ReviewRecord("a", "Protocol support", "first.example.test", "Needs review", "Observed response", 1),
+                new ReviewRecord("b", "Protocol support", "second.example.test", "Needs review", "Observed response", 1)
+            });
+            context.View.SaveHtmlPage(Path.Combine(output, "report-grid-record-context" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+                new CanopyHtmlOptions { Title = "Context beneath repeated record names", Theme = theme, Height = "360px" });
         }
     }
 

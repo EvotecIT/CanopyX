@@ -47,6 +47,30 @@ for (const count of [1, 2]) test(`phone disclosure counts only ${count} fields b
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(`+${count} column${count === 1 ? "" : "s"}`);
 });
 
+test("same-named phone records expose their next priority context without author-hidden fields", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const columns = [{ id: "check", title: "Check", kind: "text", rowHeader: true, width: 180 },
+    { id: "outcome", title: "Outcome", kind: "text", priority: 1 },
+    { id: "domain", title: "Domain", kind: "text", priority: 2 },
+    { id: "area", title: "Area", kind: "text", priority: 3 },
+    { id: "evidence", title: "Evidence", kind: "text", priority: "optional" },
+    { id: "internal", title: "Not in this view", kind: "text", hidden: true, priority: 0 }];
+  const view = { protocol: "canopyx/2", type: "grid", id: "contexts", label: "Checks", rowHeight: 32, pageSize: 100, selection: "none",
+    source: { kind: "inline" }, columns, rows: ["first.example.test", "second.example.test"].map((domain, i) => ({ id: "r" + i,
+      cells: { check: "EDNS support", outcome: "Error", domain, area: "DNS", evidence: "Observed response", internal: "Hidden detail" } })) };
+  await page.route("http://canopyx.test/context", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("http://canopyx.test/context");
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready);
+  for (const [index, domain] of ["first.example.test", "second.example.test"].entries()) {
+    const row = page.locator(`.cx-row[data-cx-id="r${index}"]`);
+    await expect(row.locator(".cx-phone-fields")).toContainText(domain);
+    await expect(row.locator(".cx-phone-value").first()).toHaveAttribute("title", domain);
+    await expect(row.locator(".cx-phone-fields")).not.toContainText("Hidden detail");
+    await expect(row.locator(".cx-hidden-fields")).toHaveText("+1 column");
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
 test("phone disclosure uses the existing localized plural catalogue", async ({ page }) => {
   await open(page, { extra: 2, lang: "pl", labels: { hiddenColumns: "[one]+{count} kolumna[few]+{count} kolumny[other]+{count} kolumn" } });
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText("+2 kolumny");

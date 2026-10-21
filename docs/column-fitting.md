@@ -92,7 +92,11 @@ space to those fields, even when it has a preferred width. Its text truncates
 with the complete value in a tooltip; fixed and reader-sized widths still win.
 When the essential fields and a useful primary line cannot fit together, automatic
 essential columns move into a quiet second line beneath the row header. Up to two
-hidden essential fields appear there, using their normal value presenters. Other
+hidden essential fields appear there, using their normal value presenters. When
+only the row header and at most one other column fit, the next columns in priority
+order fill any remaining second-line slots. This keeps records with the same name
+distinguishable by context such as a domain or owner. Author-hidden columns never
+enter that line. Values truncate inside their slot and retain their full tooltip. Other
 hidden fields stay in the drawer. Rows with this line follow its measured height;
 other rows keep their authored height policy, including during recycling and
 container resizing. Fixed, reader-sized and always-visible columns retain their

@@ -1,11 +1,13 @@
-  // Phone records retain a contained primary value and a quiet line of up to two hidden essential fields.
+  // Phone records retain a contained primary value and a quiet line of up to two priority context fields.
   // The drawer chip counts only what that line does not show.
   DataGrid.prototype.hiddenViewColumns = function () {
     return this.columns.filter(column => !column.hidden && (column.responsiveHidden || column.fitHidden));
   };
   DataGrid.prototype.phoneLineColumns = function () {
     if (this.host.clientWidth > 640 || (this.layoutMode || "fit") !== "fit") return [];
-    return this.hiddenViewColumns().filter(column => gridLevel(column) === 0).sort((a, b) => gridRank(a) - gridRank(b)).slice(0, 2);
+    const hidden = this.hiddenViewColumns().sort((a, b) => gridRank(a) - gridRank(b));
+    const compact = this.columns.filter(column => !column.hidden && !column.responsiveHidden && !column.fitHidden).length <= 2;
+    return hidden.filter(column => gridLevel(column) === 0 || compact).slice(0, 2);
   };
   DataGrid.prototype.phoneRemainingColumns = function () {
     const shown = this.phoneLineColumns();
