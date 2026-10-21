@@ -179,6 +179,11 @@ including dark (`data-cx-theme`), and use logical properties, so right-to-left p
 
 TypeScript: `DiffDocument`, `ChangeListDocument`, `PropagationDocument` and their options and APIs from `@evotecit/canopyx/grid`.
 
+Invalid documents show an alert and raise `canopyx:error` with the validation error. If a supplied diff's hunks do not match its
+file text, the alert explains the mismatch. An invalid `update(view)` removes the preceding view and its Copy/export actions,
+then throws the validation error; it never leaves the preceding diff available as if it represented the rejected document.
+Pass a valid document to `update(view)` to recover. An initial invalid document rejects `ready`.
+
 ## Packaging and size
 
 The views ship as the lazy `changes` part (`canopyx-changes.js` and `.css`, about 28 KB gzip, guard 30 KiB), loaded by the grid

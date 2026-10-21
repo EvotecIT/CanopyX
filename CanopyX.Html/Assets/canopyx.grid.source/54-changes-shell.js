@@ -14,15 +14,43 @@
       const existing = activeChangeViews.get(host);
       if (existing) return existing;
       const addedClasses = ["cx-host", "cx-change-host"].filter(className => !host.classList.contains(className)), hadClass = host.hasAttribute("class"), previousError = host.getAttribute("data-cx-error");
-      let impl = null, destroyed = false, notice = null, errorText = null;
+      let impl = null, destroyed = false, notice = null, errorText = null, failure = null, loaded = false, currentView = options.view;
       const cancelled = () => new DOMException("Change view was destroyed.", "AbortError");
-      const ready = loadPart(CHANGES_PART).then(() => { if (destroyed) throw cancelled(); impl = CHANGES_IMPL[kind](host, options); return impl.ready; });
+      const clearError = () => {
+        notice?.remove(); notice = null;
+        if (errorText !== null && host.getAttribute("data-cx-error") === errorText) { if (previousError === null) host.removeAttribute("data-cx-error"); else host.setAttribute("data-cx-error", previousError); }
+        errorText = null;
+      };
+      const showError = error => {
+        if (destroyed) return;
+        // Invalid updates must retire the preceding view and its Copy/JSON actions, rather than leave stale evidence usable.
+        impl?.destroy(); impl = null; failure = error; clearError();
+        notice = h("div", "cx-mount-error"); notice.setAttribute("role", "alert");
+        setText(notice, error && error.message ? error.message : String(error));
+        host.appendChild(notice); errorText = notice.textContent; host.setAttribute("data-cx-error", errorText);
+        host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true }));
+      };
+      const mount = view => {
+        clearError();
+        impl = CHANGES_IMPL[kind](host, { ...options, view }); failure = null;
+        return impl.ready;
+      };
+      const ready = loadPart(CHANGES_PART).then(() => { if (destroyed) throw cancelled(); loaded = true; return mount(currentView); });
       const api = { element: host };
-      Object.defineProperty(api, "view", { enumerable: true, get: () => impl ? impl.document() : options.view });
+      Object.defineProperty(api, "view", { enumerable: true, get: () => impl ? impl.document() : currentView });
       for (const method of CHANGE_VIEW_METHODS[kind]) api[method] = (...args) => {
-        const invoke = () => { if (destroyed) throw cancelled(); return impl[method](...args); };
+        const invoke = () => {
+          if (destroyed) throw cancelled();
+          if (method === "update") {
+            currentView = args[0];
+            try { return impl ? impl.update(...args) : mount(currentView); }
+            catch (error) { showError(error); throw error; }
+          }
+          if (failure) throw failure;
+          return impl[method](...args);
+        };
         if (destroyed) throw cancelled();
-        return impl ? invoke() : ready.then(invoke);
+        return loaded ? invoke() : ready.then(invoke);
       };
       api.ready = ready.then(() => { if (destroyed) throw cancelled(); return api; });
       api.ready.catch(() => {});
@@ -31,18 +59,11 @@
         destroyed = true; impl?.destroy();
         if (activeChangeViews.get(host) === api) activeChangeViews.delete(host);
         if (host.canopyx === api) delete host.canopyx;
-        host.removeAttribute("data-canopyx-mounted"); notice?.remove();
-        if (errorText !== null && host.getAttribute("data-cx-error") === errorText) { if (previousError === null) host.removeAttribute("data-cx-error"); else host.setAttribute("data-cx-error", previousError); }
+        host.removeAttribute("data-canopyx-mounted"); clearError();
         for (const className of addedClasses) host.classList.remove(className);
         if (!hadClass && !host.classList.length) host.removeAttribute("class");
       };
-      ready.catch(error => {
-        if (destroyed) return;
-        notice = h("div", "cx-mount-error"); notice.setAttribute("role", "alert");
-        setText(notice, error && error.message ? error.message : String(error));
-        host.appendChild(notice); errorText = notice.textContent; host.setAttribute("data-cx-error", errorText);
-        host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true }));
-      });
+      ready.catch(showError);
       Object.freeze(api);
       activeChangeViews.set(host, api);
       host.classList.add("cx-host", "cx-change-host"); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api;

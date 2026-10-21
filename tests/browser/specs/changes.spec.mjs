@@ -64,7 +64,7 @@ test("a diff switches layouts, folds unchanged regions that open in place, and m
   await expand.click();
   await expect(page.getByRole("button", { name: "Show 18 more lines" })).toHaveCount(0);
   await expect(page.locator(".cx-diff-row", { hasText: "line 15" })).toHaveCount(1);
-  await page.locator(".cx-diff-scroll").focus();
+  await expect(page.locator(".cx-diff-scroll")).toBeFocused();
   await page.keyboard.press("n");
   await expect(page.locator(".cx-diff-current").first()).toContainText("line 5");
   await expect(page.locator(".cx-diff [aria-live]")).toHaveText("Change 1 of 2");
@@ -110,6 +110,8 @@ test("a supported large folded region expands without an argument limit", async 
   await mount(page, "createDiff", envelope("diff", { id: "large", label: "large.txt", layout: "inline", before: prefix + "old\n", after: prefix + "new\n",
     hunks: [{ before: 180001, after: 180001, lines: ["-old", "+new"] }] }));
   await page.getByRole("button", { name: "Show 180,000 more lines" }).click();
+  await expect(page.getByRole("button", { name: "Show 180,000 more lines" })).toHaveCount(0);
+  await expect(page.locator(".cx-diff-scroll")).toBeFocused();
   await expect(page.locator(".cx-diff-scroll")).toHaveAttribute("aria-rowcount", "180003");
   expect(await page.locator(".cx-diff-row").count()).toBeLessThan(200);
   await page.evaluate(() => api.update({ protocol: "canopyx/2", type: "diff", id: "large", label: "large.txt", layout: "inline",
@@ -251,10 +253,52 @@ for (const [name, create, view, message] of [
 ]) {
   test("a document with " + name + " fails with a message", async ({ page }) => {
     await page.route("http://canopyx.test/bad", route => route.fulfill({ contentType: "text/html", body: "<!DOCTYPE html><html lang=\"en\"><head><title>x</title><script>" + asset("canopyx-grid.js") + "\n" + asset("canopyx-changes.js") +
-      "</script></head><body><div id=\"host\"></div><script>window.result=CanopyX." + create + "(document.getElementById('host'),{view:" + JSON.stringify(view).replace(/</g, "\\u003c") + "}).ready.then(()=>'ready',e=>e.message);</script></body></html>" }));
+      "</script></head><body><div id=\"host\"></div><script>window.diagnostics=[];document.addEventListener('canopyx:error',e=>diagnostics.push(e.detail.error.message));window.api=CanopyX." + create + "(document.getElementById('host'),{view:" + JSON.stringify(view).replace(/</g, "\\u003c") + "});window.result=api.ready.then(()=>'ready',e=>e.message);</script></body></html>" }));
     await page.goto("http://canopyx.test/bad");
     expect(await page.evaluate(() => window.result)).toContain(message);
     await expect(page.locator("#host")).toHaveAttribute("data-cx-error", /not valid/);
+    await expect(page.getByRole("alert")).toBeVisible();
+    expect(await page.evaluate(() => diagnostics)).toEqual([await page.evaluate(() => result)]);
+    await expect(page.getByRole("button", { name: /Copy diff|Export JSON/ })).toHaveCount(0);
+    if (create === "createDiff" && view.hunks) await expect(page.getByRole("alert")).toContainText("This diff can't be shown: the supplied hunks don't match the file text");
+  });
+}
+
+for (const nested of [false, true]) {
+  test((nested ? "a change list" : "a diff") + " rejects an inconsistent update with a diagnostic and no stale exports, then recovers", async ({ page }, testInfo) => {
+    const valid = { id: "d", label: "file.txt", before: "a\nb\nc", after: "a\nB\nc", hunks: [{ before: 2, after: 2, lines: ["-b", "+B"] }] };
+    const wrap = diff => nested ? envelope("changes", { id: "list", label: "Changes", exports: ["json"], items: [{ id: "item", kind: "modified", path: "file.txt", diff }] }) : envelope("diff", diff);
+    await mount(page, nested ? "createChangeList" : "createDiff", wrap(valid));
+    await page.evaluate(() => { window.diagnostics = []; document.addEventListener("canopyx:error", event => diagnostics.push(event.detail.error.message)); });
+    const invalid = wrap({ ...valid, after: "omitted\nB\nc" });
+    const failure = await page.evaluate(view => { try { api.update(view); return null; } catch (error) { return error.message; } }, invalid);
+    expect(failure).toContain("This diff can't be shown: the supplied hunks don't match the file text");
+    await expect(page.getByRole("alert")).toHaveText(failure);
+    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.locator("#host")).toHaveAttribute("data-cx-error", failure);
+    await expect(page.locator(".cx-diff-row")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Copy diff|Export JSON/ })).toHaveCount(0);
+    expect(await page.evaluate(() => diagnostics)).toEqual([failure]);
+    if (!nested) expect(await page.evaluate(() => { try { api.copy(); return null; } catch (error) { return error.message; } })).toBe(failure);
+    if (testInfo.project.name === "chromium") {
+      for (const width of [1200, 390]) {
+        await page.setViewportSize({ width, height: 800 });
+        await page.screenshot({ path: testInfo.outputPath("invalid-" + width + ".png") });
+      }
+    }
+    await page.evaluate(view => api.update(view), wrap(valid));
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await expect(page.locator("#host")).not.toHaveAttribute("data-cx-error");
+    await expect(page.getByRole("button", { name: nested ? "Export JSON" : "Copy diff" })).toBeVisible();
+    if (nested) {
+      const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Export JSON" }).click()]);
+      expect(JSON.parse(fs.readFileSync(await download.path(), "utf8")).items[0].diff.unified).toContain("-b\n+B\n");
+    } else {
+      await expect(page.getByRole("cell", { name: "Added line 2: B", exact: true })).toBeVisible();
+      expect(await page.evaluate(() => api.getHunks())).toEqual(valid.hunks);
+    }
+    await page.evaluate(() => api.destroy());
+    await expect(page.locator("#host")).toBeEmpty();
   });
 }
 
