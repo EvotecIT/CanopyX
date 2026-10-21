@@ -6,6 +6,7 @@ namespace CanopyX;
 /// <summary>The checks a diff, a change list and a propagation view pass before they are written; the browser's changes part applies the same rules.</summary>
 internal static class CanopyChangeValidator {
     internal static void Validate(CanopyTextDiff diff) {
+        Id(diff.Id, "The diff");
         Text(diff.Label, "The diff label", 200, false);
         Line(diff.Path, "The diff path", 2048);
         Line(diff.PreviousPath, "The diff's previous path", 2048);
@@ -59,6 +60,7 @@ internal static class CanopyChangeValidator {
     }
 
     internal static void Validate(CanopyChangeList list) {
+        Id(list.Id, "The change list");
         Text(list.Label, "The change list label", 200, false);
         if (list.Items.Count > CanopyChangeList.MaxItems) throw new InvalidOperationException("A change list holds at most " + CanopyChangeList.MaxItems + " items.");
         if (list.Actions.Count > 8) throw new InvalidOperationException("A change list has at most 8 actions.");
@@ -126,6 +128,11 @@ internal static class CanopyChangeValidator {
         if (action.Reason && kinds > 0) throw new InvalidOperationException(what + " asks for a reason, so it is the host's: it does not copy, link or reveal.");
     }
 
+    /// <summary>A view's id: at most 256 characters, as the browser checks it.</summary>
+    private static void Id(string id, string what) {
+        if (id.Length > 256) throw new InvalidOperationException(what + " needs an id of at most 256 characters.");
+    }
+
     private static void Values(IDictionary<string, string> values, string what) {
         if (values.Count > 16) throw new InvalidOperationException(what + " has at most 16 values.");
         foreach (var value in values) {
@@ -134,6 +141,7 @@ internal static class CanopyChangeValidator {
     }
 
     internal static void Validate(CanopyPropagation view) {
+        Id(view.Id, "The propagation view");
         Text(view.Label, "The propagation label", 200, false);
         Text(view.Summary, "The propagation summary", 500, true);
         Text(view.Title, "The propagation title", 200, true);

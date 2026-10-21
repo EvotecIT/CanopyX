@@ -59,6 +59,8 @@ public static partial class CanopyStaticHtml {
         var lines = 0;
         foreach (var row in rows) {
             if (row.Gap > 0) {
+                // Past the row limit, folded regions are counted in the overflow line with the rest.
+                if (lines >= maxRows) continue;
                 var text = CanopyPlural.Pick(labels.ChangeHiddenLines, row.Gap, settings.Culture).Replace("{count}", row.Gap.ToString("N0", settings.Culture));
                 html.Append("<tr><td colspan=\"4\" style=\"padding:2px 8px;font-size:12px;").Append(styles.DiffGap).Append("\">⋯ ").Append(Encode(text)).Append("</td></tr>");
                 continue;

@@ -27,8 +27,11 @@
     for (const [key, value] of Object.entries(input)) { if (!key.length || key.length > 64 || typeof value !== "string" || value.length > 4096) changeFail(what + " has an invalid value"); values[key] = value; }
     return Object.freeze(values);
   }
+  /** An item's diff, with its labels checked when the list loads rather than when the item first opens. */
+  function changeDiffChecked(diff) { changeLabels(diff.labels); return diff; }
   function changesDocument(input) {
     const doc = changeEnvelope(input, "changes", ["id", "label", "actions", "toolbar", "values", "exports", "items", "groupByFolder", "flaggedOnly", "expandFlagged", "hashLength", "pageSize", "timeZone", "labels"]);
+    changeLabels(doc.labels);
     const actionIds = new Set(), actions = changeList(doc.actions, "actions", 8).map(entry => changeAction(entry, actionIds));
     const barIds = new Set(actionIds), listValues = changeValues(doc.values, "the change list"), toolbar = changeList(doc.toolbar, "toolbar", 8).map(entry => {
       const action = changeAction(entry, barIds), key = action.copy ?? action.link;
@@ -62,7 +65,7 @@
       const values = changeValues(item.values, what);
       return Object.freeze({ id, index, kind, path, previousPath, kindLabel: changeText(item.kindLabel, what + " kind label", 64, true), secondary: changeText(item.secondary, what + " secondary text", 200, true),
         before: changeVersion(item.before, what + " before"), after: changeVersion(item.after, what + " after"), facts: Object.freeze(facts), flags: Object.freeze(flags),
-        diff: item.diff === undefined ? null : diffBody(item.diff, what + " diff"), actions: Object.freeze([...offered]), values });
+        diff: item.diff === undefined ? null : changeDiffChecked(diffBody(item.diff, what + " diff")), actions: Object.freeze([...offered]), values });
     });
     return Object.freeze({ id: changeId(doc.id, "the change list id"), label: changeText(doc.label, "the label", 200), actions: Object.freeze(actions), toolbar: Object.freeze(toolbar),
       values: listValues, exports: Object.freeze([...exports]), items: Object.freeze(items),

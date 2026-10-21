@@ -116,7 +116,7 @@ CanopyX never acts on an item. An action is one of these:
   carries `reason`. Governed changes, such as acknowledging or marking a change as expected, need one.
 - **`copy`** writes `path`, `previousPath` or a value to the clipboard (the Clipboard API, or a selected text area where it is
   unavailable) and raises the event with `copied` true or false.
-- **`link`** opens `path` or a value as a link (`#…`, relative, `http(s):` and `mailto:` addresses only; any other address leaves
+- **`link`** opens `path` or a value as a link (`#…`, `/…`, `./…`, `../…`, `http(s)://…` and `mailto:` addresses without backslashes or control characters; any other address leaves
   the action out), and raises the event with `href`.
 - **`reveal`** (`details` or `diff`) opens the item and brings its details or its diff into view, focused, and raises the event with
   `reveal`.

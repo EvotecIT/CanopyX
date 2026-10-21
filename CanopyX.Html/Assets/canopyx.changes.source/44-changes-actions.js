@@ -4,7 +4,12 @@
   // shows a field first. An action nobody claims says so and offers its request as JSON, so a read-only page never fails silently.
   const CHANGE_LINK = /^(?:#|\/(?!\/)|\.{1,2}\/|https?:\/\/|mailto:)/i;
   /** The address a link action opens, or null when it has none or it is not one CanopyX opens (only #, relative, http(s) and mailto). */
-  function changeHref(value) { return typeof value === "string" && CHANGE_LINK.test(value.trim()) ? value.trim() : null; }
+  function changeHref(value) {
+    if (typeof value !== "string") return null;
+    const href = value.trim();
+    // Backslashes and control characters are refused: browsers read "/\host" and "/<tab>/host" as another site.
+    return CHANGE_LINK.test(href) && !/[\\\u0000-\u001f\u007f]/.test(href) ? href : null;
+  }
   /** Writes a file the reader saves; false when the browser has no way to. */
   function changeDownload(name, type, text) {
     if (typeof Blob !== "function" || !global.URL || typeof URL.createObjectURL !== "function") return false;
@@ -61,7 +66,7 @@
       if (action.icon !== "none") control.appendChild(changeIcon(action.icon));
       if (action.icon === "none" || !item) control.appendChild(document.createTextNode(action.label));
       else { control.setAttribute("aria-label", action.label); control.title = action.label; }
-      if (action.reason) control.setAttribute("aria-haspopup", "dialog");
+      if (action.reason) control.setAttribute("aria-expanded", String(!!(this.pending && this.pending.mode === "ask" && this.pending.action === action && this.pending.item === item)));
       return control;
     },
     /** The bar's tools: its actions and its exports. */
@@ -86,8 +91,8 @@
       this.host.dispatchEvent(event);
       let claimed = event.defaultPrevented;
       if (typeof this.options.onAction === "function") {
-        claimed = true;
-        try { this.options.onAction(detail, event); } catch (error) { this.host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error, hook: "onAction" }, bubbles: true })); }
+        // A handler that fails has not carried the action out, so the reader still gets the request to pass on.
+        try { this.options.onAction(detail, event); claimed = true; } catch (error) { this.host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error, hook: "onAction" }, bubbles: true })); }
       }
       return claimed;
     },
@@ -105,7 +110,11 @@
     },
     send(action, item, reason) {
       const detail = this.detailOf(action, item, reason === null ? {} : { reason });
-      this.pending = this.request(detail) ? null : { mode: "note", action, item, detail };
+      const claimed = this.request(detail);
+      // The host may have destroyed or replaced the list while it handled the action.
+      if (this.destroyed) return;
+      if (item && !this.doc.items.includes(item)) { this.pending = null; this.render(); return; }
+      this.pending = claimed ? null : { mode: "note", action, item, detail };
       this.render();
       if (this.pending) this.focusPanel(); else this.focusAction(action, item);
     },
@@ -120,7 +129,9 @@
     },
     /** The field that asks for a reason, or the note of an action nobody carried out. */
     panel() {
-      const pending = this.pending, labels = this.labels, signal = this.lifetime.signal, box = h("div", "cx-chg-panel");
+      // Each panel's listeners end with the panel: the next render replaces it.
+      this.panelLife?.abort(); this.panelLife = new AbortController();
+      const pending = this.pending, labels = this.labels, signal = this.panelLife.signal, box = h("div", "cx-chg-panel");
       box.setAttribute("role", "group"); box.setAttribute("aria-label", pending.action.label);
       const cancel = h("button", "cx-chg-action cx-chg-textaction"); cancel.type = "button"; setText(cancel, labels.changeCancel);
       cancel.addEventListener("click", () => { const { action, item } = pending; this.pending = null; this.render(); this.focusAction(action, item); }, { signal });

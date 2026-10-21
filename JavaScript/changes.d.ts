@@ -105,7 +105,7 @@ export interface ChangeItem {
 
 /**
  * An action the items (or the list's bar) offer: a host action, one that asks for a reason first, a copy action ("path",
- * "previousPath" or a value key), a link that opens a value (#, relative, http(s) or mailto addresses), or one that reveals the
+ * "previousPath" or a value key), a link that opens a value (#, /, ./, ../, http(s):// or mailto: addresses), or one that reveals the
  * item's details or diff. One of copy, link, reveal and reason at most.
  */
 export interface ChangeAction {

@@ -214,6 +214,9 @@ a.cx-chg-action { text-decoration:none; }
   .cx-diff-printtable .cx-diff-code { white-space:pre-wrap;word-break:break-all; }
   .cx-diff-printtable tr:is(.cx-diff-del,.cx-diff-add) { background:color-mix(in srgb,var(--cx-chg-diff) 12%,#fff); }
   .cx-chg-row { grid-template-columns:var(--cx-size-112px) minmax(0,1fr) auto;grid-template-areas:"badge main meta"; }
+  .cx-chg-facts { table-layout:fixed;max-width:none; }
+  .cx-chg-facts thead th:first-child { width:28%; }
+  .cx-chg-facts :is(th,td) { overflow-wrap:anywhere; }
 }
 @media (forced-colors:active) {
   .cx-diff-mark { outline:var(--cx-size-1px) solid CanvasText; }

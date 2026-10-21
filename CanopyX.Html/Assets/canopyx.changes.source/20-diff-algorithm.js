@@ -81,7 +81,7 @@
     }
     return hunks;
   }
-  const DIFF_TOKENS = /[\p{L}\p{N}_]+|\s+|[^\p{L}\p{N}_\s]/gu;
+  const DIFF_TOKENS = /[\p{L}\p{N}_]+|[\t-\r\u0085\u2028\u2029\p{Zs}]+|[^\p{L}\p{N}_\t-\r\u0085\u2028\u2029\p{Zs}]/gu;
   /** The [start, end) ranges that differ between a removed line and the added line after it, or null when they share too little. */
   function diffWords(before, after) {
     const left = before.match(DIFF_TOKENS) || [], right = after.match(DIFF_TOKENS) || [];

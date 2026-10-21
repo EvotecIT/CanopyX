@@ -33,8 +33,13 @@
       this.host.appendChild(root);
       root.addEventListener("click", event => this.onClick(event), { signal });
       root.addEventListener("keydown", event => this.onKey(event), { signal });
-      root.addEventListener("change", event => { if (event.target === this.flagSwitch) this.applyState({ flaggedOnly: event.target.checked }); }, { signal });
-      this.more.addEventListener("click", () => { this.limit += this.doc.pageSize; this.render(); }, { signal });
+      root.addEventListener("change", event => { if (event.target === this.flagSwitch) { this.applyState({ flaggedOnly: event.target.checked }); this.flagSwitch?.focus(); } }, { signal });
+      this.more.addEventListener("click", () => {
+        const before = this.list.querySelectorAll(".cx-chg-toggle").length;
+        this.limit += this.doc.pageSize; this.render();
+        // Focus moves to the first item the button showed, or stays on the button while it remains.
+        if (this.more.hidden) this.list.querySelectorAll(".cx-chg-toggle")[before]?.focus();
+      }, { signal });
       // Paper shows every item the filters keep (up to 2,000), and says which filters are in effect.
       this.printing = changesInPrint();
       global.addEventListener("beforeprint", () => { this.printing = true; this.render(); }, { signal });
@@ -102,6 +107,7 @@
       this.list.replaceChildren(...rows);
       this.empty.hidden = items.length > 0; setText(this.empty, labels.changeNoItems);
       this.more.hidden = items.length <= this.shownLimit(); setText(this.more, labels.changeShowMore);
+      if (!this.pending) this.panelLife?.abort();
       this.barPanel.replaceChildren(...(this.pending && !this.pending.item ? [this.panel()] : []));
       if (focused) this.focusItem(focused);
     }

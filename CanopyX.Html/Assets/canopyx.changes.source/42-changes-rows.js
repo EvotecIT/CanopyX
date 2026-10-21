@@ -77,7 +77,7 @@
       }
       if (item.diff) {
         let diff = this.diffs.get(item.id);
-        if (!diff) { const holder = h("div", "cx-chg-diff"); diff = diffCreate(holder, { labels: this.options.labels }, item.diff); diff.holder = holder; this.diffs.set(item.id, diff); }
+        if (!diff) { const holder = h("div", "cx-chg-diff"); diff = diffCreate(holder, { labels: Object.assign({}, this.doc.labels, this.options.labels), lang: this.lang }, item.diff); diff.holder = holder; this.diffs.set(item.id, diff); }
         box.appendChild(diff.holder);
       }
       return box;
@@ -115,7 +115,7 @@
       toggle: (id, open) => view.toggle(id, open), focusItem: id => view.focusItem(id), update: next => view.update(next),
       destroy: () => {
         if (view.destroyed) return;
-        view.destroyed = true; view.lifetime.abort();
+        view.destroyed = true; view.lifetime.abort(); view.panelLife?.abort();
         for (const diff of view.diffs.values()) diff.destroy();
         view.root.remove(); host.removeAttribute("data-cx-ready");
         if (view.addedTheme) host.removeAttribute("data-cx-theme");

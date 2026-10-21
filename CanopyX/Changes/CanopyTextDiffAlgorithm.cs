@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace CanopyX;
 
@@ -19,8 +19,6 @@ internal static class CanopyTextDiffAlgorithm {
 
     /// <summary>The most tokens a line may have for a word comparison.</summary>
     internal const int MaxWordTokens = 1000;
-
-    private static readonly Regex Tokens = new Regex(@"[\p{L}\p{N}_]+|\s+|[^\p{L}\p{N}_\s]", RegexOptions.CultureInvariant);
 
     /// <summary>The edit script of two line lists: '=' with both indexes, '-' with the before index, '+' with the after index.</summary>
     internal static List<(char Op, int Before, int After)> Lines(IReadOnlyList<string> before, IReadOnlyList<string> after) =>
@@ -107,10 +105,45 @@ internal static class CanopyTextDiffAlgorithm {
         else ranges.Add((start, end));
     }
 
+    /// <summary>
+    /// The word tokens of a line, by code point as the browser reads them: runs of letters, digits and underscores, runs of white
+    /// space (tab to carriage return, U+0085, space separators, line and paragraph separators), and every other character alone.
+    /// </summary>
     private static List<string> TokensOf(string text) {
         var tokens = new List<string>();
-        foreach (Match match in Tokens.Matches(text)) tokens.Add(match.Value);
+        var start = 0;
+        var kind = -1;
+        for (var i = 0; i < text.Length;) {
+            var width = char.IsSurrogatePair(text, i) ? 2 : 1;
+            var next = TokenKind(text, i);
+            if (next != kind || next == 2) {
+                if (i > start) tokens.Add(text.Substring(start, i - start));
+                start = i;
+                kind = next;
+            }
+
+            i += width;
+        }
+
+        if (text.Length > start) tokens.Add(text.Substring(start));
         return tokens;
+    }
+
+    /// <summary>0 for a letter, digit or underscore, 1 for white space, 2 for anything else.</summary>
+    private static int TokenKind(string text, int index) {
+        var ch = text[index];
+        if (ch == '_') return 0;
+        if (ch >= '\t' && ch <= '\r' || ch == '\u0085' || ch == '\u2028' || ch == '\u2029') return 1;
+        switch (CharUnicodeInfo.GetUnicodeCategory(text, index)) {
+            case UnicodeCategory.UppercaseLetter: case UnicodeCategory.LowercaseLetter: case UnicodeCategory.TitlecaseLetter:
+            case UnicodeCategory.ModifierLetter: case UnicodeCategory.OtherLetter: case UnicodeCategory.DecimalDigitNumber:
+            case UnicodeCategory.LetterNumber: case UnicodeCategory.OtherNumber:
+                return 0;
+            case UnicodeCategory.SpaceSeparator:
+                return 1;
+            default:
+                return 2;
+        }
     }
 
     private static List<(char Op, int Before, int After)> Replace(int beforeCount, int afterCount, int beforeFrom, int afterFrom) {

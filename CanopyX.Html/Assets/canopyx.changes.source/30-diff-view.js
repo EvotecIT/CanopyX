@@ -13,7 +13,7 @@
       this.host = host; this.options = options; this.lifetime = new AbortController();
       this.doc = doc || diffDocument(options.view);
       this.labels = changeLabels(this.doc.labels, options.labels);
-      this.lang = host.closest("[lang]")?.getAttribute("lang") || document.documentElement.lang || "en";
+      this.lang = options.lang || host.closest("[lang]")?.getAttribute("lang") || document.documentElement.lang || "en";
       this.format = numberFormat(this.lang);
       this.mounted = new Map(); this.pool = []; this.current = -1;
       this.chosen = this.doc.layout === "auto" ? null : this.doc.layout;

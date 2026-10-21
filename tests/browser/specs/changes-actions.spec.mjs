@@ -25,8 +25,9 @@ test("an action that asks for a reason needs one, and the host receives it", asy
   await page.waitForSelector(".cx-changes");
   const item = page.locator(".cx-chg-item[data-cx-item=\"payload\"]");
   const acknowledge = item.getByRole("button", { name: "Acknowledge" });
-  await expect(acknowledge).toHaveAttribute("aria-haspopup", "dialog");
+  await expect(acknowledge).toHaveAttribute("aria-expanded", "false");
   await acknowledge.click();
+  await expect(acknowledge.first()).toHaveAttribute("aria-expanded", "true");
   const field = item.getByRole("textbox", { name: "Reason" });
   await expect(field).toBeFocused();
   await expect(item.locator(".cx-chg-hint")).toHaveText("Acknowledge: say why. The reason is kept with the action.");
@@ -71,7 +72,8 @@ test("a host claims an action through onAction, links open only safe addresses, 
     actions: [{ id: "ack", label: "Acknowledge", icon: "check" }, { id: "go", label: "Open", icon: "open", link: "address" }, { id: "see", label: "Open the diff", icon: "diff", reveal: "diff" }],
     items: [
       { id: "a", kind: "modified", path: "a.txt", values: { address: "#object/a" }, diff: { id: "d", label: "a.txt", before: "one\n", after: "two\n" } },
-      { id: "b", kind: "added", path: "b.txt", values: { address: "javascript:alert(1)" } }] });
+      { id: "b", kind: "added", path: "b.txt", values: { address: "javascript:alert(1)" } },
+      { id: "c", kind: "added", path: "c.txt", values: { address: "/\\evil.example" } }] });
   await mount(page, view, "{onAction:detail=>{window.claimed=detail.action;}}");
   const a = page.locator(".cx-chg-item[data-cx-item=\"a\"]"), b = page.locator(".cx-chg-item[data-cx-item=\"b\"]");
   await a.getByRole("button", { name: "Acknowledge" }).click();
@@ -79,6 +81,7 @@ test("a host claims an action through onAction, links open only safe addresses, 
   await expect(page.locator(".cx-chg-note")).toHaveCount(0);
   await expect(a.getByRole("link", { name: "Open" })).toHaveAttribute("href", "#object/a");
   await expect(b.getByRole("link", { name: "Open" })).toHaveCount(0);
+  await expect(page.locator(".cx-chg-item[data-cx-item=\"c\"]").getByRole("link", { name: "Open" })).toHaveCount(0);
   await expect(b.getByRole("button", { name: "Open the diff" })).toHaveCount(0);
   await a.getByRole("button", { name: "Open the diff" }).click();
   await expect(a.locator(".cx-chg-diff .cx-diff-scroll")).toBeFocused();

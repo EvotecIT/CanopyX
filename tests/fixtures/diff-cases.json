@@ -279,6 +279,16 @@
           ]
         ]
       }
+    },
+    {
+      "before": "x\ud83d\ude00 shared words",
+      "after": "x\ud83d\ude01 shared words",
+      "marks": { "before": [[1, 3]], "after": [[1, 3]] }
+    },
+    {
+      "before": "value\u0085old",
+      "after": "value\u0085new",
+      "marks": { "before": [[6, 9]], "after": [[6, 9]] }
     }
   ]
 }
