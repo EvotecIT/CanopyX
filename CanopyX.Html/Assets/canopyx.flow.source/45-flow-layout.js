@@ -18,16 +18,21 @@
       this.live = h("div", "cx-sr-only"); this.live.setAttribute("aria-live", "polite");
       this.layout.append(this.rail, this.main);
       root.append(head, this.layout, this.live);
-      this.host.appendChild(root);
+      this.head = head;
+      // A dialog or drawer flow opens from a launch button in the host (the flow-dialog part); an inline flow sits in the host.
+      if (this.model.container !== "inline") this.buildContainer(); else this.host.appendChild(root);
+      this.sizer = this.dialog || this.host;
       const signal = this.lifetime.signal;
       root.addEventListener("input", event => this.fieldEvent(event, "edit"), { signal });
       root.addEventListener("change", event => this.fieldEvent(event, "edit"), { signal });
       root.addEventListener("focusout", event => this.fieldEvent(event, "blur"), { signal });
       root.addEventListener("keydown", event => this.key(event), { signal });
       this.narrow = false;
-      if (global.ResizeObserver) { this.resize = new ResizeObserver(() => this.measure()); this.resize.observe(this.host); }
+      if (global.ResizeObserver) { this.resize = new ResizeObserver(() => this.measure()); this.resize.observe(this.sizer); }
+      this.buildPresets?.();
       this.measure(true);
       this.render();
+      this.startHostFeatures?.();
     },
 
     fieldEvent(event, source) {
@@ -40,7 +45,7 @@
     },
 
     measure(first) {
-      const width = this.host.clientWidth || global.innerWidth, narrow = width < FLOW_NARROW;
+      const width = this.sizer.clientWidth || global.innerWidth, narrow = width < FLOW_NARROW;
       if (!first && width === this.width) return;
       // A wider host may fit the horizontal rail an automatic orientation gave up on; a narrower one may not fit it any more.
       const changed = narrow !== this.narrow || this.railTooWide && width > this.width;
@@ -68,7 +73,7 @@
       const active = document.activeElement;
       // An answer that hides the current step moves the reader to the next visible step (or the last) before anything paints.
       const steps = this.visibleSteps();
-      if (this.phase === "form" && !steps.includes(this.step)) {
+      if (this.phase === "form" && this.step !== this.hub && !steps.includes(this.step)) {
         const from = this.step;
         this.step = steps.find(step => this.model.steps.indexOf(step) > this.model.steps.indexOf(from)) || steps[steps.length - 1];
         this.reviewStale = true;
@@ -77,8 +82,9 @@
       const orientation = this.orientation();
       this.layout.className = "cx-flow-layout cx-flow-" + orientation;
       this.root.classList.toggle("cx-flow-narrow", this.narrow);
-      if (orientation === "stack" || orientation === "single") { this.rail.removeAttribute("role"); this.rail.removeAttribute("aria-label"); }
-      else { this.rail.setAttribute("role", "navigation"); this.rail.setAttribute("aria-label", this.labels.flowSteps); }
+      // Only the horizontal and vertical rails are a navigation; a task list has its hub instead (the flow-tasks part).
+      if (orientation === "horizontal" || orientation === "vertical") { this.rail.setAttribute("role", "navigation"); this.rail.setAttribute("aria-label", this.labels.flowSteps); }
+      else { this.rail.removeAttribute("role"); this.rail.removeAttribute("aria-label"); }
       this.renderStage();
       this.renderRail();
       this.renderActions();
@@ -97,12 +103,13 @@
     },
     reachable(step, steps = this.visibleSteps()) {
       if (this.model.mode === "free") return true;
-      for (const before of steps) { if (before === step) return true; if (before.type === "form" && !this.completed.has(before.id)) return false; }
+      for (const before of steps) { if (before === step) return true; if (before.asks && !this.completed.has(before.id)) return false; }
       return false;
     },
 
     renderRail() {
       if (!this.root) return;
+      // A task list shows its hub instead (the flow-tasks part).
       const steps = this.visibleSteps(), stack = this.orientation() === "stack", labels = this.labels;
       if (!steps.includes(this.step)) this.step = steps.find(step => this.model.steps.indexOf(step) > this.model.steps.indexOf(this.step)) || steps[steps.length - 1];
       // The items stay while the visible steps stay, so a repaint during a click (a field checked as focus leaves it) never
@@ -141,8 +148,11 @@
       if (stack && this.phase !== "form") this.railList.after(this.main);
     },
 
+    /** Whether the current step submits: the last visible step (a task list's review page, in the flow-tasks part). */
+    lastStep() { const steps = this.visibleSteps(); return steps.indexOf(this.step) === steps.length - 1; },
+
     renderActions() {
-      const labels = this.labels, steps = this.visibleSteps(), at = steps.indexOf(this.step), last = at === steps.length - 1;
+      const labels = this.labels, at = this.visibleSteps().indexOf(this.step), last = this.lastStep();
       this.actions.replaceChildren();
       this.actions.hidden = this.phase !== "form";
       if (this.phase !== "form") return;
@@ -154,7 +164,8 @@
       next.addEventListener("click", () => (last ? this.submit() : this.next()).catch(error => this.report(error, last ? "submit" : "next")));
       if (this.busy) { next.disabled = back.disabled = true; next.setAttribute("aria-busy", "true"); if (last) setText(next, labels.flowSubmitting); }
       const spacer = h("span", "cx-flow-spacer");
-      this.actions.append(back, spacer, next);
+      // Save draft and Cancel sit in a quiet group beside Back (the flow-drafts and flow-dialog parts).
+      this.actions.append(back, ...[this.draftButton?.(), this.cancelButton?.()].filter(Boolean), spacer, next);
     },
 
     key(event) {
@@ -163,10 +174,9 @@
       if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && this.step.type === "review") { event.preventDefault(); this.submit().catch(error => this.report(error, "submit")); return; }
       // Enter in a single-line field moves on; text areas, lists, buttons and open suggestion lists keep their own Enter.
       if (event.key !== "Enter" || event.altKey || event.ctrlKey || event.shiftKey || target.tagName !== "INPUT" || /^(button|submit|checkbox|radio|file)$/.test(target.type) ||
-          target.closest(".cx-flow-list") || !target.closest(".cx-flow-stage")) return;
+          target.closest(".cx-flow-list,.cx-flow-records,.cx-flow-pick,.cx-flow-confirm") || !target.closest(".cx-flow-stage")) return;
       event.preventDefault();
-      const steps = this.visibleSteps();
-      (steps.indexOf(this.step) === steps.length - 1 ? this.submit() : this.next()).catch(error => this.report(error, "next"));
+      (this.lastStep() ? this.submit() : this.next()).catch(error => this.report(error, "next"));
     },
 
     announce(text) { setText(this.live, ""); setTimeout(() => setText(this.live, text), 30); }

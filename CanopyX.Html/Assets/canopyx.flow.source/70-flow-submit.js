@@ -27,7 +27,10 @@
       }
       const proposal = { kind: "flowSubmission", flow: model.id, version: 1, mode: edit ? "edit" : "create" };
       if (model.baseline !== null) proposal.baseline = model.baseline;
-      return Object.assign(proposal, { values, secrets, changes, patch });
+      Object.assign(proposal, { values, secrets, changes, patch });
+      // The preset the answers started from, the checks that ran on them and the equivalent command (the feature parts).
+      flowEach("proposal", this, proposal);
+      return proposal;
     },
 
     /** Validates everything, raises flowSubmit and waits for the host's answer; resolves with the answer, or null. */
@@ -106,6 +109,7 @@
     settle(answer) {
       // Answers the flow builds itself (no host, a failed hook) carry only a status and a message.
       answer = Object.assign({ message: null, fieldErrors: {}, stepErrors: {}, result: [], links: [] }, answer);
+      flowEach("settled", this, answer);
       if (answer.status === "saved" || answer.status === "accepted") {
         this.phase = answer.status === "saved" ? "result" : "progress";
         this.panel = answer.status === "saved" ? this.resultPanel(answer) : this.progressPanel(answer);

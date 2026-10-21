@@ -1,0 +1,148 @@
+  // ---------- the flow-pick part: pick steps, a grid or tree whose selection is the answer (docs/flow.md#pick-steps) ----------
+  // The step embeds an ordinary CanopyX view: its search, facets, filters, saved views and record drawer all work. The
+  // selection is the answer: the selected ids with a display snapshot (the label column's text), so the review page and the
+  // proposal can list them without the view. A tray lists what is chosen with Remove buttons and survives searches and
+  // paging. The view is built once per flow and kept across steps; pick steps need an entry point with grids and trees (the
+  // data-grid or reporting entry), which the C# writer chooses for flows that have one.
+  const FLOW_PART_LABELS = {
+    flowPickMore: "and {count} more",
+    flowPickCount: "[one]{count} chosen[other]{count} chosen",
+    flowPickChosen: "Chosen",
+    flowPickNone: "Nothing chosen yet.",
+    flowPickOneByOne: "Choose the records one by one or a page at a time."
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
+  const FLOW_PICK_VISIBLE = 60;
+
+  FLOW_HOST.pick = {
+    /** A pick step: a grid or tree view whose selection is the answer of the step's one field. */
+    read(raw, step, model) {
+      flowKeys(raw, ["field", "view", "label", "tray", "height"], "The pick of step " + step.id);
+      if (!flowIs(raw.view) || raw.view.protocol !== "canopyx/2" || !["grid", "view"].includes(raw.view.type)) flowFail("the pick of step " + step.id + " needs a grid or tree view document");
+      if (raw.tray !== undefined && typeof raw.tray !== "boolean") flowFail("the tray of step " + step.id + " is true or false");
+      flowKeys(raw.field, ["id", "label", "help", "required", "when", "parameter", "path", "sensitive", "validation", "default"], "The field of pick step " + step.id);
+      const field = flowField(Object.assign({}, raw.field, { type: "pick" }), step, null, model), columns = Array.isArray(raw.view.columns) ? raw.view.columns : [];
+      const label = raw.label ?? (columns[0] && columns[0].id);
+      if (typeof label !== "string" || !columns.some(column => column && column.id === label)) flowFail("the pick of step " + step.id + " needs a label column the view declares");
+      if (raw.height !== undefined && (!Number.isInteger(raw.height) || raw.height < 160 || raw.height > 1200)) flowFail("the pick of step " + step.id + " needs a height of 160 to 1200 pixels");
+      step.pick = Object.freeze({ view: raw.view, kind: raw.view.type === "grid" ? "grid" : "tree", label, tray: raw.tray !== false, height: raw.height ?? 420, field });
+      step.blocks.push({ section: null, fields: [field] });
+    },
+    /** A pick step's heading already asks what its field does; a label that repeats it stays for screen readers only. */
+    built(view, step, section) { if (step.pick?.field.label === step.title) section.querySelector(".cx-flow-label")?.classList.add("cx-flow-label-quiet"); },
+    input: (context, field, view) => flowPickInput(context, field, view),
+    fits: (field, value) => Array.isArray(value) && value.length <= 1000 && value.every(item => flowIs(item) && Object.keys(item).every(key => key === "id" || key === "label") &&
+      typeof item.id === "string" && item.id.length > 0 && item.id.length <= 256 && typeof item.label === "string" && item.label.length <= 400) && new Set(value.map(item => item.id)).size === value.length,
+    /** The review page's text: up to 12 labels, then how many more. */
+    display: (view, value) => value.slice(0, 12).map(item => item.label || item.id).join("\n") + (value.length > 12 ? "\n" + fill(view.labels.flowPickMore, { count: value.length - 12 }) : "")
+  };
+
+  const flowAnswer = FlowView.prototype.read;
+  Object.assign(FlowView.prototype, {
+    /** Conditions read a picker's answer as its record ids. */
+    read(id) { const value = flowAnswer.call(this, id); return this.model.fields.get(id)?.type === "pick" && Array.isArray(value) ? value.map(item => item.id) : value; }
+  });
+
+  function flowPickText(cell, fallback) {
+    if (cell !== null && typeof cell === "object") return typeof cell.text === "string" ? cell.text : cell.value == null ? fallback : String(cell.value);
+    return cell == null ? fallback : String(cell);
+  }
+
+  function flowPickInput(context, field, view) {
+    const pick = field.step.pick, labels = view.labels, box = h("div", "cx-flow-pick" + (pick.tray ? " cx-flow-pick-tray" : ""));
+    let items = (Array.isArray(context.value) ? context.value : []).map(item => ({ id: item.id, label: item.label }));
+    let picker = view.pickers.get(field.id);
+    if (!picker) picker = flowPickView(view, field, pick);
+    const changed = () => box.dispatchEvent(new Event("change", { bubbles: true }));
+    const tray = pick.tray ? h("section", "cx-flow-tray") : null, trayList = h("ul", "cx-flow-tray-list"), trayHead = h("h4", "cx-flow-tray-title"), clear = h("button", "cx-flow-link");
+    const count = h("p", "cx-flow-count"); count.setAttribute("aria-live", "polite");
+    const paint = () => {
+      setText(count, fill(plural(labels.flowPickCount, items.length, view.lang), { count: numberFormat(view.lang, 0, 0).format(items.length) }));
+      if (!tray) return;
+      trayList.replaceChildren(...items.slice(0, FLOW_PICK_VISIBLE).map(item => {
+        const row = h("li", "cx-flow-tray-item"), text = h("span", "cx-flow-tray-label"), remove = h("button", "cx-flow-icon-btn");
+        setText(text, item.label || item.id); text.title = item.label || item.id;
+        remove.type = "button"; setText(remove, "×"); remove.hidden = context.readOnly;
+        remove.setAttribute("aria-label", fill(labels.flowRemoveItem, { item: item.label || item.id }));
+        remove.addEventListener("click", () => {
+          const at = items.findIndex(entry => entry.id === item.id);
+          items = items.filter(entry => entry.id !== item.id);
+          picker.select(items.map(entry => entry.id));
+          paint(); changed();
+          (trayList.children[Math.min(at, trayList.children.length - 1)]?.querySelector("button") || clear).focus();
+        });
+        row.append(text, remove);
+        return row;
+      }));
+      if (items.length > FLOW_PICK_VISIBLE) { const more = h("li", "cx-flow-tray-more"); setText(more, fill(labels.flowPickMore, { count: items.length - FLOW_PICK_VISIBLE })); trayList.appendChild(more); }
+      clear.hidden = !items.length || context.readOnly;
+      const none = !items.length;
+      trayList.hidden = none; count.hidden = none; tray.querySelector(".cx-flow-tray-empty").hidden = !none;
+    };
+    if (tray) {
+      setText(trayHead, labels.flowPickChosen); clear.type = "button"; setText(clear, labels.flowSelectNone);
+      clear.addEventListener("click", () => { items = []; picker.select([]); paint(); changed(); });
+      const head = h("div", "cx-flow-tray-head"), empty = h("p", "cx-flow-tray-empty");
+      setText(empty, labels.flowPickNone);
+      head.append(trayHead, clear);
+      tray.setAttribute("aria-label", labels.flowPickChosen);
+      tray.append(head, count, trayList, empty);
+    }
+    // The view's selection becomes the answer: ids it keeps keep their snapshot, new ids take the label column's text.
+    picker.onChange = (ids, lookup) => {
+      const known = new Map(items.map(item => [item.id, item]));
+      const next = ids.slice(0, 1000).map(id => known.get(id) || { id, label: lookup(id).slice(0, 400) });
+      picker.wanted = next.map(item => item.id);
+      if (flowSameValue(picker.wanted, items.map(item => item.id))) return;
+      items = next; paint(); changed();
+    };
+    picker.select(items.map(item => item.id));
+    box.append(picker.holder);
+    if (tray) box.appendChild(tray); else box.appendChild(count);
+    paint();
+    return { element: box, control: picker.holder, group: true, focus: () => picker.api?.focus?.(),
+      getValue: () => items.map(item => ({ id: item.id, label: item.label })),
+      destroy: () => { picker.onChange = null; } };
+  }
+
+  /** Creates the step's grid or tree once; it stays across steps and is destroyed with the flow. */
+  function flowPickView(view, field, pick) {
+    const factory = pick.kind === "grid" ? FLOW_VIEWS.grid : FLOW_VIEWS.tree;
+    if (typeof factory !== "function") flowFail("the pick step " + field.step.id + " needs the data-grid or reporting entry point, which hold grids and trees");
+    const holder = h("div", "cx-flow-pick-view"), max = field.items.max;
+    holder.style.height = pick.height + "px";
+    const doc = Object.assign(flowCopy(pick.view), { selection: max === 1 ? "single" : "multiple" });
+    // With the reporting entry a grid picks with row check boxes, which work the same on phones and in narrow dialogs.
+    if (pick.kind === "grid" && FLOW_VIEWS.reporting) doc.reporting = Object.assign({}, doc.reporting, { selectionControls: true });
+    const picker = { holder, api: null, wanted: [], onChange: null };
+    const options = Object.assign({}, view.hooks.pickers?.[field.step.id], { view: doc });
+    if (pick.kind === "tree") delete options.onSelect;
+    picker.api = factory(holder, options);
+    view.pickers.set(field.id, picker);
+    const label = pick.label;
+    // The labels of newly picked records come from one read of the loaded rows (grids) or the event's nodes (trees).
+    const labelsOf = (ids, nodes) => {
+      if (pick.kind === "grid") { const rows = new Map((picker.api.getLoadedRows?.(ids) || []).map(row => [row.id, row])); return id => flowPickText(rows.get(id)?.cells?.[label], id); }
+      const byId = new Map(nodes.map(node => [node.id, node]));
+      return id => { const node = byId.get(id); return node ? flowPickText(node.cells?.[label], node.label || id) : id; };
+    };
+    // The view's own select event: the flow reads the ids (and, for trees, the nodes) and keeps the event inside the step.
+    holder.addEventListener("canopyx:select", event => {
+      event.stopPropagation();
+      if (picker.applying) return;
+      // "Select all matching" names a query, not records: a pick step keeps records it can list, so it returns to them.
+      if (event.detail?.selection?.kind === "query") { view.announce(view.labels.flowPickOneByOne); picker.select(picker.wanted); return; }
+      const nodes = event.detail?.nodes || [], ids = pick.kind === "grid" ? [...(event.detail?.ids || [])] : nodes.map(node => node.id);
+      const known = new Set(picker.wanted);
+      picker.onChange?.(ids, labelsOf(ids.filter(id => !known.has(id)), nodes));
+    });
+    picker.select = ids => {
+      picker.wanted = ids;
+      picker.api.ready.then(() => {
+        if (picker.wanted !== ids) return;
+        picker.applying = true;
+        try { picker.api.setSelection(ids); } catch (error) { view.report(error, "picker"); } finally { picker.applying = false; }
+      }, error => view.report(error, "picker"));
+    };
+    return picker;
+  }

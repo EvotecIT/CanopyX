@@ -137,7 +137,9 @@ public sealed class LabelsTests {
         // with the same English texts.
         var flow = new CanopyFlow("labelled", "Labelled") { Labels = labels }.Step("step", "Step");
         var flowWritten = JsonNode.Parse(flow.ToContract())!["labels"]!.AsObject().Select(item => item.Key).OrderBy(name => name, StringComparer.Ordinal).ToList();
-        var flowLabels = PartLabels("flow", "FLOW_LABELS");
+        // The flow part defines the labels every flow uses; each host-connected feature part brings its own (FLOW_PART_LABELS).
+        var flowLabels = CanopyX.Html.CanopyHtmlAssets.Parts.Where(part => part.Name.StartsWith("flow-", StringComparison.Ordinal))
+            .SelectMany(part => PartLabels(part.Name, "FLOW_PART_LABELS")).Concat(PartLabels("flow", "FLOW_LABELS")).ToDictionary(item => item.Key, item => item.Value);
         Assert.NotEmpty(flowLabels);
         Assert.All(flowLabels.Keys, name => Assert.StartsWith("flow", name));
         var flowRuntime = flowLabels.Concat(forms).ToDictionary(item => item.Key, item => item.Value);

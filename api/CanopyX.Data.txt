@@ -204,6 +204,158 @@ CanopyX.Data.CanopyFilterNodeKind.const CanopyX.Data.CanopyFilterNodeKind Group 
 CanopyX.Data.CanopyFilters : static class
 CanopyX.Data.CanopyFilters.static CanopyX.Data.CanopyFilterNode? All(params CanopyX.Data.CanopyFilterNode?[] filters)
 CanopyX.Data.CanopyFilters.static CanopyX.Data.CanopyFilterNode? WithoutColumn(CanopyX.Data.CanopyFilterNode? filter, System.String columnId)
+CanopyX.Data.CanopyFlowAnswer : sealed class
+CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer AddLink(System.String label, System.String href)
+CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer AddResult(System.String label, System.String value, System.Boolean once = False)
+CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer FieldError(System.String fieldId, System.String message)
+CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswer StepError(System.String stepId, System.String message)
+CanopyX.Data.CanopyFlowAnswer.CanopyX.Data.CanopyFlowAnswerStatus Status { get; }
+CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IDictionary<System.String, System.String> FieldErrors { get; }
+CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IDictionary<System.String, System.String> StepErrors { get; }
+CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IList<CanopyX.Data.CanopyFlowLink> Links { get; }
+CanopyX.Data.CanopyFlowAnswer.System.Collections.Generic.IList<CanopyX.Data.CanopyFlowResultRow> Result { get; }
+CanopyX.Data.CanopyFlowAnswer.System.String ToJson()
+CanopyX.Data.CanopyFlowAnswer.System.String? Message { get; }
+CanopyX.Data.CanopyFlowAnswer.static CanopyX.Data.CanopyFlowAnswer Accepted(System.String? message = null)
+CanopyX.Data.CanopyFlowAnswer.static CanopyX.Data.CanopyFlowAnswer Conflict(System.String? message = null)
+CanopyX.Data.CanopyFlowAnswer.static CanopyX.Data.CanopyFlowAnswer Error(System.String? message = null)
+CanopyX.Data.CanopyFlowAnswer.static CanopyX.Data.CanopyFlowAnswer Saved(System.String? message = null)
+CanopyX.Data.CanopyFlowAnswerStatus : enum System.Int32
+CanopyX.Data.CanopyFlowAnswerStatus.const CanopyX.Data.CanopyFlowAnswerStatus Accepted = 1
+CanopyX.Data.CanopyFlowAnswerStatus.const CanopyX.Data.CanopyFlowAnswerStatus Conflict = 3
+CanopyX.Data.CanopyFlowAnswerStatus.const CanopyX.Data.CanopyFlowAnswerStatus Error = 2
+CanopyX.Data.CanopyFlowAnswerStatus.const CanopyX.Data.CanopyFlowAnswerStatus Saved = 0
+CanopyX.Data.CanopyFlowChange : sealed class
+CanopyX.Data.CanopyFlowChange.System.Object? From { get; }
+CanopyX.Data.CanopyFlowChange.System.Object? To { get; }
+CanopyX.Data.CanopyFlowChange.System.String FieldId { get; }
+CanopyX.Data.CanopyFlowChange.System.String? Path { get; }
+CanopyX.Data.CanopyFlowCheckClaim : sealed class
+CanopyX.Data.CanopyFlowCheckClaim.CanopyX.Data.CanopyFlowCheckStatus Status { get; }
+CanopyX.Data.CanopyFlowCheckClaim.System.String CheckId { get; }
+CanopyX.Data.CanopyFlowCheckClaim.System.String? At { get; }
+CanopyX.Data.CanopyFlowCheckResult : sealed class
+CanopyX.Data.CanopyFlowCheckResult.CanopyX.Data.CanopyFlowCheckResult Detail(System.String label, System.String value)
+CanopyX.Data.CanopyFlowCheckResult.CanopyX.Data.CanopyFlowCheckResult FieldError(System.String fieldId, System.String message)
+CanopyX.Data.CanopyFlowCheckResult.CanopyX.Data.CanopyFlowCheckStatus Status { get; }
+CanopyX.Data.CanopyFlowCheckResult.System.Collections.Generic.IDictionary<System.String, System.String> FieldErrors { get; }
+CanopyX.Data.CanopyFlowCheckResult.System.Collections.Generic.IList<CanopyX.Data.CanopyFlowDetail> Details { get; }
+CanopyX.Data.CanopyFlowCheckResult.System.String ToJson()
+CanopyX.Data.CanopyFlowCheckResult.System.String? Message { get; }
+CanopyX.Data.CanopyFlowCheckResult.static CanopyX.Data.CanopyFlowCheckResult Fail(System.String message)
+CanopyX.Data.CanopyFlowCheckResult.static CanopyX.Data.CanopyFlowCheckResult Pass(System.String? message = null)
+CanopyX.Data.CanopyFlowCheckResult.static CanopyX.Data.CanopyFlowCheckResult Warning(System.String message)
+CanopyX.Data.CanopyFlowCheckStatus : enum System.Int32
+CanopyX.Data.CanopyFlowCheckStatus.const CanopyX.Data.CanopyFlowCheckStatus Fail = 2
+CanopyX.Data.CanopyFlowCheckStatus.const CanopyX.Data.CanopyFlowCheckStatus Pass = 0
+CanopyX.Data.CanopyFlowCheckStatus.const CanopyX.Data.CanopyFlowCheckStatus Warning = 1
+CanopyX.Data.CanopyFlowDetail : sealed class
+CanopyX.Data.CanopyFlowDetail..ctor(System.String label, System.String value)
+CanopyX.Data.CanopyFlowDetail.System.String Label { get; }
+CanopyX.Data.CanopyFlowDetail.System.String Value { get; }
+CanopyX.Data.CanopyFlowLink : sealed class
+CanopyX.Data.CanopyFlowLink..ctor(System.String label, System.String href)
+CanopyX.Data.CanopyFlowLink.System.String Href { get; }
+CanopyX.Data.CanopyFlowLink.System.String Label { get; }
+CanopyX.Data.CanopyFlowPatchOperation : sealed class
+CanopyX.Data.CanopyFlowPatchOperation.System.Object? Value { get; }
+CanopyX.Data.CanopyFlowPatchOperation.System.String Op { get; }
+CanopyX.Data.CanopyFlowPatchOperation.System.String Path { get; }
+CanopyX.Data.CanopyFlowPreview : sealed class
+CanopyX.Data.CanopyFlowPreview..ctor(System.String? title = null)
+CanopyX.Data.CanopyFlowPreview.CanopyX.Data.CanopyFlowPreview Note(System.String text)
+CanopyX.Data.CanopyFlowPreview.CanopyX.Data.CanopyFlowPreview Row(System.String label, System.String value, CanopyX.Data.CanopyFlowTone tone = Neutral)
+CanopyX.Data.CanopyFlowPreview.System.Collections.Generic.IList<CanopyX.Data.CanopyFlowPreviewRow> Rows { get; }
+CanopyX.Data.CanopyFlowPreview.System.Collections.Generic.IList<System.String> Notes { get; }
+CanopyX.Data.CanopyFlowPreview.System.String ToJson()
+CanopyX.Data.CanopyFlowPreview.System.String? Title { get; }
+CanopyX.Data.CanopyFlowPreviewRow : sealed class
+CanopyX.Data.CanopyFlowPreviewRow..ctor(System.String label, System.String value, CanopyX.Data.CanopyFlowTone tone = Neutral)
+CanopyX.Data.CanopyFlowPreviewRow.CanopyX.Data.CanopyFlowTone Tone { get; }
+CanopyX.Data.CanopyFlowPreviewRow.System.String Label { get; }
+CanopyX.Data.CanopyFlowPreviewRow.System.String Value { get; }
+CanopyX.Data.CanopyFlowReadOptions : sealed class
+CanopyX.Data.CanopyFlowReadOptions..ctor()
+CanopyX.Data.CanopyFlowReadOptions.System.Func<CanopyX.CanopyFlowField, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?>, System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowOption>>? HostOptions { get; set; }
+CanopyX.Data.CanopyFlowReadOptions.System.Func<CanopyX.CanopyFlowField, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?>, System.Threading.CancellationToken, System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowOption>>>? HostOptionsAsync { get; set; }
+CanopyX.Data.CanopyFlowReadOptions.System.Func<CanopyX.CanopyFlowSection, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?>, System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowField>>? SectionFields { get; set; }
+CanopyX.Data.CanopyFlowReadOptions.System.Func<CanopyX.CanopyFlowSection, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?>, System.Threading.CancellationToken, System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowField>>>? SectionFieldsAsync { get; set; }
+CanopyX.Data.CanopyFlowRequest : sealed class
+CanopyX.Data.CanopyFlowRequest.CanopyX.CanopyFlow Flow { get; }
+CanopyX.Data.CanopyFlowRequest.CanopyX.CanopyFlowCheck? Check { get; }
+CanopyX.Data.CanopyFlowRequest.CanopyX.CanopyFlowField? Field { get; }
+CanopyX.Data.CanopyFlowRequest.CanopyX.CanopyFlowRoutes Route { get; }
+CanopyX.Data.CanopyFlowRequest.CanopyX.CanopyFlowSection? Section { get; }
+CanopyX.Data.CanopyFlowRequest.CanopyX.CanopyFlowStep? Step { get; }
+CanopyX.Data.CanopyFlowRequest.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> Values { get; }
+CanopyX.Data.CanopyFlowRequest.System.String? ReadSecret(System.String fieldId)
+CanopyX.Data.CanopyFlowRequest.static CanopyX.Data.CanopyFlowRequest ForField(CanopyX.CanopyFlow flow, CanopyX.CanopyFlowField field, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> values)
+CanopyX.Data.CanopyFlowRequest.static CanopyX.Data.CanopyFlowRequest ForSection(CanopyX.CanopyFlow flow, CanopyX.CanopyFlowSection section, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> values)
+CanopyX.Data.CanopyFlowRequest.static CanopyX.Data.CanopyFlowRequest Parse(CanopyX.CanopyFlow flow, CanopyX.CanopyFlowRoutes route, System.String json)
+CanopyX.Data.CanopyFlowResponses : static class
+CanopyX.Data.CanopyFlowResponses.const System.Int32 MaxDraftLength = 524288
+CanopyX.Data.CanopyFlowResponses.static System.String Draft(CanopyX.CanopyFlow flow, System.String json, CanopyX.Data.CanopyFlowReadOptions? options = null)
+CanopyX.Data.CanopyFlowResponses.static System.String Fields(CanopyX.CanopyFlow flow, CanopyX.CanopyFlowSection section, System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowField>? fields)
+CanopyX.Data.CanopyFlowResponses.static System.String Options(CanopyX.CanopyFlowField field, System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowOption>? options)
+CanopyX.Data.CanopyFlowResponses.static System.Threading.Tasks.Task<System.String> DraftAsync(CanopyX.CanopyFlow flow, System.String json, CanopyX.Data.CanopyFlowReadOptions? options = null, System.Threading.CancellationToken cancellationToken = null)
+CanopyX.Data.CanopyFlowResultRow : sealed class
+CanopyX.Data.CanopyFlowResultRow..ctor(System.String label, System.String value, System.Boolean once = False)
+CanopyX.Data.CanopyFlowResultRow.System.Boolean IsShownOnce { get; }
+CanopyX.Data.CanopyFlowResultRow.System.String Label { get; }
+CanopyX.Data.CanopyFlowResultRow.System.String Value { get; }
+CanopyX.Data.CanopyFlowSecretState : enum System.Int32
+CanopyX.Data.CanopyFlowSecretState.const CanopyX.Data.CanopyFlowSecretState Clear = 2
+CanopyX.Data.CanopyFlowSecretState.const CanopyX.Data.CanopyFlowSecretState Keep = 1
+CanopyX.Data.CanopyFlowSecretState.const CanopyX.Data.CanopyFlowSecretState Set = 0
+CanopyX.Data.CanopyFlowStepStatus : sealed class
+CanopyX.Data.CanopyFlowStepStatus..ctor(CanopyX.Data.CanopyFlowTaskState state, System.String? summary = null)
+CanopyX.Data.CanopyFlowStepStatus.CanopyX.Data.CanopyFlowStepStatus Blocker(System.String text)
+CanopyX.Data.CanopyFlowStepStatus.CanopyX.Data.CanopyFlowTaskState State { get; }
+CanopyX.Data.CanopyFlowStepStatus.System.Collections.Generic.IList<System.String> Blockers { get; }
+CanopyX.Data.CanopyFlowStepStatus.System.String? Summary { get; }
+CanopyX.Data.CanopyFlowStepStatus.static System.String ToJson(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String, CanopyX.Data.CanopyFlowStepStatus>> states)
+CanopyX.Data.CanopyFlowSubmission : sealed class
+CanopyX.Data.CanopyFlowSubmission.CanopyX.CanopyFlow Flow { get; }
+CanopyX.Data.CanopyFlowSubmission.System.Boolean IsCurrent { get; }
+CanopyX.Data.CanopyFlowSubmission.System.Boolean IsEdit { get; }
+CanopyX.Data.CanopyFlowSubmission.System.Collections.Generic.IReadOnlyDictionary<System.String, CanopyX.Data.CanopyFlowCheckClaim> Checks { get; }
+CanopyX.Data.CanopyFlowSubmission.System.Collections.Generic.IReadOnlyDictionary<System.String, CanopyX.Data.CanopyFlowSecretState> Secrets { get; }
+CanopyX.Data.CanopyFlowSubmission.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> Values { get; }
+CanopyX.Data.CanopyFlowSubmission.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyFlowChange> Changes { get; }
+CanopyX.Data.CanopyFlowSubmission.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyFlowPatchOperation> Patch { get; }
+CanopyX.Data.CanopyFlowSubmission.System.String PatchToJson()
+CanopyX.Data.CanopyFlowSubmission.System.String? Baseline { get; }
+CanopyX.Data.CanopyFlowSubmission.System.String? Command { get; }
+CanopyX.Data.CanopyFlowSubmission.System.String? PresetId { get; }
+CanopyX.Data.CanopyFlowSubmission.System.String? ReadSecret(System.String fieldId)
+CanopyX.Data.CanopyFlowSubmission.static CanopyX.Data.CanopyFlowSubmission Parse(CanopyX.CanopyFlow flow, System.String json, System.Collections.Generic.IReadOnlyDictionary<System.String, System.String>? secrets = null, CanopyX.Data.CanopyFlowReadOptions? options = null)
+CanopyX.Data.CanopyFlowSubmission.static CanopyX.Data.CanopyFlowSubmission ParseRequest(CanopyX.CanopyFlow flow, System.String json, CanopyX.Data.CanopyFlowReadOptions? options = null)
+CanopyX.Data.CanopyFlowSubmission.static System.Threading.Tasks.Task<CanopyX.Data.CanopyFlowSubmission> ParseRequestAsync(CanopyX.CanopyFlow flow, System.String json, CanopyX.Data.CanopyFlowReadOptions? options = null, System.Threading.CancellationToken cancellationToken = null)
+CanopyX.Data.CanopyFlowSubmissionException : sealed class (System.Exception)
+CanopyX.Data.CanopyFlowSubmissionException..ctor(System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> fieldErrors)
+CanopyX.Data.CanopyFlowSubmissionException.CanopyX.Data.CanopyFlowAnswer ToAnswer(System.String? message = null)
+CanopyX.Data.CanopyFlowSubmissionException.System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> FieldErrors { get; }
+CanopyX.Data.CanopyFlowTaskState : enum System.Int32
+CanopyX.Data.CanopyFlowTaskState.const CanopyX.Data.CanopyFlowTaskState Blocked = 2
+CanopyX.Data.CanopyFlowTaskState.const CanopyX.Data.CanopyFlowTaskState Complete = 0
+CanopyX.Data.CanopyFlowTaskState.const CanopyX.Data.CanopyFlowTaskState NeedsAction = 1
+CanopyX.Data.CanopyFlowTaskState.const CanopyX.Data.CanopyFlowTaskState NotStarted = 3
+CanopyX.Data.CanopyFlowTone : enum System.Int32
+CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Danger = 4
+CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Info = 1
+CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Neutral = 0
+CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Success = 2
+CanopyX.Data.CanopyFlowTone.const CanopyX.Data.CanopyFlowTone Warning = 3
+CanopyX.Data.CanopyFlowValidationResult : sealed class
+CanopyX.Data.CanopyFlowValidationResult..ctor()
+CanopyX.Data.CanopyFlowValidationResult.CanopyX.Data.CanopyFlowValidationResult Error(System.String message)
+CanopyX.Data.CanopyFlowValidationResult.CanopyX.Data.CanopyFlowValidationResult FieldError(System.String fieldId, System.String message)
+CanopyX.Data.CanopyFlowValidationResult.CanopyX.Data.CanopyFlowValidationResult Warning(System.String message)
+CanopyX.Data.CanopyFlowValidationResult.System.Boolean IsValid { get; }
+CanopyX.Data.CanopyFlowValidationResult.System.Collections.Generic.IDictionary<System.String, System.String> FieldErrors { get; }
+CanopyX.Data.CanopyFlowValidationResult.System.Collections.Generic.IList<System.String> Errors { get; }
+CanopyX.Data.CanopyFlowValidationResult.System.Collections.Generic.IList<System.String> Warnings { get; }
+CanopyX.Data.CanopyFlowValidationResult.System.String ToJson()
 CanopyX.Data.CanopyInMemoryProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider, CanopyX.Data.ICanopyRangeProvider)
 CanopyX.Data.CanopyInMemoryProvider<T>..ctor(CanopyX.Data.CanopyDataSchema schema, System.Func<System.Collections.Generic.IEnumerable<T>> records, System.Func<T, System.String> id, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Func<T, System.Object?>> values, System.Func<System.String>? revision = null)
 CanopyX.Data.CanopyInMemoryProvider<T>.CanopyX.Data.CanopyDataSchema Schema { get; }

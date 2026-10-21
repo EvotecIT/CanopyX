@@ -9,5 +9,8 @@ public enum CanopyFlowStepKind {
     Info,
 
     /// <summary>The review page with change links and the submit button. A flow has at most one, and it is the last step.</summary>
-    Review
+    Review,
+
+    /// <summary>A record picker: a grid or tree view whose selection is the answer of the step's one field (<see cref="CanopyFlowStep.Picker"/>).</summary>
+    Pick
 }

@@ -57,10 +57,13 @@
           grid.appendChild(fv.element);
         }
         element.appendChild(grid);
-        element.hidden = !block.fields.some(field => this.visible(field));
-        section._cxBlocks.push({ element, fields: block.fields });
+        // A host section shows while its fields load; an empty static block stays hidden.
+        element.hidden = !block.section?.host && !block.fields.some(field => this.visible(field));
+        section._cxBlocks.push({ element, fields: block.fields, section: block.section });
         section.appendChild(element);
       }
+      // The checks block, and host sections and options that load as the step is first built (the flow-checks and flow-options parts).
+      flowEach("built", this, step, section);
       return section;
     },
 
@@ -77,18 +80,19 @@
       this.render();
       const steps = this.visibleSteps(), heading = this.stage.querySelector(".cx-flow-step-title");
       if (!quiet) {
-        heading?.focus({ preventScroll: true });
+        // Back on a task list's hub, focus returns to the task the reader left (the flow-tasks part).
+        (target === this.hub && this.taskButton(from) || heading)?.focus({ preventScroll: true });
         this.root.scrollIntoView?.({ block: "nearest" });
-        this.announce(fill(this.labels.flowStepAnnounce, { current: steps.indexOf(target) + 1, count: steps.length, title: target.title || this.labels.flowReviewTitle }));
+        this.announce(target === this.hub ? this.hubAnnouncement() : fill(this.labels.flowStepAnnounce, { current: steps.indexOf(target) + 1, count: steps.length, title: target.title || this.labels.flowReviewTitle }));
       }
-      if (target !== from) this.emit("flowStepChanged", { from: from.id, to: target.id }, "onStepChange");
+      if (target !== from) { this.emit("flowStepChanged", { from: from.id, to: target.id }, "onStepChange"); this.stepMoved?.(); }
       return true;
     },
 
     async next() {
-      if (this.busy || this.phase !== "form") return false;
+      if (this.busy || this.phase !== "form" || this.step === this.hub) return false;
       const step = this.step, steps = this.visibleSteps(), pressed = document.activeElement, generation = this.generation;
-      if (step.type === "form") {
+      if (step.asks) {
         const ticket = this.beginOperation();
         this.renderActions();
         let result;
@@ -109,7 +113,8 @@
         this.completed.add(step.id);
       } else this.completed.add(step.id);
       const review = this.reviewStep();
-      const target = this.returnToReview && review && this.stepVisible(review) ? review : steps[steps.indexOf(step) + 1];
+      // A task returns to the hub of its task list, unless it was opened from the review page.
+      const target = this.returnToReview && review && this.stepVisible(review) ? review : this.hub || steps[steps.indexOf(step) + 1];
       if (target === review) this.returnToReview = false;
       return this.go(target, "forward");
     },
@@ -120,12 +125,13 @@
       return at > 0 ? this.go(steps[at - 1], "back") : false;
     },
 
-    /** Opens a visible step; in a linear flow a later step than the first incomplete one opens that step instead. */
+    /** Opens a visible step; in a linear flow a later step than the first incomplete one opens that step instead. A task list
+     *  has its own Back and goTo (the flow-tasks part). */
     async goTo(id) {
       if (this.busy || this.phase !== "form") return false;
       const steps = this.visibleSteps(), target = steps.find(step => step.id === id);
       if (!target) return false;
-      const open = this.reachable(target, steps) ? target : steps.find(step => step.type === "form" && !this.completed.has(step.id)) || target;
+      const open = this.reachable(target, steps) ? target : steps.find(step => step.asks && !this.completed.has(step.id)) || target;
       return this.go(open, steps.indexOf(open) < steps.indexOf(this.step) ? "back" : "forward");
     },
 

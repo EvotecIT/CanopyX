@@ -1,0 +1,155 @@
+  // ---------- the flow-records part: records fields, rows of typed cells edited as a small table (docs/flow.md#records-fields) ----------
+  // Each cell uses the forms part's editor for its column type, as grid editing does, so a records field needs no grid
+  // runtime and works on a flow-only page. Rows are added and removed with buttons; the value is a list of { column: value }.
+  // Every cell's control is named "<column>, row <n>", so a reader always knows where they are.
+  const FLOW_PART_LABELS = {
+    flowRecordActions: "Actions",
+    flowRecordCell: "{column}, row {row}",
+    flowRecordRemove: "Remove row {row}",
+    flowRecordAdd: "Add row",
+    flowRecordsEmpty: "No rows yet.",
+    flowRecordProblem: "Row {row}: {message}",
+    flowRecordsCount: "[one]{count} row[other]{count} rows"
+  };
+  Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
+  const FLOW_RECORD_TYPES = ["text", "number", "date", "time", "select", "toggle"];
+
+  /** The columns of a records field: a typed cell each, with the forms part's checks. */
+  function flowRecordColumns(raw, bad) {
+    if (!Array.isArray(raw) || !raw.length || raw.length > 16) bad("needs 1 to 16 columns");
+    const ids = new Set();
+    return raw.map(column => {
+      flowKeys(column, ["id", "title", "type", "required", "options", "validation", "width"], "A records column");
+      const id = flowName(column.id, "A column id"), type = column.type ?? "text", rules = column.validation ?? {};
+      if (ids.has(id)) bad("has two columns named " + id);
+      ids.add(id);
+      if (!FLOW_RECORD_TYPES.includes(type)) bad("has a column of an unknown type");
+      flowKeys(rules, ["min", "max", "minLength", "maxLength", "pattern", "message"], "The validation of column " + id);
+      if ((rules.min !== undefined || rules.max !== undefined) && type !== "number" || [rules.minLength, rules.maxLength, rules.pattern].some(value => value !== undefined) && type !== "text") bad("has checks its column type does not take");
+      if ((column.options !== undefined) !== (type === "select") || type === "select" && !(Array.isArray(column.options) && column.options.length)) bad("needs options as a select column only");
+      if (column.width !== undefined && (!Number.isInteger(column.width) || column.width < 60 || column.width > 480)) bad("needs a column width of 60 to 480 pixels");
+      const required = flowFlag(column.required, "required"), shared = formRuleSpec({}, { required, min: rules.min, max: rules.max, minLength: rules.minLength, maxLength: rules.maxLength,
+        pattern: rules.pattern, message: rules.message }, bad);
+      return Object.freeze({ id, title: flowString(column.title, 200, "A column title", true), type, required, width: column.width ?? null,
+        options: type === "select" ? flowOptions(column.options, bad) : [], spec: Object.freeze({ id, pattern: shared.pattern, rules: shared.rules }) });
+    });
+  }
+
+  /** Whether one cell value fits its records column. */
+  function flowCellFits(column, value) {
+    if (value === null) return true;
+    switch (column.type) {
+      case "number": return Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
+      case "toggle": return typeof value === "boolean";
+      case "date": return flowFits({ type: "date" }, value);
+      case "time": return flowFits({ type: "time" }, value);
+      case "select": return column.options.some(option => option.value === value);
+      default: return typeof value === "string" && value.length <= 4096;
+    }
+  }
+
+  FLOW_HOST.records = {
+    columns: flowRecordColumns,
+    fits: (field, value) => Array.isArray(value) && value.length <= 1000 && value.every(row => flowIs(row) &&
+      Object.keys(row).every(key => field.columns.some(column => column.id === key)) && field.columns.every(column => flowCellFits(column, row[column.id] ?? null))),
+    input: (context, field, view) => flowRecordsInput(context, field, view),
+    problem: (view, field, rows) => flowRecordsProblem(view, field, rows),
+    display: (view, value) => fill(plural(view.labels.flowRecordsCount, value.length, view.lang), { count: numberFormat(view.lang, 0, 0).format(value.length) })
+  };
+  function flowRecordsInput(context, field, view) {
+    const labels = view.labels, group = h("div", "cx-flow-records"), table = h("table", "cx-flow-records-table"), head = h("thead"), body = h("tbody");
+    const add = h("button", "cx-flow-btn cx-flow-list-add"), rows = [], max = field.items.max ?? 1000;
+    group.setAttribute("role", "group");
+    const headRow = h("tr");
+    for (const column of field.columns) {
+      const th = h("th"); th.scope = "col"; setText(th, column.title);
+      if (column.width) th.style.width = column.width + "px";
+      if (column.required) th.classList.add("cx-flow-records-required");
+      headRow.appendChild(th);
+    }
+    const actions = h("th", "cx-flow-records-actions"), actionsText = h("span", "cx-sr-only");
+    actions.scope = "col"; setText(actionsText, labels.flowRecordActions); actions.appendChild(actionsText);
+    headRow.appendChild(actions); head.appendChild(headRow);
+    table.append(head, body);
+    const changed = () => group.dispatchEvent(new Event("change", { bubbles: true }));
+    const cellText = (column, value) => value == null ? "" : column.type === "number" ? numberFormat(context.locale, 0, 20).format(value) :
+      column.type === "select" ? column.options.find(option => option.value === value)?.label ?? String(value) : String(value);
+
+    const renumber = () => rows.forEach((row, index) => {
+      row.cells.forEach(({ column, instance }) => (instance.control || instance.element).setAttribute("aria-label", fill(labels.flowRecordCell, { column: column.title, row: index + 1 })));
+      row.remove.setAttribute("aria-label", fill(labels.flowRecordRemove, { row: index + 1 }));
+    });
+    const paintTools = () => { add.disabled = context.readOnly || rows.length >= max; };
+
+    const addRow = (values, focus) => {
+      const tr = h("tr", "cx-flow-records-row"), row = { tr, cells: [], abort: new AbortController() };
+      for (const column of field.columns) {
+        const td = h("td"), value = values?.[column.id] ?? null;
+        const cellContext = Object.freeze({ id: context.id + "-r" + rows.length + "-" + column.id, value, text: cellText(column, value), readOnly: context.readOnly,
+          row: Object.freeze({ id: field.id, cells: Object.freeze({}) }), column: Object.freeze({ id: column.id, title: column.title, kind: column.type === "number" ? "number" : "text" }),
+          editor: Object.freeze({ type: column.type }), options: column.options.length ? column.options : null, rules: column.spec.rules, labels, locale: context.locale,
+          timeZone: "utc", mode: "flow", initial: undefined, signal: row.abort.signal, lookupMinLength: 1, commit: changed, cancel: () => {}, lookup: () => [], remember: changed });
+        const instance = EDIT_EDITORS[column.type].create(cellContext), control = instance.control || instance.element;
+        control.classList.add("cx-flow-input");
+        if (context.readOnly) { control.disabled = control.tagName === "SELECT" || control.type === "checkbox"; control.readOnly = true; }
+        td.appendChild(instance.element);
+        tr.appendChild(td);
+        row.cells.push({ column, instance });
+      }
+      const cell = h("td", "cx-flow-records-actions"), remove = h("button", "cx-flow-icon-btn");
+      remove.type = "button"; setText(remove, "×"); remove.hidden = context.readOnly;
+      remove.addEventListener("click", () => {
+        const at = rows.indexOf(row);
+        rows.splice(at, 1); row.abort.abort(); row.cells.forEach(({ instance }) => instance.destroy?.()); tr.remove();
+        renumber(); paintTools(); changed();
+        // Focus moves to the row that took its place, or to Add when the table is empty.
+        const next = rows[Math.min(at, rows.length - 1)];
+        (next ? next.cells[0].instance.control || next.cells[0].instance.element : add).focus();
+      });
+      cell.appendChild(remove); tr.appendChild(cell); row.remove = remove;
+      rows.push(row); body.appendChild(tr);
+      renumber(); paintTools();
+      if (focus) (row.cells[0].instance.control || row.cells[0].instance.element).focus();
+      return row;
+    };
+
+    for (const values of Array.isArray(context.value) ? context.value : []) addRow(values, false);
+    add.type = "button"; setText(add, "+ " + labels.flowRecordAdd); add.setAttribute("aria-label", fill(labels.flowAddItem, { field: field.label })); add.hidden = context.readOnly;
+    add.addEventListener("click", () => { addRow(null, true); changed(); });
+    const empty = h("p", "cx-flow-records-empty"); setText(empty, labels.flowRecordsEmpty);
+    const paintEmpty = () => { empty.hidden = rows.length > 0; table.hidden = !rows.length; };
+    group.addEventListener("change", paintEmpty);
+    paintEmpty();
+    const scroller = h("div", "cx-flow-records-scroll"); scroller.appendChild(table);
+    group.append(scroller, empty, add);
+    paintTools();
+    return { element: group, control: group, group: true,
+      focus: () => (rows[0] ? rows[0].cells[0].instance.control || rows[0].cells[0].instance.element : add).focus(),
+      // A cell that is not a value yet (text in a number cell, half a date) names its row and column.
+      error: () => {
+        for (const [index, row] of rows.entries()) for (const { column, instance } of row.cells) {
+          const problem = instance.error?.();
+          if (problem) return fill(labels.flowRecordProblem, { row: index + 1, message: problem });
+        }
+        return null;
+      },
+      getValue: () => rows.map(row => Object.fromEntries(row.cells.map(({ column, instance }) => {
+        const value = instance.getValue();
+        return [column.id, value === "" || value === undefined ? null : value];
+      }))),
+      destroy: () => rows.forEach(row => { row.abort.abort(); row.cells.forEach(({ instance }) => instance.destroy?.()); }) };
+  }
+
+  /** The first problem of a records answer: the row count, then each row's cells by their column's checks. */
+  function flowRecordsProblem(view, field, rows) {
+    const labels = view.labels, title = field.label, items = field.items;
+    if (!rows.length) return field.required ? field.spec.rules.message || fill(labels.gridEditRequired, { column: title }) : null;
+    if (items.min !== undefined && rows.length < items.min) return fill(labels.flowItemsMin, { field: title, min: items.min });
+    if (items.max !== undefined && rows.length > items.max) return fill(labels.flowItemsMax, { field: title, max: items.max });
+    for (const [index, row] of rows.entries()) for (const column of field.columns) {
+      const value = row[column.id] ?? null, shown = bound => typeof bound === "number" ? numberFormat(view.lang, 0, 20).format(bound) : String(bound);
+      const problem = column.type === "toggle" ? null : formCheck(column.spec, value, column.type === "number" ? "number" : "text", column.title, labels, shown);
+      if (problem) return fill(labels.flowRecordProblem, { row: index + 1, message: problem });
+    }
+    return null;
+  }

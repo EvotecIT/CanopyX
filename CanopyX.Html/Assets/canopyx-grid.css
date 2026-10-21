@@ -576,3 +576,4 @@ body .cx-host.cx-chrome{padding:0;}
 .cx-grid-overlay [data-cx-pointer-focus]:focus-visible{outline:none;}
 .cx-host.cx-flow-host{min-height:0;display:block;background:transparent;}
 .cx-host:where(.cx-flow-host:not([data-cx-height])){height:auto;}
+body.cx-page > .cx-host.cx-flow-host:not([data-cx-height]),body.cx-page > .cx-main > .cx-host.cx-flow-host:not([data-cx-height]){height:auto;padding:0;}

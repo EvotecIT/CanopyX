@@ -150,7 +150,7 @@ internal static class CanopyHtmlWriter {
         if (flow == null) throw new ArgumentNullException(nameof(flow));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flows have no tree filter IDs.");
         var html = FragmentDocument(flow.ToContract(), options, null, "cx-host cx-flow-host");
-        var parts = WithRequested(CanopyHtmlAssets.GetRequiredParts(flow), options, CanopyRuntime.Flow);
+        var parts = WithRequested(CanopyHtmlAssets.GetRequiredParts(flow), options, CanopyHtmlAssets.GetRuntime(flow));
         return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, parts);
     }
 
@@ -164,7 +164,7 @@ internal static class CanopyHtmlWriter {
             ["dir"] = DirectionAttribute(options.Direction),
             ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? flow.Title : options.Title),
-            ["head"] = Head(CanopyRuntime.Flow, options),
+            ["head"] = Head(CanopyHtmlAssets.GetRuntime(flow), options),
             ["body"] = Fragment(flow, fragmentOptions)
         };
         return Token.Replace(PageTemplate.Value, match => values.TryGetValue(match.Groups[1].Value, out var value) ? value : match.Value);

@@ -127,6 +127,22 @@ public sealed partial class CanopyFlowField {
     /// <summary>Gets or sets the name a browser plugin or the host registers a custom field's editor under.</summary>
     public string? EditorName { get; set; }
 
+    /// <summary>
+    /// Gets or sets where a select, choice, multiple-choice or lookup field's options come from. With
+    /// <see cref="CanopyFlowOptionsSource.Host"/> the host's <c>options</c> hook supplies them as the reader reaches the field and
+    /// again when a field in <see cref="DependsOnIds"/> changes, and <see cref="Options"/> may stay empty.
+    /// </summary>
+    public CanopyFlowOptionsSource OptionsSource { get; set; }
+
+    /// <summary>
+    /// Gets the ids of the fields this one depends on (at most 16, never secrets): when one changes, host options load again, and a
+    /// field without host options starts empty again.
+    /// </summary>
+    public IList<string> DependsOnIds { get; } = new List<string>();
+
+    /// <summary>Gets the columns of a records field (1 to 16).</summary>
+    public IList<CanopyFlowRecordColumn> Columns { get; } = new List<CanopyFlowRecordColumn>();
+
     /// <summary>Gets or sets the fewest items of a multiple-choice or list answer, from 0 to 1,000.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The count is outside 0 to 1,000.</exception>
     public int? MinItems {
@@ -315,6 +331,34 @@ public sealed partial class CanopyFlowField {
         if (units == null) throw new ArgumentNullException(nameof(units));
         DurationUnits.Clear();
         foreach (var unit in units) DurationUnits.Add(unit);
+        return this;
+    }
+
+    /// <summary>Takes the options from the host's <c>options</c> hook (<see cref="OptionsSource"/>).</summary>
+    /// <returns>The field.</returns>
+    public CanopyFlowField FromHost() { OptionsSource = CanopyFlowOptionsSource.Host; return this; }
+
+    /// <summary>Makes the field depend on other fields (<see cref="DependsOnIds"/>).</summary>
+    /// <param name="fieldIds">The ids of the fields it depends on.</param>
+    /// <returns>The field.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="fieldIds"/> is null.</exception>
+    public CanopyFlowField DependsOn(params string[] fieldIds) {
+        if (fieldIds == null) throw new ArgumentNullException(nameof(fieldIds));
+        foreach (var id in fieldIds) DependsOnIds.Add(id);
+        return this;
+    }
+
+    /// <summary>Adds a column to a records field (<see cref="Columns"/>).</summary>
+    /// <param name="id">The column id.</param>
+    /// <param name="title">The header.</param>
+    /// <param name="kind">The cell type.</param>
+    /// <param name="configure">Sets the column's other settings, or null.</param>
+    /// <returns>The field.</returns>
+    /// <exception cref="ArgumentException"><paramref name="id"/> is not a valid id.</exception>
+    public CanopyFlowField Column(string id, string title, CanopyFlowRecordColumnKind kind = CanopyFlowRecordColumnKind.Text, Action<CanopyFlowRecordColumn>? configure = null) {
+        var column = new CanopyFlowRecordColumn(id, title, kind);
+        configure?.Invoke(column);
+        Columns.Add(column);
         return this;
     }
 

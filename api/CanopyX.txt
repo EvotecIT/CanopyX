@@ -567,15 +567,25 @@ CanopyX.CanopyFilter.System.String? AncestorFlag { get; set; }
 CanopyX.CanopyFlow : sealed class
 CanopyX.CanopyFlow..ctor(System.String id, System.String title)
 CanopyX.CanopyFlow.CanopyX.CanopyFlow Info(System.String id, System.String title, System.String? description = null)
+CanopyX.CanopyFlow.CanopyX.CanopyFlow Pick(System.String id, System.String title, CanopyX.CanopyDataGridView view, System.Action<CanopyX.CanopyFlowPicker>? configure = null)
+CanopyX.CanopyFlow.CanopyX.CanopyFlow Pick(System.String id, System.String title, CanopyX.CanopyTreeView view, System.Action<CanopyX.CanopyFlowPicker>? configure = null)
+CanopyX.CanopyFlow.CanopyX.CanopyFlow Preset(System.String id, System.String label, System.Action<CanopyX.CanopyFlowPreset> configure)
 CanopyX.CanopyFlow.CanopyX.CanopyFlow Review(System.Action<CanopyX.CanopyFlowStep>? configure = null)
 CanopyX.CanopyFlow.CanopyX.CanopyFlow Step(System.String id, System.String title, System.Action<CanopyX.CanopyFlowStep>? configure = null)
+CanopyX.CanopyFlow.CanopyX.CanopyFlow UseEndpoint(System.String url, CanopyX.CanopyFlowRoutes routes)
+CanopyX.CanopyFlow.CanopyX.CanopyFlowCommand? Command { get; set; }
+CanopyX.CanopyFlow.CanopyX.CanopyFlowContainer Container { get; set; }
+CanopyX.CanopyFlow.CanopyX.CanopyFlowDraftStore Draft { get; set; }
+CanopyX.CanopyFlow.CanopyX.CanopyFlowEndpoint? Endpoint { get; set; }
 CanopyX.CanopyFlow.CanopyX.CanopyFlowMode Mode { get; set; }
 CanopyX.CanopyFlow.CanopyX.CanopyFlowOrientation Orientation { get; set; }
 CanopyX.CanopyFlow.CanopyX.CanopyFlowSubmit? Submit { get; set; }
 CanopyX.CanopyFlow.CanopyX.CanopyLabels? Labels { get; set; }
 CanopyX.CanopyFlow.CanopyX.CanopyTimeZone TimeZone { get; set; }
+CanopyX.CanopyFlow.System.Boolean DeepLinks { get; set; }
 CanopyX.CanopyFlow.System.Boolean IsEditMode { get; set; }
 CanopyX.CanopyFlow.System.Collections.Generic.IDictionary<System.String, System.Object?> Initial { get; }
+CanopyX.CanopyFlow.System.Collections.Generic.IList<CanopyX.CanopyFlowPreset> Presets { get; }
 CanopyX.CanopyFlow.System.Collections.Generic.IList<CanopyX.CanopyFlowStep> Steps { get; }
 CanopyX.CanopyFlow.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> VisibleValues(System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> answers)
 CanopyX.CanopyFlow.System.Collections.Generic.ISet<System.String> StoredSecrets { get; }
@@ -585,14 +595,49 @@ CanopyX.CanopyFlow.System.String Title { get; set; }
 CanopyX.CanopyFlow.System.String ToContract()
 CanopyX.CanopyFlow.System.String? Baseline { get; set; }
 CanopyX.CanopyFlow.System.String? Description { get; set; }
+CanopyX.CanopyFlow.System.String? FormatCommand(System.Collections.Generic.IReadOnlyDictionary<System.String, System.Object?> answers, System.Collections.Generic.IEnumerable<System.String>? typedSecrets = null)
+CanopyX.CanopyFlow.System.String? LaunchLabel { get; set; }
 CanopyX.CanopyFlow.System.Void Validate()
 CanopyX.CanopyFlow.const System.Int32 MaxFields = 1000
 CanopyX.CanopyFlow.const System.Int32 MaxSteps = 64
 CanopyX.CanopyFlow.static CanopyX.CanopyFlow FromContract(System.String json)
+CanopyX.CanopyFlowAcknowledgement : sealed class
+CanopyX.CanopyFlowAcknowledgement..ctor(System.String label, CanopyX.CanopyFlowCondition? condition = null)
+CanopyX.CanopyFlowAcknowledgement.CanopyX.CanopyFlowCondition? Condition { get; set; }
+CanopyX.CanopyFlowAcknowledgement.System.String Label { get; set; }
+CanopyX.CanopyFlowCheck : sealed class
+CanopyX.CanopyFlowCheck..ctor(System.String id, System.String label)
+CanopyX.CanopyFlowCheck.CanopyX.CanopyFlowCheck Describe(System.String text)
+CanopyX.CanopyFlowCheck.CanopyX.CanopyFlowCheck Fields(params System.String[] ids)
+CanopyX.CanopyFlowCheck.CanopyX.CanopyFlowCheck RequirePass()
+CanopyX.CanopyFlowCheck.CanopyX.CanopyFlowCheck RequireRun()
+CanopyX.CanopyFlowCheck.CanopyX.CanopyFlowCheckRequirement Requirement { get; set; }
+CanopyX.CanopyFlowCheck.System.Collections.Generic.IList<System.String> FieldIds { get; }
+CanopyX.CanopyFlowCheck.System.String Id { get; }
+CanopyX.CanopyFlowCheck.System.String Label { get; set; }
+CanopyX.CanopyFlowCheck.System.String? Description { get; set; }
+CanopyX.CanopyFlowCheckRequirement : enum System.Int32
+CanopyX.CanopyFlowCheckRequirement.const CanopyX.CanopyFlowCheckRequirement None = 0
+CanopyX.CanopyFlowCheckRequirement.const CanopyX.CanopyFlowCheckRequirement Pass = 1
+CanopyX.CanopyFlowCheckRequirement.const CanopyX.CanopyFlowCheckRequirement Run = 2
 CanopyX.CanopyFlowChoiceDisplay : enum System.Int32
 CanopyX.CanopyFlowChoiceDisplay.const CanopyX.CanopyFlowChoiceDisplay Auto = 0
 CanopyX.CanopyFlowChoiceDisplay.const CanopyX.CanopyFlowChoiceDisplay Cards = 1
 CanopyX.CanopyFlowChoiceDisplay.const CanopyX.CanopyFlowChoiceDisplay List = 2
+CanopyX.CanopyFlowCommand : sealed class
+CanopyX.CanopyFlowCommand..ctor(System.String name, CanopyX.CanopyFlowCommandStyle style = PowerShell)
+CanopyX.CanopyFlowCommand.CanopyX.CanopyFlowCommand Variant(System.String id, System.String label)
+CanopyX.CanopyFlowCommand.CanopyX.CanopyFlowCommandStyle Style { get; set; }
+CanopyX.CanopyFlowCommand.System.Collections.Generic.IList<CanopyX.CanopyFlowCommandVariant> Variants { get; }
+CanopyX.CanopyFlowCommand.System.String Name { get; set; }
+CanopyX.CanopyFlowCommandStyle : enum System.Int32
+CanopyX.CanopyFlowCommandStyle.const CanopyX.CanopyFlowCommandStyle Posix = 1
+CanopyX.CanopyFlowCommandStyle.const CanopyX.CanopyFlowCommandStyle PowerShell = 0
+CanopyX.CanopyFlowCommandStyle.const CanopyX.CanopyFlowCommandStyle Windows = 2
+CanopyX.CanopyFlowCommandVariant : sealed class
+CanopyX.CanopyFlowCommandVariant..ctor(System.String id, System.String label)
+CanopyX.CanopyFlowCommandVariant.System.String Id { get; }
+CanopyX.CanopyFlowCommandVariant.System.String Label { get; set; }
 CanopyX.CanopyFlowCondition : sealed class
 CanopyX.CanopyFlowCondition.CanopyX.CanopyFlowGroupOperator GroupOperator { get; }
 CanopyX.CanopyFlowCondition.CanopyX.CanopyFlowOperator Operator { get; }
@@ -623,11 +668,29 @@ CanopyX.CanopyFlowCondition.static CanopyX.CanopyFlowCondition NotEqual(System.S
 CanopyX.CanopyFlowCondition.static CanopyX.CanopyFlowCondition NotIn(System.String field, params System.Object[] values)
 CanopyX.CanopyFlowCondition.static CanopyX.CanopyFlowCondition NotMatches(System.String field, System.String pattern)
 CanopyX.CanopyFlowCondition.static CanopyX.CanopyFlowCondition StartsWith(System.String field, System.String value)
+CanopyX.CanopyFlowConfirmation : sealed class
+CanopyX.CanopyFlowConfirmation..ctor(System.String label)
+CanopyX.CanopyFlowConfirmation.System.String Label { get; set; }
+CanopyX.CanopyFlowConfirmation.System.String? FieldId { get; set; }
+CanopyX.CanopyFlowConfirmation.System.String? Text { get; set; }
+CanopyX.CanopyFlowContainer : enum System.Int32
+CanopyX.CanopyFlowContainer.const CanopyX.CanopyFlowContainer Dialog = 1
+CanopyX.CanopyFlowContainer.const CanopyX.CanopyFlowContainer Drawer = 2
+CanopyX.CanopyFlowContainer.const CanopyX.CanopyFlowContainer Inline = 0
+CanopyX.CanopyFlowDraftStore : enum System.Int32
+CanopyX.CanopyFlowDraftStore.const CanopyX.CanopyFlowDraftStore Host = 3
+CanopyX.CanopyFlowDraftStore.const CanopyX.CanopyFlowDraftStore Local = 2
+CanopyX.CanopyFlowDraftStore.const CanopyX.CanopyFlowDraftStore None = 0
+CanopyX.CanopyFlowDraftStore.const CanopyX.CanopyFlowDraftStore Session = 1
 CanopyX.CanopyFlowDurationUnit : enum System.Int32
 CanopyX.CanopyFlowDurationUnit.const CanopyX.CanopyFlowDurationUnit Days = 3
 CanopyX.CanopyFlowDurationUnit.const CanopyX.CanopyFlowDurationUnit Hours = 2
 CanopyX.CanopyFlowDurationUnit.const CanopyX.CanopyFlowDurationUnit Minutes = 1
 CanopyX.CanopyFlowDurationUnit.const CanopyX.CanopyFlowDurationUnit Seconds = 0
+CanopyX.CanopyFlowEndpoint : sealed class
+CanopyX.CanopyFlowEndpoint..ctor(System.String url, CanopyX.CanopyFlowRoutes routes)
+CanopyX.CanopyFlowEndpoint.CanopyX.CanopyFlowRoutes Routes { get; set; }
+CanopyX.CanopyFlowEndpoint.System.String Url { get; set; }
 CanopyX.CanopyFlowField : sealed class
 CanopyX.CanopyFlowField..ctor(System.String id, CanopyX.CanopyFlowFieldKind kind, System.String label)
 CanopyX.CanopyFlowField.CanopyX.CanopyCellValidation Validation { get; }
@@ -635,8 +698,11 @@ CanopyX.CanopyFlowField.CanopyX.CanopyFlowChoiceDisplay Display { get; set; }
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowCondition? Condition { get; set; }
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField AsList()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Cards()
+CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Column(System.String id, System.String title, CanopyX.CanopyFlowRecordColumnKind kind = Text, System.Action<CanopyX.CanopyFlowRecordColumn>? configure = null)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Count(System.Nullable<System.Int32> min, System.Nullable<System.Int32> max)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Default(System.Object value)
+CanopyX.CanopyFlowField.CanopyX.CanopyFlowField DependsOn(params System.String[] fieldIds)
+CanopyX.CanopyFlowField.CanopyX.CanopyFlowField FromHost()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Half()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Help(System.String text)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField ItemPattern(System.String pattern)
@@ -665,11 +731,14 @@ CanopyX.CanopyFlowField.CanopyX.CanopyFlowField When(CanopyX.CanopyFlowCondition
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowFieldKind Kind { get; }
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowFieldWidth Width { get; set; }
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowItemRule ItemRule { get; set; }
+CanopyX.CanopyFlowField.CanopyX.CanopyFlowOptionsSource OptionsSource { get; set; }
 CanopyX.CanopyFlowField.System.Boolean IsReadOnly { get; set; }
 CanopyX.CanopyFlowField.System.Boolean IsRequired { get; set; }
 CanopyX.CanopyFlowField.System.Boolean IsSensitive { get; set; }
 CanopyX.CanopyFlowField.System.Collections.Generic.IList<CanopyX.CanopyFlowDurationUnit> DurationUnits { get; }
 CanopyX.CanopyFlowField.System.Collections.Generic.IList<CanopyX.CanopyFlowOption> Options { get; }
+CanopyX.CanopyFlowField.System.Collections.Generic.IList<CanopyX.CanopyFlowRecordColumn> Columns { get; }
+CanopyX.CanopyFlowField.System.Collections.Generic.IList<System.String> DependsOnIds { get; }
 CanopyX.CanopyFlowField.System.Nullable<System.Boolean> KeepsWhenBlank { get; set; }
 CanopyX.CanopyFlowField.System.Nullable<System.Boolean> ShowsReveal { get; set; }
 CanopyX.CanopyFlowField.System.Nullable<System.Double> NumberStep { get; set; }
@@ -700,6 +769,7 @@ CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer List(System.String id, S
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Lookup(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer MultiChoice(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Number(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
+CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Records(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Secret(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Select(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Text(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
@@ -716,6 +786,8 @@ CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind List = 11
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Lookup = 7
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind MultiChoice = 9
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Number = 1
+CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Pick = 16
+CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Records = 15
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Secret = 12
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Select = 5
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Text = 0
@@ -739,6 +811,7 @@ CanopyX.CanopyFlowItemRule.const CanopyX.CanopyFlowItemRule Url = 5
 CanopyX.CanopyFlowMode : enum System.Int32
 CanopyX.CanopyFlowMode.const CanopyX.CanopyFlowMode Free = 1
 CanopyX.CanopyFlowMode.const CanopyX.CanopyFlowMode Linear = 0
+CanopyX.CanopyFlowMode.const CanopyX.CanopyFlowMode Tasks = 2
 CanopyX.CanopyFlowOperator : enum System.Int32
 CanopyX.CanopyFlowOperator.const CanopyX.CanopyFlowOperator Between = 14
 CanopyX.CanopyFlowOperator.const CanopyX.CanopyFlowOperator Contains = 6
@@ -765,38 +838,105 @@ CanopyX.CanopyFlowOption.System.String? Description { get; set; }
 CanopyX.CanopyFlowOption.System.String? DisabledReason { get; set; }
 CanopyX.CanopyFlowOption.System.String? Group { get; set; }
 CanopyX.CanopyFlowOption.System.String? Label { get; set; }
+CanopyX.CanopyFlowOptionsSource : enum System.Int32
+CanopyX.CanopyFlowOptionsSource.const CanopyX.CanopyFlowOptionsSource Document = 0
+CanopyX.CanopyFlowOptionsSource.const CanopyX.CanopyFlowOptionsSource Host = 1
 CanopyX.CanopyFlowOrientation : enum System.Int32
 CanopyX.CanopyFlowOrientation.const CanopyX.CanopyFlowOrientation Auto = 0
 CanopyX.CanopyFlowOrientation.const CanopyX.CanopyFlowOrientation Horizontal = 1
 CanopyX.CanopyFlowOrientation.const CanopyX.CanopyFlowOrientation Vertical = 2
+CanopyX.CanopyFlowPicker : sealed class
+CanopyX.CanopyFlowPicker..ctor(CanopyX.CanopyFlowField field, CanopyX.CanopyDataGridView view)
+CanopyX.CanopyFlowPicker..ctor(CanopyX.CanopyFlowField field, CanopyX.CanopyTreeView view)
+CanopyX.CanopyFlowPicker..ctor(CanopyX.CanopyFlowField field, System.String viewJson)
+CanopyX.CanopyFlowPicker.CanopyX.CanopyDataGridView? GridView { get; }
+CanopyX.CanopyFlowPicker.CanopyX.CanopyFlowField Field { get; }
+CanopyX.CanopyFlowPicker.CanopyX.CanopyFlowPicker Label(System.String columnId)
+CanopyX.CanopyFlowPicker.CanopyX.CanopyFlowPicker NoTray()
+CanopyX.CanopyFlowPicker.CanopyX.CanopyTreeView? TreeView { get; }
+CanopyX.CanopyFlowPicker.System.Boolean ShowsTray { get; set; }
+CanopyX.CanopyFlowPicker.System.Int32 Height { get; set; }
+CanopyX.CanopyFlowPicker.System.String? LabelColumn { get; set; }
+CanopyX.CanopyFlowPicker.System.String? ViewJson { get; }
+CanopyX.CanopyFlowPreset : sealed class
+CanopyX.CanopyFlowPreset..ctor(System.String id, System.String label)
+CanopyX.CanopyFlowPreset.CanopyX.CanopyFlowPreset Value(System.String fieldId, System.Object? value)
+CanopyX.CanopyFlowPreset.System.Collections.Generic.IDictionary<System.String, System.Object?> Values { get; }
+CanopyX.CanopyFlowPreset.System.String Id { get; }
+CanopyX.CanopyFlowPreset.System.String Label { get; set; }
+CanopyX.CanopyFlowPreset.System.String? Description { get; set; }
+CanopyX.CanopyFlowRecordColumn : sealed class
+CanopyX.CanopyFlowRecordColumn..ctor(System.String id, System.String title, CanopyX.CanopyFlowRecordColumnKind kind = Text)
+CanopyX.CanopyFlowRecordColumn.CanopyX.CanopyCellValidation Validation { get; }
+CanopyX.CanopyFlowRecordColumn.CanopyX.CanopyFlowRecordColumn Option(System.Object value, System.String? label = null)
+CanopyX.CanopyFlowRecordColumn.CanopyX.CanopyFlowRecordColumn Required()
+CanopyX.CanopyFlowRecordColumn.CanopyX.CanopyFlowRecordColumnKind Kind { get; set; }
+CanopyX.CanopyFlowRecordColumn.System.Boolean IsRequired { get; set; }
+CanopyX.CanopyFlowRecordColumn.System.Collections.Generic.IList<CanopyX.CanopyFlowOption> Options { get; }
+CanopyX.CanopyFlowRecordColumn.System.Nullable<System.Int32> Width { get; set; }
+CanopyX.CanopyFlowRecordColumn.System.String Id { get; }
+CanopyX.CanopyFlowRecordColumn.System.String Title { get; set; }
+CanopyX.CanopyFlowRecordColumnKind : enum System.Int32
+CanopyX.CanopyFlowRecordColumnKind.const CanopyX.CanopyFlowRecordColumnKind Date = 2
+CanopyX.CanopyFlowRecordColumnKind.const CanopyX.CanopyFlowRecordColumnKind Number = 1
+CanopyX.CanopyFlowRecordColumnKind.const CanopyX.CanopyFlowRecordColumnKind Select = 4
+CanopyX.CanopyFlowRecordColumnKind.const CanopyX.CanopyFlowRecordColumnKind Text = 0
+CanopyX.CanopyFlowRecordColumnKind.const CanopyX.CanopyFlowRecordColumnKind Time = 3
+CanopyX.CanopyFlowRecordColumnKind.const CanopyX.CanopyFlowRecordColumnKind Toggle = 5
+CanopyX.CanopyFlowRoutes : enum System.Int32
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes Check = 4
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes Draft = 64
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes Fields = 2
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes None = 0
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes Options = 1
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes Preview = 16
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes Status = 32
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes Submit = 128
+CanopyX.CanopyFlowRoutes.const CanopyX.CanopyFlowRoutes Validate = 8
 CanopyX.CanopyFlowSection : sealed class (CanopyX.CanopyFlowFieldContainer<CanopyX.CanopyFlowSection>)
 CanopyX.CanopyFlowSection..ctor(System.String id, System.String label)
 CanopyX.CanopyFlowSection.CanopyX.CanopyFlowCondition? Condition { get; set; }
 CanopyX.CanopyFlowSection.CanopyX.CanopyFlowSection Describe(System.String text)
+CanopyX.CanopyFlowSection.CanopyX.CanopyFlowSection FromHost(params System.String[] dependsOn)
 CanopyX.CanopyFlowSection.CanopyX.CanopyFlowSection When(CanopyX.CanopyFlowCondition condition)
+CanopyX.CanopyFlowSection.System.Boolean IsFromHost { get; set; }
+CanopyX.CanopyFlowSection.System.Collections.Generic.IList<System.String> DependsOnIds { get; }
 CanopyX.CanopyFlowSection.System.String Id { get; }
 CanopyX.CanopyFlowSection.System.String Label { get; set; }
 CanopyX.CanopyFlowSection.System.String? Description { get; set; }
 CanopyX.CanopyFlowStep : sealed class (CanopyX.CanopyFlowFieldContainer<CanopyX.CanopyFlowStep>)
 CanopyX.CanopyFlowStep..ctor(System.String id, System.String? title)
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowAcknowledgement? Acknowledgement { get; set; }
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowCondition? Condition { get; set; }
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowConfirmation? Confirmation { get; set; }
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowPicker? Picker { get; set; }
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Acknowledge(System.String label, CanopyX.CanopyFlowCondition? condition = null)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep ChangesOnly(System.Boolean changesOnly = True)
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Check(System.String id, System.String label, System.Action<CanopyX.CanopyFlowCheck>? configure = null)
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Confirm(System.String label, System.String text)
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep ConfirmField(System.String label, System.String fieldId)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Declaration(System.String text)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Describe(System.String text)
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Group(System.String label)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Optional()
+CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Preview()
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep Section(System.String id, System.String label, System.Action<CanopyX.CanopyFlowSection> configure)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStep When(CanopyX.CanopyFlowCondition condition)
 CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStepKind Kind { get; set; }
 CanopyX.CanopyFlowStep.System.Boolean IsOptional { get; set; }
+CanopyX.CanopyFlowStep.System.Boolean ShowsPreview { get; set; }
+CanopyX.CanopyFlowStep.System.Collections.Generic.IList<CanopyX.CanopyFlowCheck> Checks { get; }
 CanopyX.CanopyFlowStep.System.Collections.Generic.IList<CanopyX.CanopyFlowSection> Sections { get; }
 CanopyX.CanopyFlowStep.System.Nullable<System.Boolean> ShowChangesOnly { get; set; }
 CanopyX.CanopyFlowStep.System.String Id { get; }
 CanopyX.CanopyFlowStep.System.String? DeclarationText { get; set; }
 CanopyX.CanopyFlowStep.System.String? Description { get; set; }
+CanopyX.CanopyFlowStep.System.String? GroupLabel { get; set; }
 CanopyX.CanopyFlowStep.System.String? Title { get; set; }
 CanopyX.CanopyFlowStepKind : enum System.Int32
 CanopyX.CanopyFlowStepKind.const CanopyX.CanopyFlowStepKind Form = 0
 CanopyX.CanopyFlowStepKind.const CanopyX.CanopyFlowStepKind Info = 1
+CanopyX.CanopyFlowStepKind.const CanopyX.CanopyFlowStepKind Pick = 3
 CanopyX.CanopyFlowStepKind.const CanopyX.CanopyFlowStepKind Review = 2
 CanopyX.CanopyFlowSubmit : sealed class
 CanopyX.CanopyFlowSubmit..ctor(System.String? label = null)
@@ -1503,19 +1643,50 @@ CanopyX.CanopyLabels.System.String ColumnWidth { get; set; }
 CanopyX.CanopyLabels.System.String Columns { get; set; }
 CanopyX.CanopyLabels.System.String EditValue { get; set; }
 CanopyX.CanopyLabels.System.String FlowAccepted { get; set; }
+CanopyX.CanopyLabels.System.String FlowAcknowledgeNeeded { get; set; }
 CanopyX.CanopyLabels.System.String FlowAdd { get; set; }
 CanopyX.CanopyLabels.System.String FlowAddItem { get; set; }
 CanopyX.CanopyLabels.System.String FlowBack { get; set; }
+CanopyX.CanopyLabels.System.String FlowBackToTasks { get; set; }
+CanopyX.CanopyLabels.System.String FlowCancel { get; set; }
 CanopyX.CanopyLabels.System.String FlowChange { get; set; }
 CanopyX.CanopyLabels.System.String FlowChangeField { get; set; }
 CanopyX.CanopyLabels.System.String FlowChangedCount { get; set; }
+CanopyX.CanopyLabels.System.String FlowChangedMark { get; set; }
 CanopyX.CanopyLabels.System.String FlowChangesOnly { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckAcknowledge { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckConfirmWarning { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckFailed { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckInvalid { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckNeeded { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckNotPassed { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckNotRun { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckPassed { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckRunning { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckStale { get; set; }
+CanopyX.CanopyLabels.System.String FlowCheckWarning { get; set; }
+CanopyX.CanopyLabels.System.String FlowChecks { get; set; }
+CanopyX.CanopyLabels.System.String FlowClose { get; set; }
+CanopyX.CanopyLabels.System.String FlowCommandTab { get; set; }
+CanopyX.CanopyLabels.System.String FlowCommandTitle { get; set; }
+CanopyX.CanopyLabels.System.String FlowConfirmMismatch { get; set; }
 CanopyX.CanopyLabels.System.String FlowConflict { get; set; }
 CanopyX.CanopyLabels.System.String FlowCopied { get; set; }
 CanopyX.CanopyLabels.System.String FlowCopy { get; set; }
 CanopyX.CanopyLabels.System.String FlowDays { get; set; }
+CanopyX.CanopyLabels.System.String FlowDiscard { get; set; }
+CanopyX.CanopyLabels.System.String FlowDiscardQuestion { get; set; }
+CanopyX.CanopyLabels.System.String FlowDraftFailed { get; set; }
+CanopyX.CanopyLabels.System.String FlowDraftFound { get; set; }
+CanopyX.CanopyLabels.System.String FlowDraftFrom { get; set; }
+CanopyX.CanopyLabels.System.String FlowDraftRestart { get; set; }
+CanopyX.CanopyLabels.System.String FlowDraftResume { get; set; }
+CanopyX.CanopyLabels.System.String FlowDraftSaved { get; set; }
+CanopyX.CanopyLabels.System.String FlowDraftStale { get; set; }
 CanopyX.CanopyLabels.System.String FlowDurationInvalid { get; set; }
 CanopyX.CanopyLabels.System.String FlowErrorSummary { get; set; }
+CanopyX.CanopyLabels.System.String FlowFieldsFailed { get; set; }
+CanopyX.CanopyLabels.System.String FlowFieldsLoading { get; set; }
 CanopyX.CanopyLabels.System.String FlowHours { get; set; }
 CanopyX.CanopyLabels.System.String FlowItemCidr { get; set; }
 CanopyX.CanopyLabels.System.String FlowItemEmail { get; set; }
@@ -1526,21 +1697,56 @@ CanopyX.CanopyLabels.System.String FlowItemPattern { get; set; }
 CanopyX.CanopyLabels.System.String FlowItemUrl { get; set; }
 CanopyX.CanopyLabels.System.String FlowItemsMax { get; set; }
 CanopyX.CanopyLabels.System.String FlowItemsMin { get; set; }
+CanopyX.CanopyLabels.System.String FlowKeepEditing { get; set; }
 CanopyX.CanopyLabels.System.String FlowMinutes { get; set; }
 CanopyX.CanopyLabels.System.String FlowNext { get; set; }
 CanopyX.CanopyLabels.System.String FlowNoChanges { get; set; }
 CanopyX.CanopyLabels.System.String FlowNoHost { get; set; }
+CanopyX.CanopyLabels.System.String FlowNoHostHook { get; set; }
 CanopyX.CanopyLabels.System.String FlowNotProvided { get; set; }
 CanopyX.CanopyLabels.System.String FlowNotReady { get; set; }
 CanopyX.CanopyLabels.System.String FlowNotSubmitted { get; set; }
 CanopyX.CanopyLabels.System.String FlowOff { get; set; }
 CanopyX.CanopyLabels.System.String FlowOn { get; set; }
 CanopyX.CanopyLabels.System.String FlowOptional { get; set; }
+CanopyX.CanopyLabels.System.String FlowOptionsFailed { get; set; }
+CanopyX.CanopyLabels.System.String FlowOptionsLoading { get; set; }
+CanopyX.CanopyLabels.System.String FlowPatchTab { get; set; }
+CanopyX.CanopyLabels.System.String FlowPickChosen { get; set; }
+CanopyX.CanopyLabels.System.String FlowPickCount { get; set; }
+CanopyX.CanopyLabels.System.String FlowPickMore { get; set; }
+CanopyX.CanopyLabels.System.String FlowPickNone { get; set; }
+CanopyX.CanopyLabels.System.String FlowPickOneByOne { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetApplied { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetChanges { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetCurrent { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetFailed { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetName { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetNone { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetSave { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetSaved { get; set; }
+CanopyX.CanopyLabels.System.String FlowPresetsSaved { get; set; }
+CanopyX.CanopyLabels.System.String FlowPreview { get; set; }
+CanopyX.CanopyLabels.System.String FlowPreviewFailed { get; set; }
+CanopyX.CanopyLabels.System.String FlowPreviewLoading { get; set; }
+CanopyX.CanopyLabels.System.String FlowPreviewNone { get; set; }
 CanopyX.CanopyLabels.System.String FlowProgress { get; set; }
 CanopyX.CanopyLabels.System.String FlowReady { get; set; }
+CanopyX.CanopyLabels.System.String FlowRecordActions { get; set; }
+CanopyX.CanopyLabels.System.String FlowRecordAdd { get; set; }
+CanopyX.CanopyLabels.System.String FlowRecordCell { get; set; }
+CanopyX.CanopyLabels.System.String FlowRecordProblem { get; set; }
+CanopyX.CanopyLabels.System.String FlowRecordRemove { get; set; }
+CanopyX.CanopyLabels.System.String FlowRecordsCount { get; set; }
+CanopyX.CanopyLabels.System.String FlowRecordsEmpty { get; set; }
 CanopyX.CanopyLabels.System.String FlowReload { get; set; }
 CanopyX.CanopyLabels.System.String FlowRemoveItem { get; set; }
+CanopyX.CanopyLabels.System.String FlowRetry { get; set; }
 CanopyX.CanopyLabels.System.String FlowReviewTitle { get; set; }
+CanopyX.CanopyLabels.System.String FlowRunAgain { get; set; }
+CanopyX.CanopyLabels.System.String FlowRunCheckAgain { get; set; }
+CanopyX.CanopyLabels.System.String FlowSaveAndReturn { get; set; }
+CanopyX.CanopyLabels.System.String FlowSaveDraft { get; set; }
 CanopyX.CanopyLabels.System.String FlowSaved { get; set; }
 CanopyX.CanopyLabels.System.String FlowSavedIt { get; set; }
 CanopyX.CanopyLabels.System.String FlowSeconds { get; set; }
@@ -1556,6 +1762,7 @@ CanopyX.CanopyLabels.System.String FlowSelectNone { get; set; }
 CanopyX.CanopyLabels.System.String FlowSelectedCount { get; set; }
 CanopyX.CanopyLabels.System.String FlowShownOnce { get; set; }
 CanopyX.CanopyLabels.System.String FlowStartAgain { get; set; }
+CanopyX.CanopyLabels.System.String FlowStartFrom { get; set; }
 CanopyX.CanopyLabels.System.String FlowStepAnnounce { get; set; }
 CanopyX.CanopyLabels.System.String FlowStepComplete { get; set; }
 CanopyX.CanopyLabels.System.String FlowStepCurrent { get; set; }
@@ -1567,6 +1774,13 @@ CanopyX.CanopyLabels.System.String FlowStepOptional { get; set; }
 CanopyX.CanopyLabels.System.String FlowSteps { get; set; }
 CanopyX.CanopyLabels.System.String FlowSubmit { get; set; }
 CanopyX.CanopyLabels.System.String FlowSubmitting { get; set; }
+CanopyX.CanopyLabels.System.String FlowTaskBlocked { get; set; }
+CanopyX.CanopyLabels.System.String FlowTaskNeedsAction { get; set; }
+CanopyX.CanopyLabels.System.String FlowTasks { get; set; }
+CanopyX.CanopyLabels.System.String FlowTasksIncomplete { get; set; }
+CanopyX.CanopyLabels.System.String FlowTasksProgress { get; set; }
+CanopyX.CanopyLabels.System.String FlowTasksReview { get; set; }
+CanopyX.CanopyLabels.System.String FlowTimedOut { get; set; }
 CanopyX.CanopyLabels.System.String FlowUnit { get; set; }
 CanopyX.CanopyLabels.System.String FlowUnitDays { get; set; }
 CanopyX.CanopyLabels.System.String FlowUnitHours { get; set; }

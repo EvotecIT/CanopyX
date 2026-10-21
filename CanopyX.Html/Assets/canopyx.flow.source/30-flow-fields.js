@@ -49,7 +49,8 @@
     fv.describe = () => {
       // A group's own input (a duration's amount) carries the description and state, so focusing it announces them.
       const target = fv.instance.describes || fv.control;
-      const ids = [help && help.id, !hint.hidden && hint.id, !message.hidden && message.id].filter(Boolean);
+      // A host field's loading line (the flow-options part) joins them while it shows.
+      const ids = [help && help.id, !hint.hidden && hint.id, fv.note && !fv.note.hidden && fv.note.id, !message.hidden && message.id].filter(Boolean);
       if (ids.length) target.setAttribute("aria-describedby", ids.join(" ")); else target.removeAttribute("aria-describedby");
       if (message.hidden) target.removeAttribute("aria-invalid"); else target.setAttribute("aria-invalid", "true");
     };
@@ -96,6 +97,7 @@
       case "list": return flowListInput(context, field, view.labels);
       case "secret": return flowSecretInput(context, field, view.labels, view.keeps(field));
       case "duration": return flowDurationInput(context, field, view.labels);
+      case "records": case "pick": return flowHost(field.type).input(context, field, view);
       case "custom": {
         const editor = view.editors[field.raw.editor];
         if (!editor || typeof editor.create !== "function") flowFail("the field " + field.id + " names the editor '" + field.raw.editor + "', which nobody registered");
@@ -121,6 +123,7 @@
       case "select": case "choice": case "lookup": return option(value);
       case "multiChoice": return value.map(option).join(", ");
       case "list": return value.join("\n");
+      case "pick": case "records": return flowHost(field.type).display(view, value);
       case "date": return flowDate(view, value + "T00:00:00Z", { dateStyle: "medium", timeZone: "UTC" });
       case "datetime": return flowDate(view, value, { dateStyle: "medium", timeStyle: "short", timeZone: view.model.local ? undefined : "UTC" }) + (view.model.local ? "" : " UTC");
       case "duration": return flowWords(view, flowSeconds(value), field.units[0]);

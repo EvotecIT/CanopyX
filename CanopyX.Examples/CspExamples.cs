@@ -27,6 +27,9 @@ internal static class CspExamples {
         grid.SaveHtmlPage(Path.Combine(folder, "grid.html"), new CanopyHtmlOptions { Title = "CanopyX grid under a strict policy", Nonce = NoncePlaceholder });
         // A matrix: its part, canvas tiles, the tooltip, the details dialog and the print table under the same policy.
         MatrixExamples.Services(12).SaveHtmlPage(Path.Combine(folder, "matrix.html"), new CanopyHtmlOptions { Title = "CanopyX matrix under a strict policy", Nonce = NoncePlaceholder, Height = "520px" });
+        // Flows: a dialog flow with a pick step (the reporting entry point and the grid it embeds), and a task list with a host section.
+        FlowActOnRowsExample.Flow().SaveHtmlPage(Path.Combine(folder, "flow.html"), new CanopyHtmlOptions { Title = "CanopyX flow under a strict policy", Nonce = NoncePlaceholder });
+        FlowSetupTasksExample.Flow().SaveHtmlPage(Path.Combine(folder, "flow-tasks.html"), new CanopyHtmlOptions { Title = "CanopyX task list under a strict policy", Nonce = NoncePlaceholder });
 
         var bundleTree = new SyntheticFileTree();
         ExampleViews.FileShares("csp-bundle", bundleTree.Build(shares: 4, departments: 4, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 300))

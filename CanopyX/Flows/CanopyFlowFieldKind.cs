@@ -45,5 +45,11 @@ public enum CanopyFlowFieldKind {
     Duration,
 
     /// <summary>An editor a browser plugin or the host registers (<see cref="CanopyFlowField.EditorName"/>).</summary>
-    Custom
+    Custom,
+
+    /// <summary>Rows of typed cells edited as a small table (<see cref="CanopyFlowField.Columns"/>); the value is a list of objects by column id.</summary>
+    Records,
+
+    /// <summary>The answer of a pick step (<see cref="CanopyFlowPicker"/>): the chosen records as <c>{ id, label }</c>. Created by <see cref="CanopyFlow.Pick(string, string, CanopyDataGridView, System.Action{CanopyFlowPicker})"/>.</summary>
+    Pick
 }

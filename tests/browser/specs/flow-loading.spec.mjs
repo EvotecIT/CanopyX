@@ -34,30 +34,51 @@ test("a single-file flow page carries its parts inline and loads no grid code", 
     payloads: ["application/x-canopyx-flow", "application/x-canopyx-flow-style", "application/x-canopyx-forms", "application/x-canopyx-forms-style"] });
 });
 
-test("a flow page with external assets loads the entry point and its two parts only", async ({ page }, testInfo) => {
-  // The page a host writes with external assets under plain names: the entry point, its stylesheet and the parts beside them
-  // (CanopyHtmlAssets.WriteTo with CanopyAssetNaming.Plain and CanopyRuntime.Flow). The entry point loads its parts under its
-  // own naming, so a plain entry point asks for canopyx-forms.js and canopyx-flow.js.
+/**
+ * Writes the page a host writes with external assets under plain names: the entry point, its stylesheet and every flow part
+ * beside them (CanopyHtmlAssets.WriteTo with CanopyAssetNaming.Plain and CanopyRuntime.Flow), around the flow of a
+ * single-file example. The entry point loads its parts under its own naming, so a plain entry point asks for
+ * canopyx-forms.js, canopyx-flow.js and canopyx-flow-<feature>.js.
+ */
+function externalPage(testInfo, example) {
   const folder = testInfo.outputPath("external");
   fs.mkdirSync(folder, { recursive: true });
-  for (const name of ["canopyx-flow-entry.js", "canopyx-flow-entry.css"]) fs.writeFileSync(path.join(folder, name), read(name));
-  for (const part of ["forms", "flow"]) for (const extension of [".js", ".css"]) {
-    const text = read("canopyx-" + part + extension);
-    fs.writeFileSync(path.join(folder, "canopyx-" + part + extension), text);
-  }
-  const single = fs.readFileSync(path.join(examples, "flow-mail-server.html"), "utf8");
+  for (const name of fs.readdirSync(assets).filter(name => /^canopyx-(?:flow|flow-[a-z]+|forms)\.(?:js|css)$/.test(name))) fs.writeFileSync(path.join(folder, name), read(name));
+  const single = fs.readFileSync(path.join(examples, example), "utf8");
   const fragment = /<div class="cx-host cx-flow-host"[\s\S]*?<\/script><\/div>/.exec(single)[0];
   fs.writeFileSync(path.join(folder, "index.html"), "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>External flow</title>" +
     "<link rel=\"stylesheet\" href=\"canopyx-flow-entry.css\"><script src=\"canopyx-flow-entry.js\" defer></script></head><body><main>" + fragment + "</main></body></html>");
+  // The parts the single-file page carries inline: the ones C# chose for this flow.
+  const inline = [...single.matchAll(/type="application\/x-canopyx-([a-z-]+?)(?:-style)?"/g)].map(match => "canopyx-" + match[1] + ".js");
+  return { url: pathToFileURL(path.join(folder, "index.html")).href, inline: [...new Set(inline)].sort() };
+}
+const scriptNames = urls => [...new Set(urls.filter(url => /\.js(\?|$)/.test(url)).map(url => path.basename(new URL(url).pathname)))].sort();
+
+test("a flow page with external assets loads the entry point and its two parts only", async ({ page }, testInfo) => {
+  // Every host-connected feature part sits beside the entry point; a plain form fetches none of them.
+  const external = externalPage(testInfo, "flow-mail-server.html");
   const loads = await record(page);
-  await page.goto(pathToFileURL(path.join(folder, "index.html")).href);
+  await page.goto(external.url);
   await waitForFlow(page);
   await expect(stepTitle(page)).toHaveText("Which server sends the mail?");
-  const scripts = [...new Set((await loads()).filter(url => /\.js(\?|$)/.test(url)).map(url => path.basename(new URL(url).pathname)))].sort();
-  expect(scripts).toEqual(["canopyx-flow-entry.js", "canopyx-flow.js", "canopyx-forms.js"]);
+  expect(scriptNames(await loads())).toEqual(["canopyx-flow-entry.js", "canopyx-flow.js", "canopyx-forms.js"]);
+  expect(external.inline).toEqual(["canopyx-flow.js", "canopyx-forms.js"]);
   expect(await page.evaluate(() => typeof window.CanopyX.createDataGrid)).toBe("undefined");
 });
 
+test("a host-connected flow with external assets loads the feature parts it uses, the same ones C# embeds", async ({ page }, testInfo) => {
+  // The mail checks flow uses server checks, host options, a records field, drafts and presets, the host's preview, the
+  // equivalent command and deep links, with the flow-host part they share; never a picker, a task list, a dialog, an
+  // endpoint or a typed confirmation.
+  const external = externalPage(testInfo, "flow-mail-checks.html");
+  const loads = await record(page);
+  await page.goto(external.url);
+  await waitForFlow(page);
+  const scripts = scriptNames(await loads());
+  expect(scripts).toEqual(["canopyx-flow-checks.js", "canopyx-flow-command.js", "canopyx-flow-drafts.js", "canopyx-flow-entry.js", "canopyx-flow-host.js",
+    "canopyx-flow-links.js", "canopyx-flow-options.js", "canopyx-flow-preview.js", "canopyx-flow-records.js", "canopyx-flow.js", "canopyx-forms.js"]);
+  expect(scripts.filter(name => name !== "canopyx-flow-entry.js")).toEqual(external.inline);
+});
 test("a grid page creates a flow and loads the flow part on first use", async ({ page }) => {
   const loads = await record(page);
   // A grid page whose entry point is a file with its parts beside it (enhance-assets/canopyx-grid.js).

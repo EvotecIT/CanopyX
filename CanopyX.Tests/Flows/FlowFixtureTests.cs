@@ -34,6 +34,22 @@ public sealed class FlowFixtureTests {
             "The golden document is not the contract C# writes; regenerate it with " + UpdateVariable + "=1.");
     }
 
+    [Fact]
+    public void HostFeatures_MatchTheGoldenDocument() {
+        // tests/fixtures/flow-document-host.json holds FlowHostContractTests.Everything(): checks, host options and sections,
+        // records, a pick step, a task list in a dialog, the command, presets, drafts, deep links and an endpoint, which
+        // flow-host-document.spec.mjs reads in the browser.
+        var path = FixturePath().Replace("flow-document-everything.json", "flow-document-host.json");
+        var expected = Pretty(FlowHostContractTests.Everything().ToContract());
+        if (Environment.GetEnvironmentVariable(UpdateVariable) == "1") {
+            File.WriteAllText(path, expected);
+            return;
+        }
+        Assert.True(File.Exists(path), "tests/fixtures/flow-document-host.json is missing; regenerate it with " + UpdateVariable + "=1.");
+        Assert.True(File.ReadAllText(path).Replace("\r\n", "\n") == expected, "tests/fixtures/flow-document-host.json differs from FlowHostContractTests.Everything().ToContract(); " +
+            "regenerate it with " + UpdateVariable + "=1 dotnet test --filter FlowFixtureTests and review the diff.");
+    }
+
     // The document indented for readable diffs; the values and their order are the contract's.
     private static string Pretty(string json) =>
         JsonNode.Parse(json)!.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }).Replace("\r\n", "\n") + "\n";

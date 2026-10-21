@@ -28,18 +28,23 @@ for (const [language,labels,staticLabels] of packs) {
       `<script>${classic}\nCanopyX.configure('translated',{labels:{...CanopyXLocales.${language}.labels,gridCopy:'Host copy'}});</script></head>`);
     await page.route('http://canopyx.test/translated',route=>route.fulfill({contentType:'text/html',body:html}));
     await page.goto('http://canopyx.test/translated');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
-    // The editing part brings its gridEdit… labels, the formatting parts their format… labels and the calendar part its calendar…
-    // labels; the runtime defines the rest.
+    // Lazy parts bring their own labels; flow features use the same manifest as the runtime and C# embedding.
     const runtimeNames = await page.evaluate(()=>Object.keys(CanopyX.labels));
     const partNames = Object.keys(labels).filter(name=>!runtimeNames.includes(name));
     expect(Object.keys(labels).filter(name=>runtimeNames.includes(name)).sort()).toEqual(runtimeNames.sort());
     const editing = ['forms','editing'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
-    const flow = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-flow.js'),'utf8');
+    const manifest = JSON.parse(fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-parts.json'),'utf8'));
+    const flow = manifest.parts.filter(part=>part.name==='flow'||part.name.startsWith('flow-'))
+      .map(part=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',part.script),'utf8')).join('\n');
     const formatting = ['formatting','format-editor'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
     const calendar = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-calendar.js'),'utf8');
     const matrix = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-matrix.js'),'utf8');
     expect(partNames.length).toBeGreaterThan(0);
-    for (const name of partNames) { expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix)[A-Z]/); expect(/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:editing).toMatch(new RegExp('\\b'+name+':\\s?"')); }
+    for (const name of partNames) {
+      expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix)[A-Z]/);
+      const definitions = /^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:editing;
+      expect(new RegExp('\\b'+name+':\\s?"').test(definitions), `${language}: lazy part defines ${name}`).toBe(true);
+    }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});
     await expect(page.getByPlaceholder(labels.searchPlaceholder,{exact:true})).toBeVisible();
     await expect(page.locator('.cx-grid-columns > summary')).toHaveText(labels.columns);

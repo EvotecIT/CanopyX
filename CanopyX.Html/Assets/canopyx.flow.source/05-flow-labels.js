@@ -24,7 +24,7 @@
     flowStartAgain: "Start another", flowCopy: "Copy", flowCopied: "Copied", flowSavedIt: "I have saved it", flowShownOnce: "Shown only once. Copy it now."
   };
 
-  /** A flow's labels: the English texts, then the document's, then the host's. An unknown flow… name is a mistake; other views' names are ignored. */
+  /** A flow's labels: the English texts (the feature parts add theirs), then the document's, then the host's. Names the flow does not know are ignored. */
   function flowLabels(...sources) {
     const labels = { ...FORM_LABELS, ...FLOW_LABELS };
     for (const source of sources) {
@@ -32,7 +32,8 @@
       if (!flowIs(source)) flowFail("labels must be an object of strings");
       for (const [name, text] of Object.entries(source)) {
         // A whole label pack holds the labels of every view; a flow takes its own and the shared form messages.
-        if (!Object.hasOwn(labels, name)) { if (/^flow[A-Z]/.test(name)) flowFail("there is no flow label '" + name + "'"); continue; }
+        // The labels of a feature the flow does not use are ignored with them: its part brings them, and this flow left it out.
+        if (!Object.hasOwn(labels, name)) continue;
         if (typeof text !== "string" || !/\S/.test(text)) flowFail("label '" + name + "' must be a string with visible text");
         labels[name] = text;
       }

@@ -698,8 +698,13 @@ import type{
   CanopyPlugin
 }
 from "./plugins.js";
-export type FlowValue=string|number|boolean|null|readonly(string|number|boolean)[];
-export type FlowFieldType="text"|"number"|"date"|"datetime"|"time"|"select"|"toggle"|"lookup"|"choice"|"multiChoice"|"textarea"|"list"|"secret"|"duration"|"custom";
+export type FlowValue=string|number|boolean|null|readonly(string|number|boolean)[]|readonly FlowRecordRow[]|readonly FlowPickedRecord[];
+export type FlowRecordRow=Readonly<Record<string,string|number|boolean|null>>;
+export interface FlowPickedRecord{
+  readonly id:string;
+  readonly label:string
+}
+export type FlowFieldType="text"|"number"|"date"|"datetime"|"time"|"select"|"toggle"|"lookup"|"choice"|"multiChoice"|"textarea"|"list"|"secret"|"duration"|"records"|"custom";
 export type FlowOperator="eq"|"ne"|"gt"|"ge"|"lt"|"le"|"contains"|"notContains"|"startsWith"|"endsWith"|"matches"|"notMatches"|"in"|"notIn"|"between"|"isNull"|"isNotNull";
 export interface FlowCondition{
   operator:"and"|"or"|"none";
@@ -751,25 +756,65 @@ export interface FlowField{
   reveal?:boolean;
   units?:readonly("seconds"|"minutes"|"hours"|"days")[];
   editor?:string;
+  source?:"document"|"host";
+  dependsOn?:readonly string[];
+  columns?:readonly FlowRecordColumn[];
+}
+export interface FlowRecordColumn{
+  id:string;
+  title:string;
+  type?:"text"|"number"|"date"|"time"|"select"|"toggle";
+  required?:boolean;
+  options?:readonly FlowOption[];
+  validation?:{min?:number;max?:number;minLength?:number;maxLength?:number;pattern?:string;message?:string};
+  width?:number;
+}
+export interface FlowCheck{
+  id:string;
+  label:string;
+  description?:string;
+  fields:readonly string[];
+  required?:"pass"|"run";
+}
+export interface FlowPick{
+  field:{id:string;label?:string;help?:string;required?:boolean;when?:FlowCondition;parameter?:string;path?:string;sensitive?:boolean;validation?:Pick<FlowValidation,"minItems"|"maxItems"|"message">;default?:readonly FlowPickedRecord[];};
+  view:Readonly<Record<string,unknown>>;
+  label:string;
+  tray?:boolean;
+  height?:number;
+}
+export interface FlowPreset{
+  id:string;
+  label:string;
+  description?:string;
+  values:Readonly<Record<string,FlowValue>>
 }
 export interface FlowSection{
   id:string;
   label:string;
   description?:string;
-  fields:readonly FlowField[];
-  when?:FlowCondition
+  fields?:readonly FlowField[];
+  when?:FlowCondition;
+  source?:"host";
+  dependsOn?:readonly string[];
 }
 export interface FlowStep{
   id:string;
   title?:string;
   description?:string;
-  type?:"form"|"info"|"review";
+  type?:"form"|"info"|"pick"|"review";
   fields?:readonly FlowField[];
   sections?:readonly FlowSection[];
   when?:FlowCondition;
   optional?:boolean;
   declaration?:string;
   changesOnly?:boolean;
+  checks?:readonly FlowCheck[];
+  group?:string;
+  pick?:FlowPick;
+  confirm?:{label:string;text?:string;field?:string};
+  acknowledge?:{label:string;when?:FlowCondition};
+  preview?:boolean;
 }
 export interface FlowDocument{
   kind:"flow";
@@ -777,8 +822,8 @@ export interface FlowDocument{
   id:string;
   title:string;
   description?:string;
-  mode?:"linear"|"free";
-  layout?:{orientation?:"auto"|"horizontal"|"vertical"};
+  mode?:"linear"|"free"|"tasks";
+  layout?:{orientation?:"auto"|"horizontal"|"vertical";container?:"inline"|"dialog"|"drawer";launch?:string};
   density?:"compact"|"normal"|"comfortable";
   timeZone?:"utc"|"local";
   steps:readonly FlowStep[];
@@ -787,6 +832,11 @@ export interface FlowDocument{
   baseline?:string;
   submit?:{label?:string};
   labels?:Readonly<Record<string,string>>;
+  command?:{name:string;style?:"powershell"|"posix"|"windows";variants?:readonly{id:string;label:string}[]};
+  presets?:readonly FlowPreset[];
+  draft?:"none"|"session"|"local"|"host";
+  deepLinks?:boolean;
+  endpoint?:{url:string;routes:readonly("options"|"fields"|"check"|"validate"|"preview"|"status"|"draft"|"submit")[]};
 }
 export interface FlowSubmission{
   kind:"flowSubmission";
@@ -798,6 +848,46 @@ export interface FlowSubmission{
   secrets:Record<string,{state:"set"|"keep"}>;
   changes:{field:string;path?:string;from:FlowValue;to:FlowValue}[];
   patch:({op:"add"|"replace";path:string;value:FlowValue}|{op:"remove";path:string})[];
+  checks?:Record<string,{status:FlowCheckStatus;at:string}>;
+  command?:string;
+  preset?:string;
+}
+export type FlowCheckStatus="pass"|"warning"|"fail";
+export interface FlowCheckResult{
+  status:FlowCheckStatus;
+  message?:string;
+  details?:{label:string;value:string|number|boolean}[];
+  fieldErrors?:Record<string,string>;
+}
+export interface FlowStepState{
+  state:"complete"|"needsAction"|"blocked"|"notStarted";
+  summary?:string;
+  blockers?:string[]
+}
+export interface FlowPreviewRow{
+  label:string;
+  value:string|number|boolean;
+  tone?:"info"|"success"|"warning"|"danger"
+}
+export type FlowPreview=readonly FlowPreviewRow[]|{
+  title?:string;
+  rows?:readonly FlowPreviewRow[];
+  notes?:readonly string[]
+}
+;
+export interface FlowDraft{
+  kind:"flowDraft";
+  version:1;
+  flow:string;
+  step:string;
+  completed:string[];
+  values:Record<string,FlowValue>;
+  saved:string;
+  baseline?:string;
+  preset?:string;
+}
+export interface FlowHookContext{
+  signal:AbortSignal
 }
 export interface FlowSubmitDetail extends Readonly<FlowSubmission>{
   respondWith(answer:FlowAnswer|Promise<FlowAnswer>):void;
@@ -822,6 +912,15 @@ export interface FlowHooks{
   validateStep?(stepId:string,values:Record<string,FlowValue>):FlowRuleResult|Promise<FlowRuleResult>;
   validateFlow?(values:Record<string,FlowValue>):FlowRuleResult|Promise<FlowRuleResult>;
   submit?(detail:FlowSubmitDetail):FlowAnswer|Promise<FlowAnswer>;
+  options?(fieldId:string,values:Record<string,FlowValue>,context:FlowHookContext):readonly FlowOption[]|Promise<readonly FlowOption[]>;
+  fields?(sectionId:string,values:Record<string,FlowValue>,context:FlowHookContext):readonly FlowField[]|Promise<readonly FlowField[]>;
+  check?(checkId:string,values:Record<string,FlowValue>,context:FlowHookContext&{secret(fieldId:string):string|null}):FlowCheckResult|Promise<FlowCheckResult>;
+  preview?(values:Record<string,FlowValue>,context:FlowHookContext):FlowPreview|Promise<FlowPreview>;
+  status?(values:Record<string,FlowValue>,context:FlowHookContext):Record<string,FlowStepState>|Promise<Record<string,FlowStepState>>;
+  commands?:Record<string,(values:Record<string,FlowValue>) => string|Promise<string>>;
+  draftStore?:{load(flowId:string):FlowDraft|null|Promise<FlowDraft|null>;save(flowId:string,draft:FlowDraft):void|Promise<void>;clear(flowId:string):void|Promise<void>};
+  presetStore?:{list(flowId:string):readonly FlowPreset[]|Promise<readonly FlowPreset[]>;save?(flowId:string,preset:FlowPreset):void|Promise<void>};
+  pickers?:Record<string,Readonly<Record<string,unknown>>>;
 }
 export interface FlowOptions{
   flow:FlowDocument;
@@ -835,6 +934,12 @@ export interface FlowOptions{
   onSubmit?(detail:FlowSubmitDetail):FlowAnswer|Promise<FlowAnswer>|void;
   onSubmitted?(answer:FlowAnswer):void;
   onReload?(detail:{baseline:string|null}):void;
+  onCheck?(detail:{check:string;result:{status:FlowCheckStatus;message:string|null;details:{label:string;value:string}[];at:string}}):void;
+  onLeaving?(detail:{reason:"close"}):boolean|void;
+  formatLink?(stepId:string):string|null;
+  parseLink?(fragment:string):string|null;
+  timeout?:number;
+  headers?:Record<string,string>;
 }
 export interface FlowValidationResult{
   valid:boolean;
@@ -865,6 +970,13 @@ export interface FlowApi{
   submit():Promise<FlowAnswer|null>;
   setProgress(progress:{done?:number;total?:number;message?:string}):boolean;
   complete(answer:FlowAnswer):boolean;
+  runCheck(checkId:string):Promise<{status:FlowCheckStatus;message:string|null;details:{label:string;value:string}[];at:string}|null>;
+  refreshOptions(fieldId:string):Promise<void>;
+  setStepState(stepId:string,state:FlowStepState|null):void;
+  saveDraft():Promise<boolean>;
+  setPreset(presetId:string|null):Promise<void>;
+  open():boolean;
+  close():boolean;
   destroy():void;
 }
 export declare function createFlow(host:HTMLElement,options:FlowOptions):FlowApi;
@@ -1766,6 +1878,7 @@ export interface DataGrid<Q extends AcceptedGridQuery=GridQuery,Row extends Grid
   getSelection():string[];
   setSelection(ids:string[]):void;
   clearSelection():void;
+  getLoadedRows(ids:readonly string[]):{id:string;cells:Record<string,Cell>}[];
   prepareExport(options:GridExportOptions):GridExport<Q>;
   toCsv(options:GridExportOptions):Promise<string>;
   copy(options:GridExportOptions):Promise<string>;

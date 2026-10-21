@@ -86,6 +86,90 @@ public sealed class CanopyFlow {
     /// <summary>Gets or sets the submit button's settings; null uses the translated default text.</summary>
     public CanopyFlowSubmit? Submit { get; set; }
 
+    /// <summary>Gets or sets where the flow opens: in the page, or in a dialog or drawer a launch button opens.</summary>
+    public CanopyFlowContainer Container { get; set; }
+
+    /// <summary>Gets or sets the launch button's text of a dialog or drawer flow; null uses the flow's title. Plain text of at most 80 characters.</summary>
+    public string? LaunchLabel { get; set; }
+
+    /// <summary>Gets or sets the equivalent command the review page and the proposal show; null shows none.</summary>
+    public CanopyFlowCommand? Command { get; set; }
+
+    /// <summary>Gets the presets the reader can start from (at most 32).</summary>
+    public IList<CanopyFlowPreset> Presets { get; } = new List<CanopyFlowPreset>();
+
+    /// <summary>Gets or sets where the flow keeps its draft.</summary>
+    public CanopyFlowDraftStore Draft { get; set; }
+
+    /// <summary>Gets or sets whether the page's address names the open step (<c>#flow-id/step-id</c>), so a link opens that step.</summary>
+    public bool DeepLinks { get; set; }
+
+    /// <summary>Gets or sets the routes that answer the flow's hooks without script (CanopyX.AspNetCore's <c>MapCanopyFlow</c>); null uses none.</summary>
+    public CanopyFlowEndpoint? Endpoint { get; set; }
+
+    /// <summary>Appends a pick step over a flat grid: its selection is the answer of the step's one field.</summary>
+    /// <param name="id">The step id, unique in the flow; the answer's field takes the same id unless <paramref name="configure"/> sets another label.</param>
+    /// <param name="title">The step's title, a question such as "Which servers?"; the field takes it as its label.</param>
+    /// <param name="view">The grid the reader picks from.</param>
+    /// <param name="configure">Sets the label column, the tray and the field's settings (<see cref="CanopyFlowPicker.Field"/>), or null.</param>
+    /// <returns>The flow.</returns>
+    /// <exception cref="ArgumentException"><paramref name="id"/> is not a valid id.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
+    public CanopyFlow Pick(string id, string title, CanopyDataGridView view, Action<CanopyFlowPicker>? configure = null) =>
+        AddPick(id, title, new CanopyFlowPicker(new CanopyFlowField(id, CanopyFlowFieldKind.Pick, title), view), configure);
+
+    /// <summary>Appends a pick step over a tree: its selection is the answer of the step's one field.</summary>
+    /// <param name="id">The step id, unique in the flow; the answer's field takes the same id.</param>
+    /// <param name="title">The step's title; the field takes it as its label.</param>
+    /// <param name="view">The tree the reader picks from.</param>
+    /// <param name="configure">Sets the label column, the tray and the field's settings, or null.</param>
+    /// <returns>The flow.</returns>
+    /// <exception cref="ArgumentException"><paramref name="id"/> is not a valid id.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
+    public CanopyFlow Pick(string id, string title, CanopyTreeView view, Action<CanopyFlowPicker>? configure = null) =>
+        AddPick(id, title, new CanopyFlowPicker(new CanopyFlowField(id, CanopyFlowFieldKind.Pick, title), view), configure);
+
+    private CanopyFlow AddPick(string id, string title, CanopyFlowPicker picker, Action<CanopyFlowPicker>? configure) {
+        configure?.Invoke(picker);
+        Steps.Add(new CanopyFlowStep(id, title) { Kind = CanopyFlowStepKind.Pick, Picker = picker });
+        return this;
+    }
+
+    /// <summary>Adds a preset the reader can start from (<see cref="Presets"/>).</summary>
+    /// <param name="id">The preset id.</param>
+    /// <param name="label">The name the reader picks.</param>
+    /// <param name="configure">Sets the preset's answers.</param>
+    /// <returns>The flow.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="configure"/> is null.</exception>
+    public CanopyFlow Preset(string id, string label, Action<CanopyFlowPreset> configure) {
+        if (configure == null) throw new ArgumentNullException(nameof(configure));
+        var preset = new CanopyFlowPreset(id, label);
+        configure(preset);
+        Presets.Add(preset);
+        return this;
+    }
+
+    /// <summary>Answers the flow's hooks with the routes CanopyX.AspNetCore's <c>MapCanopyFlow</c> serves (<see cref="Endpoint"/>).</summary>
+    /// <param name="url">The route group's path, for example <c>/api/flows/mail</c>.</param>
+    /// <param name="routes">The routes it serves.</param>
+    /// <returns>The flow.</returns>
+    public CanopyFlow UseEndpoint(string url, CanopyFlowRoutes routes) { Endpoint = new CanopyFlowEndpoint(url, routes); return this; }
+
+    /// <summary>
+    /// Writes the equivalent command of a set of answers with the browser's rules (see "The equivalent command" in docs/flow.md):
+    /// visible, non-empty, changed answers by parameter name, secrets that were typed as <c>&lt;secret&gt;</c>.
+    /// </summary>
+    /// <param name="answers">The answers by field id, as <see cref="VisibleValues"/> takes them.</param>
+    /// <param name="typedSecrets">The ids of secret fields that were typed, or null.</param>
+    /// <returns>The command line, or null when the flow has no <see cref="Command"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="answers"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The flow is not valid.</exception>
+    public string? FormatCommand(IReadOnlyDictionary<string, object?> answers, IEnumerable<string>? typedSecrets = null) {
+        if (answers == null) throw new ArgumentNullException(nameof(answers));
+        Validate();
+        return CanopyFlowCommandLine.Format(this, answers, typedSecrets);
+    }
+
     /// <summary>
     /// Gets or sets the translations of the texts the flow writes itself. The document carries the flow labels and the shared
     /// form messages (<see cref="CanopyLabels.GridEditRequired"/> and the other field checks) that differ from English.
@@ -168,9 +252,12 @@ public sealed class CanopyFlow {
 
     private void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("kind", "flow").Property("version", 1).Property("id", Id).Property("title", Title).OptionalProperty("description", Description);
-        if (Mode == CanopyFlowMode.Free) writer.Property("mode", "free");
-        if (Orientation != CanopyFlowOrientation.Auto) {
-            writer.Name("layout").BeginObject().Property("orientation", Orientation == CanopyFlowOrientation.Horizontal ? "horizontal" : "vertical").EndObject();
+        if (Mode != CanopyFlowMode.Linear) writer.Property("mode", Mode == CanopyFlowMode.Free ? "free" : "tasks");
+        if (Orientation != CanopyFlowOrientation.Auto || Container != CanopyFlowContainer.Inline) {
+            writer.Name("layout").BeginObject();
+            if (Orientation != CanopyFlowOrientation.Auto) writer.Property("orientation", Orientation == CanopyFlowOrientation.Horizontal ? "horizontal" : "vertical");
+            if (Container != CanopyFlowContainer.Inline) writer.Property("container", Container == CanopyFlowContainer.Dialog ? "dialog" : "drawer").OptionalProperty("launch", LaunchLabel);
+            writer.EndObject();
         }
 
         if (Density.HasValue) writer.Property("density", Density.Value == CanopyGridDensity.Compact ? "compact" : Density.Value == CanopyGridDensity.Comfortable ? "comfortable" : "normal");
@@ -192,6 +279,7 @@ public sealed class CanopyFlow {
         if (StoredSecrets.Count > 0) writer.StringArray("storedSecrets", new List<string>(StoredSecrets));
         writer.OptionalProperty("baseline", Baseline);
         if (Submit != null) writer.Name("submit").BeginObject().OptionalProperty("label", Submit.Label).EndObject();
+        WriteHostSettings(writer);
         if (Labels != null && Labels.HasFlowLabels) {
             writer.Name("labels");
             Labels.WriteFlowJson(writer);
@@ -200,10 +288,41 @@ public sealed class CanopyFlow {
         writer.EndObject();
     }
 
+    private void WriteHostSettings(CanopyJsonWriter writer) {
+        if (Command != null) {
+            writer.Name("command");
+            Command.WriteJson(writer);
+        }
+
+        if (Presets.Count > 0) {
+            var fields = new Dictionary<string, CanopyFlowField>(StringComparer.Ordinal);
+            foreach (var field in CanopyFlowValidator.Fields(this)) fields[field.Id] = field;
+            writer.Name("presets").BeginArray();
+            foreach (var preset in Presets) preset.WriteJson(writer, fields);
+            writer.EndArray();
+        }
+
+        if (Draft != CanopyFlowDraftStore.None) writer.Property("draft", Draft == CanopyFlowDraftStore.Session ? "session" : Draft == CanopyFlowDraftStore.Local ? "local" : "host");
+        if (DeepLinks) writer.Property("deepLinks", true);
+        if (Endpoint != null) {
+            writer.Name("endpoint");
+            Endpoint.WriteJson(writer);
+        }
+    }
+
+    private static void ReadHostSettings(Dictionary<string, object?> map, CanopyFlow flow, string what) {
+        if (map.TryGetValue("command", out var command)) flow.Command = CanopyFlowCommand.Read(command);
+        foreach (var item in CanopyFlowContract.Items(map, "presets", what, 32)) flow.Presets.Add(CanopyFlowPreset.Read(item));
+        var draft = CanopyFlowContract.Text(map, "draft", what);
+        if (draft != null) flow.Draft = CanopyFlowContract.Choose(draft, what, "draft", ("none", CanopyFlowDraftStore.None), ("session", CanopyFlowDraftStore.Session), ("local", CanopyFlowDraftStore.Local), ("host", CanopyFlowDraftStore.Host));
+        flow.DeepLinks = CanopyFlowContract.Boolean(map, "deepLinks", what) ?? false;
+        if (map.TryGetValue("endpoint", out var endpoint)) flow.Endpoint = CanopyFlowEndpoint.Read(endpoint);
+    }
+
     private static CanopyFlow Read(object? node) {
         const string what = "The flow document";
         var map = CanopyFlowContract.Object(node, what, "kind", "version", "id", "title", "description", "mode", "layout", "density", "timeZone",
-            "steps", "initial", "storedSecrets", "baseline", "submit", "labels");
+            "steps", "initial", "storedSecrets", "baseline", "submit", "labels", "command", "presets", "draft", "deepLinks", "endpoint");
         if (CanopyFlowContract.Text(map, "kind", what) != "flow" || !(map.TryGetValue("version", out var version) && version is long number && number == 1))
             throw new InvalidOperationException(what + " must have kind \"flow\" and version 1.");
         var id = CanopyFlowContract.RequiredText(map, "id", what);
@@ -213,12 +332,17 @@ public sealed class CanopyFlow {
             Baseline = CanopyFlowContract.Text(map, "baseline", what)
         };
         var mode = CanopyFlowContract.Text(map, "mode", what);
-        if (mode != null) flow.Mode = CanopyFlowContract.Choose(mode, what, "mode", ("linear", CanopyFlowMode.Linear), ("free", CanopyFlowMode.Free));
+        if (mode != null) flow.Mode = CanopyFlowContract.Choose(mode, what, "mode", ("linear", CanopyFlowMode.Linear), ("free", CanopyFlowMode.Free), ("tasks", CanopyFlowMode.Tasks));
         if (map.TryGetValue("layout", out var layout)) {
-            var layoutMap = CanopyFlowContract.Object(layout, what + " (layout)", "orientation");
+            var layoutMap = CanopyFlowContract.Object(layout, what + " (layout)", "orientation", "container", "launch");
             var orientation = CanopyFlowContract.Text(layoutMap, "orientation", what);
             if (orientation != null) flow.Orientation = CanopyFlowContract.Choose(orientation, what, "orientation", ("auto", CanopyFlowOrientation.Auto), ("horizontal", CanopyFlowOrientation.Horizontal), ("vertical", CanopyFlowOrientation.Vertical));
+            var container = CanopyFlowContract.Text(layoutMap, "container", what);
+            if (container != null) flow.Container = CanopyFlowContract.Choose(container, what, "container", ("inline", CanopyFlowContainer.Inline), ("dialog", CanopyFlowContainer.Dialog), ("drawer", CanopyFlowContainer.Drawer));
+            flow.LaunchLabel = CanopyFlowContract.Text(layoutMap, "launch", what);
         }
+
+        ReadHostSettings(map, flow, what);
 
         var density = CanopyFlowContract.Text(map, "density", what);
         if (density != null) flow.Density = CanopyFlowContract.Choose(density, what, "density", ("compact", CanopyGridDensity.Compact), ("normal", CanopyGridDensity.Default), ("comfortable", CanopyGridDensity.Comfortable));

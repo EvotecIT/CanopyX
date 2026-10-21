@@ -33,7 +33,8 @@ public sealed class CanopyHtmlPart {
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail",
-        "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs"
+        "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -140,8 +141,32 @@ public sealed class CanopyHtmlPart {
         (_presenters.Length == 0 || view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column?.Presenter != null && Array.IndexOf(_presenters, WireName(column.Presenter.Kind.ToString())) >= 0)) &&
         (_features.Length == 0 || _features.Any(feature => Uses(view, feature)));
 
-    /// <summary>Whether a flow loads this part: a part for flows (<c>"views": ["flow"]</c>), such as the flow and forms parts.</summary>
-    internal bool IsNeededBy(CanopyFlow flow) => flow != null && Array.IndexOf(_views, "flow") >= 0;
+    /// <summary>Whether a flow loads this part: a part for flows (<c>"views": ["flow"]</c>), such as the flow and forms parts, limited
+    /// to the host-connected features it names (a feature part loads only for a flow that uses its feature).</summary>
+    internal bool IsNeededBy(CanopyFlow flow) => flow != null && Array.IndexOf(_views, "flow") >= 0 && (_features.Length == 0 || _features.Any(feature => Uses(flow, feature)));
+
+    /// <summary>Whether a flow uses a host-connected feature, as the browser's flowFeatures (50-flow-shell.js) decides from the document.</summary>
+    private static bool Uses(CanopyFlow flow, string feature) {
+        var steps = flow.Steps.Where(step => step != null).ToList();
+        var fields = steps.SelectMany(step => step.Fields.Concat(step.Sections.Where(section => section != null).SelectMany(section => section.Fields))).Where(field => field != null);
+        var review = steps.LastOrDefault(step => step.Kind == CanopyFlowStepKind.Review);
+        return feature switch {
+            "flowChecks" => steps.Any(step => step.Checks.Count > 0),
+            "flowHostOptions" => fields.Any(field => field.OptionsSource == CanopyFlowOptionsSource.Host || field.DependsOnIds.Count > 0) || steps.Any(step => step.Sections.Any(section => section != null && section.IsFromHost)),
+            "flowPick" => steps.Any(step => step.Picker != null),
+            "flowRecords" => fields.Any(field => field.Kind == CanopyFlowFieldKind.Records),
+            "flowDrafts" => flow.Draft != CanopyFlowDraftStore.None || flow.Presets.Count > 0,
+            "flowPreview" => review?.ShowsPreview == true || flow.Endpoint != null && (flow.Endpoint.Routes & CanopyFlowRoutes.Preview) != 0,
+            "flowCommand" => flow.Command != null,
+            "flowTasks" => flow.Mode == CanopyFlowMode.Tasks,
+            "flowDialog" => flow.Container != CanopyFlowContainer.Inline,
+            "flowLinks" => flow.DeepLinks,
+            "flowEndpoint" => flow.Endpoint != null,
+            "flowConsent" => review != null && (review.Confirmation != null || review.Acknowledgement != null),
+            // flowHost: the shared runtime of the host-connected parts, which the parts that need it require.
+            _ => false
+        };
+    }
 
     /// <summary>Whether a matrix loads this part: a part for matrices (<c>"views": ["matrix"]</c>).</summary>
     internal bool IsNeededBy(CanopyMatrix matrix) => matrix != null && Array.IndexOf(_views, "matrix") >= 0;

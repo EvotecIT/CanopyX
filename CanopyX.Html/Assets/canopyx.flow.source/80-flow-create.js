@@ -11,5 +11,9 @@
       submit: () => view.submit(), setProgress: progress => view.setProgress(progress), complete: answer => view.complete(answer),
       destroy: () => view.destroy()
     };
-    return impl;
+    // The members of the host-connected parts. A flow without the part has no check, host options, task or preset to name,
+    // saves no draft and has no dialog to open.
+    const part = (name, none) => (...args) => view[name] ? view[name](...args) : none ?? flowFail("this flow does not use " + name);
+    return Object.assign(impl, { runCheck: part("runCheck"), refreshOptions: part("refreshOptions"), setStepState: part("setStepState"), setPreset: part("setPreset"),
+      saveDraft: () => part("saveDraft", false)(true), open: () => part("open", false)(), close: () => part("close", false)() });
   }

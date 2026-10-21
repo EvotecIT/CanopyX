@@ -28,7 +28,27 @@ const STATES = [
     await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.goTo("review"));
     await expect(page.locator(".cx-flow-review .cx-flow-banner-title")).toBeVisible();
   } },
-  { name: "flow-schedule-report", label: "the vertical stepper", reach: async () => {} }
+  { name: "flow-schedule-report", label: "the vertical stepper", reach: async () => {} },
+  { name: "flow-mail-checks", label: "a warning check and the presets", reach: async page => {
+    await field(page, "host").locator("input").fill("slow.example.com");
+    await page.getByRole("button", { name: "Test the connection" }).click();
+    await expect(page.locator('.cx-flow-check-item[data-cx-check="connection"]')).toHaveAttribute("data-cx-state", "warning");
+  } },
+  { name: "flow-mail-checks", label: "the review page with preview and command", reach: async page => {
+    for (const title of ["How does it sign in?", "Where does the mail go?", "Check your answers"]) { await next(page); await expect(stepTitle(page)).toHaveText(title); }
+    await expect(page.locator(".cx-flow-preview .cx-flow-answer").first()).toBeVisible();
+    await page.locator(".cx-flow-command summary").click();
+  } },
+  { name: "flow-setup-tasks", label: "the task hub", reach: async page => { await expect(page.locator(".cx-flow-task-blockers")).toBeVisible(); } },
+  { name: "flow-setup-tasks", label: "a task with a host section and records", reach: async page => {
+    await page.locator('.cx-flow-task[data-cx-task="database"] button').click();
+    await expect(field(page, "sqlInstance")).toBeVisible();
+  } },
+  { name: "flow-act-on-rows", label: "the dialog's picker with picks", reach: async page => {
+    await page.getByRole("button", { name: "Retire servers…" }).click();
+    for (const index of [0, 3]) await page.locator(".cx-flow-pick-view .cx-grid-row-select").nth(index).check();
+    await expect(page.locator(".cx-flow-tray-item")).toHaveCount(2);
+  } }
 ];
 
 for (const state of STATES) for (const theme of ["light", "dark"]) {

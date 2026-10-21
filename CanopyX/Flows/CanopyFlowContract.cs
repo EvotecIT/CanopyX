@@ -57,6 +57,28 @@ internal static class CanopyFlowContract {
         return list;
     }
 
+    /// <summary>Writes parsed contract JSON back: objects, arrays, text, numbers, booleans and null.</summary>
+    internal static void WriteNode(Json.CanopyJsonWriter writer, object? node) {
+        switch (node) {
+            case null: writer.Null(); break;
+            case string text: writer.String(text); break;
+            case bool flag: writer.Boolean(flag); break;
+            case long whole: writer.Number(whole); break;
+            case double real: writer.Number(real); break;
+            case Dictionary<string, object?> map:
+                writer.BeginObject();
+                foreach (var entry in map) { writer.Name(entry.Key); WriteNode(writer, entry.Value); }
+                writer.EndObject();
+                break;
+            case List<object?> list:
+                writer.BeginArray();
+                foreach (var item in list) WriteNode(writer, item);
+                writer.EndArray();
+                break;
+            default: throw new InvalidOperationException("A contract value must be JSON.");
+        }
+    }
+
     /// <summary>Picks the enum member whose wire name is the text.</summary>
     internal static T Choose<T>(string? text, string what, string name, params (string Wire, T Value)[] members) {
         foreach (var member in members) if (member.Wire == text) return member.Value;

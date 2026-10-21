@@ -1,0 +1,102 @@
+{
+  "about": "The equivalent command of a flow's answers. C# (CanopyFlowCommandLine, FlowCommandFixtureTests and the server's CanopyFlowSubmission) and the browser (the flow-command part, flow-host-commands.spec.mjs) both write every case's command from its document, values and typed secrets.",
+  "cases": [
+    {
+      "name": "PowerShell, create mode: defaults left out, a switch turned off, a list and a typed secret",
+      "flow": {
+        "kind": "flow",
+        "version": 1,
+        "id": "mail-relay",
+        "title": "Mail relay",
+        "command": { "name": "Set-MailRelay" },
+        "steps": [
+          {
+            "id": "server",
+            "title": "Server",
+            "fields": [
+              { "id": "name", "type": "text", "label": "Name", "parameter": "Name" },
+              { "id": "port", "type": "number", "label": "Port", "default": 25, "parameter": "Port" },
+              { "id": "tls", "type": "toggle", "label": "Use TLS", "default": true, "parameter": "UseTls" },
+              { "id": "recipients", "type": "list", "label": "Recipients", "parameter": "To" },
+              { "id": "mode", "type": "select", "label": "Mode", "default": "direct", "parameter": "Mode", "options": [ { "value": "direct" }, { "value": "relay" } ] },
+              { "id": "password", "type": "secret", "label": "Password", "parameter": "Credential" }
+            ]
+          }
+        ]
+      },
+      "values": { "name": "Mail relay", "port": 587, "tls": false, "recipients": [ "ops@example.com", "it@example.com" ], "mode": "direct" },
+      "secrets": [ "password" ],
+      "command": "Set-MailRelay -Name 'Mail relay' -Port 587 -UseTls:$false -To 'ops@example.com','it@example.com' -Credential <secret>"
+    },
+    {
+      "name": "POSIX, edit mode: unchanged and empty answers left out, --no- for a switch turned off, a one-letter flag, a hidden answer left out",
+      "flow": {
+        "kind": "flow",
+        "version": 1,
+        "id": "deploy",
+        "title": "Deploy",
+        "command": { "name": "deploy", "style": "posix" },
+        "steps": [
+          {
+            "id": "target",
+            "title": "Target",
+            "fields": [
+              { "id": "host", "type": "text", "label": "Host", "parameter": "host" },
+              { "id": "verbose", "type": "toggle", "label": "Verbose", "parameter": "v" },
+              { "id": "level", "type": "number", "label": "Level", "parameter": "level" },
+              { "id": "quiet", "type": "toggle", "label": "Quiet", "parameter": "q" },
+              { "id": "note", "type": "text", "label": "Note", "parameter": "note" },
+              { "id": "trace", "type": "text", "label": "Trace file", "parameter": "trace", "when": { "operator": "and", "filters": [ { "field": "verbose", "operator": "eq", "values": [ true ] } ] } }
+            ]
+          }
+        ]
+      },
+      "initial": { "host": "old", "verbose": true, "level": 3 },
+      "values": { "host": "new host's", "verbose": false, "level": 3, "quiet": true, "note": "", "trace": "out.log" },
+      "secrets": [],
+      "command": "deploy --host 'new host'\\''s' --no-v -q"
+    },
+    {
+      "name": "Windows: quoted paths, decimal numbers, multiple choices, letters of any script, a switch, records left out",
+      "flow": {
+        "kind": "flow",
+        "version": 1,
+        "id": "setup",
+        "title": "Setup",
+        "command": { "name": "setup.exe", "style": "windows" },
+        "steps": [
+          {
+            "id": "install",
+            "title": "Install",
+            "fields": [
+              { "id": "path", "type": "text", "label": "Path", "parameter": "Path" },
+              { "id": "ratio", "type": "number", "label": "Ratio", "parameter": "Ratio" },
+              { "id": "tags", "type": "multiChoice", "label": "Tags", "parameter": "Tags", "options": [ { "value": "a b" }, { "value": "c" } ] },
+              { "id": "owner", "type": "text", "label": "Owner", "parameter": "Owner" },
+              { "id": "force", "type": "toggle", "label": "Force", "parameter": "Force" },
+              { "id": "rows", "type": "records", "label": "Rows", "parameter": "Rows", "columns": [ { "id": "name", "title": "Name" } ] }
+            ]
+          }
+        ]
+      },
+      "values": { "path": "C:\\Program Files\\App", "ratio": 1.5, "tags": [ "a b", "c" ], "owner": "Zażółć", "force": true, "rows": [ { "name": "x" } ] },
+      "secrets": [],
+      "command": "setup.exe /Path:\"C:\\Program Files\\App\" /Ratio:1.5 /Tags:\"a b\",c /Owner:Zażółć /Force"
+    },
+    {
+      "name": "Windows: quoted trailing backslashes and backslashes before quotes preserve following arguments",
+      "flow": {
+        "kind": "flow", "version": 1, "id": "paths", "title": "Paths",
+        "command": { "name": "setup.exe", "style": "windows" },
+        "steps": [{ "id": "install", "title": "Install", "fields": [
+          { "id": "path", "type": "text", "label": "Path", "parameter": "Path" },
+          { "id": "quoted", "type": "text", "label": "Quoted", "parameter": "Quoted" },
+          { "id": "next", "type": "number", "label": "Next", "parameter": "Next" }
+        ] }]
+      },
+      "values": { "path": "C:\\Program Files\\App\\", "quoted": "a\\\"b", "next": 2 },
+      "secrets": [],
+      "command": "setup.exe /Path:\"C:\\Program Files\\App\\\\\" /Quoted:\"a\\\\\\\"b\" /Next:2"
+    }
+  ]
+}

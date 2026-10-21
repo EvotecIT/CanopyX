@@ -9,11 +9,14 @@
   class FlowView {
     constructor(host, options, editors) {
       const hooks = options.hooks ?? {};
+      // The hooks and options of host-connected flows are checked by the flow-host part (hostState).
       if (!flowIs(hooks) || FLOW_HOOKS.some(name => hooks[name] != null && typeof hooks[name] !== "function") || hooks.validators != null && !flowIs(hooks.validators) ||
           FLOW_CALLBACKS.some(name => options[name] != null && typeof options[name] !== "function") || options.editors != null && !flowIs(options.editors) ||
           options.values != null && !flowIs(options.values)) flowFail("invalid flow options");
-      this.host = host; this.options = options; this.hooks = hooks;
+      this.host = host; this.options = options;
       this.model = flowRead(options.flow);
+      // An endpoint (CanopyX.AspNetCore's MapCanopyFlow) answers the hooks the host leaves out (the flow-endpoint part).
+      this.hooks = this.model.endpoint ? flowHost("endpoint").hooks(this.model, hooks, options.headers || {}) : hooks;
       this.labels = flowLabels(this.model.labels, options.labels);
       this.editors = Object.assign({}, editors, options.editors);
       this.id = "cx-flow-" + ++FLOW_SEQUENCE;
@@ -22,6 +25,7 @@
       this.fields = new Map(); this.sections = new Map(); this.visibility = new Map();
       this.secrets = new Map(); this.errors = new Map(); this.hostErrors = new Map(); this.hostStepErrors = new Map(); this.stepErrors = new Map(); this.completed = new Set();
       this.banner = null; this.phase = "form"; this.returnToReview = false; this.generation = 0; this.answerRevision = 0;
+      this.hostState?.();
       try { this.begin(options.values); this.build(); }
       catch (error) { this.destroy(); throw error; }
     }
@@ -32,6 +36,7 @@
       this.destroyed = true;
       this.retireOperation(); this.lifetime.abort(); this.resize?.disconnect();
       for (const fv of this.fields.values()) fv.destroy();
+      this.releaseHostWork?.();
       this.secrets.clear(); this.root?.remove(); this.host.removeAttribute("data-cx-ready");
     }
 
@@ -48,9 +53,9 @@
       this.startValues = new Map([...this.values].map(([id, value]) => [id, flowCopy(value)]));
       this.secrets.clear(); this.errors.clear(); this.hostErrors.clear(); this.hostStepErrors.clear(); this.stepErrors.clear(); this.showAll = undefined; this.reviewStale = true; this.completed.clear(); this.visibility.clear();
       this.banner = null; this.returnToReview = false;
-      this.step = this.visibleSteps()[0];
+      this.step = this.hub || this.visibleSteps()[0];
       // Edit mode starts from settings that were valid when saved: steps whose fields pass their own checks count as complete.
-      if (model.initial) for (const step of this.visibleSteps()) if (step.type === "form" && this.stepFields(step).every(field => !this.problemNow(field))) this.completed.add(step.id);
+      if (model.initial) for (const step of this.visibleSteps()) if (step.asks && this.stepFields(step).every(field => !this.problemNow(field))) this.completed.add(step.id);
     }
 
     assign(id, value) {
@@ -153,6 +158,8 @@
       this.visibility.clear();
       for (const fv of this.fields.values()) fv.element.hidden = !this.visible(fv.field);
       for (const [stepId, section] of this.sections) for (const block of section._cxBlocks || []) block.element.hidden = !block.fields.some(field => this.visible(field));
+      // Host sections and host options follow (the flow-options part).
+      this.prepareVisible?.();
       // The rail (and an automatic orientation) follows the steps an answer shows or hides.
       if (!this.root) return;
       if (this.visibleSteps().map(step => step.id).join() + (this.orientation() === "stack" ? "|stack" : "") !== this.railKey) { this.railTooWide = false; this.render(); }
@@ -191,14 +198,15 @@
       }
       this.completed = new Set((state.completed || []).filter(id => this.model.steps.some(step => step.id === id)));
       this.refreshVisibility();
-      const target = this.model.steps.find(step => step.id === state.step);
-      return this.go(target && this.stepVisible(target) ? target : this.visibleSteps()[0], "jump", true);
+      const target = this.hub && state.step === this.hub.id ? this.hub : this.model.steps.find(step => step.id === state.step);
+      return this.go(target && this.stepVisible(target) ? target : this.hub || this.visibleSteps()[0], "jump", true);
     }
     reset() {
       this.generation++; this.answersChanged(); this.busy = false;
       this.checks?.clear(); this.reviewTicket = null; this.reviewChecking = false;
       for (const fv of this.fields.values()) fv.destroy();
       this.fields.clear(); this.sections.clear();
+      this.releaseHostWork?.();
       this.begin(this.options.values);
       this.phase = "form";
       this.render();
@@ -209,8 +217,9 @@
     /** Dispatches canopyx:<name> on the host and calls the matching callback; false when a cancelable event was cancelled. */
     emit(name, detail, callback, cancelable = false) {
       const event = new CustomEvent("canopyx:" + name, { detail, bubbles: true, cancelable });
-      const go = this.host.dispatchEvent(event);
-      if (callback && typeof this.options[callback] === "function") try { this.options[callback](detail); } catch (error) { this.report(error, callback); }
+      let go = this.host.dispatchEvent(event);
+      // A callback of a cancelable event vetoes it by returning false, as preventDefault does on the event.
+      if (callback && typeof this.options[callback] === "function") try { if (this.options[callback](detail) === false && cancelable) go = false; } catch (error) { this.report(error, callback); }
       return go;
     }
     report(error, hook) {
