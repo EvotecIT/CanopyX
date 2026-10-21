@@ -108,11 +108,13 @@
         if (!affected.has(id)) affected.set(id, [...this.model.fields.get(id).refs].some(changed));
         return affected.get(id);
       };
+      let invalidated = false;
       for (const check of this.model.checks.values()) {
         if (!check.fields.some(changed)) continue;
         const state = this.checkState.get(check.id);
-        if (state) { state.stale = true; state.acknowledged = false; state.controller?.abort(); this.paintCheck(check); }
+        if (state) { state.stale = true; state.acknowledged = false; state.controller?.abort(); this.paintCheck(check); invalidated = true; }
       }
+      if (invalidated) this.paintReview();
     },
 
     /** Runs a check (api.runCheck): resolves with its result, or null when it was cancelled. */

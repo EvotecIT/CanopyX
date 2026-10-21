@@ -55,3 +55,29 @@ test("restoring a visibility controller invalidates its check", async ({ page },
   await page.evaluate(() => window.__api.setState({ values: { show: false, unrelated: "before", middle: true, name: "original", detail: "checked" } }));
   expect((await page.evaluate(() => window.__api.validate())).valid).toBe(false);
 });
+
+test("host options refresh the open review after clearing a check visibility controller", async ({ page }, testInfo) => {
+  const flow = conditionalFlow("field");
+  flow.steps[0].fields[0] = { id: "show", type: "select", label: "Detail mode", source: "host", default: "yes" };
+  flow.steps[1].fields[1].when.filters[0].values = ["yes"];
+  expect(await mountRuntime(page, testInfo, flow, `(() => {
+    let options = 0;
+    return { hooks: { options: () => ++options === 1 ? [{ value: "yes", label: "Show detail" }] : [{ value: "no", label: "No detail" }],
+      check: () => ({ status: "pass" }) } };
+  })()`)).toBeNull();
+  await expect.poll(() => page.evaluate(() => window.__api.getValues().show)).toBe("yes");
+  await page.evaluate(() => window.__api.runCheck("test"));
+  await page.evaluate(() => window.__api.goTo("review"));
+  const banner = page.locator(".cx-flow-review .cx-flow-banner-title"), row = page.locator(".cx-flow-review-checks .cx-flow-answer");
+  await expect(banner).toHaveText("Ready to submit");
+  await expect(row).toHaveAttribute("data-cx-state", "pass");
+  await expect(page.locator(".cx-flow-review-lists")).toContainText("checked");
+  await page.evaluate(() => window.__api.refreshOptions("show"));
+  await expect(row).toHaveAttribute("data-cx-state", "stale");
+  await expect(banner).toHaveText(/Errors to fix/);
+  await expect(page.locator(".cx-flow-review-lists")).not.toContainText("checked");
+  expect(await page.evaluate(() => window.__api.submit())).toBeNull();
+  await row.getByRole("button", { name: /Run/ }).click();
+  await expect(row).toHaveAttribute("data-cx-state", "pass");
+  await expect(banner).toHaveText("Ready to submit");
+});

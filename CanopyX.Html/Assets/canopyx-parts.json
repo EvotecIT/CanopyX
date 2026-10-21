@@ -135,7 +135,7 @@
     {
       "name": "flow-host",
       "label": "flow host hooks",
-      "version": "4dfbfe04c940c59a",
+      "version": "de4f9b11ab881eca",
       "script": "canopyx-flow-host.js",
       "style": "canopyx-flow-host.css",
       "runtimes": [
@@ -155,7 +155,7 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "version": "49ee2148ed2bb255",
+      "version": "ec2451183901867b",
       "script": "canopyx-flow-checks.js",
       "style": "canopyx-flow-checks.css",
       "runtimes": [

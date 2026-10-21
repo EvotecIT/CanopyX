@@ -88,6 +88,7 @@
       this.errors.delete(field.id); this.fields.get(field.id)?.message(null);
       this.emit("flowValueChanged", { field: field.id, value: flowCopy(value), previous: flowCopy(previous), source }, "onValueChange");
       this.refreshVisibility();
+      this.refreshReview();
     },
 
     /** What follows the first paint: presets the host keeps, a draft to resume, and the step the address names. */
