@@ -62,6 +62,7 @@
         if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
         style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
           height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
+        this.fitHeight();
         if (!(this.sized = this.hasGridSize())) return;
         this.applyWidths();
         this.updateGridPhone();
@@ -127,7 +128,7 @@
         element.style.height = row.status ? this.rowH + "px" : "auto";
         this.observeDetail(element, !row.status);
         this.measureNeeded = true;
-      }
+      } else element.style.height = this.rowH + "px";
       setAttr(element, "data-cx-id", row.key || null); setAttr(element, "data-cx-status", row.status || null);
       setAttr(element, "draggable", this.view.dragRows && !row.status ? "true" : null);
       setAttr(element, "aria-busy", row.status === "loading" ? "true" : null); this.refreshRowState(element, row);
@@ -141,7 +142,7 @@
         this.paintSlot(slot, row.h, column, this.columnIndex[i], row);
         if(!column.render&&!slot.text.data){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
         else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
-        if(this.phone||slot.hiddenFields)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
+        if(this.phone||slot.hiddenFields||slot.phonePrimary)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
       }
       this.paintGridHighlights(element, row);
       if(row.status)this.paintGridSkeleton(element,row);

@@ -30,11 +30,11 @@ for (const theme of ["light", "dark"]) {
       { id: "group", title: "Owner", kind: "text", priority: "optional", minWidth: 600 }];
     view.rows = view.rows.map(row => ({ id: row.id, cells: { name: row.cells.name, group: row.cells.group } }));
     await mountReportLayout(page, { theme, view, width: 342, viewport: { width: 390, height: 844 } });
-    await expect(page.locator('.cx-hidden-fields').first()).toHaveText("+1 Columns");
+    await expect(page.locator('.cx-hidden-fields').first()).toHaveText("+1 column");
     expect((await layoutGeometry(page)).widths.name).toBeLessThanOrEqual(100);
   });
 
-  test(`phone scrolling retains header minimums beside an essential peer's wide content in ${theme}`, async ({ page }) => {
+  test(`phone record line retains header minimums and the full essential value tooltip in ${theme}`, async ({ page }) => {
     const view = reportLayoutView(); view.reporting.columnReorder = false;
     view.columns = [{ id: "name", title: "Record", kind: "text", rowHeader: true },
       { id: "state", title: "Signal", kind: "text", priority: 1 }];
@@ -42,9 +42,8 @@ for (const theme of ["light", "dark"]) {
     await mountReportLayout(page, { theme, view, width: 342, viewport: { width: 390, height: 844 } });
     expect((await headers(page)).filter(header => header.clipped)).toEqual([]);
     const box = await layoutGeometry(page);
-    expect(box.scrollWidth).toBeGreaterThan(box.clientWidth);
-    expect(await page.locator('.cx-row[data-cx-id="a"] [aria-colindex="2"] .cx-text')
-      .evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+    expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1);
+    await expect(page.locator('.cx-row[data-cx-id="a"] .cx-phone-value')).toHaveAttribute("title", "X".repeat(40));
   });
 
   test(`report headers precede preferred whitespace and retain their minimum during overflow in ${theme}`, async ({ page }) => {

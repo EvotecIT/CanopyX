@@ -52,7 +52,7 @@ test("the coarse pointer matches, so touch layouts and always-visible menu butto
 test("tapping +N opens the record drawer with the hidden fields, and its close button returns to the rows", async ({ page }) => {
   await open(page, gridView({}));
   const more = row(page, "r002").locator(".cx-hidden-fields");
-  await expect(more).toHaveText(/^\+\d+ Columns$/);
+  await expect(more).toHaveText(/^\+\d+ columns?$/);
   await more.tap();
   const drawer = page.locator("dialog.cx-drawer");
   await expect(drawer).toBeVisible();

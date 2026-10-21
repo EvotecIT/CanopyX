@@ -2093,6 +2093,7 @@
             "gridAddFilterGroup": { "$ref": "#/$defs/accessibleLabel" },
             "gridDeleteFilterGroup": { "$ref": "#/$defs/accessibleLabel" },
             "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
+            "hiddenColumns": { "$ref": "#/$defs/accessibleLabel" },
             "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },
             "loading": { "$ref": "#/$defs/accessibleLabel" },

@@ -86,6 +86,9 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the button of the column chooser. Default "Columns".</summary>
     public string Columns { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the pluralized phone disclosure for fields beyond the compact record line. Holds <c>{count}</c>; default "+1 column" or "+N columns".</summary>
+    public string HiddenColumns { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the flat-grid control text. Default "Filters".</summary>
     public string GridFilters { get => Get(); set => Set(value); }
 

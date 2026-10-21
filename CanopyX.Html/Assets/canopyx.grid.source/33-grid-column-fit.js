@@ -15,7 +15,13 @@
   Object.assign(DataGrid.prototype, COLUMN_FIT, {
     // Responsive visibility keeps its established compact estimate; wider content scrolls instead of hiding more fields.
     fitHide(shown, width, phone) {
-      return COLUMN_FIT.fitHide.call(this, shown, width, phone, column => COLUMN_FIT.fitSize.call(this, column, 1));
+      COLUMN_FIT.fitHide.call(this, shown, width, phone, column => COLUMN_FIT.fitSize.call(this, column, 1));
+      if (!phone || (this.layoutMode || "fit") !== "fit") return;
+      const identity = shown.find(column => column.identity), peers = shown.filter(column => !column.fitHidden && !column.identity && gridLevel(column) === 0);
+      if (!identity || identity.fixed || identity.sized) return;
+      const primary = columnWidth(identity, Math.min(Math.max(identity.contentNeed || 0, identity.pref || 0, identity.controlNeed || 0), Math.max(160, width * .65)));
+      if (primary + peers.reduce((sum, column) => sum + this.fitSize(column, 2), 0) > width)
+        for (const column of peers) if (!column.fixed && !column.sized && !column.alwaysVisible) column.fitHidden = true;
     },
     // Readable header/content minima precede preferred reading space. Explicit fixed/reader widths remain authoritative.
     fitSize(column, level) {
@@ -86,6 +92,7 @@
     },
     applyWidths() {
       this.fitLayout();
+      if (this.phone !== undefined) this.updateGridPhone();
       const visible = this.visibleColumns(), cols = this.cols, width = this.grid.clientWidth;
       if (cols && (visible.length !== cols.length || visible.some((column, index) => column !== cols[index]))) {
         if (!this.fitBuilding) { this.buildHeader(); this.syncColumnControls(); this.render(); return; }

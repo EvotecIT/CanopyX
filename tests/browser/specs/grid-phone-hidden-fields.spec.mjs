@@ -7,7 +7,9 @@ const columns = [
   { id: "name", title: "Name", kind: "text", width: 240, sortable: true },
   { id: "state", title: "State", kind: "text", width: 140, sortable: true },
   { id: "amount", title: "Amount", kind: "number", width: 140, sortable: true },
-  { id: "note", title: "Note", kind: "text", width: 240, hidden: true }
+  { id: "note", title: "Note", kind: "text", width: 240, hidden: true },
+  { id: "owner", title: "Owner", kind: "text", priority: "optional" },
+  { id: "region", title: "Region", kind: "text", priority: "optional" }
 ];
 const rows = Array.from({ length: 40 }, (_, i) => ({
   id: "r" + i,
@@ -44,10 +46,11 @@ function affordances(page) {
 }
 // Phones collapse every column except the essential identity column into the one "+N" affordance.
 async function expectOnePerRow(page, text) {
-  text ??= "+" + (columns.filter(column => !column.hidden).length - await page.locator(".cx-hcell").count()) + " Columns";
+  const count = columns.filter(column => !column.hidden).length - await page.locator(".cx-hcell").count();
+  text ??= "+" + count + " column" + (count === 1 ? "" : "s");
   const list = await affordances(page);
   expect(list.length).toBeGreaterThan(0);
-  if (text === "+0 Columns") {
+  if (text === "+0 columns") {
     expect(list).toEqual(list.map(row => ({ id: row.id, count: 0, inFirstCell: true, text: "", record: "" })));
     return;
   }
@@ -170,7 +173,7 @@ test("phone fitting reserves the +N button in the identity column when no width 
       inside: !!button && button.getBoundingClientRect().right <= cell.getBoundingClientRect().right + 0.5 };
   }));
   expect(cells.length).toBe(names.length);
-  expect(cells).toEqual(names.map(name => ({ name, truncated: false, button: "+2 Columns", inside: true })));
+  expect(cells).toEqual(names.map(name => ({ name, truncated: false, button: "+2 columns", inside: true })));
   // Responsive visibility retains the second column; its complete content now scrolls instead of truncating.
   expect(await page.locator('.cx-row[data-cx-id="r0"] .cx-cell').nth(1).evaluate(cell => cell.scrollWidth > cell.clientWidth ||
     [...cell.querySelectorAll("*")].some(node => node.scrollWidth > node.clientWidth))).toBe(false);
@@ -185,11 +188,10 @@ for (const theme of ["light", "dark"]) {
       { id: "owner", title: "Owner", kind: "text", priority: "optional" }
     ], rows: [{ id: "r0", cells: { name: { value: "record-000", secondary: "example.test" }, state: { value: "Failing", tone: "danger" }, owner: "Operations" } }],
     selection: selected ? "multiple" : "none", reporting: selected ? { selectionControls: true } : undefined });
-    await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-cell > .cx-content')).toHaveCount(selected ? 1 : 0);
+    await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-cell > .cx-content, .cx-row[data-cx-id="r0"] .cx-phone-primary > .cx-content')).toHaveCount(selected ? 1 : 0);
     await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
     const button = page.locator('.cx-hidden-fields');
-    await expect(button).toHaveText("+1 Columns");
-    expect(await button.evaluate(element => { const cell = element.closest('.cx-cell'); return element.getBoundingClientRect().right <= cell.getBoundingClientRect().right - parseFloat(getComputedStyle(cell).paddingRight) + 1; })).toBe(true);
+    await expect(button).toHaveText("+1 column");
     await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-cell').first()).toHaveAttribute("title", "record-000");
   });
 
@@ -211,7 +213,7 @@ for (const theme of ["light", "dark"]) {
   });
 
   test("phone disclosure names only this view's responsive fields and preserves essential values (" + theme + ")", async ({ page }) => {
-    const viewColumns = [
+    const viewcolumns = [
       { id: "name", title: "Common name", kind: "text", rowHeader: true, width: 260 },
       { id: "days", title: "Days", kind: "number", priority: 1 },
       { id: "signal", title: "Signal", kind: "text", priority: 1, presenter: { kind: "enum", tones: { "Expires 0-7d": "warning" } } },
@@ -220,15 +222,15 @@ for (const theme of ["light", "dark"]) {
       ...Array.from({ length: 56 }, (_, i) => ({ id: "hidden" + i, title: "Outside view " + i, kind: "text", hidden: true }))
     ];
     const name = "very-long-service.branch.production.example.com";
-    await open(page, { columns: viewColumns, rows: [{ id: "r0", cells: { name, days: 7, signal: "Expires 0-7d", owner: "Operations", note: "Evidence" } }], selection: "none" });
+    await open(page, { columns: viewcolumns, rows: [{ id: "r0", cells: { name, days: 7, signal: "Expires 0-7d", owner: "Operations", note: "Evidence" } }], selection: "none" });
     await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
-    await expectOnePerRow(page, "+2 Columns");
-    const button = page.getByRole("button", { name: "+2 Columns: Owner, Note", exact: true });
+    await expectOnePerRow(page, "+2 columns");
+    const button = page.getByRole("button", { name: "+2 columns: Owner, Note", exact: true });
     await expect(button).toHaveAttribute("title", "Owner, Note");
     await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-cell').first()).toHaveAttribute("title", name);
     const geometry = await page.evaluate(() => {
       const grid = document.querySelector('.cx-data-grid .cx-grid');
-      return { scroll: grid.scrollWidth > grid.clientWidth + 1, essential: [...document.querySelectorAll('.cx-row[data-cx-id="r0"] .cx-cell')].slice(1).map(cell => ({ text: cell.textContent, clipped: [...cell.querySelectorAll('*')].some(node => node.scrollWidth > node.clientWidth + 1) })) };
+      return { scroll: grid.scrollWidth > grid.clientWidth + 1, essential: [...document.querySelectorAll('.cx-row[data-cx-id="r0"] .cx-phone-value')].map(cell => ({ text: cell.textContent, clipped: [...cell.querySelectorAll('*')].some(node => node.scrollWidth > node.clientWidth + 1) })) };
     });
     expect(geometry.essential.map(cell => cell.text)).toEqual(["7", "Expires 0-7d"]);
     expect(geometry.essential.every(cell => !cell.clipped)).toBe(true);

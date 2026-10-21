@@ -31,7 +31,8 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
     await page.getByRole("button", { name: "Next match" }).click();
     await expect(countText(page)).toHaveText("1 of " + matches.total);
     const current = page.locator("mark.cx-hit-current");
-    if (width === 390) {
+    const drawerMatch = !await page.locator('.cx-hcell[data-cx-column="subject"]').count();
+    if (drawerMatch) {
       await expect(page.locator("dialog.cx-drawer")).toBeVisible();
       await expect(page.locator("dialog.cx-drawer mark.cx-hit-search")).toHaveText(/^printer$/i);
       await page.keyboard.press("Escape");
@@ -40,18 +41,18 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
       expect(await page.evaluate(() => document.activeElement.classList.contains("cx-cell") && !!document.activeElement.querySelector("mark.cx-hit-current"))).toBe(true);
     }
     // F3 and Shift+F3 move on and back from the grid; Previous wraps to the last match.
-    if (width === 390) await page.getByRole("button", { name: "Next match" }).click();
+    if (drawerMatch) await page.getByRole("button", { name: "Next match" }).click();
     else await page.keyboard.press("F3");
     await expect(countText(page)).toHaveText("2 of " + matches.total);
-    if (width === 390) {
+    if (drawerMatch) {
       await page.keyboard.press("Escape");
       await page.getByRole("button", { name: "Previous match" }).click();
     } else await page.keyboard.press("Shift+F3");
     await expect(countText(page)).toHaveText("1 of " + matches.total);
-    if (width === 390) await page.keyboard.press("Escape");
+    if (drawerMatch) await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Previous match" }).click();
     await expect(countText(page)).toHaveText(matches.total + " of " + matches.total);
-    if (width === 390) {
+    if (drawerMatch) {
       await expect(page.locator("dialog.cx-drawer")).toBeVisible();
       await expect(page.locator("dialog.cx-drawer mark.cx-hit-search")).toHaveText(/^printer$/i);
       await page.keyboard.press("Escape");

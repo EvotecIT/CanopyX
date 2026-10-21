@@ -259,7 +259,8 @@ test("a log keeps long messages readable and the phone layout keeps essential co
   expect(await page.locator('.cx-hcell[data-cx-column="message"]').evaluate(cell => cell.getBoundingClientRect().width)).toBeGreaterThan(500);
   await page.unrouteAll(); await mount(page, rules(), { viewport: { width: 390, height: 844 }, width: 358 });
   expect(await headers(page)).toEqual(expect.arrayContaining(["rule", "worst"]));
-  await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(/^\+\d+ Columns$/);
+  await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(/^\+\d+ columns?$/);
+  await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveAttribute("title", /Category/);
 });
 
 test("a row tone stays quiet unless the host asks for row accents", async ({ page }) => {

@@ -12,6 +12,7 @@ const labels = Object.freeze({
   searchWordTooShort: "Digita una parola di almeno {min} caratteri",
   searchFailed: "Ricerca non riuscita: {error}",
   columns: "Colonne",
+  hiddenColumns: "[one]+{count} colonna[other]+{count} colonne",
   gridFilters: "Filtri",
   gridFitContent: "Adatta al contenuto",
   gridUnpin: "Sblocca",

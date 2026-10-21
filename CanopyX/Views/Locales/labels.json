@@ -9,6 +9,7 @@
   "SearchWordTooShort": ["Wpisz słowo o długości co najmniej {min} znaków","Ein Wort mit mindestens {min} Zeichen eingeben","Escriba una palabra de al menos {min} caracteres","Saisissez un mot d'au moins {min} caractères","Digita una parola di almeno {min} caratteri"],
   "SearchFailed": ["Nie udało się wyszukać: {error}","Suche fehlgeschlagen: {error}","Error al buscar: {error}","Échec de la recherche : {error}","Ricerca non riuscita: {error}"],
   "Columns": ["Kolumny","Spalten","Columnas","Colonnes","Colonne"],
+  "HiddenColumns": ["[one]+{count} kolumna[few]+{count} kolumny[many]+{count} kolumn[other]+{count} kolumny","[one]+{count} Spalte[other]+{count} Spalten","[one]+{count} columna[other]+{count} columnas","[one]+{count} colonne[other]+{count} colonnes","[one]+{count} colonna[other]+{count} colonne"],
   "GridFilters": ["Filtry","Filter","Filtros","Filtres","Filtri"],
   "GridResultCount": ["Wiersze: {count} z {total}","{count} von {total} Zeilen","{count} de {total} filas","{count} sur {total} lignes","{count} su {total} righe"],
   "GridUnknownCount": ["Liczba wyników jest niedostępna","Ergebnisanzahl nicht verfügbar","El número de resultados no está disponible","Nombre de résultats indisponible","Numero di risultati non disponibile"],

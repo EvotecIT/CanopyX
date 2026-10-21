@@ -1,4 +1,16 @@
 /* Graphite components ported from docs/design/data-grid-spec.html to the virtual ARIA grid. */
+.cx-data-grid { min-width:0;max-width:100%;box-sizing:border-box; }
+.cx-data-grid .cx-grid { min-width:0;max-width:100%; }
+.cx-data-grid.cx-phone .cx-cell:has(> .cx-phone-primary) { display:block;min-width:0;white-space:normal; }
+.cx-phone-primary { display:flex;align-items:center;gap:var(--cx-size-6px);min-width:0;max-width:100%;overflow:hidden;white-space:nowrap; }
+.cx-phone-primary > :not(.cx-hidden-fields):not(input), .cx-phone-primary .cx-content > :is(.p-mono,.p-sub,.cx-presenter-text,.cx-text) { min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis; }
+.cx-phone-fields { display:flex;flex-wrap:wrap;gap:4px 12px;min-width:0;margin-top:4px;font-size:12px; }
+.cx-phone-field { display:flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden; }
+.cx-phone-field-title { flex:none;color:var(--cx-muted);font-size:11px; }
+.cx-phone-value { display:inline-flex;min-width:0;overflow:hidden;white-space:nowrap; }
+.cx-phone-value > * { min-width:0;overflow:hidden;text-overflow:ellipsis; }
+.cx-phone-value:has(.p-pill) { overflow-x:auto; }
+.cx-phone-value:has(.p-pill) > .cx-content { flex:none;max-width:none;overflow:visible; }
 .cx-data-grid { min-height:var(--cx-min-h,0); }
 .cx-data-grid[data-cx-density="compact"] { --cx-font-size:13px;--cx-cell-px:8px; }
 .cx-data-grid[data-cx-density="comfortable"] { --cx-cell-px:14px; }
@@ -166,8 +178,6 @@
 .cx-phone .cx-grid-pager .cx-button { min-height:var(--cx-size-44px);width:var(--cx-size-44px); }
 .cx-phone .cx-grid-page-range { flex:none; }
 .cx-data-grid .cx-hidden-fields { color:var(--cx-muted);font:var(--cx-size-12d5px) var(--cx-font);border:0;background:transparent;padding:0;flex:none;min-width:var(--cx-size-24px);min-height:var(--cx-size-24px);position:relative; }
-.cx-data-grid.cx-phone .cx-cell:has(> .cx-hidden-fields) > :is(.p-mono,.p-sub,.cx-presenter-text),
-.cx-data-grid.cx-phone .cx-cell:has(> .cx-hidden-fields) > .cx-content > :is(.p-mono,.p-sub,.cx-presenter-text) { min-width:0;overflow:hidden;text-overflow:ellipsis; }
 
 .cx-data-grid.cx-grid-awaiting.cx-phone .cx-grid { height:var(--cx-size-44px); }
 .cx-phone .cx-hcell :is(.cx-grid-column-menu,.cx-grid-header-filter) { min-width:var(--cx-size-44px);min-height:var(--cx-size-44px); }

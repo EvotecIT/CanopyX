@@ -14,6 +14,20 @@ async function rowsFit(page) {
   }).toBe(true);
 }
 
+test("auto height recovers when controls grow beyond the previous fitted host", async ({ page }) => {
+  await mountReportLayout(page);
+  await rowsFit(page);
+  const before = await page.locator(".cx-host").evaluate(host => host.getBoundingClientRect().height);
+  await page.locator(".cx-toolbar").evaluate(toolbar => {
+    const controls = document.createElement("div");
+    controls.style.cssText = "flex:0 0 100%;height:220px";
+    controls.textContent = "Report controls added after mount";
+    toolbar.appendChild(controls);
+  });
+  await rowsFit(page);
+  expect(await page.locator(".cx-host").evaluate(host => host.getBoundingClientRect().height)).toBeGreaterThan(before + 200);
+});
+
 for (const theme of ["light", "dark"]) test(`report shortage preserves header minima and atomic status content in ${theme}`, async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
@@ -105,7 +119,7 @@ test("auto-height follows horizontal overflow introduced by a user width without
 
 test("header-only slack preserves usable sort and menu targets in a phone-width grid", async ({ page }) => {
   const view = reportLayoutView();
-  view.columns.push({ id: "stage", title: "Reminder stage", kind: "text", sortable: true, priority: "essential" });
+  view.columns.push({ id: "stage", title: "Reminder stage", kind: "text", sortable: true, priority: "essential", alwaysVisible: true });
   view.rows.forEach(row => row.cells.stage = "—");
   await mountReportLayout(page, { view, width: 320 });
   const sort = page.getByRole("button", { name: "Reminder stage", exact: true });

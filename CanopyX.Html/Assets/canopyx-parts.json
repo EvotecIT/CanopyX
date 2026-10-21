@@ -544,7 +544,7 @@
     {
       "name": "detail-rows",
       "label": "detail rows",
-      "version": "6c96974326d65a4c",
+      "version": "4908d1d2b7f67aa8",
       "script": "canopyx-detail-rows.js",
       "style": "canopyx-detail-rows.css",
       "runtimes": [

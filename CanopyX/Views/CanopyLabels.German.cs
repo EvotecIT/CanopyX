@@ -15,6 +15,7 @@ public sealed partial class CanopyLabels {
         SearchWordTooShort = "Ein Wort mit mindestens {min} Zeichen eingeben",
         SearchFailed = "Suche fehlgeschlagen: {error}",
         Columns = "Spalten",
+        HiddenColumns = "[one]+{count} Spalte[other]+{count} Spalten",
         GridFilters = "Filter",
         GridFitContent = "An Inhalt anpassen",
         GridUnpin = "Fixierung aufheben",

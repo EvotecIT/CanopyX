@@ -126,8 +126,8 @@ public sealed class RuntimeAssetTests {
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        // Combined roadmap integration: its size plus about 15%.
-        Assert.True(compressed <= 122368, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 119.5 KiB.");
+        // The phone record line adds shared presenters and measured rows; keep the grid bounded at 120 KiB.
+        Assert.True(compressed <= 122880, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 120 KiB.");
     }
 
     [Fact]

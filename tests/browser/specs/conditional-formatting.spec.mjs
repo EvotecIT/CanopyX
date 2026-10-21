@@ -59,7 +59,7 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
           item.getBoundingClientRect().right > cell.getBoundingClientRect().right + 0.5).map(item => row.dataset.cxId + ":" + item.textContent))));
       expect(cut).toEqual([]);
       const flagged = cell(page, "srv-000", 0);
-      expect(await flagged.locator(".cx-text").evaluate(text => text.textContent)).toBe("srv-north-000");
+      expect(await flagged.locator(".cx-text").first().evaluate(text => text.textContent)).toBe("srv-north-000");
     }
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     expect(errors).toEqual([]);

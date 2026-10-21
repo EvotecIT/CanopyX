@@ -7,7 +7,7 @@
     searchResultCountOfTotal: "{count} of {total} results", searchResultCountOfMany: "{count} of many results",
     searchNoResults: "No results", searchTooShort: "Type at least {min} characters",
     searchWordTooShort: "Type a word of at least {min} characters", searchFailed: "Search failed: {error}",
-    columns: "Columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
+    columns: "Columns", hiddenColumns: "[one]+{count} column[other]+{count} columns", visibleColumns: "Visible columns", resizeColumn: "Resize {column}", columnWidth: "{width} pixels",
     loading: "Loading…", loadError: "Could not load: {error} (Enter to retry)",
     queryFailed: "Could not update the view: {error}",
     showMore: "Show more ({loaded} of {total} loaded)", showMoreUnknownTotal: "Show more ({loaded} loaded)",

@@ -152,7 +152,7 @@ test("moving a non-sortable header reveals its focused move control without movi
 
 test("auto-fit keeps a widened column's focused resize control visible", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 });
-  await open(page, { columns: view.columns.map(column => column.id === "notes" ? { ...column, priority: "essential" } : column), rows: [{ id: "r0", cells: { name: "Name", notes: "Long report notes ".repeat(60) } }] });
+  await open(page, { columns: view.columns.map(column => column.id === "notes" ? { ...column, priority: "essential", alwaysVisible: true } : column), rows: [{ id: "r0", cells: { name: "Name", notes: "Long report notes ".repeat(60) } }] });
   const grip = header(page, "notes").getByRole("separator"); await grip.press("Enter"); await nextFrames(page);
   await expect(grip).toBeFocused(); await expectHeaderFocusVisible(page);
   expect(await grip.getAttribute("aria-valuenow")).toBe("420");

@@ -90,20 +90,32 @@ On phones (hosts up to 640 pixels wide), essential priority 0/1 columns keep
 their measured content and pill widths. An automatic row-header column gives
 space to those fields, even when it has a preferred width. Its text truncates
 with the complete value in a tooltip; fixed and reader-sized widths still win.
-If the essential fields and the row header's minimum controls cannot fit, the
-grid scrolls horizontally.
+When the essential fields and a useful primary line cannot fit together, automatic
+essential columns move into a quiet second line beneath the row header. Up to two
+hidden essential fields appear there, using their normal value presenters. Other
+hidden fields stay in the drawer. Rows with this line follow its measured height;
+other rows keep their authored height policy, including during recycling and
+container resizing. Fixed, reader-sized and always-visible columns retain their
+explicit policy; scroll mode keeps horizontal scrolling.
 
-The first shown cell's `+N Columns` button counts only columns in the current
+The first shown cell's `+1 column` / `+2 columns` button counts only columns in the current
 view that responsive or fitting priority hid. Columns hidden by the author or
-reader do not contribute. The button has an accessible name and a tooltip
+reader and fields already shown in the second line do not contribute. The button has an accessible name and a tooltip
 listing the hidden titles, and opens the existing record drawer. When no view
-columns are hidden responsively, the button is absent. The translated Columns
-label follows the grid's normal wording settings.
+columns remain beyond the second line, the button is absent. The `hiddenColumns`
+plural label follows the grid's normal text catalogue, including localized numbers.
+The primary line has a contained ellipsis and full-value tooltip, so an identity
+longer than the viewport cannot widen the document.
 
 The grid specializes its measurement floors and header-slack pass. Trees retain
 their existing shared fitting policy.
 
 ## Auto-height and horizontal scrolling
+
+Chrome added after mounting is measured in its normal flow, even when it grows
+beyond the previous fitted height and temporarily leaves the grid body with no
+height. The next measurement restores room for the header and rows. Positioned
+overlays do not contribute to this chrome measurement.
 
 For a nonempty grid with auto-height enabled, the content height is the sum of
 the grid children's actual rendered heights, vertical borders, and the actual

@@ -2137,6 +2137,7 @@ CanopyX.CanopyLabels.System.String GridViews { get; set; }
 CanopyX.CanopyLabels.System.String GridVisibleRows { get; set; }
 CanopyX.CanopyLabels.System.String GridWhere { get; set; }
 CanopyX.CanopyLabels.System.String GridYesterday { get; set; }
+CanopyX.CanopyLabels.System.String HiddenColumns { get; set; }
 CanopyX.CanopyLabels.System.String HiddenRows { get; set; }
 CanopyX.CanopyLabels.System.String InteractionFailed { get; set; }
 CanopyX.CanopyLabels.System.String InteractionPending { get; set; }

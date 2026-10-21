@@ -38,7 +38,7 @@ internal static partial class ReportGridLayoutExample {
         }));
         grid.Column(row => row.Count, phone ? "Days" : "Observations requiring attention");
         return grid.AddRows(new[] {
-            new ReviewRecord("a", "Warehouse inventory", "Operations", "Needs investigation", "Schedule review", 12),
+            new ReviewRecord("a", phone ? string.Concat(Enumerable.Repeat("server-01.branch-office.production-region.internal.", 5)) : "Warehouse inventory", "Operations", "Needs investigation", "Schedule review", 12),
             new ReviewRecord("b", "Quarterly service review", "Service delivery", "Action required", "Awaiting confirmation", 7),
             new ReviewRecord("c", "Regional capacity check", "Planning", "Verified", "No follow-up", 0)
         });

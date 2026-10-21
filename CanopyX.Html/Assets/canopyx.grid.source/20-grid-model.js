@@ -18,9 +18,10 @@
       this.cursor = this.view.source.navigation === "cursor";
       if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
         throw new Error("CanopyX: source navigation must match the grid definition.");
-      this.pageSize = this.view.pageSize; this.autoRows = this.view.rowHeight === "auto" || !!this.view.autoRowHeight;
+      this.pageSize = this.view.pageSize; this.authoredAutoRows = this.view.rowHeight === "auto" || !!this.view.autoRowHeight;
+      this.autoRows = this.authoredAutoRows;
       this.rowH = this.view.rowHeight === "auto" ? this.view.estimatedRowHeight || 28 : this.view.rowHeight;
-      if (this.autoRows) this.rowHeights = new Map();
+      this.rowHeights = new Map();
       this.paged = this.view.presentation === "paged"; this.pageLength = this.view.pageLength || 50; this.pageOffset = 0;
       this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?
         this.view.source.kind === "inline" ? 0 : 300 : this.view.searchDelayMs : options.searchDelayMs;

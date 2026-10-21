@@ -796,6 +796,7 @@ The runtime writes some text of its own: the search box's hints and announcement
 | `searchFailed` | Search failed: {error} | `error` |
 | `columns` | Columns | |
 | `visibleColumns` | Visible columns | |
+| `hiddenColumns` | `[one]+{count} column[other]+{count} columns` | `count` |
 | `resizeColumn` | Resize {column} | `column` |
 | `columnWidth` | {width} pixels | `width` |
 | `loading` | Loading… | |
@@ -810,7 +811,7 @@ The runtime writes some text of its own: the search box's hints and announcement
 | `localTime` | {time} local time | `time`, required |
 | `mountError` | This view could not be displayed: {error} | `error` |
 
-`{error}` is the technical message of what failed, which stays in English. The first `{time}` of a date label is where the date goes. A host that builds pages from C# sets `CanopyTreeView.Labels` once, and the view document carries the names that differ from English; the static outline reads its own texts (the overflow note, the unknown total, the hidden-rows tooltip, and the full-report link) from the same object. A browser host can also pass `labels` to `createTreeGrid` or `CanopyX.configure`, on top of the view's; `CanopyX.labels` holds the English texts by name, and a name the runtime does not know is an error. For a language with plural forms, phrase a label so that its number stands on its own, for example `Wyniki: {count}`. Host data (node labels, column titles, cells, badges) is the host's own text and is never translated by CanopyX.
+`{error}` is the technical message of what failed, which stays in English. The first `{time}` of a date label is where the date goes. A host that builds pages from C# sets `CanopyTreeView.Labels` once, and the view document carries the names that differ from English; the static outline reads its own texts (the overflow note, the unknown total, the hidden-rows tooltip, and the full-report link) from the same object. A browser host can also pass `labels` to `createTreeGrid` or `CanopyX.configure`, on top of the view's; `CanopyX.labels` holds the English texts by name, and a name the runtime does not know is an error. Count labels accept catalogue forms such as `[one]+{count} column[other]+{count} columns`, selected through the plural rules of the page language. `hiddenColumns` names only responsive fields remaining beyond the phone record line; its tooltip lists their full column titles. Host data (node labels, column titles, cells, badges) is the host's own text and is never translated by CanopyX.
 
 ### Filter Semantics
 
