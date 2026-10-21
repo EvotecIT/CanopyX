@@ -35,6 +35,7 @@ internal static class CanopyChangeValidator {
             if (hunk.BeforeStart < nextBefore || hunk.AfterStart < nextAfter) throw new InvalidOperationException("Diff hunks are in order and do not overlap.");
             // Outside the hunks both texts are the same, so the unchanged run before each hunk is as long on both sides.
             if (hunk.BeforeStart - nextBefore != hunk.AfterStart - nextAfter) throw new InvalidOperationException("The unchanged lines between diff hunks must be as many on both sides.");
+            MatchUnchanged(beforeLines, afterLines, nextBefore, nextAfter, hunk.BeforeStart - nextBefore);
             int before = hunk.BeforeStart, after = hunk.AfterStart;
             foreach (var line in hunk.Lines) {
                 if (line == null || !Enum.IsDefined(typeof(CanopyDiffLineKind), line.Kind)) throw new InvalidOperationException("A diff line is unchanged, removed or added.");
@@ -51,6 +52,16 @@ internal static class CanopyChangeValidator {
         }
 
         if (beforeLines != null && afterLines != null && diff.Hunks.Count > 0 && beforeLines.Count - nextBefore != afterLines.Count - nextAfter)
+            throw new InvalidOperationException("The diff's hunks do not account for every difference between its texts.");
+        if (beforeLines != null && diff.Hunks.Count > 0) MatchUnchanged(beforeLines, afterLines, nextBefore, nextAfter, beforeLines.Count - nextBefore + 1);
+    }
+
+    /// <summary>Checks that omitted lines really are unchanged when the host supplies full texts and hunks.</summary>
+    private static void MatchUnchanged(List<string>? before, List<string>? after, int b, int a, int count) {
+        if (before == null || after == null) return;
+        if ((long)b + count - 1 > before.Count || (long)a + count - 1 > after.Count)
+            throw new InvalidOperationException("The diff's hunks do not account for every difference between its texts.");
+        for (var i = 0; i < count; i++) if (before[b - 1 + i] != after[a - 1 + i])
             throw new InvalidOperationException("The diff's hunks do not account for every difference between its texts.");
     }
 

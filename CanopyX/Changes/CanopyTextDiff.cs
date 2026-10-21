@@ -179,17 +179,46 @@ public sealed partial class CanopyTextDiff {
     /// <returns>The unified diff, with LF line breaks.</returns>
     public string ToUnifiedDiff() {
         if (UnifiedDiff != null) return UnifiedDiff;
-        var hunks = Hunks.Count > 0 || BeforeText == null || AfterText == null ? (IList<CanopyDiffHunk>)Hunks : CanopyTextDiffAlgorithm.Hunks(BeforeText, AfterText, Context);
+        var hunks = new List<CanopyDiffHunk>(Hunks.Count > 0 || BeforeText == null || AfterText == null ? (IList<CanopyDiffHunk>)Hunks : CanopyTextDiffAlgorithm.Hunks(BeforeText, AfterText, Context));
+        var left = BeforeText == null ? null : CanopyTextDiffAlgorithm.SplitLines(BeforeText);
+        var right = AfterText == null ? null : CanopyTextDiffAlgorithm.SplitLines(AfterText);
+        bool beforeOpen = HasOpenLastLine(BeforeText), afterOpen = HasOpenLastLine(AfterText);
+        // A change of only the last line terminator has no line-comparison hunk. Include it in the patch even when a host
+        // leaves that line in an unchanged suffix; do not change the document's hunks or the rendered view.
+        if (left != null && right != null && left.Count > 0 && right.Count > 0 && beforeOpen != afterOpen &&
+            left[left.Count - 1] == right[right.Count - 1] && (hunks.Count == 0 ||
+            hunks[hunks.Count - 1].BeforeStart + hunks[hunks.Count - 1].BeforeCount <= left.Count &&
+            hunks[hunks.Count - 1].AfterStart + hunks[hunks.Count - 1].AfterCount <= right.Count))
+            hunks.Add(new CanopyDiffHunk(left.Count, right.Count).Line(CanopyDiffLineKind.Context, left[left.Count - 1]));
         if (hunks.Count == 0) return string.Empty;
         var text = new StringBuilder();
         text.Append("--- a/").Append(PreviousPath ?? Path ?? Label).Append('\n').Append("+++ b/").Append(Path ?? Label).Append('\n');
         foreach (var hunk in hunks) {
             int before = hunk.BeforeCount, after = hunk.AfterCount;
             text.Append("@@ -").Append(Range(hunk.BeforeStart, before)).Append(" +").Append(Range(hunk.AfterStart, after)).Append(" @@\n");
-            foreach (var line in hunk.Lines) text.Append(line.Kind == CanopyDiffLineKind.Added ? '+' : line.Kind == CanopyDiffLineKind.Removed ? '-' : ' ').Append(line.Text).Append('\n');
+            int b = hunk.BeforeStart, a = hunk.AfterStart;
+            foreach (var line in hunk.Lines) {
+                bool openBefore = line.Kind != CanopyDiffLineKind.Added && beforeOpen && b == left!.Count;
+                bool openAfter = line.Kind != CanopyDiffLineKind.Removed && afterOpen && a == right!.Count;
+                if (line.Kind == CanopyDiffLineKind.Context && openBefore != openAfter) {
+                    UnifiedLine(text, '-', line.Text, openBefore);
+                    UnifiedLine(text, '+', line.Text, openAfter);
+                } else UnifiedLine(text, line.Kind == CanopyDiffLineKind.Added ? '+' : line.Kind == CanopyDiffLineKind.Removed ? '-' : ' ', line.Text, openBefore || openAfter);
+                if (line.Kind != CanopyDiffLineKind.Added) b++;
+                if (line.Kind != CanopyDiffLineKind.Removed) a++;
+            }
         }
 
         return text.ToString();
+    }
+
+    /// <summary>Whether a nonempty text ends in an unterminated line.</summary>
+    private static bool HasOpenLastLine(string? text) => !string.IsNullOrEmpty(text) && text![text.Length - 1] != '\n' && text[text.Length - 1] != '\r';
+
+    /// <summary>Writes one patch line and its optional standard end-of-file marker.</summary>
+    private static void UnifiedLine(StringBuilder output, char kind, string line, bool open) {
+        output.Append(kind).Append(line).Append('\n');
+        if (open) output.Append("\\ No newline at end of file\n");
     }
 
     /// <summary>A unified diff range: the start and count, with the start before an empty range as GNU diff writes it.</summary>

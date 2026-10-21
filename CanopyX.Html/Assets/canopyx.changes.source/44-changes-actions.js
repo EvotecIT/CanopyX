@@ -30,8 +30,9 @@
   function changeExportDiff(diff) {
     if (!diff) return null;
     let hunks = diff.hunks;
-    if (diff.content === "text" && !hunks.length && diff.left && diff.left.length <= DIFF_CLIENT_LINES && diff.right.length <= DIFF_CLIENT_LINES) hunks = diffHunks(diff.left, diff.right, diff.context);
-    const unified = diff.content === "text" && (diff.unified !== null || hunks.length) ? diffUnified(diff, hunks) : null;
+    const canCompare = diff.left && diff.left.length <= DIFF_CLIENT_LINES && diff.right.length <= DIFF_CLIENT_LINES;
+    if (diff.content === "text" && !hunks.length && canCompare) hunks = diffHunks(diff.left, diff.right, diff.context);
+    const unified = diff.content === "text" && (diff.unified !== null || hunks.length || canCompare) ? diffUnified(diff, hunks) : null;
     return { content: diff.content, message: diff.message, unified, truncated: diff.truncated };
   }
   function changeExportVersion(version) { return version ? { size: version.size, hash: version.hash, time: changeIso(version.time) } : null; }

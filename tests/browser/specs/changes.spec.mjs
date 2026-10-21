@@ -105,6 +105,47 @@ test("a long diff mounts only the rows in view", async ({ page }) => {
   expect(middle).toBe(true);
 });
 
+test("a supported large folded region expands without an argument limit", async ({ page }) => {
+  const prefix = "same\n".repeat(180000);
+  await mount(page, "createDiff", envelope("diff", { id: "large", label: "large.txt", layout: "inline", before: prefix + "old\n", after: prefix + "new\n",
+    hunks: [{ before: 180001, after: 180001, lines: ["-old", "+new"] }] }));
+  await page.getByRole("button", { name: "Show 180,000 more lines" }).click();
+  await expect(page.locator(".cx-diff-scroll")).toHaveAttribute("aria-rowcount", "180003");
+  expect(await page.locator(".cx-diff-row").count()).toBeLessThan(200);
+  await page.evaluate(() => api.update({ protocol: "canopyx/2", type: "diff", id: "large", label: "large.txt", layout: "inline",
+    before: "same\n".repeat(180000) + "old\n", after: "same\n".repeat(180000) + "new\n",
+    hunks: [{ before: 180001, after: 180001, lines: ["-old", "+new"] }] }));
+  await page.evaluate(() => api.expandAll());
+  await expect(page.locator(".cx-diff-scroll")).toHaveAttribute("aria-rowcount", "180003");
+});
+
+test("copied unified diffs preserve final newline state", async ({ page }) => {
+  await mount(page, "createDiff", envelope("diff", { id: "eof", label: "file.txt", before: "a\n", after: "b" }));
+  await page.evaluate(() => { navigator.clipboard.writeText = async text => { window.copiedDiff = text; }; });
+  for (const [before, after, lines] of [
+    ["a\n", "b", "-a\n+b\n\\ No newline at end of file\n"],
+    ["a", "b\n", "-a\n\\ No newline at end of file\n+b\n"],
+    ["a", "b", "-a\n\\ No newline at end of file\n+b\n\\ No newline at end of file\n"],
+    ["a\n", "a", "-a\n+a\n\\ No newline at end of file\n"],
+    ["a", "a\n", "-a\n\\ No newline at end of file\n+a\n"]
+  ]) {
+    await page.evaluate(view => api.update(view), envelope("diff", { id: "eof", label: "file.txt", before, after }));
+    expect(await page.evaluate(() => api.copy())).toBe(true);
+    expect(await page.evaluate(() => window.copiedDiff)).toBe("--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n" + lines);
+  }
+  for (const [before, after, patch] of [
+    ["a", "a\nb\n", "@@ -1 +1,2 @@\n-a\n\\ No newline at end of file\n+a\n+b\n"],
+    ["a\nb", "A\nb", "@@ -1,2 +1,2 @@\n-a\n+A\n b\n\\ No newline at end of file\n"],
+    ["", "b", "@@ -0,0 +1 @@\n+b\n\\ No newline at end of file\n"],
+    ["a", "", "@@ -1 +0,0 @@\n-a\n\\ No newline at end of file\n"],
+    ["a\r\n", "b\r\n", "@@ -1 +1 @@\n-a\n+b\n"]
+  ]) {
+    await page.evaluate(view => api.update(view), envelope("diff", { id: "eof", label: "file.txt", before, after }));
+    expect(await page.evaluate(() => api.copy())).toBe(true);
+    expect(await page.evaluate(() => window.copiedDiff)).toBe("--- a/file.txt\n+++ b/file.txt\n" + patch);
+  }
+});
+
 for (const [content, text] of [["binary", "Binary file: compared by size and hash, not by lines."], ["unavailable", "Withheld by policy."], ["identical", "The text did not change."]]) {
   test("a " + content + " diff shows its state instead of lines", async ({ page }) => {
     await mount(page, "createDiff", envelope("diff", Object.assign({ id: "s", label: "agent.exe", content }, content === "unavailable" ? { message: "Withheld by policy." } : {})));
@@ -196,6 +237,11 @@ test("printing draws every diff line in one table and hides the tools", async ({
 });
 
 for (const [name, create, view, message] of [
+  ...[0, 2, 4].map(omitted => {
+    const after = ["a", "B", "c", "D", "e"]; after[omitted] = "omitted";
+    return ["an omitted replacement at line " + (omitted + 1), "createDiff", envelope("diff", { id: "x", label: "X", before: "a\nb\nc\nd\ne", after: after.join("\n"),
+      hunks: [{ before: 2, after: 2, lines: ["-b", "+B"] }, { before: 4, after: 4, lines: ["-d", "+D"] }] }), "do not account for every difference"];
+  }),
   ["a diff hunk that does not match its text", "createDiff", envelope("diff", { id: "x", label: "X", before: "a\n", after: "b\n", hunks: [{ before: 1, after: 1, lines: ["-z", "+b"] }] }), "does not match its text"],
   ["a diff with one text", "createDiff", envelope("diff", { id: "x", label: "X", before: "a" }), "both texts or neither"],
   ["a renamed item without its earlier path", "createChangeList", envelope("changes", { id: "x", label: "X", items: [{ id: "a", kind: "renamed", path: "a.txt" }] }), "previous path"],

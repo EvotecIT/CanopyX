@@ -380,8 +380,7 @@ Gate: a 150 × 25 status matrix and a DC × DC relationship matrix at L meet the
 
 ## Change Views
 
-Consumers: the TestimoX GPO change drawer and its email card (SYSVOL and NETLOGON file changes), and later file-share monitoring in
-DomainDetectiveNext and SyncSE ([changes.md](docs/changes.md)).
+Consumer: a private host's file-change drawer and email card, through the HtmlForgeX bridge ([changes.md](docs/changes.md)).
 
 - [x] A text diff (inline and side by side, line numbers, word marks, folded regions that open in place, change navigation, a copy-ready
   unified diff, windowed rows, binary, unavailable and identical states) from host hunks or from texts the browser compares with the

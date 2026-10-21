@@ -107,6 +107,20 @@ test("the bar exports the items the filters keep as CSV and JSON", async ({ page
   expect(data.items[0].after.time).toBe("2026-10-21T10:42:00.000Z");
 });
 
+test("JSON export preserves newline-only patches and the client comparison limit", async ({ page }) => {
+  const long = "same\n".repeat(5001);
+  await mount(page, envelope("changes", { id: "eof", label: "EOF", exports: ["json"], items: [
+    { id: "remove", kind: "modified", path: "remove.txt", diff: { id: "r", label: "remove.txt", before: "a\n", after: "a" } },
+    { id: "add", kind: "modified", path: "add.txt", diff: { id: "a", label: "add.txt", before: "a", after: "a\n" } },
+    { id: "large", kind: "modified", path: "large.txt", diff: { id: "l", label: "large.txt", before: long, after: long + "x" } }
+  ] }));
+  const [json] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Export JSON" }).click()]);
+  const data = JSON.parse(fs.readFileSync(await json.path(), "utf8"));
+  expect(data.items.find(item => item.id === "remove").diff.unified).toBe("--- a/remove.txt\n+++ b/remove.txt\n@@ -1 +1 @@\n-a\n+a\n\\ No newline at end of file\n");
+  expect(data.items.find(item => item.id === "add").diff.unified).toBe("--- a/add.txt\n+++ b/add.txt\n@@ -1 +1 @@\n-a\n\\ No newline at end of file\n+a\n");
+  expect(data.items.find(item => item.id === "large").diff.unified).toBeNull();
+});
+
 test("a CSV export keeps text from being read as a formula", async ({ page }) => {
   await mount(page, envelope("changes", { id: "x y", label: "X", exports: ["csv"], items: [{ id: "a", kind: "added", path: "=cmd|' /C calc'!A0", secondary: "plain, \"quoted\"" }] }));
   const [csv] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Export CSV" }).click()]);

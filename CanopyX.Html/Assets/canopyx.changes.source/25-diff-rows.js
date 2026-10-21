@@ -76,13 +76,27 @@
   /** The unified diff of the hunks: "--- a/…", "+++ b/…" and "@@ -12,7 +12,8 @@" sections, as CanopyTextDiff.ToUnifiedDiff writes it. */
   function diffUnified(doc, hunks) {
     if (doc.unified !== null) return doc.unified;
+    const beforeOpen = !!doc.before && !/[\r\n]$/.test(doc.before), afterOpen = !!doc.after && !/[\r\n]$/.test(doc.after);
+    const last = hunks[hunks.length - 1], left = doc.left, right = doc.right;
+    // Include a changed EOF terminator in an unchanged suffix without altering the document or the displayed hunks.
+    if (left?.length && right?.length && beforeOpen !== afterOpen && left[left.length - 1] === right[right.length - 1] && (!last ||
+      last.before + last.lines.filter(line => line.kind !== "+").length <= left.length && last.after + last.lines.filter(line => line.kind !== "-").length <= right.length))
+      hunks = hunks.concat([{ before: left.length, after: right.length, lines: [{ kind: "=", text: left[left.length - 1] }] }]);
     if (!hunks.length) return "";
     const name = doc.path || doc.label, range = (start, count) => (count === 0 ? start - 1 : start) + (count === 1 ? "" : "," + count);
     let text = "--- a/" + (doc.previousPath || name) + "\n+++ b/" + name + "\n";
+    const write = (kind, line, open) => { text += kind + line + "\n"; if (open) text += "\\ No newline at end of file\n"; };
     for (const hunk of hunks) {
       const before = hunk.lines.filter(line => line.kind !== "+").length, after = hunk.lines.filter(line => line.kind !== "-").length;
       text += "@@ -" + range(hunk.before, before) + " +" + range(hunk.after, after) + " @@\n";
-      for (const line of hunk.lines) text += (line.kind === "=" ? " " : line.kind) + line.text + "\n";
+      let b = hunk.before, a = hunk.after;
+      for (const line of hunk.lines) {
+        const openBefore = line.kind !== "+" && beforeOpen && b === left.length, openAfter = line.kind !== "-" && afterOpen && a === right.length;
+        if (line.kind === "=" && openBefore !== openAfter) { write("-", line.text, openBefore); write("+", line.text, openAfter); }
+        else write(line.kind === "=" ? " " : line.kind, line.text, openBefore || openAfter);
+        if (line.kind !== "+") b++;
+        if (line.kind !== "-") a++;
+      }
     }
     return text;
   }

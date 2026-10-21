@@ -91,8 +91,14 @@
     if (content === "text" && !hunks.length && before === null) changeFail("a text diff needs hunks or both texts");
     const left = before === null ? null : changeSplit(before), right = after === null ? null : changeSplit(after);
     let nextBefore = 1, nextAfter = 1, total = 0;
+    const unchanged = (b, a, count) => {
+      if (!left || !right) return;
+      if (b + count - 1 > left.length || a + count - 1 > right.length) changeFail("the diff's hunks do not account for every difference between its texts");
+      for (let i = 0; i < count; i++) if (left[b - 1 + i] !== right[a - 1 + i]) changeFail("the diff's hunks do not account for every difference between its texts");
+    };
     for (const hunk of hunks) {
       if (!hunk.lines.length || hunk.before < nextBefore || hunk.after < nextAfter || hunk.before - nextBefore !== hunk.after - nextAfter) changeFail("diff hunks are in order, do not overlap and leave as many unchanged lines on both sides");
+      unchanged(nextBefore, nextAfter, hunk.before - nextBefore);
       let b = hunk.before, a = hunk.after;
       for (const line of hunk.lines) {
         if (line.kind !== "+" && left && left[b - 1] !== line.text || line.kind !== "-" && right && right[a - 1] !== line.text) changeFail("a hunk's line does not match its text");
@@ -104,6 +110,7 @@
       nextBefore = b; nextAfter = a;
     }
     if (left && right && hunks.length && left.length - nextBefore !== right.length - nextAfter) changeFail("the diff's hunks do not account for every difference between its texts");
+    if (left && hunks.length) unchanged(nextBefore, nextAfter, left.length - nextBefore + 1);
     const notes = changeList(doc.notes, "notes", 16).map(entry => { const note = changeKeys(entry, ["text", "tone"], "a note"); return Object.freeze({ text: changeText(note.text, "a note", 500), tone: changeTone(note.tone, "a note") }); });
     if (doc.unified !== undefined && (typeof doc.unified !== "string" || doc.unified.length > 2 * DIFF_MAX_TEXT)) changeFail("the unified diff is too long");
     return Object.freeze({ id: changeId(doc.id, "the diff id"), label: changeText(doc.label, "the diff label", 200), path: changeLine(doc.path, "the path", 2048), previousPath: changeLine(doc.previousPath, "the previous path", 2048),

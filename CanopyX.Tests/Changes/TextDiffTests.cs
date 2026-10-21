@@ -103,6 +103,42 @@ public sealed class TextDiffTests {
     }
 
     [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(4)]
+    public void Validate_RejectsOmittedReplacementsInUnchangedRegions(int omitted) {
+        var before = new[] { "a", "b", "c", "d", "e" };
+        var after = new[] { "a", "B", "c", "D", "e" };
+        after[omitted] = "omitted";
+        var diff = CanopyTextDiff.FromTexts("d", "D", string.Join("\n", before), string.Join("\n", after));
+        diff.Hunks.Add(new CanopyDiffHunk(2, 2).Line(CanopyDiffLineKind.Removed, "b").Line(CanopyDiffLineKind.Added, "B"));
+        diff.Hunks.Add(new CanopyDiffHunk(4, 4).Line(CanopyDiffLineKind.Removed, "d").Line(CanopyDiffLineKind.Added, "D"));
+        Assert.Throws<InvalidOperationException>(() => diff.Validate());
+        Assert.Throws<InvalidOperationException>(() => diff.ToJson());
+    }
+
+    [Theory]
+    [InlineData("a\n", "b", "-a\n+b\n\\ No newline at end of file\n")]
+    [InlineData("a", "b\n", "-a\n\\ No newline at end of file\n+b\n")]
+    [InlineData("a", "b", "-a\n\\ No newline at end of file\n+b\n\\ No newline at end of file\n")]
+    [InlineData("a\n", "a", "-a\n+a\n\\ No newline at end of file\n")]
+    [InlineData("a", "a\n", "-a\n\\ No newline at end of file\n+a\n")]
+    public void ToUnifiedDiff_PreservesFinalNewlineState(string before, string after, string lines) {
+        var diff = CanopyTextDiff.FromTexts("d", "file.txt", before, after, compare: true);
+        Assert.Equal("--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n" + lines, diff.ToUnifiedDiff());
+    }
+
+    [Theory]
+    [InlineData("a", "a\nb\n", "--- a/file.txt\n+++ b/file.txt\n@@ -1 +1,2 @@\n-a\n\\ No newline at end of file\n+a\n+b\n")]
+    [InlineData("a\nb", "A\nb", "--- a/file.txt\n+++ b/file.txt\n@@ -1,2 +1,2 @@\n-a\n+A\n b\n\\ No newline at end of file\n")]
+    [InlineData("", "b", "--- a/file.txt\n+++ b/file.txt\n@@ -0,0 +1 @@\n+b\n\\ No newline at end of file\n")]
+    [InlineData("a", "", "--- a/file.txt\n+++ b/file.txt\n@@ -1 +0,0 @@\n-a\n\\ No newline at end of file\n")]
+    [InlineData("a\r\n", "b\r\n", "--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-a\n+b\n")]
+    public void ToUnifiedDiff_PreservesEofAcrossContextInsertionsAndEmptySides(string before, string after, string expected) {
+        Assert.Equal(expected, CanopyTextDiff.FromTexts("d", "file.txt", before, after, compare: true).ToUnifiedDiff());
+    }
+
+    [Theory]
     [InlineData("no lines")]
     [InlineData("one text")]
     [InlineData("hunks out of order")]

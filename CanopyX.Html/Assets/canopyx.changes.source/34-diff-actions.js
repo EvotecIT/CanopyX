@@ -29,7 +29,7 @@
     expand(gap) {
       const at = this.rows.indexOf(gap);
       if (at < 0 || !gap.lines) return;
-      this.rows.splice(at, 1, ...gap.lines);
+      this.rows = this.rows.slice(0, at).concat(gap.lines, this.rows.slice(at + 1));
       const current = this.current >= 0 ? this.view[this.starts[this.current]] : null;
       this.display();
       if (current) this.current = this.starts.indexOf(this.view.indexOf(current));
