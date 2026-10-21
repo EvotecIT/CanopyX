@@ -69,3 +69,34 @@ test("a responsive hub repaint preserves a pending Space activation", async ({ p
   await expect(page.locator(".cx-flow-records-row")).toHaveCount(1);
   expect(await page.evaluate(() => window.__api.getStep())).toBe("schedules");
 });
+
+for (const status of ["error", "conflict"]) test(`a task hub without review displays a host ${status} and clears it on reset`, async ({ page }, testInfo) => {
+  const withoutReview = documentOf(flow.steps.filter(step => step.type !== "review"), { mode: "tasks" });
+  expect(await mountRuntime(page, testInfo, withoutReview, `({ hooks: { submit: () => ({ status: "${status}", message: "Host could not save the tasks." }) } })`)).toBeNull();
+  await page.evaluate(() => window.__api.setStepState("schedules", { state: "complete" }));
+  await page.getByRole("button", { name: "Submit", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Host could not save the tasks.");
+  if (status === "conflict") await expect(page.getByRole("button", { name: "Reload current settings", exact: true })).toBeVisible();
+  await page.evaluate(() => window.__api.reset());
+  await expect(page.locator(".cx-flow-answer-banner")).toHaveCount(0);
+  expect(await page.evaluate(() => [window.__errors, window.__rejections])).toEqual([[], []]);
+});
+
+test("a retried task submission replaces its message and status updates preserve a pending conflict reload", async ({ page }, testInfo) => {
+  const withoutReview = documentOf(flow.steps.filter(step => step.type !== "review"), { mode: "tasks" });
+  expect(await mountRuntime(page, testInfo, withoutReview, `({ hooks: { submit: () => {
+    window.__attempt = (window.__attempt || 0) + 1;
+    return { status: window.__attempt === 1 ? "error" : "conflict", message: "Attempt " + window.__attempt };
+  } }, onReload: () => { window.__reloads = (window.__reloads || 0) + 1; } })`)).toBeNull();
+  await page.evaluate(() => window.__api.setStepState("schedules", { state: "complete" }));
+  await page.getByRole("button", { name: "Submit", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Attempt 1");
+  await page.getByRole("button", { name: "Submit", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Attempt 2");
+  const reload = page.getByRole("button", { name: "Reload current settings", exact: true });
+  await reload.focus(); await page.keyboard.down("Space");
+  await page.evaluate(() => window.__api.setStepState("schedules", { state: "complete", summary: "Status refreshed" }));
+  await page.keyboard.up("Space");
+  await expect.poll(() => page.evaluate(() => window.__reloads || 0)).toBe(1);
+  expect(await page.evaluate(() => [window.__errors, window.__rejections])).toEqual([[], []]);
+});

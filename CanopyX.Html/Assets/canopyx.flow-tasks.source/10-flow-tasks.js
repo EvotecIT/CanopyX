@@ -112,7 +112,6 @@
       progress.id = this.id + "-hub-progress";
       const lists = h("div", "cx-flow-task-groups");
       section.append(heading, progress, lists);
-      if (this.banner && !this.reviewStep()) section.appendChild(this.answerBanner());
       this.hubNode = section;
       this.paintHub();
       this.loadStatus();
@@ -138,6 +137,12 @@
         return group;
       }));
       setText(section.querySelector(".cx-flow-hub-progress"), this.hubAnnouncement());
+      const banner = this.reviewStep() ? null : this.banner;
+      if (section._cxBanner !== banner) {
+        section.querySelector(":scope > .cx-flow-answer-banner")?.remove();
+        if (banner) section.appendChild(this.answerBanner());
+        section._cxBanner = banner;
+      }
       if (this.step === this.hub) this.renderActions();
     },
 

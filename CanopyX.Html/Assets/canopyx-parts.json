@@ -299,7 +299,7 @@
     {
       "name": "flow-tasks",
       "label": "flow task lists",
-      "version": "ca49dc79dc9cc3e8",
+      "version": "e4e21d402b99a086",
       "script": "canopyx-flow-tasks.js",
       "style": "canopyx-flow-tasks.css",
       "runtimes": [
