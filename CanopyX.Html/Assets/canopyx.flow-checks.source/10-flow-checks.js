@@ -105,7 +105,7 @@
       for (const check of this.model.checks.values()) {
         if (!check.fields.includes(field.id)) continue;
         const state = this.checkState.get(check.id);
-        if (state?.result && !state.stale) { state.stale = true; state.acknowledged = false; this.paintCheck(check); }
+        if (state) { state.stale = true; state.acknowledged = false; state.controller?.abort(); this.paintCheck(check); }
       }
     },
 
@@ -118,13 +118,20 @@
       Object.assign(state, { controller, ticket, running: true });
       this.checkState.set(id, state); this.paintCheck(check); this.paintReview();
       const secrets = new Map(check.fields.map(name => this.model.fields.get(name)).filter(field => field.type === "secret" && this.visible(field) && this.secrets.has(field.id)).map(field => [field.id, this.secrets.get(field.id)]));
-      const run = typeof this.hooks.check === "function" ? signal => this.hooks.check(id, this.getValues(), { signal, secret: name => secrets.get(name) ?? null }) : () => { throw new Error(this.labels.flowNoHostHook); };
+      const revoke = () => secrets.clear();
+      controller.signal.addEventListener("abort", revoke, { once: true });
+      const run = typeof this.hooks.check === "function" ? signal => this.hooks.check(id, this.getValues(), { signal,
+        secret: name => { const value = secrets.get(name) ?? null; secrets.delete(name); return value; } }) : () => { throw new Error(this.labels.flowNoHostHook); };
       const answer = await this.timed("check", run, controller);
-      secrets.clear();
-      if (state.ticket !== ticket || this.destroyed) return null;
+      revoke(); controller.signal.removeEventListener("abort", revoke);
+      if (this.checkState.get(id) !== state || state.ticket !== ticket || this.destroyed) return null;
       state.running = false;
       if (answer.cancelled) { this.paintCheck(check); this.paintReview(); return null; }
       const result = answer.failed ? { status: "fail", message: answer.failed, details: [], fieldErrors: {} } : this.checkResult(answer.value);
+      for (const [field, message] of Object.entries(state.result?.fieldErrors || {})) if (!Object.hasOwn(result.fieldErrors, field) && this.hostErrors.get(field) === message) {
+        this.hostErrors.delete(field);
+        if (this.errors.get(field) === message) this.setError(this.model.fields.get(field), null);
+      }
       Object.assign(state, { result, at: new Date().toISOString(), stale: false, acknowledged: false });
       for (const [field, message] of Object.entries(result.fieldErrors)) { this.hostErrors.set(field, message); this.setError(this.model.fields.get(field), message); }
       this.paintCheck(check); this.renderRail(); this.reviewStale = true; this.paintReview(true);
@@ -151,7 +158,7 @@
         let state = this.checkState.get(check.id);
         if (run && (!state?.result || state.stale) && !state?.running) { await this.runCheck(check.id); state = this.checkState.get(check.id); }
         const result = state?.result, labels = this.labels;
-        if (!result || state.stale) problems.push(fill(labels.flowCheckNeeded, { check: check.label }));
+        if (!result || state.stale || state.running) problems.push(fill(labels.flowCheckNeeded, { check: check.label }));
         else if (result.status === "fail" || check.required === "pass" && result.status === "warning") problems.push(fill(labels.flowCheckNotPassed, { check: check.label }));
         else if (result.status === "warning" && !state.acknowledged) problems.push(fill(labels.flowCheckConfirmWarning, { check: check.label }));
       }
@@ -204,7 +211,7 @@
       const checks = {};
       for (const check of this.model.checks.values()) {
         const state = this.checkState.get(check.id);
-        if (this.stepVisible(check.step) && state?.result && !state.stale) checks[check.id] = { status: state.result.status, at: state.at };
+        if (this.stepVisible(check.step) && state?.result && !state.stale && !state.running) checks[check.id] = { status: state.result.status, at: state.at };
       }
       return checks;
     }

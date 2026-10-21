@@ -40,7 +40,7 @@ internal static class CanopyFlowFieldRules {
                 return null;
             }
             default:
-                return Scalar(field.Validation, field.Kind, field.NumberStep, value, title, labels);
+                return Scalar(field.Validation, field.Kind, field.NumberStep, value, title, labels) ?? DisabledChoice(field, value, labels);
         }
     }
 
@@ -85,11 +85,27 @@ internal static class CanopyFlowFieldRules {
         if (items == null || items.Count == 0) return field.IsRequired ? Say(field.Validation, labels.GridEditRequired, title) : null;
         if (field.MinItems.HasValue && items.Count < field.MinItems.Value) return Fill(labels.FlowItemsMin, ("field", title), ("min", Count(field.MinItems.Value)));
         if (field.MaxItems.HasValue && items.Count > field.MaxItems.Value) return Fill(labels.FlowItemsMax, ("field", title), ("max", Count(field.MaxItems.Value)));
-        if (field.Kind != CanopyFlowFieldKind.List) return null;
+        if (field.Kind != CanopyFlowFieldKind.List) return DisabledChoice(field, items, labels);
         foreach (var entry in items) {
             var item = (string)entry!;
             if (field.ItemRule != CanopyFlowItemRule.None && !Fits(field.ItemRule, item)) return field.Validation.Message ?? Fill(RuleLabel(field.ItemRule, labels), ("item", item));
             if (field.ListItemPattern != null && !Matches(field.ListItemPattern, item)) return field.Validation.Message ?? Fill(labels.FlowItemPattern, ("item", item));
+        }
+
+        return null;
+    }
+
+    /// <summary>Document options may describe a disabled initial value, but a submitted choice must be available.</summary>
+    private static string? DisabledChoice(CanopyFlowField field, object? value, CanopyLabels labels) {
+        if (value == null || field.OptionsSource == CanopyFlowOptionsSource.Host) return null;
+        foreach (var option in field.Options) {
+            if (option.DisabledReason == null) continue;
+            if (value is IList items) {
+                foreach (var item in items) if (item != null && CanopyFlowValues.SameScalar(option.Value, item))
+                    return Say(field.Validation, labels.GridEditChoice, field.Label);
+            } else if (CanopyFlowValues.SameScalar(option.Value, value)) {
+                return Say(field.Validation, labels.GridEditChoice, field.Label);
+            }
         }
 
         return null;
@@ -105,7 +121,7 @@ internal static class CanopyFlowFieldRules {
             foreach (var column in field.Columns) {
                 if (column.Kind == CanopyFlowRecordColumnKind.Toggle) continue;
                 row.TryGetValue(column.Id, out var cell);
-                var problem = Scalar(column.Validation, column.Kind == CanopyFlowRecordColumnKind.Number ? CanopyFlowFieldKind.Number : CanopyFlowFieldKind.Text, null, cell, column.Title, labels);
+                var problem = Problem(column.CellField(), cell, labels);
                 if (problem != null) return Fill(labels.FlowRecordProblem, ("row", Count(index + 1)), ("message", problem));
             }
         }

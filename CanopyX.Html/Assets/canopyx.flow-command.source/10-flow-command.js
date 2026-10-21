@@ -46,7 +46,9 @@
     // Letters and digits of any script stay plain, one UTF-16 unit at a time, as .NET's char.IsLetterOrDigit decides.
     for (let index = 0; plain && index < value.length; index++) plain = /[\p{L}\p{Nd}]/u.test(value[index]) || allowed.includes(value[index]);
     if (plain) return value;
-    return style === "posix" ? "'" + value.replace(/'/g, "'\\''") + "'" : style === "windows" ? "\"" + value.replace(/"/g, "\\\"") + "\"" : "'" + value.replace(/'/g, "''") + "'";
+    // Windows doubles backslashes before quotes and the closing quote, so the next argument stays separate.
+    return style === "posix" ? "'" + value.replace(/'/g, "'\\''") + "'" : style === "windows" ?
+      "\"" + value.replace(/(\\*)"/g, (_, slashes) => slashes + slashes + "\\\"").replace(/(\\+)$/g, "$1$1") + "\"" : "'" + value.replace(/'/g, "''") + "'";
   }
   function flowCommandArgument(name, value, style) {
     const parameter = flowCommandParameter(name, style);

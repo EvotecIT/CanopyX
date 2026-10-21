@@ -47,7 +47,7 @@
     if (on && fv.mark.parentNode !== fv.label) fv.label.appendChild(fv.mark); else if (!on) fv.mark?.remove();
   }
 
-  const flowStateOf = FlowView.prototype.getState;
+  const flowStateOf = FlowView.prototype.getState, flowDraftReset = FlowView.prototype.reset;
   FLOW_HOST.drafts = {
     /** The document's presets: at most 32, with distinct ids. */
     presets(raw, model) {
@@ -70,6 +70,12 @@
   Object.assign(FlowView.prototype, {
     /** The state names the preset the answers started from. */
     getState() { const state = flowStateOf.call(this); if (this.preset) state.preset = this.preset.id; return state; },
+    /** Reset discards the prior form's draft after any write already in the store. */
+    reset() {
+      const result = flowDraftReset.call(this);
+      this.resumeBanner?.remove(); this.resumeBanner = null; this.draftPending = false; this.clearDraft();
+      return result;
+    },
     /** Save draft, quiet beside Back, when the flow keeps drafts. */
     draftButton() {
       if (!this.draftStore()) return null;
@@ -109,10 +115,24 @@
       const store = this.draftStore();
       clearTimeout(this.draftTimer);
       if (!store || this.draftPending || this.phase !== "form" || this.destroyed) return false;
-      const answer = await this.hook("draftStore.save", () => store.save(this.model.id, this.draftDocument()));
-      if (answer.failed || this.destroyed) { if (explicit) this.announce(this.labels.flowDraftFailed); return false; }
+      const draft = this.draftDocument(), generation = this.generation, version = this.draftVersion;
+      const answer = await this.draftWrite("draftStore.save", async () => {
+        if (this.destroyed || generation !== this.generation || version !== this.draftVersion || this.phase !== "form") return false;
+        await store.save(this.model.id, draft); return true;
+      });
+      if (this.destroyed || generation !== this.generation || version !== this.draftVersion) return false;
+      if (answer.failed || !answer.value) { if (explicit) this.announce(this.labels.flowDraftFailed); return false; }
       if (explicit) { this.announce(this.labels.flowDraftSaved); this.noteDraft(this.labels.flowDraftSaved); }
       return true;
+    },
+    /** The store sees saves and clears in request order, including a clear after a pending save. */
+    draftWrite(name, run) {
+      return this.draftWork = (this.draftWork || Promise.resolve()).then(() => this.hook(name, run));
+    },
+    clearDraft() {
+      const store = this.draftStore();
+      clearTimeout(this.draftTimer); this.draftVersion = (this.draftVersion || 0) + 1;
+      return store ? this.draftWrite("draftStore.clear", () => store.clear(this.model.id)) : Promise.resolve();
     },
     noteDraft(text) {
       let note = this.head.querySelector(".cx-flow-draft-note");
@@ -127,8 +147,7 @@
     },
     /** A saved or accepted proposal ends the draft. */
     draftSettled(answer) {
-      const store = this.draftStore();
-      if (store && (answer.status === "saved" || answer.status === "accepted")) { clearTimeout(this.draftTimer); this.hook("draftStore.clear", () => store.clear(this.model.id)); }
+      if (answer.status === "saved" || answer.status === "accepted") this.clearDraft();
     },
 
     /** Looks for a draft and, when there is one, offers to resume it. */
@@ -136,8 +155,8 @@
       const store = this.draftStore();
       if (!store) return;
       this.draftPending = true;
-      const answer = await this.hook("draftStore.load", () => store.load(this.model.id)), draft = answer.value;
-      if (this.destroyed) return;
+      const generation = this.generation, answer = await this.hook("draftStore.load", () => store.load(this.model.id)), draft = answer.value;
+      if (this.destroyed || generation !== this.generation) return;
       if (answer.failed || !flowIs(draft) || draft.kind !== "flowDraft" || draft.version !== 1 || draft.flow !== this.model.id || !flowIs(draft.values)) { this.draftPending = false; return; }
       const labels = this.labels, banner = this.resumeBanner = h("div", "cx-flow-resume"), text = h("p", "cx-flow-banner-title"), resume = h("button", "cx-flow-btn cx-primary"), restart = h("button", "cx-flow-btn");
       banner.setAttribute("role", "region"); banner.setAttribute("aria-label", labels.flowDraftFound);
@@ -148,7 +167,7 @@
       resume.type = restart.type = "button"; setText(resume, labels.flowDraftResume); setText(restart, labels.flowDraftRestart);
       const tools = h("div", "cx-flow-resume-tools"); tools.append(resume, restart); banner.appendChild(tools);
       resume.addEventListener("click", () => this.resumeDraft(draft).catch(error => this.report(error, "draft")));
-      restart.addEventListener("click", () => { this.closeResume(); this.hook("draftStore.clear", () => store.clear(this.model.id)); });
+      restart.addEventListener("click", () => { this.closeResume(); this.clearDraft(); });
       this.head.after(banner);
     },
     closeResume() {
@@ -160,7 +179,7 @@
       for (const [id, value] of Object.entries(draft.values)) {
         const field = this.model.fields.get(id);
         if (!field || field.type === "secret" || !flowFits(field, value)) continue;
-        this.assign(id, value); this.fields.get(id)?.mount(flowCopy(value));
+        this.setValues({ [id]: value });
       }
       this.preset = [...this.model.presets, ...this.userPresets || []].find(preset => preset.id === draft.preset) || null;
       this.closeResume();

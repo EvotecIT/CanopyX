@@ -112,13 +112,28 @@ internal sealed class CanopyFlowSubmissionReader {
         foreach (var field in Admit(section, fields)) Add(new Owner(field, section, step, true));
     }
 
+    /// <summary>Reads a draft's partial answers. Hidden answers stay, so their host sections need metadata too.</summary>
+    internal List<(CanopyFlowSection Section, CanopyFlowStep Step, IReadOnlyDictionary<string, object?> Answers)> BeginDraft(object? values) =>
+        ReadValues(values, draft: true);
+
+    /// <summary>Checks every draft answer against its admitted field and refuses secrets, sensitive answers and unknown ids.</summary>
+    internal void FinishDraft() {
+        ReadPendingValues();
+        foreach (var entry in _answers) if (_owners[entry.Key].Field.IsSensitive)
+            throw CanopyRequestException.Document("The draft holds the sensitive field " + entry.Key + ".");
+    }
+
+    private void ReadPendingValues() {
+        foreach (var entry in _pending) {
+            if (!_owners.TryGetValue(entry.Key, out var owner)) throw CanopyRequestException.Document("The values name '" + CanopyFlowRequest.Clip(entry.Key) + "', which is no field the flow shows.");
+            Answer(owner.Field, entry.Value);
+        }
+    }
+
     /// <summary>Reads the answers of host-section fields, the secrets and the checks, checks every visible field, and computes the rest.</summary>
     internal CanopyFlowSubmission Finish(Dictionary<string, string> secretValues, bool secretsTravel) {
         var map = _map;
-        foreach (var entry in _pending) {
-            if (!_owners.TryGetValue(entry.Key, out var owner)) throw CanopyRequestException.Document("The proposal's values name '" + CanopyFlowRequest.Clip(entry.Key) + "', which is no field the flow shows.");
-            Answer(owner.Field, entry.Value);
-        }
+        ReadPendingValues();
 
         foreach (var entry in _answers) {
             if (!IsVisible(entry.Key)) throw CanopyRequestException.Document("The proposal carries an answer of the hidden field " + entry.Key + ".");
@@ -154,7 +169,7 @@ internal sealed class CanopyFlowSubmissionReader {
     }
 
     /// <summary>The answers of the flow's own fields, each in its kind's canonical form; the rest wait for the host sections' fields.</summary>
-    private List<(CanopyFlowSection, CanopyFlowStep, IReadOnlyDictionary<string, object?>)> ReadValues(object? node) {
+    private List<(CanopyFlowSection, CanopyFlowStep, IReadOnlyDictionary<string, object?>)> ReadValues(object? node, bool draft = false) {
         if (node != null) {
             if (!(node is Dictionary<string, object?> map) || map.Count > 2 * CanopyFlow.MaxFields) throw CanopyRequestException.Document("The proposal's values are an object of answers.");
             foreach (var entry in map) {
@@ -163,7 +178,7 @@ internal sealed class CanopyFlowSubmissionReader {
             }
         }
 
-        return HostSections();
+        return draft && _pending.Count == 0 ? new List<(CanopyFlowSection, CanopyFlowStep, IReadOnlyDictionary<string, object?>)>() : HostSections(draft);
     }
 
     private void Answer(CanopyFlowField field, object? raw) {
@@ -175,12 +190,12 @@ internal sealed class CanopyFlowSubmissionReader {
     }
 
     /// <summary>The visible host sections, with the visible answers of the flow's own fields their fields may depend on.</summary>
-    private List<(CanopyFlowSection, CanopyFlowStep, IReadOnlyDictionary<string, object?>)> HostSections() {
+    private List<(CanopyFlowSection, CanopyFlowStep, IReadOnlyDictionary<string, object?>)> HostSections(bool includeHidden = false) {
         var answers = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var owner in _order) if (owner.Field.Kind != CanopyFlowFieldKind.Secret && IsVisible(owner.Field.Id) && _answers.TryGetValue(owner.Field.Id, out var value)) answers[owner.Field.Id] = value;
         var sections = new List<(CanopyFlowSection, CanopyFlowStep, IReadOnlyDictionary<string, object?>)>();
         foreach (var step in _flow.Steps) {
-            foreach (var section in step.Sections) if (section.IsFromHost && Shown(step.Condition) && Shown(section.Condition)) sections.Add((section, step, answers));
+            foreach (var section in step.Sections) if (section.IsFromHost && (includeHidden || Shown(step.Condition) && Shown(section.Condition))) sections.Add((section, step, answers));
         }
 
         return sections;

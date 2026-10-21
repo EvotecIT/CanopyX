@@ -294,9 +294,10 @@ CanopyX.Data.CanopyFlowRequest.static CanopyX.Data.CanopyFlowRequest ForSection(
 CanopyX.Data.CanopyFlowRequest.static CanopyX.Data.CanopyFlowRequest Parse(CanopyX.CanopyFlow flow, CanopyX.CanopyFlowRoutes route, System.String json)
 CanopyX.Data.CanopyFlowResponses : static class
 CanopyX.Data.CanopyFlowResponses.const System.Int32 MaxDraftLength = 524288
-CanopyX.Data.CanopyFlowResponses.static System.String Draft(CanopyX.CanopyFlow flow, System.String json)
+CanopyX.Data.CanopyFlowResponses.static System.String Draft(CanopyX.CanopyFlow flow, System.String json, CanopyX.Data.CanopyFlowReadOptions? options = null)
 CanopyX.Data.CanopyFlowResponses.static System.String Fields(CanopyX.CanopyFlow flow, CanopyX.CanopyFlowSection section, System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowField>? fields)
 CanopyX.Data.CanopyFlowResponses.static System.String Options(CanopyX.CanopyFlowField field, System.Collections.Generic.IEnumerable<CanopyX.CanopyFlowOption>? options)
+CanopyX.Data.CanopyFlowResponses.static System.Threading.Tasks.Task<System.String> DraftAsync(CanopyX.CanopyFlow flow, System.String json, CanopyX.Data.CanopyFlowReadOptions? options = null, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyFlowResultRow : sealed class
 CanopyX.Data.CanopyFlowResultRow..ctor(System.String label, System.String value, System.Boolean once = False)
 CanopyX.Data.CanopyFlowResultRow.System.Boolean IsShownOnce { get; }

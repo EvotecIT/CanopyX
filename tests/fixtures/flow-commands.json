@@ -82,6 +82,21 @@
       "values": { "path": "C:\\Program Files\\App", "ratio": 1.5, "tags": [ "a b", "c" ], "owner": "Zażółć", "force": true, "rows": [ { "name": "x" } ] },
       "secrets": [],
       "command": "setup.exe /Path:\"C:\\Program Files\\App\" /Ratio:1.5 /Tags:\"a b\",c /Owner:Zażółć /Force"
+    },
+    {
+      "name": "Windows: quoted trailing backslashes and backslashes before quotes preserve following arguments",
+      "flow": {
+        "kind": "flow", "version": 1, "id": "paths", "title": "Paths",
+        "command": { "name": "setup.exe", "style": "windows" },
+        "steps": [{ "id": "install", "title": "Install", "fields": [
+          { "id": "path", "type": "text", "label": "Path", "parameter": "Path" },
+          { "id": "quoted", "type": "text", "label": "Quoted", "parameter": "Quoted" },
+          { "id": "next", "type": "number", "label": "Next", "parameter": "Next" }
+        ] }]
+      },
+      "values": { "path": "C:\\Program Files\\App\\", "quoted": "a\\\"b", "next": 2 },
+      "secrets": [],
+      "command": "setup.exe /Path:\"C:\\Program Files\\App\\\\\" /Quoted:\"a\\\\\\\"b\" /Next:2"
     }
   ]
 }

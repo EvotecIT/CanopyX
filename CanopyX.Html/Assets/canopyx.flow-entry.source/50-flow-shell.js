@@ -35,7 +35,7 @@
       add("checks", step.checks !== undefined); add("pick", step.type === "pick"); add("preview", step.preview === true); add("consent", has(step, "confirm", "acknowledge"));
       for (const block of [step, ...list(step.sections)]) {
         if (block !== step) add("options", has(block, "source", "dependsOn"));
-        for (const field of object(block) ? list(block.fields) : []) { add("options", has(field, "source", "dependsOn")); add("records", object(field) && field.type === "records"); }
+        for (const field of object(block) ? list(block.fields) : []) { add("options", has(field, "dependsOn") || has(field, "source") && field.source !== "document"); add("records", object(field) && field.type === "records"); }
       }
     }
     hooks = object(hooks) ? hooks : {};

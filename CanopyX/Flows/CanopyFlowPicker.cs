@@ -100,10 +100,11 @@ public sealed class CanopyFlowPicker {
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {
-        var (json, _, _) = Document();
+        var (json, _, columns) = Document();
+        var label = LabelColumn ?? (columns.Count > 0 ? columns[0] : null);
         writer.BeginObject().Name("field");
         Field.WriteJson(writer, pick: true);
-        writer.Name("view").Raw(json).OptionalProperty("label", LabelColumn);
+        writer.Name("view").Raw(json).OptionalProperty("label", label);
         if (!ShowsTray) writer.Property("tray", false);
         if (Height != 420) writer.Property("height", Height);
         writer.EndObject();

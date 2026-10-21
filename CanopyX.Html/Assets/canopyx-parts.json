@@ -118,7 +118,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "509177d3f0f5f0a9",
+      "version": "842e1f1956f6213f",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -135,7 +135,7 @@
     {
       "name": "flow-host",
       "label": "flow host hooks",
-      "version": "47a04ff0e733aa93",
+      "version": "4dfbfe04c940c59a",
       "script": "canopyx-flow-host.js",
       "style": "canopyx-flow-host.css",
       "runtimes": [
@@ -155,7 +155,7 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "version": "4d6cc908702a2e3e",
+      "version": "f05028c7cac97819",
       "script": "canopyx-flow-checks.js",
       "style": "canopyx-flow-checks.css",
       "runtimes": [
@@ -176,7 +176,7 @@
     {
       "name": "flow-options",
       "label": "flow host options",
-      "version": "c3c98b45aab1fd87",
+      "version": "60450342239ded26",
       "script": "canopyx-flow-options.js",
       "runtimes": [
         "grid",
@@ -196,7 +196,7 @@
     {
       "name": "flow-pick",
       "label": "flow pick steps",
-      "version": "f4cb517f41f9ef07",
+      "version": "426718e2fa1f3cd0",
       "script": "canopyx-flow-pick.js",
       "style": "canopyx-flow-pick.css",
       "runtimes": [
@@ -237,7 +237,7 @@
     {
       "name": "flow-drafts",
       "label": "flow drafts and presets",
-      "version": "02630fcc42340fe5",
+      "version": "4f112f64736ca8e3",
       "script": "canopyx-flow-drafts.js",
       "style": "canopyx-flow-drafts.css",
       "runtimes": [
@@ -279,7 +279,7 @@
     {
       "name": "flow-command",
       "label": "flow command",
-      "version": "a987505e0b52f35e",
+      "version": "39472118ca80ef02",
       "script": "canopyx-flow-command.js",
       "style": "canopyx-flow-command.css",
       "runtimes": [
@@ -299,7 +299,7 @@
     {
       "name": "flow-tasks",
       "label": "flow task lists",
-      "version": "0b64266e2835c97d",
+      "version": "ef7202c818791a5f",
       "script": "canopyx-flow-tasks.js",
       "style": "canopyx-flow-tasks.css",
       "runtimes": [

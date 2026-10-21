@@ -72,7 +72,20 @@ internal static class CanopyFlowCommandLine {
         foreach (var ch in value) if (!char.IsLetterOrDigit(ch) && allowed.IndexOf(ch) < 0) { plain = false; break; }
         if (plain) return value;
         return style == CanopyFlowCommandStyle.Posix ? "'" + value.Replace("'", "'\\''") + "'" :
-            style == CanopyFlowCommandStyle.Windows ? "\"" + value.Replace("\"", "\\\"") + "\"" : "'" + value.Replace("'", "''") + "'";
+            style == CanopyFlowCommandStyle.Windows ? QuoteWindows(value) : "'" + value.Replace("'", "''") + "'";
+    }
+
+    /// <summary>Backslashes before a quote, including the closing quote, follow Windows argument parsing rules.</summary>
+    private static string QuoteWindows(string value) {
+        var quoted = new StringBuilder("\"");
+        var slashes = 0;
+        foreach (var ch in value) {
+            if (ch == '\\') { slashes++; continue; }
+            quoted.Append('\\', ch == '"' ? slashes * 2 + 1 : slashes).Append(ch);
+            slashes = 0;
+        }
+
+        return quoted.Append('\\', slashes * 2).Append('"').ToString();
     }
 
     internal static string Argument(string name, object? value, CanopyFlowCommandStyle style) {

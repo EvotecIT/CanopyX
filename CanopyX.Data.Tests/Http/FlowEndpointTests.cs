@@ -67,6 +67,13 @@ public sealed class FlowEndpointTests : IAsyncLifetime {
             Fields = (context, request) => Task.FromResult<IEnumerable<CanopyFlowField>>(new CanopyFlowField[0]),
             Submit = (context, submission) => Task.FromResult(CanopyFlowAnswer.Accepted())
         }, options => options.AllowAnonymous = true);
+        _app.MapCanopyFlow("/api/flows/engine-drafts", _ => FlowServerSamples.Engine(), new CanopyFlowHandlers {
+            Fields = (context, request) => Task.FromResult<IEnumerable<CanopyFlowField>>(new[] {
+                new CanopyFlowField("account", CanopyFlowFieldKind.Text, "Account").Sensitive(),
+                new CanopyFlowField("database", CanopyFlowFieldKind.Text, "Database")
+            }),
+            Drafts = new MemoryDrafts(_drafts)
+        });
         await _app.StartAsync();
         _client = _app.GetTestClient();
     }
@@ -167,6 +174,23 @@ public sealed class FlowEndpointTests : IAsyncLifetime {
         Assert.Equal(HttpStatusCode.BadRequest, (await Send(HttpMethod.Put, "/api/flows/mail/draft", "{\"flow\":\"mail\",\"draft\":" + draft.Replace("\"host\"", "\"password\"") + "}")).Status);
         Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Delete, "/api/flows/mail/draft")).Status);
         Assert.Equal("null", (await Send(HttpMethod.Get, "/api/flows/mail/draft")).Body);
+    }
+
+    [Fact]
+    public async Task Drafts_CheckHostFieldSensitivityBeforeReplacingTheStoredDraft() {
+        const string path = "/api/flows/engine-drafts/draft";
+        var ordinary = FlowServerBoundaryTests.Draft("{\"engine\":\"sql\",\"database\":\"Mail\"}");
+        Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Put, path, ordinary)).Status);
+        var before = (await Send(HttpMethod.Get, path)).Body;
+        Assert.Contains("\"database\":\"Mail\"", before);
+
+        var sensitive = FlowServerBoundaryTests.Draft("{\"engine\":\"sql\",\"account\":\"private-value\"}");
+        var refused = await Send(HttpMethod.Put, path, sensitive);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.Status);
+        Assert.Contains("sensitive field account", refused.Body);
+        Assert.Equal(before, (await Send(HttpMethod.Get, path)).Body);
+        Assert.DoesNotContain("private-value", _drafts["admin/engine"]);
     }
 
     [Fact]

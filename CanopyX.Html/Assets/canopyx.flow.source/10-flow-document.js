@@ -102,7 +102,7 @@
     // the host's options hook supplies them (as the reader reaches the field, and again when a field it depends on changes).
     const choosing = ["select", "choice", "multiChoice", "lookup"].includes(type);
     // source "host" and dependsOn come with the flow-options part.
-    if (raw.source !== undefined || raw.dependsOn !== undefined) flowHost("options").field(field, raw, choosing, bad);
+    if (raw.source !== undefined && (raw.source !== "document" || !choosing) || raw.dependsOn !== undefined) flowHost("options").field(field, raw, choosing, bad);
     if (raw.options !== undefined && !choosing) bad("has options but does not choose");
     if (choosing && !field.host && !(Array.isArray(raw.options) && raw.options.length)) bad("needs options");
     if (raw.options !== undefined && !Array.isArray(raw.options)) bad("needs a list of options");

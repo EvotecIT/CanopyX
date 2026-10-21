@@ -24,7 +24,7 @@
     },
     /** A field's source "host" (a field that chooses only) and the fields it depends on. */
     field(field, raw, choosing, bad) {
-      if (raw.source !== undefined && (raw.source !== "host" || !choosing)) bad("takes source \"host\" as a field that chooses only");
+      if (raw.source !== undefined && (!["document", "host"].includes(raw.source) || !choosing)) bad("takes a source as a field that chooses only");
       field.host = raw.source === "host";
       if (raw.dependsOn !== undefined && (!Array.isArray(raw.dependsOn) || !raw.dependsOn.length || raw.dependsOn.length > 16 || raw.dependsOn.some(name => typeof name !== "string"))) bad("needs 1 to 16 field ids in dependsOn");
       field.dependsOn = raw.dependsOn ? [...new Set(raw.dependsOn)] : [];
@@ -45,7 +45,7 @@
     },
     /** Host sections and host options load as a step is first built. */
     built(view, step) {
-      for (const block of step.blocks) if (block.section?.host) queueMicrotask(() => view.destroyed || view.loadFields(step, block));
+      for (const block of step.blocks) if (block.section?.host) queueMicrotask(() => view.destroyed || view.sectionState?.has(block.section.id) || view.loadFields(step, block));
       queueMicrotask(() => view.destroyed || view.prepareVisible());
     }
   };
@@ -124,16 +124,16 @@
     loadFields(step, block) {
       const section = block.section, state = (this.sectionState ||= new Map()).get(section.id) || {}, controller = new AbortController(), ticket = {};
       state.controller?.abort();
-      Object.assign(state, { controller, ticket, loading: true });
+      Object.assign(state, { controller, ticket, loading: true, error: null });
       this.sectionState.set(section.id, state);
       this.paintSection(block, this.labels.flowFieldsLoading);
       const run = typeof this.hooks.fields === "function" ? signal => this.hooks.fields(section.id, this.getValues(), { signal }) : () => { throw new Error(this.labels.flowNoHostHook); };
-      return this.timed("fields", run, controller).then(answer => {
+      return state.work = this.timed("fields", run, controller).then(answer => {
         if (state.ticket !== ticket || this.destroyed || answer.cancelled) return;
         state.loading = false;
         let fields = null, problem = answer.failed || null;
         if (!problem) { try { fields = this.readDynamic(step, block, answer.value); } catch (error) { this.report(error, "fields"); problem = error.message; } }
-        if (problem) { this.paintSection(block, fill(this.labels.flowFieldsFailed, { message: problem }), () => this.loadFields(step, block)); return; }
+        if (problem) { state.error = problem; this.paintSection(block, fill(this.labels.flowFieldsFailed, { message: problem }), () => this.loadFields(step, block)); return; }
         this.placeDynamic(step, block, fields);
         this.paintSection(block, null);
       });

@@ -12,13 +12,21 @@
   const FLOW_HOST_HOOKS = ["options", "fields", "check", "preview", "status"], FLOW_HOST_GROUPS = ["commands", "draftStore", "presetStore", "pickers"];
   const FLOW_HOST_CALLBACKS = ["onCheck", "onLeaving", "formatLink", "parseLink"];
 
-  const flowEmit = FlowView.prototype.emit;
+  const flowEmit = FlowView.prototype.emit, flowRestore = FlowView.prototype.setState;
   Object.assign(FlowView.prototype, {
     /** Each changed answer is followed by what depends on it (afterChange). */
     emit(name, detail, callback, cancelable) {
       const go = flowEmit.call(this, name, detail, callback, cancelable);
       if (name === "flowValueChanged") this.afterChange(this.model.fields.get(detail.field));
       return go;
+    },
+
+    /** Restored answers invalidate the same host work as edits and API changes. */
+    setState(state) {
+      const before = new Map(this.values), moved = flowRestore.call(this, state);
+      for (const field of [...this.model.fields.values()]) if (!flowSameValue(before.get(field.id), this.values.get(field.id))) this.afterChange(field);
+      this.refreshVisibility();
+      return moved;
     },
 
     /** The hooks and options of host-connected flows; what the host is answering (options, checks, pickers and task states);
@@ -40,13 +48,23 @@
     timed(name, run, controller = new AbortController()) {
       const relay = () => controller.abort(), lifetime = this.lifetime.signal;
       lifetime.addEventListener("abort", relay, { once: true });
-      let timer = 0, timedOut = false;
-      const expired = new Promise((resolve, reject) => { timer = setTimeout(() => { timedOut = true; controller.abort(); reject(new Error(this.labels.flowTimedOut)); }, this.timeout); });
-      return Promise.race([Promise.resolve().then(() => run(controller.signal)), expired]).then(value => controller.signal.aborted && !timedOut ? { cancelled: true } : { value }, error => {
-        if (controller.signal.aborted && !timedOut) return { cancelled: true };
+      let timer = 0, cancel;
+      const cancelled = new Promise(resolve => { cancel = () => resolve({ cancelled: true }); });
+      controller.signal.addEventListener("abort", cancel, { once: true });
+      if (lifetime.aborted) controller.abort();
+      if (controller.signal.aborted) cancel();
+      const expired = new Promise(resolve => { timer = setTimeout(() => {
+        const error = new Error(this.labels.flowTimedOut);
+        this.report(error, name); resolve({ failed: error.message, timedOut: true }); controller.abort();
+      }, this.timeout); });
+      const work = Promise.resolve().then(() => controller.signal.aborted ? undefined : run(controller.signal)).then(value => ({ value }), error => {
+        if (controller.signal.aborted) return { cancelled: true };
         this.report(error, name);
-        return { failed: error && error.message ? error.message : String(error), timedOut };
-      }).finally(() => { clearTimeout(timer); lifetime.removeEventListener("abort", relay); });
+        return { failed: error && error.message ? error.message : String(error) };
+      });
+      return Promise.race([work, cancelled, expired]).finally(() => {
+        clearTimeout(timer); lifetime.removeEventListener("abort", relay); controller.signal.removeEventListener("abort", cancel);
+      });
     },
 
     /** What follows an answer that changed: dependent fields, host sections, checks, preset marks and the draft. */
@@ -55,7 +73,7 @@
       if (!field || this.destroyed || !this.checkState) return;
       this.checksChanged?.(field);
       for (const other of [...this.model.fields.values()]) if (other.dependsOn.includes(field.id)) this.dependentChanged?.(other);
-      for (const step of this.model.steps) for (const block of step.blocks) if (block.section?.host && block.section.dependsOn.includes(field.id) && this.sections.has(step.id)) this.loadFields(step, block);
+      for (const step of this.model.steps) for (const block of step.blocks) if (block.section?.host && block.section.dependsOn.includes(field.id) && (this.sections.has(step.id) || this.sectionState?.has(block.section.id))) this.loadFields(step, block);
       this.markPreset?.();
       this.draftChanged?.();
     },

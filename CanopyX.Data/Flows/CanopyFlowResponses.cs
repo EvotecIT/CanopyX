@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using CanopyX.Json;
 
 namespace CanopyX.Data;
@@ -55,18 +57,59 @@ public static class CanopyFlowResponses {
 
     /// <summary>
     /// Reads the body of a <c>PUT draft</c> request (<c>{ "flow", "draft" }</c>) and returns the draft to store: a <c>flowDraft</c>
-    /// of this flow whose answers name its non-secret, non-sensitive fields (or host-section fields), at most
+    /// of this flow whose answers name its non-secret, non-sensitive fields (including admitted host-section fields), at most
     /// <see cref="MaxDraftLength"/> characters. <c>GET draft</c> answers the stored text, or <c>null</c>.
     /// </summary>
     /// <param name="flow">The flow.</param>
     /// <param name="json">The request body.</param>
+    /// <param name="options">Host-section fields, or null. Host answers require <see cref="CanopyFlowReadOptions.SectionFields"/>; asynchronous callbacks are ignored.</param>
     /// <returns>The draft, as compact JSON.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="flow"/> or <paramref name="json"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The flow or host fields are invalid, or host answers have no field loader.</exception>
     /// <exception cref="CanopyRequestException">The request or the draft is malformed, or the draft holds a secret or sensitive answer.</exception>
-    public static string Draft(CanopyFlow flow, string json) {
+    public static string Draft(CanopyFlow flow, string json, CanopyFlowReadOptions? options = null) {
+        var draft = ReadDraft(flow, json);
+        var reader = new CanopyFlowSubmissionReader(flow, options);
+        foreach (var (section, step, answers) in reader.BeginDraft(draft.TryGetValue("values", out var values) ? values : null)) {
+            if (options?.SectionFields == null) throw new InvalidOperationException("Section " + section.Id + " needs field metadata to save host answers: set CanopyFlowReadOptions.SectionFields.");
+            reader.AddHostFields(section, step, options.SectionFields(section, answers));
+        }
+
+        reader.FinishDraft();
+        return WriteDraft(draft);
+    }
+
+    /// <summary>Reads a draft as <see cref="Draft"/> does, loading host fields asynchronously when configured.</summary>
+    /// <param name="flow">The flow, as the server builds it for this request.</param>
+    /// <param name="json">The request body.</param>
+    /// <param name="options">Host fields. Prefers <see cref="CanopyFlowReadOptions.SectionFieldsAsync"/> to <see cref="CanopyFlowReadOptions.SectionFields"/>.</param>
+    /// <param name="cancellationToken">Cancels loading host fields and validating the draft.</param>
+    /// <returns>The checked draft as compact JSON.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="flow"/> or <paramref name="json"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The flow or host fields are invalid, or host answers have no field loader.</exception>
+    /// <exception cref="CanopyRequestException">The draft is malformed or has unknown, secret or sensitive answers.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static async Task<string> DraftAsync(CanopyFlow flow, string json, CanopyFlowReadOptions? options = null, CancellationToken cancellationToken = default) {
+        cancellationToken.ThrowIfCancellationRequested();
+        var draft = ReadDraft(flow, json);
+        var reader = new CanopyFlowSubmissionReader(flow, options);
+        foreach (var (section, step, answers) in reader.BeginDraft(draft.TryGetValue("values", out var values) ? values : null)) {
+            cancellationToken.ThrowIfCancellationRequested();
+            IEnumerable<CanopyFlowField>? fields;
+            if (options?.SectionFieldsAsync != null) fields = await options.SectionFieldsAsync(section, answers, cancellationToken).ConfigureAwait(false);
+            else if (options?.SectionFields != null) fields = options.SectionFields(section, answers);
+            else throw new InvalidOperationException("Section " + section.Id + " needs field metadata to save host answers: set CanopyFlowReadOptions.SectionFieldsAsync.");
+            cancellationToken.ThrowIfCancellationRequested();
+            reader.AddHostFields(section, step, fields);
+        }
+
+        reader.FinishDraft();
+        return WriteDraft(draft);
+    }
+
+    private static Dictionary<string, object?> ReadDraft(CanopyFlow flow, string json) {
         if (flow == null) throw new ArgumentNullException(nameof(flow));
         if (json == null) throw new ArgumentNullException(nameof(json));
-        flow.Validate();
         var map = CanopyFlowRequest.Envelope(flow, CanopyFlowRequest.ParseJson(json), "draft");
         if (!(map.TryGetValue("draft", out var node) && node is Dictionary<string, object?> draft)) throw CanopyRequestException.Document("The request needs a draft object.");
         foreach (var key in draft.Keys) {
@@ -89,16 +132,10 @@ public static class CanopyFlowResponses {
             if (draft.TryGetValue(name, out var text) && !(text is string value && value.Length <= 256)) throw CanopyRequestException.Document("The draft's " + name + " is text of at most 256 characters.");
         }
 
-        if (draft.TryGetValue("values", out var values)) {
-            // Every answer must fit its field (hidden ones too: a draft keeps them); a sensitive field's never travels.
-            CanopyFlowRequest.Answers(flow, values);
-            if (values is Dictionary<string, object?> answers) {
-                foreach (var field in CanopyFlowValidator.Fields(flow)) {
-                    if (field.IsSensitive && answers.ContainsKey(field.Id)) throw CanopyRequestException.Document("The draft holds the sensitive field " + field.Id + ".");
-                }
-            }
-        }
+        return draft;
+    }
 
+    private static string WriteDraft(Dictionary<string, object?> draft) {
         var writer = new CanopyJsonWriter(1024);
         CanopyFlowContract.WriteNode(writer, draft);
         var stored = writer.ToString();

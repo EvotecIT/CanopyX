@@ -54,6 +54,24 @@ public sealed class FlowHostContractTests {
     }
 
     [Fact]
+    public void FromContract_ExplicitDocumentOptionsSource_MatchesTheDefault() {
+        const string json = "{\"kind\":\"flow\",\"version\":1,\"id\":\"options\",\"title\":\"Options\",\"steps\":[{\"id\":\"one\",\"title\":\"One\",\"fields\":[{\"id\":\"choice\",\"type\":\"select\",\"label\":\"Choice\",\"source\":\"document\",\"options\":[{\"value\":\"one\"}]}]}]}";
+        FlowSamples.AssertValid(json, "Explicit document options");
+        var flow = CanopyFlow.FromContract(json);
+        Assert.Equal(CanopyFlowOptionsSource.Document, flow.Steps[0].Fields[0].OptionsSource);
+        Assert.Equal(CanopyFlow.FromContract(json.Replace(",\"source\":\"document\"", "")).ToContract(), flow.ToContract());
+    }
+
+    [Fact]
+    public void ToContract_DefaultPickerLabel_WritesTheResolvedColumnAndMatchesTheSchema() {
+        var flow = Everything();
+        flow.Steps[1].Picker!.LabelColumn = null;
+        var json = flow.ToContract();
+        FlowSamples.AssertValid(json, "A picker using its first column");
+        Assert.Equal("name", CanopyFlow.FromContract(json).Steps[1].Picker!.LabelColumn);
+    }
+
+    [Fact]
     public void ToContract_HostFeatures_MatchTheSchemaAndReadBack() {
         var json = Everything().ToContract();
         FlowSamples.AssertValid(json, "The host-connected flow");

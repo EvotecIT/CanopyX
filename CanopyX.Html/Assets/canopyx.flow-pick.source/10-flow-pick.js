@@ -91,7 +91,7 @@
     // The view's selection becomes the answer: ids it keeps keep their snapshot, new ids take the label column's text.
     picker.onChange = (ids, lookup) => {
       const known = new Map(items.map(item => [item.id, item]));
-      const next = ids.slice(0, 1000).map(id => known.get(id) || { id, label: lookup(id) });
+      const next = ids.slice(0, 1000).map(id => known.get(id) || { id, label: lookup(id).slice(0, 400) });
       picker.wanted = next.map(item => item.id);
       if (flowSameValue(picker.wanted, items.map(item => item.id))) return;
       items = next; paint(); changed();

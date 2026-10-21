@@ -19,7 +19,7 @@
   const FLOW_TASK_MARKS = { complete: "✓", error: "!", needsAction: "!", blocked: "—", notStarted: "" };
   // The stepper's navigation, which a flow that is not a task list keeps.
   const { back: flowStepBack, goTo: flowStepGoTo, renderStage: flowStepStage, renderRail: flowStepRail, renderActions: flowStepActions, lastStep: flowLastStep,
-    orientation: flowOrientation, begin: flowTaskBegin } = FlowView.prototype;
+    orientation: flowOrientation, begin: flowTaskBegin, submit: flowTaskSubmit, validateAll: flowTaskValidate } = FlowView.prototype;
 
   Object.assign(FlowView.prototype, {
     /** A task list opens on its hub, a page of its own that is not one of the document's steps. */
@@ -75,6 +75,16 @@
     },
     taskOpens(step) { return step.type === "review" ? this.tasksReady() : this.taskState(step) !== "blocked"; },
     tasksReady() { return this.tasks().filter(step => this.counted(step)).every(step => this.taskState(step) === "complete"); },
+    /** Host task states gate both direct API submission and a review page already open. */
+    async submit() {
+      if (this.hub && !this.tasksReady()) { this.announce(this.labels.flowTasksIncomplete); return null; }
+      return flowTaskSubmit.call(this);
+    },
+    async validateAll(...args) {
+      const result = await flowTaskValidate.apply(this, args);
+      if (this.hub && !this.tasksReady()) { result.valid = false; result.errors.push({ message: this.labels.flowTasksIncomplete }); }
+      return result;
+    },
     hubAnnouncement() {
       const counted = this.tasks().filter(step => this.counted(step));
       return fill(this.labels.flowTasksProgress, { done: counted.filter(step => this.taskState(step) === "complete").length, count: counted.length });
@@ -160,7 +170,10 @@
       this.timed("status", signal => this.hooks.status(this.getValues(), { signal }), controller).then(answer => {
         if (this.statusController !== controller || this.destroyed || answer.cancelled || answer.failed) return;
         if (!flowIs(answer.value)) { this.report(new Error("CanopyX: the status hook answers an object of step states."), "status"); return; }
-        for (const [id, state] of Object.entries(answer.value)) if (this.model.steps.some(step => step.id === id)) this.applyStepState(id, state);
+        for (const [id, state] of Object.entries(answer.value)) if (this.model.steps.some(step => step.id === id)) {
+          try { this.applyStepState(id, state); } catch (error) { this.report(error, "status"); }
+        }
+        if (!this.tasksReady()) this.retireOperation();
         this.paintHub();
       });
     },
@@ -170,6 +183,7 @@
       if (!this.hub) flowFail("this flow does not use setStepState");
       if (!this.model.steps.some(step => step.id === id)) flowFail("there is no step '" + id + "'");
       this.applyStepState(id, state);
+      if (!this.tasksReady()) this.retireOperation();
       if (this.step === this.hub) this.paintHub(); else this.renderRail();
     },
     applyStepState(id, state) {

@@ -411,6 +411,7 @@ The selection is the answer of the step's one field: the picked records as `[{ i
 the `label` column when the record was picked, so the review page and the proposal can list them without the view. A tray
 beside the view lists what is chosen, with Remove buttons and Clear; it survives searches and paging (`tray: false` leaves
 it out). `minItems` and `maxItems` count the picks; `maxItems: 1` picks one record. Conditions read the picked ids.
+Picked record ids are at most 256 characters; the display label snapshot is limited to 400 characters.
 "Select all matching" names a query rather than records, so a pick step returns to the records it can list. A host gives
 the view options of its own (a remote source, for example) with `hooks.pickers[stepId]`.
 
@@ -453,6 +454,8 @@ edit mode). Lists join with commas, values are quoted for the `style` (`powershe
 switch that was on and is now off becomes `-Name:$false` or `--no-name`, and a typed secret is `<secret>`, never its value.
 The proposal's `command` carries the line. C# writes the same line with `CanopyFlow.FormatCommand`, and the server computes
 it again from the answers; the shared fixture `tests/fixtures/flow-commands.json` keeps the browser and C# in step.
+Windows-style quoted values escape backslashes before quotes and at the end of a value, so paths ending in `\` preserve
+the arguments that follow them.
 
 ### Presets
 
@@ -537,7 +540,10 @@ sections and the `Options` handler (or the endpoint's `HostOptions` callback) fo
 longer offers is refused. Answers that fail the flow's checks answer an error with the messages beside
 the fields, without calling the handler; a proposal whose baseline is not the flow's answers a conflict
 (`RejectStaleBaseline`, on by default). A `PUT draft` keeps only a well-formed draft of the flow without secrets or
-sensitive answers (`CanopyFlowResponses.Draft`).
+sensitive answers (`CanopyFlowResponses.DraftAsync`). The draft reader uses the same host-section field definitions as the
+submission reader, so a host field marked sensitive cannot enter the store. `MapCanopyFlow` loads those definitions through
+the `Fields` handler. Standalone readers use `CanopyFlowReadOptions.SectionFields` with `Draft`, or `SectionFieldsAsync`
+with `DraftAsync`; a draft containing host answers is refused when their field definitions are unavailable.
 
 ## Reading a proposal on the server
 
@@ -560,7 +566,7 @@ var submission = CanopyFlowSubmission.Parse(flow, proposalJson, secrets, new Can
 Parse reads the proposal against the flow: answers of hidden, unknown or secret fields, values of the wrong type, secrets
 the proposal does not set and anything outside the contract throw `CanopyRequestException` (400). Every visible field is
 checked with the browser's rules (required, ranges and steps, lengths and patterns, counts, item rules, records cells,
-current host options); failures throw `CanopyFlowSubmissionException`, whose `ToAnswer()` is the error answer the browser
+enabled document options and current host options); failures throw `CanopyFlowSubmissionException`, whose `ToAnswer()` is the error answer the browser
 shows beside the fields; they use the flow's labels, with numbers and moments written invariantly (the browser writes them
 in the page's language). The browser's own `changes`, `patch` and `command` are never used. `CanopyFlowRequest.Parse` reads
 the hooks' requests the same way, and `CanopyFlowAnswer`, `CanopyFlowCheckResult`, `CanopyFlowValidationResult`,

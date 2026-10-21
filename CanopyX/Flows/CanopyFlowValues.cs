@@ -233,6 +233,7 @@ internal static class CanopyFlowValues {
                 if (value is string || !(value is IEnumerable items)) { error = "must be a list of the field's option values."; return null; }
                 var chosen = new List<object>();
                 foreach (var item in items) {
+                    if (chosen.Count >= MaxItems) { error = "holds at most 1000 items."; return null; }
                     if (!TryScalar(item, out var option) || field.OptionsSource != CanopyFlowOptionsSource.Host && !IsOption(field, option)) { error = "must be a list of the field's option values."; return null; }
                     foreach (var earlier in chosen) if (SameScalar(earlier, option)) { error = "lists an option twice."; return null; }
                     chosen.Add(option);

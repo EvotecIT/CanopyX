@@ -242,7 +242,7 @@ public sealed partial class CanopyFlowField {
         foreach (var unit in CanopyFlowContract.Items(map, "units", what, 4)) field.DurationUnits.Add(CanopyFlowContract.Choose(unit as string, what, "units", UnitNames));
         if (map.TryGetValue("validation", out var validation)) field.ReadValidation(validation, what);
         var source = CanopyFlowContract.Text(map, "source", what);
-        if (source != null) field.OptionsSource = CanopyFlowContract.Choose(source, what, "source", ("host", CanopyFlowOptionsSource.Host));
+        if (source != null) field.OptionsSource = CanopyFlowContract.Choose(source, what, "source", ("document", CanopyFlowOptionsSource.Document), ("host", CanopyFlowOptionsSource.Host));
         foreach (var item in CanopyFlowContract.Items(map, "dependsOn", what, 16)) field.DependsOnIds.Add(item as string ?? throw new InvalidOperationException(what + " depends on a field id that is not text."));
         foreach (var item in CanopyFlowContract.Items(map, "columns", what, 16)) field.Columns.Add(CanopyFlowRecordColumn.Read(item, what));
         return field;

@@ -69,7 +69,7 @@ public static class CanopyFlowEndpointExtensions {
         Post("validate", CanopyFlowRoutes.Validate, handlers.Validate, (request, result) => Require(result, "validate").ToJson());
         Post("preview", CanopyFlowRoutes.Preview, handlers.Preview, (request, preview) => Require(preview, "preview").ToJson());
         Post("status", CanopyFlowRoutes.Status, handlers.Status, (request, states) => CanopyFlowStepStatus.ToJson(Require(states, "status")));
-        if (handlers.Drafts != null) MapDrafts(group, flow, handlers.Drafts, limits, options);
+        if (handlers.Drafts != null) MapDrafts(group, flow, handlers.Drafts, handlers.Fields, limits, options);
         if (handlers.Submit != null) {
             var submit = handlers.Submit;
             group.MapPost("/submit", (RequestDelegate)(context => Run(context, limits, options, async (body, token) => {
@@ -102,14 +102,16 @@ public static class CanopyFlowEndpointExtensions {
         return read;
     }
 
-    private static void MapDrafts(RouteGroupBuilder group, Func<HttpContext, CanopyFlow> flow, ICanopyFlowDraftStore store, CanopyRemoteLimits limits, CanopyFlowEndpointOptions options) {
+    private static void MapDrafts(RouteGroupBuilder group, Func<HttpContext, CanopyFlow> flow, ICanopyFlowDraftStore store,
+        Func<HttpContext, CanopyFlowRequest, Task<IEnumerable<CanopyFlowField>>>? fields, CanopyRemoteLimits limits, CanopyFlowEndpointOptions options) {
         group.MapGet("/draft", (RequestDelegate)(context => CanopyRemoteHttp.RunAsync(context, async token => {
             var draft = await store.LoadAsync(context, flow(context).Id, token).ConfigureAwait(false);
             await CanopyRemoteHttp.WriteJsonAsync(context, string.IsNullOrEmpty(draft) ? "null" : draft!, token).ConfigureAwait(false);
         })));
         group.MapPut("/draft", (RequestDelegate)(context => Run(context, limits, options, async (body, token) => {
             var current = flow(context);
-            await store.SaveAsync(context, current.Id, CanopyFlowResponses.Draft(current, body), token).ConfigureAwait(false);
+            var draft = await CanopyFlowResponses.DraftAsync(current, body, ReadOptions(context, current, fields, null, null), token).ConfigureAwait(false);
+            await store.SaveAsync(context, current.Id, draft, token).ConfigureAwait(false);
             return "{}";
         })));
         group.MapDelete("/draft", (RequestDelegate)(context => CanopyRemoteHttp.RunAsync(context, async token => {
