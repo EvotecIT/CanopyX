@@ -78,7 +78,7 @@
     /** The hunks in effect, as plain data: the document's or those compared here. */
     getHunks() { return this.hunks.map(hunk => ({ before: hunk.before, after: hunk.after, lines: hunk.lines.map(line => (line.kind === "=" ? " " : line.kind) + line.text) })); },
     update(view) {
-      this.doc = diffDocument(view); this.labels = changeLabels(this.doc.labels, this.options.labels); this.source = view;
+      this.doc = diffDocument(view); this.labels = changeLabels(this.options.baseLabels, this.doc.labels, this.options.labels); this.source = view;
       this.current = -1; this.prepare(); this.refresh();
     }
   });

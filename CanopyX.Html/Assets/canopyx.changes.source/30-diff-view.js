@@ -12,7 +12,8 @@
     constructor(host, options, doc) {
       this.host = host; this.options = options; this.lifetime = new AbortController();
       this.doc = doc || diffDocument(options.view);
-      this.labels = changeLabels(this.doc.labels, options.labels);
+      // A diff inside a change list takes the list's labels first, then its own, then the host's.
+      this.labels = changeLabels(options.baseLabels, this.doc.labels, options.labels);
       this.lang = options.lang || host.closest("[lang]")?.getAttribute("lang") || document.documentElement.lang || "en";
       this.format = numberFormat(this.lang);
       this.mounted = new Map(); this.pool = []; this.current = -1;

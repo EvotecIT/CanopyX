@@ -113,7 +113,7 @@
       const claimed = this.request(detail);
       // The host may have destroyed or replaced the list while it handled the action.
       if (this.destroyed) return;
-      if (item && !this.doc.items.includes(item)) { this.pending = null; this.render(); return; }
+      if (item ? !this.doc.items.includes(item) : !this.doc.toolbar.includes(action)) { this.pending = null; this.render(); return; }
       this.pending = claimed ? null : { mode: "note", action, item, detail };
       this.render();
       if (this.pending) this.focusPanel(); else this.focusAction(action, item);

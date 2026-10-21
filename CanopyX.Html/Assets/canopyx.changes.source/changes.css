@@ -218,6 +218,7 @@ a.cx-chg-action { text-decoration:none; }
   .cx-chg-facts { table-layout:fixed;max-width:none; }
   .cx-chg-facts thead th:first-child { width:28%; }
   .cx-chg-facts :is(th,td) { overflow-wrap:anywhere; }
+  .cx-chg-facts tbody th { white-space:normal; }
 }
 @media (forced-colors:active) {
   .cx-diff-mark { outline:var(--cx-size-1px) solid CanvasText; }

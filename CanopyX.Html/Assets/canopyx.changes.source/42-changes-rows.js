@@ -77,7 +77,7 @@
       }
       if (item.diff) {
         let diff = this.diffs.get(item.id);
-        if (!diff) { const holder = h("div", "cx-chg-diff"); diff = diffCreate(holder, { labels: Object.assign({}, this.doc.labels, this.options.labels), lang: this.lang }, item.diff); diff.holder = holder; this.diffs.set(item.id, diff); }
+        if (!diff) { const holder = h("div", "cx-chg-diff"); diff = diffCreate(holder, { labels: this.options.labels, baseLabels: this.doc.labels, lang: this.lang }, item.diff); diff.holder = holder; this.diffs.set(item.id, diff); }
         box.appendChild(diff.holder);
       }
       return box;

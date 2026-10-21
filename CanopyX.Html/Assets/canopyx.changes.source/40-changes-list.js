@@ -35,10 +35,10 @@
       root.addEventListener("keydown", event => this.onKey(event), { signal });
       root.addEventListener("change", event => { if (event.target === this.flagSwitch) { this.applyState({ flaggedOnly: event.target.checked }); this.flagSwitch?.focus(); } }, { signal });
       this.more.addEventListener("click", () => {
-        const before = this.list.querySelectorAll(".cx-chg-toggle").length;
+        const shown = new Set([...this.list.querySelectorAll("[data-cx-item]")].map(item => item.getAttribute("data-cx-item")));
         this.limit += this.doc.pageSize; this.render();
-        // Focus moves to the first item the button showed, or stays on the button while it remains.
-        if (this.more.hidden) this.list.querySelectorAll(".cx-chg-toggle")[before]?.focus();
+        // Focus moves to the first item the button showed (folders sort, so it may be in an earlier one), or stays on the button.
+        if (this.more.hidden) [...this.list.querySelectorAll("[data-cx-item]")].find(item => !shown.has(item.getAttribute("data-cx-item")))?.querySelector(".cx-chg-toggle")?.focus();
       }, { signal });
       // Paper shows every item the filters keep (up to 2,000), and says which filters are in effect.
       this.printing = changesInPrint();
