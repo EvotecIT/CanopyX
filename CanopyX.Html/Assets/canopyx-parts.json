@@ -414,7 +414,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "c7a4b9bed67b529c",
+      "version": "ba7ade76456a78f5",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [

@@ -75,8 +75,11 @@
       }
       // Paper says how many lines the printed copy leaves out, so a long diff is never cut silently.
       if (written > 5000) {
-        const rest = this.rows.slice(5000).reduce((sum, row) => sum + (row.t === "gap" ? 0 : 1), 0), tr = h("tr"), td = h("td", "cx-diff-gap");
-        td.colSpan = 4; setText(td, "⋯ " + fill(this.labels.changePrintLimit, { count: this.format.format(rest) })); tr.appendChild(td); body.appendChild(tr);
+        const rest = this.rows.slice(5000).reduce((sum, row) => sum + (row.t === "gap" ? row.count : 1), 0);
+        if (rest > 0) {
+          const tr = h("tr"), td = h("td", "cx-diff-gap");
+          td.colSpan = 4; setText(td, "⋯ " + changeCount(this.labels.changePrintLimit, rest, this.lang, { count: this.format.format(rest) })); tr.appendChild(td); body.appendChild(tr);
+        }
       }
       table.appendChild(body); this.print.replaceChildren(table);
     },

@@ -58,6 +58,7 @@
       this.host.appendChild(root);
       this.probe = h("span", "cx-diff-probe"); setText(this.probe, "0000000000"); root.appendChild(this.probe);
       this.buildTools();
+      changeTips(root, signal);
       scroll.addEventListener("scroll", () => { this.schedule(); this.edges(); }, { passive: true, signal });
       scroll.addEventListener("keydown", event => this.onKey(event), { signal });
       scroll.addEventListener("click", event => this.onClick(event), { signal });
@@ -120,7 +121,7 @@
       this.state.hidden = empty === null; setText(this.state, empty || "");
       this.state.className = "cx-diff-state cx-diff-state-" + (this.tooLarge ? "unavailable" : doc.content);
       this.scroll.hidden = !this.rows.some(row => row.t === "line" && row.kind !== "=");
-      this.tools.hidden = this.scroll.hidden;
+      this.tools.hidden = this.scroll.hidden; this.frameBox.hidden = this.scroll.hidden;
       this.scroll.setAttribute("aria-label", fill(labels.changeDiffOf, { name: doc.label }));
       this.layout(true);
     }

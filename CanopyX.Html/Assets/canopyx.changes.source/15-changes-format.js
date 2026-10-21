@@ -43,4 +43,9 @@
     question: '<path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17" r=".6"/>',
     chevron: '<path d="m9 6 6 6-6 6"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>'
   };
+  /** Esc hides the tooltip of the focused or hovered icon button until the pointer or focus leaves it (WCAG 1.4.13). */
+  function changeTips(root, signal) {
+    root.addEventListener("keydown", event => { if (event.key === "Escape") event.target.closest?.("[data-cx-tip]")?.setAttribute("data-cx-tip-off", ""); }, { signal });
+    for (const type of ["focusout", "pointerout"]) root.addEventListener(type, event => event.target.closest?.("[data-cx-tip]")?.removeAttribute("data-cx-tip-off"), { signal });
+  }
   function changeIcon(name) { const icon = svgIcon(CHANGE_ICONS_SVG[name] || CHANGE_ICONS_SVG.check); icon.classList.add("cx-chg-ico"); return icon; }

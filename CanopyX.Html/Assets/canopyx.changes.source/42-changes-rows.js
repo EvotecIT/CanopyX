@@ -62,14 +62,16 @@
       for (const fact of item.facts) rows.push([fact.label, fact.before, fact.after, fact.tone, false, fact.note]);
       if (rows.length) {
         // An added item has only an after, a removed one only a before: one value column, never a column of dashes.
-        const sides = item.kind === "added" ? [1] : item.kind === "removed" ? [0] : [0, 1];
+        // A fact with a value on the other side keeps both columns, so no value appears under the wrong heading.
+        const other = item.kind === "added" ? 0 : item.kind === "removed" ? 1 : -1;
+        const sides = other < 0 || rows.some(row => (other ? row[2] : row[1]) != null) ? [0, 1] : [1 - other];
         const table = h("table", "cx-chg-facts" + (sides.length === 1 ? " cx-chg-onevalue" : "")), head = h("tr");
         for (const text of ["", ...sides.map(side => side ? labels.changeAfter : labels.changeBefore)]) { const th = h("th"); th.scope = "col"; setText(th, text); head.appendChild(th); }
         const thead = h("thead"), tbody = h("tbody"); thead.appendChild(head);
         for (const [label, before, after, tone, mono, note] of rows) {
           const tr = h("tr"), th = h("th"); th.scope = "row"; setText(th, label); tr.appendChild(th);
           sides.forEach((side, at) => {
-            const value = sides.length === 1 ? (side ? after ?? before : before ?? after) : side ? after : before;
+            const value = side ? after : before;
             // The empty mark is the same glyph in every row, so it never takes the monospaced font of hashes.
             const td = h("td", (mono && value !== null ? "cx-chg-mono" : "") + (side === 1 && sides.length === 2 && before !== null && after !== null && before !== after ? " cx-chg-changed" : ""));
             setText(td, value ?? "—"); if ((side === 1 || sides.length === 1) && tone) applyTone(td, td.className, toneOf(tone));

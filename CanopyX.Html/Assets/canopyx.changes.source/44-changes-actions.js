@@ -38,14 +38,14 @@
   function changeExportItem(item) {
     return { id: item.id, kind: item.kind, kindLabel: item.kindLabel, path: item.path, previousPath: item.previousPath, secondary: item.secondary,
       before: changeExportVersion(item.before), after: changeExportVersion(item.after), flags: item.flags.map(flag => ({ id: flag.id, label: flag.label, reason: flag.reason, tone: flag.tone })),
-      facts: item.facts.map(fact => ({ label: fact.label, before: fact.before, after: fact.after })), values: { ...item.values }, diff: changeExportDiff(item.diff) };
+      facts: item.facts.map(fact => ({ label: fact.label, before: fact.before, after: fact.after, note: fact.note })), values: { ...item.values }, diff: changeExportDiff(item.diff) };
   }
   function changeCsv(items) {
     const keys = [...new Set(items.flatMap(item => Object.keys(item.values)))].sort();
     const head = ["kind", "kindLabel", "path", "previousPath", "secondary", "sizeBefore", "sizeAfter", "hashBefore", "hashAfter", "timeBefore", "timeAfter", "flags", "facts"].concat(keys.map(key => "values." + key));
     const rows = [head].concat(items.map(item => [item.kind, item.kindLabel, item.path, item.previousPath, item.secondary, item.before?.size, item.after?.size, item.before?.hash, item.after?.hash,
       changeIso(item.before?.time), changeIso(item.after?.time), item.flags.map(flag => flag.label + ": " + flag.reason).join(" | "),
-      item.facts.map(fact => fact.label + ": " + (fact.before ?? "") + (fact.before != null && fact.after != null ? " → " : "") + (fact.after ?? "")).join(" | ")].concat(keys.map(key => item.values[key]))));
+      item.facts.map(fact => fact.label + ": " + (fact.before ?? "") + (fact.before != null && fact.after != null ? " → " : "") + (fact.after ?? "") + (fact.note ? " (" + fact.note + ")" : "")).join(" | ")].concat(keys.map(key => item.values[key]))));
     return rows.map(row => row.map(changeCsvField).join(",")).join("\r\n") + "\r\n";
   }
 

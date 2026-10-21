@@ -33,6 +33,7 @@
       this.host.appendChild(root);
       root.addEventListener("click", event => this.onClick(event), { signal });
       root.addEventListener("keydown", event => this.onKey(event), { signal });
+      changeTips(root, signal);
       root.addEventListener("change", event => { if (event.target === this.flagSwitch) { this.applyState({ flaggedOnly: event.target.checked }); this.flagSwitch?.focus(); } }, { signal });
       this.more.addEventListener("click", () => {
         const shown = new Set([...this.list.querySelectorAll("[data-cx-item]")].map(item => item.getAttribute("data-cx-item")));

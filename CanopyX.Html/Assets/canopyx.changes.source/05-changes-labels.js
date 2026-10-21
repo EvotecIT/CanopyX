@@ -21,7 +21,7 @@
     changeDays: "{count} d", changeUtcTime: "{time} UTC", changeExportCsv: "Export CSV", changeExportJson: "Export JSON", changeReason: "Reason",
     changeReasonHint: "{action}: say why. The reason is kept with the action.", changeReasonRequired: "Enter a reason first.", changeCancel: "Cancel",
     changeUnclaimed: "This page cannot carry out “{action}” itself. Copy the request to pass it on.", changeCopyRequest: "Copy request",
-    changeFiltered: "Filtered: {filters}", changePrintLimit: "{count} more lines are not printed."
+    changeFiltered: "Filtered: {filters}", changePrintLimit: "[one]{count} more line is not printed.[other]{count} more lines are not printed."
   };
 
   /** A change view's labels: the English texts, then the document's, then the host's. An unknown change… name is a mistake; other views' names are ignored. */

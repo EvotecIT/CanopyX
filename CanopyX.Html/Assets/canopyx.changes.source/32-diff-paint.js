@@ -47,6 +47,11 @@
     edges() {
       if (!this.edgeEnd) return;
       const scroll = this.scroll, max = scroll.scrollWidth - scroll.clientWidth, at = Math.abs(scroll.scrollLeft);
+      // The edges stop at the scrollbars, so the vertical one stays visible and the line marks where the text is cut.
+      const style = getComputedStyle(scroll), borders = (parseFloat(style.borderInlineStartWidth) || 0) + (parseFloat(style.borderInlineEndWidth) || 0);
+      this.frameBox.style.setProperty("--cx-diff-bar-y", Math.max(0, scroll.offsetWidth - scroll.clientWidth - borders) + "px");
+      this.frameBox.style.setProperty("--cx-diff-bar-x", Math.max(0, scroll.offsetHeight - scroll.clientHeight - (parseFloat(style.borderTopWidth) || 0) - (parseFloat(style.borderBottomWidth) || 0)) + "px");
+      this.frameBox.style.setProperty("--cx-diff-head", (this.shown === "split" ? this.columns.offsetHeight : 0) + "px");
       this.edgeStart.hidden = scroll.hidden || at <= 1;
       this.edgeEnd.hidden = scroll.hidden || max - at <= 1;
     },
