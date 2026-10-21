@@ -1,6 +1,10 @@
+import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import { nextFrames } from "./support.mjs";
 import { reportLayoutView, mountReportLayout, layoutGeometry } from "./report-grid-layout-support.mjs";
+
+// Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
+test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 const headers = page => page.locator(".cx-hcell :is(.cx-sort,.cx-htext)").evaluateAll(nodes => nodes.map(node => ({
   text: node.textContent, title: node.title, clipped: node.scrollWidth > node.clientWidth + 1
@@ -27,8 +31,10 @@ for (const theme of ["light", "dark"]) {
   test(`phone header restoration includes disclosure space within an authored maximum in ${theme}`, async ({ page }) => {
     const view = reportLayoutView(); view.reporting.columnReorder = false;
     view.columns = [{ id: "name", title: "Record", kind: "text", rowHeader: true, width: 80, maxWidth: 100 },
-      { id: "group", title: "Owner", kind: "text", priority: "optional", minWidth: 600 }];
-    view.rows = view.rows.map(row => ({ id: row.id, cells: { name: row.cells.name, group: row.cells.group } }));
+      { id: "group", title: "Owner", kind: "text", priority: "optional", minWidth: 600 },
+      { id: "region", title: "Region", kind: "text", priority: "optional" },
+      { id: "source", title: "Source", kind: "text", priority: "optional" }];
+    view.rows = view.rows.map(row => ({ id: row.id, cells: { name: row.cells.name, group: row.cells.group, region: "North", source: "Snapshot" } }));
     await mountReportLayout(page, { theme, view, width: 342, viewport: { width: 390, height: 844 } });
     await expect(page.locator('.cx-hidden-fields').first()).toHaveText("+1 column");
     expect((await layoutGeometry(page)).widths.name).toBeLessThanOrEqual(100);
@@ -48,7 +54,7 @@ for (const theme of ["light", "dark"]) {
 
   test(`report headers precede preferred whitespace and retain their minimum during overflow in ${theme}`, async ({ page }) => {
     const view = reportLayoutView();
-    await mountReportLayout(page, { theme, view, width: 1086 });
+    await mountReportLayout(page, { theme, view, width: 1320 });
     expect((await headers(page)).filter(header => header.clipped)).toEqual([]);
     expect((await layoutGeometry(page)).clippedPills).toBe(0);
     await resize(page, 1600);
@@ -56,7 +62,7 @@ for (const theme of ["light", "dark"]) {
     expect(roomy.widths.name).toBeGreaterThanOrEqual(240);
     expect(roomy.widths.group).toBeGreaterThanOrEqual(260);
     await page.evaluate(() => api().setColumnWidth("group", 600));
-    await resize(page, 1086);
+    await resize(page, 1320);
     const overflow = await layoutGeometry(page);
     expect(overflow.widths.group).toBe(600);
     expect(overflow.scrollWidth).toBeGreaterThan(overflow.clientWidth);

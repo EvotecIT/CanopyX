@@ -1,5 +1,9 @@
+import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import { runtimeAssets, nextFrames } from "./support.mjs";
+
+// Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
+test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 // Generic fixtures: a six-column rules list, a products table, a log with long messages and a 30-column table.
 const words = ["Configuration", "Replication health", "Certificate expiry", "Password policy (weakness)", "Service accounts", "Time synchronization"];
@@ -260,7 +264,8 @@ test("a log keeps long messages readable and the phone layout keeps essential co
   await page.unrouteAll(); await mount(page, rules(), { viewport: { width: 390, height: 844 }, width: 358 });
   expect(await headers(page)).toEqual(expect.arrayContaining(["rule", "worst"]));
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(/^\+\d+ columns?$/);
-  await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveAttribute("title", /Category/);
+  await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-phone-fields')).toContainText("Category:");
+  await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).not.toHaveAttribute("title", /Category/);
 });
 
 test("a row tone stays quiet unless the host asks for row accents", async ({ page }) => {

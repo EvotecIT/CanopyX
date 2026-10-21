@@ -134,8 +134,9 @@
       }
       const [, small, headFont, pad, mono, sub, pillFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
-      // The title is a 24 px pointer target at least, and a move handle takes its 24 px target plus the gap beside it.
-      const chrome = 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 32 : 0) +
+      // The title keeps its 24 px target. Reorder glyphs may use a wider fallback font, so include their native advance and padding.
+      const move = this.view.reporting?.columnReorder ? Math.max(32, Math.ceil(text("⋮⋮", headFont, false)) + 8) : 0;
+      const chrome = 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + move +
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0);
       column.controlNeed = Math.ceil(24 + chrome);
       const head = Math.ceil(Math.max(24, text(column.title, headFont, false)) + chrome);

@@ -429,8 +429,8 @@ body .cx-host.cx-chrome{padding:0;}
 .cx-phone-field-title{flex:none;color:var(--cx-muted);font-size:11px;}
 .cx-phone-value{display:inline-flex;min-width:0;overflow:hidden;white-space:nowrap;}
 .cx-phone-value > *{min-width:0;overflow:hidden;text-overflow:ellipsis;}
-.cx-phone-value:has(.p-pill){overflow-x:auto;}
-.cx-phone-value:has(.p-pill) > .cx-content{flex:none;max-width:none;overflow:visible;}
+.cx-phone-value:has(:is(.p-pill,.p-state)){overflow-x:auto;}
+.cx-phone-value:has(:is(.p-pill,.p-state)) > .cx-content{flex:none;max-width:none;overflow:visible;}
 .cx-data-grid{min-height:var(--cx-min-h,0);}
 .cx-data-grid[data-cx-density="compact"]{--cx-font-size:13px;--cx-cell-px:8px;}
 .cx-data-grid[data-cx-density="comfortable"]{--cx-cell-px:14px;}

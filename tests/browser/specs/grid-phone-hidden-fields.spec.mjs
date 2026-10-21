@@ -1,7 +1,11 @@
-// Phone layout: the first cell carries exactly one "+N hidden fields" affordance however often rows are recycled.
+// Phone layout: context fields stay visible and any remaining fields share one disclosure as rows are recycled.
+import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import path from "node:path";
 import { viewPage, nextFrames } from "./support.mjs";
+
+// Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
+test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 const columns = [
   { id: "name", title: "Name", kind: "text", width: 240, sortable: true },
@@ -44,9 +48,10 @@ function affordances(page) {
       text: buttons.map(button => button.textContent).join(" "), record: buttons.map(button => button.dataset.cxRecord).join(" ") };
   }));
 }
-// Phones collapse every column except the essential identity column into the one "+N" affordance.
+// The one disclosure counts only view fields absent from both the main cells and the quiet context line.
 async function expectOnePerRow(page, text) {
-  const count = columns.filter(column => !column.hidden).length - await page.locator(".cx-hcell").count();
+  const context = await page.locator(".cx-row[data-cx-id]").first().locator(".cx-phone-field").count();
+  const count = columns.filter(column => !column.hidden).length - await page.locator(".cx-hcell").count() - context;
   text ??= "+" + count + " column" + (count === 1 ? "" : "s");
   const list = await affordances(page);
   expect(list.length).toBeGreaterThan(0);
@@ -162,9 +167,11 @@ test("phone fitting reserves the +N button in the identity column when no width 
       { id: "name", title: "Name", kind: "text", sortable: true },
       { id: "detail", title: "Detail", kind: "text" },
       { id: "state", title: "State", kind: "text", priority: "optional" },
-      { id: "owner", title: "Owner", kind: "text", priority: "optional" }
+      { id: "owner", title: "Owner", kind: "text", priority: "optional" },
+      { id: "region", title: "Region", kind: "text", priority: "optional" },
+      { id: "source", title: "Source", kind: "text", priority: "optional" }
     ],
-    rows: names.map((name, i) => ({ id: "r" + i, cells: { name, detail: "Replication healthy across every site link in the forest " + i, state: "Pass", owner: "Team " + i } }))
+    rows: names.map((name, i) => ({ id: "r" + i, cells: { name, detail: "Replication healthy across every site link in the forest " + i, state: "Pass", owner: "Team " + i, region: "North", source: "Snapshot" } }))
   });
   await capture(page, "phone-fit-reserves-hidden-fields-390");
   const cells = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].map(row => {
@@ -185,8 +192,10 @@ for (const theme of ["light", "dark"]) {
     await open(page, { columns: [
       { id: "name", title: "Record", kind: "text", rowHeader: true, width: 180, presenter: { kind: "identifier", mono: true }, priority: 0 },
       { id: "state", title: "State", kind: "text", width: 120, presenter: { kind: "state" }, priority: 1 },
-      { id: "owner", title: "Owner", kind: "text", priority: "optional" }
-    ], rows: [{ id: "r0", cells: { name: { value: "record-000", secondary: "example.test" }, state: { value: "Failing", tone: "danger" }, owner: "Operations" } }],
+      { id: "owner", title: "Owner", kind: "text", priority: "optional" },
+      { id: "context", title: "Context", kind: "text", priority: "optional" },
+      { id: "region", title: "Region", kind: "text", priority: "optional" }
+    ], rows: [{ id: "r0", cells: { name: { value: "record-000", secondary: "example.test" }, state: { value: "Failing", tone: "danger" }, owner: "Operations", context: "Zone A", region: "North" } }],
     selection: selected ? "multiple" : "none", reporting: selected ? { selectionControls: true } : undefined });
     await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-cell > .cx-content, .cx-row[data-cx-id="r0"] .cx-phone-primary > .cx-content')).toHaveCount(selected ? 1 : 0);
     await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
@@ -240,7 +249,7 @@ for (const theme of ["light", "dark"]) {
     await expect(page.locator('dialog.cx-drawer')).toBeVisible();
   });
 
-  test("phone first column keeps the name readable next to a compact affordance (" + theme + ")", async ({ page }) => {
+  test("phone first column contains a long identity beside the remaining disclosure (" + theme + ")", async ({ page }) => {
     await open(page, { presentation: "paged", pageLength: 10 });
     await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
     for (const search of ["server", "", "server", ""]) await setQuery(page, { search });
@@ -252,7 +261,9 @@ for (const theme of ["light", "dark"]) {
       return { truncated: text.scrollWidth > text.clientWidth, overflow: style.textOverflow, textWidth: textBox.width,
         buttonWidth: buttonBox.width, buttonContent: button.scrollWidth, cellWidth: box.width, buttonInside: buttonBox.left >= textBox.right - 0.5 && buttonBox.right <= box.right + 0.5 };
     });
-    expect(geometry.truncated).toBe(false);
+    expect(geometry.truncated).toBe(true);
+    await expect(page.locator('.cx-row[data-cx-id="r1"] .cx-cell').first()).toHaveAttribute("title", rows[1].cells.name);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     expect(geometry.overflow).toBe("ellipsis");
     expect(geometry.textWidth).toBeGreaterThan(120);
     expect(geometry.buttonWidth).toBeLessThanOrEqual(geometry.buttonContent + 1);

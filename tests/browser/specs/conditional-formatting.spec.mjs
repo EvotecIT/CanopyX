@@ -1,10 +1,14 @@
 // Conditional formatting (docs/conditional-formatting.md): rules on the filter builder's conditions, cell, row, column and
 // drawer targets, tone styles, icons and badges, data bars, colour scales and bands, the legend, saved views, export
 // records, print, remote rows and the evaluation budget on 100,000 rows. The rule editor has its own spec.
+import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { nextFrames, openExample, median, exampleUrl } from "./support.mjs";
 import { formattingPage, healthView } from "./formatting-support.mjs";
+
+// Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
+test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 async function open(page, view = healthView(), options = {}) {
   page.errors = []; page.on("pageerror", error => page.errors.push(error.message));

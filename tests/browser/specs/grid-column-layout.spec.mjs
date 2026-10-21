@@ -1,6 +1,10 @@
+import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { viewPage, nextFrames } from "./support.mjs";
+
+// Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
+test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 const view = { protocol: "canopyx/2", type: "grid", id: "layout", label: "Column layout", source: { kind: "inline" },
   rowHeight: 28, pageSize: 100, selection: "multiple", search: true,
@@ -44,15 +48,15 @@ test("column-owned flex weights share spare width and survive saved-state restor
   await page.setViewportSize({ width: 1100, height: 700 });
   await open(page, { reporting: {}, columns: [
     { ...view.columns[0], fixed: true, minWidth: 160, maxWidth: 160 }, view.columns[1],
-    { ...view.columns[2], width: 100, minWidth: 100, maxWidth: 900, flex: 1, autoSize: "none" },
-    { ...view.columns[3], width: 100, minWidth: 100, maxWidth: 900, flex: 3, autoSize: "none" }
+    { ...view.columns[2], width: 160, minWidth: 160, maxWidth: 900, flex: 1, autoSize: "none" },
+    { ...view.columns[3], width: 160, minWidth: 160, maxWidth: 900, flex: 3, autoSize: "none" }
   ] });
   const widths = async () => [(await header(page, "amount").boundingBox()).width, (await header(page, "notes").boundingBox()).width];
   const initial = await widths(); expect(initial[0]).toBeGreaterThan(200);
-  expect((initial[1] - 100) / (initial[0] - 100)).toBeCloseTo(3, 1);
+  expect((initial[1] - 160) / (initial[0] - 160)).toBeCloseTo(3, 1);
   const state = await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getState());
-  expect(state.columns.find(column => column.id === "amount")).toMatchObject({ width: 100, flex: true });
-  expect(state.columns.find(column => column.id === "notes")).toMatchObject({ width: 100, flex: true });
+  expect(state.columns.find(column => column.id === "amount")).toMatchObject({ width: 160, flex: true });
+  expect(state.columns.find(column => column.id === "notes")).toMatchObject({ width: 160, flex: true });
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnWidth("notes", 180));
   await page.evaluate(state => document.querySelector('[data-canopyx-host]').canopyx.setState(state), state); await nextFrames(page);
   const restored = await widths(); expect(restored[0]).toBeCloseTo(initial[0], 0); expect(restored[1]).toBeCloseTo(initial[1], 0);

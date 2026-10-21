@@ -42,7 +42,7 @@ export async function mountReportLayout(page, { view = reportLayoutView(), width
     `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Report grid layout</title><style>${assets.style}
     body { margin:0;padding:40px 24px;background:${theme === "dark" ? "#121820" : "#f4f6f9"};color:${theme === "dark" ? "#e5eaf1" : "#263346"};font:15px system-ui; }
-    main { max-width:1086px;margin:auto; } h1 { font-size:24px;margin:0 0 8px; } p { margin:0 0 24px; }
+    main { max-width:${Math.max(1086, width)}px;margin:auto; } h1 { font-size:24px;margin:0 0 8px; } p { margin:0 0 24px; }
     ${classic ? ".cx-data-grid .cx-grid { scrollbar-width:auto; } .cx-data-grid .cx-grid::-webkit-scrollbar { width:17px;height:17px; }" : ".cx-data-grid .cx-grid { scrollbar-width:none; }"}
     </style><script>${assets.script}</script></head><body><main><h1>Review queue</h1>
     <p>Three records, preferred text widths, and complete status labels.</p>
@@ -62,7 +62,8 @@ export async function layoutGeometry(page) {
       widths: Object.fromEntries([...grid.querySelectorAll(".cx-hcell")].map(cell => [cell.dataset.cxColumn, cell.getBoundingClientRect().width])),
       clippedPills: [...grid.querySelectorAll(".p-pill,.p-state")].filter(pill => {
         const cell = pill.closest(".cx-cell"), pad = getComputedStyle(cell), box = pill.getBoundingClientRect(), parent = cell.getBoundingClientRect();
-        return pill.scrollWidth > pill.clientWidth + 1 || box.right > parent.right - parseFloat(pad.paddingRight) + 1 || box.left < parent.left;
+        const scroll = pill.closest(".cx-phone-value"), localScroll = scroll && getComputedStyle(scroll).overflowX === "auto";
+        return pill.scrollWidth > pill.clientWidth + 1 || (localScroll ? scroll.getBoundingClientRect().right > parent.right - parseFloat(pad.paddingRight) + 1 : box.right > parent.right - parseFloat(pad.paddingRight) + 1 || box.left < parent.left);
       }).length };
   });
 }

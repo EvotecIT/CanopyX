@@ -61,6 +61,8 @@ column's header. Use fixed sizing or an explicit minimum when a width must never
 3. **Protect header minimums before preferred whitespace.** An automatic column's
    header minimum is its measured label plus sort, menu, filter and reorder
    affordances, capped at 320 pixels and bounded by explicit sizing constraints.
+   Reorder handles include their measured glyph advance and padding, so a wider
+   fallback font cannot consume space reserved for the header label.
    If the total exceeds available width, remove whitespace above the greater of
    this header minimum and measured content first, including preferred whitespace.
    Fixed and reader-sized columns do not yield. Only when the header minimums

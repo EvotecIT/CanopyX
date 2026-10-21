@@ -1,7 +1,11 @@
+import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { nextFrames } from "./support.mjs";
 import { reportLayoutView, mountReportLayout, layoutGeometry } from "./report-grid-layout-support.mjs";
+
+// Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
+test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 // Headless Chromium otherwise adds --hide-scrollbars, which would leave the classic-gutter contract unexercised.
 test.use({ launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] } });
@@ -31,7 +35,7 @@ test("auto height recovers when controls grow beyond the previous fitted host", 
 for (const theme of ["light", "dark"]) test(`report shortage preserves header minima and atomic status content in ${theme}`, async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await mountReportLayout(page, { theme });
+  await mountReportLayout(page, { theme, width: 1320 });
   const box = await layoutGeometry(page);
   expect(box.clippedPills).toBe(0);
   const headers = await page.locator(".cx-hcell :is(.cx-sort,.cx-htext)").evaluateAll(labels => labels.map(label => ({
@@ -86,7 +90,7 @@ test("atomic pills wider than the ordinary text cap remain readable and explicit
   expect((await layoutGeometry(page)).widths.group).toBe(280);
   await page.evaluate(() => api().setColumnWidth("group", 40)); await settled(page);
   expect((await layoutGeometry(page)).widths.group).toBe(260);
-  await page.locator("#frame").evaluate(frame => frame.style.width = "360px"); await settled(page);
+  await page.locator("#frame").evaluate(frame => { frame.style.width = "360px"; frame.querySelector(".cx-host").style.height = "1000px"; }); await settled(page);
   expect((await layoutGeometry(page)).clippedPills).toBe(0); await rowsFit(page);
 });
 
@@ -106,7 +110,7 @@ test("automatic text content keeps its measured width after header-only slack is
 });
 
 test("auto-height follows horizontal overflow introduced by a user width without a row-count change", async ({ page }) => {
-  await mountReportLayout(page, { classic: true, width: 1200 });
+  await mountReportLayout(page, { classic: true, width: 1320 });
   await page.locator("#frame").evaluate(frame => frame.parentElement.style.maxWidth = "none");
   await settled(page); await rowsFit(page);
   await page.evaluate(() => api().setColumnWidth("group", 1000)); await settled(page); await rowsFit(page);
