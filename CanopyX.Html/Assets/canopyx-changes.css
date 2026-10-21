@@ -203,6 +203,7 @@ color:var(--cx-chg-flag,var(--cx-text));background:color-mix(in srgb,var(--cx-ch
 .cx-diff,.cx-changes,.cx-prop{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 .cx-diff-printtable{width:100%;border-collapse:collapse;font-family:var(--cx-font-mono);font-size:var(--cx-size-11px);}
 .cx-diff-printtable td{padding:0 var(--cx-size-4px);vertical-align:top;}
+.cx-diff-printtable :is(.cx-diff-num,.cx-diff-sign){width:1%;white-space:nowrap;text-align:end;color:var(--cx-muted);}
 .cx-diff-printtable .cx-diff-code{white-space:pre-wrap;word-break:break-all;}
 .cx-diff-printtable tr:is(.cx-diff-del,.cx-diff-add){background:color-mix(in srgb,var(--cx-chg-diff) 12%,#fff);}
 .cx-chg-row{grid-template-columns:var(--cx-size-112px) minmax(0,1fr) auto;grid-template-areas:"badge main meta";}
