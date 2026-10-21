@@ -10,8 +10,8 @@ public static partial class CanopyStaticHtml {
     /// <summary>The most cells the static matrix draws as a table; a larger matrix lists the cells that need attention instead.</summary>
     public const int MaxStaticMatrixCells = 2500;
 
-    /// <summary>The browser's order of group labels: folded text with digit runs compared as numbers.</summary>
-    private static readonly CanopyGridOrdering MatrixGroupOrder = new CanopyGridOrdering(CanopyGridTextOrder.FoldedNatural);
+    /// <summary>The browser's order of group labels (matrixNatural): folded runs of digits and of other text, then the labels as written.</summary>
+    private static readonly Comparer<string> MatrixGroupOrder = Comparer<string>.Create(MatrixNatural);
 
     private static readonly Dictionary<CanopyMatrixSymbol, string> MatrixGlyphs = new Dictionary<CanopyMatrixSymbol, string> {
         [CanopyMatrixSymbol.Check] = "✓", [CanopyMatrixSymbol.Cross] = "✕", [CanopyMatrixSymbol.Warning] = "!", [CanopyMatrixSymbol.Info] = "i",
@@ -32,8 +32,9 @@ public static partial class CanopyStaticHtml {
     /// <param name="options">Caption (the matrix label by default), row limit, theme, culture and link to the full report.</param>
     /// <returns>The fallback table.</returns>
     /// <remarks>
-    /// Items keep their declared order and groups follow their labels in natural order, as the browser shows them before the reader
-    /// sorts; the browser's sorts, filters and collapsed groups are not applied.
+    /// Items keep their declared order and groups follow their labels in natural order, the browser's order of groups when the axis
+    /// declares no sort; a declared <see cref="CanopyMatrixAxis.SortBy"/> is not applied, nor are the reader's sorts, filters and
+    /// collapsed groups.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The matrix is not valid.</exception>
@@ -63,10 +64,15 @@ public static partial class CanopyStaticHtml {
             var columnGroups = MatrixGroups(columnAxis, settings.Culture);
             var order = columnGroups.SelectMany(group => group.Members).ToList();
             if (columnAxis.GroupBy != null) {
-                html.Append("<thead><tr><th style=\"").Append(styles.Header).Append("\"></th>");
+                // Column groups give each band header the columns it names (scope="colgroup").
+                html.Append("<colgroup span=\"1\"></colgroup>");
+                foreach (var group in columnGroups) html.Append("<colgroup span=\"").Append(group.Members.Count).Append("\"></colgroup>");
+                if (matrix.RowTotals) html.Append("<colgroup span=\"1\"></colgroup>");
+                html.Append("<thead><tr><td style=\"").Append(styles.Header).Append("\"></td>");
                 foreach (var group in columnGroups)
-                    html.Append("<th scope=\"colgroup\" colspan=\"").Append(group.Members.Count).Append("\" style=\"").Append(styles.Header).Append("text-align:center;\">").Append(Encode(group.Label)).Append("</th>");
-                if (matrix.RowTotals) html.Append("<th style=\"").Append(styles.Header).Append("\"></th>");
+                    html.Append("<th scope=\"colgroup\" colspan=\"").Append(group.Members.Count).Append("\" style=\"").Append(styles.Header).Append("text-align:center;\">").Append(Encode(group.Label))
+                        .Append(" <span style=\"").Append(styles.MutedText).Append("\">· ").Append(Encode(GroupCountText(columnAxis, group.Members.Count, labels, settings.Culture))).Append("</span></th>");
+                if (matrix.RowTotals) html.Append("<td style=\"").Append(styles.Header).Append("\"></td>");
                 html.Append("</tr>");
             } else {
                 html.Append("<thead>");
@@ -75,18 +81,19 @@ public static partial class CanopyStaticHtml {
             html.Append("<tr><th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(matrix.Rows.Title ?? labels.MatrixRows)).Append("</th>");
             foreach (var c in order) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("text-align:center;\">").Append(Encode(columns[c].Label)).Append("</th>");
             if (matrix.RowTotals) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("text-align:right;\">").Append(Encode(labels.MatrixTotal)).Append("</th>");
-            html.Append("</tr></thead><tbody>");
+            html.Append("</tr></thead>");
             int Total(int r) => order.Count(c => !Self(r, c) && cells.TryGetValue((long)r * columns.Count + c, out var cell) && counted.Contains(cell.State));
             var grouped = matrix.Rows.GroupBy != null;
             var shown = 0;
             foreach (var group in MatrixGroups(matrix.Rows, settings.Culture)) {
                 if (shown >= settings.MaxRows) break;
+                // Each group is a body of its own, so its heading (scope="rowgroup") names only its own rows.
+                html.Append("<tbody>");
                 if (grouped) {
-                    var count = CanopyPlural.Pick(matrix.Rows.GroupCount ?? labels.MatrixGroupCount, group.Members.Count, settings.Culture)
-                        .Replace("{count}", group.Members.Count.ToString("N0", settings.Culture));
+                    var count = GroupCountText(matrix.Rows, group.Members.Count, labels, settings.Culture);
                     html.Append("<tr><th scope=\"rowgroup\" colspan=\"").Append(columns.Count + 1).Append("\" style=\"").Append(styles.GroupHeading).Append("\">").Append(Encode(group.Label))
                         .Append(" <span style=\"").Append(styles.MutedText).Append("\">· ").Append(Encode(count)).Append("</span></th>");
-                    if (matrix.RowTotals) html.Append("<td style=\"").Append(styles.GroupHeading).Append("text-align:right;\">").Append(group.Members.Sum(Total).ToString(settings.Culture)).Append("</td>");
+                    if (matrix.RowTotals) html.Append("<td style=\"").Append(styles.GroupHeading).Append("text-align:right;\">").Append(group.Members.Sum(Total).ToString("N0", settings.Culture)).Append("</td>");
                     html.Append("</tr>");
                 }
 
@@ -96,12 +103,13 @@ public static partial class CanopyStaticHtml {
                     html.Append("<tr><th scope=\"row\" style=\"").Append(styles.Cell).Append("text-align:left;font-weight:600;").Append(grouped ? "padding-left:20px;" : string.Empty).Append("\">")
                         .Append(Encode(rows[r].Label)).Append("</th>");
                     foreach (var c in order) AppendMatrixCell(html, r, c, Self(r, c), cells.TryGetValue((long)r * columns.Count + c, out var cell) ? cell : null, states, styles, labels, settings);
-                    if (matrix.RowTotals) html.Append("<td style=\"").Append(styles.Cell).Append("text-align:right;font-weight:600;\">").Append(Total(r).ToString(settings.Culture)).Append("</td>");
+                    if (matrix.RowTotals) html.Append("<td style=\"").Append(styles.Cell).Append("text-align:right;font-weight:600;\">").Append(Total(r).ToString("N0", settings.Culture)).Append("</td>");
                     html.Append("</tr>");
                 }
+
+                html.Append("</tbody>");
             }
 
-            html.Append("</tbody>");
             if (shown < rows.Count) { html.Append("<tbody>"); AppendOverflow(html, shown, rows.Count, span, settings, styles, labels); html.Append("</tbody>"); }
         } else {
             html.Append("<thead><tr>");
@@ -171,19 +179,66 @@ public static partial class CanopyStaticHtml {
         return groups.Values.OrderBy(group => group.Label, MatrixGroupOrder).ToList();
     }
 
+    /// <summary>A group's count in the axis's own words or the label, in the culture's plural form.</summary>
+    private static string GroupCountText(CanopyMatrixAxis axis, int count, CanopyLabels labels, CultureInfo culture) =>
+        CanopyPlural.Pick(axis.GroupCount ?? labels.MatrixGroupCount, count, culture).Replace("{count}", count.ToString("N0", culture));
+
+    // Numbers key by their value as the browser reads them from the document: 10, 10L and 10.0m are one group, and -0 is 0.
     private static string MatrixValueKey(CanopyCell? value) => value?.Value == null ? string.Empty : value.Value switch {
         bool flag => flag ? "true" : "false",
-        IFormattable number when !(value.Value is DateTime) => number.ToString(null, CultureInfo.InvariantCulture),
+        IConvertible number when value.Value is int || value.Value is long || value.Value is double || value.Value is float || value.Value is decimal || value.Value is short || value.Value is byte =>
+            (number.ToDouble(CultureInfo.InvariantCulture) + 0d).ToString("R", CultureInfo.InvariantCulture),
         DateTime moment => moment.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture),
         _ => value.Value.ToString() ?? string.Empty
     };
 
     private static string MatrixValueText(CanopyCell? value, CanopyMatrixAttribute attribute, CultureInfo culture) {
-        if (value?.Text != null) return value.Text;
+        if (!string.IsNullOrEmpty(value?.Text)) return value!.Text!;
         if (value?.Value == null) return "—";
         if (value.Value is DateTime moment) return moment.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-        if (attribute.Kind == CanopyColumnKind.Number && value.Value is IFormattable number) return number.ToString("0.###", culture);
+        if (attribute.Kind == CanopyColumnKind.Number && value.Value is IFormattable number) return number.ToString("#,##0.###", culture);
         return value.Value is bool flag ? (flag ? "true" : "false") : value.Value.ToString() ?? "—";
+    }
+
+    /// <summary>The browser's matrixNatural: the folded labels as runs of digits and of other text, digit runs by value, then the labels as written.</summary>
+    private static int MatrixNatural(string a, string b) {
+        var left = MatrixRuns(Fold(a));
+        var right = MatrixRuns(Fold(b));
+        for (var i = 0; i < Math.Min(left.Count, right.Count); i++) {
+            string p = left[i], q = right[i];
+            if (p[0] >= '0' && p[0] <= '9' && q[0] >= '0' && q[0] <= '9') {
+                string s = p.TrimStart('0'), t = q.TrimStart('0');
+                if (s.Length != t.Length) return s.Length - t.Length;
+                var digits = string.CompareOrdinal(s, t);
+                if (digits != 0) return digits < 0 ? -1 : 1;
+            } else {
+                var text = string.CompareOrdinal(p, q);
+                if (text != 0) return text < 0 ? -1 : 1;
+            }
+        }
+
+        if (left.Count != right.Count) return left.Count - right.Count;
+        var raw = string.CompareOrdinal(a, b);
+        return raw < 0 ? -1 : raw > 0 ? 1 : 0;
+    }
+
+    private static string Fold(string text) {
+        var folded = new StringBuilder(text.Length);
+        foreach (var unit in text) folded.Append(Bundles.CanopySearchFolding.Fold(unit));
+        return folded.ToString();
+    }
+
+    /// <summary>The runs of ASCII digits and of anything else, as the browser's <c>/(\d+)|(\D+)/g</c> splits them.</summary>
+    private static List<string> MatrixRuns(string text) {
+        var runs = new List<string>();
+        var start = 0;
+        for (var i = 1; i <= text.Length; i++) {
+            if (i < text.Length && (text[i] >= '0' && text[i] <= '9') == (text[start] >= '0' && text[start] <= '9')) continue;
+            runs.Add(text.Substring(start, i - start));
+            start = i;
+        }
+
+        return runs;
     }
 
     private static string Glyph(CanopyMatrixState state) => MatrixGlyphs.TryGetValue(state.Symbol, out var glyph) ? glyph : string.Empty;

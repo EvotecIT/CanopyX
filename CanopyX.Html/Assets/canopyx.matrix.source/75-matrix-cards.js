@@ -59,25 +59,29 @@
       else td.className = info.state === MATRIX_SELF ? "cx-mx-printself" : "cx-mx-printnone";
       return td;
     },
-    /** The print table's head: a band per column group over the column labels. */
-    printHead(columns) {
-      const head = h("thead");
+    /** The print table's column groups and head: a band per column group, with its count, over the column labels. */
+    printHead(table, columns) {
+      const head = h("thead"), colgroup = span => { const group = h("colgroup"); group.span = span; table.appendChild(group); };
       if (columns.some(entry => entry.band)) {
-        const band = h("tr"); band.appendChild(h("th"));
+        // Column groups give each band header the columns it names (scope="colgroup").
+        const band = h("tr"); band.appendChild(h("td")); colgroup(1);
         for (let c = 0; c < columns.length;) {
-          const group = columns[c].band, th = h("th");
+          const group = columns[c].band, th = h(group ? "th" : "td");
           let span = 1;
-          if (group) { while (c + span < columns.length && columns[c + span].band === group) span++; th.scope = "colgroup"; setText(th, group.label); }
-          th.colSpan = span; band.appendChild(th); c += span;
+          if (group) {
+            while (c + span < columns.length && columns[c + span].band === group) span++;
+            const count = h("span", "cx-mx-printcount"); th.scope = "colgroup"; setText(th, group.label);
+            setText(count, " · " + this.groupCount("columns", group.members.length)); th.appendChild(count);
+          }
+          th.colSpan = span; band.appendChild(th); colgroup(span); c += span;
         }
-        if (this.totalW) band.appendChild(h("th"));
+        if (this.totalW) { band.appendChild(h("td")); colgroup(1); }
         head.appendChild(band);
       }
       const row = h("tr"), corner = h("th"); corner.scope = "col"; setText(corner, this.axisTitle("rows")); row.appendChild(corner);
       for (const column of columns) { const th = h("th"); th.scope = "col"; setText(th, column.label); row.appendChild(th); }
       if (this.totalW) { const th = h("th"); th.scope = "col"; setText(th, this.labels.matrixTotal); row.appendChild(th); }
-      head.appendChild(row);
-      return head;
+      head.appendChild(row); table.appendChild(head);
     },
     renderPrint() {
       if (this.destroyed) return;
@@ -85,9 +89,11 @@
       setText(caption, this.doc.label + " — " + this.summaryText()); table.appendChild(caption);
       const columns = model.columns, rows = model.rows.filter(entry => entry.kind !== "heading");
       if (rows.length * columns.length <= 2500) {
-        table.appendChild(this.printHead(columns));
-        const body = h("tbody");
+        this.printHead(table, columns);
+        let body = h("tbody");
         for (const entry of model.rows) {
+          // Each group is a body of its own, so its heading (scope="rowgroup") names only its own rows.
+          if (entry.kind !== "item" && body.childElementCount) { table.appendChild(body); body = h("tbody"); }
           const tr = h("tr"), th = h("th"), total = h("td");
           setText(total, this.format.format(entry.total || 0)); setText(th, entry.label);
           if (entry.kind !== "item") {

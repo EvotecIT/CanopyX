@@ -48,7 +48,11 @@ internal static class CanopyPlural {
             case "sk":
                 return n == 1 ? "one" : n >= 2 && n <= 4 ? "few" : "other";
             case "fr":
-                return n <= 1 ? "one" : "other";
+                return n <= 1 ? "one" : n % 1000000 == 0 ? "many" : "other";
+            case "es":
+            case "it":
+                // Whole millions take the many form, as Intl.PluralRules does since CLDR 42.
+                return n == 1 ? "one" : n != 0 && n % 1000000 == 0 ? "many" : "other";
             default:
                 return n == 1 ? "one" : "other";
         }

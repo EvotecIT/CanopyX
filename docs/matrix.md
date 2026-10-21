@@ -62,7 +62,7 @@ and `large/matrix-400.html`.
 
 | Property | Meaning |
 | --- | --- |
-| `rows`, `columns` | The axes: `title`, `noun`, `groupCount` (how a group heading counts its members: `{count}` in the text, or in plural forms such as `"[one]{count} domain controller[other]{count} domain controllers"`; the `matrixGroupCount` label, the count alone, by default), up to 32 `attributes` (`id`, `title`, `kind` text, number or datetime, `facet`), 1 to 10,000 `items` (`id`, `label`, `secondary`, `href`, `values` by attribute: a value, or `{ value, text }`; datetime values are ISO 8601, sorted by instant at millisecond precision; an omitted zone means UTC), and the first `groupBy` and `sort` (`by` is `#label`, `#total` or an attribute; `direction` asc or desc). |
+| `rows`, `columns` | The axes: `title`, `noun`, `groupCount` (how a group counts its members: `{count}` in the text, or in plural forms such as `"[one]{count} domain controller[other]{count} domain controllers"`; the `matrixGroupCount` label, the count alone, by default; row headings show it everywhere, column bands in the print and static tables and their tooltip), up to 32 `attributes` (`id`, `title`, `kind` text, number or datetime, `facet`), 1 to 10,000 `items` (`id`, `label`, `secondary`, `href`, `values` by attribute: a value, or `{ value, text }`; datetime values are ISO 8601, sorted by instant at millisecond precision; an omitted zone means UTC), and the first `groupBy` and `sort` (`by` is `#label`, `#total` or an attribute; `direction` asc or desc). |
 | `square`, `columnTitle` | A square matrix has no `columns`: its rows are also its columns, and `columnTitle` names them (for example Source beside Destination). |
 | `diagonal` | The self cells of a square matrix: `self` (the default) draws them hatched and counts them nowhere; `data` treats them as ordinary cells. |
 | `states` | 1 to 36 states, **worst first**: `id`, `label`, `tone` (a CanopyX or host tone), the required `symbol` (check, cross, warning, info, dot, dash, question, clock, pause) so no state relies on colour alone, and `attention`. |
@@ -159,8 +159,9 @@ them in its document. The stylesheet uses logical properties, and the canvas dra
 Each cell is its state's symbol in its tone: a state that needs attention is a tint of its tone behind bold text, any other
 state the symbol in its tone's colour, and the state is the cell's tooltip, so no state relies on colour alone. The table asks
 print to keep the tints (`print-color-adjust: exact`). A grouped row axis keeps its groups as heading rows (the group, its count
-in the axis's `groupCount` and its total), a grouped column axis as bands above the column labels; groups follow their labels in
-natural order and items their declared order. Row totals and a legend with each state's count follow. A matrix of more than 2,500
+in the axis's `groupCount` and its total, each group a table body of its own), a grouped column axis as bands above the column
+labels (with their counts, over column groups); groups follow their labels in natural order and items their declared order, as the
+browser opens them when the axis declares no sort (a declared sort is not applied). Row totals and a legend with each state's count follow. A matrix of more than 2,500
 cells is listed instead as the cells that need attention (row, column, state, value), up to `MaxRows`. Printing a page draws the
 same from the visible matrix, with its current groups, collapsed groups and tones.
 

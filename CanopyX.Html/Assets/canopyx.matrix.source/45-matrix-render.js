@@ -136,7 +136,7 @@
         toggle.setAttribute("aria-label", fill(this.labels.matrixCollapseGroup, { group: band.label })); toggle._group = { axis: "columns", key: band.key };
         const text = h("span", "cx-mx-label"); setText(text, band.label); toggle.appendChild(text); element.appendChild(toggle);
         // A narrow band shortens its name; the whole name is its tooltip.
-        element.title = band.label;
+        element.title = band.label + " · " + this.groupCount("columns", band.members.length);
         mounted.set(band.key, element); this.band.appendChild(element);
       }
       for (const [key, element] of mounted) if (!seen.has(key)) { element.remove(); mounted.delete(key); }

@@ -477,7 +477,7 @@ test("the print table keeps group rows, column bands and tone cells that never r
   await page.emulateMedia({ media: "print" });
   const table = page.locator(".cx-mx-print table");
   await expect(table.locator("tr.cx-mx-printgroup th")).toHaveText(["North · 3 servers", "South · 3 servers"]);
-  await expect(table.locator('th[scope="colgroup"]')).toHaveText(["Core", "Edge"]);
+  await expect(table.locator('th[scope="colgroup"]')).toHaveText(["Core · 2", "Edge · 2"]);
   const failing = table.locator("td.cx-mx-attn.cx-tone-danger", { hasText: "3" });
   await expect(failing).toHaveText("✕ 3");
   await expect(failing).toHaveAttribute("title", "Failing");
@@ -499,7 +499,9 @@ for (const [name, change, message] of [
   ["a cells string of the wrong length", { cells: ["22", "2222", "0..2", "1220", "2222", "...."] }, "one character per column"],
   ["an undeclared state", { cells: ["9222", "2222", "0..2", "1220", "2222", "...."] }, "undeclared state"],
   ["an unsafe link", { rows: { items: [{ id: "a", label: "A", href: "javascript:alert(1)" }] }, cells: ["2222"], notes: [] }, "not an http, https, mailto"],
-  ["a diagonal on a matrix that is not square", { diagonal: "data" }, "only a square matrix has a diagonal"]
+  ["a diagonal on a matrix that is not square", { diagonal: "data" }, "only a square matrix has a diagonal"],
+  ["a group count without an other form", { rows: Object.assign(matrixDoc().rows, { groupCount: "[one]{count} server" }) }, "group count needs {count}"],
+  ["a group count without the count", { rows: Object.assign(matrixDoc().rows, { groupCount: "Servers" }) }, "group count needs {count}"]
 ]) {
   test("a document with " + name + " fails with a message", async ({ page }) => {
     await page.route("http://canopyx.test/bad", route => route.fulfill({ contentType: "text/html", body: "<!DOCTYPE html><html lang=\"en\"><head><title>x</title><script>" +
