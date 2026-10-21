@@ -1,0 +1,71 @@
+import { test, expect } from "@playwright/test";
+import { mountRuntime, documentOf, reviewStep } from "./flow-host-regression-support.mjs";
+
+const flow = documentOf([{ id: "schedules", title: "Schedules", group: "Content", fields: [{
+  id: "schedule", type: "records", label: "Schedules", columns: [{ id: "name", title: "Name", type: "text" }], default: [{ name: "Daily" }]
+}] }, reviewStep], { mode: "tasks" });
+const hooks = `({ hooks: { status: () => new Promise(resolve => { window.__status = resolve; }) } })`;
+const task = page => page.locator('[data-cx-task="schedules"]');
+
+async function press(page, button, input) {
+  if (input === "space") { await button.focus(); await page.keyboard.down("Space"); }
+  else { const box = await button.boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); }
+}
+async function release(page, input) {
+  if (input === "space") await page.keyboard.up("Space"); else await page.mouse.up();
+}
+async function answerStatus(page, state) {
+  await page.evaluate(state => window.__status({ schedules: { state, summary: "Status received" } }), state);
+  await expect(task(page).locator(".cx-flow-task-summary")).toHaveText("Status received");
+}
+
+for (const input of ["pointer", "space"]) test(`an asynchronous task status update preserves a pending ${input} activation`, async ({ page }, testInfo) => {
+  expect(await mountRuntime(page, testInfo, flow, hooks)).toBeNull();
+  await press(page, task(page).getByRole("button"), input);
+  await answerStatus(page, "notStarted");
+  await release(page, input);
+  await expect(page.locator(".cx-flow-records-row")).toHaveCount(1);
+  expect(await page.evaluate(() => window.__api.getStep())).toBe("schedules");
+  expect(await page.evaluate(() => [window.__errors, window.__rejections])).toEqual([[], []]);
+});
+
+test("an asynchronous status update preserves a pending hub review click", async ({ page }, testInfo) => {
+  expect(await mountRuntime(page, testInfo, flow, hooks)).toBeNull();
+  // Keep the row's height stable so this case isolates control replacement, not a release outside a moved button.
+  await page.evaluate(() => window.__api.setStepState("schedules", { state: "complete", summary: "Previous status" }));
+  await press(page, page.locator(".cx-flow-next"), "pointer");
+  await answerStatus(page, "complete");
+  await release(page, "pointer");
+  await expect.poll(() => page.evaluate(() => window.__api.getStep())).toBe("review");
+});
+
+test("a task blocked between pointer down and up cannot open", async ({ page }, testInfo) => {
+  expect(await mountRuntime(page, testInfo, flow, hooks)).toBeNull();
+  await press(page, task(page).getByRole("button"), "pointer");
+  await answerStatus(page, "blocked");
+  await release(page, "pointer");
+  expect(await page.evaluate(() => window.__api.getStep())).toBe("#tasks");
+  await expect(task(page).getByRole("button")).toHaveAttribute("aria-disabled", "true");
+  await expect(page.locator(".cx-flow-records-row")).toHaveCount(0);
+});
+
+test("a hub review action blocked between pointer down and up cannot open review", async ({ page }, testInfo) => {
+  expect(await mountRuntime(page, testInfo, flow, hooks)).toBeNull();
+  await page.evaluate(() => window.__api.setStepState("schedules", { state: "complete", summary: "Previous status" }));
+  await press(page, page.locator(".cx-flow-next"), "pointer");
+  await answerStatus(page, "blocked");
+  await release(page, "pointer");
+  expect(await page.evaluate(() => window.__api.getStep())).toBe("#tasks");
+  await expect(page.locator(".cx-flow-next")).toHaveAttribute("aria-disabled", "true");
+  expect(await page.evaluate(() => window.__submissions)).toEqual([]);
+});
+
+test("a responsive hub repaint preserves a pending Space activation", async ({ page }, testInfo) => {
+  expect(await mountRuntime(page, testInfo, flow)).toBeNull();
+  await press(page, task(page).getByRole("button"), "space");
+  await page.setViewportSize({ width: 600, height: 900 });
+  await expect(page.locator(".cx-flow")).toHaveClass(/cx-flow-narrow/);
+  await release(page, "space");
+  await expect(page.locator(".cx-flow-records-row")).toHaveCount(1);
+  expect(await page.evaluate(() => window.__api.getStep())).toBe("schedules");
+});

@@ -17,6 +17,13 @@
   Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
   const FLOW_TASK_STATES = ["complete", "needsAction", "blocked", "notStarted"];
   const FLOW_TASK_MARKS = { complete: "✓", error: "!", needsAction: "!", blocked: "—", notStarted: "" };
+  // Keep surviving controls attached: removing and reattaching the same button also cancels a native pending activation.
+  function flowTaskOrder(parent, nodes) {
+    const wanted = new Set(nodes);
+    for (const child of [...parent.children]) if (!wanted.has(child)) child.remove();
+    let at = parent.firstChild;
+    for (const node of nodes) { if (node === at) at = at.nextSibling; else parent.insertBefore(node, at); }
+  }
   // The stepper's navigation, which a flow that is not a task list keeps.
   const { back: flowStepBack, goTo: flowStepGoTo, renderStage: flowStepStage, renderRail: flowStepRail, renderActions: flowStepActions, lastStep: flowLastStep,
     orientation: flowOrientation, begin: flowTaskBegin, submit: flowTaskSubmit, validateAll: flowTaskValidate } = FlowView.prototype;
@@ -33,7 +40,11 @@
     /** The hub has its own actions; a task's Back returns to the hub and its Next saves and returns. */
     renderActions() {
       if (!this.hub || this.phase !== "form") return flowStepActions.call(this);
-      if (this.step === this.hub) { this.actions.replaceChildren(); this.actions.hidden = false; this.hubActions(); return; }
+      if (this.step === this.hub) {
+        this.actions.hidden = false;
+        if (this.hubAction?.go.parentNode !== this.actions) { this.actions.replaceChildren(); this.hubActions(); }
+        this.paintHubActions(); return;
+      }
       flowStepActions.call(this);
       const back = this.actions.querySelector(".cx-flow-back");
       setText(back, this.labels.flowBackToTasks); back.hidden = false;
@@ -52,7 +63,11 @@
       return target && this.taskOpens(target) ? this.go(target, "forward") : false;
     },
     /** The hub is drawn afresh each time it opens, from the answers and the host's states. */
-    renderStage() { if (this.hub && this.step === this.hub && this.phase === "form") this.stage.replaceChildren(this.hubSection()); else flowStepStage.call(this); },
+    renderStage() {
+      if (this.hub && this.step === this.hub && this.phase === "form") {
+        if (this.stage.firstChild !== this.hubNode) this.stage.replaceChildren(this.hubSection()); else this.paintHub();
+      } else flowStepStage.call(this);
+    },
     /** A task list has its hub instead of a rail; the hub follows the answers. It keeps the key of the visible steps too, so an
      *  answer that leaves them alone never repaints the page mid-click. */
     renderRail() {
@@ -110,56 +125,68 @@
       if (!section) return;
       const labels = this.labels, lists = section.querySelector(".cx-flow-task-groups"), groups = new Map();
       for (const step of this.tasks()) { const name = step.group || ""; if (!groups.has(name)) groups.set(name, []); groups.get(name).push(step); }
-      const focused = document.activeElement?.closest?.("[data-cx-task]")?.dataset.cxTask;
-      lists.replaceChildren(...[...groups].map(([name, steps]) => {
-        const group = h("section", "cx-flow-task-group"), list = h("ol", "cx-flow-task-list");
-        if (name) { const title = h("h4", "cx-flow-section-title"); title.id = this.id + "-tg-" + steps[0].id; setText(title, name); group.setAttribute("aria-labelledby", title.id); group.appendChild(title); }
-        for (const step of steps) list.appendChild(this.taskRow(step));
-        group.appendChild(list);
+      const existing = new Map([...lists.children].map(group => [group._cxName, group]));
+      const rows = new Map([...lists.querySelectorAll("[data-cx-task]")].map(row => [row.dataset.cxTask, row]));
+      flowTaskOrder(lists, [...groups].map(([name, steps]) => {
+        let group = existing.get(name);
+        if (!group) {
+          group = h("section", "cx-flow-task-group"); group._cxName = name;
+          if (name) { const title = h("h4", "cx-flow-section-title"); title.id = this.id + "-tg-" + steps[0].id; setText(title, name); group.setAttribute("aria-labelledby", title.id); group.appendChild(title); }
+          group.appendChild(h("ol", "cx-flow-task-list"));
+        }
+        flowTaskOrder(group.querySelector("ol"), steps.map(step => this.taskRow(step, rows.get(step.id))));
         return group;
       }));
       setText(section.querySelector(".cx-flow-hub-progress"), this.hubAnnouncement());
-      if (focused) lists.querySelector('[data-cx-task="' + CSS.escape(focused) + '"] button')?.focus({ preventScroll: true });
       if (this.step === this.hub) this.renderActions();
     },
 
-    taskRow(step) {
+    taskRow(step, row) {
       const labels = this.labels, state = this.taskState(step), host = this.stepStatus.get(step.id);
-      const row = h("li", "cx-flow-task"), open = h("button", "cx-flow-task-open"), title = h("span", "cx-flow-task-title"), status = h("span", "cx-flow-task-state"), mark = h("span", "cx-flow-task-mark");
-      row.dataset.cxTask = step.id; row.dataset.cxState = state;
-      open.type = "button"; setText(title, step.title);
-      const words = state === "complete" ? labels.flowStepComplete : state === "error" ? fill(labels.flowStepErrors, { count: this.stepErrorCount(step) }) :
-        state === "needsAction" ? labels.flowTaskNeedsAction : state === "blocked" ? labels.flowTaskBlocked : step.optional ? labels.flowStepOptional : labels.flowStepNotStarted;
-      mark.setAttribute("aria-hidden", "true"); setText(mark, FLOW_TASK_MARKS[state] || "");
-      status.append(mark, words);
-      status.id = this.id + "-ts-" + step.id;
-      open.appendChild(title);
-      const notes = [status.id];
-      if (host?.summary) { const summary = h("span", "cx-flow-task-summary"); summary.id = this.id + "-tsum-" + step.id; setText(summary, host.summary); open.appendChild(summary); notes.push(summary.id); }
-      open.setAttribute("aria-describedby", notes.join(" "));
-      if (state === "blocked") open.setAttribute("aria-disabled", "true");
-      open.addEventListener("click", () => { if (open.getAttribute("aria-disabled") !== "true") this.goTo(step.id).catch(error => this.report(error, "goTo")); });
-      row.append(open, status);
-      if (host?.blockers?.length) {
-        const blockers = h("ul", "cx-flow-task-blockers");
-        for (const text of host.blockers) { const item = h("li"); setText(item, text); blockers.appendChild(item); }
-        row.appendChild(blockers);
+      if (!row) {
+        row = h("li", "cx-flow-task");
+        const open = h("button", "cx-flow-task-open"), title = h("span", "cx-flow-task-title"), status = h("span", "cx-flow-task-state"), mark = h("span", "cx-flow-task-mark");
+        const words = document.createTextNode(""), summary = h("span", "cx-flow-task-summary"), blockers = h("ul", "cx-flow-task-blockers");
+        open.type = "button"; mark.setAttribute("aria-hidden", "true"); status.id = this.id + "-ts-" + step.id; summary.id = this.id + "-tsum-" + step.id;
+        status.append(mark, words); open.append(title); row.append(open, status);
+        open.addEventListener("click", () => { if (open.getAttribute("aria-disabled") !== "true") this.goTo(step.id).catch(error => this.report(error, "goTo")); });
+        row._cx = { open, title, status, mark, words, summary, blockers };
       }
+      const { open, title, status, mark, words, summary, blockers } = row._cx;
+      row.dataset.cxTask = step.id; row.dataset.cxState = state;
+      setText(title, step.title);
+      words.nodeValue = state === "complete" ? labels.flowStepComplete : state === "error" ? fill(labels.flowStepErrors, { count: this.stepErrorCount(step) }) :
+        state === "needsAction" ? labels.flowTaskNeedsAction : state === "blocked" ? labels.flowTaskBlocked : step.optional ? labels.flowStepOptional : labels.flowStepNotStarted;
+      setText(mark, FLOW_TASK_MARKS[state] || "");
+      const notes = [status.id];
+      if (host?.summary) { setText(summary, host.summary); if (summary.parentNode !== open) open.appendChild(summary); notes.push(summary.id); }
+      else summary.remove();
+      open.setAttribute("aria-describedby", notes.join(" "));
+      if (state === "blocked") open.setAttribute("aria-disabled", "true"); else open.removeAttribute("aria-disabled");
+      blockers.replaceChildren(...(host?.blockers || []).map(text => { const item = h("li"); setText(item, text); return item; }));
+      if (blockers.children.length) { if (blockers.parentNode !== row) row.appendChild(blockers); } else blockers.remove();
       return row;
     },
 
     /** The hub's action: Review and submit (or Submit without a review page), open once the required tasks are complete. */
     hubActions() {
-      const labels = this.labels, review = this.reviewStep(), ready = this.tasksReady(), go = h("button", "cx-flow-btn cx-primary cx-flow-next"), note = h("span", "cx-flow-hub-note");
+      const labels = this.labels, review = this.reviewStep(), go = h("button", "cx-flow-btn cx-primary cx-flow-next"), note = h("span", "cx-flow-hub-note");
       go.type = "button"; setText(go, review ? labels.flowTasksReview : this.model.submitLabel || labels.flowSubmit);
-      note.id = this.id + "-hub-note"; setText(note, ready ? "" : labels.flowTasksIncomplete); note.hidden = ready;
-      if (!ready) { go.setAttribute("aria-disabled", "true"); go.setAttribute("aria-describedby", note.id); }
+      note.id = this.id + "-hub-note";
       go.addEventListener("click", () => {
         if (!this.tasksReady()) { this.announce(labels.flowTasksIncomplete); return; }
         (review ? this.goTo(review.id) : this.submit()).catch(error => this.report(error, review ? "goTo" : "submit"));
       });
-      if (this.busy) { go.disabled = true; go.setAttribute("aria-busy", "true"); }
       this.actions.append(...[this.draftButton?.(), this.cancelButton?.()].filter(Boolean), note, h("span", "cx-flow-spacer"), go);
+      this.hubAction = { go, note };
+    },
+    paintHubActions() {
+      const { go, note } = this.hubAction, ready = this.tasksReady();
+      setText(note, ready ? "" : this.labels.flowTasksIncomplete); note.hidden = ready;
+      if (!ready) { go.setAttribute("aria-disabled", "true"); go.setAttribute("aria-describedby", note.id); }
+      else { go.removeAttribute("aria-disabled"); go.removeAttribute("aria-describedby"); }
+      go.disabled = !!this.busy;
+      if (this.busy) go.setAttribute("aria-busy", "true"); else go.removeAttribute("aria-busy");
     },
 
     /** Asks the host for the tasks' states (hooks.status); a later answer replaces an earlier one. */
