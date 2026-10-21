@@ -340,7 +340,8 @@ flow.Step("sign-in", "How does it sign in?", step => step
 A check is a named host action on a form step, such as "Send a test message" or "Test sign-in". Its button runs
 `hooks.check(checkId, values, { signal, secret })`, which answers `{ status: "pass" | "warning" | "fail", message, details:
 [{ label, value }], fieldErrors }`. The step shows running (with Cancel), passed, warning or failed with the time, the message
-and the details; field messages show beside their fields. Changing any field the check names marks its result stale.
+and the details; field messages show beside their fields. Changing any field the check names, or an answer that controls
+its visibility, marks its result stale and cancels a running check. This includes conditions on its section or step.
 
 | `required` | Next on the step |
 | --- | --- |

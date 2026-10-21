@@ -155,7 +155,7 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "version": "f05028c7cac97819",
+      "version": "49ee2148ed2bb255",
       "script": "canopyx-flow-checks.js",
       "style": "canopyx-flow-checks.css",
       "runtimes": [

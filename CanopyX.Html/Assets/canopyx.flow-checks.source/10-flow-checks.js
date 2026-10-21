@@ -100,10 +100,16 @@
       try { return new Intl.DateTimeFormat(this.lang || undefined, { timeStyle: "short" }).format(new Date(at)); } catch (error) { return at; }
     },
 
-    /** A field changed: the results of the checks that test it no longer describe the answers. */
+    /** A field or its visibility controller changed: checks must test the effective answers again. */
     checksChanged(field) {
+      // Conditions form an acyclic graph, including the containing step and section. Memoize its traversal per change.
+      const affected = new Map([[field.id, true]]);
+      const changed = id => {
+        if (!affected.has(id)) affected.set(id, [...this.model.fields.get(id).refs].some(changed));
+        return affected.get(id);
+      };
       for (const check of this.model.checks.values()) {
-        if (!check.fields.includes(field.id)) continue;
+        if (!check.fields.some(changed)) continue;
         const state = this.checkState.get(check.id);
         if (state) { state.stale = true; state.acknowledged = false; state.controller?.abort(); this.paintCheck(check); }
       }
