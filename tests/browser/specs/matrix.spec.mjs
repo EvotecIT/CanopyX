@@ -55,7 +55,8 @@ test("a matrix draws its cells with a symbol, a label and its totals", async ({ 
   expect(await cellLabel(page, "c", "y")).toBe("Row C and Col Y: No data");
   await expect(page.locator(".cx-mx-key svg")).toHaveCount(3);
   // Cells that need attention are filled with their tone; the others draw only their symbol.
-  expect((await cellPixel(page, "Row C", 0))[3]).toBeGreaterThan(0);
+  // Layout and theme observers may queue another canvas paint after the DOM has its final labels.
+  await expect.poll(async () => (await cellPixel(page, "Row C", 0))[3]).toBeGreaterThan(0);
   expect((await cellPixel(page, "Row A", 0))[3]).toBe(0);
   expect(await page.locator(".cx-mx-row .cx-mx-total").allTextContents()).toEqual(["1", "0", "1", "2", "0", "0"]);
   expect(await page.locator(".cx-mx-fcell").allTextContents()).toEqual(["2", "0", "1", "1"]);
