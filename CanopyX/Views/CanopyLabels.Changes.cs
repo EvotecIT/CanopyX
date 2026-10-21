@@ -144,4 +144,6 @@ public sealed partial class CanopyLabels {
     public string ChangeCopyRequest { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the printed note of the filters in effect, including <c>{filters}</c>. Default "Filtered: {filters}".</summary>
     public string ChangeFiltered { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the note under a printed diff that leaves lines out, including <c>{count}</c>. Default "{count} more lines are not printed."</summary>
+    public string ChangePrintLimit { get => Get(); set => Set(value); }
 }

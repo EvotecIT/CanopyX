@@ -76,9 +76,10 @@ public sealed class CanopyChangeItem {
     /// <param name="before">The value before, or null for a fact with one value.</param>
     /// <param name="after">The value after, or the one value.</param>
     /// <param name="tone">The tone of the value.</param>
+    /// <param name="note">Quiet text under the values, or null.</param>
     /// <returns>The item.</returns>
-    public CanopyChangeItem Fact(string label, string? before, string? after, CanopyTone tone = default) {
-        Facts.Add(new CanopyChangeFact(label) { Before = before, After = after, Tone = tone });
+    public CanopyChangeItem Fact(string label, string? before, string? after, CanopyTone tone = default, string? note = null) {
+        Facts.Add(new CanopyChangeFact(label) { Before = before, After = after, Tone = tone, Note = note });
         return this;
     }
 }

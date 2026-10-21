@@ -777,6 +777,7 @@ public sealed partial class CanopyLabels {
             [nameof(ChangeCancel)] = "Cancel",
             [nameof(ChangeUnclaimed)] = "This page cannot carry out “{action}” itself. Copy the request to pass it on.",
             [nameof(ChangeCopyRequest)] = "Copy request",
-            [nameof(ChangeFiltered)] = "Filtered: {filters}"
+            [nameof(ChangeFiltered)] = "Filtered: {filters}",
+            [nameof(ChangePrintLimit)] = "{count} more lines are not printed."
     };
 }

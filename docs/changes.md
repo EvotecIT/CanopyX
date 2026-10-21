@@ -94,7 +94,7 @@ its diff, which mounts the first time.
 
 | Property | Meaning |
 | --- | --- |
-| `items` | Up to 10,000: `id`, `kind`, `path`, `previousPath` (required when renamed), `kindLabel`, `secondary`, `before` and `after` (`{ size, hash, time }`), `facts` (`{ label, before?, after?, tone? }`), `flags` (`{ id, label, reason, tone? }`; warning by default), `diff` (a diff without its envelope), `actions` and `values`. |
+| `items` | Up to 10,000: `id`, `kind`, `path`, `previousPath` (required when renamed), `kindLabel`, `secondary`, `before` and `after` (`{ size, hash, time }`), `facts` (`{ label, before?, after?, tone?, note? }`; an added item shows only after values and a removed one only before values, and `note` is quiet text under the values), `flags` (`{ id, label, reason, tone? }`; warning by default), `diff` (a diff without its envelope), `actions` and `values`. |
 | `actions` | Up to 8: `id`, `label`, `icon` (copy, diff, check, open, download, compare, flag) and at most one of `copy`, `link`, `reveal` and `reason` (see below). An item offers the actions it names, or all of them, and only those it has a value, an address or a diff for. |
 | `toolbar` | Up to 8 actions of the list's bar: host actions, those that ask for a reason, and copy and link actions on the list's own `values`. |
 | `values` | Up to 16 values of the list, for the bar's copy and link actions, such as the address of the object that changed. |

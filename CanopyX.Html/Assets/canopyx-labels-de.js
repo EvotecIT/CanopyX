@@ -768,6 +768,7 @@ const labels = Object.freeze({
   changeUnclaimed: "Diese Seite kann „{action}“ nicht selbst ausführen. Kopieren Sie die Anfrage, um sie weiterzugeben.",
   changeCopyRequest: "Anfrage kopieren",
   changeFiltered: "Gefiltert: {filters}",
+  changePrintLimit: "{count} weitere Zeilen werden nicht gedruckt.",
 });
 const staticLabels = Object.freeze({
   overflowNote: "{shown} Zeilen angezeigt. Gesamtzahl: {total}.",

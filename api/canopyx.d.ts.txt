@@ -390,7 +390,7 @@ export interface ChangeItem{
   secondary?:string;
   before?:ChangeVersion;
   after?:ChangeVersion;
-  facts?:{label:string;before?:string;after?:string;tone?:string}[];
+  facts?:{label:string;before?:string;after?:string;tone?:string;note?:string}[];
   flags?:{id:string;label:string;reason:string;tone?:string}[];
   diff?:DiffBody;
   actions?:string[];

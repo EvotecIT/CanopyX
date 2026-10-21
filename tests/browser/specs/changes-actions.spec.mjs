@@ -133,3 +133,37 @@ test("paper shows every item the filters keep, the filters in effect, and a diff
   await expect(page.locator(".cx-chg-item")).toHaveCount(10);
   await expect(page.locator(".cx-chg-printnote")).toBeHidden();
 });
+
+test("an added file shows one value column, icon buttons show their names, and fact notes stay quiet", async ({ page }) => {
+  await mount(page, envelope("changes", { id: "f", label: "Files", actions: [{ id: "ack", label: "Acknowledge", icon: "check" }],
+    items: [{ id: "a", kind: "added", path: "a.exe", after: { size: 5, hash: "abcdef0123" }, facts: [{ label: "Owner", after: "BUILTIN\\Administrators", note: "S-1-5-32-544" }] },
+      { id: "m", kind: "modified", path: "m.txt", before: { size: 1 }, after: { size: 2 } }] }));
+  await page.evaluate(() => { api.toggle("a", true); api.toggle("m", true); });
+  const added = page.locator(".cx-chg-item[data-cx-item=\"a\"] .cx-chg-facts"), modified = page.locator(".cx-chg-item[data-cx-item=\"m\"] .cx-chg-facts");
+  await expect(added.locator("thead th")).toHaveText(["", "After"]);
+  await expect(modified.locator("thead th")).toHaveText(["", "Before", "After"]);
+  await expect(added.locator(".cx-chg-factnote")).toHaveText("S-1-5-32-544");
+  const action = page.locator(".cx-chg-item[data-cx-item=\"a\"]").getByRole("button", { name: "Acknowledge" });
+  await expect(action).toHaveAttribute("data-cx-tip", "Acknowledge");
+  await action.focus();
+  await page.keyboard.press("Shift+Tab"); await page.keyboard.press("Tab");
+  expect(await action.evaluate(element => getComputedStyle(element, "::after").content)).toBe("\"Acknowledge\"");
+});
+
+test("a long line scrolls sideways inside the diff, with a shaded edge where it continues", async ({ page }) => {
+  const long = "Invoke-WebRequest 'https://updates.example.org/agent.exe' -OutFile \"$env:TEMP\\agent.exe\" " + "-Verbose ".repeat(40);
+  const body = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Diff</title><style>" + asset("canopyx-grid.css") + asset("canopyx-changes.css") +
+    "</style><script>" + asset("canopyx-grid.js") + "\n" + asset("canopyx-changes.js") + "</script></head><body style=\"margin:0;padding:16px\"><div id=\"host\" data-cx-theme=\"light\" style=\"width:1000px\"></div>" +
+    "<script>window.api=CanopyX.createDiff(document.getElementById('host'),{view:" + JSON.stringify(envelope("diff", { id: "d", label: "D", before: "a\n", after: "a\n" + long + "\n", layout: "split" })).replace(/</g, "\\u003c") + "});</script></body></html>";
+  await page.route("https://canopyx.test/long", route => route.fulfill({ contentType: "text/html", body }));
+  await page.goto("https://canopyx.test/long");
+  await page.evaluate(() => api.ready);
+  await nextFrames(page);
+  await expect(page.locator(".cx-diff-edge-end")).toBeVisible();
+  await expect(page.locator(".cx-diff-edge-start")).toBeHidden();
+  const fits = await page.locator(".cx-diff-code.cx-diff-add").evaluate(cell => { const range = document.createRange(); range.selectNode([...cell.childNodes].pop()); return cell.getBoundingClientRect().right >= range.getBoundingClientRect().right; });
+  expect(fits).toBe(true);
+  await page.locator(".cx-diff-scroll").evaluate(scroll => { scroll.scrollLeft = scroll.scrollWidth; });
+  await expect(page.locator(".cx-diff-edge-start")).toBeVisible();
+  await expect(page.locator(".cx-diff-edge-end")).toBeHidden();
+});

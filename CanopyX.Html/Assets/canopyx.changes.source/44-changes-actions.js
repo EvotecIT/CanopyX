@@ -65,7 +65,7 @@
       control.setAttribute("data-cx-action", action.id);
       if (action.icon !== "none") control.appendChild(changeIcon(action.icon));
       if (action.icon === "none" || !item) control.appendChild(document.createTextNode(action.label));
-      else { control.setAttribute("aria-label", action.label); control.title = action.label; }
+      else { control.setAttribute("aria-label", action.label); control.setAttribute("data-cx-tip", action.label); }
       if (action.reason) control.setAttribute("aria-expanded", String(!!(this.pending && this.pending.mode === "ask" && this.pending.action === action && this.pending.item === item)));
       return control;
     },

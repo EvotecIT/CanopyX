@@ -100,6 +100,7 @@ internal static class CanopyChangeValidator {
                 if (fact!.Before == null && fact.After == null) throw new InvalidOperationException(what + "'s fact '" + fact.Label + "' needs a value.");
                 Text(fact.Before, what + "'s fact value", 2000, true);
                 Text(fact.After, what + "'s fact value", 2000, true);
+                Text(fact.Note, what + "'s fact note", 500, true);
             }
 
             if (item.Flags.Count > 16) throw new InvalidOperationException(what + " has at most 16 flags.");

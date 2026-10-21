@@ -768,6 +768,7 @@ const labels = Object.freeze({
   changeUnclaimed: "Questa pagina non può eseguire «{action}» da sola. Copia la richiesta per inoltrarla.",
   changeCopyRequest: "Copia richiesta",
   changeFiltered: "Filtrato: {filters}",
+  changePrintLimit: "Altre {count} righe non vengono stampate.",
 });
 const staticLabels = Object.freeze({
   overflowNote: "Righe mostrate: {shown} su {total}.",

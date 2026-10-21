@@ -775,5 +775,6 @@ public sealed partial class CanopyLabels {
         ChangeUnclaimed = "Cette page ne peut pas exécuter « {action} » elle-même. Copiez la demande pour la transmettre.",
         ChangeCopyRequest = "Copier la demande",
         ChangeFiltered = "Filtré : {filters}",
+        ChangePrintLimit = "{count} lignes de plus ne sont pas imprimées.",
     };
 }

@@ -49,11 +49,16 @@
       scroll.append(this.columns, this.canvas);
       this.live = h("div", "cx-sr-only"); this.live.setAttribute("aria-live", "polite");
       this.print = h("div", "cx-diff-print");
-      root.append(head, this.notes, this.state, scroll, this.live, this.print);
+      // Long lines scroll sideways inside the frame; a shaded edge shows there is more to either side.
+      const frame = this.frameBox = h("div", "cx-diff-frame");
+      this.edgeStart = h("div", "cx-diff-edge cx-diff-edge-start"); this.edgeEnd = h("div", "cx-diff-edge cx-diff-edge-end");
+      this.edgeStart.hidden = this.edgeEnd.hidden = true;
+      frame.append(scroll, this.edgeStart, this.edgeEnd);
+      root.append(head, this.notes, this.state, frame, this.live, this.print);
       this.host.appendChild(root);
       this.probe = h("span", "cx-diff-probe"); setText(this.probe, "0000000000"); root.appendChild(this.probe);
       this.buildTools();
-      scroll.addEventListener("scroll", () => this.schedule(), { passive: true, signal });
+      scroll.addEventListener("scroll", () => { this.schedule(); this.edges(); }, { passive: true, signal });
       scroll.addEventListener("keydown", event => this.onKey(event), { signal });
       scroll.addEventListener("click", event => this.onClick(event), { signal });
       global.addEventListener("beforeprint", () => this.renderPrint(), { signal });
@@ -78,9 +83,10 @@
         return button;
       });
       const button = (label, icon, action, text) => {
-        const element = h("button", "cx-diff-btn"); element.type = "button"; element.title = label;
+        const element = h("button", "cx-diff-btn"); element.type = "button";
         element.appendChild(changeIcon(icon));
-        if (text) { const name = h("span"); setText(name, label); element.appendChild(name); } else element.setAttribute("aria-label", label);
+        // An icon-only button names itself and shows its label as a tooltip on hover and on keyboard focus.
+        if (text) { const name = h("span"); setText(name, label); element.appendChild(name); } else { element.setAttribute("aria-label", label); element.setAttribute("data-cx-tip", label); }
         element.addEventListener("click", action, { signal });
         return element;
       };

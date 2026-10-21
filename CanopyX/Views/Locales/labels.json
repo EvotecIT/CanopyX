@@ -769,5 +769,6 @@
   "ChangeCancel": ["Anuluj","Abbrechen","Cancelar","Annuler","Annulla"],
   "ChangeUnclaimed": ["Ta strona nie może sama wykonać akcji „{action}”. Skopiuj żądanie, aby je przekazać.","Diese Seite kann „{action}“ nicht selbst ausführen. Kopieren Sie die Anfrage, um sie weiterzugeben.","Esta página no puede realizar «{action}» por sí misma. Copie la solicitud para transmitirla.","Cette page ne peut pas exécuter « {action} » elle-même. Copiez la demande pour la transmettre.","Questa pagina non può eseguire «{action}» da sola. Copia la richiesta per inoltrarla."],
   "ChangeCopyRequest": ["Kopiuj żądanie","Anfrage kopieren","Copiar solicitud","Copier la demande","Copia richiesta"],
-  "ChangeFiltered": ["Filtry: {filters}","Gefiltert: {filters}","Filtrado: {filters}","Filtré : {filters}","Filtrato: {filters}"]
+  "ChangeFiltered": ["Filtry: {filters}","Gefiltert: {filters}","Filtrado: {filters}","Filtré : {filters}","Filtrato: {filters}"],
+  "ChangePrintLimit": ["Pominięte w wydruku wiersze: {count}.","{count} weitere Zeilen werden nicht gedruckt.","{count} líneas más no se imprimen.","{count} lignes de plus ne sont pas imprimées.","Altre {count} righe non vengono stampate."]
 }

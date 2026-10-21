@@ -398,6 +398,7 @@ CanopyX.CanopyChangeFact.CanopyX.CanopyTone Tone { get; set; }
 CanopyX.CanopyChangeFact.System.String Label { get; }
 CanopyX.CanopyChangeFact.System.String? After { get; set; }
 CanopyX.CanopyChangeFact.System.String? Before { get; set; }
+CanopyX.CanopyChangeFact.System.String? Note { get; set; }
 CanopyX.CanopyChangeFlag : sealed class
 CanopyX.CanopyChangeFlag..ctor(System.String id, System.String label, System.String reason, CanopyX.CanopyTone tone = null)
 CanopyX.CanopyChangeFlag.CanopyX.CanopyTone Tone { get; }
@@ -406,7 +407,7 @@ CanopyX.CanopyChangeFlag.System.String Label { get; }
 CanopyX.CanopyChangeFlag.System.String Reason { get; }
 CanopyX.CanopyChangeItem : sealed class
 CanopyX.CanopyChangeItem..ctor(System.String id, CanopyX.CanopyChangeKind kind, System.String path)
-CanopyX.CanopyChangeItem.CanopyX.CanopyChangeItem Fact(System.String label, System.String? before, System.String? after, CanopyX.CanopyTone tone = null)
+CanopyX.CanopyChangeItem.CanopyX.CanopyChangeItem Fact(System.String label, System.String? before, System.String? after, CanopyX.CanopyTone tone = null, System.String? note = null)
 CanopyX.CanopyChangeItem.CanopyX.CanopyChangeItem Flag(System.String id, System.String label, System.String reason, CanopyX.CanopyTone tone = null)
 CanopyX.CanopyChangeItem.CanopyX.CanopyChangeKind Kind { get; set; }
 CanopyX.CanopyChangeItem.CanopyX.CanopyChangeVersion? After { get; set; }
@@ -1804,6 +1805,7 @@ CanopyX.CanopyLabels.System.String ChangeNoItems { get; set; }
 CanopyX.CanopyLabels.System.String ChangeNotSeen { get; set; }
 CanopyX.CanopyLabels.System.String ChangePosition { get; set; }
 CanopyX.CanopyLabels.System.String ChangePrevious { get; set; }
+CanopyX.CanopyLabels.System.String ChangePrintLimit { get; set; }
 CanopyX.CanopyLabels.System.String ChangeProgress { get; set; }
 CanopyX.CanopyLabels.System.String ChangePropagating { get; set; }
 CanopyX.CanopyLabels.System.String ChangeReason { get; set; }

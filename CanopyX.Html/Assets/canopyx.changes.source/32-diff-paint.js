@@ -34,12 +34,21 @@
     },
     /** The canvas: as tall as every row, and wide enough for the longest line on each side. */
     size() {
-      const cw = this.probe.getBoundingClientRect().width / 10 || 7.5, number = (this.digits + 2) * cw, code = this.chars * cw + 24;
+      // The code column holds the longest line with its padding and a character to spare, so no line is ever cut.
+      const cw = this.probe.getBoundingClientRect().width / 10 || 7.5, number = (this.digits + 2) * cw, code = (this.chars + 1) * cw + 32;
       const needed = this.shown === "split" ? 2 * (number + code) : 2 * number + 2 * cw + code;
       this.canvas.style.height = this.view.length * DIFF_ROW + "px";
       this.canvas.style.width = Math.max(this.scroll.clientWidth, Math.ceil(needed)) + "px";
       this.columns.style.width = this.canvas.style.width;
       this.render();
+      this.edges();
+    },
+    /** Shows the shaded edges where lines continue past the visible width. */
+    edges() {
+      if (!this.edgeEnd) return;
+      const scroll = this.scroll, max = scroll.scrollWidth - scroll.clientWidth, at = Math.abs(scroll.scrollLeft);
+      this.edgeStart.hidden = scroll.hidden || at <= 1;
+      this.edgeEnd.hidden = scroll.hidden || max - at <= 1;
     },
     schedule() {
       if (this.destroyed || this.frame) return;

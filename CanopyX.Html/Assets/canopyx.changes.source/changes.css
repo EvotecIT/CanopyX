@@ -37,6 +37,16 @@
 .cx-diff-scroll { position:relative;flex:0 1 auto;min-height:0;max-height:var(--cx-diff-max-height,70vh);overflow:auto;background:var(--cx-surface);border:var(--cx-size-1px) solid var(--cx-line);
   border-radius:var(--cx-radius);font-family:var(--cx-font-mono);font-size:var(--cx-size-12px);overscroll-behavior:contain; }
 .cx-change-host:is([data-cx-height],[style*="height"]) .cx-diff-scroll { flex:1 1 auto;max-height:none; }
+.cx-diff-frame { position:relative;display:flex;flex-direction:column;flex:0 1 auto;min-height:0; }
+.cx-change-host:is([data-cx-height],[style*="height"]) .cx-diff-frame { flex:1 1 auto; }
+.cx-diff-edge { position:absolute;top:var(--cx-size-1px);bottom:var(--cx-size-1px);width:var(--cx-size-32px);z-index:3;pointer-events:none; }
+.cx-diff-edge-start { inset-inline-start:var(--cx-size-1px);background:linear-gradient(to right,color-mix(in srgb,var(--cx-text) 26%,transparent),transparent);border-inline-start:var(--cx-size-2px) solid color-mix(in srgb,var(--cx-accent) 70%,transparent); }
+.cx-diff-edge-end { inset-inline-end:var(--cx-size-1px);background:linear-gradient(to left,color-mix(in srgb,var(--cx-text) 26%,transparent),transparent);border-inline-end:var(--cx-size-2px) solid color-mix(in srgb,var(--cx-accent) 70%,transparent); }
+.cx-diff-edge:dir(rtl) { transform:scaleX(-1); }
+/* Icon-only buttons show their label on hover and on keyboard focus, above the button. */
+:is(.cx-diff,.cx-changes) [data-cx-tip] { position:relative; }
+:is(.cx-diff,.cx-changes) [data-cx-tip]:is(:hover,:focus-visible)::after { content:attr(data-cx-tip);position:absolute;bottom:calc(100% + var(--cx-size-6px));inset-inline-end:0;z-index:6;padding:var(--cx-size-2px) var(--cx-size-8px);
+  font-size:var(--cx-size-12px);font-weight:400;line-height:1.4;white-space:nowrap;color:var(--cx-surface);background:var(--cx-text);border-radius:var(--cx-radius-sm);pointer-events:none; }
 .cx-diff-scroll:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:calc(var(--cx-size-2px) * -1); }
 .cx-diff-columns { position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr 1fr;background:var(--cx-head-bg);border-bottom:var(--cx-size-1px) solid var(--cx-line);
   font-family:var(--cx-font);font-size:var(--cx-size-12px);font-weight:600;color:var(--cx-muted); }
@@ -146,6 +156,8 @@ a.cx-chg-action { text-decoration:none; }
 .cx-chg-facts tbody th { font-weight:400;color:var(--cx-muted);white-space:nowrap; }
 .cx-chg-mono { font-family:var(--cx-font-mono);font-size:var(--cx-size-12px);overflow-wrap:anywhere; }
 .cx-chg-changed { font-weight:600; }
+.cx-chg-factnote { margin-top:var(--cx-size-2px);font-family:var(--cx-font);font-size:var(--cx-size-12px);font-weight:400;color:var(--cx-muted); }
+.cx-chg-facts.cx-chg-onevalue :is(th,td):first-child { width:28%; }
 .cx-chg-facts td.cx-tone-warning { color:var(--cx-tone-warning); }
 .cx-chg-facts td.cx-tone-danger { color:var(--cx-tone-danger); }
 .cx-chg-facts td.cx-tone-success { color:var(--cx-tone-success); }
@@ -204,7 +216,8 @@ a.cx-chg-action { text-decoration:none; }
 }
 
 @media print {
-  .cx-diff .cx-diff-tools,.cx-diff .cx-diff-scroll,.cx-chg-kinds,.cx-chg-switch,.cx-chg-tools,.cx-chg-barpanel,.cx-chg-panel,.cx-chg-actions,.cx-chg-toggle,.cx-chg-more { display:none !important; }
+  [data-cx-tip]::after { display:none !important; }
+  .cx-diff .cx-diff-tools,.cx-diff .cx-diff-scroll,.cx-diff-edge,.cx-chg-kinds,.cx-chg-switch,.cx-chg-tools,.cx-chg-barpanel,.cx-chg-panel,.cx-chg-actions,.cx-chg-toggle,.cx-chg-more { display:none !important; }
   .cx-chg-printnote { display:inline; }
   .cx-chg-summary { margin-inline-start:0; }
   .cx-diff .cx-diff-print { display:block; }
@@ -221,6 +234,7 @@ a.cx-chg-action { text-decoration:none; }
   .cx-chg-facts tbody th { white-space:normal; }
 }
 @media (forced-colors:active) {
+  [data-cx-tip]::after { color:Canvas;background:CanvasText; }
   .cx-diff-mark { outline:var(--cx-size-1px) solid CanvasText; }
   .cx-diff-current { outline:var(--cx-size-2px) solid Highlight; }
   .cx-prop-fill { background:CanvasText; }

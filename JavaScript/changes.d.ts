@@ -93,7 +93,8 @@ export interface ChangeItem {
   secondary?: string;
   before?: ChangeVersion;
   after?: ChangeVersion;
-  facts?: { label: string; before?: string; after?: string; tone?: string }[];
+  /** Shown side by side; an added item shows only its after, a removed one only its before. `note` is quiet text under the values. */
+  facts?: { label: string; before?: string; after?: string; tone?: string; note?: string }[];
   flags?: { id: string; label: string; reason: string; tone?: string }[];
   /** A diff that opens in the item's details. */
   diff?: DiffBody;

@@ -50,9 +50,10 @@
       if (kind === undefined || path === null || !/\S/.test(path)) changeFail(what + " needs a kind and a path");
       if (kind === "renamed" && previousPath === null || (kind === "added" || kind === "removed") && previousPath !== null) changeFail(what + " has a previous path only when it is renamed or modified, and always when renamed");
       const facts = changeList(item.facts, what + " facts", 32).map(value => {
-        const fact = changeKeys(value, ["label", "before", "after", "tone"], "a fact");
+        const fact = changeKeys(value, ["label", "before", "after", "tone", "note"], "a fact");
         if (fact.before === undefined && fact.after === undefined) changeFail(what + " has a fact without a value");
-        return Object.freeze({ label: changeText(fact.label, "a fact label", 200), before: changeText(fact.before, "a fact value", 2000, true), after: changeText(fact.after, "a fact value", 2000, true), tone: changeTone(fact.tone, "a fact") });
+        return Object.freeze({ label: changeText(fact.label, "a fact label", 200), before: changeText(fact.before, "a fact value", 2000, true), after: changeText(fact.after, "a fact value", 2000, true), tone: changeTone(fact.tone, "a fact"),
+          note: changeText(fact.note, "a fact note", 500, true) });
       });
       const flagIds = new Set(), flags = changeList(item.flags, what + " flags", 16).map(value => {
         const flag = changeKeys(value, ["id", "label", "reason", "tone"], "a flag"), flagId = changeId(flag.id, "a flag id", 64);
