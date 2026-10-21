@@ -44,9 +44,13 @@ function affordances(page) {
 }
 // Phones collapse every column except the essential identity column into the one "+N" affordance.
 async function expectOnePerRow(page, text) {
-  text ??= "+" + (columns.length - await page.locator(".cx-hcell").count());
+  text ??= "+" + (columns.filter(column => !column.hidden).length - await page.locator(".cx-hcell").count()) + " Columns";
   const list = await affordances(page);
   expect(list.length).toBeGreaterThan(0);
+  if (text === "+0 Columns") {
+    expect(list).toEqual(list.map(row => ({ id: row.id, count: 0, inFirstCell: true, text: "", record: "" })));
+    return;
+  }
   expect(list).toEqual(list.map(row => ({ id: row.id, count: 1, inFirstCell: true, text, record: row.id })));
 }
 
@@ -166,7 +170,7 @@ test("phone fitting reserves the +N button in the identity column when no width 
       inside: !!button && button.getBoundingClientRect().right <= cell.getBoundingClientRect().right + 0.5 };
   }));
   expect(cells.length).toBe(names.length);
-  expect(cells).toEqual(names.map(name => ({ name, truncated: false, button: "+2", inside: true })));
+  expect(cells).toEqual(names.map(name => ({ name, truncated: false, button: "+2 Columns", inside: true })));
   // Responsive visibility retains the second column; its complete content now scrolls instead of truncating.
   expect(await page.locator('.cx-row[data-cx-id="r0"] .cx-cell').nth(1).evaluate(cell => cell.scrollWidth > cell.clientWidth ||
     [...cell.querySelectorAll("*")].some(node => node.scrollWidth > node.clientWidth))).toBe(false);
@@ -174,6 +178,64 @@ test("phone fitting reserves the +N button in the identity column when no width 
 });
 
 for (const theme of ["light", "dark"]) {
+  test("phone identifier and secondary text yield before the disclosure label (" + theme + ")", async ({ page }) => {
+    await open(page, { columns: [
+      { id: "name", title: "Record", kind: "text", rowHeader: true, width: 180, presenter: { kind: "identifier", mono: true }, priority: 0 },
+      { id: "state", title: "State", kind: "text", width: 120, presenter: { kind: "state" }, priority: 1 },
+      { id: "owner", title: "Owner", kind: "text", priority: "optional" }
+    ], rows: [{ id: "r0", cells: { name: { value: "record-000", secondary: "example.test" }, state: { value: "Failing", tone: "danger" }, owner: "Operations" } }], selection: "none" });
+    await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
+    const button = page.locator('.cx-hidden-fields');
+    await expect(button).toHaveText("+1 Columns");
+    expect(await button.evaluate(element => { const cell = element.closest('.cx-cell'); return element.getBoundingClientRect().right <= cell.getBoundingClientRect().right - parseFloat(getComputedStyle(cell).paddingRight) + 1; })).toBe(true);
+    await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-cell').first()).toHaveAttribute("title", "record-000");
+  });
+
+  test("phone scroll layout preserves the preferred identity beside essential fields (" + theme + ")", async ({ page }) => {
+    await open(page, { layout: { mode: "scroll" }, columns: [
+      { id: "name", title: "Common name", kind: "text", rowHeader: true, width: 260 },
+      { id: "days", title: "Days", kind: "number", priority: 1, fixed: true, width: 100 },
+      { id: "signal", title: "Signal", kind: "text", priority: 1, fixed: true, width: 120 },
+      { id: "detail", title: "Detail", kind: "text", width: 240 }
+    ], rows: [{ id: "r0", cells: { name: "service.branch.production.example.com", days: 7, signal: "Expires 0-7d", detail: "Evidence" } }], selection: "none" });
+    await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
+    const geometry = await page.evaluate(() => { const grid = document.querySelector('.cx-data-grid .cx-grid'); return {
+      mode: document.querySelector('[data-canopyx-host]').canopyx.getLayout().mode,
+      width: document.querySelector('.cx-row[data-cx-id="r0"] .cx-cell').getBoundingClientRect().width,
+      scroll: grid.scrollWidth > grid.clientWidth }; });
+    expect(geometry.mode).toBe("scroll");
+    expect(geometry.width).toBeGreaterThanOrEqual(260);
+    expect(geometry.scroll).toBe(true);
+  });
+
+  test("phone disclosure names only this view's responsive fields and preserves essential values (" + theme + ")", async ({ page }) => {
+    const viewColumns = [
+      { id: "name", title: "Common name", kind: "text", rowHeader: true, width: 260 },
+      { id: "days", title: "Days", kind: "number", priority: 1 },
+      { id: "signal", title: "Signal", kind: "text", priority: 1, presenter: { kind: "enum", tones: { "Expires 0-7d": "warning" } } },
+      { id: "owner", title: "Owner", kind: "text", priority: "optional" },
+      { id: "note", title: "Note", kind: "text", priority: "optional" },
+      ...Array.from({ length: 56 }, (_, i) => ({ id: "hidden" + i, title: "Outside view " + i, kind: "text", hidden: true }))
+    ];
+    const name = "very-long-service.branch.production.example.com";
+    await open(page, { columns: viewColumns, rows: [{ id: "r0", cells: { name, days: 7, signal: "Expires 0-7d", owner: "Operations", note: "Evidence" } }], selection: "none" });
+    await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
+    await expectOnePerRow(page, "+2 Columns");
+    const button = page.getByRole("button", { name: "+2 Columns: Owner, Note", exact: true });
+    await expect(button).toHaveAttribute("title", "Owner, Note");
+    await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-cell').first()).toHaveAttribute("title", name);
+    const geometry = await page.evaluate(() => {
+      const grid = document.querySelector('.cx-data-grid .cx-grid');
+      return { scroll: grid.scrollWidth > grid.clientWidth + 1, essential: [...document.querySelectorAll('.cx-row[data-cx-id="r0"] .cx-cell')].slice(1).map(cell => ({ text: cell.textContent, clipped: [...cell.querySelectorAll('*')].some(node => node.scrollWidth > node.clientWidth + 1) })) };
+    });
+    expect(geometry.essential.map(cell => cell.text)).toEqual(["7", "Expires 0-7d"]);
+    expect(geometry.essential.every(cell => !cell.clipped)).toBe(true);
+    expect(geometry.scroll).toBe(false);
+    await capture(page, "view-fields-essential-" + theme + "-390");
+    await button.click();
+    await expect(page.locator('dialog.cx-drawer')).toBeVisible();
+  });
+
   test("phone first column keeps the name readable next to a compact affordance (" + theme + ")", async ({ page }) => {
     await open(page, { presentation: "paged", pageLength: 10 });
     await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
@@ -190,8 +252,8 @@ for (const theme of ["light", "dark"]) {
     expect(geometry.overflow).toBe("ellipsis");
     expect(geometry.textWidth).toBeGreaterThan(120);
     expect(geometry.buttonWidth).toBeLessThanOrEqual(geometry.buttonContent + 1);
-    expect(geometry.buttonWidth).toBeLessThan(40);
-    expect(geometry.buttonWidth).toBeLessThan(geometry.cellWidth / 4);
+    expect(geometry.buttonWidth).toBeLessThan(110);
+    expect(geometry.buttonWidth).toBeLessThan(geometry.cellWidth / 2);
     expect(geometry.buttonInside).toBe(true);
     await capture(page, "phone-hidden-fields-" + theme + "-390");
   });

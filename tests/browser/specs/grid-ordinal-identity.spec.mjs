@@ -50,14 +50,25 @@ test("ordinal saved views omit selection and reject selection replay before chan
 
 test("ordinal live updates fail both before and after another grid loads the live part", async ({ page }) => {
   await open(page);
-  expect(await page.evaluate(async () => { try { await api.updateRows([{ id: "0", cells: { count: 4 } }]); } catch (error) { return error.message; } })).toContain("stable row keys");
+  expect(await page.evaluate(() => api.updateRows([{ id: "0", cells: { count: 4 } }]).catch(error => error.message))).toContain("stable row keys");
   await page.evaluate(async () => {
     const host = document.createElement("div"); document.body.appendChild(host);
     const keyed = CanopyX.createDataGrid(host, { view: { ...api.view, id: "keyed", rowIdentity: "stableKey", stateKey: undefined } });
     await keyed.ready; await keyed.updateRows([{ id: "0", cells: { count: 4 } }]); keyed.destroy(); host.remove();
   });
-  expect(await page.evaluate(async () => { try { await api.updateRows([{ id: "0", cells: { count: 4 } }]); } catch (error) { return error.message; } })).toContain("stable row keys");
+  const failures = await page.evaluate(() => Promise.all([
+    api.applyTransaction({ update: [{ id: "0", cells: { count: 4 } }] }),
+    api.addRows([{ id: "3", cells: { message: "New", count: 4 } }]),
+    api.updateRows([{ id: "0", cells: { count: 4 } }]), api.removeRows(["0"])
+  ].map(promise => promise.catch(error => error.message))));
+  expect(failures).toEqual(Array(4).fill(expect.stringContaining("stable row keys")));
   expect(await page.evaluate(() => api.toCsv({ scope: "all" }))).toContain("Retry");
+});
+
+test("resetting ordinal columns retains current snapshot selection", async ({ page }) => {
+  await open(page);
+  const result = await page.evaluate(async () => { api.setSelection(["1"]); api.setColumnWidth("message", 333); await api.resetColumns(); return api.getSelection(); });
+  expect(result).toEqual(["1"]);
 });
 
 test("ordinal hosted snapshots clear local selection when the revision changes", async ({ page }) => {

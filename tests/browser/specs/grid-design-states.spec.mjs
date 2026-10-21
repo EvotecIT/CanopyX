@@ -61,7 +61,7 @@ test('phone hidden fields open a full-screen drawer and overflow remains usable'
  await expect(row.locator('.cx-hidden-fields')).toBeVisible();
  const shown=await page.locator('.cx-hcell[data-cx-column]').evaluateAll(cells=>cells.map(cell=>cell.getAttribute('data-cx-column')));
  const hidden=definition.columns.filter(column=>!shown.includes(column.id)).map(column=>column.id);
- expect(hidden).toContain('note');await expect(row.locator('.cx-hidden-fields')).toHaveText('+'+hidden.length);
+ expect(hidden).toContain('note');const responsive=definition.columns.filter(column=>!column.hidden&&!shown.includes(column.id));await expect(row.locator('.cx-hidden-fields')).toHaveText('+'+responsive.length+' Columns');
  await row.locator('.p-mono').click();const drawer=page.locator('.cx-drawer');await expect(drawer).toBeVisible();expect(await drawer.evaluate(element=>Math.round(element.getBoundingClientRect().width))).toBe(390);await capture(page,'drawer-phone-light');await page.keyboard.press('Escape');await expect(drawer).toHaveCount(0);
  await row.locator('.cx-hidden-fields').click();await expect(drawer).toBeVisible();
  for(const id of hidden){await expect(drawer.locator('dd[data-cx-field="'+id+'"]').locator('xpath=preceding-sibling::dt[1]')).toHaveText(definition.columns.find(column=>column.id===id).title);}

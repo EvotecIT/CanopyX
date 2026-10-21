@@ -80,6 +80,20 @@ column can grow to accommodate content or receive spare space.
    round down to whole CSS pixels; a remaining pixel budget goes to a growing
    text column with room. Explicit maxima may leave unused space.
 
+On phones (hosts up to 640 pixels wide), essential priority 0/1 columns keep
+their measured content and pill widths. An automatic row-header column gives
+space to those fields, even when it has a preferred width. Its text truncates
+with the complete value in a tooltip; fixed and reader-sized widths still win.
+If the essential fields and the row header's minimum controls cannot fit, the
+grid scrolls horizontally.
+
+The first shown cell's `+N Columns` button counts only columns in the current
+view that responsive or fitting priority hid. Columns hidden by the author or
+reader do not contribute. The button has an accessible name and a tooltip
+listing the hidden titles, and opens the existing record drawer. When no view
+columns are hidden responsively, the button is absent. The translated Columns
+label follows the grid's normal wording settings.
+
 The grid specializes its measurement floors and header-slack pass. Trees retain
 their existing shared fitting policy.
 

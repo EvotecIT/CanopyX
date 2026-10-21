@@ -583,6 +583,9 @@
       "then": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] },
       "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
       "allOf": [{
+        "if": { "required": ["selection"], "properties": { "selection": { "const": "none" } } },
+        "then": { "properties": { "reporting": { "properties": { "selectionControls": { "const": false } } } } }
+      }, {
         "if": { "required": ["rowIdentity"], "properties": { "rowIdentity": { "const": "ordinal" } } },
         "then": { "not": { "required": ["live"] }, "properties": { "record": { "properties": { "deepLink": { "const": false } } } } }
       }, {

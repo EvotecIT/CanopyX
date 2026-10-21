@@ -102,7 +102,8 @@
         const column = current.get(saved.id);
         return Object.assign(column, { sized: false, priority: column.basePriority }, saved);
       });
-      this.setTimeZone(state.timeZone); this.setSelection(state.selection);
+      this.setTimeZone(state.timeZone);
+      if (this.view.rowIdentity !== "ordinal") this.setSelection(state.selection);
       this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
       // Formatting rules travel untouched through readGridState; the formatting part validates them here.
       if (state.formatRules !== undefined || this.formatEdited) return this.setFormatRules(state.formatRules || this.view.formatRules || []);

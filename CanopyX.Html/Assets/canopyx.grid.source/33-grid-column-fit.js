@@ -23,7 +23,14 @@
       if (column.fixed || column.sized) return columnWidth(column, column.width);
       const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
       const floor = Math.max(level === undefined ? need : content, column.controlNeed || 0);
-      return Math.ceil(columnWidth(column, Math.max(floor, column.pref || 0) + (column.reserve || 0)));
+      let width = Math.max(floor, column.pref || 0) + (column.reserve || 0);
+      if (column.identity && this.host.clientWidth <= 640 && (this.layoutMode || "fit") === "fit") {
+        const peers = this.columns.filter(item => item !== column && !item.hidden && !item.responsiveHidden && gridLevel(item) === 0);
+        // Essential scalar fields keep their complete values. The phone identity may ellipsize with its full-value tooltip.
+        if (peers.length) width = Math.min(width, Math.max(column.controlNeed || column.minW,
+          this.grid.clientWidth - peers.reduce((total, item) => total + this.fitSize(item), 0)));
+      }
+      return Math.ceil(columnWidth(column, width));
     },
     fitShrink(cols, excess, level) {
       if (level !== 2) return COLUMN_FIT.fitShrink.call(this, cols, excess, level);
@@ -84,7 +91,7 @@
       // On phones the first shown column also holds the "+N" button of the hidden fields (76-grid-phone.js). Its width is
       // reserved beside the column's content, and the columns are hidden again so the reserved width fits.
       // The button's text is measured again once the count is final; the button is at least 24 pixels wide (its target size).
-      const first = shown.find(column => !column.fitHidden), reserve = () => first.reserve = Math.max(24, Math.ceil(this.fitContext.measureText("+" + this.hiddenFieldCount()).width)) + 8;
+      const first = shown.find(column => !column.fitHidden), reserve = () => first.reserve = Math.max(24, Math.ceil(this.fitContext.measureText(this.hiddenFieldLabel()).width)) + 8;
       if (phone && first && this.hiddenFieldCount()) { this.fitContext.font = this.fitFont[1]; reserve(); this.fitHide(shown, width, phone); reserve(); }
     },
     measureGridColumn(column) {
@@ -119,7 +126,7 @@
         const tone = gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), atomic = kind === "enum" || kind === "state";
         // Enum success uses a dot and ordinary text; toned enums use the pill font and 16 px inline padding.
         const atomicWidth = atomic ? text(value, kind === "enum" && !quiet && tone !== "success" ? pillFont : undefined) +
-          (kind === "enum" && (quiet || tone !== "success") ? 16 : quiet ? 0 : 13) : 0;
+          (kind === "enum" && (quiet || tone !== "success") ? 16 : kind === "state" && !quiet && tone !== "success" ? 15 : quiet ? 0 : 13) : 0;
         values = Math.max(values, atomic ? atomicWidth : kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
           Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value, kind === "enum" && !quiet ? small : undefined)) +
           (kind === "progress" ? 80 : kind === "enum" ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;

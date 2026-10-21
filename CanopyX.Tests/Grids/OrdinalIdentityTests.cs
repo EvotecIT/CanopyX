@@ -4,6 +4,21 @@ using CanopyX.Tests.Protocol;
 namespace CanopyX.Tests.Grids;
 
 public sealed class OrdinalIdentityTests {
+    [Theory]
+    [InlineData("none", true, false)]
+    [InlineData("none", false, true)]
+    [InlineData("single", true, true)]
+    [InlineData("multiple", true, true)]
+    public void SchemaSelectionControlsRequireASelectionMode(string selection, bool controls, bool valid) {
+        var grid = new CanopyDataGridView("g", "Grid");
+        grid.Columns.Add(new CanopyColumn("a", "A"));
+        var json = ProtocolSchema.Mutate(grid.ToJson(), value => {
+            value["selection"] = selection;
+            value["reporting"] = new System.Text.Json.Nodes.JsonObject { ["selectionControls"] = controls };
+        });
+        Assert.Equal(valid, ProtocolSchema.Evaluate(json).IsValid);
+    }
+
     private sealed record Attempt(string Message, int Count);
 
     [Fact]
