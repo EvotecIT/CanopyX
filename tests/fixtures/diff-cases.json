@@ -1,0 +1,284 @@
+{
+  "$comment": "Shared diff cases: CanopyX.Tests (CanopyTextDiffAlgorithm) and tests/browser (the changes part) must both produce these hunks and word marks.",
+  "lines": [
+    {
+      "name": "one line changed in the middle",
+      "before": "a\nb\nc\nd\ne\nf\ng\nh\n",
+      "after": "a\nb\nc\nD\ne\nf\ng\nh\n",
+      "context": 3,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            " a",
+            " b",
+            " c",
+            "-d",
+            "+D",
+            " e",
+            " f",
+            " g"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "added to an empty text",
+      "before": "",
+      "after": "one\ntwo\n",
+      "context": 3,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            "+one",
+            "+two"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "removed everything",
+      "before": "one\ntwo\n",
+      "after": "",
+      "context": 3,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            "-one",
+            "-two"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "two changes far apart make two hunks",
+      "before": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n",
+      "after": "1\nTWO\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\nNINETEEN\n20\n",
+      "context": 3,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            " 1",
+            "-2",
+            "+TWO",
+            " 3",
+            " 4",
+            " 5"
+          ]
+        },
+        {
+          "before": 16,
+          "after": 16,
+          "lines": [
+            " 16",
+            " 17",
+            " 18",
+            "-19",
+            "+NINETEEN",
+            " 20"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "two changes close together share a hunk",
+      "before": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n",
+      "after": "1\n2\nx\n4\n5\n6\n7\ny\n9\n10\n",
+      "context": 3,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            " 1",
+            " 2",
+            "-3",
+            "+x",
+            " 4",
+            " 5",
+            " 6",
+            " 7",
+            "-8",
+            "+y",
+            " 9",
+            " 10"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "interleaved edits put removals first",
+      "before": "keep\nold 1\nold 2\nkeep too\n",
+      "after": "keep\nnew 1\nnew 2\nnew 3\nkeep too\n",
+      "context": 1,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            " keep",
+            "-old 1",
+            "-old 2",
+            "+new 1",
+            "+new 2",
+            "+new 3",
+            " keep too"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "moved line",
+      "before": "alpha\nbeta\ngamma\ndelta\n",
+      "after": "beta\ngamma\nalpha\ndelta\n",
+      "context": 0,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            "-alpha"
+          ]
+        },
+        {
+          "before": 4,
+          "after": 3,
+          "lines": [
+            "+alpha"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CRLF and a missing final line break",
+      "before": "x\r\ny\r\nz",
+      "after": "x\ny changed\nz",
+      "context": 2,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            " x",
+            "-y",
+            "+y changed",
+            " z"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "repeated lines",
+      "before": "a\na\nb\na\na\n",
+      "after": "a\nb\na\nb\na\n",
+      "context": 1,
+      "hunks": [
+        {
+          "before": 1,
+          "after": 1,
+          "lines": [
+            " a",
+            "-a",
+            " b",
+            " a",
+            "+b",
+            " a"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "no change",
+      "before": "same\n",
+      "after": "same\n",
+      "context": 3,
+      "hunks": []
+    }
+  ],
+  "words": [
+    {
+      "before": "Add-Printer -ConnectionName \"Floor1\"",
+      "after": "Add-Printer -ConnectionName \"Floor2\"",
+      "marks": {
+        "before": [
+          [
+            29,
+            35
+          ]
+        ],
+        "after": [
+          [
+            29,
+            35
+          ]
+        ]
+      }
+    },
+    {
+      "before": "channel=stable",
+      "after": "channel=preview",
+      "marks": {
+        "before": [
+          [
+            8,
+            14
+          ]
+        ],
+        "after": [
+          [
+            8,
+            15
+          ]
+        ]
+      }
+    },
+    {
+      "before": "completely different text here",
+      "after": "nothing in common at all",
+      "marks": null
+    },
+    {
+      "before": "    Sales   = 1",
+      "after": "    Sales   = 2 # note",
+      "marks": {
+        "before": [
+          [
+            14,
+            15
+          ]
+        ],
+        "after": [
+          [
+            14,
+            22
+          ]
+        ]
+      }
+    },
+    {
+      "before": "één twee",
+      "after": "één drie",
+      "marks": {
+        "before": [
+          [
+            4,
+            8
+          ]
+        ],
+        "after": [
+          [
+            4,
+            8
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -322,6 +322,184 @@ export interface GridCellRangeApi{
   pasteCells(text:string,at?:{readonly row:number;readonly column:string}):Promise<GridPasteResult>;
 }
 
+// ---- JavaScript/changes.d.ts ----
+export interface ChangeNote{
+  text:string;
+  tone?:string;
+}
+export interface DiffHunk{
+  before:number;
+  after:number;
+  lines:string[];
+}
+export interface DiffBody{
+  id:string;
+  label:string;
+  path?:string;
+  previousPath?:string;
+  content?:"binary"|"unavailable"|"identical";
+  message?:string;
+  beforeTitle?:string;
+  afterTitle?:string;
+  before?:string;
+  after?:string;
+  hunks?:DiffHunk[];
+  context?:number;
+  layout?:"inline"|"split";
+  notes?:ChangeNote[];
+  truncated?:boolean;
+  unified?:string;
+  labels?:Record<string,string>;
+}
+export interface DiffDocument extends DiffBody{
+  protocol:"canopyx/2";
+  type:"diff";
+}
+export interface DiffOptions{
+  view:DiffDocument;
+  labels?:Record<string,string>;
+  onReady?:(detail:{diff:string}) => void;
+  onLayout?:(detail:{diff:string;layout:"inline"|"split"}) => void;
+  onCopy?:(detail:{diff:string;copied:boolean}) => void;
+}
+export interface DiffApi{
+  readonly element:HTMLElement;
+  readonly view:DiffDocument;
+  readonly ready:Promise<DiffApi>;
+  getLayout():"inline"|"split";
+  setLayout(layout:"inline"|"split"):void;
+  next():boolean;
+  previous():boolean;
+  expandAll():void;
+  copy():Promise<boolean>;
+  getHunks():DiffHunk[];
+  update(view:DiffDocument):void;
+  destroy():void;
+}
+export interface ChangeVersion{
+  size?:number;
+  hash?:string;
+  time?:string;
+}
+export interface ChangeItem{
+  id:string;
+  kind:"added"|"removed"|"modified"|"renamed";
+  path:string;
+  previousPath?:string;
+  kindLabel?:string;
+  secondary?:string;
+  before?:ChangeVersion;
+  after?:ChangeVersion;
+  facts?:{label:string;before?:string;after?:string;tone?:string}[];
+  flags?:{id:string;label:string;reason:string;tone?:string}[];
+  diff?:DiffBody;
+  actions?:string[];
+  values?:Record<string,string>;
+}
+export interface ChangeAction{
+  id:string;
+  label:string;
+  icon?:"none"|"copy"|"diff"|"check"|"open"|"download"|"compare"|"flag";
+  copy?:string;
+  link?:string;
+  reveal?:"none"|"details"|"diff";
+  reason?:boolean;
+}
+export interface ChangeListDocument{
+  protocol:"canopyx/2";
+  type:"changes";
+  id:string;
+  label:string;
+  actions?:ChangeAction[];
+  toolbar?:ChangeAction[];
+  values?:Record<string,string>;
+  exports?:("csv"|"json")[];
+  items:ChangeItem[];
+  groupByFolder?:boolean;
+  flaggedOnly?:boolean;
+  expandFlagged?:boolean;
+  hashLength?:number;
+  pageSize?:number;
+  timeZone?:"utc"|"local";
+  labels?:Record<string,string>;
+}
+export interface ChangeListState{
+  kinds:ChangeItem["kind"][];
+  flaggedOnly:boolean;
+  open:string[];
+}
+export interface ChangeActionDetail{
+  list:string;
+  action:string;
+  item:string|null;
+  kind:ChangeItem["kind"]|null;
+  path:string|null;
+  previousPath:string|null;
+  values:Record<string,string>;
+  copied:boolean|null;
+  reason?:string;
+  href?:string;
+  reveal?:"details"|"diff";
+}
+export interface ChangeExportDetail{
+  list:string;
+  format:"csv"|"json";
+  count:number;
+  saved:boolean;
+}
+export interface ChangeListOptions{
+  view:ChangeListDocument;
+  labels?:Record<string,string>;
+  state?:Partial<ChangeListState>;
+  onReady?:(detail:{list:string}) => void;
+  onAction?:(detail:ChangeActionDetail,event:CustomEvent<ChangeActionDetail>) => void;
+  onExport?:(detail:ChangeExportDetail) => void;
+  onToggle?:(detail:{list:string;item:string;open:boolean}) => void;
+  onStateChange?:(state:ChangeListState) => void;
+}
+export interface ChangeListApi{
+  readonly element:HTMLElement;
+  readonly view:ChangeListDocument;
+  readonly ready:Promise<ChangeListApi>;
+  getState():Readonly<ChangeListState>;
+  setState(state:Partial<ChangeListState>):void;
+  toggle(id:string,open?:boolean):boolean;
+  focusItem(id:string):boolean;
+  update(view:ChangeListDocument):void;
+  destroy():void;
+}
+export type PropagationState="converged"|"propagating"|"fault"|"unknown";
+export interface PropagationDocument{
+  protocol:"canopyx/2";
+  type:"propagation";
+  id:string;
+  label:string;
+  start?:string;
+  asOf?:string;
+  state?:PropagationState;
+  summary?:string;
+  title?:string;
+  groupCount?:string;
+  witnesses:{id:string;label:string;secondary?:string;state:PropagationState;firstSeen?:string;lastSeen?:string;note?:string;source?:boolean;group?:string}[];
+  timeZone?:"utc"|"local";
+  labels?:Record<string,string>;
+}
+export interface PropagationOptions{
+  view:PropagationDocument;
+  labels?:Record<string,string>;
+  onReady?:(detail:{propagation:string}) => void;
+}
+export interface PropagationApi{
+  readonly element:HTMLElement;
+  readonly view:PropagationDocument;
+  readonly ready:Promise<PropagationApi>;
+  update(view:PropagationDocument):void;
+  destroy():void;
+}
+export declare function createDiff(host:HTMLElement,options:DiffOptions):DiffApi;
+export declare function createChangeList(host:HTMLElement,options:ChangeListOptions):ChangeListApi;
+export declare function createPropagation(host:HTMLElement,options:PropagationOptions):PropagationApi;
+
 // ---- JavaScript/column-groups.d.ts ----
 export interface GridColumnGroup{
   readonly id:string;
@@ -1903,8 +2081,8 @@ type GridNamedRow<Row>=[Row][Row extends unknown?0:never];
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:GridOptions<GridNamedRow<Row>>):DataGrid<GridQuery,Row>;
 export function createDataGrid<Row extends GridRow=GridRow>(host:HTMLElement,options:CursorGridOptions<GridNamedRow<Row>>):DataGrid<GridCursorQuery,Row>;
 export function createCalendar(host:HTMLElement,options?:CalendarOptions):DataGrid<GridQuery,GridRow>;
-export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>|Partial<Omit<FlowOptions,"flow">>|Partial<Omit<MatrixOptions,"view">>):() => void;
-export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>|FlowApi|MatrixApi>;
+export function configure(viewId:string,options:HostOptions|GridHostOptions|GridHostOptions<GridCursorQuery>|Partial<Omit<FlowOptions,"flow">>|Partial<Omit<MatrixOptions,"view">>|Partial<Omit<DiffOptions,"view">>|Partial<Omit<ChangeListOptions,"view">>|Partial<Omit<PropagationOptions,"view">>):() => void;
+export function mount(root?:ParentNode):Array<TreeGrid|DataGrid<AcceptedGridQuery>|FlowApi|MatrixApi|DiffApi|ChangeListApi|PropagationApi>;
 import type{
   createFlow,FlowApi,FlowOptions
 }
@@ -1929,11 +2107,26 @@ export type{
   MatrixDocument,MatrixAxis,MatrixItem,MatrixAttribute,MatrixState,MatrixSort,MatrixNote,MatrixQueryState,MatrixStateInput,MatrixCellDetail,MatrixOptions,MatrixApi
 }
 from "./matrix.js";
+import type{
+  createDiff,createChangeList,createPropagation,DiffOptions,DiffApi,ChangeListOptions,ChangeListApi,PropagationOptions,PropagationApi
+}
+from "./changes.js";
+export{
+  createDiff,createChangeList,createPropagation
+}
+from "./changes.js";
+export type{
+  ChangeNote,DiffHunk,DiffBody,DiffDocument,DiffOptions,DiffApi,ChangeVersion,ChangeItem,ChangeAction,ChangeListDocument,ChangeListState,ChangeActionDetail,ChangeExportDetail,ChangeListOptions,ChangeListApi,PropagationState,PropagationDocument,PropagationOptions,PropagationApi
+}
+from "./changes.js";
 declare const gridRuntime:Omit<typeof CanopyX,"configure"|"mount">&{
   createDataGrid:typeof createDataGrid;
   createCalendar:typeof createCalendar;
   createFlow:typeof createFlow;
   createMatrix:typeof createMatrix;
+  createDiff:typeof createDiff;
+  createChangeList:typeof createChangeList;
+  createPropagation:typeof createPropagation;
   enhance:typeof enhance;
   grid:typeof grid;
   configure:typeof configure;
@@ -2425,6 +2618,7 @@ export interface MatrixItem{
 export interface MatrixAxis{
   title?:string;
   noun?:string;
+  groupCount?:string;
   attributes?:MatrixAttribute[];
   items:MatrixItem[];
   groupBy?:string;

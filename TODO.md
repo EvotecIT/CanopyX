@@ -378,6 +378,22 @@ Consumers: the status matrix (services × DCs), the relationship matrix (DC × D
 
 Gate: a 150 × 25 status matrix and a DC × DC relationship matrix at L meet the plan section 7.2 interaction budget and pass the accessibility checks.
 
+## Change Views
+
+Consumers: the TestimoX GPO change drawer and its email card (SYSVOL and NETLOGON file changes), and later file-share monitoring in
+DomainDetectiveNext and SyncSE ([changes.md](docs/changes.md)).
+
+- [x] A text diff (inline and side by side, line numbers, word marks, folded regions that open in place, change navigation, a copy-ready
+  unified diff, windowed rows, binary, unavailable and identical states) from host hunks or from texts the browser compares with the
+  C# algorithm (shared fixtures), a change list (kind badges, folders, sizes and short hashes before and after, flags with reasons, a
+  flagged-only filter, details with diffs, host and copy actions) and a propagation view (states with symbols, first and last
+  sightings, delays and lanes, groups, stacked rows on phones), with static renderers for email and print, in the lazy `changes` part.
+- [ ] Wrapped lines in the diff for short diffs (today long lines scroll sideways).
+- [ ] Syntax colouring of diff lines through a host renderer, if a consumer asks for it.
+
+Gate: the change views pass the browser suites on Chromium, Firefox and WebKit at desktop and phone widths in both palettes with axe,
+the shared diff fixtures agree in C# and the browser, and the part stays under its gzip guard.
+
 ## 0.5 Explorer Composition Patterns
 
 Consumers: an Active Directory users and computers browser (ADPlayground and TestimoX Desktop) and the CertNoob Manager / CA Noob certificates overview.

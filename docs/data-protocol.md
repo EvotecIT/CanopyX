@@ -36,6 +36,9 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `gridRecordPack` | `CanopyRecordSidecar.Write` | A record's drawer opens and its details are in a record pack beside the page |
 | `gridTransaction` | `CanopyGridTransaction.ToJson(view)` | A host sends rows to add, update or remove to an open grid ([Live data](#live-data)) |
 | `matrix` | `CanopyMatrix.ToJson()` | A status matrix: two axes of items, states, one string of state digits per row and sparse notes ([matrix.md](matrix.md#the-document)) |
+| `diff` | `CanopyTextDiff.ToJson()` | A text diff of one file: hunks as unified-diff lines, or both texts for the browser to compare ([changes.md](changes.md#the-text-diff)) |
+| `changes` | `CanopyChangeList.ToJson()` | A change list: changed files or items with versions, flags, facts, diffs and actions ([changes.md](changes.md#the-change-list)) |
+| `propagation` | `CanopyPropagation.ToJson()` | How one change reached its replicas: a state, first and last sighting per replica ([changes.md](changes.md#the-propagation-view)) |
 | `page` | `CanopyPage.ToJson()`, bundle writer | A node opens, or the user asks for more children |
 | `search` | `CanopySearchResult.ToJson()` | A remote search endpoint answers |
 | `counts` | `CanopyCounts.ToJson()` | A live host refreshes counts and rollups without reloading rows |

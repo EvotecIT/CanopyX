@@ -21,6 +21,7 @@ Turn application data into searchable trees, sortable tables and standalone HTML
 - **Email and print tables** rendered from the same .NET view without JavaScript.
 - **Calendars and resource timelines** of the same records: month, week, day, agenda and year views, resources grouped as a tree with capacity per group, recurring events, drag to reschedule through the grid's editing, and iCalendar export.
 - **Status matrices**: a state for each pair of two sets of entities, with totals, sorting, filtering and grouping on both axes, sticky headers and both axes windowed ([docs/matrix.md](docs/matrix.md)).
+- **Change views**: a text diff (inline or side by side, word marks, folded regions, windowed rows), a change list with kind badges, folders, hashes and risk flags, and how a change reached its replicas ([docs/changes.md](docs/changes.md)).
 - **Guided flows** for setup and edit tasks: steps with typed fields, conditions as data, validation, a review page with change links, secrets that never echo, and one proposal to the host ([docs/flow.md](docs/flow.md)).
 
 ![File explorer in the light theme, with sizes, dates, owners and an expanded detail row](docs/images/tree-grid-light.png)

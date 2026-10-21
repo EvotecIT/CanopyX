@@ -7,6 +7,9 @@
     { "$ref": "#/$defs/view" },
     { "$ref": "#/$defs/grid" },
     { "$ref": "#/$defs/matrix" },
+    { "$ref": "#/$defs/diff" },
+    { "$ref": "#/$defs/changes" },
+    { "$ref": "#/$defs/propagation" },
     { "$ref": "#/$defs/gridPage" },
     { "$ref": "#/$defs/gridQuery" },
     { "$ref": "#/$defs/gridCursorPage" },
@@ -118,6 +121,107 @@
       "if": { "required": ["square"], "properties": { "square": { "const": true } } },
       "then": { "not": { "required": ["columns"] } },
       "else": { "required": ["columns"], "not": { "anyOf": [{ "required": ["diagonal"] }, { "required": ["columnTitle"] }] } }
+    },
+    "changeText": { "type": "string", "pattern": "\\S", "maxLength": 200 },
+    "changeLine": { "type": "string", "maxLength": 2048, "pattern": "^[^\\r\\n]*$" },
+    "changeTime": { "type": "string", "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d(?::\\d\\d(?:\\.\\d{1,7})?)?(?:Z|[+-]\\d\\d:\\d\\d)?$" },
+    "changeNote": {
+      "type": "object", "required": ["text"], "additionalProperties": false,
+      "properties": { "text": { "type": "string", "pattern": "\\S", "maxLength": 500 }, "tone": { "$ref": "#/$defs/tone" } }
+    },
+    "diffHunk": {
+      "type": "object", "required": ["before", "after", "lines"], "additionalProperties": false,
+      "properties": {
+        "before": { "type": "integer", "minimum": 1 }, "after": { "type": "integer", "minimum": 1 },
+        "lines": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[ +-][^\\r\\n]*$", "maxLength": 20001 } }
+      }
+    },
+    "diffBody": {
+      "description": "A text diff. Writers and readers also check that hunks are in order, leave as many unchanged lines on both sides, and match the texts when the diff carries them.",
+      "type": "object", "required": ["id", "label"],
+      "properties": {
+        "id": { "$ref": "#/$defs/matrixId" }, "label": { "$ref": "#/$defs/changeText" },
+        "path": { "$ref": "#/$defs/changeLine" }, "previousPath": { "$ref": "#/$defs/changeLine" },
+        "content": { "enum": ["binary", "unavailable", "identical"] }, "message": { "type": "string", "pattern": "\\S", "maxLength": 1000 },
+        "beforeTitle": { "$ref": "#/$defs/changeText" }, "afterTitle": { "$ref": "#/$defs/changeText" },
+        "before": { "type": "string", "maxLength": 2000000 }, "after": { "type": "string", "maxLength": 2000000 },
+        "hunks": { "type": "array", "items": { "$ref": "#/$defs/diffHunk" } },
+        "context": { "type": "integer", "minimum": 0, "maximum": 20 }, "layout": { "enum": ["inline", "split"] },
+        "notes": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/changeNote" } },
+        "truncated": { "type": "boolean" }, "unified": { "type": "string" },
+        "labels": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "dependentRequired": { "before": ["after"], "after": ["before"] }
+    },
+    "diff": {
+      "allOf": [{ "$ref": "#/$defs/diffBody" }],
+      "required": ["protocol", "type"],
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "diff" },
+        "id": true, "label": true, "path": true, "previousPath": true, "content": true, "message": true, "beforeTitle": true, "afterTitle": true, "before": true, "after": true,
+        "hunks": true, "context": true, "layout": true, "notes": true, "truncated": true, "unified": true, "labels": true
+      },
+      "additionalProperties": false
+    },
+    "changeVersion": {
+      "type": "object", "additionalProperties": false,
+      "properties": { "size": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "hash": { "type": "string", "pattern": "\\S", "maxLength": 256 }, "time": { "$ref": "#/$defs/changeTime" } }
+    },
+    "changeItem": {
+      "type": "object", "required": ["id", "kind", "path"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/matrixId" }, "kind": { "enum": ["added", "removed", "modified", "renamed"] },
+        "path": { "$ref": "#/$defs/changeLine", "pattern": "\\S" }, "previousPath": { "$ref": "#/$defs/changeLine" },
+        "kindLabel": { "type": "string", "pattern": "\\S", "maxLength": 64 }, "secondary": { "$ref": "#/$defs/changeText" },
+        "before": { "$ref": "#/$defs/changeVersion" }, "after": { "$ref": "#/$defs/changeVersion" },
+        "facts": { "type": "array", "maxItems": 32, "items": { "type": "object", "required": ["label"], "additionalProperties": false, "properties": {
+          "label": { "$ref": "#/$defs/changeText" }, "before": { "type": "string", "maxLength": 2000 }, "after": { "type": "string", "maxLength": 2000 }, "tone": { "$ref": "#/$defs/tone" } } } },
+        "flags": { "type": "array", "maxItems": 16, "items": { "type": "object", "required": ["id", "label", "reason"], "additionalProperties": false, "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 64 }, "label": { "type": "string", "pattern": "\\S", "maxLength": 64 },
+          "reason": { "type": "string", "pattern": "\\S", "maxLength": 500 }, "tone": { "$ref": "#/$defs/tone" } } } },
+        "diff": { "allOf": [{ "$ref": "#/$defs/diffBody" }], "unevaluatedProperties": false },
+        "actions": { "type": "array", "maxItems": 8, "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
+        "values": { "type": "object", "maxProperties": 16, "additionalProperties": { "type": "string", "maxLength": 4096 } }
+      }
+    },
+    "changeAction": {
+      "description": "A change list action: a host action, one that asks for a reason, a copy or link action on a value key, or one that reveals the item's details or diff; one of copy, link, reveal and reason at most.",
+      "type": "object", "required": ["id", "label"], "additionalProperties": false, "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64 }, "label": { "type": "string", "pattern": "\\S", "maxLength": 64 },
+        "icon": { "enum": ["none", "copy", "diff", "check", "open", "download", "compare", "flag"] }, "copy": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "link": { "type": "string", "minLength": 1, "maxLength": 64 }, "reveal": { "enum": ["none", "details", "diff"] }, "reason": { "type": "boolean" } }
+    },
+    "changes": {
+      "description": "A change list. Writers and readers also check unique item and action ids, declared actions, and previous paths for renamed items.",
+      "type": "object", "required": ["protocol", "type", "id", "label", "items"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "changes" },
+        "id": { "$ref": "#/$defs/matrixId" }, "label": { "$ref": "#/$defs/changeText" },
+        "actions": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/changeAction" } },
+        "toolbar": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/changeAction" }, "description": "The bar's actions: host actions, and copy and link actions on the list's values." },
+        "values": { "type": "object", "maxProperties": 16, "additionalProperties": { "type": "string", "maxLength": 4096 } },
+        "exports": { "type": "array", "maxItems": 2, "uniqueItems": true, "items": { "enum": ["csv", "json"] } },
+        "items": { "type": "array", "maxItems": 10000, "items": { "$ref": "#/$defs/changeItem" } },
+        "groupByFolder": { "type": "boolean" }, "flaggedOnly": { "type": "boolean" }, "expandFlagged": { "type": "boolean" },
+        "hashLength": { "type": "integer", "minimum": 4, "maximum": 64 }, "pageSize": { "type": "integer", "minimum": 10, "maximum": 1000 },
+        "timeZone": { "enum": ["utc", "local"] }, "labels": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "propagation": {
+      "description": "How a change reached its replicas. Writers and readers also check unique replica ids and that times are in order.",
+      "type": "object", "required": ["protocol", "type", "id", "label", "witnesses"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "propagation" },
+        "id": { "$ref": "#/$defs/matrixId" }, "label": { "$ref": "#/$defs/changeText" },
+        "start": { "$ref": "#/$defs/changeTime" }, "asOf": { "$ref": "#/$defs/changeTime" },
+        "state": { "enum": ["converged", "propagating", "fault", "unknown"] }, "summary": { "type": "string", "pattern": "\\S", "maxLength": 500 },
+        "title": { "$ref": "#/$defs/changeText" }, "groupCount": { "$ref": "#/$defs/changeText", "pattern": "\\{count\\}" },
+        "witnesses": { "type": "array", "minItems": 1, "maxItems": 2000, "items": { "type": "object", "required": ["id", "label", "state"], "additionalProperties": false, "properties": {
+          "id": { "$ref": "#/$defs/matrixId" }, "label": { "$ref": "#/$defs/changeText" }, "secondary": { "$ref": "#/$defs/changeText" },
+          "state": { "enum": ["converged", "propagating", "fault", "unknown"] }, "firstSeen": { "$ref": "#/$defs/changeTime" }, "lastSeen": { "$ref": "#/$defs/changeTime" },
+          "note": { "type": "string", "pattern": "\\S", "maxLength": 500 }, "source": { "type": "boolean" }, "group": { "$ref": "#/$defs/changeText" } } } },
+        "timeZone": { "enum": ["utc", "local"] }, "labels": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
     },
     "gridRow": {
       "description": "A flat row with a dataset-stable identity. Writers and readers also enforce unique identities across the dataset.",

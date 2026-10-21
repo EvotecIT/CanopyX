@@ -11,6 +11,7 @@ but not built yet, see [planned work](../TODO.md). For short how-tos, see the [r
 - **Tree**: the tree grid (`@evotecit/canopyx`, `CanopyTreeView`).
 - **Flow**: guided forms (`@evotecit/canopyx/flow`, `CanopyFlow`); the grid entry points create flows too.
 - **Matrix**: a state for each pair of two sets of entities (`CanopyMatrix`, `CanopyX.createMatrix`), from the grid and reporting entry points.
+- **Change views**: a text diff, a change list and a propagation view (`CanopyTextDiff`, `CanopyChangeList`, `CanopyPropagation`; `CanopyX.createDiff`, `createChangeList`, `createPropagation`), from the grid and reporting entry points ([changes.md](changes.md)).
 
 ## Data sources
 

@@ -396,6 +396,20 @@
       ]
     },
     {
+      "name": "changes",
+      "label": "change views",
+      "runtimes": ["grid"],
+      "views": ["changes"],
+      "key": "CHANGES_IMPL",
+      "context": ["CHANGES_IMPL", "h", "setText", "fill", "plural", "numberFormat", "gridFreeze", "toneOf", "applyTone", "svgIcon", "PROTOCOL"],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.changes.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.changes.source/changes.css"
+      ]
+    },
+    {
       "name": "editing",
       "label": "editing",
       "runtimes": ["grid"],

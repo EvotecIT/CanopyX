@@ -170,3 +170,6 @@
 /* Overlays (column popovers, the record drawer, the text dialog) come with the editor part; their focus ring is here, ahead of its stylesheet. */
 .cx-grid-overlay :focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-2px); }
 .cx-grid-overlay [data-cx-pointer-focus]:focus-visible { outline:none; }
+/* Change view hosts (docs/changes.md): as tall as their content, unless a height bounds them. */
+.cx-host.cx-change-host { min-height:0;display:block; }
+.cx-host:where(.cx-change-host:not([data-cx-height])) { height:auto; }

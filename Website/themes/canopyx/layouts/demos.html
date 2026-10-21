@@ -23,6 +23,7 @@
       <a href="#files"><span class="cnx-demos__num">1</span><strong>File explorer</strong><span>{{ data.demos.files.nodes }} nodes, sidecar bundle</span></a>
       <a href="#inventory"><span class="cnx-demos__num">2</span><strong>Device inventory</strong><span>{{ data.demos.inventory.rows }} rows, one HTML page</span></a>
       <a href="#outline"><span class="cnx-demos__num">3</span><strong>Static outline</strong><span>Script-free HTML</span></a>
+      <a href="#changes"><span class="cnx-demos__num">4</span><strong>Change review</strong><span>Diff, change list, propagation</span></a>
     </nav>
 
     <section class="cnx-tour" id="files" aria-labelledby="cnx-demo-files-title">
@@ -118,6 +119,26 @@
 string html = CanopyStaticHtml.Render(outline, options);</code></pre>
           </figure>
         </div>
+      </div>
+    </section>
+
+    <section class="cnx-tour" id="changes" aria-labelledby="cnx-demo-changes-title">
+      <div class="cnx-node cnx-tour__head">
+        <h2 id="cnx-demo-changes-title">Change review</h2>
+        <p>A change set on a replicated share, written with <code>CanopyChangeList</code>, <code>CanopyPropagation</code> and <code>CanopyTextDiff</code>: what changed and why it is flagged, how it reached each server, and what changed inside a script.</p>
+      </div>
+      <div class="cnx-tour__body">
+        <figure class="cnx-frame">
+          <div class="cnx-frame__bar">
+            <span class="cnx-frame__title">Change review</span>
+            <span class="cnx-frame__path">/live/changes.html</span>
+            <a class="cnx-frame__open" href="/live/changes.html"><span>Open<span class="cnx-sr"> the change review</span> full screen</span></a>
+          </div>
+          <div class="cnx-frame__screen">
+            <iframe title="CanopyX change review" data-cnx-frame data-src="/live/changes.html"></iframe>
+          </div>
+        </figure>
+        {{ tour = data.tour.changes; include "tour-steps" }}
       </div>
     </section>
 

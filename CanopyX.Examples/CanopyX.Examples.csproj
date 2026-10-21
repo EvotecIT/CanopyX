@@ -32,5 +32,6 @@
     <EmbeddedResource Include="Templates\calendar-linked.html" LogicalName="CanopyX.Examples.Templates.calendar-linked.html" />
     <EmbeddedResource Include="Templates\calendar-scheduler.html" LogicalName="CanopyX.Examples.Templates.calendar-scheduler.html" />
     <EmbeddedResource Include="Templates\live-data.html" LogicalName="CanopyX.Examples.Templates.live-data.html" />
+    <EmbeddedResource Include="Templates\changes.html" LogicalName="CanopyX.Examples.Templates.changes.html" />
   </ItemGroup>
 </Project>

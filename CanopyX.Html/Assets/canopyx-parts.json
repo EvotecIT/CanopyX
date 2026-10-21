@@ -412,6 +412,19 @@
       ]
     },
     {
+      "name": "changes",
+      "label": "change views",
+      "version": "c45fdfd7e8b10af0",
+      "script": "canopyx-changes.js",
+      "style": "canopyx-changes.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "changes"
+      ]
+    },
+    {
       "name": "editing",
       "label": "editing",
       "version": "c82648dfaa7e5ee5",

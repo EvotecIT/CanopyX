@@ -11,7 +11,7 @@ namespace CanopyX.Html;
 /// Composes fragments and pages. The page shell is the native <c>Assets/page.html</c> template; this class only fills
 /// its tokens.
 /// </summary>
-internal static class CanopyHtmlWriter {
+internal static partial class CanopyHtmlWriter {
     private static readonly Lazy<string> PageTemplate = new Lazy<string>(() => CanopyHtmlResources.Read("page.html"));
     private static readonly Regex Token = new Regex(@"\{\{(\w+)\}\}", RegexOptions.CultureInvariant);
 
