@@ -2172,6 +2172,7 @@ CanopyX.CanopyLabels.System.String MatrixAttention { get; set; }
 CanopyX.CanopyLabels.System.String MatrixByLabel { get; set; }
 CanopyX.CanopyLabels.System.String MatrixByTotal { get; set; }
 CanopyX.CanopyLabels.System.String MatrixCell { get; set; }
+CanopyX.CanopyLabels.System.String MatrixCellCount { get; set; }
 CanopyX.CanopyLabels.System.String MatrixClearFilters { get; set; }
 CanopyX.CanopyLabels.System.String MatrixClose { get; set; }
 CanopyX.CanopyLabels.System.String MatrixCollapseGroup { get; set; }
@@ -2319,6 +2320,7 @@ CanopyX.CanopyMatrixAxis.System.Boolean SortDescending { get; set; }
 CanopyX.CanopyMatrixAxis.System.Collections.Generic.IList<CanopyX.CanopyMatrixAttribute> Attributes { get; }
 CanopyX.CanopyMatrixAxis.System.Collections.Generic.IList<CanopyX.CanopyMatrixItem> Items { get; }
 CanopyX.CanopyMatrixAxis.System.String? GroupBy { get; set; }
+CanopyX.CanopyMatrixAxis.System.String? GroupCount { get; set; }
 CanopyX.CanopyMatrixAxis.System.String? Noun { get; set; }
 CanopyX.CanopyMatrixAxis.System.String? SortBy { get; set; }
 CanopyX.CanopyMatrixAxis.System.String? Title { get; set; }

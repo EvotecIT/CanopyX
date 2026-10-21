@@ -16,7 +16,7 @@
       if (note && note.value != null) lines.push([labels.matrixValue, this.format.format(note.value)]);
       if (note && note.text) lines.push([note.value != null ? "" : labels.matrixValue, note.text]);
       if (data.info.rolled) {
-        lines.push(["", fill(labels.matrixGroupCount, { count: this.format.format(data.info.members) })]);
+        lines.push(["", fill(labels.matrixCellCount, { count: this.format.format(data.info.members) })]);
         if (data.info.attention) lines.push(["", fill(labels.matrixAttention, { count: this.format.format(data.info.attention) })]);
       }
       if (note && note.title) lines.push(["", note.title]);

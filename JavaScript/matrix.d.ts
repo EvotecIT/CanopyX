@@ -37,6 +37,8 @@ export interface MatrixItem {
 export interface MatrixAxis {
   title?: string;
   noun?: string;
+  /** How a group heading counts its members: {count}, optionally in plural forms ("[one]{count} server[other]{count} servers"). */
+  groupCount?: string;
   attributes?: MatrixAttribute[];
   items: MatrixItem[];
   groupBy?: string;

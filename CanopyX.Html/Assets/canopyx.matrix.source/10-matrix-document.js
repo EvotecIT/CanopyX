@@ -30,8 +30,14 @@
     const colon = value.indexOf(":"), boundary = value.search(/[/?#]/);
     return colon < 0 || boundary >= 0 && boundary < colon || /^(?:https?|mailto)$/i.test(value.slice(0, colon));
   }
+  /** A count text: {count} in the text, or in every plural form ([one]…[other]…) of a complete list that ends with an other form. */
+  function matrixPluralText(text) {
+    if (!text.startsWith("[")) return text.includes("{count}");
+    const forms = [...text.matchAll(/\[(zero|one|two|few|many|other)\]([^[]*)/g)];
+    return forms.reduce((sum, form) => sum + form[0].length, 0) === text.length && forms.some(form => form[1] === "other") && forms.every(form => form[2].includes("{count}"));
+  }
   function matrixAxis(input, what) {
-    const axis = matrixKeys(input, ["title", "noun", "attributes", "items", "groupBy", "sort"], what);
+    const axis = matrixKeys(input, ["title", "noun", "groupCount", "attributes", "items", "groupBy", "sort"], what);
     const attributes = [], byId = new Map();
     if (axis.attributes !== undefined && (!Array.isArray(axis.attributes) || axis.attributes.length > 32)) matrixFail(what + " has at most 32 attributes");
     for (const entry of axis.attributes || []) {
@@ -76,7 +82,9 @@
       sort = { by: value.by, direction: value.direction || "asc" };
     }
     if (axis.noun !== undefined) matrixText(axis.noun, what + " noun", 64);
-    return Object.freeze({ title: matrixText(axis.title, what + " title", 200, true), noun: axis.noun ?? null, attributes: Object.freeze(attributes), attributeById: byId,
+    const groupCount = matrixText(axis.groupCount, what + " group count", 200, true);
+    if (groupCount !== null && !matrixPluralText(groupCount)) matrixFail(what + " group count needs {count} in every form, and plural forms that end with [other]");
+    return Object.freeze({ title: matrixText(axis.title, what + " title", 200, true), noun: axis.noun ?? null, groupCount, attributes: Object.freeze(attributes), attributeById: byId,
       items: Object.freeze(items), byId: ids, groupBy: axis.groupBy ?? null, sort });
   }
 

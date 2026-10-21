@@ -76,7 +76,7 @@ public sealed partial class CanopyMatrix {
     }
 
     private static void WriteAxis(CanopyJsonWriter writer, CanopyMatrixAxis axis) {
-        writer.BeginObject().OptionalProperty("title", axis.Title).OptionalProperty("noun", axis.Noun);
+        writer.BeginObject().OptionalProperty("title", axis.Title).OptionalProperty("noun", axis.Noun).OptionalProperty("groupCount", axis.GroupCount);
         if (axis.Attributes.Count > 0) {
             writer.Name("attributes").BeginArray();
             foreach (var attribute in axis.Attributes) {
@@ -195,9 +195,10 @@ public sealed partial class CanopyMatrix {
     }
 
     private static void ReadAxis(object? node, CanopyMatrixAxis axis, string what) {
-        var map = CanopyFlowContract.Object(node, what, "title", "noun", "attributes", "items", "groupBy", "sort");
+        var map = CanopyFlowContract.Object(node, what, "title", "noun", "groupCount", "attributes", "items", "groupBy", "sort");
         axis.Title = CanopyFlowContract.Text(map, "title", what);
         axis.Noun = CanopyFlowContract.Text(map, "noun", what);
+        axis.GroupCount = CanopyFlowContract.Text(map, "groupCount", what);
         var kinds = new Dictionary<string, CanopyColumnKind>(StringComparer.Ordinal);
         foreach (var entry in CanopyFlowContract.Items(map, "attributes", what, 32)) {
             var attribute = CanopyFlowContract.Object(entry, what + " (attribute)", "id", "title", "kind", "facet");

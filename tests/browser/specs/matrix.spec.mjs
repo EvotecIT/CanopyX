@@ -130,10 +130,10 @@ test("sorting by total or name, grouping and collapsing a group rolls its cells 
   await page.evaluate(() => api.sort("columns", "#label", "desc"));
   expect(await headLabels(page)).toEqual(["Col Z", "Col Y", "Col X", "Col W"]);
   await page.evaluate(() => { api.sort("columns", null); api.group("rows", "site"); });
-  expect(await rowLabels(page)).toEqual(["NorthItems: 3", "Row A", "Row C", "Row B", "SouthItems: 3", "Row D", "Row E", "Row F"]);
+  expect(await rowLabels(page)).toEqual(["North3", "Row A", "Row C", "Row B", "South3", "Row D", "Row E", "Row F"]);
   // Collapsing North rolls its three rows into one: the worst state of each column and how many need attention.
   await page.getByRole("button", { name: "Collapse North" }).click();
-  expect(await rowLabels(page)).toEqual(["NorthItems: 3", "SouthItems: 3", "Row D", "Row E", "Row F"]);
+  expect(await rowLabels(page)).toEqual(["North3", "South3", "Row D", "Row E", "Row F"]);
   expect(await cellLabel(page, "a", "x")).toBe("North and Col X: Failing, 1");
   await expect(page.locator(".cx-mx-rolledrow .cx-mx-total")).toHaveText("2");
   await page.getByRole("button", { name: "Expand North" }).click();
@@ -466,6 +466,32 @@ test("printing draws a table of the visible matrix", async ({ page }) => {
   await page.emulateMedia({ media: "print" });
   await expect(table).toBeVisible();
   await expect(page.locator(".cx-mx-scroll")).toBeHidden();
+});
+
+test("the print table keeps group rows, column bands and tone cells that never rely on colour alone", async ({ page }) => {
+  const doc = matrixDoc();
+  doc.rows.groupBy = "site"; doc.rows.groupCount = "[one]{count} server[other]{count} servers"; doc.columns.groupBy = "tier";
+  await mountMatrix(page, doc);
+  await expect(page.locator(".cx-mx-heading .cx-mx-sub").first()).toHaveText("3 servers");
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  await page.emulateMedia({ media: "print" });
+  const table = page.locator(".cx-mx-print table");
+  await expect(table.locator("tr.cx-mx-printgroup th")).toHaveText(["North · 3 servers", "South · 3 servers"]);
+  await expect(table.locator('th[scope="colgroup"]')).toHaveText(["Core", "Edge"]);
+  const failing = table.locator("td.cx-mx-attn.cx-tone-danger", { hasText: "3" });
+  await expect(failing).toHaveText("✕ 3");
+  await expect(failing).toHaveAttribute("title", "Failing");
+  const look = await failing.evaluate(cell => ({ background: getComputedStyle(cell).backgroundColor, adjust: getComputedStyle(cell.closest("table")).printColorAdjust }));
+  expect(look.background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(look.adjust).toBe("exact");
+  const healthy = table.locator("td.cx-mx-printcell.cx-tone-success").first();
+  expect(await healthy.evaluate(cell => getComputedStyle(cell).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  await expect(table.locator("td.cx-mx-printnone").first()).toHaveText("·");
+  // A collapsed group prints as one rolled-up row.
+  await page.emulateMedia({ media: "screen" });
+  await page.getByRole("button", { name: "Collapse North" }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  await expect(table.locator("tr.cx-mx-printrolled th")).toHaveText("North · 3 servers");
 });
 
 for (const [name, change, message] of [

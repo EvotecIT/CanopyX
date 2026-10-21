@@ -401,7 +401,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "a02d6881b70019b4",
+      "version": "304dbc4c804a9090",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [

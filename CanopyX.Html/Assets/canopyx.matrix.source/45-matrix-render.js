@@ -3,6 +3,11 @@
   // and placed with transforms; each draws its window of cells on its canvas (47-matrix-canvas.js), and the header and totals
   // are elements placed at inline-start offsets. A derive drops the mounted rows and the next frame paints anew.
   Object.assign(MatrixView.prototype, {
+    /** A group's count in the axis's own words ("2 domain controllers") or the matrixGroupCount label, in the page language's plural form. */
+    groupCount(axis, count) {
+      const template = (axis === "columns" ? this.doc.columns : this.doc.rows).groupCount || this.labels.matrixGroupCount;
+      return fill(plural(template, count, this.lang), { count: this.format.format(count) });
+    },
     scheduleRender() {
       if (this.destroyed || this.frame) return;
       this.frame = requestAnimationFrame(() => { this.frame = 0; this.render(); });
@@ -75,7 +80,7 @@
         toggle.setAttribute("aria-label", fill(open ? labels.matrixCollapseGroup : labels.matrixExpandGroup, { group: entry.label }));
         toggle._group = { axis: "rows", key: entry.group.key };
         const label = h("span", "cx-mx-label"), count = h("span", "cx-mx-sub");
-        setText(label, entry.label); setText(count, fill(labels.matrixGroupCount, { count: this.format.format(entry.members.length) }));
+        setText(label, entry.label); setText(count, this.groupCount("rows", entry.members.length));
         toggle.append(label, count); head.appendChild(toggle);
         head.removeAttribute("title");
       }

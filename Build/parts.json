@@ -386,7 +386,7 @@
       "runtimes": ["grid"],
       "views": ["matrix"],
       "key": "MATRIX_IMPL",
-      "context": ["MATRIX_IMPL", "h", "setText", "fill", "foldText", "numberFormat", "gridFreeze", "toneOf", "applyTone", "toneColors", "AxisWindow", "PROTOCOL"],
+      "context": ["MATRIX_IMPL", "h", "setText", "fill", "plural", "foldText", "numberFormat", "gridFreeze", "toneOf", "applyTone", "toneColors", "AxisWindow", "PROTOCOL"],
       "end": "MATRIX_IMPL.create = matrixCreate;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.matrix.source"
