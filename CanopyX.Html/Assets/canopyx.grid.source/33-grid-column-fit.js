@@ -17,28 +17,47 @@
     fitHide(shown, width, phone) {
       return COLUMN_FIT.fitHide.call(this, shown, width, phone, column => COLUMN_FIT.fitSize.call(this, column, 1));
     },
-    // Header slack yields before content. Authored preferred widths remain floors; readers can explicitly override them.
-    // Content floors apply to every automatic column. Once header slack is gone, use horizontal scrolling.
+    // Readable header/content minima precede preferred reading space. Explicit fixed/reader widths remain authoritative.
     fitSize(column, level) {
       if (column.fixed || column.sized) return columnWidth(column, column.width);
       const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
-      const floor = Math.max(level === undefined ? need : content, column.controlNeed || 0);
-      let width = Math.max(floor, column.pref || 0) + (column.reserve || 0);
+      const header = level === undefined || level === 2 || this.fitHeadersFit ? Math.min(column.headNeed || 0, 320) : 0;
+      const floor = Math.max(level === undefined ? need : content, header, column.controlNeed || 0);
+      let width = Math.max(floor, level === undefined ? column.pref || 0 : 0) + (column.reserve || 0);
       if (column.identity && this.host.clientWidth <= 640 && (this.layoutMode || "fit") === "fit") {
         const peers = this.columns.filter(item => item !== column && !item.hidden && !item.responsiveHidden && gridLevel(item) === 0);
         // Essential scalar fields keep their complete values. The phone identity may ellipsize with its full-value tooltip.
-        if (peers.length) width = Math.min(width, Math.max(column.controlNeed || column.minW,
-          this.grid.clientWidth - peers.reduce((total, item) => total + this.fitSize(item), 0)));
+        const minimum = this.fitHeadersFit ? Math.max(column.controlNeed || 0, Math.min(column.headNeed || 0, 320)) + (column.reserve || 0) : column.controlNeed || column.minW;
+        if (peers.length) width = Math.min(width, Math.max(minimum,
+          this.grid.clientWidth - peers.reduce((total, item) => total + this.fitSize(item, 2), 0)));
       }
       return Math.ceil(columnWidth(column, width));
     },
     fitShrink(cols, excess, level) {
-      if (level !== 2) return COLUMN_FIT.fitShrink.call(this, cols, excess, level);
-      // All header-only slack yields together, including numeric headers. A long numeric title must not force text cuts.
-      const slack = cols.map(column => Math.max(0, column.renderWidth - this.fitSize(column, 2)));
+      // First preserve capped header minimums, then let headers yield only when those minimums cannot fit.
+      // Preferred whitespace gives way to these minima; content remains a floor in every pass.
+      const slack = cols.map(column => Math.max(0, column.renderWidth - this.fitSize(column, level)));
       const total = slack.reduce((sum, width) => sum + width, 0), ratio = total ? Math.min(1, excess / total) : 0;
       cols.forEach((column, index) => column.renderWidth -= slack[index] * ratio);
       return Math.max(0, excess - total);
+    },
+    fitWidths(cols, width) {
+      // Content can require scrolling even though the header minimums alone fit. In that case retain those headers.
+      this.fitHeadersFit = cols.reduce((sum, column) => sum + columnWidth(column,
+        Math.min(column.headNeed || 0, 320) + (column.reserve || 0)), 0) <= width;
+      return COLUMN_FIT.fitWidths.call(this, cols, width);
+    },
+    fitSpare(columns, spare) {
+      // Restore capped header labels before flex/identity columns receive decorative reading space.
+      const deficits = columns.map(column => Math.max(0, Math.min(Math.min(column.headNeed || 0, 320) +
+        (column.reserve || 0), column.maxW) - column.renderWidth));
+      const total = deficits.reduce((sum, value) => sum + value, 0), ratio = total ? Math.min(1, spare / total) : 0;
+      columns.forEach((column, index) => column.renderWidth += deficits[index] * ratio);
+      spare = Math.max(0, spare - total);
+      const preferred = columns.map(column => Math.max(0, Math.min(column.pref || 0, column.maxW) - column.renderWidth));
+      const preferredTotal = preferred.reduce((sum, value) => sum + value, 0), preferredRatio = preferredTotal ? Math.min(1, spare / preferredTotal) : 0;
+      columns.forEach((column, index) => column.renderWidth += preferred[index] * preferredRatio);
+      return COLUMN_FIT.fitSpare.call(this, columns, Math.max(0, spare - preferredTotal));
     },
     visibleColumns() { return FIT.visibleColumns.call(this).filter(column => !column.fitHidden); },
     newCell(index, width, kind) { return FIT.newCell.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind); },
@@ -109,7 +128,7 @@
       const [, small, headFont, pad, mono, sub, pillFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
       // The title is a 24 px pointer target at least, and a move handle takes its 24 px target plus the gap beside it.
-      const chrome = 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 28 : 0) +
+      const chrome = 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 32 : 0) +
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0);
       column.controlNeed = Math.ceil(24 + chrome);
       const head = Math.ceil(Math.max(24, text(column.title, headFont, false)) + chrome);

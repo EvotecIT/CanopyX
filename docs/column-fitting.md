@@ -40,8 +40,10 @@ columns retain their authored width during fitting. A drag, keyboard resize, or
 `setColumnWidth` creates a user width that fitting preserves within those bounds,
 including when it is narrower than measured content. Such explicit constraints
 can intentionally truncate content. Reset columns or `autoSizeColumns` restores
-automatic sizing. Preferred widths are automatic floors, not fixed widths: a
-column can grow to accommodate content or receive spare space.
+automatic sizing. Preferred widths are reading-space targets, not fixed widths.
+They receive space before ordinary growth, after readable header and content
+minimums. This prevents empty preferred space in one column from cutting another
+column's header. Use fixed sizing or an explicit minimum when a width must never yield.
 
 ## Width allocation, in order
 
@@ -56,15 +58,18 @@ column can grow to accommodate content or receive spare space.
    greater of its measured need (header or content) and preferred width, clamped
    to its minimum and maximum. Phone disclosure space is included. Fixed and
    user-sized columns retain their widths.
-3. **Remove header-only slack.** If the total exceeds available width, calculate
-   each column's slack above the greater of measured content and preferred width.
-   Preserve space for the header's sort, menu and filter controls and their
-   minimum pointer targets, even when the cell content is only a dash. Remove
-   the same fraction of the remaining slack from every column, including numeric
-   columns, until the grid fits or this slack is exhausted. Fixed and user-sized
-   columns have no slack. Header text may truncate with an ellipsis; the complete
-   authored title remains available through its native tooltip and accessible
-   header label. Sorting and resize controls remain usable.
+3. **Protect header minimums before preferred whitespace.** An automatic column's
+   header minimum is its measured label plus sort, menu, filter and reorder
+   affordances, capped at 320 pixels and bounded by explicit sizing constraints.
+   If the total exceeds available width, remove whitespace above the greater of
+   this header minimum and measured content first, including preferred whitespace.
+   Fixed and reader-sized columns do not yield. Only when the header minimums
+   themselves cannot collectively fit may header-only space yield to content.
+   Keep the sort/menu controls' minimum pointer targets even for a dash-only
+   column. A header beyond the cap or one that must yield truncates with an
+   ellipsis; its complete title remains in its tooltip and accessible name.
+   When header minimums fit but content requires a wider row, keep those header
+   minimums in the horizontally scrolling row too.
 4. **Scroll when the floors cannot fit.** The row and canvas retain the sum of
    the resulting widths. The scroll container exposes horizontal scrolling;
    fitting does not squeeze measured text, identity values, pills or other
@@ -73,7 +78,8 @@ column can grow to accommodate content or receive spare space.
    clipping or expansion policy.
    Scroll/card layout modes keep each column's base width instead of performing
    shortage fitting or automatic hiding.
-5. **Distribute spare width.** Once the base widths fit, weighted flex columns
+5. **Distribute spare width.** Restore truncated headers to their capped minimums
+   first, then restore preferred reading widths. Only then do weighted flex columns
    receive spare width up to their maxima. The identity column grows toward
    420 pixels; it and the widest normal text column then share remaining space,
    respecting maxima. Fixed and user-sized columns do not grow. Render widths

@@ -110,12 +110,14 @@ test("automatic columns return spare width and header slack before sacrificing c
   expect(fill[0]).toBeLessThanOrEqual(fill[1] + 1);
 });
 
-test("long values and preferred widths survive a narrow frame", async ({ page }) => {
+test("long values survive a narrow frame before preferred whitespace", async ({ page }) => {
   await mount(page, servers(), { width: 1400 });
   const domain = () => page.locator('.cx-hcell[data-cx-column="domain"]').evaluate(cell => cell.getBoundingClientRect().width);
+  const preferred = await domain(); expect(preferred).toBeGreaterThanOrEqual(200);
   await page.locator("#frame").evaluate(frame => frame.style.width = "720px"); await nextFrames(page); await nextFrames(page);
   expect(await truncated(page, '.cx-row [aria-colindex="3"] .cx-text')).toBe(0);
-  expect(await domain()).toBeGreaterThanOrEqual(200);
+  expect(await domain()).toBeLessThanOrEqual(preferred);
+  expect(await truncated(page, '.cx-row [aria-colindex="2"] .cx-text')).toBe(0);
 });
 
 test("an automatic identity column keeps its measured content estimate and scrolls when necessary", async ({ page }) => {

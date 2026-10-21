@@ -14,27 +14,28 @@ async function rowsFit(page) {
   }).toBe(true);
 }
 
-for (const theme of ["light", "dark"]) test(`report shortage preserves preferred widths and atomic status content in ${theme}`, async ({ page }) => {
+for (const theme of ["light", "dark"]) test(`report shortage preserves header minima and atomic status content in ${theme}`, async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   await mountReportLayout(page, { theme });
   const box = await layoutGeometry(page);
-  expect(box.widths.name).toBeGreaterThanOrEqual(240); expect(box.widths.group).toBeGreaterThanOrEqual(260);
-  expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1); expect(box.clippedPills).toBe(0);
+  expect(box.clippedPills).toBe(0);
   const headers = await page.locator(".cx-hcell :is(.cx-sort,.cx-htext)").evaluateAll(labels => labels.map(label => ({
     title: label.title, text: label.textContent, clipped: label.scrollWidth > label.clientWidth + 1
   })));
   expect(headers.every(label => label.title === label.text)).toBe(true);
-  expect(headers.some(label => label.clipped)).toBe(true);
+  expect(headers.some(label => label.clipped)).toBe(false);
   await rowsFit(page);
   await page.getByRole("button", { name: "Record", exact: true }).click(); await settled(page);
   await expect(page.locator('.cx-hcell[data-cx-column="name"]')).toHaveAttribute("aria-sort", "ascending");
   const grip = page.getByRole("separator", { name: "Resize Responsible team", exact: true });
+  const beforeResize = (await layoutGeometry(page)).widths.group;
   await grip.focus(); await page.keyboard.press("ArrowRight"); await settled(page);
-  expect((await layoutGeometry(page)).widths.group).toBe(270);
+  const readerWidth = (await layoutGeometry(page)).widths.group;
+  expect(readerWidth).toBe(beforeResize + 10);
   await page.locator("#frame").evaluate(frame => frame.style.width = "760px"); await settled(page);
   const narrow = await layoutGeometry(page);
-  expect(narrow.widths.group).toBe(270); expect(narrow.widths.name).toBeGreaterThanOrEqual(240);
+  expect(narrow.widths.group).toBe(readerWidth);
   expect(narrow.scrollWidth).toBeGreaterThan(narrow.clientWidth); expect(narrow.clippedPills).toBe(0);
   await rowsFit(page); expect(errors).toEqual([]);
 });
@@ -84,7 +85,6 @@ test("automatic text content keeps its measured width after header-only slack is
   await mountReportLayout(page, { view, width: 760 });
   const box = await layoutGeometry(page);
   expect(box.scrollWidth).toBeGreaterThan(box.clientWidth);
-  expect(box.widths.name).toBeGreaterThanOrEqual(240);
   expect(box.widths.stage).toBeLessThan(144);
   const text = page.locator('.cx-row[data-cx-id="a"] [aria-colindex="2"] .cx-text');
   expect(await text.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
@@ -92,7 +92,9 @@ test("automatic text content keeps its measured width after header-only slack is
 });
 
 test("auto-height follows horizontal overflow introduced by a user width without a row-count change", async ({ page }) => {
-  await mountReportLayout(page, { classic: true }); await rowsFit(page);
+  await mountReportLayout(page, { classic: true, width: 1200 });
+  await page.locator("#frame").evaluate(frame => frame.parentElement.style.maxWidth = "none");
+  await settled(page); await rowsFit(page);
   await page.evaluate(() => api().setColumnWidth("group", 1000)); await settled(page); await rowsFit(page);
   const overflowing = await layoutGeometry(page);
   expect(overflowing.scrollWidth).toBeGreaterThan(overflowing.clientWidth);

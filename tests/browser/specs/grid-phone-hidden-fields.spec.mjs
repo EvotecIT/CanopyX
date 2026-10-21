@@ -178,12 +178,14 @@ test("phone fitting reserves the +N button in the identity column when no width 
 });
 
 for (const theme of ["light", "dark"]) {
-  test("phone identifier and secondary text yield before the disclosure label (" + theme + ")", async ({ page }) => {
+  for (const selected of [false, true]) test("phone identifier and secondary text yield before the disclosure label (" + theme + ", selection " + selected + ")", async ({ page }) => {
     await open(page, { columns: [
       { id: "name", title: "Record", kind: "text", rowHeader: true, width: 180, presenter: { kind: "identifier", mono: true }, priority: 0 },
       { id: "state", title: "State", kind: "text", width: 120, presenter: { kind: "state" }, priority: 1 },
       { id: "owner", title: "Owner", kind: "text", priority: "optional" }
-    ], rows: [{ id: "r0", cells: { name: { value: "record-000", secondary: "example.test" }, state: { value: "Failing", tone: "danger" }, owner: "Operations" } }], selection: "none" });
+    ], rows: [{ id: "r0", cells: { name: { value: "record-000", secondary: "example.test" }, state: { value: "Failing", tone: "danger" }, owner: "Operations" } }],
+    selection: selected ? "multiple" : "none", reporting: selected ? { selectionControls: true } : undefined });
+    await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-cell > .cx-content')).toHaveCount(selected ? 1 : 0);
     await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
     const button = page.locator('.cx-hidden-fields');
     await expect(button).toHaveText("+1 Columns");

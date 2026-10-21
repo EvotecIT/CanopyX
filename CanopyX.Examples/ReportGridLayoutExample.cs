@@ -11,17 +11,23 @@ internal static partial class ReportGridLayoutExample {
             var grid = Create();
             grid.View.SaveHtmlPage(Path.Combine(output, "report-grid-layout" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Title = "Review queue column fitting", Theme = theme, Height = "480px" });
+            var phone = Create(phone: true);
+            phone.View.Reporting!.ColumnReorder = false;
+            phone.View.Columns[2].ResponsivePriority = 1;
+            phone.View.Columns[4].ResponsivePriority = 1;
+            phone.View.SaveHtmlPage(Path.Combine(output, "report-grid-essential-fields" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+                new CanopyHtmlOptions { Title = "Essential fields on phones", Theme = theme, Height = "480px" });
         }
     }
 
-    private static CanopyDataGridView<ReviewRecord> Create() {
+    private static CanopyDataGridView<ReviewRecord> Create(bool phone = false) {
         var grid = new CanopyDataGridView<ReviewRecord>("report-layout", "Review queue", row => row.Id);
         grid.View.Selection = CanopySelectionMode.Single;
         grid.View.RowHeight = 36;
         grid.View.Reporting = new CanopyGridReporting { ColumnReorder = true };
         grid.Column(row => row.Name, "Record", column => { column.Sizing = CanopyColumnSizing.Preferred(240); column.Sortable = true; });
         grid.Column(row => row.Team, "Responsible team", column => column.Sizing = CanopyColumnSizing.Preferred(260));
-        grid.Column(row => row.State, "Latest verification outcome", column => {
+        grid.Column(row => row.State, phone ? "Signal" : "Latest verification outcome", column => {
             column.Sortable = true;
             column.Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> {
                 ["Needs investigation"] = CanopyTone.Warning, ["Action required"] = CanopyTone.Danger, ["Verified"] = CanopyTone.Success
@@ -30,7 +36,7 @@ internal static partial class ReportGridLayoutExample {
         grid.Column(row => row.Review, "Recommended follow-up decision", column => column.Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> {
             ["Schedule review"] = CanopyTone.Info, ["Awaiting confirmation"] = CanopyTone.Warning, ["No follow-up"] = CanopyTone.Success
         }));
-        grid.Column(row => row.Count, "Observations requiring attention");
+        grid.Column(row => row.Count, phone ? "Days" : "Observations requiring attention");
         return grid.AddRows(new[] {
             new ReviewRecord("a", "Warehouse inventory", "Operations", "Needs investigation", "Schedule review", 12),
             new ReviewRecord("b", "Quarterly service review", "Service delivery", "Action required", "Awaiting confirmation", 7),
