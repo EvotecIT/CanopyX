@@ -12,6 +12,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CanopyX.Html\CanopyX.Html.csproj" />
     <ProjectReference Include="..\..\CanopyX.AspNetCore\CanopyX.AspNetCore.csproj" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
   </ItemGroup>
 </Project>
