@@ -26,13 +26,20 @@
   }
   // The stepper's navigation, which a flow that is not a task list keeps.
   const { back: flowStepBack, goTo: flowStepGoTo, renderStage: flowStepStage, renderRail: flowStepRail, renderActions: flowStepActions, lastStep: flowLastStep,
-    orientation: flowOrientation, begin: flowTaskBegin, submit: flowTaskSubmit, validateAll: flowTaskValidate } = FlowView.prototype;
+    orientation: flowOrientation, begin: flowTaskBegin, setState: flowTaskRestore, submit: flowTaskSubmit, validateAll: flowTaskValidate } = FlowView.prototype;
 
   Object.assign(FlowView.prototype, {
     /** A task list opens on its hub, a page of its own that is not one of the document's steps. */
     begin(values) {
       this.hub ??= this.model.mode === "tasks" ? { id: "#tasks", type: "hub", title: null, asks: false, blocks: [], checks: [] } : null;
+      this.hubNode = undefined;
       flowTaskBegin.call(this, values);
+    },
+    /** Restoring answers on an attached hub renews host status; ordinary repaints keep the current request. */
+    setState(state) {
+      const controller = this.statusController, result = flowTaskRestore.call(this, state);
+      if (controller && this.statusController === controller && !this.destroyed && this.step === this.hub) this.loadStatus();
+      return result;
     },
     orientation() { return this.hub ? "tasks" : flowOrientation.call(this); },
     /** A task list submits from its review page. */

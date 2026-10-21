@@ -100,3 +100,28 @@ test("a retried task submission replaces its message and status updates preserve
   await expect.poll(() => page.evaluate(() => window.__reloads || 0)).toBe(1);
   expect(await page.evaluate(() => [window.__errors, window.__rejections])).toEqual([[], []]);
 });
+
+for (const lifecycle of ["reset", "restore"]) for (const initial of ["pending", "settled"]) test(`${lifecycle} on the hub renews ${initial} host status ownership without refreshing ordinary repaints`, async ({ page }, testInfo) => {
+  expect(await mountRuntime(page, testInfo, flow, `({ hooks: { status: (values, { signal }) => new Promise(resolve => {
+    (window.__statuses ||= []).push({ values, signal, resolve });
+  }) } })`)).toBeNull();
+  await page.waitForFunction(() => window.__statuses?.length === 1);
+  if (initial === "settled") {
+    await page.evaluate(() => window.__statuses[0].resolve({ schedules: { state: "complete", summary: "Previous host state" } }));
+    await expect(task(page)).toHaveAttribute("data-cx-state", "complete");
+  }
+  await page.evaluate(lifecycle => lifecycle === "reset" ? window.__api.reset() : window.__api.setState(window.__api.getState()), lifecycle);
+  await expect.poll(() => page.evaluate(() => window.__statuses.length)).toBe(2);
+  expect(await page.evaluate(() => window.__statuses[0].signal.aborted)).toBe(true);
+  await page.evaluate(() => {
+    window.__statuses[0].resolve({ schedules: { state: "complete", summary: "Retired host state" } });
+    window.__statuses[1].resolve({ schedules: { state: "blocked", summary: "Current host state" } });
+  });
+  await expect(task(page)).toHaveAttribute("data-cx-state", "blocked");
+  await expect(task(page).locator(".cx-flow-task-summary")).toHaveText("Current host state");
+  await page.setViewportSize({ width: 600, height: 900 });
+  await expect(page.locator(".cx-flow")).toHaveClass(/cx-flow-narrow/);
+  await page.evaluate(() => window.__api.setStepState("schedules", { state: "blocked", summary: "Host pushed an update" }));
+  expect(await page.evaluate(() => window.__statuses.length)).toBe(2);
+  expect(await page.evaluate(() => [window.__errors, window.__rejections])).toEqual([[], []]);
+});
