@@ -130,6 +130,8 @@
     "CanopyX.Html/Assets/canopyx-forms.css",
     "CanopyX.Html/Assets/canopyx-flow.js",
     "CanopyX.Html/Assets/canopyx-flow.css",
+    "CanopyX.Html/Assets/canopyx-flow-*.js",
+    "CanopyX.Html/Assets/canopyx-flow-*.css",
     "CanopyX.Html/Assets/canopyx-matrix.js",
     "CanopyX.Html/Assets/canopyx-matrix.css",
     "CanopyX.Html/Assets/canopyx-editing.js",
