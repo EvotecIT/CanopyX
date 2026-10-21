@@ -14,7 +14,7 @@ public sealed class ChangesPartAssetsTests {
         Assert.Empty(part.Requires);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         var size = Gzip(part.Script) + Gzip(part.Style!);
-        // Change views with their actions and exports: 26,564 bytes plus about 15%, rounded up to KiB.
+        // Change views with their actions and exports: 26,564 bytes plus about 15%, rounded up to KiB (27,974 bytes after the review round).
         Assert.True(size <= 30 * 1024, "The changes part is " + size + " bytes gzip; the guard is 30 KiB.");
     }
 

@@ -181,7 +181,7 @@ TypeScript: `DiffDocument`, `ChangeListDocument`, `PropagationDocument` and thei
 
 ## Packaging and size
 
-The views ship as the lazy `changes` part (`canopyx-changes.js` and `.css`, about 26 KB gzip, guard 30 KiB), loaded by the grid
+The views ship as the lazy `changes` part (`canopyx-changes.js` and `.css`, about 28 KB gzip, guard 30 KiB), loaded by the grid
 and reporting entry points when a change view mounts; those entry points carry only the three create functions. CanopyX.Html writes
 a change view's page with the data-grid entry point and embeds the part in single-file pages.
 
