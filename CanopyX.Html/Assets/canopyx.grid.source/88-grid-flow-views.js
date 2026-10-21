@@ -3,4 +3,3 @@
   // have no pick steps. The reporting entry adds row checkboxes (selectionControls), which a picker turns on for its grid.
   const FLOW_GRID_VIEWS = Object.freeze({ grid: createDataGrid, tree: createTreeGrid,
     get reporting() { return typeof GRID_REPORTING === "object" && typeof GRID_REPORTING.api === "function"; } });
-
