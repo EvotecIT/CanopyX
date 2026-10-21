@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "1e7e68d65a0c7aeb",
+      "version": "4d5178c0a8a8cc51",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -632,7 +632,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "e49f69556b65916b",
+      "version": "5be01d4929920cb1",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

@@ -98,37 +98,37 @@ for (const theme of ["light", "dark"]) for (const viewport of [{ width: 1440, he
   });
 }
 
-test("the identity column takes spare width and shrinks first when the frame narrows", async ({ page }) => {
+test("automatic columns return spare width and header slack before sacrificing content", async ({ page }) => {
   await mount(page, products(), { width: 1100 });
   const widthOf = id => page.locator(`.cx-hcell[data-cx-column="${id}"]`).evaluate(cell => cell.getBoundingClientRect().width);
   const wideName = await widthOf("name"), wideStock = await widthOf("stock");
   await page.locator("#frame").evaluate(frame => frame.style.width = "720px"); await nextFrames(page); await nextFrames(page);
   expect(await widthOf("name")).toBeLessThan(wideName);
-  expect(await widthOf("stock")).toBeCloseTo(wideStock, 0);
+  expect(await widthOf("stock")).toBeLessThanOrEqual(wideStock);
+  expect(await truncated(page, '.cx-row [aria-colindex="4"] .cx-text')).toBe(0);
   const fill = await page.evaluate(() => { const grid = document.querySelector(".cx-grid"); return [grid.scrollWidth, grid.clientWidth]; });
   expect(fill[0]).toBeLessThanOrEqual(fill[1] + 1);
 });
 
-test("long values keep their measured width before a short column keeps its preferred width", async ({ page }) => {
+test("long values and preferred widths survive a narrow frame", async ({ page }) => {
   await mount(page, servers(), { width: 1400 });
-  // Narrow the frame until the short column gives up part of its declared width; the long values must still fit.
   const domain = () => page.locator('.cx-hcell[data-cx-column="domain"]').evaluate(cell => cell.getBoundingClientRect().width);
-  for (let width = 1400; width > 300 && await domain() >= 199; width -= 10) {
-    await page.locator("#frame").evaluate((frame, value) => frame.style.width = value + "px", width); await nextFrames(page); await nextFrames(page);
-  }
+  await page.locator("#frame").evaluate(frame => frame.style.width = "720px"); await nextFrames(page); await nextFrames(page);
   expect(await truncated(page, '.cx-row [aria-colindex="3"] .cx-text')).toBe(0);
-  expect(await domain()).toBeLessThan(200);
+  expect(await domain()).toBeGreaterThanOrEqual(200);
 });
 
-test("an automatic identity column gives up content width before forcing horizontal scrolling", async ({ page }) => {
+test("an automatic identity column keeps its measured content estimate and scrolls when necessary", async ({ page }) => {
   const view = products(); view.rows[0].cells.name = "Workstation " + "branch-office-".repeat(12);
   await mount(page, view, { width: 720 });
   const geometry = await page.evaluate(() => {
     const grid = document.querySelector(".cx-grid"), text = grid.querySelector('.cx-row[data-cx-id="p0"] .cx-text');
     return { client: grid.clientWidth, scroll: grid.scrollWidth, clipped: text.scrollWidth > text.clientWidth,
-      headers: [...grid.querySelectorAll('.cx-sort,.cx-htext')].every(label => label.scrollWidth <= label.clientWidth + 1) };
+      width: grid.querySelector('.cx-hcell[data-cx-column="name"]').getBoundingClientRect().width,
+      headers: [...grid.querySelectorAll('.cx-sort,.cx-htext')].every(label => label.title === label.textContent) };
   });
-  expect(geometry.scroll).toBeLessThanOrEqual(geometry.client + 1);
+  expect(geometry.scroll).toBeGreaterThan(geometry.client);
+  expect(geometry.width).toBeGreaterThanOrEqual(420);
   expect(geometry.clipped).toBe(true); expect(geometry.headers).toBe(true);
 });
 

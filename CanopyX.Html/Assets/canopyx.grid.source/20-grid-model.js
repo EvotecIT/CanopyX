@@ -5,6 +5,8 @@
       // A host's view is copied, so later changes to it cannot reach the grid; the rows of a view the runtime parsed from the
       // page belong to no one else, and copying a large inline dataset would double its parse time and peak memory.
       this.view = JSON.parse(JSON.stringify(definition));
+      if (this.view.rowIdentity === "ordinal" && options.live)
+        throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
       if (rows) this.view.rows = owned ? rows : JSON.parse(JSON.stringify(rows));
       // The rows of rowData arrive in view.rows as the data part decodes them.
       // Structured cloning preserves invalid numeric values for the decoder to reject instead of converting them to null.
@@ -105,9 +107,11 @@
         }
         gridOperationActive(this, lifetime.signal);
         const hadFocus = this.canvas.contains(document.activeElement), previousId = this.focused && this.focused.key;
+        const retireSelection = this.view.rowIdentity === "ordinal" && this.snapshot && this.snapshot.revision !== page.revision;
         this.pages.clear(); this.rowCache.clear(); this.placeholders.clear(); this.focused = null;
         this.acceptedQuery = gridQuery(this.view, { ...query, revision: page.revision });
         this.snapshot = { revision: page.revision, total: page.total, matched: page.matched };
+        if (retireSelection) this.clearSnapshotSelection();
         this.pageLength = length; if(paging)this.pageAll=!!paging.allRows; this.pageOffset = this.cursor ? page.offset : this.paged ? query.offset : 0;
         if (this.cursor) this.cursorWindow = { end: page.offset + page.items.length, next: page.nextCursor, previous: page.previousCursor };
         if (this.autoRows) { if (!same) this.rowHeights.clear(); this.rowOffsets = null; }
@@ -188,6 +192,14 @@
 
     observeDetail() {}
     trimInactiveCache() { this.trimPages(); }
+
+    // Query maintenance must not count as reader intent and cancel an in-flight saved-view restoration.
+    clearSnapshotSelection() {
+      const changed = this.selected.size || this.querySelection;
+      this.selectionController?.abort(); this.selectionAnchor = null;
+      this.querySelection = null; this.selectionExcluded = null; this.selected.clear();
+      if (changed) { this.version++; this.scheduleRender(); this.emit("select", { ids: [] }); this.syncGridChrome(); }
+    }
 
     setSelection(ids) {
       if (this.destroyed) return;

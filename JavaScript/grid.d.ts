@@ -354,6 +354,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   /** Pager settings of a paged view, read by the pager part (canopyx-pager.js); absent keeps the built-in pager. */
   pager?: GridPager;
   selection: "none" | "single" | "multiple";
+  /** Ordinal IDs are source positions in one snapshot; saved selection replay and keyed live updates are unavailable. Default stableKey. */
+  rowIdentity?: "stableKey" | "ordinal";
   search: boolean;
   /** Search-input debounce (0..5000). Absent uses 0 for inline and 300 for host sources. */
   searchDelayMs?: number;

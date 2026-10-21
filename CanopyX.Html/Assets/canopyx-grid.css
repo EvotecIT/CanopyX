@@ -436,6 +436,8 @@ body .cx-host.cx-chrome{padding:0;}
 .cx-data-grid .cx-hcell[data-cx-sort="asc"] .cx-sort::after{content:"↑";font-size:var(--cx-size-14px);color:var(--cx-accent);order:1;}
 .cx-data-grid .cx-hcell[data-cx-sort="desc"] .cx-sort::after{content:"↓";font-size:var(--cx-size-14px);color:var(--cx-accent);order:1;}
 .cx-data-grid .cx-hcell[aria-sort="other"] .cx-sort::before{content:none;}
+.cx-data-grid .cx-hcell :is(.cx-sort,.cx-htext){min-width:0;text-overflow:ellipsis;white-space:nowrap;}
+.cx-data-grid .cx-hcell .cx-sort{display:block;min-width:24px;text-align:inherit;}
 .cx-sort-priority{font-size:var(--cx-size-10px);color:var(--cx-accent);order:2;align-self:start;}
 .cx-data-grid .cx-auto-row{min-height:var(--cx-row-h);contain:layout style paint;}
 .cx-pins .cx-row{contain:layout style paint;}

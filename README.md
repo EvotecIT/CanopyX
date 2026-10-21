@@ -136,6 +136,10 @@ inventory.SaveHtmlPage("inventory.html");
 
 Open `inventory.html` to search the records, sort by name or size, and adjust the columns. Record IDs stay stable when the order changes.
 
+Event snapshots without a key column opt in to `CanopyGridRowIdentity.Ordinal`; the typed grid assigns source positions and keeps sorting, filtering, export and drawers available. Saved selections, record deep links and keyed live updates require stable keys. Use `CanopySelectionMode.None` and leave reporting selection controls off for a read-only report with no selection consumer. See [row identity](docs/data-protocol.md#row-identity-order) and the generated `ordinal-grid.html` example.
+
+Grid fitting preserves measured content and preferred widths, lets long headers yield with a tooltip, and scrolls horizontally when those widths cannot fit. Auto height includes the actual horizontal scrollbar gutter. The [column-fitting algorithm](docs/column-fitting.md) and `report-grid-layout.html` example describe the policy.
+
 ### Render a table for email or print
 
 ```csharp

@@ -13,15 +13,38 @@
   }
 
   Object.assign(DataGrid.prototype, COLUMN_FIT, {
+    // Responsive visibility keeps its established compact estimate; wider content scrolls instead of hiding more fields.
+    fitHide(shown, width, phone) {
+      return COLUMN_FIT.fitHide.call(this, shown, width, phone, column => COLUMN_FIT.fitSize.call(this, column, 1));
+    },
+    // Header slack yields before content. Authored preferred widths remain floors; readers can explicitly override them.
+    // Content floors apply to every automatic column. Once header slack is gone, use horizontal scrolling.
+    fitSize(column, level) {
+      if (column.fixed || column.sized) return columnWidth(column, column.width);
+      const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
+      const floor = Math.max(level === undefined ? need : content, column.controlNeed || 0);
+      return Math.ceil(columnWidth(column, Math.max(floor, column.pref || 0) + (column.reserve || 0)));
+    },
+    fitShrink(cols, excess, level) {
+      if (level !== 2) return COLUMN_FIT.fitShrink.call(this, cols, excess, level);
+      // All header-only slack yields together, including numeric headers. A long numeric title must not force text cuts.
+      const slack = cols.map(column => Math.max(0, column.renderWidth - this.fitSize(column, 2)));
+      const total = slack.reduce((sum, width) => sum + width, 0), ratio = total ? Math.min(1, excess / total) : 0;
+      cols.forEach((column, index) => column.renderWidth -= slack[index] * ratio);
+      return Math.max(0, excess - total);
+    },
     visibleColumns() { return FIT.visibleColumns.call(this).filter(column => !column.fitHidden); },
     newCell(index, width, kind) { return FIT.newCell.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind); },
     // Hiding is decided before the header reads its columns; a later change rebuilds once, after this build.
     buildHeader() {
       this.fitLayout(); this.fitBuilding = true;
       try { FIT.buildHeader.call(this); } finally { this.fitBuilding = false; }
-      this.headCells.forEach((cell, index) => cell.querySelector(".cx-resize").addEventListener("keydown", event => {
-        if (["ArrowLeft", "ArrowRight", "Home"].includes(event.key)) this.fitManual(this.cols[index]);
-      }, true));
+      this.headCells.forEach((cell, index) => {
+        cell.querySelector(".cx-sort,.cx-htext").title = this.cols[index].title;
+        cell.querySelector(".cx-resize").addEventListener("keydown", event => {
+          if (["ArrowLeft", "ArrowRight", "Home"].includes(event.key)) this.fitManual(this.cols[index]);
+        }, true);
+      });
     },
     startResize(event, column) {
       if (!this.destroyed && !event.button) {
@@ -43,6 +66,8 @@
         queueMicrotask(() => this.destroyed || this.applyWidths());
       }
       FIT.applyWidths.call(this, this.fitWidths(cols, width));
+      // A column resize can introduce a classic horizontal scrollbar without changing the observed border box.
+      this.fitHeight();
     },
     // Measures once per query and phone layout, then hides what does not fit (fitHide).
     fitLayout() {
@@ -70,15 +95,17 @@
         this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
           parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 12];
         // Monospace identifiers and their secondary text are drawn in their own fonts, so they are measured in them.
-        this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"));
+        this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"), gridClassFont(this.grid, "p-pill"));
         this.fitNumericVariant = gridNumericVariant(this.grid);
         context.font = this.fitFont[0]; this.fitCh = Math.ceil(gridMeasureText(context, "00000000000", this.fitNumericVariant));
       }
-      const [, small, headFont, pad, mono, sub] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
+      const [, small, headFont, pad, mono, sub, pillFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
       // The title is a 24 px pointer target at least, and a move handle takes its 24 px target plus the gap beside it.
-      const head = Math.ceil(Math.max(24, text(column.title, headFont, false)) + 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 28 : 0) +
-        (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0));
+      const chrome = 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + (this.view.reporting?.columnReorder ? 28 : 0) +
+        (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0);
+      column.controlNeed = Math.ceil(24 + chrome);
+      const head = Math.ceil(Math.max(24, text(column.title, headFont, false)) + chrome);
       // The header holds the column menu button (wider on phones) unless the toolbar switches column menus off.
       let values = 0, sampled = 0;
       // Presenter-aware estimates of rendered values, without touching the DOM.
@@ -89,12 +116,16 @@
         const cell = row.h.cells[column.id], value = cellText(cell, column, this.fmt) || "—", series = gridSeries(cell).length;
         const quiet = options.quietTones?.includes(gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone));
         const secondary = kind === "identifier" && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);
-        values = Math.max(values, kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
+        const tone = gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), atomic = kind === "enum" || kind === "state";
+        // Enum success uses a dot and ordinary text; toned enums use the pill font and 16 px inline padding.
+        const atomicWidth = atomic ? text(value, kind === "enum" && !quiet && tone !== "success" ? pillFont : undefined) +
+          (kind === "enum" && (quiet || tone !== "success") ? 16 : quiet ? 0 : 13) : 0;
+        values = Math.max(values, atomic ? atomicWidth : kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
           Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value, kind === "enum" && !quiet ? small : undefined)) +
           (kind === "progress" ? 80 : kind === "enum" ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }
       // A row checkbox takes its 16 px box, its 6 px margin and the cell's 6 px gap before the value, in every density.
-      const cap = columnWidth(column, 420);
+      const cap = columnWidth(column, kind === "enum" || kind === "state" ? column.maxW : 420);
       // The values alone (without the header or aggregates): the floor of a date, number or graphic column.
       column.contentNeed = none || !sampled ? 0 : Math.min(cap, Math.ceil(values + 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0)));
       const need = none ? column.pref || column.width : Math.min(cap, Math.max(head,

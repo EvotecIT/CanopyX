@@ -464,6 +464,7 @@ CanopyX.CanopyDataGridView.CanopyX.CanopyGridQuery? Query { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyGridRangeSelection? RangeSelection { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyGridReporting? Reporting { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyGridRowAction RowAction { get; set; }
+CanopyX.CanopyDataGridView.CanopyX.CanopyGridRowIdentity RowIdentity { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyGridSource Source { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyGridToolbar Toolbar { get; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyLabels Labels { get; set; }
@@ -498,6 +499,7 @@ CanopyX.CanopyDataGridView.System.String? Noun { get; set; }
 CanopyX.CanopyDataGridView.System.String? StateKey { get; set; }
 CanopyX.CanopyDataGridView.System.Void Validate()
 CanopyX.CanopyDataGridView<T> : sealed class
+CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, CanopyX.CanopyGridRowIdentity rowIdentity)
 CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, System.Func<T, System.Int64> identity)
 CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, System.Func<T, System.String> identity)
 CanopyX.CanopyDataGridView<T>.CanopyX.CanopyCalendar<T> Calendar()
@@ -1458,6 +1460,9 @@ CanopyX.CanopyGridRowData.System.String DataFolder { get; }
 CanopyX.CanopyGridRowData.System.String GetChunk(System.Int32 index)
 CanopyX.CanopyGridRowData.System.String ToJson(System.String? sidecarBase = null)
 CanopyX.CanopyGridRowData.static System.Boolean ShouldWrite(CanopyX.CanopyDataGridView view, CanopyX.CanopyRowDataOptions? options = null)
+CanopyX.CanopyGridRowIdentity : enum System.Int32
+CanopyX.CanopyGridRowIdentity.const CanopyX.CanopyGridRowIdentity Ordinal = 1
+CanopyX.CanopyGridRowIdentity.const CanopyX.CanopyGridRowIdentity StableKey = 0
 CanopyX.CanopyGridRowsDetail : sealed class (CanopyX.CanopyDetail)
 CanopyX.CanopyGridRowsDetail..ctor()
 CanopyX.CanopyGridRowsDetail.System.Collections.Generic.IList<CanopyX.CanopyGridRow> Rows { get; }
@@ -2580,6 +2585,7 @@ CanopyX.CanopySearchResult.System.String ToJson()
 CanopyX.CanopySearchResult.System.String? Revision { get; set; }
 CanopyX.CanopySelectionMode : enum System.Int32
 CanopyX.CanopySelectionMode.const CanopyX.CanopySelectionMode Multiple = 1
+CanopyX.CanopySelectionMode.const CanopyX.CanopySelectionMode None = 2
 CanopyX.CanopySelectionMode.const CanopyX.CanopySelectionMode Single = 0
 CanopyX.CanopySource : sealed class
 CanopyX.CanopySource.CanopyX.CanopySourceKind Kind { get; }

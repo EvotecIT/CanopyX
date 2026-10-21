@@ -9,6 +9,12 @@
 
   function validateGridView(view) {
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
+    if (view.rowIdentity !== undefined && !["stableKey", "ordinal"].includes(view.rowIdentity))
+      throw new Error("CanopyX: rowIdentity must be stableKey or ordinal.");
+    if (view.rowIdentity === "ordinal" && view.live)
+      throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
+    if (view.rowIdentity === "ordinal" && view.record?.deepLink)
+      throw new Error("CanopyX: ordinal row identity is snapshot-local; record deep links require stable row keys.");
     if (typeof view.label !== "string" || !view.label.trim() || !Array.isArray(view.columns) || !view.columns.length)
       throw new Error("CanopyX: a grid needs a label and columns.");
     if (view.reporting !== undefined) {

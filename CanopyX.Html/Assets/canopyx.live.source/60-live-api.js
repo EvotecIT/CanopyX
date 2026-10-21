@@ -5,6 +5,7 @@
   // any query in flight have finished, so they apply to the accepted result.
   Object.assign(DataGrid.prototype, {
     startLive() {
+      if (this.view.rowIdentity === "ordinal") throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (this.liveOpts) return;
       this.liveOpts = liveOptions(this.view, this.opts);

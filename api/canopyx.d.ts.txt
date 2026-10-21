@@ -1459,6 +1459,7 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   pageLength?:number;
   pager?:GridPager;
   selection:"none"|"single"|"multiple";
+  rowIdentity?:"stableKey"|"ordinal";
   search:boolean;
   searchDelayMs?:number;
   searchColumns?:GridColumnId<Row>[];

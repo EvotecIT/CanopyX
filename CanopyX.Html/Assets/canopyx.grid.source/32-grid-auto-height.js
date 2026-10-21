@@ -9,15 +9,19 @@
     return measured;
   };
   DataGrid.prototype.fitHeight = function () {
-    if (this.view.autoHeight === false || !this.sized || this.pendingQuery) return;
+    if (this.view.autoHeight === false || !this.sized || this.pendingQuery || !this.hasGridSize()) return;
     // The host's own max-height, read before the first change, stays a bound; without rows the host's own value returns.
     // Pixels bound the fit as a number; a relative bound (a percentage, calc()) stays CSS, so the browser keeps resolving it.
-    const grid = this.grid, style = this.host.style, content = [...grid.children].reduce((sum, child) => sum + child.offsetHeight, grid.offsetHeight - grid.clientHeight);
+    const grid = this.grid, style = this.host.style, box = grid.getBoundingClientRect(), computed = getComputedStyle(grid);
+    const borders = parseFloat(computed.borderTopWidth) + parseFloat(computed.borderBottomWidth);
+    // Only a real horizontal scrollbar consumes block space. Overlay scrollbars contribute zero, without a guessed gutter.
+    const scrollbar = grid.scrollWidth > grid.clientWidth ? Math.max(0, grid.offsetHeight - grid.clientHeight - borders) : 0;
+    const content = [...grid.children].reduce((sum, child) => sum + child.getBoundingClientRect().height, borders + scrollbar);
     if (this.fitInline === undefined) {
       const own = getComputedStyle(this.host).maxHeight;
       this.fitInline = style.maxHeight; this.fitMax = own === "none" || !own ? Infinity : /^-?[\d.]+px$/.test(own) ? parseFloat(own) : own;
     }
-    const height = Math.ceil(this.host.offsetHeight - grid.offsetHeight + content), bound = this.fitMax;
+    const height = Math.ceil(this.host.getBoundingClientRect().height - box.height + content), bound = this.fitMax;
     const value = !this.rowCount() ? this.fitInline : typeof bound === "number" ? Math.min(bound, height) + "px" : "min(" + height + "px, " + bound + ")";
     if (this.host.style.maxHeight !== value) this.host.style.maxHeight = value;
   };

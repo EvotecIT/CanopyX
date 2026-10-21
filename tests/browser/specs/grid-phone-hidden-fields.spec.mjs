@@ -167,10 +167,10 @@ test("phone fitting reserves the +N button in the identity column when no width 
   }));
   expect(cells.length).toBe(names.length);
   expect(cells).toEqual(names.map(name => ({ name, truncated: false, button: "+2", inside: true })));
-  // The second column took the rest of the width and still truncates: nothing was spare, and nothing scrolls.
+  // Responsive visibility retains the second column; its complete content now scrolls instead of truncating.
   expect(await page.locator('.cx-row[data-cx-id="r0"] .cx-cell').nth(1).evaluate(cell => cell.scrollWidth > cell.clientWidth ||
-    [...cell.querySelectorAll("*")].some(node => node.scrollWidth > node.clientWidth))).toBe(true);
-  expect(await page.locator(".cx-data-grid .cx-grid").evaluate(grid => grid.scrollWidth <= grid.clientWidth)).toBe(true);
+    [...cell.querySelectorAll("*")].some(node => node.scrollWidth > node.clientWidth))).toBe(false);
+  expect(await page.locator(".cx-data-grid .cx-grid").evaluate(grid => grid.scrollWidth > grid.clientWidth)).toBe(true);
 });
 
 for (const theme of ["light", "dark"]) {
@@ -186,7 +186,7 @@ for (const theme of ["light", "dark"]) {
       return { truncated: text.scrollWidth > text.clientWidth, overflow: style.textOverflow, textWidth: textBox.width,
         buttonWidth: buttonBox.width, buttonContent: button.scrollWidth, cellWidth: box.width, buttonInside: buttonBox.left >= textBox.right - 0.5 && buttonBox.right <= box.right + 0.5 };
     });
-    expect(geometry.truncated).toBe(true);
+    expect(geometry.truncated).toBe(false);
     expect(geometry.overflow).toBe("ellipsis");
     expect(geometry.textWidth).toBeGreaterThan(120);
     expect(geometry.buttonWidth).toBeLessThanOrEqual(geometry.buttonContent + 1);

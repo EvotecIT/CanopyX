@@ -79,6 +79,8 @@ var inline = ExampleViews.FileShares("files-inline", smallTree.Build(shares: 4, 
 inline.SaveHtmlPage(Path.Combine(output, "inline.html"), new CanopyHtmlOptions { Title = "CanopyX inline file shares" });
 Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
+OrdinalGridExample.Write(output);
+ReportGridLayoutExample.Write(output);
 CursorGridExample.Write(output);
 ReportingGridExample.Write(output);
 ExportFormatsExample.Write(output);
