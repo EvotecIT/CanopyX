@@ -1,0 +1,48 @@
+name: Focused matrix native diagnostic
+on:
+  push:
+    branches: [diagnostics/report-matrix-macos15]
+permissions:
+  contents: read
+jobs:
+  matrix-native:
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      CANOPYX_TEST_BROWSERS: webkit
+      CANOPYX_VISUAL: "0"
+      MSBUILDDISABLENODEREUSE: "1"
+      DOTNET_CLI_USE_MSBUILD_SERVER: "0"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Install the existing browser test toolchain
+        working-directory: tests/browser
+        shell: pwsh
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "120000"
+        run: |
+          npm ci --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- webkit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Diagnose the original matrix first-paint fixture
+        working-directory: tests/browser
+        shell: pwsh
+        run: node node_modules/@playwright/test/cli.js test specs/matrix-lifecycle.spec.mjs specs/matrix-native-diagnostic.spec.mjs --project=webkit --workers=1
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: matrix-native-diagnostic
+          path: |
+            tests/browser/playwright-report
+            tests/browser/test-results
+          if-no-files-found: warn
