@@ -130,10 +130,10 @@ test("sorting by total or name, grouping and collapsing a group rolls its cells 
   await page.evaluate(() => api.sort("columns", "#label", "desc"));
   expect(await headLabels(page)).toEqual(["Col Z", "Col Y", "Col X", "Col W"]);
   await page.evaluate(() => { api.sort("columns", null); api.group("rows", "site"); });
-  expect(await rowLabels(page)).toEqual(["NorthItems: 3", "Row A", "Row C", "Row B", "SouthItems: 3", "Row D", "Row E", "Row F"]);
+  expect(await rowLabels(page)).toEqual(["North3", "Row A", "Row C", "Row B", "South3", "Row D", "Row E", "Row F"]);
   // Collapsing North rolls its three rows into one: the worst state of each column and how many need attention.
   await page.getByRole("button", { name: "Collapse North" }).click();
-  expect(await rowLabels(page)).toEqual(["NorthItems: 3", "SouthItems: 3", "Row D", "Row E", "Row F"]);
+  expect(await rowLabels(page)).toEqual(["North3", "South3", "Row D", "Row E", "Row F"]);
   expect(await cellLabel(page, "a", "x")).toBe("North and Col X: Failing, 1");
   await expect(page.locator(".cx-mx-rolledrow .cx-mx-total")).toHaveText("2");
   await page.getByRole("button", { name: "Expand North" }).click();
@@ -494,4 +494,18 @@ test("labels come from a label pack, and text stays text", async ({ page }) => {
   await expect(page.locator(".cx-mx-htotal")).toHaveText(labels.matrixTotal);
   await expect(page.locator(".cx-mx-rowhead").first()).toHaveText("<img src=x onerror=alert(1)>");
   await expect(page.locator(".cx-matrix img")).toHaveCount(0);
+});
+
+
+test("group heading count is independent from collapsed cell tooltip and details", async ({ page }) => {
+  await mountMatrix(page, matrixDoc({ labels: { matrixGroupHeadingCount: "({count})", matrixGroupCount: "Members: {count}" } }));
+  await page.evaluate(() => api.group("rows", "site"));
+  await nextFrames(page);
+  await expect(page.locator('.cx-mx-toggle .cx-mx-sub').first()).toHaveText("(3)");
+  await page.getByRole("button", { name: "Collapse North" }).click();
+  await nextFrames(page);
+  await expect(page.locator('.cx-mx-toggle .cx-mx-sub').first()).toHaveText("(3)");
+  await clickCell(page, "North(3)", 0);
+  await expect(page.locator("dialog.cx-mx-dialog")).toContainText("Members: 3");
+  await expect(page.locator("dialog.cx-mx-dialog")).not.toContainText("Items:");
 });

@@ -23,7 +23,7 @@
       // Normal context belongs below the identity; authored always-visible and reader sizing stay authoritative.
       for (const column of shown) if (!column.identity && gridLevel(column) > 0 && !column.alwaysVisible && !column.fixed && !column.sized) column.fitHidden = true;
       const peers = shown.filter(column => !column.fitHidden && !column.identity && gridLevel(column) === 0);
-      if (!identity || identity.fixed || identity.sized) return;
+      if (identity.fixed || identity.sized) return;
       const primary = columnWidth(identity, Math.min(Math.max(identity.contentNeed || 0, identity.pref || 0, identity.controlNeed || 0), Math.max(160, width * .65)));
       if (primary + peers.reduce((sum, column) => sum + this.fitSize(column, 2), 0) > width)
         for (const column of peers) if (!column.fixed && !column.sized && !column.alwaysVisible) column.fitHidden = true;
@@ -33,8 +33,8 @@
       if (column.fixed || column.sized) return columnWidth(column, column.width);
       const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
       const header = level === undefined || level === 2 ? column.headWrapNeed || 0 : column.headWordNeed || column.controlNeed || 0;
-      const floor = Math.max(level === undefined ? need : content, header, column.controlNeed || 0);
-      let width = Math.max(floor, level === undefined ? column.pref || 0 : 0) + (column.reserve || 0);
+      const floor = Math.max(level === undefined ? need : content, header);
+      let width = Math.max(floor, level === undefined ? column.pref || 0 : 0);
       if (column.identity && this.host.clientWidth <= 640 && (this.layoutMode || "fit") === "fit") {
         // The identity keeps forty percent before peers move to the context line; small values need no empty allocation.
         const minimum = Math.min(content, this.grid.clientWidth * .4);
@@ -52,15 +52,13 @@
     },
     fitSpare(columns, spare) {
       // Restore balanced two-line headers before preferred and flex reading space.
-      const deficits = columns.map(column => Math.max(0, Math.min((column.headWrapNeed || 0) +
-        (column.reserve || 0), column.maxW) - column.renderWidth));
-      const total = deficits.reduce((sum, value) => sum + value, 0), ratio = total ? Math.min(1, spare / total) : 0;
-      columns.forEach((column, index) => column.renderWidth += deficits[index] * ratio);
-      spare = Math.max(0, spare - total);
-      const preferred = columns.map(column => Math.max(0, Math.min(column.pref || 0, column.maxW) - column.renderWidth));
-      const preferredTotal = preferred.reduce((sum, value) => sum + value, 0), preferredRatio = preferredTotal ? Math.min(1, spare / preferredTotal) : 0;
-      columns.forEach((column, index) => column.renderWidth += preferred[index] * preferredRatio);
-      return COLUMN_FIT.fitSpare.call(this, columns, Math.max(0, spare - preferredTotal));
+      for (const target of ["headWrapNeed", "pref"]) {
+        const deficits = columns.map(column => Math.max(0, Math.min(column[target] || 0, column.maxW) - column.renderWidth));
+        const total = deficits.reduce((sum, value) => sum + value, 0), ratio = total ? Math.min(1, spare / total) : 0;
+        columns.forEach((column, index) => column.renderWidth += deficits[index] * ratio);
+        spare = Math.max(0, spare - total);
+      }
+      return COLUMN_FIT.fitSpare.call(this, columns, spare);
     },
     visibleColumns() { return FIT.visibleColumns.call(this).filter(column => !column.fitHidden); },
     newCell(index, width, kind) { return FIT.newCell.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind); },
@@ -109,7 +107,7 @@
         for (const column of this.columns) { const result = this.measureGridColumn(column); column.need = result.width; column.headNeed = result.head; }
       }
       // Base widths depend on content, not on the available width, so responsive policies read stable values.
-      for (const column of this.columns) { column.reserve = 0; if (!column.fixed && !column.sized) column.width = this.fitSize(column); }
+      for (const column of this.columns) { if (!column.fixed && !column.sized) column.width = this.fitSize(column); }
       this.fitHide(shown, width, phone);
       // Residual disclosure belongs to the context line and takes no width from the identity.
     },
@@ -118,26 +116,27 @@
       if (!context) throw new Error("CanopyX: no canvas context.");
       if (!this.fitFont) {
         const style = getComputedStyle(this.grid), head = this.headCells?.[0] && getComputedStyle(this.headCells[0]), family = " " + style.fontFamily;
+        // The formatting extension also reads the base/cue/header/padding positions in this array.
         this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
           parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 12];
         // Monospace identifiers and their secondary text are drawn in their own fonts, so they are measured in them.
-        this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"), gridClassFont(this.grid, "p-pill"));
+        this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"), gridClassFont(this.grid, "p-pill", this.fitPill = {}));
         this.fitNumericVariant = gridNumericVariant(this.grid);
         context.font = this.fitFont[0]; this.fitCh = Math.ceil(gridMeasureText(context, "00000000000", this.fitNumericVariant));
       }
-      const [, small, headFont, pad, mono, sub, pillFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
+      const [, , headFont, pad, mono, sub, pillFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
       // The title keeps its 24 px target. Reorder glyphs may use a wider fallback font, so include their native advance and padding.
       const move = this.view.reporting?.columnReorder ? Math.max(32, Math.ceil(text("⋮⋮", headFont, false)) + 8) : 0;
       const chrome = 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + move +
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0);
       column.controlNeed = Math.ceil(24 + chrome);
-      const head = Math.ceil(Math.max(24, text(column.title, headFont, false)) + chrome);
-      const words = column.title.trim().split(/\s+/), widths = words.map(word => text(word, headFont, false));
-      let balanced = text(column.title, headFont, false);
+      const title = text(column.title, headFont, false), head = Math.ceil(Math.max(24, title) + chrome);
+      const words = column.title.trim().split(/\s+/);
+      let balanced = title;
       for (let split = 1; split < words.length; split++) balanced = Math.min(balanced,
         Math.max(text(words.slice(0, split).join(" "), headFont, false), text(words.slice(split).join(" "), headFont, false)));
-      column.headWordNeed = Math.ceil(Math.max(24, ...widths) + chrome);
+      column.headWordNeed = Math.ceil(Math.max(24, ...words.map(word => text(word, headFont, false))) + chrome);
       column.headWrapNeed = Math.ceil(Math.max(24, balanced) + chrome);
       // The header holds the column menu button (wider on phones) unless the toolbar switches column menus off.
       let values = 0, sampled = 0;
@@ -147,22 +146,23 @@
       if (!none && column.autoSize !== "header") for (const row of this.rowCache.values()) {
         if (sampled === 200) break;
         const cell = row.h.cells[column.id], value = cellText(cell, column, this.fmt) || "—", series = gridSeries(cell).length;
-        const quiet = options.quietTones?.includes(gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone));
+        const tone = gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), quiet = options.quietTones?.includes(tone);
         const secondary = kind === "identifier" && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);
-        const tone = gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), atomic = kind === "enum" || kind === "state";
-        // Enum success uses a dot and ordinary text; toned enums use the pill font and 16 px inline padding.
-        const atomicWidth = atomic ? text(value, kind === "enum" && !quiet && tone !== "success" ? pillFont : undefined) +
-          (kind === "enum" && (quiet || tone !== "success") ? 16 : kind === "state" && !quiet && tone !== "success" ? 15 : quiet ? 0 : 13) : 0;
+        const atomic = kind === "enum" || kind === "state";
+        // Enum success uses a dot and ordinary text; toned enums use their computed pill font and chrome.
+        const pill = kind === "enum" && !quiet && tone !== "success";
+        const atomicWidth = atomic ? text(value, pill ? pillFont : undefined) +
+          (pill ? this.fitPill.extra + this.fitPill.spacing * Array.from(value).length : quiet && kind === "enum" ? 16 : quiet ? 0 : kind === "state" && tone !== "success" ? 15 : 13) : 0;
         values = Math.max(values, atomic ? atomicWidth : kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
-          Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value, kind === "enum" && !quiet ? small : undefined)) +
-          (kind === "progress" ? 80 : kind === "enum" ? 18 : kind === "state" && !quiet ? 15 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
+          Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value)) +
+          (kind === "progress" ? 80 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }
       // A row checkbox takes its 16 px box, its 6 px margin and the cell's 6 px gap before the value, in every density.
       const cap = columnWidth(column, kind === "enum" || kind === "state" ? column.maxW : 420);
       // The values alone (without the header or aggregates): the floor of a date, number or graphic column.
-      column.contentNeed = none || !sampled ? 0 : Math.min(cap, Math.ceil(values + 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0)));
-      const need = none ? column.pref || column.width : Math.min(cap, Math.max(column.headWrapNeed,
-        Math.ceil(values + (sampled ? 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0) : 0))));
+      const measured = Math.min(cap, Math.ceil(values + (sampled ? 2 * pad + 4 + (first && this.selectionControls ? 28 : 0) : 0)));
+      column.contentNeed = none || !sampled ? 0 : measured;
+      const need = none ? column.pref || column.width : Math.min(cap, Math.max(column.headWrapNeed, measured));
       return Object.freeze({ width: Math.max(column.minW, need), head: Math.min(head, cap), sampled, scope: "loaded" });
     },
     autoFitColumn(id) {

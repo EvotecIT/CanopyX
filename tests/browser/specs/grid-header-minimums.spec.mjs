@@ -6,7 +6,7 @@ import { reportLayoutView, mountReportLayout, layoutGeometry } from "./report-gr
 // Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
 test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
-const headers = page => page.locator(".cx-hcell :is(.cx-sort,.cx-htext)").evaluateAll(nodes => nodes.map(node => ({
+const headers = page => page.locator(".cx-hcell > :is(.cx-sort,.cx-htext)").evaluateAll(nodes => nodes.map(node => ({
   text: node.textContent, title: node.title, clipped: node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1
 })));
 async function resize(page, width) {

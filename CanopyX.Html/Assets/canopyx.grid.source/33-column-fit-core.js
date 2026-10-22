@@ -28,9 +28,10 @@
     return variant;
   }
   // The canvas font a presenter class draws with (weight, size and family), read from a hidden probe inside the grid.
-  function gridClassFont(grid, className) {
-    const probe = document.createElement("span"); probe.className = className; probe.style.display = "none"; grid.appendChild(probe);
-    const style = getComputedStyle(probe), font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
+  function gridClassFont(grid, className, chrome) {
+    const probe = h("span", className); probe.style.cssText = "position:absolute;visibility:hidden"; grid.appendChild(probe);
+    const style = getComputedStyle(probe), font = [style.fontWeight, style.fontSize, style.fontFamily].join(" ");
+    if (chrome) { chrome.extra = probe.getBoundingClientRect().width; chrome.spacing = parseFloat(style.letterSpacing) || 0; }
     probe.remove();
     return font;
   }
@@ -91,7 +92,7 @@
     // The base width (content or preferred), the content width (level 2), or the narrowest width before hiding
     // (level 1): essential columns keep their content width.
     fitSize(column, level) {
-      // reserve: width a view keeps beside the column's content, such as the flat grid's phone "+N" button.
+      // reserve: width a view keeps beside the column's content, such as the tree grid's phone "+N" button.
       const need = (column.need ?? column.width) + (column.reserve || 0);
       // The default identity yields last, only when that can avoid scrolling. Explicit or user-sized widths stay.
       if (level === 0) return column.identity && column.priority === undefined && !column.fixed && !column.sized ?

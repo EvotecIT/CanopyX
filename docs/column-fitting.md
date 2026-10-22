@@ -133,3 +133,9 @@ wrapped chrome, and user widths can add or remove a scrollbar without changing
 the number of rows. Three rows in a 1196-pixel canvas inside a 1086-pixel host
 therefore remain fully visible above a classic horizontal scrollbar, subject to
 the host's explicit height bound.
+
+Pill content minimums use the computed font, letter spacing, inline padding and border of a hidden pill probe inside the styled grid. Host themes can style `.p-pill` normally; fitting and `autoSizeColumns()` use those styles. After changing a host stylesheet dynamically, call `autoSizeColumns()` to invalidate the measured widths.
+
+Body-appended record drawers, column popovers and full-text dialogs accept the mount option `overlayClass: "report-style custom-theme"`. These space-separated classes are copied onto each overlay root when it opens, alongside CanopyX's own classes and inherited theme variables. Style both the host and overlay through the same marker class (for example `.report-style .p-pill`); classes on arbitrary ancestors are not copied. Changing the option affects subsequently opened overlays.
+
+The record drawer has a labelled `Close` control (×); previous and next record controls keep their separate accessible names. `GridCloseRecord` localizes the close label.

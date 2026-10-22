@@ -11,5 +11,5 @@
     gridSelectedRows: "Selected rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records", gridExportCancelled: "Export cancelled",
     gridCancelExport: "Cancel export", gridMore: "More", gridPrint: "Print", gridDetails: "Record details", gridDetailsSection: "Details",
-    gridPreviousRecord: "Previous record", gridNextRecord: "Next record", gridCloseRecord: "Close record details"
+    gridPreviousRecord: "Previous record", gridNextRecord: "Next record", gridCloseRecord: "Close"
   }));

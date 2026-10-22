@@ -380,6 +380,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   dragRows?: boolean;
   stateKey?: string;
   timeZone?: TimeZone;
+  /** Space-separated host styling classes copied onto body-appended record, text and column overlays when opened. */
+  overlayClass?: string;
   labels?: Partial<CanopyLabels>;
   /** Sanitizes trusted host HTML details before insertion; shares the tree host's sanitizer contract. */
   sanitizeHtml?: HostOptions["sanitizeHtml"];
@@ -697,6 +699,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   /** Overrides the view's search-input debounce (0..5000); Enter always applies immediately. */
   searchDelayMs?: number;
   source?: Q extends GridCursorQuery ? GridCursorSource<Row> : GridSource<Row>;
+  /** Space-separated host styling classes copied onto body-appended record, text and column overlays when opened. */
+  overlayClass?: string;
   labels?: Partial<CanopyLabels>;
   renderers?: Record<string, (row: Row, element: HTMLElement, context: GridCellContext) => boolean | void>;
   cachePageLimit?: number;

@@ -75,7 +75,7 @@ test("phone hidden-field cues exclude tones and descriptions from grid-only form
   await page.setViewportSize({ width: 390, height: 844 });
   await open(page, [{ id: "grid-only", description: "Grid-only danger", column: "cpu", details: false, style: { tone: "danger", badge: "private" } },
     { id: "details", description: "Drawer-safe cue", column: "cpu", style: { cue: "public" } }], undefined,
-    { columns: healthView().columns.map(column => column.id === "cpu" ? { ...column, hidden: true } : column) });
+    { columns: healthView().columns.map(column => column.id === "cpu" ? { ...column, priority: "optional" } : column) });
   const hidden = page.locator('.cx-row[data-cx-id="srv-00000"] .cx-hidden-fields');
   await expect(hidden).toHaveClass(/cx-fmt-flag/);
   await expect(hidden).toHaveAttribute("aria-label", /Drawer-safe cue/);
@@ -87,6 +87,21 @@ test("phone hidden-field cues exclude tones and descriptions from grid-only form
   await expect(value.locator(".cx-fmt-badge")).toHaveCount(0);
   await expect(value.locator(".cx-sr-only")).toHaveText(", Drawer-safe cue");
   expect(await value.evaluate(element => element.style.getPropertyValue("--cx-fmt"))).not.toContain("danger");
+});
+
+test("formatted residual disclosure follows the current view after a column is hidden", async ({ page }) => {
+  await page.setViewportSize({ width:390, height:844 });
+  await open(page, [{ id:"cue", description:"Needs review", column:"cpu", style:{cue:"Review"} }], undefined,
+    { columns:healthView().columns.map(column => column.id === "cpu" ? { ...column, priority:"optional" } : column) });
+  const disclosure = page.locator('.cx-row[data-cx-id="srv-00000"] .cx-hidden-fields');
+  await expect(disclosure).toHaveText("+4 columns");
+  await expect(disclosure).toHaveAttribute("aria-label", /^\+4 columns:/);
+  await page.evaluate(() => grid.setColumnVisible("region",false));
+  await nextFrames(page);
+  await expect(disclosure).toHaveText("+3 columns");
+  await expect(disclosure).toHaveAttribute("aria-label", /^\+3 columns:/);
+  await expect(disclosure).not.toHaveAttribute("aria-label", /Region/);
+  await expect(disclosure).toHaveAttribute("aria-label", /Needs review/);
 });
 
 test("reporting state restoration rejects destruction from onSelect without an unhandled formatting rejection", async ({ page }) => {

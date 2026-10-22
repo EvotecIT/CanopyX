@@ -90,11 +90,12 @@
       const sorts = this.acceptedQuery ? this.acceptedQuery.sort : [];
       this.sortState = sorts[0] || null; ROW_HELPERS.buildHeader.call(this);
       for (const cell of this.headCells) {
+        const button = cell.querySelector(".cx-sort");
+        if (button) { const label = h("span", "cx-htext"); setText(label, button.textContent); button.replaceChildren(label); }
         const index = sorts.findIndex(sort => sort.column === cell.getAttribute("data-cx-column"));
         if (index >= 0) {
           cell.setAttribute("aria-sort", sorts.length === 1 ? sorts[index].direction === "asc" ? "ascending" : "descending" : "other");
           cell.setAttribute("data-cx-sort", sorts[index].direction); cell.setAttribute("data-cx-sort-priority", String(index + 1));
-          const button = cell.querySelector(".cx-sort");
           button.setAttribute("data-cx-sort-priority", String(index + 1));
           if (sorts.length > 1) { const priority = h("sup", "cx-sort-priority"); setText(priority, String(index + 1)); button.appendChild(priority); }
           button.setAttribute("aria-label", cell.getAttribute("aria-label") + ", " + sorts[index].direction + ", " + (index + 1));

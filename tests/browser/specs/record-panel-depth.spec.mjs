@@ -119,7 +119,7 @@ async function readableValue(page) {
   expect(geometry.lines.length).toBeLessThanOrEqual(2);
   expect(Math.max(...geometry.lines.map(line => line.width))).toBeGreaterThan(60);
   for (const line of geometry.lines) { expect(line.left).toBeGreaterThanOrEqual(geometry.left + 8); expect(line.right).toBeLessThanOrEqual(geometry.right - 8); }
-  for (const name of ["Close record details", "Record actions"]) {
+  for (const name of ["Close", "Record actions"]) {
     const control = await drawer(page).getByRole("button", { name, exact: true }).boundingBox();
     expect(control.x).toBeGreaterThanOrEqual(geometry.left); expect(control.x + control.width).toBeLessThanOrEqual(geometry.right);
   }

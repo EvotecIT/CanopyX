@@ -2188,6 +2188,7 @@ CanopyX.CanopyLabels.System.String MatrixExpandGroup { get; set; }
 CanopyX.CanopyLabels.System.String MatrixFilter { get; set; }
 CanopyX.CanopyLabels.System.String MatrixGroupBy { get; set; }
 CanopyX.CanopyLabels.System.String MatrixGroupCount { get; set; }
+CanopyX.CanopyLabels.System.String MatrixGroupHeadingCount { get; set; }
 CanopyX.CanopyLabels.System.String MatrixHideEmpty { get; set; }
 CanopyX.CanopyLabels.System.String MatrixItemTotal { get; set; }
 CanopyX.CanopyLabels.System.String MatrixLegend { get; set; }

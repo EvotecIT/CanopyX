@@ -63,7 +63,7 @@ test("tapping +N opens the record drawer with the hidden fields, and its close b
   for (const column of columns.filter(column => !hidden.includes(column.id))) expect(listed).toContain(column.title);
   const box = await drawer.boundingBox();
   expect(Math.round(box.width)).toBeLessThanOrEqual(390);
-  await drawer.getByRole("button", { name: "Close record details", exact: true }).tap();
+  await drawer.getByRole("button", { name: "Close", exact: true }).tap();
   await expect(drawer).toHaveCount(0);
   await expect(row(page, "r002")).toBeVisible();
 });
@@ -103,14 +103,14 @@ test("a column menu opens by tap and its entries sort the column", async ({ page
 
 test("a tap on a phone row activates it once and opens its record details, without changing the selection", async ({ page }) => {
   await open(page, gridView({}));
-  await row(page, "r001").locator(".cx-cell").nth(1).tap();
+  await row(page, "r001").locator(".cx-phone-value").first().tap();
   expect(await activations(page, 1)).toEqual(["r001:false"]);
   const drawer = page.locator("dialog.cx-drawer");
   await expect(drawer.locator("h4")).toHaveText("server-001");
   await expect(page.locator('.cx-row[aria-selected="true"]')).toHaveCount(0);
-  await drawer.getByRole("button", { name: "Close record details", exact: true }).tap();
+  await drawer.getByRole("button", { name: "Close", exact: true }).tap();
   await expect(drawer).toHaveCount(0);
-  await row(page, "r004").locator(".cx-cell").nth(1).tap();
+  await row(page, "r004").locator(".cx-phone-primary").tap();
   expect(await activations(page, 1)).toEqual(["r004:false"]);
   await expect(drawer.locator("h4")).toHaveText("server-004");
 });

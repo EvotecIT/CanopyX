@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "4d5178c0a8a8cc51",
+      "version": "4c6c4101089c4444",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "99cafeec3da59ffa",
+      "version": "8a058a87bbba3cbe",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -401,7 +401,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "a02d6881b70019b4",
+      "version": "16182d6ff073928a",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -496,7 +496,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "6f9f3c51b0ad2a0e",
+      "version": "1a28068597f435de",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [

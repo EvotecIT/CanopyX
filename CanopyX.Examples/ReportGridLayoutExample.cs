@@ -8,6 +8,7 @@ internal static partial class ReportGridLayoutExample {
 
     internal static void Write(string output) {
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+            WriteHostStyles(output, theme);
             var grid = Create();
             grid.View.SaveHtmlPage(Path.Combine(output, "report-grid-layout" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Title = "Review queue column fitting", Theme = theme, Height = "480px" });

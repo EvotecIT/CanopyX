@@ -29,7 +29,7 @@
 .cx-data-grid .cx-hcell[data-cx-sort="desc"] .cx-sort::after { content:"↓";font-size:var(--cx-size-14px);color:var(--cx-accent);order:1; }
 .cx-data-grid .cx-hcell[aria-sort="other"] .cx-sort::before { content:none; }
 .cx-data-grid .cx-hcell :is(.cx-sort,.cx-htext) { min-width:0;text-overflow:ellipsis;white-space:nowrap; }
-.cx-data-grid .cx-hcell .cx-sort { display:block;min-width:24px;text-align:inherit; }
+.cx-data-grid .cx-hcell .cx-sort { display:flex;align-items:center;gap:4px;min-width:24px;text-align:inherit; }
 .cx-sort-priority { font-size:var(--cx-size-10px);color:var(--cx-accent);order:2;align-self:start; }
 .cx-data-grid .cx-auto-row { min-height:var(--cx-row-h);contain:layout style paint; }
 /* Gecko does not position sticky descendants across a size-contained row. */
@@ -188,7 +188,8 @@
 /* Two-line report headers keep content floors without reserving the full single-line caption. */
 .cx-data-grid .cx-hrow { height:auto;min-height:var(--cx-head-h);align-items:stretch; }
 .cx-data-grid .cx-hcell { padding-block:6px; }
-.cx-data-grid .cx-hcell :is(.cx-sort,.cx-htext) { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;line-height:1.25;text-wrap:balance;overflow:hidden;max-height:2.5em; }
+.cx-data-grid .cx-hcell .cx-htext { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;line-height:1.25;text-wrap:balance;overflow:hidden;max-height:2.5em; }
+.cx-data-grid .cx-htext { flex:1;min-width:0; }
 .cx-data-grid.cx-phone .cx-phone-primary { align-items:flex-start; }
 .cx-data-grid.cx-phone .cx-phone-primary > .cx-content { flex:1; }
 .cx-data-grid.cx-phone:not([data-cx-layout="scroll"]) .cx-phone-primary :is(.cx-text,.p-mono,.cx-presenter-text) { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;overflow-wrap:anywhere;line-height:1.25;max-height:2.5em; }

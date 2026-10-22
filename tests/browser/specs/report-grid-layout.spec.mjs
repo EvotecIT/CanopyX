@@ -38,7 +38,7 @@ for (const theme of ["light", "dark"]) test(`report shortage preserves header mi
   await mountReportLayout(page, { theme, width: 1320 });
   const box = await layoutGeometry(page);
   expect(box.clippedPills).toBe(0);
-  const headers = await page.locator(".cx-hcell :is(.cx-sort,.cx-htext)").evaluateAll(labels => labels.map(label => ({
+  const headers = await page.locator(".cx-hcell > :is(.cx-sort,.cx-htext)").evaluateAll(labels => labels.map(label => ({
     title: label.title, text: label.textContent, clipped: label.scrollWidth > label.clientWidth + 1
   })));
   expect(headers.every(label => label.title === label.text)).toBe(true);

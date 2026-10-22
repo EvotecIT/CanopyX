@@ -197,7 +197,7 @@ test.describe("on a touch phone", () => {
     await open(page, ticketView(40, { layout: { mode: "cards" }, query: { search: "printer" } }), { height: 640 });
     await page.locator(".cx-canvas .cx-row[data-cx-id='t7'] .cx-cell").nth(2).tap();
     await expect(page.locator(".cx-drawer h4")).toHaveText("TCK-1007");
-    await page.locator(".cx-drawer").getByRole("button", { name: "Close record details" }).tap();
+    await page.locator(".cx-drawer").getByRole("button", { name: "Close" }).tap();
     await page.getByRole("button", { name: "Next match" }).tap();
     // Next starts at the focused card: TCK-1007, the last of the six results in id order ("t7" follows "t35").
     await expect(page.locator(".cx-matches-count")).toHaveText("6 of 6");

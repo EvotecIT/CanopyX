@@ -282,7 +282,7 @@ for (const theme of ["light", "dark"]) {
     await tree.locator('.cx-row[data-cx-id="fs-2"]').click();
     // A centered row click can hit the phone's hidden-fields button; close its modal before reaching the toolbar.
     const drawer = page.locator("dialog.cx-drawer");
-    if (await drawer.isVisible()) await drawer.getByRole("button", { name: "Close record details", exact: true }).click();
+    if (await drawer.isVisible()) await drawer.getByRole("button", { name: "Close", exact: true }).click();
     await expect(drawer).toHaveCount(0);
     await tree.locator(".cx-grid-overflow > summary").click();
     await tree.locator(".cx-grid-details").click();
