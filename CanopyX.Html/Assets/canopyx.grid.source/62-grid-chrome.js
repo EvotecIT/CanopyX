@@ -48,7 +48,7 @@
       this.syncGridStatus?.();
     },
     updateGridPhone() {
-      const phone = this.host.clientWidth <= 640, autoRows = this.authoredAutoRows || phone && this.phoneLineColumns().length > 0;
+      const phone = this.host.clientWidth <= 640, autoRows = this.authoredAutoRows || phone && (this.layoutMode || "fit") === "fit";
       this.host.classList.toggle("cx-phone", phone);
       if (phone === this.phone && autoRows === this.autoRows) return;
       const anchor = this.gridRowAnchor();

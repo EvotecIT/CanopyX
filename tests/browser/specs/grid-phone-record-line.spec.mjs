@@ -31,7 +31,7 @@ for (const selected of [false, true]) test(`phone record contains an over-viewpo
   const geometry = await row.evaluate(element => {
     const name = element.querySelector('.cx-phone-primary .cx-text'), card = document.querySelector('[data-canopyx-host]');
     return { page: document.documentElement.scrollWidth, viewport: innerWidth, right: card.getBoundingClientRect().right,
-      clipped: name.scrollWidth > name.clientWidth, ellipsis: getComputedStyle(name).textOverflow, line: element.querySelector('.cx-phone-fields').getBoundingClientRect().bottom,
+      clipped: name.scrollWidth > name.clientWidth || name.scrollHeight > name.clientHeight + 1, ellipsis: getComputedStyle(name).textOverflow, line: element.querySelector('.cx-phone-fields').getBoundingClientRect().bottom,
       bottom: element.getBoundingClientRect().bottom };
   });
   expect(geometry.page).toBeLessThanOrEqual(geometry.viewport);

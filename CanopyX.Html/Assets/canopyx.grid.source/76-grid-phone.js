@@ -33,20 +33,22 @@
       button.dataset.cxRecord = row.id; button.setAttribute("aria-label", label + ": " + titles); button.title = titles; setText(button, label);
       slot.hiddenFields = button;
     }
-    if (!first || !fields.length) {
+    if (!first) {
       slot.childSlots?.forEach(disposeHostSlot); slot.childSlots = null;
       slot.phoneLine?.remove(); slot.phoneLine = null;
       if (slot.phonePrimary) { slot.phonePrimary.replaceWith(...slot.phonePrimary.childNodes); slot.phonePrimary = null; }
-      if (count && button.parentNode !== slot.cell) slot.cell.appendChild(button);
       return;
     }
     let primary = slot.phonePrimary;
     if (!primary || primary.parentNode !== slot.cell) primary = h("span", "cx-phone-primary");
     // Presenters may replace their children while repainting a recycled row. Keep existing slot references intact.
     for (const node of [...slot.cell.childNodes]) if (node !== primary && node !== slot.phoneLine && node !== button) primary.appendChild(node);
-    if (count) primary.appendChild(button);
     if (primary.parentNode !== slot.cell) slot.cell.prepend(primary);
     slot.phonePrimary = primary;
+    if (!fields.length && !count) {
+      slot.childSlots?.forEach(disposeHostSlot); slot.childSlots = null;
+      slot.phoneLine?.remove(); slot.phoneLine = null; return;
+    }
     let line = slot.phoneLine;
     if (!line || line.parentNode !== slot.cell) { line = h("span", "cx-phone-fields"); slot.cell.appendChild(line); }
     slot.phoneLine = line;
@@ -61,6 +63,7 @@
         slot.childSlots.push({ cell: value, content, base: "cx-phone-value", cls: null, title: null, badges: [], mode: "default", textSpan, text: textSpan.appendChild(document.createTextNode("")) });
       }
     }
+    if (count && button.parentNode !== line) line.appendChild(button);
     fields.forEach((field, index) => {
       this.paintSlot(slot.childSlots[index], row, field, this.columns.indexOf(field), { level: 0, expanded: false });
       slot.childSlots[index].cell.title = cellText(row.cells[field.id], field, this.fmt) || "";

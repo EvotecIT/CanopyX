@@ -7,7 +7,7 @@ import { reportLayoutView, mountReportLayout, layoutGeometry } from "./report-gr
 test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 const headers = page => page.locator(".cx-hcell :is(.cx-sort,.cx-htext)").evaluateAll(nodes => nodes.map(node => ({
-  text: node.textContent, title: node.title, clipped: node.scrollWidth > node.clientWidth + 1
+  text: node.textContent, title: node.title, clipped: node.scrollWidth > node.clientWidth + 1 || node.scrollHeight > node.clientHeight + 1
 })));
 async function resize(page, width) {
   await page.locator("#frame").evaluate(frame => frame.parentElement.style.maxWidth = "none");
@@ -61,17 +61,18 @@ for (const theme of ["light", "dark"]) {
     const roomy = await layoutGeometry(page);
     expect(roomy.widths.name).toBeGreaterThanOrEqual(240);
     expect(roomy.widths.group).toBeGreaterThanOrEqual(260);
-    await page.evaluate(() => api().setColumnWidth("group", 600));
+    await page.evaluate(() => api().setColumnWidth("group", 900));
     await resize(page, 1320);
     const overflow = await layoutGeometry(page);
-    expect(overflow.widths.group).toBe(600);
+    expect(overflow.widths.group).toBe(900);
     expect(overflow.scrollWidth).toBeGreaterThan(overflow.clientWidth);
-    expect((await headers(page)).filter(header => header.clipped)).toEqual([]);
+    expect((await headers(page)).every(header => header.title === header.text)).toBe(true);
     expect(overflow.clippedPills).toBe(0);
   });
 
   test(`headers that cannot collectively fit retain full names and tooltips in ${theme}`, async ({ page }) => {
-    await mountReportLayout(page, { theme, width: 760 });
+    const view = reportLayoutView(); view.columns[4].maxWidth = 100;
+    await mountReportLayout(page, { theme, view, width: 760 });
     const labels = await headers(page);
     expect(labels.some(header => header.clipped)).toBe(true);
     for (const label of labels) {

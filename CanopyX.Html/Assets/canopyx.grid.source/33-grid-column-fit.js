@@ -17,7 +17,12 @@
     fitHide(shown, width, phone) {
       COLUMN_FIT.fitHide.call(this, shown, width, phone, column => COLUMN_FIT.fitSize.call(this, column, 1));
       if (!phone || (this.layoutMode || "fit") !== "fit") return;
-      const identity = shown.find(column => column.identity), peers = shown.filter(column => !column.fitHidden && !column.identity && gridLevel(column) === 0);
+      const identity = shown.find(column => column.identity);
+      // If the reader hid the declared identity, preserve the shared fitter's last visible column and its scrolling floor.
+      if (!identity) return;
+      // Normal context belongs below the identity; authored always-visible and reader sizing stay authoritative.
+      for (const column of shown) if (!column.identity && gridLevel(column) > 0 && !column.alwaysVisible && !column.fixed && !column.sized) column.fitHidden = true;
+      const peers = shown.filter(column => !column.fitHidden && !column.identity && gridLevel(column) === 0);
       if (!identity || identity.fixed || identity.sized) return;
       const primary = columnWidth(identity, Math.min(Math.max(identity.contentNeed || 0, identity.pref || 0, identity.controlNeed || 0), Math.max(160, width * .65)));
       if (primary + peers.reduce((sum, column) => sum + this.fitSize(column, 2), 0) > width)
@@ -27,35 +32,27 @@
     fitSize(column, level) {
       if (column.fixed || column.sized) return columnWidth(column, column.width);
       const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
-      const header = level === undefined || level === 2 || this.fitHeadersFit ? Math.min(column.headNeed || 0, 320) : 0;
+      const header = level === undefined || level === 2 ? column.headWrapNeed || 0 : column.headWordNeed || column.controlNeed || 0;
       const floor = Math.max(level === undefined ? need : content, header, column.controlNeed || 0);
       let width = Math.max(floor, level === undefined ? column.pref || 0 : 0) + (column.reserve || 0);
       if (column.identity && this.host.clientWidth <= 640 && (this.layoutMode || "fit") === "fit") {
-        const peers = this.columns.filter(item => item !== column && !item.hidden && !item.responsiveHidden && gridLevel(item) === 0);
-        // Essential scalar fields keep their complete values. The phone identity may ellipsize with its full-value tooltip.
-        const minimum = this.fitHeadersFit ? Math.max(column.controlNeed || 0, Math.min(column.headNeed || 0, 320)) + (column.reserve || 0) : column.controlNeed || column.minW;
-        if (peers.length) width = Math.min(width, Math.max(minimum,
-          this.grid.clientWidth - peers.reduce((total, item) => total + this.fitSize(item, 2), 0)));
+        // The identity keeps forty percent before peers move to the context line; small values need no empty allocation.
+        const minimum = Math.min(content, this.grid.clientWidth * .4);
+        width = Math.max(minimum, Math.min(width, Math.max(minimum, this.grid.clientWidth * .5)));
       }
       return Math.ceil(columnWidth(column, width));
     },
     fitShrink(cols, excess, level) {
-      // First preserve capped header minimums, then let headers yield only when those minimums cannot fit.
+      // First preserve balanced two-line headers, then yield to their longest-word minimum.
       // Preferred whitespace gives way to these minima; content remains a floor in every pass.
       const slack = cols.map(column => Math.max(0, column.renderWidth - this.fitSize(column, level)));
       const total = slack.reduce((sum, width) => sum + width, 0), ratio = total ? Math.min(1, excess / total) : 0;
       cols.forEach((column, index) => column.renderWidth -= slack[index] * ratio);
       return Math.max(0, excess - total);
     },
-    fitWidths(cols, width) {
-      // Content can require scrolling even though the header minimums alone fit. In that case retain those headers.
-      this.fitHeadersFit = cols.reduce((sum, column) => sum + columnWidth(column,
-        Math.min(column.headNeed || 0, 320) + (column.reserve || 0)), 0) <= width;
-      return COLUMN_FIT.fitWidths.call(this, cols, width);
-    },
     fitSpare(columns, spare) {
-      // Restore capped header labels before flex/identity columns receive decorative reading space.
-      const deficits = columns.map(column => Math.max(0, Math.min(Math.min(column.headNeed || 0, 320) +
+      // Restore balanced two-line headers before preferred and flex reading space.
+      const deficits = columns.map(column => Math.max(0, Math.min((column.headWrapNeed || 0) +
         (column.reserve || 0), column.maxW) - column.renderWidth));
       const total = deficits.reduce((sum, value) => sum + value, 0), ratio = total ? Math.min(1, spare / total) : 0;
       columns.forEach((column, index) => column.renderWidth += deficits[index] * ratio);
@@ -114,11 +111,7 @@
       // Base widths depend on content, not on the available width, so responsive policies read stable values.
       for (const column of this.columns) { column.reserve = 0; if (!column.fixed && !column.sized) column.width = this.fitSize(column); }
       this.fitHide(shown, width, phone);
-      // On phones the first shown column also holds the "+N" button of the hidden fields (76-grid-phone.js). Its width is
-      // reserved beside the column's content, and the columns are hidden again so the reserved width fits.
-      // The button's text is measured again once the count is final; the button is at least 24 pixels wide (its target size).
-      const first = shown.find(column => !column.fitHidden), reserve = () => first.reserve = Math.max(24, Math.ceil(this.fitContext.measureText(this.hiddenFieldLabel()).width)) + 8;
-      if (phone && first && this.hiddenFieldCount()) { this.fitContext.font = this.fitFont[1]; reserve(); this.fitHide(shown, width, phone); reserve(); }
+      // Residual disclosure belongs to the context line and takes no width from the identity.
     },
     measureGridColumn(column) {
       const context = this.fitContext ||= document.createElement("canvas").getContext("2d"), query = this.acceptedQuery;
@@ -140,6 +133,12 @@
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0);
       column.controlNeed = Math.ceil(24 + chrome);
       const head = Math.ceil(Math.max(24, text(column.title, headFont, false)) + chrome);
+      const words = column.title.trim().split(/\s+/), widths = words.map(word => text(word, headFont, false));
+      let balanced = text(column.title, headFont, false);
+      for (let split = 1; split < words.length; split++) balanced = Math.min(balanced,
+        Math.max(text(words.slice(0, split).join(" "), headFont, false), text(words.slice(split).join(" "), headFont, false)));
+      column.headWordNeed = Math.ceil(Math.max(24, ...widths) + chrome);
+      column.headWrapNeed = Math.ceil(Math.max(24, balanced) + chrome);
       // The header holds the column menu button (wider on phones) unless the toolbar switches column menus off.
       let values = 0, sampled = 0;
       // Presenter-aware estimates of rendered values, without touching the DOM.
@@ -162,7 +161,7 @@
       const cap = columnWidth(column, kind === "enum" || kind === "state" ? column.maxW : 420);
       // The values alone (without the header or aggregates): the floor of a date, number or graphic column.
       column.contentNeed = none || !sampled ? 0 : Math.min(cap, Math.ceil(values + 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0)));
-      const need = none ? column.pref || column.width : Math.min(cap, Math.max(head,
+      const need = none ? column.pref || column.width : Math.min(cap, Math.max(column.headWrapNeed,
         Math.ceil(values + (sampled ? 2 * pad + 4 + (first && this.view.reporting?.selectionControls ? 28 : 0) : 0))));
       return Object.freeze({ width: Math.max(column.minW, need), head: Math.min(head, cap), sampled, scope: "loaded" });
     },

@@ -158,33 +158,29 @@ test("hidden fields follow the phone breakpoint in both directions", async ({ pa
   }
 });
 
-// A long second column leaves no spare width at 390 px, so the identity column gets exactly its content width. That width
-// includes the "+N" button the column also holds, so the button never truncates the names.
-test("phone fitting reserves the +N button in the identity column when no width is spare", async ({ page }) => {
+// Normal context moves below the identity; residual disclosure never competes for the primary line.
+test("phone fitting puts long context and residual disclosure below the identity without horizontal overflow", async ({ page }) => {
   const names = ["web-01.branch.contoso", "db-02.branch.contoso", "mail-03.branch.contoso", "file-04.branch.contoso"];
   await open(page, {
     columns: [
       { id: "name", title: "Name", kind: "text", sortable: true },
       { id: "detail", title: "Detail", kind: "text" },
-      { id: "state", title: "State", kind: "text", priority: "optional" },
-      { id: "owner", title: "Owner", kind: "text", priority: "optional" },
-      { id: "region", title: "Region", kind: "text", priority: "optional" },
-      { id: "source", title: "Source", kind: "text", priority: "optional" }
+      ...["state", "owner", "region", "source"].map(id => ({ id, title: id, kind: "text", priority: "optional" }))
     ],
-    rows: names.map((name, i) => ({ id: "r" + i, cells: { name, detail: "Replication healthy across every site link in the forest " + i, state: "Pass", owner: "Team " + i, region: "North", source: "Snapshot" } }))
+    rows: names.map((name, i) => ({ id: "r" + i, cells: { name, detail: "Replication healthy across every site link " + i,
+      state: "Pass", owner: "Team " + i, region: "North", source: "Snapshot" } }))
   });
-  await capture(page, "phone-fit-reserves-hidden-fields-390");
-  const cells = await page.evaluate(() => [...document.querySelectorAll(".cx-row[data-cx-id]")].map(row => {
-    const cell = row.firstElementChild, text = cell.querySelector(".cx-text"), button = cell.querySelector(".cx-hidden-fields");
-    return { name: text.textContent, truncated: text.scrollWidth > text.clientWidth, button: button?.textContent,
-      inside: !!button && button.getBoundingClientRect().right <= cell.getBoundingClientRect().right + 0.5 };
-  }));
-  expect(cells.length).toBe(names.length);
-  expect(cells).toEqual(names.map(name => ({ name, truncated: false, button: "+2 columns", inside: true })));
-  // Responsive visibility retains the second column; its complete content now scrolls instead of truncating.
-  expect(await page.locator('.cx-row[data-cx-id="r0"] .cx-cell').nth(1).evaluate(cell => cell.scrollWidth > cell.clientWidth ||
-    [...cell.querySelectorAll("*")].some(node => node.scrollWidth > node.clientWidth))).toBe(false);
-  expect(await page.locator(".cx-data-grid .cx-grid").evaluate(grid => grid.scrollWidth > grid.clientWidth)).toBe(true);
+  await capture(page, "phone-fit-context-390");
+  for (const [index, name] of names.entries()) {
+    const row = page.locator(`.cx-row[data-cx-id="r${index}"]`);
+    await expect(row.locator('.cx-phone-primary')).toHaveText(name);
+    await expect(row.locator('.cx-phone-primary .cx-hidden-fields')).toHaveCount(0);
+    await expect(row.locator('.cx-phone-fields')).toContainText("Replication healthy");
+    await expect(row.locator('.cx-phone-value').first()).toHaveAttribute("title", "Replication healthy across every site link " + index);
+    await expect(row.locator('.cx-hidden-fields')).toHaveText("+3 columns");
+  }
+  expect(await page.locator(".cx-data-grid .cx-grid").evaluate(grid => grid.scrollWidth <= grid.clientWidth + 1)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 for (const theme of ["light", "dark"]) {
@@ -210,14 +206,16 @@ for (const theme of ["light", "dark"]) {
       { id: "days", title: "Days", kind: "number", priority: 1, fixed: true, width: 100 },
       { id: "signal", title: "Signal", kind: "text", priority: 1, fixed: true, width: 120 },
       { id: "detail", title: "Detail", kind: "text", width: 240 }
-    ], rows: [{ id: "r0", cells: { name: "service.branch.production.example.com", days: 7, signal: "Expires 0-7d", detail: "Evidence" } }], selection: "none" });
+    ], rows: [{ id: "r0", cells: { name: "service.branch.production.example.com".repeat(3), days: 7, signal: "Expires 0-7d", detail: "Evidence" } }], selection: "none" });
     await page.locator("[data-canopyx-host]").evaluate((element, value) => element.setAttribute("data-cx-theme", value), theme);
     const geometry = await page.evaluate(() => { const grid = document.querySelector('.cx-data-grid .cx-grid'); return {
       mode: document.querySelector('[data-canopyx-host]').canopyx.getLayout().mode,
       width: document.querySelector('.cx-row[data-cx-id="r0"] .cx-cell').getBoundingClientRect().width,
+      lineHeight: document.querySelector('.cx-row[data-cx-id="r0"] .cx-text').getBoundingClientRect().height,
       scroll: grid.scrollWidth > grid.clientWidth }; });
     expect(geometry.mode).toBe("scroll");
     expect(geometry.width).toBeGreaterThanOrEqual(260);
+    expect(geometry.lineHeight).toBeLessThan(24);
     expect(geometry.scroll).toBe(true);
   });
 
@@ -258,10 +256,11 @@ for (const theme of ["light", "dark"]) {
       const text = cell.querySelector(".cx-text"), button = cell.querySelector(".cx-hidden-fields");
       const box = cell.getBoundingClientRect(), textBox = text.getBoundingClientRect(), buttonBox = button.getBoundingClientRect();
       const style = getComputedStyle(text);
-      return { truncated: text.scrollWidth > text.clientWidth, overflow: style.textOverflow, textWidth: textBox.width,
-        buttonWidth: buttonBox.width, buttonContent: button.scrollWidth, cellWidth: box.width, buttonInside: buttonBox.left >= textBox.right - 0.5 && buttonBox.right <= box.right + 0.5 };
+      const range=document.createRange();range.selectNodeContents(text);
+      return { lines:new Set([...range.getClientRects()].filter(r=>r.bottom<=textBox.bottom+1).map(r=>Math.round(r.top))).size, overflow: style.textOverflow, textWidth: textBox.width,
+        buttonWidth: buttonBox.width, buttonContent: button.scrollWidth, cellWidth: box.width, buttonInside: buttonBox.top >= textBox.bottom - 0.5 && buttonBox.right <= box.right + 0.5 };
     });
-    expect(geometry.truncated).toBe(true);
+    expect(geometry.lines).toBe(2);
     await expect(page.locator('.cx-row[data-cx-id="r1"] .cx-cell').first()).toHaveAttribute("title", rows[1].cells.name);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     expect(geometry.overflow).toBe("ellipsis");

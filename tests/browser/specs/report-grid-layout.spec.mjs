@@ -63,6 +63,8 @@ for (const classic of [false, true]) test(`three wide rows fit after hidden moun
   // 1196 px of explicit safe widths inside a 1086 px frame must scroll horizontally.
   [240, 260, 220, 240, 236].forEach((width, i) => { view.columns[i].minWidth = width; view.columns[i].maxWidth = width; });
   await mountReportLayout(page, { view, hidden: true, classic });
+  // At phone width the two-line identity and context need more block space than the original one-line fixture.
+  await page.locator(".cx-host").evaluate(host => host.style.height = "800px");
   await page.locator("#frame").evaluate(frame => frame.style.display = "");
   await page.evaluate(() => api().ready); await rowsFit(page);
   const wide = await layoutGeometry(page);
@@ -96,7 +98,7 @@ test("atomic pills wider than the ordinary text cap remain readable and explicit
 
 test("automatic text content keeps its measured width after header-only slack is exhausted", async ({ page }) => {
   const view = reportLayoutView();
-  delete view.columns[1].width;
+  delete view.columns[1].width; view.reporting.columnReorder = false;
   view.rows[0].cells.group = "Operations review awaiting confirmation";
   view.columns.push({ id: "stage", title: "Reminder stage", kind: "text" });
   view.rows.forEach(row => row.cells.stage = "—");

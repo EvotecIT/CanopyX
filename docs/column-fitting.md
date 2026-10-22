@@ -47,71 +47,62 @@ column's header. Use fixed sizing or an explicit minimum when a width must never
 
 ## Width allocation, in order
 
-1. **Choose visible columns.** Apply the existing user visibility, responsive,
-   priority, and pin rules using their compact estimates (including the existing
-   eleven-digit estimate for normal text). Content floors govern the widths of
-   retained columns, not which fields remain visible. Optional columns can hide
-   when the compact estimates do not fit. Phone layouts can also hide normal columns and reserve the first
-   shown column's `+N` button; essential, explicitly sized, and always-visible
-   columns follow the existing protections.
-2. **Start at measured or preferred width.** Each automatic column starts at the
-   greater of its measured need (header or content) and preferred width, clamped
-   to its minimum and maximum. Phone disclosure space is included. Fixed and
-   user-sized columns retain their widths.
-3. **Protect header minimums before preferred whitespace.** An automatic column's
-   header minimum is its measured label plus sort, menu, filter and reorder
-   affordances, capped at 320 pixels and bounded by explicit sizing constraints.
-   Reorder handles include their measured glyph advance and padding, so a wider
-   fallback font cannot consume space reserved for the header label.
-   If the total exceeds available width, remove whitespace above the greater of
-   this header minimum and measured content first, including preferred whitespace.
-   Fixed and reader-sized columns do not yield. Only when the header minimums
-   themselves cannot collectively fit may header-only space yield to content.
-   Keep the sort/menu controls' minimum pointer targets even for a dash-only
-   column. A header beyond the cap or one that must yield truncates with an
-   ellipsis; its complete title remains in its tooltip and accessible name.
-   When header minimums fit but content requires a wider row, keep those header
-   minimums in the horizontally scrolling row too.
-4. **Scroll when the floors cannot fit.** The row and canvas retain the sum of
-   the resulting widths. The scroll container exposes horizontal scrolling;
-   fitting does not squeeze measured text, identity values, pills or other
-   content to manufacture a viewport fit. Explicit wrapping, long-text
-   presenters and authored or user width constraints retain their documented
-   clipping or expansion policy.
-   Scroll/card layout modes keep each column's base width instead of performing
-   shortage fitting or automatic hiding.
-5. **Distribute spare width.** Restore truncated headers to their capped minimums
-   first, then restore preferred reading widths. Only then do weighted flex columns
-   receive spare width up to their maxima. The identity column grows toward
-   420 pixels; it and the widest normal text column then share remaining space,
-   respecting maxima. Fixed and user-sized columns do not grow. Render widths
-   round down to whole CSS pixels; a remaining pixel budget goes to a growing
-   text column with room. Explicit maxima may leave unused space.
+1. **Choose visible columns.** Apply reader visibility, responsive priority and
+   pin rules. Optional columns can hide when compact estimates do not fit. On
+   phones, normal context moves below the identity. Essential, reader-sized and
+   always-visible fields retain their protections.
+2. **Measure two header targets.** The minimum is the longest unbreakable word,
+   plus padding, sort, filter, menu and reorder affordances. The preferred header
+   width is the narrowest balanced split into at most two lines, with the same
+   affordances. Reorder glyphs use their measured font advance. The header row
+   grows to the actual wrapped height; its height participates in auto-height.
+3. **Start at the larger of preferred width and measured need.** Measured need
+   includes the balanced two-line header target and formatted content. Atomic
+   pills keep their full measured width. Fixed and reader-sized columns stay at
+   their explicit widths, bounded by authored minima and maxima.
+4. **Remove spare reading space before content.** First shrink towards the
+   greater of content and the balanced two-line header target. If that does not
+   fit, header-only space can yield towards the longest-word target. In every
+   pass the floor is the greater of the content minimum, header target and
+   affordances. A dash-only column therefore gives way before a status pill.
+   Headers wrap before they truncate or cause horizontal scrolling. If two
+   lines still cannot hold a title, it truncates with the full title in its
+   tooltip and accessible name. Explicit width constraints remain authoritative.
+5. **Scroll only when the sum of the minimums does not fit.** Keep these floors
+   in the scrolling row too. Do not clip pills or other content to manufacture
+   a fit. Scroll/card modes retain their established base-width policy.
+6. **Distribute spare width.** Restore balanced header targets first, then
+   preferred reading widths, then weighted flex and ordinary text growth.
+   Fixed and reader-sized columns do not grow. Whole-pixel rounding respects
+   the viewport budget and explicit maxima.
 
-On phones (hosts up to 640 pixels wide), essential priority 0/1 columns keep
-their measured content and pill widths. An automatic row-header column gives
-space to those fields, even when it has a preferred width. Its text truncates
-with the complete value in a tooltip; fixed and reader-sized widths still win.
-When the essential fields and a useful primary line cannot fit together, automatic
-essential columns move into a quiet second line beneath the row header. Up to two
-hidden essential fields appear there, using their normal value presenters. When
-only the row header and at most one other column fit, the next columns in priority
-order fill any remaining second-line slots. This keeps records with the same name
-distinguishable by context such as a domain or owner. Author-hidden columns never
-enter that line. Values truncate inside their slot and retain their full tooltip. Other
-hidden fields stay in the drawer. Rows with this line follow its measured height;
-other rows keep their authored height policy, including during recycling and
-container resizing. Fixed, reader-sized and always-visible columns retain their
-explicit policy; scroll mode keeps horizontal scrolling.
+The five-column fixture (Record, Responsible team, Latest verification outcome,
+Recommended follow-up decision, Observations requiring attention) fits a 1086 px
+host with complete headers on no more than two lines and no horizontal scrolling.
+Its narrowest content includes status pills, so fitting cannot pass by clipping
+those values. `grid-wrapped-report.spec.mjs` checks both themes with real glyph
+rectangles rather than only comparing element widths.
 
-The first shown cell's `+1 column` / `+2 columns` button counts only columns in the current
-view that responsive or fitting priority hid. Columns hidden by the author or
-reader and fields already shown in the second line do not contribute. The button has an accessible name and a tooltip
-listing the hidden titles, and opens the existing record drawer. When no view
-columns remain beyond the second line, the button is absent. The `hiddenColumns`
-plural label follows the grid's normal text catalogue, including localized numbers.
-The primary line has a contained ellipsis and full-value tooltip, so an identity
-longer than the viewport cannot widen the document.
+On phones (hosts up to 640 px), the automatic row header retains at least 40% of
+the grid width, or its smaller content need. It wraps to two lines before
+truncating, with the full value in a tooltip. Essential priority 0/1 fields keep
+their content minimums when they fit beside that identity. Otherwise they move
+into a quiet second line, followed by the next normal fields in priority order,
+up to two context fields. Author-hidden columns never enter that line. Context
+values retain full-value tooltips and normal presenters; oversized atomic pills
+scroll within their context slot. Automatic phone rows use measured heights so
+the two-line identity and context remain inside their record. Explicit fixed,
+reader-sized and always-visible policies remain authoritative.
+
+The residual `+1 column` / `+2 columns` button sits on the quiet line, away from
+the identity. It counts only current-view fields hidden by responsive priority
+that the quiet line does not already show. It has an accessible name and a
+tooltip listing those fields, opens the record drawer, and disappears when all
+hidden fields appear in the second line. `hiddenColumns` uses the existing
+localized plural catalogue and number formatting. The 390 px fixture checks
+that an identity longer than the viewport causes no document overflow, retains
+at least twelve visible characters beside two essential peers, and never shares
+its primary line with the residual disclosure.
 
 The grid specializes its measurement floors and header-slack pass. Trees retain
 their existing shared fitting policy.

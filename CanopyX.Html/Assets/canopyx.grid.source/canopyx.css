@@ -184,3 +184,12 @@
 /* Overlays (column popovers, the record drawer, the text dialog) come with the editor part; their focus ring is here, ahead of its stylesheet. */
 .cx-grid-overlay :focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-2px); }
 .cx-grid-overlay [data-cx-pointer-focus]:focus-visible { outline:none; }
+
+/* Two-line report headers keep content floors without reserving the full single-line caption. */
+.cx-data-grid .cx-hrow { height:auto;min-height:var(--cx-head-h);align-items:stretch; }
+.cx-data-grid .cx-hcell { padding-block:6px; }
+.cx-data-grid .cx-hcell :is(.cx-sort,.cx-htext) { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;line-height:1.25;text-wrap:balance;overflow:hidden;max-height:2.5em; }
+.cx-data-grid.cx-phone .cx-phone-primary { align-items:flex-start; }
+.cx-data-grid.cx-phone .cx-phone-primary > .cx-content { flex:1; }
+.cx-data-grid.cx-phone:not([data-cx-layout="scroll"]) .cx-phone-primary :is(.cx-text,.p-mono,.cx-presenter-text) { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;overflow-wrap:anywhere;line-height:1.25;max-height:2.5em; }
+.cx-data-grid.cx-phone .cx-phone-fields > .cx-hidden-fields { margin-left:auto;flex:none; }
