@@ -1,10 +1,14 @@
 // Conditional formatting (docs/conditional-formatting.md): rules on the filter builder's conditions, cell, row, column and
 // drawer targets, tone styles, icons and badges, data bars, colour scales and bands, the legend, saved views, export
 // records, print, remote rows and the evaluation budget on 100,000 rows. The rule editor has its own spec.
+import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { nextFrames, openExample, median, exampleUrl } from "./support.mjs";
 import { formattingPage, healthView } from "./formatting-support.mjs";
+
+// Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
+test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 async function open(page, view = healthView(), options = {}) {
   page.errors = []; page.on("pageerror", error => page.errors.push(error.message));
@@ -26,9 +30,11 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
     const down = row(page, "srv-006");
     await expect(down).toHaveClass(/cx-fmt-row/);
     await expect(down.locator(".cx-cell").first().locator(".cx-fmt-icon")).toHaveText("✕");
-    await expect(down.locator(".cx-cell").first().locator(".cx-sr-only")).toHaveText(", Server is down");
+    await expect(down.locator(".cx-cell").first().locator(":scope > .cx-sr-only")).toHaveText(", Server is down");
     await expect(down.locator(".cx-fmt-icon").first()).toHaveAttribute("aria-hidden", "true");
-    await expect(row(page, "srv-003").locator(".cx-cell").nth(1)).toHaveClass(/cx-fmt-fill/);
+    const status = width === 390 ? row(page, "srv-003").locator(".cx-phone-field").filter({
+      has: page.locator(".cx-phone-field-title", { hasText: /^Status:$/ }) }).locator(".cx-phone-value") : cell(page, "srv-003", 1);
+    await expect(status).toHaveClass(/cx-fmt-fill/);
     const legend = page.getByRole("list", { name: "Formatting legend" });
     await expect(legend).toBeVisible();
     await expect(legend.getByRole("listitem")).toHaveCount(8);
@@ -59,7 +65,7 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
           item.getBoundingClientRect().right > cell.getBoundingClientRect().right + 0.5).map(item => row.dataset.cxId + ":" + item.textContent))));
       expect(cut).toEqual([]);
       const flagged = cell(page, "srv-000", 0);
-      expect(await flagged.locator(".cx-text").evaluate(text => text.textContent)).toBe("srv-north-000");
+      expect(await flagged.locator(".cx-text").first().evaluate(text => text.textContent)).toBe("srv-north-000");
     }
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     expect(errors).toEqual([]);

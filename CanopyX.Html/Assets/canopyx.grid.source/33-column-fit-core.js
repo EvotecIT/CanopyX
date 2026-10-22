@@ -28,9 +28,10 @@
     return variant;
   }
   // The canvas font a presenter class draws with (weight, size and family), read from a hidden probe inside the grid.
-  function gridClassFont(grid, className) {
-    const probe = document.createElement("span"); probe.className = className; probe.style.display = "none"; grid.appendChild(probe);
-    const style = getComputedStyle(probe), font = style.fontWeight + " " + style.fontSize + " " + style.fontFamily;
+  function gridClassFont(grid, className, chrome) {
+    const probe = h("span", className); probe.style.cssText = "position:absolute;visibility:hidden"; grid.appendChild(probe);
+    const style = getComputedStyle(probe), font = [style.fontWeight, style.fontSize, style.fontFamily].join(" ");
+    if (chrome) { chrome.extra = probe.getBoundingClientRect().width; chrome.spacing = parseFloat(style.letterSpacing) || 0; }
     probe.remove();
     return font;
   }
@@ -91,7 +92,7 @@
     // The base width (content or preferred), the content width (level 2), or the narrowest width before hiding
     // (level 1): essential columns keep their content width.
     fitSize(column, level) {
-      // reserve: width a view keeps beside the column's content, such as the flat grid's phone "+N" button.
+      // reserve: width a view keeps beside the column's content, such as the tree grid's phone "+N" button.
       const need = (column.need ?? column.width) + (column.reserve || 0);
       // The default identity yields last, only when that can avoid scrolling. Explicit or user-sized widths stay.
       if (level === 0) return column.identity && column.priority === undefined && !column.fixed && !column.sized ?
@@ -160,17 +161,17 @@
     // except on phones: there the identity column (a tree's tree column) keeps its indent and about two dozen characters
     // (indentNeed, set by trees, plus twice fitCh) beside its "+N" button, and pinned columns that are not essential hide,
     // after the others and in the same order, rather than cut it short.
-    fitHide(shown, width, phone) {
+    fitHide(shown, width, phone, size = column => this.fitSize(column, 1)) {
       let total = 0, remaining = shown.length;
       const order = (a, b) => gridLevel(b) - gridLevel(a) || gridRank(b) - gridRank(a) || shown.indexOf(b) - shown.indexOf(a), identity = phone && shown.find(column => column.identity);
       const hide = (column, pinned) => !column.sized && !column.alwaysVisible && (column.pin === "none") !== pinned && !(phone && column.identity) && gridLevel(column) > !phone;
       for (const column of this.columns) column.fitHidden = false;
       if (this.layoutMode && this.layoutMode !== "fit") return;
-      for (const column of shown) total += this.fitSize(column, 1);
+      for (const column of shown) total += size(column);
       for (const column of shown.filter(column => hide(column, false)).sort(order))
-        if (total > width && remaining > 1) { column.fitHidden = true; total -= this.fitSize(column, 1); remaining--; }
-      if (identity && !identity.fixed && !identity.sized) total += Math.min(identity.need ?? identity.width, (identity.indentNeed || 0) + 2 * (this.fitCh || 88)) + (identity.reserve || 0) - this.fitSize(identity, 1);
+        if (total > width && remaining > 1) { column.fitHidden = true; total -= size(column); remaining--; }
+      if (identity && !identity.fixed && !identity.sized) total += Math.min(identity.need ?? identity.width, (identity.indentNeed || 0) + 2 * (this.fitCh || 88)) + (identity.reserve || 0) - size(identity);
       if (identity) for (const column of shown.filter(column => hide(column, true)).sort(order))
-        if (total > width) { column.fitHidden = true; total -= this.fitSize(column, 1); }
+        if (total > width) { column.fitHidden = true; total -= size(column); }
     }
   };

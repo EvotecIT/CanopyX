@@ -1,5 +1,5 @@
-// A pinned test font for the visual-regression baselines: every element renders in the bundled Inter subset, so a
-// screenshot does not depend on the fonts a machine has installed.
+// A pinned test font for geometry fixtures and visual-regression baselines: the bundled Inter subset keeps
+// measured width, responsive projection and screenshot contracts independent of installed platform fonts.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

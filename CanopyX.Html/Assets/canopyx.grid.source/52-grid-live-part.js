@@ -18,6 +18,7 @@
   for (const name of GRID_LIVE_API) DataGrid.prototype[name] = function (...args) { return this.loadLive().then(() => this[name](...args)); };
   Object.assign(DataGrid.prototype, {
     loadLive() {
+      if (this.view.rowIdentity === "ordinal") return Promise.reject(new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys."));
       return this.liveLoad ||= loadPart(GRID_LIVE).then(() => this.destroyed || this.startLive()).catch(error => { this.liveLoad = null; throw error; });
     },
     getLiveState() {

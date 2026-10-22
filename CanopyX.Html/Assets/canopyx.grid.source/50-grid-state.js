@@ -38,7 +38,7 @@
       const state = { version: 1, view: this.view.id,
         columns: this.columns.map(gridStateColumn),
         query: JSON.parse(JSON.stringify({ ...query, offset: this.cursor ? undefined : 0, cursor: undefined, revision: undefined })),
-        timeZone: this.local ? "local" : "utc", selection: [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
+        timeZone: this.local ? "local" : "utc", selection: this.view.rowIdentity === "ordinal" ? [] : [...this.selected], scrollTop: this.grid ? this.logicalTop() : 0 };
       if (this.paged) state.paging = { pageLength: this.pageLength, offset: this.cursor ? 0 : this.pageOffset, ...this.pageAll?{allRows:true}:{} };
       // Rules edited at run time (52-grid-formatting.js) are part of the view a reader saves.
       if (this.formatEdited) state.formatRules = JSON.parse(JSON.stringify(this.formatRules));
@@ -51,6 +51,8 @@
         throw new Error("CanopyX: invalid grid state.");
       const columns = gridStateColumns(this, state.columns);
       const selection = [...new Set(state.selection.map(id => { requireIdentifier(id, "state selection ID"); return id; }))];
+      if (this.view.rowIdentity === "ordinal" && selection.length)
+        throw new Error("CanopyX: ordinal row identity is snapshot-local; replaying saved selections requires stable row keys.");
       if (this.view.selection === "none" && selection.length || !this.multi && selection.length > 1) throw new Error("CanopyX: invalid state selection.");
       const input = state.query;
       if (!input || typeof input !== "object" || !Array.isArray(input.sort) || !Array.isArray(input.filters)) throw new Error("CanopyX: invalid state query.");
@@ -100,7 +102,8 @@
         const column = current.get(saved.id);
         return Object.assign(column, { sized: false, priority: column.basePriority }, saved);
       });
-      this.setTimeZone(state.timeZone); this.setSelection(state.selection);
+      this.setTimeZone(state.timeZone);
+      if (this.view.rowIdentity !== "ordinal") this.setSelection(state.selection);
       this.buildHeader(); this.syncColumnControls(); this.setLogicalTop(state.scrollTop); this.render();
       // Formatting rules travel untouched through readGridState; the formatting part validates them here.
       if (state.formatRules !== undefined || this.formatEdited) return this.setFormatRules(state.formatRules || this.view.formatRules || []);

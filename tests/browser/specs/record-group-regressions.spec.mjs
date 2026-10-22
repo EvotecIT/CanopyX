@@ -35,17 +35,17 @@ test("record payloads follow accepted revisions and reject a mismatched response
     } });`);
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Details at r1");
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate("revision = 'r2'; " + api + ".reload()");
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Details at r2");
   expect(await page.evaluate("requests.map(request => request.revision)")).toEqual(["r1", "r2"]);
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate("revision = 'r3'; wrongRevision = true; " + api + ".reload()");
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator(".cx-record-error")).toContainText("requested record and revision");
   await expect(drawer(page)).not.toContainText("Details at r3");
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate("revision = 'inline'; wrongRevision = false; " + api + ".reload()");
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Details at inline");
@@ -70,26 +70,26 @@ for (const source of ["host", "URL"]) test(`query-aware tree record payloads fol
     });`);
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Tree details at r1");
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Tree details at r1");
   expect(await page.evaluate("recordRequests.length")).toBe(1);
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   revision = "r2"; await page.evaluate("revision = 'r2'; " + api + ".reload()");
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Tree details at r2");
   expect(await page.evaluate("recordRequests.map(request => request.revision)")).toEqual(["r1", "r2"]);
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   revision = "r3"; await page.evaluate("revision = 'r3'; wrongRevision = true; " + api + ".reload()");
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator(".cx-record-error")).toContainText("requested record and revision");
   await expect(drawer(page)).not.toContainText("Tree details at r3");
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   revision = "r4"; await page.evaluate("revision = 'r4'; wrongRevision = false; omitRevision = true; " + api + ".reload()");
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Tree details at r4");
   expect(await page.evaluate("recordRequests.map(request => request.revision)")).toEqual(["r1", "r2", "r3", "r4"]);
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   revision = "inline"; await page.evaluate("revision = 'inline'; wrongRevision = true; omitRevision = false; " + api + ".reload()");
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator(".cx-record-error")).toContainText("requested record and revision");
@@ -105,7 +105,7 @@ test("inline tree record requests keep revision optional and reuse accepted deta
   for (let attempt = 0; attempt < 2; attempt++) {
     await page.evaluate(api + ".openRecord('a')");
     await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Inline details");
-    await drawer(page).getByRole("button", { name: "Close record" }).click();
+    await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   }
   expect(await page.evaluate("recordRequests")).toEqual([{ protocol: "canopyx/2", type: "gridRecordQuery", view: "records", id: "a" }]);
 });
@@ -146,7 +146,7 @@ test("record printing awaits async sections and disposes cancelled renderers", a
   expect(await page.evaluate("disposals")).toBe(1);
   await page.evaluate("finishChart = null"); await action(page, "Print record");
   await expect.poll(() => page.evaluate("typeof finishChart")).toBe("function");
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.locator(".cx-record-print")).toHaveCount(0);
   expect(await page.evaluate("printContext.signal.aborted")).toBe(true);
   await page.evaluate("finishChart()");
@@ -312,7 +312,7 @@ test("detail HTML and record icons respect sanitation and Trusted Types", async 
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).getByRole("button", { name: "Record actions" })).toBeVisible();
   expect(await page.evaluate("sanitized")).toEqual([{ html: "<em>payload markup</em>", kind: "detail" }]);
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate(async () => {
     const host = document.body.appendChild(document.createElement("div")); host.id = "html-details";
     const view = { protocol: "canopyx/2", type: "grid", id: "html-detail", label: "HTML", source: { kind: "inline" }, pageSize: 20, selection: "none",
@@ -348,7 +348,7 @@ test("tree drawer cleanup registered after async setup runs after repaint and cl
   expect(await page.evaluate("drawerSetups[0].context.signal.aborted")).toBe(true);
   await page.evaluate(async () => { drawerSetups[0].finish(); await drawerSetups[0].ready; });
   expect(await page.evaluate("drawerSetups[0].disposed")).toBe(1);
-  await drawer(page).getByRole("button", { name: "Close record details", exact: true }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await expect(drawer(page)).toHaveCount(0);
   expect(await page.evaluate("drawerSetups[1].context.signal.aborted")).toBe(true);
   await page.evaluate(async () => { drawerSetups[1].finish(); await drawerSetups[1].ready; });
@@ -393,7 +393,7 @@ test("formatting loaded after a drawer opens updates that drawer and subsequent 
   await page.evaluate(api + ".setFormatRules([])");
   await expect(field).not.toHaveClass(/cx-fmt-fill/); await expect(field.locator(".cx-fmt-icon")).toHaveCount(0);
   await page.evaluate(rules => document.querySelector("[data-canopyx-host]").canopyx.setFormatRules(rules), danger);
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="status"] .cx-fmt-icon')).toHaveText("✕");
 });

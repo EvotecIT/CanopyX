@@ -43,7 +43,7 @@ internal static class CanopyDataSnapshot {
     internal static CanopyDataGridView View(CanopyDataGridView source) {
         var copy = new CanopyDataGridView(source.Id, source.Label) {
             Source = source.Source, PageSize = source.PageSize, Presentation = source.Presentation,
-            Selection = source.Selection, StateKey = source.StateKey, Record = Record(source.Record),
+            Selection = source.Selection, RowIdentity = source.RowIdentity, StateKey = source.StateKey, Record = Record(source.Record),
             Reporting = Reporting(source.Reporting)
         };
         foreach (var column in source.Columns) copy.Columns.Add(Column(column));

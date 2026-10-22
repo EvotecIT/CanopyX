@@ -62,6 +62,7 @@
         if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
         style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
           height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
+        this.fitHeight();
         if (!(this.sized = this.hasGridSize())) return;
         this.applyWidths();
         this.updateGridPhone();
@@ -89,11 +90,12 @@
       const sorts = this.acceptedQuery ? this.acceptedQuery.sort : [];
       this.sortState = sorts[0] || null; ROW_HELPERS.buildHeader.call(this);
       for (const cell of this.headCells) {
+        const button = cell.querySelector(".cx-sort");
+        if (button) { const label = h("span", "cx-htext"); setText(label, button.textContent); button.replaceChildren(label); }
         const index = sorts.findIndex(sort => sort.column === cell.getAttribute("data-cx-column"));
         if (index >= 0) {
           cell.setAttribute("aria-sort", sorts.length === 1 ? sorts[index].direction === "asc" ? "ascending" : "descending" : "other");
           cell.setAttribute("data-cx-sort", sorts[index].direction); cell.setAttribute("data-cx-sort-priority", String(index + 1));
-          const button = cell.querySelector(".cx-sort");
           button.setAttribute("data-cx-sort-priority", String(index + 1));
           if (sorts.length > 1) { const priority = h("sup", "cx-sort-priority"); setText(priority, String(index + 1)); button.appendChild(priority); }
           button.setAttribute("aria-label", cell.getAttribute("aria-label") + ", " + sorts[index].direction + ", " + (index + 1));
@@ -127,7 +129,7 @@
         element.style.height = row.status ? this.rowH + "px" : "auto";
         this.observeDetail(element, !row.status);
         this.measureNeeded = true;
-      }
+      } else element.style.height = this.rowH + "px";
       setAttr(element, "data-cx-id", row.key || null); setAttr(element, "data-cx-status", row.status || null);
       setAttr(element, "draggable", this.view.dragRows && !row.status ? "true" : null);
       setAttr(element, "aria-busy", row.status === "loading" ? "true" : null); this.refreshRowState(element, row);
@@ -141,7 +143,7 @@
         this.paintSlot(slot, row.h, column, this.columnIndex[i], row);
         if(!column.render&&!slot.text.data){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
         else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
-        if(this.phone||slot.hiddenFields)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
+        if(this.phone||slot.hiddenFields||slot.phonePrimary)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
       }
       this.paintGridHighlights(element, row);
       if(row.status)this.paintGridSkeleton(element,row);

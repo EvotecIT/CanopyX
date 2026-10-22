@@ -5,6 +5,7 @@
   // any query in flight have finished, so they apply to the accepted result.
   Object.assign(DataGrid.prototype, {
     startLive() {
+      if (this.view.rowIdentity === "ordinal") throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (this.liveOpts) return;
       this.liveOpts = liveOptions(this.view, this.opts);
@@ -47,7 +48,7 @@
     },
     liveQueueChange(change, source, replacement) {
       if (this.destroyed) return Promise.reject(new DOMException("Grid was destroyed.", "AbortError"));
-      this.startLive();
+      try { this.startLive(); } catch (error) { return Promise.reject(error); }
       if (this.view.source.kind === "inline" && this.opts.source)
         return Promise.reject(new Error("CanopyX: this grid's rows belong to its own source; change them through it (an enhanced grid's setData, addRows and removeRows)."));
       if (!this.liveInline() && (change.add.length || change.remove.length))

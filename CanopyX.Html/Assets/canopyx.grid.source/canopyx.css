@@ -1,4 +1,16 @@
 /* Graphite components ported from docs/design/data-grid-spec.html to the virtual ARIA grid. */
+.cx-data-grid { min-width:0;max-width:100%;box-sizing:border-box; }
+.cx-data-grid .cx-grid { min-width:0;max-width:100%; }
+.cx-data-grid.cx-phone .cx-cell:has(> .cx-phone-primary) { display:block;min-width:0;white-space:normal; }
+.cx-phone-primary { display:flex;align-items:center;gap:var(--cx-size-6px);min-width:0;max-width:100%;overflow:hidden;white-space:nowrap; }
+.cx-phone-primary > :not(.cx-hidden-fields):not(input), .cx-phone-primary .cx-content > :is(.p-mono,.p-sub,.cx-presenter-text,.cx-text) { min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis; }
+.cx-phone-fields { display:flex;flex-wrap:wrap;gap:4px 12px;min-width:0;margin-top:4px;font-size:12px; }
+.cx-phone-field { display:flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden; }
+.cx-phone-field-title { flex:none;color:var(--cx-muted);font-size:11px; }
+.cx-phone-value { display:inline-flex;min-width:0;overflow:hidden;white-space:nowrap; }
+.cx-phone-value > * { min-width:0;overflow:hidden;text-overflow:ellipsis; }
+.cx-phone-value:has(:is(.p-pill,.p-state)) { overflow-x:auto; }
+.cx-phone-value:has(:is(.p-pill,.p-state)) > .cx-content { flex:none;max-width:none;overflow:visible; }
 .cx-data-grid { min-height:var(--cx-min-h,0); }
 .cx-data-grid[data-cx-density="compact"] { --cx-font-size:13px;--cx-cell-px:8px; }
 .cx-data-grid[data-cx-density="comfortable"] { --cx-cell-px:14px; }
@@ -16,6 +28,8 @@
 .cx-data-grid .cx-hcell[data-cx-sort="asc"] .cx-sort::after { content:"↑";font-size:var(--cx-size-14px);color:var(--cx-accent);order:1; }
 .cx-data-grid .cx-hcell[data-cx-sort="desc"] .cx-sort::after { content:"↓";font-size:var(--cx-size-14px);color:var(--cx-accent);order:1; }
 .cx-data-grid .cx-hcell[aria-sort="other"] .cx-sort::before { content:none; }
+.cx-data-grid .cx-hcell :is(.cx-sort,.cx-htext) { min-width:0;text-overflow:ellipsis;white-space:nowrap; }
+.cx-data-grid .cx-hcell .cx-sort { display:flex;align-items:center;gap:4px;min-width:24px;text-align:inherit; }
 .cx-sort-priority { font-size:var(--cx-size-10px);color:var(--cx-accent);order:2;align-self:start; }
 .cx-data-grid .cx-auto-row { min-height:var(--cx-row-h);contain:layout style paint; }
 /* Gecko does not position sticky descendants across a size-contained row. */
@@ -170,6 +184,17 @@
 /* Overlays (column popovers, the record drawer, the text dialog) come with the editor part; their focus ring is here, ahead of its stylesheet. */
 .cx-grid-overlay :focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-2px); }
 .cx-grid-overlay [data-cx-pointer-focus]:focus-visible { outline:none; }
+
+/* Two-line report headers keep content floors without reserving the full single-line caption. */
+.cx-data-grid .cx-hrow { height:auto;min-height:var(--cx-head-h);align-items:stretch; }
+.cx-data-grid .cx-hcell { padding-block:6px; }
+.cx-data-grid .cx-hcell .cx-htext { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;line-height:1.25;text-wrap:balance;overflow:hidden;max-height:2.5em; }
+.cx-data-grid .cx-htext { flex:1;min-width:0; }
+.cx-data-grid.cx-phone .cx-phone-primary { align-items:flex-start; }
+.cx-data-grid.cx-phone .cx-phone-primary > .cx-content { flex:1; }
+.cx-data-grid.cx-phone:not([data-cx-layout="scroll"]) .cx-phone-primary :is(.cx-text,.p-mono,.cx-presenter-text) { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;overflow-wrap:anywhere;line-height:1.25;max-height:2.5em; }
+.cx-data-grid.cx-phone .cx-phone-fields > .cx-hidden-fields { margin-left:auto;flex:none; }
+
 /* Change view hosts (docs/changes.md): as tall as their content, unless a height bounds them. */
 .cx-host.cx-change-host { min-height:0;display:block; }
 .cx-host:where(.cx-change-host:not([data-cx-height])) { height:auto; }

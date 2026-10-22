@@ -81,10 +81,13 @@ for (const width of [1440, 390]) test(`first-column long text stays readable bes
       const cell = button.closest(".cx-cell").getBoundingClientRect(), target = button.getBoundingClientRect();
       const preview = button.parentElement.querySelector(".cx-wrapped-text").getBoundingClientRect();
       return { rowHeight: button.closest(".cx-row").getBoundingClientRect().height,
+        previewHeight: preview.height, previewLineHeight: parseFloat(getComputedStyle(button.parentElement.querySelector(".cx-wrapped-text")).lineHeight),
         targetHeight: target.height, visibleTargetHeight: Math.max(0, Math.min(target.bottom, cell.bottom) - Math.max(target.top, cell.top)),
         previewInside: preview.top >= cell.top - 0.5 && preview.bottom <= cell.bottom + 0.5 };
     });
-    expect(geometry.rowHeight).toBe(28); expect(geometry.targetHeight).toBeGreaterThanOrEqual(24);
+    if (width === 1440) expect(geometry.rowHeight).toBe(28);
+    else { expect(geometry.rowHeight).toBeGreaterThanOrEqual(28); expect(geometry.previewHeight).toBeLessThanOrEqual(4 * geometry.previewLineHeight + 1); }
+    expect(geometry.targetHeight).toBeGreaterThanOrEqual(24);
     expect(geometry.visibleTargetHeight).toBeGreaterThanOrEqual(24); expect(geometry.previewInside).toBe(true);
     if (selectionControls) {
       await first.focus(); await page.keyboard.press("F2");

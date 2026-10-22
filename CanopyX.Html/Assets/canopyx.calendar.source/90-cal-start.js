@@ -64,9 +64,12 @@
         this.calBody.addEventListener("pointercancel", event => this.calDragEnd(event, true), { signal });
         this.calBody.addEventListener("lostpointercapture", event => { if (this.calDrag?.id === event.pointerId && !this.calDrag.started) this.calDrag = null; }, { signal });
       }
-      let width = 0, height = 0;
-      const observer = new ResizeObserver(() => requestAnimationFrame(() => {
+      let width = 0, height = 0, resizeFrame = 0;
+      const resize = () => {
+        resizeFrame = 0;
         if (this.destroyed || !root.clientWidth) return;
+        // Month repaint replaces day controls. Keep a held target until its release can deliver the click.
+        if (root.querySelector(":active")) { resizeFrame = requestAnimationFrame(resize); return; }
         this.updateGridPhone();
         const phone = host.clientWidth <= 640, changed = phone !== this.calPhone || Math.abs(root.clientWidth - width) > 1 || Math.abs(this.calBody.clientHeight - height) > 1;
         width = root.clientWidth; height = this.calBody.clientHeight;
@@ -77,7 +80,8 @@
         if (switched || this.calView === "month") this.calPaint({ keep: true, resize: true });
         else if (this.calView === "timeline") this.tlPaintLanes?.();
         else if (this.calScroller?.isConnected) this.calGrid.querySelector(".cx-cal-thead").style.paddingInlineEnd = Math.max(0, this.calScroller.offsetWidth - this.calScroller.clientWidth) + "px";
-      }));
+      };
+      const observer = new ResizeObserver(() => { if (!resizeFrame) resizeFrame = requestAnimationFrame(resize); });
       observer.observe(root);
       host.classList.toggle("cx-cal-phone", this.calPhone);
       const timer = setInterval(() => { if (!this.destroyed && this.cal.now) this.calTick?.(); }, 60000);
@@ -85,7 +89,7 @@
       const print = on => { if (this.destroyed || !this.calRange) return; this.calPrinting = on; host.classList.toggle("cx-cal-printing", on); this.tlPrint?.(on); if (this.calView !== "timeline") this.calPaint({ keep: true, resize: true }); };
       global.addEventListener("beforeprint", () => print(true), { signal }); global.addEventListener("afterprint", () => print(false), { signal });
       signal.addEventListener("abort", () => {
-        observer.disconnect(); clearInterval(timer); clearTimeout(this.calAnnounceTimer); this.calPrevLifetime?.abort();
+        observer.disconnect(); cancelAnimationFrame(resizeFrame); clearInterval(timer); clearTimeout(this.calAnnounceTimer); this.calPrevLifetime?.abort();
         this.calCancelGesture?.(); this.calDragEnd?.(null, true); this.calStopMoving?.(); if (this.calDropDrag) this.calDropClear?.();
         this.calDisposeEventRenderers();
         root.remove(); host.classList.remove("cx-calendar", "cx-cal-phone", "cx-cal-bare", "cx-cal-rtl", ...CAL_TOOLBAR.map(item => "cx-cal-no-" + item)); this.calHideHover(); this.calCloseDetails(false); this.calCloseMenu(false); this.calCloseCreate?.(false); this.calCloseAsk?.(null); clearTimeout(this.calPressTimer); host.removeAttribute("data-cx-event-style"); host.removeAttribute("data-cx-calendar-ready");

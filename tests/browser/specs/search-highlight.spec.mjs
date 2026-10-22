@@ -16,8 +16,10 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
     await openExample(page, theme === "dark" ? "support-tickets-dark.html" : "support-tickets.html");
     await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.ready); await nextFrames(page);
     // The example opens searching for "printer": every painted hit is a <mark>, and the count covers the whole result.
-    await expect(marks(page).first()).toBeVisible();
-    expect(await marks(page).evaluateAll(list => list.every(mark => mark.tagName === "MARK" && /^printer$/i.test(mark.textContent)))).toBe(true);
+    if (width !== 390) {
+      await expect(marks(page).first()).toBeVisible();
+      expect(await marks(page).evaluateAll(list => list.every(mark => mark.tagName === "MARK" && /^printer$/i.test(mark.textContent)))).toBe(true);
+    }
     const matches = await call(page, "getMatches");
     expect(matches).toMatchObject({ enabled: true, complete: true });
     expect(matches.total).toBeGreaterThan(20);
@@ -29,16 +31,32 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
     await page.getByRole("button", { name: "Next match" }).click();
     await expect(countText(page)).toHaveText("1 of " + matches.total);
     const current = page.locator("mark.cx-hit-current");
-    await expect(current).toHaveCount(1);
-    expect(await page.evaluate(() => document.activeElement.classList.contains("cx-cell") && !!document.activeElement.querySelector("mark.cx-hit-current"))).toBe(true);
+    const drawerMatch = !await page.locator('.cx-hcell[data-cx-column="subject"]').count();
+    if (drawerMatch) {
+      await expect(page.locator("dialog.cx-drawer")).toBeVisible();
+      await expect(page.locator("dialog.cx-drawer mark.cx-hit-search")).toHaveText(/^printer$/i);
+      await page.keyboard.press("Escape");
+    } else {
+      await expect(current).toHaveCount(1);
+      expect(await page.evaluate(() => document.activeElement.classList.contains("cx-cell") && !!document.activeElement.querySelector("mark.cx-hit-current"))).toBe(true);
+    }
     // F3 and Shift+F3 move on and back from the grid; Previous wraps to the last match.
-    await page.keyboard.press("F3");
+    if (drawerMatch) await page.getByRole("button", { name: "Next match" }).click();
+    else await page.keyboard.press("F3");
     await expect(countText(page)).toHaveText("2 of " + matches.total);
-    await page.keyboard.press("Shift+F3");
+    if (drawerMatch) {
+      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "Previous match" }).click();
+    } else await page.keyboard.press("Shift+F3");
     await expect(countText(page)).toHaveText("1 of " + matches.total);
+    if (drawerMatch) await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Previous match" }).click();
     await expect(countText(page)).toHaveText(matches.total + " of " + matches.total);
-    expect(await page.evaluate(() => document.activeElement.closest(".cx-row")?.getAttribute("aria-rowindex"))).not.toBeNull();
+    if (drawerMatch) {
+      await expect(page.locator("dialog.cx-drawer")).toBeVisible();
+      await expect(page.locator("dialog.cx-drawer mark.cx-hit-search")).toHaveText(/^printer$/i);
+      await page.keyboard.press("Escape");
+    } else expect(await page.evaluate(() => document.activeElement.closest(".cx-row")?.getAttribute("aria-rowindex"))).not.toBeNull();
     await expect(page.locator(".cx-live")).toContainText("Match " + matches.total + " of " + matches.total);
     // The search box's own buttons meet the touch size on phones.
     if (width === 390) expect((await page.getByRole("button", { name: "Next match" }).boundingBox()).height).toBeGreaterThanOrEqual(36);

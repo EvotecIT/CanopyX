@@ -105,7 +105,7 @@ test("opens a machine's record from the hosted grid with fields, a paged collect
   const rack = dialog.locator('.cx-record-block-b[data-cx-field="rack"] .cx-record-nested .cx-row[data-cx-id]');
   await expect(rack.first()).toBeVisible();
   // Rack rows sort by name, so the machine itself is one of them: open another one.
-  const names = await rack.evaluateAll(list => list.map(row => row.querySelector(".cx-cell")?.textContent.trim()));
+  const names = await rack.evaluateAll(list => list.map(row => (row.querySelector(".cx-phone-primary") || row.querySelector(".cx-cell"))?.textContent.trim()));
   const index = names.findIndex(name => name !== title);
   await rack.nth(index).locator(".cx-cell").first().click();
   await expect(dialog.locator(".cx-drawer-h h4")).toHaveText(names[index]);

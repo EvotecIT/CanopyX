@@ -220,3 +220,5 @@ and reporting entry points when a matrix document mounts. The grid entry points 
 - The data is inline: the dense cell strings keep even a 1,000 by 1,000 matrix near 1 MB. Paging a larger matrix from the host
   (windows of cells requested as the reader scrolls) is a later addition.
 - Sorting by one column's states ("sort rows by DC07") is not offered; sort by total or an attribute.
+
+Group headings use `CanopyLabels.MatrixGroupCount` (`matrixGroupCount` in JavaScript), default `{count}`; an axis's `GroupCount` replaces it on that axis ("2 domain controllers"). Collapsed-cell tooltips and details use `MatrixCellCount` (`matrixCellCount`), default `Cells: {count}`. Override them independently, for example `matrix.Labels.MatrixGroupCount = "({count})"`; all language packs keep the compact heading default.

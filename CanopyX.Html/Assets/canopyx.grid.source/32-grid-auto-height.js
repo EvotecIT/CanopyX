@@ -9,15 +9,25 @@
     return measured;
   };
   DataGrid.prototype.fitHeight = function () {
-    if (this.view.autoHeight === false || !this.sized || this.pendingQuery) return;
+    if (this.view.autoHeight === false || this.pendingQuery || !this.grid.clientWidth || !this.host.checkVisibility()) return;
     // The host's own max-height, read before the first change, stays a bound; without rows the host's own value returns.
     // Pixels bound the fit as a number; a relative bound (a percentage, calc()) stays CSS, so the browser keeps resolving it.
-    const grid = this.grid, style = this.host.style, content = [...grid.children].reduce((sum, child) => sum + child.offsetHeight, grid.offsetHeight - grid.clientHeight);
+    const grid = this.grid, style = this.host.style, box = grid.getBoundingClientRect(), computed = getComputedStyle(grid);
+    const borders = parseFloat(computed.borderTopWidth) + parseFloat(computed.borderBottomWidth);
+    // Only a real horizontal scrollbar consumes block space. Overlay scrollbars contribute zero, without a guessed gutter.
+    const scrollbar = grid.scrollWidth > grid.clientWidth ? Math.max(0, grid.offsetHeight - grid.clientHeight - borders) : 0;
+    const content = [...grid.children].reduce((sum, child) => sum + child.getBoundingClientRect().height, borders + scrollbar);
     if (this.fitInline === undefined) {
       const own = getComputedStyle(this.host).maxHeight;
       this.fitInline = style.maxHeight; this.fitMax = own === "none" || !own ? Infinity : /^-?[\d.]+px$/.test(own) ? parseFloat(own) : own;
     }
-    const height = Math.ceil(this.host.offsetHeight - grid.offsetHeight + content), bound = this.fitMax;
+    // Chrome can grow beyond the old fitted host before its flex body has room again.
+    const hostStyle = getComputedStyle(this.host);
+    const chrome = [...this.host.children].filter(child => child !== grid).reduce((sum, child) => {
+      const css = getComputedStyle(child);
+      return css.position === "absolute" || css.position === "fixed" ? sum : sum + child.getBoundingClientRect().height;
+    }, parseFloat(hostStyle.borderTopWidth) + parseFloat(hostStyle.borderBottomWidth) + parseFloat(hostStyle.paddingTop) + parseFloat(hostStyle.paddingBottom));
+    const height = Math.ceil(Math.max(this.host.getBoundingClientRect().height - box.height, chrome) + content), bound = this.fitMax;
     const value = !this.rowCount() ? this.fitInline : typeof bound === "number" ? Math.min(bound, height) + "px" : "min(" + height + "px, " + bound + ")";
     if (this.host.style.maxHeight !== value) this.host.style.maxHeight = value;
   };

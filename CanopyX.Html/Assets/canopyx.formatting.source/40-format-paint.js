@@ -8,8 +8,12 @@
     for (const name of fx.props) fx.element.style.removeProperty(name);
     for (const name of fx.classes) fx.element.classList.remove(name);
   }
+  function formatClearSlot(slot) {
+    if (slot.fx) { formatUndo(slot.fx); slot.fx = null; }
+    for (const child of slot.childSlots || []) formatClearSlot(child);
+  }
   function formatClear(element) {
-    for (const slot of element._cells || []) if (slot && slot.fx) { formatUndo(slot.fx); slot.fx = null; }
+    for (const slot of element._cells || []) if (slot) formatClearSlot(slot);
     if (element._fx) { formatUndo(element._fx); element._fx = null; }
   }
   function formatEffects(element) { return { element, nodes: [], props: [], classes: [] }; }
@@ -62,8 +66,10 @@
       }
       if (first) { first.fx = formatEffects(first.cell); first.highlighted = true; formatDecorate(first.cell, formatCues(result.row), first.fx, first.textSpan); }
     }
-    for (let i = 0; i < this.cols.length; i++) {
-      const target = result.cells.get(this.cols[i].id), slot = slots[i];
+    // Compact record values are the same fields, projected into child slots below the identity.
+    const columns = this.cols.concat(this.phoneLineColumns()), paintSlots = slots.concat(first?.childSlots || []);
+    for (let i = 0; i < columns.length; i++) {
+      const target = result.cells.get(columns[i].id), slot = paintSlots[i];
       if (!target || !slot) continue;
       if (!slot.fx || slot.fx.element !== slot.cell) slot.fx = formatEffects(slot.cell);
       slot.highlighted = true;
@@ -78,14 +84,16 @@
   // flags) and takes the strongest tone among them.
   const formatFlag = target => target && target.details && (target.tone || target.glyph || target.badge || target.cue);
   DataGrid.prototype.formatHiddenFields = function (slot, result) {
-    const button = slot.hiddenFields, hidden = this.columns.filter(column => (column.hidden || column.responsiveHidden || column.fitHidden) && formatFlag(result.cells.get(column.id)));
+    const button = slot.hiddenFields, hidden = this.phoneRemainingColumns().filter(column => formatFlag(result.cells.get(column.id)));
     if (!hidden.length) return;
     let tone = null;
     for (const column of hidden) { const next = result.cells.get(column.id).tone; if (next && (FORMAT_RANK[next] || 3) > (FORMAT_RANK[tone] || 0)) tone = next; }
     const fx = slot.fx || (slot.fx = formatEffects(slot.cell)), effects = formatEffects(button), label = button.getAttribute("aria-label");
-    fx.nodes.push({ remove() { formatUndo(effects); button.setAttribute("aria-label", label); } });
+    let decorated;
+    fx.nodes.push({ remove() { formatUndo(effects); if (button.getAttribute("aria-label") === decorated) button.setAttribute("aria-label", label); } });
     effects.classes.push("cx-fmt-flag"); button.classList.add("cx-fmt-flag");
     button.style.setProperty("--cx-fmt", tone ? formatToneVar(tone) : "var(--cx-text-2)"); effects.props.push("--cx-fmt");
     const rules = [...new Set(hidden.flatMap(column => result.cells.get(column.id).descriptions))].join(", ");
-    button.setAttribute("aria-label", label + ". " + fill(this.formatLabels.formatHiddenFlagged, { count: hidden.length, rules }));
+    decorated = label + ". " + fill(this.formatLabels.formatHiddenFlagged, { count: hidden.length, rules });
+    button.setAttribute("aria-label", decorated);
   };

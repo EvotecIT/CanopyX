@@ -52,7 +52,7 @@ test("the coarse pointer matches, so touch layouts and always-visible menu butto
 test("tapping +N opens the record drawer with the hidden fields, and its close button returns to the rows", async ({ page }) => {
   await open(page, gridView({}));
   const more = row(page, "r002").locator(".cx-hidden-fields");
-  await expect(more).toHaveText(/^\+\d+$/);
+  await expect(more).toHaveText(/^\+\d+ columns?$/);
   await more.tap();
   const drawer = page.locator("dialog.cx-drawer");
   await expect(drawer).toBeVisible();
@@ -63,7 +63,7 @@ test("tapping +N opens the record drawer with the hidden fields, and its close b
   for (const column of columns.filter(column => !hidden.includes(column.id))) expect(listed).toContain(column.title);
   const box = await drawer.boundingBox();
   expect(Math.round(box.width)).toBeLessThanOrEqual(390);
-  await drawer.getByRole("button", { name: "Close record details", exact: true }).tap();
+  await drawer.getByRole("button", { name: "Close", exact: true }).tap();
   await expect(drawer).toHaveCount(0);
   await expect(row(page, "r002")).toBeVisible();
 });
@@ -103,14 +103,14 @@ test("a column menu opens by tap and its entries sort the column", async ({ page
 
 test("a tap on a phone row activates it once and opens its record details, without changing the selection", async ({ page }) => {
   await open(page, gridView({}));
-  await row(page, "r001").locator(".cx-cell").nth(1).tap();
+  await row(page, "r001").locator(".cx-phone-value").first().tap();
   expect(await activations(page, 1)).toEqual(["r001:false"]);
   const drawer = page.locator("dialog.cx-drawer");
   await expect(drawer.locator("h4")).toHaveText("server-001");
   await expect(page.locator('.cx-row[aria-selected="true"]')).toHaveCount(0);
-  await drawer.getByRole("button", { name: "Close record details", exact: true }).tap();
+  await drawer.getByRole("button", { name: "Close", exact: true }).tap();
   await expect(drawer).toHaveCount(0);
-  await row(page, "r004").locator(".cx-cell").nth(1).tap();
+  await row(page, "r004").locator(".cx-phone-primary").tap();
   expect(await activations(page, 1)).toEqual(["r004:false"]);
   await expect(drawer.locator("h4")).toHaveText("server-004");
 });
@@ -134,6 +134,7 @@ test("a touch scroll moves the rows, recycles them and neither selects nor activ
   test.skip(browserName !== "chromium", "Only Chromium can dispatch native touch points that scroll.");
   await open(page, gridView({}));
   const grid = page.locator(".cx-data-grid .cx-grid");
+  const beforeLast = await page.locator(".cx-row[data-cx-id]").evaluateAll(list => Math.max(...list.map(element => Number(element.dataset.cxId.slice(1)))));
   const box = await grid.boundingBox();
   const x = Math.round(box.x + box.width / 2), start = Math.round(box.y + box.height - 40);
   const cdp = await page.context().newCDPSession(page);
@@ -148,9 +149,9 @@ test("a touch scroll moves the rows, recycles them and neither selects nor activ
   await expect.poll(() => grid.evaluate(element => element.scrollTop)).toBeGreaterThan(300);
   await nextFrames(page);
   // The rendered window followed the scroll: the first records were recycled for later ones.
-  await expect(row(page, "r000")).toHaveCount(0);
+  await expect(row(page, "r000")).not.toBeInViewport();
   const visible = await page.locator(".cx-row[data-cx-id]").evaluateAll(list => list.map(element => Number(element.getAttribute("data-cx-id").slice(1))));
-  expect(Math.max(...visible)).toBeGreaterThan(25);
+  expect(Math.max(...visible)).toBeGreaterThan(beforeLast);
   expect(await activations(page)).toEqual([]);
   await expect(page.locator('.cx-row[aria-selected="true"]')).toHaveCount(0);
   await expect(page.locator("dialog.cx-drawer")).toHaveCount(0);

@@ -43,6 +43,21 @@ public sealed class MatrixTests {
     }
 
     [Fact]
+    public void HeadingCountIsIndependentFromCellCountAndRoundTrips() {
+        var matrix = Small(); matrix.Labels = new CanopyLabels();
+        Assert.Equal("{count}", matrix.Labels!.MatrixGroupCount);
+        Assert.Equal("Cells: {count}", matrix.Labels!.MatrixCellCount);
+        matrix.Labels!.MatrixGroupCount = "({count})";
+        matrix.Labels!.MatrixCellCount = "Members: {count}";
+        var json = matrix.ToJson();
+        var back = CanopyMatrix.FromJson(json);
+        Assert.Equal("({count})", back.Labels!.MatrixGroupCount);
+        Assert.Equal("Members: {count}", back.Labels.MatrixCellCount);
+        Assert.Equal("Members: {count}", matrix.Labels!.MatrixCellCount);
+        Assert.Equal("{count}", CanopyLabels.Polish().MatrixGroupCount);
+    }
+
+    [Fact]
     public void FromJson_ReadsTheFixtureAndWritesItBack() {
         var matrix = CanopyMatrix.FromJson(Fixture());
         Assert.Equal(6, matrix.Rows.Items.Count);

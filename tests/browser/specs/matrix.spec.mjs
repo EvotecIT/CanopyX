@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { exampleUrl, nextFrames, repo } from "./support.mjs";
+import { instrumentMatrixPaint, matrixPixelSample, withMatrixPaintDiagnostics } from "./matrix-paint-diagnostics.mjs";
 
 const asset = name => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets", name), "utf8");
 const STATES = JSON.parse(fs.readFileSync(path.join(repo, "tests/fixtures/matrix-small.json"), "utf8")).states;
@@ -12,10 +13,11 @@ const STATES = JSON.parse(fs.readFileSync(path.join(repo, "tests/fixtures/matrix
 // Slow: rows a 1, b 0, c 1, d 2, e 0, f 0; columns x 2, y 0, z 1, w 1.
 function matrixDoc(extra = {}) {
   return Object.assign(JSON.parse(fs.readFileSync(path.join(repo, "tests/fixtures/matrix-small.json"), "utf8")), extra);
-}async function mountMatrix(page, view, { width = 1200, height = 520, dir = "ltr", lang = "en", options = "", script = "" } = {}) {
+}async function mountMatrix(page, view, { width = 1200, height = 520, dir = "ltr", lang = "en", options = "", script = "", diagnosePaint = false } = {}) {
   const json = JSON.stringify(view).replace(/</g, "\\u003c");
+  const matrixRuntime = diagnosePaint ? instrumentMatrixPaint(asset("canopyx-matrix.js")) : asset("canopyx-matrix.js");
   const body = "<!DOCTYPE html><html lang=\"" + lang + "\" dir=\"" + dir + "\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Matrix</title><style>" +
-    asset("canopyx-grid.css") + asset("canopyx-matrix.css") + "</style><script>" + asset("canopyx-grid.js") + "\n" + asset("canopyx-matrix.js") + "\n" + script + "</script></head>" +
+    asset("canopyx-grid.css") + asset("canopyx-matrix.css") + "</style><script>" + asset("canopyx-grid.js") + "\n" + matrixRuntime + "\n" + (diagnosePaint ? "window.matrixPixelSample=" + matrixPixelSample.toString() + ";" : "") + script + "</script></head>" +
     "<body style=\"margin:0;padding:16px\"><div id=\"frame\" style=\"width:" + width + "px;max-width:100%\"><div id=\"host\" style=\"height:" + height + "px\"></div></div>" +
     "<script>window.events=[];document.addEventListener('canopyx:matrixCell',e=>events.push(e.detail));document.addEventListener('canopyx:matrixState',e=>events.push({state:e.detail}));" +
     "window.api=CanopyX.createMatrix(document.getElementById('host'),Object.assign({view:JSON.parse(" + JSON.stringify(json) + ")}," + (options || "{}") + "));</script></body></html>";
@@ -37,42 +39,54 @@ async function cellPoint(page, rowLabel, column) {
 const cellPixel = (page, rowLabel, column) => page.evaluate(([rowLabel, column]) => {
   const row = [...document.querySelectorAll(".cx-mx-row")].find(item => item.querySelector(".cx-mx-rowhead").textContent === rowLabel), canvas = row.querySelector("canvas");
   const head = document.querySelector('.cx-mx-hcell[aria-colindex="' + (column + 2) + '"]').getBoundingClientRect(), box = canvas.getBoundingClientRect(), ratio = canvas.width / box.width;
-  return [...canvas.getContext("2d").getImageData(Math.round((head.left - box.left + 3) * ratio), Math.round(3 * ratio), 1, 1).data];
+  const point = { x: Math.round((head.left - box.left + 3) * ratio), y: Math.round(3 * ratio) };
+  const pixel = [...canvas.getContext("2d").getImageData(point.x, point.y, 1, 1).data];
+  if (window.__matrixPaintDiagnostic) window.__matrixPaintDiagnostic.samples.push({ rowLabel, column, ...window.matrixPixelSample(canvas, point, pixel) });
+  return pixel;
 }, [rowLabel, column]);
 const clickCell = async (page, rowLabel, column) => { const point = await cellPoint(page, rowLabel, column); await page.mouse.click(point.x, point.y); };
 const rowLabels = page => page.locator(".cx-mx-row").evaluateAll(rows => rows.sort((a, b) => a.getAttribute("aria-rowindex") - b.getAttribute("aria-rowindex")).map(row => row.querySelector(".cx-mx-rowhead").textContent));
 const headLabels = page => page.locator(".cx-mx-hcell").evaluateAll(cells => cells.sort((a, b) => a.getAttribute("aria-colindex") - b.getAttribute("aria-colindex")).map(cell => cell.textContent));
 
-test("a matrix draws its cells with a symbol, a label and its totals", async ({ page }) => {
-  await mountMatrix(page, matrixDoc());
-  const grid = page.getByRole("grid", { name: "Small matrix" });
-  await expect(grid).toHaveAttribute("aria-rowcount", "8");
-  await expect(grid).toHaveAttribute("aria-colcount", "6");
-  expect(await rowLabels(page)).toEqual(["Row A", "Row B", "Row C", "Row D", "Row E", "Row F"]);
-  expect(await headLabels(page)).toEqual(["Col X", "Col Y", "Col Z", "Col W"]);
-  // A state never relies on colour alone: a symbol in the cell and the state in its accessible name.
-  expect(await cellLabel(page, "c", "x")).toBe("Row C and Col X: Failing, 3");
-  expect(await cellLabel(page, "c", "y")).toBe("Row C and Col Y: No data");
-  await expect(page.locator(".cx-mx-key svg")).toHaveCount(3);
-  // Cells that need attention are filled with their tone; the others draw only their symbol.
-  // Layout and theme observers may queue another canvas paint after the DOM has its final labels.
-  await expect.poll(async () => (await cellPixel(page, "Row C", 0))[3]).toBeGreaterThan(0);
-  expect((await cellPixel(page, "Row A", 0))[3]).toBe(0);
-  expect(await page.locator(".cx-mx-row .cx-mx-total").allTextContents()).toEqual(["1", "0", "1", "2", "0", "0"]);
-  expect(await page.locator(".cx-mx-fcell").allTextContents()).toEqual(["2", "0", "1", "1"]);
-  await expect(page.locator(".cx-mx-grand")).toHaveText("4");
-  await expect(page.locator(".cx-mx-summary")).toHaveText("6 × 4 · Need attention: 4");
-  expect(await page.locator(".cx-mx-key").allTextContents()).toEqual(["Failing3", "Slow1", "Healthy14", "No data6"]);
+test("a matrix draws its cells with a symbol, a label and its totals", async ({ page }, testInfo) => {
+  await withMatrixPaintDiagnostics(page, testInfo, async () => {
+    await mountMatrix(page, matrixDoc(), { diagnosePaint: true });
+    const grid = page.getByRole("grid", { name: "Small matrix" });
+    await expect(grid).toHaveAttribute("aria-rowcount", "8");
+    await expect(grid).toHaveAttribute("aria-colcount", "6");
+    expect(await rowLabels(page)).toEqual(["Row A", "Row B", "Row C", "Row D", "Row E", "Row F"]);
+    expect(await headLabels(page)).toEqual(["Col X", "Col Y", "Col Z", "Col W"]);
+    // A state never relies on colour alone: a symbol in the cell and the state in its accessible name.
+    expect(await cellLabel(page, "c", "x")).toBe("Row C and Col X: Failing, 3");
+    expect(await cellLabel(page, "c", "y")).toBe("Row C and Col Y: No data");
+    await expect(page.locator(".cx-mx-key svg")).toHaveCount(3);
+    // Cells that need attention are filled with their tone; the others draw only their symbol.
+    // Layout and theme observers may queue another canvas paint after the DOM has its final labels.
+    await expect.poll(async () => (await cellPixel(page, "Row C", 0))[3]).toBeGreaterThan(0);
+    expect((await cellPixel(page, "Row A", 0))[3]).toBe(0);
+    expect(await page.locator(".cx-mx-row .cx-mx-total").allTextContents()).toEqual(["1", "0", "1", "2", "0", "0"]);
+    expect(await page.locator(".cx-mx-fcell").allTextContents()).toEqual(["2", "0", "1", "1"]);
+    await expect(page.locator(".cx-mx-grand")).toHaveText("4");
+    await expect(page.locator(".cx-mx-summary")).toHaveText("6 × 4 · Need attention: 4");
+    expect(await page.locator(".cx-mx-key").allTextContents()).toEqual(["Failing3", "Slow1", "Healthy14", "No data6"]);
+  });
 });
 
 test("a theme switch draws the cells again in the theme's colours", async ({ page }) => {
   await mountMatrix(page, matrixDoc());
-  const light = await cellPixel(page, "Row C", 0);
+  // The same failing state occurs in the first row and later rows. A stale row cache must not leave either in the old theme.
+  const cells = [["Row A", 2], ["Row C", 0]];
+  const light = await Promise.all(cells.map(([row, column]) => cellPixel(page, row, column)));
+  expect(light[0]).toEqual(light[1]);
   await page.locator("#host").evaluate(host => host.setAttribute("data-cx-theme", "dark"));
   await nextFrames(page); await nextFrames(page);
-  const dark = await cellPixel(page, "Row C", 0);
-  expect(dark).not.toEqual(light);
-  expect(dark[3]).toBeGreaterThan(0);
+  for (let index = 0; index < cells.length; index++) {
+    const [row, column] = cells[index];
+    await expect.poll(() => cellPixel(page, row, column)).not.toEqual(light[index]);
+  }
+  const dark = await Promise.all(cells.map(([row, column]) => cellPixel(page, row, column)));
+  expect(dark[0]).toEqual(dark[1]);
+  expect(dark[0][3]).toBeGreaterThan(0);
 });
 
 test("the keyboard moves one tab stop over cells, headers and totals, and Enter opens the details", async ({ page }) => {
@@ -522,4 +536,18 @@ test("labels come from a label pack, and text stays text", async ({ page }) => {
   await expect(page.locator(".cx-mx-htotal")).toHaveText(labels.matrixTotal);
   await expect(page.locator(".cx-mx-rowhead").first()).toHaveText("<img src=x onerror=alert(1)>");
   await expect(page.locator(".cx-matrix img")).toHaveCount(0);
+});
+
+
+test("group heading count is independent from collapsed cell tooltip and details", async ({ page }) => {
+  await mountMatrix(page, matrixDoc({ labels: { matrixGroupCount: "({count})", matrixCellCount: "Members: {count}" } }));
+  await page.evaluate(() => api.group("rows", "site"));
+  await nextFrames(page);
+  await expect(page.locator('.cx-mx-toggle .cx-mx-sub').first()).toHaveText("(3)");
+  await page.getByRole("button", { name: "Collapse North" }).click();
+  await nextFrames(page);
+  await expect(page.locator('.cx-mx-toggle .cx-mx-sub').first()).toHaveText("(3)");
+  await clickCell(page, "North(3)", 0);
+  await expect(page.locator("dialog.cx-mx-dialog")).toContainText("Members: 3");
+  await expect(page.locator("dialog.cx-mx-dialog")).not.toContainText("Cells:");
 });

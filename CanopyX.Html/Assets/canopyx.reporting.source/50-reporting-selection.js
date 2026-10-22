@@ -79,7 +79,7 @@
           const key = JSON.stringify([detail.revision, gridResultShape(detail.query)]), previous = this.selectionScopeKey;
           if (previous !== undefined && previous !== key) {
             this.selectionAnchor = null;
-            if (this.querySelection || this.selectionRevision !== detail.revision) this.setSelection([]);
+            if (this.querySelection || this.selectionRevision !== detail.revision) this.clearSnapshotSelection();
           }
           this.selectionScopeKey = key; this.selectionRevision = detail.revision;
         }

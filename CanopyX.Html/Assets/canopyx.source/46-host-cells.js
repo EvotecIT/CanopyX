@@ -51,6 +51,7 @@
   }
 
   function disposeHostSlot(slot) {
+    slot.childSlots?.forEach(disposeHostSlot);
     const lifetime = slot.hostLifetime;
     if (!lifetime) return;
     delete slot.hostLifetime;

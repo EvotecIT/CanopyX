@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "1e7e68d65a0c7aeb",
+      "version": "4c6c4101089c4444",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -17,7 +17,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "99cafeec3da59ffa",
+      "version": "8a058a87bbba3cbe",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -401,7 +401,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "6399a1490baacca9",
+      "version": "16ab7faa98c96b46",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -509,7 +509,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "6f9f3c51b0ad2a0e",
+      "version": "1a28068597f435de",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -557,7 +557,7 @@
     {
       "name": "detail-rows",
       "label": "detail rows",
-      "version": "6c96974326d65a4c",
+      "version": "4908d1d2b7f67aa8",
       "script": "canopyx-detail-rows.js",
       "style": "canopyx-detail-rows.css",
       "runtimes": [
@@ -645,7 +645,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "e49f69556b65916b",
+      "version": "a27c818b731c22e3",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -679,7 +679,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "2f44e057443bc649",
+      "version": "762f4b4b62ecb4d8",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
