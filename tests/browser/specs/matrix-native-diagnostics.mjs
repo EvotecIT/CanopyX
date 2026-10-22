@@ -82,7 +82,7 @@ export async function startMatrixPaintDiagnostics(page, mode) {
         })) };
     }).catch(error => ({ captureError: error.stack || error.message }));
     const path = testInfo.outputPath("matrix-paint.json");
-    fs.writeFileSync(path, JSON.stringify({ test: testInfo.title, status: testInfo.status, errors, consoleMessages, snapshot }, null, 2));
+    fs.writeFileSync(path, JSON.stringify({ test: testInfo.title, status: testInfo.status, workerIndex: testInfo.workerIndex, repeatEachIndex: testInfo.repeatEachIndex, browserVersion: page.context().browser()?.version(), browserContexts: page.context().browser()?.contexts().length, errors, consoleMessages, snapshot }, null, 2));
     await testInfo.attach("matrix-paint", { path, contentType: "application/json" });
     if (!page.isClosed()) {
       const screenshot = testInfo.outputPath("matrix-painted-cells.png");

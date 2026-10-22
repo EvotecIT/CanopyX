@@ -18,7 +18,7 @@ async function delayedMatrix(page, classes, invalid, destroyOnReady = false) {
       '<div id="host" style="height:480px"' + (classes === null ? "" : ' class="' + classes + '"') + '><p id="owned">Host content</p></div></body></html>' });
     if (name === "canopyx-matrix.js") { requested(); await gate; }
     if (!/^canopyx[a-z-]*\.(?:js|css)$/.test(name)) return route.abort();
-    return route.fulfill({ contentType: name.endsWith(".css") ? "text/css" : "text/javascript", body: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets", name), "utf8") });
+    return route.fulfill({ contentType: name.endsWith(".css") ? "text/css" : "text/javascript", body: fs.readFileSync(path.join(process.env.CANOPYX_MATRIX_ASSETS || path.join(repo, "CanopyX.Html/Assets"), name), "utf8") });
   });
   await page.goto(origin + "/");
   const doc = document();

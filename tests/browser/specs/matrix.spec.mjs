@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { exampleUrl, nextFrames, repo } from "./support.mjs";
-import { startMatrixPaintDiagnostics } from "./matrix-paint-diagnostics.mjs";
+import { startMatrixPaintDiagnostics } from "./matrix-native-diagnostics.mjs";
 
 if (process.env.CANOPYX_MATRIX_DIAGNOSTICS) {
   const captures = new WeakMap();

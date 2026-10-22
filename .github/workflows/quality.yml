@@ -203,8 +203,10 @@ jobs:
           dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- webkit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      # The original failure immediately followed these ten lifecycle cases. Keep that order in one worker
+      # to test whether their create/destroy history matters; the first diagnostic used fresh isolated workers.
       # Baseline failures are expected diagnostic evidence, never a substitute for a passing candidate.
-      - name: Record original-source first paint with passive diagnostics
+      - name: Record original-source first paint after its lifecycle cohort
         id: baseline
         continue-on-error: true
         working-directory: tests/browser
@@ -213,16 +215,16 @@ jobs:
           CANOPYX_MATRIX_DIAGNOSTICS: passive
           CANOPYX_MATRIX_ASSETS: ${{ github.workspace }}/artifacts/matrix-diagnostics/baseline-assets
         run: |
-          node node_modules/@playwright/test/cli.js test specs/matrix.spec.mjs --project=webkit --grep 'a matrix draws its cells' --repeat-each=3 --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/baseline"
+          node node_modules/@playwright/test/cli.js test specs/matrix-lifecycle.spec.mjs specs/matrix.spec.mjs --project=webkit --grep 'queued matrix|matrix destroy|a matrix draws its cells' --repeat-each=3 --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/baseline"
 
-      - name: Check candidate first paint and theme with passive diagnostics
+      - name: Check candidate first paint and theme after the same cohort
         id: candidate
         working-directory: tests/browser
         shell: bash
         env:
           CANOPYX_MATRIX_DIAGNOSTICS: passive
         run: |
-          node node_modules/@playwright/test/cli.js test specs/matrix.spec.mjs --project=webkit --grep 'a matrix draws its cells|a theme switch draws' --repeat-each=3 --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/candidate"
+          node node_modules/@playwright/test/cli.js test specs/matrix-lifecycle.spec.mjs specs/matrix.spec.mjs --project=webkit --grep 'queued matrix|matrix destroy|a matrix draws its cells|a theme switch draws' --repeat-each=3 --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/candidate"
 
       - name: Capture one separate candidate draw-call trace
         id: calls
