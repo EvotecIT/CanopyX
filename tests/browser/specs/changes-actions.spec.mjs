@@ -148,7 +148,7 @@ test("paper shows every item the filters keep, the filters in effect, and a diff
   await expect(page.locator(".cx-chg-printnote")).toBeHidden();
 });
 
-test("an added file shows one value column, icon buttons show their names, and fact notes stay quiet", async ({ page }) => {
+test("an added file shows one value column, icon buttons show their names, and fact notes stay quiet", async ({ page, browserName }) => {
   await mount(page, envelope("changes", { id: "f", label: "Files", actions: [{ id: "ack", label: "Acknowledge", icon: "check" }],
     items: [{ id: "a", kind: "added", path: "a.exe", after: { size: 5, hash: "abcdef0123" }, facts: [{ label: "Owner", after: "BUILTIN\\Administrators", note: "S-1-5-32-544" }] },
       { id: "m", kind: "modified", path: "m.txt", before: { size: 1 }, after: { size: 2 } }] }));
@@ -160,7 +160,12 @@ test("an added file shows one value column, icon buttons show their names, and f
   const action = page.locator(".cx-chg-item[data-cx-item=\"a\"]").getByRole("button", { name: "Acknowledge" });
   await expect(action).toHaveAttribute("data-cx-tip", "Acknowledge");
   await action.focus();
-  await page.keyboard.press("Shift+Tab"); await page.keyboard.press("Tab");
+  // macOS WebKit uses Option+Tab to include native buttons, as in the other keyboard-navigation tests.
+  const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
+  await page.keyboard.press("Shift+" + tab);
+  await expect(action).not.toBeFocused();
+  await page.keyboard.press(tab);
+  await expect(action).toBeFocused();
   expect(await action.evaluate(element => getComputedStyle(element, "::after").content)).toBe("\"Acknowledge\"");
 });
 
