@@ -3,35 +3,38 @@ import fs from "node:fs";
 
 export async function startMatrixPaintDiagnostics(page, mode) {
   const errors = [], consoleMessages = [];
-  page.on("pageerror", error => errors.push(error.stack || error.message));
-  page.on("console", message => { if (["warning", "error"].includes(message.type())) consoleMessages.push({ type: message.type(), text: message.text() }); });
-  await page.addInitScript(mode => {
-    const evidence = window.__matrixPaintEvidence = { mode, events: [], calls: [] };
-    const record = value => { if (evidence.calls.length < 1200) evidence.calls.push(value); };
-    for (const type of ["contextlost", "contextrestored"]) document.addEventListener(type, event => {
-      evidence.events.push({ type, at: performance.now(), canvas: event.target.className });
-    }, true);
-    document.addEventListener("DOMContentLoaded", () => {
-      evidence.events.push({ type: "DOMContentLoaded", at: performance.now(), fonts: document.fonts.status });
-      document.fonts.ready.then(() => evidence.events.push({ type: "fontsReady", at: performance.now() }));
-    }, { once: true });
-    // A separate instrumented phase complements the passive reproduction without changing its draw-loop timing.
-    if (mode !== "calls") return;
-    for (const name of ["setTransform", "clearRect", "fillRect", "drawImage", "stroke", "fill", "fillText"]) {
-      const original = CanvasRenderingContext2D.prototype[name];
-      if (typeof original !== "function") { record({ missing: name }); continue; }
-      CanvasRenderingContext2D.prototype[name] = function (...args) {
-        const call = { name, at: performance.now(), canvas: this.canvas.className, size: [this.canvas.width, this.canvas.height],
-          args: args.map(value => typeof value === "object" ? value?.constructor?.name : value),
-          fill: this.fillStyle, stroke: this.strokeStyle, alpha: this.globalAlpha, composite: this.globalCompositeOperation };
-        record(call);
-        try { return original.apply(this, args); }
-        catch (error) { call.error = error.stack || error.message; throw error; }
-      };
-    }
-  }, mode);
+  // An unobserved control installs nothing in the page before the assertion.
+  if (mode !== "snapshot") {
+    page.on("pageerror", error => errors.push(error.stack || error.message));
+    page.on("console", message => { if (["warning", "error"].includes(message.type())) consoleMessages.push({ type: message.type(), text: message.text() }); });
+    await page.addInitScript(mode => {
+      const evidence = window.__matrixPaintEvidence = { mode, events: [], calls: [] };
+      const record = value => { if (evidence.calls.length < 1200) evidence.calls.push(value); };
+      for (const type of ["contextlost", "contextrestored"]) document.addEventListener(type, event => {
+        evidence.events.push({ type, at: performance.now(), canvas: event.target.className });
+      }, true);
+      document.addEventListener("DOMContentLoaded", () => {
+        evidence.events.push({ type: "DOMContentLoaded", at: performance.now(), fonts: document.fonts.status });
+        document.fonts.ready.then(() => evidence.events.push({ type: "fontsReady", at: performance.now() }));
+      }, { once: true });
+      // Keep call wrappers out of passive/control phases because tracing can affect draw-loop timing.
+      if (mode !== "calls") return;
+      for (const name of ["setTransform", "clearRect", "fillRect", "drawImage", "stroke", "fill", "fillText"]) {
+        const original = CanvasRenderingContext2D.prototype[name];
+        if (typeof original !== "function") { record({ missing: name }); continue; }
+        CanvasRenderingContext2D.prototype[name] = function (...args) {
+          const call = { name, at: performance.now(), canvas: this.canvas.className, size: [this.canvas.width, this.canvas.height],
+            args: args.map(value => typeof value === "object" ? value?.constructor?.name : value),
+            fill: this.fillStyle, stroke: this.strokeStyle, alpha: this.globalAlpha, composite: this.globalCompositeOperation };
+          record(call);
+          try { return original.apply(this, args); }
+          catch (error) { call.error = error.stack || error.message; throw error; }
+        };
+      }
+    }, mode);
+  }
   return async testInfo => {
-    const snapshot = await page.evaluate(() => {
+    const snapshot = await page.evaluate(mode => {
       const box = element => element?.getBoundingClientRect().toJSON();
       const read = canvas => {
         const ctx = canvas.getContext("2d"), result = { size: [canvas.width, canvas.height], box: box(canvas),
@@ -72,7 +75,7 @@ export async function startMatrixPaintDiagnostics(page, mode) {
         featureProbe.sprite = [...dst.getImageData(3, 3, 1, 1).data];
         featureProbe.path2D = typeof Path2D;
       } catch (error) { featureProbe.error = error.stack || error.message; }
-      return { ...window.__matrixPaintEvidence, userAgent: navigator.userAgent, dpr: devicePixelRatio,
+      return { ...(window.__matrixPaintEvidence || { mode, events: [], calls: [], priorEvents: "not observed before assertion" }), userAgent: navigator.userAgent, dpr: devicePixelRatio,
         readyState: document.readyState, fonts: document.fonts.status, viewport: [innerWidth, innerHeight],
         host: { box: box(document.querySelector("#host")), style: document.querySelector("#host")?.getAttribute("style"),
           theme: document.querySelector("#host")?.getAttribute("data-cx-theme") },
@@ -80,7 +83,7 @@ export async function startMatrixPaintDiagnostics(page, mode) {
           label: row.querySelector(".cx-mx-rowhead")?.textContent, box: box(row),
           tiles: [...row.querySelectorAll("canvas")].map(read)
         })) };
-    }).catch(error => ({ captureError: error.stack || error.message }));
+    }, mode).catch(error => ({ captureError: error.stack || error.message }));
     const path = testInfo.outputPath("matrix-paint.json");
     fs.writeFileSync(path, JSON.stringify({ test: testInfo.title, status: testInfo.status, workerIndex: testInfo.workerIndex, repeatEachIndex: testInfo.repeatEachIndex, browserVersion: page.context().browser()?.version(), browserContexts: page.context().browser()?.contexts().length, errors, consoleMessages, snapshot }, null, 2));
     await testInfo.attach("matrix-paint", { path, contentType: "application/json" });

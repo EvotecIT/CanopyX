@@ -205,24 +205,25 @@ jobs:
 
       # The original failure immediately followed these ten lifecycle cases. Keep that order in one worker
       # to test whether their create/destroy history matters; the first diagnostic used fresh isolated workers.
+      # No pre-navigation observer or init script runs in these controls: collect pixels only after the assertion.
       # Baseline failures are expected diagnostic evidence, never a substitute for a passing candidate.
-      - name: Record original-source first paint after its lifecycle cohort
+      - name: Record unobserved original-source paint after its lifecycle cohort
         id: baseline
         continue-on-error: true
         working-directory: tests/browser
         shell: bash
         env:
-          CANOPYX_MATRIX_DIAGNOSTICS: passive
+          CANOPYX_MATRIX_DIAGNOSTICS: snapshot
           CANOPYX_MATRIX_ASSETS: ${{ github.workspace }}/artifacts/matrix-diagnostics/baseline-assets
         run: |
           node node_modules/@playwright/test/cli.js test specs/matrix-lifecycle.spec.mjs specs/matrix.spec.mjs --project=webkit --grep 'queued matrix|matrix destroy|a matrix draws its cells' --repeat-each=3 --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/baseline"
 
-      - name: Check candidate first paint and theme after the same cohort
+      - name: Check unobserved candidate paint and theme after the same cohort
         id: candidate
         working-directory: tests/browser
         shell: bash
         env:
-          CANOPYX_MATRIX_DIAGNOSTICS: passive
+          CANOPYX_MATRIX_DIAGNOSTICS: snapshot
         run: |
           node node_modules/@playwright/test/cli.js test specs/matrix-lifecycle.spec.mjs specs/matrix.spec.mjs --project=webkit --grep 'queued matrix|matrix destroy|a matrix draws its cells|a theme switch draws' --repeat-each=3 --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/candidate"
 
