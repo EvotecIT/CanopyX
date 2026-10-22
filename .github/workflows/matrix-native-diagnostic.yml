@@ -7,12 +7,13 @@ permissions:
 jobs:
   matrix-native:
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 100
     env:
       CANOPYX_TEST_BROWSERS: webkit
       CANOPYX_VISUAL: "0"
       MSBUILDDISABLENODEREUSE: "1"
       DOTNET_CLI_USE_MSBUILD_SERVER: "0"
+      CANOPYX_EXAMPLES: ${{ github.workspace }}/CanopyX.Examples/bin/Release/net10.0/output
     steps:
       - uses: actions/checkout@v7
         with:
@@ -34,10 +35,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- webkit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Diagnose the original matrix first-paint fixture
+      - name: Generate the unchanged browser example fixtures
+        shell: pwsh
+        run: dotnet run --project CanopyX.Examples/CanopyX.Examples.csproj -c Release -- $env:CANOPYX_EXAMPLES
+      - name: Preserve the observed browser prefix through matrix first paint
         working-directory: tests/browser
         shell: pwsh
-        run: node node_modules/@playwright/test/cli.js test specs/matrix-lifecycle.spec.mjs specs/matrix.spec.mjs specs/z-matrix-native-diagnostic.spec.mjs --grep 'queued matrix mutations|matrix destroy|a matrix draws its cells|native matrix first paint' --project=webkit --workers=1
+        run: |
+          $files = @(Get-ChildItem specs -Filter '*.spec.mjs' | Where-Object { $_.Name -cle 'matrix.spec.mjs' } | Sort-Object Name | ForEach-Object { 'specs/' + $_.Name })
+          Write-Host "Preserving $($files.Count) original WebKit test files through matrix.spec.mjs."
+          node node_modules/@playwright/test/cli.js test @files --project=webkit --workers=1
+          exit $LASTEXITCODE
       - uses: actions/upload-artifact@v7
         if: always()
         with:
