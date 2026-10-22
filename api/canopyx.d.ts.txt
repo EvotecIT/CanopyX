@@ -2688,6 +2688,12 @@ export interface CanopyColumn{
   priority?:"essential"|"normal"|"optional"|number;
   alwaysVisible?:boolean;
   tooltip?:string;
+  wrap?:boolean;
+  maxLines?:number;
+  valueLabels?:Readonly<Record<string,string>>;
+  valueOrder?:readonly string[];
+  valueTones?:Readonly<Record<string,string>>;
+  numericTones?:readonly{operator:"atMost"|"atLeast"|"below"|"above";value:number;tone:string;label:string}[];
   pinned?:"left"|"right"|null;
   renderer?:string;
   section?:string;

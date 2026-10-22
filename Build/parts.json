@@ -36,13 +36,26 @@
       "styleScope": [".cx-chrome", ".cx-tree-tools"]
     },
     {
+      "name": "presenters",
+      "label": "cell presenters",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["presenters"],
+      "key": "GRID_PRESENTER_IMPL",
+      "context": ["GRID_PRESENTER_IMPL", "h", "setText", "fill", "cellValue", "cellText", "isCellObject", "gridNumericTone", "gridValueTone",
+        "gridPresenterTone", "gridPresenterLink", "numberFormat", "toneColors", "toneOf", "applyTone", "gridIcon", "badgeElement", "GRID_HISTORY_KINDS", "GRID_HISTORY_IMPL", "RECORD_IMPL"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.grid.source/36-grid-presenter-cells.js"],
+      "end": "GRID_PRESENTER_IMPL.create = gridRenderPresenter;"
+    },
+    {
       "name": "filter-editor",
       "label": "filter editor",
+      "requires": ["presenters"],
       "runtimes": ["grid"],
       "views": ["grid"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridDateInputMoment", "gridQuery", "gridQueryStart",
-        "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
+        "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridKeyCompare", "gridFacetKey", "gridNumericTone", "gridValueTone", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
         "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "numberText", "fill", "announceMenu", "reportingRangeRows",
         "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL"],
       "start": "const buildFilters = DataGrid.prototype.buildGridFilters;",

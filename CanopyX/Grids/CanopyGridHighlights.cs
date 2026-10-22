@@ -42,6 +42,7 @@ internal static class CanopyGridHighlights {
     private static object? Scalar(object? value, CanopyColumn column) {
         if (value is double real && (double.IsNaN(real) || double.IsInfinity(real))) return null;
         if (value is string text) {
+            if (column.ExactCategoryTokens) return text;
             var folded = new StringBuilder(text.Length);
             foreach (var unit in text) folded.Append(CanopySearchFolding.Fold(unit));
             return folded.ToString();

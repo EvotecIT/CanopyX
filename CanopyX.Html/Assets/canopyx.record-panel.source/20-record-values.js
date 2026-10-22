@@ -49,7 +49,7 @@
       else view.paintDrawerValue(field.column, ctx.row, element, { signal: ctx.signal, width: ctx.width });
       return;
     }
-    if (field.presenter && grid.gridCellRenderer && view.kind === "grid") { grid.gridCellRenderer(view, { ...field, renderWidth: ctx.width }, field.presenter)(ctx.row, element); return; }
+    if ((field.presenter || field.wrap) && view.paintDrawerValue && view.kind === "grid") { view.paintDrawerValue(field, ctx.row, element, {signal:ctx.signal,width:ctx.width}); return; }
     recordPlain(ctx, field, cell, element);
   }
 

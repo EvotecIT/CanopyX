@@ -1,5 +1,51 @@
 # CanopyX Data Protocol (`canopyx/2`)
 
+Grid columns optionally declare `wrap` and `maxLines` (integer 1–12, default 2).
+Wrapped columns enable measured rows, as do `autoRowHeight: true` and
+`rowHeight: "auto"`. Explicit JavaScript `autoRowHeight: false` keeps a fixed
+one-line preview. Cards reserve a label line and up to two whole value lines.
+Clamped text retains its full
+tooltip and the record drawer shows complete text. Settings belong to the view,
+so hosts can give two views over the same records different line limits.
+
+Text columns may declare `valueLabels` (raw token to authored display label),
+`valueOrder` (unique raw tokens in ascending order), and `valueTones` (raw token
+to semantic tone). Each supports at most 512 tokens of at most 4096 characters.
+These declarations target string tokens. Boolean values in text columns keep
+their own labels, tones and typed identities; string `"true"` does not match boolean `true`.
+Labels appear in cells, filter choices, group headings, the drawer, and display
+exports. Predicates, group identities and raw exports retain raw tokens.
+Declared order takes precedence over reporting text order and cell sort keys:
+declared tokens precede unknown tokens, which sort by ordinal UTF-16 text.
+Descending reverses value order; null stays last in either direction. Hosts
+author localized labels in their chosen culture; CanopyX does not translate them.
+Nonempty `valueLabels` or `valueOrder` opts text into exact category-token
+predicates and facet identities: `A` and `a` remain independent. Unconfigured
+text keeps its existing case folding. Quick search and searching displayed
+filter labels remain case-insensitive. Remote database hosts must preserve the
+same raw-token distinction with a suitable store collation or query translation;
+CanopyX's queryable provider leaves opted-in text operands unfolded.
+
+Number columns may declare up to 32 ordered `numericTones` rules:
+
+```json
+{"id":"days","title":"Days remaining","kind":"number","numericTones":[
+  {"operator":"below","value":0,"tone":"danger","label":"Overdue"},
+  {"operator":"atMost","value":14,"tone":"warning","label":"Review soon"},
+  {"operator":"atLeast","value":30,"tone":"success","label":"Time available"}
+]}
+```
+
+Operators are `atMost` (≤), `atLeast` (≥), `below` (<), and `above` (>), with a
+finite numeric threshold. The **first matching rule wins**, including its tone
+and label: place the negative rule before `atMost: 14` to distinguish overdue
+values. A rule colors plain numeric text without adding a filled chip. Its label
+appears in the tooltip and drawer; the number remains numeric in captures and
+XLSX-provider input. CSV never substitutes threshold words for the number.
+Unmatched values retain their cell tone; null never matches. Rule tones take
+precedence over cell tones. Host renderers remain authoritative, and filters
+and sorts keep the raw number.
+
 This is the wire format between hosts and the CanopyX browser runtime. The C# types in the `CanopyX` package write it; the runtime in `CanopyX.Html` reads it. A host that is not .NET can produce the same documents by hand. The JSON schema is [schema/canopyx-2.schema.json](schema/canopyx-2.schema.json).
 
 Flat grids optionally declare `density` (`compact`, `default`, `comfortable`) and `zebra` (boolean, default false). Density supplies spacing; the required numeric wire `rowHeight` remains authoritative. The .NET writer resolves an unassigned height to 28, 34 or 42 pixels respectively. These optional fields remain in `canopyx/2`. Optional `autoHeight` (default true) makes a grid whose rows all fit exactly as tall as its chrome, header and rows; the host height stays the bound for longer results, and `false` keeps a fixed-height panel. Optional `rowAction` (`none`, the default, `details` or `link`) chooses what a plain row click does: nothing beyond focus, opening the record details, or following the first link in the row with its modifier keys. A plain click never selects.
@@ -127,7 +173,7 @@ The grid state carries `formatRules` when the grid's rules differ from the view'
 
 #### Wrapped cells and measured grid rows
 
-Grid columns accept `wrap: true` to retain line breaks and wrap long text. The wire document retains numeric `rowHeight`, an integer from 20 to 64. Optional `autoRowHeight: true` enables measured records and uses that height as both the minimum and the estimate for unseen rows. Without the flag, rows retain their fixed height. The JavaScript API also accepts `rowHeight: "auto"` with optional `estimatedRowHeight` (20 to 64, default 28) as shorthand. In .NET, use `CanopyColumn.Wrap` and `CanopyDataGridView.AutoRowHeight`; `RowHeight` supplies the estimate. Automatic height applies to continuous, paged and grouped grids. Group/status rows retain the minimum height.
+Grid columns accept `wrap: true` to retain line breaks and wrap long text. The wire document retains numeric `rowHeight`, an integer from 20 to 64. Wrapped columns or optional `autoRowHeight: true` enable measured records and use that height as both the minimum and the estimate for unseen rows. Unconfigured columns retain fixed rows; explicit JavaScript `autoRowHeight: false` keeps wrapped text to a one-line preview. The JavaScript API also accepts `rowHeight: "auto"` with optional `estimatedRowHeight` (20 to 64, default 28) as shorthand. In .NET, use `CanopyColumn.Wrap` or `CanopyDataGridView.AutoRowHeight`; `RowHeight` supplies the estimate. Automatic height applies to continuous, paged and grouped grids. Group/status rows retain the minimum height. Cards use fixed geometry with room for the field label and up to two whole wrapped value lines, even when the corresponding table uses measured rows.
 
 Optional `dragRows: true` (default false; .NET `CanopyDataGridView.DragRows`) lets readers drag rows out of the grid to a calendar that accepts drops (`calendar.drop`), or pick a row up with F2 from row focus and drop it with Enter (`gridRowPicked` is announced).
 

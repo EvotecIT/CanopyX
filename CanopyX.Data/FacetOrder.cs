@@ -7,6 +7,13 @@ namespace CanopyX.Data;
 internal sealed class FacetOrder : IComparer<object?> {
     internal static readonly FacetOrder Instance = new FacetOrder();
 
+    /// <summary>Applies opted-in category order without treating distinct raw facet keys as equal.</summary>
+    internal static IComparer<object?> ForColumn(CanopyDataColumn column) => !column.ExactCategoryTokens ? Instance :
+        Comparer<object?>.Create((left, right) => {
+            var compared = ProtocolSemantics.Compare(left, right, column.Kind, column.Ordering, column.ValueOrder);
+            return compared != 0 ? compared : left is string a && right is string b ? string.CompareOrdinal(a, b) : Instance.Compare(left, right);
+        });
+
     public int Compare(object? left, object? right) {
         if (left == null || right == null) return left == right ? 0 : left == null ? 1 : -1;
         var rank = Rank(left).CompareTo(Rank(right));

@@ -12,9 +12,10 @@ internal static class CanopyGridFacets {
         foreach (var column in view.Columns) if (column.Id == id) return column;
         throw new InvalidOperationException("Facets require a declared column.");
     }
-    internal static string Key(object? value) {
+    internal static string Key(object? value, bool exactTokens = false) {
         if (value == null) return "null";
         if (value is string text) {
+            if (exactTokens) return "s:" + text;
             var units = text.ToCharArray();
             for (var i = 0; i < units.Length; i++) units[i] = CanopySearchFolding.Fold(units[i]);
             return "s:" + new string(units);

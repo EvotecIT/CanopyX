@@ -30,7 +30,13 @@ const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { pr
   source: { kind: "inline" }, rows: [], rowHeight: "auto", estimatedRowHeight: 32, pageSize: 100, selection: "none", search: true,
   highlightRules: [{ column: "name", operator: "eq", values: ["Needs review"], tone: "warning", className: "needs-review" },
     { column: "name", operator: "isNull", values: [], target: "cell", className: "empty" }],
-  columns: [{ id: "name", title: "Name", kind: "text", sortable: true, wrap: true }],
+  columns: [{ id: "name", title: "Name", kind: "text", sortable: true, wrap: true, maxLines: 2,
+    valueLabels: { review: "Needs review", verified: "Verified" }, valueOrder: ["review", "verified"], valueTones: { review: "warning", verified: "success" } },
+    { id: "days", title: "Days remaining", kind: "number", wrap: true, maxLines: 2, numericTones: [
+      { operator: "below", value: 0, tone: "danger", label: "Overdue" },
+      { operator: "atMost", value: 14, tone: "warning", label: "Review soon" },
+      { operator: "above", value: 90, tone: "info", label: "Long horizon" },
+      { operator: "atLeast", value: 30, tone: "success", label: "Time available" }] }],
   reporting: { columnReorder: true, responsive: true, filterGroups: true, facetColumns: ["name"], minimumCenterWidth: 160,
     layout: { name: { minimum: 120, maximum: 800, flex: 1, pin: "left", priority: 0, alwaysVisible: true } }, ordering: { name: { text: "foldedNatural", categories: ["Pinned"] } },
     presenters: { name: { kind: "link", newWindow: true } } } } });

@@ -1490,6 +1490,11 @@
         "editable": { "type": "boolean" },
         "hidden": { "type": "boolean" },
         "wrap": { "type": "boolean", "description": "Wrap flat-grid cell text within its width." },
+        "maxLines": { "type": "integer", "minimum": 1, "maximum": 12, "default": 2 },
+        "valueLabels": { "$ref": "#/$defs/columnValueLabels" },
+        "valueOrder": { "$ref": "#/$defs/columnValueOrder" },
+        "valueTones": { "$ref": "#/$defs/columnValueTones" },
+        "numericTones": { "$ref": "#/$defs/columnNumericTones" },
         "autoWidth": { "type": "boolean", "description": "Tree columns: fit the visible rows' content; width is the fallback until the tree tools part measures." },
         "fixed": { "type": "boolean", "description": "Tree columns: the width is hard during fitting. Otherwise width is preferred." },
         "flex": { "type": "number", "minimum": 0, "maximum": 100, "description": "Tree columns: share of spare width, given before the tree column." },
@@ -1500,6 +1505,22 @@
         "pinned": { "enum": ["left", "right", null], "description": "The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right." },
         "drawer": { "type": "boolean", "description": "false keeps the column out of the tree's record drawer. Default true." }, "section": { "type": "string", "minLength": 1, "maxLength": 256, "description": "The record drawer section of a tree column." }, "renderer": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$", "description": "The name of a cell renderer a browser plugin registers (cellRenderers, docs/plugins.md). An unregistered name keeps the built-in painter; a host renderer for the column wins." }
       }
+    },
+    "columnValueLabels": {
+      "type": "object", "maxProperties": 512, "propertyNames": { "maxLength": 4096 },
+      "additionalProperties": { "type": "string", "maxLength": 4096 }
+    },
+    "columnValueOrder": {
+      "type": "array", "maxItems": 512, "uniqueItems": true, "items": { "type": "string", "maxLength": 4096 }
+    },
+    "columnValueTones": {
+      "type": "object", "maxProperties": 512, "propertyNames": { "maxLength": 4096 }, "additionalProperties": { "$ref": "#/$defs/tone" }
+    },
+    "columnNumericTones": {
+      "type": "array", "maxItems": 32,
+      "items": { "type": "object", "additionalProperties": false, "required": ["operator", "value", "tone", "label"],
+        "properties": { "operator": { "enum": ["atMost", "atLeast", "below", "above"] }, "value": { "type": "number" },
+          "tone": { "$ref": "#/$defs/tone" }, "label": { "type": "string", "minLength": 1, "maxLength": 4096, "pattern": "\\S" } } }
     },
     "gridColumnGroup": {
       "description": "A named group of columns drawn as a header above them. It lists the columns directly below it and its nested groups.",
@@ -1558,6 +1579,11 @@
         "wrap": {
           "type": "boolean"
         },
+        "maxLines": { "$ref": "#/$defs/column/properties/maxLines" },
+        "valueLabels": { "$ref": "#/$defs/columnValueLabels" },
+        "valueOrder": { "$ref": "#/$defs/columnValueOrder" },
+        "valueTones": { "$ref": "#/$defs/columnValueTones" },
+        "numericTones": { "$ref": "#/$defs/columnNumericTones" },
         "presenter": {
           "$ref": "#/$defs/gridPresenter"
         },

@@ -126,6 +126,8 @@ test("long values survive a narrow frame before preferred whitespace", async ({ 
 
 test("an automatic identity column keeps its measured content estimate and scrolls when necessary", async ({ page }) => {
   const view = products(); view.rows[0].cells.name = "Workstation " + "branch-office-".repeat(12);
+  // Compact headers can fit the ordinary peers at 720px. A real context-column floor makes scrolling necessary.
+  view.columns.find(column => column.id === "sku").minWidth = 240;
   await mount(page, view, { width: 720 });
   const geometry = await page.evaluate(() => {
     const grid = document.querySelector(".cx-grid"), text = grid.querySelector('.cx-row[data-cx-id="p0"] .cx-text');

@@ -82,3 +82,28 @@ test("the module and complete stylesheet retain the interactive asset budget", (
   // The interactive budget of the combined roadmap integration (RuntimeAssetTests): 69.5 KiB.
   expect(gzipSync(runtime).length + gzipSync(style).length).toBeLessThanOrEqual(71168);
 });
+
+test("grid module loads the shipped presenter part for record-only fields", async ({ page }) => {
+  const errors = [], requests = [];
+  page.on('pageerror', error => errors.push(error.message)); page.on('request', request => requests.push(new URL(request.url()).pathname));
+  const definition = { protocol: 'canopyx/2', type: 'grid', id: 'record-module', label: 'Record fields', rowHeight: 28, pageSize: 100,
+    source: { kind: 'inline' }, selection: 'none', columns: [{ id: 'name', title: 'Name', kind: 'text' }],
+    record: { fields: [{ id: 'identifier', title: 'Identifier', kind: 'text', presenter: { kind: 'identifier', mono: true } },
+      { id: 'notes', title: 'Notes', kind: 'text', wrap: true, maxLines: 2 }] },
+    rows: [{ id: 'one', cells: { name: 'Record one' }, fields: { identifier: 'record-only-id', notes: 'Complete record-only observation with supporting evidence.' } }] };
+  await page.route('https://module.test/**', route => {
+    const pathname = new URL(route.request().url()).pathname, file = path.join(assets, pathname.slice(1));
+    if (/^\/canopyx-[a-z-]+\.(?:mjs|js|css)$/.test(pathname) && fs.existsSync(file))
+      return route.fulfill({ contentType: pathname.endsWith('.css') ? 'text/css' : 'text/javascript', body: fs.readFileSync(file, 'utf8') });
+    return route.fulfill({ contentType: 'text/html', body: `<!doctype html><html lang="en"><head><title>Record module</title>
+      <link rel="stylesheet" href="/canopyx-grid.css"></head><body><div id="host" class="cx-host" style="height:500px"></div>
+      <script type="module">import {createDataGrid} from '/canopyx-grid-module.mjs';
+      window.api=createDataGrid(document.querySelector('#host'),{view:${JSON.stringify(definition)}});await api.ready;window.ready=true;</script></body></html>` });
+  });
+  await page.goto('https://module.test/'); await page.waitForFunction(() => window.ready);
+  await page.evaluate(() => api.openDetails('one'));
+  await expect(page.locator('.cx-drawer dd[data-cx-field="identifier"] .p-mono')).toHaveText('record-only-id');
+  await expect(page.locator('.cx-drawer dd[data-cx-field="notes"] .cx-wrapped-text')).toContainText('Complete record-only observation');
+  expect(requests.filter(name => name === '/canopyx-presenters.js')).toHaveLength(1);
+  expect(errors).toEqual([]);
+});

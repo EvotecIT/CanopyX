@@ -117,7 +117,7 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Gets or sets whether to show result and selected-record counts in a status bar.</summary>
     public bool StatusBar { get; set; }
 
-    /// <summary>Gets or sets whether rows measure their content. Defaults to false; <see cref="RowHeight"/> supplies the minimum and unseen-row estimate.</summary>
+    /// <summary>Gets or sets whether rows measure their content even without wrapped columns. Defaults to false; wrapped columns also enable measurement. <see cref="RowHeight"/> supplies the minimum and unseen-row estimate.</summary>
     public bool AutoRowHeight { get; set; }
 
     /// <summary>Gets or sets whether rows can be dragged out of the grid, to a calendar that accepts drops (<see cref="CanopyCalendar.Drop"/>), and picked up with F2 from row focus. Defaults to false.</summary>

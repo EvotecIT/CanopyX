@@ -76,7 +76,7 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets whether the column starts hidden. Tree views cannot hide their tree column.</summary>
     public bool Hidden { get; set; }
 
-    /// <summary>Gets or sets whether flat-grid cell text wraps within the column. Use automatic grid row heights to show all lines.</summary>
+    /// <summary>Gets or sets whether flat-grid cell text wraps within the column and enables measured row heights.</summary>
     public bool Wrap { get; set; }
 
     /// <summary>Gets or sets a safe flat-grid presenter. Raw values still drive search, sort and export.</summary>
@@ -138,6 +138,7 @@ public sealed partial class CanopyColumn {
         if (grid && Editor != null) { writer.Name("editor"); Editor.WriteJson(writer); }
         if (grid && Validation != null) { writer.Name("validation"); Validation.WriteJson(writer); }
         if (Wrap) writer.Property("wrap", true);
+        WriteValuesJson(writer);
         if (grid && Format != null) { writer.Name("format"); Format.WriteJson(writer); }
         if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
         if (grid && Aggregatable) writer.Property("aggregatable", true);

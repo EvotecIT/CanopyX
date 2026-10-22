@@ -21,10 +21,11 @@
           if (typeof value === "string" && value < existing.value) existing.value = value;
         } else buckets.set(key, { value, count: 1 });
       }
-      const items = [...buckets.values()].filter(item => foldText(item.value).includes(needle));
+      const items = [...buckets.values()].filter(item => foldText(cellText(item.value,column,formatting(undefined,false,DEFAULT_LABELS))).includes(needle));
       items.sort((a, b) => {
         if (a.value === null || b.value === null) return a.value === b.value ? 0 : a.value === null ? 1 : -1;
         if (column.kind !== "text") return gridOrder(gridScalar(a.value, column), gridScalar(b.value, column));
+        if (column.valueOrder?.length) return gridKeyCompare(a.value,b.value,column,"asc");
         if (typeof a.value !== typeof b.value) return typeof a.value === "boolean" ? -1 : 1;
         return gridOrder(typeof a.value === "string" ? foldText(a.value) : a.value, typeof b.value === "string" ? foldText(b.value) : b.value);
       });
