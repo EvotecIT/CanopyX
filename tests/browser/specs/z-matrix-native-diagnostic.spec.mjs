@@ -5,12 +5,14 @@ import { test, expect } from "@playwright/test";
 import { repo, nextFrames } from "./support.mjs";
 import { instrumentMatrixPaint, matrixPixelSample } from "./matrix-paint-diagnostics.mjs";
 
-test("native matrix first paint and primitive canvas diagnostics", async ({ page }, testInfo) => {
+for (const mode of ["palette-only", "resets-only", "context-state"]) {
+test("native matrix first paint and primitive canvas diagnostics · " + mode, async ({ page }, testInfo) => {
   const consoleMessages = [], pageErrors = [];
   page.on("console", message => consoleMessages.push({ type: message.type(), text: message.text() }));
   page.on("pageerror", error => pageErrors.push({ message: error.message, stack: error.stack }));
-  await page.addInitScript(() => {
+  await page.addInitScript(mode => {
     const operations = window.__canvasOperations = [], ids = new WeakMap(); let sequence = 0;
+    if (mode === "palette-only") return;
     const id = canvas => { if (!ids.has(canvas)) ids.set(canvas, ++sequence); return ids.get(canvas); };
     const record = (context, method, args) => {
       if (!context.canvas.classList.contains("cx-mx-canvas")) return;
@@ -22,6 +24,7 @@ test("native matrix first paint and primitive canvas diagnostics", async ({ page
         transform: [transform.a, transform.b, transform.c, transform.d, transform.e, transform.f] });
     };
     for (const method of ["setTransform", "clearRect", "fillRect", "drawImage", "stroke", "fill", "fillText", "reset"]) {
+      if (mode !== "context-state") continue;
       const original = CanvasRenderingContext2D.prototype[method]; if (typeof original !== "function") continue;
       CanvasRenderingContext2D.prototype[method] = function (...args) { record(this, method, args); return Reflect.apply(original, this, args); };
     }
@@ -34,7 +37,7 @@ test("native matrix first paint and primitive canvas diagnostics", async ({ page
         return Reflect.apply(descriptor.set, this, [value]);
       } });
     }
-  });
+  }, mode);
   const assets = process.env.CANOPYX_DIAGNOSTIC_ASSETS || path.join(repo, "CanopyX.Html/Assets");
   const asset = name => fs.readFileSync(path.join(assets, name), "utf8");
   const fixture = fs.readFileSync(path.join(repo, "tests/fixtures/matrix-small.json"), "utf8");
@@ -71,8 +74,19 @@ test("native matrix first paint and primitive canvas diagnostics", async ({ page
   await page.screenshot({ path:testInfo.outputPath("native-matrix-before-probes.png") });
   const evidence = await page.evaluate(() => {
     const diagnostic = JSON.parse(JSON.stringify(__matrixPaintDiagnostic)), operations = __canvasOperations.slice();
-    const canvases = [...document.querySelectorAll(".cx-mx-canvas")].map(canvas => ({ sample: matrixPixelSample(canvas,null,null),
-      nonzero: [...canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height).data].filter((_,i) => i%4===3).filter(Boolean).length }));
+    const canvases = [...document.querySelectorAll(".cx-mx-canvas")].map(canvas => {
+      const context = canvas.getContext("2d"), sample = matrixPixelSample(canvas,null,null);
+      const before = [...context.getImageData(0,0,canvas.width,canvas.height).data].filter((_,i) => i%4===3).filter(Boolean).length;
+      const transform = typeof context.getTransform === "function" ? context.getTransform() : {};
+      const state = { alpha:context.globalAlpha, composite:context.globalCompositeOperation, fill:context.fillStyle,
+        transform:[transform.a,transform.b,transform.c,transform.d,transform.e,transform.f] };
+      const afterStateRead = [...context.getImageData(3,3,1,1).data];
+      context.fillStyle = "#ff0000"; context.fillRect(3,3,1,1);
+      const manual = [...context.getImageData(3,3,1,1).data];
+      if (typeof context.reset === "function") context.reset(); else canvas.width = canvas.width;
+      context.fillStyle = "#ff0000"; context.fillRect(3,3,1,1);
+      return { sample, nonzero:before, state, afterStateRead, manual, afterReset:[...context.getImageData(3,3,1,1).data] };
+    });
     const primitives = [];
     for (const options of [undefined, { willReadFrequently:true }]) {
       const canvas = document.createElement("canvas"); canvas.width = canvas.height = 4; document.body.appendChild(canvas);
@@ -90,7 +104,10 @@ test("native matrix first paint and primitive canvas diagnostics", async ({ page
     return { diagnostic, operations, canvases, primitives, repaint, repaintPalette:__matrixPaintDiagnostic.palette,
       forcedColors: matchMedia("(forced-colors:active)").matches, fonts:document.fonts.status, userAgent:navigator.userAgent };
   });
-  await testInfo.attach("native-canvas-evidence", { contentType:"application/json", body:Buffer.from(JSON.stringify({ consoleMessages,pageErrors,evidence },null,2)) });
+  const body = Buffer.from(JSON.stringify({ mode,consoleMessages,pageErrors,evidence },null,2));
+  fs.writeFileSync(testInfo.outputPath("native-canvas-evidence.json"),body);
+  await testInfo.attach("native-canvas-evidence", { contentType:"application/json", body });
   await page.screenshot({ path:testInfo.outputPath("native-matrix.png") });
   if (failure) throw failure;
 });
+}

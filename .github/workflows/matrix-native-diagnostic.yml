@@ -37,7 +37,7 @@ jobs:
       - name: Diagnose the original matrix first-paint fixture
         working-directory: tests/browser
         shell: pwsh
-        run: node node_modules/@playwright/test/cli.js test specs/matrix-lifecycle.spec.mjs specs/matrix-native-diagnostic.spec.mjs --project=webkit --workers=1
+        run: node node_modules/@playwright/test/cli.js test specs/matrix-lifecycle.spec.mjs specs/matrix.spec.mjs specs/z-matrix-native-diagnostic.spec.mjs --grep 'queued matrix mutations|matrix destroy|a matrix draws its cells|native matrix first paint' --project=webkit --workers=1
       - uses: actions/upload-artifact@v7
         if: always()
         with:
