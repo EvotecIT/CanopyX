@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CanopyX.Data;
 
 /// <summary>A column a remote request may reference: declared by the grid view and allowed by the server.</summary>
@@ -7,9 +9,11 @@ namespace CanopyX.Data;
 /// </remarks>
 public sealed class CanopyDataColumn {
     private readonly CanopyColumn _definition;
+    private readonly CanopyGridOrdering? _ordering;
 
     internal CanopyDataColumn(CanopyColumn definition, int ordinal, bool filterable, bool searchable, bool explicitlySearchable, bool facetable) {
         _definition = CanopyDataSnapshot.Column(definition);
+        _ordering = _definition.ValueOrder.Count != 0 ? new CanopyGridOrdering(CanopyGridTextOrder.Ordinal, _definition.ValueOrder) : _definition.Ordering;
         Ordinal = ordinal;
         Filterable = filterable && definition.Filterable;
         _definition.Filterable = Filterable;
@@ -37,9 +41,11 @@ public sealed class CanopyDataColumn {
     public bool Hidden => _definition.Hidden;
 
     /// <summary>Gets the declared text ordering policy, if any.</summary>
-    public CanopyGridOrdering? Ordering => _definition.Ordering;
+    public CanopyGridOrdering? Ordering => _ordering;
 
     internal CanopyGridNumberFormat? NumberFormat => _definition.Format;
+    internal bool ExactCategoryTokens => _definition.ExactCategoryTokens;
+    internal IList<string> ValueOrder => _definition.ValueOrder;
 
     /// <summary>Gets the position of this column among the allowed columns.</summary>
     public int Ordinal { get; }

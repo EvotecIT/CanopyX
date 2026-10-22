@@ -32,6 +32,7 @@
           column.fixed && column.width === undefined || column.tooltip !== undefined && column.tooltip !== "auto" && !view.columns.some(item => item.id === column.tooltip))
         throw new Error("CanopyX: invalid or duplicate grid column.");
       ids.add(column.id);
+      validateColumnValues(column);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
       if (column.format !== undefined) { if (column.kind !== "number") throw new Error("CanopyX: number formats need number columns."); gridNumberFormat(column.format); }
       if (column.aggregatable !== undefined && (typeof column.aggregatable !== "boolean" || column.aggregatable && column.kind !== "number") ||

@@ -32,7 +32,7 @@
     fitSize(column, level) {
       if (column.fixed || column.sized) return columnWidth(column, column.width);
       const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
-      const header = level === undefined || level === 2 ? column.headWrapNeed || 0 : column.headWordNeed || column.controlNeed || 0;
+      const header = this.compactHeaders || level === undefined || level === 2 ? column.headWrapNeed || 0 : column.headWordNeed || column.controlNeed || 0;
       const floor = Math.max(level === undefined ? need : content, header);
       let width = Math.max(floor, level === undefined ? column.pref || 0 : 0);
       if (column.identity && this.host.clientWidth <= 640 && (this.layoutMode || "fit") === "fit") {
@@ -101,7 +101,9 @@
     fitLayout() {
       const width = this.grid.clientWidth, phone = this.host.clientWidth <= 640, shown = FIT.visibleColumns.call(this).filter(column => !column.responsiveHidden);
       if (!width) return;
-      const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone;
+      this.compactHeaders = !phone && width <= 900;
+      this.host.classList.toggle("cx-stacked-headers", this.compactHeaders);
+      const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone + ":" + this.compactHeaders;
       if (key !== this.fitKey || !this.fitCh) {
         this.fitKey = key; this.fitFont = null;
         for (const column of this.columns) { const result = this.measureGridColumn(column); column.need = result.width; column.headNeed = result.head; }
@@ -128,8 +130,8 @@
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
       // The title keeps its 24 px target. Reorder glyphs may use a wider fallback font, so include their native advance and padding.
       const move = this.view.reporting?.columnReorder ? Math.max(32, Math.ceil(text("⋮⋮", headFont, false)) + 8) : 0;
-      const chrome = 2 * pad + (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + move +
-        (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0);
+      const chrome = 2 * pad + (this.compactHeaders ? 4 : (this.tools.columnMenus === false ? 8 : this.host.clientWidth <= 640 ? 52 : 32) + move) +
+        (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (!this.compactHeaders && gridColumnFiltered(query, column.id) ? 24 : 0) + (first && this.selectionControls ? 26 : 0);
       column.controlNeed = Math.ceil(24 + chrome);
       const title = text(column.title, headFont, false), head = Math.ceil(Math.max(24, title) + chrome);
       const words = column.title.trim().split(/\s+/);
@@ -146,7 +148,7 @@
       if (!none && column.autoSize !== "header") for (const row of this.rowCache.values()) {
         if (sampled === 200) break;
         const cell = row.h.cells[column.id], value = cellText(cell, column, this.fmt) || "—", series = gridSeries(cell).length;
-        const tone = gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), quiet = options.quietTones?.includes(tone);
+        const tone = gridValueTone(column, cell) || gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), quiet = options.quietTones?.includes(tone);
         const secondary = kind === "identifier" && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);
         const atomic = kind === "enum" || kind === "state";
         // Enum success uses a dot and ordinary text; toned enums use their computed pill font and chrome.

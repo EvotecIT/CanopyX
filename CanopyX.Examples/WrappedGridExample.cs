@@ -9,7 +9,7 @@ internal static class WrappedGridExample {
         var view = new CanopyDataGridView("wrapped-grid", "Detailed records") { AutoRowHeight = true, PageSize = 100 };
         view.Columns.Add(new CanopyColumn("name", "Record") { Sizing = CanopyColumnSizing.Preferred(180), Sortable = true });
         view.Columns.Add(new CanopyColumn("category", "Category") { Sizing = CanopyColumnSizing.Preferred(140), Sortable = true });
-        view.Columns.Add(new CanopyColumn("notes", "Notes") { Sizing = CanopyColumnSizing.Preferred(320), Wrap = true });
+        view.Columns.Add(new CanopyColumn("notes", "Notes") { Sizing = CanopyColumnSizing.Preferred(320), Wrap = true, MaxLines = 4, Tooltip = CanopyColumn.AutoTooltip });
         for (var i = 0; i < 2000; i++) {
             var row = new CanopyGridRow("record-" + i.ToString("D4", CultureInfo.InvariantCulture));
             row.Cells["name"] = "Record " + i; row.Cells["category"] = i % 2 == 0 ? "Complete" : "Needs review";

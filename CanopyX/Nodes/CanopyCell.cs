@@ -181,6 +181,7 @@ public sealed partial class CanopyCell {
 
     /// <summary>Returns the display text, formatting a raw number with the flat-grid column format when one is declared.</summary>
     internal string DisplayText(CanopyColumn column, CanopyLabels labels) {
+        if (_value is string token && column.ValueLabels.TryGetValue(token, out var label)) return label;
         if (Text != null || column.Format == null || column.Kind != CanopyColumnKind.Number) return DisplayText(column.Kind, labels);
         switch (_value) {
             case long whole: return column.Format.Format(whole);

@@ -1,5 +1,36 @@
 # Typed grids
 
+Typed grids expose column labels, category ordering, numeric text tones, and
+wrapping on their existing `CanopyColumn` configuration:
+
+```csharp
+grid.Column(row => row.State, "Outcome", column => {
+    column.ValueLabels.Add("needs-review", "Needs review");
+    column.ValueOrder.Add("needs-review");
+    column.ValueOrder.Add("verified");
+    column.ValueTones.Add("needs-review", CanopyTone.Warning);
+    column.Presenter = CanopyGridPresenter.Enum();
+});
+grid.Column(row => row.Days, "Days remaining", column => {
+    column.NumericTones.Add(new CanopyNumericToneRule(
+        CanopyNumericToneOperator.Below, 0, CanopyTone.Danger, "Overdue"));
+    column.NumericTones.Add(new CanopyNumericToneRule(
+        CanopyNumericToneOperator.AtMost, 14, CanopyTone.Warning, "Review soon"));
+});
+grid.Column(row => row.Notes, "Observation", column => {
+    column.Wrap = true;
+    column.MaxLines = 3; // 1–12, default 2
+    column.Tooltip = CanopyColumn.AutoTooltip;
+});
+grid.View.AutoRowHeight = true;
+```
+
+Labels keep raw filter values and group identities. Category ordering uses
+declared tokens followed by unknown ordinal tokens; numeric rules use the first
+match and color plain text. The generated `report-grid-value-policies.html` and
+`report-grid-ten-cards.html` examples show these policies with mixed row heights
+and ten phone cards.
+
 A grid can be written from your own record type, in C# and in TypeScript, so that a renamed member, a misspelt column id or a
 cell of the wrong type is caught by the compiler instead of in the browser. The untyped API stays as it is: typed grids are
 a layer over it, and every typed grid is also an ordinary grid.

@@ -87,6 +87,17 @@ export interface CanopyColumn {
   alwaysVisible?: boolean;
   /** Hover tooltip: "auto" shows a cell's full value while it is cut off; a declared column id shows that column's text. */
   tooltip?: string;
+  /** Wrap text; maxLines is 1..12, default 2. Automatic row heights measure the visible lines. */
+  wrap?: boolean;
+  maxLines?: number;
+  /** Host-authored labels keyed by exact raw category token; query and group identities stay raw. */
+  valueLabels?: Readonly<Record<string, string>>;
+  /** Declared tokens precede unknown ordinal tokens in ascending order; null keeps the missing-value policy. */
+  valueOrder?: readonly string[];
+  /** Semantic tones keyed by raw category token. */
+  valueTones?: Readonly<Record<string, string>>;
+  /** Ordered first-match rules color plain numeric text; labels explain the rule in tooltips and the drawer. */
+  numericTones?: readonly { operator: "atMost" | "atLeast" | "below" | "above"; value: number; tone: string; label: string }[];
   /** The tree column pins left by default and null lets it scroll; other columns pin left (after the tree column) or right. */
   pinned?: "left" | "right" | null;
   /** The name of a cell renderer a plugin registers (cellRenderers); an unregistered name keeps the built-in painter. */

@@ -252,6 +252,8 @@
   }
 
   function cellText(cell, column, fmt) {
+    const raw = cellValue(cell);
+    if (typeof raw === "string" && Object.hasOwn(column.valueLabels || {}, raw)) return column.valueLabels[raw];
     if (isCellObject(cell) && typeof cell.text === "string") {
       return cell.text;
     }

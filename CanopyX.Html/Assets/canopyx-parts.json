@@ -15,9 +15,24 @@
       ]
     },
     {
+      "name": "presenters",
+      "label": "cell presenters",
+      "version": "f66a2161dcf65e13",
+      "script": "canopyx-presenters.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "presenters"
+      ]
+    },
+    {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "8a058a87bbba3cbe",
+      "version": "ebb54bbefd9b8fe0",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -25,6 +40,9 @@
       ],
       "views": [
         "grid"
+      ],
+      "requires": [
+        "presenters"
       ]
     },
     {
@@ -574,7 +592,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "0970f2edbcb32de8",
+      "version": "0e0a3529c0b099d7",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -611,7 +629,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "fa8c686f21626884",
+      "version": "dd1076d5684bfc6e",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [
@@ -661,7 +679,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "bcc06276c7933af6",
+      "version": "9ce272a4bffb8772",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
