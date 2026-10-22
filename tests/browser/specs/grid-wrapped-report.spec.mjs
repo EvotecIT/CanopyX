@@ -3,10 +3,11 @@ import { pinTestFont } from "./visual-font.mjs";
 import { mountReportLayout, reportLayoutView, layoutGeometry } from "./report-grid-layout-support.mjs";
 
 test.beforeEach(async ({ page }) => { await pinTestFont(page); });
-for (const theme of ["light", "dark"]) test(`five report columns fit 1086 with complete two-line headers in ${theme}`, async ({ page }) => {
-  await mountReportLayout(page, { theme, width: 1086 });
+for (const width of [1086, 760]) for (const theme of ["light", "dark"]) test(`five report columns retain complete two-line headers at ${width} in ${theme}`, async ({ page }) => {
+  await mountReportLayout(page, { theme, width });
   const box = await layoutGeometry(page);
-  expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1);
+  // This pinned font has wider status pills than the generated page's font: preserve their measured floors.
+  if (width === 1086) expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1);
   const headers = await page.locator('.cx-hcell .cx-htext').evaluateAll(nodes => nodes.map(node => {
     const range = document.createRange(); range.selectNodeContents(node);
     const rects = [...range.getClientRects()].filter(r => r.width && r.height);

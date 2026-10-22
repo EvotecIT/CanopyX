@@ -3,11 +3,11 @@
       if(!column||column.filterable===false)throw new Error("CanopyX: facets require a filterable column.");
       if(this.view.source.kind==="host")return this.getFacets(column.id,{search,includeCurrentFilter:false,limit:200,signal});
       const query=gridColumnProjection(this.queryForChange(false,true),column.id),columns=new Map(this.view.columns.map(item=>[item.id,item])),rows=gridQueryRows(this.view,query,columns,false),buckets=new Map();
-      for(const row of rows){const value=cellValue(row.cells[column.id])??null,key=typeof value+":"+foldText(value),item=buckets.get(key);
+      for(const row of rows){const value=cellValue(row.cells[column.id])??null,key=gridFacetKey(value,column),item=buckets.get(key);
         if(item)item.count++;else buckets.set(key,{value,count:1});}
-      const items=[...buckets.values()].filter(item=>foldText(item.value).includes(foldText(search)));
+      const items=[...buckets.values()].filter(item=>foldText(cellText(item.value,column,this.fmt)).includes(foldText(search)));
       items.sort((a,b)=>a.value===null||b.value===null?(a.value===b.value?0:a.value===null?1:-1):
-        gridOrder(typeof a.value,typeof b.value)||gridOrder(foldText(a.value),foldText(b.value)));
+        column.valueOrder?.length?gridKeyCompare(a.value,b.value,column,"asc"):gridOrder(typeof a.value,typeof b.value)||gridOrder(foldText(a.value),foldText(b.value)));
       return {items:items.slice(0,200),matched:rows.length,totalValues:items.length,truncated:items.length>200};
     },
     openColumnFilter(id,anchor){
@@ -42,7 +42,7 @@
       this.host.addEventListener("canopyx:query",()=>{if(criteria()!==originalCriteria)this.closeGridPopover(false);},{signal});
       let baseline=gridColumnGroup("and",clauses),items=[],selected=new Map(),request=0,facetController;
       signal.addEventListener("abort",()=>facetController?.abort(),{once:true});
-      const key=value=>typeof value+":"+foldText(value),columns=new Map([[column.id,column]]),
+      const key=value=>gridFacetKey(value,column),columns=new Map([[column.id,column]]),
         matchesClause=(value,clause)=>typeof clause==="boolean"?clause:gridMatchesGroup({cells:{[column.id]:value}},clause,columns),
         predicate=(operator,values=[])=>({column:column.id,operator,values}),matches=value=>matchesClause(value,baseline),
         chosen=value=>selected.get(key(value))?.checked??matches(value);

@@ -109,7 +109,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
             cancellationToken.ThrowIfCancellationRequested();
             var value = record.Values[ordinal];
             if (term.Length > 0 && !ProtocolSemantics.ContainsTerm(value, term)) continue;
-            var key = CanopyQueryableProvider<T>.FacetKey(value);
+            var key = CanopyQueryableProvider<T>.FacetKey(value, request.Column.ExactCategoryTokens);
             buckets[key] = buckets.TryGetValue(key, out var existing)
                 ? (string.CompareOrdinal(existing.Value as string, value as string) <= 0 ? existing.Value : value, existing.Count + 1)
                 : (value, 1);
@@ -117,7 +117,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
         var ordered = buckets.Values.OrderBy(bucket => {
             cancellationToken.ThrowIfCancellationRequested();
             return bucket.Value;
-        }, FacetOrder.Instance).Take(request.Limit).Select(bucket => {
+        }, FacetOrder.ForColumn(request.Column)).Take(request.Limit).Select(bucket => {
             cancellationToken.ThrowIfCancellationRequested();
             return new CanopyFacetBucket(bucket.Value, bucket.Count);
         });
@@ -297,7 +297,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
         cancellationToken.ThrowIfCancellationRequested();
         return node switch {
             CanopyFilterConstant constant => constant.Value,
-            CanopyFilterCondition condition => ProtocolSemantics.Matches(record.Values[condition.Column.Ordinal], condition.Column.Kind, condition.Operator, condition.Values),
+            CanopyFilterCondition condition => ProtocolSemantics.Matches(record.Values[condition.Column.Ordinal], condition.Column.Kind, condition.Operator, condition.Values, condition.Column.ExactCategoryTokens),
             CanopyFilterGroup group => group.Junction == CanopyGridFilterJunction.All
                 ? group.Children.All(child => Matches(record, child, cancellationToken))
                 : group.Children.Any(child => Matches(record, child, cancellationToken)),
@@ -344,7 +344,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
             foreach (var key in sort) {
                 var a = left.Values[key.Column.Ordinal];
                 var b = right.Values[key.Column.Ordinal];
-                var compared = ProtocolSemantics.Compare(a, b, key.Column.Kind, key.Column.Ordering);
+                var compared = ProtocolSemantics.Compare(a, b, key.Column.Kind, key.Column.Ordering, key.Column.ValueOrder);
                 if (compared != 0) return key.Descending && a != null && b != null ? -compared : compared;
             }
             return CanopyRowIdentity.Compare(left.Id, right.Id);

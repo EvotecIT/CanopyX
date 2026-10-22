@@ -17,10 +17,10 @@ internal sealed partial class QueryTranslator<T> {
         var guard = nullable ? ExpressionTools.NotNull(value) : null;
         Expression? test;
         switch (mapped.Shape) {
-            case ValueShape.Text: test = TextCondition(value, op, condition.Values, guard); break;
+            case ValueShape.Text: test = TextCondition(value, op, condition.Values, guard, condition.Column.ExactCategoryTokens); break;
             case ValueShape.Boolean:
             case ValueShape.Enum:
-                return Domain(value, mapped.Shape, member => ProtocolSemantics.Matches(member, CanopyColumnKind.Text, op, condition.Values));
+                return Domain(value, mapped.Shape, member => ProtocolSemantics.Matches(member, CanopyColumnKind.Text, op, condition.Values, condition.Column.ExactCategoryTokens));
             case ValueShape.Integer: test = IntegerCondition(value, op, condition.Values, guard); break;
             case ValueShape.Real:
             case ValueShape.Decimal:
@@ -34,9 +34,10 @@ internal sealed partial class QueryTranslator<T> {
         return guard == null ? test : Expression.AndAlso(guard, test);
     }
 
-    private Expression TextCondition(Expression value, CanopyGridFilterOperator op, IReadOnlyList<object> operands, Expression? guard) {
-        var texts = operands.OfType<string>().Select(text => ExpressionTools.FoldOperand(text, Comparison)).ToList();
-        var folded = ExpressionTools.Fold(value, Comparison);
+    private Expression TextCondition(Expression value, CanopyGridFilterOperator op, IReadOnlyList<object> operands, Expression? guard, bool exactTokens = false) {
+        var comparison = exactTokens ? CanopyTextComparison.Collation : Comparison;
+        var texts = operands.OfType<string>().Select(text => ExpressionTools.FoldOperand(text, comparison)).ToList();
+        var folded = ExpressionTools.Fold(value, comparison);
         switch (op) {
             case CanopyGridFilterOperator.Equal:
                 return texts.Count == 0 ? Expression.Constant(false) : Expression.Equal(folded, ExpressionTools.Parameter(texts[0], typeof(string)));

@@ -205,7 +205,7 @@
       const source = tip === "auto" ? column : this.columns.find(item => item.id === tip);
       if (!source || cell.title && !cell._cxTip) return;
       cell._cxTip = true;
-      cell.title = tip !== "auto" || [cell, ...cell.querySelectorAll("*")].some(item => item.scrollWidth > item.clientWidth) ?
+      cell.title = tip !== "auto" || [cell, ...cell.querySelectorAll("*")].some(item => item.scrollWidth > item.clientWidth || item.scrollHeight > item.clientHeight) ?
         cellText(this.cellOf(row.h, source, this.columns.indexOf(source)), source, this.fmt) : "";
     },
 

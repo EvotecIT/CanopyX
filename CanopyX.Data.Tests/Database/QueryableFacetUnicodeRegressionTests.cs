@@ -6,6 +6,25 @@ namespace CanopyX.Data.Tests;
 /// <summary>Facet pages merge the protocol's Unicode buckets before searching, limiting and counting them.</summary>
 public sealed class QueryableFacetUnicodeRegressionTests {
     [Theory]
+    [InlineData(CanopyGridTextOrder.FoldedOrdinal, "a", "A")]
+    [InlineData(CanopyGridTextOrder.Natural, "item1", "item01")]
+    public async Task SqliteLabelsOnlyFacetsKeepOrderingTiesAsDistinctKeys(CanopyGridTextOrder order, string first, string second) {
+        var hosts = new[] { new Host { Id = 1, Site = first }, new Host { Id = 2, Site = second } };
+        using var store = new SqliteFleet(hosts); using var database = store.Create();
+        var view = Fleet.View(); var column = view.GetColumn("site");
+        column.ValueLabels.Add(first, "First"); column.ValueLabels.Add(second, "Second"); column.Ordering = new CanopyGridOrdering(order);
+        var (reference, sql) = Handlers(hosts, database, view);
+        foreach (var limit in new[] { 1, 20 }) {
+            var request = "{\"column\":\"site\",\"limit\":" + limit + ",\"query\":{\"revision\":\"r1\"}}";
+            var expected = await reference.FacetAsync(request);
+            Assert.Equal(expected, await sql.FacetAsync(request));
+            using var result = JsonDocument.Parse(expected);
+            Assert.Equal(2, result.RootElement.GetProperty("totalValues").GetInt32());
+            Assert.Equal(new[] { first, second }.OrderBy(value => value, StringComparer.Ordinal).Take(limit), result.RootElement.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("value").GetString()));
+            Assert.All(result.RootElement.GetProperty("items").EnumerateArray(), item => Assert.Equal(1, item.GetProperty("count").GetInt32()));
+        }
+    }
+    [Theory]
     [InlineData("", 5, false, false, 12, 6)]
     [InlineData("", 200, false, false, 12, 6)]
     [InlineData("ä", 2, false, false, 12, 1)]
@@ -57,8 +76,8 @@ public sealed class QueryableFacetUnicodeRegressionTests {
         Assert.Equal(expected, await sql.FacetAsync(request));
     }
 
-    private static (CanopyRemoteHandler Reference, CanopyRemoteHandler Sql) Handlers(IReadOnlyList<Host> hosts, FleetDb database) {
-        var map = Fleet.Map(Fleet.View());
+    private static (CanopyRemoteHandler Reference, CanopyRemoteHandler Sql) Handlers(IReadOnlyList<Host> hosts, FleetDb database, CanopyDataGridView? view = null) {
+        var map = Fleet.Map(view ?? Fleet.View());
         var reference = new CanopyInMemoryProvider<Host>(map.Schema, () => hosts,
             host => host.Id.ToString(System.Globalization.CultureInfo.InvariantCulture), Harness.Values(), () => "r1");
         var sql = new CanopyQueryableProvider<Host>(() => database.Hosts, map,

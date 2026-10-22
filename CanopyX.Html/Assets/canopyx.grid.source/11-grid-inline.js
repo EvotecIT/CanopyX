@@ -15,7 +15,7 @@
   }
 
   // A cell's sort field (text or a number) orders it; its value stays what filters, value lists and search read.
-  function gridSortScalar(cell, column) { return isCellObject(cell) && cell.sort != null ? cell.sort : gridScalar(cell, column); }
+  function gridSortScalar(cell, column) { return !column.valueOrder?.length && isCellObject(cell) && cell.sort != null ? cell.sort : gridScalar(cell, column); }
 
   function gridCompare(left, right, column, direction) {
     return gridKeyCompare(gridSortScalar(left.cells[column.id], column), gridSortScalar(right.cells[column.id], column), column, direction);
@@ -24,6 +24,11 @@
   function gridKeyCompare(a, b, column, direction) {
     // Empty strings are values. Missing/null cells sort last in either direction.
     if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+    if (column.valueOrder?.length) {
+      const at = value => { const index = typeof value === "string" ? column.valueOrder.indexOf(value) : -1; return index < 0 ? column.valueOrder.length : index; };
+      const rank = at(a) - at(b), result = rank || gridOrder(typeof a, typeof b) || gridOrder(a, b);
+      return direction === "desc" ? -result : result;
+    }
     const x = column.kind === "text" && typeof a !== "number" ? String(a) : a, y = column.kind === "text" && typeof b !== "number" ? String(b) : b;
     // Keys of different types (a numeric sort key beside text) order by type, numbers first, so the order is consistent.
     const rank = gridOrder(typeof x, typeof y);

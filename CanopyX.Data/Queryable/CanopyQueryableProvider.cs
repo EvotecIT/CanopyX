@@ -130,12 +130,12 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         var merged = new Dictionary<string, (object? Value, int Count)>(StringComparer.Ordinal);
         foreach (var bucket in buckets) {
             var value = CanopyDataValues.Normalize(bucket.Value);
-            var key = FacetKey(value);
+            var key = FacetKey(value, request.Column.ExactCategoryTokens);
             merged[key] = merged.TryGetValue(key, out var existing)
                 ? (string.CompareOrdinal(existing.Value as string, value as string) <= 0 ? existing.Value : value, existing.Count + bucket.Count)
                 : (value, bucket.Count);
         }
-        var ordered = merged.Values.OrderBy(item => item.Value, FacetOrder.Instance).ToList();
+        var ordered = merged.Values.OrderBy(item => item.Value, FacetOrder.ForColumn(request.Column)).ToList();
         var complete = small || distinct <= request.Limit;
         var totalValues = complete ? ordered.Count : distinct;
         return new CanopyFacetResult(matched, totalValues, ordered.Take(request.Limit).Select(item => new CanopyFacetBucket(item.Value, item.Count)));
@@ -147,14 +147,15 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         int matched, CancellationToken cancellationToken) {
         var term = CanopyTextFolding.Fold(request.Search)!;
         var distinct = new HashSet<string>(StringComparer.Ordinal);
-        var order = Comparer<string>.Create((left, right) => left == "null" ? right == "null" ? 0 : 1 : right == "null" ? -1 : string.CompareOrdinal(left, right));
+        var values = FacetOrder.ForColumn(request.Column);
+        var order = Comparer<string>.Create((left, right) => values.Compare(left == "null" ? null : left.Substring(2), right == "null" ? null : right.Substring(2)));
         var prefix = new SortedList<string, (string? Value, int Count)>(order);
         await foreach (var bucket in translator.TextBucketsAsync(source, request.Column.Id, Executor, cancellationToken).ConfigureAwait(false)) {
             var value = (string?)bucket.Value;
             var folded = CanopyTextFolding.Fold(value);
             // Store LOWER may fold only ASCII. Search the canonical value before retaining or merging its bucket.
             if (term.Length > 0 && (folded == null || folded.IndexOf(term, StringComparison.Ordinal) < 0)) continue;
-            var key = folded == null ? "null" : "s:" + folded;
+            var key = FacetKey(value, request.Column.ExactCategoryTokens);
             distinct.Add(key);
             if (prefix.TryGetValue(key, out var current)) {
                 prefix[key] = (string.CompareOrdinal(current.Value, value) <= 0 ? current.Value : value, current.Count + bucket.Count);
@@ -187,7 +188,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         }
         await foreach (var bucket in translator.OrderedValueBucketsAsync(source, request.Column.Id, Executor, cancellationToken).ConfigureAwait(false)) {
             var normalized = CanopyDataValues.Normalize(bucket.Value);
-            var key = FacetKey(normalized);
+            var key = FacetKey(normalized, request.Column.ExactCategoryTokens);
             if (key == previous) { count += bucket.Count; continue; }
             Complete();
             previous = key; value = normalized; count = bucket.Count;
@@ -388,9 +389,9 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         if (!ReferenceEquals(request.Schema, Map.Schema)) throw new ArgumentException("The request belongs to another schema.", nameof(request));
     }
 
-    internal static string FacetKey(object? value) => value switch {
+    internal static string FacetKey(object? value, bool exactTokens = false) => value switch {
         null => "null",
-        string text => "s:" + CanopyTextFolding.Fold(text),
+        string text => "s:" + (exactTokens ? text : CanopyTextFolding.Fold(text)),
         bool flag => flag ? "b:true" : "b:false",
         DateTime date => "d:" + (date.Ticks / TimeSpan.TicksPerMillisecond),
         var number => "n:" + CanopyDataValues.FormatNumber(CanopyDataValues.ToDouble(number!))

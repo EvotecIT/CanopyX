@@ -490,6 +490,11 @@ CanopyX.CanopyColumn.System.Boolean RowHeader { get; set; }
 CanopyX.CanopyColumn.System.Boolean ShowInDrawer { get; set; }
 CanopyX.CanopyColumn.System.Boolean Sortable { get; set; }
 CanopyX.CanopyColumn.System.Boolean Wrap { get; set; }
+CanopyX.CanopyColumn.System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyTone> ValueTones { get; }
+CanopyX.CanopyColumn.System.Collections.Generic.IDictionary<System.String, System.String> ValueLabels { get; }
+CanopyX.CanopyColumn.System.Collections.Generic.IList<CanopyX.CanopyNumericToneRule> NumericTones { get; }
+CanopyX.CanopyColumn.System.Collections.Generic.IList<System.String> ValueOrder { get; }
+CanopyX.CanopyColumn.System.Int32 MaxLines { get; set; }
 CanopyX.CanopyColumn.System.Nullable<CanopyX.CanopyGridColumnPin> Pinned { get; set; }
 CanopyX.CanopyColumn.System.Nullable<System.Int32> ResponsivePriority { get; set; }
 CanopyX.CanopyColumn.System.String Id { get; }
@@ -2591,6 +2596,18 @@ CanopyX.CanopyNode.System.String? ClassName { get; set; }
 CanopyX.CanopyNode.System.String? Icon { get; set; }
 CanopyX.CanopyNode.System.String? Kind { get; set; }
 CanopyX.CanopyNode.System.String? Ref { get; set; }
+CanopyX.CanopyNumericToneOperator : enum System.Int32
+CanopyX.CanopyNumericToneOperator.const CanopyX.CanopyNumericToneOperator Above = 3
+CanopyX.CanopyNumericToneOperator.const CanopyX.CanopyNumericToneOperator AtLeast = 1
+CanopyX.CanopyNumericToneOperator.const CanopyX.CanopyNumericToneOperator AtMost = 0
+CanopyX.CanopyNumericToneOperator.const CanopyX.CanopyNumericToneOperator Below = 2
+CanopyX.CanopyNumericToneRule : sealed class
+CanopyX.CanopyNumericToneRule..ctor(CanopyX.CanopyNumericToneOperator operator, System.Double value, CanopyX.CanopyTone tone, System.String label)
+CanopyX.CanopyNumericToneRule.CanopyX.CanopyNumericToneOperator Operator { get; }
+CanopyX.CanopyNumericToneRule.CanopyX.CanopyTone Tone { get; }
+CanopyX.CanopyNumericToneRule.System.Boolean Matches(System.Double value)
+CanopyX.CanopyNumericToneRule.System.Double Value { get; }
+CanopyX.CanopyNumericToneRule.System.String Label { get; }
 CanopyX.CanopyPage : sealed class
 CanopyX.CanopyPage..ctor(System.String? parentId)
 CanopyX.CanopyPage.System.Collections.Generic.IList<CanopyX.CanopyNode> Items { get; }
