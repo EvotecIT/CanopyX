@@ -80,8 +80,8 @@ Tree interaction scope:
 Gate:
 
 - In CanopyX CI, on the large bundle example (a synthetic tree of more than 100,000 nodes): first rows within 2.5 s, each expand, page of children, and search to an expanded path within 250 ms, and no blank rows while scrolling. Runtime assets within 48 KB gzip.
-- With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling.
-- Qualify each host's list and tree workflows against its representative large fixture and interaction budget.
+- With `tests/browser/bench/scroll-benchmark.mjs`, median of 5 runs at `--cpu 4`: frames over 50 ms are at most 6% of the frames recorded while scrolling, matching the measured patched third-party-tree baseline (56 of about 900).
+- Qualify each host's list and tree workflows against its representative large fixture and interaction budget, including a hierarchy of 5 scopes, 5,000 records and 200,000 links and comparison with the patched third-party tree. The fallback third-party tree stays consumer-owned; CanopyX does not vendor one.
 - Every HtmlForgeX `FancyTree` example (nested nodes, icons, folders, minimum expand level) can also be rendered on CanopyX with the same content, so authors can choose either tree.
 
 Completed generic tree improvements:
