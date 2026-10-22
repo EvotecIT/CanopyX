@@ -63,10 +63,11 @@ test("collections: a nested grid with its own sorting; a row opens its record; O
   await drawer(page).getByRole("tab", { name: "Related" }).click();
   const nested = drawer(page).locator(".cx-record-nested");
   await expect(nested.locator(".cx-row[data-cx-id]")).toHaveCount(3);
-  await expect(nested.locator(".cx-row[data-cx-id] .cx-cell:first-child")).toHaveText(["host2.example.test", "host3.example.test", "host4.example.test"]);
+  const names = nested.locator(".cx-row[data-cx-id] .cx-cell:first-child").locator(":scope > .cx-text,:scope > .cx-phone-primary > .cx-text");
+  await expect(names).toHaveText(["host2.example.test", "host3.example.test", "host4.example.test"]);
   await nested.getByRole("columnheader", { name: "Common name" }).locator("button").first().click();
   await nested.getByRole("columnheader", { name: "Common name" }).locator("button").first().click();
-  await expect(nested.locator(".cx-row[data-cx-id] .cx-cell:first-child").first()).toHaveText("host4.example.test");
+  await expect(names.first()).toHaveText("host4.example.test");
   // Enter on a nested row opens that record (the collection's target view), never a second drawer.
   await nested.locator(".cx-row[data-cx-id]").first().focus();
   await page.keyboard.press("Enter");

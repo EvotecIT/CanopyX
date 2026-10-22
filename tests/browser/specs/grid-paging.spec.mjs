@@ -107,7 +107,7 @@ test("keyboard and host position navigation cross page boundaries with global ro
 test("cached public position navigation reveals recycled rows without taking focus from a details drawer", async ({ page }) => {
   await open(page, definition({ presentation: "continuous" }));
   await page.evaluate(controller + ".openDetails('row-0')");
-  const drawer = page.locator("dialog.cx-drawer"), control = drawer.getByRole("button", { name: "Close record details", exact: true });
+  const drawer = page.locator("dialog.cx-drawer"), control = drawer.getByRole("button", { name: "Close", exact: true });
   await expect(drawer).toBeVisible(); await control.focus(); await expect(control).toBeFocused();
   for (const index of [110, 0, 110]) {
     await page.evaluate(index => document.querySelector('[data-canopyx-host]').canopyx.scrollToRow(index), index);

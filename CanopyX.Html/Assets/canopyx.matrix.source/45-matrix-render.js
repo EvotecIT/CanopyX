@@ -75,7 +75,7 @@
         toggle.setAttribute("aria-label", fill(open ? labels.matrixCollapseGroup : labels.matrixExpandGroup, { group: entry.label }));
         toggle._group = { axis: "rows", key: entry.group.key };
         const label = h("span", "cx-mx-label"), count = h("span", "cx-mx-sub");
-        setText(label, entry.label); setText(count, fill(labels.matrixGroupCount, { count: this.format.format(entry.members.length) }));
+        setText(label, entry.label); setText(count, fill(labels.matrixGroupHeadingCount, { count: this.format.format(entry.members.length) }));
         toggle.append(label, count); head.appendChild(toggle);
         head.removeAttribute("title");
       }

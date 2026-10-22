@@ -35,8 +35,9 @@
     },
     /** Mounts the tiles of a row that meet the window of columns and draws those not yet drawn for this row, theme and ratio. */
     drawRow(row, entry, first, last) {
-      const ratio = global.devicePixelRatio || 1, tiles = row._tiles ||= new Map(), version = this.canvasVersion + ":" + ratio + ":" + entry.key;
+      // Refreshing the palette advances its version; the first row must compare against that new version too.
       this.looks();
+      const ratio = global.devicePixelRatio || 1, tiles = row._tiles ||= new Map(), version = this.canvasVersion + ":" + ratio + ":" + entry.key;
       const from = last >= first ? Math.floor(first / MATRIX_TILE) : 0, to = last >= first ? Math.floor(last / MATRIX_TILE) : -1;
       for (const [index, tile] of tiles) if (index < from || index > to) { tiles.delete(index); tile.remove(); if (this.tilePool.length < 400) this.tilePool.push(tile); }
       for (let index = from; index <= to; index++) {

@@ -39,7 +39,7 @@
       if (policy) {
         if (column.minWidth === undefined) column.minWidth = policy.minimum;
         if (column.maxWidth === undefined) column.maxWidth = policy.maximum;
-        column.flex ??= policy.flex; column.alwaysVisible ??= policy.alwaysVisible;
+        column.flex ??= policy.flex; column.priority ??= policy.priority; column.alwaysVisible ??= policy.alwaysVisible;
       }
     }
     return LAYOUT_PREPARE.call(this);

@@ -187,6 +187,7 @@ public sealed partial class CanopyDataGridView {
         Validate();
         var writer = new CanopyJsonWriter(4096);
         writer.BeginObject().Envelope("grid").Property("id", Id).Property("label", Label);
+        if (RowIdentity == CanopyGridRowIdentity.Ordinal) writer.Property("rowIdentity", "ordinal");
         writer.Property("rowHeight", RowHeight);
         if (Density != CanopyGridDensity.Default) writer.Property("density", Density == CanopyGridDensity.Compact ? "compact" : "comfortable");
         if (Zebra) writer.Property("zebra", true);
@@ -259,6 +260,7 @@ public sealed partial class CanopyDataGridView {
     public void Validate() => ValidateColumns();
 
     internal HashSet<string> ValidateColumns() {
+        ValidateRowIdentity();
         if (Source.Kind != CanopyGridSourceKind.Inline && Source.Kind != CanopyGridSourceKind.Host) {
             throw new ArgumentOutOfRangeException(nameof(Source), Source, "Unknown grid source.");
         }

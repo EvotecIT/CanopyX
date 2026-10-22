@@ -1,5 +1,4 @@
-// When the columns do not fit, long free text gives way first: dates, short names and states keep their whole width while
-// the long path and description columns, still wider than their minimum, take the cut. Flat grids and trees share the rule.
+// Trees shorten free text to fit; grids preserve measured content after header slack and scroll when needed.
 import { expect, test } from "@playwright/test";
 import { viewPage } from "./support.mjs";
 import { pinTestFont, testFontState } from "./visual-font.mjs";
@@ -65,6 +64,6 @@ for (const font of ["system", "bundled Inter"]) for (const [name, view] of [["fl
     expect(fit.path.width).toBeGreaterThan(100);
     // Dates, short names and states stay whole.
     for (const id of ["created", "modified", "owner", "status"]) expect(fit[id].cut, JSON.stringify({ id, ...fit[id] })).toBe(0);
-    expect(await page.locator(".cx-grid").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    expect(await page.locator(".cx-grid").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(name === "tree");
   });
 }

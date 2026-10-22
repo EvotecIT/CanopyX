@@ -48,10 +48,19 @@
       this.syncGridStatus?.();
     },
     updateGridPhone() {
-      const phone = this.host.clientWidth <= 640;
+      const phone = this.host.clientWidth <= 640, autoRows = this.authoredAutoRows || phone && (this.layoutMode || "fit") === "fit";
       this.host.classList.toggle("cx-phone", phone);
-      if (phone === this.phone) return;
-      this.phone = phone;this.version++;this.scheduleRender();
+      if (phone === this.phone && autoRows === this.autoRows) return;
+      const anchor = this.gridRowAnchor();
+      const changedRows = autoRows !== this.autoRows;
+      this.phone = phone;this.autoRows = autoRows;
+      if (changedRows) { this.rowOffsets = null;this.rowHeights?.clear(); }
+      this.rowWidthShape = null;
+      if (!this.autoRows && !this.rowProjection) {
+        const bounds = this.rowBounds(); this.total = Math.max(0, bounds.last - bounds.first + 1) * this.rowH;
+        this.syncScrollRange(this.rowTop(anchor.index) + Math.min(anchor.offset, this.rowH - 1));
+      }
+      this.version++;this.scheduleRender();
       this.placeMenus(phone);
       this.syncPinnedShadows();
     },

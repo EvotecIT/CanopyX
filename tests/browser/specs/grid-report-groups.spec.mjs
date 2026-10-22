@@ -210,8 +210,9 @@ test('collapsed middle ranges never fetch hidden pages between visible records',
 });
 
 test('grouped page keys cross record pages and skip collapsed presentation ranges',async({page})=>{
-  await open(page);
-  await page.locator('.cx-grid').evaluate(grid=>grid.style.height='200px');await nextFrames(page);
+  // A fixed viewport spans more than one record page, so both Page keys exercise cross-page navigation.
+  await open(page,definition({autoHeight:false}));
+  await page.locator('.cx-grid').evaluate(grid=>{grid.style.flex='0 0 300px';grid.style.height='300px';});await nextFrames(page);
   await page.evaluate(api+'.scrollToRow(4)');await page.locator('[data-cx-id="r04"]').focus();
   await page.keyboard.press('ArrowDown');await expect(page.locator('[data-cx-id="r05"]')).toBeFocused();
   await page.keyboard.press('ArrowUp');expect(await page.evaluate('document.activeElement.classList.contains("cx-grid-group")')).toBe(true);

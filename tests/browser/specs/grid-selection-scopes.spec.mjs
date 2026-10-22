@@ -122,7 +122,8 @@ test('checkboxes, Shift selection and cell keyboard navigation survive compact p
   await first.focus();await page.keyboard.press('F2');await expect(first.locator('.cx-grid-row-select')).toBeFocused();
   await page.keyboard.press('Escape');await expect(first).toBeFocused();
   expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
-  expect(await page.locator('.cx-row[data-cx-id]').first().locator('[role="gridcell"]').count()).toBe(2);
+  await expect(first.locator('.cx-phone-field').filter({has:page.locator('.cx-phone-field-title',{hasText:/^Amount:$/})}).locator('.cx-phone-value')).toHaveText('0');
+  expect(await first.locator('[role="gridcell"]').count()).toBe(await page.locator('.cx-hcell').count());
 });
 
 test('selection controls recover after a failed query and query selections remain ephemeral in saved state',async({page})=>{

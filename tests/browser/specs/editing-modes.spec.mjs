@@ -110,7 +110,8 @@ for (const theme of ["light", "dark"]) {
 for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [390, "dark"]]) {
   test(`an open editor, a changed cell, an invalid cell and the edit bar pass the accessibility checks (${theme}, ${width})`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
-    await serveGrid(page, { theme, script: `CanopyX.configure("assets", { editing: { validators: { name: value => value === "Taken" ? "That name is taken." : null } } });` });
+    // Keep the inline editor under test visible; other normal-priority fields may move into the phone drawer.
+    await serveGrid(page, { theme, view: assetView({}, { name: { priority: "essential" } }), script: `CanopyX.configure("assets", { editing: { validators: { name: value => value === "Taken" ? "That name is taken." : null } } });` });
     await page.evaluate(`${grid}.setCellValue("a1", "name", "Taken")`);
     await page.evaluate(`${grid}.setCellValue("a2", "cost", 1)`);
     // A phone shows fewer columns; the lookup column is edited in the drawer there.

@@ -7,7 +7,15 @@ import { nextFrames } from "./support.mjs";
 
 const chunks = [[["a", "Alpha", 20, 20, "One"], ["b", "Beta", 40, 40, "One"]],
   [["c", "Gamma", -20, -20, "Two"], ["d", "Delta", 100, 100, "Two"]]];
-const cell = (page, id, column) => page.locator('.cx-row[data-cx-id="' + id + '"] .cx-cell').nth(["name", "amount", "scale", "group"].indexOf(column));
+// A field keeps its formatting when phone fitting projects it into the quiet record line.
+const cell = async (page, id, column) => {
+  const row = page.locator('.cx-row[data-cx-id="' + id + '"]');
+  const header = page.locator('.cx-hcell[data-cx-column="' + column + '"]');
+  if (await header.count()) return row.locator('.cx-cell[aria-colindex="' + await header.getAttribute("aria-colindex") + '"]');
+  const title = { name:"Name:", amount:"Amount:", scale:"Scale:", group:"Group:" }[column];
+  return row.locator('.cx-phone-field').filter({ has: page.locator('.cx-phone-field-title', {
+    hasText:new RegExp('^' + title + '$') }) }).locator('.cx-phone-value');
+};
 const drawer = (page, column) => page.locator('.cx-drawer dd[data-cx-field="' + column + '"]');
 
 function compactView(transport, reporting = false) {
@@ -58,8 +66,8 @@ async function openCompact(page, transport, reporting = false, editableDrawer = 
   return errors;
 }
 
-const barWidth = target => target.locator(".cx-fmt-bar").evaluate(bar => bar.style.getPropertyValue("--cx-fmt-w"));
-const scaleColor = target => target.evaluate(element => element.style.getPropertyValue("--cx-fmt-scale"));
+const barWidth = async target => (await target).locator(".cx-fmt-bar").evaluate(bar => bar.style.getPropertyValue("--cx-fmt-w"));
+const scaleColor = async target => (await target).evaluate(element => element.style.getPropertyValue("--cx-fmt-scale"));
 
 for (const transport of ["inline", "scripts-gzip", "sidecar"]) {
   test("compact " + transport + " formatting refreshes automatic bounds and cached drawer rows after later extrema decode", async ({ page }, testInfo) => {
@@ -81,7 +89,7 @@ for (const transport of ["inline", "scripts-gzip", "sidecar"]) {
       expect(await barWidth(cell(page, "a", "amount"))).toBe("33.3%");
       expect(await barWidth(cell(page, "b", "amount"))).toBe("50.0%");
       expect(await scaleColor(cell(page, "b", "scale"))).toContain("50%");
-      await page.getByRole("button", { name: "Close record details", exact: true }).click();
+      await page.getByRole("button", { name: "Close", exact: true }).click();
       await page.evaluate(() => grid.setPageLength(4));
       await nextFrames(page);
       expect(await barWidth(cell(page, "d", "amount"))).toBe("100.0%");
@@ -94,11 +102,11 @@ for (const transport of ["inline", "scripts-gzip", "sidecar"]) {
 test("grouped compact formatting keeps complete bounds for hidden fields and saved extrema", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const errors = await openCompact(page, "sidecar", true);
-  await expect(cell(page, "a", "amount")).toBeVisible();
+  await expect(await cell(page, "a", "amount")).toBeVisible();
   expect(await barWidth(cell(page, "a", "amount"))).toBe("33.3%");
   await page.evaluate(() => grid.openDetails("a"));
   expect(await scaleColor(drawer(page, "scale"))).toContain("33%");
-  await page.getByRole("button", { name: "Close record details", exact: true }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.evaluate(async () => {
     await grid.setCellValue("d", "amount", 200); await grid.setCellValue("d", "scale", 200); await grid.commitChanges();
     await grid.collapseAllGroups(); await grid.expandAllGroups();

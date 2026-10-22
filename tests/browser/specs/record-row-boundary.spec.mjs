@@ -88,7 +88,7 @@ test("valid shared record packs are reused and only a rejected pack reloads", as
   for (const id of ["a", "b"]) {
     await page.evaluate(api + ".openRecord(" + JSON.stringify(id) + ")");
     await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Loaded details");
-    await drawer(page).getByRole("button", { name: "Close record" }).click();
+    await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   }
   expect(pack.requests).toHaveLength(1);
   expect(await page.evaluate(api + ".openRecord('c').then(() => null, error => error.message)")).toContain("invalid flat row fields");
@@ -97,7 +97,7 @@ test("valid shared record packs are reused and only a rejected pack reloads", as
   await page.evaluate(api + ".openRecord('c')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Loaded details");
   expect(pack.requests).toHaveLength(2);
-  await drawer(page).getByRole("button", { name: "Close record" }).click();
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   // The earlier accepted record keeps its own payload even though another record invalidated their shared pack.
   await page.evaluate(api + ".openRecord('a')");
   await expect(drawer(page).locator('dd[data-cx-field="note"]')).toHaveText("Loaded details");

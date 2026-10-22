@@ -29,6 +29,7 @@ internal static class CanopyTreeViewValidator {
     internal static HashSet<string> ValidateDefinition(CanopyTreeView view, bool bundle) {
         // Bundle writers use this validation before creating sidecars, not only when serializing the page.
         CanopyJsonNames.Selection(view.Selection);
+        if (view.Selection == CanopySelectionMode.None) throw new InvalidOperationException("No-selection mode is supported by flat grids only.");
         CanopyCheckIntentValidator.Validate(view);
         var actions = new HashSet<string>(StringComparer.Ordinal);
         foreach (var action in view.ContextActions) {

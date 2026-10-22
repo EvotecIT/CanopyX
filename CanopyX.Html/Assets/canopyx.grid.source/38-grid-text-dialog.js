@@ -1,4 +1,5 @@
   function gridOverlayTheme(grid,element) {
+    for (const name of (grid.opts.overlayClass || "").split(/\s+/).filter(Boolean)) element.classList.add(name);
     element.setAttribute("data-cx-theme",grid.host.getAttribute("data-cx-theme"));
     const theme=getComputedStyle(grid.host);
     element.style.colorScheme=theme.colorScheme;

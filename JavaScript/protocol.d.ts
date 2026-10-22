@@ -195,7 +195,7 @@ export type LabelName =
   | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridVisibleRows" | "gridAllRows" | "gridDownloadCsv" | "gridCopy" | "gridDetails"
   | "searchPlaceholder" | "searchResults" | "searchResultCount" | "searchResultCountOfTotal"
   | "searchResultCountOfMany" | "searchNoResults" | "searchTooShort" | "searchWordTooShort" | "searchFailed"
-  | "columns" | "visibleColumns" | "resizeColumn" | "columnWidth" | "loading" | "loadError" | "queryFailed"
+  | "columns" | "hiddenColumns" | "visibleColumns" | "resizeColumn" | "columnWidth" | "loading" | "loadError" | "queryFailed"
   | "showMore" | "showMoreUnknownTotal" | "pageLoaded" | "itemsLoaded" | "yes" | "no"
   | "utcTime" | "localTime" | "mountError" | "actions" | "editValue" | "saveEdit" | "cancelEdit"
   | "invalidEdit" | "interactionPending" | "interactionRejected" | "interactionFailed"

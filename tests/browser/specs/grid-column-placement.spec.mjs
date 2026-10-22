@@ -1,6 +1,10 @@
+import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { viewPage, nextFrames, openExample } from "./support.mjs";
+
+// Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
+test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 const columns = ["name", "region", "owner", "notes", "action"].map(id => ({ id, title: id, kind: "text", width: 160, sortable: true }));
 const view = { protocol: "canopyx/2", type: "grid", id: "placement", label: "Responsive inventory", rowHeight: 28,
@@ -101,7 +105,8 @@ test("pin intent and widths survive compact suspension, state restoration and re
   await page.setViewportSize({ width: 390, height: 700 }); await open(page);
   const saved = await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.getState());
   let placement = await layout(page); expect(placement.find(c => c.id === "name")).toMatchObject({ requestedPin: "left", pin: "left" });
-  expect(placement.find(c => c.id === "action")).toMatchObject({ requestedPin: "right", pin: "none", width: 160 });
+  expect(placement.find(c => c.id === "action")).toMatchObject({ requestedPin: "right", pin: "none" });
+  expect(saved.columns.find(c => c.id === "action").width).toBe(160);
   await page.setViewportSize({ width: 1200, height: 700 }); await nextFrames(page);
   expect((await layout(page)).find(c => c.id === "action").pin).toBe("right");
   await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.setColumnPinned("owner", "left"));

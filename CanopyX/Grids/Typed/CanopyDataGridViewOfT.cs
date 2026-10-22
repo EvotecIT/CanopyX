@@ -23,6 +23,7 @@ namespace CanopyX;
 /// </remarks>
 public sealed partial class CanopyDataGridView<T> {
     private readonly Func<T, string> _identity;
+    private long _nextOrdinal;
     private readonly List<KeyValuePair<CanopyColumn, Func<T, CanopyCell?>>> _cells = new List<KeyValuePair<CanopyColumn, Func<T, CanopyCell?>>>();
     private readonly List<KeyValuePair<string, Func<T, CanopyCell?>>> _fields = new List<KeyValuePair<string, Func<T, CanopyCell?>>>();
 
@@ -42,6 +43,17 @@ public sealed partial class CanopyDataGridView<T> {
     /// <param name="identity">Returns each record's stable numeric key, unique in the dataset; non-negative keys keep their numeric order.</param>
     /// <exception cref="ArgumentNullException"><paramref name="identity"/> is null.</exception>
     public CanopyDataGridView(string id, string label, Func<T, long> identity) : this(id, label, NumericIdentity(identity)) {
+    }
+
+    /// <summary>Creates a keyless typed grid using positions in this materialized snapshot as row identities.</summary>
+    /// <param name="id">The grid identity.</param>
+    /// <param name="label">The accessible label.</param>
+    /// <param name="rowIdentity">Must be <see cref="CanopyGridRowIdentity.Ordinal"/>; stable keys require an identity selector.</param>
+    /// <remarks>Each call to <see cref="Row"/> assigns the next position, starting at zero. Sorting and filtering do not renumber records.</remarks>
+    public CanopyDataGridView(string id, string label, CanopyGridRowIdentity rowIdentity) {
+        if (rowIdentity != CanopyGridRowIdentity.Ordinal) throw new ArgumentException("Stable row keys require an identity selector.", nameof(rowIdentity));
+        View = new CanopyDataGridView(id, label) { RowIdentity = rowIdentity };
+        _identity = _ => CanopyRowIdentity.Format(_nextOrdinal++);
     }
 
     private static Func<T, string> NumericIdentity(Func<T, long> identity) {

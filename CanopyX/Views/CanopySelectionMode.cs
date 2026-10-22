@@ -8,5 +8,8 @@ public enum CanopySelectionMode {
     Single = 0,
 
     /// <summary>Several rows, with Ctrl or Cmd to toggle, Shift to extend, and Space to toggle the focused row.</summary>
-    Multiple
+    Multiple,
+
+    /// <summary>No row selection. Row activation, keyboard navigation and record drawers remain available.</summary>
+    None
 }

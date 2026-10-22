@@ -9,6 +9,7 @@
   "SearchWordTooShort": ["Wpisz słowo o długości co najmniej {min} znaków","Ein Wort mit mindestens {min} Zeichen eingeben","Escriba una palabra de al menos {min} caracteres","Saisissez un mot d'au moins {min} caractères","Digita una parola di almeno {min} caratteri"],
   "SearchFailed": ["Nie udało się wyszukać: {error}","Suche fehlgeschlagen: {error}","Error al buscar: {error}","Échec de la recherche : {error}","Ricerca non riuscita: {error}"],
   "Columns": ["Kolumny","Spalten","Columnas","Colonnes","Colonne"],
+  "HiddenColumns": ["[one]+{count} kolumna[few]+{count} kolumny[many]+{count} kolumn[other]+{count} kolumny","[one]+{count} Spalte[other]+{count} Spalten","[one]+{count} columna[other]+{count} columnas","[one]+{count} colonne[other]+{count} colonnes","[one]+{count} colonna[other]+{count} colonne"],
   "GridFilters": ["Filtry","Filter","Filtros","Filtres","Filtri"],
   "GridResultCount": ["Wiersze: {count} z {total}","{count} von {total} Zeilen","{count} de {total} filas","{count} sur {total} lignes","{count} su {total} righe"],
   "GridUnknownCount": ["Liczba wyników jest niedostępna","Ergebnisanzahl nicht verfügbar","El número de resultados no está disponible","Nombre de résultats indisponible","Numero di risultati non disponibile"],
@@ -88,7 +89,7 @@
   "GridHeaderFilter": ["Filtruj kolumnę {column}","{column} filtern","Filtrar {column}","Filtrer {column}","Filtra {column}"],
   "GridExpandCell": ["{column}: pokaż pełny tekst","{column}: vollständigen Text anzeigen","{column}: mostrar el texto completo","{column} : afficher le texte complet","{column}: mostra il testo completo"],
   "GridCloseCell": ["Zamknij pełny tekst","Vollständigen Text schließen","Cerrar el texto completo","Fermer le texte complet","Chiudi il testo completo"],
-  "GridCloseRecord": ["Zamknij szczegóły rekordu","Datensatzdetails schließen","Cerrar detalles del registro","Fermer les détails de l'enregistrement","Chiudi i dettagli del record"],
+  "GridCloseRecord": ["Zamknij","Schließen","Cerrar","Fermer","Chiudi"],
   "GridMoveColumn": ["{column}: przeciągnij, aby przenieść, lub użyj strzałek w lewo i w prawo","{column}: zum Verschieben ziehen oder Pfeil links/rechts verwenden","{column}: arrastre para mover o use las flechas izquierda y derecha","{column} : faites glisser ou utilisez Gauche/Droite pour déplacer","{column}: trascina o usa Sinistra/Destra per spostare"],
   "GridResizeHelp": ["Enter dopasowuje do maksymalnie 200 wczytanych wierszy; strzałki w lewo i w prawo zmieniają szerokość.","Eingabe passt die Breite an bis zu 200 geladene Zeilen an; Pfeil links/rechts ändert die Breite.","Entrar ajusta el ancho a un máximo de 200 filas cargadas; las flechas izquierda y derecha cambian el ancho.","Entrée ajuste à 200 lignes chargées au plus ; Gauche/Droite redimensionne.","Invio adatta fino a 200 righe caricate; Sinistra/Destra ridimensiona."],
   "GridFitColumn": ["Dopasuj kolumnę {column}","{column} anpassen","Ajustar {column}","Ajuster {column}","Adatta {column}"],
@@ -697,5 +698,6 @@
   "MatrixValue": ["Wartość","Wert","Valor","Valeur","Valore"],
   "MatrixState": ["Stan","Zustand","Estado","État","Stato"],
   "MatrixAllClear": ["Nic nie wymaga uwagi","Nichts erfordert Aufmerksamkeit","Nada requiere atención","Rien à examiner","Niente richiede attenzione"],
-  "MatrixShowMore": ["Pokaż więcej","Mehr anzeigen","Mostrar más","Afficher plus","Mostra altro"]
+  "MatrixShowMore": ["Pokaż więcej","Mehr anzeigen","Mostrar más","Afficher plus","Mostra altro"],
+  "MatrixGroupHeadingCount": [ "{count}", "{count}", "{count}", "{count}", "{count}" ]
 }

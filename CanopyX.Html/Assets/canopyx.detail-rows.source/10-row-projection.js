@@ -30,7 +30,7 @@
     prepareRowProjection() {
       this.resolveDetails();
       const bounds = this.rowBounds(), groups = this.projectionGroups?.() || null;
-      const key = [this.snapshot, groups, bounds.first, bounds.last, this.groupCollapseVersion || 0, this.detailVersion || 0, this.rowH];
+      const key = [this.snapshot, groups, bounds.first, bounds.last, this.groupCollapseVersion || 0, this.detailVersion || 0, this.rowH, this.autoRows];
       if (this.rowProjectionKey?.every((value, index) => value === key[index])) return;
       const previous = this.rowProjection, sameResult = previous && this.rowProjectionKey[0] === this.snapshot, top = this.logicalTop();
       const anchorIndex = sameResult && previous.rowCount() ? previous.rowAt(top) : -1;

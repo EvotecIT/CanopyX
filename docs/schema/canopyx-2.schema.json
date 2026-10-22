@@ -524,6 +524,7 @@
       "properties": {
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "grid" },
+        "rowIdentity": { "enum": ["stableKey", "ordinal"], "description": "Default stableKey. Ordinal IDs are source positions in one dataset snapshot; saved selections and keyed live updates are unavailable." },
         "id": { "$ref": "#/$defs/identifier" },
         "label": { "$ref": "#/$defs/accessibleLabel" },
         "rowHeight": { "type": "integer", "minimum": 20, "maximum": 64 },
@@ -553,7 +554,7 @@
         "formatRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatRule" }, "description": "Conditional formatting rules in priority order (docs/conditional-formatting.md)." },
         "formatting": { "type": "object", "additionalProperties": false, "description": "A legend of the labelled rules and the rule editor in the more menu.", "properties": { "legend": { "type": "boolean" }, "editor": { "type": "boolean" } } },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
-        "selection": { "enum": ["single", "multiple"] },
+        "selection": { "enum": ["none", "single", "multiple"] },
         "search": { "type": "boolean" },
         "presentation": { "enum": ["continuous", "paged"] },
         "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
@@ -582,6 +583,12 @@
       "then": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] },
       "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
       "allOf": [{
+        "if": { "required": ["selection"], "properties": { "selection": { "const": "none" } } },
+        "then": { "properties": { "reporting": { "properties": { "selectionControls": { "const": false } } } } }
+      }, {
+        "if": { "required": ["rowIdentity"], "properties": { "rowIdentity": { "const": "ordinal" } } },
+        "then": { "not": { "required": ["live"] }, "properties": { "record": { "properties": { "deepLink": { "const": false } } } } }
+      }, {
         "if": { "properties": { "source": { "required": ["navigation"], "properties": { "navigation": { "const": "cursor" } } } } },
         "then": { "required": ["presentation"], "properties": { "presentation": { "const": "paged" }, "source": { "properties": { "kind": { "const": "host" } } }, "query": { "$ref": "#/$defs/gridCursorQuery" } } },
         "else": { "properties": { "query": { "$ref": "#/$defs/gridQuery" } } }
@@ -2086,6 +2093,7 @@
             "gridAddFilterGroup": { "$ref": "#/$defs/accessibleLabel" },
             "gridDeleteFilterGroup": { "$ref": "#/$defs/accessibleLabel" },
             "visibleColumns": { "$ref": "#/$defs/accessibleLabel" },
+            "hiddenColumns": { "$ref": "#/$defs/accessibleLabel" },
             "resizeColumn": { "$ref": "#/$defs/accessibleLabel" },
             "columnWidth": { "$ref": "#/$defs/accessibleLabel" },
             "loading": { "$ref": "#/$defs/accessibleLabel" },

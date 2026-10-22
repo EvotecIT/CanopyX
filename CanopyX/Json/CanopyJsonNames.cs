@@ -24,6 +24,7 @@ internal static class CanopyJsonNames {
     internal static string Selection(CanopySelectionMode mode) => mode switch {
         CanopySelectionMode.Single => "single",
         CanopySelectionMode.Multiple => "multiple",
+        CanopySelectionMode.None => "none",
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown selection mode.")
     };
 
