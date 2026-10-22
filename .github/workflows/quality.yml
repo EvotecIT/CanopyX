@@ -6,6 +6,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      matrix_diagnostics:
+        description: Run only the focused native macOS 15 WebKit matrix paint diagnostic
+        type: boolean
+        default: false
+        required: false
 
 permissions:
   contents: read
@@ -15,7 +21,7 @@ jobs:
     # Preserve the required platform contexts while requiring the entire browser/platform matrix to succeed.
     name: Build, test, examples, browser tests, pack (${{ matrix.platform }})
     needs: build-test-pack
-    if: always()
+    if: ${{ always() && !inputs.matrix_diagnostics }}
     runs-on: ubuntu-24.04
     strategy:
       matrix:
@@ -29,6 +35,7 @@ jobs:
           if ($env:MATRIX_RESULT -ne 'success') { throw "The browser/platform matrix did not pass: $env:MATRIX_RESULT" }
 
   build-test-pack:
+    if: ${{ !inputs.matrix_diagnostics }}
     # Every platform runs the full browser suite in all three engines. Windows Firefox uses two isolated shards;
     # its serial suite outgrew the process deadline. Every shard keeps one worker and the same test/time limits.
     # The Chromium job of each platform
@@ -141,3 +148,114 @@ jobs:
             tests/browser/playwright-report
             tests/browser/test-results
           if-no-files-found: ignore
+
+  matrix-native-diagnostic:
+    name: Matrix paint diagnostic (macOS 15 arm64, WebKit)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.matrix_diagnostics }}
+    runs-on: macos-15
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      MSBUILDDISABLENODEREUSE: "1"
+      DOTNET_CLI_USE_MSBUILD_SERVER: "0"
+      CANOPYX_TEST_BROWSERS: webkit
+      CANOPYX_VISUAL: "0"
+      SOURCE_COMMIT: 586926544708d48882453f47d5581f178545573a
+    steps:
+      - name: Checkout exact diagnostic candidate and source history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Record and require the native environment
+        shell: bash
+        run: |
+          mkdir -p artifacts/matrix-diagnostics/baseline-assets
+          { sw_vers; uname -m; node --version; dotnet --info; git rev-parse HEAD; } > artifacts/matrix-diagnostics/environment.txt
+          test "$(uname -m)" = arm64
+          test "$(sw_vers -productVersion | cut -d. -f1)" = 15
+          for asset in canopyx-grid.css canopyx-matrix.css canopyx-grid.js canopyx-matrix.js; do
+            git show "$SOURCE_COMMIT:CanopyX.Html/Assets/$asset" > "artifacts/matrix-diagnostics/baseline-assets/$asset"
+          done
+
+      - name: Install pinned WebKit through HtmlTinkerX
+        id: install
+        working-directory: tests/browser
+        shell: pwsh
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "120000"
+        run: |
+          npm ci --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- webkit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # Baseline failures are expected diagnostic evidence, never a substitute for a passing candidate.
+      - name: Record original-source first paint with passive diagnostics
+        id: baseline
+        continue-on-error: true
+        working-directory: tests/browser
+        shell: bash
+        env:
+          CANOPYX_MATRIX_DIAGNOSTICS: passive
+          CANOPYX_MATRIX_ASSETS: ${{ github.workspace }}/artifacts/matrix-diagnostics/baseline-assets
+        run: |
+          node node_modules/@playwright/test/cli.js test specs/matrix.spec.mjs --project=webkit --grep 'a matrix draws its cells' --repeat-each=3 --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/baseline"
+
+      - name: Check candidate first paint and theme with passive diagnostics
+        id: candidate
+        working-directory: tests/browser
+        shell: bash
+        env:
+          CANOPYX_MATRIX_DIAGNOSTICS: passive
+        run: |
+          node node_modules/@playwright/test/cli.js test specs/matrix.spec.mjs --project=webkit --grep 'a matrix draws its cells|a theme switch draws' --repeat-each=3 --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/candidate"
+
+      - name: Capture one separate candidate draw-call trace
+        id: calls
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        working-directory: tests/browser
+        shell: bash
+        env:
+          CANOPYX_MATRIX_DIAGNOSTICS: calls
+        run: |
+          node node_modules/@playwright/test/cli.js test specs/matrix.spec.mjs --project=webkit --grep 'a matrix draws its cells' --workers=1 --retries=0 --reporter=list --trace=on --output="$GITHUB_WORKSPACE/artifacts/matrix-diagnostics/calls"
+
+      - name: Record exact candidate and diagnostic outcomes
+        if: always()
+        shell: bash
+        env:
+          WORKFLOW_SHA: ${{ github.sha }}
+          BASELINE_OUTCOME: ${{ steps.baseline.outcome }}
+          CANDIDATE_OUTCOME: ${{ steps.candidate.outcome }}
+          CALLS_OUTCOME: ${{ steps.calls.outcome }}
+        run: |
+          mkdir -p artifacts/matrix-diagnostics
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const record = { workflowSha: process.env.WORKFLOW_SHA, checkoutSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), sourceSha: process.env.SOURCE_COMMIT, node: process.version, arch: process.arch, baseline: process.env.BASELINE_OUTCOME, candidate: process.env.CANDIDATE_OUTCOME, calls: process.env.CALLS_OUTCOME };
+          fs.writeFileSync('artifacts/matrix-diagnostics/run.json', JSON.stringify(record, null, 2));
+          JS
+
+      - name: Upload bounded matrix diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: matrix-native-mac15-${{ github.sha }}
+          path: artifacts/matrix-diagnostics
+          if-no-files-found: error
+          retention-days: 7

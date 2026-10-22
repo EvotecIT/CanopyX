@@ -5,8 +5,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { exampleUrl, nextFrames, repo } from "./support.mjs";
+import { startMatrixPaintDiagnostics } from "./matrix-paint-diagnostics.mjs";
 
-const asset = name => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets", name), "utf8");
+if (process.env.CANOPYX_MATRIX_DIAGNOSTICS) {
+  const captures = new WeakMap();
+  test.beforeEach(async ({ page }) => captures.set(page, await startMatrixPaintDiagnostics(page, process.env.CANOPYX_MATRIX_DIAGNOSTICS)));
+  test.afterEach(async ({ page }, testInfo) => { await captures.get(page)?.(testInfo); });
+}
+
+const asset = name => fs.readFileSync(path.join(process.env.CANOPYX_MATRIX_ASSETS || path.join(repo, "CanopyX.Html/Assets"), name), "utf8");
 const STATES = JSON.parse(fs.readFileSync(path.join(repo, "tests/fixtures/matrix-small.json"), "utf8")).states;
 // The shared fixture (CanopyX.Tests reads it too): six rows (two sites) by four columns (two tiers). Totals count Failing and
 // Slow: rows a 1, b 0, c 1, d 2, e 0, f 0; columns x 2, y 0, z 1, w 1.
