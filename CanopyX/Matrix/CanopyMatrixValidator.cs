@@ -19,7 +19,8 @@ internal static class CanopyMatrixValidator {
         foreach (var id in matrix.TotalStates) if (id == null || !states.Contains(id)) throw new InvalidOperationException("The totals count the undeclared state '" + id + "'.");
         Axis(matrix.Rows, "row");
         if (matrix.Square) {
-            if (matrix.Columns.Items.Count > 0 || matrix.Columns.Attributes.Count > 0 || matrix.Columns.GroupBy != null || matrix.Columns.SortBy != null || matrix.Columns.Noun != null)
+            if (matrix.Columns.Items.Count > 0 || matrix.Columns.Attributes.Count > 0 || matrix.Columns.GroupBy != null || matrix.Columns.SortBy != null || matrix.Columns.Noun != null ||
+                matrix.Columns.GroupCount != null)
                 throw new InvalidOperationException("A square matrix takes its columns from its rows; set only Columns.Title.");
             Text(matrix.Columns.Title, "The column title", 200, true);
         } else {
@@ -63,6 +64,9 @@ internal static class CanopyMatrixValidator {
     private static void Axis(CanopyMatrixAxis axis, string name) {
         Text(axis.Title, "The " + name + " title", 200, true);
         if (axis.Noun != null && (!CanopyFlowValues.HasVisibleText(axis.Noun) || axis.Noun.Length > 64)) throw new InvalidOperationException("The " + name + " noun is visible text of at most 64 characters.");
+        Text(axis.GroupCount, "The " + name + " group count", 200, true);
+        if (axis.GroupCount != null && !CanopyPlural.IsValid(axis.GroupCount, "{count}"))
+            throw new InvalidOperationException("The " + name + " group count needs {count} in every form, and plural forms such as [one]…[other]… that end with an other form.");
         if (axis.Attributes.Count > 32) throw new InvalidOperationException("A matrix axis has at most 32 attributes.");
         var attributes = new Dictionary<string, CanopyMatrixAttribute>(StringComparer.Ordinal);
         foreach (var attribute in axis.Attributes) {

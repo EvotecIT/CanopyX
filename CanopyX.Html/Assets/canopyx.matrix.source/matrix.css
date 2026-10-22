@@ -146,11 +146,25 @@
   .cx-matrix .cx-mx-bar,.cx-matrix .cx-mx-scroll,.cx-matrix .cx-mx-cards,.cx-matrix .cx-mx-tip { display:none !important; }
   .cx-matrix .cx-mx-print { display:block; }
   .cx-matrix-host { max-height:none !important; }
-  .cx-mx-printtable { border-collapse:collapse;font-size:var(--cx-size-11px); }
+  /* Print keeps the tints (browsers drop backgrounds unless asked); every state also prints its symbol, so none relies on colour alone. */
+  .cx-mx-printtable { border-collapse:collapse;font-size:var(--cx-size-11px);-webkit-print-color-adjust:exact;print-color-adjust:exact; }
   .cx-mx-printtable :is(th,td) { border:var(--cx-size-1px) solid var(--cx-line);padding:var(--cx-size-2px) var(--cx-size-4px);text-align:center; }
-  .cx-mx-printtable th[scope="row"] { text-align:start; }
+  .cx-mx-printtable thead th { background:var(--cx-head-bg); }
+  .cx-mx-printtable :is(th[scope="row"],th[scope="rowgroup"]) { text-align:start; }
   .cx-mx-printtable caption { text-align:start;font-weight:600;padding-bottom:var(--cx-size-6px); }
-  .cx-mx-printattn { font-weight:700; }
+  .cx-mx-printgroup > th,.cx-mx-printgroup > td,.cx-mx-printrolled > th { background:var(--cx-head-bg);font-weight:600; }
+  .cx-mx-printcount { font-weight:400;color:var(--cx-muted); }
+  .cx-mx-printmember { padding-inline-start:var(--cx-size-16px) !important;font-weight:400; }
+  .cx-mx-printcell { color:var(--cx-muted); }
+  .cx-mx-printcell.cx-tone-danger { color:var(--cx-tone-danger); }
+  .cx-mx-printcell.cx-tone-warning { color:var(--cx-tone-warning); }
+  .cx-mx-printcell.cx-tone-info { color:var(--cx-tone-info); }
+  .cx-mx-printcell.cx-tone-success { color:var(--cx-quiet); }
+  .cx-mx-printcell.cx-toned { color:var(--cx-t); }
+  .cx-mx-printcell.cx-mx-attn { background:var(--mx-bg,var(--cx-hover-bg));font-weight:700; }
+  .cx-mx-printcell.cx-mx-attn.cx-tone-success { color:var(--cx-tone-success); }
+  .cx-mx-printnone { color:var(--mx-none); }
+  .cx-mx-printself { background:var(--cx-hover-bg); }
 }
 @media (forced-colors:active) {
   .cx-mx-cell.cx-mx-attn { border:var(--cx-size-1px) solid CanvasText; }

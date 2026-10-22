@@ -43,18 +43,18 @@ public sealed class MatrixTests {
     }
 
     [Fact]
-    public void HeadingCountIsIndependentFromDetailCountAndRoundTrips() {
+    public void HeadingCountIsIndependentFromCellCountAndRoundTrips() {
         var matrix = Small(); matrix.Labels = new CanopyLabels();
-        Assert.Equal("{count}", matrix.Labels!.MatrixGroupHeadingCount);
-        Assert.Equal("Items: {count}", matrix.Labels!.MatrixGroupCount);
-        matrix.Labels!.MatrixGroupHeadingCount = "({count})";
-        matrix.Labels!.MatrixGroupCount = "Members: {count}";
+        Assert.Equal("{count}", matrix.Labels!.MatrixGroupCount);
+        Assert.Equal("Cells: {count}", matrix.Labels!.MatrixCellCount);
+        matrix.Labels!.MatrixGroupCount = "({count})";
+        matrix.Labels!.MatrixCellCount = "Members: {count}";
         var json = matrix.ToJson();
         var back = CanopyMatrix.FromJson(json);
-        Assert.Equal("({count})", back.Labels!.MatrixGroupHeadingCount);
-        Assert.Equal("Members: {count}", back.Labels.MatrixGroupCount);
-        Assert.Equal("Members: {count}", matrix.Labels!.MatrixGroupCount);
-        Assert.Equal("{count}", CanopyLabels.Polish().MatrixGroupHeadingCount);
+        Assert.Equal("({count})", back.Labels!.MatrixGroupCount);
+        Assert.Equal("Members: {count}", back.Labels.MatrixCellCount);
+        Assert.Equal("Members: {count}", matrix.Labels!.MatrixCellCount);
+        Assert.Equal("{count}", CanopyLabels.Polish().MatrixGroupCount);
     }
 
     [Fact]

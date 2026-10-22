@@ -482,12 +482,40 @@ test("printing draws a table of the visible matrix", async ({ page }) => {
   await expect(page.locator(".cx-mx-scroll")).toBeHidden();
 });
 
+test("the print table keeps group rows, column bands and tone cells that never rely on colour alone", async ({ page }) => {
+  const doc = matrixDoc();
+  doc.rows.groupBy = "site"; doc.rows.groupCount = "[one]{count} server[other]{count} servers"; doc.columns.groupBy = "tier";
+  await mountMatrix(page, doc);
+  await expect(page.locator(".cx-mx-heading .cx-mx-sub").first()).toHaveText("3 servers");
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  await page.emulateMedia({ media: "print" });
+  const table = page.locator(".cx-mx-print table");
+  await expect(table.locator("tr.cx-mx-printgroup th")).toHaveText(["North · 3 servers", "South · 3 servers"]);
+  await expect(table.locator('th[scope="colgroup"]')).toHaveText(["Core · 2", "Edge · 2"]);
+  const failing = table.locator("td.cx-mx-attn.cx-tone-danger", { hasText: "3" });
+  await expect(failing).toHaveText("✕ 3");
+  await expect(failing).toHaveAttribute("title", "Failing");
+  const look = await failing.evaluate(cell => ({ background: getComputedStyle(cell).backgroundColor, adjust: getComputedStyle(cell.closest("table")).printColorAdjust }));
+  expect(look.background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(look.adjust).toBe("exact");
+  const healthy = table.locator("td.cx-mx-printcell.cx-tone-success").first();
+  expect(await healthy.evaluate(cell => getComputedStyle(cell).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  await expect(table.locator("td.cx-mx-printnone").first()).toHaveText("·");
+  // A collapsed group prints as one rolled-up row.
+  await page.emulateMedia({ media: "screen" });
+  await page.getByRole("button", { name: "Collapse North" }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  await expect(table.locator("tr.cx-mx-printrolled th")).toHaveText("North · 3 servers");
+});
+
 for (const [name, change, message] of [
   ["an unknown property", { extra: 1 }, "unknown property 'extra'"],
   ["a cells string of the wrong length", { cells: ["22", "2222", "0..2", "1220", "2222", "...."] }, "one character per column"],
   ["an undeclared state", { cells: ["9222", "2222", "0..2", "1220", "2222", "...."] }, "undeclared state"],
   ["an unsafe link", { rows: { items: [{ id: "a", label: "A", href: "javascript:alert(1)" }] }, cells: ["2222"], notes: [] }, "not an http, https, mailto"],
-  ["a diagonal on a matrix that is not square", { diagonal: "data" }, "only a square matrix has a diagonal"]
+  ["a diagonal on a matrix that is not square", { diagonal: "data" }, "only a square matrix has a diagonal"],
+  ["a group count without an other form", { rows: Object.assign(matrixDoc().rows, { groupCount: "[one]{count} server" }) }, "group count needs {count}"],
+  ["a group count without the count", { rows: Object.assign(matrixDoc().rows, { groupCount: "Servers" }) }, "group count needs {count}"]
 ]) {
   test("a document with " + name + " fails with a message", async ({ page }) => {
     await page.route("http://canopyx.test/bad", route => route.fulfill({ contentType: "text/html", body: "<!DOCTYPE html><html lang=\"en\"><head><title>x</title><script>" +
@@ -512,7 +540,7 @@ test("labels come from a label pack, and text stays text", async ({ page }) => {
 
 
 test("group heading count is independent from collapsed cell tooltip and details", async ({ page }) => {
-  await mountMatrix(page, matrixDoc({ labels: { matrixGroupHeadingCount: "({count})", matrixGroupCount: "Members: {count}" } }));
+  await mountMatrix(page, matrixDoc({ labels: { matrixGroupCount: "({count})", matrixCellCount: "Members: {count}" } }));
   await page.evaluate(() => api.group("rows", "site"));
   await nextFrames(page);
   await expect(page.locator('.cx-mx-toggle .cx-mx-sub').first()).toHaveText("(3)");
@@ -521,5 +549,5 @@ test("group heading count is independent from collapsed cell tooltip and details
   await expect(page.locator('.cx-mx-toggle .cx-mx-sub').first()).toHaveText("(3)");
   await clickCell(page, "North(3)", 0);
   await expect(page.locator("dialog.cx-mx-dialog")).toContainText("Members: 3");
-  await expect(page.locator("dialog.cx-mx-dialog")).not.toContainText("Items:");
+  await expect(page.locator("dialog.cx-mx-dialog")).not.toContainText("Cells:");
 });

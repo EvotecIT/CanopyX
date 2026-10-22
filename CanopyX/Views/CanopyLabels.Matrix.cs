@@ -54,10 +54,13 @@ public sealed partial class CanopyLabels {
     public string MatrixExpandGroup { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the button that rolls a group up into one row or column, including <c>{group}</c>. Default "Collapse {group}".</summary>
     public string MatrixCollapseGroup { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the count beside a group heading, including <c>{count}</c>. Default "{count}".</summary>
-    public string MatrixGroupHeadingCount { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the group item count in tooltips and details. Default "Items: {count}".</summary>
+    /// <summary>
+    /// Gets or sets the number of items in a group heading, including <c>{count}</c>, optionally with plural forms. Default "{count}".
+    /// An axis's <see cref="CanopyMatrixAxis.GroupCount"/> replaces it on that axis ("2 domain controllers").
+    /// </summary>
     public string MatrixGroupCount { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets how many cells a rolled-up cell covers, in its details, including <c>{count}</c>. Default "Cells: {count}".</summary>
+    public string MatrixCellCount { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the title of the cell details dialog. Default "Details".</summary>
     public string MatrixDetails { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the button that closes a dialog or panel. Default "Close".</summary>

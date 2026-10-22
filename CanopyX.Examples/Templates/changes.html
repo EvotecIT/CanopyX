@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX change views</title>
+<style>{{style}}</style>
+<script>{{script}}</script>
+<style>{{example-style}}
+.changes-layout { display: grid; gap: 28px; margin-top: 20px; }
+.changes-layout > section { min-width: 0; }
+.changes-layout h2 { margin: 0 0 4px; font-size: 16px; }
+.changes-layout h2 + p { margin: 0 0 12px; color: var(--example-muted); font-size: 13px; }
+.changes-status { min-height: 22px; margin: 0; font-size: 13px; color: var(--example-muted); }
+</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>Change views</h1>
+<p>A change set on a replicated deployment share: what changed, how it reached each file server, and what changed inside a script. Open an item to see its flags, its versions and its diff; the actions are the host's to carry out.</p>
+<div class="changes-layout">
+<section aria-labelledby="changes-list-title">
+<h2 id="changes-list-title">Changed files</h2>
+<p>Grouped by folder, with risk flags and their reasons. Filter by kind or show only the flagged files.</p>
+{{list}}
+<p class="changes-status" id="changes-status" role="status"></p>
+</section>
+<section aria-labelledby="changes-propagation-title">
+<h2 id="changes-propagation-title">Propagation</h2>
+<p>When each server first had the change, and how long after it was made.</p>
+{{propagation}}
+</section>
+<section aria-labelledby="changes-diff-title">
+<h2 id="changes-diff-title">map-drives.ps1</h2>
+<p>Inline or side by side, with the changed words marked. Press n and p in the lines to move between changes.</p>
+{{diff}}
+</section>
+</div>
+</main>
+<script>
+// The page carries out Compare and Acknowledge (it claims them by cancelling the event); Mark as expected is left to show what a
+// read-only page offers instead: the request, to copy and pass on.
+document.addEventListener("canopyx:changeAction", event => {
+  const detail = event.detail, status = document.getElementById("changes-status");
+  if (detail.copied === true) status.textContent = "Copied the path of " + detail.path + ".";
+  else if (detail.action === "acknowledge" || detail.action === "compare") {
+    event.preventDefault();
+    status.textContent = "The host would " + detail.action + " " + detail.path + (detail.reason ? " because: " + detail.reason : "") + ".";
+  }
+});
+</script>
+</body>
+</html>

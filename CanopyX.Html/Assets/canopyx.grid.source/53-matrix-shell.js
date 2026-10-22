@@ -4,7 +4,7 @@
   // the part is in and the first window is painted, and calls made before then wait for it.
   class MatrixHost {}
   const MATRIX_IMPL = {}, activeMatrices = new WeakMap();
-  const MATRIX_PART = definePart(MatrixHost, "matrix", "matrix view", () => ({ MATRIX_IMPL, h, setText, fill, foldText, numberFormat, gridFreeze, toneOf, applyTone, toneColors, AxisWindow, PROTOCOL }));
+  const MATRIX_PART = definePart(MatrixHost, "matrix", "matrix view", () => ({ MATRIX_IMPL, h, setText, fill, plural, foldText, numberFormat, gridFreeze, toneOf, applyTone, toneColors, AxisWindow, PROTOCOL }));
   const MATRIX_METHODS = ["sort", "group", "filter", "setSearch", "setAttentionOnly", "getState", "setState", "getVisible", "focusCell", "update"];
 
   /**

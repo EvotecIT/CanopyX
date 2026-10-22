@@ -13,5 +13,6 @@
     <ProjectReference Include="..\..\..\CanopyX.Html\CanopyX.Html.csproj" />
     <Compile Include="..\..\..\CanopyX.Examples\SyntheticFileTree.cs" Link="Examples\SyntheticFileTree.cs" />
     <Compile Include="..\..\..\CanopyX.Examples\ExampleViews.cs" Link="Examples\ExampleViews.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\ChangeViewsExample.cs" Link="Examples\ChangeViewsExample.cs" />
   </ItemGroup>
 </Project>

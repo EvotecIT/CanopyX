@@ -11,6 +11,14 @@ public sealed class CanopyMatrixAxis {
     /// <summary>Gets or sets what one item is called in counts, such as "domain controllers". At most 64 characters; null for "rows" or "columns".</summary>
     public string? Noun { get; set; }
 
+    /// <summary>
+    /// Gets or sets how a group heading on this axis counts its members, with <c>{count}</c> and optionally one form per plural
+    /// category, such as <c>"[one]{count} domain controller[other]{count} domain controllers"</c>. Visible text of at most 200
+    /// characters; null takes <see cref="CanopyLabels.MatrixGroupCount"/>, which is the count alone. Row group headings show it in the
+    /// interactive matrix, its print table and the static table; column bands show it in the print and static tables and in their tooltip.
+    /// </summary>
+    public string? GroupCount { get; set; }
+
     /// <summary>Gets the attributes items carry, at most 32.</summary>
     public IList<CanopyMatrixAttribute> Attributes { get; } = new List<CanopyMatrixAttribute>();
 

@@ -23,8 +23,8 @@
       if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
       Object.keys(source).forEach((name) => {
         // Parts that carry the English defaults of their own labels: forms and editing (gridEdit…), conditional formatting (format…),
-        // the calendar (calendar…), flows (flow…) and the matrix (matrix…), so a whole label pack applies to any view.
-        if (!Object.hasOwn(DEFAULT_LABELS, name) && !/^(?:gridEdit|format|calendar|flow|matrix)[A-Z]\w{0,63}$/.test(name)) throw new Error("CanopyX: there is no label '" + name + "'.");
+        // the calendar (calendar…), flows (flow…), the matrix (matrix…) and the change views (change…), so a whole label pack applies to any view.
+        if (!Object.hasOwn(DEFAULT_LABELS, name) && !/^(?:gridEdit|format|calendar|flow|matrix|change)[A-Z]\w{0,63}$/.test(name)) throw new Error("CanopyX: there is no label '" + name + "'.");
         if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
         if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
         labels[name] = source[name];

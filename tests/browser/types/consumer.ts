@@ -256,7 +256,8 @@ for (const controller of [...mountViews(document), ...GridRuntime.mount(document
   }
   else if ("focusCell" in controller) controller.focusCell("dc1", "dc2");
   else if ("getSelection" in controller) controller.getSelection();
-  else controller.expandPath(["tree-1"]);
+  else if ("getHunks" in controller) void controller.copy();
+  else if ("expandPath" in controller) controller.expandPath(["tree-1"]);
 }
 
 const view: CanopyView = {
@@ -887,3 +888,19 @@ GridRuntime.configure("replication", { onCell: (detail: MatrixCellDetail, event:
 const mountedMatrix: MatrixApi | undefined = GridRuntime.mount().find((view): view is MatrixApi => "focusCell" in view);
 matrixApi.setState({ sort: { rows: { by: "#label" } } });
 void mountedMatrix;
+
+// The change views: the documents, the action event and the APIs are typed (docs/changes.md).
+import { createDiff, createChangeList, createPropagation, type DiffDocument, type ChangeListDocument, type ChangeActionDetail, type ChangeExportDetail, type PropagationDocument } from "@evotecit/canopyx/grid";
+const diffDocument: DiffDocument = { protocol: "canopyx/2", type: "diff", id: "logon", label: "logon.ps1", hunks: [{ before: 1, after: 1, lines: [" a", "-b", "+c"] }], layout: "split" };
+const diffApi = createDiff(document.createElement("div"), { view: diffDocument, onCopy: detail => { const copied: boolean = detail.copied; void copied; } });
+const diffLayout: "inline" | "split" = diffApi.getLayout();
+void diffLayout; void diffApi.copy().then((copied: boolean) => copied);
+const changeDocument: ChangeListDocument = { protocol: "canopyx/2", type: "changes", id: "files", label: "Files",
+  actions: [{ id: "ack", label: "Acknowledge", icon: "check", reason: true }, { id: "copy", label: "Copy path", icon: "copy", copy: "unc" }, { id: "see", label: "Diff", reveal: "diff" }],
+  toolbar: [{ id: "open", label: "Open", icon: "open", link: "object" }], values: { object: "#object/1" }, exports: ["csv", "json"],
+  items: [{ id: "a", kind: "renamed", path: "b.ps1", previousPath: "a.ps1", flags: [{ id: "f", label: "Unsigned", reason: "No signature.", tone: "danger" }], diff: { id: "d", label: "D", before: "x", after: "y" } }] };
+const changeApi = createChangeList(document.createElement("div"), { view: changeDocument, onAction: (detail: ChangeActionDetail) => { const path: string | null = detail.path; const reason: string | undefined = detail.reason; void path; void reason; },
+  onExport: (detail: ChangeExportDetail) => { const format: "csv" | "json" = detail.format; void format; } });
+changeApi.setState({ flaggedOnly: true, kinds: ["added"] });
+const propagationDocument: PropagationDocument = { protocol: "canopyx/2", type: "propagation", id: "p", label: "P", witnesses: [{ id: "dc1", label: "DC01", state: "propagating", firstSeen: "2026-10-21T10:42:00Z" }] };
+createPropagation(document.createElement("div"), { view: propagationDocument }).update(propagationDocument);
