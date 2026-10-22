@@ -37,9 +37,11 @@ test("a hidden restored grid keeps its requested scroll position through reveal 
   const anchor = () => grid.evaluate(element => {
     const top = element.getBoundingClientRect().top + element.querySelector(".cx-hrow").getBoundingClientRect().height;
     const row = [...element.querySelectorAll(".cx-row[data-cx-id]")].find(row => row.getBoundingClientRect().bottom > top);
-    return { id: row.dataset.cxId, offset: Math.round(top - row.getBoundingClientRect().top) };
+    return row ? { id: row.dataset.cxId, offset: Math.round(top - row.getBoundingClientRect().top) } : null;
   });
-  const before = await anchor();
+  // Restoring scrollTop precedes the next virtual-row render; capture an anchor only once that row exists.
+  let before;
+  await expect.poll(async () => before = await anchor()).not.toBeNull();
   await page.locator("#intro-tab").click(); await page.setViewportSize({ width: 390, height: 844 });
   await page.locator("#records-tab").click();
   await expect.poll(anchor).toEqual(before);

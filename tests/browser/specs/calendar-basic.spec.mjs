@@ -140,14 +140,19 @@ test.describe("simple layouts", () => {
     await openBuilt(page, "held-day.html", calendarPage({ events: EVENTS, date: "2026-02-10", firstDay: 1,
       calendar: { weekNumbers: "iso", fixedWeeks: true, outsideDays: false } }));
     const number = page.locator('.cx-cal-day[data-cx-day="' + Date.UTC(2026, 1, 12) / 86400000 + '"] .cx-cal-num');
-    const held = await number.elementHandle();
+    // Initial sizing may replace a pre-hover handle; observe the node that actually receives the press.
+    await page.evaluate(() => document.addEventListener("pointerdown", event => {
+      window.__heldCalendarDay = event.target.closest(".cx-cal-num");
+    }, { once: true, capture: true }));
     await number.hover(); await page.mouse.down();
+    const held = await page.evaluateHandle(() => window.__heldCalendarDay);
     try {
+      expect(await held.evaluate(element => element?.textContent)).toBe("12");
       await page.setViewportSize({ width: 1407, height: 900 });
       await nextFrames(page);
       expect(await held.evaluate(element => element.isConnected)).toBe(true);
       expect((await calApi(page, "api => api.getCalendar()")).view).toBe("month");
-    } finally { await page.mouse.up(); }
+    } finally { await page.mouse.up(); await held.dispose(); }
     await expect.poll(() => calApi(page, "api => api.getCalendar()").then(state => [state.view, state.date])).toEqual(["day", "2026-02-12"]);
   });
 
