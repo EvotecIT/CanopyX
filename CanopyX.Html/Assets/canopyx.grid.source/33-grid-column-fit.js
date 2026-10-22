@@ -13,9 +13,9 @@
   }
 
   Object.assign(DataGrid.prototype, COLUMN_FIT, {
-    // Responsive visibility keeps its established compact estimate; wider content scrolls instead of hiding more fields.
+    // Optional visibility uses the same content floors as fitting, before remaining columns scroll.
     fitHide(shown, width, phone) {
-      COLUMN_FIT.fitHide.call(this, shown, width, phone, column => COLUMN_FIT.fitSize.call(this, column, 1));
+      COLUMN_FIT.fitHide.call(this, shown, width, phone);
       if (!phone || (this.layoutMode || "fit") !== "fit") return;
       const identity = shown.find(column => column.identity);
       // If the reader hid the declared identity, preserve the shared fitter's last visible column and its scrolling floor.

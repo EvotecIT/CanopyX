@@ -30,9 +30,11 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
     const down = row(page, "srv-006");
     await expect(down).toHaveClass(/cx-fmt-row/);
     await expect(down.locator(".cx-cell").first().locator(".cx-fmt-icon")).toHaveText("✕");
-    await expect(down.locator(".cx-cell").first().locator(".cx-sr-only")).toHaveText(", Server is down");
+    await expect(down.locator(".cx-cell").first().locator(":scope > .cx-sr-only")).toHaveText(", Server is down");
     await expect(down.locator(".cx-fmt-icon").first()).toHaveAttribute("aria-hidden", "true");
-    await expect(row(page, "srv-003").locator(".cx-cell").nth(1)).toHaveClass(/cx-fmt-fill/);
+    const status = width === 390 ? row(page, "srv-003").locator(".cx-phone-field").filter({
+      has: page.locator(".cx-phone-field-title", { hasText: /^Status:$/ }) }).locator(".cx-phone-value") : cell(page, "srv-003", 1);
+    await expect(status).toHaveClass(/cx-fmt-fill/);
     const legend = page.getByRole("list", { name: "Formatting legend" });
     await expect(legend).toBeVisible();
     await expect(legend.getByRole("listitem")).toHaveCount(8);

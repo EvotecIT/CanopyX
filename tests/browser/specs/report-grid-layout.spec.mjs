@@ -137,3 +137,21 @@ test("header-only slack preserves usable sort and menu targets in a phone-width 
   await sort.click();
   await expect(page.locator('.cx-hcell[data-cx-column="stage"]')).toHaveAttribute("aria-sort", "ascending");
 });
+
+
+test("optional text gives way before measured content floors force scrolling", async ({ page }) => {
+  const view = reportLayoutView();
+  view.reporting.columnReorder = false;
+  view.columns = [{ id:"name",title:"Record",kind:"text",rowHeader:true },
+    { id:"state",title:"Signal",kind:"text",presenter:{kind:"enum"} },
+    { id:"count",title:"Count",kind:"number" },
+    { id:"notes",title:"Notes",kind:"text",priority:"optional",maxWidth:320 }];
+  view.rows = [{ id:"a",cells:{name:"server-01.branch-office.production-region.internal",state:{value:"Down",tone:"danger"},count:12,
+    notes:"A long optional note about this record that can yield before the essential content requires horizontal scrolling."} }];
+  await mountReportLayout(page,{view,width:648});
+  await expect(page.locator('.cx-hcell[data-cx-column="notes"]')).toHaveCount(0);
+  const box = await layoutGeometry(page);
+  expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1);
+  expect(box.clippedPills).toBe(0);
+  await expect(page.locator('.cx-hcell')).toHaveCount(3);
+});

@@ -139,3 +139,5 @@ Pill content minimums use the computed font, letter spacing, inline padding and 
 Body-appended record drawers, column popovers and full-text dialogs accept the mount option `overlayClass: "report-style custom-theme"`. These space-separated classes are copied onto each overlay root when it opens, alongside CanopyX's own classes and inherited theme variables. Style both the host and overlay through the same marker class (for example `.report-style .p-pill`); classes on arbitrary ancestors are not copied. Changing the option affects subsequently opened overlays.
 
 The record drawer has a labelled `Close` control (×); previous and next record controls keep their separate accessible names. `GridCloseRecord` localizes the close label.
+
+Reporting layout policies also feed the shared fitter: `reporting.layout[columnId].priority` is the fallback when the column has no declared priority. An explicit column priority takes precedence. Essential fields therefore retain the same rank in responsive visibility, the phone record line, and saved layout restoration.

@@ -100,7 +100,8 @@ test.describe('touch headers',()=>{test.use({hasTouch:true,viewport:{width:390,h
   test('column menu buttons stay visible on touch phones',async({page})=>{
     await open(page);
     const opacities=await page.locator('.cx-grid-column-menu').evaluateAll(buttons=>buttons.map(button=>getComputedStyle(button).opacity));
-    expect(opacities.length).toBeGreaterThan(1);expect(opacities.every(value=>value==='1')).toBe(true);
+    expect(opacities.length).toBe(await page.locator('.cx-hcell').count());expect(opacities.length).toBeGreaterThan(0);expect(opacities.every(value=>value==='1')).toBe(true);
+    await page.locator('.cx-grid-column-menu').first().tap();await expect(page.getByRole('menu')).toBeVisible();
     await expect(page.locator('.cx-grid-header-filter:visible')).toHaveCount(0);
   });
 });

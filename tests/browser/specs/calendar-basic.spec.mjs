@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { examples, runtimeAssets } from "./support.mjs";
+import { examples, runtimeAssets, nextFrames } from "./support.mjs";
 import { api, capture, openBuilt, openCalendar } from "./calendar-support.mjs";
 
 /** A page that mounts CanopyX.createCalendar(host, options) with the options as JSON (functions are not needed here). */
@@ -132,6 +132,22 @@ test.describe("simple layouts", () => {
     await expect(page.locator(".cx-cal-pad").first()).toBeVisible();
     // The day number opens that day.
     await page.locator('.cx-cal-day[data-cx-day="' + Date.UTC(2026, 1, 12) / 86400000 + '"] .cx-cal-num').click();
+    await expect.poll(() => calApi(page, "api => api.getCalendar()").then(state => [state.view, state.date])).toEqual(["day", "2026-02-12"]);
+  });
+
+  test("a resize during a held day link preserves its click target and navigation", async ({ page }) => {
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await openBuilt(page, "held-day.html", calendarPage({ events: EVENTS, date: "2026-02-10", firstDay: 1,
+      calendar: { weekNumbers: "iso", fixedWeeks: true, outsideDays: false } }));
+    const number = page.locator('.cx-cal-day[data-cx-day="' + Date.UTC(2026, 1, 12) / 86400000 + '"] .cx-cal-num');
+    const held = await number.elementHandle();
+    await number.hover(); await page.mouse.down();
+    try {
+      await page.setViewportSize({ width: 1407, height: 900 });
+      await nextFrames(page);
+      expect(await held.evaluate(element => element.isConnected)).toBe(true);
+      expect((await calApi(page, "api => api.getCalendar()")).view).toBe("month");
+    } finally { await page.mouse.up(); }
     await expect.poll(() => calApi(page, "api => api.getCalendar()").then(state => [state.view, state.date])).toEqual(["day", "2026-02-12"]);
   });
 

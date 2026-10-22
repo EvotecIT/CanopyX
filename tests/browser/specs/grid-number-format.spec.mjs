@@ -153,11 +153,11 @@ test("aggregate overrides and count defaults use the current shared heading and 
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => page.locator("[data-canopyx-host]").evaluate(element => element.classList.contains("cx-phone"))).toBe(true);
-  await expect(page.locator('.cx-hcell[data-cx-column="amount"]')).toBeVisible();
+  await expect(page.locator('.cx-phone-field-title', { hasText: /^Amount:$/ }).first()).toBeVisible();
   await nextFrames(page);
-  const heading = page.locator(".cx-grid-group").first(), phone = heading.locator(".cx-aggregate-button");
+  const heading = page.locator(".cx-grid-group").first(), phone = heading.locator(".cx-aggregate-button,.cx-hidden-aggregates");
   await expect(phone).toContainText("avg $15.00");
-  expect(await page.locator(".cx-aggregate-button").evaluateAll(buttons => buttons.every(button => {
+  expect(await page.locator(".cx-aggregate-button,.cx-hidden-aggregates").evaluateAll(buttons => buttons.every(button => {
     const box = button.getBoundingClientRect(), cell = button.parentElement.getBoundingClientRect();
     return box.left >= cell.left - 1 && box.right <= cell.right + 1;
   }))).toBe(true);
@@ -206,13 +206,13 @@ test.describe("touch access to complete formatted aggregates", () => {
     ] };
     view.rows = [10, 20].map((amount, i) => ({ id: "r" + i, cells: { name: "Group A", amount } }));
     await open(page, view);
-    await page.locator(".cx-grid-group .cx-aggregate-button").tap();
+    await page.locator(".cx-grid-group :is(.cx-aggregate-button,.cx-hidden-aggregates)").tap();
     const dialog = page.locator(".cx-reporting-text");
     await expect(dialog).toContainText("Total amount: 30%"); await expect(dialog).toContainText("Average amount: $15.00");
     await expect(dialog).toContainText("Distinct amounts: 2");
     await dialog.getByRole("button", { name: "Close complete text", exact: true }).tap();
     expect(await page.evaluate(api + ".getCollapsedGroups()")).toEqual([]);
-    await page.locator(".cx-summary-row .cx-aggregate-button").tap();
+    await page.locator(".cx-summary-row :is(.cx-aggregate-button,.cx-hidden-aggregates)").tap();
     await expect(dialog).toContainText("Total amount: 30%");
     await dialog.getByRole("button", { name: "Close complete text", exact: true }).tap();
   });
