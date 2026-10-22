@@ -289,7 +289,7 @@ export default CanopyX;
     if ($Grid) {
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
-        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, createCalendar, createFlow, createMatrix, enhance, grid, configure')
+        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, createCalendar, createFlow, createMatrix, createDiff, createChangeList, createPropagation, enhance, grid, configure')
     }
     if ($Flow) {
         # The flow module needs only an entry point that creates flows: the flow entry or a grid entry point.

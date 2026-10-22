@@ -7,7 +7,7 @@
     matrixAttention: "Need attention: {count}", matrixLegend: "States", matrixFilter: "Filter", matrixClearFilters: "Clear filters",
     matrixNoMatches: "No rows or columns match.", matrixSelf: "Same item", matrixNoData: "No data", matrixCell: "{row} and {column}: {state}",
     matrixTotal: "Total", matrixItemTotal: "{item}: {count}", matrixExpandGroup: "Expand {group}", matrixCollapseGroup: "Collapse {group}",
-    matrixGroupHeadingCount: "{count}", matrixGroupCount: "Items: {count}", matrixDetails: "Details", matrixClose: "Close", matrixValue: "Value", matrixState: "State",
+    matrixGroupCount: "{count}", matrixCellCount: "Cells: {count}", matrixDetails: "Details", matrixClose: "Close", matrixValue: "Value", matrixState: "State",
     matrixAllClear: "Nothing needs attention", matrixShowMore: "Show more"
   };
 

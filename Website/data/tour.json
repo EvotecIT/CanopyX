@@ -74,5 +74,27 @@
       "try": "Print this page or save it as PDF.",
       "watch": "The table is plain HTML with inline styles, so it prints and pastes into Word as it looks here."
     }
+  ],
+  "changes": [
+    {
+      "feature": "Flags with reasons",
+      "try": "Turn on Flagged only, then open agent.exe.",
+      "watch": "The details list why each flag is raised, with the versions side by side."
+    },
+    {
+      "feature": "Diffs in place",
+      "try": "Open map-drives.ps1 and switch between Inline and Side by side.",
+      "watch": "The changed words are marked inside each replaced line; folded lines open where they are."
+    },
+    {
+      "feature": "Propagation",
+      "try": "Look at the Lyon servers.",
+      "watch": "FS04 has not got the change yet, FS05 holds a different file and FS06 has not reported: three different states, each with its own symbol."
+    },
+    {
+      "feature": "Host actions",
+      "try": "Use Copy the network path on a row.",
+      "watch": "CanopyX copies the value and tells the host; every other action is the host's to carry out."
+    }
   ]
 }

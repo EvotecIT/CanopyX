@@ -39,10 +39,11 @@ for (const [language,labels,staticLabels] of packs) {
     const formatting = ['formatting','format-editor'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
     const calendar = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-calendar.js'),'utf8');
     const matrix = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-matrix.js'),'utf8');
+    const changes = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-changes.js'),'utf8');
     expect(partNames.length).toBeGreaterThan(0);
     for (const name of partNames) {
-      expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix)[A-Z]/);
-      const definitions = /^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:editing;
+      expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change)[A-Z]/);
+      const definitions = /^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:editing;
       expect(new RegExp('\\b'+name+':\\s?"').test(definitions), `${language}: lazy part defines ${name}`).toBe(true);
     }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});

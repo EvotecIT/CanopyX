@@ -197,14 +197,15 @@
       try {
         view = JSON.parse(config.textContent);
         if (view === Object(view)) parsedViews.add(view);
-        // Grid entry points also mount flow and matrix documents (docs/flow.md, docs/matrix.md); a tree entry point has neither.
+        // Grid entry points also mount flow, matrix and change view documents (docs/flow.md, docs/matrix.md, docs/changes.md); a tree entry point has none.
         const flow = view && view.kind === "flow" && typeof FLOW_API === "object", matrix = view && view.type === "matrix" && typeof MATRIX_API === "object";
-        const create = flow ? FLOW_API.createFlow : matrix ? MATRIX_API.createMatrix : view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
+        const change = view && typeof CHANGE_VIEW_TYPES === "object" && Object.hasOwn(CHANGE_VIEW_TYPES, view.type) ? CHANGE_VIEW_TYPES[view.type] : null;
+        const create = flow ? FLOW_API.createFlow : matrix ? MATRIX_API.createMatrix : change ? change : view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
         const api = create(host, Object.assign({}, view && configured.get(view.id), flow ? { flow: view } : { view }));
         created.push(api);
         api.ready.catch((err) => {
           // Grid query failures keep their retryable loading/error surface and accepted snapshot.
-          if (view.type !== "grid" && !matrix && activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api, view);
+          if (view.type !== "grid" && !matrix && !change && activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api, view);
         });
       } catch (err) {
         showError(host, err, null, view);
@@ -231,7 +232,8 @@
     registerPart,
     // The Content Security Policy nonce for the scripts and stylesheets the runtime inserts (docs/security.md).
     setNonce
-  }, typeof GRID_API === "object" ? GRID_API : {}, typeof FLOW_API === "object" ? FLOW_API : {}, typeof MATRIX_API === "object" ? MATRIX_API : {}));
+  }, typeof GRID_API === "object" ? GRID_API : {}, typeof FLOW_API === "object" ? FLOW_API : {}, typeof MATRIX_API === "object" ? MATRIX_API : {},
+    typeof CHANGES_API === "object" ? CHANGES_API : {}));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it

@@ -401,7 +401,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "b7324bd75b73b9a3",
+      "version": "16ab7faa98c96b46",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -409,6 +409,19 @@
       ],
       "views": [
         "matrix"
+      ]
+    },
+    {
+      "name": "changes",
+      "label": "change views",
+      "version": "2db8e138da4b5658",
+      "script": "canopyx-changes.js",
+      "style": "canopyx-changes.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "changes"
       ]
     },
     {

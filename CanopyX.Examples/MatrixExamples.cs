@@ -24,10 +24,15 @@ internal static class MatrixExamples {
         // Plain N by N matrices for the scroll benchmarks (tests/browser/bench/matrix-benchmark.mjs, matrix-performance.spec.mjs).
         foreach (var size in new[] { 150, 400 }) Bench(size).SaveHtmlPage(Path.Combine(output, "large", "matrix-" + size + ".html"), new CanopyHtmlOptions { Title = "Matrix " + size, Height = "820px" });
 
-        // The static fallback for email, print and Office, as a host would put it in a message body.
-        var page = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Matrix static fallback</title></head><body style=\"font-family:Calibri,Arial,sans-serif;margin:16px\">" +
-            CanopyStaticHtml.RenderMatrix(Services(24)) + "<br>" + CanopyStaticHtml.RenderMatrix(Consistency()) + "</body></html>";
-        File.WriteAllText(Path.Combine(output, "matrix-static.html"), page, new System.Text.UTF8Encoding(false));
+        // The static fallback for email, print and Office, as a host would put it in a message body: tone cells, the servers grouped
+        // by site (heading rows with their counts and totals) and the services grouped by tier (bands), then the long list form.
+        var services = Services(24);
+        services.Columns.GroupBy = "tier";
+        foreach (var (name, theme, background) in new[] { ("matrix-static.html", new CanopyStaticTheme(), "#ffffff"), ("matrix-static-dark.html", CanopyStaticTheme.Dark(), "#16181c") }) {
+            var page = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Matrix static fallback</title></head><body style=\"font-family:Calibri,Arial,sans-serif;margin:16px;background:" + background + "\">" +
+                CanopyStaticHtml.RenderMatrix(services, new CanopyStaticHtmlOptions { Theme = theme }) + "<br>" + CanopyStaticHtml.RenderMatrix(Consistency(), new CanopyStaticHtmlOptions { Theme = theme }) + "</body></html>";
+            File.WriteAllText(Path.Combine(output, name), page, new System.Text.UTF8Encoding(false));
+        }
     }
 
     /// <summary>A plain N by N matrix with random states, about 8% needing attention and 10% without data, for the benchmarks.</summary>
@@ -61,6 +66,7 @@ internal static class MatrixExamples {
         matrix.Rows.Title = "Destination";
         matrix.Columns.Title = "Source";
         matrix.Rows.Noun = "domain controllers";
+        matrix.Rows.GroupCount = "[one]{count} domain controller[other]{count} domain controllers";
         matrix.Rows.Attribute("site", "Site", facet: true).Attribute("domain", "Domain", facet: true);
         matrix.Rows.GroupBy = "site";
         matrix.Rows.SortBy = CanopyMatrix.SortByLabel;
@@ -105,6 +111,7 @@ internal static class MatrixExamples {
             .State("absent", "Not installed", CanopyTone.Muted, CanopyMatrixSymbol.Dash);
         matrix.Rows.Title = "Server";
         matrix.Rows.Noun = "servers";
+        matrix.Rows.GroupCount = "[one]{count} server[other]{count} servers";
         matrix.Rows.Attribute("site", "Site", facet: true).Attribute("role", "Role", facet: true);
         matrix.Rows.GroupBy = "site";
         matrix.Columns.Title = "Service";

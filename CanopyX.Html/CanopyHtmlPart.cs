@@ -171,6 +171,9 @@ public sealed class CanopyHtmlPart {
     /// <summary>Whether a matrix loads this part: a part for matrices (<c>"views": ["matrix"]</c>).</summary>
     internal bool IsNeededBy(CanopyMatrix matrix) => matrix != null && Array.IndexOf(_views, "matrix") >= 0;
 
+    /// <summary>Whether a change view (a diff, a change list or a propagation view) loads this part: the changes part.</summary>
+    internal bool IsNeededByChangeView => Array.IndexOf(_views, "changes") >= 0;
+
     /// <summary>
     /// Whether a grid uses a view feature: pager settings, an editable column, formatting rules or the rule editor, column
     /// groups, cell ranges, grouping or aggregates, detail rows, search highlighting, layout modes, the record panel, live data, a facet panel, or a calendar and its resources. Compact
