@@ -67,12 +67,19 @@ test("a matrix draws its cells with a symbol, a label and its totals", async ({ 
 
 test("a theme switch draws the cells again in the theme's colours", async ({ page }) => {
   await mountMatrix(page, matrixDoc());
-  const light = await cellPixel(page, "Row C", 0);
+  // The same failing state occurs in the first row and later rows. A stale row cache must not leave either in the old theme.
+  const cells = [["Row A", 2], ["Row C", 0]];
+  const light = await Promise.all(cells.map(([row, column]) => cellPixel(page, row, column)));
+  expect(light[0]).toEqual(light[1]);
   await page.locator("#host").evaluate(host => host.setAttribute("data-cx-theme", "dark"));
   await nextFrames(page); await nextFrames(page);
-  const dark = await cellPixel(page, "Row C", 0);
-  expect(dark).not.toEqual(light);
-  expect(dark[3]).toBeGreaterThan(0);
+  for (let index = 0; index < cells.length; index++) {
+    const [row, column] = cells[index];
+    await expect.poll(() => cellPixel(page, row, column)).not.toEqual(light[index]);
+  }
+  const dark = await Promise.all(cells.map(([row, column]) => cellPixel(page, row, column)));
+  expect(dark[0]).toEqual(dark[1]);
+  expect(dark[0][3]).toBeGreaterThan(0);
 });
 
 test("the keyboard moves one tab stop over cells, headers and totals, and Enter opens the details", async ({ page }) => {
