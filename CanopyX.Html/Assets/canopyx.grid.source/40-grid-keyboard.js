@@ -6,7 +6,10 @@
       this.focused = row;
       this.revealGridRow(row, row._ri);
       if (this.render()) { this.revealGridRow(row, row._ri); this.render(); }
-      if (focus) { const element = this.rendered.get(row); if (element) element.focus({ preventScroll: true }); }
+      if (focus) {
+        if (this.grid.style.visibility) { this.fitFocus = document.activeElement; return; }
+        const element = this.rendered.get(row); if (element) element.focus({ preventScroll: true });
+      }
     },
 
     onClick(event) {

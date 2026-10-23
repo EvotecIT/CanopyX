@@ -61,7 +61,8 @@
     fitSpare(columns, spare) {
       // Authored flex weights win; otherwise measured content shares surplus without favouring the identity.
       const flex = columns.filter(column => column.flexWeight);
-      return gridFitGrow(flex.length ? flex : columns.filter(gridTextual), spare, column => column.flexWeight || column.contentNeed || column.need).target;
+      const first = gridFitGrow(flex, spare, column => column.flexWeight);
+      return gridFitGrow(columns.filter(gridTextual), first.spare, column => column.contentNeed || column.need).target || first.target;
     },
     visibleColumns() { return FIT.visibleColumns.call(this).filter(column => !column.fitHidden); },
     newCell(index, width, kind) { return FIT.newCell.call(this, index, kind ? this.cols[index].renderWidth ?? width : width, kind); },
@@ -97,6 +98,7 @@
         queueMicrotask(() => this.destroyed || this.applyWidths());
       }
       FIT.applyWidths.call(this, this.fitWidths(cols, width));
+      if (this.headRow.matches(":hover")) this.syncColumnMenuRoom?.();
       // A column resize can introduce a classic horizontal scrollbar without changing the observed border box.
       this.fitHeight();
     },
@@ -123,16 +125,17 @@
         this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
           parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 12];
         // Monospace identifiers and their secondary text are drawn in their own fonts, so they are measured in them.
-        this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"), gridClassFont(this.grid, "p-pill", this.fitPill = {}));
+        this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"), gridClassFont(this.grid, "p-pill", this.fitPill = {}), gridClassFont(this.grid, "cx-sort-priority"));
         this.fitNumericVariant = gridNumericVariant(this.grid);
         context.font = this.fitFont[0]; this.fitCh = Math.ceil(gridMeasureText(context, "00000000000", this.fitNumericVariant));
       }
-      const [, , headFont, pad, mono, sub, pillFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
+      const [, , headFont, pad, mono, sub, pillFont, priorityFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
       // Reorder glyphs keep their native advance and padding. Column menus overlay the title and cost no fit width.
       const move = this.view.reporting?.columnReorder ? Math.max(32, Math.ceil(text("⋮⋮", headFont, false)) + 8) : 0, target = this.host.clientWidth <= 640 ? 44 : 24;
-      const chrome = 2 * pad + 8 + move +
-        (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? target : 0) + (first && this.selectionControls ? target + 2 : 0);
+      const sort = query?.sort.findIndex(sort => sort.column === column.id) ?? -1;
+      const chrome = 2 * pad + 8 + move + (sort < 0 ? 0 : 22 + (query.sort.length > 1 ? text(sort + 1, priorityFont, false) + 4 : 0)) +
+        (gridColumnFiltered(query, column.id) ? target : 0) + (first && this.selectionControls ? target + 2 : 0);
       const title = text(column.title, headFont, false), head = Math.ceil(Math.max(24, title) + chrome);
       const words = column.title.trim().split(/\s+/);
       let balanced = title;

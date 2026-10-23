@@ -222,12 +222,12 @@ test("a grouped grid keeps each group whole when its cells carry sort keys, and 
   await expect.poll(order).toEqual([...ascending.slice(0, 4).reverse(), ...ascending.slice(4).reverse()]);
   expect(page.errors).toEqual([]);
 });
-// Localized numeric captions keep their full layout width and fade beneath a revealed trailing menu.
+// Localized numeric captions keep their full layout width and remain complete beneath an opaque trailing menu chip.
 const numberHeader = page => page.locator('.cx-hcell[data-cx-column="overall"]').evaluate(cell => {
   const box = element => element.getBoundingClientRect(), own = box(cell), title = box(cell.querySelector(".cx-sort")), menu = box(cell.querySelector(".cx-grid-column-menu"));
   const label = cell.querySelector('.cx-htext');
   return { cellLeft: own.left, cellRight: own.right, titleRight: title.right, menuLeft: menu.left, menuRight: menu.right,
-    fade: getComputedStyle(label).maskImage, clipped: label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 };
+    fade: getComputedStyle(cell.querySelector(".cx-grid-column-menu"),"::before").backgroundImage, clipped: label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 };
 });
 for (const language of ["en", "pl"]) for (const theme of ["light", "dark"]) for (const width of [1440, 390]) {
   test("a numeric caption stays readable with an overlaid menu (" + [language, theme, width].join(", ") + ")", async ({ browser, browserName }) => {

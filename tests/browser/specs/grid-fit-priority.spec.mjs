@@ -32,12 +32,14 @@ for (const width of [1024, 390]) test(`a hidden grid fits its captions before th
   // Resize delivery precedes paint. Read after the runtime's callback, not in the earlier animation-frame phase.
   await page.addInitScript(({ check }) => {
     window.visibleFits = [];
+    // Embedded hosts may observe an ancestor before the hidden grid becomes visible.
+    document.addEventListener('DOMContentLoaded', () => new ResizeObserver(() => {}).observe(document.body));
     const inspect = new Function('grid', 'return (' + check + ')(grid)'), Native = ResizeObserver;
     window.ResizeObserver = class extends Native {
       constructor(callback) {
         super((entries, observer) => {
           callback(entries, observer);
-          for (const { target, contentRect } of entries) if (target.matches('.cx-grid') && contentRect.width && target.checkVisibility())
+          for (const { target, contentRect } of entries) if (target.matches('.cx-grid') && contentRect.width && target.checkVisibility({ visibilityProperty: true }))
             window.visibleFits.push(inspect(target));
         });
       }
@@ -64,7 +66,7 @@ for (const width of [1440, 1280, 1024, 390]) test(`eleven-column probe headers r
     const inspect = new Function('grid', 'return (' + check + ')(grid)');
     function frame() {
       const grid = document.querySelector('[data-cx-ready] .cx-grid[aria-busy="false"]');
-      if (grid) { window.fitFrames++; window.captionFailures.push(...inspect(grid)); }
+      if (grid?.checkVisibility({ visibilityProperty: true })) { window.fitFrames++; window.captionFailures.push(...inspect(grid)); }
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
@@ -121,6 +123,27 @@ test('surplus follows measured content rather than the identifier or column orde
   expect(longGrowth, 'the longer content must receive the larger share of added width').toBeGreaterThan(identityGrowth * 2);
   expect(wide.c0).toBeLessThan(wide.c1);
   expect(wide.count, 'fixed-format numbers must not receive automatic surplus').toBe(narrow.count);
+});
+
+for (const reporting of [false, true]) for (const width of [700, 1200]) test(`capped flex shares remaining width across text columns (${reporting ? 'reporting' : 'ordinary'}, ${width}px)`, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const view = probes();
+  if (reporting) view.reporting = { columnReorder: false };
+  view.columns = [150, 1000, 200].map((maxWidth, i) => ({ id: 'c' + i, title: ['Name', 'Description', 'Note'][i],
+    kind: 'text', priority: 'essential', width: 100, autoSize: 'none', maxWidth, ...(i === 0 ? { rowHeader: true, flex: 1 } : {}) }));
+  view.rows.forEach(row => row.cells = { c0: 'A', c1: 'B', c2: 'C' });
+  const html = viewPage(view).replace('</head>', `<style>body.cx-page>.cx-host{width:${width}px;height:420px}</style></head>`);
+  await page.route('http://canopyx.test/fit-cap', route => route.fulfill({ contentType: 'text/html', body: html }));
+  await page.goto('http://canopyx.test/fit-cap');
+  await page.waitForSelector('[data-cx-ready] .cx-grid[aria-busy="false"]'); await nextFrames(page); await nextFrames(page);
+  const fit = await page.locator('.cx-grid').evaluate(grid => ({ available: grid.clientWidth,
+    widths: [...grid.querySelectorAll('.cx-hcell')].map(cell => cell.getBoundingClientRect().width),
+    row: grid.querySelector('.cx-hrow').getBoundingClientRect().width }));
+  expect(fit.widths[0]).toBe(150);
+  expect(fit.widths[1]).toBeGreaterThan(100);
+  expect(fit.widths[1]).toBeLessThanOrEqual(1000);
+  expect(fit.widths[2]).toBeLessThanOrEqual(200);
+  expect(Math.abs(fit.row - fit.available)).toBeLessThanOrEqual(1);
 });
 
 for (const reporting of [false, true]) test(`fixed context columns scroll instead of collapsing in ${reporting ? 'reporting' : 'ordinary'} grids`, async ({ page }) => {

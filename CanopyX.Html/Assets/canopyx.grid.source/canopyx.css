@@ -41,7 +41,6 @@
 .cx-data-grid.cx-row-accents .cx-row[data-cx-tone] > .cx-cell:first-child::after { content:"";position:absolute;inset:0 auto 0 0;width:var(--cx-size-3px);background:var(--cx-row-tone);pointer-events:none;z-index:4; }
 .cx-data-grid.cx-row-accents .cx-row[data-cx-tone][aria-selected="true"] > .cx-cell:first-child::after { left:var(--cx-size-2px); }
 /* Keep active filter and sort indicators before the caption, clear of the trailing menu overlay. */
-.cx-data-grid .cx-hcell.cx-kind-number > .cx-grid-header-filter { order:-1; }
 .cx-data-grid .cx-hcell > .cx-grid-header-filter { order:-1; }
 .cx-data-grid .cx-grid-pager { flex:none;display:flex;align-items:center;gap:var(--cx-size-12px) var(--cx-size-20px);padding:var(--cx-size-8px) var(--cx-size-12px);border-top:var(--cx-size-1px) solid var(--cx-line);font-size:var(--cx-size-13d5px);color:var(--cx-muted); }
 .cx-data-grid .cx-grid-page-range { font-variant-numeric:tabular-nums; }
@@ -125,12 +124,13 @@
 .cx-data-grid .cx-tag-list { flex:1; min-width:0; overflow:hidden; white-space:nowrap; }
 .cx-data-grid .cx-list-cell .cx-presenter-expand { flex:none; align-self:center; }
 
-.cx-data-grid .cx-grid-column-menu { position:absolute;inset-inline-end:var(--cx-size-4px);top:50%;transform:translateY(-50%);z-index:2;width:var(--cx-size-24px); height:var(--cx-size-24px); min-height:0; padding:0; opacity:var(--cx-menu-opacity,0); border:0; background:transparent; color:var(--cx-muted); }
+.cx-data-grid .cx-grid-column-menu { position:absolute;inset-inline-end:var(--cx-size-4px);top:50%;transform:translateY(-50%);z-index:2;width:var(--cx-size-24px); height:var(--cx-size-24px); min-height:0; padding:0; opacity:var(--cx-menu-opacity,0); border:0; border-radius:var(--cx-size-6px);background:var(--cx-head-bg);color:var(--cx-muted); }
+.cx-data-grid .cx-grid-column-menu::before { content:"";position:absolute;inset-block:0;inset-inline-end:100%;width:12px;background:var(--cx-menu-fade,none);pointer-events:none; }
 @media (hover:hover) {
-  .cx-data-grid :where(.cx-hrow:hover) .cx-hcell:where(:has(> .cx-grid-column-menu)) { --cx-menu-opacity:.4;--cx-menu-fade:var(--cx-menu-gradient); }
-  .cx-data-grid .cx-hrow .cx-hcell:hover { --cx-menu-opacity:1; }
+  .cx-data-grid :where(.cx-hrow:hover) .cx-hcell.cx-menu-room { --cx-menu-opacity:.4; }
+  .cx-data-grid .cx-hrow .cx-hcell:hover { --cx-menu-opacity:1;--cx-menu-fade:var(--cx-menu-gradient); }
 }
-.cx-data-grid .cx-hcell:is(:focus-within,.cx-menu-touched,[data-cx-sort]),.cx-data-grid .cx-hcell:has(> .cx-grid-column-menu[data-cx-filtered="true"]) { --cx-menu-opacity:1;--cx-menu-fade:var(--cx-menu-gradient); }
+.cx-data-grid .cx-hcell:is(:focus-within,.cx-menu-touched) { --cx-menu-opacity:1;--cx-menu-fade:var(--cx-menu-gradient); }
 .cx-data-grid .cx-grid-header-filter { width:var(--cx-size-20px); height:var(--cx-size-24px); min-height:0; padding:0; border:0; background:transparent; color:var(--cx-accent); }
 .cx-grid-header-filter svg { fill:currentColor; }
 .cx-grid-column-menu svg { rotate:90deg; }
@@ -190,11 +190,9 @@
 
 /* Two-line report headers keep content floors without reserving the full single-line caption. */
 .cx-data-grid .cx-hrow { height:auto;min-height:var(--cx-head-h);align-items:stretch; }
-.cx-data-grid .cx-hcell { padding-block:6px;--cx-menu-gradient:linear-gradient(to right,#000 calc(100% - var(--cx-menu-w,24px)),transparent); }
-.cx-data-grid .cx-hcell:dir(rtl) { --cx-menu-gradient:linear-gradient(to left,#000 calc(100% - var(--cx-menu-w,24px)),transparent); }
+.cx-data-grid .cx-hcell { padding-block:6px;--cx-menu-gradient:linear-gradient(to right,transparent,var(--cx-head-bg)); }
+.cx-data-grid .cx-hcell:dir(rtl) { --cx-menu-gradient:linear-gradient(to left,transparent,var(--cx-head-bg)); }
 .cx-data-grid .cx-hcell .cx-htext { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;line-height:1.25;text-wrap:balance;overflow:hidden;max-height:2.5em; }
-.cx-data-grid .cx-hcell:has(> .cx-grid-column-menu) .cx-htext { mask-image:var(--cx-menu-fade,none); }
-.cx-data-grid.cx-phone { --cx-menu-w:44px; }
 .cx-data-grid .cx-htext { flex:1;min-width:0; }
 .cx-data-grid.cx-phone .cx-phone-primary { align-items:flex-start; }
 .cx-data-grid.cx-phone .cx-phone-primary > .cx-content { flex:1; }

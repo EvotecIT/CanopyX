@@ -10,6 +10,15 @@
     return {...query,filters:(query.filters||[]).filter(item=>item.column!==id),filterGroup:project(query.filterGroup)};
   }
   Object.assign(DataGrid.prototype,{
+    syncColumnMenuRoom(){
+      for(const cell of this.headCells){
+        const menu=cell.querySelector(".cx-grid-column-menu"),text=cell.querySelector(".cx-htext");
+        if(!menu||!text)continue;
+        const range=document.createRange();range.selectNodeContents(text);
+        const box=menu.getBoundingClientRect(),caption=range.getBoundingClientRect();
+        cell.classList.toggle("cx-menu-room",cell.matches(":dir(rtl)")?caption.left>=box.right+1:caption.right<=box.left-1);
+      }
+    },
     closeGridPopover(focus=true){
       const open=this.gridPopover;if(!open)return;this.gridPopover=null;open.controller.abort();open.panel.remove();open.anchor?.setAttribute("aria-expanded","false");
       if(focus){const anchor=open.anchor?.isConnected&&open.anchor.checkVisibility()?open.anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(open.columnId||"")+'"]');
@@ -17,6 +26,7 @@
     },
     buildColumnMenus(){
       this.headerMenusLifetime?.abort();this.headerMenusLifetime=new AbortController();const signal=this.headerMenusLifetime.signal;
+      this.headRow.addEventListener("pointerenter",()=>this.syncColumnMenuRoom(),{signal});
       const clearTouch=()=>this.headCells.forEach(cell=>cell.classList.remove("cx-menu-touched"));
       document.addEventListener("pointerdown",clearTouch,{capture:true,signal});
       for(const cell of this.headCells){
@@ -25,8 +35,8 @@
         filter.classList.add("cx-grid-header-filter","icon");menu.classList.add("cx-grid-column-menu","icon");
         filter.dataset.cxFilterColumn=id;menu.dataset.cxColumnMenu=id;filter.setAttribute("aria-label",this.labels.gridHeaderFilter?fill(this.labels.gridHeaderFilter,{column:column.title}):column.title+": "+this.labels.gridFilterColumn);
         menu.setAttribute("aria-label",fill(this.labels.gridColumnMenu,{column:column.title}));menu.setAttribute("aria-haspopup","menu");menu.setAttribute("aria-expanded","false");
-        filter.dataset.cxFiltered=String(gridColumnFiltered(this.acceptedQuery,id));filter.hidden=filter.dataset.cxFiltered!=="true";
-        menu.dataset.cxFiltered=filter.dataset.cxFiltered;
+        filter.hidden=!gridColumnFiltered(this.acceptedQuery,id);
+        filter.dataset.cxFiltered=String(!filter.hidden);
         menu.addEventListener("keydown",event=>{if(event.key==="ArrowDown"){event.preventDefault();this.openColumnMenu(id,menu);}},{signal});
         cell.insertBefore(filter,cell.querySelector(".cx-resize"));if(this.tools.columnMenus!==false)cell.insertBefore(menu,cell.querySelector(".cx-resize"));
         if(this.tools.columnMenus!==false){

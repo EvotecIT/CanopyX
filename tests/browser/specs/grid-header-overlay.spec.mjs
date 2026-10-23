@@ -24,10 +24,12 @@ const button = (page, id = "c1") => header(page, id).locator('.cx-grid-column-me
 const geometry = page => page.locator('.cx-grid').evaluate(grid => ({ width: grid.clientWidth, scroll: grid.scrollWidth,
   columns: [...grid.querySelectorAll('.cx-hcell')].map(cell => cell.getBoundingClientRect().width) }));
 
-test('header-row hover reveals every menu faintly without changing the twelve-column fit', async ({ page }) => {
+test('row hover reveals menus only beside complete captions and own hover uses an opaque chip', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const definition = makeView();
+  Object.assign(definition.columns[1], { title: 'Latency', kind: 'number', width: 80, maxWidth: 80, autoSize: 'none' });
   definition.rows.forEach(row => Object.keys(row.cells).forEach(id => row.cells[id] = '1'));
+  definition.rows.forEach(row => row.cells.c1 = 12);
   definition.toolbar.columnMenus = false;
   await open(page, { definition }); const baseline = await geometry(page);
   definition.toolbar.columnMenus = true;
@@ -37,15 +39,19 @@ test('header-row hover reveals every menu faintly without changing the twelve-co
   expect(baseline.scroll).toBeLessThanOrEqual(baseline.width);
   await header(page, 'c0').hover();
   await expect(button(page, 'c0')).toHaveCSS('opacity', '1');
-  await expect(button(page, 'c1')).toHaveCSS('opacity', '0.4');
-  await expect(button(page, 'c11')).toHaveCSS('opacity', '0.4');
-  const span = await header(page, 'c0').locator('.cx-htext').boundingBox();
-  expect(span.width, 'the fade belongs to the header edge, not the intrinsic caption width').toBeGreaterThan(baseline.columns[0] - 25);
-  expect(await header(page, 'c1').locator('.cx-htext').evaluate(text => getComputedStyle(text).maskImage)).toContain('linear-gradient');
+  const revealed = await page.locator('.cx-hcell').evaluateAll(cells => cells.slice(1).map(cell => {
+    const menu=cell.querySelector('.cx-grid-column-menu'), box=menu.getBoundingClientRect(), range=document.createRange();
+    range.selectNodeContents(cell.querySelector('.cx-htext'));
+    return { opacity:getComputedStyle(menu).opacity, overlap:[...range.getClientRects()].some(rect=>rect.right>box.left-1) };
+  }));
+  expect(revealed.some(item=>item.overlap), 'the fixture includes narrow captions').toBe(true);
+  for(const item of revealed) expect(item.opacity).toBe(item.overlap ? '0' : '0.4');
+  await expect(button(page,'c0')).toHaveCSS('background-color', await header(page,'c0').evaluate(cell=>getComputedStyle(cell).backgroundColor));
+  expect(await button(page,'c0').evaluate(el=>getComputedStyle(el,'::before').backgroundImage)).toContain('linear-gradient');
+  expect(await header(page,'c1').locator('.cx-htext').evaluate(el=>getComputedStyle(el).maskImage)).toBe('none');
   expect(await geometry(page)).toEqual(baseline);
   await page.mouse.move(0, 0);
-  await expect(button(page, 'c1')).toHaveCSS('opacity', '0');
-  await expect(header(page, 'c1').locator('.cx-htext')).toHaveCSS('mask-image', 'none');
+  await expect(button(page,'c1')).toHaveCSS('opacity','0');
 });
 
 test('touch long-press opens actions without sorting and a moved press stays a scroll gesture', async ({ browser, browserName }) => {
@@ -99,33 +105,27 @@ test('touch long-press opens actions without sorting and a moved press stays a s
   } finally { await context.close(); }
 });
 
-test('active numeric headers keep indicators and a trailing menu visible without reserving caption width', async ({ page }) => {
-  const definition = makeView();
-  Object.assign(definition.columns[1], { title: 'Size', kind: 'number' });
-  definition.rows.forEach(row => row.cells.c1 = 4999);
-  await open(page, { definition });
-  for (const query of [{ sort: [{ column: 'c1', direction: 'asc' }] },
-    { filters: [{ column: 'c1', operator: 'eq', values: [4999] }] },
-    { sort: [{ column: 'c1', direction: 'asc' }, { column: 'c2', direction: 'desc' }], filters: [{ column: 'c1', operator: 'eq', values: [4999] }] }]) {
-    await page.evaluate(query => document.querySelector('[data-canopyx-host]').canopyx.setQuery(query), query);
-    await expect(button(page)).toHaveCSS('opacity', '1');
-    const layout = await header(page).evaluate(cell => {
-      const menu = cell.querySelector('.cx-grid-column-menu').getBoundingClientRect();
-      const text = cell.querySelector('.cx-htext'), style = getComputedStyle(cell);
-      const filter = cell.querySelector('.cx-grid-header-filter');
-      const priority = cell.querySelector('.cx-sort-priority');
-      return { edge: cell.getBoundingClientRect().right - menu.right, padding: style.paddingInlineEnd,
-        fade: getComputedStyle(text).maskImage, clipped: text.scrollWidth > text.clientWidth + 1,
-        filterClear: filter.hidden || filter.getBoundingClientRect().right <= menu.left,
-        sort: getComputedStyle(cell.querySelector('.cx-sort'), '::after').content,
-        sortOrder: getComputedStyle(cell.querySelector('.cx-sort'), '::after').order,
-        priorityClear: !priority || priority.getBoundingClientRect().right <= menu.left };
-    });
-    expect(layout.edge).toBeLessThanOrEqual(5); expect(layout.edge).toBeGreaterThanOrEqual(4);
-    expect(layout.padding).toBe('8px'); expect(layout.fade).toContain('linear-gradient');
-    expect(layout.clipped).toBe(false); expect(layout.filterClear).toBe(true);
-    expect(layout.priorityClear, 'multi-sort priority must remain clear of the trailing menu').toBe(true);
-    if (query.sort) { expect(layout.sort).toContain('↑'); expect(layout.sortOrder).toBe('-2'); }
+test('sorted and filtered narrow headers reserve state width and keep complete captions without idle menus', async ({ page }) => {
+  const definition=makeView();
+  definition.columns.forEach((column,index)=>Object.assign(column,{title:index===1?'Latency':'Port '+index,kind:'number'}));
+  definition.rows.forEach(row=>Object.keys(row.cells).forEach(id=>row.cells[id]=4999));
+  await open(page,{definition});
+  for(const query of [{sort:[{column:'c1',direction:'asc'}]},
+    {filters:[{column:'c1',operator:'eq',values:[4999]}]},
+    {sort:definition.columns.map(column=>({column:column.id,direction:'asc'})),filters:[{column:'c1',operator:'eq',values:[4999]}]}]){
+    await page.evaluate(query=>document.querySelector('[data-canopyx-host]').canopyx.setQuery(query),query);
+    await page.locator('.cx-grid').focus(); await page.mouse.move(0,0);
+    await expect(button(page)).toHaveCSS('opacity','0');
+    const states=await page.locator('.cx-hcell').evaluateAll(cells=>cells.map(cell=>{
+      const text=cell.querySelector('.cx-htext'),box=text.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(text);
+      const filter=cell.querySelector('.cx-grid-header-filter'),priority=cell.querySelector('.cx-sort-priority');
+      return {clipped:[...range.getClientRects()].some(rect=>rect.left<box.left-.6||rect.right>box.right+.6||rect.bottom>box.bottom+.6),
+        filterClear:filter.hidden||filter.getBoundingClientRect().right<=box.left,
+        priorityClear:!priority||priority.getBoundingClientRect().right<=box.left};
+    }));
+    for(const state of states){expect(state.clipped).toBe(false);expect(state.filterClear).toBe(true);expect(state.priorityClear).toBe(true);}
+    await header(page).hover();await expect(button(page)).toHaveCSS('opacity','1');
+    expect(await button(page).evaluate(el=>getComputedStyle(el).backgroundColor)).not.toMatch(/transparent|rgba\([^)]*, 0\)/);
   }
 });
 
@@ -146,10 +146,10 @@ test('twelve columns fit at 1440 and overlaid menus stay accessible without addi
   await page.keyboard.press('Enter');
   await expect(header(page)).toHaveAttribute('aria-sort', 'ascending');
   await page.locator('.cx-grid').focus();
-  await expect(button(page)).toHaveCSS('opacity', '1');
+  await expect(button(page)).toHaveCSS('opacity', '0');
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setQuery({ filters: [{ column: 'c2', operator: 'eq', values: ['123456789'] }] }));
-  await expect(button(page, 'c2')).toHaveAttribute('data-cx-filtered', 'true');
-  await expect(button(page, 'c2')).toHaveCSS('opacity', '1');
+  await expect(header(page, 'c2').locator('.cx-grid-header-filter')).toBeVisible();
+  await expect(button(page, 'c2')).toHaveCSS('opacity', '0');
 });
 
 test('header context and keyboard menus and the Columns panel reach the same column actions', async ({ page }) => {

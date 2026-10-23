@@ -56,11 +56,14 @@
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal });
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();
-      // Newly visible grids fit before their first paint; ordinary resize writes stay outside observer delivery.
+      // Keep the first visible paint fitted without changing observed ancestors during resize delivery.
+      grid.style.visibility = "hidden";
+      let resizeFrame;
+      signal.addEventListener("abort", () => cancelAnimationFrame(resizeFrame), { once: true });
       this.resizeObserver = new ResizeObserver(entries => {
         const size = entries.find(entry => entry.target === grid);
-        const appearing = size?.contentRect.width && !this.fitContentWidth;
         if (size) this.fitContentWidth = size.contentRect.width;
+        if (size && !size.contentRect.width) grid.style.visibility = "hidden";
         const resize = () => {
           if (this.destroyed) return;
           if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
@@ -75,18 +78,16 @@
           if (this.hiddenScrollTop !== undefined) {
             const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
           }
-          this.scheduleRender();
-        };
-        if (appearing) {
-          // Pause observation while the first visible fit changes ancestor heights, then resume normal resize delivery.
-          this.resizeObserver.disconnect();
-          try { resize(); } finally {
-            requestAnimationFrame(() => {
-              if (this.destroyed) return;
-              this.resizeObserver.observe(grid); this.resizeObserver.observe(this.head);
-            });
+          if (grid.style.visibility) {
+            this.render(); grid.style.visibility = "";
+            // Replay an explicit request only while focus still belongs to the requesting control.
+            if (this.fitFocus && this.fitFocus === document.activeElement) this.setFocus(this.focused, true);
+            this.fitFocus = null;
           }
-        } else requestAnimationFrame(resize);
+          else this.scheduleRender();
+        };
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = requestAnimationFrame(resize);
       });
       this.resizeObserver.observe(grid);
       this.resizeObserver.observe(this.head);
