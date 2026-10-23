@@ -129,9 +129,9 @@
       }
       const [, , headFont, pad, mono, sub, pillFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
-      // The title keeps its 24 px target. Reorder glyphs may use a wider fallback font, so include their native advance and padding.
+      // Reorder glyphs keep their native advance and padding. Column menus overlay the title and cost no fit width.
       const move = this.view.reporting?.columnReorder ? Math.max(32, Math.ceil(text("⋮⋮", headFont, false)) + 8) : 0, target = this.host.clientWidth <= 640 ? 44 : 24;
-      const chrome = 2 * pad + 8 + (this.tools.columnMenus === false ? 0 : target) + move +
+      const chrome = 2 * pad + 8 + move +
         (query?.sort.some(sort => sort.column === column.id) ? 22 : 0) + (gridColumnFiltered(query, column.id) ? target : 0) + (first && this.selectionControls ? target + 2 : 0);
       const title = text(column.title, headFont, false), head = Math.ceil(Math.max(24, title) + chrome);
       const words = column.title.trim().split(/\s+/);
@@ -139,7 +139,7 @@
       for (let split = 1; split < words.length; split++) balanced = Math.min(balanced,
         Math.max(text(words.slice(0, split).join(" "), headFont, false), text(words.slice(split).join(" "), headFont, false)));
       column.headWrapNeed = Math.ceil(Math.max(24, balanced) + chrome);
-      // An overlaid menu is counted once in the caption minimum, never added to measured body content.
+      // Neither the caption nor body measurements reserve space for the overlaid menu.
       let values = 0, sampled = 0;
       // Presenter-aware estimates of rendered values, without touching the DOM.
       // Wrapping and complete-text columns keep a declared width: they show more lines or a "show more" control instead.

@@ -40,7 +40,12 @@ test("Graphite rows are unstriped by default and preserve explicit zebra styling
 test("numeric headers align their control group and selected pinned cells remain opaque",async({page})=>{
   await page.setViewportSize({width:650,height:900});await mount(page,{...base,rowAccents:true,columns:[{...base.columns[0],fixed:true},{id:'amount',title:'Amount',kind:'number',width:180,fixed:true,sortable:true},{id:'note',title:'Note',kind:'text',width:600,fixed:true}],rows:[{id:'r1',tone:'warning',cells:{name:'First record',amount:20,note:'Wide scrolling content'}}]});
   const header=page.locator('.cx-hcell[data-cx-column="amount"]');
-  expect(await header.evaluate(cell=>cell.querySelector('.cx-sort').getBoundingClientRect().left-cell.getBoundingClientRect().left)).toBeGreaterThan(40);
+  const edges=await header.evaluate(cell=>{
+    const right=element=>{const range=document.createRange();range.selectNodeContents(element);return range.getBoundingClientRect().right;};
+    const value=document.querySelector('.cx-row[data-cx-id="r1"] .cx-cell:nth-child(2)');
+    return{caption:right(cell.querySelector('.cx-htext')),value:right(value.querySelector('.cx-text')||value)};
+  });
+  expect(Math.abs(edges.caption-edges.value),'the numeric caption stays aligned with its values while the button fills the header').toBeLessThanOrEqual(1);
   await page.evaluate(()=>{grid.setColumnPinned('name','left');grid.setSelection(['r1']);});
   const row=page.locator('.cx-row[data-cx-id="r1"]');await expect(row).toHaveAttribute('aria-selected','true');await row.hover();
   const paint=await row.evaluate(element=>{const style=getComputedStyle(element.querySelector('[data-cx-pin]'));return{base:style.backgroundColor,overlay:style.backgroundImage,selected:getComputedStyle(element).backgroundColor};});

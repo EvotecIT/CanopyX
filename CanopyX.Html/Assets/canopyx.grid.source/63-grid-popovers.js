@@ -30,10 +30,27 @@
         menu.addEventListener("keydown",event=>{if(event.key==="ArrowDown"){event.preventDefault();this.openColumnMenu(id,menu);}},{signal});
         cell.insertBefore(filter,cell.querySelector(".cx-resize"));if(this.tools.columnMenus!==false)cell.insertBefore(menu,cell.querySelector(".cx-resize"));
         if(this.tools.columnMenus!==false){
-          const open=event=>{event.preventDefault();event.stopPropagation();this.openColumnMenu(id,menu);};
-          cell.addEventListener("pointerdown",event=>{if(event.pointerType==="touch")cell.classList.add("cx-menu-touched");},{signal});
+          let press,timer,held=false;
+          const cancel=()=>{global.clearTimeout(timer);press=null;};
+          document.addEventListener("pointerdown",cancel,{capture:true,signal});
+          const open=event=>{event.preventDefault();event.stopPropagation();if(press)held=true;cancel();if(this.gridPopover?.columnId!==id||!this.gridPopover.panel.classList.contains("cx-column-menu"))this.openColumnMenu(id,menu);};
+          cell.addEventListener("pointerdown",event=>{
+            cancel();held=false;
+            if(event.pointerType!=="touch")return;
+            cell.classList.add("cx-menu-touched");
+            if(!event.isPrimary||event.button||event.target.closest(".cx-resize,.cx-grid-column-menu,.cx-grid-header-filter,.cx-column-move"))return;
+            press={id:event.pointerId,x:event.clientX,y:event.clientY};
+            timer=global.setTimeout(()=>{press=null;held=true;this.openColumnMenu(id,menu);},550);
+          },{signal});
+          global.addEventListener("pointermove",event=>{if(press?.id===event.pointerId&&Math.hypot(event.clientX-press.x,event.clientY-press.y)>8)cancel();},{signal});
+          for(const type of ["pointerup","pointercancel"])global.addEventListener(type,event=>{if(press?.id===event.pointerId)cancel();},{signal});
+          global.addEventListener("scroll",cancel,{capture:true,signal});
+          // A touch release sends a compatibility mousedown: its default focus would close the just-opened menu.
+          cell.addEventListener("mousedown",event=>{if(held)event.preventDefault();},{signal});
+          cell.addEventListener("click",event=>{if(held){held=false;event.preventDefault();event.stopImmediatePropagation();}},{capture:true,signal});
+          signal.addEventListener("abort",cancel,{once:true});
           cell.addEventListener("contextmenu",open,{signal});
-          cell.addEventListener("keydown",event=>{if(event.key==="ContextMenu"||event.shiftKey&&event.key==="F10")open(event);},{signal});
+          cell.addEventListener("keydown",event=>{held=false;cancel();if(event.key==="ContextMenu"||event.shiftKey&&event.key==="F10")open(event);},{signal});
         }
       }
       if(this.gridPopover)this.gridPopover.position();

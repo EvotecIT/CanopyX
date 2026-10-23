@@ -1,4 +1,4 @@
-// Follow-ups from real report data: header room only for drawn column menus, column tooltips on truncated cells, and the
+// Follow-ups from real report data: column menus without reserved header room, column tooltips on truncated cells, and the
 // flat grid's sizing model on wide trees (content fit, flex, priority hiding and pins on both edges), cell sort keys, and part
 // stylesheets that leave the other components on a page alone.
 import { test, expect } from "@playwright/test";
@@ -19,7 +19,7 @@ const grid = patch => ({ protocol: "canopyx/2", type: "grid", id: "followups", l
   columns: [{ id: "name", title: "Name", kind: "text" }, { id: "review", title: "Review state of the benchmark", kind: "text" }, { id: "site", title: "Site", kind: "text" }],
   rows: Array.from({ length: 4 }, (_, i) => ({ id: "h" + i, cells: { name: "host-" + i, review: "Ok", site: "Site " + i } })), ...patch });
 
-test("column fitting keeps header room for a column menu only where one is drawn", async ({ page }) => {
+test("overlaid column menus cost no measured header width", async ({ page }) => {
   // The header need auto-fit measures: the title, padding and controls (spare width goes elsewhere, so not the width on screen).
   const width = () => page.locator("[data-canopyx-host]").evaluate(host => host.canopyx.autoFitColumn("review").head);
   await open(page, grid());
@@ -29,7 +29,7 @@ test("column fitting keeps header room for a column menu only where one is drawn
   await open(page, grid({ toolbar: { columnMenus: false } }));
   await expect(page.locator(".cx-grid-column-menu")).toHaveCount(0);
   const without = await width();
-  expect(withMenus - without).toBeGreaterThanOrEqual(20);
+  expect(withMenus).toBe(without);
   // The header title still shows in full without the menu's room.
   expect(await page.locator('.cx-hcell[data-cx-column="review"] .cx-htext, .cx-hcell[data-cx-column="review"] .cx-sort').first().evaluate(item => item.scrollWidth <= item.clientWidth + 1)).toBe(true);
   expect(page.errors).toEqual([]);
@@ -222,14 +222,12 @@ test("a grouped grid keeps each group whole when its cells carry sort keys, and 
   await expect.poll(order).toEqual([...ascending.slice(0, 4).reverse(), ...ascending.slice(4).reverse()]);
   expect(page.errors).toEqual([]);
 });
-// Localized numeric captions stay complete beside an overlaid menu, including touch-capable desktop browsers.
+// Localized numeric captions keep their full layout width and fade beneath a revealed trailing menu.
 const numberHeader = page => page.locator('.cx-hcell[data-cx-column="overall"]').evaluate(cell => {
   const box = element => element.getBoundingClientRect(), own = box(cell), title = box(cell.querySelector(".cx-sort")), menu = box(cell.querySelector(".cx-grid-column-menu"));
-  const label = cell.querySelector('.cx-htext'), range = document.createRange(); range.selectNodeContents(label);
-  const overlap = [...range.getClientRects()].reduce((area, text) => area + Math.max(0, Math.min(menu.right, text.right) - Math.max(menu.left, text.left)) *
-    Math.max(0, Math.min(menu.bottom, text.bottom) - Math.max(menu.top, text.top)), 0);
+  const label = cell.querySelector('.cx-htext');
   return { cellLeft: own.left, cellRight: own.right, titleRight: title.right, menuLeft: menu.left, menuRight: menu.right,
-    overlap, clipped: label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 };
+    fade: getComputedStyle(label).maskImage, clipped: label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 };
 });
 for (const language of ["en", "pl"]) for (const theme of ["light", "dark"]) for (const width of [1440, 390]) {
   test("a numeric caption stays readable with an overlaid menu (" + [language, theme, width].join(", ") + ")", async ({ browser, browserName }) => {
@@ -247,7 +245,8 @@ for (const language of ["en", "pl"]) for (const theme of ["light", "dark"]) for 
         await menu.focus(); await expect(menu).toHaveCSS('opacity', '1'); await expect(menu).toHaveCSS('position', 'absolute');
         if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, "number-header-" + [language, theme, width].join("-") + (touch ? "-touch" : "") + ".png") });
         const header = await numberHeader(page);
-        expect(header.clipped).toBe(false); expect(header.overlap).toBe(0);
+        expect(header.clipped).toBe(false); expect(header.fade).toContain('linear-gradient');
+        expect(header.cellRight - header.menuRight).toBeLessThanOrEqual(5);
         expect(header.menuLeft).toBeGreaterThanOrEqual(header.cellLeft); expect(header.menuRight).toBeLessThanOrEqual(header.cellRight);
         if (width === 1440 && !coarse) {
           // The caption remains aligned with the numbers while its menu is open.
