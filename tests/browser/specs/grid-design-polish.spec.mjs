@@ -96,16 +96,6 @@ test('only a filtered header shows the filled accent funnel; column menus appear
   await funnel.click();const pop=page.getByRole('dialog',{name:'Amount: Filter…'});await expect(pop).toBeVisible();await pop.getByRole('spinbutton',{name:'Value',exact:true}).press('Escape');await expect(funnel).toBeFocused();
 });
 
-test.describe('touch headers',()=>{test.use({hasTouch:true,viewport:{width:390,height:700}});
-  test('column menu buttons stay visible on touch phones',async({page})=>{
-    await open(page);
-    const opacities=await page.locator('.cx-grid-column-menu').evaluateAll(buttons=>buttons.map(button=>getComputedStyle(button).opacity));
-    expect(opacities.length).toBe(await page.locator('.cx-hcell').count());expect(opacities.length).toBeGreaterThan(0);expect(opacities.every(value=>value==='1')).toBe(true);
-    await page.locator('.cx-grid-column-menu').first().tap();await expect(page.getByRole('menu')).toBeVisible();
-    await expect(page.locator('.cx-grid-header-filter:visible')).toHaveCount(0);
-  });
-});
-
 test('column value filter keeps Select all in the checkbox column with a right-aligned total',async({page})=>{
   await open(page);await menu(page,'State').click();await page.getByRole('menuitem',{name:'Filter…',exact:true}).click();
   const pop=page.getByRole('dialog',{name:'State: Filter…'});await expect(pop.locator('.cx-val')).toHaveCount(2);

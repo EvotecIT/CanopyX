@@ -56,11 +56,12 @@
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal });
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();
-      // Layout writes run outside observer delivery, avoiding a resize loop when chrome wraps.
+      // Newly visible grids fit before their first paint; ordinary resize writes stay outside observer delivery.
       this.resizeObserver = new ResizeObserver(entries => {
         const size = entries.find(entry => entry.target === grid);
+        const appearing = size?.contentRect.width && !this.fitContentWidth;
         if (size) this.fitContentWidth = size.contentRect.width;
-        requestAnimationFrame(() => {
+        const resize = () => {
           if (this.destroyed) return;
           if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
           style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
@@ -75,7 +76,17 @@
             const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
           }
           this.scheduleRender();
-        });
+        };
+        if (appearing) {
+          // Pause observation while the first visible fit changes ancestor heights, then resume normal resize delivery.
+          this.resizeObserver.disconnect();
+          try { resize(); } finally {
+            requestAnimationFrame(() => {
+              if (this.destroyed) return;
+              this.resizeObserver.observe(grid); this.resizeObserver.observe(this.head);
+            });
+          }
+        } else requestAnimationFrame(resize);
       });
       this.resizeObserver.observe(grid);
       this.resizeObserver.observe(this.head);

@@ -15,6 +15,8 @@ export function budgetView(extra = {}, rowCount = 40) {
   const columns = [{ id: "line", title: "Budget line", kind: "text", sortable: true, rowHeader: true }, { id: "team", title: "Team", kind: "text", sortable: true },
     ...MONTHS.map(id => ({ id, title: id[0].toUpperCase() + id.slice(1), kind: "number", sortable: true })),
     { id: "total", title: "Total", kind: "number", sortable: true }, { id: "reviewed", title: "Reviewed", kind: "datetime" }];
+  // Every budget field participates in group/range operations; keep them on desktop before scrolling.
+  columns.forEach(column => column.priority = 'essential');
   const quarter = index => ({ id: "q" + (index + 1), title: "Q" + (index + 1), columns: MONTHS.slice(index * 3, index * 3 + 3) });
   const rows = Array.from({ length: rowCount }, (_, r) => {
     const cells = { line: "Line " + String(r).padStart(3, "0"), team: ["Platform", "Product", "Sales"][r % 3] };

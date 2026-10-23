@@ -43,15 +43,16 @@ for (const overflow of [false, true]) for (const width of [1440, 1280, 1024, 390
       const signature = () => JSON.stringify([grid.clientWidth, grid.clientHeight, grid.scrollWidth, grid.scrollHeight,
         grid.parentElement.getBoundingClientRect().height, [...grid.querySelectorAll(".cx-hcell")].map(cell => cell.getBoundingClientRect().width)]);
       let previous = signature(), changes = 0, frames = 0, resizePasses;
-      const start = performance.now(), until = start + 4000;
+      let start;
       function measure() {
+        start ??= performance.now();
         const next = signature();
         if (performance.now() >= start + 1000) {
           resizePasses ??= window.gridResizePasses;
           frames++; if (next !== previous) changes++;
         }
         previous = next;
-        if (performance.now() < until) requestAnimationFrame(measure);
+        if (performance.now() < start + 4000 || frames < 10) requestAnimationFrame(measure);
         else resolve({ changes, frames, resizePasses: window.gridResizePasses - resizePasses, clientWidth: grid.clientWidth, scrollWidth: grid.scrollWidth,
           columnsRight: grid.querySelector('.cx-hrow').getBoundingClientRect().right, viewportRight: grid.getBoundingClientRect().right,
           filled: parseFloat(getComputedStyle(grid.querySelector('.cx-hrow')).width), available: window.gridContentWidth,

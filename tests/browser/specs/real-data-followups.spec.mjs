@@ -222,13 +222,17 @@ test("a grouped grid keeps each group whole when its cells carry sort keys, and 
   await expect.poll(order).toEqual([...ascending.slice(0, 4).reverse(), ...ascending.slice(4).reverse()]);
   expect(page.errors).toEqual([]);
 });
-// Where the column menu always shows, a number column's header reads as one cell: the title over the numbers, then the menu.
+// Localized numeric captions stay complete beside an overlaid menu, including touch-capable desktop browsers.
 const numberHeader = page => page.locator('.cx-hcell[data-cx-column="overall"]').evaluate(cell => {
   const box = element => element.getBoundingClientRect(), own = box(cell), title = box(cell.querySelector(".cx-sort")), menu = box(cell.querySelector(".cx-grid-column-menu"));
-  return { cellLeft: own.left, cellRight: own.right, titleLeft: title.left, titleRight: title.right, menuLeft: menu.left, menuRight: menu.right };
+  const label = cell.querySelector('.cx-htext'), range = document.createRange(); range.selectNodeContents(label);
+  const overlap = [...range.getClientRects()].reduce((area, text) => area + Math.max(0, Math.min(menu.right, text.right) - Math.max(menu.left, text.left)) *
+    Math.max(0, Math.min(menu.bottom, text.bottom) - Math.max(menu.top, text.top)), 0);
+  return { cellLeft: own.left, cellRight: own.right, titleRight: title.right, menuLeft: menu.left, menuRight: menu.right,
+    overlap, clipped: label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 };
 });
 for (const language of ["en", "pl"]) for (const theme of ["light", "dark"]) for (const width of [1440, 390]) {
-  test("a number column's header keeps its menu beside its title where the menu always shows (" + [language, theme, width].join(", ") + ")", async ({ browser, browserName }) => {
+  test("a numeric caption stays readable with an overlaid menu (" + [language, theme, width].join(", ") + ")", async ({ browser, browserName }) => {
     // hasTouch makes any-pointer:coarse match in Chromium; the touch layout is checked there.
     for (const touch of width === 1440 && browserName === "chromium" ? [false, true] : [false]) {
       const context = await browser.newContext({ viewport: { width, height: 700 }, hasTouch: touch, colorScheme: theme });
@@ -239,15 +243,14 @@ for (const language of ["en", "pl"]) for (const theme of ["light", "dark"]) for 
         await nextFrames(page);
         const coarse = await page.evaluate(() => matchMedia("(any-pointer:coarse)").matches);
         if (touch) expect(coarse).toBe(true);
+        const menu = page.locator('.cx-hcell[data-cx-column="overall"] .cx-grid-column-menu');
+        await menu.focus(); await expect(menu).toHaveCSS('opacity', '1'); await expect(menu).toHaveCSS('position', 'absolute');
         if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, "number-header-" + [language, theme, width].join("-") + (touch ? "-touch" : "") + ".png") });
         const header = await numberHeader(page);
-        if (width === 390 || coarse) {
-          // The menu follows the title closely, and both sit at the right of the cell, over the numbers.
-          expect(header.menuLeft).toBeGreaterThanOrEqual(header.titleRight - 1);
-          expect(header.menuLeft - header.titleRight).toBeLessThanOrEqual(8);
-          expect(header.cellRight - header.menuRight).toBeLessThanOrEqual(16);
-        } else {
-          // With a fine pointer the menu shows on hover only, and the title stays flush with the numbers.
+        expect(header.clipped).toBe(false); expect(header.overlap).toBe(0);
+        expect(header.menuLeft).toBeGreaterThanOrEqual(header.cellLeft); expect(header.menuRight).toBeLessThanOrEqual(header.cellRight);
+        if (width === 1440 && !coarse) {
+          // The caption remains aligned with the numbers while its menu is open.
           const value = await page.locator('.cx-row[data-cx-id="team-0"] .cx-cell').nth(2).evaluate(cell => {
             const range = document.createRange(); range.selectNodeContents(cell); return range.getBoundingClientRect().right;
           });

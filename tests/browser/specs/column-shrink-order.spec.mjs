@@ -11,7 +11,8 @@ const columns = [
 const cells = i => ({ created: "2026-01-0" + (i % 9 + 1) + "T09:00:00Z", modified: "2026-02-1" + (i % 9) + "T17:30:00Z", owner: i % 2 ? "Operations team" : "Finance team",
   status: i % 3 ? "Published" : "In review", path: "/library/operations/policies/review-" + i + "/the-final-approved-version.docx", description: description + " " + i });
 const grid = { protocol: "canopyx/2", type: "grid", id: "shrink", label: "Documents", pageSize: 50, selection: "single", search: false, source: { kind: "inline" },
-  columns: [{ id: "name", title: "Name", kind: "text" }, ...columns], rows: Array.from({ length: 12 }, (_, i) => ({ id: "r" + i, cells: { name: "Document " + i, ...cells(i) } })) };
+  columns: [{ id: "name", title: "Name", kind: "text" }, ...columns].map(column => ({ ...column, priority: 'essential' })),
+  rows: Array.from({ length: 12 }, (_, i) => ({ id: "r" + i, cells: { name: "Document " + i, ...cells(i) } })) };
 const tree = { protocol: "canopyx/2", type: "view", id: "shrink", label: "Documents", pageSize: 50, selection: "single", source: { kind: "inline" },
   columns: [{ id: "name", title: "Name" }, ...columns],
   roots: Array.from({ length: 12 }, (_, i) => ({ id: "r" + i, label: "Document " + i, cells: cells(i) })) };
@@ -56,6 +57,7 @@ for (const font of ["system", "bundled Inter"]) for (const [name, view] of [["fl
       expect(advances.variant).toContain("tabular-nums");
       expect(advances.tabular).toBeGreaterThan(advances.proportional + 1);
     }
+    await page.locator('.cx-row[data-cx-id]').first().waitFor();
     await expect.poll(async () => (await columnFit(page)).description?.width ?? 0).toBeGreaterThan(0);
     const fit = await columnFit(page);
     // The columns do not fit whole: the long text is cut, and it is still wider than its minimum.

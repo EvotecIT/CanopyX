@@ -38,12 +38,13 @@ test("Graphite rows are unstriped by default and preserve explicit zebra styling
 });
 
 test("numeric headers align their control group and selected pinned cells remain opaque",async({page})=>{
-  await page.setViewportSize({width:650,height:900});await mount(page,{...base,rowAccents:true,columns:[{...base.columns[0],fixed:true},{id:'amount',title:'Amount',kind:'number',width:180,fixed:true,sortable:true},{id:'note',title:'Note',kind:'text',width:600}],rows:[{id:'r1',tone:'warning',cells:{name:'First record',amount:20,note:'Wide scrolling content'}}]});
+  await page.setViewportSize({width:650,height:900});await mount(page,{...base,rowAccents:true,columns:[{...base.columns[0],fixed:true},{id:'amount',title:'Amount',kind:'number',width:180,fixed:true,sortable:true},{id:'note',title:'Note',kind:'text',width:600,fixed:true}],rows:[{id:'r1',tone:'warning',cells:{name:'First record',amount:20,note:'Wide scrolling content'}}]});
   const header=page.locator('.cx-hcell[data-cx-column="amount"]');
   expect(await header.evaluate(cell=>cell.querySelector('.cx-sort').getBoundingClientRect().left-cell.getBoundingClientRect().left)).toBeGreaterThan(40);
   await page.evaluate(()=>{grid.setColumnPinned('name','left');grid.setSelection(['r1']);});
   const row=page.locator('.cx-row[data-cx-id="r1"]');await expect(row).toHaveAttribute('aria-selected','true');await row.hover();
-  expect(await row.evaluate(element=>getComputedStyle(element.querySelector('[data-cx-pin]')).backgroundColor)).toBe(await row.evaluate(element=>getComputedStyle(element).backgroundColor));
+  const paint=await row.evaluate(element=>{const style=getComputedStyle(element.querySelector('[data-cx-pin]'));return{base:style.backgroundColor,overlay:style.backgroundImage,selected:getComputedStyle(element).backgroundColor};});
+  expect(paint.base).not.toMatch(/rgba\([^)]*, 0\)|transparent/);expect(paint.overlay).toContain(paint.selected);
   expect(await row.evaluate(element=>getComputedStyle(element.querySelector('[data-cx-pin]'),'::before').width)).toBe('2px');
   expect(await row.evaluate(element=>getComputedStyle(element.querySelector('[data-cx-pin]')).position)).toBe('sticky');
   const pinned=row.locator('[data-cx-pin]'),start=await pinned.boundingBox();

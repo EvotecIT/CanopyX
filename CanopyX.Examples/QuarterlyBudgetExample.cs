@@ -55,6 +55,8 @@ CanopyX.configure("budget", { onPaste(paste) {
             grid.Columns.Add(new CanopyColumn(Months[i], MonthTitles[i]) { Kind = CanopyColumnKind.Number, Sortable = true, Aggregatable = true });
         grid.Columns.Add(new CanopyColumn("total", "Year total") { Kind = CanopyColumnKind.Number, Sortable = true, Aggregatable = true });
         grid.Columns.Add(new CanopyColumn("reviewed", "Reviewed") { Kind = CanopyColumnKind.DateTime, Sortable = true });
+        // Every field participates in the budget's cell ranges; scroll before hiding one on desktop.
+        foreach (var column in grid.Columns) column.ResponsivePriority = 0;
 
         CanopyColumnGroup Quarter(int index) => new CanopyColumnGroup("q" + (index + 1).ToString(CultureInfo.InvariantCulture), "Q" + (index + 1).ToString(CultureInfo.InvariantCulture),
             Months[index * 3], Months[index * 3 + 1], Months[index * 3 + 2]);

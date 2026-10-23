@@ -24,6 +24,11 @@ grid.Clipboard.CopyValues = CanopyGridClipboardValues.Raw;                 // or
 `rangeSelection` and `clipboard` options override the view's. `enabled: false` turns the pointer, keyboard and touch input
 off while the part and the API keep working.
 
+Range endpoints refer to visible columns. Set `ResponsivePriority = 0` (`priority: "essential"`) on fields that must stay
+available through horizontal scrolling on desktop, as the quarterly budget example does. Set `AlwaysVisible = true`
+(`alwaysVisible: true`) when a field must also remain in the phone grid. Other fields can move to the record drawer and
+Columns panel as the container narrows.
+
 The .NET writers carry the part's payload in a single-file page only when the view sets `RangeSelection`. A host that turns
 ranges on in the browser instead (the `rangeSelection` option, or the API on a grid without it) serves `canopyx-cell-range.js`
 and `.css` beside the runtime, or adds the payload with `CanopyHtmlDocument.EmbedOnce(CanopyHtmlAssets.GetPart("cell-range"))`.
