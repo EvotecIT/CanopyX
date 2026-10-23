@@ -56,23 +56,38 @@
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal });
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();
-      // Layout writes run outside observer delivery, avoiding a resize loop when chrome wraps.
-      this.resizeObserver = new ResizeObserver(() => requestAnimationFrame(() => {
-        if (this.destroyed) return;
-        if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
-        style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
-          height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
-        this.fitHeight();
-        if (!(this.sized = this.hasGridSize())) return;
-        this.applyWidths();
-        this.updateGridPhone();
-        this.fitHeight();
-        this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
-        if (this.hiddenScrollTop !== undefined) {
-          const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
-        }
-        this.scheduleRender();
-      }));
+      // Newly visible grids fit before their first paint; ordinary resize writes stay outside observer delivery.
+      this.resizeObserver = new ResizeObserver(entries => {
+        const size = entries.find(entry => entry.target === grid);
+        const appearing = size?.contentRect.width && !this.fitContentWidth;
+        if (size) this.fitContentWidth = size.contentRect.width;
+        const resize = () => {
+          if (this.destroyed) return;
+          if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
+          style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
+            height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
+          this.fitHeight();
+          if (!(this.sized = this.hasGridSize())) return;
+          this.applyWidths();
+          this.updateGridPhone();
+          this.fitHeight();
+          this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
+          if (this.hiddenScrollTop !== undefined) {
+            const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
+          }
+          this.scheduleRender();
+        };
+        if (appearing) {
+          // Pause observation while the first visible fit changes ancestor heights, then resume normal resize delivery.
+          this.resizeObserver.disconnect();
+          try { resize(); } finally {
+            requestAnimationFrame(() => {
+              if (this.destroyed) return;
+              this.resizeObserver.observe(grid); this.resizeObserver.observe(this.head);
+            });
+          }
+        } else requestAnimationFrame(resize);
+      });
       this.resizeObserver.observe(grid);
       this.resizeObserver.observe(this.head);
     },

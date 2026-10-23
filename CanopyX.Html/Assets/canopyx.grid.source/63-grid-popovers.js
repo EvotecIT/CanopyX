@@ -12,11 +12,13 @@
   Object.assign(DataGrid.prototype,{
     closeGridPopover(focus=true){
       const open=this.gridPopover;if(!open)return;this.gridPopover=null;open.controller.abort();open.panel.remove();open.anchor?.setAttribute("aria-expanded","false");
-      if(focus){const anchor=open.anchor?.isConnected&&!open.anchor.hidden?open.anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(open.columnId||"")+'"]');
+      if(focus){const anchor=open.anchor?.isConnected&&open.anchor.checkVisibility()?open.anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(open.columnId||"")+'"]');
         (anchor||this.grid).focus({preventScroll:true});}
     },
     buildColumnMenus(){
       this.headerMenusLifetime?.abort();this.headerMenusLifetime=new AbortController();const signal=this.headerMenusLifetime.signal;
+      const clearTouch=()=>this.headCells.forEach(cell=>cell.classList.remove("cx-menu-touched"));
+      document.addEventListener("pointerdown",clearTouch,{capture:true,signal});
       for(const cell of this.headCells){
         const id=cell.dataset.cxColumn,column=this.columns.find(item=>item.id===id);
         const filter=gridDecorateButton(gridButton("",()=>this.openColumnFilter(id,filter)),"filter",true),menu=gridDecorateButton(gridButton("",()=>this.openColumnMenu(id,menu)),"more",true);
@@ -24,8 +26,15 @@
         filter.dataset.cxFilterColumn=id;menu.dataset.cxColumnMenu=id;filter.setAttribute("aria-label",this.labels.gridHeaderFilter?fill(this.labels.gridHeaderFilter,{column:column.title}):column.title+": "+this.labels.gridFilterColumn);
         menu.setAttribute("aria-label",fill(this.labels.gridColumnMenu,{column:column.title}));menu.setAttribute("aria-haspopup","menu");menu.setAttribute("aria-expanded","false");
         filter.dataset.cxFiltered=String(gridColumnFiltered(this.acceptedQuery,id));filter.hidden=filter.dataset.cxFiltered!=="true";
+        menu.dataset.cxFiltered=filter.dataset.cxFiltered;
         menu.addEventListener("keydown",event=>{if(event.key==="ArrowDown"){event.preventDefault();this.openColumnMenu(id,menu);}},{signal});
         cell.insertBefore(filter,cell.querySelector(".cx-resize"));if(this.tools.columnMenus!==false)cell.insertBefore(menu,cell.querySelector(".cx-resize"));
+        if(this.tools.columnMenus!==false){
+          const open=event=>{event.preventDefault();event.stopPropagation();this.openColumnMenu(id,menu);};
+          cell.addEventListener("pointerdown",event=>{if(event.pointerType==="touch")cell.classList.add("cx-menu-touched");},{signal});
+          cell.addEventListener("contextmenu",open,{signal});
+          cell.addEventListener("keydown",event=>{if(event.key==="ContextMenu"||event.shiftKey&&event.key==="F10")open(event);},{signal});
+        }
       }
       if(this.gridPopover)this.gridPopover.position();
     }

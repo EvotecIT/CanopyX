@@ -126,8 +126,8 @@ public sealed class RuntimeAssetTests {
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        // The phone record line adds shared presenters and measured rows; keep the grid bounded at 120 KiB.
-        Assert.True(compressed <= 122880, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 120 KiB.");
+        // Complete header minima and accessible overlay menus need 121.5 KiB after sharing weighted growth and removing obsolete fit state.
+        Assert.True(compressed <= 124416, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 121.5 KiB.");
     }
 
     [Fact]

@@ -234,3 +234,31 @@ test("print asks the host for stacked records in the card layout and a table oth
   }, ticketView(20, { reporting: {} }));
   expect(layouts).toEqual(["table", "stacked"]);
 });
+
+test("cards preserve fractional scroll anchors when authored auto rows change density", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, ticketView(300, { rowHeight: "auto" }));
+  await call(page, "setLayout", { mode: "cards" });
+  await settle(page);
+  await page.locator(".cx-grid").evaluate(grid => {
+    const height = grid.querySelector(".cx-row[data-cx-id]").getBoundingClientRect().height;
+    grid.scrollTop = height * 60.45;
+  });
+  await settle(page);
+  const anchor = () => page.locator(".cx-grid").evaluate(grid => {
+    const top = grid.getBoundingClientRect().top + grid.clientTop;
+    const rows = [...grid.querySelectorAll(".cx-row[data-cx-id]")].filter(row => row.getBoundingClientRect().bottom > top + 1);
+    rows.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    const row = rows[0], box = row.getBoundingClientRect();
+    return { id: row.dataset.cxId, fraction: (top - box.top) / box.height };
+  });
+  const before = await anchor();
+  expect(before.fraction).toBeGreaterThan(.2);
+  expect(before.fraction).toBeLessThan(.8);
+  await call(page, "setLayout", { mode: "cards", density: "compact" });
+  await settle(page);
+  const after = await anchor();
+  expect(after.id).toBe(before.id);
+  expect(Math.abs(after.fraction - before.fraction)).toBeLessThan(.05);
+  expect(page.errors).toEqual([]);
+});

@@ -25,7 +25,7 @@
         // through pointerup and its click; moving it between those events loses a checkbox's activation.
         if(pressed.size||releaseFrame){positionPending=true;return;}
         positionPending=false;
-        const current=this.headCells.find(cell=>cell.dataset.cxColumn===columnId)||anchor,bounds=current.getBoundingClientRect();
+        const current=this.headCells.find(cell=>cell.dataset.cxColumn===columnId)||(anchor.checkVisibility()?anchor:this.grid),bounds=current.getBoundingClientRect();
         if(panel.classList.toggle("cx-phone",this.host.clientWidth<=640)){panel.style.left="0";panel.style.top="auto";panel.style.bottom="0";panel.style.width="100%";panel.style.maxHeight="80vh";}
         else {panel.style.width="";panel.style.bottom="auto";panel.style.maxHeight=Math.min(500,global.innerHeight-16)+"px";
           panel.style.left=Math.max(8,Math.min(bounds.left,global.innerWidth-panel.offsetWidth-8))+"px";
@@ -41,7 +41,8 @@
       global.addEventListener("resize",position,{signal});global.addEventListener("scroll",position,{capture:true,signal});
       panel.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopPropagation();this.closeGridPopover();}else gridMenuFocus(panel,event);},{signal});
       this.lifetime.signal.addEventListener("abort",()=>controller.abort(),{once:true,signal});
-      signal.addEventListener("abort",()=>{global.cancelAnimationFrame(releaseFrame);pressed.clear();panel.remove();},{once:true});queueMicrotask(position);return panel;
+      signal.addEventListener("abort",()=>{global.cancelAnimationFrame(releaseFrame);pressed.clear();panel.remove();},{once:true});
+      queueMicrotask(()=>{if(signal.aborted)return;position();if(!panel.contains(document.activeElement))panel.focus({preventScroll:true});});return panel;
     },
     openColumnMenu(id,anchor){
       const column=this.columns.find(item=>item.id===id),panel=this.openGridPopover(anchor,"cx-column-menu",fill(this.labels.gridColumnMenu,{column:column.title}),id);
@@ -55,7 +56,7 @@
       add(this.labels.gridSortAscending,()=>sort("asc"),!column.sortable||this.view.reporting?.grouping?.column===id);
       add(this.labels.gridSortDescending,()=>sort("desc"),!column.sortable||this.view.reporting?.grouping?.column===id);
       add(this.labels.gridClearSort,()=>sort(null),!(this.getQuery()?.sort||[]).some(item=>item.column===id));
-      menu.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFilterColumn,()=>this.openColumnFilter(id,this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]')),column.filterable===false);
+      menu.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFilterColumn,()=>this.openColumnFilter(id,this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]')||anchor),column.filterable===false);
       menu.appendChild(h("hr","cx-menu-rule"));
       for(const [pin,label]of [["left","gridPinLeft"],["right","gridPinRight"],["none","gridUnpin"]])add(this.labels[label],()=>this.setColumnPinned(id,pin));
       menu.appendChild(h("hr","cx-menu-rule"));add(this.labels.gridFitContent,()=>this.autoFitColumn(id),!this.acceptedQuery||!!this.pendingQuery);

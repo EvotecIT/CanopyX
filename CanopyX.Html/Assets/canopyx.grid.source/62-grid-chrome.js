@@ -65,9 +65,10 @@
       this.syncPinnedShadows();
     },
     syncPinnedShadows() {
-      if(!this.pinnedLeftWidth&&!this.pinnedRightWidth)return;
-      this.host.classList.toggle("cx-scroll-left", this.grid.scrollLeft > 0);
-      this.host.classList.toggle("cx-scroll-right", this.grid.scrollLeft + this.grid.clientWidth < this.grid.scrollWidth - 1);
+      const overflow=this.grid.scrollWidth>this.grid.clientWidth+1,pins=overflow&&(this.pinnedLeftWidth||this.pinnedRightWidth);
+      this.host.classList.toggle("cx-scroll-x",overflow);
+      this.host.classList.toggle("cx-scroll-left", !!pins&&this.grid.scrollLeft > 0);
+      this.host.classList.toggle("cx-scroll-right", !!pins&&this.grid.scrollLeft + this.grid.clientWidth < this.grid.scrollWidth - 1);
     },
     // The reporting runtime adds content entries (render) to these handler entries.
     gridAction(action, act) {
