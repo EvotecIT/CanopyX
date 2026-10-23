@@ -39,7 +39,7 @@ for (const width of [1024, 390]) test(`a hidden grid fits its captions before th
       constructor(callback) {
         super((entries, observer) => {
           callback(entries, observer);
-          for (const { target, contentRect } of entries) if (target.matches('.cx-grid') && contentRect.width && target.checkVisibility({ visibilityProperty: true }))
+          for (const { target, contentRect } of entries) if (target.matches('.cx-grid') && contentRect.width && target.checkVisibility({ visibilityProperty: true, opacityProperty: true }))
             window.visibleFits.push(inspect(target));
         });
       }
@@ -66,7 +66,7 @@ for (const width of [1440, 1280, 1024, 390]) test(`eleven-column probe headers r
     const inspect = new Function('grid', 'return (' + check + ')(grid)');
     function frame() {
       const grid = document.querySelector('[data-cx-ready] .cx-grid[aria-busy="false"]');
-      if (grid?.checkVisibility({ visibilityProperty: true })) { window.fitFrames++; window.captionFailures.push(...inspect(grid)); }
+      if (grid?.checkVisibility({ visibilityProperty: true, opacityProperty: true })) { window.fitFrames++; window.captionFailures.push(...inspect(grid)); }
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);

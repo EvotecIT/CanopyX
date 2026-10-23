@@ -11,7 +11,8 @@ const makeView = (overflow = false, menus = true) => ({ protocol: "canopyx/2", t
     cells: Object.fromEntries(columns.map(column => [column.id, "123456789"])) })) });
 
 async function open(page, { overflow = false, menus = true, dark = false, definition } = {}) {
-  let html = viewPage(definition || makeView(overflow, menus)).replace('</head>', '<style>body.cx-page>[data-canopyx-host]{width:min(1100px,100%);height:420px}</style></head>');
+  // Twelve nine-digit values need up to 1140px with platform fonts, even without menu chrome.
+  let html = viewPage(definition || makeView(overflow, menus)).replace('</head>', '<style>body.cx-page>[data-canopyx-host]{width:min(1200px,100%);height:420px}</style></head>');
   if (dark) html = html.replace('data-cx-theme="light"', 'data-cx-theme="dark"');
   await page.route("http://canopyx.test/overlay", route => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("http://canopyx.test/overlay");
@@ -133,7 +134,9 @@ test('twelve columns fit at 1440 and overlaid menus stay accessible without addi
   await page.setViewportSize({ width: 1440, height: 900 });
   await open(page, { menus: false });
   const baseline = await geometry(page);
+  expect(baseline.scroll).toBeLessThanOrEqual(baseline.width);
   await open(page);
+  expect(await geometry(page)).toEqual(baseline);
   await expect.poll(async () => (await geometry(page)).scroll).toBeLessThanOrEqual(baseline.width);
   expect((await geometry(page)).columns).toHaveLength(baseline.columns.length);
   await expect(button(page)).toHaveCSS('position', 'absolute');

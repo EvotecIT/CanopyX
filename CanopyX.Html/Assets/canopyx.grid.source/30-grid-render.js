@@ -57,13 +57,14 @@
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();
       // Keep the first visible paint fitted without changing observed ancestors during resize delivery.
-      grid.style.visibility = "hidden";
+      // Opacity suppresses paint while preserving native focus requested at data readiness.
+      grid.style.opacity = "0";
       let resizeFrame;
       signal.addEventListener("abort", () => cancelAnimationFrame(resizeFrame), { once: true });
       this.resizeObserver = new ResizeObserver(entries => {
         const size = entries.find(entry => entry.target === grid);
         if (size) this.fitContentWidth = size.contentRect.width;
-        if (size && !size.contentRect.width) grid.style.visibility = "hidden";
+        if (size && !size.contentRect.width) grid.style.opacity = "0";
         const resize = () => {
           if (this.destroyed) return;
           if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
@@ -78,12 +79,7 @@
           if (this.hiddenScrollTop !== undefined) {
             const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
           }
-          if (grid.style.visibility) {
-            this.render(); grid.style.visibility = "";
-            // Replay an explicit request only while focus still belongs to the requesting control.
-            if (this.fitFocus && this.fitFocus === document.activeElement) this.setFocus(this.focused, true);
-            this.fitFocus = null;
-          }
+          if (grid.style.opacity) { this.render(); grid.style.opacity = ""; }
           else this.scheduleRender();
         };
         cancelAnimationFrame(resizeFrame);
