@@ -7,6 +7,8 @@ import type {
   InteractionOptions, DropPlacement, ExportFormat, ExportFormatOptions, ExportFormatResult, TreeExport, TreeExportOptions, LinkedView
 } from "./hosts.js";
 import type { CanopyPlugin, CanopyPartDefinition } from "./plugins.js";
+import type { UiApi } from "./ui.js";
+export * from "./ui.js";
 export * from "./protocol.js";
 export * from "./hosts.js";
 export * from "./plugins.js";
@@ -117,7 +119,7 @@ export function registerPart(name: string, part: CanopyPartDefinition): void;
  */
 export function setNonce(nonce: string): void;
 
-declare const CanopyX: Readonly<{
+declare const CanopyX: Readonly<UiApi & {
   protocol: typeof protocol;
   createTreeGrid: typeof createTreeGrid;
   configure: typeof configure;

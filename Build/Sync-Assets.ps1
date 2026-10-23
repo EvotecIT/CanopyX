@@ -149,7 +149,8 @@ $assets = @(
         Source = 'CanopyX.Html/Assets/canopyx.flow-entry.source/00-flow-entry.js'
         Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js', 'CanopyX.Html/Assets/canopyx.source/02-design-tokens.js',
             'CanopyX.Html/Assets/canopyx.source/05-patterns.js', 'CanopyX.Html/Assets/canopyx.source/05-search-folding.js', 'CanopyX.Html/Assets/canopyx.grid.source/00-grid-pure.js',
-            'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell, 'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
+            'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell,
+            'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
         Target = 'CanopyX.Html/Assets/canopyx-flow-entry.js'
         Folding = $true
         Kind = 'flow'
@@ -163,7 +164,8 @@ $assets = @(
         Source = 'CanopyX.Html/Assets/canopyx.flow-entry.source/00-flow-entry.js'
         Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js', 'CanopyX.Html/Assets/canopyx.source/02-design-tokens.js',
             'CanopyX.Html/Assets/canopyx.source/05-patterns.js', 'CanopyX.Html/Assets/canopyx.source/05-search-folding.js', 'CanopyX.Html/Assets/canopyx.grid.source/00-grid-pure.js',
-            'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell, 'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
+            'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell,
+            'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
         Target = 'CanopyX.Html/Assets/canopyx-flow-module.mjs'
         Folding = $true
         Module = $true
@@ -174,7 +176,8 @@ $assets = @(
 # Lazy parts (Build/parts.json): each part's scripts and styles, the context its code receives and the entry points that know it.
 # Entry points leave out every script a part lists, unless that part also lists it as shared.
 $partList = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'parts.json') -Raw | ConvertFrom-Json).parts)
-# A part requires parts that exist for every entry point and view it has, without a cycle; the runtime loader relies on it.
+# Dependencies cover every entry point. Empty views means explicit/dependency-only selection;
+# otherwise a dependency covers its consumer's views. The runtime loader also requires an acyclic graph.
 $partNames = @($partList | ForEach-Object name)
 foreach ($part in $partList) {
     # View gating has one field: features lists the view features that make a view load the part (CanopyHtmlPart maps them).
@@ -187,7 +190,8 @@ foreach ($part in $partList) {
     foreach ($name in @($part.requires | Where-Object { $_ })) {
         $required = $partList | Where-Object name -EQ $name
         if (-not $required) { throw "Part '$($part.name)' requires the unknown part '$name'." }
-        if (@($part.runtimes | Where-Object { $_ -notin $required.runtimes }).Count -or @($part.views | Where-Object { $_ -notin $required.views }).Count) {
+        if (@($part.runtimes | Where-Object { $_ -notin $required.runtimes }).Count -or
+            ($required.views.Count -gt 0 -and @($part.views | Where-Object { $_ -notin $required.views }).Count)) {
             throw "Part '$($part.name)' requires '$name', which some of its entry points or views do not have."
         }
     }
@@ -301,8 +305,10 @@ throw new Error("CanopyX: load the interactive runtime or module before the core
 '@
     $exports = @'
 const CanopyX = runtimeHost.CanopyX;
-const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce } = CanopyX;
-export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce };
+const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce,
+  mountUi, contextMenu, tabs, stepper, dialog, drawer, popover, tooltip, menu } = CanopyX;
+export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce,
+  mountUi, contextMenu, tabs, stepper, dialog, drawer, popover, tooltip, menu };
 export default CanopyX;
 '@
     # Parts load from files beside the module (Build/parts.json), as they do beside a classic runtime script.
@@ -317,6 +323,7 @@ export default CanopyX;
         $header = $header.Replace('(runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)', '!runtimeHost.CanopyX.createFlow')
         $header = $header.Replace('interactive runtime or module before the core script', 'flow or grid runtime, or this module, before the core script')
         $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'createFlow, configure, unconfigure, mount, use, registerPart, setNonce')
+        $exports = [regex]::Replace($exports, ',\r?\n\s+mountUi, contextMenu, tabs, stepper, dialog, drawer, popover, tooltip, menu', '')
     }
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }

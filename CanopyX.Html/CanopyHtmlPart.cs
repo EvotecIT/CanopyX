@@ -34,7 +34,7 @@ public sealed class CanopyHtmlPart {
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent"
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "contextActions", "columnMenus"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -183,6 +183,7 @@ public sealed class CanopyHtmlPart {
         var reporting = view.Reporting;
         return feature switch {
             "presenters" => view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column.Presenter != null || column.Wrap),
+            "columnMenus" => view.Toolbar.ColumnMenus,
             "pager" => view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault,
             "editable" => view.Columns.Any(column => column.Editable) || view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "formatting" => view.FormatRules.Count > 0 || view.Formatting != null,
@@ -215,6 +216,7 @@ public sealed class CanopyHtmlPart {
 
     /// <summary>Whether a tree uses a view feature: search highlighting, layout modes or the record panel.</summary>
     private static bool Uses(CanopyTreeView view, string feature) => feature switch {
+        "contextActions" => view.ContextActions.Count > 0 || view.DragDrop || view.Columns.Any(column => column.Editable),
         "searchHighlight" => view.SearchHighlight != null,
         "layout" => view.Layout != null,
         "record" => UsesRecordPanel(view),

@@ -270,7 +270,12 @@ export type LabelName =
   | "calendarZoom" | "calendarZoomHour" | "calendarZoomDay" | "calendarZoomWeek" | "calendarZoomMonth" | "calendarZoomQuarter" | "calendarResources" | "calendarCapacity"
   | "calendarCapacityAt" | "calendarBusy" | "calendarOverlaps" | "calendarUnavailable" | "calendarOutsideHours" | "calendarConflict" | "calendarNotAllowed" | "calendarMoved"
   | "calendarResized" | "calendarSeriesMoved" | "calendarSeriesTime" | "calendarMoveHelp" | "calendarEdit" | "calendarSaveFailed" | "calendarExport" | "calendarTimeRange" | "calendarSelected"
-  | "calendarLane" | "calendarHighlighted";
+  | "calendarLane" | "calendarHighlighted"
+  /** Standalone UI primitives; their English defaults load with the optional UI parts. */
+  | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay"
+  | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
+  | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
+  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

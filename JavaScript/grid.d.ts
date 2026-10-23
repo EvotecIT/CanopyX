@@ -8,6 +8,7 @@ import type { GridEditorDefinition, GridValidation, GridEditingSettings, GridEdi
 import type { RecordPanelDefinition, RecordLoader, RecordSectionRenderer, RecordAction, RecordOpenAll, OpenRecordOptions } from "./records.js";
 export * from "./records.js";
 export * from "./index.js";
+export * from "./ui.js";
 export * from "./enhance.js";
 import type { enhance, grid } from "./enhance.js";
 export * from "./editing.js";

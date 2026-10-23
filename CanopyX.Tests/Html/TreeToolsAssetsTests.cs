@@ -24,11 +24,19 @@ public sealed class TreeToolsAssetsTests {
         // The shared chrome in this copy targets tree hosts only, so a flat grid's own rules keep their order on a mixed page.
         Assert.DoesNotContain(".cx-chrome", CanopyHtmlAssets.TreeToolsStyle);
         Assert.Contains(".cx-tree-tools", CanopyHtmlAssets.TreeToolsStyle);
-        // The record drawer rules it shares with the editor part come before the flat grid's overlay rules, as in the editor's
-        // stylesheet, so a flat grid's drawer keeps the overlay's font and height when the tree tools load after the editor.
-        foreach (var style in new[] { CanopyHtmlAssets.TreeToolsStyle, CanopyHtmlAssets.FilterEditorStyle }) {
-            Assert.True(style.IndexOf("body .cx-host.cx-drawer{", StringComparison.Ordinal) >= 0, "The record drawer rules are missing.");
-            Assert.True(style.IndexOf("body .cx-host.cx-grid-overlay{", StringComparison.Ordinal) > style.IndexOf("body .cx-host.cx-drawer{", StringComparison.Ordinal));
+        // Tree details and grid editors use the same layered overlay shell. Consumers keep their content rules without
+        // overriding the common shell when parts load in either order on a mixed page.
+        foreach (var name in new[] { "tree-tools", "filter-editor" }) {
+            var consumer = CanopyHtmlAssets.GetPart(name);
+            Assert.Contains("ui-overlays", consumer.Requires);
+            Assert.NotNull(consumer.Style);
+            Assert.DoesNotMatch(@"body\s+\.cx-host\.cx-(drawer|grid-overlay)\s*\{", consumer.Style!);
+        }
+        var overlays = CanopyHtmlAssets.GetPart("ui-overlays").Style;
+        Assert.NotNull(overlays);
+        Assert.Contains("@layer hfx.components", overlays);
+        foreach (var element in new[] { "header", "title", "body", "footer" }) {
+            Assert.Matches(@"[^{}]*\.cx-dialog[^{}]*\.cx-drawer[^{}]*\.cx-popover[^{}]*\[data-hfx-part=""" + element + @"""\]\s*\{", overlays!);
         }
     }
 
@@ -59,7 +67,9 @@ public sealed class TreeToolsAssetsTests {
         Assert.Single(Regex.Matches(page, "application/x-canopyx-tree-tools-style"));
         Assert.Contains("x-canopyx-tree-tools", fragments[0]);
         Assert.All(fragments.Skip(1), fragment => Assert.DoesNotContain("x-canopyx-tree-tools", fragment));
-        Assert.Equal(new[] { "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion, "export@" + CanopyHtmlAssets.ExportVersion }, document.EmbeddedParts);
+        Assert.Equal(new[] { "ui-overlays@" + CanopyHtmlAssets.GetPart("ui-overlays").Version, "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion, "export@" + CanopyHtmlAssets.ExportVersion }, document.EmbeddedParts);
+        Assert.Single(Regex.Matches(page, "application/x-canopyx-ui-overlays\""));
+        Assert.Single(Regex.Matches(page, "application/x-canopyx-ui-overlays-style\""));
         Assert.Single(Regex.Matches(page, "application/x-canopyx-export"));
 
         // Flat grids share the filter editor and export parts the same way: the trees above already carry the export part.

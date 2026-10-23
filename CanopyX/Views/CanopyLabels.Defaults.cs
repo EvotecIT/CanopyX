@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CanopyX;
 
-// The English default of every label, one entry per line. Build/Sync-Labels.ps1 reads the entries of this file in this order and
+// The English default of every label. Build/Sync-Labels.ps1 reads the entries of this file in this order and
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
@@ -779,6 +779,20 @@ public sealed partial class CanopyLabels {
             [nameof(ChangeUnclaimed)] = "This page cannot carry out “{action}” itself. Copy the request to pass it on.",
             [nameof(ChangeCopyRequest)] = "Copy request",
             [nameof(ChangeFiltered)] = "Filtered: {filters}",
-            [nameof(ChangePrintLimit)] = "[one]{count} more line is not printed.[other]{count} more lines are not printed."
+            [nameof(ChangePrintLimit)] = "[one]{count} more line is not printed.[other]{count} more lines are not printed.",
+        [nameof(TabsMore)] = "More", [nameof(TabsMoreSelected)] = "More: {label}",
+        [nameof(TabsScrollPrevious)] = "Previous tabs", [nameof(TabsScrollNext)] = "Next tabs",
+        [nameof(TabsSection)] = "Section", [nameof(TabsPosition)] = "{current} of {total}",
+        [nameof(TabsPause)] = "Pause", [nameof(TabsPlay)] = "Play",
+        [nameof(StepperStepOf)] = "Step {current} of {total}", [nameof(StepperBack)] = "Back",
+        [nameof(StepperNext)] = "Next", [nameof(StepperFinish)] = "Finish",
+        [nameof(StepperSkip)] = "Skip", [nameof(StepperSaveDraft)] = "Save draft",
+        [nameof(StepperAllSteps)] = "All steps", [nameof(StepperOptional)] = "Optional",
+        [nameof(StepperCompleted)] = "Completed", [nameof(StepperSkipped)] = "Skipped",
+        [nameof(StepperIssues)] = "{count} issues to fix", [nameof(StepperIssue)] = "1 issue to fix",
+        [nameof(DialogClose)] = "Close", [nameof(DrawerClose)] = "Close",
+        [nameof(DrawerPrevious)] = "Previous record", [nameof(DrawerNext)] = "Next record",
+        [nameof(StateLoading)] = "Loading…", [nameof(StateRetry)] = "Retry",
+        [nameof(StateDetails)] = "Details"
     };
 }

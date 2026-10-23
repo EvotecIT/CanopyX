@@ -33,7 +33,9 @@
   // A record opened in a drawer of another kind (a grid's from a tree's, or one of another runtime on the page) does not replace
   // the drawer it came from: that one closes once the new one is open, without restoring focus.
   function recordRetire(dialog) {
-    if (dialog.isConnected && dialog.open && document.querySelectorAll("dialog.cx-drawer[open]").length > 1) { dialog._replaced = true; dialog.close(); dialog.remove(); }
+    if (dialog.isConnected && dialog.open && document.querySelectorAll("dialog.cx-drawer[open]").length > 1) {
+      dialog._replaced = true; dialog._cxOverlay.close("replace", false, true); dialog.remove();
+    }
   }
 
   RECORD_IMPL.open = async (view, id, options = {}) => {

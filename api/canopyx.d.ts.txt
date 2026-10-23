@@ -1283,6 +1283,7 @@ import type{
 from "./records.js";
 export * from "./records.js";
 export * from "./index.js";
+export * from "./ui.js";
 export * from "./enhance.js";
 import type{
   enhance,grid
@@ -2427,6 +2428,11 @@ import type{
   CanopyPlugin,CanopyPartDefinition
 }
 from "./plugins.js";
+import type{
+  UiApi
+}
+from "./ui.js";
+export * from "./ui.js";
 export * from "./protocol.js";
 export * from "./hosts.js";
 export * from "./plugins.js";
@@ -2506,7 +2512,7 @@ export function registerExportFormat(format:ExportFormat):() => void;
 export function use(plugin:CanopyPlugin):() => void;
 export function registerPart(name:string,part:CanopyPartDefinition):void;
 export function setNonce(nonce:string):void;
-declare const CanopyX:Readonly<{
+declare const CanopyX:Readonly<UiApi&{
   protocol:typeof protocol;
   createTreeGrid:typeof createTreeGrid;
   configure:typeof configure;
@@ -3009,7 +3015,7 @@ export type LazyNode=NodeDefinition&{
 ;
 export type CanopyNode=LeafNode|DetailNode|InlineBranch|LazyNode;
 export type InlineNode=LeafNode|DetailNode|InlineBranch<InlineNode>;
-export type LabelName=|"gridPaging"|"gridPageRange"|"gridPageNumber"|"gridPageLength"|"gridFirstPage"|"gridPreviousPage"|"gridNextPage"|"gridLastPage"|"gridPageInfo"|"gridPageInfoFiltered"|"gridPageButton"|"gridUnknownCount"|"gridMatchedCount"|"gridCursorRange"|"gridResultCount"|"gridClearQuery"|"gridRemoveSearch"|"gridGroupedFilters"|"gridRemoveGroup"|"gridRemoveCondition"|"gridExport"|"gridFilteredResults"|"gridSelectedRows"|"gridAllResults"|"gridVisibleRows"|"gridAllRows"|"gridDownloadCsv"|"gridCopy"|"gridDetails"|"searchPlaceholder"|"searchResults"|"searchResultCount"|"searchResultCountOfTotal"|"searchResultCountOfMany"|"searchNoResults"|"searchTooShort"|"searchWordTooShort"|"searchFailed"|"columns"|"hiddenColumns"|"visibleColumns"|"resizeColumn"|"columnWidth"|"loading"|"loadError"|"queryFailed"|"showMore"|"showMoreUnknownTotal"|"pageLoaded"|"itemsLoaded"|"yes"|"no"|"utcTime"|"localTime"|"mountError"|"actions"|"editValue"|"saveEdit"|"cancelEdit"|"invalidEdit"|"interactionPending"|"interactionRejected"|"interactionFailed"|"markMove"|"moveHere"|"moveBefore"|"moveAfter"|"cancelMove"|"gridFilters"|"gridColumn"|"gridOperator"|"gridValue"|"gridValueType"|"gridText"|"gridBoolean"|"gridAddFilter"|"gridRemoveFilter"|"gridApply"|"gridClearFilters"|"gridMoveEarlier"|"gridMoveLater"|"gridViews"|"gridViewName"|"gridSaveView"|"gridRemoveView"|"gridResetView"|"gridChooseView"|"gridInvalidFilter"|"gridContains"|"gridStartsWith"|"gridIn"|"gridIsNull"|"gridIsNotNull"|"gridBetween"|"gridRangeEnd"|"gridInvalidRange"|"gridSuggestedCategory"|"gridChooseCategory"|"gridBooleanValue"|"gridTrue"|"gridFalse"|"gridHeaderFilter"|"gridExpandCell"|"gridCloseCell"|"gridCloseRecord"|"gridMoveColumn"|"gridResizeHelp"|"gridColumnMoved"|"gridFitColumn"|"gridFitAllColumns"|"gridPinColumn"|"gridPinNone"|"gridPinLeft"|"gridPinRight"|"gridResponsiveHidden"|"gridFindColumn"|"gridShowAllColumns"|"gridResetColumns"|"gridReorderColumn"|"gridPinnedLeft"|"gridPinnedRight"|"gridFilterGroupTitle"|"gridFilterMatch"|"gridFilterAll"|"gridFilterAny"|"gridAddFilterGroup"|"gridDeleteFilterGroup"|"gridFacetValues"|"gridFacetSearch"|"gridFacetIncludeCurrent"|"gridFacetLoad"|"gridFacetChoose"|"gridFacetCounts"|"gridFacetReload"|"gridRenameView"|"gridDefaultView"|"gridClearDefaultView"|"gridDefaultViewName"|"gridNoDefaultView"|"gridDefaultViewOption"|"gridSelection"|"gridSelectPage"|"gridSelectMatching"|"gridClearSelection"|"gridSelectionCount"|"gridSelectionQueryCount"|"gridSelectionQueryUnknown"|"gridSelectRecord"|"gridGroupHeading"|"gridGroupMissing"|"gridGroupExpand"|"gridGroupCollapse"|"gridSummary"|"gridGroupOrder"|"gridAggregateCount"|"gridAggregateSum"|"gridAggregateAverage"|"gridAggregateMinimum"|"gridAggregateMaximum"|"gridGroupBy"|"gridUngroup"|"gridGroupDrop"|"gridExpandAll"|"gridCollapseAll"|"gridExpandLevel"|"gridCollapseLevel"|"gridGroupMove"|"gridGroupSortBy"|"gridGroupSortValue"|"gridGroupSortAggregate"|"gridSelectGroup"|"gridAggregateDistinct"|"gridShowDetail"|"gridHideDetail"|"gridDetailOf"|"gridDetailFailed"|"gridExportProgress"|"gridExportReading"|"gridExportCancelled"|"gridCancelExport"|"gridNoExportColumns"|"gridPrint"|"matchesHighlight"|"matchesCount"|"matchesPosition"|"matchesNone"|"matchesLoaded"|"matchesPrevious"|"matchesNext"|"matchesAnnounce"|"layoutMenu"|"layoutFit"|"layoutScroll"|"layoutCards"|"layoutDensity"|"layoutCompact"|"layoutNormal"|"layoutComfortable"|"layoutChanged"|"layoutSort"|"gridFitContent"|"gridUnpin"|"gridWhere"|"gridComplexFilter"|"gridClearColumnFilter"|"gridSelectionAggregate"|"gridConditionValue"|"gridConditionUpperValue"|"gridDeleteCondition"|"gridShowRowsWhere"|"gridOfTheseAreTrue"|"gridOfThese"|"gridGroupCount"|"gridEditCell"|"gridEditSave"|"gridEditCancel"|"gridEditDiscard"|"gridEditUndo"|"gridEditRedo"|"gridEditEdited"|"gridEditChanges"|"gridEditErrors"|"gridEditSaving"|"gridEditSaved"|"gridEditFailed"|"gridEditRequired"|"gridEditNumber"|"gridEditDate"|"gridEditMin"|"gridEditMax"|"gridEditStep"|"gridEditMinLength"|"gridEditMaxLength"|"gridEditPattern"|"gridEditChoice"|"gridEditConflict"|"gridEditRejected"|"gridEditNotSaved"|"gridEditNoMatches"|"gridEditSearching"|"gridEditUndone"|"gridEditRedone"|"gridEditNone"|"gridMore"|"gridDone"|"gridClearAll"|"gridRows"|"gridResultNoun"|"gridSearchNoun"|"gridChart"|"gridColumnMenu"|"gridSortAscending"|"gridSortDescending"|"gridClearSort"|"gridFilterColumn"|"gridHideColumn"|"gridGroupedBy"|"gridRemoveGrouping"|"gridSelectAllValues"|"gridFilterValues"|"gridAddCondition"|"gridAddGroup"|"gridAnd"|"gridOr"|"gridEditAsText"|"gridFilterText"|"gridDeepFilters"|"gridToday"|"gridYesterday"|"gridLastSevenDays"|"gridLastThirtyDays"|"gridThisMonth"|"gridDateRange"|"gridEmpty"|"gridEmptyReason"|"gridNoMatches"|"gridNoMatchesReason"|"gridRetry"|"gridLoadFailed"|"gridAll"|"gridPageOf"|"gridStatusCount"|"gridDetailsSection"|"gridPreviousRecord"|"gridNextRecord"|"gridShowMore"|"gridNoData"|"gridPeriodRange"|"gridHealthy"|"formatRules"|"formatLegend"|"formatUpTo"|"formatAbove"|"formatHiddenFlagged"|"formatRule"|"formatAddRule"|"formatEditRule"|"formatDeleteRule"|"formatMoveUp"|"formatMoveDown"|"formatEnableRule"|"formatNoRules"|"formatName"|"formatDescription"|"formatOnlyRowsWhere"|"formatEveryRow"|"formatNone"|"formatApplyTo"|"formatTargetCell"|"formatTargetRow"|"formatTargetColumns"|"formatStyle"|"formatHighlight"|"formatDataBar"|"formatColorScale"|"formatBands"|"formatTone"|"formatEmphasis"|"formatFill"|"formatTextOnly"|"formatStrong"|"formatIcon"|"formatNoIcon"|"formatAutomatic"|"formatBadge"|"formatCue"|"formatLowest"|"formatMidpoint"|"formatHighest"|"formatAddBand"|"formatRemoveBand"|"formatSave"|"formatCancel"|"formatShowLegend"|"formatInvalid"|"formatMatchCase"|"formatToneDanger"|"formatToneWarning"|"formatToneSuccess"|"formatToneInfo"|"formatToneNeutral"|"formatToneMuted"|"formatNotContains"|"formatEndsWith"|"formatNotIn"|"formatBetween"|"formatLike"|"formatMatches"|"formatOlderThan"|"formatWithinLast"|"formatNotLike"|"formatNotMatches"|"formatBetweenExclusive"|"gridCellRangeSelected"|"gridCellRangesSelected"|"gridCellRangeCleared"|"gridCopyCells"|"gridCopyCellsWithHeaders"|"gridPasteCells"|"gridSelectAllCells"|"gridCellsCopied"|"gridCellsPasted"|"gridPasteRefused"|"gridPasteReadOnly"|"gridPasteType"|"gridPasteReport"|"gridPasteCell"|"gridFillHandle"|"gridCellsFilled"|"gridCellMenu"|"gridClearCellRanges"|"linkFilteredBy"|"linkRemoveFilter"|"linkFiltered"|"linkHighlighted"|"linkHighlightedRows"|"linkCleared"|"recordBack"|"recordBackTo"|"recordTrail"|"recordShowing"|"recordTabs"|"recordSections"|"recordOtherFields"|"recordShowEmpty"|"recordHideEmpty"|"recordActions"|"recordCopyValues"|"recordCopyJson"|"recordCopyLink"|"recordCopied"|"recordPrint"|"recordExportCsv"|"recordExportJson"|"recordOpenAll"|"recordLoadMore"|"recordCount"|"recordItems"|"recordMore"|"recordShowAll"|"recordRetry"|"recordLoadFailed"|"recordUnavailable"|"recordField"|"recordValue"|"recordSection"|"recordBefore"|"recordAfter"|"recordAdded"|"recordRemoved"|"recordChanged"|"calendarToday"|"calendarPrevious"|"calendarNext"|"calendarViews"|"calendarMonth"|"calendarWeek"|"calendarDay"|"calendarDays"|"calendarAgenda"|"calendarYear"|"calendarTimeline"|"calendarGoTo"|"calendarAllDay"|"calendarMore"|"calendarMoreLabel"|"calendarDayEvents"|"calendarNoEvents"|"calendarEvents"|"calendarShowing"|"calendarRepeats"|"calendarTruncated"|"calendarLoading"|"calendarLoadError"|"calendarNow"|"calendarZoom"|"calendarZoomHour"|"calendarZoomDay"|"calendarZoomWeek"|"calendarZoomMonth"|"calendarZoomQuarter"|"calendarResources"|"calendarCapacity"|"calendarCapacityAt"|"calendarBusy"|"calendarOverlaps"|"calendarUnavailable"|"calendarOutsideHours"|"calendarConflict"|"calendarNotAllowed"|"calendarMoved"|"calendarResized"|"calendarSeriesMoved"|"calendarSeriesTime"|"calendarMoveHelp"|"calendarEdit"|"calendarSaveFailed"|"calendarExport"|"calendarTimeRange"|"calendarSelected"|"calendarLane"|"calendarHighlighted";
+export type LabelName=|"gridPaging"|"gridPageRange"|"gridPageNumber"|"gridPageLength"|"gridFirstPage"|"gridPreviousPage"|"gridNextPage"|"gridLastPage"|"gridPageInfo"|"gridPageInfoFiltered"|"gridPageButton"|"gridUnknownCount"|"gridMatchedCount"|"gridCursorRange"|"gridResultCount"|"gridClearQuery"|"gridRemoveSearch"|"gridGroupedFilters"|"gridRemoveGroup"|"gridRemoveCondition"|"gridExport"|"gridFilteredResults"|"gridSelectedRows"|"gridAllResults"|"gridVisibleRows"|"gridAllRows"|"gridDownloadCsv"|"gridCopy"|"gridDetails"|"searchPlaceholder"|"searchResults"|"searchResultCount"|"searchResultCountOfTotal"|"searchResultCountOfMany"|"searchNoResults"|"searchTooShort"|"searchWordTooShort"|"searchFailed"|"columns"|"hiddenColumns"|"visibleColumns"|"resizeColumn"|"columnWidth"|"loading"|"loadError"|"queryFailed"|"showMore"|"showMoreUnknownTotal"|"pageLoaded"|"itemsLoaded"|"yes"|"no"|"utcTime"|"localTime"|"mountError"|"actions"|"editValue"|"saveEdit"|"cancelEdit"|"invalidEdit"|"interactionPending"|"interactionRejected"|"interactionFailed"|"markMove"|"moveHere"|"moveBefore"|"moveAfter"|"cancelMove"|"gridFilters"|"gridColumn"|"gridOperator"|"gridValue"|"gridValueType"|"gridText"|"gridBoolean"|"gridAddFilter"|"gridRemoveFilter"|"gridApply"|"gridClearFilters"|"gridMoveEarlier"|"gridMoveLater"|"gridViews"|"gridViewName"|"gridSaveView"|"gridRemoveView"|"gridResetView"|"gridChooseView"|"gridInvalidFilter"|"gridContains"|"gridStartsWith"|"gridIn"|"gridIsNull"|"gridIsNotNull"|"gridBetween"|"gridRangeEnd"|"gridInvalidRange"|"gridSuggestedCategory"|"gridChooseCategory"|"gridBooleanValue"|"gridTrue"|"gridFalse"|"gridHeaderFilter"|"gridExpandCell"|"gridCloseCell"|"gridCloseRecord"|"gridMoveColumn"|"gridResizeHelp"|"gridColumnMoved"|"gridFitColumn"|"gridFitAllColumns"|"gridPinColumn"|"gridPinNone"|"gridPinLeft"|"gridPinRight"|"gridResponsiveHidden"|"gridFindColumn"|"gridShowAllColumns"|"gridResetColumns"|"gridReorderColumn"|"gridPinnedLeft"|"gridPinnedRight"|"gridFilterGroupTitle"|"gridFilterMatch"|"gridFilterAll"|"gridFilterAny"|"gridAddFilterGroup"|"gridDeleteFilterGroup"|"gridFacetValues"|"gridFacetSearch"|"gridFacetIncludeCurrent"|"gridFacetLoad"|"gridFacetChoose"|"gridFacetCounts"|"gridFacetReload"|"gridRenameView"|"gridDefaultView"|"gridClearDefaultView"|"gridDefaultViewName"|"gridNoDefaultView"|"gridDefaultViewOption"|"gridSelection"|"gridSelectPage"|"gridSelectMatching"|"gridClearSelection"|"gridSelectionCount"|"gridSelectionQueryCount"|"gridSelectionQueryUnknown"|"gridSelectRecord"|"gridGroupHeading"|"gridGroupMissing"|"gridGroupExpand"|"gridGroupCollapse"|"gridSummary"|"gridGroupOrder"|"gridAggregateCount"|"gridAggregateSum"|"gridAggregateAverage"|"gridAggregateMinimum"|"gridAggregateMaximum"|"gridGroupBy"|"gridUngroup"|"gridGroupDrop"|"gridExpandAll"|"gridCollapseAll"|"gridExpandLevel"|"gridCollapseLevel"|"gridGroupMove"|"gridGroupSortBy"|"gridGroupSortValue"|"gridGroupSortAggregate"|"gridSelectGroup"|"gridAggregateDistinct"|"gridShowDetail"|"gridHideDetail"|"gridDetailOf"|"gridDetailFailed"|"gridExportProgress"|"gridExportReading"|"gridExportCancelled"|"gridCancelExport"|"gridNoExportColumns"|"gridPrint"|"matchesHighlight"|"matchesCount"|"matchesPosition"|"matchesNone"|"matchesLoaded"|"matchesPrevious"|"matchesNext"|"matchesAnnounce"|"layoutMenu"|"layoutFit"|"layoutScroll"|"layoutCards"|"layoutDensity"|"layoutCompact"|"layoutNormal"|"layoutComfortable"|"layoutChanged"|"layoutSort"|"gridFitContent"|"gridUnpin"|"gridWhere"|"gridComplexFilter"|"gridClearColumnFilter"|"gridSelectionAggregate"|"gridConditionValue"|"gridConditionUpperValue"|"gridDeleteCondition"|"gridShowRowsWhere"|"gridOfTheseAreTrue"|"gridOfThese"|"gridGroupCount"|"gridEditCell"|"gridEditSave"|"gridEditCancel"|"gridEditDiscard"|"gridEditUndo"|"gridEditRedo"|"gridEditEdited"|"gridEditChanges"|"gridEditErrors"|"gridEditSaving"|"gridEditSaved"|"gridEditFailed"|"gridEditRequired"|"gridEditNumber"|"gridEditDate"|"gridEditMin"|"gridEditMax"|"gridEditStep"|"gridEditMinLength"|"gridEditMaxLength"|"gridEditPattern"|"gridEditChoice"|"gridEditConflict"|"gridEditRejected"|"gridEditNotSaved"|"gridEditNoMatches"|"gridEditSearching"|"gridEditUndone"|"gridEditRedone"|"gridEditNone"|"gridMore"|"gridDone"|"gridClearAll"|"gridRows"|"gridResultNoun"|"gridSearchNoun"|"gridChart"|"gridColumnMenu"|"gridSortAscending"|"gridSortDescending"|"gridClearSort"|"gridFilterColumn"|"gridHideColumn"|"gridGroupedBy"|"gridRemoveGrouping"|"gridSelectAllValues"|"gridFilterValues"|"gridAddCondition"|"gridAddGroup"|"gridAnd"|"gridOr"|"gridEditAsText"|"gridFilterText"|"gridDeepFilters"|"gridToday"|"gridYesterday"|"gridLastSevenDays"|"gridLastThirtyDays"|"gridThisMonth"|"gridDateRange"|"gridEmpty"|"gridEmptyReason"|"gridNoMatches"|"gridNoMatchesReason"|"gridRetry"|"gridLoadFailed"|"gridAll"|"gridPageOf"|"gridStatusCount"|"gridDetailsSection"|"gridPreviousRecord"|"gridNextRecord"|"gridShowMore"|"gridNoData"|"gridPeriodRange"|"gridHealthy"|"formatRules"|"formatLegend"|"formatUpTo"|"formatAbove"|"formatHiddenFlagged"|"formatRule"|"formatAddRule"|"formatEditRule"|"formatDeleteRule"|"formatMoveUp"|"formatMoveDown"|"formatEnableRule"|"formatNoRules"|"formatName"|"formatDescription"|"formatOnlyRowsWhere"|"formatEveryRow"|"formatNone"|"formatApplyTo"|"formatTargetCell"|"formatTargetRow"|"formatTargetColumns"|"formatStyle"|"formatHighlight"|"formatDataBar"|"formatColorScale"|"formatBands"|"formatTone"|"formatEmphasis"|"formatFill"|"formatTextOnly"|"formatStrong"|"formatIcon"|"formatNoIcon"|"formatAutomatic"|"formatBadge"|"formatCue"|"formatLowest"|"formatMidpoint"|"formatHighest"|"formatAddBand"|"formatRemoveBand"|"formatSave"|"formatCancel"|"formatShowLegend"|"formatInvalid"|"formatMatchCase"|"formatToneDanger"|"formatToneWarning"|"formatToneSuccess"|"formatToneInfo"|"formatToneNeutral"|"formatToneMuted"|"formatNotContains"|"formatEndsWith"|"formatNotIn"|"formatBetween"|"formatLike"|"formatMatches"|"formatOlderThan"|"formatWithinLast"|"formatNotLike"|"formatNotMatches"|"formatBetweenExclusive"|"gridCellRangeSelected"|"gridCellRangesSelected"|"gridCellRangeCleared"|"gridCopyCells"|"gridCopyCellsWithHeaders"|"gridPasteCells"|"gridSelectAllCells"|"gridCellsCopied"|"gridCellsPasted"|"gridPasteRefused"|"gridPasteReadOnly"|"gridPasteType"|"gridPasteReport"|"gridPasteCell"|"gridFillHandle"|"gridCellsFilled"|"gridCellMenu"|"gridClearCellRanges"|"linkFilteredBy"|"linkRemoveFilter"|"linkFiltered"|"linkHighlighted"|"linkHighlightedRows"|"linkCleared"|"recordBack"|"recordBackTo"|"recordTrail"|"recordShowing"|"recordTabs"|"recordSections"|"recordOtherFields"|"recordShowEmpty"|"recordHideEmpty"|"recordActions"|"recordCopyValues"|"recordCopyJson"|"recordCopyLink"|"recordCopied"|"recordPrint"|"recordExportCsv"|"recordExportJson"|"recordOpenAll"|"recordLoadMore"|"recordCount"|"recordItems"|"recordMore"|"recordShowAll"|"recordRetry"|"recordLoadFailed"|"recordUnavailable"|"recordField"|"recordValue"|"recordSection"|"recordBefore"|"recordAfter"|"recordAdded"|"recordRemoved"|"recordChanged"|"calendarToday"|"calendarPrevious"|"calendarNext"|"calendarViews"|"calendarMonth"|"calendarWeek"|"calendarDay"|"calendarDays"|"calendarAgenda"|"calendarYear"|"calendarTimeline"|"calendarGoTo"|"calendarAllDay"|"calendarMore"|"calendarMoreLabel"|"calendarDayEvents"|"calendarNoEvents"|"calendarEvents"|"calendarShowing"|"calendarRepeats"|"calendarTruncated"|"calendarLoading"|"calendarLoadError"|"calendarNow"|"calendarZoom"|"calendarZoomHour"|"calendarZoomDay"|"calendarZoomWeek"|"calendarZoomMonth"|"calendarZoomQuarter"|"calendarResources"|"calendarCapacity"|"calendarCapacityAt"|"calendarBusy"|"calendarOverlaps"|"calendarUnavailable"|"calendarOutsideHours"|"calendarConflict"|"calendarNotAllowed"|"calendarMoved"|"calendarResized"|"calendarSeriesMoved"|"calendarSeriesTime"|"calendarMoveHelp"|"calendarEdit"|"calendarSaveFailed"|"calendarExport"|"calendarTimeRange"|"calendarSelected"|"calendarLane"|"calendarHighlighted"|"tabsMore"|"tabsMoreSelected"|"tabsScrollPrevious"|"tabsScrollNext"|"tabsSection"|"tabsPosition"|"tabsPause"|"tabsPlay"|"stepperStepOf"|"stepperBack"|"stepperNext"|"stepperFinish"|"stepperSkip"|"stepperSaveDraft"|"stepperAllSteps"|"stepperOptional"|"stepperCompleted"|"stepperSkipped"|"stepperIssues"|"stepperIssue"|"dialogClose"|"drawerClose"|"drawerPrevious"|"drawerNext"|"stateLoading"|"stateRetry"|"stateDetails";
 export type CanopyLabels=Partial<Record<LabelName,string>>;
 export interface InlineSourceDefinition{
   kind:"inline";
@@ -3269,6 +3275,7 @@ export interface RecordSectionContext{
 }
 export type RecordSectionRenderer=(record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>;label?:string}>,element:HTMLElement,context:RecordSectionContext) => void|PromiseLike<void>;
 export interface RecordAction{
+  readonly disabled?:boolean;
   readonly label:string;
   run(context:{readonly record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>;readonly view:string;readonly api:unknown;readonly payload:GridRecord|null;readonly signal:AbortSignal}):void|PromiseLike<void>;
 }
@@ -3291,6 +3298,210 @@ export interface RecordPanelOptions{
   recordActions?:readonly RecordAction[];
   onOpenAll?:(event:RecordOpenAll) => boolean|void;
   onRecordPrint?:(event:{readonly id:string;readonly element:HTMLElement;readonly dispose:() => void}) => boolean|void;
+}
+
+// ---- JavaScript/ui.d.ts ----
+import type{
+  LabelName
+}
+from "./protocol.js";
+export type UiTarget=HTMLElement|string;
+export type UiResult<T>=T|Promise<T>;
+export type UiLabels=Partial<Record<LabelName,string>>;
+export interface UiController{
+  readonly element:HTMLElement;
+  readonly ready:Promise<this>;
+  destroy():void;
+}
+export interface UiNavigationItem{
+  readonly id:string;
+  readonly index:number;
+  readonly element:HTMLElement;
+  readonly panel?:HTMLElement;
+  readonly label:string;
+  readonly badge?:string;
+  readonly icon?:Node|string;
+  readonly disabled:boolean;
+  readonly optional:boolean;
+  readonly visited:boolean;
+}
+export type UiContentLoader<Item extends UiNavigationItem=UiNavigationItem>=(item:Item,signal:AbortSignal) => Node|string|null|void|Promise<Node|string|null|void>;
+export interface UiDeferredOptions<Item extends UiNavigationItem=UiNavigationItem>{
+  deferred?:boolean;
+  keepAlive?:boolean;
+  loader?:UiContentLoader<Item>;
+}
+export interface UiNavigationOptions<Item extends UiNavigationItem=UiNavigationItem>extends UiDeferredOptions<Item>{
+  renderIcon?:(icon:string,item:Partial<Item>) => Node|string|null|void;
+  labels?:UiLabels;
+  selectedIndex?:number;
+  selected?:string|number;
+  beforeChange?:(from:Item|undefined,to:Item,signal:AbortSignal) => boolean|void|Promise<boolean|void>;
+}
+export interface UiTabOptions extends UiDeferredOptions{
+  id:string;
+}
+export interface UiTabsOptions extends UiNavigationOptions{
+  style?:"underline"|"pills"|"segmented"|"vertical";
+  overflow?:"scroll"|"menu"|"wrap";
+  collapse?:"picker"|"none";
+  activation?:"automatic"|"manual";
+  print?:"all"|"selected";
+  transition?:"none"|"fade"|"slide";
+  hash?:boolean;
+  hashHistory?:"replace"|"push";
+  tabs?:readonly UiTabOptions[];
+  autoAdvance?:{interval:number;loop?:boolean;pauseOnHover?:boolean;pauseOnFocus?:boolean;};
+  debug?:boolean;
+}
+export interface UiNavigationController extends UiController{
+  select(idOrIndex:string|number):Promise<boolean>;
+  getSelected():UiResult<string|null>;
+  refresh():UiResult<void>;
+  preparePrint():Promise<void>;
+}
+export interface UiTabsController extends UiNavigationController{
+}
+export type UiStepState="upcoming"|"current"|"done"|"error"|"skipped"|"disabled";
+export interface UiStepItem extends UiNavigationItem{
+  readonly state:UiStepState;
+}
+export interface UiStepOptions extends UiDeferredOptions<UiStepItem>{
+  id:string;
+}
+export type UiStepValidation=boolean|readonly string[]|void;
+export interface UiStepperState{
+  selected:string|null;
+  finished:boolean;
+  steps:Array<{id:string;state:UiStepState;current:boolean;visited:boolean;optional:boolean}>;
+}
+export interface UiStepperOptions extends UiNavigationOptions<UiStepItem>{
+  mode?:"interactive"|"report"|"static";
+  linear?:boolean;
+  vertical?:"inline"|"side";
+  resetForwardOnBack?:boolean;
+  steps?:readonly UiStepOptions[];
+  validate?:(step:UiStepItem,signal:AbortSignal) => UiStepValidation|Promise<UiStepValidation>;
+  backLabel?:string;
+  nextLabel?:string;
+  finishLabel?:string;
+  skipLabel?:string;
+  saveDraftLabel?:string;
+  skip?:boolean;
+  onSaveDraft?:(state:UiStepperState) => void;
+  onFinish?:(state:UiStepperState) => void;
+}
+export interface UiStepperController extends UiNavigationController{
+  next():Promise<boolean>;
+  back():Promise<boolean>;
+  skip():Promise<boolean>;
+  finish():Promise<boolean>;
+  setStepState(id:string,state:UiStepState):UiResult<boolean>;
+  getState():UiResult<UiStepperState>;
+}
+export type UiPlacement="top"|"bottom"|"left"|"right"|"top-start"|"top-end"|"bottom-start"|"bottom-end";
+export interface UiOverlayOpenOptions{
+  modal?:boolean;
+  point?:{x:number;y:number};
+}
+export interface UiOverlayOptions{
+  trigger?:HTMLElement;
+  host?:HTMLElement;
+  placement?:UiPlacement;
+  dismissible?:boolean;
+  modal?:boolean;
+  initialFocus?:HTMLElement|((element:HTMLElement) => HTMLElement|null|undefined);
+  focus?:boolean;
+}
+export interface UiOverlayController extends UiController{
+  open(options?:UiOverlayOpenOptions):UiResult<boolean>;
+  close(reason?:string,restoreFocus?:boolean,force?:boolean):UiResult<boolean>;
+}
+export interface UiDialogOptions{
+  trigger?:HTMLElement;
+  host?:HTMLElement;
+  container?:HTMLElement;
+  labels?:UiLabels;
+  dismissible?:boolean;
+  initialFocus?:HTMLElement|((element:HTMLElement) => HTMLElement|null|undefined);
+}
+export interface UiDrawerOptions extends UiDialogOptions{
+  modal?:boolean;
+  records?:(direction:-1|1) => void;
+}
+export interface UiDialogState{
+  open:boolean;
+  modal:boolean
+}
+export interface UiDialogController extends UiOverlayController{
+  open():UiResult<boolean>;
+  refresh():UiResult<void>;
+  getState():UiResult<UiDialogState>;
+}
+export interface UiMenuItem{
+  id?:string;
+  label?:string;
+  kind?:"separator"|"groupLabel"|"grouplabel"|"radio"|"checkbox";
+  type?:"separator"|"groupLabel"|"grouplabel"|"radio"|"checkbox";
+  role?:"menuitemradio";
+  icon?:string;
+  badge?:string|number;
+  shortcut?:string;
+  checked?:boolean;
+  disabled?:boolean;
+  danger?:boolean;
+  group?:string;
+  items?:readonly UiMenuItem[];
+}
+export interface UiMenuSelectDetail{
+  id:string;
+  item:UiMenuItem;
+  checked?:boolean;
+  element:HTMLElement;
+  originalEvent:Event;
+}
+export interface UiMenuOptions{
+  trigger?:HTMLElement;
+  host?:HTMLElement;
+  label?:string;
+  placement?:UiPlacement;
+  bindTrigger?:boolean;
+  renderIcon?:(icon:string,item:UiMenuItem) => Node|string|null|void;
+  onSelect?:(item:UiMenuItem,event:Event,element:HTMLElement,detail:UiMenuSelectDetail) => void;
+}
+export interface UiMenuOpenOptions extends UiOverlayOpenOptions{
+  focus?:"first"|"last"|"none";
+}
+export interface UiMenuController extends UiOverlayController{
+  open(options?:UiMenuOpenOptions):UiResult<boolean>;
+  refresh():UiResult<void>;
+}
+export interface UiContextMenuOptions extends UiMenuOptions{
+  variant?:string;
+}
+export interface UiContextMenuDisposer{
+  ():void;
+  readonly ready:Promise<void>;
+}
+export function mountUi(root?:ParentNode):UiController[];
+export function contextMenu(target:UiTarget,items:readonly UiMenuItem[]|((event:MouseEvent|KeyboardEvent|PointerEvent,element:HTMLElement) => readonly UiMenuItem[]|null|undefined),options?:UiContextMenuOptions):UiContextMenuDisposer;
+export function tabs(target:UiTarget,options?:UiTabsOptions):UiTabsController;
+export function stepper(target:UiTarget,options?:UiStepperOptions):UiStepperController;
+export function dialog(target:UiTarget,options?:UiDialogOptions):UiDialogController;
+export function drawer(target:UiTarget,options?:UiDrawerOptions):UiDialogController;
+export function popover(target:UiTarget,options?:UiOverlayOptions):UiOverlayController;
+export function tooltip(target:UiTarget,options?:UiOverlayOptions):UiOverlayController;
+export function menu(target:UiTarget,options?:UiMenuOptions):UiMenuController;
+export interface UiApi{
+  mountUi:typeof mountUi;
+  contextMenu:typeof contextMenu;
+  tabs:typeof tabs;
+  stepper:typeof stepper;
+  dialog:typeof dialog;
+  drawer:typeof drawer;
+  popover:typeof popover;
+  tooltip:typeof tooltip;
+  menu:typeof menu;
 }
 
 // ---- JavaScript/locales/de.d.ts ----

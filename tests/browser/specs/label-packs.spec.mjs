@@ -12,9 +12,21 @@ import { repo, viewPage, nextFrames, openExample } from './support.mjs';
 const packs = [['pl',polish,polishStatic],['de',german,germanStatic],['es',spanish,spanishStatic],['fr',french,frenchStatic],['it',italian,italianStatic]];
 const canonical = JSON.parse(fs.readFileSync(path.join(repo,'CanopyX/Views/Locales/labels.json'),'utf8'));
 const wire = name => name[0].toLowerCase()+name.slice(1);
+// The C# UI partial declares the exact optional UI names; the overlay part owns their English defaults.
+const uiNames = new Set([...fs.readFileSync(path.join(repo,'CanopyX/Views/CanopyLabels.Ui.cs'),'utf8')
+  .matchAll(/public string (\w+)\s*\{/g)].map(match=>wire(match[1])));
+function uiDefaults(source) {
+  const definition = source.match(/\bconst\s+UI_LABELS\s*=\s*\{([\s\S]*?)\};/);
+  if (!definition) throw new Error('The UI overlay part must declare UI_LABELS defaults.');
+  return Object.fromEntries([...definition[1].matchAll(/\b(\w+):\s*("(?:[^"\\]|\\.)*")/g)]
+    .map(match=>[match[1],JSON.parse(match[2])]));
+}
+const uiSourceDefaults = uiDefaults(fs.readFileSync(path.join(repo,
+  'CanopyX.Html/Assets/canopyx.ui-overlays.source/00-ui-labels.js'),'utf8'));
 for (const [language,labels,staticLabels] of packs) {
   test(`${language} pack covers every browser and static label and preserves host overrides`,async({page})=>{
     const all = {...labels,...staticLabels}, index = packs.findIndex(pack=>pack[0]===language);
+    expect(Object.keys(uiSourceDefaults).sort()).toEqual([...uiNames].sort());
     expect(Object.keys(all).sort()).toEqual(Object.keys(canonical).map(wire).sort());
     for (const [name,values] of Object.entries(canonical)) expect(all[wire(name)]).toBe(values[index]);
     expect(Object.isFrozen(labels)&&Object.isFrozen(staticLabels)).toBe(true);
@@ -34,6 +46,10 @@ for (const [language,labels,staticLabels] of packs) {
     expect(Object.keys(labels).filter(name=>runtimeNames.includes(name)).sort()).toEqual(runtimeNames.sort());
     const editing = ['forms','editing'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
     const manifest = JSON.parse(fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-parts.json'),'utf8'));
+    const overlayPart = manifest.parts.find(part=>part.name==='ui-overlays');
+    expect(overlayPart, 'UI defaults belong to the ui-overlays part').toBeDefined();
+    const overlays = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',overlayPart.script),'utf8');
+    expect(uiDefaults(overlays)).toEqual(uiSourceDefaults);
     const flow = manifest.parts.filter(part=>part.name==='flow'||part.name.startsWith('flow-'))
       .map(part=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',part.script),'utf8')).join('\n');
     const formatting = ['formatting','format-editor'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
@@ -42,8 +58,8 @@ for (const [language,labels,staticLabels] of packs) {
     const changes = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-changes.js'),'utf8');
     expect(partNames.length).toBeGreaterThan(0);
     for (const name of partNames) {
-      expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change)[A-Z]/);
-      const definitions = /^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:editing;
+      if (!uiNames.has(name)) expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change)[A-Z]/);
+      const definitions = uiNames.has(name)?overlays:/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:editing;
       expect(new RegExp('\\b'+name+':\\s?"').test(definitions), `${language}: lazy part defines ${name}`).toBe(true);
     }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});

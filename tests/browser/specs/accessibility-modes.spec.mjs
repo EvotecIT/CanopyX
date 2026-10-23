@@ -2,7 +2,7 @@
 // reflow at 200% and 400% zoom (640 and 320 CSS pixel wide windows), and the WCAG 2.2 target size of 24 x 24 CSS pixels,
 // met by the control's box, by a larger hit area, or by spacing. Phone toolbars aim for 44 pixel targets.
 import { test, expect } from "@playwright/test";
-import { openExample, nextFrames } from "./support.mjs";
+import { openExample, nextFrames, settleOverlayMotion } from "./support.mjs";
 
 /** The colour a CSS system colour resolves to on this page, under the current emulation. */
 const systemColor = (page, name) => page.evaluate(color => {
@@ -143,6 +143,7 @@ for (const [width, height, zoom] of [[640, 512, "200%"], [320, 256, "400%"]]) {
     await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.openDetails(document.querySelector(".cx-row[data-cx-id]").getAttribute("data-cx-id")));
     const drawer = page.locator(".cx-drawer");
     await expect(drawer).toBeVisible();
+    await settleOverlayMotion(drawer);
     const box = await drawer.boundingBox();
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(width + 1);

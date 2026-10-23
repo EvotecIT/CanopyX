@@ -47,7 +47,7 @@ public sealed class ViewModePartAssetsTests {
         view.Layout = new CanopyLayoutOptions();
         Assert.Contains("x-canopyx-layouts", view.ToHtmlFragment());
         Assert.DoesNotContain("x-canopyx-highlight", view.ToHtmlFragment());
-        Assert.Equal(new[] { "tree-tools", "export", "layouts" }, CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name));
+        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "layouts" }, CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name));
     }
 
     [Theory]

@@ -4,7 +4,7 @@
   // records, timelines, deep links and record actions for flat grids and trees. The part is one definition shared by both
   // view kinds; a flat grid's runtime hands it the grid helpers through RECORD_IMPL.grid (52-grid-record-part.js).
   // openRecord loads the part and runs again; a view that cannot load it keeps its plain drawer and reports the error.
-  const RECORD_IMPL = {}, RECORD_PART = definePart(TreeGrid, "record-panel", "record panel", () => ({ RECORD_IMPL, TreeGrid, h, setText, fill,
+  const RECORD_IMPL = {}, RECORD_PART = definePart(TreeGrid, "record-panel", "record panel", () => ({ RECORD_IMPL, UI_IMPL, TreeGrid, h, setText, fill,
     cellText, cellValue, isCellObject, formatValue, toneOf, applyTone, toneColors, badgeElement, loadSidecar, requireIdentifier, validateGridRows, PROTOCOL, foldText, createTreeGrid, svgIcon, gridExportField, columnNumericTone, columnValueTone, validateColumnValues }));
   function loadRecordPanel() { return loadPart(RECORD_PART); }
   // A cell holds a structured value (a list, an object, a collection, a timeline or changes) or a link to another record.

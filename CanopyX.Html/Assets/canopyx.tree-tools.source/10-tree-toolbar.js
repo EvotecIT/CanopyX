@@ -60,7 +60,8 @@
     closeMenusOutside(node) {
       TOOLBAR_PANELS.closeMenusOutside.call(this, node);
       const panel = this.interactionPanel;
-      if (panel?.getAttribute("role") === "menu" && !panel.contains(node)) this.closeInteractionPanel(false);
+      // The menu is portalled; the initiating row remains its anchor for focus handoff.
+      if (panel?.getAttribute("role") === "menu" && !panel.contains(node) && !this.rendered.get(this.panelNode)?.contains(node)) this.closeInteractionPanel(false);
     },
 
     // The list of columns keeps the accessible name the tree's former column chooser had.

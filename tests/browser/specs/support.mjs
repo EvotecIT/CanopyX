@@ -57,6 +57,14 @@ export function settleGrid(page) {
   });
 }
 
+/** Layout assertions measure the open overlay after its entry motion, rather than an intermediate transform. */
+export function settleOverlayMotion(overlay) {
+  return overlay.evaluate(async element => {
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => {})));
+  });
+}
+
 /** Opens a toolbar control through its desktop button or the phone overflow. */
 export async function openGridControl(page, kind) {
   const control = page.locator('.cx-grid-' + kind), summary = control.locator(':scope > summary');
@@ -130,14 +138,17 @@ export function runtimeAssets(runtime = "tree") {
       // The search highlighting and layout mode parts of views that declare them.
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.js"),"utf8") +
       // The record panel part every runtime loads for record panels, structured values and record links.
-      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.js"),"utf8"),
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.js"),"utf8") +
+      // The shared overlays and menus used by tree tools, filters, calendars and cell ranges.
+      ["ui-overlays", "ui-menu"].map(name => "\n" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".js"), "utf8")).join(""),
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8") +
       (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-live.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-facets.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-calendar.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-timeline.css"),"utf8") : "") +
       "\n" + treeToolsAssets().style + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.css"),"utf8") +
-      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.css"),"utf8")
+      "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.css"),"utf8") +
+      ["ui-overlays", "ui-menu"].map(name => "\n" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".css"), "utf8")).join("")
   };
 }
 

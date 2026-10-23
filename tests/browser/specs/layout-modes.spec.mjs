@@ -3,8 +3,21 @@
 // set the default and allowed modes; trees offer fit and scroll; print asks for a table or stacked records.
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { waitForEntryMotion } from "./part-fixture-support.mjs";
 import { openExample, nextFrames } from "./support.mjs";
 import { ticketView, treeView, open, call, settle } from "./view-modes-support.mjs";
+
+async function expectCardPopupAnchor(popup, trigger, width) {
+  await waitForEntryMotion(popup);
+  const box = await popup.boundingBox(), anchor = await trigger.boundingBox();
+  expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(width + .5);
+  if (width >= 640) {
+    const side = await popup.getAttribute("data-side"); expect(["top", "bottom"]).toContain(side);
+    const top = side === "top" ? anchor.y - box.height - 6 : anchor.y + anchor.height + 6;
+    expect(Math.abs(box.y - top)).toBeLessThan(1);
+    expect(Math.abs(box.x - Math.max(8, Math.min(anchor.x, width - box.width - 8)))).toBeLessThan(1);
+  }
+}
 
 const host = page => page.locator("[data-canopyx-host]").first();
 const firstRowIndex = page => page.evaluate(() => {
@@ -78,11 +91,67 @@ for (const width of [1440, 390]) test(`cards hide the header row and offer sorti
   // A column's menu opens from its row, with the column's actions.
   await panel.getByRole("button", { name: "Menu for Priority" }).click();
   await expect(page.locator(".cx-column-menu")).toBeVisible();
-  // The menu belongs to the card layout only; the header comes back in fit.
+  await expectCardPopupAnchor(page.locator(".cx-column-menu"), panel.getByRole("button", { name: "Menu for Priority" }), width);
+  await expect(sort).toHaveAttribute("open", "");
+  // Escape retires the portalled child before its toolbar parent and returns to its card control.
   await page.keyboard.press("Escape");
+  await expect(page.locator(".cx-column-menu")).toHaveCount(0);
+  await expect(sort).toHaveAttribute("open", "");
+  await expect(panel.getByRole("button", { name: "Menu for Priority" })).toBeFocused();
+  // The menu belongs to the card layout only; the header comes back in fit.
   await call(page, "setLayout", { mode: "fit" }); await settle(page);
   await expect(sort).toBeHidden();
   await expect(page.locator(".cx-hcell").first()).toBeVisible();
+});
+
+for (const width of [1440, 390]) test(`card filter handoff retains its toolbar trigger after host query refresh (${width})`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await open(page, ticketView(120, { layout: { mode: "cards" } }));
+  const sort = page.locator(".cx-grid-sort"); await sort.locator(":scope > summary").click();
+  const trigger = sort.getByRole("button", { name: "Menu for Priority", exact: true });
+  const oldTrigger = await trigger.elementHandle();
+  await trigger.click(); await page.getByRole("menuitem", { name: /^Filter/ }).click();
+  const filter = page.getByRole("dialog", { name: /^Priority: Filter/ });
+  await expect(filter).toBeVisible(); await expect(sort).toHaveAttribute("open", "");
+  await expectCardPopupAnchor(filter, trigger, width);
+  // A refresh with unchanged facet criteria still rebuilds the toolbar controls.
+  await call(page, "setQuery", await call(page, "getQuery"));
+  expect(await oldTrigger.evaluate(element => element.isConnected)).toBe(false);
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(trigger).toHaveAttribute("aria-controls", await filter.getAttribute("id"));
+  await page.keyboard.press("Escape"); await expect(filter).toHaveCount(0);
+  await expect(sort).toHaveAttribute("open", ""); await expect(trigger).toBeFocused();
+  await trigger.click(); await page.getByRole("menuitem", { name: /^Filter/ }).click();
+  await expect(filter).toBeVisible();
+  await filter.getByRole("button", { name: "Done", exact: true }).click();
+  await expect(filter).toHaveCount(0); await expect(trigger).toBeFocused();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await trigger.click();
+  const menu = page.getByRole("menu", { name: "Menu for Priority", exact: true });
+  await expect(menu).toBeVisible();
+  await call(page, "setQuery", await call(page, "getQuery"));
+  await expect(menu).toBeVisible(); await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Tab");
+  await expect(menu).toHaveCount(0);
+  await expect(sort.getByRole("button", { name: "Replies", exact: true })).toBeFocused();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+});
+
+test("a rebuilt column header adopts its open menu relationship and focus return", async ({ page }) => {
+  await open(page, ticketView(120));
+  const trigger = page.locator('[data-cx-column-menu="priority"]');
+  await trigger.click();
+  const menu = page.getByRole("menu", { name: "Menu for Priority", exact: true });
+  await expect(menu).toBeVisible();
+  const oldTrigger = await trigger.elementHandle();
+  await call(page, "setColumnVisible", "customer", false);
+  expect(await oldTrigger.evaluate(element => element.isConnected)).toBe(false);
+  await expect(menu).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(trigger).toHaveAttribute("aria-controls", await menu.getAttribute("id"));
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0); await expect(trigger).toBeFocused();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
 });
 
 test("switching keeps the sort, filters, search, selection, first row in view and the focused cell", async ({ page }) => {

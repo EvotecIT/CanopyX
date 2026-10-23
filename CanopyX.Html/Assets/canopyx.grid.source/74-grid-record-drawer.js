@@ -15,15 +15,21 @@
     if(activeRecordDrawer?.contains(returnFocus))returnFocus=activeRecordDrawer._returnFocus;
     // A drawer opened in place of another takes its focus: the one it replaces does not restore focus on closing.
     // It leaves the page at once, so the page never holds two drawers (or two titles with one id); its close event still runs.
-    if(activeRecordDrawer){activeRecordDrawer._replaced=true;activeRecordDrawer.close();activeRecordDrawer.remove();}
+    if(activeRecordDrawer){activeRecordDrawer._replaced=true;activeRecordDrawer._cxOverlay.close("replace",false,true);activeRecordDrawer.remove();}
     const dialog=h("dialog","cx-host cx-grid-overlay cx-drawer"),head=h("div","cx-drawer-h"),identity=h("div"),title=h("h4"),subtitle=h("p"),body=h("div","cx-drawer-body");
     dialog._returnFocus=returnFocus;
-    gridOverlayTheme(this,dialog);title.id=this.id+"-record-title";title.tabIndex=-1;title.setAttribute("aria-level","2");dialog.setAttribute("aria-labelledby",title.id);
-    const previous=gridDecorateButton(gridButton("",()=>navigate(-1)),"up",true),next=gridDecorateButton(gridButton("",()=>navigate(1)),"down",true),close=gridDecorateButton(gridButton("",()=>dialog.close()),"close",true);
+    for(const name of (this.opts.overlayClass||"").split(/\s+/).filter(Boolean))dialog.classList.add(name);
+    // Renderers and drawer hooks read the host theme before the first paint, while the dialog is still closed.
+    const restoreTheme=UI_TOOLS.theme(this.host,dialog);
+    dialog.dataset.hfxPart="drawer";dialog.dataset.side="end";head.dataset.hfxPart="header";title.dataset.hfxPart="title";body.dataset.hfxPart="body";
+    title.id=this.id+"-record-title";title.tabIndex=-1;title.setAttribute("aria-level","2");dialog.setAttribute("aria-labelledby",title.id);
+    const previous=gridDecorateButton(gridButton("",()=>navigate(-1)),"up",true),next=gridDecorateButton(gridButton("",()=>navigate(1)),"down",true),close=gridDecorateButton(gridButton("",()=>dialog._cxOverlay.close()),"close",true);
     previous.setAttribute("aria-label",this.labels.gridPreviousRecord);next.setAttribute("aria-label",this.labels.gridNextRecord);close.setAttribute("aria-label",this.labels.gridCloseRecord);
     for(const button of [previous,next,close])button.classList.add("icon");identity.append(title,subtitle);head.append(identity,previous,next,close);dialog.append(head,body);
     document.body.appendChild(dialog);activeRecordDrawer=dialog;this.recordDrawer=dialog;DataGrid.activeDrawers.set(dialog,this);
     const primary=this.visibleColumns()[0],shape=gridResultShape(this.acceptedQuery),owner=this.dataLifetime;let retiredForNavigation=false,paints=null;
+    const lifetime=new AbortController(),overlay=dialog._cxOverlay=UI_IMPL.drawer(dialog,{host:this.host,container:this.host,focus:false,dismissible:false},lifetime.signal);
+    lifetime.signal.addEventListener("abort",restoreTheme,{once:true});
     // A record outside the accepted result (a deep link or a related record) has no position: previous and next stay off.
     const placed=()=>Number.isInteger(index);
     const steps=()=>{previous.disabled=!placed()||index<=0||this.cursor&&index<=this.rowBounds().first;next.disabled=!placed()||index>=this.rowCount()-1;};
@@ -49,17 +55,16 @@
     };
     dialog._cxPaint=paint;
     dialog.addEventListener("keydown",event=>{
-      if(event.key==="Escape"&&!event.defaultPrevented){event.preventDefault();dialog.close();}
-      else if(["ArrowUp","ArrowDown"].includes(event.key)&&!event.defaultPrevented&&!event.target.matches('input,textarea,select,[contenteditable],[role=tab]')&&!event.target.closest(".cx-record-nested")){event.preventDefault();navigate(event.key==="ArrowUp"?-1:1);}
+      if(["ArrowUp","ArrowDown"].includes(event.key)&&!event.defaultPrevented&&!event.target.matches('input,textarea,select,[contenteditable],[role=tab]')&&!event.target.closest(".cx-record-nested")){event.preventDefault();navigate(event.key==="ArrowUp"?-1:1);}
     });
-    const abort=()=>{retiredForNavigation=dialog._navigating;dialog.close();};owner.signal.addEventListener("abort",abort,{once:true});
+    const abort=()=>{retiredForNavigation=dialog._navigating;overlay.close("data",false,true);};owner.signal.addEventListener("abort",abort,{once:true});
     const refreshHooks=()=>DataGrid.refreshDrawerHooks(this,dialog);
     this.host.addEventListener("canopyx:format",refreshHooks);
-    dialog.addEventListener("close",()=>{owner.signal.removeEventListener("abort",abort);this.host.removeEventListener("canopyx:format",refreshHooks);DataGrid.activeDrawers.delete(dialog);cancelAnimationFrame(dialog._cxHooksFrame);paints?.abort();dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
+    dialog.addEventListener("close",()=>{lifetime.abort();owner.signal.removeEventListener("abort",abort);this.host.removeEventListener("canopyx:format",refreshHooks);DataGrid.activeDrawers.delete(dialog);cancelAnimationFrame(dialog._cxHooksFrame);paints?.abort();dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
       if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary);},{once:true});
     RECORD_IMPL.decorate?.(this,dialog,{head,identity,title,subtitle,body,options:options||{}});
     DataGrid.applyDrawerHooks(this,dialog);
-    paint(record,index);const phone=this.host.clientWidth<=640;dialog.classList.toggle("cx-phone",phone);if(phone)dialog.showModal();else dialog.show();this.focusRing(title);
+    paint(record,index);overlay.open();this.focusRing(title);
     return dialog;
   };
   Object.assign(DataGrid.prototype,{

@@ -910,3 +910,19 @@ const changeApi = createChangeList(document.createElement("div"), { view: change
 changeApi.setState({ flaggedOnly: true, kinds: ["added"] });
 const propagationDocument: PropagationDocument = { protocol: "canopyx/2", type: "propagation", id: "p", label: "P", witnesses: [{ id: "dc1", label: "DC01", state: "propagating", firstSeen: "2026-10-21T10:42:00Z" }] };
 createPropagation(document.createElement("div"), { view: propagationDocument }).update(propagationDocument);
+
+// Standalone UI shares the lazy API across tree and grid entry points.
+import { tabs, stepper, contextMenu, type UiTabsController } from "@evotecit/canopyx";
+const uiTabs: UiTabsController = tabs("#sections", {
+  labels: polish,
+  beforeChange: async (from, to, signal) => !signal.aborted && from?.id !== to.id,
+  renderIcon: name => { const span = document.createElement("span"); span.textContent = name; return span; }
+});
+void uiTabs.ready.then(controller => controller.select("activity"));
+stepper("#setup", { validate: step => step.id === "review" ? true : ["Choose a workspace."], onFinish: () => {} });
+const disposeMenu = contextMenu(".record", (_event, element) => [{ id: element.id, label: "Open record" }], {
+  onSelect: (item, _event, _element, detail) => { const id: string = detail.id; void id; void item.checked; }
+});
+void disposeMenu.ready.then(() => disposeMenu());
+void GridRuntime.drawer("#details").ready;
+void ReportingRuntime.dialog("#confirm").ready;

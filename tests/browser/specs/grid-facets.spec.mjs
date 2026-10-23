@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { viewPage, nextFrames } from "./support.mjs";
+import { waitForEntryMotion } from "./part-fixture-support.mjs";
 import AxeBuilder from "@axe-core/playwright";
 
 const filter = (column, operator, ...values) => ({ column, operator, values });
@@ -143,6 +144,7 @@ test('accepted facet queries keep a held checkbox target until its native click 
  const target=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input');
  const bounds=()=>target.boundingBox();
  await target.focus();
+ await waitForEntryMotion(pop);
  const before=await bounds();await page.mouse.move(before.x+before.width/2,before.y+before.height/2);await page.mouse.down();
  // WebKit gives focus back to the grid on native checkbox pointerdown. Preserve that native focus just as other engines
  // preserve the checkbox's focus; accepted queries and deferred positioning must not move it again.
@@ -158,7 +160,8 @@ test('accepted facet queries keep a held checkbox target until its native click 
  await expect(target).toBeChecked();
  await expect.poll(()=>pop.evaluate(panel=>{
   const header=document.querySelector('[data-cx-column="category"]'),bottom=header.getBoundingClientRect().bottom;
-  return Math.abs(panel.getBoundingClientRect().top-Math.max(8,Math.min(bottom,innerHeight-panel.offsetHeight-8)));
+  // Shared popovers restore the space-1-5 anchor gap after the native click.
+  return Math.abs(panel.getBoundingClientRect().top-(bottom+6));
  })).toBeLessThan(1);
  expect(await page.evaluate(()=>document.activeElement===window.facetPressFocus)).toBe(true);await page.screenshot({path:testInfo.outputPath('held-facet-query.png')});
  await pop.getByRole('button',{name:'Done',exact:true}).click();

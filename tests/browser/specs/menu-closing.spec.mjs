@@ -33,7 +33,7 @@ async function open(page, views, runtime = "grid") {
 }
 const host = (page, index) => page.locator("[data-canopyx-host]").nth(index);
 const openMenus = page => page.evaluate(() => [...document.querySelectorAll("details[open]")].map(menu => menu.closest("[data-canopyx-host]").canopyx.view.id + ":" + menu.className.split(" ").pop())
-  .concat([...document.querySelectorAll(".cx-grid-overlay.cx-pop, .cx-interaction-panel")].map(panel => "panel:" + panel.getAttribute("role"))));
+  .concat([...document.querySelectorAll(".cx-grid-overlay.cx-pop, .cx-interaction-panel, .cx-menu[data-context-menu]")].map(panel => "panel:" + panel.getAttribute("role"))));
 // The open phone sheets that show a drag handle.
 const handles = page => page.evaluate(() => [...document.querySelectorAll("details[open] > .cx-grid-panel")].filter(panel => getComputedStyle(panel, "::before").display !== "none")
   .map(panel => panel.parentElement.className.split(" ").pop().replace("cx-grid-", "")));
@@ -79,7 +79,7 @@ test("opening a CanopyX menu closes the others and announces itself to the host"
   await page.keyboard.press("ArrowDown");
   await expect(page.locator(".cx-column-menu")).toBeVisible();
   // Details toggles are queued, so the other menu closes a task later.
-  await expect.poll(() => openMenus(page)).toEqual(["panel:dialog"]);
+  await expect.poll(() => openMenus(page)).toEqual(["panel:menu"]);
   // A toolbar menu opening closes the popover.
   await host(page, 1).locator(".cx-grid-columns").evaluate(menu => { menu.open = true; });
   await expect.poll(() => openMenus(page)).toEqual(["second:cx-grid-columns"]);
@@ -94,6 +94,93 @@ test("the column popover closes when focus leaves it", async ({ page }) => {
   await expect(page.locator(".cx-column-menu")).toBeVisible();
   await page.locator("#host-popover").focus();
   await expect(page.locator(".cx-column-menu")).toHaveCount(0);
+});
+
+test("the column menu keeps disabled items navigable and opens its filter as a dialog", async ({ page }) => {
+  await open(page, [grid("first")]);
+  const trigger = host(page, 0).locator('[data-cx-column-menu="owner"]');
+  await trigger.focus(); await page.keyboard.press("ArrowDown");
+  const menu = page.locator(".cx-column-menu"), items = menu.getByRole("menuitem");
+  await expect(menu).toHaveAttribute("role", "menu");
+  await expect(items.first()).toHaveAttribute("aria-disabled", "true");
+  await expect(items.first()).toBeFocused();
+  await page.keyboard.press("Enter"); await expect(menu).toBeVisible();
+  await page.keyboard.press("End"); await expect(items.last()).toBeFocused();
+  await page.keyboard.press("Home"); await expect(items.first()).toBeFocused();
+  await page.keyboard.type("Filter"); await expect(menu.getByRole("menuitem", { name: /Filter/ })).toBeFocused();
+  await page.keyboard.press("Enter");
+  const filter = page.locator(".cx-column-filter");
+  await expect(filter).toBeVisible(); await expect(filter).toHaveAttribute("role", "dialog");
+  await expect(menu).toHaveCount(0);
+  await page.keyboard.press("Escape"); await expect(filter).toHaveCount(0); await expect(trigger).toBeFocused();
+});
+
+test("host dismissal cancels a column-menu opening that is still loading its part", async ({ page }) => {
+  await open(page, [grid("first")]);
+  await host(page, 0).evaluate(element => {
+    element.querySelector('[data-cx-column-menu="name"]').click();
+    element.canopyx.closeMenus();
+  });
+  await nextFrames(page);
+  await expect(page.locator(".cx-column-menu")).toHaveCount(0);
+  await host(page, 0).locator('[data-cx-column-menu="name"]').click();
+  await expect(page.locator(".cx-column-menu")).toBeVisible();
+});
+
+test("a grid toolbar inside a modal closes before its containing dialog", async ({ page }) => {
+  await open(page, [grid("first")]);
+  await host(page, 0).evaluate(async element => {
+    const dialog = document.createElement("dialog"); dialog.id = "nested-grid";
+    dialog.className = "cx-dialog"; dialog.setAttribute("role", "dialog"); dialog.setAttribute("aria-label", "Nested grid");
+    const heading = document.createElement("h2"); heading.textContent = "Nested grid"; dialog.append(heading, element);
+    document.body.append(dialog);
+    window.modalUi = CanopyX.dialog(dialog, { trigger: document.getElementById("host-popover") });
+    await modalUi.ready; await modalUi.open();
+  });
+  const dialog = page.locator("#nested-grid"), trigger = dialog.locator(".cx-grid-columns > summary");
+  await trigger.focus(); await page.keyboard.press("Enter");
+  await expect(dialog.locator(".cx-grid-columns")).toHaveAttribute("open", "");
+  await dialog.locator(".cx-grid-columns input").first().focus();
+  await page.keyboard.press("Escape");
+  await expect(dialog.locator(".cx-grid-columns")).not.toHaveAttribute("open", "");
+  await expect(dialog).toBeVisible(); await expect(trigger).toBeFocused();
+  await page.keyboard.press("Escape"); await expect(dialog).not.toBeVisible();
+});
+
+test("tree action menus stay inside a native modal with keyboard activation and dismissal", async ({ page }) => {
+  const view = { ...tree("tree"), contextActions: [{ id: "inspect", label: "Inspect" }, { id: "details", label: "Details" }] };
+  await open(page, [view], "interactive");
+  await host(page, 0).evaluate(async element => {
+    const view = element.canopyx.view;
+    // Remount the existing host with a real action callback inside the native modal.
+    element.canopyx.destroy();
+    const main = document.createElement("main"), dialog = document.createElement("dialog");
+    dialog.id = "native-tree-modal"; dialog.setAttribute("aria-label", "Modal tree"); dialog.style.width = "900px";
+    main.append(dialog); document.body.append(main); dialog.append(element); dialog.showModal();
+    window.nativeModalActions = [];
+    await CanopyX.createTreeGrid(element, { view, onAction(proposal) {
+      window.nativeModalActions.push({ nodeId: proposal.nodeId, action: proposal.action }); return true;
+    } }).ready;
+  });
+  await nextFrames(page);
+  await expect(page.getByRole("dialog", { name: "Modal tree" })).toBeVisible();
+  const dialog = page.locator("#native-tree-modal"), alpha = dialog.locator('.cx-row[data-cx-id="a"]');
+  const menu = page.getByRole("menu", { name: "Actions" });
+  await alpha.focus(); await page.keyboard.press("Shift+F10");
+  await expect(menu).toBeVisible();
+  expect(await menu.evaluate(element => element.closest("dialog")?.id)).toBe("native-tree-modal");
+  await expect(menu.getByRole("menuitem", { name: "Inspect", exact: true })).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(menu.getByRole("menuitem", { name: "Details", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect.poll(() => page.evaluate(() => window.nativeModalActions)).toEqual([{ nodeId: "a", action: "details" }]);
+  await expect(menu).toHaveCount(0); await expect(dialog).toHaveJSProperty("open", true);
+  await host(page, 0).evaluate(element => element.canopyx.openActions("a"));
+  await expect(menu.getByRole("menuitem", { name: "Inspect", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0); await expect(dialog).toHaveJSProperty("open", true); await expect(alpha).toBeFocused();
+  expect(await page.evaluate(() => window.nativeModalActions)).toEqual([{ nodeId: "a", action: "details" }]);
+  await page.keyboard.press("Escape"); await expect(dialog).toHaveJSProperty("open", false);
 });
 
 test("a host closes CanopyX menus with the canopyx:closemenus event or closeMenus on one view", async ({ page }) => {
@@ -120,23 +207,26 @@ test("a host closes CanopyX menus with the canopyx:closemenus event or closeMenu
 test("tree menus and the actions menu close on focus outside, another menu and the host event", async ({ page }) => {
   await open(page, [tree("tree"), grid("grid")], "grid");
   // The tree toolbar menu, from the keyboard.
-  await openFromKeyboard(page, 0, "columns");
+  await host(page, 0).getByRole("button", { name: "Columns", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(host(page, 0).locator(".cx-grid-columns")).toHaveAttribute("open", "");
   await page.locator("#host-popover").focus();
   expect(await openMenus(page)).toEqual([]);
   // The actions menu opens from the keyboard (the API Shift+F10 uses) and closes when focus leaves it.
   await host(page, 0).evaluate(element => element.canopyx.openActions("a"));
-  await expect(page.locator(".cx-interaction-panel[role=menu]")).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.menuEvents.at(-1))).toBe("cx-interaction-panel");
+  await expect(page.getByRole("menu", { name: "Actions" })).toBeVisible();
+  await expect(page.getByRole("menu", { name: "Actions" })).toHaveAttribute("data-hfx-part", "menu");
+  await expect.poll(() => page.evaluate(() => window.menuEvents.at(-1))).toBe("cx-menu");
   await page.locator("#host-popover").focus();
-  await expect(page.locator(".cx-interaction-panel")).toHaveCount(0);
+  await expect(page.getByRole("menu", { name: "Actions" })).toHaveCount(0);
   // A grid menu opening closes the actions menu, and so does the host event.
   await host(page, 0).evaluate(element => element.canopyx.openActions("b"));
-  await expect(page.locator(".cx-interaction-panel[role=menu]")).toBeVisible();
+  await expect(page.getByRole("menu", { name: "Actions" })).toBeVisible();
   await host(page, 1).locator(".cx-grid-columns").evaluate(menu => { menu.open = true; });
-  await expect(page.locator(".cx-interaction-panel")).toHaveCount(0);
+  await expect(page.getByRole("menu", { name: "Actions" })).toHaveCount(0);
   await host(page, 0).evaluate(element => element.canopyx.openActions("a"));
   await page.evaluate(() => document.dispatchEvent(new CustomEvent("canopyx:closemenus")));
-  await expect(page.locator(".cx-interaction-panel")).toHaveCount(0);
+  await expect(page.getByRole("menu", { name: "Actions" })).toHaveCount(0);
   expect(await openMenus(page)).toEqual([]);
   await openFromKeyboard(page, 0, "export");
   await host(page, 0).evaluate(element => element.canopyx.closeMenus());

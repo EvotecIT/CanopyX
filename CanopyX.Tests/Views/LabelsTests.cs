@@ -75,7 +75,7 @@ public sealed class LabelsTests {
             property.SetValue(labels, "x {time}");
         }
 
-        // A flat grid writes them all.
+        // A flat grid writes the labels its runtime reads; standalone UI parts keep their labels separate.
         var grid = new CanopyDataGridView("labelled", "Labelled") { Labels = labels };
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         var written = JsonNode.Parse(grid.ToJson())!["labels"]!.AsObject().Select(item => item.Key).OrderBy(name => name, StringComparer.Ordinal).ToList();
@@ -85,7 +85,9 @@ public sealed class LabelsTests {
         bool IsFlowLabel(string name) => name.StartsWith("Flow", StringComparison.Ordinal);
         // Matrix and change view labels likewise: their documents carry them (MatrixTests, TextDiffTests).
         bool IsMatrixLabel(string name) => name.StartsWith("Matrix", StringComparison.Ordinal) || name.StartsWith("Change", StringComparison.Ordinal);
-        var browser = properties.Where(property => !outlineOnly.Contains(property.Name) && !IsFlowLabel(property.Name) && !IsMatrixLabel(property.Name)).ToList();
+        bool IsUiLabel(string name) => name.StartsWith("Tabs", StringComparison.Ordinal) || name.StartsWith("Stepper", StringComparison.Ordinal) ||
+            name.StartsWith("Dialog", StringComparison.Ordinal) || name.StartsWith("Drawer", StringComparison.Ordinal) || name.StartsWith("State", StringComparison.Ordinal);
+        var browser = properties.Where(property => !outlineOnly.Contains(property.Name) && !IsFlowLabel(property.Name) && !IsMatrixLabel(property.Name) && !IsUiLabel(property.Name)).ToList();
         Assert.Equal(browser.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), written);
 
         // A tree writes the labels the tree runtimes read: the core and interaction texts and its toolbar menus' grid labels,
@@ -128,10 +130,18 @@ public sealed class LabelsTests {
         // The tree runtimes define their toolbar menus' labels with the same English texts.
         foreach (var (name, text) in RuntimeLabels(CanopyX.Html.CanopyRuntime.InteractiveTreeGrid)) Assert.Equal(runtime[name], text);
 
-        // And the schema knows exactly those names.
+        // Standalone UI defaults live in their optional overlay part, outside the ordinary grid and tree runtimes.
+        var ui = PartLabels("ui-overlays", "UI_LABELS");
+        var uiProperties = properties.Where(property => IsUiLabel(property.Name)).ToList();
+        Assert.NotEmpty(ui);
+        Assert.Equal(uiProperties.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), ui.Keys.OrderBy(name => name, StringComparer.Ordinal));
+        Assert.All(ui.Keys, name => Assert.False(runtime.ContainsKey(name), name + " belongs to the optional UI part."));
+        foreach (var property in uiProperties) Assert.Equal(property.GetValue(english), ui[Wire(property.Name)]);
+
+        // Whole label packs can also carry UI translations before the optional part loads, so the schema accepts them.
         var schema = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Schema", "canopyx-2.schema.json")))!;
         var declared = schema["$defs"]!["view"]!["properties"]!["labels"]!["properties"]!.AsObject().Select(item => item.Key);
-        Assert.Equal(written, declared.OrderBy(name => name, StringComparer.Ordinal));
+        Assert.Equal(written.Concat(ui.Keys).OrderBy(name => name, StringComparer.Ordinal), declared.OrderBy(name => name, StringComparer.Ordinal));
 
         // A flow writes exactly the flow labels and the shared field messages, under the names the flow and forms parts define,
         // with the same English texts.

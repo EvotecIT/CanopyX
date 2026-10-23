@@ -3,7 +3,7 @@
   const FILTER_EDITOR=definePart(DataGrid,"filter-editor","filter editor",()=>({DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridDateInputMoment,gridQuery,gridQueryStart,
     GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridKeyCompare,gridFacetKey,columnNumericTone,columnValueTone,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
     reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,numberText,fill,announceMenu,applyTone,toneOf,badgeElement,isCellObject,RECORD_IMPL,
-    GRID_REPORTING,overlayTheme,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null}));
+    GRID_REPORTING,overlayTheme,UI_IMPL,UI_TOOLS,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null}));
   function loadGridFilterEditor(){return loadPart(FILTER_EDITOR);}
   DataGrid.prototype.requirePart=requirePart;
   Object.assign(DataGrid.prototype,{
@@ -21,6 +21,8 @@
     async showReportingText(...args){const epoch=this.queryEpoch;try{await loadGridFilterEditor();if(!this.destroyed&&epoch===this.queryEpoch)this.showReportingText(...args);}catch(error){this.emit("error",{error});}},
   });
   for(const method of ["openColumnMenu","openColumnFilter"])DataGrid.prototype[method]=async function(id,anchor){
-    try{await loadGridFilterEditor();if(!this.destroyed)this[method](id,anchor?.isConnected?anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(id)+'"]'));}
-    catch(error){this.setNotice(this.labels.gridLoadFailed,true);this.emit("error",{error});}
+    const request=this.pendingColumnMenu={anchor};
+    try{await loadGridFilterEditor();if(!this.destroyed&&this.pendingColumnMenu===request){const target=this.resolveColumnAnchor(id,anchor);if(target)this[method](id,target);}}
+    catch(error){if(!this.destroyed&&this.pendingColumnMenu===request){this.setNotice(this.labels.gridLoadFailed,true);this.emit("error",{error});}}
+    finally{if(this.pendingColumnMenu===request)this.pendingColumnMenu=null;}
   };

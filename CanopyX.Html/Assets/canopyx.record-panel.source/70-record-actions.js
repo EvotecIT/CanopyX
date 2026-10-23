@@ -3,8 +3,8 @@
   // record alone, then the host's recordActions option and plugins' recordActions ({ label, run({ record, view, api, payload,
   // signal }) }). record.actions switches the built-in ones off. Exports carry every field with its section, empty ones too.
   function recordActionsMenu(view, dialog, identity) {
-    const spec = recordSpec(view), switches = spec.actions || {}, labels = view.labels, items = [];
-    const add = (label, task) => items.push({ label, task });
+    const spec = recordSpec(view), switches = spec.actions || {}, labels = view.labels, items = [], actions = new Map();
+    const add = (label, task, disabled = false) => items.push({ label, task, disabled });
     if (switches.link !== false && spec.deepLink) add(labels.recordCopyLink, () => recordCopy(view, dialog, recordAddress(view, dialog._cxRecord)));
     if (switches.copy !== false) { add(labels.recordCopyValues, () => recordCopy(view, dialog, recordExport(view, dialog, "text"))); add(labels.recordCopyJson, () => recordCopy(view, dialog, recordExport(view, dialog, "json"))); }
     if (switches.export !== false) { add(labels.recordExportCsv, () => recordDownload(view, dialog, "csv")); add(labels.recordExportJson, () => recordDownload(view, dialog, "json")); }
@@ -12,38 +12,25 @@
     for (const action of [...(Array.isArray(view.opts.recordActions) ? view.opts.recordActions : []), ...view.plugins.flatMap(item => item.recordActions || [])]) {
       if (!action || typeof action.label !== "string" || typeof action.run !== "function") continue;
       add(action.label, () => { const record = dialog._cxRecord, entry = recordEntry(view, record.id);
-        return action.run(Object.freeze({ record: JSON.parse(JSON.stringify(record)), view: view.view.id, api: view.host.canopyx, payload: entry?.payload || null, signal: view.lifetime.signal })); });
+        return action.run(Object.freeze({ record: JSON.parse(JSON.stringify(record)), view: view.view.id, api: view.host.canopyx, payload: entry?.payload || null, signal: view.lifetime.signal })); }, action.disabled === true);
     }
     if (!items.length) return;
-    // A menu button: Enter, Space or a click opens the menu on its first item; arrows move, Escape or Tab closes it.
-    const menu = h("div", "cx-record-menu"), toggle = recordButton("", () => show(list.hidden), "cx-record-menu-btn", "more"), list = h("div", "cx-record-menu-list");
+    // Share keyboard handling, focus return and nested Escape order with every other menu.
+    const menu = h("div", "cx-record-menu"), toggle = h("button", "cx-record-btn cx-record-menu-btn"), list = h("div", "cx-menu");
+    toggle.type = "button"; toggle.appendChild(recordIcon("more"));
     list.id = dialog.id + "-actions"; list.setAttribute("role", "menu"); list.setAttribute("aria-label", labels.recordActions); list.hidden = true;
     toggle.setAttribute("aria-label", labels.recordActions); toggle.title = labels.recordActions;
-    toggle.setAttribute("aria-haspopup", "menu"); toggle.setAttribute("aria-expanded", "false"); toggle.setAttribute("aria-controls", list.id);
-    const show = open => {
-      list.hidden = !open; toggle.setAttribute("aria-expanded", String(open));
-      if (open) buttons[0].focus();
-    };
     const buttons = items.map(item => {
-      const button = recordButton(item.label, () => {
-        show(false); toggle.focus();
-        Promise.resolve().then(item.task).catch(error => { recordAnnounce(dialog, error.message); view.emit("error", { error }); });
-      }, "cx-record-menu-item");
-      button.setAttribute("role", "menuitem"); button.tabIndex = -1;
+      const button = h("button", "cx-record-btn cx-record-menu-item"); button.type = "button"; setText(button, item.label);
+      button.setAttribute("role", "menuitem"); button.disabled = item.disabled;
+      button.dataset.itemId = String(actions.size); actions.set(button.dataset.itemId, item.task);
       return button;
     });
     list.append(...buttons); menu.append(toggle, list); identity.after(menu);
-    menu.addEventListener("keydown", event => {
-      if (list.hidden) return;
-      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); show(false); toggle.focus(); return; }
-      if (event.key === "Tab") { show(false); return; }
-      const at = buttons.indexOf(document.activeElement);
-      if (at < 0 || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
-      event.preventDefault(); event.stopPropagation();
-      buttons[{ ArrowDown: (at + 1) % buttons.length, ArrowUp: (at - 1 + buttons.length) % buttons.length, Home: 0, End: buttons.length - 1 }[event.key]].focus();
-    });
-    menu.addEventListener("focusout", event => { if (!menu.contains(event.relatedTarget) && event.relatedTarget) show(false); });
-    dialog.addEventListener("pointerdown", event => { if (!menu.contains(event.target)) show(false); });
+    const controller = UI_IMPL.menu(list, { host: view.host, trigger: toggle, label: labels.recordActions, placement: "bottom-end",
+      onSelect: item => Promise.resolve().then(actions.get(item.id))
+        .catch(error => { recordAnnounce(dialog, error.message); view.emit("error", { error }); }) });
+    dialog.addEventListener("close", () => controller.destroy(), { once: true });
   }
   async function recordCopy(view, dialog, text) {
     if (!global.navigator.clipboard?.writeText) recordFail("the clipboard is not available.");

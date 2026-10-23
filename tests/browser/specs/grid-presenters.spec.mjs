@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames } from "./support.mjs";
+import { viewPage, nextFrames, settleOverlayMotion } from "./support.mjs";
 
 const columns = [
   { id: "name", title: "Record", width: 180, kind: "text", sortable: true },
@@ -143,12 +143,14 @@ test("large notes and lists retain complete exports with bounded mounted preview
   expect(csv).toContain(notes); expect(csv).toContain(owners);
 });
 
-test("compact dark complete-text dialogs retain visible gutters and keyboard close controls", async ({ page }) => {
+test("compact dark complete-text sheets stay within the phone and retain keyboard close controls", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 }); await open(page);
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').setAttribute('data-cx-theme', 'dark'));
   await row(page, "a").getByRole("button", { name: "Notes: show complete text" }).click();
-  const dialog = page.getByRole("dialog"), bounds = await dialog.boundingBox();
-  expect(bounds.x).toBeGreaterThanOrEqual(12); expect(bounds.x + bounds.width).toBeLessThanOrEqual(378);
+  const dialog = page.getByRole("dialog"); await expect(dialog).toBeVisible(); await settleOverlayMotion(dialog);
+  const bounds = await dialog.boundingBox();
+  expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  expect(bounds.y).toBeGreaterThanOrEqual(0); expect(bounds.y + bounds.height).toBeLessThanOrEqual(700);
   await dialog.locator("pre").press("Tab");
   const copy = dialog.getByRole("button", {name:"Copy",exact:true}); await expect(copy).toBeFocused();
   const close = page.getByRole("button", { name: "Close complete text" });

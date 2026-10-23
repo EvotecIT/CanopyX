@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import crypto from "node:crypto";
-import { viewPage, nextFrames, runtimeAssets, openGridControl, openExample, repo } from "./support.mjs";
+import { viewPage, nextFrames, runtimeAssets, openGridControl, openExample } from "./support.mjs";
+import { readAsset as read, assetHash as hash, partFixture } from "./part-fixture-support.mjs";
 
 // Export format providers: registered writers listed in the grid's own Export menu, with its scope picker, progress,
 // cancellation and error status, and tree grid captures for the same writers.
@@ -285,24 +285,21 @@ test("the ordinary tree runtime exports through its tree tools part", async ({ p
 });
 
 // The export part loads on first use, like the filter editor, from an inline payload, plain files, hashed files or the module.
-const read = name => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets", name), "utf8").replace(/\r\n/g, "\n");
-const hash = value => crypto.createHash("sha256").update(value).digest("hex").slice(0, 16);
 for (const mode of ["embedded", "plain", "hashed", "module"]) test("the export part loads on first use with " + mode + " assets", async ({ page }) => {
-  const script = read("canopyx-grid.js"), style = read("canopyx-grid.css"), part = read("canopyx-export.js");
-  const version = part.match(/version\s*:\s*"([a-f0-9]{16})"/)[1], loads = [];
+  const script = read("canopyx-grid.js"), style = read("canopyx-grid.css"), parts = partFixture("export"), loads = [];
   const entry = mode === "hashed" ? "canopyx-grid." + hash(script) + ".js" : mode === "module" ? "canopyx-grid-module.mjs" : "canopyx-grid.js";
   const view = definition();
   await page.route("http://canopyx.test/**", route => {
     const file = new URL(route.request().url()).pathname.split("/").at(-1); loads.push(file);
     if (file === "page") {
-      const inert = mode === "embedded" ? '<script type="application/x-canopyx-export" data-cx-version="' + version + '">' + part + "</script>" : "";
+      const inert = mode === "embedded" ? parts.payloads : "";
       const runtime = mode === "embedded" ? "<script>" + script + "</script>" : "<script " + (mode === "module" ? 'type="module"' : "defer") + ' src="/assets/' + entry + '"></script>';
       const register = mode === "module" ? '<script type="module">import { registerExportFormat } from "/assets/canopyx-grid-module.mjs";registerExportFormat({id:"xlsx",label:"Download Excel",extension:"xlsx",write:()=>new Blob(["x"])});window.registered=true;</script>' : "";
       return route.fulfill({ contentType: "text/html", body: '<!doctype html><html lang="en"><head><title>Records</title><style>' + style + "</style>" + runtime + register +
         '</head><body><div class="cx-host" data-canopyx-host data-cx-mount="manual"><script type="application/json" class="cx-config">' + JSON.stringify(view) + "</script></div>" + inert + "</body></html>" });
     }
-    const contents = file === entry ? mode === "module" ? read(entry) : script : file === "canopyx-export.js" || file === "canopyx-export." + hash(part) + ".js" ? part : null;
-    return contents === null ? route.fulfill({ status: 404, body: "" }) : route.fulfill({ contentType: "text/javascript", body: contents });
+    if (file === entry) return route.fulfill({ contentType: "text/javascript", body: mode === "module" ? read(entry) : script });
+    return route.fulfill(parts.files.get(file) || { status: 404, body: "" });
   });
   await page.goto("http://canopyx.test/page");
   await page.waitForFunction(mode => window.CanopyX && (mode !== "module" || window.registered), mode);
@@ -366,14 +363,14 @@ test("a writer that returns a File names the download", async ({ page }) => {
 });
 
 test("trees on a grid runtime and export methods load the export part on demand", async ({ page }) => {
-  const script = read("canopyx-grid.js"), style = read("canopyx-grid.css"), part = read("canopyx-export.js"), loads = [];
+  const script = read("canopyx-grid.js"), style = read("canopyx-grid.css"), assets = partFixture("tree-tools", "export"), loads = [];
   const fragment = view => '<div class="cx-host" data-canopyx-host><script type="application/json" class="cx-config">' + JSON.stringify(view) + "</script></div>";
   await page.route("http://canopyx.test/**", route => {
     const file = new URL(route.request().url()).pathname.split("/").at(-1); loads.push(file);
     if (file === "page") return route.fulfill({ contentType: "text/html", body: '<!doctype html><html lang="en"><head><title>Mixed</title><style>' + style +
       '</style><script defer src="/assets/canopyx-grid.js"></script></head><body>' + fragment(tree()) + fragment(definition()) + "</body></html>" });
-    const tools = file.startsWith("canopyx-tree-tools") ? read(file) : null;
-    return route.fulfill({ contentType: file.endsWith(".css") ? "text/css" : "text/javascript", body: file === "canopyx-grid.js" ? script : file === "canopyx-export.js" ? part : tools ?? "" });
+    if (file === "canopyx-grid.js") return route.fulfill({ contentType: "text/javascript", body: script });
+    return route.fulfill(assets.files.get(file) || { status: 404, body: "" });
   });
   await page.goto("http://canopyx.test/page"); await page.waitForFunction(() => document.querySelectorAll("[data-cx-ready]").length === 2);
   const parts = () => loads.filter(file => file.startsWith("canopyx-export"));

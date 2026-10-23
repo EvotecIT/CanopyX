@@ -16,13 +16,26 @@
       if (this.cellOptions || this.destroyed) return;
       const options = this.cellOptions = crOptions(this), signal = this.lifetime.signal, shared = Object.getPrototypeOf(this);
       this.cellRanges = []; this.cellAnchor = null;
-      this.renderPass = function (...args) { const result = shared.renderPass.apply(this, args); crPaint(this); return result; };
+      this.renderPass = function (...args) {
+        const result = shared.renderPass.apply(this, args); crPaint(this);
+        const prior = this.cellMenuHit, now = prior && crHit(this, prior.cell);
+        if (prior && (!now || now.row !== prior.row || now.column !== prior.column || now.element._w !== prior.record)) this.cellMenuBinding.close("recycle", false, true);
+        return result;
+      };
       // Columns that leave the view take their ranges' corners with them; a new query clears the ranges.
-      const columns = () => { const before = this.cellRanges.length; this.cellRanges = this.cellRanges.filter(range => crRect(this, range)); if (before !== this.cellRanges.length) crChanged(this); else crPaint(this); };
+      const columnState = () => JSON.stringify(this.columns.map(column => [column.id, column.width, !!column.hidden, column.pin, column.priority]));
+      let acceptedColumns = columnState();
+      const columns = () => {
+        const next = columnState();
+        if (next === acceptedColumns) return;
+        acceptedColumns = next; this.cellMenuBinding?.close("columns", false, true);
+        const before = this.cellRanges.length; this.cellRanges = this.cellRanges.filter(range => crRect(this, range));
+        if (before !== this.cellRanges.length) crChanged(this); else crPaint(this);
+      };
       // A reload of the same query at the same data revision (same search, filters, sorting and page) keeps the ranges: its
       // rows keep their places. A new revision, another query, or a reporting group that collapses or expands clears them.
       const shape = (query, revision) => query && JSON.stringify([query.search, query.searchMode, query.sort, query.filters, query.filterGroup, query.groupBy, this.paged ? query.offset : 0, revision]);
-      const clear = () => { if (this.cellRanges.length) { this.cellRanges = []; this.cellAnchor = null; this.cellHandles = false; crChanged(this); } };
+      const clear = () => { this.cellMenuBinding?.close("query", false, true); if (this.cellRanges.length) { this.cellRanges = []; this.cellAnchor = null; this.cellHandles = false; crChanged(this); } };
       let accepted = shape(this.getQuery(), this.snapshot?.revision);
       this.host.addEventListener("canopyx:query", event => {
         const next = shape(event.detail.query, event.detail.revision);
@@ -35,6 +48,33 @@
       document.addEventListener("copy", event => crCopyEvent(this, event), { signal });
       if (!options.enabled) return;
       this.host.classList.add("cx-cell-ranges");
+      this.cellMenuBinding = bindContextMenu(this.canvas, () => crMenuItems(this), {
+        host: this.host, label: this.labels.gridCellMenu, renderIcon: name => gridIcon(name), closeOnFocusOutside: true,
+        match: event => !event.target.closest(CR_CONTROLS) && crHit(this, event.target)?.cell,
+        // Touch starts/extends selection outside a range; only that gesture opens an inside-range menu.
+        gesture: () => false,
+        beforeOpen: (event, cell, settings) => {
+          const hit = crHit(this, cell);
+          if (this.destroyed || this.cellTouching || !hit || !this.cellOptions.enabled) return false;
+          if (settings.hit && (hit.row !== settings.hit.row || hit.column !== settings.hit.column || hit.element._w !== settings.hit.record)) return false;
+          const inside = crRects(this).some(rect => hit.row >= rect.top && hit.row <= rect.bottom && crIndex(this, hit.column) >= rect.left && crIndex(this, hit.column) <= rect.right);
+          if (settings.touch && !inside) return false;
+          if (event?.type === "contextmenu" && !inside) {
+            this.cellAnchor = { row: hit.row, column: hit.column };
+            if (this.cellRanges.length) { this.cellRanges = []; this.cellHandles = false; crChanged(this); }
+          }
+        },
+        onOpen: ({ menu, element }) => {
+          this.cellMenuPanel = menu;
+          this.cellMenuHit = crHit(this, element);
+          this.cellMenuHit.record = this.cellMenuHit.element._w;
+          document.dispatchEvent(new CustomEvent("canopyx:closemenus", { detail: { source: menu } }));
+        },
+        onClose: () => { this.cellMenuHit = null; this.cellMenuPanel = null; },
+        onSelect: item => { Promise.resolve().then(() => item.run()).catch(error => this.emit("error", { error })); }
+      });
+      this.cellMenuBinding.ready.catch(error => { if (!this.destroyed) this.emit("error", { error }); });
+      signal.addEventListener("abort", () => this.cellMenuBinding(), { once: true });
       signal.addEventListener("abort", () => { this.host.classList.remove("cx-cell-ranges"); crGuard(this, false); }, { once: true });
       if (options.multiple) this.grid.setAttribute("aria-multiselectable", "true");
       this.canvas.addEventListener("pointerdown", event => {
@@ -49,16 +89,6 @@
         if (hit && this.grid.contains(document.activeElement)) crFocus(this, hit);
       }, { signal });
 
-      this.canvas.addEventListener("contextmenu", event => {
-        const hit = crHit(this, event.target);
-        // Links, buttons and other controls keep the browser's own context menu.
-        if (!hit || event.target.closest(CR_CONTROLS)) return;
-        event.preventDefault();
-        if (this.cellTouching || event.pointerType === "touch") return;
-        const inside = crRects(this).some(rect => hit.row >= rect.top && hit.row <= rect.bottom && crIndex(this, hit.column) >= rect.left && crIndex(this, hit.column) <= rect.right);
-        if (!inside) { this.cellAnchor = { row: hit.row, column: hit.column }; if (this.cellRanges.length) { this.cellRanges = []; crChanged(this); } }
-        crMenu(this, hit.cell);
-      }, { signal });
       this.grid.addEventListener("paste", event => {
         if (!options.paste || event.target.closest("input,textarea,select,[contenteditable]:not([contenteditable=false])") || !this.canvas.contains(event.target)) return;
         const text = event.clipboardData?.getData("text/plain");

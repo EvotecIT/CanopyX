@@ -15,6 +15,7 @@
       const column=this.columns.find(item=>item.id===id);
       if(!column||column.filterable===false)throw new Error("CanopyX: column filters require a filterable column.");
       const panel=this.openGridPopover(anchor,"cx-column-filter",column.title+": "+this.labels.gridFilterColumn,id);
+      if(!panel)return;
       const head=h("div","cx-pop-h"),body=h("div","cx-pop-b"),footer=h("div","cx-pop-f"),error=h("p","cx-grid-control-error");
       setText(head,column.title);error.setAttribute("role","status");panel.append(head,body,error,footer);
       let timer,clauses,draft;const signal=this.gridPopover.controller.signal,filters=this.reportingFilters;

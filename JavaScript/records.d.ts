@@ -112,6 +112,8 @@ export type RecordSectionRenderer = (record: Readonly<{ id: string; cells?: Read
   element: HTMLElement, context: RecordSectionContext) => void | PromiseLike<void>;
 /** An action of the record panel's actions menu. */
 export interface RecordAction {
+  /** Keeps the action focusable in its menu while preventing activation. */
+  readonly disabled?: boolean;
   readonly label: string;
   run(context: { readonly record: Readonly<{ id: string; cells?: Readonly<Record<string, Cell>>; fields?: Readonly<Record<string, Cell>> }>; readonly view: string; readonly api: unknown;
     readonly payload: GridRecord | null; readonly signal: AbortSignal }): void | PromiseLike<void>;

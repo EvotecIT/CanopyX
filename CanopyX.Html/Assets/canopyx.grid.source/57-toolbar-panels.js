@@ -57,15 +57,19 @@
     // Closes the toolbar menus (and the menus inside them, such as Views and Export in the phone more menu) and the column
     // popover that do not hold the node (the document closes every one).
     closeMenusOutside(node) {
-      for (const details of this.toolbar.querySelectorAll(".cx-columns[open]")) if (!details.contains(node)) details.open = false;
+      const holds = element => element && (UI_TOOLS.owns?.(element, node) ?? element.contains(node));
+      if (this.pendingColumnMenu && !holds(this.pendingColumnMenu.anchor)) this.pendingColumnMenu = null;
+      for (const details of this.toolbar.querySelectorAll(".cx-columns[open]")) if (!holds(details)) details.open = false;
       const popover = this.gridPopover;
-      if (popover && !popover.panel.contains(node) && !popover.anchor?.contains(node)) this.closeGridPopover(false);
+      if (popover && !holds(popover.panel) && !holds(popover.anchor)) this.closeGridPopover(false);
+      const cellMenu = this.cellMenuPanel;
+      if (cellMenu && !holds(cellMenu) && !holds(this.cellMenuHit?.cell)) this.cellMenuBinding?.close("menus", false, true);
     },
     closeMenus() { this.closeMenusOutside(document); },
 
     controlPanel(title, className, onOpen) {
       const details = h("details", "cx-columns " + className), summary = h("summary", "cx-btn"), panel = h("div", "cx-columns-list cx-grid-panel cx-pop");
-      summary.setAttribute("role","button");
+      summary.setAttribute("role","button");panel.setAttribute("aria-label",title);
       if (className !== "cx-grid-filters") summary.classList.add("ghost");
       setText(summary, title); details.append(summary, panel); this.toolbar.appendChild(details);
       // The icon is named by the control: filter, columns, views or export (the more menu's summary is its own icon).
@@ -76,7 +80,7 @@
       // inside it (the phone layout moves Views and Export into the more menu).
       panel.popover = "manual";
       const flyout = watchFlyout(details, panel, () => details.open); this.controlFlyouts.push(flyout);
-      details.addEventListener("toggle", () => { if (details.open) { announceMenu(details); if (panel.isConnected) panel.showPopover?.(); if (onOpen) onOpen(panel); flyout.position(); } else { panel.hidePopover?.(); for (const inner of panel.querySelectorAll("details[open]")) inner.open = false; } });
+      details.addEventListener("toggle", () => { if (details.open) { announceMenu(details); if (onOpen) onOpen(panel); flyout.open(); } else { flyout.close(); for (const inner of panel.querySelectorAll("details[open]")) inner.open = false; } });
       details.addEventListener("keydown", event => {
         if (event.key === "Escape" && details.open) { details.open = false; summary.focus(); event.preventDefault(); event.stopPropagation(); }
       });
