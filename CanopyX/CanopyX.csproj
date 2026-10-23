@@ -16,7 +16,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX</PackageId>
-    <Version>$(CanopyXProductVersion)</Version>
+    <Version>0.3.0</Version>
     <Authors>Evotec</Authors>
     <Description>Dependency-free tree and flat-grid definitions, typed queries, the versioned canopyx/2 data protocol, a sidecar tree bundle writer, and script-free fallback rendering for large interactive data views.</Description>
     <PackageReleaseNotes>Tree and flat-grid definitions, typed filtering and stable sorting, the canopyx/2 protocol, tree bundle writing, and script-free fallback rendering.</PackageReleaseNotes>
