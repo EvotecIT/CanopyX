@@ -13,6 +13,15 @@
   }
 
   Object.assign(DataGrid.prototype, COLUMN_FIT, {
+    fitAvailableWidth() {
+      const grid = this.grid;
+      if (!grid.clientWidth) return 0;
+      // Observer content widths retain fractions and already exclude padding, borders and scrollbar gutters.
+      // Before first delivery, leave one pixel for clientWidth's rounding; the observer then fills the real space.
+      const style = this.fitContentWidth === undefined && getComputedStyle(grid);
+      const width = style ? grid.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 1 : this.fitContentWidth;
+      return Math.max(0, Math.floor(width));
+    },
     // Optional visibility uses the same content floors as fitting, before remaining columns scroll.
     fitHide(shown, width, phone) {
       COLUMN_FIT.fitHide.call(this, shown, width, phone);
@@ -37,8 +46,8 @@
       let width = Math.max(floor, level === undefined ? column.pref || 0 : 0);
       if (column.identity && this.host.clientWidth <= 640 && (this.layoutMode || "fit") === "fit") {
         // The identity keeps forty percent before peers move to the context line; small values need no empty allocation.
-        const minimum = Math.min(content, this.grid.clientWidth * .4);
-        width = Math.max(minimum, Math.min(width, Math.max(minimum, this.grid.clientWidth * .5)));
+        const available = this.fitAvailableWidth(), minimum = Math.min(content, available * .4);
+        width = Math.max(minimum, Math.min(width, Math.max(minimum, available * .5)));
       }
       return Math.ceil(columnWidth(column, width));
     },
@@ -88,7 +97,7 @@
     applyWidths() {
       this.fitLayout();
       if (this.phone !== undefined) this.updateGridPhone();
-      const visible = this.visibleColumns(), cols = this.cols, width = this.grid.clientWidth;
+      const visible = this.visibleColumns(), cols = this.cols, width = this.fitAvailableWidth();
       if (cols && (visible.length !== cols.length || visible.some((column, index) => column !== cols[index]))) {
         if (!this.fitBuilding) { this.buildHeader(); this.syncColumnControls(); this.render(); return; }
         queueMicrotask(() => this.destroyed || this.applyWidths());
@@ -99,7 +108,7 @@
     },
     // Measures once per query and phone layout, then hides what does not fit (fitHide).
     fitLayout() {
-      const width = this.grid.clientWidth, phone = this.host.clientWidth <= 640, shown = FIT.visibleColumns.call(this).filter(column => !column.responsiveHidden);
+      const width = this.fitAvailableWidth(), phone = this.host.clientWidth <= 640, shown = FIT.visibleColumns.call(this).filter(column => !column.responsiveHidden);
       if (!width) return;
       const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone;
       if (key !== this.fitKey || !this.fitCh) {

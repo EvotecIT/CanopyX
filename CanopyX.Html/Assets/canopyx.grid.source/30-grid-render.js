@@ -57,22 +57,26 @@
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();
       // Layout writes run outside observer delivery, avoiding a resize loop when chrome wraps.
-      this.resizeObserver = new ResizeObserver(() => requestAnimationFrame(() => {
-        if (this.destroyed) return;
-        if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
-        style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
-          height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
-        this.fitHeight();
-        if (!(this.sized = this.hasGridSize())) return;
-        this.applyWidths();
-        this.updateGridPhone();
-        this.fitHeight();
-        this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
-        if (this.hiddenScrollTop !== undefined) {
-          const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
-        }
-        this.scheduleRender();
-      }));
+      this.resizeObserver = new ResizeObserver(entries => {
+        const size = entries.find(entry => entry.target === grid);
+        if (size) this.fitContentWidth = size.contentRect.width;
+        requestAnimationFrame(() => {
+          if (this.destroyed) return;
+          if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
+          style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
+            height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
+          this.fitHeight();
+          if (!(this.sized = this.hasGridSize())) return;
+          this.applyWidths();
+          this.updateGridPhone();
+          this.fitHeight();
+          this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
+          if (this.hiddenScrollTop !== undefined) {
+            const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
+          }
+          this.scheduleRender();
+        });
+      });
       this.resizeObserver.observe(grid);
       this.resizeObserver.observe(this.head);
     },
