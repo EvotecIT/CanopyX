@@ -212,7 +212,7 @@ public sealed class CalendarEventsTests {
         var page = grid.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Language = "ar", Direction = CanopyTextDirection.Rtl });
         Assert.Contains("<html lang=\"ar\" dir=\"rtl\">", page);
         Assert.DoesNotContain("{{dir}}", page);
-        Assert.Contains("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"auto\" dir=\"ltr\"", grid.ToHtmlFragment(new CanopyHtmlOptions { Direction = CanopyTextDirection.Ltr }));
+        Assert.Contains("<div class=\"cx-host\" data-canopyx-host dir=\"ltr\"", grid.ToHtmlFragment(new CanopyHtmlOptions { Direction = CanopyTextDirection.Ltr }));
         Assert.DoesNotContain(" dir=", grid.ToHtmlFragment());
         Assert.DoesNotContain(" dir=", grid.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }).Substring(0, 200));
         var tree = new CanopyTreeView("tree", "Tree");

@@ -40,7 +40,7 @@ export function definition(extra = {}) {
 
 /** Serves a view page (with optional setup script before the runtime mounts) and waits for its first painted page. */
 export async function open(page, view = definition(), setup = "", theme = "light") {
-  await page.route("http://canopyx.test/orders", route => route.fulfill({ contentType: "text/html", body: viewPage(view)
-    .replace("</head>", "<script>" + setup + "</script></head>").replace('data-cx-theme="light"', 'data-cx-theme="' + theme + '"') }));
+  await page.route("http://canopyx.test/orders", route => route.fulfill({ contentType: "text/html", body: viewPage(view, theme)
+    .replace("</head>", "<script>" + setup + "</script></head>") }));
   await page.goto("http://canopyx.test/orders"); await page.waitForSelector("[data-cx-ready]"); await nextFrames(page);
 }

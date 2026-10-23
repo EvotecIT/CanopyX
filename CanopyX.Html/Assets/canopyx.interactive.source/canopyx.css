@@ -1,25 +1,25 @@
 /* Optional checking controls; the standard tree stylesheet remains independent of interaction features. */
-.cx-check { flex:none; margin:0 0 0 var(--cx-size-6px); width:var(--cx-size-16px); height:var(--cx-size-16px); accent-color:var(--cx-accent); }
-.cx-check:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent); outline-offset:var(--cx-size-1px); }
+.cx-check { flex:none; margin:0 0 0 var(--cx-size-6px); width:var(--cx-size-16px); height:var(--cx-size-16px); accent-color:var(--hfx-color-accent); }
+.cx-check:focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring); outline-offset:var(--hfx-focus-offset); }
 
-.cx-interaction-panel { position:fixed; z-index:20; box-sizing:border-box; width:min(var(--cx-size-340px), calc(var(--cx-size-100vw) - var(--cx-size-16px))); max-height:calc(var(--cx-size-100vh) - var(--cx-size-16px)); overflow:auto; padding:var(--cx-size-12px); border:var(--cx-size-1px) solid var(--cx-line-strong); border-radius:var(--cx-size-10px); background:var(--cx-surface); color:var(--cx-text); box-shadow:var(--cx-panel-shadow); font:inherit; }
-.cx-interaction-panel button, .cx-editor { box-sizing:border-box; font:inherit; color:inherit; background:var(--cx-surface); border:var(--cx-size-1px) solid var(--cx-line-strong); border-radius:var(--cx-size-6px); min-height:var(--cx-size-34px); padding:var(--cx-size-6px) var(--cx-size-12px); }
+.cx-interaction-panel { position:fixed; z-index:20; box-sizing:border-box; width:min(var(--cx-size-340px), calc(var(--cx-size-100vw) - var(--cx-size-16px))); max-height:calc(var(--cx-size-100vh) - var(--cx-size-16px)); overflow:auto; padding:var(--cx-size-12px); border:var(--cx-size-1px) solid var(--hfx-color-border-strong); border-radius:var(--hfx-radius-overlay); background:var(--hfx-color-surface); color:var(--hfx-color-text); box-shadow:var(--hfx-elevation-2); font:inherit; }
+.cx-interaction-panel button, .cx-editor { box-sizing:border-box; font:inherit; color:inherit; background:var(--hfx-color-surface); border:var(--cx-size-1px) solid var(--hfx-color-border-strong); border-radius:var(--hfx-radius-control); min-height:var(--cx-size-34px); padding:var(--cx-size-6px) var(--cx-size-12px); }
 .cx-interaction-panel button { cursor:pointer; }
-.cx-interaction-panel button:disabled { color:var(--cx-muted); cursor:default; }
+.cx-interaction-panel button:disabled { color:var(--hfx-color-text-muted); cursor:default; }
 .cx-editor { width:100%; margin-bottom:var(--cx-size-12px); padding:var(--cx-size-7px) var(--cx-size-10px); }
 .cx-editor[type="checkbox"] { width:var(--cx-size-20px); height:var(--cx-size-20px); display:block; }
-.cx-editor[type="checkbox"] { min-height:var(--cx-size-20px); accent-color:var(--cx-accent); }
+.cx-editor[type="checkbox"] { min-height:var(--cx-size-20px); accent-color:var(--hfx-color-accent); }
 .cx-interaction-title { font-weight:600; margin-bottom:var(--cx-size-10px); }
 .cx-interaction-buttons { display:flex; justify-content:flex-end; gap:var(--cx-size-8px); }
-.cx-interaction-panel .cx-save { background:var(--cx-selected-bg); border-color:var(--cx-accent); font-weight:600; }
+.cx-interaction-panel .cx-save { background:var(--hfx-color-accent-subtle); border-color:var(--hfx-color-accent); font-weight:600; }
 .cx-interaction-panel[role="menu"] { padding:var(--cx-size-5px); }
 .cx-action-item { display:block; width:100%; min-height:var(--cx-size-36px); text-align:start; border:0 !important; }
-.cx-action-item[aria-disabled="true"] { color:var(--cx-muted); }
-.cx-interaction-panel button:not(:disabled):not([aria-disabled="true"]):hover { background:var(--cx-hover-bg); }
-.cx-interaction-panel :focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent); outline-offset:var(--cx-size-neg-2px); }
-.cx-drop-target { outline:var(--cx-size-2px) solid var(--cx-accent); outline-offset:var(--cx-size-neg-2px); }
-.cx-drop-target[data-cx-drop-placement="before"] { outline:0; box-shadow:inset 0 var(--cx-size-3px) var(--cx-accent); }
-.cx-drop-target[data-cx-drop-placement="after"] { outline:0; box-shadow:inset 0 var(--cx-size-neg-3px) var(--cx-accent); }
+.cx-action-item[aria-disabled="true"] { color:var(--hfx-color-text-muted); }
+.cx-interaction-panel button:not(:disabled):not([aria-disabled="true"]):hover { background:var(--hfx-color-hover); }
+.cx-interaction-panel :focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring); outline-offset:var(--hfx-focus-offset); }
+.cx-drop-target { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring); outline-offset:var(--hfx-focus-offset); }
+.cx-drop-target[data-cx-drop-placement="before"] { outline:0; box-shadow:inset 0 var(--cx-size-3px) var(--hfx-color-accent); }
+.cx-drop-target[data-cx-drop-placement="after"] { outline:0; box-shadow:inset 0 var(--cx-size-neg-3px) var(--hfx-color-accent); }
 @media (forced-colors: active) {
   .cx-interaction-panel :focus-visible { outline-color:Highlight; }
   .cx-drop-target[data-cx-drop-placement="before"] { border-top:var(--cx-size-3px) solid Highlight; }

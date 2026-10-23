@@ -39,8 +39,8 @@ internal static class CertificateInventoryExample {
 </script>
 <style>
 .reminder-stages{display:flex;gap:4px;margin:2px 0 4px}
-.reminder-stage{flex:1;padding:4px 0;text-align:center;font-size:12px;border-radius:4px;border:1px solid var(--cx-line);color:var(--cx-muted)}
-.reminder-stage.reached{border-color:var(--cx-tone-warning);color:var(--cx-tone-warning);font-weight:600}
+.reminder-stage{flex:1;padding:4px 0;text-align:center;font-size:12px;border-radius:4px;border:1px solid var(--hfx-color-border);color:var(--hfx-color-text-muted)}
+.reminder-stage.reached{border-color:var(--hfx-color-status-warn-fg);color:var(--hfx-color-status-warn-fg);font-weight:600}
 </style>
 """;
 

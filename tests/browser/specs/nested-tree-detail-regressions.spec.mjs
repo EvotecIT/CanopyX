@@ -66,6 +66,9 @@ for (const theme of ["light", "dark"]) for (const width of [1440, 390]) test(`na
     return { left: box.left - outer.left, right: outer.right - box.right };
   });
   expect(bounds.left).toBeGreaterThanOrEqual(-1); expect(bounds.right).toBeGreaterThanOrEqual(-1);
-  await expect(detail(page).locator(".cx-detail-view")).toHaveAttribute("data-cx-theme", theme);
+  const nested = detail(page).locator(".cx-detail-view");
+  await expect(nested).not.toHaveAttribute("data-cx-theme", /.+/);
+  expect(await nested.evaluate(element => getComputedStyle(element).colorScheme)).toBe(theme);
+  await expect(nested).toHaveCSS("background-color", theme === "dark" ? "rgb(22, 24, 28)" : "rgb(255, 255, 255)");
   await page.screenshot({ path: test.info().outputPath(`nested-tree-${theme}-${width}.png`) });
 });

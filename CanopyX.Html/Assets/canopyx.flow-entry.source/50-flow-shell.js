@@ -54,6 +54,7 @@
     if (!host || !options || !options.flow || typeof options.flow !== "object") throw new Error("CanopyX: createFlow needs a host element and a flow document.");
     const existing = activeFlows.get(host);
     if (existing) return existing;
+    const disposeTheme = watchTheme(host);
     let impl = null, destroyed = false, mountError = null;
     const destroyedError = () => new Error("CanopyX: this flow has been destroyed.");
     const requireImpl = name => {
@@ -82,7 +83,7 @@
     api.ready.catch(() => {});
     api.destroy = () => {
       if (destroyed) return;
-      destroyed = true;
+      destroyed = true; disposeTheme();
       try { impl?.destroy(); }
       finally {
         impl = null;

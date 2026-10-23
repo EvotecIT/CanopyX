@@ -9,7 +9,7 @@
       "key": "TreeGrid.prototype",
       "context": ["TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
         "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "exportFormatsOf", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems",
-        "applyTone", "toneOf", "badgeElement", "RECORD_IMPL", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone"],
+        "applyTone", "toneOf", "badgeElement", "RECORD_IMPL", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone", "overlayTheme"],
       "start": "const EXPORT_IMPL = { formatsOf: exportFormatsOf };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
@@ -57,7 +57,7 @@
       "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridDateInputMoment", "gridQuery", "gridQueryStart",
         "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridKeyCompare", "gridFacetKey", "columnNumericTone", "columnValueTone", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
         "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "numberText", "fill", "announceMenu", "reportingRangeRows",
-        "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL"],
+        "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL", "overlayTheme"],
       "start": "const buildFilters = DataGrid.prototype.buildGridFilters;",
       "end": "Object.assign(DataGrid.prototype, COLUMNS_MENU, {buildGridFilters:buildFilters});\ncontext.GRID_REPORTING?.installFilters?.({gridDateInput});",
       "scripts": [
@@ -505,8 +505,8 @@
       "views": ["grid"],
       "features": ["formatting"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "gridDateInputMoment", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
-        "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon"],
+      "context": ["toneVariable", "DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "gridDateInputMoment", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
+        "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon", "overlayTheme"],
       "scripts": ["CanopyX.Html/Assets/canopyx.formatting.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.formatting.source/formatting.css"]
     },
@@ -518,7 +518,7 @@
       "features": ["formatEditor"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridOption", "gridDateInputMoment", "gridInputLabel", "gridIcon", "gridDecorateButton", "announceMenu",
-        "formatCompile", "formatToneVar", "formatError", "FORMAT_ICONS", "FORMAT_TONE_ICONS", "FORMAT_OPERATORS", "svgIcon"],
+        "formatCompile", "formatToneVar", "formatError", "FORMAT_ICONS", "FORMAT_TONE_ICONS", "FORMAT_OPERATORS", "svgIcon", "overlayTheme"],
       "requires": ["filter-editor", "formatting"],
       "scripts": ["CanopyX.Html/Assets/canopyx.format-editor.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.format-editor.source/format-editor.css"]
@@ -579,7 +579,7 @@
       "views": ["tree", "grid"],
       "features": ["searchHighlight"],
       "key": "VIEW_MODES",
-      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
+      "context": ["toneVariable", "VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "layoutAnchor", "layoutRows", "layoutApplyTree", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
       "scripts": ["CanopyX.Html/Assets/canopyx.highlight.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.highlight.source/highlight.css"]
     },
@@ -590,7 +590,7 @@
       "views": ["tree", "grid"],
       "features": ["layout"],
       "key": "VIEW_MODES",
-      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
+      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "layoutAnchor", "layoutRows", "layoutApplyTree", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
       "scripts": ["CanopyX.Html/Assets/canopyx.layouts.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.layouts.source/layouts.css"]
     },
@@ -602,7 +602,7 @@
       "features": ["facets"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQueryStart", "gridQueryRows", "gridColumnProjection", "gridScalar",
-        "gridOrder", "gridKeyCompare", "gridFacetKey", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze"],
+        "gridOrder", "gridKeyCompare", "gridFacetKey", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze", "overlayTheme", "watchOverlayTheme"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",
         "CanopyX.Html/Assets/canopyx.facets.source"
@@ -651,7 +651,7 @@
       "views": ["grid"],
       "features": ["calendar"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
+      "context": ["toneVariable", "DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
         "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "validateGridPage", "validateGridCursorPage", "validStructuralCount", "checkDocument", "numberFormat",
         "HostCellContext", "disposeHostSlot", "loadPart", "PROTOCOL"],
       "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid };",
@@ -714,7 +714,7 @@
       "features": ["calendarResources"],
       "key": "DataGrid.prototype",
       "requires": ["calendar"],
-      "context": ["DataGrid", "TreeGrid", "h", "setText", "fill", "numberFormat"],
+      "context": ["toneVariable", "DataGrid", "TreeGrid", "h", "setText", "fill", "numberFormat"],
       "start": "const { CAL_DAY, CAL_HOUR, CAL_MINUTE, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthStart, calWeekStart } = DataGrid.prototype.calKit;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.timeline.source"

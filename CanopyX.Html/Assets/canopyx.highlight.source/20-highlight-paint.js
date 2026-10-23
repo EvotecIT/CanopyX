@@ -19,7 +19,7 @@
   }
   function hlMark(kind, tone, current) {
     const mark = h("mark", "cx-hit cx-hit-" + kind + (current ? " cx-hit-current" : "") + (tone ? " cx-hit-toned" : ""));
-    if (tone) mark.style.setProperty("--cx-hit-tone", "var(--cx-tone-" + tone + ")");
+    if (tone) mark.style.setProperty("--cx-hit-tone", toneVariable(tone));
     return mark;
   }
   /**

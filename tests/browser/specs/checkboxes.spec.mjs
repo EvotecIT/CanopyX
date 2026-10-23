@@ -8,9 +8,9 @@ function view(mode = "hierarchical", roots = [{ id: "a", label: "Atlas", hasChil
 }
 
 async function mount(page, definition = view(), options = "{}", accessiblePage = false) {
-  let html = viewPage(definition).replace("</head>", "<script>CanopyX.configure('checking'," + options + ");</script></head>");
+  let html = viewPage(definition, accessiblePage ? "auto" : "light").replace("</head>", "<script>CanopyX.configure('checking'," + options + ");</script></head>");
   if (accessiblePage) html = html.replace('<body class="cx-page">','<body class="cx-page"><main><h1>Projects</h1>')
-    .replace('</body>','</main></body>').replace('data-cx-theme="light"','data-cx-theme="auto"');
+    .replace('</body>','</main></body>');
   await page.route("https://checking.test/", route => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("https://checking.test/");
   await page.waitForSelector("[data-cx-ready]");

@@ -256,8 +256,8 @@ Spoken screen-reader output has not been recorded for a release yet. Calendar an
 | Feature | Views | How | Reference |
 |---|---|---|---|
 | Light, dark and system themes | Grid, Tree | `data-cx-theme="light" \| "dark" \| "auto"` | [Theming](architecture.md#theming) |
-| A few base colours; hover, selection and muted colours derived | Grid, Tree | `--cx-surface`, `--cx-text`, `--cx-accent`, `--cx-line`, tone variables | [Theming](architecture.md#theming) |
-| Typography, radius, spacing and scrollbar tokens | Grid, Tree | `--cx-font`, `--cx-radius`, `--cx-row-h`, `--cx-scrollbar-*` | [Theming scrollbars](architecture.md#theming-scrollbars) |
+| A few base colours; hover, selection and muted colours derived | Grid, Tree | `--hfx-color-surface`, `--hfx-color-text`, `--hfx-color-accent`, `--hfx-color-border`, tone variables | [Theming](architecture.md#theming) |
+| Typography, radius, spacing and scrollbar tokens | Grid, Tree | `--hfx-font-sans`, `--hfx-radius-control`, `--cx-row-h`, `--cx-scrollbar-*` | [Theming scrollbars](architecture.md#theming-scrollbars) |
 | Themed script-free tables | Grid, Tree | `CanopyStaticTheme`, `UseThemeVariables` | [Theming the outline](architecture.md#theming-the-outline) |
 
 ## Translations

@@ -43,7 +43,7 @@ test('ordinary column presenters preserve raw exports, long strip periods and ac
   const first=page.locator('.cx-row[data-cx-id="one"]');
   await expect(first.getByRole('img',{name:'Yes',exact:true})).toBeVisible();
   await expect(page.locator('.cx-row[data-cx-id="two"]').getByRole('img',{name:'No',exact:true})).toHaveText('—');
-  await expect(first.locator('.p-state.quiet')).toHaveText('Healthy');
+  await expect(first.locator('.p-pill.success')).toHaveText('Healthy');
   await expect(first.locator('.p-delta.good')).toHaveText('↓ 6');
   await expect(first.locator('.p-tag')).toHaveCount(3);await expect(first.getByRole('button',{name:'Tags: show complete text'})).toHaveText('+2');
   const strip=first.locator('.p-strip');expect(await strip.locator('i').count()).toBeLessThan(90);

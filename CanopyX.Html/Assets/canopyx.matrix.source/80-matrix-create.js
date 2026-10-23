@@ -96,8 +96,7 @@
         view.destroyed = true; view.lifetime.abort(); view.resize?.disconnect(); view.themeWatch?.disconnect();
         cancelAnimationFrame(view.frame); cancelAnimationFrame(view.fitFrame); clearTimeout(view.searchTimer); clearTimeout(view.tipTimer);
         view.root.remove(); host.removeAttribute("data-cx-ready");
-        // The host is as it was before createMatrix: its classes, mount mark, the theme the matrix added and its own max-height.
-        if (view.addedTheme) host.removeAttribute("data-cx-theme");
+        // Restore the host's own max-height; the createMatrix shell restores classes and the mount mark.
         if (view.fitInline !== undefined) { host.style.maxHeight = view.fitInline; if (!host.getAttribute("style")) host.removeAttribute("style"); }
       }
     };

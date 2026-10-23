@@ -72,15 +72,15 @@ public sealed class CanopyStaticHtmlOptions {
 
     /// <summary>
     /// Gets or sets whether each colour is also written as the CSS custom property the browser runtime is themed
-    /// with (<c>--cx-surface</c>, <c>--cx-text</c>, <c>--cx-accent</c>, <c>--cx-line</c>, <c>--cx-tone-&lt;name&gt;</c>,
-    /// and <c>--cx-tone-&lt;name&gt;-bg</c>), after the literal from <see cref="Theme"/> and <see cref="ToneColors"/>.
+    /// with (<c>--hfx-color-surface</c>, <c>--hfx-color-text</c>, <c>--hfx-color-accent</c>, <c>--hfx-color-border</c>, <c>--hfx-color-status-&lt;name&gt;-fg</c>,
+    /// and <c>--hfx-color-status-&lt;name&gt;-bg</c>), after the literal from <see cref="Theme"/> and <see cref="ToneColors"/>.
     /// The outline then follows the theme of the page it is in, without script: inside an element with the class
     /// <c>cx-static</c> it takes the light or dark palette of <c>canopyx.css</c> by the element's
     /// <c>data-cx-theme</c> (<c>light</c>, <c>dark</c>, or <c>auto</c> for the reader's system preference), and a
     /// host that sets those properties from its design tokens for the grid sets them for the outline with the same
     /// rule. Where the properties are not defined, and in clients that do not know custom properties (email, Word),
     /// the literals apply. Colours in <see cref="ToneColors"/> are literals of one theme: a page that can turn dark
-    /// defines <c>--cx-tone-&lt;name&gt;</c> for its own tones. Defaults to false, which writes literals only: the
+    /// defines <c>--hfx-color-status-&lt;name&gt;-fg</c> for its own tones. Defaults to false, which writes literals only: the
     /// safest form for email.
     /// </summary>
     public bool UseThemeVariables { get; set; }

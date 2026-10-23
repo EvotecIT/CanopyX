@@ -111,7 +111,7 @@ CanopyX.use({
 });
 ```
 
-Write text with `textContent`, never `innerHTML`, and theme with the runtime's custom properties (`--cx-text`, `--cx-accent`, `--cx-line`) so the renderer follows the light and dark palettes.
+Write text with `textContent`, never `innerHTML`, and theme with the runtime's custom properties (`--hfx-color-text`, `--hfx-color-accent`, `--hfx-color-border`) so the renderer follows the light and dark palettes.
 
 In TypeScript the types are `CanopyPlugin`, `CanopyPluginContext`, `CanopyCellRenderer`, `CanopyPluginItem` and `CanopyPluginItemContext` from `@evotecit/canopyx`; `use` and `registerPart` are named exports of the modules and members of `window.CanopyX`.
 

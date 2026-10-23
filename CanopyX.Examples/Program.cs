@@ -42,6 +42,10 @@ var positional = args.Where((arg, index) => !arg.StartsWith("--", StringComparis
 var output = positional.Length > 0 ? positional[0] : Path.Combine(AppContext.BaseDirectory, searchBench ? "search-bench" : packBench ? "pack-bench" : "output");
 Directory.CreateDirectory(output);
 var clock = Stopwatch.StartNew();
+if (args.Contains("--shared-tokens")) {
+    SharedTokensExample.Write(output);
+    return;
+}
 
 if (packBench) {
     var catalog = PackBenchTree.View();
@@ -79,6 +83,7 @@ var inline = ExampleViews.FileShares("files-inline", smallTree.Build(shares: 4, 
 inline.SaveHtmlPage(Path.Combine(output, "inline.html"), new CanopyHtmlOptions { Title = "CanopyX inline file shares" });
 Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
+SharedTokensExample.Write(output);
 OrdinalGridExample.Write(output);
 ReportGridLayoutExample.Write(output);
 CursorGridExample.Write(output);

@@ -21,7 +21,7 @@
       this.pageSize = this.view.pageSize; this.authoredAutoRows = this.view.rowHeight === "auto" || !!this.view.autoRowHeight ||
         this.view.autoRowHeight !== false && this.view.columns.some(column => column.wrap);
       this.autoRows = this.authoredAutoRows;
-      this.rowH = this.view.rowHeight === "auto" ? this.view.estimatedRowHeight || 28 : this.view.rowHeight;
+      this.rowH = this.view.rowHeight === "auto" ? this.view.estimatedRowHeight || (this.view.density === "compact" ? 32 : 40) : this.view.rowHeight;
       this.rowHeights = new Map();
       this.paged = this.view.presentation === "paged"; this.pageLength = this.view.pageLength || 50; this.pageOffset = 0;
       this.searchDelayMs = options.searchDelayMs === undefined ? this.view.searchDelayMs === undefined ?

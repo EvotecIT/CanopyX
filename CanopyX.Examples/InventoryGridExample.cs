@@ -52,7 +52,7 @@ internal static class InventoryGridExample {
     internal static void WritePage(CanopyDataGridView view, string output, string name, CanopyTheme theme) {
         var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX " + view.Label, Theme = theme });
         const string details = """
-<dialog id="record-details" aria-labelledby="record-title" style="box-sizing:border-box;width:min(42rem,90vw);max-height:85vh;overflow:auto;padding:20px;border:1px solid var(--cx-line);border-radius:8px;background:var(--cx-surface);color:var(--cx-text)">
+<dialog id="record-details" aria-labelledby="record-title" style="box-sizing:border-box;width:min(42rem,90vw);max-height:85vh;overflow:auto;padding:20px;border:1px solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));border-radius:8px;background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5))">
 <h2 id="record-title">Record details</h2><dl id="record-fields"></dl><form method="dialog"><button>Close details</button></form></dialog>
 <script>
 (() => {
@@ -62,7 +62,7 @@ internal static class InventoryGridExample {
   CanopyX.configure(__VIEW_ID__, { onQuery() { back = null; if (dialog.open) dialog.close(); }, onDetails({row, returnFocus}) {
     back = returnFocus; fields.replaceChildren();
     const host = document.querySelector('[data-canopyx-host]'), theme = getComputedStyle(host);
-    for (const name of ['--cx-surface','--cx-text','--cx-line','--cx-accent']) dialog.style.setProperty(name, theme.getPropertyValue(name));
+    for (const name of ['--hfx-color-surface','--hfx-color-text','--hfx-color-border','--hfx-color-accent']) dialog.style.setProperty(name, theme.getPropertyValue(name));
     dialog.style.colorScheme = theme.colorScheme;
     for (const [name, cell] of Object.entries(row.cells)) {
       const value = cell && typeof cell === 'object' ? (cell.text ?? cell.value) : cell;

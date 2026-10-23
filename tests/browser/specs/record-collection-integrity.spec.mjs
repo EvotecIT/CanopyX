@@ -41,8 +41,8 @@ async function openCollection(page, list, pages = [], theme = "light", options =
     }, onError: ({ error }) => window.collectionErrors.push(error.message),
       onOpenAll: detail => { window.collectionOpenAll.push(detail); ${options.takeOver ? "return false;" : ""} } });
     </script>`;
-  const html = viewPage(view).replace('<body class="cx-page">', '<body class="cx-page">' + script)
-    .replace('data-cx-theme="light"', `data-cx-theme="${theme}"`);
+  const html = viewPage(view, theme).replace('<body class="cx-page">', '<body class="cx-page">' + script)
+    ;
   await page.route("http://canopyx.test/collection-integrity.html", route => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("http://canopyx.test/collection-integrity.html");
   await page.waitForSelector("[data-cx-ready]");

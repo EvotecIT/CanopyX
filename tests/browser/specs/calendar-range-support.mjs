@@ -24,7 +24,7 @@ export function calendarRangePage(rows, options = {}) {
     ...(options.inline ? { rows } : {}), ...(options.grouped ? { reporting: { groupBy: [{ column: "resource", direction: "asc" }], groupable: true } } : {}), calendar };
   const settings = JSON.stringify({ rows, options }).replace(/</g, "\\u003c");
   const script = "<script>window.calendarFixture = " + settings + ";(" + installCalendarSource.toString() + ")();</script>";
-  return viewPage(view).replace('data-cx-theme="light"', 'data-cx-theme="' + (options.dark ? "dark" : "light") + '"').replace("</head>", script + "</head>");
+  return viewPage(view, options.dark ? "dark" : "light").replace("</head>", script + "</head>");
 }
 
 /* global CanopyX */

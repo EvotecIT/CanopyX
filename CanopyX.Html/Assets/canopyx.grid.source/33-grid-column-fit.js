@@ -123,7 +123,7 @@
         const style = getComputedStyle(this.grid), head = this.headCells?.[0] && getComputedStyle(this.headCells[0]), family = " " + style.fontFamily;
         // The formatting extension also reads the base/cue/header/padding positions in this array.
         this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
-          parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 12];
+          parseFloat(head?.paddingRight) || 12];
         // Monospace identifiers and their secondary text are drawn in their own fonts, so they are measured in them.
         this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"), gridClassFont(this.grid, "p-pill", this.fitPill = {}), gridClassFont(this.grid, "cx-sort-priority"));
         this.fitNumericVariant = gridNumericVariant(this.grid);
@@ -153,8 +153,8 @@
         const tone = columnValueTone(column, cell) || gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), quiet = options.quietTones?.includes(tone);
         const secondary = kind === "identifier" && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);
         const atomic = kind === "enum" || kind === "state";
-        // Enum success uses a dot and ordinary text; toned enums use their computed pill font and chrome.
-        const pill = kind === "enum" && !quiet && tone !== "success";
+        // All enum tones use the same pill font and chrome; state presenters retain dots.
+        const pill = kind === "enum" && !quiet;
         const atomicWidth = atomic ? text(value, pill ? pillFont : undefined) +
           (pill ? this.fitPill.extra + this.fitPill.spacing * Array.from(value).length : quiet && kind === "enum" ? 16 : quiet ? 0 : kind === "state" && tone !== "success" ? 15 : 13) : 0;
         values = Math.max(values, atomic ? atomicWidth : kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :

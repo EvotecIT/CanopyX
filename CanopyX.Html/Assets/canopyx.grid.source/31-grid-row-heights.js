@@ -19,6 +19,17 @@
       return Math.max(0, Math.min(this.count - 1, index));
     }
   }
+  const GRID_ROW_TOP = DataGrid.prototype.rowTop, GRID_ROW_AT = DataGrid.prototype.rowAt;
+  // Hidden density changes cannot render to rebuild offsets. Metric reads must still use retained tall-row
+  // measurements, rather than a minimum-height estimate that can clip an intra-row anchor to one short row.
+  DataGrid.prototype.rowTop = function (index) {
+    if (this.autoRows && !this.rowProjection && !this.rowOffsets) this.syncRowOffsets();
+    return GRID_ROW_TOP.call(this, index);
+  };
+  DataGrid.prototype.rowAt = function (top) {
+    if (this.autoRows && !this.rowProjection && !this.rowOffsets) this.syncRowOffsets();
+    return GRID_ROW_AT.call(this, top);
+  };
   const AUTO_WIDTHS = DataGrid.prototype.applyWidths;
   DataGrid.prototype.applyWidths = function (widths) {
     AUTO_WIDTHS.call(this, widths);

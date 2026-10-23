@@ -194,7 +194,7 @@ public sealed class Wave1ModelRegressionTests {
         var html = CanopyStaticHtml.RenderGrid(grid, options: new CanopyStaticHtmlOptions { UseThemeVariables = true });
         Assert.Contains("clip:rect(0,0,0,0)", html);
         Assert.Contains("border:0;\">75</span>", html);
-        Assert.Contains("color:color-mix(in srgb,var(--cx-tone-danger", html);
+        Assert.Contains("color:color-mix(in srgb,var(--hfx-color-status-bad-fg", html);
         Assert.Contains("75", CanopyStaticHtml.RenderGridWithResult(grid).Rows[0][0]);
     }
 

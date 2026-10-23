@@ -10,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Templates\examples.css" LogicalName="CanopyX.Examples.Templates.examples.css" />
+    <EmbeddedResource Include="..\CanopyX.Html\Assets\Shared\canopyx-fallbacks.json" LogicalName="CanopyX.Examples.Templates.token-fallbacks.json" />
+    <EmbeddedResource Include="Templates\shared-tokens.html" LogicalName="CanopyX.Examples.Templates.shared-tokens.html" />
     <ProjectReference Include="..\CanopyX.Html\CanopyX.Html.csproj" />
   </ItemGroup>
   <ItemGroup>

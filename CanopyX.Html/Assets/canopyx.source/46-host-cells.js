@@ -12,7 +12,7 @@
 
   /**
    * A badge as the runtime draws one: the "cx-badge" class, the classes of its tone, the theme colours of a host tone
-   * (--cx-tone-<name> and --cx-tone-<name>-bg), its text, and its tooltip. Exported as CanopyX.badge for renderers.
+   * (--hfx-color-status-<name>-fg and --hfx-color-status-<name>-bg), its text, and its tooltip. Exported as CanopyX.badge for renderers.
    */
   function badgeElement(badge) {
     const span = h("span");

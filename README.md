@@ -46,6 +46,8 @@ The same explorer in the dark theme, alongside its script-free output for email 
 
 Both views use virtual rows and support keyboard navigation. Both can mark search and filter matches with a match count and next/previous navigation ([search highlighting](docs/search-highlight.md)), and let readers switch between fitting the width, scrolling sideways and (on grids) cards, in three densities ([layout modes](docs/layout-modes.md)). Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). Grids and trees can open each record in a record panel: record-only fields in tabs and sections, lists, objects and nested collections, links between records, timelines, record deep links, and copy, print and export of one record, with details loaded on demand for large reports (see [docs/record-panel.md](docs/record-panel.md)). English labels are built in; Polish, German, Spanish, French and Italian packs are included.
 
+CanopyX reads the shared `--hfx-*` design roles for colours, fonts, radii and density, and includes standalone defaults. Use `data-hfx-style` and `data-hfx-mode` on a containing element to theme a page; `data-hfx-density="compact"` selects 32px rows and `"comfortable"` selects 40px rows. See [theming](docs/architecture.md#theming) for custom roles and the migration from `--cx-*` colour variables.
+
 ## Installation
 
 ### .NET

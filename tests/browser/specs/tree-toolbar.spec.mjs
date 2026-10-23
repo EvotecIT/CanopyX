@@ -189,7 +189,8 @@ test("a tree is as tall as its rows, grows to the host height when expanded and 
   await open(page);
   const host = groups(page);
   const height = () => host.evaluate(element => element.offsetHeight);
-  const content = await host.evaluate(element => element.querySelector(".cx-toolbar").offsetHeight + element.querySelector(".cx-head").offsetHeight + 3 * 28);
+  const content = await host.evaluate(element => element.querySelector(".cx-toolbar").offsetHeight + element.querySelector(".cx-head").offsetHeight
+    + element.canopyx.visibleRows().length * element.querySelector('.cx-row[data-cx-id]').getBoundingClientRect().height);
   await expect.poll(height).toBeLessThanOrEqual(content + 8);
   expect(await height()).toBeGreaterThanOrEqual(content);
   await host.locator('.cx-row[data-cx-id="g-everyone"] .cx-exp').click();

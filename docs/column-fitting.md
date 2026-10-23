@@ -23,7 +23,7 @@ No product-specific width adjustments or host resize callbacks are needed.
 The grid measures the header and up to 200 loaded rows per column, using formatted
 cell text and the effective fonts. The content measurement includes cell padding,
 selection controls, and presenter decoration. Enum pills include their bold font
-and inline padding; successful enum values use the ordinary font and state dot.
+and inline padding for every tone; state presenters use their text and dot.
 Quiet enum values retain their inset. Atomic enum and state labels are not capped
 at the ordinary text estimate of 420 pixels. The existing text measurement limit
 of 512 characters still applies.

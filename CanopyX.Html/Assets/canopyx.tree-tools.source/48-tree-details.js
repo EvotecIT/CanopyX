@@ -51,9 +51,7 @@
       // The drawer it replaces leaves the page at once; its close event still runs.
       if (TREE_DETAILS.active) { TREE_DETAILS.active._replaced = true; TREE_DETAILS.active.close(); TREE_DETAILS.active.remove(); }
       const dialog = TREE_DETAILS.active = this.recordDrawer = h("dialog", "cx-host cx-tree-tools cx-drawer"), head = h("div", "cx-drawer-h"), title = h("h4"), body = h("div", "cx-drawer-body");
-      dialog._returnFocus = returnFocus; dialog.setAttribute("data-cx-theme", this.host.getAttribute("data-cx-theme"));
-      const theme = getComputedStyle(this.host); dialog.style.colorScheme = theme.colorScheme;
-      for (const name of theme) if (name.startsWith("--cx-")) dialog.style.setProperty(name, theme.getPropertyValue(name));
+      dialog._returnFocus = returnFocus; overlayTheme(this.host, dialog);
       title.id = this.id + "-record-title"; title.tabIndex = -1; title.setAttribute("aria-level", "2"); dialog.setAttribute("aria-labelledby", title.id);
       const button = (icon, label, run) => { const item = gridDecorateButton(gridButton("", run), icon, true); item.classList.add("icon"); item.setAttribute("aria-label", labels[label]); return item; };
       const step = position => { paint(position); focusDrawerTitle(title); };

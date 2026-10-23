@@ -132,7 +132,7 @@
           if (cell.classList.contains("cx-cal-pad")) return;
           const day = shown[col], backgrounds = this.calBackgroundsOn(day);
           if (backgrounds.length) {
-            cell.classList.add("cx-cal-bgday"); cell.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + backgrounds[0].tone + ",var(--cx-tone-info))");
+            cell.classList.add("cx-cal-bgday"); cell.style.setProperty("--cx-bg-tone", toneVariable(backgrounds[0].tone, false, "var(--hfx-color-status-info-fg)"));
             if (backgrounds[0].sd === day || col === 0) { const label = h("span", "cx-cal-bglabel"); setText(label, backgrounds[0].label); label.setAttribute("aria-hidden", "true"); cell.appendChild(label); }
           }
           const hidden = totals[col] - visible[col];
@@ -140,7 +140,7 @@
           if (options.dots && totals[col]) {
             const dots = h("span", "cx-cal-dots"); dots.setAttribute("aria-hidden", "true");
             for (const item of placed.filter(entry => entry.from <= col && entry.to >= col).slice(0, 3)) {
-              const dot = h("i"); if (item.event.tone) dot.style.setProperty("--cx-ev", "var(--cx-tone-" + item.event.tone + ",var(--cx-accent))"); dots.appendChild(dot);
+              const dot = h("i"); if (item.event.tone) dot.style.setProperty("--cx-ev", toneVariable(item.event.tone, false, "var(--hfx-color-accent)")); dots.appendChild(dot);
             }
             cell.appendChild(dots);
           } else if (hidden > 0) {

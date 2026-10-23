@@ -9,12 +9,6 @@
   let facetSeq = 0;
   const FACET_ICON = '<path d="M4 6h16M7 12h10M10 18h4"/>';
 
-  function facetTheme(grid, element) {
-    element.setAttribute("data-cx-theme", grid.host.getAttribute("data-cx-theme") || "auto");
-    const style = grid.host.style;
-    for (const name of style) if (name.startsWith("--cx-")) element.style.setProperty(name, style.getPropertyValue(name));
-  }
-
   Object.assign(DataGrid.prototype, {
     startFacets() {
       if (this.facetPanel) return;
@@ -30,7 +24,7 @@
       live.setAttribute("aria-live", "polite"); toggle.classList.add("cx-facets-toggle"); toggle.setAttribute("aria-controls", id + "-list"); list.id = id + "-list";
       toggle.appendChild(gridIcon(null, FACET_ICON)); clear.classList.add("cx-facets-clear"); this.facetClear = clear;
       toggle.hidden = !options.collapsible;
-      head.append(title, clear, toggle); panel.append(head, list, live); facetTheme(this, panel);
+      head.append(title, clear, toggle); panel.append(head, list, live);
       panel.setAttribute("data-cx-position", options.position); panel.style.setProperty("--cx-facets-w", options.width + "px");
       this.facetSections = this.facetColumns.map(facet => this.facetSection(facet, list));
       // The frame: the panel and the grid element side by side or stacked, in the grid element's place.
@@ -40,6 +34,7 @@
         frame.setAttribute("data-cx-position", options.position);
         this.host.before(frame); frame.append(panel, this.host);
       }
+      this.facetTheme = watchOverlayTheme(this.host, panel, signal);
       // The button that opens the sheet when the panel does not fit, including grids without a toolbar.
       const sheetButton = this.facetSheetButton = gridButton(this.labels.gridFacetPanel, () => this.openFacetSheet());
       sheetButton.classList.add("cx-btn", "cx-facets-open"); sheetButton.prepend(gridIcon(null, FACET_ICON)); sheetButton.hidden = true;
@@ -184,22 +179,24 @@
       if (this.facetSheet || !this.facetPanel) return;
       const sheet = this.facetSheet = h("dialog", "cx-host cx-chrome cx-grid-overlay cx-facet-sheet"), head = h("div", "cx-facet-sheet-h"), title = h("h2"), done = gridButton(this.labels.gridDone, () => sheet.close());
       const panel = this.facetPanel, home = panel.parentNode, next = panel.nextSibling, returnFocus = document.activeElement;
-      facetTheme(this, sheet); title.id = this.id + "-facet-sheet"; sheet.setAttribute("aria-labelledby", title.id); setText(title, this.facetOptions.label || this.labels.gridFacetPanel);
+      const disposeTheme = watchOverlayTheme(this.host, sheet, this.lifetime.signal);
+      sheet.addEventListener("close", disposeTheme, { once: true });
+      title.id = this.id + "-facet-sheet"; sheet.setAttribute("aria-labelledby", title.id); setText(title, this.facetOptions.label || this.labels.gridFacetPanel);
       // The sheet heading names the panel, so the panel's own heading steps aside and its Clear all joins Done.
       const clear = this.facetClear, clearHome = clear.parentNode, clearNext = clear.nextSibling;
       done.classList.add("cx-btn"); head.append(title, clear, done); sheet.append(head, panel);
       panel.hidden = false; panel.classList.remove("cx-facets-closed"); panel.classList.add("cx-facets-in-sheet");
-      document.body.appendChild(sheet);
+      document.body.appendChild(sheet); this.facetTheme.refresh();
       sheet.addEventListener("close", () => {
         if (this.facetPanel !== panel) { sheet.remove(); return; }   // The grid was destroyed meanwhile; the panel is gone.
-        panel.classList.remove("cx-facets-in-sheet"); home?.insertBefore(panel, next); clearHome.insertBefore(clear, clearNext);
+        panel.classList.remove("cx-facets-in-sheet"); home?.insertBefore(panel, next); this.facetTheme.refresh(); clearHome.insertBefore(clear, clearNext);
         sheet.remove(); this.facetSheet = null; this.facetFit();
         if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
       }, { once: true });
       sheet.showModal(); done.focus();
     },
     facetDestroy() {
-      clearTimeout(this.facetTimer); clearTimeout(this.facetLiveTimer); this.facetResize?.disconnect();
+      clearTimeout(this.facetTimer); clearTimeout(this.facetLiveTimer); this.facetResize?.disconnect(); this.facetTheme?.(); this.facetTheme = null;
       for (const section of this.facetSections || []) section.controller?.abort();
       const sheet = this.facetSheet; this.facetSheet = null;
       this.facetPanel?.remove(); this.facetSheetButton?.remove(); this.facetPanel = null;

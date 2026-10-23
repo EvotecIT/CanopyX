@@ -12,7 +12,7 @@ namespace CanopyX;
 /// <see cref="Warning"/>, <see cref="Danger"/>, and <see cref="Muted"/>. A host that needs more, for example one
 /// tone per step of a severity scale, names its own with <see cref="Named"/> and supplies their colours in its theme:
 /// the browser runtime reads the text colour of tone <c>high</c> from the CSS custom property
-/// <c>--cx-tone-high</c> and the badge background from <c>--cx-tone-high-bg</c> (when that is missing, a tint of the
+/// <c>--hfx-color-status-high-fg</c> and the badge background from <c>--hfx-color-status-high-bg</c> (when that is missing, a tint of the
 /// text colour). The static outline takes them from <c>CanopyStaticHtmlOptions.ToneColors</c>, and with
 /// <c>UseThemeVariables</c> also from those properties.
 /// </para>

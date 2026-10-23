@@ -1,9 +1,6 @@
   function gridOverlayTheme(grid,element) {
     for (const name of (grid.opts.overlayClass || "").split(/\s+/).filter(Boolean)) element.classList.add(name);
-    element.setAttribute("data-cx-theme",grid.host.getAttribute("data-cx-theme"));
-    const theme=getComputedStyle(grid.host);
-    element.style.colorScheme=theme.colorScheme;
-    for (const name of theme) if(name.startsWith("--cx-")) element.style.setProperty(name,theme.getPropertyValue(name));
+    overlayTheme(grid.host, element);
   }
   function gridRestoreFocus(grid,returnFocus,rowId,column) {
     if(grid.destroyed)return;

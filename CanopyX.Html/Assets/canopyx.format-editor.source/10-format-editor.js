@@ -18,12 +18,6 @@
     formatEndsWith: "ends with", formatNotIn: "is none of", formatBetween: "between", formatLike: "matches wildcard", formatMatches: "matches pattern",
     formatOlderThan: "older than (days)", formatWithinLast: "within the last (days)", formatNotLike: "does not match wildcard",
     formatNotMatches: "does not match pattern", formatBetweenExclusive: "between (exclusive)" };
-  function formatEditorTheme(grid, dialog) {
-    dialog.setAttribute("data-cx-theme", grid.host.getAttribute("data-cx-theme") || "auto");
-    const theme = getComputedStyle(grid.host);
-    dialog.style.colorScheme = theme.colorScheme;
-    for (const name of theme) if (name.startsWith("--cx-")) dialog.style.setProperty(name, theme.getPropertyValue(name));
-  }
   function formatIconButton(label, icon, run) {
     const button = gridDecorateButton(gridButton("", run), icon === "edit" ? "more" : icon, true);
     if (icon === "edit") button.querySelector("svg").replaceWith(svgIcon('<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>'));
@@ -54,7 +48,7 @@
       const labels = this.formatLabels, returnFocus = document.activeElement, phone = this.host.clientWidth <= 640;
       const dialog = h("dialog", "cx-host cx-grid-overlay cx-format-editor"), head = h("div", "cx-drawer-h"), title = h("h4"), body = h("div", "cx-format-body"),
         status = h("p", "cx-grid-control-error"), foot = h("div", "cx-pop-f");
-      formatEditorTheme(this, dialog); dialog.classList.toggle("cx-phone", phone);
+      overlayTheme(this.host, dialog); dialog.classList.toggle("cx-phone", phone);
       title.id = this.id + "-format-title"; title.tabIndex = -1; setText(title, labels.formatRules); dialog.setAttribute("aria-labelledby", title.id);
       status.setAttribute("role", "status");
       head.append(title, formatIconButton(labels.formatCancel, "close", () => dialog.close()));

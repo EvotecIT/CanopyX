@@ -30,7 +30,7 @@
           const bar = h("span", "cx-tl-print-bar");
           const from = Math.max(event.tlStart, axis.from), to = Math.min(event.tlEnd, axis.to), pixels = (axis.x(to) - axis.x(from)) / axis.total * TL_PRINT_LANE;
           bar.style.insetInlineStart = share(from); bar.style.width = "max(6px, calc(" + share(to) + " - " + share(from) + "))";
-          if (event.tone) bar.style.setProperty("--cx-ev", "var(--cx-tone-" + event.tone + ",var(--cx-accent))");
+          if (event.tone) bar.style.setProperty("--cx-ev", toneVariable(event.tone, false, "var(--hfx-color-accent)"));
           // A short bar is solid; a title is printed only where it fits whole.
           if (pixels < 16) bar.classList.add("cx-tl-print-tiny");
           if (pixels >= event.title.length * TL_PRINT_CHAR + 8) setText(bar, event.title);

@@ -1,4 +1,3 @@
-using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 using CanopyX.Html;
@@ -25,7 +24,7 @@ public sealed class RuntimeAssetTests {
         var flowShell = Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.flow-entry.source", "50-flow-shell.js");
         var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
         if (runtime == CanopyRuntime.Flow) {
-            files = new[] { "canopyx.flow-entry.source/00-flow-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-number-format.js", "canopyx.source/01-trust.js",
+            files = new[] { "canopyx.flow-entry.source/00-flow-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-number-format.js", "canopyx.source/01-trust.js", "canopyx.source/02-design-tokens.js",
                 "canopyx.source/05-patterns.js", "canopyx.source/05-search-folding.js", "canopyx.grid.source/00-grid-pure.js", "canopyx.source/82-parts.js",
                 "canopyx.flow-entry.source/50-flow-shell.js", "canopyx.flow-entry.source/90-flow-boot.js" }
                 .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
@@ -75,7 +74,7 @@ public sealed class RuntimeAssetTests {
         Assert.Contains(partsMarker, expected);
         expected = expected.Replace(partsMarker, "{" + string.Join(",", CanopyHtmlAssets.GetParts(runtime).Select(part => "\"" + part.Name + "\":[" +
             string.Join(",", new[] { part.Version, part.HashedScriptFileName, part.HashedStyleFileName }.Where(value => value != null).Select(value => "\"" + value + "\"")) + "]")) + "}");
-        expected = CompressScriptSpacing(expected);
+        expected = CompressScriptSpacing(SharedTokenAssets.Expand(expected));
 
         Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
         Assert.True(expected == Normalize(script), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
@@ -88,7 +87,7 @@ public sealed class RuntimeAssetTests {
     [InlineData(CanopyRuntime.ReportingGrid)]
     [InlineData(CanopyRuntime.Flow)]
     public void Style_MatchesItsSource(CanopyRuntime runtime) {
-        // Every entry point starts from the shared theme tokens (base.css); the flow entry point adds only its host rules, which the
+        // Every entry point starts from component geometry (base.css); the flow entry point adds only its host rules, which the
         // grid entry points carry too so they can host a flow.
         var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
         var names = new List<string> { "canopyx.source/base.css" };
@@ -98,43 +97,88 @@ public sealed class RuntimeAssetTests {
         if (runtime == CanopyRuntime.ReportingGrid) names.Add("canopyx.reporting.source/canopyx.css");
         if (grid || runtime == CanopyRuntime.Flow) names.Add("canopyx.flow-entry.source/flow-host.css");
         var source = string.Join("\n", names.Select(name => Normalize(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar)))).TrimEnd('\n')));
-        Assert.Equal(CompressStyleSpacing(WithoutCommentLines(source + "\n")), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
+        Assert.Equal(CompressStyleSpacing(SharedTokenAssets.Expand(WithoutCommentLines(source + "\n"))), Normalize(CanopyHtmlAssets.GetStyle(runtime)));
     }
     [Fact]
     public void FilterEditorStyle_MatchesItsSource() {
         // The editor's own rules, the Columns menu and record drawer styles it shares with the tree tools part, then the overlay base.
         var source = string.Join("\n", new[] { "canopyx.css", "columns.css", "drawer.css", "overlay.css" }.Select(name =>
             Normalize(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.filter-editor.source", name))).TrimEnd('\n')));
-        Assert.Equal(CompressStyleSpacing(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n")), Normalize(CanopyHtmlAssets.FilterEditorStyle));
+        Assert.Equal(CompressStyleSpacing(SharedTokenAssets.Expand(WithoutCommentLines(Normalize(source).TrimEnd('\n') + "\n"))), Normalize(CanopyHtmlAssets.FilterEditorStyle));
     }
 
     [Fact]
     public void Assets_StayWithinTheCompressedBudget() {
-        var compressed = GzipLength(CanopyHtmlAssets.Script) + GzipLength(CanopyHtmlAssets.Style);
-
         // Combined roadmap integration: its size plus about 15%.
-        Assert.True(compressed <= 60928, "Runtime assets are " + compressed + " bytes gzip; the budget is 59.5 KiB.");
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.TreeGrid, 60928);
     }
 
     [Fact]
     public void InteractiveAssets_StayWithinTheirCompressedBudget() {
-        var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.InteractiveTreeGrid));
         // Combined roadmap integration: its size plus about 15%.
-        Assert.True(compressed <= 71168, "Interactive runtime assets are " + compressed + " bytes gzip; the budget is 69.5 KiB.");
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.InteractiveTreeGrid, 71168);
     }
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        // Caption geometry, sort priorities and cancellable hidden-panel focus need 121.875 KiB after sharing row/query state and removing obsolete styles.
-        Assert.True(compressed <= 124800, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 121.875 KiB.");
+        // Preserve the component ceiling established by the caption geometry and hidden-panel focus fixes.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 124800);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
-        var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid));
         // Combined roadmap integration: its size plus about 15%.
-        Assert.True(compressed <= 151040, "Reporting assets are " + compressed + " bytes gzip; the optional entry point budget is 147.5 KiB.");
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 151040);
+    }
+
+    [Fact]
+    public void SharedTokenPayload_StaysWithinItsSeparateAllowance() {
+        var theme = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.source", "02-design-tokens.js"));
+        // Bound the full generated dictionary plus the expanded theme source independently of the component budgets.
+        var density = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets", "canopyx.source", "86-shared-density.js"));
+        var compressed = SharedTokenAssets.Gzip(SharedTokenAssets.FallbackJson) + SharedTokenAssets.Gzip(SharedTokenAssets.Expand(theme)) + SharedTokenAssets.Gzip(density);
+        Assert.True(compressed <= SharedTokenAssets.Allowance,
+            "Shared-token defaults and theme source are " + compressed + " bytes gzip; their separate allowance is 6 KiB.");
+    }
+
+    [Theory]
+    [InlineData(CanopyRuntime.TreeGrid)]
+    [InlineData(CanopyRuntime.InteractiveTreeGrid)]
+    [InlineData(CanopyRuntime.DataGrid)]
+    [InlineData(CanopyRuntime.ReportingGrid)]
+    [InlineData(CanopyRuntime.Flow)]
+    public void SharedTokenFallbacks_AddedCompressedOverheadStaysWithinItsSeparateAllowance(CanopyRuntime runtime) {
+        var script = CanopyHtmlAssets.GetScript(runtime);
+        var style = CanopyHtmlAssets.GetStyle(runtime);
+        var overhead = SharedTokenAssets.Gzip(script) + SharedTokenAssets.Gzip(style)
+            - SharedTokenAssets.Gzip(SharedTokenAssets.WithoutFallbackPayload(script))
+            - SharedTokenAssets.Gzip(SharedTokenAssets.WithoutFallbackPayload(style));
+        Assert.True(overhead <= SharedTokenAssets.Allowance,
+            runtime + " use-site defaults add " + overhead + " bytes gzip; the separate shared-token allowance is 6 KiB.");
+    }
+
+    [Fact]
+    public void LazySharedTokenFallbacks_StayWithinTheSeparateAllowance() {
+        foreach (var part in CanopyHtmlAssets.Parts) {
+            var actual = SharedTokenAssets.Gzip(part.Script) + (part.Style == null ? 0 : SharedTokenAssets.Gzip(part.Style));
+            var component = SharedTokenAssets.Gzip(SharedTokenAssets.WithoutFallbackPayload(part.Script))
+                + (part.Style == null ? 0 : SharedTokenAssets.Gzip(SharedTokenAssets.WithoutFallbackPayload(part.Style)));
+            Assert.True(actual - component <= SharedTokenAssets.Allowance, part.Name + " shared fallback overhead exceeds 6 KiB.");
+        }
+    }
+
+    [Fact]
+    public void AssembledStyles_UseHostTokensWithoutDeclaringAPalette() {
+        var files = Directory.GetFiles(Path.Combine(RepositoryPaths.Root, "CanopyX.Html", "Assets"), "*.css");
+        Assert.NotEmpty(files);
+        foreach (var file in files) {
+            var style = File.ReadAllText(file);
+            // Shared declarations would mask an inherited host theme, even if their values matched the standalone defaults.
+            Assert.False(Regex.IsMatch(style, @"(?<![\w-])--hfx-[a-z0-9-]+\s*:"),
+                Path.GetFileName(file) + " declares a shared host token; use a var() fallback instead.");
+            Assert.False(Regex.IsMatch(style, @"var\(--hfx-[a-z0-9-]+\)"),
+                Path.GetFileName(file) + " has a shared token without a standalone fallback.");
+        }
     }
 
     [Fact]
@@ -277,7 +321,7 @@ public sealed class RuntimeAssetTests {
         return string.Concat(parts);
     }));
 
-    private static string CompressScriptSpacing(string value) {
+    internal static string CompressScriptSpacing(string value) {
         var output = new StringBuilder();
         var previous = "";
         var slash = false;
@@ -324,15 +368,5 @@ public sealed class RuntimeAssetTests {
         var value = 0;
         foreach (var digit in text.TrimStart('-')) value = checked(value * 36 + (digit <= '9' ? digit - '0' : digit - 'a' + 10));
         return text[0] == '-' ? -value : value;
-    }
-
-    private static long GzipLength(string value) {
-        using var buffer = new MemoryStream();
-        using (var gzip = new GZipStream(buffer, CompressionLevel.SmallestSize, leaveOpen: true)) {
-            var bytes = Encoding.UTF8.GetBytes(value);
-            gzip.Write(bytes, 0, bytes.Length);
-        }
-
-        return buffer.Length;
     }
 }

@@ -62,7 +62,6 @@
 
   function recordNested(ctx, field, list, body) {
     const grid = recordGridHelpers(), host = h("div", "cx-host cx-record-nested"), rows = list.rows, tree = !!list.roots || !grid.createDataGrid;
-    host.setAttribute("data-cx-theme", ctx.view.host.getAttribute("data-cx-theme") || "auto");
     const columns = list.columns.map(column => ({ kind: "text", sortable: true, ...column })), id = "cx-record-" + ++recordNestedSeq;
     // Rows keep the order they come in: the nested grid sees positional ids and maps them back to the records.
     const byKey = new Map(rows.map((row, at) => ["r" + String(at).padStart(6, "0"), row]));

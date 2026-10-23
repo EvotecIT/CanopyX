@@ -3,7 +3,7 @@
   const FILTER_EDITOR=definePart(DataGrid,"filter-editor","filter editor",()=>({DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridDateInputMoment,gridQuery,gridQueryStart,
     GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridKeyCompare,gridFacetKey,columnNumericTone,columnValueTone,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
     reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,numberText,fill,announceMenu,applyTone,toneOf,badgeElement,isCellObject,RECORD_IMPL,
-    GRID_REPORTING,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null}));
+    GRID_REPORTING,overlayTheme,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null}));
   function loadGridFilterEditor(){return loadPart(FILTER_EDITOR);}
   DataGrid.prototype.requirePart=requirePart;
   Object.assign(DataGrid.prototype,{

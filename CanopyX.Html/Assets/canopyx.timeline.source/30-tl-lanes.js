@@ -145,7 +145,7 @@
         if (x2 <= x1 || x2 < left || x1 > right) return;
         const block = h("div", "cx-tl-shade " + cls); block.setAttribute("aria-hidden", "true");
         block.style.insetInlineStart = x1 + "px"; block.style.width = (x2 - x1) + "px";
-        if (tone) block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + tone + ",var(--cx-tone-info))");
+        if (tone) block.style.setProperty("--cx-bg-tone", toneVariable(tone, false, "var(--hfx-color-status-info-fg)"));
         if (label && x2 - x1 > 60) { const text = h("span"); setText(text, label); block.appendChild(text); }
         lane.appendChild(block);
       };
@@ -168,7 +168,7 @@
         const x1 = axis.x(range.start), x2 = axis.x(range.end);
         if (x2 <= x1 || x2 < left || x1 > right) continue;
         const block = h("div", "cx-tl-range" + (range.kind === "unavailable" ? " cx-tl-unavailable" : "")); block.style.insetInlineStart = x1 + "px"; block.style.width = (x2 - x1) + "px";
-        if (range.kind !== "unavailable") block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + range.tone + ",var(--cx-tone-info))");
+        if (range.kind !== "unavailable") block.style.setProperty("--cx-bg-tone", toneVariable(range.tone, false, "var(--hfx-color-status-info-fg)"));
         block.title = range.label; blocks.push(block);
       }
       const now = Date.now();
@@ -196,7 +196,7 @@
         const block = h("div", "cx-tl-heat"), tone = thresholds.reduce((found, item) => value >= item.at ? item.tone : found, null);
         block.style.insetInlineStart = unit.x + "px"; block.style.width = axis.width + "px";
         block.style.setProperty("--cx-heat", String(Math.min(1, value / most)));
-        if (tone) { block.dataset.cxTone = tone; block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + tone + ",var(--cx-accent))"); }
+        if (tone) { block.dataset.cxTone = tone; block.style.setProperty("--cx-bg-tone", toneVariable(tone, false, "var(--hfx-color-accent)")); }
         block.setAttribute("aria-hidden", "true"); block.title = fill(this.calLabels.calendarCapacityAt, { count: numberFormat(this.lang).format(value) });
         if (axis.width >= 28) setText(block, numberFormat(this.lang).format(value));
         lane.appendChild(block);

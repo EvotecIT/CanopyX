@@ -12,12 +12,12 @@ const view = patch => ({ protocol: "canopyx/2", type: "grid", id: "pills", label
     { id: "address", title: "Address", kind: "text", hidden: true }],
   rows: states.map((state, i) => ({ id: "s" + i, cells: { name: "service-0" + i, state, address: "#service-" + i } })), ...patch });
 // A host theme like a report's: "up" brings its own fill, "maintenance" only its ink.
-const HOST_TONES = "<style>.cx-host{--cx-tone-up:#1d6b3a;--cx-tone-up-bg:#d9f2e1;--cx-tone-maintenance:#5b3fb5}" +
-  ".cx-host[data-cx-theme=dark]{--cx-tone-up:#6fd69a;--cx-tone-up-bg:#173a26;--cx-tone-maintenance:#b9a5ff}</style></head>";
+const HOST_TONES = "<style>.cx-host{--hfx-color-status-up-fg:#1d6b3a;--hfx-color-status-up-bg:#d9f2e1;--hfx-color-status-maintenance-fg:#5b3fb5}" +
+  ".cx-host[data-cx-theme=dark]{--hfx-color-status-up-fg:#6fd69a;--hfx-color-status-up-bg:#173a26;--hfx-color-status-maintenance-fg:#b9a5ff}</style></head>";
 
 async function open(page, document, theme = "light", script = "") {
   await page.emulateMedia({ colorScheme: theme });
-  const html = viewPage(document).replace('data-cx-theme="light"', 'data-cx-theme="' + theme + '"')
+  const html = viewPage(document, theme)
     .replace("</head>", HOST_TONES + (script ? "<script>" + script + "</script></head>" : "")).replace("</head></head>", "</head>");
   await page.setViewportSize({ width: 1100, height: 600 });
   await page.route("http://canopyx.test/pills", route => route.fulfill({ contentType: "text/html", body: html }));

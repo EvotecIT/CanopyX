@@ -8,7 +8,7 @@
       host.classList.add("cx-host", "cx-data-grid", "cx-chrome");
       host.classList.toggle("cx-row-accents", !!this.view.rowAccents);
       host.setAttribute("data-cx-density", this.view.density || "default");
-      if (!host.hasAttribute("data-cx-theme")) host.setAttribute("data-cx-theme", "auto");
+      watchTheme(host, signal);
       style.setProperty("--cx-row-h", this.rowH + "px");
       this.toolbar = h("div", "cx-toolbar"); this.toolbar.hidden = this.opts.toolbar === false;
       if (this.view.search && this.tools.search !== false) this.buildGridSearch();
@@ -95,10 +95,18 @@
 
     setLogicalTop(top) {
       if (!this.hasGridSize()) { this.hiddenScrollTop = top; return; }
-      return ROW_SCROLLING.setLogicalTop.call(this, top);
+      const result = ROW_SCROLLING.setLogicalTop.call(this, top);
+      this.visibleScrollTop = ROW_SCROLLING.logicalTop.call(this);
+      return result;
     },
 
-    logicalTop() { return this.hiddenScrollTop ?? ROW_SCROLLING.logicalTop.call(this); },
+    logicalTop() {
+      if (this.hiddenScrollTop !== undefined) return this.hiddenScrollTop;
+      // A display:none container reports native scrollTop as zero. Hidden typography/density updates must
+      // retain the reader's last visible position rather than turn that temporary zero into a scroll request.
+      if (!this.grid.checkVisibility()) return this.visibleScrollTop ?? 0;
+      return this.visibleScrollTop = ROW_SCROLLING.logicalTop.call(this);
+    },
 
     hasGridSize() { return !!(this.grid.clientWidth && this.grid.clientHeight && this.grid.checkVisibility()); },
 

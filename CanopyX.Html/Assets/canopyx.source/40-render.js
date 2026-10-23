@@ -4,9 +4,7 @@
     build() {
       const host = this.host;
       host.classList.add("cx-host");
-      if (!host.hasAttribute("data-cx-theme")) {
-        host.setAttribute("data-cx-theme", "auto");
-      }
+      watchTheme(host, this.lifetime.signal);
       host.style.setProperty("--cx-row-h", this.rowH + "px");
       this.setTreeColumnPinned(this.view.pinTreeColumn);
       this.toolbar = h("div", "cx-toolbar");

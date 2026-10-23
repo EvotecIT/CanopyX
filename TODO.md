@@ -92,7 +92,7 @@ Completed generic tree improvements:
 - [x] Detail rows as tall as their content (measured), inside the visible width, with wrapping tables and column width shares.
 - [x] Host renderers per column (`renderers`), so the other columns keep their cell reuse.
 - [x] Dates in UTC or the reader's time zone (`timeZone`, `setTimeZone`), the other zone in the tooltip.
-- [x] Tones as names: six built in, any other from the host theme (`--cx-tone-<name>`).
+- [x] Tones as names: six built in, any other from the host theme (`--hfx-color-status-<name>-fg`).
 - [x] Host data on a node (`data`), and search limited to node kinds (`search.kinds`).
 - [x] Host-driven filters (`hidden`, `canopyx:filter`), a pinned tree column, `setColumnWidth`.
 - [x] `CanopyX.configure` for auto-mounted fragments, manual mounting, and a host link scheme (`formatLink`, `parseLink`).
@@ -141,7 +141,7 @@ Closed for the HtmlForgeX bridge (`HtmlForgeX.CanopyX`, 2026-09-30):
 
 Left open by that work:
 
-- Page chrome (header, toolbar slots, side panel) stays with the host; for HtmlForgeX documents it belongs to the `HtmlForgeX.CanopyX` bridge, which also maps design tokens onto `--cx-tone-<name>`.
+- Page chrome (header, toolbar slots, side panel) stays with the host; for HtmlForgeX documents it belongs to the `HtmlForgeX.CanopyX` bridge, which supplies shared `--hfx-*` design roles.
 - Right-to-left layout: row positions, the pinned tree column, and the detail body use physical left offsets.
 - The streamed writer holds one whole child list in memory until its last node is read; a flat list of millions of top-level rows needs pages that are written as they fill.
 - On the packed catalog at 4x, "identity gateway" (a service far down a region of 1,000) stays at about 210 ms on a busy machine, over the 200 ms margin and under the 250 ms budget. A trace (Edge, 4x): the search is 70 to 80 ms (19 index files; inserting their script elements alone costs about 17 ms), attaching the region's 1,000 services from one 229 KB pack about 25 ms, the forced layout of the rows in view about 20 ms, and the paint and commit 30 to 40 ms. What is left is the search (it ranks five times `maxResults` candidates and reads the entry files of all of them) and the size of the list a hit sits in; the path itself already loads in one round and renders once.
@@ -190,7 +190,7 @@ Consumers: HtmlForgeX documents and reports. The work happens in HtmlForgeX and 
 
 Owner decision (2026-10-15): HtmlForgeX offers choices. `FancyTree` stays and the CanopyX tree is added beside it; nothing is deprecated or removed. `FancyTree` and its assets stay maintained, and load only on pages that use it.
 
-- [x] `HtmlForgeX.CanopyX` bridge (in HtmlForgeX, on `master`: `CanopyTreeGrid`, `CanopyDataGrid`, `CanopyDataExplorer`, the tables bridge and token mapping): registers the CanopyX assets as a library, maps HtmlForgeX design tokens onto the CanopyX base colours, and emits the fragment.
+- [x] `HtmlForgeX.CanopyX` bridge (in HtmlForgeX, on `master`: `CanopyTreeGrid`, `CanopyDataGrid`, `CanopyDataExplorer`, the tables bridge and token mapping): registers the CanopyX assets as a library and emits the fragment.
 - [x] Offer the CanopyX tree alongside `FancyTree` (`CanopyTreeGrid` beside `FancyTree`), so authors can pick either. Document where each fits; for example, `FancyTree`'s `SelectMode` and free-form `Extensions` reach features of that component (tri-state checkboxes, drag and drop, editing) that CanopyX may not cover yet.
 - [x] Qualify the bridge's `StaticOutline.Only` output for email and Office delivery (`CanopyTreeGrid` writes the outline). HtmlForgeX has no separate `HtmlForgeX.Email` project; the bridge emits a script-free outline table through CanopyX's static renderer. Actual email-client rendering remains a separate consumer check.
 

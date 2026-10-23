@@ -1,5 +1,5 @@
   // ---------- rules: identity, target, condition and style, validated once into compiled rules ----------
-  // Styles come from theme tones (--cx-tone-<name>), so they follow the light, dark and print palettes. className and css
+  // Styles come from theme tones (--hfx-color-status-<name>-fg), so they follow the light, dark and print palettes. className and css
   // are the escape hatch. A rule that only colours gets a shape icon per tone unless it sets icon "none", and every
   // matched cell carries the rule's description for screen readers: formatting is never colour alone.
   const FORMAT_ICONS = { up: "↑", down: "↓", check: "✓", cross: "✕", warning: "⚠︎", info: "ⓘ", dot: "●", circle: "○", triangle: "▲",
@@ -9,7 +9,7 @@
   const FORMAT_LABELS = { formatRules: "Conditional formatting", formatLegend: "Formatting legend", formatUpTo: "Up to", formatAbove: "Above",
     formatHiddenFlagged: "{count} hidden fields formatted: {rules}" };
   function formatToneVar(tone) {
-    return tone === "neutral" ? "var(--cx-text-2)" : tone === "muted" ? "var(--cx-muted)" : "var(--cx-tone-" + tone + ",var(--cx-text-2))";
+    return tone === "neutral" ? "var(--hfx-color-text-secondary)" : tone === "muted" ? "var(--hfx-color-text-muted)" : toneVariable(tone, false, "var(--hfx-color-text-secondary)");
   }
   function formatTone(value) {
     if (typeof value !== "string" || !toneOf(value).cls) formatError("'" + value + "' is not a tone name.");

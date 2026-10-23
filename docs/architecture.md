@@ -102,22 +102,22 @@ File names keep that rule when files are cached or shared:
 
 ### Theming the Outline
 
-The outline is themed when it is rendered, not by script. `CanopyStaticHtmlOptions.Theme` holds the same base colours the runtime is themed with (surface, text, accent, line, and the four coloured tones), and the renderer mixes muted text, header and detail backgrounds, strong lines, and badge tints from them with the formulas of `canopyx.css`. The table, its caption, and the note in its last row carry the surface, so a dark outline is complete on a white page. The host chooses the colours by where the outline goes:
+The outline is themed when it is rendered, without script. `CanopyStaticHtmlOptions.Theme` supplies literal colours for email, print and Word. With `UseThemeVariables`, shared semantic roles override those literals in browsers. The table, its caption, and the note in its last row carry the surface, so a dark outline is complete on a white page. The host chooses the colours by where the outline goes:
 
 | Where the outline goes | What the host sets | What is written |
 | --- | --- | --- |
 | Email, Word, print, a light page | nothing (the light theme) | literal light colours |
 | A dark document | `Theme = CanopyStaticTheme.Dark()` | literal dark colours |
 | A document with a palette of its own | the colours its design tokens resolve to, on `Theme`, and its tone colours in `ToneColors` | those literals |
-| A page whose theme is decided in the browser | `UseThemeVariables = true`, plus any of the above for the fallback | each literal, then the same property as `var(--cx-…, literal)` |
+| A page whose theme is decided in the browser | `UseThemeVariables = true`, plus any of the above for the fallback | each literal, then the same property as `var(--hfx-…, literal)` |
 
 A host passes token colours in one of two forms. Resolved: it reads the hex values of its tokens for the theme it renders (for example surface `#10141a`, text `#e6edf3`, and the ink of each status) and assigns them to `Theme` and `ToneColors`; colours are `#` plus three or six hex digits, because they go into inline styles. Live: it sets `UseThemeVariables` and lets its stylesheet define the runtime's custom properties for an element around the outline, exactly as it does for the grid:
 
 ```css
 /* One rule themes the grid and the outline from the host's tokens, in whichever theme the page is in. */
-.report .cx-host.cx-host, .report .report-outline {
-  --cx-surface: var(--token-surface-card); --cx-text: var(--token-text); --cx-accent: var(--token-accent); --cx-line: var(--token-line);
-  --cx-tone-critical: var(--token-critical-ink); --cx-tone-critical-bg: var(--token-critical-tint);
+.report {
+  --hfx-color-surface: var(--token-surface-card); --hfx-color-text: var(--token-text); --hfx-color-accent: var(--token-accent); --hfx-color-border: var(--token-line);
+  --hfx-color-status-critical-fg: var(--token-critical-ink); --hfx-color-status-critical-bg: var(--token-critical-tint);
 }
 ```
 
@@ -125,7 +125,7 @@ A host passes token colours in one of two forms. Resolved: it reads the hex valu
 <noscript><div class="report-outline"><!-- CanopyStaticHtml.Render(view, options) --></div></noscript>
 ```
 
-The element around the outline is the host's own, so nothing in `canopyx.css` competes with the rule. (On the grid, the palettes of `canopyx.css` are selected by `data-cx-theme` and weigh as much as one class plus one attribute; a host rule outweighs them with a repeated class, as above, whatever the order of the stylesheets.) `ToneColors` are literals of one theme, so a page that can turn dark defines `--cx-tone-<name>` for its own tones as well.
+The host can set roles on a containing element; the view and outline inherit them. `ToneColors` are literals of one theme, so a page that can turn dark defines `--hfx-color-status-<name>-fg` and, for badges, `--hfx-color-status-<name>-bg` for its own tones as well.
 
 A page that uses only the CanopyX stylesheet wraps the outline in an element with the class `cx-static` instead: `canopyx.css` gives it the light or dark palette by its `data-cx-theme` (`light`, `dark`, or `auto` for the reader's system preference), and the light palette for print.
 
@@ -237,17 +237,21 @@ Selection proposals share one owner across clicks, keyboard ranges, path navigat
 
 ### Theming
 
-The approved [data-grid design specification](design/data-grid-spec.html) is the reference for grid tokens, components, and interactions. Open it with `#light` or `#dark` to compare either theme.
+Trees, grids and lazy view parts read the shared `--hfx-*` semantic roles directly. Stylesheets use generated values as fallbacks at each var() reference, so standalone views need no host framework or font download. CanopyX never declares a shared palette on the host or a parent. Inherited roles always take precedence. The default sans family starts with Segoe UI Variable Text; headings and monospaced content use `--hfx-font-display` and `--hfx-font-mono`.
 
-The Graphite defaults use Calibri/Carlito/Segoe UI and expose `--cx-font`, `--cx-font-mono`, `--cx-font-size`, `--cx-radius`, `--cx-radius-sm`, `--cx-control-h`, `--cx-row-h`, `--cx-head-h`, `--cx-cell-px`, and `--cx-on-accent`. No web font download is required. Map the host's card surface, body text, accent, line and status inks to the existing inputs; HtmlForgeX bridges can map typography, control radius and spacing through the new inputs. Derived tokens (`--cx-text-2`, `--cx-muted`, `--cx-control-border`, `--cx-group-bg`, `--cx-accent-soft`, `--cx-quiet` and the state backgrounds) follow those inputs. The control border is intentionally stronger than decorative separators.
+A host supplies its `--hfx-*` roles and colour scheme, including the Evotec, Neutral, Slate, Warm and High contrast themes. Without host roles, CanopyX uses its own light/dark defaults, following the system preference. Set `data-theme="light"` or `data-theme="dark"` on a standalone CanopyX root to choose the fallback mode. This changes only absent-role fallbacks; provided roles still win. Legacy `data-cx-theme`, `data-bs-theme`, `data-hfx-theme` and `data-hfx-tokens` theme triggers remain supported. Override individual roles such as `--hfx-color-surface`, `--hfx-color-text`, `--hfx-color-accent`, `--hfx-color-border`, `--hfx-radius-overlay` and `--hfx-font-sans` on the host container. Body-mounted view overlays carry the same resolved roles and theme attributes.
 
-Grid `density` is `compact` (28 pixel rows, 8 pixel padding), `default` (34/12), or `comfortable` (42/14). JavaScript can omit `rowHeight` to use density; the .NET writer emits the effective numeric height. Explicit heights keep their meaning. `zebra: true` opts into alternate backgrounds; the default is off.
+Tree and grid column headers use `--hfx-table-header-size`, `--hfx-table-header-weight` and `--hfx-table-header-line-height`, with 12 pixel, semibold defaults. Optional `--hfx-table-header-color` and `--hfx-table-header-background` overrides apply to ordinary, sorted, grouped and pinned headers. When absent, they resolve from the table's own secondary text and sunken surface roles, including inside a theme island. Static output keeps literal inline values before its optional role declarations.
 
-`canopyx.css` defines a small set of base colours as custom properties (`--cx-surface`, `--cx-text`, `--cx-accent`, `--cx-line`, and one colour per tone it ships). A tone is a name, and a host adds its own, such as the steps of a severity scale, by defining `--cx-tone-<name>` and optionally `--cx-tone-<name>-bg` in its theme (see "Tones" in data-protocol.md). Hover, selection, alternate rows, and muted text are derived with `color-mix()`. Host renderers draw badges and chips with `CanopyX.badge({ text, tone, title })`, which returns the element the runtime draws for a badge (a `span` with `cx-badge`, the tone classes, and for a host tone the custom properties that point at its theme colours), so a host never repeats the badge markup or the tone rules; `tone` defaults to `neutral`, and a missing or non-string `text` throws. A dark palette applies under `data-cx-theme="dark"`, or under `data-cx-theme="auto"` when the system prefers dark. Hosts theme CanopyX by setting the base colours, for example from their own design tokens.
+Grid `density` is `compact` (32 pixel rows, 8 pixel horizontal padding) or `comfortable` (40/12); `default` remains accepted and uses comfortable spacing. Header and control heights follow the same shared density tokens. An inherited `data-hfx-density` takes precedence over the grid option and updates virtual row offsets when it changes. Without that host override, explicit row heights keep their meaning. Trees default to 40 pixel rows. `zebra: true` opts into alternate backgrounds; the default is off.
+
+Built-in tones retain their public names: `success` reads `status-good`, `warning` reads `status-warn`, and `danger` reads `status-bad`. A named host tone reads `--hfx-color-status-<name>-fg` and `--hfx-color-status-<name>-bg`. Host renderers use `CanopyX.badge({ text, tone, title })` for the same badge treatment as view cells. Badges use `--hfx-radius-badge`; status pills use `--hfx-radius-status`; every popup uses `--hfx-radius-overlay`. The categorical `--hfx-color-series-1` through `-6` roles carry palette v1.1 in a fixed order, independently of status colours.
+
+Migration: replace former `--cx-*` colour, font and radius overrides with their shared roles. For example, `--cx-surface` becomes `--hfx-color-surface`, `--cx-tone-warning` becomes `--hfx-color-status-warn-fg`, and `--cx-font` becomes `--hfx-font-sans`. Component geometry hooks such as `--cx-row-h` and `--cx-scrollbar-*` remain available. `Build/Sync-DesignTokens.mjs` imports fallback values and the shared lint rules from the canonical generated tokens. `Build/Sync-Assets.ps1` inserts those values at use sites. `Build/Lint-DesignTokens.mjs` checks maintained runtime CSS for new literals; its baseline can only shrink. Shared fallback data and density/theme wiring have a separate 6 KiB gzip guard. Every existing component ceiling stays unchanged; both the component bytes and added shared overhead are checked.
 
 #### Theming scrollbars
 
-Every scroll container a view owns (the grid body in both directions, the pinned and scrolling regions, the Columns menu, filter popovers, the filter builder, the record drawer and dropdown lists) uses `scrollbar-color` and `scrollbar-width: thin`, with a `::-webkit-scrollbar` fallback (rounded thumb, transparent track, hover state) for engines that need it. Four custom properties drive them: `--cx-scrollbar-thumb` and `--cx-scrollbar-thumb-hover` (derived from `--cx-text`, so they follow light, dark, `auto` and host palettes, including a report shell that switches the theme on the document and maps its tokens onto `.cx-host`), `--cx-scrollbar-track` (transparent) and `--cx-scrollbar-size` (10 pixels). Hosts override them on `.cx-host`. Under `forced-colors: active` the system scrollbars are left alone; nothing hides scrollbars or adds overlay-scrollbar script.
+Every scroll container a view owns (the grid body in both directions, the pinned and scrolling regions, the Columns menu, filter popovers, the filter builder, the record drawer and dropdown lists) uses `scrollbar-color` and `scrollbar-width: thin`, with a `::-webkit-scrollbar` fallback (rounded thumb, transparent track, hover state) for engines that need it. Four custom properties drive them: `--cx-scrollbar-thumb` and `--cx-scrollbar-thumb-hover` (derived from `--hfx-color-text`, so they follow light, dark, `auto` and host palettes, including a report shell that switches the theme on the document and maps its tokens onto `.cx-host`), `--cx-scrollbar-track` (transparent) and `--cx-scrollbar-size` (10 pixels). Hosts override them on `.cx-host`. Under `forced-colors: active` the system scrollbars are left alone; nothing hides scrollbars or adds overlay-scrollbar script.
 
 ## Performance
 

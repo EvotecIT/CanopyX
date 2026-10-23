@@ -16,7 +16,7 @@ const view = {
 
 async function open(page, theme, width = 1280) {
   await page.setViewportSize({ width, height: 800 });
-  const html = viewPage(view).replace('data-cx-theme="light"', 'data-cx-theme="' + theme + '"');
+  const html = viewPage(view, theme);
   await page.route("http://canopyx.test/chrome", route => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("http://canopyx.test/chrome");
   await page.locator("[data-canopyx-host]").evaluate(host => host.canopyx.ready);
@@ -24,13 +24,6 @@ async function open(page, theme, width = 1280) {
 }
 async function capture(page, locator, name) {
   if (process.env.CANOPYX_EVIDENCE) await locator.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, name + ".png") });
-}
-/** The colour a token resolves to inside the grid host, for comparing with computed colours. */
-function token(page, name) {
-  return page.locator("[data-canopyx-host]").evaluate((host, variable) => {
-    const probe = document.createElement("span"); probe.style.color = "var(" + variable + ")"; host.appendChild(probe);
-    const color = getComputedStyle(probe).color; probe.remove(); return color;
-  }, name);
 }
 /** Focus indicators drawn on an element: a visible outline and each box-shadow layer. */
 function rings(locator) {
@@ -69,7 +62,8 @@ for (const theme of ["light", "dark"]) {
     await open(page, theme);
     await page.locator("[data-canopyx-host]").evaluate(host => host.canopyx.setSelection(["r1", "r2"]));
     await nextFrames(page);
-    const text = await token(page, "--cx-text"), muted = await token(page, "--cx-muted");
+    const text = theme === "dark" ? "rgb(242, 243, 245)" : "rgb(22, 24, 28)";
+    const muted = theme === "dark" ? "rgb(143, 148, 157)" : "rgb(98, 103, 112)";
     expect(text).not.toBe(muted);
     const color = locator => locator.evaluate(element => getComputedStyle(element).color);
     const status = page.locator(".cx-grid-status > span").first();

@@ -15,7 +15,7 @@ public sealed class FlowPartAssetsTests {
         Assert.Empty(part.Requires);
         Assert.NotNull(part.Style);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
-        var size = Gzip(part.Script) + Gzip(part.Style!);
+        var size = ComponentGzip(part.Script) + ComponentGzip(part.Style!);
         // Flow wave F1: 5,354 bytes plus about 15%, rounded up to KiB.
         Assert.True(size <= 7 * 1024, "The forms part is " + size + " bytes gzip; the guard is 7 KiB.");
     }
@@ -28,7 +28,7 @@ public sealed class FlowPartAssetsTests {
         Assert.Equal(new[] { "forms" }, part.Requires);
         Assert.NotNull(part.Style);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
-        var size = Gzip(part.Script) + Gzip(part.Style!);
+        var size = ComponentGzip(part.Script) + ComponentGzip(part.Style!);
         // The guard of flow wave F1 (28,120 bytes at F1). Wave F2 keeps it: the host-connected features ship in parts of their
         // own (below), loaded only for a flow that uses them, and the flow part keeps only their seams.
         Assert.True(size <= 29 * 1024, "The flow part is " + size + " bytes gzip; the guard is 29 KiB.");
@@ -56,15 +56,14 @@ public sealed class FlowPartAssetsTests {
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid, CanopyRuntime.Flow }, part.Runtimes);
         Assert.Equal(requires.Split(',', StringSplitOptions.None), part.Requires);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
-        var size = Gzip(part.Script) + (part.Style == null ? 0 : Gzip(part.Style));
+        var size = ComponentGzip(part.Script) + (part.Style == null ? 0 : ComponentGzip(part.Style));
         Assert.True(size <= guardKiB * 1024, "The " + name + " part is " + size + " bytes gzip; the guard is " + guardKiB + " KiB.");
     }
 
     [Fact]
     public void FlowEntryPoint_IsBounded() {
-        var size = Gzip(CanopyHtmlAssets.GetScript(CanopyRuntime.Flow)) + Gzip(CanopyHtmlAssets.GetStyle(CanopyRuntime.Flow));
         // Flow wave F1: 8,342 bytes plus about 15%, rounded up to KiB.
-        Assert.True(size <= 10 * 1024, "The flow entry point is " + size + " bytes gzip; the guard is 10 KiB.");
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Flow, 10 * 1024);
         Assert.DoesNotContain("</script", CanopyHtmlAssets.GetScript(CanopyRuntime.Flow), StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("</style", CanopyHtmlAssets.GetStyle(CanopyRuntime.Flow), StringComparison.OrdinalIgnoreCase);
     }
@@ -89,9 +88,10 @@ public sealed class FlowPartAssetsTests {
         Assert.Contains("type=\"application/x-canopyx-flow-style\"", page);
     }
 
-    private static long Gzip(string value) {
+    // Token fallback bytes have their own shared allowance; keep this component ceiling unchanged.
+    private static long ComponentGzip(string value) {
         using var output = new MemoryStream();
-        using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize, true)) { var bytes = Encoding.UTF8.GetBytes(value); gzip.Write(bytes, 0, bytes.Length); }
+        using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize, true)) { var bytes = Encoding.UTF8.GetBytes(SharedTokenAssets.WithoutFallbackPayload(value)); gzip.Write(bytes, 0, bytes.Length); }
         return output.Length;
     }
 }

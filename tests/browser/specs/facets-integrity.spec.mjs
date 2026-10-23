@@ -35,13 +35,13 @@ test("folded list buckets keep ordinal representatives and styling through live 
   await open(page);
   await expect.poll(() => labels(page, "city")).toEqual(["A"]);
   await expect(section(page, "city").getByRole("checkbox")).toHaveAccessibleName("A, 2 rows");
-  await expect(section(page, "city").locator(".p-state.quiet .p-dot.quiet")).toBeVisible();
+  await expect(section(page, "city").locator(".p-pill.success")).toBeVisible();
   await section(page, "city").getByRole("checkbox").check();
   await expect.poll(() => api(page, () => document.querySelector("[data-canopyx-host]").canopyx.getQuery().filters)).toEqual([{ column: "city", operator: "in", values: ["A"] }]);
   await api(page, () => document.querySelector("[data-canopyx-host]").canopyx.applyTransaction({ remove: ["a"], add: [{ id: "c", cells: { team: "Red", city: "a" } }] }));
   await expect.poll(() => labels(page, "city")).toEqual(["A"]);
   await expect(section(page, "city").getByRole("checkbox")).toBeChecked();
-  await expect(section(page, "city").locator(".p-state.quiet .p-dot.quiet")).toBeVisible();
+  await expect(section(page, "city").locator(".p-pill.success")).toBeVisible();
 });
 
 for (const ending of ["resolve", "reject"]) test(`a newer live facet refresh owns counts and errors while an earlier section waits (${ending})`, async ({ page }) => {

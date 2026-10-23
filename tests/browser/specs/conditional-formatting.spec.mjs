@@ -138,7 +138,7 @@ test("the first rule that sets an aspect wins it, stopIfTrue ends a row's rules,
   await expect(status.locator(".cx-fmt-icon")).toHaveText("⚑");
   await expect(status.locator(".cx-fmt-cue")).toHaveText("later");
   await expect(status.locator(".cx-fmt-badge")).toHaveText("two");
-  expect(await status.evaluate(cell => cell.style.getPropertyValue("--cx-fmt"))).toContain("--cx-tone-danger");
+  expect(await status.evaluate(cell => cell.style.getPropertyValue("--cx-fmt"))).toContain("--hfx-color-status-bad-fg");
   await expect(cell(page, "srv-00005", 0).locator(".cx-fmt-cue")).toHaveText("stop");
   await expect(cell(page, "srv-00005", 0).locator(".cx-fmt-badge")).toHaveCount(0);
   await expect(cell(page, "srv-00000", 0).locator(".cx-fmt-badge")).toHaveText("after");

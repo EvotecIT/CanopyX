@@ -1,5 +1,5 @@
 // Tones are names. The stylesheet colours six of them; any other tone takes its colours from the host theme, through
-// --cx-tone-<name> (text) and --cx-tone-<name>-bg (badge background), so a host can carry its own scale of states.
+// --hfx-color-status-<name>-fg (text) and --hfx-color-status-<name>-bg (badge background), so a host can carry its own scale of states.
 import { expect, test } from "@playwright/test";
 import { nextFrames, viewPage } from "./support.mjs";
 
@@ -15,8 +15,8 @@ const view = { protocol: "canopyx/2", type: "view", id: "tones", label: "Tones",
       detail: { type: "table", columns: ["Severity"], rows: [[{ value: "High", tone: "high", badges: [{ text: "new", tone: "high" }] }]] } }] }
   ] };
 // What a host theme adds next to canopyx.css. "maintenance" has no background of its own, so its badge gets a tint.
-const theme = ".cx-host { --cx-tone-critical: rgb(150, 20, 30); --cx-tone-critical-bg: rgb(255, 230, 232); --cx-tone-high: rgb(160, 80, 0);"
-  + " --cx-tone-maintenance: rgb(60, 60, 140); }";
+const theme = ".cx-host { --hfx-color-status-critical-fg: rgb(150, 20, 30); --hfx-color-status-critical-bg: rgb(255, 230, 232); --hfx-color-status-high-fg: rgb(160, 80, 0);"
+  + " --hfx-color-status-maintenance-fg: rgb(60, 60, 140); }";
 
 async function open(page) {
   await page.route("https://canopyx.test/", (route) => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("</style>", theme + "</style>") }));

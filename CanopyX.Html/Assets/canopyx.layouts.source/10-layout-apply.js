@@ -36,27 +36,6 @@
     style.setProperty("--cx-card-field", metrics.field + "px"); style.setProperty("--cx-card-gap", metrics.gap + "px");
     style.setProperty("--cx-card-title", metrics.title + "px");
   }
-  // The first row in view and how far into it the view starts, as a share of its height.
-  function layoutAnchor(view) {
-    const rows = view.rowProjection || view, top = view.logicalTop(), count = rows.rowCount();
-    if (!count) return null;
-    const index = rows.rowAt(top), height = (view.autoRows ? null : view.rowH) || 1;
-    return { index, share: Math.max(0, Math.min(1, (top - rows.rowTop(index)) / height)) };
-  }
-  // Applies a new fixed row height to a flat grid's rows and scroll range, keeping the anchor row in view.
-  function layoutRows(view, anchor) {
-    const rows = view.rowProjection || view;
-    for (const row of [...view.rowCache.values(), ...view.placeholders.values()]) row.hpx = view.rowH;
-    if (view.autoRows) { view.rowOffsets = null; view.rowHeights?.clear(); view.measureNeeded = true; view.render(); }
-    else {
-      const bounds = view.rowBounds(), count = view.rowProjection ? rows.rowCount() : Math.max(0, bounds.last - bounds.first + 1);
-      view.total = count * view.rowH;
-      view.syncScrollRange(anchor ? rows.rowTop(anchor.index) + anchor.share * view.rowH : 0);
-    }
-    if (anchor && view.autoRows) view.setLogicalTop(rows.rowTop(anchor.index));
-    view.render();
-  }
-
   function layoutApplyGrid(view, mode) {
     const anchor = layoutAnchor(view);
     if (mode === "cards") { if (view.cardAutoRows === undefined) { view.cardAutoRows = view.autoRows; view.autoRows = false; } }
@@ -69,23 +48,6 @@
     else view.rowH = densityRowHeight(view, view.density);
     layoutRows(view, anchor);
     view.syncPinnedShadows?.();
-  }
-
-  function layoutApplyTree(view) {
-    const before = view.rowH, after = densityRowHeight(view, view.density);
-    if (before !== after) {
-      const anchor = view.captureScrollAnchor();
-      view.rowH = after;
-      const status = row => { if (row && row.hpx === before) row.hpx = after; };
-      status(view.root._status);
-      for (const row of view.keyMap.values()) { if (!row.h?.detail && row.hpx === before) row.hpx = after; status(row._status); }
-      for (const row of view.rows) if (row.status) status(row);
-      view.retop();
-      if (anchor) view.restoreScrollAnchor(anchor);
-    }
-    view.fitKey = null; view.version++;
-    if (view.fitReady) view.applyWidths();
-    view.render();
   }
 
   /** Switches a view to a layout mode and density, keeping its query, selection, focus and the first row in view. */

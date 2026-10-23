@@ -57,6 +57,11 @@
     view.host.setAttribute("data-cx-density", view.density);
     if (view.layoutMode !== "fit" || view.kind === "grid" && view.density !== view.declaredDensity) layoutApply(view, view.layoutMode, view.density);
   };
+  VIEW_MODES.refreshCardDensity = view => {
+    const anchor = layoutAnchor(view), geometry = cardGeometry(view);
+    cardStyle(view, geometry); view.rowH = geometry.height; view.version++;
+    layoutRows(view, anchor);
+  };
   VIEW_MODES.setLayout = (view, change) => {
     if (!change || typeof change !== "object" || Array.isArray(change) || Object.keys(change).some(key => !["mode", "density"].includes(key)) ||
         change.mode !== undefined && !view.layoutOptions.modes.includes(change.mode) || change.density !== undefined && !LAYOUT_DENSITIES.includes(change.density))

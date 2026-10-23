@@ -268,6 +268,9 @@ try {
 
     Assert-SourceLineBudget -Root $root -ProjectFolders @('CanopyX', 'CanopyX.Html', 'CanopyX.Data', 'CanopyX.AspNetCore')
     Assert-RuntimeLineBudget -Root $root
+    if (Get-Command node -CommandType Application -ErrorAction SilentlyContinue) {
+        Invoke-ToolCommand -FileName 'node' -Arguments @((Join-Path $root 'Build/Lint-DesignTokens.mjs')) -Description 'Design token lint' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+    }
     & (Join-Path $root 'Build/Sync-Assets.ps1') -Check
 
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('restore', $solution) -Description 'Solution restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds

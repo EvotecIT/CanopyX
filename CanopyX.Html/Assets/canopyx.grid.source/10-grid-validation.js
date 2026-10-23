@@ -73,7 +73,7 @@
     } else if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
     else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
-    return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 28 : view.density === "comfortable" ? 42 : 34) };
+    return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 32 : 40) };
   }
 
   function gridQuery(view, input, strict) {

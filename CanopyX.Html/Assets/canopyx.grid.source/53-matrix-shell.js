@@ -18,6 +18,7 @@
     if (existing) return existing;
     const addedClasses = ["cx-host", "cx-matrix-host"].filter(name => !host.classList.contains(name)), hadClass = host.hasAttribute("class");
     const previousError = host.getAttribute("data-cx-error");
+    let stopTheme;
     let impl = null, destroyed = false, notice = null, errorText = null;
     const cancelled = () => new DOMException("Matrix was destroyed.", "AbortError");
     const ready = loadPart(MATRIX_PART).then(() => {
@@ -39,6 +40,7 @@
       if (destroyed) return;
       destroyed = true;
       impl?.destroy();
+      stopTheme?.();
       if (activeMatrices.get(host) === api) activeMatrices.delete(host);
       if (host.canopyx === api) delete host.canopyx;
       host.removeAttribute("data-canopyx-mounted");
@@ -61,6 +63,7 @@
     Object.freeze(api);
     activeMatrices.set(host, api);
     host.classList.add("cx-host", "cx-matrix-host");
+    stopTheme = watchTheme(host);
     host.setAttribute("data-canopyx-mounted", "true");
     host.canopyx = api;
     return api;
