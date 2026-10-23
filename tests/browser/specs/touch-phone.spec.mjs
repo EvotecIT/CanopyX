@@ -130,29 +130,57 @@ test("in a tree a tap selects a row and a tap on the expander opens and closes i
   expect(await activations(page)).toEqual([]);
 });
 
-test("a touch scroll moves the rows, recycles them and neither selects nor activates a row", async ({ page, browserName }) => {
+test("a touch scroll moves the rows, recycles them and neither selects nor activates a row", async ({ page, browserName }, testInfo) => {
   test.skip(browserName !== "chromium", "Only Chromium can dispatch native touch points that scroll.");
   await open(page, gridView({}));
   const grid = page.locator(".cx-data-grid .cx-grid");
   const beforeLast = await page.locator(".cx-row[data-cx-id]").evaluateAll(list => Math.max(...list.map(element => Number(element.dataset.cxId.slice(1)))));
   const box = await grid.boundingBox();
   const x = Math.round(box.x + box.width / 2), start = Math.round(box.y + box.height - 40);
+  const gesture = await grid.evaluateHandle(element => {
+    const samples = [], state = { samples, released: false };
+    const record = reason => {
+      const first = element.querySelector('.cx-row[data-cx-id]');
+      samples.push({ reason, time: performance.now(), top: element.scrollTop, height: element.clientHeight,
+        scrollHeight: element.scrollHeight, first: first?.dataset.cxId, firstTop: first?.getBoundingClientRect().top });
+      if (samples.length > 64) samples.shift();
+    };
+    element.addEventListener("touchend", () => { state.released = true; record("touchend"); }, { once: true });
+    element.addEventListener("scroll", () => record("scroll"), { passive: true });
+    element.addEventListener("scrollend", () => record("scrollend"));
+    record("before");
+    return state;
+  });
   const cdp = await page.context().newCDPSession(page);
   try {
     // A finger drags up across the rows: the touch starts on a record, so a scroll must not turn into a tap.
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y: start }] });
     for (let step = 1; step <= 24; step++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: start - step * 25 }] });
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    // Wait for DOM touch release and finish assertions before tearing down the input session.
+    await expect.poll(() => gesture.evaluate(state => state.released)).toBe(true);
+    await expect.poll(() => grid.evaluate(element => element.scrollTop)).toBeGreaterThan(300);
+    await nextFrames(page);
+    // The rendered window followed the scroll: the first records were recycled for later ones.
+    await expect(row(page, "r000")).not.toBeInViewport();
+    const visible = await page.locator(".cx-row[data-cx-id]").evaluateAll(list => list.map(element => Number(element.getAttribute("data-cx-id").slice(1))));
+    expect(Math.max(...visible)).toBeGreaterThan(beforeLast);
+    expect(await activations(page)).toEqual([]);
+    await expect(page.locator('.cx-row[aria-selected="true"]')).toHaveCount(0);
+    await expect(page.locator("dialog.cx-drawer")).toHaveCount(0);
+  } catch (error) {
+    try {
+      const final = await grid.evaluate(element => ({ top: element.scrollTop, height: element.clientHeight,
+        scrollHeight: element.scrollHeight, viewport: [innerWidth, innerHeight], active: document.activeElement?.outerHTML.slice(0, 200) }));
+      await testInfo.attach("touch-scroll-state", {
+        body: JSON.stringify({ gesture: await gesture.jsonValue(), final }, null, 2), contentType: "application/json"
+      });
+    } catch (diagnosticError) {
+      testInfo.annotations.push({ type: "touch-scroll-diagnostic", description: String(diagnosticError) });
+    }
+    throw error;
   } finally {
     await cdp.detach();
+    await gesture.dispose();
   }
-  await expect.poll(() => grid.evaluate(element => element.scrollTop)).toBeGreaterThan(300);
-  await nextFrames(page);
-  // The rendered window followed the scroll: the first records were recycled for later ones.
-  await expect(row(page, "r000")).not.toBeInViewport();
-  const visible = await page.locator(".cx-row[data-cx-id]").evaluateAll(list => list.map(element => Number(element.getAttribute("data-cx-id").slice(1))));
-  expect(Math.max(...visible)).toBeGreaterThan(beforeLast);
-  expect(await activations(page)).toEqual([]);
-  await expect(page.locator('.cx-row[aria-selected="true"]')).toHaveCount(0);
-  await expect(page.locator("dialog.cx-drawer")).toHaveCount(0);
 });
