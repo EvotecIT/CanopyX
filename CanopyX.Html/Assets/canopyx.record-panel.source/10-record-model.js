@@ -54,6 +54,8 @@
       if (field.id === "__proto__") recordFail("a record field cannot be named __proto__.");
       if (columns.has(field.id) || fields.has(field.id) || !recordText(field.title) || field.kind !== undefined && !["text", "number", "datetime"].includes(field.kind) ||
           field.section !== undefined && !recordText(field.section)) recordFail("record field " + field.id + " needs a unique id, a title and a text, number or datetime kind.");
+      if (field.maxLines !== undefined && (!Number.isInteger(field.maxLines) || field.maxLines < 1 || field.maxLines > 12))
+        recordFail("record maxLines must be an integer from 1 to 12.");
       if (field.presenter !== undefined && recordGridHelpers().validatePresenter) recordGridHelpers().validatePresenter(field.presenter, { kind: "text", ...field }, view.columns);
       fields.add(field.id);
     }

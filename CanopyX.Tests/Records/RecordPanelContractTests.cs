@@ -5,6 +5,20 @@ namespace CanopyX.Tests.Records;
 
 /// <summary>The record panel's wire contract: the view's record panel, record fields, structured cells and drawer switches.</summary>
 public sealed class RecordPanelContractTests {
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(12)]
+    public void RecordOnlyWrappedFieldsRetainTheirDeclaredLineLimit(int maxLines) {
+        var view = Grid();
+        view.Record!.Fields.Add(new CanopyColumn("observation", "Observation") { Wrap = true, MaxLines = maxLines });
+        var json = view.ToJson();
+        var fields = JsonNode.Parse(json)!["record"]!["fields"]!.AsArray();
+        var field = fields.Single(item => item!["id"]!.GetValue<string>() == "observation")!;
+        Assert.Equal(maxLines, field["maxLines"]?.GetValue<int>() ?? 2);
+        ProtocolSchema.AssertValid(json, "record-only wrapped field with an authored line limit");
+    }
+
     internal static CanopyDataGridView Grid() {
         var view = new CanopyDataGridView("certs", "Certificates");
         view.Columns.Add(new CanopyColumn("cn", "Common name") { Sortable = true });

@@ -59,6 +59,8 @@ export interface RecordFieldDefinition {
   readonly id: string; readonly title: string; readonly kind?: "text" | "number" | "datetime";
   /** A flat-grid presenter descriptor (the grid runtimes apply it). */
   readonly presenter?: unknown; readonly wrap?: boolean; readonly section?: string;
+  /** Visible wrapped lines, from 1 to 12. Default 2; the full value remains available in its tooltip. */
+  readonly maxLines?: number;
 }
 export interface RecordSectionDefinition {
   readonly id: string; readonly label: string; readonly fields?: readonly string[]; readonly collapsed?: boolean;

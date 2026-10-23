@@ -59,7 +59,7 @@
     if (kind === "records") return (cell.records.rows || cell.records.roots || []).map(row => cell.records.columns.map(column => text(row.cells?.[column.id] ?? null, column)).filter(Boolean).join(" · ")).join("\n");
     if (kind === "events") return cell.events.map(event => [event.time ? formatValue(event.time, "datetime", fmt) : "", event.kind, event.actor, event.summary].filter(Boolean).join(" · ")).join("\n");
     if (kind === "changes") return cell.changes.map(change => change.name + ": " + text(change.before ?? null) + " → " + text(change.after ?? null)).join("\n");
-    return cellText(cell, field, fmt);
+    return cellText(cell, field.column || field, fmt);
   }
   function recordData(view, dialog) {
     const record = dialog._cxRecord, entry = recordEntry(view, record.id), payload = entry?.state === "ready" ? entry.payload : null;
@@ -80,12 +80,13 @@
     const { record, items } = recordData(view, dialog), labels = view.labels, title = recordTitle(dialog);
     if (format === "json") return JSON.stringify({ view: view.view.id, id: record.id, title, fields: items.map(item =>
       ({ id: item.field.id, title: item.field.title, section: item.section, text: recordFlat(item.cell, item.field, view.fmt), value: item.cell === undefined ? null : item.cell })) }, null, 2);
-    const rows = items.map(item => [item.section, item.field.title, recordFlat(item.cell, item.field, view.fmt)]);
+    const rows = items.map(item => [item.section, item.field.title,
+      format === "csv" && item.field.kind === "number" && typeof cellValue(item.cell) === "number" ? cellValue(item.cell) : recordFlat(item.cell, item.field, view.fmt)]);
     if (format === "text") return [title, ...rows.map(row => row[1] + "\t" + row[2].replace(/\s*\n\s*/g, "; "))].join("\n");
     // CSV: quoted fields, and text that a spreadsheet would run as a formula starts with an apostrophe.
     // Keep the record CSV's quoted-field shape while sharing the grid's spreadsheet formula protection.
     const quote = value => {
-      const escaped = gridExportField(String(value), ",");
+      const escaped = gridExportField(value, ",");
       return escaped.startsWith('"') ? escaped : '"' + escaped + '"';
     };
     return [[labels.recordSection, labels.recordField, labels.recordValue], ...rows].map(row => row.map(quote).join(",")).join("\r\n");

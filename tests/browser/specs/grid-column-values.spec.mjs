@@ -45,7 +45,7 @@ test("self-contained record-only identifier and wrap fields render without colum
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.openDetails('one'));
   await expect(page.locator('.cx-drawer dd[data-cx-field="identifier"] .p-mono')).toHaveText('record-only-identifier');
   await expect(page.locator('.cx-drawer dd[data-cx-field="observation"] .cx-wrapped-text')).toContainText('A record-only observation');
-  await expect(page.locator('.cx-drawer dd[data-cx-field="observation"] .cx-wrapped-text')).toHaveCSS('-webkit-line-clamp', '2');
+  await expect(page.locator('.cx-drawer dd[data-cx-field="observation"] .cx-wrapped-text')).toHaveCSS('-webkit-line-clamp', '3');
   expect(requests.filter(url => !url.endsWith('report-grid-record-fields.html'))).toEqual([]);
   expect(errors).toEqual([]);
 });

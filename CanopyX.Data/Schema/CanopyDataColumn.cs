@@ -46,6 +46,7 @@ public sealed class CanopyDataColumn {
     internal CanopyGridNumberFormat? NumberFormat => _definition.Format;
     internal bool ExactCategoryTokens => _definition.ExactCategoryTokens;
     internal IList<string> ValueOrder => _definition.ValueOrder;
+    internal object? FacetSearchValue(object? value) => value is string token && _definition.ValueLabels.TryGetValue(token, out var label) ? label : value;
 
     /// <summary>Gets the position of this column among the allowed columns.</summary>
     public int Ordinal { get; }

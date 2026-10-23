@@ -35,7 +35,7 @@
       const chosen = new Set(state.chosen.map(value => facetKey(value, facet.def))), focused = list.contains(document.activeElement) ? document.activeElement : null;
       const focusKey = focused?.getAttribute("data-cx-key"), focusPosition = focused ? [...list.querySelectorAll("input")].indexOf(focused) : 0;
       const needle = facet.hosted ? "" : foldText(state.search), locked = !!selection.locked;
-      let items = counts.items.filter(item => !needle || item.value !== null && foldText(String(item.value)).includes(needle));
+      let items = counts.items.filter(item => !needle || item.value !== null && foldText(cellText(item.value, facet.def, grid.fmt)).includes(needle));
       // A chosen value the other facets exclude stays listed (count 0) so it can be unchosen; not while a hosted search hides it.
       if (!(facet.hosted && state.search)) for (const value of state.chosen) if (!items.some(item => facetKey(item.value, facet.def) === facetKey(value, facet.def))) items.push({ value, count: 0 });
       items.sort(facet.sort === "count" ? (a, b) => b.count - a.count || facetValueOrder(a.value, b.value, facet) : (a, b) => facetValueOrder(a.value, b.value, facet));
@@ -77,9 +77,10 @@
    */
   function facetValueOrder(a, b, facet) {
     const column = facet.def;
+    if (column.valueOrder?.length) return gridKeyCompare(a, b, column, "asc");
     if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
     if (facet.order) {
-      const at = facet.order.get(foldText(String(a))) ?? Infinity, bt = facet.order.get(foldText(String(b))) ?? Infinity;
+      const at = facet.order.get(facetKey(a, column)) ?? Infinity, bt = facet.order.get(facetKey(b, column)) ?? Infinity;
       if (at !== bt) return at < bt ? -1 : 1;
     }
     if (column.kind !== "text") return gridOrder(gridScalar(a, column), gridScalar(b, column));

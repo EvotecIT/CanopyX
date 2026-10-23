@@ -106,6 +106,7 @@ public sealed class CanopyRecordPanel {
                 if (field.Kind != CanopyColumnKind.Text) writer.Property("kind", CanopyJsonNames.ColumnKind(field.Kind));
                 if (grid && field.Presenter != null) { writer.Name("presenter"); field.Presenter.WriteJson(writer); }
                 if (field.Wrap) writer.Property("wrap", true);
+                if (field.MaxLines != 2) writer.Property("maxLines", field.MaxLines);
                 writer.OptionalProperty("section", field.Section).EndObject();
             }
             writer.EndArray();

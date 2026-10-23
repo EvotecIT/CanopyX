@@ -19,6 +19,7 @@ public sealed class EnumCategoryOrderSqlTests {
         database.SaveChanges(); commands.Clear();
         var view = new CanopyDataGridView("devices", "Devices") { Source = CanopyGridSource.HostedOffset(), Reporting = new CanopyGridReporting { Groupable = true } };
         var column = new CanopyColumn("platform", "Platform") { Sortable = true }; column.ValueOrder.Add("Windows"); column.ValueOrder.Add("macOS");
+        column.ValueLabels.Add("macOS", "Apple desktops");
         view.Columns.Add(column); view.Reporting.FacetColumns.Add("platform");
         var map = new CanopyColumnMap<EnumDisplayNameTests.Device>(view).Key(row => row.Id).Column("platform", row => row.Platform);
         var provider = new CanopyQueryableProvider<EnumDisplayNameTests.Device>(() => database.Set<EnumDisplayNameTests.Device>().AsNoTracking(), map,
@@ -33,6 +34,10 @@ public sealed class EnumCategoryOrderSqlTests {
         using var facet = JsonDocument.Parse(await handler.FacetAsync("{\"column\":\"platform\",\"query\":{\"revision\":\"r1\"}}"));
         Assert.Equal(new[] { "Windows", "macOS", "FreeBSD", "Linux" }, facet.RootElement.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("value").GetString()));
         Assert.Equal(new[] { 1, 2, 1, 1 }, facet.RootElement.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("count").GetInt32()));
+        using var labelled = JsonDocument.Parse(await handler.FacetAsync("{\"column\":\"platform\",\"search\":\"apple\",\"limit\":1,\"query\":{\"revision\":\"r1\"}}"));
+        var labelledItem = Assert.Single(labelled.RootElement.GetProperty("items").EnumerateArray());
+        Assert.Equal("macOS", labelledItem.GetProperty("value").GetString());
+        Assert.Equal(2, labelledItem.GetProperty("count").GetInt32());
         using var summary = JsonDocument.Parse(await handler.SummaryAsync("{\"revision\":\"r1\",\"groupBy\":[{\"column\":\"platform\",\"direction\":\"asc\"}]}"));
         Assert.Equal(new[] { "Windows", "macOS", "FreeBSD", "Linux" }, summary.RootElement.GetProperty("groups").EnumerateArray().Select(item => item.GetProperty("value").GetString()));
     }

@@ -3199,6 +3199,7 @@ export interface RecordFieldDefinition{
   readonly presenter?:unknown;
   readonly wrap?:boolean;
   readonly section?:string;
+  readonly maxLines?:number;
 }
 export interface RecordSectionDefinition{
   readonly id:string;

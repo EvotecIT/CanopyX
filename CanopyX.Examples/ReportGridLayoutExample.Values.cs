@@ -36,7 +36,7 @@ internal static partial class ReportGridLayoutExample {
         var record = new CanopyDataGridView("record-fields", "Record-only presentations") { Record = new CanopyRecordPanel(), Selection = CanopySelectionMode.None };
         record.Columns.Add(new CanopyColumn("name", "Record"));
         record.Record.Fields.Add(new CanopyColumn("identifier", "Identifier") { Presenter = CanopyGridPresenter.Identifier(mono: true) });
-        record.Record.Fields.Add(new CanopyColumn("observation", "Observation") { Wrap = true, MaxLines = 2 });
+        record.Record.Fields.Add(new CanopyColumn("observation", "Observation") { Wrap = true, MaxLines = 3 });
         record.Rows.Add(new CanopyGridRow("one") { Cells = { ["name"] = "Record one" }, Fields = {
             ["identifier"] = "record-only-identifier", ["observation"] = "A record-only observation with complete supporting evidence and a wrapped two-line preview."
         } });

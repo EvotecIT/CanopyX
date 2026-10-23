@@ -152,9 +152,8 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         var prefix = new SortedList<string, (string? Value, int Count)>(order);
         await foreach (var bucket in translator.TextBucketsAsync(source, request.Column.Id, Executor, cancellationToken).ConfigureAwait(false)) {
             var value = (string?)bucket.Value;
-            var folded = CanopyTextFolding.Fold(value);
-            // Store LOWER may fold only ASCII. Search the canonical value before retaining or merging its bucket.
-            if (term.Length > 0 && (folded == null || folded.IndexOf(term, StringComparison.Ordinal) < 0)) continue;
+            // Search the same displayed label as inline facets, before retaining a bounded prefix.
+            if (term.Length > 0 && !ProtocolSemantics.ContainsTerm(request.Column.FacetSearchValue(value), term)) continue;
             var key = FacetKey(value, request.Column.ExactCategoryTokens);
             distinct.Add(key);
             if (prefix.TryGetValue(key, out var current)) {

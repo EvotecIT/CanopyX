@@ -31,8 +31,9 @@ public sealed class EnumDisplayNameTests {
 
     public static TheoryData<string> Providers => new TheoryData<string> { "reference", "canonical", "store" };
 
-    private static CanopyRemoteHandler Handler(string provider, bool categories = false) {
+    private static CanopyRemoteHandler Handler(string provider, bool categories = false, bool facetLabels = false) {
         var view = View();
+        if (facetLabels) view.GetColumn("platform").ValueLabels.Add("macOS", "Apple desktops");
         if (categories) { view.GetColumn("platform").ValueOrder.Add("Windows"); view.GetColumn("platform").ValueOrder.Add("macOS"); view.Reporting!.Groupable = true; }
         var map = new CanopyColumnMap<Device>(view).Key(x => x.Id).Column("platform", x => x.Platform);
         ICanopyDataProvider data = provider == "reference"
@@ -47,6 +48,16 @@ public sealed class EnumDisplayNameTests {
     private static async Task<string[]> Ids(CanopyRemoteHandler handler, string query) {
         using var page = JsonDocument.Parse(await handler.QueryAsync(query));
         return page.RootElement.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetString()!).ToArray();
+    }
+
+    [Theory, MemberData(nameof(Providers))]
+    public async Task EnumFacetSearchReadsAuthoredLabelsAndRetainsRawMembers(string provider) {
+        var handler = Handler(provider, facetLabels: true);
+        using var result = JsonDocument.Parse(await handler.FacetAsync("{\"column\":\"platform\",\"search\":\"apple\",\"limit\":1,\"query\":{\"revision\":\"r1\"}}"));
+        Assert.Equal(1, result.RootElement.GetProperty("totalValues").GetInt32());
+        var item = Assert.Single(result.RootElement.GetProperty("items").EnumerateArray());
+        Assert.Equal("macOS", item.GetProperty("value").GetString());
+        Assert.Equal(2, item.GetProperty("count").GetInt32());
     }
 
     [Theory, MemberData(nameof(Providers))]

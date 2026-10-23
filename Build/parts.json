@@ -602,7 +602,7 @@
       "features": ["facets"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQueryStart", "gridQueryRows", "gridColumnProjection", "gridScalar",
-        "gridOrder", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze"],
+        "gridOrder", "gridKeyCompare", "gridFacetKey", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",
         "CanopyX.Html/Assets/canopyx.facets.source"

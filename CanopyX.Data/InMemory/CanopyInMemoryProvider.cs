@@ -108,7 +108,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
         foreach (var record in matches) {
             cancellationToken.ThrowIfCancellationRequested();
             var value = record.Values[ordinal];
-            if (term.Length > 0 && !ProtocolSemantics.ContainsTerm(value, term)) continue;
+            if (term.Length > 0 && !ProtocolSemantics.ContainsTerm(request.Column.FacetSearchValue(value), term)) continue;
             var key = CanopyQueryableProvider<T>.FacetKey(value, request.Column.ExactCategoryTokens);
             buckets[key] = buckets.TryGetValue(key, out var existing)
                 ? (string.CompareOrdinal(existing.Value as string, value as string) <= 0 ? existing.Value : value, existing.Count + 1)
