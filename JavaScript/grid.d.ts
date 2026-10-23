@@ -1,7 +1,7 @@
 import CanopyX from "./index.js";
 import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone, SearchHighlightOptions, LayoutOptions, LayoutState, ViewModeMethods } from "./protocol.js";
-import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult, LinkedView } from "./hosts.js";
+import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult, ExportMenuOptions, LinkedView } from "./hosts.js";
 import type { CanopyPlugin } from "./plugins.js";
 import type { GridEditorDefinition, GridValidation, GridEditingSettings, GridEditingOptions, GridEditingApi, GridCellValueChange,
   GridRowCommit, GridCommitRowResult, GridCommitOutcome, GridCommit, GridCommitResult } from "./editing.js";
@@ -707,6 +707,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   requestTimeoutMs?: number;
   /** Formats the Export menu lists after CSV: ids of registered formats or provider objects, in order. Wins over the view's exportFormats; absent offers every registered format. */
   exportFormats?: readonly (string | ExportFormat<GridExport<Q>>)[];
+  /** Native menu actions and captured value mode; defaults keep CSV, Copy and displayed values. */
+  exportMenu?: ExportMenuOptions;
   /** Safety timeout for export format writers and onExport, 1..2147483647 ms (default 600000). Page reads keep requestTimeoutMs. */
   exportTimeoutMs?: number;
   onQuery?: (event: GridQueryEvent<Q>) => void;

@@ -30,7 +30,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "8b99c0b7b0ec37c5",
+      "version": "9203882f58fa0155",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",

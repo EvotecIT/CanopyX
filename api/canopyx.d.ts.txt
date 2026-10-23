@@ -1266,7 +1266,7 @@ import type{
 }
 from "./protocol.js";
 import type{
-  HostOptions,ExportFormat,ExportFormatOptions,ExportFormatResult,LinkedView
+  HostOptions,ExportFormat,ExportFormatOptions,ExportFormatResult,ExportMenuOptions,LinkedView
 }
 from "./hosts.js";
 import type{
@@ -1947,6 +1947,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends Gri
   cachePageLimit?:number;
   requestTimeoutMs?:number;
   exportFormats?:readonly(string|ExportFormat<GridExport<Q>>)[];
+  exportMenu?:ExportMenuOptions;
   exportTimeoutMs?:number;
   onQuery?:(event:GridQueryEvent<Q>) => void;
   onSelect?:(event:{ids:string[];selection?:GridSelection<Q>}) => void;
@@ -2156,6 +2157,11 @@ import type{
 }
 from "./index.js";
 export type Awaitable<T>=T|PromiseLike<T>;
+export interface ExportMenuOptions{
+  csv?:boolean;
+  copy?:boolean;
+  values?:"raw"|"display";
+}
 export interface SourceRequest{
   signal:AbortSignal;
   query?:ReadonlyViewQuery;
@@ -2308,6 +2314,7 @@ interface HostOptionsBase extends RecordPanelOptions{
   labels?:CanopyLabels;
   requestTimeoutMs?:number;
   exportFormats?:readonly(string|ExportFormat)[];
+  exportMenu?:ExportMenuOptions;
   toolbar?:boolean|TreeToolbarOptions;
   actions?:readonly TreeAction[];
   plugins?:readonly CanopyPlugin[];

@@ -16,6 +16,12 @@
     if (panel.cxRun) return panel.cxFormats();
     panel.replaceChildren();
     const reporting = !!this.view.reporting, scope = h("select"), labels = this.labels;
+    const menu = this.opts.exportMenu ?? {};
+    if (!menu || typeof menu !== "object" || Array.isArray(menu) ||
+        Object.keys(menu).some(key => !["csv", "copy", "values"].includes(key)) ||
+        ["csv", "copy"].some(key => menu[key] !== undefined && typeof menu[key] !== "boolean") ||
+        menu.values !== undefined && !["raw", "display"].includes(menu.values))
+      throw new Error("CanopyX: exportMenu supports csv/copy booleans and raw/display values.");
     scope.setAttribute("aria-label", labels.gridExport);
     for (const [value, label] of this.exportScopes || [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])
       scope.appendChild(gridOption(value, labels[label]));
@@ -42,7 +48,7 @@
       if (operation) return;
       const controller = operation = new AbortController();
       busy(true); meter.removeAttribute("value"); setText(status, labels.loading);
-      Promise.resolve().then(() => action({ scope: scope.value, signal: controller.signal }, progress)).then(() => { if (!this.destroyed) setText(status, ""); }, error => {
+      Promise.resolve().then(() => action({ scope: scope.value, signal: controller.signal, ...(menu.values ? { values: menu.values } : {}) }, progress)).then(() => { if (!this.destroyed) setText(status, ""); }, error => {
         if (!this.destroyed) setText(status, error.name === "AbortError" ? labels.gridExportCancelled : error.message);
         if (error.name !== "AbortError") this.emit("error", { error });
       }).finally(() => {
@@ -59,6 +65,7 @@
       saveExport(new Blob([text], { type: "text/csv;charset=utf-8" }), (exported.request.fileName || this.view.id.replace(/[^a-z0-9_-]/gi, "_")) + ".csv");
     }));
     const copy = this.copy ? gridButton(labels.gridCopy, () => panel.cxRun((options, onProgress) => this.copy(traced(options, onProgress)))) : h("span");
+    csv.hidden = menu.csv === false; copy.hidden = menu.copy === false;
     panel.cxFormats = () => {
       if (operation) return;
       formats.forEach(button => button.remove());
