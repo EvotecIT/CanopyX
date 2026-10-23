@@ -52,7 +52,11 @@
       }, { signal });
       document.addEventListener("focusin", event => {
         if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
-      }, { signal });
+        if (this.focusOrigin && event.target !== this.focusOrigin) this.focusOrigin = null;
+      }, { signal, capture: true });
+      document.addEventListener("focusout", event => {
+        if (event.target === this.focusOrigin) this.focusOrigin = null;
+      }, { signal, capture: true });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal });
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();

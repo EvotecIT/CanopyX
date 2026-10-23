@@ -3,11 +3,14 @@
     setFocus(row, focus) {
       this.pendingNavigation = null;
       if (!row || this.indexOf(row) < 0 || this.destroyed) return;
+      if (focus) this.focusOrigin = null;
       this.focused = row;
       this.revealGridRow(row, row._ri);
       if (this.render()) { this.revealGridRow(row, row._ri); this.render(); }
       if (focus) {
-        const element = this.rendered.get(row); if (element) element.focus({ preventScroll: true });
+        const element = this.rendered.get(row);
+        if (this.hasGridSize() && element) element.focus({ preventScroll: true });
+        else { this.focusOrigin = document.activeElement; this.scheduleRender(); }
       }
     },
 
