@@ -12,7 +12,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX.Data</PackageId>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <Authors>Evotec</Authors>
     <Description>Server-side execution of the CanopyX remote grid protocol: typed request parsing with safety limits, column allow-lists, IQueryable translation (EF Core, LINQ to objects, any LINQ provider), value lists, multi-level grouping and aggregates, streamed CSV export, a provider interface for raw SQL back ends, and commits of edited rows through a writer with server-side validation and conflict detection.</Description>
     <PackageReleaseNotes>First release of the remote data adapter: query, value-list, summary, export and commit endpoints over IQueryable or a custom provider.</PackageReleaseNotes>
