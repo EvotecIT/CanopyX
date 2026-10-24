@@ -112,3 +112,21 @@ test('the script-free themed static fallback prints readable table and header co
   for (const el of [page.locator('main'), page.locator('table'), page.locator('th'), page.locator('td')]) { await expect(el).toHaveCSS('background-color', LIGHT.surface); await expect(el).toHaveCSS('color', LIGHT.text); }
   await expect(page.locator('script')).toHaveCount(0);
 });
+
+for (const trigger of ['data-theme', 'data-cx-theme', 'data-hfx-mode', 'data-bs-theme', 'data-hfx-theme', 'data-hfx-tokens']) {
+  test(`persistent standalone facets follow ${trigger} changes on desktop and in an open phone sheet`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const view = grid(); view.facets = { columns: ['state'] };
+    await mount(page, 'createDataGrid', view, { scope: `${trigger}="dark"` });
+    const panel = page.locator('.cx-facets'), host = page.locator('#host');
+    await expect(panel).toHaveCSS('background-color', DARK.surface);
+    await page.locator('#scope').evaluate((el, trigger) => el.setAttribute(trigger, 'light'), trigger);
+    await expect(host).toHaveCSS('color-scheme', 'light'); await expect(panel).toHaveCSS('background-color', LIGHT.surface);
+    await page.setViewportSize({ width: 390, height: 844 }); await expect(panel).toBeHidden(); await page.locator('.cx-facets-open').click();
+    const sheet = page.getByRole('dialog', { name: 'Filter by' }); await expect(sheet).toHaveCSS('background-color', LIGHT.surface);
+    await page.locator('#scope').evaluate((el, trigger) => el.setAttribute(trigger, 'dark'), trigger);
+    await expect(host).toHaveCSS('color-scheme', 'dark'); await expect(panel).toHaveCSS('background-color', DARK.surface); await expect(sheet).toHaveCSS('background-color', DARK.surface);
+    expect(await host.evaluate(el => el.style.getPropertyValue('--hfx-color-surface'))).toBe('');
+    await page.evaluate(() => api.destroy()); await expect(sheet).toHaveCount(0); await expect(panel).toHaveCount(0);
+  });
+}

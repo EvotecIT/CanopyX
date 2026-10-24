@@ -1,15 +1,18 @@
   // These are use-site defaults only. No shared role is assigned to a component or its parent.
   const STATUS_FALLBACKS = __CX_STATUS_FALLBACKS__;
 
+  const MODE_ATTRIBUTES = ["data-theme", "data-cx-theme", "data-hfx-mode", "data-bs-theme", "data-hfx-theme", "data-hfx-tokens"];
+  const THEME_ATTRIBUTES = [...MODE_ATTRIBUTES, "data-hfx-style", "data-hfx-density", "data-cx-fallback-mode", "style", "class"];
+
   function watchTheme(host, signal) {
-    const attributes = ["data-theme", "data-cx-theme", "data-hfx-mode", "data-bs-theme", "data-hfx-theme", "data-hfx-tokens", "style", "class"];
+    const attributes = THEME_ATTRIBUTES;
     const previous = host.getAttribute("data-cx-fallback-mode");
     const refresh = () => {
       const parent = host.parentElement && getComputedStyle(host.parentElement);
       const inherited = parent?.colorScheme;
       let mode = null;
       if (!parent?.getPropertyValue("--hfx-color-surface").trim()) {
-        outer: for (let owner = host; owner; owner = owner.parentElement) for (const attribute of attributes.slice(0, 6)) {
+        outer: for (let owner = host; owner; owner = owner.parentElement) for (const attribute of MODE_ATTRIBUTES) {
           const value = owner.getAttribute(attribute);
           if (value === "light" || value === "dark") { mode = value; break outer; }
         }
@@ -48,7 +51,7 @@
     };
     const observer = new MutationObserver(refresh);
     for (let owner = host; owner; owner = owner.parentElement) observer.observe(owner, { attributes: true,
-      attributeFilter: ["data-theme", "data-cx-theme", "data-hfx-style", "data-hfx-mode", "data-hfx-density", "data-hfx-tokens", "style", "class"] });
+      attributeFilter: THEME_ATTRIBUTES });
     const media = ["(prefers-color-scheme:dark)", "(prefers-contrast:more)", "(forced-colors:active)"].map(query => matchMedia(query));
     for (const query of media) query.addEventListener("change", refresh);
     const dispose = () => { observer.disconnect(); for (const query of media) query.removeEventListener("change", refresh); signal?.removeEventListener("abort", dispose); };
