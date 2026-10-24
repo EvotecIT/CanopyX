@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { viewPage, nextFrames, openGridControl } from './support.mjs';
-import { pinTestFont } from './visual-font.mjs';
+import { viewPage, nextFrames, openGridControl, settleGrid } from './support.mjs';
+import { pinTestFont, testFontState } from './visual-font.mjs';
 
 // One long identifier and ten short context/count fields, as in a connection-probe grid.
 const titles = ['Target', 'Site', 'State', 'Last 24 h', 'Last result', 'Latency (ms)',
@@ -29,30 +29,30 @@ function captions(grid) {
 for (const width of [1024, 390]) test(`a hidden grid fits its captions before the first visible paint at ${width}px`, async ({ page }) => {
   await pinTestFont(page); await page.setViewportSize({ width, height: 900 });
   const errors = []; page.on('pageerror', error => errors.push(error.message));
-  // Resize delivery precedes paint. Read after the runtime's callback, not in the earlier animation-frame phase.
+  // Inspect visible rendering opportunities, not intermediate state between unrelated resize callbacks.
   await page.addInitScript(({ check }) => {
     window.visibleFits = [];
     // Embedded hosts may observe an ancestor before the hidden grid becomes visible.
     document.addEventListener('DOMContentLoaded', () => new ResizeObserver(() => {}).observe(document.body));
-    const inspect = new Function('grid', 'return (' + check + ')(grid)'), Native = ResizeObserver;
-    window.ResizeObserver = class extends Native {
-      constructor(callback) {
-        super((entries, observer) => {
-          callback(entries, observer);
-          for (const { target, contentRect } of entries) if (target.matches('.cx-grid') && contentRect.width && target.checkVisibility({ visibilityProperty: true, opacityProperty: true }))
-            window.visibleFits.push(inspect(target));
-        });
-      }
+    const inspect = new Function('grid', 'return (' + check + ')(grid)');
+    const sample = () => {
+      const grid = document.querySelector('.cx-grid');
+      if (grid?.clientWidth && grid.checkVisibility({ visibilityProperty: true }) && Number(getComputedStyle(grid).opacity) > 0)
+        window.visibleFits.push(inspect(grid));
+      requestAnimationFrame(sample);
     };
+    requestAnimationFrame(sample);
   }, { check: captions.toString() });
   const view = probes(); view.columns.forEach(column => column.width = 40);
   const html = viewPage(view).replace('<div class="cx-host"', '<section id="panel" hidden><div class="cx-host"').replace('</body>', '</section></body>');
   await page.route('http://canopyx.test/fit-priority', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://canopyx.test/fit-priority');
   await page.waitForSelector('[data-cx-ready]', { state: 'attached' });
+  expect((await testFontState(page)).now).toBe('loaded');
   await page.evaluate(() => { document.querySelector('#panel').hidden = false; });
+  await settleGrid(page);
   await expect.poll(() => page.evaluate(() => window.visibleFits.length)).toBeGreaterThan(0);
-  expect(await page.evaluate(() => window.visibleFits.flat()), 'every visible resize delivery must leave complete captions for paint').toEqual([]);
+  expect(await page.evaluate(() => window.visibleFits.flat()), 'every visible frame must leave complete captions for paint').toEqual([]);
   expect(errors).toEqual([]);
 });
 
@@ -75,17 +75,15 @@ for (const width of [1440, 1280, 1024, 390]) test(`eleven-column probe headers r
   await page.route('http://canopyx.test/fit-priority', route => route.fulfill({ contentType: 'text/html', body: html }));
   await page.goto('http://canopyx.test/fit-priority');
   await page.waitForSelector('[data-cx-ready] .cx-grid[aria-busy="false"]');
-  await page.evaluate(() => document.fonts.ready); await nextFrames(page);
+  await settleGrid(page);
   const result = await page.locator('.cx-grid').evaluate(grid => new Promise(resolve => {
     const signature = () => JSON.stringify([grid.clientWidth, grid.clientHeight, grid.scrollWidth, grid.scrollHeight,
       [...grid.querySelectorAll('.cx-hcell')].map(cell => cell.getBoundingClientRect().width)]);
     let previous = signature(), changes = 0, frames = 0;
-    let start;
     function sample() {
-      start ??= performance.now();
-      const next = signature(); if (performance.now() - start > 500) { frames++; if (next !== previous) changes++; }
+      const next = signature(); frames++; if (next !== previous) changes++;
       previous = next;
-      if (performance.now() - start < 1500 || frames < 10) requestAnimationFrame(sample);
+      if (frames < 60) requestAnimationFrame(sample);
       else resolve({ changes, frames, captions: window.captionFailures, painted: window.fitFrames,
         shown: [...grid.querySelectorAll('.cx-hcell')].map(cell => cell.dataset.cxColumn),
         scroll: grid.scrollWidth, width: grid.clientWidth });

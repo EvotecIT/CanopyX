@@ -34,6 +34,27 @@ export function nextFrames(page) {
   return page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
 
+/** Waits for a painted grid, loaded fonts and unchanged grid/popover geometry across consecutive frames. */
+export function settleGrid(page) {
+  return page.evaluate(async () => {
+    await document.fonts.ready;
+    let previous = "", stable = 0;
+    while (stable < 3) {
+      await new Promise(requestAnimationFrame);
+      const grid = document.querySelector(".cx-grid"), style = grid && getComputedStyle(grid);
+      if (!grid?.clientWidth || !grid.clientHeight || !grid.checkVisibility({ visibilityProperty: true }) ||
+          Number(style.opacity) === 0 || document.fonts.status !== "loaded") { stable = 0; continue; }
+      const elements = [grid, ...grid.querySelectorAll(".cx-head,.cx-hcell"), ...document.querySelectorAll("[popover]:popover-open")];
+      const geometry = JSON.stringify(elements.map(element => {
+        const box = element.getBoundingClientRect();
+        return [box.x, box.y, box.width, box.height, element.clientWidth, element.clientHeight, element.scrollWidth, element.scrollHeight];
+      }));
+      stable = geometry === previous ? stable + 1 : 1;
+      previous = geometry;
+    }
+  });
+}
+
 /** Opens a toolbar control through its desktop button or the phone overflow. */
 export async function openGridControl(page, kind) {
   const control = page.locator('.cx-grid-' + kind), summary = control.locator(':scope > summary');

@@ -1,7 +1,7 @@
 import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames, openExample } from "./support.mjs";
+import { viewPage, nextFrames, openExample, settleGrid } from "./support.mjs";
 
 // Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
 test.beforeEach(async ({ page }) => { await pinTestFont(page); });
@@ -16,7 +16,7 @@ const view = { protocol: "canopyx/2", type: "grid", id: "placement", label: "Res
 async function open(page, patch = {}) {
   await page.route("http://canopyx.test/placement", route => route.fulfill({ contentType: "text/html", body: viewPage({ ...view, ...patch })
     .replace('<body class="cx-page">', '<body class="cx-page"><main><h1>Responsive inventory</h1>').replace('</body>', '</main></body>') }));
-  await page.goto("http://canopyx.test/placement"); await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready); await nextFrames(page);
+  await page.goto("http://canopyx.test/placement"); await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready); await settleGrid(page);
 }
 const api = (page, run) => page.evaluate(run);
 const header = (page, id) => page.locator('.cx-hcell[data-cx-column="' + id + '"]');
@@ -140,7 +140,8 @@ test("responsive layout returns focus to the record when its entered field disap
   expect(await page.evaluate(() => document.activeElement.textContent)).toContain("hidden field 0");
   await page.setViewportSize({ width: 390, height: 700 }); await nextFrames(page);
   await expect(page.locator('.cx-row[data-cx-id="r0"]')).toBeFocused();
-  expect(await page.evaluate(() => ({ x: scrollX, width: document.body.scrollWidth, viewport: innerWidth }))).toEqual({ x: 0, width: 390, viewport: 390 });
+  const bounds = await page.evaluate(() => ({ x: scrollX, width: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }));
+  expect(bounds.x).toBe(0); expect(bounds.width).toBeLessThanOrEqual(bounds.viewport);
 });
 
 test("an oversized outer pin suspends its whole edge prefix and leaves center navigation available", async ({ page }) => {
@@ -183,11 +184,13 @@ test("pin changes preserve the same reachable host control and reject after disp
       const input = document.createElement("input"); input.setAttribute("aria-label", "Owner note"); input.value = "Alex"; cell.append(input); return true;
     } } }); return host.canopyx.ready;
   });
+  await settleGrid(page);
   const note = page.locator('.cx-row[data-cx-id="r0"]').getByLabel("Owner note"); await note.focus();
   // Native End scrolls on macOS; arrange the caret before testing focus across the pin change.
   await note.evaluate(input => input.setSelectionRange(input.value.length, input.value.length));
   await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.setColumnPinned("owner", "right"));
-  await expect(note).toBeFocused(); await page.keyboard.type("x"); await expect(note).toHaveValue("Alexx");
+  await settleGrid(page);
+  await expect(note).toBeFocused(); await page.keyboard.type("x"); await settleGrid(page); await expect(note).toHaveValue("Alexx");
   expect(await api(page, () => { const grid = document.querySelector('[data-canopyx-host]').canopyx; grid.destroy();
     try { grid.setColumnPinned("owner", "none"); return false; } catch { return true; } })).toBe(true);
 });

@@ -1,6 +1,7 @@
 // Public editing and linked-view regressions exposed by the combined roadmap integration.
 import { test, expect } from "@playwright/test";
 import { serveGrid, read, cell } from "./editing-support.mjs";
+import { settleGrid } from "./support.mjs";
 
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const condition = value => ({ column: "site", operator: "eq", values: [value] });
@@ -77,8 +78,7 @@ for (const placement of ["ordinary", "top-side", "top-below"]) test(`typing to s
   }
   await expect(page.getByRole("option", { name: "Zoe" })).toBeVisible();
   expect(await page.evaluate(() => window.lookups)).toEqual(["Z"]);
-  // Lookup results resize the popup; let the rendering cycle deliver its resize notifications before measuring.
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await settleGrid(page);
   const overlaps = await page.evaluate(() => {
     const hint = document.querySelector('.cx-edit-tip').getBoundingClientRect();
     return [...document.querySelectorAll('.cx-editor, [role="option"]')].map(element => {
