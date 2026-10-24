@@ -31,8 +31,11 @@ public sealed class EnumDisplayNameTests {
 
     public static TheoryData<string> Providers => new TheoryData<string> { "reference", "canonical", "store" };
 
-    private static CanopyRemoteHandler Handler(string provider) {
-        var map = new CanopyColumnMap<Device>(View()).Key(x => x.Id).Column("platform", x => x.Platform);
+    private static CanopyRemoteHandler Handler(string provider, bool categories = false, bool facetLabels = false) {
+        var view = View();
+        if (facetLabels) view.GetColumn("platform").ValueLabels.Add("macOS", "Apple desktops");
+        if (categories) { view.GetColumn("platform").ValueOrder.Add("Windows"); view.GetColumn("platform").ValueOrder.Add("macOS"); view.Reporting!.Groupable = true; }
+        var map = new CanopyColumnMap<Device>(view).Key(x => x.Id).Column("platform", x => x.Platform);
         ICanopyDataProvider data = provider == "reference"
             ? new CanopyInMemoryProvider<Device>(map.Schema, () => Devices, x => x.Id.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 new Dictionary<string, Func<Device, object?>> { ["platform"] = x => x.Platform }, () => "r1")
@@ -45,6 +48,28 @@ public sealed class EnumDisplayNameTests {
     private static async Task<string[]> Ids(CanopyRemoteHandler handler, string query) {
         using var page = JsonDocument.Parse(await handler.QueryAsync(query));
         return page.RootElement.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetString()!).ToArray();
+    }
+
+    [Theory, MemberData(nameof(Providers))]
+    public async Task EnumFacetSearchReadsAuthoredLabelsAndRetainsRawMembers(string provider) {
+        var handler = Handler(provider, facetLabels: true);
+        using var result = JsonDocument.Parse(await handler.FacetAsync("{\"column\":\"platform\",\"search\":\"apple\",\"limit\":1,\"query\":{\"revision\":\"r1\"}}"));
+        Assert.Equal(1, result.RootElement.GetProperty("totalValues").GetInt32());
+        var item = Assert.Single(result.RootElement.GetProperty("items").EnumerateArray());
+        Assert.Equal("macOS", item.GetProperty("value").GetString());
+        Assert.Equal(2, item.GetProperty("count").GetInt32());
+    }
+
+    [Theory, MemberData(nameof(Providers))]
+    public async Task DeclaredCategoriesOrderNormalizedEnumSortsFacetsAndGroups(string provider) {
+        var handler = Handler(provider, true);
+        Assert.Equal(new[] { "2", "1", "5", "3", "4" }, await Ids(handler, "{\"sort\":[{\"column\":\"platform\",\"direction\":\"asc\"}]}"));
+        Assert.Equal(new[] { "4", "3", "1", "5", "2" }, await Ids(handler, "{\"sort\":[{\"column\":\"platform\",\"direction\":\"desc\"}]}"));
+        using var facet = JsonDocument.Parse(await handler.FacetAsync("{\"column\":\"platform\",\"query\":{\"revision\":\"r1\"}}"));
+        Assert.Equal(new[] { "Windows", "macOS", "FreeBSD", "Linux" }, facet.RootElement.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("value").GetString()));
+        Assert.Equal(new[] { 1, 2, 1, 1 }, facet.RootElement.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("count").GetInt32()));
+        using var summary = JsonDocument.Parse(await handler.SummaryAsync("{\"revision\":\"r1\",\"groupBy\":[{\"column\":\"platform\",\"direction\":\"asc\"}]}"));
+        Assert.Equal(new[] { "Windows", "macOS", "FreeBSD", "Linux" }, summary.RootElement.GetProperty("groups").EnumerateArray().Select(item => item.GetProperty("value").GetString()));
     }
 
     [Theory, MemberData(nameof(Providers))]

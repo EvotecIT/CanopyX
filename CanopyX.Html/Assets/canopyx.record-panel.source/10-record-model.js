@@ -54,7 +54,10 @@
       if (field.id === "__proto__") recordFail("a record field cannot be named __proto__.");
       if (columns.has(field.id) || fields.has(field.id) || !recordText(field.title) || field.kind !== undefined && !["text", "number", "datetime"].includes(field.kind) ||
           field.section !== undefined && !recordText(field.section)) recordFail("record field " + field.id + " needs a unique id, a title and a text, number or datetime kind.");
+      if (field.maxLines !== undefined && (!Number.isInteger(field.maxLines) || field.maxLines < 1 || field.maxLines > 12))
+        recordFail("record maxLines must be an integer from 1 to 12.");
       if (field.presenter !== undefined && recordGridHelpers().validatePresenter) recordGridHelpers().validatePresenter(field.presenter, { kind: "text", ...field }, view.columns);
+      validateColumnValues({ kind: "text", ...field });
       fields.add(field.id);
     }
     const known = id => columns.has(id) || fields.has(id), top = new Set();
@@ -115,7 +118,7 @@
     if (kind === "records") return !cell.records.rows?.length && !cell.records.roots?.length;
     if (kind) return !Array.isArray(cell[kind]) || !cell[kind].length;
     if (isCellObject(cell) && (cell.series?.length || cell.badges?.length)) return false;
-    return cellText(cell, field, fmt) === "";
+    return cellText(cell, field.column || field, fmt) === "";
   }
 
   // Tabs of sections of fields. Without declared sections, fields group by their section label as in the plain drawer;

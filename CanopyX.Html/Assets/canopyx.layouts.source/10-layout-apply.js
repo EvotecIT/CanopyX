@@ -11,8 +11,12 @@
   // Fields per line, from the grid's width, and the card height that holds the title and every shown field. The lines are
   // counted by placing the fields the way the stylesheet's dense grid does: each in the first free run of slots.
   function cardGeometry(view) {
-    const metrics = CARD_METRICS[view.density], width = Math.max(0, (view.grid.clientWidth || view.host.clientWidth) - 2 * CARD_GUTTER);
+    const metrics = { ...CARD_METRICS[view.density] }, width = Math.max(0, (view.grid.clientWidth || view.host.clientWidth) - 2 * CARD_GUTTER);
     const fields = (view.cols || []).slice(1), most = Math.max(1, Math.floor((width + CARD_COLUMN_GAP) / (CARD_FIELD + CARD_COLUMN_GAP)));
+    const font = parseFloat(getComputedStyle(view.grid).fontSize), clampLines = column => Math.min(column.maxLines ?? 2, 2);
+    if (fields.some(column => column.wrap)) metrics.field = Math.max(metrics.field,
+      Math.ceil(11.5 * 1.35 + 1 + font * 1.4 * Math.max(...fields.filter(column => column.wrap).map(clampLines))));
+    if (view.cols?.[0]?.wrap) metrics.title = Math.max(metrics.title, Math.ceil((font + 1) * 1.4 * clampLines(view.cols[0])));
     // As few lines as the width allows, with the fields spread evenly over them.
     const slots = fields.reduce((sum, field) => sum + (cardWide(field) && most > 1 ? 2 : 1), 0) || 1;
     const columns = Math.min(most, Math.ceil(slots / Math.ceil(slots / most))), span = Math.min(2, columns), rows = [];

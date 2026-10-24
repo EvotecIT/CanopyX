@@ -102,6 +102,8 @@
         const cell = h("div", "cx-hcell cx-kind-" + (column.kind || "text"));
         cell.setAttribute("role", "columnheader");
         cell.setAttribute("aria-label", column.title);
+        if (column.headerDescription) cell.setAttribute("aria-description", column.headerDescription);
+        cell.title = column.headerDescription ?? column.title;
         cell.setAttribute("data-cx-column", column.id);
         cell.setAttribute("aria-colindex", String(i + 1));
         if (column.sortable) {
@@ -109,11 +111,13 @@
           cell.setAttribute("aria-sort", sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none");
           const button = h("button", "cx-sort");
           button.type = "button";
+          button.title = column.headerDescription ?? column.title;
           setText(button, column.title);
           button.addEventListener("click", (event) => this.queryAware ? this.querySortHeader(column.id, event) : this.sort(column.id, sorted === "asc" ? "desc" : sorted === "desc" ? null : "asc"));
           cell.appendChild(button);
         } else {
           const title = h("span", "cx-htext");
+          title.title = column.headerDescription ?? column.title;
           setText(title, column.title);
           cell.appendChild(title);
         }

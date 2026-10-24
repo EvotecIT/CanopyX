@@ -34,6 +34,9 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets the header text.</summary>
     public string Title { get; }
 
+    /// <summary>Gets or sets the full header explanation shown as a tooltip and accessibility description. Null uses the header text.</summary>
+    public string? HeaderDescription { get; set; }
+
     /// <summary>Gets or sets the column's immutable sizing intent. The default fits content in flat grids and trees; trees write 160 pixels, within the bounds, as the width a tree uses until its columns are measured.</summary>
     public CanopyColumnSizing Sizing {
         get => _sizing;
@@ -76,7 +79,7 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets or sets whether the column starts hidden. Tree views cannot hide their tree column.</summary>
     public bool Hidden { get; set; }
 
-    /// <summary>Gets or sets whether flat-grid cell text wraps within the column. Use automatic grid row heights to show all lines.</summary>
+    /// <summary>Gets or sets whether flat-grid cell text wraps within the column and enables measured row heights.</summary>
     public bool Wrap { get; set; }
 
     /// <summary>Gets or sets a safe flat-grid presenter. Raw values still drive search, sort and export.</summary>
@@ -124,6 +127,7 @@ public sealed partial class CanopyColumn {
         writer.BeginObject()
             .Property("id", Id)
             .Property("title", Title);
+        writer.OptionalProperty("headerDescription", HeaderDescription);
         writer.Property("width", InitialWidth);
         if (Sizing.Minimum != MinWidth) writer.Property("minWidth", Sizing.Minimum);
         if (Sizing.Maximum != int.MaxValue) writer.Property("maxWidth", Sizing.Maximum);
@@ -138,6 +142,7 @@ public sealed partial class CanopyColumn {
         if (grid && Editor != null) { writer.Name("editor"); Editor.WriteJson(writer); }
         if (grid && Validation != null) { writer.Name("validation"); Validation.WriteJson(writer); }
         if (Wrap) writer.Property("wrap", true);
+        WriteValuesJson(writer);
         if (grid && Format != null) { writer.Name("format"); Format.WriteJson(writer); }
         if (grid && Presenter != null) { writer.Name("presenter"); Presenter.WriteJson(writer); }
         if (grid && Aggregatable) writer.Property("aggregatable", true);

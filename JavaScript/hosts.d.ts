@@ -7,6 +7,15 @@ import type { RecordPanelOptions } from "./records.js";
 import type { TreeGrid } from "./index.js";
 
 export type Awaitable<T> = T | PromiseLike<T>;
+/** Presentation of the native Export menu; programmatic export methods keep their explicit options. */
+export interface ExportMenuOptions {
+  /** Offers the built-in CSV action. Defaults to true; turn it off when a provider supplies CSV. */
+  csv?: boolean;
+  /** Offers the clipboard action. Defaults to true. */
+  copy?: boolean;
+  /** Values captured by native menu actions. Defaults to display. */
+  values?: "raw" | "display";
+}
 /** Query-aware hosts answer from one accepted dataset revision. */
 export interface SourceRequest { signal: AbortSignal; query?: ReadonlyViewQuery; revision?: string | null; }
 interface DataSourceBase {
@@ -148,6 +157,8 @@ interface HostOptionsBase extends RecordPanelOptions {
   requestTimeoutMs?: number;
   /** The formats the Export menu and exportAs offer (ids of registered formats or provider objects); absent offers the view's exportFormats, else every registered format. */
   exportFormats?: readonly (string | ExportFormat)[];
+  /** Native menu actions and captured value mode; defaults keep CSV, Copy and displayed values. */
+  exportMenu?: ExportMenuOptions;
   /** False hides the tree toolbar; an object switches single controls off, overriding the view's toolbar switches. */
   toolbar?: boolean | TreeToolbarOptions;
   /** Host entries of the tree's more menu, run with the selected nodes; the host owns what they do. */

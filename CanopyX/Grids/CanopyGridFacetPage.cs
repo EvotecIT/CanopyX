@@ -52,7 +52,7 @@ public sealed class CanopyGridFacetPage {
         foreach (var item in Items) {
             if (item == null) throw new InvalidOperationException("A facet bucket cannot be null.");
             CanopyGridValues.Validate(item.Value?.Value, column);
-            if (!keys.Add(CanopyGridFacets.Key(item.Value?.Value))) throw new InvalidOperationException("Facet buckets must have distinct typed canonical values.");
+            if (!keys.Add(CanopyGridFacets.Key(item.Value?.Value, column.ExactCategoryTokens))) throw new InvalidOperationException("Facet buckets must have distinct typed canonical values.");
             occurrences += item.Count;
         }
         if (occurrences > Matched) throw new InvalidOperationException("Facet bucket counts cannot exceed the matching row count.");

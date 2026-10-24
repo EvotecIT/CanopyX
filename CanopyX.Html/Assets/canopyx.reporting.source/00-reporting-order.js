@@ -72,7 +72,7 @@
     if (!policies.size) return gridCompare;
     return (left, right, column, direction) => {
       const compare = policies.get(column.id);
-      if (!compare) return gridCompare(left, right, column, direction);
+      if (!compare || column.valueOrder?.length) return gridCompare(left, right, column, direction);
       const a = gridScalar(left.cells[column.id], column), b = gridScalar(right.cells[column.id], column);
       if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
       const result = compare(String(a), String(b));

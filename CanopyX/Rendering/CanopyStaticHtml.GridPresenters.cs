@@ -14,6 +14,7 @@ public static partial class CanopyStaticHtml {
         }
         if ((presenter?.Kind == CanopyGridPresenterKind.SparklineBars || presenter?.Kind == CanopyGridPresenterKind.SparklineLine) && cell != null && cell.Series.Count > 0)
             return string.Join(", ", cell.Series.Select(point => point.Period + ": " + (point.Value.HasValue ? point.Value.Value.ToString("G", CultureInfo.InvariantCulture) : view.Labels.GridNoData)));
+        if (cell?.Value == null && cell?.Text == string.Empty) return string.Empty;
         if (string.IsNullOrEmpty(text)) return "—";
         if (presenter?.Kind == CanopyGridPresenterKind.Boolean && cell?.Value is bool flag) return flag ? "✓" : "—";
         if (presenter?.Kind == CanopyGridPresenterKind.Identifier) {

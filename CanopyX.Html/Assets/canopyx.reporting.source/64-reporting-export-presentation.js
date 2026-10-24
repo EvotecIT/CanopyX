@@ -13,6 +13,7 @@
       width: { unit: "css-px", preferred: column.width, minimum, ...(maximum === undefined ? {} : { maximum }) },
       wrap: !!column.wrap, alignment: column.kind === "number" ? "right" : "left", ...(column.format ? { format: { ...column.format } } : {}),
       ...(presenter ? { presenter: JSON.parse(JSON.stringify(presenter)) } : {}),
+      ...JSON.parse(JSON.stringify({ valueLabels:column.valueLabels, valueTones:column.valueTones, numericTones:column.numericTones })),
       ...(column.render && column.hostRenderer !== false ? { diagnostics: ["custom-renderer"] } : {}) };
   };
   GRID_REPORTING.exportRecord = function (grid, request, row) {
@@ -53,7 +54,7 @@
           else diagnostics.push("unsafe-link");
         } else if (target) diagnostics.push("relative-link");
       }
-      const mark = matches.get(column.id), tone = mark?.tone ?? (presenter?.kind === "boolean" && value === true && presenter.inverted ? "danger" :
+      const mark = matches.get(column.id), tone = mark?.tone ?? columnValueTone(column,cell) ?? (presenter?.kind === "boolean" && value === true && presenter.inverted ? "danger" :
         presenter ? gridPresenterTone(presenter, value, object ? cell.tone : null) : object ? cell.tone : undefined);
       if (mark?.className) diagnostics.push("custom-class");
       cells[column.id] = { value, text, ...(tone ? { tone } : {}), ...(link ? { link } : {}), ...(diagnostics.length ? { diagnostics: [...new Set(diagnostics)] } : {}) };

@@ -31,6 +31,25 @@ async function open(page, view = definition(), setup = "", runtime) {
 }
 const menuButtons = page => page.locator(".cx-grid-export .cx-grid-panel button:not([hidden])");
 
+for (const reporting of [false, true]) test("native exportMenu chooses raw values and only provider actions for " + (reporting ? "reporting" : "ordinary") + " grids", async ({ page }) => {
+  await open(page, definition(reporting ? { reporting: {} } : {}), fakeFormats +
+    "CanopyX.configure('records',{exportFormats:['xlsx'],exportMenu:{csv:false,copy:false,values:'raw'}});");
+  await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    await grid.setQuery({search:'Archive',sort:[{column:'size',direction:'desc'}]});
+  });
+  await openGridControl(page, "export");
+  await expect(menuButtons(page)).toHaveText(["Download Excel"]);
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", {name:"Download Excel",exact:true}).click(); await download;
+  const capture = await page.evaluate(() => window.writes.at(-1));
+  expect(capture.request.values).toBe("raw"); expect(capture.request.scope).toBe("filtered");
+  expect(capture.rows[0]).toBe("079"); expect(capture.rows).toHaveLength(40);
+  expect(capture.first.cells.size.value).toBe(79);
+  // Menu policy never changes explicit programmatic exports.
+  expect(await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.toCsv({scope:'all',values:'display'}))).toContain("79 KiB");
+});
+
 for (const reporting of [false, true]) test("format providers join the " + (reporting ? "reporting" : "ordinary") + " Export menu and respect each scope, sort, order and visibility", async ({ page }) => {
   await open(page, definition(reporting ? { reporting: {} } : {}), fakeFormats + "CanopyX.configure('records',{onError:event=>window.errors.push(event.error.message)});");
   await page.evaluate(async api => { const grid = eval(api);

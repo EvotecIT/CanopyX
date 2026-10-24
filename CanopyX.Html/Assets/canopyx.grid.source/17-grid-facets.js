@@ -3,7 +3,7 @@
     if (value !== null && typeof value === "object" || value === undefined) throw new Error("CanopyX: facet values are raw scalars.");
     const scalar = gridScalar(value, column);
     if (scalar === null) return "null";
-    return column.kind === "datetime" ? "d:" + scalar : typeof scalar === "string" ? "s:" + foldText(scalar) :
+    return column.kind === "datetime" ? "d:" + scalar : typeof scalar === "string" ? "s:" + (gridExactTokens(column) ? scalar : foldText(scalar)) :
       typeof scalar === "boolean" ? "b:" + scalar : "n:" + scalar;
   }
   function validateGridFacetPage(input, view, request, snapshot) {

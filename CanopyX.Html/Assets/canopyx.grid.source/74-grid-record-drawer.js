@@ -82,9 +82,14 @@
         try{if(column.render(row,value,{column:column.id,index:this.columns.indexOf(column),signal:context.signal,onDispose:cleanup=>{if(context.signal.aborted)cleanup();else context.signal.addEventListener("abort",cleanup,{once:true});}})===true)return;}
         catch(error){this.emit("error",{error});}
       }
-      if(presenter){gridCellRenderer(this,{...column,renderWidth:context.width||260},presenter)(row,value);return;}
-      const text=cellText(cell,column,this.fmt),span=h("span");applyTone(span,"cx-drawer-text"+(text?"":" p-missing"),toneOf(object?cell.tone:null));
-      setText(span,text||"—");if(object&&cell.title)span.title=cell.title;value.appendChild(span);
+      if(presenter){
+        gridCellRenderer(this,{...column,renderWidth:context.width||260},presenter,true,this.columns.includes(column))(row,value);
+        const rule=columnNumericTone(column,cellValue(cell));if(rule){const label=h("span","p-sub");setText(label,rule.label);value.appendChild(label);}
+        return;
+      }
+      const text=cellText(cell,column,this.fmt),blank=object&&cellValue(cell)==null&&cell.text==="",span=h("span");applyTone(span,"cx-drawer-text"+(text||blank?"":" p-missing"),toneOf(columnValueTone(column,cell)||(object?cell.tone:null)));
+      setText(span,text||blank?text:"—");if(object&&cell.title)span.title=cell.title;value.appendChild(span);
+      const rule=columnNumericTone(column,cellValue(cell));if(rule){span.title=rule.label;const label=h("span","p-sub");setText(label,rule.label);value.appendChild(label);}
       if(object)for(const badge of cell.badges||[])value.appendChild(badgeElement(badge));
     },
     /** The fields the open drawer shows, in order: { id, column (null for a record field), term, value }. */

@@ -66,17 +66,23 @@ internal sealed partial class QueryTranslator<T> {
         }
         if (mapped.Shape == ValueShape.Enum) {
             var type = ExpressionTools.Underlying(value.Type);
+            var enumOrder = (IComparer<string>?)key.Column.Ordering ?? StringComparer.Ordinal;
             if (canonical) {
                 var plain = value.Type == type ? value : Expression.Convert(value, type);
                 Expression name = Expression.Call(typeof(CanopyDataValues).GetMethod(nameof(CanopyDataValues.EnumText))!, Expression.Convert(plain, typeof(Enum)));
                 if (value.Type != type) name = Expression.Condition(ExpressionTools.IsNull(value), Expression.Constant(null, typeof(string)), name);
-                yield return (name, key.Descending, StringComparer.Ordinal);
+                yield return (name, key.Descending, enumOrder);
             } else {
-                // Enumerations sort by their raw text (EnumMember value or name); the database sees a rank expression, one rank per text.
+                // Comparer-equal enum texts share a rank, so the stable row identity breaks their tie in every provider.
                 var texts = EnumDomains.Members(type).Cast<Enum>().GroupBy(member => CanopyDataValues.EnumText(member), StringComparer.Ordinal)
-                    .OrderBy(group => group.Key, StringComparer.Ordinal).ToList();
-                yield return (Rank(value, texts.Select(group => group.Select(member => (Expression)Expression.Equal(value, ExpressionTools.Parameter(member, value.Type)))
-                    .Aggregate(Expression.OrElse)).ToList()), key.Descending, null);
+                    .OrderBy(group => group.Key, enumOrder).ToList();
+                var tests = new List<Expression>();
+                for (var i = 0; i < texts.Count; i++) {
+                    var test = texts[i].Select(member => (Expression)Expression.Equal(value, ExpressionTools.Parameter(member, value.Type))).Aggregate(Expression.OrElse);
+                    if (i > 0 && enumOrder.Compare(texts[i - 1].Key, texts[i].Key) == 0) tests[tests.Count - 1] = Expression.OrElse(tests[tests.Count - 1], test);
+                    else tests.Add(test);
+                }
+                yield return (Rank(value, tests), key.Descending, null);
             }
             yield break;
         }

@@ -1,9 +1,24 @@
-  function gridCellRenderer(grid,column,options) {
+  function gridRenderPresenter(grid,column,options,record,complete) {
     return (row,element) => {
       const cell=row.cells[column.id],raw=cellValue(cell),text=cellText(cell,column,grid.fmt),object=isCellObject(cell);
-      const tone=gridPresenterTone(options,raw,object?cell.tone:null);
-      element.classList.add("cx-presented-cell"); if (object&&cell.title) element.title=cell.title;
-      const add=(value,cls="cx-presenter-text",tag="span")=>{const item=h(tag,cls);setText(item,value);element.appendChild(item);return item;};
+      const rule=columnNumericTone(column,raw),declaredTone=columnValueTone(column,cell),tone=declaredTone||gridPresenterTone(options,raw,object?cell.tone:null);
+      element.classList.add("cx-presented-cell"); if (rule || object&&cell.title) element.title=rule?.label || cell.title;
+      if(declaredTone)applyTone(element,element.className,toneOf(declaredTone));
+      if(rule)element.setAttribute("aria-description",rule.label);
+      const add=(value,cls="cx-presenter-text",tag="span")=>{
+        const item=h(tag,cls),textItem=/^(cx-presenter-text|p-mono|p-link|cx-wrapped-text|p-muted)\b/.test(cls);setText(item,value);
+        if(declaredTone&&textItem)item.style.color="inherit";
+        if(column.wrap&&textItem){
+          item.classList.add("cx-wrapped-text");item.style.maxWidth="100%";item.style.flex="none";item.title=rule?.label||String(value);
+          // Grid values read in full in the drawer; record-only fields retain their own authored line limit.
+          if(complete){item.style.webkitLineClamp="unset";item.style.maxHeight="none";}
+          else {
+            const lines=record?column.maxLines??2:grid.layoutMode==="cards"?Math.min(column.maxLines??2,2):grid.autoRows?column.maxLines??2:1;
+            item.style.webkitLineClamp=String(lines);item.style.maxHeight=lines*1.4+"em";
+          }
+        }
+        element.appendChild(item);return item;
+      };
       const more=(value,label=grid.labels.gridShowMore)=>{
         const button=add(label,"cx-link cx-presenter-expand","button");button.type="button";
         button.setAttribute("aria-haspopup","dialog");button.setAttribute("aria-label",fill(grid.labels.gridExpandCell,{column:column.title}));
@@ -14,7 +29,8 @@
       } else if (options.kind==="structured") {
         // Lists, objects and collections summarise through the record panel part (52-grid-record-part.js).
         if(RECORD_IMPL.summary)RECORD_IMPL.summary(grid,column,options,row,element,text);else{add(text);grid.loadRecordPanel();}
-      } else if (raw==null&&(!object||cell.text===undefined)||text==="") add("—","p-missing");
+      } else if (raw==null&&object&&cell.text==="") add("");
+      else if (raw==null&&(!object||cell.text===undefined)||text==="") add("—","p-missing");
       else if (options.kind==="link") {
         const href=gridPresenterLink(cellValue(options.hrefColumn?row.cells[options.hrefColumn]:cell));
         const link=add(text,"p-link",href?"a":"span"); if(href){link.href=href;if(options.newWindow){link.target="_blank";link.rel="noopener noreferrer";}}
@@ -50,10 +66,14 @@
         for(const value of values.slice(0,limit)){const tag=h("span","p-tag");setText(tag,value);preview.appendChild(tag);}
         if(values.length>limit||options.kind==="list")more(text,values.length>limit?"+"+(values.length-limit):grid.labels.gridShowMore);
       } else if(options.kind==="longText") {
+        if(column.wrap){
+          add(text,"cx-wrapped-text"+(options.mono?" p-mono":""));
+        }else{
         const budget=Math.max(256,Math.ceil((column.renderWidth||column.width)/7*5));
         const preview=add(text.length>budget?text.slice(0,budget).replace(/[\uD800-\uDBFF]$/,"")+" …":text,"cx-wrapped-text"+(options.mono?" p-mono":""));
         if(!grid.autoRows)element.classList.add("cx-fixed-text");
         if(!column.wrap||text.length>Math.max(40,(column.renderWidth||column.width)/7*4)||text.split("\n").length>4){element.classList.add("cx-clamped");more(text);}
+        }
       } else add(text);
       if(object)for(const badge of cell.badges||[])element.appendChild(badgeElement(badge));
       return true;

@@ -15,8 +15,8 @@ public sealed class RuntimePartTests {
     [Fact]
     public void Parts_FollowTheBuildListInOrder() {
         Assert.Equal(PartManifestFile.Read().Select(part => part.Name), CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[2]);
+        Assert.Equal(new[] { "tree-tools", "presenters", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
+        Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[3]);
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("missing"));
     }
 
@@ -43,7 +43,7 @@ public sealed class RuntimePartTests {
         // too, so a grid page can host a flow.
         Assert.Equal(new[] { "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-consent" },
             CanopyHtmlAssets.GetParts(CanopyRuntime.Flow).Select(part => part.Name));
-        Assert.Equal(new[] { "tree-tools", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
+        Assert.Equal(new[] { "tree-tools", "presenters", "filter-editor", "export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline" }, CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid).Select(part => part.Name));
     }
 
     [Fact]
@@ -76,12 +76,12 @@ public sealed class RuntimePartTests {
 
         var grid = new CanopyDataGridView("grid", "Grid");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.Equal(new[] { "filter-editor", "export" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
+        Assert.Equal(new[] { "presenters", "filter-editor", "export" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         grid.Columns.Add(new CanopyColumn("trend", "Trend") { Presenter = CanopyGridPresenter.StatusStrip() });
-        Assert.Equal(new[] { "filter-editor", "export", "history" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
+        Assert.Equal(new[] { "presenters", "filter-editor", "export", "history" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         // An editable column brings the editing part; a tree's editable column keeps the tree's own proposals.
         grid.Columns[0].Editable = true;
-        Assert.Equal(new[] { "filter-editor", "export", "history", "forms", "editing" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
+        Assert.Equal(new[] { "presenters", "filter-editor", "export", "history", "forms", "editing" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         tree.Columns[0].Editable = true;
         Assert.DoesNotContain("editing", Names(CanopyHtmlAssets.GetRequiredParts(tree)));
         Assert.DoesNotContain("forms", Names(CanopyHtmlAssets.GetRequiredParts(tree)));

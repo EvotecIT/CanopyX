@@ -12,7 +12,7 @@
     gridFacetCollapse: "Collapse {column}", gridFacetExpand: "Expand {column}", gridFacetInvalid: "Enter a valid value.", gridFacetReversed: "From must not be after To."
   }));
   const GRID_FACETS = definePart(DataGrid, "facets", "facet panel", () => ({ DataGrid, h, setText, fill, gridButton, gridIcon, gridQueryStart,
-    gridQueryRows, gridColumnProjection, gridScalar, gridOrder, cellText, foldText, numberFormat, gridCellRenderer, gridFreeze }));
+    gridQueryRows, gridColumnProjection, gridScalar, gridOrder, gridKeyCompare, gridFacetKey, cellText, foldText, numberFormat, gridCellRenderer, gridFreeze }));
   Object.assign(DataGrid.prototype, {
     loadFacets() { return this.facetLoad ||= loadPart(GRID_FACETS).then(() => this.destroyed || this.startFacets()).catch(error => { this.facetLoad = null; throw error; }); },
     setFacetPanelOpen(open) { return this.loadFacets().then(() => this.setFacetPanelOpen(open)); },

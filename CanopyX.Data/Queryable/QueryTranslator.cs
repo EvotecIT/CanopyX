@@ -143,14 +143,15 @@ internal sealed partial class QueryTranslator<T> {
         return RawTextContains(value, mapped.Shape, term);
     }
 
-    /// <summary>Restricts a value list to buckets whose raw value contains the search text, case-insensitively.</summary>
+    /// <summary>Restricts a value list to buckets whose display label or fallback value contains the search text.</summary>
     internal IQueryable<T> ValueSearch(IQueryable<T> source, string column, string search) {
         if (search.Length == 0) return source;
         var mapped = Map.Get(column);
+        var definition = Map.Schema.GetColumn(column);
         var value = _values[column];
         Expression? test = mapped.Shape switch {
             ValueShape.Text => TextContains(value, search),
-            ValueShape.Boolean or ValueShape.Enum => Domain(value, mapped.Shape, member => ProtocolSemantics.ContainsTerm(member, CanopyTextFolding.Fold(search)!)),
+            ValueShape.Boolean or ValueShape.Enum => Domain(value, mapped.Shape, member => ProtocolSemantics.ContainsTerm(definition.FacetSearchValue(member), CanopyTextFolding.Fold(search)!)),
             _ => RawTextContains(value, mapped.Shape, search)
         };
         if (test == null) throw new CanopyRequestException(CanopyRequestError.Unsupported, "Value search is not available for date columns on this endpoint.");

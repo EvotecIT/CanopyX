@@ -281,5 +281,7 @@ Parts that extend the drawer (editing, conditional formatting) can rely on:
 
 ## Labels
 
+Record-only fields use `Wrap` and `MaxLines` just like visible grid columns. A nondefault line limit is retained in `record.fields`; the browser clamps the preview and keeps the full text in its tooltip.
+
 The panel's texts are labels of every runtime (`recordBack`, `recordShowEmpty`, `recordOpenAll`, … in `CanopyLabels`), with
 Polish, German, Spanish, French and Italian translations; see [labels.md](labels.md).

@@ -47,13 +47,13 @@
   }
 
   /**
-   * A column's declared value order, if it has one: its reporting category order, else the values its enum or state
+   * A column's declared value order, if it has one: its value order, reporting category order, else the values its enum or state
    * presenter names, in the order it names them. A value list then lists by that order (values it does not name follow).
    */
   function facetDeclaredOrder(grid, column) {
-    const presenter = column.presenter, values = grid.view.reporting?.ordering?.[column.id]?.categories ||
+    const presenter = column.presenter, values = column.valueOrder || grid.view.reporting?.ordering?.[column.id]?.categories ||
       (presenter && (presenter.kind === "enum" || presenter.kind === "state") && presenter.tones ? Object.keys(presenter.tones) : null);
-    return values && values.length ? new Map(values.map((value, index) => [foldText(String(value)), index])) : null;
+    return values && values.length ? new Map(values.map((value, index) => [gridFacetKey(value, column), index])) : null;
   }
 
   /**
@@ -100,8 +100,8 @@
   }
   /** Whether two queries count the same rows: facets ignore sort, paging and the window. */
   const facetShape = query => query ? JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.revision]) : "";
-  /** A facet value's key, as value lists fold text. */
-  const facetKey = (value, column) => value === null ? "null" : column.kind === "text" && typeof value === "string" ? "s:" + foldText(value) : typeof value + ":" + value;
+  /** The same typed identity used by facet pages and the column filter picker. */
+  const facetKey = gridFacetKey;
 
   /** Counts of one facet from inline rows: buckets for a value list (every value; the list's search filters as it draws), numeric values for a range. */
   function facetInlineCounts(grid, facet, query) {

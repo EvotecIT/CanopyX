@@ -28,7 +28,7 @@ public sealed class CanopyGridGrouping {
         CanopyColumn? column = null;
         foreach (var declared in view.Columns) if (declared.Id == Column) column = declared;
         if (column == null || !column.Sortable) throw new InvalidOperationException("Grouping needs its declared sortable column.");
-        var order = column.Ordering;
+        var order = column.ValueOrder.Count != 0 ? new CanopyGridOrdering(CanopyGridTextOrder.Ordinal, column.ValueOrder) : column.Ordering;
         return Comparer<CanopyCell>.Create((left, right) => Compare(left?.Value, right?.Value, column, order));
     }
     private int Compare(object? left, object? right, CanopyColumn column, CanopyGridOrdering? order) {
@@ -44,7 +44,11 @@ public sealed class CanopyGridGrouping {
         else {
             var a = left is bool flagA ? flagA ? "true" : "false" : (string)left;
             var b = right is bool flagB ? flagB ? "true" : "false" : (string)right;
-            result = order?.Compare(a, b) ?? string.CompareOrdinal(a, b);
+            if (column.ValueOrder.Count != 0 && (left is bool || right is bool)) {
+                int Rank(object value) { var index = value is string token ? column.ValueOrder.IndexOf(token) : -1; return index < 0 ? column.ValueOrder.Count : index; }
+                result = Rank(left).CompareTo(Rank(right));
+                if (result == 0) result = left is bool && right is string ? -1 : left is string && right is bool ? 1 : string.CompareOrdinal(a, b);
+            } else result = order?.Compare(a, b) ?? string.CompareOrdinal(a, b);
             if (result == 0) result = left is bool && right is string ? -1 : left is string && right is bool ? 1 : string.CompareOrdinal(a, b);
         }
         return Descending ? -result : result;

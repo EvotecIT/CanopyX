@@ -25,7 +25,7 @@
   // Membership is one field that opens checkable facet values; Enter in its search adds a typed value for columns without facets.
   function gridMultiSelect(grid, columnOf, typeOf) {
     const box = h("details", "cx-ms"), summary = h("summary", "cx-input sel"), text = h("span"), list = h("div", "cx-ms-list"), search = h("input", "cx-input"),
-      values = h("div", "cx-val-list"), selected = new Map(), facets = new Map(), key = value => typeof value + ":" + foldText(value), name = value => cellText(value, columnOf(), grid.fmt);
+      values = h("div", "cx-val-list"), selected = new Map(), facets = new Map(), key = value => gridFacetKey(value, columnOf()), name = value => cellText(value, columnOf(), grid.fmt);
     let loaded;
     search.type = "search"; search.placeholder = grid.labels.gridFacetSearch; search.setAttribute("aria-label", search.placeholder);
     summary.appendChild(text); list.append(search, values); box.append(summary, list);

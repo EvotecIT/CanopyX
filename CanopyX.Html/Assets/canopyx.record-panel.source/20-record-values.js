@@ -22,10 +22,12 @@
   const recordRefValid = ref => !!ref && typeof ref === "object" && typeof ref.id === "string" && !!ref.id && (ref.view === undefined || typeof ref.view === "string" && !!ref.view);
 
   function recordPlain(ctx, field, cell, element) {
-    const text = cellText(cell, field, ctx.fmt), object = isCellObject(cell), span = h("span");
-    applyTone(span, "cx-drawer-text" + (text ? "" : " p-missing"), toneOf(object ? cell.tone : null));
-    setText(span, text || "—"); if (object && cell.title) span.title = cell.title;
+    const text = cellText(cell, field.column || field, ctx.fmt), object = isCellObject(cell), blank = object && cellValue(cell) == null && cell.text === "", span = h("span");
+    const column = field.column || field, rule = columnNumericTone(column, cellValue(cell));
+    applyTone(span, "cx-drawer-text" + (text || blank ? "" : " p-missing"), toneOf(columnValueTone(column, cell) || (object ? cell.tone : null)));
+    setText(span, text || blank ? text : "—"); if (object && cell.title) span.title = cell.title;
     element.appendChild(span);
+    if (rule) { span.title = rule.label; const label = h("span", "p-sub"); setText(label, rule.label); element.appendChild(label); }
     if (object) for (const badge of cell.badges || []) element.appendChild(badgeElement(badge));
   }
 
@@ -34,7 +36,7 @@
     const text = cellText(cell, field, ctx.fmt) || cell.ref.id;
     if (ctx.print || !recordRefValid(cell.ref)) { recordPlain(ctx, field, cell, element); return null; }
     const link = recordButton(text, () => ctx.navigate(cell.ref, link), "cx-record-link" + (className ? " " + className : ""));
-    applyTone(link, link.className, toneOf(cell.tone || null));
+    applyTone(link, link.className, toneOf(columnValueTone(field.column || field, cell) || cell.tone || null));
     link.setAttribute("data-cx-origin", field.id + ":" + ctx.origins++);
     if (cell.title) link.title = cell.title;
     element.appendChild(link);
@@ -49,14 +51,14 @@
       else view.paintDrawerValue(field.column, ctx.row, element, { signal: ctx.signal, width: ctx.width });
       return;
     }
-    if (field.presenter && grid.gridCellRenderer && view.kind === "grid") { grid.gridCellRenderer(view, { ...field, renderWidth: ctx.width }, field.presenter)(ctx.row, element); return; }
+    if ((field.presenter || field.wrap) && view.paintDrawerValue && view.kind === "grid") { view.paintDrawerValue(field, ctx.row, element, {signal:ctx.signal,width:ctx.width}); return; }
     recordPlain(ctx, field, cell, element);
   }
 
   function recordChip(ctx, field, item) {
     const object = isCellObject(item), text = cellText(item, field, ctx.fmt);
     if (object && item.ref && recordRefValid(item.ref) && !ctx.print) { const holder = h("span"); return recordLink(ctx, item, field, holder, "cx-record-chip"); }
-    const chip = h("span"); applyTone(chip, "cx-record-chip", toneOf(object ? item.tone : null));
+    const chip = h("span"); applyTone(chip, "cx-record-chip", toneOf(columnValueTone(field.column || field, item) || (object ? item.tone : null)));
     setText(chip, text || "—"); if (object && item.title) chip.title = item.title;
     return chip;
   }

@@ -25,6 +25,7 @@
     for (const column of view.columns) {
       requireIdentifier(column && column.id, "grid column ID");
       if (ids.has(column.id) || typeof column.title !== "string" || !["text", "number", "datetime"].includes(column.kind) ||
+          column.headerDescription !== undefined && typeof column.headerDescription !== "string" ||
           column.width !== undefined && (!Number.isInteger(column.width) || column.width < 40) ||
           ["wrap", "autoWidth", "fixed", "rowHeader", "alwaysVisible", "editable", "filterable", "exportable"].some(name => column[name] !== undefined && typeof column[name] !== "boolean") ||
           column.flex !== undefined && !(typeof column.flex === "number" && column.flex >= 0 && column.flex <= 100) || column.autoSize !== undefined && !["content", "header", "none"].includes(column.autoSize) ||
@@ -32,6 +33,7 @@
           column.fixed && column.width === undefined || column.tooltip !== undefined && column.tooltip !== "auto" && !view.columns.some(item => item.id === column.tooltip))
         throw new Error("CanopyX: invalid or duplicate grid column.");
       ids.add(column.id);
+      validateColumnValues(column);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
       if (column.format !== undefined) { if (column.kind !== "number") throw new Error("CanopyX: number formats need number columns."); gridNumberFormat(column.format); }
       if (column.aggregatable !== undefined && (typeof column.aggregatable !== "boolean" || column.aggregatable && column.kind !== "number") ||
