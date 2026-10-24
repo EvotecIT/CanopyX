@@ -49,6 +49,7 @@
       this.columns = view.columns.map((column, index) => ({ ...column, hidden: index > 0 && !!column.hidden,
         render: Object.hasOwn(renderers, column.id) ? renderers[column.id] : null }));
       this.columns.forEach(prepareWidth);
+      this.columns.forEach(validateColumnValues);
       this.keyMap = new Map();
       this.root = { key: null, h: null, parent: null, level: 0, idx: 0, expanded: true, children: null, total: null, next: null, loading: false, error: null };
       if (!options.source && (!view.source || view.source.kind === "inline")) {

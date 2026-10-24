@@ -59,6 +59,38 @@ public sealed class ColumnValueContractTests {
     }
 
     [Fact]
+    public void StaticTree_UsesColumnTonesAndFirstNumericExplanationWithoutChangingValues() {
+        var state = new CanopyColumn("state", "State");
+        state.ValueLabels.Add("z", "First"); state.ValueTones.Add("z", CanopyTone.Warning);
+        var days = new CanopyColumn("days", "Days") { Kind = CanopyColumnKind.Number };
+        days.NumericTones.Add(new(CanopyNumericToneOperator.Below, 0, CanopyTone.Danger, "Overdue"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, CanopyTone.Warning, "Review soon"));
+        var view = new CanopyTreeView("tones", "Tones") { Columns = { new CanopyColumn("name", "Name"), state, days } };
+        var row = new CanopyNode("a", "Record") { Cells = { ["state"] = new CanopyCell("z") { Tone = CanopyTone.Info }, ["days"] = -1 } };
+        view.Roots.Add(row);
+        var result = CanopyStaticHtml.RenderWithResult(view, new CanopyStaticHtmlOptions {
+            Theme = new CanopyStaticTheme { Warning = "#123456", Danger = "#654321" }
+        });
+        Assert.Contains("color:#123456;", result.Html); Assert.Contains("color:#654321;", result.Html);
+        Assert.Contains("title=\"Overdue\"", result.Html); Assert.DoesNotContain("Review soon", result.Html);
+        Assert.Equal(new[] { "Record", "First", "-1" }, result.Rows[0]);
+        Assert.Equal("z", row.Cells["state"].Value); Assert.Equal(-1L, row.Cells["days"].Value);
+    }
+
+    [Fact]
+    public void NumericRules_IgnoreTextBooleanAndNonfiniteTreeCells() {
+        var days = new CanopyColumn("days", "Days") { Kind = CanopyColumnKind.Number };
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, CanopyTone.Warning, "Review soon"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtLeast, 14, CanopyTone.Danger, "Long interval"));
+        var view = new CanopyTreeView("mixed", "Mixed values") { Columns = { new CanopyColumn("name", "Name"), days } };
+        var cells = new CanopyCell[] { new("12"), new("text"), new(true), new(double.NaN), new(double.PositiveInfinity), new(double.NegativeInfinity) };
+        for (var i = 0; i < cells.Length; i++) view.Roots.Add(new CanopyNode("row-" + i, "Record") { Cells = { ["days"] = cells[i] } });
+        var result = CanopyStaticHtml.RenderWithResult(view);
+        Assert.DoesNotContain("Review soon", result.Html); Assert.DoesNotContain("Long interval", result.Html);
+        Assert.Equal("12", result.Rows[0][1]); Assert.Equal("text", result.Rows[1][1]);
+    }
+
+    [Fact]
     public void RecordField_NonDefaultLineLimitIsSerializedAndCheckedBySchema() {
         var field = new CanopyColumn("notes", "Notes") { Wrap = true, MaxLines = 3 };
         var view = new CanopyDataGridView("record", "Record") { Columns = { new CanopyColumn("name", "Name") }, Record = new CanopyRecordPanel { Fields = { field } } };

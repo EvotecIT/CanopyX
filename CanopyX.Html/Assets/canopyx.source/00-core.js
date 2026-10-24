@@ -268,6 +268,12 @@
    */
   const safeGridNumber = value => Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER;
   function sortKey(cell, column) {
+    if (column.valueOrder?.length) {
+      const raw = cellValue(cell);
+      if (raw == null) return { rank: 2, value: 0 };
+      const at = typeof raw === "string" ? column.valueOrder.indexOf(raw) : -1;
+      return { rank: 1, category: at < 0 ? column.valueOrder.length : at, type: typeof raw, value: raw };
+    }
     // Trees ignore malformed sort keys; flat grids reject them at intake.
     let value = isCellObject(cell) && (typeof cell.sort === "string" || safeGridNumber(cell.sort)) ? cell.sort : cellValue(cell);
     if ((value === null || value === "") && isCellObject(cell) && typeof cell.text === "string" && cell.text !== "") {
@@ -298,6 +304,8 @@
     if (a.rank === 2) {
       return 0;
     }
-    const order = a.rank === 0 ? (a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : collator.compare(a.value, b.value);
+    const order = a.category !== undefined ? a.category - b.category ||
+      (a.type < b.type ? -1 : a.type > b.type ? 1 : a.value < b.value ? -1 : a.value > b.value ? 1 : 0) :
+      a.rank === 0 ? (a.value < b.value ? -1 : a.value > b.value ? 1 : 0) : collator.compare(a.value, b.value);
     return order * direction;
   }

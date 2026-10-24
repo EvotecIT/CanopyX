@@ -29,6 +29,10 @@ Declared order takes precedence over reporting text order and cell sort keys:
 declared tokens precede unknown tokens, which sort by ordinal UTF-16 text.
 Descending reverses value order; null stays last in either direction. Hosts
 author localized labels in their chosen culture; CanopyX does not translate them.
+Tree siblings use the same declared ordering before inline paging and when
+exporting nodes that have not loaded. Category and numeric tones apply to default
+tree and grid cells, scalar record fields and static tables. A host renderer
+that handles a cell retains control of its presentation.
 Nonempty `valueLabels` or `valueOrder` opts text into exact category-token
 predicates and facet identities: `A` and `a` remain independent. Unconfigured
 text keeps its existing case folding. Quick search and searching displayed

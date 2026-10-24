@@ -12,7 +12,7 @@ internal static class CanopyDataSnapshot {
         Sizing = source.Sizing, Wrap = source.Wrap, Presenter = source.Presenter, Aggregatable = source.Aggregatable, Format = source.Format,
         Section = source.Section, ShowInDrawer = source.ShowInDrawer, Renderer = source.Renderer,
         ResponsivePriority = source.ResponsivePriority, AlwaysVisible = source.AlwaysVisible, Pinned = source.Pinned,
-        RowHeader = source.RowHeader, Tooltip = source.Tooltip, MaxLines = source.MaxLines
+        RowHeader = source.RowHeader, Tooltip = source.Tooltip, MaxLines = source.MaxLines, HeaderDescription = source.HeaderDescription
     };
         foreach (var pair in source.ValueLabels) copy.ValueLabels.Add(pair);
         foreach (var token in source.ValueOrder) copy.ValueOrder.Add(token);

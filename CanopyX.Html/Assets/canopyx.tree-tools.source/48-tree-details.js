@@ -122,8 +122,10 @@
         catch (error) { this.emit("error", { error }); }
       }
       const text = cellText(cell, column, this.fmt), blank = object && cell.value == null && cell.text === "", span = h("span");
-      applyTone(span, "cx-drawer-text" + (text || blank ? "" : " p-missing"), toneOf(object ? cell.tone : null));
+      applyTone(span, "cx-drawer-text" + (text || blank ? "" : " p-missing"), toneOf(columnValueTone(column, cell) || (object ? cell.tone : null)));
       setText(span, text || blank ? text : "—"); if (object && cell.title) span.title = cell.title; value.appendChild(span);
+      const rule = columnNumericTone(column, cellValue(cell));
+      if (rule) { span.title = rule.label; const label = h("span", "p-sub"); setText(label, rule.label); value.appendChild(label); }
       if (object) for (const badge of cell.badges || []) value.appendChild(badgeElement(badge));
     }
   });

@@ -180,11 +180,12 @@ public static partial class CanopyStaticHtml {
                 style += "padding-left:" + ((level - 1) * IndentPixels + 8) + "px;" + (node.Group ? "font-weight:600;" : string.Empty);
             }
 
-            style += styles.ToneColor(cell?.Tone ?? CanopyTone.None);
+            style += styles.ToneColor(column.ValueTone(cell));
 
             html.Append("<td style=\"").Append(style).Append('"');
-            if (!string.IsNullOrEmpty(cell?.Title)) {
-                html.Append(" title=\"").Append(Encode(cell!.Title!)).Append('"');
+            var title = column.NumericTone(cell)?.Label ?? cell?.Title;
+            if (!string.IsNullOrEmpty(title)) {
+                html.Append(" title=\"").Append(Encode(title!)).Append('"');
             }
 
             html.Append('>');

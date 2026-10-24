@@ -28,8 +28,9 @@ public sealed partial class CanopyColumn {
     internal bool ExactCategoryTokens => Kind == CanopyColumnKind.Text && (ValueLabels.Count != 0 || ValueOrder.Count != 0);
 
     internal CanopyNumericToneRule? NumericTone(CanopyCell? cell) {
-        if (cell?.Value == null || Kind != CanopyColumnKind.Number) return null;
+        if (NumericTones.Count == 0 || Kind != CanopyColumnKind.Number || cell?.Value is not (long or double or decimal)) return null;
         var raw = CanopyNumericValues.ToDouble(cell.Value);
+        if (double.IsNaN(raw) || double.IsInfinity(raw)) return null;
         foreach (var rule in NumericTones) if (rule.Matches(raw)) return rule;
         return null;
     }

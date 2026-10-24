@@ -150,7 +150,7 @@
       if (!none && column.autoSize !== "header") for (const row of this.rowCache.values()) {
         if (sampled === 200) break;
         const cell = row.h.cells[column.id], value = cellText(cell, column, this.fmt) || "—", series = gridSeries(cell).length;
-        const tone = gridValueTone(column, cell) || gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), quiet = options.quietTones?.includes(tone);
+        const tone = columnValueTone(column, cell) || gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), quiet = options.quietTones?.includes(tone);
         const secondary = kind === "identifier" && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);
         const atomic = kind === "enum" || kind === "state";
         // Enum success uses a dot and ordinary text; toned enums use their computed pill font and chrome.

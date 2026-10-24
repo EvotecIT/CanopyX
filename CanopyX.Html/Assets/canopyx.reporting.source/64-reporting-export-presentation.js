@@ -54,7 +54,7 @@
           else diagnostics.push("unsafe-link");
         } else if (target) diagnostics.push("relative-link");
       }
-      const mark = matches.get(column.id), tone = mark?.tone ?? gridValueTone(column,cell) ?? (presenter?.kind === "boolean" && value === true && presenter.inverted ? "danger" :
+      const mark = matches.get(column.id), tone = mark?.tone ?? columnValueTone(column,cell) ?? (presenter?.kind === "boolean" && value === true && presenter.inverted ? "danger" :
         presenter ? gridPresenterTone(presenter, value, object ? cell.tone : null) : object ? cell.tone : undefined);
       if (mark?.className) diagnostics.push("custom-class");
       cells[column.id] = { value, text, ...(tone ? { tone } : {}), ...(link ? { link } : {}), ...(diagnostics.length ? { diagnostics: [...new Set(diagnostics)] } : {}) };

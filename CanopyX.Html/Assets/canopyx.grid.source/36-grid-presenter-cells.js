@@ -1,7 +1,7 @@
   function gridRenderPresenter(grid,column,options,record,complete) {
     return (row,element) => {
       const cell=row.cells[column.id],raw=cellValue(cell),text=cellText(cell,column,grid.fmt),object=isCellObject(cell);
-      const rule=gridNumericTone(column,raw),declaredTone=gridValueTone(column,cell),tone=declaredTone||gridPresenterTone(options,raw,object?cell.tone:null);
+      const rule=columnNumericTone(column,raw),declaredTone=columnValueTone(column,cell),tone=declaredTone||gridPresenterTone(options,raw,object?cell.tone:null);
       element.classList.add("cx-presented-cell"); if (rule || object&&cell.title) element.title=rule?.label || cell.title;
       if(declaredTone)applyTone(element,element.className,toneOf(declaredTone));
       if(rule)element.setAttribute("aria-description",rule.label);

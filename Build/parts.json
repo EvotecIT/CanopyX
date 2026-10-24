@@ -9,7 +9,7 @@
       "key": "TreeGrid.prototype",
       "context": ["TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
         "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "exportFormatsOf", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems",
-        "applyTone", "toneOf", "badgeElement", "RECORD_IMPL", "svgIcon", "gridExportField"],
+        "applyTone", "toneOf", "badgeElement", "RECORD_IMPL", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone"],
       "start": "const EXPORT_IMPL = { formatsOf: exportFormatsOf };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
@@ -42,7 +42,7 @@
       "views": ["grid"],
       "features": ["presenters"],
       "key": "GRID_PRESENTER_IMPL",
-      "context": ["GRID_PRESENTER_IMPL", "h", "setText", "fill", "cellValue", "cellText", "isCellObject", "gridNumericTone", "gridValueTone",
+      "context": ["GRID_PRESENTER_IMPL", "h", "setText", "fill", "cellValue", "cellText", "isCellObject", "columnNumericTone", "columnValueTone",
         "gridPresenterTone", "gridPresenterLink", "numberFormat", "toneColors", "toneOf", "applyTone", "gridIcon", "badgeElement", "GRID_HISTORY_KINDS", "GRID_HISTORY_IMPL", "RECORD_IMPL"],
       "scripts": ["CanopyX.Html/Assets/canopyx.grid.source/36-grid-presenter-cells.js"],
       "end": "GRID_PRESENTER_IMPL.create = gridRenderPresenter;"
@@ -55,7 +55,7 @@
       "views": ["grid"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridDateInputMoment", "gridQuery", "gridQueryStart",
-        "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridKeyCompare", "gridFacetKey", "gridNumericTone", "gridValueTone", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
+        "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridKeyCompare", "gridFacetKey", "columnNumericTone", "columnValueTone", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
         "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "numberText", "fill", "announceMenu", "reportingRangeRows",
         "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL"],
       "start": "const buildFilters = DataGrid.prototype.buildGridFilters;",
@@ -636,7 +636,7 @@
       "features": ["record"],
       "key": "RECORD_IMPL",
       "context": ["RECORD_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors", "validateGridRows",
-        "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid", "svgIcon", "gridExportField"],
+        "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone", "validateColumnValues"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.record-panel.source"
       ],

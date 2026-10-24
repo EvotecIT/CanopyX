@@ -84,12 +84,12 @@
       }
       if(presenter){
         gridCellRenderer(this,{...column,renderWidth:context.width||260},presenter,true,this.columns.includes(column))(row,value);
-        const rule=gridNumericTone(column,cellValue(cell));if(rule){const label=h("span","p-sub");setText(label,rule.label);value.appendChild(label);}
+        const rule=columnNumericTone(column,cellValue(cell));if(rule){const label=h("span","p-sub");setText(label,rule.label);value.appendChild(label);}
         return;
       }
-      const text=cellText(cell,column,this.fmt),blank=object&&cellValue(cell)==null&&cell.text==="",span=h("span");applyTone(span,"cx-drawer-text"+(text||blank?"":" p-missing"),toneOf(gridValueTone(column,cell)||(object?cell.tone:null)));
+      const text=cellText(cell,column,this.fmt),blank=object&&cellValue(cell)==null&&cell.text==="",span=h("span");applyTone(span,"cx-drawer-text"+(text||blank?"":" p-missing"),toneOf(columnValueTone(column,cell)||(object?cell.tone:null)));
       setText(span,text||blank?text:"—");if(object&&cell.title)span.title=cell.title;value.appendChild(span);
-      const rule=gridNumericTone(column,cellValue(cell));if(rule){span.title=rule.label;const label=h("span","p-sub");setText(label,rule.label);value.appendChild(label);}
+      const rule=columnNumericTone(column,cellValue(cell));if(rule){span.title=rule.label;const label=h("span","p-sub");setText(label,rule.label);value.appendChild(label);}
       if(object)for(const badge of cell.badges||[])value.appendChild(badgeElement(badge));
     },
     /** The fields the open drawer shows, in order: { id, column (null for a record field), term, value }. */

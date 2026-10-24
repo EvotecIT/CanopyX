@@ -53,7 +53,9 @@ test('ordinary column presenters preserve raw exports, long strip periods and ac
   const rows=await page.evaluate(async()=>{const records=[];for await(const row of grid.prepareExport({scope:'all',raw:true}).rows())records.push(row);return records;});
   expect(rows[0].cells.change.value).toBe(142);expect(rows[0].cells.history.value).toBe('Healthy');
   if(process.env.CANOPYX_EVIDENCE)await page.screenshot({path:path.join(process.env.CANOPYX_EVIDENCE,'presenters-light-1440.png')});
-  await first.getByRole('button',{name:'Notes: show complete text'}).click();await expect(page.getByRole('dialog').locator('pre')).toHaveText(base.rows[0].cells.notes);
+  await expect(first.getByRole('button',{name:'Notes: show complete text'})).toHaveCount(0);
+  await page.evaluate(()=>grid.openDetails('one'));
+  await expect(page.getByRole('dialog').locator('dd[data-cx-field="notes"]')).toHaveText(base.rows[0].cells.notes);
   await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 for(const theme of ['light','dark'])test('Graphite presenter contrast and semantics pass axe in '+theme,async({page})=>{

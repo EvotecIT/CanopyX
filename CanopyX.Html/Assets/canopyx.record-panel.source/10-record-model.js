@@ -57,7 +57,7 @@
       if (field.maxLines !== undefined && (!Number.isInteger(field.maxLines) || field.maxLines < 1 || field.maxLines > 12))
         recordFail("record maxLines must be an integer from 1 to 12.");
       if (field.presenter !== undefined && recordGridHelpers().validatePresenter) recordGridHelpers().validatePresenter(field.presenter, { kind: "text", ...field }, view.columns);
-      if (field.maxLines !== undefined && (!Number.isInteger(field.maxLines) || field.maxLines < 1 || field.maxLines > 12)) recordFail("record field line limits must be integers from 1 to 12.");
+      validateColumnValues({ kind: "text", ...field });
       fields.add(field.id);
     }
     const known = id => columns.has(id) || fields.has(id), top = new Set();

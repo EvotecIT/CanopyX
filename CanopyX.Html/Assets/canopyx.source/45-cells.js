@@ -223,7 +223,8 @@
         slot.text.data = text;
       }
       const object = isCellObject(value);
-      const tone = object ? toneOf(value.tone) : NO_TONE;
+      const rule = columnNumericTone(column, cellValue(value));
+      const tone = toneOf(columnValueTone(column, value) || (object ? value.tone : null));
       const cls = slot.base + tone.cls;
       if (slot.cls !== cls) {
         if (decorated) {
@@ -236,7 +237,8 @@
       }
       toneColors(slot.cell, tone);
       // A host renderer that falls back to the default text keeps the tooltip it may have set itself.
-      const title = object && value.title ? value.title : decorated ? null : otherZone(value, column, this.fmt);
+      const title = object && value.title ? value.title : decorated ? null : rule?.label || otherZone(value, column, this.fmt);
+      setAttr(slot.cell, "aria-description", rule?.label || null);
       if (slot.title !== title) {
         if (title) {
           slot.cell.title = title;
