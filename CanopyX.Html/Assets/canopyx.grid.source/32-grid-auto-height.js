@@ -15,7 +15,8 @@
     const grid = this.grid, style = this.host.style, box = grid.getBoundingClientRect(), computed = getComputedStyle(grid);
     const borders = parseFloat(computed.borderTopWidth) + parseFloat(computed.borderBottomWidth);
     // Only a real horizontal scrollbar consumes block space. Overlay scrollbars contribute zero, without a guessed gutter.
-    const scrollbar = grid.scrollWidth > grid.clientWidth ? Math.max(0, grid.offsetHeight - grid.clientHeight - borders) : 0;
+    // Width overflow can disappear before the occupied gutter is released during a column reset.
+    const scrollbar = Math.max(0, grid.offsetHeight - grid.clientHeight - borders);
     const content = [...grid.children].reduce((sum, child) => sum + child.getBoundingClientRect().height, borders + scrollbar);
     if (this.fitInline === undefined) {
       const own = getComputedStyle(this.host).maxHeight;

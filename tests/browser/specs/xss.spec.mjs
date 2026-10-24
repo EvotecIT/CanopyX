@@ -117,7 +117,7 @@ test("grid cells, titles, pills, tags and tooltips stay text, and links only use
 test("CSV and clipboard fields that could start a spreadsheet formula are escaped", async ({ page }) => {
   const notes = ["=1+1", "+SUM(A1)", "-2+3", "@cmd", "\tTAB", "\rCR", "  =padded", "＝1+1", "＋1", "－1", "＠1", "plain", "a=b"];
   await open(page, gridView(notes.map((note, i) => ({ id: "r" + String(i).padStart(2, "0"), cells: { name: "n" + i, state: "ok", tags: "t", note, amount: -i, href: "" } }))));
-  const csv = await page.evaluate(() => document.querySelector(".cx-host").canopyx.toCsv({ scope: "filtered" }));
+  const csv = await page.evaluate(() => document.querySelector(".cx-host").canopyx.toCsv({ scope: "filtered", columns: ["name", "state", "tags", "note", "amount"] }));
   const records = csv.trim().split("\r\n").slice(1).map(line => line.match(/("(?:[^"]|"")*"|[^,]*)(?:,|$)/g).map(field => field.replace(/,$/, "")));
   const field = text => text.startsWith('"') ? text.slice(1, -1).replace(/""/g, '"') : text;
   expect(records.map(record => field(record[3]))).toEqual(["'=1+1", "'+SUM(A1)", "'-2+3", "'@cmd", "'\tTAB", "'\rCR", "'  =padded", "'＝1+1", "'＋1", "'－1", "'＠1", "plain", "a=b"]);
@@ -126,7 +126,7 @@ test("CSV and clipboard fields that could start a spreadsheet formula are escape
   // The clipboard copy (tab separated) escapes the same fields.
   const copied = await page.evaluate(async () => {
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async text => { window.__clipboard = text; } } });
-    await document.querySelector(".cx-host").canopyx.copy({ scope: "filtered" });
+    await document.querySelector(".cx-host").canopyx.copy({ scope: "filtered", columns: ["name", "state", "tags", "note", "amount"] });
     return window.__clipboard;
   });
   expect(copied.split("\r\n").slice(1, 4).map(line => line.split("\t")[3])).toEqual(["'=1+1", "'+SUM(A1)", "'-2+3"]);

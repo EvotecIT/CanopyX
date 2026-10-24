@@ -126,8 +126,8 @@ public sealed class RuntimeAssetTests {
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         var compressed = GzipLength(CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid)) + GzipLength(CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid));
-        // Main's phone records plus the lazy change-view lifecycle/error shell total 123605 bytes; bound the combined grid at 121 KiB.
-        Assert.True(compressed <= 123904, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 121 KiB.");
+        // Caption geometry, sort priorities and cancellable hidden-panel focus need 121.875 KiB after sharing row/query state and removing obsolete styles.
+        Assert.True(compressed <= 124800, "Grid runtime assets are " + compressed + " bytes gzip; the budget is 121.875 KiB.");
     }
 
     [Fact]

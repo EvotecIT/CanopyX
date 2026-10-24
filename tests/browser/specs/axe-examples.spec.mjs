@@ -37,22 +37,32 @@ for (const name of all) {
     for (const [width, options] of Object.entries(VIEWPORTS)) {
       const context = await browser.newContext({ ...options, colorScheme: schemes[0] });
       const page = await context.newPage();
-      await page.goto(exampleUrl(name));
-      // Pages with views wait for them; the index and outline pages have none.
-      if (await page.locator("[data-canopyx-host]").count()) await page.waitForSelector("[data-cx-ready]", { state: "attached", timeout: 15000 });
-      await page.addScriptTag({ content: AXE });
-      for (const colorScheme of schemes) {
-        await page.emulateMedia({ colorScheme });
-        await nextFrames(page);
-        const violations = await page.evaluate(tags => axe.run(document, { runOnly: { type: "tag", values: tags }, resultTypes: ["violations"] })
-          .then(result => result.violations.map(violation => ({ id: violation.id, impact: violation.impact, targets: violation.nodes.slice(0, 3).map(node => node.target.join(" ")) }))), TAGS);
-        for (const violation of violations) {
-          const entry = `${width} ${colorScheme} ${violation.impact} ${violation.id}: ` + violation.targets.join(", ");
-          if (violation.impact === "serious" || violation.impact === "critical") found.push(entry);
-          else testInfo.annotations.push({ type: "axe " + violation.impact, description: entry });
+      try {
+        await page.goto(exampleUrl(name));
+        // Pages with views wait for them; the index and outline pages have none.
+        if (await page.locator("[data-canopyx-host]").count()) await page.waitForSelector("[data-cx-ready]", { state: "attached", timeout: 15000 });
+        await page.addScriptTag({ content: AXE });
+        for (const colorScheme of schemes) {
+          await page.emulateMedia({ colorScheme });
+          await page.evaluate(() => document.fonts.ready);
+          await nextFrames(page);
+          const violations = await page.evaluate(tags => axe.run(document, { runOnly: { type: "tag", values: tags }, resultTypes: ["violations"] })
+            .then(result => result.violations.map(violation => ({ id: violation.id, impact: violation.impact, targets: violation.nodes.slice(0, 3).map(node => node.target.join(" ")) }))), TAGS);
+          for (const violation of violations) {
+            const entry = `${width} ${colorScheme} ${violation.impact} ${violation.id}: ` + violation.targets.join(", ");
+            if (violation.impact === "serious" || violation.impact === "critical") found.push(entry);
+            else testInfo.annotations.push({ type: "axe " + violation.impact, description: entry });
+          }
         }
+      } finally {
+        try {
+          // Stop view-owned observers and animation work before closing the page and its browsing context.
+          if (!page.isClosed()) {
+            await page.evaluate(() => document.querySelectorAll('[data-canopyx-host]').forEach(host => host.canopyx?.destroy()));
+            await page.close();
+          }
+        } finally { await context.close(); }
       }
-      await context.close();
     }
     expect(found).toEqual([]);
   });

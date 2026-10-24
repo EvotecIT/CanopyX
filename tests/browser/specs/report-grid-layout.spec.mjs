@@ -35,7 +35,10 @@ test("auto height recovers when controls grow beyond the previous fitted host", 
 for (const theme of ["light", "dark"]) test(`report shortage preserves header minima and atomic status content in ${theme}`, async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await mountReportLayout(page, { theme, width: 1320 });
+  const view = reportLayoutView();
+  // This case exercises scrolling after fitting, so retain every field rather than allowing priority collapse.
+  view.columns.forEach(column => column.priority = "essential");
+  await mountReportLayout(page, { view, theme, width: 1320 });
   const box = await layoutGeometry(page);
   expect(box.clippedPills).toBe(0);
   const headers = await page.locator(".cx-hcell > :is(.cx-sort,.cx-htext)").evaluateAll(labels => labels.map(label => ({
@@ -61,7 +64,7 @@ for (const theme of ["light", "dark"]) test(`report shortage preserves header mi
 for (const classic of [false, true]) test(`three wide rows fit after hidden mount and resize with ${classic ? "classic" : "overlay"} scrollbars`, async ({ page }) => {
   const view = reportLayoutView();
   // 1196 px of explicit safe widths inside a 1086 px frame must scroll horizontally.
-  [240, 260, 220, 240, 236].forEach((width, i) => { view.columns[i].minWidth = width; view.columns[i].maxWidth = width; });
+  [240, 260, 220, 240, 236].forEach((width, i) => Object.assign(view.columns[i], { width, minWidth: width, maxWidth: width, fixed: true }));
   await mountReportLayout(page, { view, hidden: true, classic });
   // At phone width the two-line identity and context need more block space than the original one-line fixture.
   await page.locator(".cx-host").evaluate(host => host.style.height = "800px");
@@ -101,6 +104,7 @@ test("automatic text content keeps its measured width after header-only slack is
   delete view.columns[1].width; view.reporting.columnReorder = false;
   view.rows[0].cells.group = "Operations review awaiting confirmation";
   view.columns.push({ id: "stage", title: "Reminder stage", kind: "text" });
+  view.columns.forEach(column => column.priority = "essential");
   view.rows.forEach(row => row.cells.stage = "—");
   await mountReportLayout(page, { view, width: 760 });
   const box = await layoutGeometry(page);
@@ -115,12 +119,15 @@ test("auto-height follows horizontal overflow introduced by a user width without
   await mountReportLayout(page, { classic: true, width: 1320 });
   await page.locator("#frame").evaluate(frame => frame.parentElement.style.maxWidth = "none");
   await settled(page); await rowsFit(page);
-  await page.evaluate(() => api().setColumnWidth("group", 1000)); await settled(page); await rowsFit(page);
+  // A reader-sized column wider than the viewport forces a gutter even if all other normal fields collapse.
+  await page.evaluate(() => api().setColumnWidth("group", 1600)); await settled(page); await rowsFit(page);
   const overflowing = await layoutGeometry(page);
+  expect(overflowing.widths.group).toBe(1600);
   expect(overflowing.scrollWidth).toBeGreaterThan(overflowing.clientWidth);
   await page.evaluate(() => api().resetColumns()); await settled(page); await rowsFit(page);
   const reset = await layoutGeometry(page);
   expect(reset.scrollWidth).toBeLessThanOrEqual(reset.clientWidth + 1); expect(reset.clippedPills).toBe(0);
+  expect(reset.scrollbar).toBe(0);
 });
 
 test("header-only slack preserves usable sort and menu targets in a phone-width grid", async ({ page }) => {
@@ -134,8 +141,13 @@ test("header-only slack preserves usable sort and menu targets in a phone-width 
   expect(bounds.width).toBeGreaterThanOrEqual(24); expect(bounds.height).toBeGreaterThanOrEqual(24);
   const result = await new AxeBuilder({ page }).include(".cx-grid").withRules(["target-size"]).analyze();
   expect(result.violations.map(violation => violation.id)).toEqual([]);
-  await sort.click();
+  // The trailing menu intentionally overlays the sort button: exercise its separate clear target.
+  const clearWidth = await sort.evaluate(button => button.closest('.cx-hcell').querySelector('.cx-grid-column-menu').getBoundingClientRect().left - button.getBoundingClientRect().left);
+  expect(clearWidth).toBeGreaterThanOrEqual(24);
+  await sort.click({ position: { x: 12, y: bounds.height / 2 } });
   await expect(page.locator('.cx-hcell[data-cx-column="stage"]')).toHaveAttribute("aria-sort", "ascending");
+  await page.getByRole('button', { name: 'Menu for Reminder stage', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Sort descending', exact: true })).toBeVisible();
 });
 
 

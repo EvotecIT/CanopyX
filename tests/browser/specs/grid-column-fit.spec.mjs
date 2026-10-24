@@ -41,7 +41,7 @@ function servers() {
 function wide() {
   return { protocol: "canopyx/2", type: "grid", id: "wide", label: "Wide", rowHeight: 28, pageSize: 250, selection: "single", search: false,
     columns: [{ id: "name", title: "Device", kind: "text" }, { id: "site", title: "Site", kind: "text", pinned: "left" },
-      ...Array.from({ length: 27 }, (_, c) => ({ id: "m" + c, title: "Metric " + c, kind: "number" })), { id: "status", title: "Status", kind: "text", pinned: "right" }],
+      ...Array.from({ length: 27 }, (_, c) => ({ id: "m" + c, title: "Metric " + c, kind: "number", priority: "essential" })), { id: "status", title: "Status", kind: "text", pinned: "right" }],
     source: { kind: "inline" }, rows: Array.from({ length: 20 }, (_, i) => ({ id: "w" + i, cells: Object.assign({ name: "device-" + i, site: "Site " + (i % 3), status: "Online" },
       ...Array.from({ length: 27 }, (_, c) => ({ ["m" + c]: i * c })) ) })) };
 }
@@ -126,6 +126,8 @@ test("long values survive a narrow frame before preferred whitespace", async ({ 
 
 test("an automatic identity column keeps its measured content estimate and scrolls when necessary", async ({ page }) => {
   const view = products(); view.rows[0].cells.name = "Workstation " + "branch-office-".repeat(12);
+  // Essential value widths, rather than header menu chrome, must be what makes this case overflow.
+  Object.assign(view.columns.find(column => column.id === "price"), { minWidth: 300, priority: "essential" });
   await mount(page, view, { width: 720 });
   const geometry = await page.evaluate(() => {
     const grid = document.querySelector(".cx-grid"), text = grid.querySelector('.cx-row[data-cx-id="p0"] .cx-text');

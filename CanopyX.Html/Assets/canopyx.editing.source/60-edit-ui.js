@@ -12,6 +12,9 @@
       const state = this.edit, signal = this.lifetime.signal, grid = this.grid, labels = state.labels;
       state.tip = h("div", "cx-edit-tip"); state.tip.id = this.id + "-edit-tip"; state.tip.popover = "manual";
       state.notes = h("div", "cx-sr-only"); state.notes.id = this.id + "-edit-notes";
+      state.tipObserver = new ResizeObserver(() => {
+        if (state.tip.matches(":popover-open")) this.editTip(state.tipAnchor, state.tip.textContent);
+      });
       this.host.append(state.tip, state.notes);
       grid.addEventListener("keydown", event => this.editGridKey(event), { capture: true, signal });
       grid.addEventListener("pointerdown", event => { const cell = event.target.closest?.(".cx-cell"); state.armed = cell && cell === document.activeElement ? cell : null; }, { capture: true, signal });
@@ -27,7 +30,7 @@
       }, { signal });
       this.canvas.addEventListener("focusout", event => { if (!event.relatedTarget || !this.canvas.contains(event.relatedTarget)) this.editHideMessage(); }, { signal });
       grid.addEventListener("scroll", () => { if (state.tip.matches(":popover-open")) this.editRefreshMessage(); }, { passive: true, signal });
-      signal.addEventListener("abort", () => { if (state.session) for (const field of state.session.fields.values()) this.editDispose(field); state.tip.remove(); state.notes.remove(); state.barEl?.remove(); }, { once: true });
+      signal.addEventListener("abort", () => { state.tipObserver.disconnect(); if (state.session) for (const field of state.session.fields.values()) this.editDispose(field); state.tip.remove(); state.notes.remove(); state.barEl?.remove(); }, { once: true });
       if (!state.bar) return;
       const bar = state.barEl = h("div", "cx-editbar"), status = h("span", "cx-editbar-text");
       state.barText = status.appendChild(h("span")); state.barErrors = status.appendChild(h("span", "cx-editbar-errors"));
@@ -127,14 +130,34 @@
     },
 
     editTip(anchor, text) {
-      const tip = this.edit.tip, box = anchor.getBoundingClientRect();
+      const state = this.edit, tip = state.tip, box = anchor.getBoundingClientRect();
       if (!anchor.isConnected || !box.width) { this.editHideMessage(); return; }
       setText(tip, text);
-      tip.style.left = Math.max(4, Math.min(box.left, innerWidth - 280)) + "px"; tip.style.top = box.bottom + 4 + "px";
+      tip.style.left = Math.max(4, Math.min(box.left, innerWidth - 280)) + "px";
       if (!tip.matches(":popover-open")) tip.showPopover();
+      // Lookup options open below the field; its validation message must leave them readable and clickable.
+      const control = anchor.querySelector("[aria-controls]"), list = document.getElementById(control?.getAttribute("aria-controls"));
+      const popup = list?.closest("[popover]");
+      state.tipAnchor = anchor;
+      if (state.tipPopup !== popup) {
+        state.tipObserver.disconnect(); state.tipPopup = popup;
+        if (popup) state.tipObserver.observe(popup);
+      }
+      const options = popup?.matches(":popover-open") ? popup.getBoundingClientRect() : box;
+      const top = Math.min(box.top, options.top), bottom = Math.max(box.bottom, options.bottom);
+      const left = Math.min(box.left, options.left), right = Math.max(box.right, options.right);
+      if (top - tip.offsetHeight >= 8) tip.style.top = top - tip.offsetHeight - 4 + "px";
+      else if (right + tip.offsetWidth + 8 <= innerWidth || left - tip.offsetWidth >= 8) {
+        tip.style.left = (right + tip.offsetWidth + 8 <= innerWidth ? right + 4 : left - tip.offsetWidth - 4) + "px";
+        tip.style.top = Math.max(4, Math.min(box.top, innerHeight - tip.offsetHeight - 4)) + "px";
+      } else tip.style.top = bottom + 4 + "px";
     },
 
-    editHideMessage() { const tip = this.edit?.tip; if (tip?.matches(":popover-open")) tip.hidePopover(); },
+    editHideMessage() {
+      const state = this.edit;
+      state?.tipObserver.disconnect();
+      if (state) { state.tipAnchor = state.tipPopup = null; if (state.tip.matches(":popover-open")) state.tip.hidePopover(); }
+    },
 
     // Announces through the grid's live region; the same words twice still speak.
     editAnnounce(text) { if (text) setText(this.live, text + ((this.edit.flip = !this.edit.flip) ? " " : "")); },

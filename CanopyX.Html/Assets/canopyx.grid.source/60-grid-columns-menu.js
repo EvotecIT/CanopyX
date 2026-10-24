@@ -1,5 +1,5 @@
   // ---------- Columns menu body (optional editor): find, show or hide, and reorder by handle or Alt+Up/Down ----------
-  // Pinning, fitting and width live in each header's own menu, so a row here holds a handle, a checkbox and a label.
+  // Each row also opens the header's menu, including for columns hidden by the reader or responsive layout.
   // The editor part mixes it into DataGrid, the tree tools part into TreeGrid.
   const COLUMNS_MENU = {
     // A moved column joins the pinned group of the column it lands next to, as header moves do.
@@ -33,6 +33,11 @@
         handle.setAttribute("aria-label", fill(this.labels.gridReorderColumn, { column: column.title }));
         label.append(input, name); row.append(handle, label); row.hidden = !!query && !foldText(column.title).includes(query);
         if (note) { const span = h("span", "cx-grid-column-note"); setText(span, note); row.append(span); }
+        if(this.openColumnMenu&&this.tools.columnMenus!==false){
+          const menu=gridDecorateButton(gridButton("",()=>this.openColumnMenu(column.id,menu)),"more",true);
+          menu.classList.add("cx-grid-column-options","icon");menu.setAttribute("aria-label",fill(this.labels.gridColumnMenu,{column:column.title}));
+          menu.setAttribute("aria-haspopup","menu");row.append(menu);
+        }
         row.onkeydown = event => {
           const target = event.altKey && this.columns[this.columns.indexOf(column) + (event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : NaN)];
           if (target) { event.preventDefault(); event.stopPropagation(); this.moveColumnChoice(column, target, event.key === "ArrowDown"); }

@@ -123,7 +123,7 @@
         this.grid.tabIndex = hasRows ? -1 : 0;
         this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader(); this.syncColumnControls();
         this.setNotice(hasRows ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
-        if (hadFocus) {
+        if (hadFocus || this.focusOrigin) {
           this.focused = [...this.rowCache.values()].find(row => row.key === previousId) || this.rowCache.get(this.cursor ? page.offset : query.offset) || null;
         }
         this.render();
@@ -188,6 +188,11 @@
       }
       for (const [index, row] of this.placeholders) if (!this.rendered.has(row) && this.focused !== row) this.placeholders.delete(index);
       this.loadWindow();
+      const origin = this.focusOrigin;
+      if (origin && this.hasGridSize()) {
+        this.focusOrigin = null;
+        if (document.activeElement === origin) (this.rendered.get(this.focused) || this.grid).focus({ preventScroll: true });
+      }
       return measured;
     }
 
@@ -225,6 +230,7 @@
       if (this.destroyed) return;
       this.writeStoredState(this.getState());
       this.destroyed = true; this.queryEpoch++; this.lifetime.abort(); this.dataLifetime.abort();
+      this.focusOrigin = null;
       for (const row of [...this.rendered.values(), ...this.pool]) disposeRowHostCells(row);
       if (this.rafId) cancelAnimationFrame(this.rafId);
       clearTimeout(this.searchTimer); this.searchTimer = null;

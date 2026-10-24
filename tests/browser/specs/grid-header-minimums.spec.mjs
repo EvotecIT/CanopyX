@@ -54,6 +54,7 @@ for (const theme of ["light", "dark"]) {
 
   test(`report headers precede preferred whitespace and retain their minimum during overflow in ${theme}`, async ({ page }) => {
     const view = reportLayoutView();
+    view.columns.forEach(column => column.priority = 'essential');
     await mountReportLayout(page, { theme, view, width: 1320 });
     expect((await headers(page)).filter(header => header.clipped)).toEqual([]);
     expect((await layoutGeometry(page)).clippedPills).toBe(0);
@@ -70,11 +71,11 @@ for (const theme of ["light", "dark"]) {
     expect(overflow.clippedPills).toBe(0);
   });
 
-  test(`headers that cannot collectively fit retain full names and tooltips in ${theme}`, async ({ page }) => {
+  test(`headers that cannot collectively fit adapt with complete captions and tooltips in ${theme}`, async ({ page }) => {
     const view = reportLayoutView(); view.columns[4].maxWidth = 100;
     await mountReportLayout(page, { theme, view, width: 760 });
     const labels = await headers(page);
-    expect(labels.some(header => header.clipped)).toBe(true);
+    expect(labels.filter(header => header.clipped)).toEqual([]);
     for (const label of labels) {
       expect(label.title).toBe(label.text);
       await expect(page.getByRole("columnheader", { name: label.text, exact: false })).toHaveCount(1);

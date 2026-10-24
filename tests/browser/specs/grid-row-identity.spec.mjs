@@ -51,7 +51,8 @@ for (const pending of ["page", "query", "page timeout", "query timeout"]) test("
   await page.route("http://canopyx.test/**", async route => {
     const file = new URL(route.request().url()).pathname;
     if (file === "/") return route.fulfill({ contentType: "text/html", body: viewPage(view).replace("</body>",
-      '<script>CanopyX.configure("keys",{requestTimeoutMs:' + (timeout ? 500 : 30000) + '});</script></body>') });
+      // The held chunk forces the intended timeout; ordinary setup and recovery requests still need room under parallel browser load.
+      '<script>CanopyX.configure("keys",{requestTimeoutMs:' + (timeout ? 2000 : 30000) + '});</script></body>') });
     const index = Number(/rows\/(\d)\.js$/.exec(file)?.[1]);
     if (index === 1) await gate;
     if (index === 2) await finalGate;

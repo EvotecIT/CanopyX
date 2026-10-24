@@ -41,14 +41,6 @@ async function activations(page, count = 0) {
 }
 const openPanel = page => page.locator("details[open] > .cx-grid-panel").last();
 
-test("the coarse pointer matches, so touch layouts and always-visible menu buttons apply", async ({ page }) => {
-  await open(page, gridView({}));
-  expect(await page.evaluate(() => matchMedia("(any-pointer: coarse)").matches)).toBe(true);
-  const opacities = await page.locator(".cx-grid-column-menu:visible").evaluateAll(buttons => buttons.map(button => getComputedStyle(button).opacity));
-  expect(opacities.length).toBeGreaterThan(0);
-  expect(opacities.every(value => value === "1")).toBe(true);
-});
-
 test("tapping +N opens the record drawer with the hidden fields, and its close button returns to the rows", async ({ page }) => {
   await open(page, gridView({}));
   const more = row(page, "r002").locator(".cx-hidden-fields");

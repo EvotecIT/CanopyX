@@ -87,6 +87,20 @@
     if (column.flexWeight) column.flex = true; else if (typeof column.flex === "number") delete column.flex;
   }
 
+  // Weighted growth shared by explicit tree flex and content-weighted flat grids, redistributing capped shares.
+  function gridFitGrow(columns, spare, weight) {
+    let target;
+    while (spare > .5 && columns.length) {
+      const before = spare, total = columns.reduce((sum, column) => sum + weight(column), 0);
+      for (const column of columns) {
+        const add = Math.min(before * weight(column) / total, column.maxW - column.renderWidth);
+        if (add > 0) { column.renderWidth += add; spare -= add; target = column; }
+      }
+      columns = columns.filter(column => column.maxW - column.renderWidth > .5);
+    }
+    return { spare, target };
+  }
+
   const COLUMN_FIT = {
     fitManual(column) { column.width = column.renderWidth ?? column.width; column.sized = true; },
     // The base width (content or preferred), the content width (level 2), or the narrowest width before hiding
@@ -140,16 +154,12 @@
       return excess;
     },
     fitSpare(columns, spare) {
-      let target, flex = columns.filter(column => column.flex && column.flexWeight);
+      let target;
+      ({ spare, target } = gridFitGrow(columns.filter(column => column.flex && column.flexWeight), spare, column => column.flexWeight));
       const grow = (column, limit) => {
         const add = column ? Math.min(spare, Math.min(limit, column.maxW) - column.renderWidth) : 0;
         if (add > 0) { column.renderWidth += add; spare -= add; target = column; }
       };
-      for (let before = 0; spare > 0.5 && flex.length && before !== spare;) {
-        const weight = flex.reduce((sum, column) => sum + column.flexWeight, 0); before = spare;
-        for (const column of flex) grow(column, column.renderWidth + before * column.flexWeight / weight);
-        flex = flex.filter(column => column.maxW - column.renderWidth > 0.5);
-      }
       const identity = columns.find(column => column.identity), widest = columns.filter(column => !column.identity &&
         gridTextual(column) && gridLevel(column) === 1).sort((a, b) => b.need - a.need)[0];
       grow(identity, 420);
@@ -161,10 +171,10 @@
     // except on phones: there the identity column (a tree's tree column) keeps its indent and about two dozen characters
     // (indentNeed, set by trees, plus twice fitCh) beside its "+N" button, and pinned columns that are not essential hide,
     // after the others and in the same order, rather than cut it short.
-    fitHide(shown, width, phone, size = column => this.fitSize(column, 1)) {
+    fitHide(shown, width, phone, size = column => this.fitSize(column, 1), level = !phone) {
       let total = 0, remaining = shown.length;
       const order = (a, b) => gridLevel(b) - gridLevel(a) || gridRank(b) - gridRank(a) || shown.indexOf(b) - shown.indexOf(a), identity = phone && shown.find(column => column.identity);
-      const hide = (column, pinned) => !column.sized && !column.alwaysVisible && (column.pin === "none") !== pinned && !(phone && column.identity) && gridLevel(column) > !phone;
+      const hide = (column, pinned) => !column.fixed && !column.sized && !column.alwaysVisible && (column.pin === "none") !== pinned && !(phone && column.identity) && gridLevel(column) > level;
       for (const column of this.columns) column.fitHidden = false;
       if (this.layoutMode && this.layoutMode !== "fit") return;
       for (const column of shown) total += size(column);

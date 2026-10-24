@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { api, definition, open, orders } from "./grid-grouping-fixtures.mjs";
+import { settleGrid } from "./support.mjs";
 
 // The detail-only fixture: no grouping, so the detail rows part loads alone.
 const flat = (extra = {}) => { const view = definition(extra); view.reporting = { detail: view.reporting.detail, selectionControls: true, ...(extra.reporting || {}) }; return view; };
@@ -19,6 +20,8 @@ test("an expander loads a nested grid once, sized to its content inside the visi
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(toggle).not.toHaveAttribute("aria-controls", /./);
   await expect(detail.locator(".cx-detail-view .cx-row[data-cx-id]")).toHaveCount(orders()[0].detail.rows.length);
+  // The child's first fit changes its height before the parent's observer repositions subsequent rows.
+  await settleGrid(page);
   const layout = await page.evaluate(() => {
     const grid = document.querySelector(".cx-grid"), detail = document.querySelector(".cx-detail-row"), body = detail.querySelector(".cx-detail-body");
     const next = document.querySelector('.cx-row[data-cx-id="o001"]');

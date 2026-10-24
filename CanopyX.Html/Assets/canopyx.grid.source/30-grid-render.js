@@ -52,27 +52,43 @@
       }, { signal });
       document.addEventListener("focusin", event => {
         if (this.pendingNavigation && this.pendingNavigation.focus && !this.canvas.contains(event.target)) this.pendingNavigation = null;
-      }, { signal });
+        if (this.focusOrigin && event.target !== this.focusOrigin) this.focusOrigin = null;
+      }, { signal, capture: true });
+      document.addEventListener("focusout", event => {
+        if (event.target === this.focusOrigin) this.focusOrigin = null;
+      }, { signal, capture: true });
       this.canvas.addEventListener("focusout", event => this.settleCell(event.relatedTarget), { signal });
       // The observer refreshes this after container changes; ordinary scrolling needs no extra layout reads.
       this.sized = this.hasGridSize();
-      // Layout writes run outside observer delivery, avoiding a resize loop when chrome wraps.
-      this.resizeObserver = new ResizeObserver(() => requestAnimationFrame(() => {
-        if (this.destroyed) return;
-        if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
-        style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
-          height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
-        this.fitHeight();
-        if (!(this.sized = this.hasGridSize())) return;
-        this.applyWidths();
-        this.updateGridPhone();
-        this.fitHeight();
-        this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
-        if (this.hiddenScrollTop !== undefined) {
-          const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
-        }
-        this.scheduleRender();
-      }));
+      // Keep the first visible paint fitted without changing observed ancestors during resize delivery.
+      // Opacity suppresses paint while preserving native focus requested at data readiness.
+      grid.style.opacity = "0";
+      let resizeFrame;
+      signal.addEventListener("abort", () => cancelAnimationFrame(resizeFrame), { once: true });
+      this.resizeObserver = new ResizeObserver(entries => {
+        const size = entries.find(entry => entry.target === grid);
+        if (size) this.fitContentWidth = size.contentRect.width;
+        if (size && !size.contentRect.width) grid.style.opacity = "0";
+        const resize = () => {
+          if (this.destroyed) return;
+          if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
+          style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
+            height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
+          this.fitHeight();
+          if (!(this.sized = this.hasGridSize())) return;
+          this.applyWidths();
+          this.updateGridPhone();
+          this.fitHeight();
+          this.viewportHeight = grid.clientHeight - this.head.offsetHeight;
+          if (this.hiddenScrollTop !== undefined) {
+            const top = this.hiddenScrollTop; delete this.hiddenScrollTop; this.setLogicalTop(top);
+          }
+          if (grid.style.opacity) { this.render(); grid.style.opacity = ""; }
+          else this.scheduleRender();
+        };
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = requestAnimationFrame(resize);
+      });
       this.resizeObserver.observe(grid);
       this.resizeObserver.observe(this.head);
     },

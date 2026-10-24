@@ -1,6 +1,7 @@
 // Public editing and linked-view regressions exposed by the combined roadmap integration.
 import { test, expect } from "@playwright/test";
 import { serveGrid, read, cell } from "./editing-support.mjs";
+import { settleGrid } from "./support.mjs";
 
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const condition = value => ({ column: "site", operator: "eq", values: [value] });
@@ -55,14 +56,38 @@ for (const [editor, value] of [["date", "2026-10-15"], ["time", "13:45"], ["date
     expect((await page.evaluate(`${api}.getChanges()`))[0].values.name).toBe(value);
   });
 
-test("typing to start a lookup clears the prior choice and searches before accepting a value", async ({ page }) => {
-  await serveGrid(page, { view: view(), script: `window.lookups=[]; CanopyX.configure('assets',{editing:{lookups:{owner:request=>{
-    lookups.push(request.search);return [{value:'Zoe',label:'Zoe'}];}}}});` });
+for (const placement of ["ordinary", "top-side", "top-below"]) test(`typing to start a lookup keeps choices readable with a ${placement} validation hint`, async ({ page }) => {
+  const data = view();
+  if (placement !== "ordinary") data.labels = { gridEditChoice: "Choose a listed owner before accepting this record. ".repeat(8) };
+  if (placement === "top-below") {
+    await page.setViewportSize({ width: 1024, height: 900 }); data.columns = [data.columns[2]]; data.columns[0].width = 980;
+    data.rows = data.rows.map(row => ({ ...row, cells: { owner: row.cells.owner } }));
+  }
+  await serveGrid(page, { view: data, script: `window.lookups=[]; CanopyX.configure('assets',{editing:{lookups:{owner:request=>{
+    lookups.push(request.search);return ${placement === "top-below" ? "new Promise(resolve=>window.releaseLookup=resolve)" : "[{value:'Zoe',label:'Zoe'}]"};}}}});` });
+  if (placement !== "ordinary") {
+    await page.addStyleTag({ content: 'body{padding-bottom:1000px}' });
+    await page.evaluate(() => window.scrollBy(0, document.querySelector('.cx-row .cx-kind-text').getBoundingClientRect().top - 20));
+  }
   await page.evaluate(`${api}.beginEdit('a0','owner',{initial:'Z'})`);
   expect(await page.evaluate(`${api}.endEdit()`)).toBe(false);
   expect(await page.evaluate(`${api}.getChanges()`)).toEqual([]);
+  if (placement === "top-below") {
+    await expect.poll(() => page.evaluate(() => typeof window.releaseLookup)).toBe("function");
+    await page.evaluate(() => window.releaseLookup([{value:'Zoe',label:'Zoe'},{value:'Zora',label:'Zora'}]));
+  }
   await expect(page.getByRole("option", { name: "Zoe" })).toBeVisible();
   expect(await page.evaluate(() => window.lookups)).toEqual(["Z"]);
+  await settleGrid(page);
+  const overlaps = await page.evaluate(() => {
+    const hint = document.querySelector('.cx-edit-tip').getBoundingClientRect();
+    return [...document.querySelectorAll('.cx-editor, [role="option"]')].map(element => {
+      const box = element.getBoundingClientRect();
+      return Math.max(0, Math.min(hint.right, box.right) - Math.max(hint.left, box.left)) *
+        Math.max(0, Math.min(hint.bottom, box.bottom) - Math.max(hint.top, box.top));
+    });
+  });
+  expect(overlaps, 'the validation hint must leave the editor and choices readable').toEqual(overlaps.map(() => 0));
   await page.getByRole("option", { name: "Zoe" }).click();
   await page.evaluate(`${api}.endEdit()`);
   expect((await page.evaluate(`${api}.getChanges()`))[0].values.owner).toBe("Zoe");

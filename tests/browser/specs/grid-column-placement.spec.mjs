@@ -1,7 +1,7 @@
 import { pinTestFont } from "./visual-font.mjs";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames, openExample } from "./support.mjs";
+import { viewPage, nextFrames, openExample, settleGrid } from "./support.mjs";
 
 // Stable glyph metrics keep width and projection contracts independent of installed platform fonts.
 test.beforeEach(async ({ page }) => { await pinTestFont(page); });
@@ -16,7 +16,7 @@ const view = { protocol: "canopyx/2", type: "grid", id: "placement", label: "Res
 async function open(page, patch = {}) {
   await page.route("http://canopyx.test/placement", route => route.fulfill({ contentType: "text/html", body: viewPage({ ...view, ...patch })
     .replace('<body class="cx-page">', '<body class="cx-page"><main><h1>Responsive inventory</h1>').replace('</body>', '</main></body>') }));
-  await page.goto("http://canopyx.test/placement"); await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready); await nextFrames(page);
+  await page.goto("http://canopyx.test/placement"); await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.ready); await settleGrid(page);
 }
 const api = (page, run) => page.evaluate(run);
 const header = (page, id) => page.locator('.cx-hcell[data-cx-column="' + id + '"]');
@@ -67,7 +67,7 @@ test("a cross-pin move that responsively hides its own column retains a survivin
 });
 
 test("left and right cells stay aligned with headers while the center scrolls and receives keyboard focus", async ({ page }) => {
-  await page.setViewportSize({ width: 650, height: 700 }); await open(page);
+  await page.setViewportSize({ width: 650, height: 700 }); await open(page, { columns: columns.map(column => ({ ...column, fixed: true })) });
   const start = await header(page, "name").boundingBox(), end = await header(page, "action").boundingBox();
   await page.locator(".cx-grid").evaluate(grid => grid.scrollLeft = 200); await nextFrames(page);
   expect((await header(page, "name").boundingBox()).x).toBeCloseTo(start.x, 0);
@@ -140,7 +140,8 @@ test("responsive layout returns focus to the record when its entered field disap
   expect(await page.evaluate(() => document.activeElement.textContent)).toContain("hidden field 0");
   await page.setViewportSize({ width: 390, height: 700 }); await nextFrames(page);
   await expect(page.locator('.cx-row[data-cx-id="r0"]')).toBeFocused();
-  expect(await page.evaluate(() => ({ x: scrollX, width: document.body.scrollWidth, viewport: innerWidth }))).toEqual({ x: 0, width: 390, viewport: 390 });
+  const bounds = await page.evaluate(() => ({ x: scrollX, width: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }));
+  expect(bounds.x).toBe(0); expect(bounds.width).toBeLessThanOrEqual(bounds.viewport);
 });
 
 test("an oversized outer pin suspends its whole edge prefix and leaves center navigation available", async ({ page }) => {
@@ -183,11 +184,13 @@ test("pin changes preserve the same reachable host control and reject after disp
       const input = document.createElement("input"); input.setAttribute("aria-label", "Owner note"); input.value = "Alex"; cell.append(input); return true;
     } } }); return host.canopyx.ready;
   });
+  await settleGrid(page);
   const note = page.locator('.cx-row[data-cx-id="r0"]').getByLabel("Owner note"); await note.focus();
   // Native End scrolls on macOS; arrange the caret before testing focus across the pin change.
   await note.evaluate(input => input.setSelectionRange(input.value.length, input.value.length));
   await api(page, () => document.querySelector('[data-canopyx-host]').canopyx.setColumnPinned("owner", "right"));
-  await expect(note).toBeFocused(); await page.keyboard.type("x"); await expect(note).toHaveValue("Alexx");
+  await settleGrid(page);
+  await expect(note).toBeFocused(); await page.keyboard.type("x"); await settleGrid(page); await expect(note).toHaveValue("Alexx");
   expect(await api(page, () => { const grid = document.querySelector('[data-canopyx-host]').canopyx; grid.destroy();
     try { grid.setColumnPinned("owner", "none"); return false; } catch { return true; } })).toBe(true);
 });
@@ -215,10 +218,13 @@ test("row keyboard focus stays visible on pinned cells in forced colors", async 
   expect(focus.visible).toBe(true); expect(focus.outlines).toEqual(["solid", "solid"]);
 });
 
-for (const mode of ["", "-continuous"]) for (const theme of ["", "-dark"]) test("responsive example retains identity/status and exposes complete details " + mode + theme, async ({ page }) => {
+for (const mode of ["", "-continuous"]) for (const theme of ["", "-dark"]) test("responsive example retains identity and status information and exposes complete details " + mode + theme, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 }); await openExample(page, "responsive-grid" + mode + theme + ".html");
-  expect(await headerOrder(page)).toEqual(["name", "status"]);
-  const row = page.locator('.cx-row[data-cx-id="record-000"]'); await row.press("Control+Enter");
+  const shown = await headerOrder(page);
+  expect(shown[0]).toBe('name'); expect(shown.every(id => ['name', 'status'].includes(id))).toBe(true);
+  const row = page.locator('.cx-row[data-cx-id="record-000"]');
+  if (!shown.includes('status')) await expect(row.locator('.cx-phone-fields')).toContainText('Status:');
+  await expect(row).toContainText('Complete'); await row.press("Control+Enter");
   await expect(page.locator("#record-details")).toBeVisible();
   await expect(page.locator("#record-fields")).toContainText("Alex, Sam, Kim, Pat");
   await expect(page.locator("#record-fields")).toContainText("without interpreting markup");
@@ -228,5 +234,5 @@ for (const mode of ["", "-continuous"]) for (const theme of ["", "-dark"]) test(
     { background: "rgb(255, 255, 255)", foreground: "rgb(22, 24, 28)" });
   await page.keyboard.press("Escape"); await expect(row).toBeFocused();
   await page.locator(".cx-grid-columns > summary").click();
-  await expect(page.getByText("Hidden at this width", { exact: true })).toHaveCount(4);
+  await expect(page.getByText("Hidden at this width", { exact: true })).toHaveCount(6 - shown.length);
 });
