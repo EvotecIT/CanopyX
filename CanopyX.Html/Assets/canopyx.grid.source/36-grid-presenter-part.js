@@ -4,11 +4,11 @@
     gridPresenterTone, gridPresenterLink, numberFormat, toneColors, toneOf, applyTone, gridIcon, badgeElement,
     GRID_HISTORY_KINDS, GRID_HISTORY_IMPL, RECORD_IMPL
   }));
-  function gridCellRenderer(grid, column, options, record = false) {
+  function gridCellRenderer(grid, column, options, record = false, complete = false) {
     let paint;
     return (row, element) => {
       if (!GRID_PRESENTER_IMPL.create) return false;
-      return (paint ||= GRID_PRESENTER_IMPL.create(grid, column, options, record))(row, element);
+      return (paint ||= GRID_PRESENTER_IMPL.create(grid, column, options, record, complete))(row, element);
     };
   }
   DataGrid.prototype.loadPresenters = function () {

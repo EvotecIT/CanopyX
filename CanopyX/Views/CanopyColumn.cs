@@ -34,6 +34,9 @@ public sealed partial class CanopyColumn {
     /// <summary>Gets the header text.</summary>
     public string Title { get; }
 
+    /// <summary>Gets or sets the full header explanation shown as a tooltip and accessibility description. Null uses the header text.</summary>
+    public string? HeaderDescription { get; set; }
+
     /// <summary>Gets or sets the column's immutable sizing intent. The default fits content in flat grids and trees; trees write 160 pixels, within the bounds, as the width a tree uses until its columns are measured.</summary>
     public CanopyColumnSizing Sizing {
         get => _sizing;
@@ -124,6 +127,7 @@ public sealed partial class CanopyColumn {
         writer.BeginObject()
             .Property("id", Id)
             .Property("title", Title);
+        writer.OptionalProperty("headerDescription", HeaderDescription);
         writer.Property("width", InitialWidth);
         if (Sizing.Minimum != MinWidth) writer.Property("minWidth", Sizing.Minimum);
         if (Sizing.Maximum != int.MaxValue) writer.Property("maxWidth", Sizing.Maximum);

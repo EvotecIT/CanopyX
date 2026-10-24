@@ -3,7 +3,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "bbcdb89bb78ede8b",
+      "version": "8fe4abbe4c0066b0",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -15,9 +15,24 @@
       ]
     },
     {
+      "name": "presenters",
+      "label": "cell presenters",
+      "version": "938e57e824b0bca7",
+      "script": "canopyx-presenters.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "presenters"
+      ]
+    },
+    {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "20fda9e421ce521f",
+      "version": "9e9bad30d92c88d8",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -25,6 +40,9 @@
       ],
       "views": [
         "grid"
+      ],
+      "requires": [
+        "presenters"
       ]
     },
     {
@@ -574,7 +592,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "0970f2edbcb32de8",
+      "version": "0e0a3529c0b099d7",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -611,7 +629,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "fa8c686f21626884",
+      "version": "dd1076d5684bfc6e",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [
@@ -629,7 +647,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "f9219d35a87635f8",
+      "version": "b46aac5ddb8be693",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -661,7 +679,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "bcc06276c7933af6",
+      "version": "a1287a5940a82ce8",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

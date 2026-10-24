@@ -22,9 +22,9 @@
   const recordRefValid = ref => !!ref && typeof ref === "object" && typeof ref.id === "string" && !!ref.id && (ref.view === undefined || typeof ref.view === "string" && !!ref.view);
 
   function recordPlain(ctx, field, cell, element) {
-    const text = cellText(cell, field, ctx.fmt), object = isCellObject(cell), span = h("span");
-    applyTone(span, "cx-drawer-text" + (text ? "" : " p-missing"), toneOf(object ? cell.tone : null));
-    setText(span, text || "—"); if (object && cell.title) span.title = cell.title;
+    const text = cellText(cell, field.column || field, ctx.fmt), object = isCellObject(cell), blank = object && cellValue(cell) == null && cell.text === "", span = h("span");
+    applyTone(span, "cx-drawer-text" + (text || blank ? "" : " p-missing"), toneOf(object ? cell.tone : null));
+    setText(span, text || blank ? text : "—"); if (object && cell.title) span.title = cell.title;
     element.appendChild(span);
     if (object) for (const badge of cell.badges || []) element.appendChild(badgeElement(badge));
   }

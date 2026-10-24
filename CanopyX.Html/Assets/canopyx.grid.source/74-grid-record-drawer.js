@@ -83,12 +83,12 @@
         catch(error){this.emit("error",{error});}
       }
       if(presenter){
-        gridCellRenderer(this,{...column,renderWidth:context.width||260},presenter,true)(row,value);
+        gridCellRenderer(this,{...column,renderWidth:context.width||260},presenter,true,this.columns.includes(column))(row,value);
         const rule=gridNumericTone(column,cellValue(cell));if(rule){const label=h("span","p-sub");setText(label,rule.label);value.appendChild(label);}
         return;
       }
-      const text=cellText(cell,column,this.fmt),span=h("span");applyTone(span,"cx-drawer-text"+(text?"":" p-missing"),toneOf(gridValueTone(column,cell)||(object?cell.tone:null)));
-      setText(span,text||"—");if(object&&cell.title)span.title=cell.title;value.appendChild(span);
+      const text=cellText(cell,column,this.fmt),blank=object&&cellValue(cell)==null&&cell.text==="",span=h("span");applyTone(span,"cx-drawer-text"+(text||blank?"":" p-missing"),toneOf(gridValueTone(column,cell)||(object?cell.tone:null)));
+      setText(span,text||blank?text:"—");if(object&&cell.title)span.title=cell.title;value.appendChild(span);
       const rule=gridNumericTone(column,cellValue(cell));if(rule){span.title=rule.label;const label=h("span","p-sub");setText(label,rule.label);value.appendChild(label);}
       if(object)for(const badge of cell.badges||[])value.appendChild(badgeElement(badge));
     },

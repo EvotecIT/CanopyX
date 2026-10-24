@@ -597,10 +597,6 @@ body .cx-host.cx-chrome{padding:0;}
 .cx-data-grid .cx-hcell:dir(rtl){--cx-menu-gradient:linear-gradient(to left,transparent,var(--cx-head-bg));}
 .cx-data-grid .cx-hcell .cx-htext{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;line-height:1.25;text-wrap:balance;overflow:hidden;max-height:2.5em;}
 .cx-data-grid .cx-htext{flex:1;min-width:0;}
-.cx-data-grid.cx-stacked-headers .cx-hcell{flex-wrap:wrap;align-content:space-between;gap:4px;}
-.cx-data-grid.cx-stacked-headers .cx-hcell > :is(.cx-sort,.cx-htext){order:-3;flex:0 0 100%;width:100%;}
-.cx-data-grid.cx-stacked-headers .cx-hcell > .cx-column-move{order:0;margin-right:auto;}
-.cx-data-grid.cx-stacked-headers .cx-hcell > :is(.cx-grid-column-menu,.cx-grid-header-filter){order:1;margin-right:0;}
 .cx-data-grid.cx-phone .cx-phone-primary{align-items:flex-start;}
 .cx-data-grid.cx-phone .cx-phone-primary > .cx-content{flex:1;}
 .cx-data-grid.cx-phone:not([data-cx-layout="scroll"]) .cx-phone-primary :is(.cx-text,.p-mono,.cx-presenter-text){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;overflow-wrap:anywhere;line-height:1.25;max-height:2.5em;}

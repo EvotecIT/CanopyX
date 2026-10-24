@@ -2875,6 +2875,7 @@ interface NodeDefinition{
 export interface CanopyColumn{
   id:string;
   title:string;
+  headerDescription?:string;
   width:number;
   minWidth?:number;
   maxWidth?:number;

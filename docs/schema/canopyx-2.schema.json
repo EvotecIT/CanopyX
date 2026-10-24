@@ -1588,6 +1588,7 @@
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
         "title": { "$ref": "#/$defs/accessibleLabel" },
+        "headerDescription": { "type": "string" },
         "width": { "type": "integer", "minimum": 40, "maximum": 2147483647 },
         "minWidth": { "$ref": "#/$defs/column/properties/width" },
         "maxWidth": { "$ref": "#/$defs/column/properties/width" },
@@ -1658,6 +1659,7 @@
         "title": {
           "$ref": "#/$defs/column/properties/title"
         },
+        "headerDescription": { "$ref": "#/$defs/column/properties/headerDescription" },
         "width": {
           "$ref": "#/$defs/column/properties/width"
         },

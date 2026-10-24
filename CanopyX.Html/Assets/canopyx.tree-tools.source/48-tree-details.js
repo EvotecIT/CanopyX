@@ -121,9 +121,9 @@
           onDispose: cleanup => { if (context.signal.aborted) cleanup(); else context.signal.addEventListener("abort", cleanup, { once: true }); } }) === true) return; }
         catch (error) { this.emit("error", { error }); }
       }
-      const text = cellText(cell, column, this.fmt), span = h("span");
-      applyTone(span, "cx-drawer-text" + (text ? "" : " p-missing"), toneOf(object ? cell.tone : null));
-      setText(span, text || "—"); if (object && cell.title) span.title = cell.title; value.appendChild(span);
+      const text = cellText(cell, column, this.fmt), blank = object && cell.value == null && cell.text === "", span = h("span");
+      applyTone(span, "cx-drawer-text" + (text || blank ? "" : " p-missing"), toneOf(object ? cell.tone : null));
+      setText(span, text || blank ? text : "—"); if (object && cell.title) span.title = cell.title; value.appendChild(span);
       if (object) for (const badge of cell.badges || []) value.appendChild(badgeElement(badge));
     }
   });

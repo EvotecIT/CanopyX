@@ -64,6 +64,8 @@ interface NodeDefinition {
 export interface CanopyColumn {
   id: string;
   title: string;
+  /** Full header explanation shown as a tooltip and accessibility description. Defaults to title. */
+  headerDescription?: string;
   width: number;
   /** Minimum manual width in CSS pixels; defaults to 40. */
   minWidth?: number;

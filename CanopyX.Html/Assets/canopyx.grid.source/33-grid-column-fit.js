@@ -71,7 +71,7 @@
       this.fitLayout(); this.fitBuilding = true;
       try { FIT.buildHeader.call(this); } finally { this.fitBuilding = false; }
       this.headCells.forEach((cell, index) => {
-        cell.querySelector(".cx-sort,.cx-htext").title = this.cols[index].title;
+        cell.querySelector(".cx-sort,.cx-htext").title = this.cols[index].headerDescription ?? this.cols[index].title;
         cell.querySelector(".cx-resize").addEventListener("keydown", event => {
           if (["ArrowLeft", "ArrowRight", "Home"].includes(event.key)) this.fitManual(this.cols[index]);
         }, true);

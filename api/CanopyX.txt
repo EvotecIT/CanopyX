@@ -499,6 +499,7 @@ CanopyX.CanopyColumn.System.Nullable<CanopyX.CanopyGridColumnPin> Pinned { get; 
 CanopyX.CanopyColumn.System.Nullable<System.Int32> ResponsivePriority { get; set; }
 CanopyX.CanopyColumn.System.String Id { get; }
 CanopyX.CanopyColumn.System.String Title { get; }
+CanopyX.CanopyColumn.System.String? HeaderDescription { get; set; }
 CanopyX.CanopyColumn.System.String? Renderer { get; set; }
 CanopyX.CanopyColumn.System.String? Section { get; set; }
 CanopyX.CanopyColumn.System.String? Tooltip { get; set; }

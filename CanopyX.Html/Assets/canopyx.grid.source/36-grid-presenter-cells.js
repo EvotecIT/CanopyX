@@ -1,4 +1,4 @@
-  function gridRenderPresenter(grid,column,options,record) {
+  function gridRenderPresenter(grid,column,options,record,complete) {
     return (row,element) => {
       const cell=row.cells[column.id],raw=cellValue(cell),text=cellText(cell,column,grid.fmt),object=isCellObject(cell);
       const rule=gridNumericTone(column,raw),declaredTone=gridValueTone(column,cell),tone=declaredTone||gridPresenterTone(options,raw,object?cell.tone:null);
@@ -9,9 +9,13 @@
         const item=h(tag,cls),textItem=/^(cx-presenter-text|p-mono|p-link|cx-wrapped-text|p-muted)\b/.test(cls);setText(item,value);
         if(declaredTone&&textItem)item.style.color="inherit";
         if(column.wrap&&textItem){
-          const lines=record?column.maxLines??2:grid.layoutMode==="cards"?Math.min(column.maxLines??2,2):grid.autoRows?column.maxLines??2:1;
-          item.classList.add("cx-wrapped-text");item.style.webkitLineClamp=String(lines);
-          item.style.maxHeight=lines*1.4+"em";item.style.maxWidth="100%";item.style.flex="none";item.title=rule?.label||String(value);
+          item.classList.add("cx-wrapped-text");item.style.maxWidth="100%";item.style.flex="none";item.title=rule?.label||String(value);
+          // Grid values read in full in the drawer; record-only fields retain their own authored line limit.
+          if(complete){item.style.webkitLineClamp="unset";item.style.maxHeight="none";}
+          else {
+            const lines=record?column.maxLines??2:grid.layoutMode==="cards"?Math.min(column.maxLines??2,2):grid.autoRows?column.maxLines??2:1;
+            item.style.webkitLineClamp=String(lines);item.style.maxHeight=lines*1.4+"em";
+          }
         }
         element.appendChild(item);return item;
       };
@@ -25,7 +29,8 @@
       } else if (options.kind==="structured") {
         // Lists, objects and collections summarise through the record panel part (52-grid-record-part.js).
         if(RECORD_IMPL.summary)RECORD_IMPL.summary(grid,column,options,row,element,text);else{add(text);grid.loadRecordPanel();}
-      } else if (raw==null&&(!object||cell.text===undefined)||text==="") add("—","p-missing");
+      } else if (raw==null&&object&&cell.text==="") add("");
+      else if (raw==null&&(!object||cell.text===undefined)||text==="") add("—","p-missing");
       else if (options.kind==="link") {
         const href=gridPresenterLink(cellValue(options.hrefColumn?row.cells[options.hrefColumn]:cell));
         const link=add(text,"p-link",href?"a":"span"); if(href){link.href=href;if(options.newWindow){link.target="_blank";link.rel="noopener noreferrer";}}
@@ -63,9 +68,6 @@
       } else if(options.kind==="longText") {
         if(column.wrap){
           add(text,"cx-wrapped-text"+(options.mono?" p-mono":""));
-          if(grid.autoRows&&grid.layoutMode!=="cards"&&text.length>Math.max(40,(column.renderWidth||column.width)/7*(column.maxLines??2))){
-            element.classList.add("cx-clamped");more(text);
-          }
         }else{
         const budget=Math.max(256,Math.ceil((column.renderWidth||column.width)/7*5));
         const preview=add(text.length>budget?text.slice(0,budget).replace(/[\uD800-\uDBFF]$/,"")+" …":text,"cx-wrapped-text"+(options.mono?" p-mono":""));

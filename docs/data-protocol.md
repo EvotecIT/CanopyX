@@ -8,6 +8,16 @@ Clamped text retains its full
 tooltip and the record drawer shows complete text. Settings belong to the view,
 so hosts can give two views over the same records different line limits.
 
+Columns may supply `headerDescription` (`CanopyColumn.HeaderDescription`) as the
+full header tooltip and accessibility description while `title` remains the
+visible label. Without it, the tooltip uses the title. Flat-grid header labels
+show at most two lines. Wrapped `longText` previews use the existing record
+drawer for complete reading, without an inline expansion button. An explicit
+cell `{ "value": null, "text": "" }` stays blank; an absent value without an
+explicit display text keeps the missing-value marker.
+Record-only wrapped fields also accept `maxLines` (1–12, default 2); their
+authored preview limit stays separate from full grid-column text in the drawer.
+
 Text columns may declare `valueLabels` (raw token to authored display label),
 `valueOrder` (unique raw tokens in ascending order), and `valueTones` (raw token
 to semantic tone). Each supports at most 512 tokens of at most 4096 characters.

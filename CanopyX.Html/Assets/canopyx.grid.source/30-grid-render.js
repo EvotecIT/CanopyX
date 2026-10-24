@@ -155,9 +155,9 @@
       else for (let i = 0; i < this.cols.length; i++) {
         const slot = element._cells[i];
         if (slot.highlighted) { slot.cls = null; slot.highlighted = false; }
-        const column=this.cols[i];
+        const column=this.cols[i],cell=row.h.cells[column.id];
         this.paintSlot(slot, row.h, column, this.columnIndex[i], row);
-        if(!column.render&&!slot.text.data){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
+        if(!column.render&&!slot.text.data&&!(isCellObject(cell)&&cellValue(cell)==null&&cell.text==="")){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
         else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
         if(this.phone||slot.hiddenFields||slot.phonePrimary)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
       }
