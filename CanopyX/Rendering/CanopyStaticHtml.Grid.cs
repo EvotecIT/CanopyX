@@ -120,7 +120,8 @@ public static partial class CanopyStaticHtml {
                     if (depth > level) html.Append(" rowspan=\"").Append(depth - level + 1).Append('"');
                     var className = columns[index].ClassName;
                     if (className != null) html.Append(" class=\"").Append(Encode(className)).Append('"');
-                    html.Append(" style=\"").Append(text == null ? styles.Header : styles.InnerHeader).Append(Align(columns[index])).Append("\">");
+                    html.Append(" style=\"").Append(text == null ? styles.Header : styles.InnerHeader)
+                        .Append(view.Compare != null ? "white-space:normal;" : string.Empty).Append(Align(columns[index])).Append("\">");
                     AppendVisibleText(html, ComparisonHeaderText(view, columns[index]), text, true); html.Append("</th>");
                 }
                 index++;

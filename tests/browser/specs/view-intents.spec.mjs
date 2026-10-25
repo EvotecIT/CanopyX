@@ -21,6 +21,7 @@ async function open(page, options = {}) {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   await page.route("http://canopyx.test/intent", route => {
     const definition = view(options.host); if (options.enabled === false) definition.viewIntents = false;
+    if (options.reporting === false) delete definition.reporting;
     const script = fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-view-intents.js"), "utf8");
     const style = fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-view-intents.css"), "utf8");
     const configuration = `<script>window.queryCalls=[];window.failQuery=false;window.holdQuery=false;CanopyX.configure('intent-grid',{
@@ -146,6 +147,75 @@ test("superseding an in-flight apply aborts its host request and cannot install 
   expect(await page.evaluate("window.applying")).toBe("AbortError");
   expect((await query(page)).search).toBe("current");
   expect(await page.evaluate(`${api}.getState().columns`)).toEqual(columns);
+});
+
+for (const reporting of [false, true]) {
+  const kind = reporting ? "reporting" : "ordinary";
+  for (const preference of ["order-visibility-pin", "width-timezone"]) test(`${kind} grid preserves newer ${preference} while an intent query is pending`, async ({ page }) => {
+    const errors = await open(page, { host: true, reporting });
+    await preview(page, intent({ search: "proposal" }, { columns: ["amount", "name"] }));
+    await page.evaluate(() => {
+      window.holdQuery = true;
+      window.applying = window.preview.apply().then(() => "accepted", error => error.name);
+    });
+    await expect.poll(() => page.evaluate("window.requested")).toBe(2);
+    const newer = await page.evaluate(preference => {
+      const grid = document.querySelector("[data-canopyx-host]").canopyx;
+      if (preference === "order-visibility-pin") {
+        grid.setColumnOrder(["date", "name", "amount", "secret"]);
+        grid.setColumnVisible("date", false);
+        grid.setColumnPinned("amount", "right");
+      } else {
+        grid.setColumnWidth("date", 333);
+        grid.setTimeZone("local");
+      }
+      const state = grid.getState();
+      return { columns: state.columns, timeZone: state.timeZone };
+    }, preference);
+    await page.evaluate(() => { window.holdQuery = false; window.releaseQuery(); });
+    expect(await page.evaluate("window.applying")).toBe("AbortError");
+    expect(await page.evaluate(`${api}.getState().columns`)).toEqual(newer.columns);
+    expect(await page.evaluate(`${api}.getState().timeZone`)).toBe(newer.timeZone);
+    expect((await query(page)).search).toBe("proposal");
+    expect(await page.evaluate("window.requested")).toBe(2);
+    expect(await page.evaluate("preview.apply().then(()=>false,error=>error.name)")).toBe("AbortError");
+    await expect(region(page).getByRole("status")).toHaveText("The view changed. Preview the proposal again.");
+    expect(errors).toEqual([]);
+  });
+
+  test(`${kind} grid still applies an unchanged presentation after a held host query`, async ({ page }) => {
+    await open(page, { host: true, reporting });
+    await preview(page, intent({ search: "proposal" }, { columns: ["amount", "name"] }));
+    await page.evaluate(() => {
+      window.holdQuery = true;
+      window.applying = window.preview.apply().then(() => "accepted", error => error.name);
+    });
+    await expect.poll(() => page.evaluate("window.requested")).toBe(2);
+    await page.evaluate(() => { window.holdQuery = false; window.releaseQuery(); });
+    expect(await page.evaluate("window.applying")).toBe("accepted");
+    expect(await page.evaluate(`${api}.getState().columns.filter(column=>!column.hidden).map(column=>column.id)`)).toEqual(["amount", "name"]);
+    expect((await query(page)).search).toBe("proposal");
+    expect(await page.evaluate("window.requested")).toBe(2);
+  });
+}
+
+test("reporting preference epoch rejects a pending intent even when the reader returns to the original timezone", async ({ page }) => {
+  await open(page, { host: true });
+  const before = await page.evaluate(`${api}.getState()`);
+  await preview(page, intent({ search: "proposal" }, { columns: ["amount", "name"] }));
+  await page.evaluate(() => {
+    window.holdQuery = true;
+    window.applying = window.preview.apply().then(() => "accepted", error => error.name);
+  });
+  await expect.poll(() => page.evaluate("window.requested")).toBe(2);
+  await page.evaluate(() => {
+    const grid = document.querySelector("[data-canopyx-host]").canopyx;
+    grid.setTimeZone("local"); grid.setTimeZone("utc");
+    window.holdQuery = false; window.releaseQuery();
+  });
+  expect(await page.evaluate("window.applying")).toBe("AbortError");
+  expect(await page.evaluate(`${api}.getState().columns`)).toEqual(before.columns);
+  expect(await page.evaluate(`${api}.getState().timeZone`)).toBe(before.timeZone);
 });
 
 test("accepted state export roundtrips grouped filters and visibility without cursor, revision or selection", async ({ page }) => {

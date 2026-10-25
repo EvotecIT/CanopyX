@@ -112,7 +112,7 @@
       "views": ["grid"],
       "features": ["presenters"],
       "key": "GRID_PRESENTER_IMPL",
-      "context": ["GRID_PRESENTER_IMPL", "h", "setText", "fill", "cellValue", "cellText", "isCellObject", "columnNumericTone", "columnValueTone",
+      "context": ["GRID_PRESENTER_IMPL", "h", "setText", "fill", "cellValue", "cellText", "changeCellText", "isCellObject", "columnNumericTone", "columnValueTone",
         "gridPresenterTone", "gridPresenterLink", "numberFormat", "toneColors", "toneOf", "applyTone", "gridIcon", "badgeElement", "GRID_HISTORY_KINDS", "GRID_HISTORY_IMPL", "RECORD_IMPL"],
       "scripts": ["CanopyX.Html/Assets/canopyx.grid.source/36-grid-presenter-cells.js"],
       "end": "GRID_PRESENTER_IMPL.create = gridRenderPresenter;"
@@ -781,7 +781,7 @@
       "features": ["record"],
       "key": "RECORD_IMPL",
       "requires": ["ui-menu"],
-      "context": ["RECORD_IMPL", "UI_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors", "validateGridRows",
+      "context": ["RECORD_IMPL", "UI_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "changeCellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors", "validateGridRows",
         "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone", "validateColumnValues"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.record-panel.source"
@@ -972,7 +972,8 @@
         "fill",
         "cellValue",
         "numberFormat",
-        "gridQueryStart"
+        "gridQueryStart",
+        "gridQuery"
       ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.compare.source"

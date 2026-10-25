@@ -1,4 +1,4 @@
-const VIEW_INTENT_LABELS = {"viewIntentPreview": "Preview view changes", "viewIntentApplied": "View changes applied.", "viewIntentSuperseded": "The view changed. Preview the proposal again.", "viewIntentSearch": "Search: {search}", "viewIntentSort": "Sort: {columns}", "viewIntentGroup": "Group by: {columns}", "viewIntentColumns": "Columns: {columns}", "viewIntentWords": "Whole words", "viewIntentSubstring": "Text contains"};
+const VIEW_INTENT_LABELS = {viewIntentPreview: "Preview view changes", viewIntentApplied: "View changes applied.", viewIntentSuperseded: "The view changed. Preview the proposal again.", viewIntentSearch: "Search: {search}", viewIntentSort: "Sort: {columns}", viewIntentGroup: "Group by: {columns}", viewIntentColumns: "Columns: {columns}", viewIntentWords: "Whole words", viewIntentSubstring: "Text contains"};
   // A view intent is data, never source text or an authorization grant. Snapshot before validation or preview.
   const VIEW_INTENT_MAX = 65536;
   function viewIntentSnapshot(input) {

@@ -28,9 +28,14 @@ internal static class DataViewsExample {
                 .Replace("{{compare}}", compare.ToHtmlFragment(options)).Replace("{{intent}}", ask.ToHtmlFragment(options));
             File.WriteAllText(Path.Combine(output, "data-views" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), page, new UTF8Encoding(false));
         }
-        var staticHtml = CanopyStaticHtml.RenderComparison(compare);
-        File.WriteAllText(Path.Combine(output, "dataset-compare-static.html"),
-            "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Inventory changes</title><body>" + staticHtml + "</body></html>", new UTF8Encoding(false));
+        foreach (var dark in new[] { false, true }) {
+            var staticHtml = CanopyStaticHtml.RenderComparison(compare,
+                new CanopyStaticHtmlOptions { Theme = dark ? CanopyStaticTheme.Dark() : new CanopyStaticTheme() });
+            var background = dark ? "#16181c" : "#ffffff";
+            File.WriteAllText(Path.Combine(output, "dataset-compare-static" + (dark ? "-dark" : "") + ".html"),
+                "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Inventory changes</title>" +
+                "<body style=\"font-family:Calibri,Arial,sans-serif;margin:16px;background:" + background + "\">" + staticHtml + "</body></html>", new UTF8Encoding(false));
+        }
     }
 
     private static CanopyColumn[] Columns() => new[] {

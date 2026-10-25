@@ -10,6 +10,10 @@
   },
   "types": "./JavaScript/index.d.ts",
   "exports": {
+    "./compare.js": "./CanopyX.Html/Assets/canopyx-compare.js",
+    "./compare.css": "./CanopyX.Html/Assets/canopyx-compare.css",
+    "./view-intents.js": "./CanopyX.Html/Assets/canopyx-view-intents.js",
+    "./view-intents.css": "./CanopyX.Html/Assets/canopyx-view-intents.css",
     ".": {
       "types": "./JavaScript/index.d.ts",
       "import": "./CanopyX.Html/Assets/canopyx-module.mjs"
@@ -123,6 +127,10 @@
     "./locales/it.js": "./CanopyX.Html/Assets/canopyx-labels-it.js"
   },
   "files": [
+    "CanopyX.Html/Assets/canopyx-compare.js",
+    "CanopyX.Html/Assets/canopyx-compare.css",
+    "CanopyX.Html/Assets/canopyx-view-intents.js",
+    "CanopyX.Html/Assets/canopyx-view-intents.css",
     "docs/images/*.png",
     "JavaScript/*.d.ts",
     "JavaScript/locales/*.d.ts",

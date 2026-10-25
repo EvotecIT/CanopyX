@@ -1,4 +1,4 @@
-const COMPARE_LABELS = {"compareSummary": "Dataset comparison", "compareAdded": "Added", "compareRemoved": "Removed", "compareChanged": "Changed", "compareUnchanged": "Unchanged", "compareOnlyChanges": "Only changes", "compareColumnChanges": "{column}: {count} changed cells"};
+const COMPARE_LABELS = {compareSummary: "Dataset comparison", compareAdded: "Added", compareRemoved: "Removed", compareChanged: "Changed", compareUnchanged: "Unchanged", compareOnlyChanges: "Only changes", compareColumnChanges: "{column}: {count} changed cells"};
 // Comparison controls use the ordinary query contract, so hosts, saved views and exports see the same scope.
 function compareDefinition(grid) {
   const value = grid.view.compare, columns = new Set(grid.columns.map(column => column.id));
@@ -41,7 +41,7 @@ Object.assign(DataGrid.prototype, {
       const badge = h("span", "cx-compare-status cx-compare-" + state); setText(badge, label || state); element.append(badge); return true;
     };
     for (const column of this.columns) {
-      const count = info.columns[column.id];
+      const count = Object.hasOwn(info.columns, column.id) ? info.columns[column.id] : 0;
       if (count) { column.title += " · " + number.format(count); column.headerDescription = fill(this.labels.compareColumnChanges, { column: column.title, count: number.format(count) }); }
     }
     this.buildHeader();
@@ -49,6 +49,8 @@ Object.assign(DataGrid.prototype, {
       const query = this.view.query || {};
       this.view.query = { ...query, filters: [...(query.filters || []).filter(filter => !compareOnlyFilter(this, filter)),
         { column: info.statusColumn, operator: "ne", values: ["unchanged"] }] };
+      // Reset restores the authored scope, independently of a reader's persisted current view.
+      this.defaultState.query = gridQuery(this.view, gridQueryStart(this.view.query));
     }
   },
   getOnlyChanges() { return !!this.view.compare && !!this.getQuery()?.filters?.some(filter => compareOnlyFilter(this, filter)); },

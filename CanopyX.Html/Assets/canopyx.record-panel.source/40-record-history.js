@@ -51,7 +51,10 @@
       if (recordKind(change.before) === "items" && recordKind(change.after) === "items") {
         recordTokens(ctx, spec, change.before.items, change.after.items, before, "cx-diff-removed", labels.recordRemoved);
         recordTokens(ctx, spec, change.after.items, change.before.items, after, "cx-diff-added", labels.recordAdded);
-      } else { recordValue(ctx, spec, change.before ?? null, before, 1); recordValue(ctx, spec, change.after ?? null, after, 1); }
+      } else {
+        const paint = (value, element) => recordKind(value) ? recordValue(ctx, spec, value, element, 1) : setText(element, changeCellText(value, spec, ctx.fmt));
+        paint(change.before, before); paint(change.after, after);
+      }
       line.append(name, before, after); body.appendChild(line);
     }
     const thead = h("thead"); thead.appendChild(head);

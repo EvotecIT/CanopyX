@@ -46,6 +46,10 @@ typed search, sort and filter meanings. Removed rows have null later values and 
 before/after payload. Column kinds must describe the later snapshot; the earlier payload can retain a different type.
 Source rows are retained by the comparison, so keep them unchanged while consuming it.
 
+Before/after values distinguish an absent endpoint (`—`), an explicit null (`null`) and empty text (`""`) in the grid,
+record drawer and static fallback. A change between these states therefore retains its meaning even when both raw
+values would otherwise render as blank.
+
 The existing `change` presenter has an additive `beforeAfter: true` mode (`CanopyGridPresenter.BeforeAfter()`). It reads
 `CanopyCell.Changes`; numeric-delta presenters keep their existing `deltaColumn` behavior. Comparison metadata lives
 in the additive `compare` field of `canopyx/2`; see [the protocol](data-protocol.md) and its JSON Schema.

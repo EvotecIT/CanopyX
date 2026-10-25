@@ -121,6 +121,11 @@ public sealed class LabelsTests {
         Assert.All(calendar.Keys, name => Assert.StartsWith("calendar", name));
         Assert.All(calendar.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
         foreach (var (name, text) in calendar) runtime.Add(name, text);
+        foreach (var part in new[] { ("compare", "COMPARE_LABELS"), ("view-intents", "VIEW_INTENT_LABELS") }) {
+            var dataView = PartLabels(part.Item1, part.Item2);
+            Assert.NotEmpty(dataView);
+            foreach (var (name, text) in dataView) runtime.Add(name, text);
+        }
         foreach (var (name, text) in FormattingPartLabels()) runtime.Add(name, text);
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();

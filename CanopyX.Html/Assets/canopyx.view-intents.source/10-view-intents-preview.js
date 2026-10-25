@@ -1,7 +1,12 @@
   // Preview handles belong to one grid, one input snapshot and one accepted state. A consumed handle cannot be replayed.
   const VIEW_INTENT_PREVIEWS = new WeakMap();
-  const VIEW_INTENT_BASE = { setQuery: DataGrid.prototype.setQuery, stateChanged: DataGrid.prototype.stateChanged };
+  const VIEW_INTENT_BASE = { setQuery: DataGrid.prototype.setQuery, stateChanged: DataGrid.prototype.stateChanged,
+    readGridState: DataGrid.prototype.readGridState, applyStatePresentation: DataGrid.prototype.applyStatePresentation };
   function intentStateKey(grid) { return JSON.stringify(grid.getState()); }
+  function intentPresentationKey(grid) {
+    const state = grid.getState();
+    return JSON.stringify({ columns: state.columns, timeZone: state.timeZone, selection: state.selection, formatRules: state.formatRules });
+  }
   function retireViewIntent(grid, reason) {
     const preview = grid.viewIntentPreview;
     if (!preview) return;
@@ -46,17 +51,40 @@
     if (!preview || entry.grid !== grid || !preview.active || grid.destroyed || grid.pendingQuery || preview.epoch !== grid.queryEpoch || preview.key !== intentStateKey(grid))
       throw new DOMException(grid.labels.viewIntentSuperseded, "AbortError");
     const intent = grid.validateViewIntent(preview.intent), state = intentCandidate(grid, intent, grid.getState());
+    const restore = { input: state, before: intentPresentationKey(grid), preferenceBefore: grid.viewPreferenceIntent, applied: false };
+    grid.viewIntentApply = restore;
     retireViewIntent(grid, grid.labels.loading);
     try {
       const query = await grid.setState(state);
       if (grid.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
+      if (!restore.applied || restore.epoch !== grid.queryEpoch || restore.after !== intentPresentationKey(grid) || restore.preferenceAfter !== grid.viewPreferenceIntent)
+        throw new DOMException(grid.labels.viewIntentSuperseded, "AbortError");
       // Saved-state restore retains pins. Explicit column order uses the ordinary reorder API, which unpins columns
       // moved out of their pinned segment, so the accepted order matches the order the reader previewed.
       if (intent.columns) grid.setColumnOrder(state.columns.map(column => column.id));
       setText(preview.status, grid.labels.viewIntentApplied); return query;
     } catch (error) { if (!grid.destroyed) setText(preview.status, error.message); throw error; }
+    finally { if (grid.viewIntentApply === restore) grid.viewIntentApply = null; }
   }
   Object.assign(DataGrid.prototype, {
+    readGridState(input) {
+      const state = VIEW_INTENT_BASE.readGridState.call(this, input), restore = this.viewIntentApply;
+      // Identify only this intent's canonical restore, without changing the saved-state document or other callers.
+      if (restore?.input === input) restore.state = state;
+      return state;
+    },
+    applyStatePresentation(state) {
+      const restore = this.viewIntentApply;
+      if (!restore || restore.state !== state) return VIEW_INTENT_BASE.applyStatePresentation.call(this, state);
+      if (restore.before !== intentPresentationKey(this) || restore.preferenceBefore !== this.viewPreferenceIntent ||
+          restore.preferenceBefore !== undefined && this.restorePreferenceIntent !== this.viewPreferenceIntent) return;
+      const applied = VIEW_INTENT_BASE.applyStatePresentation.call(this, state);
+      // Canonical setters can advance reporting's preference epoch themselves. Capture the post-restore baseline now,
+      // so a subsequent reader change while asynchronous presentation finishes still cancels the final reorder.
+      restore.applied = true; restore.epoch = this.queryEpoch;
+      restore.after = intentPresentationKey(this); restore.preferenceAfter = this.viewPreferenceIntent;
+      return applied;
+    },
     validateViewIntent(input) { return readViewIntent(this, input); },
     getViewIntent() {
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");

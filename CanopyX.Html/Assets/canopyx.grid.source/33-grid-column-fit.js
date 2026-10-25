@@ -153,8 +153,8 @@
         const change = options.beforeAfter && isCellObject(cell) && cell.changes?.[0];
         if (change) {
           const spec = { ...column, kind: change.kind || column.kind };
-          values = Math.max(values, Math.min(420, text(cellText(change.before, spec, this.fmt) || "—") + text("→") +
-            text(cellText(change.after, spec, this.fmt) || "—") + 12)); sampled++; continue;
+          values = Math.max(values, Math.min(420, text(changeCellText(change.before, spec, this.fmt)) + text("→") +
+            text(changeCellText(change.after, spec, this.fmt)) + 12)); sampled++; continue;
         }
         const tone = columnValueTone(column, cell) || gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), quiet = options.quietTones?.includes(tone);
         const secondary = kind === "identifier" && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);

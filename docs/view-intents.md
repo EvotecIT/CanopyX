@@ -59,8 +59,8 @@ enforce authorization on every normal query: hiding a column is a presentation c
 
 ## Read-only IntelligenceX tool integration
 
-The IX host registers its view-proposal tool as **read-only**, following TestimoX's
-`docs/IX-Tool-Governance-Contract.md`. The tool accepts only the versioned view-intent document, validates it against
+The IX host registers its view-proposal tool as **read-only** under its tool-governance policy.
+The tool accepts only the versioned view-intent document, validates it against
 the authorized target view, and passes the resulting snapshot to `applyViewIntent`. It returns preview information;
 the reader applies it in the grid. It has no edit, transaction, action, command or dataset-write route. Do not attach
 a write execution contract or accept `allow_write` as a way to turn this tool into a write tool.

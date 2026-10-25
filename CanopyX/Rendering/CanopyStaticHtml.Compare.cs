@@ -56,8 +56,8 @@ public static partial class CanopyStaticHtml {
     }
 
     private static string ComparisonHeaderText(CanopyDataGridView view, CanopyColumn column) =>
-        view.Compare != null && view.Compare.Columns.TryGetValue(column.Id, out var count)
-            ? view.Labels.CompareColumnChanges.Replace("{column}", column.Title).Replace("{count}", count.ToString(CultureInfo.InvariantCulture))
+        view.Compare != null && view.Compare.Columns.TryGetValue(column.Id, out var count) && count > 0
+            ? column.Title + " · " + count.ToString(CultureInfo.InvariantCulture)
             : column.Title;
 
     private static string BeforeAfterText(CanopyFieldChange change, CanopyColumn column, CanopyLabels labels) =>

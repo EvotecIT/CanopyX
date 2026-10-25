@@ -54,7 +54,7 @@ public sealed class ComparisonRenderingTests {
         Assert.Contains("Before: former → After: —", html);
         Assert.Contains("Changed translated</td>", html);
         Assert.Contains("Unchanged translated</td>", html);
-        Assert.Contains("&lt;Value&gt;: 1 changed cells</th>", html);
+        Assert.Contains("<Value> · 1", System.Net.WebUtility.HtmlDecode(html));
         Assert.DoesNotContain("{column}", html);
         Assert.DoesNotContain("{count}", html);
     }

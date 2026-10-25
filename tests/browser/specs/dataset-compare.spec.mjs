@@ -2,7 +2,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { repo, exampleUrl, nextFrames } from "./support.mjs";
+import { repo, exampleUrl, nextFrames, settleGrid } from "./support.mjs";
 
 const assets = path.join(repo, "CanopyX.Html/Assets");
 const read = name => fs.readFileSync(path.join(assets, name), "utf8");
@@ -151,6 +151,101 @@ test("before-after cells preserve text, typed numbers and dates, null endpoints 
   await expect(cell(page, "removed", 1).locator("ins")).toHaveText("—");
   await expect(cell(page, "added", 1)).toHaveText("New item");
   await expect(cell(page, "stable", 1)).toHaveText("Stable item");
+});
+
+test("reset view restores declared only-changes mode after mounting and after revealing unchanged rows", async ({ page }) => {
+  await serve(page);
+  const view = definition(); view.compare.onlyChanges = true;
+  await mount(page, view);
+  const changedIds = ["added", "nulls", "removed", "typed"];
+  const toggle = host(page).getByRole("switch", { name: "Only changes" });
+  await expect.poll(async () => (await ids(page)).sort()).toEqual(changedIds);
+  await page.evaluate(() => compareGrid.resetView());
+  await expect.poll(async () => (await ids(page)).sort()).toEqual(changedIds);
+  expect(await page.evaluate(() => compareGrid.getOnlyChanges())).toBe(true);
+  await expect(toggle).toBeChecked();
+  await page.evaluate(() => compareGrid.setOnlyChanges(false));
+  await expect.poll(async () => (await ids(page)).sort()).toEqual(["added", "nulls", "removed", "stable", "typed"]);
+  expect(await page.evaluate(() => compareGrid.getOnlyChanges())).toBe(false);
+  await expect(toggle).not.toBeChecked();
+  await page.evaluate(() => compareGrid.resetView());
+  await expect.poll(async () => (await ids(page)).sort()).toEqual(changedIds);
+  expect(await page.evaluate(() => compareGrid.getOnlyChanges())).toBe(true);
+  await expect(toggle).toBeChecked();
+});
+
+test("change endpoints distinguish missing, explicit null, empty text, zero and false in cells and the native drawer", async ({ page }) => {
+  const explicitNull = { value: null, text: "" };
+  // Boolean false follows the ordinary English cell formatter (No); it must never collapse to missing/null.
+  const cases = [
+    { id: "missing-to-null", before: null, after: explicitNull, text: ["—", "null"] },
+    { id: "null-to-missing", before: explicitNull, after: null, text: ["null", "—"] },
+    { id: "empty-to-null", before: "", after: explicitNull, text: ['""', "null"] },
+    { id: "null-to-empty", before: explicitNull, after: "", text: ["null", '""'] },
+    { id: "zero-to-null", before: 0, after: explicitNull, text: ["0", "null"] },
+    { id: "null-to-zero", before: explicitNull, after: 0, text: ["null", "0"] },
+    { id: "false-to-null", before: false, after: explicitNull, text: ["No", "null"] },
+    { id: "null-to-false", before: explicitNull, after: false, text: ["null", "No"] }
+  ];
+  const view = definition();
+  view.rowHeight = 32;
+  view.columns = [view.columns[0], { id: "name", title: "Item", kind: "text" },
+    { id: "endpoint", title: "Endpoint", kind: "text", alwaysVisible: true, width: 240, presenter: { kind: "change", beforeAfter: true } },
+    { id: "numeric", title: "Numeric endpoint", kind: "number", alwaysVisible: true, width: 240, presenter: { kind: "change", beforeAfter: true } }];
+  view.compare = { statusColumn: "change", counts: { added: 0, removed: 0, changed: cases.length, unchanged: 0 },
+    columns: { endpoint: cases.length - 2, numeric: 2 }, onlyChanges: false };
+  view.rows = cases.map(item => {
+    item.numeric = typeof item.before === "number" || typeof item.after === "number";
+    return { id: item.id, cells: { change: "changed", name: item.id,
+      [item.numeric ? "numeric" : "endpoint"]: { value: item.after && typeof item.after === "object" ? item.after.value : item.after,
+        changes: [{ name: "Endpoint", before: item.before, after: item.after, kind: item.numeric ? "number" : "text" }] } } };
+  });
+  await serve(page); await mount(page, view);
+  for (const item of cases) {
+    await test.step(item.id, async () => {
+      const endpoint = cell(page, item.id, item.numeric ? 3 : 2);
+      await expect(endpoint.locator("del")).toHaveText(item.text[0]);
+      await expect(endpoint.locator("ins")).toHaveText(item.text[1]);
+      await expect(endpoint.locator(".cx-before-after")).toHaveText(item.text.join("→"));
+      await page.evaluate(id => compareGrid.openDetails(id), item.id);
+      const drawer = page.locator("dialog.cx-drawer[open]");
+      await expect(drawer).toBeVisible();
+      const changes = drawer.locator('.cx-record-block-b[data-cx-field="' + (item.numeric ? "numeric" : "endpoint") + '"] .cx-record-diff');
+      await expect(changes.getByRole("columnheader")).toHaveText(["Field", "Before", "After"]);
+      const change = changes.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Endpoint", exact: true }) });
+      await expect(change.getByRole("cell")).toHaveText(item.text);
+      await page.keyboard.press("Escape");
+      await expect(drawer).toHaveCount(0);
+    });
+  }
+});
+
+test("the generated Units comparison fits on one line inside its fixed desktop row", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openCompareExample(page);
+  await settleGrid(page);
+  const value = row(page, "a").locator(".cx-before-after");
+  await expect(value.locator("del")).toHaveText("24");
+  await expect(value.locator("ins")).toHaveText("32");
+  const geometry = await value.evaluate(element => {
+    const rect = node => { const box = node.getBoundingClientRect(); return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, height: box.height }; };
+    const row = element.closest(".cx-row"), cell = element.closest(".cx-cell");
+    return { row: rect(row), fixedHeight: Number.parseFloat(row.style.height), cell: rect(cell), value: rect(element),
+      parts: [...element.children].map(rect) };
+  });
+  expect(geometry.fixedHeight).toBeGreaterThan(0);
+  expect(Math.abs(geometry.row.height - geometry.fixedHeight)).toBeLessThanOrEqual(1);
+  expect(geometry.parts).toHaveLength(3);
+  // Overlapping vertical bounds and ordered horizontal bounds prove before, arrow and after share one line.
+  expect(Math.max(...geometry.parts.map(part => part.top))).toBeLessThan(Math.min(...geometry.parts.map(part => part.bottom)));
+  for (let i = 1; i < geometry.parts.length; i++) expect(geometry.parts[i].left).toBeGreaterThanOrEqual(geometry.parts[i - 1].right - 1);
+  for (const part of [geometry.value, ...geometry.parts]) {
+    expect(part.right).toBeGreaterThan(part.left);
+    expect(part.left).toBeGreaterThanOrEqual(geometry.cell.left - 1);
+    expect(part.right).toBeLessThanOrEqual(geometry.cell.right + 1);
+    expect(part.top).toBeGreaterThanOrEqual(geometry.row.top - 1);
+    expect(part.bottom).toBeLessThanOrEqual(geometry.row.bottom + 1);
+  }
 });
 
 test("only-changes roundtrips through query and state and exports the same filtered rows", async ({ page }) => {
