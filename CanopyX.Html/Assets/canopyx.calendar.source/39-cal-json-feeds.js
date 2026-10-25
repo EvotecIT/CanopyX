@@ -8,7 +8,7 @@
       const load = async source => {
         const url = new URL(source.url, location.href);
         for (const [key, value] of Object.entries(source.fetchParams)) url.searchParams.set(key, value);
-        url.searchParams.set("start", calIso(from)); url.searchParams.set("end", calIso(to)); url.searchParams.set("timeZone", this.cal.zoneName);
+        url.searchParams.set("start", calIso(from)); url.searchParams.set("end", calIso(to)); url.searchParams.set("timeZone", this.calZone.name);
         const key = source.id + ":" + url.href;
         try {
           let entry = cache.get(key);

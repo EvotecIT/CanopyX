@@ -39,6 +39,7 @@ jobs:
     with:
       website_root: Website
       pipeline_config: Website/pipeline.json
+      dotnet_version: "10.0.403"
       powerforge_lock_path: ./Website/.powerforge/engine-lock.json
       powerforge_repository_override: ${{ vars.POWERFORGE_REPOSITORY }}
       powerforge_ref_override: ${{ vars.POWERFORGE_REF }}

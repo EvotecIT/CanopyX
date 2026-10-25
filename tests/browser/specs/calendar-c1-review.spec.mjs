@@ -62,6 +62,38 @@ test("timed replacements of all-day series retain a date recurrence identity on 
   expect(events.filter(event => event.title === "Timed exception")).toHaveLength(1);
 });
 
+test.describe("JSON feed runtime zones", () => {
+  // Equal UTC/local offsets make the zone token the only cache-key difference.
+  test.use({ timezoneId: "UTC" });
+  test("switching the grid zone reloads feeds and restores the matching cached answer", async ({ page }) => {
+    const requests = [];
+    await page.route("http://canopyx.test/zone-feed**", route => {
+      const params = new URL(route.request().url()).searchParams;
+      requests.push(Object.fromEntries(params));
+      return route.fulfill({ json: [{ id: "one", title: "Feed " + params.get("timeZone"), start: "2026-10-16T09:00:00Z" }] });
+    });
+    await openBuilt(page, "feed-zones.html", calendarC1Page({ count: 2, events: [] }));
+    await page.evaluate(() => {
+      window.api.destroy();
+      window.api = window.CanopyX.createCalendar(document.getElementById("cal"), {
+        id: "zones", events: [], view: "day", date: "2026-10-16",
+        sources: [{ id: "feed", label: "Feed", url: "/zone-feed" }],
+        onError: detail => window.errors.push(detail.error.message)
+      });
+    });
+    await expect.poll(() => page.evaluate(() => window.api.getCalendarEvents().map(event => event.title))).toEqual(["Feed utc"]);
+    expect(requests).toEqual([{ start: "2026-10-16T00:00:00Z", end: "2026-10-17T00:00:00Z", timeZone: "utc" }]);
+    await page.evaluate(() => window.api.setTimeZone("local"));
+    await expect.poll(() => requests.length).toBe(2);
+    expect(requests[1]).toEqual({ ...requests[0], timeZone: "local" });
+    await expect.poll(() => page.evaluate(() => window.api.getCalendarEvents().map(event => event.title))).toEqual(["Feed local"]);
+    await page.evaluate(() => window.api.setTimeZone("utc"));
+    await expect.poll(() => page.evaluate(() => window.api.getCalendarEvents().map(event => event.title))).toEqual(["Feed utc"]);
+    expect(requests).toHaveLength(2);
+    expect(await page.evaluate(() => window.errors)).toEqual([]);
+  });
+});
+
 test("visible JSON feeds limit concurrent requests while loading every small source", async ({ page }) => {
   let started = 0, active = 0, peak = 0, release;
   const gate = new Promise(resolve => { release = resolve; });
