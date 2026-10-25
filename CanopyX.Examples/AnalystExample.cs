@@ -43,13 +43,13 @@ internal static class AnalystExample {
             summary.Groups.Add(group); offset += rows.Count();
         }
         summary.Aggregates["total"] = summary.Groups.Sum(group => group.Aggregates["total"]);
-        File.WriteAllText(Path.Combine(output, "analysis-summary.html"), CanopyStaticHtml.RenderGridSummary(view, summary));
+        WriteStatic(output, "analysis-summary", settings => CanopyStaticHtml.RenderGridSummary(view, summary, settings));
         view.Reporting.Aggregates[0] = view.Reporting.Aggregates[0].ShowValuesAs(CanopyShowAs.PercentGrandTotal);
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
             File.WriteAllText(Path.Combine(output, "analysis-values" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Shares by month" }));
         }
-        File.WriteAllText(Path.Combine(output, "analysis-values-summary.html"), CanopyStaticHtml.RenderGridSummary(view, summary));
+        WriteStatic(output, "analysis-values-summary", settings => CanopyStaticHtml.RenderGridSummary(view, summary, settings));
         view.Reporting.Aggregates[0] = view.Reporting.Aggregates[0].ShowValuesAs(CanopyShowAs.Value);
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("records", "record", CanopyGridAggregateOperation.Count, "Records"));
         view.Reporting.Pivotable = true;
@@ -61,6 +61,17 @@ internal static class AnalystExample {
             var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
             File.WriteAllText(Path.Combine(output, "analysis-pivot" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Regions by month" }));
         }
-        File.WriteAllText(Path.Combine(output, "analysis-pivot-static.html"), CanopyStaticHtml.RenderGridPivot(view, CanopyPivot.Compute(view, pivot, view.Rows)));
+        var result = CanopyPivot.Compute(view, pivot, view.Rows);
+        WriteStatic(output, "analysis-pivot-static", settings => CanopyStaticHtml.RenderGridPivot(view, result, settings));
+    }
+
+    private static void WriteStatic(string output, string name, Func<CanopyStaticHtmlOptions, string> render) {
+        foreach (var dark in new[] { false, true }) {
+            var theme = dark ? CanopyStaticTheme.Dark() : CanopyStaticTheme.Light();
+            var table = render(new CanopyStaticHtmlOptions { Theme = theme });
+            var page = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Analytical report</title></head>" +
+                "<body style=\"margin:12px;background:" + theme.Surface + ";color:" + theme.Text + ";font-family:Calibri,Arial,sans-serif;\"><div style=\"max-width:100%;overflow:auto;\">" + table + "</div></body></html>";
+            File.WriteAllText(Path.Combine(output, name + (dark ? "-dark" : string.Empty) + ".html"), page);
+        }
     }
 }
