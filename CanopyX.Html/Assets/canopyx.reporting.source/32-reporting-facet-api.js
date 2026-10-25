@@ -15,7 +15,9 @@
     const abort = () => controller.abort();
     dataSignal.addEventListener("abort", abort, { once: true }); options.signal?.addEventListener("abort", abort, { once: true });
     if (options.signal?.aborted) abort();
-    const request = gridFreeze({ protocol: PROTOCOL, type: "gridFacetQuery", column, search, limit, includeCurrentFilter, query: this.acceptedQuery });
+    const bucket = options.bucket === undefined ? null : gridBucketDefinition(options.bucket, this.view.columns.find(item => item.id === column));
+    if (bucket) await loadPart(BUCKETS_PART);
+    const request = gridFreeze({ protocol: PROTOCOL, type: "gridFacetQuery", column, search, limit, includeCurrentFilter, query: this.acceptedQuery, ...(bucket ? { bucket } : {}) });
     try {
       const page = await this.runGridHook(signal => this.source.facet(request, { signal }), controller.signal);
       gridOperationActive(this, controller.signal);

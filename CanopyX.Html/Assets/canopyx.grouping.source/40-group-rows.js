@@ -42,7 +42,8 @@
         try { this.setFocus(row, false); this.setGroupCollapsed(group.key, !this.collapsedGroups.has(group.key)); this.setFocus(this.focused, true); }
         catch (error) { this.emit("error", { error }); }
       });
-      const value = group.value === null ? this.labels.gridGroupMissing : cellText(group.value, groupColumn, this.fmt), count = numberFormat(this.lang).format(group.count);
+      const bucket = levels[level - 1].bucket;
+      const value = group.value === null ? this.labels.gridGroupMissing : bucket ? GRID_BUCKETS.label(bucket, group.value, this.lang) : cellText(group.value, groupColumn, this.fmt), count = numberFormat(this.lang).format(group.count);
       const label = fill(this.view.reporting?.grouping?.headerTemplate || this.labels.gridGroupHeading, { column: groupColumn.title, value, count }), cells = [];
       this.cols.forEach((column, index) => {
         const cell = previous?.[index].cell || this.cell(element, index, column.width, column.kind); cells.push({ cell, content: cell });

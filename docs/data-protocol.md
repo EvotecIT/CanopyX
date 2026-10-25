@@ -1,5 +1,27 @@
 # CanopyX Data Protocol (`canopyx/2`)
 
+Grouping levels, facet definitions/requests/responses and column predicates may carry an optional `bucket`.
+Calendar buckets declare `kind` (`day`, `week`, `month`, `quarter`, `year`, `hour`, `weekday`), `timeZone`
+(UTC by default) and `firstWeekday` (0 Sunday through 6 Saturday; Monday by default). Numeric buckets use
+`{ "kind": "width", "width": 10, "origin": 0 }` or `{ "kind": "edges", "edges": [0, 10, 100] }`.
+Edges are strictly ascending, with at most 200 boundaries. Intervals include the lower edge and exclude the upper edge;
+explicit edges include underflow and overflow groups. Null inputs remain null. Numeric bucket indices must remain safe integers.
+
+Bucket group/facet values and bucket-predicate operands are numeric keys, while record cells retain their original raw values.
+Calendar keys use the Gregorian day ordinal (0001-01-01 is zero), the week index anchored to that ordinal and first weekday,
+the zero-based month or quarter since year 1, the calendar year, hour 0–23, or weekday index from the first weekday.
+Weeks use the first-four-day week-year rule (ISO with Monday first). Repeated daylight-saving hours share an hour category;
+calendar days use local dates, independently of their elapsed duration. Display labels never determine ordering or identity.
+Facet responses echo the normalized partition, and bucket selections remain ordinary numeric predicates carrying that partition.
+
+The `buckets` part loads when a partition is used. `CanopyBucket`, `CanopyGridGroupLevel.Bucket`, `CanopyFacet.Bucket`
+and `CanopyGridFilter.Bucket` author the same shapes in C#. `CanopyStaticHtml.RenderGridSummary` renders accepted summaries
+with calendar/range labels and inline styles. `CanopyX.Data` translates UTC keys through date parts and arithmetic in
+`IQueryable`; providers group in the database. Named-zone SQL conversion is explicit host wiring through
+`CanopyColumnMapping.BucketTimeZone`, since database time-zone functions differ. The host's mapping must use the same
+time-zone rules as the descriptor. Hosts with different native and browser zone identifiers can supply a `TimeZoneInfo`
+and the corresponding browser identifier to `CanopyBucket.Calendar`.
+
 Grid columns optionally declare `wrap` and `maxLines` (integer 1–12, default 2).
 Wrapped columns enable measured rows, as do `autoRowHeight: true` and
 `rowHeight: "auto"`. Explicit JavaScript `autoRowHeight: false` keeps a fixed

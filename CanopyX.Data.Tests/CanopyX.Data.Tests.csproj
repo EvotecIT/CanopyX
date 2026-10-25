@@ -21,6 +21,10 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <ProjectReference Include="..\CanopyX.AspNetCore\CanopyX.AspNetCore.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
+    <!-- Translation-only SQL Server qualification; no provider enters shipped libraries. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.13" />
+    <!-- SqlClient's PKCS minimum is vulnerable; keep the isolated SQL Server test graph on the patched implementation. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.13" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">

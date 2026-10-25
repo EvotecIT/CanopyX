@@ -47,14 +47,14 @@ internal sealed partial class QueryTranslator<T> {
 
     /// <summary>Groups by the exact values of up to four columns (or a constant for complete-query totals) and evaluates the aggregates in the store.</summary>
     internal Task<List<StoreGroup>> GroupsAsync(IQueryable<T> source, IReadOnlyList<string> columns, IReadOnlyList<CanopySummaryAggregate> aggregates, int take,
-        CanopyQueryExecutor executor, CancellationToken cancellationToken) {
+        CanopyQueryExecutor executor, CancellationToken cancellationToken, IReadOnlyList<CanopySummaryLevel>? levels = null) {
         if (aggregates.Count > 32) throw new ArgumentException("At most 32 aggregates are supported.", nameof(aggregates));
         if (columns.Count > 4) throw new ArgumentException("At most four grouping columns are supported.", nameof(columns));
         foreach (var aggregate in aggregates) {
             if (aggregate.Operation == CanopyGridAggregateOperation.Custom)
                 throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not compute the custom aggregate '" + aggregate.CustomOperation + "'.");
         }
-        var parts = columns.Select(GroupValue).ToArray();
+        var parts = columns.Select((column, index) => levels == null ? GroupValue(column) : GroupValue(levels[index])).ToArray();
         // One column groups by its value; several by a composite key, which LINQ providers translate like an anonymous type.
         var key = parts.Length == 0 ? Expression.Constant(1) : parts.Length == 1 ? parts[0] : CompositeKeys.New(parts);
         var method = typeof(QueryTranslator<T>).GetMethod(nameof(GroupsCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(key.Type);

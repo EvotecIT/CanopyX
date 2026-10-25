@@ -198,6 +198,11 @@ public sealed partial class CanopyRemoteHandler {
                 writer.WriteString("column", level.Column.Id);
                 writer.WriteString("direction", level.Descending ? "desc" : "asc");
                 if (level.Aggregate != null) writer.WriteString("aggregate", level.Aggregate.Id);
+                if (level.Bucket != null) {
+                    var bucketWriter = new CanopyX.Json.CanopyJsonWriter(); level.Bucket.WriteJson(bucketWriter);
+                    using var bucket = JsonDocument.Parse(bucketWriter.ToString());
+                    writer.WritePropertyName("bucket"); bucket.RootElement.WriteTo(writer);
+                }
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
@@ -212,6 +217,7 @@ public sealed partial class CanopyRemoteHandler {
             writer.WritePropertyName(name);
             filter.GetProperty(name).WriteTo(writer);
         }
+        if (filter.TryGetProperty("bucket", out var bucket)) { writer.WritePropertyName("bucket"); bucket.WriteTo(writer); }
         writer.WriteEndObject();
     }
 
@@ -255,6 +261,10 @@ public sealed partial class CanopyRemoteHandler {
         writer.WriteStartArray("values");
         foreach (var value in condition.Values) WriteValue(writer, value);
         writer.WriteEndArray();
+        if (condition.Bucket != null) {
+            var bucketWriter = new CanopyX.Json.CanopyJsonWriter(); condition.Bucket.WriteJson(bucketWriter);
+            using var bucket = JsonDocument.Parse(bucketWriter.ToString()); writer.WritePropertyName("bucket"); bucket.RootElement.WriteTo(writer);
+        }
         writer.WriteEndObject();
     }
 

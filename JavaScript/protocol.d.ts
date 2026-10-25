@@ -202,6 +202,7 @@ export type InlineNode = LeafNode | DetailNode | InlineBranch<InlineNode>;
 
 /** Names accepted by the interactive runtime; omitted translations use English. */
 export type LabelName =
+  | "gridBucket" | "gridBucketNone" | "gridBucketDay" | "gridBucketWeek" | "gridBucketMonth" | "gridBucketQuarter" | "gridBucketYear" | "gridBucketHour" | "gridBucketWeekday" | "gridBucketWidth" | "gridBucketEdges" | "gridBucketOrigin" | "gridBucketInvalid"
   | "gridPaging" | "gridPageRange" | "gridPageNumber" | "gridPageLength" | "gridFirstPage" | "gridPreviousPage" | "gridNextPage" | "gridLastPage" | "gridPageInfo" | "gridPageInfoFiltered" | "gridPageButton"
   | "gridUnknownCount" | "gridMatchedCount" | "gridCursorRange"
   | "gridResultCount" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"

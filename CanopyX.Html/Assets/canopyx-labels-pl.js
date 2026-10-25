@@ -1,6 +1,19 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 (function (global) {
 const labels = Object.freeze({
+  gridBucket: "Przedział",
+  gridBucketNone: "Dokładne wartości",
+  gridBucketDay: "Dzień",
+  gridBucketWeek: "Tydzień",
+  gridBucketMonth: "Miesiąc",
+  gridBucketQuarter: "Kwartał",
+  gridBucketYear: "Rok",
+  gridBucketHour: "Godzina dnia",
+  gridBucketWeekday: "Dzień tygodnia",
+  gridBucketWidth: "Szerokość przedziału",
+  gridBucketEdges: "Granice przedziałów",
+  gridBucketOrigin: "Początek przedziałów",
+  gridBucketInvalid: "Podaj poprawne ustawienia przedziałów.",
   gridNoExportColumns: "Żadna widoczna kolumna nie obsługuje eksportu.",
   searchPlaceholder: "Szukaj",
   searchResults: "Wyniki wyszukiwania",

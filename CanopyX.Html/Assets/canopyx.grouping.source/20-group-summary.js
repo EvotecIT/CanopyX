@@ -8,7 +8,8 @@
   }
   function groupOrder(view, level) {
     const column = view.columns.find(item => item.id === level.column), compare = reportingGroupCompare(GRID_REPORTING.compare(view));
-    const byValue = (a, b, direction) => compare({ cells: { [column.id]: a.value } }, { cells: { [column.id]: b.value } }, column, direction);
+    const byValue = (a, b, direction) => level.bucket ? a.value === null || b.value === null ? a.value === b.value ? 0 : a.value === null ? 1 : -1 :
+      direction === "desc" ? gridOrder(b.value, a.value) : gridOrder(a.value, b.value) : compare({ cells: { [column.id]: a.value } }, { cells: { [column.id]: b.value } }, column, direction);
     if (!level.aggregate) return (a, b) => byValue(a, b, level.direction);
     return (a, b) => {
       const x = a.aggregates[level.aggregate], y = b.aggregates[level.aggregate];
@@ -33,7 +34,7 @@
       for (const group of groups) {
         if (!group || typeof group !== "object" || !Object.hasOwn(group, "value") ||
             group.value !== null && typeof group.value === "object") throw new Error("CanopyX: groups carry raw values.");
-        requireIdentifier(group.key, "group key"); const value = reportingGroupKey(gridScalar(group.value, column));
+        requireIdentifier(group.key, "group key"); const value = reportingGroupKey(gridScalar(group.value, level.bucket ? { ...column, kind: "number" } : column));
         if (group.cells !== undefined) validateGridRows([{ id: group.key, cells: group.cells }], view.columns);
         if (keys.size >= 10000 || group.key.length > 4096 || keys.has(group.key) || values.has(value) || group.offset !== offset ||
             !validStructuralCount(group.count) || !group.count) throw new Error("CanopyX: invalid complete group range.");
@@ -76,11 +77,11 @@
       if (depth === levels.length) return rows.sort(within);
       const level = levels[depth], column = columns.get(level.column), buckets = new Map();
       for (const row of rows) {
-        const key = reportingGroupKey(gridScalar(row.cells[column.id], column));
+        const key = reportingGroupKey(groupBucketValue(level, column, row.cells[column.id]));
         if (!buckets.has(key)) buckets.set(key, []);
         buckets.get(key).push(row);
       }
-      const groups = [...buckets.values()].map(list => ({ list, value: cellValue(list[0].cells[column.id]) ?? null,
+      const groups = [...buckets.values()].map(list => ({ list, value: groupBucketValue(level, column, list[0].cells[column.id]),
         aggregates: level.aggregate ? { [level.aggregate]: groupAggregateValue(grid, view.reporting.aggregates.find(item => item.id === level.aggregate), list, 0, list.length) } : {} }));
       groups.sort(groupOrder(view, level));
       return groups.flatMap(group => arrange(group.list, depth + 1));
@@ -103,9 +104,9 @@
     const build = (start, end, depth, parent) => {
       const column = columns.get(levels[depth].column), groups = [];
       for (let offset = start; offset < end;) {
-        const value = cellValue(rows[offset].cells[column.id]) ?? null, key = reportingGroupKey(gridScalar(value, column));
+        const value = groupBucketValue(levels[depth], column, rows[offset].cells[column.id]), key = reportingGroupKey(value);
         let last = offset + 1;
-        while (last < end && reportingGroupKey(gridScalar(rows[last].cells[column.id], column)) === key) last++;
+        while (last < end && reportingGroupKey(groupBucketValue(levels[depth], column, rows[last].cells[column.id])) === key) last++;
         // An inner key carries its outer groups' keys, so the same value under another outer group is another group.
         const id = parent === null ? key : groupInnerKey(parent, key);
         if (++total > 10000 || id.length > 4096) throw new Error("CanopyX: inline grouping exceeds its metadata bounds.");
@@ -134,4 +135,9 @@
       if (worst !== null) cells[declared.id] = worst;
     }
     return Object.keys(cells).length ? { cells } : {};
+  }
+  function groupBucketValue(level, column, cell) {
+    if (level.bucket) return GRID_BUCKETS.key(level.bucket, gridScalar(cell, column));
+    const value = cellValue(cell) ?? null;
+    return column.kind === "datetime" && value !== null ? new Date(gridScalar(cell, column)).toISOString() : value;
   }

@@ -153,7 +153,7 @@ public sealed partial class CanopyDataRequest {
         if (schema.Grouping != null) return new[] { new CanopySummaryLevel(schema.GetColumn(schema.Grouping.Column), schema.Grouping.Descending) };
         var levels = new List<CanopySummaryLevel>();
         foreach (var level in schema.GroupBy)
-            levels.Add(new CanopySummaryLevel(schema.GetColumn(level.Column), level.Descending, level.Aggregate == null ? null : schema.FindAggregate(level.Aggregate)));
+            levels.Add(new CanopySummaryLevel(schema.GetColumn(level.Column), level.Descending, level.Aggregate == null ? null : schema.FindAggregate(level.Aggregate), level.Bucket));
         return new ReadOnlyCollection<CanopySummaryLevel>(levels);
     }
 
@@ -165,6 +165,7 @@ public sealed partial class CanopyDataRequest {
                 throw new ArgumentException("Grouping levels need distinct columns of this schema.", nameof(levels));
             if (level.Aggregate != null && !ReferenceEquals(schema.FindAggregate(level.Aggregate.Id), level.Aggregate))
                 throw new ArgumentException("A grouping level orders by a declared aggregate of this schema.", nameof(levels));
+            level.Bucket?.Validate(column.Definition);
             list.Add(level);
         }
         if (list.Count > 4) throw new ArgumentException("At most four grouping levels are supported.", nameof(levels));

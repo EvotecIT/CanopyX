@@ -15,13 +15,15 @@ public sealed class CanopyFacetRequest {
     /// <param name="search">Case-insensitive substring search over the bucket values; empty for none.</param>
     /// <param name="limit">The most buckets to return, at least one.</param>
     /// <param name="includeCurrentFilter">Whether predicates on the facet column still apply.</param>
-    public CanopyFacetRequest(CanopyDataRequest query, CanopyDataColumn column, string? search, int limit, bool includeCurrentFilter) {
+    /// <param name="bucket">Optional partition, with numeric keys.</param>
+    public CanopyFacetRequest(CanopyDataRequest query, CanopyDataColumn column, string? search, int limit, bool includeCurrentFilter, CanopyBucket? bucket = null) {
         Query = query ?? throw new ArgumentNullException(nameof(query));
         Column = column ?? throw new ArgumentNullException(nameof(column));
         if (limit < 1) throw new ArgumentOutOfRangeException(nameof(limit));
         Search = search ?? string.Empty;
         Limit = limit;
         IncludeCurrentFilter = includeCurrentFilter;
+        bucket?.Validate(column.Definition); Bucket = bucket;
     }
 
     /// <summary>Gets the complete query with the effective filter.</summary>
@@ -29,6 +31,8 @@ public sealed class CanopyFacetRequest {
 
     /// <summary>Gets the facet column.</summary>
     public CanopyDataColumn Column { get; }
+    /// <summary>Gets the optional partition applied before counting distinct values.</summary>
+    public CanopyBucket? Bucket { get; }
 
     /// <summary>Gets the value search text, exactly as requested.</summary>
     public string Search { get; }

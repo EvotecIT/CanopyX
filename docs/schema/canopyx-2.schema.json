@@ -349,7 +349,7 @@
       "properties": {
         "columns": { "type": "array", "minItems": 1, "maxItems": 24, "items": { "anyOf": [{ "$ref": "#/$defs/identifier" }, {
           "type": "object", "required": ["column"], "additionalProperties": false, "properties": {
-            "column": { "$ref": "#/$defs/identifier" }, "kind": { "enum": ["list", "range"] }, "label": { "$ref": "#/$defs/nonEmptyString" },
+            "column": { "$ref": "#/$defs/identifier" }, "kind": { "enum": ["list", "range"] }, "label": { "$ref": "#/$defs/nonEmptyString" }, "bucket": { "$ref": "#/$defs/gridBucket" },
             "limit": { "type": "integer", "minimum": 1, "maximum": 200 }, "bins": { "type": "integer", "minimum": 2, "maximum": 60 },
             "sort": { "enum": ["count", "value"] }, "collapsed": { "type": "boolean" } } }] } },
         "position": { "enum": ["side", "top"] },
@@ -492,7 +492,21 @@
     "gridGroupLevel": {
       "type": "object", "required": ["column", "direction"], "additionalProperties": false,
       "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] },
-        "aggregate": { "$ref": "#/$defs/identifier", "description": "A declared aggregate whose value orders this level's groups (missing values last, ties by value)." } }
+        "aggregate": { "$ref": "#/$defs/identifier", "description": "A declared aggregate whose value orders this level's groups (missing values last, ties by value)." }, "bucket": { "$ref": "#/$defs/gridBucket" } }
+    },
+    "gridBucket": {
+      "oneOf": [
+        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": {
+          "kind": { "enum": ["day", "week", "month", "quarter", "year", "hour", "weekday"] },
+          "timeZone": { "type": "string", "minLength": 1, "maxLength": 128 }, "firstWeekday": { "type": "integer", "minimum": 0, "maximum": 6 }
+        } },
+        { "type": "object", "required": ["kind", "width"], "additionalProperties": false, "properties": {
+          "kind": { "const": "width" }, "width": { "type": "number", "exclusiveMinimum": 0 }, "origin": { "type": "number" }
+        } },
+        { "type": "object", "required": ["kind", "edges"], "additionalProperties": false, "properties": {
+          "kind": { "const": "edges" }, "edges": { "type": "array", "minItems": 1, "maxItems": 200, "items": { "type": "number" } }
+        } }
+      ]
     },
     "gridRowData": {
       "description": "Compact rows of an inline grid in place of rows: each row an array of its id (or { id, tone, className }) and its cells in the order of columns, without trailing empty cells, in chunks the runtime decodes one at a time. chunks is the number of application/x-canopyx-rows scripts inside the host element (or of sidecar files rows/<n>.js under base), or the chunks themselves: arrays of rows, or with encoding gzip base64 text of the gzip-compressed JSON of each chunk. ordered declares ordinal string order, preserving version-1 reader compatibility. The current runtime answers early windows only when this order also matches display identity order.",
@@ -710,6 +724,7 @@
     "gridFacetQuery": {
       "type": "object", "required": ["protocol", "type", "query", "column", "search", "limit", "includeCurrentFilter"], "additionalProperties": false,
       "properties": {
+        "bucket": { "$ref": "#/$defs/gridBucket" },
         "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridFacetQuery" },
         "column": { "$ref": "#/$defs/identifier" }, "search": { "type": "string", "maxLength": 16384 },
         "limit": { "type": "integer", "minimum": 1, "maximum": 200 }, "includeCurrentFilter": { "type": "boolean" },
@@ -720,6 +735,7 @@
     "gridFacetPage": {
       "type": "object", "required": ["protocol", "type", "view", "revision", "column", "search", "includeCurrentFilter", "matched", "totalValues", "truncated", "items"], "additionalProperties": false,
       "properties": {
+        "bucket": { "$ref": "#/$defs/gridBucket" },
         "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridFacetPage" },
         "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
         "search": { "type": "string", "maxLength": 16384 }, "includeCurrentFilter": { "type": "boolean" },
@@ -1408,6 +1424,7 @@
       "required": ["column", "operator", "values"],
       "additionalProperties": false,
       "properties": {
+        "bucket": { "$ref": "#/$defs/gridBucket" },
         "column": { "$ref": "#/$defs/identifier" },
         "operator": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$" },
         "values": { "type": "array", "items": { "allOf": [{ "$ref": "#/$defs/cellValue" }, { "not": { "type": "null" } }] } }
@@ -1911,6 +1928,19 @@
             "gridEditPattern": { "type": "string" }, "gridEditChoice": { "type": "string" }, "gridEditConflict": { "type": "string" }, "gridEditRejected": { "type": "string" },
             "gridEditNotSaved": { "type": "string" }, "gridEditNoMatches": { "type": "string" }, "gridEditSearching": { "type": "string" }, "gridEditUndone": { "type": "string" },
             "gridEditRedone": { "type": "string" }, "gridEditNone": { "type": "string" },
+            "gridBucket": { "type": "string" },
+            "gridBucketNone": { "type": "string" },
+            "gridBucketDay": { "type": "string" },
+            "gridBucketWeek": { "type": "string" },
+            "gridBucketMonth": { "type": "string" },
+            "gridBucketQuarter": { "type": "string" },
+            "gridBucketYear": { "type": "string" },
+            "gridBucketHour": { "type": "string" },
+            "gridBucketWeekday": { "type": "string" },
+            "gridBucketWidth": { "type": "string" },
+            "gridBucketEdges": { "type": "string" },
+            "gridBucketOrigin": { "type": "string" },
+            "gridBucketInvalid": { "type": "string" },
             "gridFacetBin": { "type": "string" },
             "gridFacetClear": { "type": "string" },
             "gridFacetCollapse": { "type": "string" },

@@ -39,6 +39,9 @@ public sealed class CanopyGridFilter {
     /// <summary>Gets the declared column identity.</summary>
     public string Column { get; }
 
+    /// <summary>Gets or sets an optional partition; operands then refer to numeric bucket keys.</summary>
+    public CanopyBucket? Bucket { get; set; }
+
     /// <summary>Gets the operator.</summary>
     public CanopyGridFilterOperator Operator { get; }
 
@@ -61,6 +64,8 @@ public sealed class CanopyGridFilter {
     });
 
     internal void Validate(CanopyColumn column) {
+        Bucket?.Validate(column);
+        if (Bucket != null) column = new CanopyColumn(column.Id, column.Title) { Kind = CanopyColumnKind.Number };
         ValidateArity();
         var textMatch = Operator == CanopyGridFilterOperator.Contains || Operator == CanopyGridFilterOperator.StartsWith;
         var comparison = Operator == CanopyGridFilterOperator.GreaterThan || Operator == CanopyGridFilterOperator.GreaterThanOrEqual
@@ -93,5 +98,6 @@ public sealed class CanopyGridFilter {
         writer.Property("column", Column).Property("operator", WireOperator).Name("values").BeginArray();
         foreach (var operand in Values) operand.WriteValue(writer);
         writer.EndArray();
+        if (Bucket != null) { writer.Name("bucket"); Bucket.WriteJson(writer); }
     }
 }

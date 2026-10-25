@@ -1,6 +1,19 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 (function (global) {
 const labels = Object.freeze({
+  gridBucket: "Intervalo",
+  gridBucketNone: "Valores exactos",
+  gridBucketDay: "Día",
+  gridBucketWeek: "Semana",
+  gridBucketMonth: "Mes",
+  gridBucketQuarter: "Trimestre",
+  gridBucketYear: "Año",
+  gridBucketHour: "Hora del día",
+  gridBucketWeekday: "Día de la semana",
+  gridBucketWidth: "Amplitud del intervalo",
+  gridBucketEdges: "Límites de los intervalos",
+  gridBucketOrigin: "Origen de los intervalos",
+  gridBucketInvalid: "Introduce una configuración de intervalos válida.",
   gridNoExportColumns: "Ninguna columna visible permite exportar.",
   searchPlaceholder: "Buscar",
   searchResults: "Resultados de búsqueda",

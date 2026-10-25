@@ -99,6 +99,7 @@ public sealed class CanopyGridReporting {
             if (level?.Aggregate != null) foreach (var declared in Aggregates) if (declared.Id == level.Aggregate) aggregate = true;
             if (level == null || column == null || !column.Sortable || !seen.Add(level.Column) || level.Aggregate != null && !aggregate)
                 throw new InvalidOperationException("Grouping levels need unique declared sortable columns and declared aggregates.");
+            level.Bucket?.Validate(column);
         }
     }
 

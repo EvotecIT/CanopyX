@@ -14,10 +14,11 @@ public sealed class CanopyGridGroupLevel {
     /// <param name="column">The declared sortable column whose raw values form the groups. Missing values form one last group.</param>
     /// <param name="descending">Whether groups follow descending order.</param>
     /// <param name="aggregate">An optional declared aggregate identity whose value orders the groups instead of their value.</param>
-    public CanopyGridGroupLevel(string column, bool descending = false, string? aggregate = null) {
+    /// <param name="bucket">An optional calendar or numeric partition applied to the column before grouping.</param>
+    public CanopyGridGroupLevel(string column, bool descending = false, string? aggregate = null, CanopyBucket? bucket = null) {
         CanopyIdentifiers.Require(column, nameof(column));
         if (aggregate != null) CanopyIdentifiers.Require(aggregate, nameof(aggregate));
-        Column = column; Descending = descending; Aggregate = aggregate;
+        Column = column; Descending = descending; Aggregate = aggregate; Bucket = bucket;
     }
 
     /// <summary>Gets the grouping column.</summary>
@@ -29,6 +30,12 @@ public sealed class CanopyGridGroupLevel {
     /// <summary>Gets the declared aggregate whose value orders the groups, or null to order them by value.</summary>
     public string? Aggregate { get; }
 
-    internal void WriteJson(CanopyJsonWriter writer) => writer.BeginObject().Property("column", Column)
-        .Property("direction", Descending ? "desc" : "asc").OptionalProperty("aggregate", Aggregate).EndObject();
+    /// <summary>Gets the optional calendar or numeric partition applied before grouping.</summary>
+    public CanopyBucket? Bucket { get; }
+
+    internal void WriteJson(CanopyJsonWriter writer) {
+        writer.BeginObject().Property("column", Column).Property("direction", Descending ? "desc" : "asc").OptionalProperty("aggregate", Aggregate);
+        if (Bucket != null) { writer.Name("bucket"); Bucket.WriteJson(writer); }
+        writer.EndObject();
+    }
 }

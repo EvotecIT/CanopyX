@@ -37,3 +37,7 @@
 .cx-phone .cx-gchip-name{min-width:0;overflow:hidden;text-overflow:ellipsis;}
 .cx-phone :is(.cx-groupbar-label,.cx-gchip-order,.cx-gchip-fold){display:none;}
 @media (forced-colors:active){.cx-gchip{border-color:CanvasText;}}
+.cx-gchip-bucket-value{width:7rem;min-width:3rem;max-width:10rem;padding:2px 4px;font:inherit;}
+.cx-phone .cx-gchip-bucket{display:inline-block;max-width:6rem;}
+.cx-phone .cx-gchip-bucket-value{width:3.5rem;min-width:2rem;}
+.cx-phone .cx-gchip:has(.cx-gchip-bucket) .cx-gchip-name{max-width:3.5rem;}

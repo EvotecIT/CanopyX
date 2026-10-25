@@ -99,6 +99,7 @@ GridFootersExample.Write(output);
 ExportFormatsExample.Write(output);
 SidecarKeysExample.Write(output);
 GroupedGridExample.Write(output);
+AnalystExample.Write(output);
 ContainedGridsExample.Write(output);
 ColumnLayoutExample.Write(output);
 TreeParityExample.Write(output);
