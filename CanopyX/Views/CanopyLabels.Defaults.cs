@@ -319,7 +319,7 @@ public sealed partial class CanopyLabels {
         [nameof(RecordAfter)] = "After",
         [nameof(RecordAdded)] = "Added",
         [nameof(RecordRemoved)] = "Removed",
-        [nameof(RecordChanged)] = "{count} changed fields",
+        [nameof(RecordChanged)] = "Changed fields: {count}",
         [nameof(Yes)] = "Yes",
         [nameof(No)] = "No",
         [nameof(UtcTime)] = "{time} UTC",

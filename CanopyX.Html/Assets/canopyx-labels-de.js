@@ -344,7 +344,7 @@ const labels = Object.freeze({
   recordAfter: "Nachher",
   recordAdded: "Hinzugefügt",
   recordRemoved: "Entfernt",
-  recordChanged: "{count} geänderte Felder",
+  recordChanged: "Geänderte Felder: {count}",
   yes: "Ja",
   no: "Nein",
   utcTime: "{time} UTC",

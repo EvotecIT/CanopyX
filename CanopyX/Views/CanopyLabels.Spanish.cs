@@ -310,7 +310,7 @@ public sealed partial class CanopyLabels {
         RecordAfter = "Después",
         RecordAdded = "Añadido",
         RecordRemoved = "Eliminado",
-        RecordChanged = "{count} campos modificados",
+        RecordChanged = "Campos modificados: {count}",
         Yes = "Sí",
         No = "No",
         UtcTime = "{time} UTC",

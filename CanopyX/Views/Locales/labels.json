@@ -347,7 +347,7 @@
   "RecordAfter": ["Po","Nachher","Después","Après","Dopo"],
   "RecordAdded": ["Dodano","Hinzugefügt","Añadido","Ajouté","Aggiunto"],
   "RecordRemoved": ["Usunięto","Entfernt","Eliminado","Supprimé","Rimosso"],
-  "RecordChanged": ["Zmienione pola: {count}","{count} geänderte Felder","{count} campos modificados","Champs modifiés : {count}","Campi modificati: {count}"],
+  "RecordChanged": ["Zmienione pola: {count}","Geänderte Felder: {count}","Campos modificados: {count}","Champs modifiés : {count}","Campi modificati: {count}"],
   "MatchesHighlight": ["Wyróżniaj dopasowania","Treffer hervorheben","Resaltar coincidencias","Surligner les correspondances","Evidenzia le corrispondenze"],
   "MatchesCount": ["[one]{count} dopasowanie[few]{count} dopasowania[many]{count} dopasowań[other]{count} dopasowania","{count} Treffer","[one]{count} coincidencia[other]{count} coincidencias","[one]{count} correspondance[other]{count} correspondances","[one]{count} corrispondenza[other]{count} corrispondenze"],
   "MatchesPosition": ["{current} z {count}","{current} von {count}","{current} de {count}","{current} sur {count}","{current} di {count}"],

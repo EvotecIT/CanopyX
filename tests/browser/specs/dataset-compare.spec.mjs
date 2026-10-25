@@ -211,6 +211,7 @@ test("change endpoints distinguish missing, explicit null, empty text, zero and 
       const drawer = page.locator("dialog.cx-drawer[open]");
       await expect(drawer).toBeVisible();
       const changes = drawer.locator('.cx-record-block-b[data-cx-field="' + (item.numeric ? "numeric" : "endpoint") + '"] .cx-record-diff');
+      await expect(changes.locator("caption")).toHaveText("Changed fields: 1");
       await expect(changes.getByRole("columnheader")).toHaveText(["Field", "Before", "After"]);
       const change = changes.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Endpoint", exact: true }) });
       await expect(change.getByRole("cell")).toHaveText(item.text);

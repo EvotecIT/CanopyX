@@ -343,7 +343,7 @@ const labels = Object.freeze({
   recordAfter: "Después",
   recordAdded: "Añadido",
   recordRemoved: "Eliminado",
-  recordChanged: "{count} campos modificados",
+  recordChanged: "Campos modificados: {count}",
   yes: "Sí",
   no: "No",
   utcTime: "{time} UTC",
