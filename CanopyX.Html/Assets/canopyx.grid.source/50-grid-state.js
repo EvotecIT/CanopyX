@@ -86,6 +86,9 @@
       if (this.destroyed || before !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
       state.formatRules = rules;
       clearTimeout(this.searchTimer); this.searchTimer = null;
+      // Optional projections read this intent while fetching; presentation still belongs to the accepted view.
+      const restore = { state, epoch: this.queryEpoch + 1 };
+      this.stateQueryRestore = restore;
       const pending = this.setQuery({ ...state.query, offset: state.paging ? state.paging.offset : 0 }, state.paging), epoch = this.queryEpoch;
       this.restoringEpoch = epoch;
       try {
@@ -94,6 +97,7 @@
         await this.applyStatePresentation(state);
         return this.getQuery();
       } finally {
+        if (this.stateQueryRestore === restore) this.stateQueryRestore = null;
         if (this.restoringEpoch === epoch) { this.restoringEpoch = null; this.stateChanged(); }
       }
     },

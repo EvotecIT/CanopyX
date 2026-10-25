@@ -186,6 +186,11 @@ shows flat records while retaining the configured definition. `setPivotCollapsed
 `"rows"` or `"columns"` and an accepted non-total prefix with children. Collapse changes presentation, not totals.
 These optional controller methods are installed only on grids that enable pivots.
 
+`await grid.setState(savedState)` requests the saved pivot or flat mode in the same query restore. Axis and value
+changes are validated before requesting their result; switching back to records fetches the flat page and its summary.
+The pivot presentation changes only after that query succeeds. A rejected or superseded request retains the accepted
+pivot intent and result, and a successful restore emits one accepted query without a second presentation query.
+
 `await grid.getPivotExport?.()` returns a frozen snapshot with `view`, `query`, `definition`, `columns`, `rows`,
 `matched` and `columnsLimited`. It exports expanded leaf columns plus the grand-total column. Row prefixes remain
 present with `outlineLevel`, `summary`, `collapsed` and `hidden`, so an adapter can reproduce row outlines without

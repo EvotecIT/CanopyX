@@ -20,12 +20,15 @@
         !values.includes(sort.aggregate) || !["asc", "desc"].includes(sort.direction))) throw new Error("CanopyX: invalid pivot total sort.");
     return gridFreeze({ rows, columns, values: [...values], maxColumns, ...(topNColumns === undefined ? {} : { topNColumns }), ...(sort === undefined ? {} : { sortByTotal: { ...sort } }) });
   }
+  function pivotDefaultState(view) {
+    return view.reporting?.pivot ? { ...pivotDefinition(view, view.reporting.pivot), active: true, collapsedRows: [], collapsedColumns: [] } : null;
+  }
   function pivotIntent(grid) {
-    if (grid.pivotState === undefined) grid.pivotState = grid.view.reporting?.pivot ? { ...pivotDefinition(grid.view, grid.view.reporting.pivot), active: true, collapsedRows: [], collapsedColumns: [] } : null;
+    if (grid.pivotState === undefined) grid.pivotState = pivotDefaultState(grid.view);
     return grid.pivotState;
   }
-  function pivotRequestOf(grid, query, revision) {
-    const { active, collapsedRows, collapsedColumns, columnKey, ...definition } = pivotIntent(grid);
+  function pivotRequestOf(grid, query, revision, state = pivotIntent(grid)) {
+    const { active, collapsedRows, collapsedColumns, columnKey, ...definition } = state;
     return { query: gridQuery(grid.view, { ...query, revision }), definition: pivotDefinition(grid.view, definition) };
   }
   const PIVOT_PART = definePart(DataGrid, "pivot", "pivot analysis", () => ({ DataGrid, GRID_PIVOT, GRID_ROWS, GRID_SHOW_AS, GRID_SHOW_AS_MODES, GRID_BUCKETS,
@@ -46,10 +49,12 @@
       button.classList.add("cx-pivot-toggle"); this.toolbar.append(button); this.pivotButton = button;
     },
     async requestPage(query, signal) {
-      if (!pivotEnabled(this.view) || !pivotIntent(this)?.active || signal !== this.dataLifetime.signal) return PIVOT_REQUEST.call(this, query, signal);
+      const restore = this.stateQueryRestore?.epoch === this.queryEpoch ? this.stateQueryRestore : null;
+      const state = restore ? restore.state.pivot || pivotDefaultState(this.view) : pivotIntent(this);
+      if (!pivotEnabled(this.view) || !state?.active || signal !== this.dataLifetime.signal) return PIVOT_REQUEST.call(this, query, signal);
       await this.loadPivot();
       const page = validateGridPage(await GRID_ROWS.base.requestPage.call(this, query, signal), this.view, query);
-      await this.requestPivot(query, page, signal); return page;
+      await this.requestPivot(query, page, signal, restore, state); return page;
     },
     async setPivot(input) {
       if (!pivotEnabled(this.view)) throw new Error("CanopyX: this view does not enable pivots.");
@@ -77,12 +82,10 @@
       state.pivot = { ...pivotDefinition(this.view, definition), active, collapsedRows: [...new Set(collapsedRows)], collapsedColumns: [...new Set(collapsedColumns)], ...(columnKey === undefined ? {} : { columnKey }) }; return state;
     },
     applyStatePresentation(state) {
+      const restore = this.stateQueryRestore;
+      if (restore?.state === state && restore.pivotCandidate) this.pivotCandidate = restore.pivotCandidate;
       this.pivotState = state.pivot ? JSON.parse(JSON.stringify(state.pivot)) : undefined;
-      return Promise.resolve(PIVOT_STATE.apply.call(this, state)).then(() => {
-        if (this.destroyed || this.pendingQuery || !pivotIntent(this)?.active || !this.acceptedQuery) return;
-        const key = JSON.stringify(pivotRequestOf(this, this.acceptedQuery, this.snapshot.revision));
-        if (this.pivotCandidate?.key !== key) return this.setQuery(gridQueryStart(this.acceptedQuery, {}));
-      });
+      return PIVOT_STATE.apply.call(this, state);
     },
     getShareState() { const state = PIVOT_STATE.share.call(this), pivot = pivotEnabled(this.view) && this.getPivot(); return pivot ? gridFreeze({ ...state, pivot }) : state; }
   });
