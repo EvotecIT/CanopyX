@@ -5,7 +5,7 @@
     },
     stackRecordButton(layer) {
       const button = h("button", "cx-stack-title"); button.type = "button"; setText(button, this.stackTitle(layer));
-      button.addEventListener("click", () => this.openRecord(layer.record).catch(error => { this.setNotice(error.message, true); this.emit("error", { error }); }));
+      button.addEventListener("click", () => this.openRecord(layer.record, { returnFocus: button }).catch(error => { this.setNotice(error.message, true); this.emit("error", { error }); }));
       return button;
     },
     stackBadges(layer) {

@@ -2,7 +2,7 @@
   class TimeSliderHost {}
   const TIME_SLIDER_IMPL = {};
   const TIME_SLIDER_PART = definePart(TimeSliderHost, "time-slider", "snapshot playback", () => ({ TIME_SLIDER_IMPL, h, setText, fill, PROTOCOL }));
-  function bindTimeSlider(api, options, kind, validate) {
+  function bindTimeSlider(api, options, kind, validate, reportError) {
     const ownerReady = api.ready, update = api.update, destroy = api.destroy;
     let controller = null, revision = 0, disposed = false;
     const cancelled = () => new DOMException("Snapshot playback was replaced or destroyed.", "AbortError");
@@ -10,10 +10,16 @@
       await ownerReady;
       if (disposed || token !== revision) throw cancelled();
       if (!Object.hasOwn(view, "timeSlider")) return;
-      await loadPart(TIME_SLIDER_PART);
-      if (disposed || token !== revision) throw cancelled();
-      validate(view);
-      controller = TIME_SLIDER_IMPL.create(api.element, view, options.labels, kind, validate, update);
+      try {
+        await loadPart(TIME_SLIDER_PART);
+        if (disposed || token !== revision) throw cancelled();
+        validate(view);
+        controller = TIME_SLIDER_IMPL.create(api.element, view, options.labels, kind, validate, update);
+      } catch (error) {
+        if (disposed || token !== revision) throw cancelled();
+        if (error?.name !== "AbortError") reportError(error);
+        throw error;
+      }
     };
     api.ready = ownerReady.then(async () => { if (!revision && !disposed) await install(options.view, 0); return api; });
     api.ready.catch(() => {});

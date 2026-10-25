@@ -16,10 +16,10 @@
     return true;
   }
   function pathSettings(grid) {
+    grid.validatePathSource();
     const input = grid.view.path, object = value => value && typeof value === "object" && !Array.isArray(value);
     const known = id => pathText(id) && grid.columns.some(column => column.id === id);
-    if (grid.view.protocol !== PROTOCOL || !object(input) || grid.view.source.kind !== "inline" || grid.opts.source ||
-        grid.view.rowIdentity === "ordinal" || input.titleColumn !== undefined && !known(input.titleColumn) ||
+    if (grid.view.protocol !== PROTOCOL || !object(input) || input.titleColumn !== undefined && !known(input.titleColumn) ||
         !Array.isArray(input.chains) || input.chains.length > 200)
       throw new Error("CanopyX: a path needs inline records with stable identities, a known title column and at most 200 chains.");
     pathKeys(input, ["titleColumn", "chains"]);
@@ -53,6 +53,10 @@
     return { ...input, titleColumn, records, total };
   }
   Object.assign(DataGrid.prototype, {
+    validatePathSource() {
+      if (this.view.source.kind !== "inline" || this.opts.source || this.view.rowIdentity === "ordinal")
+        throw new Error("CanopyX: a path requires stable inline records.");
+    },
     async startPath() {
       if (this.path) return;
       if (this.view.rowData) await this.source.decoded;
@@ -61,17 +65,28 @@
       for (const [key, text] of Object.entries(PATH_TEXT)) labels[key] = this.opts.labels?.[key] || this.view.labels?.[key] || text;
       this.path = { settings, labels, rows: [...settings.records.values()] };
       const hidden = this.grid.hidden, pagerHidden = this.pager?.hidden;
-      const toolbarHidden = this.toolbar.hidden;
-      this.toolbar.hidden = true;
+      const toolbarHidden = this.toolbar.hidden, originalMaxHeight = this.fitInline ?? this.host.style.maxHeight;
+      this.host.style.maxHeight = originalMaxHeight; this.toolbar.hidden = true;
       this.host.classList.add("cx-path-host"); this.grid.hidden = true;
       if (this.pager) this.pager.hidden = true;
       this.pathFrame = h("section", "cx-path"); this.pathFrame.setAttribute("aria-label", this.view.label);
       this.host.insertBefore(this.pathFrame, this.grid.nextSibling);
       this.pathPaint();
-      this.host.addEventListener("canopyx:format", () => this.pathPaint(), { signal: this.lifetime.signal });
+      const repaint = () => {
+        try {
+          this.path.settings = pathSettings(this); this.path.rows = [...this.path.settings.records.values()];
+          if (this.path.failure) { this.path.failure = false; this.setNotice("", false); }
+          this.pathPaint();
+        } catch (error) {
+          this.path.rows = []; this.path.settings = { ...this.path.settings, records: new Map() }; this.path.failure = true;
+          this.pathFrame.replaceChildren(); this.setNotice(error.message, true); this.emit("error", { error });
+        }
+      };
+      this.host.addEventListener("canopyx:format", repaint, { signal: this.lifetime.signal });
+      this.host.addEventListener("canopyx:rowsChanged", repaint, { signal: this.lifetime.signal });
       this.lifetime.signal.addEventListener("abort", () => {
         this.pathFrame.remove(); this.host.classList.remove("cx-path-host"); this.grid.hidden = hidden;
-        this.toolbar.hidden = toolbarHidden;
+        this.toolbar.hidden = toolbarHidden; this.host.style.maxHeight = originalMaxHeight;
         if (this.pager) this.pager.hidden = pagerHidden;
         this.path = null;
       }, { once: true });

@@ -4,5 +4,8 @@
   const GRID_PATH_INIT = DataGrid.prototype.initializeState;
   DataGrid.prototype.initializeState = function () {
     const start = () => this.destroyed ? undefined : GRID_PATH_INIT.call(this);
-    return this.view.path ? loadPart(GRID_PATH).then(() => { if (!this.destroyed) return this.startPath(); }).then(start) : start();
+    return this.view.path ? loadPart(GRID_PATH).then(() => { if (!this.destroyed) this.validatePathSource(); }).then(start).then(async result => {
+      if (!this.destroyed) await this.startPath();
+      return result;
+    }) : start();
   };

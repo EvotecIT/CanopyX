@@ -5,6 +5,15 @@ namespace CanopyX.Tests.Protocol;
 
 public sealed class ForestViewSchemaTests {
     [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Stack_OptionalContextAllowsEmptyStringsConsistentlyWithAuthoringAndRuntime(string? label) {
+        var view = Grid("stack");
+        view.Stack!.Layers[0].Label = label;
+        ProtocolSchema.AssertValid(view.ToJson(), "stack optional context");
+    }
+    [Theory]
     [InlineData("path")]
     [InlineData("stack")]
     public void ForestGrid_WriterOutputMatchesSchemaWithRepeatedRecordsAndHostAnnotations(string presentation) {

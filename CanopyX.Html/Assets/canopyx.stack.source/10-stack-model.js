@@ -14,8 +14,9 @@
     return true;
   }
   function stackSettings(grid) {
+    grid.validateStackSource();
     const input = grid.view.stack, known = id => grid.columns.some(column => column.id === id);
-    if (!stackObject(input, ["titleColumn", "layers"]) || grid.view.source.kind !== "inline" || grid.opts.source || grid.view.rowIdentity === "ordinal" ||
+    if (!stackObject(input, ["titleColumn", "layers"]) ||
         input.titleColumn !== undefined && (!stackIdentifier(input.titleColumn) || !known(input.titleColumn)) ||
         !Array.isArray(input.layers) || input.layers.length > 1000)
       throw new Error("CanopyX: a stack needs inline records, stable identities, known title columns and at most 1,000 layers.");
@@ -37,6 +38,10 @@
     return { ...input, titleColumn, records };
   }
   Object.assign(DataGrid.prototype, {
+    validateStackSource() {
+      if (this.view.source.kind !== "inline" || this.opts.source || this.view.rowIdentity === "ordinal")
+        throw new Error("CanopyX: a stack requires stable inline records.");
+    },
     startStack() {
       if (this.stack) return;
       const settings = stackSettings(this), labels = {};
@@ -50,8 +55,14 @@
       this.stackFrame = h("section", "cx-stack"); this.stackFrame.setAttribute("aria-label", this.view.label);
       this.host.insertBefore(this.stackFrame, this.grid.nextSibling);
       const repaint = () => {
-        try { this.stack.settings = stackSettings(this); this.stackPaint(); }
-        catch (error) { this.stackFrame.replaceChildren(); this.setNotice(error.message, true); this.emit("error", { error }); }
+        try {
+          this.stack.settings = stackSettings(this);
+          if (this.stack.failure) { this.stack.failure = false; this.setNotice("", false); }
+          this.stackPaint();
+        } catch (error) {
+          this.stack.settings = { ...this.stack.settings, records: new Map() }; this.stack.failure = true;
+          this.stackFrame.replaceChildren(); this.setNotice(error.message, true); this.emit("error", { error });
+        }
       };
       this.host.addEventListener("canopyx:format", repaint, { signal: this.lifetime.signal });
       this.host.addEventListener("canopyx:rowsChanged", repaint, { signal: this.lifetime.signal });

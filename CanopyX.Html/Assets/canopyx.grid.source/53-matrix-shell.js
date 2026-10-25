@@ -19,10 +19,26 @@
     const addedClasses = ["cx-host", "cx-matrix-host"].filter(name => !host.classList.contains(name)), hadClass = host.hasAttribute("class");
     const previousError = host.getAttribute("data-cx-error");
     let stopTheme;
-    let impl = null, destroyed = false, notice = null, errorText = null;
+    let impl = null, destroyed = false, notice = null, errorText = null, failure = null, loaded = false;
     const cancelled = () => new DOMException("Matrix was destroyed.", "AbortError");
+    const clearError = () => {
+      notice?.remove(); notice = null;
+      if (errorText !== null && host.getAttribute("data-cx-error") === errorText) {
+        if (previousError === null) host.removeAttribute("data-cx-error"); else host.setAttribute("data-cx-error", previousError);
+      }
+      errorText = null;
+    };
+    const showError = error => {
+      if (destroyed) return;
+      impl?.destroy(); impl = null; failure = error; clearError();
+      notice = h("div", "cx-mount-error"); notice.setAttribute("role", "alert");
+      setText(notice, error && error.message ? error.message : String(error)); host.appendChild(notice);
+      errorText = notice.textContent; host.setAttribute("data-cx-error", errorText);
+      host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true }));
+    };
     const ready = loadPart(MATRIX_PART).then(() => {
       if (destroyed) throw cancelled();
+      loaded = true;
       impl = MATRIX_IMPL.create(host, options);
       return impl.ready;
     });
@@ -30,9 +46,18 @@
     const api = { element: host };
     Object.defineProperty(api, "view", { enumerable: true, get: () => impl ? impl.document() : options.view });
     for (const name of MATRIX_METHODS) api[name] = (...args) => {
-      const invoke = () => { if (destroyed) throw cancelled(); return impl[name](...args); };
+      const invoke = () => {
+        if (destroyed) throw cancelled();
+        if (!impl && name === "update") {
+          clearError();
+          try { impl = MATRIX_IMPL.create(host, { ...options, view: args[0] }); failure = null; return impl.ready.then(() => undefined); }
+          catch (error) { showError(error); throw error; }
+        }
+        if (failure) throw failure;
+        return impl[name](...args);
+      };
       if (destroyed) throw cancelled();
-      return impl ? invoke() : ready.then(invoke);
+      return loaded ? invoke() : ready.then(invoke);
     };
     api.ready = ready.then(() => { if (destroyed) throw cancelled(); return api; });
     api.ready.catch(() => {});
@@ -44,23 +69,12 @@
       if (activeMatrices.get(host) === api) activeMatrices.delete(host);
       if (host.canopyx === api) delete host.canopyx;
       host.removeAttribute("data-canopyx-mounted");
-      notice?.remove();
-      if (errorText !== null && host.getAttribute("data-cx-error") === errorText) {
-        if (previousError === null) host.removeAttribute("data-cx-error"); else host.setAttribute("data-cx-error", previousError);
-      }
+      clearError();
       for (const name of addedClasses) host.classList.remove(name);
       if (!hadClass && !host.classList.length) host.removeAttribute("class");
     };
-    ready.catch(error => {
-      if (destroyed) return;
-      notice = h("div", "cx-mount-error");
-      notice.setAttribute("role", "alert");
-      setText(notice, error && error.message ? error.message : String(error));
-      host.appendChild(notice);
-      errorText = notice.textContent; host.setAttribute("data-cx-error", errorText);
-      host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true }));
-    });
-    bindTimeSlider(api, options, "matrix", value => MATRIX_IMPL.validate(value));
+    ready.catch(showError);
+    bindTimeSlider(api, options, "matrix", value => MATRIX_IMPL.validate(value), showError);
     Object.freeze(api);
     activeMatrices.set(host, api);
     host.classList.add("cx-host", "cx-matrix-host");

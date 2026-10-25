@@ -2923,11 +2923,7 @@
                 "minLength": 1,
                 "pattern": "\\S"
               },
-              "label": {
-                "type": "string",
-                "minLength": 1,
-                "pattern": "\\S"
-              },
+              "label": { "type": "string" },
               "winner": {
                 "type": "boolean"
               },
