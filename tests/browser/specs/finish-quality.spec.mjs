@@ -6,7 +6,7 @@ const fixtures = {
   "minute-precision": '<form class="cx-cal-occurrence-editor"><input type="datetime-local" step="0.001" value="2026-10-16T11:00:00.001"></form>',
   "header-wrap": '<div data-cx-finish-frame style="width:500px"><div data-cx-finish-header style="width:50px;line-height:20px">Monthly cost</div></div>',
   "empty-band": '<div data-cx-finish-frame style="height:160px"><div style="height:32px">Row</div></div>',
-  "single-sort-priority": '<div data-cx-finish-frame><div role="columnheader" aria-sort="ascending">Resource <span data-cx-finish-sort-priority>2</span></div></div>',
+  "single-sort-priority": '<div data-cx-finish-frame><div role="columnheader" aria-sort="ascending">Resource <span aria-hidden="true" data-cx-finish-sort-priority>2</span></div></div>',
   "text-clipped": '<span data-cx-finish-text style="display:block;width:40px;white-space:nowrap;overflow:hidden">A long visible label</span>',
   "phone-overflow": '<div style="width:800px">A wide row</div>',
   "phone-chip-wrap": '<div><span style="display:block;height:32px">Record</span><span data-cx-finish-chip style="display:block">+1 column</span></div>'
@@ -28,5 +28,15 @@ test("finished content, explicit sub-minute precision, ellipsis and internal scr
     <span data-cx-finish-text style="display:block;width:40px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">A long label</span>
     <div style="overflow:auto"><div style="width:800px">A wide row</div></div>
   </main>`);
+  expect(await page.evaluate(inspectFinishQuality)).toEqual([]);
+});
+
+test("minute precision also checks rendered date-column values", async ({ page }) => {
+  await page.setContent('<div data-canopyx-mounted><div class="cx-cell" data-cx-column="when">16 Oct 2026 11:00:15.123 UTC</div></div>');
+  await page.locator('[data-canopyx-mounted]').evaluate(host => {
+    host.canopyx = { view: { columns: [{ id: "when", kind: "datetime" }] } };
+  });
+  expect((await page.evaluate(inspectFinishQuality)).map(finding => finding.rule)).toContain("minute-precision");
+  await page.locator('.cx-cell').evaluate(cell => { cell.textContent = "16 Oct 2026 11:00 UTC"; });
   expect(await page.evaluate(inspectFinishQuality)).toEqual([]);
 });

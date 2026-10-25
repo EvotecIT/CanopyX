@@ -17,6 +17,7 @@
       this.buildQuerySummary();
       const grid = this.grid = h("div", "cx-grid"); grid.id = this.id; grid.tabIndex = -1;
       grid.setAttribute("role", "grid"); grid.setAttribute("aria-label", this.view.label);
+      if (this.view.autoHeight === false) grid.setAttribute("data-cx-finish-allow", "empty-band");
       if (this.multi) grid.setAttribute("aria-multiselectable", "true");
       this.head = h("div", "cx-head"); this.head.setAttribute("role", "rowgroup");
       this.headRow = h("div", "cx-hrow"); this.headRow.setAttribute("role", "row"); this.headRow.setAttribute("aria-rowindex", "1");

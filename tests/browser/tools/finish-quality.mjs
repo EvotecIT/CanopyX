@@ -3,7 +3,7 @@ export function inspectFinishQuality(root = document) {
   const findings = [], tolerance = 3;
   const box = element => element.getBoundingClientRect();
   const visible = element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden" &&
-    !element.closest('[hidden],[aria-hidden="true"]');
+    !element.closest('[hidden]');
   const all = selector => [...root.querySelectorAll(selector)].filter(visible);
   const allowed = (element, rule) => {
     for (let at = element; at; at = at.parentElement) {
@@ -30,20 +30,26 @@ export function inspectFinishQuality(root = document) {
   };
 
   // Bands compare with the actual rendered row width, including the fitted filler, not the viewport or hidden columns.
-  for (const band of all('.cx-footer-row,.cx-summary,.cx-group-row,.cx-grid-toolbar,[data-cx-finish-band]')) {
+  for (const band of all('.cx-footer-row,.cx-summary-row,.cx-grid-group,.cx-grid-query-summary,.cx-toolbar,[data-cx-finish-band]')) {
     const frame = band.closest('.cx-data-grid,[data-canopyx-host],[data-cx-finish-frame]');
-    const rows = frame && [...frame.querySelectorAll('.cx-row,[data-cx-finish-row]')].filter(visible);
+    const rows = frame && [...frame.querySelectorAll('.cx-row,[data-cx-finish-row]')].filter(row => visible(row) &&
+      row.closest('.cx-data-grid,[data-canopyx-host],[data-cx-finish-frame]') === frame);
     if (!rows?.length) continue;
-    const expected = Math.max(...rows.map(row => box(row).width)), actual = box(band).width;
+    const bodyWidth = Math.max(...rows.map(row => box(row).width)), inside = band.closest('.cx-grid');
+    const expected = inside ? bodyWidth : Math.min(bodyWidth, box(frame.querySelector('.cx-grid') || frame).width), actual = box(band).width;
     if (actual + tolerance < expected) report("band-width", band, "Band ends before its body rows.", { actual, expected });
   }
 
   // datetime-local defaults to minute precision. Fractions can force native editors to expose extra fields even at zero.
-  for (const field of all('input[type="datetime-local"],input[type="time"],[data-cx-precision="minutes"]')) {
+  const dates = all('.cx-cell[data-cx-column]').filter(cell => {
+    const host = cell.closest('[data-canopyx-host],[data-canopyx-mounted]');
+    return host?.canopyx?.view?.columns?.some(column => column.id === cell.dataset.cxColumn && column.kind === "datetime");
+  });
+  for (const field of new Set([...dates, ...all('input[type="datetime-local"],input[type="time"],[data-cx-precision="minutes"]')])) {
     const explicit = field.getAttribute("data-cx-precision"), editor = field.matches("input"),
       minuteEditor = editor && (!field.hasAttribute("step") || Number(field.step) >= 60 ||
         !!field.closest(".cx-cal-occurrence-editor,.cx-cal-create"));
-    if (explicit !== "minutes" && !minuteEditor) continue;
+    if (explicit !== "minutes" && !minuteEditor && !dates.includes(field)) continue;
     const value = editor ? field.value : field.textContent;
     if (/(?:T|\b)\d{1,2}:\d{2}:\d{2}(?:[.,]\d+)?/.test(value) || editor && Number(field.step) < 60)
       report("minute-precision", field, "Minute precision exposes seconds or milliseconds.", { value, step: field.step });
@@ -57,7 +63,8 @@ export function inspectFinishQuality(root = document) {
     if (lines.size < 2 || box(label).height < lineHeight * 1.7) continue;
     const frame = header.closest('.cx-grid,[data-cx-finish-frame]');
     if (!frame) continue;
-    const heads = [...frame.querySelectorAll('.cx-hcell,[data-cx-finish-header]')].filter(visible);
+    const heads = [...frame.querySelectorAll('.cx-hcell,[data-cx-finish-header]')].filter(header => visible(header) &&
+      header.closest('.cx-grid,[data-cx-finish-frame]') === frame);
     const occupied = heads.reduce((total, cell) => total + box(cell).width, 0), spare = box(frame).width - occupied;
     const canvas = document.createElement("canvas"), context = canvas.getContext("2d");
     context.font = style.font;
@@ -67,11 +74,11 @@ export function inspectFinishQuality(root = document) {
   }
 
   // Check unused frame space after real content. Virtual spacers, calendar cells and intentionally empty states are content.
-  for (const frame of all('.cx-cal-body,.cx-cal-scroll,[data-cx-finish-frame]')) {
+  for (const frame of all('.cx-grid,.cx-cal-body,.cx-cal-scroll,[data-cx-finish-frame]')) {
     // A mini-month picker deliberately stays compact inside a frame shared with full calendar layouts.
-    const mini = frame.querySelector('.cx-cal-mini[data-cx-finish-allow~="empty-band"]');
+    const mini = [...frame.children].some(child => child.matches('.cx-cal-mini[data-cx-finish-allow~="empty-band"]'));
     if (mini) continue;
-    const children = [...frame.children].filter(visible).filter(child => getComputedStyle(child).position !== "absolute");
+    const children = [...frame.children].filter(visible).filter(child => !["absolute", "fixed"].includes(getComputedStyle(child).position));
     if (!children.length || frame.scrollHeight > frame.clientHeight + tolerance) continue;
     const bottom = Math.max(...children.map(child => box(child).bottom)), gap = box(frame).bottom - bottom;
     if (gap > rowHeight(frame) + tolerance)
@@ -79,14 +86,14 @@ export function inspectFinishQuality(root = document) {
   }
 
   for (const frame of all('.cx-grid,[data-cx-finish-frame]')) {
+    const belongs = element => visible(element) && element.closest('.cx-grid,[data-cx-finish-frame]') === frame;
     const sorted = [...frame.querySelectorAll('[role="columnheader"][aria-sort]')].filter(element =>
-      visible(element) && ["ascending", "descending", "other"].includes(element.getAttribute("aria-sort")));
-    const priorities = [...frame.querySelectorAll('.cx-sort-priority,[data-cx-finish-sort-priority]')].filter(visible);
-    const host = frame.closest('[data-canopyx-host]');
+      belongs(element) && ["ascending", "descending", "other"].includes(element.getAttribute("aria-sort")));
+    const priorities = [...frame.querySelectorAll('.cx-sort-priority,[data-cx-finish-sort-priority]')].filter(belongs);
+    const host = frame.closest('[data-canopyx-host],[data-canopyx-mounted]');
     let userSorts;
     if (host?.canopyx?.getQuery) {
-      const config = host.querySelector('script.cx-config[type="application/json"]');
-      const fixed = config ? (JSON.parse(config.textContent).preSort || []).map(sort => sort.column) : [];
+      const fixed = (host.canopyx.view?.preSort || []).map(sort => sort.column);
       userSorts = host.canopyx.getQuery()?.sort?.filter(sort => !fixed.includes(sort.column)).length;
     }
     if (userSorts === 1 || userSorts === undefined && (sorted.length === 1 || sorted.length === 0 && priorities.length === 1)) {

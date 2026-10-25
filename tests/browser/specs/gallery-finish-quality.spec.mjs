@@ -24,12 +24,14 @@ for (const size of [{ width: 1440, theme: "light" }, { width: 390, theme: "dark"
       await page.clock.setFixedTime(new Date("2026-10-16T10:30:00Z"));
       // A dedicated dark page overrides an example's literal light theme, where one is generated.
       const dark = name.replace(/\.html$/, "-dark.html"), target = size.theme === "dark" && fs.existsSync(examples + "/" + dark) ? dark : name;
-      await page.goto(server.url + target);
-      for (const host of await page.locator("[data-canopyx-host]").all()) {
+      const url = new URL(target, server.url); url.searchParams.set("theme", size.theme);
+      await page.goto(url.href);
+      for (const host of await page.locator("[data-canopyx-host],[data-canopyx-mounted]").all()) {
         if (!await host.isVisible()) continue;
         await host.scrollIntoViewIfNeeded();
         await expect.poll(() => host.evaluate(element => element.hasAttribute("data-cx-ready") ||
           element.hasAttribute("data-cx-calendar-ready") || !!element.querySelector("[data-cx-ready],[data-cx-calendar-ready]"))).toBe(true);
+        await host.evaluate(async element => { await element.canopyx?.ready; });
       }
       await page.evaluate(async () => { await document.fonts.ready; await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame); });
       const findings = await page.evaluate(inspectFinishQuality);
