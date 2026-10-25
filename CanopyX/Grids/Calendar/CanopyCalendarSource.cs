@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CanopyX.Json;
 
 namespace CanopyX;
@@ -12,6 +13,7 @@ public sealed class CanopyCalendarSource {
     private string _id;
     private string _label;
     private string? _ics;
+    private string? _url, _color;
 
     /// <summary>Creates a source.</summary>
     /// <param name="id">The source id that records name in the source column, unique within the calendar.</param>
@@ -56,6 +58,33 @@ public sealed class CanopyCalendarSource {
     /// <summary>Gets or sets whether the source starts switched off in the legend. Defaults to false.</summary>
     public bool Hidden { get; set; }
 
+    /// <summary>Gets or sets a same-origin JSON feed URL. Receives start, end and timeZone query parameters for the visible range and returns an array of calendar events. Mutually exclusive with <see cref="Ics"/>.</summary>
+    public string? Url {
+        get => _url;
+        set => _url = value == null || IsIcsUrl(value) ? value : throw new ArgumentException("A JSON feed needs a relative or same-origin http(s) URL.", nameof(value));
+    }
+
+    /// <summary>Gets the extra query parameters sent with each JSON feed request. Reserved start, end and timeZone parameters are supplied by the calendar.</summary>
+    public IDictionary<string, string> FetchParams { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>Gets or sets a source colour in six-digit hexadecimal form, for example #2563eb. Null keeps the theme tone.</summary>
+    public string? Color {
+        get => _color;
+        set {
+            if (value != null && !System.Text.RegularExpressions.Regex.IsMatch(value, "^#[0-9a-fA-F]{6}$")) throw new ArgumentException("A source colour is #RRGGBB.", nameof(value));
+            _color = value;
+        }
+    }
+
+    internal void Validate() {
+        if (_ics != null && _url != null) throw new InvalidOperationException("A calendar source has one feed: url or ics.");
+        if (FetchParams.Count > 50 || FetchParams.Count > 0 && _url == null) throw new InvalidOperationException("At most 50 fetch parameters belong to a JSON feed.");
+        foreach (var pair in FetchParams) {
+            if (string.IsNullOrWhiteSpace(pair.Key) || pair.Key.Length > 128 || pair.Value == null || pair.Value.Length > 2048 || pair.Key == "start" || pair.Key == "end" || pair.Key == "timeZone")
+                throw new InvalidOperationException("JSON feed parameters need a name and a value; start, end and timeZone are reserved.");
+        }
+    }
+
     private static string CheckLabel(string label, string parameter) =>
         CanopyCalendarValues.Label(label ?? throw new ArgumentException("A source needs a label.", parameter), parameter)!;
 
@@ -71,7 +100,14 @@ public sealed class CanopyCalendarSource {
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {
+        Validate();
         writer.BeginObject().Property("id", _id).Property("label", _label).OptionalProperty("tone", Tone.Name).OptionalProperty("ics", _ics);
+        writer.OptionalProperty("url", _url).OptionalProperty("color", _color);
+        if (FetchParams.Count > 0) {
+            writer.Name("fetchParams").BeginObject();
+            foreach (var pair in FetchParams) writer.Property(pair.Key, pair.Value);
+            writer.EndObject();
+        }
         if (Hidden) writer.Property("hidden", true);
         writer.EndObject();
     }

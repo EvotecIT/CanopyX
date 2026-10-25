@@ -697,7 +697,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "74644d2e5d76f594",
+      "version": "8724d2f8ee4292fc",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -731,7 +731,7 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "version": "bdde26d4b7de2096",
+      "version": "29a711a1cfd4be9a",
       "script": "canopyx-calendar-edit.js",
       "runtimes": [
         "grid"
@@ -749,7 +749,7 @@
     {
       "name": "calendar-ics",
       "label": "iCalendar",
-      "version": "feb3ed2cd67d057f",
+      "version": "ac8b2950fccbfb0f",
       "script": "canopyx-calendar-ics.js",
       "runtimes": [
         "grid"
@@ -768,7 +768,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "11d7ecf140c93c25",
+      "version": "22c9e15c108aeaa1",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
