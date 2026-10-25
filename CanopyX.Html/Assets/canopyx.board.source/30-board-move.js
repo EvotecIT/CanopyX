@@ -12,7 +12,7 @@
         if (lane.wipLimit && lane.count >= lane.wipLimit) setText(this.live, fill(board.labels.boardWipFull, { lane: lane.label, limit: lane.wipLimit }));
         return false;
       }
-      const epoch = this.queryEpoch, signal = this.dataLifetime.signal, revision = this.snapshot.revision;
+      const epoch = this.queryEpoch, signal = this.dataLifetime.signal, revision = this.snapshot.revision, version = board.version;
       board.pending.add(id); board.targets.set(id, key); this.boardPaint(); setText(this.live, board.labels.boardPending);
       try {
         await this.loadEditing();
@@ -27,12 +27,14 @@
         const writer = typeof this.edit.options.commit === "function" || typeof this.source.commit === "function";
         if (!permitted || (!answered && !writer)) return false;
         if (answered && await this.runGridHook(() => Promise.resolve(response), signal) !== true) return false;
-        if (this.destroyed || signal.aborted || epoch !== this.queryEpoch || revision !== this.snapshot.revision || this.edit.changes.has(id)) return false;
+        if (this.destroyed || signal.aborted || epoch !== this.queryEpoch || revision !== this.snapshot.revision || version !== board.version || this.edit.changes.has(id)) return false;
+        const currentRow = board.rows.find(item => item.id === id);
+        if (!currentRow || !this.canEditCell(currentRow, board.settings.column)) return false;
         // Another move can fill a lane while the host considers this proposal.
         const current = board.lanes.find(item => item.key === key);
         const otherMoves = [...board.targets].filter(([record, target]) => record !== id && target === key).length;
         if (!current || current.wipLimit && current.count + otherMoves >= current.wipLimit) return false;
-        const record = JSON.parse(JSON.stringify(row)), spec = this.edit.specs.get(board.settings.column);
+        const record = JSON.parse(JSON.stringify(currentRow)), spec = this.edit.specs.get(board.settings.column);
         if (!this.editApply(id, spec, lane.value, "board", record)) return false;
         const result = await this.commitChanges({ ids: [id] });
         if (!result.ok) { this.revertChanges([id]); return false; }

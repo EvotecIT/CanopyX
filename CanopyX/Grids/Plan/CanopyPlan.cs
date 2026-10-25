@@ -38,6 +38,8 @@ public sealed class CanopyPlan {
             throw new InvalidOperationException("A plan's calendar must offer the timeline.");
         if (calendar.Recurrence != null || calendar.Sources.Count > 0)
             throw new InvalidOperationException("Plan tasks are ordinary grid records, without recurrence or calendar feeds.");
+        if (calendar.Create != null || calendar.Drop)
+            throw new InvalidOperationException("A plan cannot create or drop calendar events; task changes are proposals for the host.");
         if ((BaselineStart == null) != (BaselineEnd == null))
             throw new InvalidOperationException("A plan's baseline start and end columns are set together.");
         RequireColumn(view, BaselineStart, CanopyColumnKind.DateTime);

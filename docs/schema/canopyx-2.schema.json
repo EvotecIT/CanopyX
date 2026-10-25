@@ -813,6 +813,9 @@
       "then": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] },
       "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
       "allOf": [{
+        "if": { "required": ["plan"] },
+        "then": { "required": ["calendar"], "properties": { "calendar": { "not": { "required": ["create"] }, "properties": { "drop": { "const": false } } } } }
+      }, {
         "if": { "required": ["selection"], "properties": { "selection": { "const": "none" } } },
         "then": { "properties": { "reporting": { "properties": { "selectionControls": { "const": false } } } } }
       }, {

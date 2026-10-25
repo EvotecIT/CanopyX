@@ -31,5 +31,8 @@ public sealed class BoardPlanSchemaTests {
         var json = view.ToJson(); ProtocolSchema.AssertValid(json, "plan with French labels");
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, root => root["plan"]!["dependencies"]![0]!["lagMinutes"] = -1)).IsValid);
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, root => root["plan"]!.AsObject().Remove("baselineEnd"))).IsValid);
+        foreach (var action in new[] { "create", "drop" })
+            Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, root => root["calendar"]![action] = true)).IsValid);
+        ProtocolSchema.AssertValid(ProtocolSchema.Mutate(json, root => root["calendar"]!["drop"] = false), "plan with external drops disabled");
     }
 }

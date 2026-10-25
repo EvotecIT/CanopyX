@@ -49,7 +49,7 @@ const api = createDataGrid(host, {
 await api.ready;
 ```
 
-After approval, the normal editing contract validates and commits the lane cell. A rejected writer restores the original lane. An outstanding edit on that record prevents a board move from overwriting it. A host answer from an earlier query cannot change the current result. CanopyX performs no application writes itself.
+After approval, the normal editing contract rechecks current record permissions, validates and commits the lane cell. A rejected writer restores the original lane. An outstanding edit on that record prevents a board move from overwriting it. A host answer from an earlier query or live row update cannot change the current result. Shared live transactions and source refreshes update cards, lane membership and WIP counts. CanopyX performs no application writes itself.
 
 WIP limits prevent additional moves into a full lane. Existing over-limit data remains visible and records can move out. For inline data, WIP counts cover the whole dataset, including records hidden by a search or facet. Hosted counts cover the returned snapshot; the host must check its authoritative limit again when committing.
 

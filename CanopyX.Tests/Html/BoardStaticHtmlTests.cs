@@ -76,6 +76,65 @@ public sealed class BoardStaticHtmlTests {
     }
 
     [Fact]
+    public void BoardStatic_OverflowUsesLocalizedAndCustomReportLinksWithoutCapturingTheNote() {
+        var view = Grid();
+        view.Rows.Add(Row("a", "First task", "active", "Platform"));
+        view.Rows.Add(Row("b", "Second task", "active", "Platform"));
+        view.Labels.OverflowNote = "Widoczne {shown} z {total} <zadań>";
+        view.Labels.FullReport = "Pełny <raport>";
+        var options = new CanopyStaticHtmlOptions { MaxRows = 1, FullReportUrl = "reports/tasks.html?a=1&b=2" };
+
+        var localized = CanopyStaticHtml.RenderGridWithResult(view, options: options);
+
+        Assert.Contains("Widoczne 1 z 2 &lt;zadań&gt;", localized.Html);
+        Assert.Contains("href=\"reports/tasks.html?a=1&amp;b=2\"", localized.Html);
+        Assert.Contains("Pełny &lt;raport&gt;</a>", localized.Html);
+        Assert.Equal("First task", Assert.Single(localized.Rows)[0]);
+        var localizedText = string.Join(" ", localized.Rows.SelectMany(row => row));
+        Assert.DoesNotContain("Widoczne", localizedText);
+        Assert.DoesNotContain("Pełny <raport>", localizedText);
+        Assert.Equal(2, localized.TotalRows);
+        Assert.False(localized.IsComplete);
+
+        options.FullReportUrl = "https://example.test/tasks?a=1&b=2";
+        options.FullReportText = "Open <all> tasks";
+        options.OverflowNote = "Limited {shown}/{total}";
+        var custom = CanopyStaticHtml.RenderGridWithResult(view, options: options);
+
+        Assert.Contains("Limited 1/2", custom.Html);
+        Assert.Contains("href=\"https://example.test/tasks?a=1&amp;b=2\"", custom.Html);
+        Assert.Contains("Open &lt;all&gt; tasks</a>", custom.Html);
+        Assert.Equal("First task", Assert.Single(custom.Rows)[0]);
+        var customText = string.Join(" ", custom.Rows.SelectMany(row => row));
+        Assert.DoesNotContain("Limited", customText);
+        Assert.DoesNotContain("Open <all> tasks", customText);
+        Assert.DoesNotContain("Pełny", custom.Html);
+    }
+
+    [Fact]
+    public void BoardStatic_OverflowRejectsUnsafeReportUrlsAndOnlyLinksIncompleteResults() {
+        var view = Grid();
+        view.Rows.Add(Row("a", "First task", "active", "Platform"));
+        view.Rows.Add(Row("b", "Second task", "active", "Platform"));
+        var options = new CanopyStaticHtmlOptions { MaxRows = 1, FullReportText = "Open report" };
+        foreach (var url in new[] { "javascript:alert(1)", "data:text/html,<script>x</script>", "https:\\example.test", "java\nscript:alert(1)" }) {
+            options.FullReportUrl = url;
+            var html = view.ToBoardStaticHtml(options: options);
+            Assert.Contains("Showing 1 of 2", html);
+            Assert.DoesNotContain("<a ", html);
+            Assert.DoesNotContain("Open report", html);
+        }
+
+        options.MaxRows = 2;
+        options.FullReportUrl = "https://example.test/tasks";
+        var complete = CanopyStaticHtml.RenderGridWithResult(view, options: options);
+        Assert.True(complete.IsComplete);
+        Assert.Equal(2, complete.Rows.Count);
+        Assert.DoesNotContain("<a ", complete.Html);
+        Assert.DoesNotContain("Showing", complete.Html);
+    }
+
+    [Fact]
     public void BoardStatic_UsesRowHeaderTitleAndExplicitHiddenFieldsWithoutMutatingColumns() {
         var view = Grid();
         view.Columns[0].Hidden = true;

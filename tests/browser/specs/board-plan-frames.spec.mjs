@@ -24,7 +24,7 @@ for (const name of ["board", "plan"]) for (const sample of [{ width: 1440, dark:
   });
 }
 
-for (const invalid of ["cycle", "missing endpoint", "negative lag"]) {
+for (const invalid of ["cycle", "missing endpoint", "negative lag", "calendar creation", "calendar drop"]) {
   test("raw plan definition rejects " + invalid, async ({ page }) => {
     await page.goto(exampleUrl("plan.html"));
     await page.waitForFunction(() => document.querySelector("[data-canopyx-host]")?.canopyx);
@@ -34,12 +34,14 @@ for (const invalid of ["cycle", "missing endpoint", "negative lag"]) {
       if (kind === "cycle") view.plan.dependencies.push({ predecessor: "release", successor: "prepare" });
       if (kind === "missing endpoint") view.plan.dependencies.push({ predecessor: "absent", successor: "prepare" });
       if (kind === "negative lag") view.plan.dependencies[0].lagMinutes = -1;
+      if (kind === "calendar creation") view.calendar.create = true;
+      if (kind === "calendar drop") view.calendar.drop = true;
       const host = document.createElement("div"); document.body.appendChild(host);
       let api;
       try { api = CanopyX.createDataGrid(host, { view }); await api.ready; return null; }
       catch (error) { return error.message; }
       finally { api?.destroy(); host.remove(); }
     }, invalid);
-    expect(error).toMatch(invalid === "cycle" ? /cycle/ : invalid === "missing endpoint" ? /unknown task/ : /nonnegative lag/);
+    expect(error).toMatch(invalid === "cycle" ? /cycle/ : invalid === "missing endpoint" ? /unknown task/ : invalid === "negative lag" ? /nonnegative lag/ : /plan needs a resource timeline/);
   });
 }

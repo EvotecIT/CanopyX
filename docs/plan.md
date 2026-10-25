@@ -84,7 +84,7 @@ The payload is:
 
 Conflict kinds are `dependency`, `overlap`, `unavailable`, `range`, `resource` and `incomplete`; `id` is null when the conflict does not identify another task. Dates are UTC ISO strings. The payload is frozen before delivery. The callback receives the grid's bounded hook signal: a new query, disposal or the configured request timeout aborts it.
 
-Neither an uncanceled event nor a callback return value accepts a proposal. Missing callbacks, successful callbacks, rejected callbacks and canceled gestures leave actual records unchanged. CanopyX calls no writer from this path. The host performs its authorization, full-network conflict checks, confirmation and persistence, then refreshes the records through its ordinary grid data flow.
+Neither an uncanceled event nor a callback return value accepts a proposal. Missing callbacks, successful callbacks, rejected callbacks and canceled gestures leave actual records unchanged. The calendar's ordinary move and resize permissions remain disabled for a plan, including when proposals are disabled or a callback is pending. Calendar creation and external drops are not supported in plan definitions. CanopyX calls no writer from task gestures. The host performs its authorization, full-network conflict checks, confirmation and persistence, then refreshes the records through its ordinary grid data flow.
 
 ## Static output and print
 

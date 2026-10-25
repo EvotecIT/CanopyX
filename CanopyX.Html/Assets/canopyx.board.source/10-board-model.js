@@ -28,7 +28,7 @@
       if (this.board) return;
       const settings = boardSettings(this), labels = {};
       for (const [key, text] of Object.entries(BOARD_TEXT)) labels[key] = this.opts.labels?.[key] || this.view.labels?.[key] || text;
-      const board = this.board = { settings, labels, rows: [], lanes: [], pending: new Set(), targets: new Map(), epoch: 0 };
+      const board = this.board = { settings, labels, rows: [], lanes: [], pending: new Set(), targets: new Map(), epoch: 0, version: 0 };
       // Editing can install after this part; resolve its setter at call time for this board instance.
       this.setReadOnly = (...args) => { const result = DataGrid.prototype.setReadOnly.apply(this, args); this.boardPaint(); return result; };
       this.host.classList.add("cx-board-host"); this.grid.hidden = true;
@@ -36,9 +36,18 @@
       this.boardFrame = h("section", "cx-board"); this.boardFrame.setAttribute("aria-label", this.view.label);
       this.host.insertBefore(this.boardFrame, this.grid.nextSibling);
       this.host.addEventListener("canopyx:commit", () => this.boardReload(), { signal: this.lifetime.signal });
+      this.host.addEventListener("canopyx:rowsChanged", event => {
+        board.version++; board.epoch++;
+        if ((this.view.source.kind !== "inline" || this.opts.source) && event.detail.source === "api") {
+          // The live owner has already merged supported hosted pushes into its held records.
+          const updated = new Set(event.detail.updated), held = new Map([...this.rowCache.values()].filter(row => !row.status && updated.has(row.key)).map(row => [row.key, row.h]));
+          this.boardSetRows(board.rows.map(row => held.get(row.id) || row), board.total);
+          this.boardFrame.setAttribute("aria-busy", "false");
+        } else void this.boardReload();
+      }, { signal: this.lifetime.signal });
       window.addEventListener("beforeprint", () => { board.printing = true; this.boardPaint(); }, { signal: this.lifetime.signal });
       window.addEventListener("afterprint", () => { board.printing = false; this.boardPaint(); }, { signal: this.lifetime.signal });
-      this.lifetime.signal.addEventListener("abort", () => this.boardFrame.remove(), { once: true });
+      this.lifetime.signal.addEventListener("abort", () => { this.boardFrame.remove(); this.host.classList.remove("cx-board-host"); }, { once: true });
     },
     async boardReload() {
       const board = this.board; if (!board || this.destroyed || !this.acceptedQuery) return;
@@ -59,22 +68,26 @@
           }
         }
         if (this.destroyed || signal.aborted || epoch !== board.epoch) return;
-        board.rows = rows; board.partial = rows.length < total;
-        const column = this.columns.find(column => column.id === board.settings.column);
-        const lanes = new Map((board.settings.lanes || []).map(lane => [boardKey(lane.value, column), { ...lane, key: boardKey(lane.value, column), rows: [], count: 0 }]));
-        for (const row of rows) {
-          const value = cellValue(row.cells[board.settings.column]);
-          if (!boardScalar(value)) throw new Error("CanopyX: a board lane cell must be scalar.");
-          const key = boardKey(value, column);
-          if (!lanes.has(key)) lanes.set(key, { key, value: value ?? null, label: value == null ? board.labels.boardUnassigned : boardText(this, row, board.settings.column), rows: [], count: 0 });
-          lanes.get(key).rows.push(row);
-        }
-        // WIP describes the entire inline dataset, even while a search hides some cards.
-        const countRows = this.view.source.kind === "inline" && !this.opts.source ? this.view.rows : rows;
-        for (const row of countRows) { const lane = lanes.get(boardKey(cellValue(row.cells[board.settings.column]), column)); if (lane) lane.count++; }
-        board.lanes = [...lanes.values()]; this.boardPaint();
+        this.boardSetRows(rows, total);
       } catch (error) { if (!signal.aborted && !this.destroyed && epoch === board.epoch) { this.setNotice(error.message, true); this.emit("error", { error }); } }
       finally { if (epoch === board.epoch) this.boardFrame.setAttribute("aria-busy", "false"); }
+    },
+    boardSetRows(rows, total) {
+      const board = this.board;
+      board.rows = rows; board.total = total; board.partial = rows.length < total;
+      const column = this.columns.find(column => column.id === board.settings.column);
+      const lanes = new Map((board.settings.lanes || []).map(lane => [boardKey(lane.value, column), { ...lane, key: boardKey(lane.value, column), rows: [], count: 0 }]));
+      for (const row of rows) {
+        const value = cellValue(row.cells[board.settings.column]);
+        if (!boardScalar(value)) throw new Error("CanopyX: a board lane cell must be scalar.");
+        const key = boardKey(value, column);
+        if (!lanes.has(key)) lanes.set(key, { key, value: value ?? null, label: value == null ? board.labels.boardUnassigned : boardText(this, row, board.settings.column), rows: [], count: 0 });
+        lanes.get(key).rows.push(row);
+      }
+      // WIP describes the entire inline dataset, even while a search hides some cards.
+      const countRows = this.view.source.kind === "inline" && !this.opts.source ? this.view.rows : rows;
+      for (const row of countRows) { const lane = lanes.get(boardKey(cellValue(row.cells[board.settings.column]), column)); if (lane) lane.count++; }
+      board.lanes = [...lanes.values()]; this.boardPaint();
     }
   });
   const BOARD_QUERY = DataGrid.prototype.setQuery;

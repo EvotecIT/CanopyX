@@ -2,11 +2,14 @@
     const input = this.view.plan, calendar = this.view.calendar, columns = new Map(this.columns.map(column => [column.id, column]));
     const kind = (id, type) => typeof id === "string" && columns.get(id)?.kind === type;
     if (!input || typeof input !== "object" || Array.isArray(input) || !calendar?.resources || !calendar.end || !calendar.resource ||
-        calendar.recurrence || calendar.sources?.length || calendar.views?.length && !calendar.views.includes("timeline") ||
+        calendar.recurrence || calendar.sources?.length || calendar.create || calendar.drop || calendar.views?.length && !calendar.views.includes("timeline") ||
         ["criticalPath", "proposeMoves", "avoidOverlap"].some(key => input[key] !== undefined && typeof input[key] !== "boolean") ||
         (input.baselineStart === undefined) !== (input.baselineEnd === undefined) || input.baselineStart !== undefined &&
           (!kind(input.baselineStart, "datetime") || !kind(input.baselineEnd, "datetime")) || input.milestone !== undefined && !kind(input.milestone, "text"))
       throw new Error("CanopyX: a plan needs a resource timeline, paired baseline date columns and valid options.");
+    // This instance never grants the calendar's move/resize permission, including lazy editing installs and other views.
+    // Host-driven grid edits remain available; task gestures use the plan's informational proposal path.
+    this.calCanEdit = () => false;
     const seen = new Set(), next = new Map(), degree = new Map();
     if (input.dependencies !== undefined && (!Array.isArray(input.dependencies) || input.dependencies.length > 100000 || input.dependencies.some(edge => {
       if (!edge || typeof edge.predecessor !== "string" || !edge.predecessor || typeof edge.successor !== "string" || !edge.successor || edge.predecessor === edge.successor ||

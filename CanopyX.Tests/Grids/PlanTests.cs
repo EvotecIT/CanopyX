@@ -44,6 +44,27 @@ public sealed class PlanTests {
     }
 
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Plan_RejectsCalendarCreationAndDropButAllowsOrdinaryEditing(bool create) {
+        var view = Grid();
+        view.GetColumn("starts").Editable = true;
+        view.GetColumn("title").Editable = true;
+        view.Calendar!.Editing = new CanopyCalendarEditing();
+        if (create) view.Calendar.Create = new CanopyCalendarCreate();
+        else view.Calendar.Drop = true;
+
+        Assert.Contains("cannot create or drop", Assert.Throws<InvalidOperationException>(view.Validate).Message);
+
+        view.Calendar.Create = null;
+        view.Calendar.Drop = false;
+        var json = JsonNode.Parse(view.ToJson())!;
+        Assert.True(json["calendar"]!["editable"]!.GetValue<bool>());
+        Assert.True(view.GetColumn("starts").Editable);
+        Assert.True(view.GetColumn("title").Editable);
+    }
+
+    [Theory]
     [InlineData("baseline-pair")]
     [InlineData("unknown-column")]
     [InlineData("wrong-kind")]
@@ -123,17 +144,45 @@ public sealed class PlanTests {
         Assert.Equal("2026-10-06 00:00 UTC – 2026-10-06 00:00 UTC", result.Rows[3][2]);
     }
 
-    [Fact]
-    public void StaticPlan_AllDayTasksKeepTheCalendarsExclusiveDateBoundary() {
+    [Theory]
+    [InlineData(2, 19, 3)]
+    [InlineData(4, 19, 5)]
+    [InlineData(4, 0, 4)]
+    public void StaticPlan_AllDayTasksKeepTheCalendarsExclusiveDateBoundary(int endDay, int endHour, int exclusiveEndDay) {
         var view = Grid();
         view.Columns.Add(new CanopyColumn("allDay", "All day"));
         view.Calendar!.AllDay = "allDay";
         view.Rows[0].Cells["allDay"] = true;
         view.Rows[0].Cells["starts"] = At(2).AddHours(18);
-        view.Rows[0].Cells["ends"] = At(2).AddHours(19);
+        view.Rows[0].Cells["ends"] = At(endDay).AddHours(endHour);
         var result = CanopyStaticHtml.RenderGridWithResult(view);
-        Assert.Equal("2026-10-02 00:00 UTC – 2026-10-03 00:00 UTC", result.Rows[0][2]);
+        Assert.Equal($"2026-10-02 00:00 UTC – 2026-10-{exclusiveEndDay:00} 00:00 UTC", result.Rows[0][2]);
         Assert.DoesNotContain("Milestone", result.Rows[0][0]);
+    }
+
+    [Theory]
+    [InlineData(19, true)]
+    [InlineData(0, false)]
+    public void StaticPlan_AllDayEndBoundaryDeterminesDependencyConflictsAndCriticalPath(int endHour, bool conflict) {
+        var view = Grid();
+        view.Columns.Add(new CanopyColumn("allDay", "All day"));
+        view.Calendar!.AllDay = "allDay";
+        view.Rows[0].Cells["allDay"] = true;
+        view.Rows[0].Cells["starts"] = At(2).AddHours(18);
+        view.Rows[0].Cells["ends"] = At(4).AddHours(endHour);
+        view.Rows[1].Cells["starts"] = At(4).AddHours(12);
+        view.Rows[1].Cells["ends"] = At(5).AddHours(12);
+        view.Rows[2].Cells["starts"] = At(2);
+        view.Rows[2].Cells["ends"] = At(5).AddHours(12);
+        view.Plan!.Dependencies.Add(new CanopyPlanDependency("prepare", "migrate"));
+
+        var result = CanopyStaticHtml.RenderGridWithResult(view);
+
+        Assert.Equal(conflict ? view.Labels.PlanDependencyConflict.Replace("{task}", "Prepare") : "Prepare", result.Rows[1][5]);
+        Assert.Equal(conflict ? view.Labels.PlanCritical : string.Empty, result.Rows[0][4]);
+        Assert.Equal(conflict ? view.Labels.PlanCritical : string.Empty, result.Rows[1][4]);
+        Assert.Equal(conflict ? string.Empty : view.Labels.PlanCritical, result.Rows[2][4]);
+        Assert.True(result.IsComplete);
     }
 
     private static DateTime At(int day) => new DateTime(2026, 10, day, 0, 0, 0, DateTimeKind.Utc);

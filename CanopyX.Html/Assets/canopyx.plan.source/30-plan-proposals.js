@@ -6,9 +6,10 @@
       const signal = this.lifetime.signal, body = this.calBody;
       body.addEventListener("pointerdown", event => {
         const button = event.target.closest(".cx-plan-task"), task = button?._calEvent;
-        if (event.button !== 0 || !task || task.base?.external || this.planSending) return;
+        if (event.button !== 0 || !task || task.base?.external) return;
         // Capture before the calendar's edit handlers; plan gestures never enter calApply or a writer.
         event.stopImmediatePropagation();
+        if (this.planSending) return;
         this.planDrag = { pointer: event.pointerId, task, x: event.clientX, y: event.clientY, version: this.calVersion };
         body.setPointerCapture(event.pointerId);
       }, { capture: true, signal });

@@ -31,9 +31,9 @@ public static partial class CanopyStaticHtml {
             AppendBoardLanes(html, view, groupRows, lanes, visible, projection, cardOptions, settings, captured, rows);
         }
         if (visible.Count < matching || offset > 0) {
-            var note = (settings.OverflowNote ?? view.Labels.OverflowNote)
-                .Replace("{shown}", visible.Count.ToString("N0", settings.Culture)).Replace("{total}", matching.ToString("N0", settings.Culture));
-            html.Append("<p style=\"margin:12px 0 0;\">").Append(BoardEncode(note)).Append("</p>");
+            html.Append("<p style=\"margin:12px 0 0;\">");
+            AppendOverflowContent(html, visible.Count, matching, settings, new CanopyStaticStyles(settings), view.Labels);
+            html.Append("</p>");
         }
         if (rows.Count == 0 && lanes.Count == 0) html.Append("<p>").Append(BoardEncode(view.Labels.BoardEmpty)).Append("</p>");
         return new CanopyStaticHtmlResult(html.Append("</div>").ToString(), captured, matching, false, visible.Count >= matching && offset == 0);

@@ -54,6 +54,40 @@ async function openPlan(page, { dark = false, width = 1440, rtl = false, handler
 const task = (page, id) => page.locator('.cx-plan-task[data-cx-record="' + id + '"]');
 const actuals = page => page.evaluate(() => ({ changed: JSON.stringify(window.planApi.view.rows) !== window.initialRows, writes: window.writerCalls }));
 
+test("plan blocks calendar keyboard writes with proposals enabled or disabled", async ({ page }) => {
+  for (const proposeMoves of [true, false]) {
+    await openPlan(page, { change: view => {
+      view.plan.proposeMoves = proposeMoves; view.calendar.editable = true;
+      for (const column of view.columns) if (["starts", "ends", "owner"].includes(column.id)) column.editable = true;
+    } });
+    await task(page, "migrate").focus(); await page.keyboard.press("F2");
+    await page.keyboard.press("ArrowRight"); await page.keyboard.press("Enter");
+    await nextFrames(page);
+    expect(await actuals(page)).toEqual({ changed: false, writes: 0 });
+    expect(await page.evaluate(() => window.planApi.getChanges())).toEqual([]);
+    expect(await page.evaluate(() => !!window.planApi.calMoving)).toBe(false);
+    expect(await page.evaluate(() => window.proposals.length)).toBe(0);
+  }
+});
+
+test("plan keeps the calendar writer closed during a pending host proposal", async ({ page }) => {
+  await openPlan(page, { handler: "pending", change: view => {
+    view.calendar.editable = true;
+    for (const column of view.columns) if (["starts", "ends", "owner"].includes(column.id)) column.editable = true;
+  } });
+  await task(page, "migrate").focus(); await page.keyboard.press("Alt+ArrowRight");
+  await page.waitForFunction(() => typeof window.finishProposal === "function");
+  const box = await task(page, "notes").boundingBox();
+  await page.mouse.move(box.x + 20, box.y + box.height / 2); await page.mouse.down();
+  await page.mouse.move(box.x + 64, box.y + box.height / 2, { steps: 6 }); await page.mouse.up();
+  await task(page, "verify").focus(); await page.keyboard.press("F2");
+  await page.keyboard.press("ArrowRight"); await page.keyboard.press("Enter");
+  await page.evaluate(() => window.finishProposal()); await nextFrames(page);
+  expect(await actuals(page)).toEqual({ changed: false, writes: 0 });
+  expect(await page.evaluate(() => window.planApi.getChanges())).toEqual([]);
+  expect(await page.evaluate(() => window.proposals.length)).toBe(1);
+});
+
 test("plan renders task bars, milestones, dependency arrows, full-network criticality and baseline", async ({ page }) => {
   await openPlan(page, { change: view => view.plan.dependencies.push({ predecessor: "prepare", successor: "release" }) });
   await expect(page.locator(".cx-plan-task")).toHaveCount(5);

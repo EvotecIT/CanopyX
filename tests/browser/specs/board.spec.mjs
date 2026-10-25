@@ -1,9 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { exampleUrl } from "./support.mjs";
+import fs from "node:fs";
+import path from "node:path";
+import { exampleUrl, repo } from "./support.mjs";
 
 async function board(page, settings = {}) {
   await page.goto(exampleUrl("board.html"));
   await page.waitForFunction(() => document.querySelector("[data-canopyx-host]")?.canopyx);
+  await page.addScriptTag({ content: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-live.js"), "utf8") });
+  await page.addStyleTag({ content: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-live.css"), "utf8") });
   await page.evaluate(async options => {
     const host = document.querySelector("[data-canopyx-host]"), previous = host.canopyx;
     await previous.ready;
@@ -29,11 +33,11 @@ async function board(page, settings = {}) {
     }
     view.query = { search: "", sort: [], filters: [] };
     view.source = { kind: "inline" }; view.presentation = "continuous"; view.pageSize = 100;
-    const opts = { view, onBoardMove: options.deferred ? () => new Promise(resolve => { window.acceptMove = resolve; }) : options.accept ? () => true : () => false };
+    const opts = { view, editing: { isEditable: () => !window.lockBoard }, onBoardMove: options.deferred ? () => new Promise(resolve => { window.acceptMove = resolve; }) : options.accept ? () => true : () => false };
     if (options.hosted) {
-      const rows = view.rows; delete view.rows; view.source = { kind: "host" }; window.boardRequests = [];
+      const rows = view.rows; window.hostRows = rows; window.hostRevision = "board-snapshot"; delete view.rows; view.source = { kind: "host" }; window.boardRequests = [];
       opts.source = { query(query) { window.boardRequests.push(query); return { protocol: "canopyx/2", type: "gridPage", view: view.id,
-        revision: "board-snapshot", offset: query.offset, total: rows.length, matched: rows.length, items: rows.slice(query.offset, query.offset + query.limit) }; } };
+        revision: window.hostRevision, offset: query.offset, total: rows.length, matched: rows.length, items: rows.slice(query.offset, query.offset + query.limit) }; } };
     }
     if (options.rejectWriter) opts.editing = { commit: batch => ({ protocol: "canopyx/2", type: "gridCommitResult", view: view.id,
       rows: batch.rows.map(row => ({ id: row.id, status: "error", error: "Host refused the change" })) }) };
@@ -174,4 +178,58 @@ test("board typed lane identities match dates by instant and preserve boolean nu
   await expect(lane(page, "Unassigned").locator(".cx-board-count")).toHaveText("1");
   await board(page, { typedLane: "text" });
   for (const label of ["Boolean", "Text", "Unassigned", "Empty text"]) await expect(lane(page, label).locator(".cx-board-count")).toHaveText("1");
+});
+
+test("board deferred approval rechecks read-only and per-record editing permission", async ({ page }) => {
+  for (const permission of ["readOnly", "record"]) {
+    await board(page, { deferred: true });
+    await card(page, "r1").locator(".cx-board-move").selectOption('\"done\"');
+    await page.waitForFunction(() => typeof window.acceptMove === "function");
+    await page.evaluate(kind => { if (kind === "readOnly") window.boardApi.setReadOnly(true); else window.lockBoard = true; window.acceptMove(true); }, permission);
+    await expect(card(page, "r1").locator(".cx-board-move")).toBeDisabled();
+    await expect(lane(page, "To do").locator('[data-cx-board-record="r1"]')).toBeVisible();
+    expect(await page.evaluate(() => window.boardApi.view.rows.find(row => row.id === "r1").cells.status)).toBe("todo");
+    expect(await page.evaluate(() => window.boardApi.getChanges())).toEqual([]);
+  }
+});
+
+test("board live transactions reconcile cards and work limits and retire pending approvals", async ({ page }) => {
+  await board(page, { deferred: true, limit: 5 });
+  await card(page, "r1").focus(); await page.keyboard.press("Alt+ArrowRight");
+  await page.waitForFunction(() => typeof window.acceptMove === "function");
+  await page.evaluate(async () => {
+    await window.boardApi.updateRows([{ id: "r2", cells: { status: "doing", title: "Updated task" } }]);
+    await window.boardApi.removeRows(["r4"]);
+  });
+  await expect(lane(page, "In progress").locator(".cx-board-count")).toHaveText("5 / 5");
+  await expect(lane(page, "In progress").locator('[data-cx-board-record="r2"]')).toContainText("Updated task");
+  await expect(card(page, "r4")).toHaveCount(0);
+  await page.evaluate(() => window.acceptMove(true));
+  await expect(card(page, "r1").locator(".cx-board-move")).toBeEnabled();
+  await expect(lane(page, "To do").locator('[data-cx-board-record="r1"]')).toBeVisible();
+  expect(await page.evaluate(() => window.boardApi.getChanges())).toEqual([]);
+});
+
+test("hosted board follows held-row pushes and a refreshed source revision", async ({ page }) => {
+  await board(page, { hosted: true });
+  await page.evaluate(() => window.boardApi.updateRows([{ id: "r1", cells: { status: "done", title: "Pushed task" } }]));
+  await expect(lane(page, "Complete").locator('[data-cx-board-record="r1"]')).toContainText("Pushed task");
+  await page.evaluate(async () => {
+    window.hostRows.find(row => row.id === "r2").cells.status = "done";
+    window.hostRows.find(row => row.id === "r2").cells.title = "Refreshed task";
+    window.hostRevision = "board-next"; await window.boardApi.refreshRows();
+  });
+  await expect(lane(page, "Complete").locator('[data-cx-board-record="r2"]')).toContainText("Refreshed task");
+  await expect(lane(page, "To do").locator('[data-cx-board-record="r1"]')).toContainText("Task 1");
+});
+
+test("destroying a board releases its host for an ordinary grid", async ({ page }) => {
+  await board(page);
+  await page.evaluate(async () => {
+    const api = window.boardApi, host = document.querySelector("[data-canopyx-host]"), view = JSON.parse(JSON.stringify(api.view));
+    api.destroy(); host.replaceChildren(); delete view.board;
+    window.boardApi = CanopyX.createDataGrid(host, { view }); await window.boardApi.ready;
+  });
+  await expect(page.locator(".cx-grid")).toBeVisible();
+  await expect(page.locator(".cx-board")).toHaveCount(0);
 });

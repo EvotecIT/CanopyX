@@ -36,7 +36,10 @@ internal sealed class CanopyPlanAnalysis {
             var allDay = Value(row, view.Calendar.AllDay) is true || string.Equals(Value(row, view.Calendar.AllDay) as string, "true", StringComparison.Ordinal);
             if (allDay) {
                 start = new DateTimeOffset(start.Value.UtcDateTime.Date, TimeSpan.Zero);
-                end = new DateTimeOffset(end.UtcDateTime.Date, TimeSpan.Zero);
+                var endDate = end.UtcDateTime;
+                end = new DateTimeOffset(endDate.Date, TimeSpan.Zero);
+                // Midnight is exclusive; an end during a day includes that whole day, as in the calendar.
+                if (endDate.TimeOfDay != TimeSpan.Zero) end = end.AddDays(1);
                 if (end <= start.Value) end = start.Value.AddDays(1);
             }
             var milestone = end <= start.Value || Value(row, plan.Milestone) is true || string.Equals(Value(row, plan.Milestone) as string, "true", StringComparison.Ordinal);
