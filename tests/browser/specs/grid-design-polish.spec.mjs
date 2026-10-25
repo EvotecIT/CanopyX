@@ -90,7 +90,7 @@ test('only a filtered header shows the filled accent funnel; column menus appear
   await setQuery(page,{filters:[{column:'amount',operator:'gt',values:[5]}]});
   await expect(page.locator('.cx-grid-header-filter:visible')).toHaveCount(1);
   const funnel=page.locator('.cx-hcell[data-cx-column="amount"] .cx-grid-header-filter');await expect(funnel).toBeVisible();
-  const colors=await funnel.evaluate(element=>{const svg=element.querySelector('svg'),probe=document.createElement('span');probe.style.color='var(--cx-accent)';element.appendChild(probe);
+  const colors=await funnel.evaluate(element=>{const svg=element.querySelector('svg'),probe=document.createElement('span');probe.style.color='var(--hfx-color-accent)';element.appendChild(probe);
     const result={fill:getComputedStyle(svg).fill,stroke:getComputedStyle(svg).stroke,accent:getComputedStyle(probe).color};probe.remove();return result;});
   expect(colors.fill).toBe(colors.accent);expect(colors.stroke).toBe(colors.accent);
   await funnel.click();const pop=page.getByRole('dialog',{name:'Amount: Filter…'});await expect(pop).toBeVisible();await pop.getByRole('spinbutton',{name:'Value',exact:true}).press('Escape');await expect(funnel).toBeFocused();

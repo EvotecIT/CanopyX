@@ -17,7 +17,7 @@ const view = {
 
 for (const scheme of ["light", "dark"]) {
   test(`body-mounted grid overlays retain the host's resolved ${scheme} scheme`, async ({ page }, testInfo) => {
-    const palette = scheme === "dark" ? "--cx-surface:#16181c;--cx-text:#f2f3f5;" : "--cx-surface:#ffffff;--cx-text:#16181c;";
+    const palette = scheme === "dark" ? "--hfx-color-surface:#16181c;--hfx-color-text:#f2f3f5;" : "--hfx-color-surface:#ffffff;--hfx-color-text:#16181c;";
     const html = viewPage(view).replace("</head>", `<style>[data-canopyx-host] { ${palette}color-scheme:${scheme}; }</style></head>`);
     await page.route("http://canopyx.test/host-theme", route => route.fulfill({ contentType: "text/html", body: html }));
     await page.goto("http://canopyx.test/host-theme");

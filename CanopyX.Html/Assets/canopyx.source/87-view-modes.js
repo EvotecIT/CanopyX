@@ -13,7 +13,7 @@
   }));
   const LAYOUT_MODES = ["fit", "scroll", "cards"], LAYOUT_DENSITIES = ["compact", "default", "comfortable"];
   // Row height steps per density, relative to the view's own row height and declared density.
-  const DENSITY_STEP = { tree: { compact: -4, default: 0, comfortable: 8 }, grid: { compact: -6, default: 0, comfortable: 8 } };
+  const DENSITY_STEP = { tree: { compact: -8, default: 0, comfortable: 0 }, grid: { compact: -8, default: 0, comfortable: 0 } };
   // Filled by the parts when they install: highlightStart, setHighlight, matches, step, layoutsStart and setLayout.
   const VIEW_MODES = {};
   const HIGHLIGHT_KEYS = ["enabled", "search", "filters", "matchCase", "ignoreAccents", "minLength", "filterTones"];
@@ -64,6 +64,8 @@
 
   // The row height of a density: the view's own height moved by the density's step, within the 20 to 64 pixel bounds.
   function densityRowHeight(view, density) {
+    const shared = sharedDensity(view.host);
+    if (shared) return shared === "compact" ? 32 : 40;
     const steps = DENSITY_STEP[view.kind];
     return Math.max(20, Math.min(64, view.baseRowH + steps[density] - steps[view.declaredDensity]));
   }
@@ -77,6 +79,7 @@
       this.layoutOptions = readLayout(view.layout, this.kind, this.declaredDensity);
       this.baseRowH = this.rowH;
       this.adoptModes({ layout: this.layoutOptions || { mode: "fit", density: this.declaredDensity }, highlight: !!this.highlightOptions?.enabled });
+      watchSharedDensity(this);
     },
     // Takes a saved state's choices (readModeState) before the view builds itself, so its first rows use them.
     adoptModes(choice) {
@@ -129,7 +132,7 @@
   // Both view kinds load the same two parts; whichever view loads a part first installs it for every view of the runtime.
   // The flat-grid runtimes add their helpers to VIEW_MODES (86-grid-view-modes.js) before any view is created.
   const viewModeContext = () => ({ VIEW_MODES, TreeGrid, h, setText, fill, numberFormat, foldText, cellText, cellValue, isCellObject,
-    setAttr, toneOf, watchFlyout, densityRowHeight, MAX_PROTOCOL_INTEGER, LAYOUT_DENSITIES, plural, svgIcon });
+    setAttr, toneOf, toneVariable, watchFlyout, densityRowHeight, layoutAnchor, layoutRows, layoutApplyTree, MAX_PROTOCOL_INTEGER, LAYOUT_DENSITIES, plural, svgIcon });
   definePart(TreeGrid, "highlight", "search highlighting", viewModeContext);
   definePart(TreeGrid, "layouts", "layout modes", viewModeContext);
   // A tree starts its declared modes once its tree tools part (and so its toolbar menus) is installed.

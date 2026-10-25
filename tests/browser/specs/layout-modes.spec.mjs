@@ -48,7 +48,7 @@ for (const [width, theme] of [[1440, "light"], [1440, "dark"], [390, "light"], [
     if (width === 390) expect(await page.locator(".cx-grid").evaluate(grid => grid.scrollWidth > grid.clientWidth)).toBe(true);
     await panel.getByRole("radio", { name: "Comfortable" }).check();
     await expect(host(page)).toHaveAttribute("data-cx-density", "comfortable");
-    expect(await card.evaluate(row => row.getBoundingClientRect().height)).toBe(42);
+    expect(await card.evaluate(row => row.getBoundingClientRect().height)).toBe(40);
     await panel.getByRole("radio", { name: "Fit to width" }).check();
     await expect(host(page)).not.toHaveAttribute("data-cx-layout", /./);
     const axe = await new AxeBuilder({ page }).include(".cx-toolbar").disableRules(["scrollable-region-focusable"]).analyze();
@@ -135,8 +135,8 @@ test("the layout and density are part of saved views and the remembered state", 
 test("density sets the row height and padding, and keeps an explicit row height's offset", async ({ page }) => {
   await open(page, ticketView(50, { layout: { density: "compact" } }));
   const row = page.locator(".cx-canvas .cx-row[data-cx-id]").first();
-  expect(await row.evaluate(element => element.getBoundingClientRect().height)).toBe(28);
-  for (const [density, height] of [["default", 34], ["comfortable", 42], ["compact", 28]]) {
+  expect(await row.evaluate(element => element.getBoundingClientRect().height)).toBe(26);
+  for (const [density, height] of [["default", 34], ["comfortable", 34], ["compact", 26]]) {
     await call(page, "setLayout", { density }); await settle(page);
     expect(await page.locator(".cx-canvas .cx-row[data-cx-id]").first().evaluate(element => element.getBoundingClientRect().height)).toBe(height);
   }
@@ -215,7 +215,8 @@ test("a tree offers fit and scroll, with the density, and refuses cards", async 
   await expect(page.locator(".cx-hcell")).toHaveCount(3);
   expect(await page.locator(".cx-row > .cx-tree").first().evaluate(cell => getComputedStyle(cell).position)).toBe("sticky");
   await page.locator(".cx-grid-layout").getByRole("radio", { name: "Comfortable" }).check();
-  expect(await page.locator(".cx-canvas .cx-row[data-cx-id]").first().evaluate(row => row.getBoundingClientRect().height)).toBe(36);
+  // An explicit row height stays intact when default and comfortable share the same density step.
+  expect(await page.locator(".cx-canvas .cx-row[data-cx-id]").first().evaluate(row => row.getBoundingClientRect().height)).toBe(28);
   expect((await call(page, "getState")).layout).toEqual({ mode: "scroll", density: "comfortable" });
   expect(await page.evaluate(view => { try { CanopyX.createTreeGrid(document.createElement("div"), { view: { ...view, id: "bad", layout: { mode: "cards" } } }); return "ok"; } catch (error) { return error.message; } },
     treeView())).toMatch(/invalid layout/);

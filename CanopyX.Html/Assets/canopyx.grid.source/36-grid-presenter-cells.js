@@ -42,7 +42,7 @@
       } else if(options.kind==="state"||options.kind==="enum") {
         // Quiet values are plain text (muted unless quietStyle is "plain"); in an enum they keep the pills' inline start.
         if(options.quietTones?.includes(tone)) add(text,(options.quietStyle==="plain"?"cx-presenter-text":"p-muted")+(options.kind==="enum"?" p-inset":""));
-        else if(options.kind==="state"||tone==="success") {
+        else if(options.kind==="state") {
           const state=add("","p-state"+(tone==="success"?" quiet":""));const dot=h("span","p-dot "+(tone==="success"?"quiet":tone));
           toneColors(dot,toneOf(tone));state.append(dot,document.createTextNode(text));
         } else {const pill=add(text,"p-pill "+tone);applyTone(pill,pill.className,toneOf(tone));}

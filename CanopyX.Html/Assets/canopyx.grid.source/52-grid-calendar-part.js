@@ -5,8 +5,8 @@
   // before the first query, so the first paint is the calendar; until it is in, the calendar methods load it first.
   const GRID_CALENDAR = definePart(DataGrid, "calendar", "calendar", () => ({ DataGrid, h, setText, fill, plural, gridButton, gridIcon, gridFreeze, cellText,
     cellValue, isCellObject, gridQuery, gridQueryRows, gridResultShape, gridPresenterTone, validateGridRows, validateGridPage, validateGridCursorPage, validStructuralCount, checkDocument,
-    numberFormat, loadPart, HostCellContext, disposeHostSlot, PROTOCOL }));
-  definePart(DataGrid, "timeline", "resource timeline", () => ({ DataGrid, TreeGrid, h, setText, fill, numberFormat }));
+    numberFormat, loadPart, HostCellContext, disposeHostSlot, PROTOCOL, toneVariable }));
+  definePart(DataGrid, "timeline", "resource timeline", () => ({ DataGrid, TreeGrid, h, setText, fill, numberFormat, toneVariable }));
   // What a basic calendar does not use loads only for definitions that need it: recurrence, editing and iCalendar.
   definePart(DataGrid, "calendar-recurrence", "calendar recurrence", () => ({ DataGrid }));
   definePart(DataGrid, "calendar-edit", "calendar editing", () => ({ DataGrid, h, setText, fill, cellValue, GRID_DRAG }));

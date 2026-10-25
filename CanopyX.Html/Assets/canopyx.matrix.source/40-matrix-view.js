@@ -28,7 +28,6 @@
     reportError(error, hook) { this.host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error, hook }, bubbles: true })); }
     build() {
       const host = this.host, doc = this.doc, signal = this.lifetime.signal;
-      if (!host.hasAttribute("data-cx-theme")) { host.setAttribute("data-cx-theme", "auto"); this.addedTheme = true; }
       const root = this.root = h("div", "cx-matrix cx-mx-" + doc.density);
       this.bar = h("div", "cx-mx-bar"); this.legend = h("div", "cx-mx-legend");
       this.legend.setAttribute("role", "list"); this.legend.setAttribute("aria-label", this.labels.matrixLegend); this.legend.hidden = !doc.legend;
@@ -82,7 +81,8 @@
       // The canvas reads its colours from the stylesheet: a theme switch, a colour scheme or forced colours draw the cells again.
       const restyle = () => { if (!this.destroyed) { this.lookCache = null; this.scheduleRender(); } };
       this.themeWatch = new MutationObserver(restyle);
-      this.themeWatch.observe(host, { attributes: true, attributeFilter: ["data-cx-theme", "class", "style"] });
+      const themeAttributes = ["data-theme", "data-cx-theme", "data-cx-fallback-mode", "data-hfx-style", "data-hfx-mode", "data-hfx-density", "data-bs-theme", "data-hfx-theme", "data-hfx-tokens", "class", "style"];
+      for (let owner = host; owner; owner = owner.parentElement) this.themeWatch.observe(owner, { attributes: true, attributeFilter: themeAttributes });
       for (const query of ["(prefers-color-scheme: dark)", "(forced-colors: active)"]) global.matchMedia?.(query).addEventListener?.("change", restyle, { signal });
     }
     /** The texts that come from the document and the labels: written again when update brings another document. */

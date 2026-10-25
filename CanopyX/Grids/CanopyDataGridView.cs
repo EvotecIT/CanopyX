@@ -95,7 +95,7 @@ public sealed partial class CanopyDataGridView {
 
     /// <summary>Gets or sets the fixed height, or the minimum and estimate for automatic rows, in CSS pixels between 20 and 64.</summary>
     public int RowHeight {
-        get => _rowHeight ?? (Density == CanopyGridDensity.Compact ? 28 : Density == CanopyGridDensity.Comfortable ? 42 : 34);
+        get => _rowHeight ?? (Density == CanopyGridDensity.Compact ? 32 : 40);
         set {
             if (value < 20 || value > 64) throw new ArgumentOutOfRangeException(nameof(value), value, "Row height must be between 20 and 64 pixels.");
             _rowHeight = value;

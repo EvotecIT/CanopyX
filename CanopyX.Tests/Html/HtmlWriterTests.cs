@@ -60,7 +60,7 @@ public sealed class HtmlWriterTests {
         var view = SampleDocuments.FullView();
 
         Assert.DoesNotContain("data-cx-mount", view.ToHtmlFragment());
-        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"auto\" data-cx-mount=\"manual\">", view.ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false }));
+        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-mount=\"manual\">", view.ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false }));
         Assert.Contains(" data-cx-mount=\"manual\"", view.ToHtmlPage(new CanopyHtmlOptions { AutoMount = false, AssetMode = CanopyAssetMode.External }));
     }
 

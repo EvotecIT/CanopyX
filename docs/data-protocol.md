@@ -176,7 +176,7 @@ Paged version-1 browser state adds optional `paging: { pageLength, offset }`, se
 
 #### Row and cell highlight rules
 
-`gridRow` accepts optional `tone` and `className`. Tones use the existing named `--cx-tone-<name>` system and set `data-cx-tone` on the row for host styling. Classes contain visible text, at most 1,024 UTF-16 units, and no controls. By default a row tone draws nothing and never colours the row's cells: the coloured bar at the row start is reserved for the selected row, and cells carry colour only through their own `tone`. Optional view-level `rowAccents: true` restores the bar for row tones.
+`gridRow` accepts optional `tone` and `className`. Tones use the existing named `--hfx-color-status-<name>-fg` system and set `data-cx-tone` on the row for host styling. Classes contain visible text, at most 1,024 UTF-16 units, and no controls. By default a row tone draws nothing and never colours the row's cells: the coloured bar at the row start is reserved for the selected row, and cells carry colour only through their own `tone`. Optional view-level `rowAccents: true` restores the bar for row tones.
 
 Optional `highlightRules` holds at most 64 ordered rules with the same `column`, `operator` and `values` as a grid filter, plus `tone` and/or `className`. `target` defaults to `row`; `cell` means the condition column's cell. Operators, operand arity, numeric/date typing and deterministic text folding match the existing query contract. Missing values match only null tests. The first matching rule wins independently for the row and each cell. A row rule overrides its supplied tone and adds its class to host row classes; omitted tone retains the default. Cell rules retain an existing tone when they only add classes. Rules do not alter filtering, paging, selection, raw exports or host data. Raw row metadata is retained in immutable export snapshots; computed rule decoration remains presentation policy.
 
@@ -190,7 +190,7 @@ The grid state carries `formatRules` when the grid's rules differ from the view'
 
 #### Wrapped cells and measured grid rows
 
-Grid columns accept `wrap: true` to retain line breaks and wrap long text. The wire document retains numeric `rowHeight`, an integer from 20 to 64. Wrapped columns or optional `autoRowHeight: true` enable measured records and use that height as both the minimum and the estimate for unseen rows. Unconfigured columns retain fixed rows; explicit JavaScript `autoRowHeight: false` keeps wrapped text to a one-line preview. The JavaScript API also accepts `rowHeight: "auto"` with optional `estimatedRowHeight` (20 to 64, default 28) as shorthand. In .NET, use `CanopyColumn.Wrap` or `CanopyDataGridView.AutoRowHeight`; `RowHeight` supplies the estimate. Automatic height applies to continuous, paged and grouped grids. Group/status rows retain the minimum height. Cards use fixed geometry with room for the field label and up to two whole wrapped value lines, even when the corresponding table uses measured rows.
+Grid columns accept `wrap: true` to retain line breaks and wrap long text. The wire document retains numeric `rowHeight`, an integer from 20 to 64. Wrapped columns or optional `autoRowHeight: true` enable measured records and use that height as both the minimum and the estimate for unseen rows. Unconfigured columns retain fixed rows; explicit JavaScript `autoRowHeight: false` keeps wrapped text to a one-line preview. The JavaScript API also accepts `rowHeight: "auto"` with optional `estimatedRowHeight` (20 to 64, default 32 in compact density, 40 otherwise) as shorthand. In .NET, use `CanopyColumn.Wrap` or `CanopyDataGridView.AutoRowHeight`; `RowHeight` supplies the estimate. Automatic height applies to continuous, paged and grouped grids. Group/status rows retain the minimum height. Cards use fixed geometry with room for the field label and up to two whole wrapped value lines, even when the corresponding table uses measured rows.
 
 Optional `dragRows: true` (default false; .NET `CanopyDataGridView.DragRows`) lets readers drag rows out of the grid to a calendar that accepts drops (`calendar.drop`), or pick a row up with F2 from row focus and drop it with Enter (`gridRowPicked` is announced).
 
@@ -636,7 +636,7 @@ Cell objects optionally include `secondary` and up to 4096 ordered `series` peri
 | `icon` | Required plain-text `glyph`, 1–32 nonblank code units | Decorative glyph beside the existing text alternative; no markup is interpreted. |
 | `progress` | Positive finite `maximum` within the safe-integer magnitude; optional `thresholds` | Numeric column with a slim threshold-coloured track and its formatted value, visually clamped from zero to maximum. The raw value is retained. |
 | `boolean` | Optional `inverted` | Boolean values show a check or muted dash, with translated accessible yes/no text. Inverted true values use the danger tone. |
-| `enum` / `state` | Optional raw-value `tones` map; optional `quietTones`; optional `quietStyle` (`muted` or `plain`) | Enums use compact pills, each with a tinted fill and a border in its tone (a host tone takes its `--cx-tone-<name>-bg` fill when the theme defines one, otherwise a tint of its ink); the `success` tone and state columns use a dot and text, with quiet healthy styling. Tones listed in `quietTones` (at most 16) render as plain text, for example `["success"]` so passing values read quietly and chips remain for values that need attention. Quiet text is muted unless `quietStyle` is `plain`, which keeps the normal text colour (for values without a tone that are ordinary, not secondary). In an enum column quiet values keep the pills' inline start, so both line up. |
+| `enum` / `state` | Optional raw-value `tones` map; optional `quietTones`; optional `quietStyle` (`muted` or `plain`) | Enums use compact pills, each with a tinted fill and a border in its tone (a host tone takes its `--hfx-color-status-<name>-bg` fill when the theme defines one, otherwise a tint of its ink); state columns use a dot and text, with quiet healthy styling for the `success` tone. Tones listed in `quietTones` (at most 16) render as plain text, for example `["success"]` so passing values read quietly and chips remain for values that need attention. Quiet text is muted unless `quietStyle` is `plain`, which keeps the normal text colour (for values without a tone that are ordinary, not secondary). In an enum column quiet values keep the pills' inline start, so both line up. |
 | `change` | Numeric `deltaColumn`; optional `higherIsGood` | A directional delta beside the original formatted value; the column declares which direction is healthy. |
 | `statusStrip` | None | One segment per period, shrinking to two pixels before adjacent periods merge into worst-state buckets. Tooltips name the original period or merged range. |
 | `sparklineBars` / `sparklineLine` | Optional `thresholds`, paired `minimum` / `scaleMaximum`, `higherIsGood`, and `mark` | Compact history with a per-cell or declared shared scale and a marked worst or last point. |
@@ -949,14 +949,14 @@ The CanopyX stylesheet has colours for six tones: `neutral`, `info`, `success`, 
 
 | Custom property | Used for |
 | --- | --- |
-| `--cx-tone-<name>` | Text colour of cells and badges with the tone |
-| `--cx-tone-<name>-bg` | Background of badges with the tone. Optional; without it the badge gets a tint of the text colour. |
+| `--hfx-color-status-<name>-fg` | Text colour of cells and badges with the tone |
+| `--hfx-color-status-<name>-bg` | Background of badges with the tone. Optional; without it the badge gets a tint of the text colour. |
 
 ```css
 .cx-host {
-  --cx-tone-critical: #8f1d1d;  --cx-tone-critical-bg: #fde8e8;
-  --cx-tone-high: #9a3412;      --cx-tone-medium: #854d0e;      --cx-tone-low: #3f6212;
-  --cx-tone-maintenance: #3730a3;
+  --hfx-color-status-critical-fg: #8f1d1d;  --hfx-color-status-critical-bg: #fde8e8;
+  --hfx-color-status-high-fg: #9a3412;      --hfx-color-status-medium-fg: #854d0e;      --hfx-color-status-low-fg: #3f6212;
+  --hfx-color-status-maintenance-fg: #3730a3;
 }
 ```
 

@@ -36,7 +36,6 @@
     }
     build() {
       const doc = this.doc, labels = this.labels, signal = this.lifetime.signal;
-      if (!this.host.closest("[data-cx-theme]")) { this.host.setAttribute("data-cx-theme", "auto"); this.addedTheme = true; }
       const root = this.root = h("div", "cx-diff");
       const head = h("div", "cx-diff-head"), title = this.titleBox = h("div", "cx-diff-title"), tools = this.tools = h("div", "cx-diff-tools");
       head.append(title, tools);

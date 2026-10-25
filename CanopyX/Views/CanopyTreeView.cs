@@ -18,7 +18,7 @@ namespace CanopyX;
 public sealed partial class CanopyTreeView {
     private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
-    private int _rowHeight = 28;
+    private int _rowHeight = 40;
     private int _pageSize = 100;
     private CanopySource _source = CanopySource.Inline();
     private CanopyLabels _labels = new CanopyLabels();

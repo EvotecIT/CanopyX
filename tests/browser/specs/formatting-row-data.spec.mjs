@@ -74,7 +74,7 @@ for (const transport of ["inline", "scripts-gzip", "sidecar"]) {
     const errors = await openCompact(page, transport);
     try {
       expect(await barWidth(cell(page, "a", "amount"))).toBe("50.0%");
-      expect(await scaleColor(cell(page, "a", "scale"))).toContain("--cx-tone-success");
+      expect(await scaleColor(cell(page, "a", "scale"))).toContain("--hfx-color-status-good-fg");
       await page.evaluate(() => grid.openDetails("a"));
       expect(await barWidth(drawer(page, "amount"))).toBe("50.0%");
       if (transport === "sidecar") await page.screenshot({ path: testInfo.outputPath("partial-bounds.png") });
@@ -93,7 +93,7 @@ for (const transport of ["inline", "scripts-gzip", "sidecar"]) {
       await page.evaluate(() => grid.setPageLength(4));
       await nextFrames(page);
       expect(await barWidth(cell(page, "d", "amount"))).toBe("100.0%");
-      expect(await scaleColor(cell(page, "d", "scale"))).toContain("--cx-tone-danger");
+      expect(await scaleColor(cell(page, "d", "scale"))).toContain("--hfx-color-status-bad-fg");
       expect(errors).toEqual([]);
     } finally { if (!page.isClosed()) await page.evaluate(() => releaseDecode()).catch(() => {}); }
   });

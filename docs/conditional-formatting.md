@@ -74,7 +74,7 @@ for alternatives. Wildcards keep their separate `*` and `?` syntax and support m
 ## Styles
 
 Every colour is a theme tone: `neutral`, `info`, `success`, `warning`, `danger`, `muted` or a tone the host's theme
-defines (`--cx-tone-<name>`). Tones follow the light, dark and print palettes, so formatting stays legible in each.
+defines (`--hfx-color-status-<name>-fg`). Tones follow the light, dark and print palettes, so formatting stays legible in each.
 
 | Style | Draws |
 | --- | --- |

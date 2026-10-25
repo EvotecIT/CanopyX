@@ -109,7 +109,7 @@
       if (!context) return;
       const style = getComputedStyle(this.grid), family = this.fitFamily = " " + style.fontFamily, head = this.headCells?.[0] && getComputedStyle(this.headCells[0]);
       const font = style.fontWeight + " " + style.fontSize + family, headFont = (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family;
-      const badgeFont = "400 " + parseFloat(style.fontSize) * 0.8 + "px" + family, pad = parseFloat(getComputedStyle(this.host).getPropertyValue("--cx-cell-px")) || 8;
+      const badgeFont = "400 " + parseFloat(style.fontSize) * 0.8 + "px" + family, pad = parseFloat(head?.paddingRight) || 12;
       const numericVariant = gridNumericVariant(this.grid);
       const text = (value, using = font, numeric = true) => { context.font = using; return gridMeasureText(context, value, numeric ? numericVariant : "normal"); };
       const badges = list => (list || []).reduce((sum, badge) => sum + text(badge.text, badgeFont) + 20, 0);

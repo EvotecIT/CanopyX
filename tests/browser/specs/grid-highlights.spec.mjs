@@ -30,9 +30,7 @@ test("raw rules win in order per target, preserve host classes, and use the exis
   await expect(row.locator('.cx-cell').nth(1)).not.toHaveClass(/later-cell/);
   await expect(row.locator('.cx-cell').nth(2)).toHaveClass(/cx-tone-success/);
   await expect(row.locator('.cx-cell').nth(3)).toHaveClass(/old-date/);
-  const colors = await row.evaluate(row => ({ actual: getComputedStyle(row).color,
-    expected: getComputedStyle(row).getPropertyValue('--cx-tone-danger').trim() }));
-  expect(colors.actual).toBe("rgb(22, 24, 28)"); expect(colors.expected).toBe("#b8292a");
+  await expect(row).toHaveCSS("color", "rgb(22, 24, 28)");
   expect(await row.locator('.cx-cell').first().evaluate(cell => getComputedStyle(cell,'::after').backgroundColor)).toBe("rgb(184, 41, 42)");
   expect(await row.locator('.cx-cell').nth(1).evaluate(cell => getComputedStyle(cell).color)).toBe("rgb(140, 92, 5)");
   const exported = await page.evaluate(async () => { const api = document.querySelector('[data-canopyx-host]').canopyx;
@@ -40,6 +38,13 @@ test("raw rules win in order per target, preserve host classes, and use the exis
   expect(exported.cells.status).toMatchObject({ value: "FaIlEd", text: "Passed display" });
   expect(exported.cells.score.value).toBe(5);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  // Host roles override the built-in fallback at the point where a highlight is painted.
+  await row.evaluate(element => {
+    element.style.setProperty("--hfx-color-status-bad-fg", "rgb(160, 20, 30)");
+    element.style.setProperty("--hfx-color-status-warn-fg", "rgb(100, 60, 0)");
+  });
+  expect(await row.locator('.cx-cell').first().evaluate(cell => getComputedStyle(cell, '::after').backgroundColor)).toBe("rgb(160, 20, 30)");
+  await expect(row.locator('.cx-cell').nth(1)).toHaveCSS("color", "rgb(100, 60, 0)");
 });
 
 test("row and cell highlights clear after recycling, including host presenter cells", async ({ page }) => {

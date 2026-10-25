@@ -145,7 +145,7 @@ test("merged alert tones remain visible on cell text over bars and scales", asyn
   await expect(scaleCell).toHaveClass(/cx-fmt-scale/);
   for (const target of [barCell, scaleCell]) {
     await expect(target).toHaveClass(/cx-fmt-text/);
-    expect(await target.evaluate(element => element.style.getPropertyValue("--cx-fmt"))).toContain("--cx-tone-danger");
+    expect(await target.evaluate(element => element.style.getPropertyValue("--cx-fmt"))).toContain("--hfx-color-status-bad-fg");
     expect(await target.evaluate(element => getComputedStyle(element).color === getComputedStyle(element.closest("[data-canopyx-host]")).color)).toBe(false);
   }
 });

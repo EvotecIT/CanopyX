@@ -1,0 +1,34 @@
+<style>
+body.cx-token-example { box-sizing:border-box;margin:0;padding:var(--hfx-space-6);background:var(--hfx-color-surface-page);color:var(--hfx-color-text);font-family:var(--hfx-font-sans); }
+.cx-token-example header { max-width:1200px;margin:0 auto var(--hfx-space-5); }
+.cx-token-example h1 { margin:var(--hfx-space-2) 0;font-family:var(--hfx-font-display);font-size:var(--hfx-type-title-size);font-weight:var(--hfx-weight-semibold); }
+.cx-token-example p { margin:0;color:var(--hfx-color-text-secondary);font-size:var(--hfx-type-body-size); }
+.cx-token-example .token-caption { font-size:var(--hfx-type-caption-size);letter-spacing:var(--hfx-tracking-overline);text-transform:uppercase;color:var(--hfx-color-accent-text); }
+.cx-token-example .token-series { display:flex;flex-wrap:wrap;gap:var(--hfx-space-3);margin:var(--hfx-space-4) 0 0; }
+.token-series span { display:inline-flex;align-items:center;gap:var(--hfx-space-1);font-size:var(--hfx-type-small-size);color:var(--hfx-color-text-secondary); }
+.token-series i { display:inline-block;width:var(--hfx-icon-sm);height:var(--hfx-icon-sm);border-radius:var(--hfx-radius-sm);background:var(--series); }
+body.cx-token-example > .cx-main > .cx-host { height:640px;max-width:1200px;margin:auto;box-shadow:var(--hfx-elevation-1); }
+@media(max-width:640px) { body.cx-token-example { padding:var(--hfx-space-4); } body.cx-token-example > .cx-main > .cx-host { height:620px; } }
+</style>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search), root = document.documentElement;
+  root.dataset.theme = params.get("mode") || "light";
+  root.style.colorScheme = root.dataset.theme;
+  root.dataset.hfxDensity = params.get("density") || "comfortable";
+})();
+</script>
+<!-- content -->
+<header>
+  <p class="token-caption">CanopyX · Shared design tokens</p>
+  <h1>Workspace records</h1>
+  <p>Consistent typography, status colours and controls, with comfortable and compact spacing.</p>
+  <div class="token-series" role="group" aria-label="Categorical palette, version 1.1">
+    <span><i style="--series:var(--hfx-color-series-1)" aria-hidden="true"></i>Series 1</span>
+    <span><i style="--series:var(--hfx-color-series-2)" aria-hidden="true"></i>Series 2</span>
+    <span><i style="--series:var(--hfx-color-series-3)" aria-hidden="true"></i>Series 3</span>
+    <span><i style="--series:var(--hfx-color-series-4)" aria-hidden="true"></i>Series 4</span>
+    <span><i style="--series:var(--hfx-color-series-5)" aria-hidden="true"></i>Series 5</span>
+    <span><i style="--series:var(--hfx-color-series-6)" aria-hidden="true"></i>Series 6</span>
+  </div>
+</header>

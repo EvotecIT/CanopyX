@@ -15,7 +15,7 @@ const sizes = [{ width: 1440, height: 900 }, { width: 390, height: 800 }];
 
 /** Opens a view page. markup goes inside the host element before its configuration; setup runs before the automatic mount. */
 async function openGrid(page, view, { setup = "", markup = "", theme = "light", wrap = null, size = sizes[0] } = {}) {
-  let html = viewPage(view).replace('data-cx-theme="light"', 'data-cx-theme="' + theme + '"')
+  let html = viewPage(view, theme)
     .replace('<script type="application/json" class="cx-config">', markup + '<script type="application/json" class="cx-config">')
     .replace("</head>", "<script>" + setup + "</script></head>");
   if (wrap) html = html.replace('<div class="cx-host"', '<div class="frame" style="' + wrap + '"><div class="cx-host"').replace("</div></body>", "</div></div></body>");
@@ -298,7 +298,7 @@ test(`toolbar menus of a two-row grid escape an overflow-hidden host (${theme}, 
       const host = getComputedStyle(element.closest(".cx-host"));
       return { box: { top: box.top, bottom: box.bottom, left: box.left, right: box.right }, radius, layer: element.matches(":popover-open"),
         visible: inside(box.left + box.width / 2, box.bottom - radius - 2) && inside(box.left + radius + 2, box.top + radius + 2) && inside(box.right - radius - 2, box.bottom - radius - 2),
-        background: getComputedStyle(element).backgroundColor, surface: host.getPropertyValue("--cx-surface").trim(), color: getComputedStyle(element).color, text: host.color };
+        background: getComputedStyle(element).backgroundColor, surface: host.getPropertyValue("--hfx-color-surface").trim(), color: getComputedStyle(element).color, text: host.color };
     });
     expect(state.layer, kind + " is in the top layer").toBe(true);
     expect(state.visible, kind + " is drawn whole").toBe(true);

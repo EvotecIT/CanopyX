@@ -184,7 +184,7 @@
         if (bottom <= top) return;
         const block = h("div", "cx-cal-shade " + cls); block.setAttribute("aria-hidden", "true");
         block.style.setProperty("--d", String(index)); block.style.setProperty("--t", String(top - cal.minMinutes)); block.style.setProperty("--h", String(bottom - top));
-        if (tone) block.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + tone + ",var(--cx-tone-info))");
+        if (tone) block.style.setProperty("--cx-bg-tone", toneVariable(tone, false, "var(--hfx-color-status-info-fg)"));
         if (label && (bottom - top) * ppm >= 18) { const text = h("span"); setText(text, label); block.appendChild(text); }
         slots.appendChild(block);
       };

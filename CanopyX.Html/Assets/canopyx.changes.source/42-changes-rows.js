@@ -125,7 +125,6 @@
         view.destroyed = true; view.lifetime.abort(); view.panelLife?.abort();
         for (const diff of view.diffs.values()) diff.destroy();
         view.root.remove(); host.removeAttribute("data-cx-ready");
-        if (view.addedTheme) host.removeAttribute("data-cx-theme");
       }
     };
     return impl;

@@ -102,7 +102,6 @@
         if (view.destroyed) return;
         view.destroyed = true; view.lifetime.abort(); view.resize.disconnect(); cancelAnimationFrame(view.frame); clearTimeout(view.copyTimer);
         view.root.remove(); host.removeAttribute("data-cx-ready");
-        if (view.addedTheme) host.removeAttribute("data-cx-theme");
       }
     };
     return impl;

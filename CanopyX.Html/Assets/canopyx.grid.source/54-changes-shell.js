@@ -14,6 +14,7 @@
       const existing = activeChangeViews.get(host);
       if (existing) return existing;
       const addedClasses = ["cx-host", "cx-change-host"].filter(className => !host.classList.contains(className)), hadClass = host.hasAttribute("class"), previousError = host.getAttribute("data-cx-error");
+      let stopTheme;
       let impl = null, destroyed = false, notice = null, errorText = null, failure = null, loaded = false, currentView = options.view;
       const cancelled = () => new DOMException("Change view was destroyed.", "AbortError");
       const clearError = () => {
@@ -57,6 +58,7 @@
       api.destroy = () => {
         if (destroyed) return;
         destroyed = true; impl?.destroy();
+        stopTheme?.();
         if (activeChangeViews.get(host) === api) activeChangeViews.delete(host);
         if (host.canopyx === api) delete host.canopyx;
         host.removeAttribute("data-canopyx-mounted"); clearError();
@@ -67,6 +69,7 @@
       Object.freeze(api);
       activeChangeViews.set(host, api);
       host.classList.add("cx-host", "cx-change-host"); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api;
+      stopTheme = watchTheme(host);
       return api;
     };
   }

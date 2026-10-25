@@ -109,13 +109,15 @@ test("inline reload rereads replacements and keeps scroll anchored to a survivin
     data.pageSize = 200; data.roots = Array.from({ length: 150 }, (_, i) => ({ id: "n" + i, label: "Node " + i }));
     window.api = CanopyX.createTreeGrid(host, { view: data }); await api.ready;
   }, view); await nextFrames(page);
-  await page.evaluate(() => { document.querySelector(".cx-grid").scrollTop = 60 * 28 + 7; }); await nextFrames(page);
+  const rowHeight = await page.locator('.cx-row[data-cx-id]').first().evaluate(row => row.getBoundingClientRect().height);
+  expect(rowHeight).toBe(40);
+  await page.evaluate(height => { document.querySelector(".cx-grid").scrollTop = 60 * height + 7; }, rowHeight); await nextFrames(page);
   const result = await page.evaluate(async () => {
     const grid = document.querySelector(".cx-grid"), before = grid.scrollTop;
     api.view.roots.unshift({ id: "inserted", label: "Inserted" }); await api.reload();
     return { before, after: grid.scrollTop };
   });
-  expect(result.after).toBe(result.before + 28);
+  expect(result.after).toBe(result.before + rowHeight);
 });
 
 test("reload detects in-place payload edits and preserves an unchanged host control", async ({ page }) => {

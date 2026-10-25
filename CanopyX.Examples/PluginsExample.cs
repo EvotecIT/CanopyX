@@ -12,8 +12,8 @@ internal static class PluginsExample {
     private const string Plugin = """
 <style>
 .load-meter{display:inline-flex;align-items:center;gap:8px;width:100%;font-variant-numeric:tabular-nums}
-.load-meter-track{flex:1;height:6px;border-radius:3px;background:color-mix(in srgb,var(--cx-text) 12%,transparent);overflow:hidden}
-.load-meter-fill{display:block;height:100%;background:var(--cx-accent)}
+.load-meter-track{flex:1;height:6px;border-radius:3px;background:color-mix(in srgb,var(--hfx-color-text) 12%,transparent);overflow:hidden}
+.load-meter-fill{display:block;height:100%;background:var(--hfx-color-accent)}
 .load-meter-text{min-width:3.5ch;text-align:right}
 body{background:Canvas;color:CanvasText}
 .plugin-log{box-sizing:border-box;height:36px;margin:0;padding:10px 16px 0;font-size:13px;color:CanvasText}

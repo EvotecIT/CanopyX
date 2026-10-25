@@ -19,7 +19,7 @@ test("screen-reader headings outside a view do not widen the phone viewport",asy
 });
 
 test("density supplies default row sizes and preserves explicit dimensions", async ({page}) => {
-  for (const [density,height,padding] of [["compact",28,8],["default",34,12],["comfortable",42,14]]) {
+  for (const [density,height,padding] of [["compact",32,8],["default",40,12],["comfortable",40,12]]) {
     await mount(page,{...base,density});
     await expect(page.locator('.cx-row')).toHaveCSS('height',height + 'px');
     await expect(page.locator('.cx-row .cx-cell')).toHaveCSS('padding-left',padding + 'px');

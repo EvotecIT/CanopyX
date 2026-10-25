@@ -467,7 +467,7 @@ await grid.expandPath(["projects", "projects/plans"]);
 // Pass { signal: controller.signal } to cancel navigation promptly, even while a page is still loading.
 ```
 
-A renderer that draws badges or chips uses `CanopyX.badge({ text, tone, title })`, which returns the badge element the grid itself draws (the `cx-badge` class, the classes of a named tone, and for a host tone its `--cx-tone-<name>` colours), so a host cell matches the cells CanopyX paints:
+A renderer that draws badges or chips uses `CanopyX.badge({ text, tone, title })`, which returns the badge element the grid itself draws (the `cx-badge` class, the classes of a named tone, and for a host tone its `--hfx-color-status-<name>-fg` colours), so a host cell matches the cells CanopyX paints:
 
 ```js
 renderers: { finding: (node, element) => {

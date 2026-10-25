@@ -93,12 +93,21 @@ test("search hits and filter hits are marked apart, with whole-cell marks for va
   await expect(filter.first()).toBeVisible();
   // The status condition marks the whole pill text; the contains condition marks the matching part in the column's tone.
   expect(await filter.evaluateAll(list => list.map(mark => mark.textContent))).toEqual(expect.arrayContaining(["Open", "Nowak"]));
-  expect(await page.locator(".cx-canvas mark.cx-hit-toned").first().evaluate(mark => mark.style.getPropertyValue("--cx-hit-tone"))).toBe("var(--cx-tone-success)");
+  const toned = page.locator(".cx-canvas mark.cx-hit-toned").first();
+  const expectedBackground = color => toned.evaluate((mark, color) => {
+    const probe = document.createElement("span");
+    probe.style.backgroundColor = "color-mix(in srgb," + color + " 24%,rgb(255, 255, 255))";
+    mark.parentElement.appendChild(probe);
+    const background = getComputedStyle(probe).backgroundColor; probe.remove(); return background;
+  }, color);
+  await expect(toned).toHaveCSS("background-color", await expectedBackground("rgb(23, 115, 69)"));
   const [searchBg, filterBg] = await Promise.all([search.first(), filter.first()].map(mark => mark.evaluate(element => getComputedStyle(element).backgroundColor)));
   expect(searchBg).not.toBe(filterBg);
   // Filter hits count too: a whole-cell hit is one match.
   const rows = await page.locator(".cx-canvas .cx-row[data-cx-id]").count();
   expect((await call(page, "getMatches")).total).toBe(rows * 3);
+  await page.locator("[data-canopyx-host]").evaluate(host => host.style.setProperty("--hfx-color-status-good-fg", "rgb(0, 90, 0)"));
+  await expect(toned).toHaveCSS("background-color", await expectedBackground("rgb(0, 90, 0)"));
 });
 
 test("marks wrap text only: links, pills and the painters' text nodes come back intact", async ({ page }) => {

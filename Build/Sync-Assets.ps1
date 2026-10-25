@@ -53,6 +53,27 @@ for ($foldOffset = 0; $foldOffset -lt $foldEntries.Count;) {
 }
 $foldPairs = $foldRecords -join ','
 
+$tokenFallbacks = Get-Content -LiteralPath (Join-Path $root 'CanopyX.Html/Assets/Shared/canopyx-fallbacks.json') -Raw | ConvertFrom-Json -AsHashtable
+function Add-TokenFallbacks([string] $Content) {
+    [regex]::Replace($Content, 'var\((--hfx-[a-z0-9-]+)\)', [System.Text.RegularExpressions.MatchEvaluator] {
+        param($match)
+        $name = $match.Groups[1].Value
+        if (-not $tokenFallbacks.ContainsKey($name)) { throw "Missing shared fallback: $name" }
+        'var(' + $name + ',' + $tokenFallbacks[$name] + ')'
+    })
+}
+# Paper uses the canonical light branch directly, without assigning palette roles to the host.
+$printDefaults = @{}
+foreach ($entry in @(@('TEXT', '--hfx-color-text'), @('SURFACE', '--hfx-color-surface'), @('BORDER', '--hfx-color-border-control'))) {
+    $value = $tokenFallbacks[$entry[1]]
+    if ($value -match '^light-dark\(([^,()]+),[^()]+\)$') { $value = $Matches[1].Trim() }
+    elseif ($value -match 'light-dark|var\(') { throw "The paper token must have a resolved light value: $($entry[1])" }
+    $printDefaults['__CX_PRINT_' + $entry[0] + '__'] = $value
+}
+$statusFallbacks = [ordered]@{}
+foreach ($name in @($tokenFallbacks.Keys | Sort-Object)) { if ($name -match '^--hfx-color-status-.*-(fg|bg)$') { $statusFallbacks[$name] = $tokenFallbacks[$name] } }
+$statusFallbackJson = ConvertTo-Json -InputObject $statusFallbacks -Compress
+
 $flowShell = 'CanopyX.Html/Assets/canopyx.flow-entry.source/50-flow-shell.js'
 $flowHostStyle = 'CanopyX.Html/Assets/canopyx.flow-entry.source/flow-host.css'
 $assets = @(
@@ -126,7 +147,7 @@ $assets = @(
     # flow shell the grid entry points also carry; the forms and flow parts load beside it (Build/parts.json, runtime "flow").
     @{
         Source = 'CanopyX.Html/Assets/canopyx.flow-entry.source/00-flow-entry.js'
-        Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js',
+        Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js', 'CanopyX.Html/Assets/canopyx.source/02-design-tokens.js',
             'CanopyX.Html/Assets/canopyx.source/05-patterns.js', 'CanopyX.Html/Assets/canopyx.source/05-search-folding.js', 'CanopyX.Html/Assets/canopyx.grid.source/00-grid-pure.js',
             'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell, 'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
         Target = 'CanopyX.Html/Assets/canopyx-flow-entry.js'
@@ -140,7 +161,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.flow-entry.source/00-flow-entry.js'
-        Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js',
+        Extension = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-number-format.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js', 'CanopyX.Html/Assets/canopyx.source/02-design-tokens.js',
             'CanopyX.Html/Assets/canopyx.source/05-patterns.js', 'CanopyX.Html/Assets/canopyx.source/05-search-folding.js', 'CanopyX.Html/Assets/canopyx.grid.source/00-grid-pure.js',
             'CanopyX.Html/Assets/canopyx.source/82-parts.js', $flowShell, 'CanopyX.Html/Assets/canopyx.flow-entry.source/90-flow-boot.js')
         Target = 'CanopyX.Html/Assets/canopyx-flow-module.mjs'
@@ -359,13 +380,13 @@ function Get-AssetHash([string] $Content) {
 # installs the part of its own build. Entry points read the manifest of the parts they know (__CX_PARTS__).
 $partBuilds = foreach ($part in $partList) {
     $scriptPaths = @($part.scripts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
-    $body = Join-AssetSource -SourcePath $scriptPaths[0] -ExtensionPath @($scriptPaths | Select-Object -Skip 1) -PartSource
+    $body = Add-TokenFallbacks (Join-AssetSource -SourcePath $scriptPaths[0] -ExtensionPath @($scriptPaths | Select-Object -Skip 1) -PartSource)
     $style = ''
     if ($part.styles) {
         $stylePaths = @($part.styles | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
         $style = Join-AssetSource -SourcePath $stylePaths[0] -ExtensionPath @($stylePaths | Select-Object -Skip 1) -PartSource
         if ($part.styleScope) { $style = $style.Replace($part.styleScope[0], $part.styleScope[1]) }
-        $style = Compress-StyleSpacing $style
+        $style = Compress-StyleSpacing (Add-TokenFallbacks $style)
     }
     $version = '__CX_PART_VERSION__'
     $requires = if ($part.requires) { ', requires:' + (ConvertTo-Json -InputObject @($part.requires) -Compress) } else { '' }
@@ -421,9 +442,13 @@ foreach ($asset in $assets) {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
     }
+    $generated = (Add-TokenFallbacks $generated).Replace('__CX_STATUS_FALLBACKS__', $statusFallbackJson)
+    foreach ($marker in $printDefaults.Keys) { $generated = $generated.Replace($marker, $printDefaults[$marker]) }
     if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) -Flow:($asset.Kind -eq 'flow') }
     if ($asset.Folding) { $generated = Compress-ScriptSpacing -Content $generated }
-    if (-not $asset.Generated -and $asset.Target.EndsWith('.css')) { $generated = Compress-StyleSpacing -Content $generated }
+    if (-not $asset.Generated -and $asset.Target.EndsWith('.css')) {
+        $generated = Compress-StyleSpacing -Content $generated
+    }
 
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }

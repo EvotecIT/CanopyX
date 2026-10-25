@@ -29,7 +29,7 @@ public sealed class FlowHtmlTests {
     public void Fragment_CarriesTheDocumentAndPartPayloadsWithNonce() {
         var flow = FlowSamples.MailServer();
         var html = flow.ToHtmlFragment(new CanopyHtmlOptions { Nonce = "abc123" });
-        Assert.StartsWith("<div class=\"cx-host cx-flow-host\" data-canopyx-host data-cx-theme=\"auto\"><script type=\"application/json\" class=\"cx-config\">" + flow.ToContract() + "</script></div>", html);
+        Assert.StartsWith("<div class=\"cx-host cx-flow-host\" data-canopyx-host><script type=\"application/json\" class=\"cx-config\">" + flow.ToContract() + "</script></div>", html);
         Assert.DoesNotContain("height", html.Substring(0, html.IndexOf("<script", StringComparison.Ordinal)));
         Assert.DoesNotContain("data-cx-height", html);
         foreach (var name in new[] { "forms", "flow" }) {
@@ -44,7 +44,7 @@ public sealed class FlowHtmlTests {
     [Fact]
     public void Fragment_HasAHeightOnlyWhenAsked() {
         var html = FlowSamples.MailServer().ToHtmlFragment(new CanopyHtmlOptions { Height = "480px", AutoMount = false });
-        Assert.StartsWith("<div class=\"cx-host cx-flow-host\" data-canopyx-host data-cx-theme=\"auto\" data-cx-mount=\"manual\" style=\"height:480px\">", html);
+        Assert.StartsWith("<div class=\"cx-host cx-flow-host\" data-canopyx-host data-cx-mount=\"manual\" style=\"height:480px\">", html);
     }
 
     [Fact]

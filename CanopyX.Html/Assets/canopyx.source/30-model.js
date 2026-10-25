@@ -21,7 +21,7 @@
       this.dataLifetime = new AbortController();
       this.acceptedQuery = Object.freeze({ version: 1, sort: null, filters: Object.freeze([]) });
       this.datasetRevision = null;
-      this.rowH = view.rowHeight || 28;
+      this.rowH = view.rowHeight || 40;
       this.pageSize = view.pageSize || 100;
       this.retainedNodeLimit = options.retainedNodeLimit === undefined ? 1024 : options.retainedNodeLimit;
       if (!validStructuralCount(this.retainedNodeLimit)) throw new Error("CanopyX: retainedNodeLimit must be a nonnegative 32-bit integer.");

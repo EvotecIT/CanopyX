@@ -1,9 +1,9 @@
 /* Forms part: what every form's editors share, here the lookup combobox's suggestion list (a popover above any clipping). */
-.cx-editor-list { position:fixed;inset:auto;margin:0;box-sizing:border-box;background:var(--cx-surface);color:var(--cx-text);border:var(--cx-size-1px) solid var(--cx-line-strong);border-radius:var(--cx-radius);box-shadow:var(--cx-panel-shadow);font:var(--cx-size-13d5px)/1.4 var(--cx-font); }
+.cx-editor-list { position:fixed;inset:auto;margin:0;box-sizing:border-box;background:var(--hfx-color-surface-raised);color:var(--hfx-color-text);border:var(--cx-size-1px) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-overlay);box-shadow:var(--hfx-elevation-2);font:var(--cx-size-13d5px)/1.4 var(--hfx-font-sans); }
 .cx-editor-list { max-height:var(--cx-size-240px);overflow:auto;padding:var(--cx-size-4px); }
-.cx-editor-option,.cx-editor-note { padding:var(--cx-size-6px) var(--cx-size-8px);border-radius:var(--cx-radius-sm);white-space:nowrap; }
+.cx-editor-option,.cx-editor-note { padding:var(--cx-size-6px) var(--cx-size-8px);border-radius:var(--hfx-radius-sm);white-space:nowrap; }
 .cx-editor-option { cursor:pointer; }
-.cx-editor-option[aria-selected="true"],.cx-editor-option:hover { background:var(--cx-selected-bg); }
-.cx-editor-note { color:var(--cx-muted); }
+.cx-editor-option[aria-selected="true"],.cx-editor-option:hover { background:var(--hfx-color-accent-subtle); }
+.cx-editor-note { color:var(--hfx-color-text-muted); }
 /* An editor's placeholder is a hint, fainter than any value (4.7:1 light, 6.4:1 dark) and italic, in cells, the drawer form and flows alike. */
-.cx-editor::placeholder { color:color-mix(in srgb,var(--cx-text) 60%,var(--cx-surface));font-style:italic;opacity:1; }
+.cx-editor::placeholder { color:color-mix(in srgb,var(--hfx-color-text) 60%,var(--hfx-color-surface));font-style:italic;opacity:1; }

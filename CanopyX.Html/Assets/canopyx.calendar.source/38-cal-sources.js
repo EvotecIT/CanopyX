@@ -12,7 +12,7 @@
       for (const source of sources) {
         const button = h("button", "cx-cal-src"), swatch = h("i", "cx-cal-src-swatch"), text = h("span");
         button.type = "button"; button.dataset.cxSource = source.id; button.setAttribute("aria-pressed", String(!this.calHiddenSources.has(source.id)));
-        if (source.tone) button.style.setProperty("--cx-ev", "var(--cx-tone-" + source.tone + ",var(--cx-accent))");
+        if (source.tone) button.style.setProperty("--cx-ev", toneVariable(source.tone, false, "var(--hfx-color-accent)"));
         swatch.setAttribute("aria-hidden", "true"); setText(text, source.label);
         button.append(swatch, text);
         button.addEventListener("click", () => this.calToggleSource(source.id));

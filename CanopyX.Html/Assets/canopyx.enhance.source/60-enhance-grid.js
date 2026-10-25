@@ -53,10 +53,10 @@
 
   // The kept caption and footer are styled in place with the theme's custom properties, so the part needs no stylesheet.
   const ENHANCE_STYLES = {
-    caption: "flex:none;padding:var(--cx-size-10px) var(--cx-size-12px) var(--cx-size-2px);color:var(--cx-text);font-size:var(--cx-size-14px);font-weight:600;line-height:1.35",
-    foot: "flex:none;display:flex;flex-direction:column;gap:var(--cx-size-4px);padding:var(--cx-size-8px) var(--cx-size-12px);border-top:var(--cx-size-1px) solid var(--cx-line);color:var(--cx-muted);font-size:var(--cx-size-13px)",
+    caption: "flex:none;padding:var(--cx-size-10px) var(--cx-size-12px) var(--cx-size-2px);color:var(--hfx-color-text);font-size:var(--cx-size-14px);font-weight:600;line-height:1.35",
+    foot: "flex:none;display:flex;flex-direction:column;gap:var(--cx-size-4px);padding:var(--cx-size-8px) var(--cx-size-12px);border-top:var(--cx-size-1px) solid var(--hfx-color-border);color:var(--hfx-color-text-muted);font-size:var(--cx-size-13px)",
     row: "display:flex;flex-wrap:wrap;gap:var(--cx-size-4px) var(--cx-size-16px);margin:0",
-    value: "color:var(--cx-text);font-weight:600;font-variant-numeric:tabular-nums"
+    value: "color:var(--hfx-color-text);font-weight:600;font-variant-numeric:tabular-nums"
   };
   function enhanceStyled(tag, className, style) { const element = h(tag, className); element.style.cssText = ENHANCE_STYLES[style]; return element; }
 

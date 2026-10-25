@@ -40,7 +40,7 @@
     }
     if (target.badge) {
       const badge = node("span", "cx-badge cx-fmt-badge", target.badge), tone = toneOf(target.tone || "neutral");
-      badge.className += tone.cls; if (tone.host) { prop(badge, "--cx-t", "var(--cx-tone-" + tone.host + ")"); prop(badge, "--cx-t-bg", "var(--cx-tone-" + tone.host + "-bg)"); }
+      badge.className += tone.cls; if (tone.host) { prop(badge, "--cx-t", toneVariable(tone.host)); prop(badge, "--cx-t-bg", toneVariable(tone.host, true)); }
       element.appendChild(badge);
     }
     if (target.cue) element.appendChild(node("span", "cx-fmt-cue", target.cue));
@@ -92,7 +92,7 @@
     let decorated;
     fx.nodes.push({ remove() { formatUndo(effects); if (button.getAttribute("aria-label") === decorated) button.setAttribute("aria-label", label); } });
     effects.classes.push("cx-fmt-flag"); button.classList.add("cx-fmt-flag");
-    button.style.setProperty("--cx-fmt", tone ? formatToneVar(tone) : "var(--cx-text-2)"); effects.props.push("--cx-fmt");
+    button.style.setProperty("--cx-fmt", tone ? formatToneVar(tone) : "var(--hfx-color-text-secondary)"); effects.props.push("--cx-fmt");
     const rules = [...new Set(hidden.flatMap(column => result.cells.get(column.id).descriptions))].join(", ");
     decorated = label + ". " + fill(this.formatLabels.formatHiddenFlagged, { count: hidden.length, rules });
     button.setAttribute("aria-label", decorated);

@@ -6,7 +6,7 @@
   // which receives a fresh element and the record, as cell renderers do.
   const CAL_ROW_COPIES = new WeakMap();
   Object.assign(DataGrid.prototype, {
-    /** The time of an occurrence in words: "09:00 – 10:30", one time for a marker, nothing for an all-day event. */
+    /** The time of an occurrence in words: "09:00 â€“ 10:30", one time for a marker, nothing for an all-day event. */
     calTimeText(event) {
       if (event.allDay) return this.calLabels.calendarAllDay;
       const fmt = this.calFmt, labels = this.calLabels;
@@ -40,7 +40,7 @@
       element.type = "button"; element.tabIndex = -1;
       element.dataset.cxEvent = event.id; element.dataset.cxRecord = event.key;
       element._calEvent = event;
-      if (event.tone) { element.dataset.cxTone = event.tone; element.style.setProperty("--cx-ev", event.tone === "neutral" ? "var(--cx-tone-neutral,var(--cx-muted))" : "var(--cx-tone-" + event.tone + ",var(--cx-accent))"); element.style.setProperty("--cx-ev-bg", "var(--cx-tone-" + event.tone + "-bg,color-mix(in srgb,var(--cx-ev) 14%,var(--cx-surface)))"); }
+      if (event.tone) { element.dataset.cxTone = event.tone; element.style.setProperty("--cx-ev", event.tone === "neutral" ? "var(--hfx-color-status-neutral-fg,var(--hfx-color-text-muted))" : toneVariable(event.tone, false, "var(--hfx-color-accent)")); element.style.setProperty("--cx-ev-bg", toneVariable(event.tone, true, "color-mix(in srgb,var(--cx-ev) 14%,var(--hfx-color-surface))")); }
       element.setAttribute("aria-label", this.calEventName(event));
       if (this.linkHighlight?.has(event.key)) element.dataset.cxLinked = "true";
       const template = this.opts.calendar?.render;

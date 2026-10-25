@@ -1,15 +1,15 @@
 /* Column groups: header rows above the column headers (canopyx.column-groups.source), and the nested Columns menu. */
-.cx-data-grid .cx-hgroup-row { height:var(--cx-head-h); }
+.cx-data-grid .cx-hgroup-row { height:var(--hfx-table-header-height); }
 .cx-data-grid.cx-phone .cx-hgroup-row { height:var(--cx-size-32px); }
-.cx-data-grid .cx-hgroup { overflow:visible;justify-content:flex-start;border-bottom:var(--cx-size-1px) solid var(--cx-line);color:var(--cx-text-2); }
+.cx-data-grid .cx-hgroup { overflow:visible;justify-content:flex-start;border-bottom:var(--cx-size-1px) solid var(--hfx-color-border); }
 .cx-data-grid .cx-hgroup::after { top:0;bottom:0; }
 .cx-data-grid .cx-hgroup-row .cx-hcell:last-child::after { display:block; }
 .cx-data-grid .cx-hgroup-row .cx-hcell:last-child:not(.cx-hgroup)::after,.cx-data-grid .cx-hgroup-pad::after { display:none; }
-.cx-data-grid .cx-hgroup-title { position:sticky;left:calc(var(--cx-pin-left-w, 0px) + var(--cx-cell-px));min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.cx-data-grid .cx-hgroup-title { position:sticky;left:calc(var(--cx-pin-left-w, 0px) + var(--hfx-cell-padding-x));min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .cx-data-grid .cx-hgroup[data-cx-pin] .cx-hgroup-title { position:static; }
 .cx-data-grid .cx-hgroup .cx-column-move { flex:none; }
-.cx-data-grid .cx-hgroup.cx-drop-before { box-shadow:inset var(--cx-size-2px) 0 var(--cx-accent); }
-.cx-data-grid .cx-hgroup.cx-drop-after { box-shadow:inset var(--cx-size-neg-2px) 0 var(--cx-accent); }
+.cx-data-grid .cx-hgroup.cx-drop-before { box-shadow:inset var(--cx-size-2px) 0 var(--hfx-color-accent); }
+.cx-data-grid .cx-hgroup.cx-drop-after { box-shadow:inset var(--cx-size-neg-2px) 0 var(--hfx-color-accent); }
 .cx-data-grid.cx-column-groups .cx-hrow:not(.cx-hgroup-row) .cx-hcell::after { top:var(--cx-size-6px);bottom:var(--cx-size-6px); }
 .cx-grid-column-choice { padding-inline-start:calc(var(--cx-level, 0) * var(--cx-size-16px)); }
 .cx-grid-column-group-choice .cx-grid-column-name { font-weight:600; }

@@ -7,6 +7,7 @@ import { openFlow, flowCall, field, next, stepTitle } from "./flow-support.mjs";
 const task = (page, id) => page.locator(`.cx-flow-task[data-cx-task="${id}"]`);
 
 test("a task list opens on its hub with the host's states, and Save and return brings the reader back", async ({ page }) => {
+  await page.clock.install();
   await openFlow(page, "flow-setup-tasks.html");
   await expect(stepTitle(page)).toHaveText("Tasks");
   await expect(page.locator(".cx-flow-hub-progress")).toHaveText("0 of 3 tasks complete");
@@ -23,6 +24,9 @@ test("a task list opens on its hub with the host's states, and Save and return b
   await expect(stepTitle(page)).toHaveText("Tasks");
   await expect(task(page, "mail")).toHaveAttribute("data-cx-state", "complete");
   await expect(task(page, "mail").locator("button")).toBeFocused();
+  // Returning to the hub starts the example's 150 ms status refresh. Complete that host answer
+  // before testing a later explicit override; either operation may legitimately replace an earlier state.
+  await page.clock.runFor(200);
   await flowCall(page, "setStepState", "licence", { state: "complete", summary: "Activated" });
   await expect(task(page, "licence")).toHaveAttribute("data-cx-state", "complete");
   await expect(task(page, "licence").locator(".cx-flow-task-summary")).toHaveText("Activated");

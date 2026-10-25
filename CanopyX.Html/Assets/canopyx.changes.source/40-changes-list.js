@@ -21,7 +21,6 @@
     }
     build() {
       const signal = this.lifetime.signal;
-      if (!this.host.closest("[data-cx-theme]")) { this.host.setAttribute("data-cx-theme", "auto"); this.addedTheme = true; }
       const root = this.root = h("div", "cx-changes");
       this.bar = h("div", "cx-chg-bar");
       this.list = h("ul", "cx-chg-list"); this.list.setAttribute("aria-label", this.doc.label);

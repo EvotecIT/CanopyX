@@ -1,51 +1,51 @@
 /* ---------- toolbar ---------- */
 .cx-toolbar { display:flex;flex-wrap:wrap;align-items:center;gap:var(--cx-size-8px) var(--cx-size-12px);padding:var(--cx-size-4px) 0 var(--cx-size-10px);}
 .cx-search { position:relative;min-width:0;max-width:100%;}
-.cx-search::before { content:"";position:absolute;left:var(--cx-size-12px);top:var(--cx-size-11px);width:var(--cx-size-10px);height:var(--cx-size-10px);border:var(--cx-size-1d5px) solid var(--cx-muted);border-radius:50%;pointer-events:none;}
-.cx-search::after { content:"";position:absolute;left:var(--cx-size-21px);top:var(--cx-size-21px);width:var(--cx-size-5px);border-top:var(--cx-size-1d5px) solid var(--cx-muted);transform:rotate(45deg);pointer-events:none;}
+.cx-search::before { content:"";position:absolute;left:var(--cx-size-12px);top:var(--cx-size-11px);width:var(--cx-size-10px);height:var(--cx-size-10px);border:var(--cx-size-1d5px) solid var(--hfx-color-text-muted);border-radius:50%;pointer-events:none;}
+.cx-search::after { content:"";position:absolute;left:var(--cx-size-21px);top:var(--cx-size-21px);width:var(--cx-size-5px);border-top:var(--cx-size-1d5px) solid var(--hfx-color-text-muted);transform:rotate(45deg);pointer-events:none;}
 .cx-search-input {
-  font:inherit;width:var(--cx-size-280px);max-width:100%;min-height:var(--cx-size-34px);padding:var(--cx-size-6px) var(--cx-size-10px) var(--cx-size-6px) var(--cx-size-32px);border-radius:var(--cx-size-7px);
-  border:var(--cx-size-1px) solid var(--cx-line-strong);background:var(--cx-surface);color:var(--cx-text);
+  font:inherit;width:var(--cx-size-280px);max-width:100%;min-height:var(--cx-size-34px);padding:var(--cx-size-6px) var(--cx-size-10px) var(--cx-size-6px) var(--cx-size-32px);border-radius:var(--hfx-radius-control);
+  border:var(--cx-size-1px) solid var(--hfx-color-border-strong);background:var(--hfx-color-surface);color:var(--hfx-color-text);
 }
-.cx-search-input::placeholder { color:var(--cx-muted);opacity:1;}
+.cx-search-input::placeholder { color:var(--hfx-color-text-muted);opacity:1;}
 .cx-results {
   position:absolute;z-index:20;top:100%;left:0;width:var(--cx-size-420px);max-width:calc(var(--cx-size-100vw) - var(--cx-size-16px));max-height:var(--cx-size-320px);overflow:auto;
-  margin:0;padding:var(--cx-size-4px);list-style:none;background:var(--cx-surface);
-  border:var(--cx-size-1px) solid var(--cx-line-strong);border-radius:var(--cx-size-8px);box-shadow:var(--cx-panel-shadow);
+  margin:0;padding:var(--cx-size-4px);list-style:none;background:var(--hfx-color-surface);
+  border:var(--cx-size-1px) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-overlay);box-shadow:var(--hfx-elevation-2);
 }
-.cx-result { display:grid;grid-template-columns:1fr auto;gap:var(--cx-size-2px) var(--cx-size-8px);padding:var(--cx-size-6px) var(--cx-size-8px);border-radius:var(--cx-size-4px);cursor:pointer;}
+.cx-result { display:grid;grid-template-columns:1fr auto;gap:var(--cx-size-2px) var(--cx-size-8px);padding:var(--cx-size-6px) var(--cx-size-8px);border-radius:var(--hfx-radius-control);cursor:pointer;}
 .cx-result-label { min-width:0;overflow-wrap:anywhere;}
-.cx-result[aria-selected="true"],.cx-result:hover { background:var(--cx-selected-bg);}
-.cx-result-kind { font-size:var(--cx-size-d8em);color:var(--cx-muted);text-transform:uppercase;}
-.cx-result-context { grid-column:1 / -1;font-size:var(--cx-size-d85em);color:var(--cx-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cx-result[aria-selected="true"],.cx-result:hover { background:var(--hfx-color-accent-subtle);}
+.cx-result-kind { font-size:var(--cx-size-d8em);color:var(--hfx-color-text-muted);text-transform:uppercase;}
+.cx-result-context { grid-column:1 / -1;font-size:var(--cx-size-d85em);color:var(--hfx-color-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cx-switch { display:inline-flex;align-items:center;gap:var(--cx-size-7px);min-height:var(--cx-size-34px);cursor:pointer;}
-.cx-switch input { accent-color:var(--cx-accent);width:var(--cx-size-16px);height:var(--cx-size-16px);margin:0;}
+.cx-switch input { accent-color:var(--hfx-color-accent);width:var(--cx-size-16px);height:var(--cx-size-16px);margin:0;}
 .cx-columns { position:relative;}
 .cx-columns:not([open]) > .cx-columns-list { display:none; }
-.cx-columns > summary { display:flex;align-items:center;gap:var(--cx-size-10px);min-height:var(--cx-size-34px);cursor:pointer;padding:var(--cx-size-6px) var(--cx-size-10px);border:var(--cx-size-1px) solid var(--cx-line-strong);border-radius:var(--cx-size-7px);list-style:none;}
+.cx-columns > summary { display:flex;align-items:center;gap:var(--cx-size-10px);min-height:var(--cx-size-34px);cursor:pointer;padding:var(--cx-size-6px) var(--cx-size-10px);border:var(--cx-size-1px) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-control);list-style:none;}
 .cx-columns > summary::after { content:"";width:var(--cx-size-6px);height:var(--cx-size-6px);border-right:var(--cx-size-1d5px) solid currentColor;border-bottom:var(--cx-size-1d5px) solid currentColor;transform:rotate(45deg) translateY(var(--cx-size-neg-2px));}
-.cx-columns[open] > summary,.cx-columns > summary:hover { background:var(--cx-hover-bg);}
+.cx-columns[open] > summary,.cx-columns > summary:hover { background:var(--hfx-color-hover);}
 .cx-columns > summary::-webkit-details-marker { display:none;}
 .cx-columns-list {
   position:absolute;z-index:20;top:100%;left:0;margin:0;padding:var(--cx-size-6px);
   width:max-content;min-width:min(var(--cx-size-180px),calc(var(--cx-size-100vw) - var(--cx-size-16px)));max-width:calc(var(--cx-size-100vw) - var(--cx-size-16px));max-height:var(--cx-size-320px);overflow:auto;
-  display:grid;gap:var(--cx-size-2px);background:var(--cx-surface);border:var(--cx-size-1px) solid var(--cx-line-strong);border-radius:var(--cx-size-8px);box-shadow:var(--cx-panel-shadow);
+  display:grid;gap:var(--cx-size-2px);background:var(--hfx-color-surface);border:var(--cx-size-1px) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-overlay);box-shadow:var(--hfx-elevation-2);
 }
-.cx-columns-list label { display:flex;gap:var(--cx-size-8px);align-items:center;min-height:var(--cx-size-32px);padding:var(--cx-size-4px) var(--cx-size-6px);border-radius:var(--cx-size-4px);cursor:pointer;overflow-wrap:anywhere;}
-.cx-columns-list label:hover { background:var(--cx-hover-bg);}
-.cx-columns-list input { flex:none;width:var(--cx-size-16px);height:var(--cx-size-16px);margin:0;accent-color:var(--cx-accent);}
-.cx-host :is(.cx-search-input,.cx-sort,.cx-columns > summary,.cx-switch input):focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-1px);}
+.cx-columns-list label { display:flex;gap:var(--cx-size-8px);align-items:center;min-height:var(--cx-size-32px);padding:var(--cx-size-4px) var(--cx-size-6px);border-radius:var(--hfx-radius-sm);cursor:pointer;overflow-wrap:anywhere;}
+.cx-columns-list label:hover { background:var(--hfx-color-hover);}
+.cx-columns-list input { flex:none;width:var(--cx-size-16px);height:var(--cx-size-16px);margin:0;accent-color:var(--hfx-color-accent);}
+.cx-host :is(.cx-search-input,.cx-sort,.cx-columns > summary,.cx-switch input):focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset);}
 
 /* ---------- grid ---------- */
 .cx-grid {
   position:relative;flex:1 1 auto;min-height:0;overflow:auto;outline:none;contain:strict;
-  background:var(--cx-surface);border:var(--cx-size-1px) solid var(--cx-line);border-radius:var(--cx-size-8px);
+  background:var(--hfx-color-surface);border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);
 }
-.cx-head { position:sticky;top:0;z-index:2;min-width:100%;width:max-content;background:var(--cx-head-bg);border-bottom:var(--cx-size-1px) solid var(--cx-line-strong);}
-.cx-hrow { display:flex;height:var(--cx-row-h);}
+.cx-head { position:sticky;top:0;z-index:2;min-width:100%;width:max-content;background:var(--hfx-table-header-background,var(--hfx-color-surface-sunken));border-bottom:var(--cx-size-1px) solid var(--hfx-color-border-strong);}
+.cx-hrow { display:flex;height:var(--hfx-table-header-height);}
 .cx-hcell {
   flex:none;position:relative;display:flex;align-items:center;padding:0 var(--cx-size-8px);overflow:hidden;white-space:nowrap;
-  font-weight:600;font-size:var(--cx-size-d92em);color:var(--cx-text);border-right:var(--cx-size-1px) solid var(--cx-row-line);user-select:none;
+  font-weight:var(--hfx-table-header-weight);font-size:var(--hfx-table-header-size);line-height:var(--hfx-table-header-line-height);color:var(--hfx-table-header-color,var(--hfx-color-text-secondary));border-right:var(--cx-size-1px) solid var(--hfx-color-border);user-select:none;
 }
 .cx-hcell.cx-kind-number { justify-content:flex-end;}
 .cx-sort { font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;display:inline-flex;gap:var(--cx-size-4px);align-items:center;min-height:var(--cx-size-24px);min-width:var(--cx-size-24px);}
@@ -55,25 +55,25 @@
 /* A pinned tree column stays in view while the other columns scroll sideways; its cell takes the row's background. */
 .cx-pin-tree .cx-hcell:first-child,.cx-pin-tree .cx-row > .cx-tree { position:sticky;left:0;z-index:1;}
 /* Above the resize grips of the columns that scroll under it. */
-.cx-pin-tree .cx-hcell:first-child { z-index:2;background:var(--cx-head-bg);}
+.cx-pin-tree .cx-hcell:first-child { z-index:2;background:var(--hfx-table-header-background,var(--hfx-color-surface-sunken));}
 .cx-pin-tree .cx-row > .cx-tree { background:inherit;}
 /* The pinned cell covers the row's focus ring where it lies over it, so it carries the ring itself. */
-.cx-pin-tree .cx-row:focus-visible > .cx-tree { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-neg-2px);}
+.cx-pin-tree .cx-row:focus-visible > .cx-tree { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(-1 * var(--hfx-focus-width));}
 .cx-canvas { position:relative;min-width:100%;}
 .cx-canvas[data-cx-scaled] { overflow:clip;}
 /* Fixed row dimensions let the browser contain layout and painting during scroll. Details measure their content below. */
 .cx-row {
   position:absolute;left:0;top:0;display:flex;height:var(--cx-row-h);min-width:100%;
-  background:var(--cx-surface);border-bottom:var(--cx-size-1px) solid var(--cx-row-line);cursor:default;contain:strict;
+  background:var(--hfx-color-surface);border-bottom:var(--cx-size-1px) solid var(--hfx-color-border);cursor:default;contain:strict;
 }
-.cx-row.cx-alt { background:var(--cx-alt-bg);}
-.cx-row:hover { background:var(--cx-hover-bg);}
-.cx-row[aria-selected="true"] { background:var(--cx-selected-bg);}
+.cx-row.cx-alt { background:var(--hfx-color-row-alt);}
+.cx-row:hover { background:var(--hfx-color-hover);}
+.cx-row[aria-selected="true"] { background:var(--hfx-color-accent-subtle);}
 .cx-row:focus { outline:none;}
-.cx-row:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-neg-2px);}
+.cx-row:focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(-1 * var(--hfx-focus-width));}
 /* Cell navigation focuses a cell, or the control in it, which shows its own ring. */
 .cx-cell:focus,.cx-detail-body:focus { outline:none;}
-.cx-cell:focus-visible,.cx-detail-body:focus-visible { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-neg-2px);}
+.cx-cell:focus-visible,.cx-detail-body:focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(-1 * var(--hfx-focus-width));}
 .cx-cell {
   flex:none;display:flex;align-items:center;gap:var(--cx-size-6px);padding:0 var(--cx-size-8px);min-width:0;overflow:hidden;
   white-space:nowrap;text-overflow:ellipsis;
@@ -84,56 +84,56 @@
 .cx-text { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cx-indent { flex:none;display:inline-block;}
 .cx-ico { width:var(--cx-size-16px);height:var(--cx-size-16px);flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round; }
-.cx-icon { flex:none;display:inline-flex;width:var(--cx-size-16px);height:var(--cx-size-16px);margin-right:var(--cx-size-4px);color:var(--cx-muted);}
+.cx-icon { flex:none;display:inline-flex;width:var(--cx-size-16px);height:var(--cx-size-16px);margin-right:var(--cx-size-4px);color:var(--hfx-color-text-muted);}
 .cx-icon svg { width:var(--cx-size-16px);height:var(--cx-size-16px);}
 .cx-exp {
   flex:none;width:var(--cx-size-18px);height:var(--cx-size-18px);display:inline-flex;align-items:center;justify-content:center;
-  cursor:pointer;color:var(--cx-muted);border-radius:var(--cx-size-4px);position:relative;
+  cursor:pointer;color:var(--hfx-color-text-muted);border-radius:var(--hfx-radius-control);position:relative;
 }
 /* The pointer target of an expander is 24 x 24 CSS pixels (WCAG 2.2 target size) without changing the layout. */
 .cx-exp:not(.cx-leaf)::after { content:"";position:absolute;inset:var(--cx-size-neg-3px);}
 .cx-exp::before { content:"";width:var(--cx-size-7px);height:var(--cx-size-7px);border-right:var(--cx-size-1d6px) solid currentColor;border-bottom:var(--cx-size-1d6px) solid currentColor;transform:rotate(-45deg);transition:transform .12s ease;}
 .cx-row[aria-expanded="true"] > .cx-tree .cx-exp::before { transform:rotate(45deg);}
 .cx-exp.cx-leaf { cursor:default;}
-.cx-exp:not(.cx-leaf):hover { background:var(--cx-selected-bg);color:var(--cx-text);}
+.cx-exp:not(.cx-leaf):hover { background:var(--hfx-color-accent-subtle);color:var(--hfx-color-text);}
 .cx-exp.cx-leaf::before { display:none;}
-.cx-row[aria-busy="true"] .cx-exp::before { width:var(--cx-size-10px);height:var(--cx-size-10px);transform:none;border:var(--cx-size-1d6px) solid var(--cx-line-strong);border-top-color:var(--cx-accent);border-radius:50%;animation:cx-spin .8s linear infinite;}
+.cx-row[aria-busy="true"] .cx-exp::before { width:var(--cx-size-10px);height:var(--cx-size-10px);transform:none;border:var(--cx-size-1d6px) solid var(--hfx-color-border-strong);border-top-color:var(--hfx-color-accent);border-radius:50%;animation:cx-spin .8s linear infinite;}
 @keyframes cx-spin { to { transform:rotate(360deg);} }
 /* Reduced motion: no transitions or animations anywhere in a view or its menus, sheets and drawers (all .cx-host); the busy spinner stops. */
 @media (prefers-reduced-motion:reduce) {
   .cx-host,.cx-host *,.cx-host ::before,.cx-host ::after { transition:none!important;animation:none!important;scroll-behavior:auto!important;}
 }
 .cx-group .cx-text { font-weight:600;}
-.cx-row.cx-status .cx-cell { color:var(--cx-muted);font-style:italic;}
-.cx-row.cx-more .cx-cell { color:var(--cx-accent);font-style:normal;}
+.cx-row.cx-status .cx-cell { color:var(--hfx-color-text-muted);font-style:italic;}
+.cx-row.cx-more .cx-cell { color:var(--hfx-color-accent);font-style:normal;}
 .cx-more-btn { cursor:pointer;text-decoration:underline;text-underline-offset:var(--cx-size-2px);}
-.cx-row.cx-error .cx-cell { color:var(--cx-tone-danger);}
-.cx-mount-error { padding:var(--cx-size-8px);color:var(--cx-tone-danger);}
+.cx-row.cx-error .cx-cell { color:var(--hfx-color-status-bad-fg);}
+.cx-mount-error { padding:var(--cx-size-8px);color:var(--hfx-color-status-bad-fg);}
 
 /* ---------- tones and badges ---------- */
-.cx-tone-info { color:var(--cx-tone-info);}
-.cx-tone-success { color:var(--cx-tone-success);}
-.cx-tone-warning { color:var(--cx-tone-warning);}
-.cx-tone-danger { color:var(--cx-tone-danger);}
-.cx-tone-muted { color:var(--cx-muted);}
+.cx-tone-info { color:var(--hfx-color-status-info-fg);}
+.cx-tone-success { color:var(--hfx-color-status-good-fg);}
+.cx-tone-warning { color:var(--hfx-color-status-warn-fg);}
+.cx-tone-danger { color:var(--hfx-color-status-bad-fg);}
+.cx-tone-muted { color:var(--hfx-color-text-muted);}
 .cx-badge {
-  flex:none;display:inline-block;padding:0 var(--cx-size-6px);border-radius:var(--cx-size-999px);font-size:var(--cx-size-d8em);line-height:var(--cx-size-18px);
+  flex:none;display:inline-block;padding:0 var(--cx-size-6px);border-radius:var(--hfx-radius-badge);font-size:var(--cx-size-d8em);line-height:var(--cx-size-18px);
   font-style:normal;font-weight:400;font-variant-numeric:tabular-nums;
-  color:var(--cx-text);background:var(--cx-alt-bg);border:var(--cx-size-1px) solid var(--cx-line);
+  color:var(--hfx-color-text);background:var(--hfx-color-row-alt);border:var(--cx-size-1px) solid var(--hfx-color-border);
 }
-.cx-badge.cx-tone-info { color:var(--cx-tone-info);background:color-mix(in srgb,var(--cx-tone-info) 12%,var(--cx-surface));border-color:transparent;}
-.cx-badge.cx-tone-success { color:var(--cx-tone-success);background:color-mix(in srgb,var(--cx-tone-success) 12%,var(--cx-surface));border-color:transparent;}
-.cx-badge.cx-tone-warning { color:var(--cx-tone-warning);background:color-mix(in srgb,var(--cx-tone-warning) 12%,var(--cx-surface));border-color:transparent;}
-.cx-badge.cx-tone-danger { color:var(--cx-tone-danger);background:color-mix(in srgb,var(--cx-tone-danger) 12%,var(--cx-surface));border-color:transparent;}
-.cx-badge.cx-tone-muted { color:var(--cx-muted);}
-/* Any other tone is the host's: the runtime points --cx-t at the theme's --cx-tone-<name>, and --cx-t-bg at its -bg. */
+.cx-badge.cx-tone-info { color:var(--hfx-color-status-info-fg);background:var(--hfx-color-status-info-bg);border-color:transparent;}
+.cx-badge.cx-tone-success { color:var(--hfx-color-status-good-fg);background:var(--hfx-color-status-good-bg);border-color:transparent;}
+.cx-badge.cx-tone-warning { color:var(--hfx-color-status-warn-fg);background:var(--hfx-color-status-warn-bg);border-color:transparent;}
+.cx-badge.cx-tone-danger { color:var(--hfx-color-status-bad-fg);background:var(--hfx-color-status-bad-bg);border-color:transparent;}
+.cx-badge.cx-tone-muted { color:var(--hfx-color-text-muted);}
+/* Any other tone is the host's: the runtime points --cx-t at the theme's --hfx-color-status-<name>-fg, and --cx-t-bg at its -bg. */
 .cx-toned { color:var(--cx-t,inherit);}
-.cx-badge.cx-toned { color:var(--cx-t,var(--cx-text));background:var(--cx-t-bg,color-mix(in srgb,var(--cx-t,var(--cx-text)) 12%,var(--cx-surface)));border-color:transparent;}
+.cx-badge.cx-toned { color:var(--cx-t,var(--hfx-color-text));background:var(--cx-t-bg,color-mix(in srgb,var(--cx-t,var(--hfx-color-text)) 12%,var(--hfx-color-surface)));border-color:transparent;}
 /* Muted text on a selected row falls back to the normal colour to keep 4.5:1 contrast in both themes. */
-.cx-row[aria-selected="true"] :is(.cx-tone-muted,.cx-badge.cx-tone-muted) { color:var(--cx-text);}
+.cx-row[aria-selected="true"] :is(.cx-tone-muted,.cx-badge.cx-tone-muted) { color:var(--hfx-color-text);}
 
 /* ---------- detail rows ---------- */
-.cx-row.cx-detail { background:var(--cx-alt-bg);cursor:auto;contain:layout style;}
+.cx-row.cx-detail { background:var(--hfx-color-row-alt);cursor:auto;contain:layout style;}
 .cx-row.cx-detail > .cx-cell { align-items:stretch;padding:0;white-space:normal;overflow:visible;}
 .cx-detail-body { overflow:auto;padding:var(--cx-size-8px) var(--cx-size-12px);}
 /* In the grid the body stays inside the visible width: it sticks at the row's indent while the grid scrolls sideways. */
@@ -145,25 +145,23 @@
 .cx-row.cx-detail-auto { min-height:var(--cx-row-h);}
 .cx-detail-auto .cx-detail-body { height:auto;}
 .cx-detail-table { width:100%;border-collapse:collapse;font-size:var(--cx-size-d92em);table-layout:fixed;}
-.cx-detail-table caption { text-align:left;color:var(--cx-muted);padding-bottom:var(--cx-size-6px);}
-.cx-detail-table th { text-align:left;font-weight:600;border-bottom:var(--cx-size-1px) solid var(--cx-line-strong);padding:var(--cx-size-5px) var(--cx-size-8px);overflow-wrap:anywhere;}
-.cx-detail-table td { padding:var(--cx-size-5px) var(--cx-size-8px);border-bottom:var(--cx-size-1px) solid var(--cx-row-line);vertical-align:top;overflow-wrap:anywhere;}
+.cx-detail-table caption { text-align:left;color:var(--hfx-color-text-muted);padding-bottom:var(--cx-size-6px);}
+.cx-detail-table th { text-align:left;font-weight:600;border-bottom:var(--cx-size-1px) solid var(--hfx-color-border-strong);padding:var(--cx-size-5px) var(--cx-size-8px);overflow-wrap:anywhere;}
+.cx-detail-table td { padding:var(--cx-size-5px) var(--cx-size-8px);border-bottom:var(--cx-size-1px) solid var(--hfx-color-border);vertical-align:top;overflow-wrap:anywhere;}
 .cx-props { display:grid;grid-template-columns:max-content 1fr;gap:var(--cx-size-2px) var(--cx-size-16px);margin:0;font-size:var(--cx-size-d92em);}
-.cx-props dt { color:var(--cx-muted);}
+.cx-props dt { color:var(--hfx-color-text-muted);}
 .cx-props dd { margin:0;overflow-wrap:anywhere;}
 
 /* ---------- print outline ---------- */
 .cx-outline { display:none;}
 .cx-outline-table { border-collapse:collapse;font-size:var(--cx-size-11px);}
-.cx-outline-table td,.cx-outline-table th { border:var(--cx-size-1px) solid var(--cx-control-border);padding:var(--cx-size-1px) var(--cx-size-4px);text-align:left;}
+.cx-outline-table td,.cx-outline-table th { border:var(--cx-size-1px) solid var(--hfx-color-border-control);padding:var(--cx-size-1px) var(--cx-size-4px);text-align:left;}
 @media print {
   /* Paper is white whatever the screen theme is. */
   .cx-host,.cx-host[data-cx-theme],.cx-static,.cx-static[data-cx-theme] {
-    --cx-surface:#ffffff;--cx-text:#16181c;--cx-accent:#11776f;--cx-line:#e2e4e7;
-    --cx-tone-info:#0a728b;--cx-tone-success:#177345;--cx-tone-warning:#8c5c05;--cx-tone-danger:#b8292a;
-    color-scheme:light;height:auto !important;color:var(--cx-text);background:var(--cx-surface);
+    color-scheme:light !important;height:auto !important;color:__CX_PRINT_TEXT__ !important;background:__CX_PRINT_SURFACE__ !important;
   }
-  .cx-outline-table { color:var(--cx-text);background:var(--cx-surface);}
+  .cx-outline-table,.cx-outline-table :is(th,td),.cx-static :is(table,caption,th,td) { color:__CX_PRINT_TEXT__ !important;background:__CX_PRINT_SURFACE__ !important;border-color:__CX_PRINT_BORDER__ !important; }
   .cx-grid,.cx-toolbar { display:none !important;}
   /* A tree whose tools part could not install has no outline to print: its rows on screen print instead of a blank page. */
   .cx-host:has(> .cx-outline:empty) > .cx-grid { display:block !important;}
@@ -171,10 +169,10 @@
 }
 
 /* ---------- full pages written by CanopyX.Html ---------- */
-body.cx-page { margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}
+body.cx-page { margin:0;font-family:var(--hfx-font-sans);}
 body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:var(--cx-size-100vh);padding:var(--cx-size-12px) var(--cx-size-16px);}
 /* Header grips remain visible when keyboard traversal directs focus programmatically. */
-.cx-resize:focus { outline:var(--cx-size-2px) solid var(--cx-accent);outline-offset:var(--cx-size-neg-2px);}
+.cx-resize:focus { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(-1 * var(--hfx-focus-width));}
 /* Forced colours (Windows high contrast): backgrounds and shadows are dropped, so a selected row or result takes the system
    Highlight colours, with its contents in HighlightText; focus that a background showed gets an outline. */
 @media (forced-colors:active) {
@@ -182,7 +180,7 @@ body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:var(--cx-siz
   :is(.cx-row,.cx-result)[aria-selected="true"] :not(input,select) { forced-color-adjust:none;color:HighlightText!important;background-color:transparent!important;border-color:HighlightText!important;outline-color:HighlightText!important;}
   :is(.cx-row,.cx-result)[aria-selected="true"] .cx-cell { background-color:Highlight!important;}
   :is(.cx-row,.cx-result)[aria-selected="true"]:focus-visible { outline-color:HighlightText;}
-  :where(.cx-host) :is([role^="menuitem"],[role="option"],.cx-result,summary,button):focus-visible { outline:var(--cx-size-2px) solid;outline-offset:var(--cx-size-neg-2px);}
+  :where(.cx-host) :is([role^="menuitem"],[role="option"],.cx-result,summary,button):focus-visible { outline:var(--cx-size-2px) solid;outline-offset:var(--hfx-focus-offset);}
   :where(.cx-host) [aria-pressed="true"] { forced-color-adjust:none;background:Highlight;color:HighlightText;}
   .cx-badge { outline:var(--cx-size-1px) solid;outline-offset:calc(-1 * var(--cx-size-1px));}
 }

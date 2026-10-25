@@ -123,7 +123,6 @@
       }
       root.style.setProperty("--cx-tl-side", resources.width + "px");
       main.append(head, canvas); side.appendChild(host); root.append(side, main);
-      host.setAttribute("data-cx-theme", this.host.getAttribute("data-cx-theme") || "auto");
       const aggregates = resources.aggregates, renderers = {};
       for (const [column, kind] of Object.entries(aggregates)) renderers[column] = (node, element) => { setText(element, this.tlAggregateText(node.id, kind)); element.classList.add("cx-tl-agg"); return true; };
       const view = { ...resources.view, rowHeight: resources.view.rowHeight || this.rowH, labels: { ...this.view.labels, ...resources.view.labels } };

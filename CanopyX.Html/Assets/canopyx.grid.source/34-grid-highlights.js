@@ -23,7 +23,7 @@
     const tone = toneOf(name), classes = row.status ? "" : [row.h.className, mark?.className].filter(Boolean).join(" ");
     setClass(element, (element._cls ?? element.className) + (classes ? " " + classes : "") + tone.cls); toneColors(element, tone);
     setAttr(element, "data-cx-tone", name || null);
-    if (name) element.style.setProperty("--cx-row-tone", "var(--cx-tone-" + name + ",var(--cx-text))");
+    if (name) element.style.setProperty("--cx-row-tone", toneVariable(name, false, "var(--hfx-color-text)"));
     else element.style.removeProperty("--cx-row-tone");
     element._cxHighlight = !!(name || classes);
     for (const [id, rule] of matches) if (id !== null) {

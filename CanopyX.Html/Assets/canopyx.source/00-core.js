@@ -148,9 +148,16 @@
 
   // ---------- tones ----------
   // The stylesheet has colours for six tones. Any other tone is the host's: its colours come from the theme's
-  // --cx-tone-<name> (text) and --cx-tone-<name>-bg (badge background), through two properties set on the element.
+  // --hfx-color-status-<name>-fg (text) and --hfx-color-status-<name>-bg (badge background), through two properties set on the element.
   const NO_TONE = { cls: "", host: null };
   const tones = new Map();
+
+  /** Reads a shared status role; public tone names keep their existing meaning. */
+  function toneVariable(name, background = false, fallback) {
+    const role = { success: "good", warning: "warn", danger: "bad" }[name] || name;
+    const key = "--hfx-color-status-" + role + (background ? "-bg" : "-fg");
+    return "var(" + key + (STATUS_FALLBACKS[key] || fallback ? "," + (STATUS_FALLBACKS[key] || fallback) : "") + ")";
+  }
 
   /** The class names of a tone (with a leading space) and, for a host tone, its name; a malformed tone has neither. */
   function toneOf(name) {
@@ -179,8 +186,8 @@
     }
     element._tone = tone.host;
     if (tone.host) {
-      element.style.setProperty("--cx-t", "var(--cx-tone-" + tone.host + ")");
-      element.style.setProperty("--cx-t-bg", "var(--cx-tone-" + tone.host + "-bg)");
+      element.style.setProperty("--cx-t", toneVariable(tone.host));
+      element.style.setProperty("--cx-t-bg", toneVariable(tone.host, true));
     } else {
       element.style.removeProperty("--cx-t");
       element.style.removeProperty("--cx-t-bg");

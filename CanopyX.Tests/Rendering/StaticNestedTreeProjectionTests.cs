@@ -72,11 +72,11 @@ public sealed class StaticNestedTreeProjectionTests {
 
         Assert.StartsWith("Preferred <&>", rendered.Value);
         Assert.Equal("Tooltip \"<&>\"", rendered.Attribute("title")?.Value);
-        Assert.Contains("--cx-tone-danger", rendered.Attribute("style")!.Value);
+        Assert.Contains("--hfx-color-status-bad-fg", rendered.Attribute("style")!.Value);
         var badge = Assert.Single(rendered.Elements("span"));
         Assert.Equal("Verified <&>", badge.Value);
         Assert.Equal("Badge \"<&>\"", badge.Attribute("title")?.Value);
-        Assert.Contains("--cx-tone-success", badge.Attribute("style")!.Value);
+        Assert.Contains("--hfx-color-status-good-fg", badge.Attribute("style")!.Value);
     }
 
     [Theory]
@@ -138,15 +138,15 @@ public sealed class StaticNestedTreeProjectionTests {
 
         Assert.Equal(nullCellReference ? new[] { "Node <&>" } : new[] { "Node <&>", "Cell <&>" }, badges.Select(badge => badge.Value).ToArray());
         Assert.Equal("Node \"<&>\"", badges[0].Attribute("title")?.Value);
-        Assert.Contains("--cx-tone-danger", badges[0].Attribute("style")!.Value);
+        Assert.Contains("--hfx-color-status-bad-fg", badges[0].Attribute("style")!.Value);
         Assert.Contains("Node &lt;&amp;&gt;", html);
         Assert.Contains("title=\"Node &quot;&lt;&amp;&gt;&quot;\"", html);
         Assert.DoesNotContain("Wrong null identity", html);
         if (!nullCellReference) {
             Assert.Equal("Cell \"<&>\"", cells[0].Attribute("title")?.Value);
-            Assert.Contains("--cx-tone-warning", cells[0].Attribute("style")!.Value);
+            Assert.Contains("--hfx-color-status-warn-fg", cells[0].Attribute("style")!.Value);
             Assert.Equal("Badge \"<&>\"", badges[1].Attribute("title")?.Value);
-            Assert.Contains("--cx-tone-success", badges[1].Attribute("style")!.Value);
+            Assert.Contains("--hfx-color-status-good-fg", badges[1].Attribute("style")!.Value);
         }
         Assert.Equal("Other badge", Assert.Single(cells[1].Elements("span")).Value);
     }

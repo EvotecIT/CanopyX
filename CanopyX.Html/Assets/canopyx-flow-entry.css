@@ -1,24 +1,7 @@
-/* CanopyX theme. */
+/* Shared semantic tokens are bundled by Sync-Assets.ps1. Only component geometry lives here. */
 .cx-host,.cx-static{
---cx-surface:#ffffff;
---cx-text:#16181c;
---cx-accent:#11776f;
---cx-line:#e2e4e7;
---cx-tone-info:#0a728b;
---cx-tone-success:#177345;
---cx-tone-warning:#8c5c05;
---cx-tone-danger:#b8292a;
---cx-font:Calibri,Carlito,"Segoe UI",system-ui,sans-serif;
---cx-font-mono:"IBM Plex Mono","Cascadia Mono",Consolas,monospace;
---cx-font-size:14px;
---cx-radius:6px;
---cx-radius-sm:4px;
---cx-control-h:32px;
---cx-row-h:28px;
---cx-head-h:36px;
---cx-cell-px:12px;
---cx-on-accent:#ffffff;
---cx-shadow-ink:#000;
+--cx-compact:0;
+--cx-row-h:var(--hfx-row-height,calc(40px - var(--cx-compact,0) * 8px));
 --cx-size-d04em:.04em;
 --cx-size-46ch:46ch;
 --cx-size-440px:440px;
@@ -90,59 +73,11 @@
 --cx-size-d875em:.875em;
 --cx-size-92px:92px;
 --cx-size-28px:28px;
---cx-text-2:color-mix(in srgb,var(--cx-text) 78%,var(--cx-surface));
---cx-muted:color-mix(in srgb,var(--cx-text) 66%,var(--cx-surface));
---cx-control-border:color-mix(in srgb,var(--cx-text) 54%,var(--cx-surface));
---cx-head-bg:color-mix(in srgb,var(--cx-text) 3.5%,var(--cx-surface));
---cx-group-bg:color-mix(in srgb,var(--cx-text) 2.5%,var(--cx-surface));
---cx-alt-bg:var(--cx-group-bg);
---cx-hover-bg:color-mix(in srgb,var(--cx-text) 4%,var(--cx-surface));
---cx-selected-bg:color-mix(in srgb,var(--cx-accent) 11%,var(--cx-surface));
---cx-accent-text:color-mix(in srgb,var(--cx-accent) 98%,var(--cx-text));
---cx-accent-soft:color-mix(in srgb,var(--cx-accent) 13%,var(--cx-surface));
---cx-line-strong:color-mix(in srgb,var(--cx-text) 22%,var(--cx-surface));
---cx-row-line:var(--cx-line);
---cx-panel-shadow:0 8px 28px color-mix(in srgb,var(--cx-shadow-ink) 14%,transparent),0 1px 3px color-mix(in srgb,var(--cx-shadow-ink) 8%,transparent);
---cx-tone-danger-bg:color-mix(in srgb,var(--cx-tone-danger) 11%,var(--cx-surface));
---cx-tone-warning-bg:color-mix(in srgb,var(--cx-tone-warning) 13%,var(--cx-surface));
---cx-tone-success-bg:color-mix(in srgb,var(--cx-tone-success) 11%,var(--cx-surface));
---cx-tone-info-bg:color-mix(in srgb,var(--cx-tone-info) 11%,var(--cx-surface));
---cx-quiet:color-mix(in srgb,var(--cx-tone-success) 55%,var(--cx-surface));
---cx-scrollbar-thumb:color-mix(in srgb,var(--cx-text) 28%,transparent);
---cx-scrollbar-thumb-hover:color-mix(in srgb,var(--cx-text) 46%,transparent);
+--cx-size-1px:1px;--cx-size-neg-1px:-1px;
+--cx-scrollbar-thumb:color-mix(in srgb,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)) 28%,transparent);
+--cx-scrollbar-thumb-hover:color-mix(in srgb,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)) 46%,transparent);
 --cx-scrollbar-track:transparent;
 --cx-scrollbar-size:10px;
-color-scheme:light;
-}
-.cx-host[data-cx-theme="dark"],.cx-static[data-cx-theme="dark"]{
-color-scheme:dark;
---cx-surface:#16181c;
---cx-text:#f2f3f5;
---cx-accent:#37c9b8;
---cx-line:#272a30;
---cx-tone-info:#3ec3dd;
---cx-tone-success:#4cc78a;
---cx-tone-warning:#eeb640;
---cx-tone-danger:#f47171;
---cx-on-accent:#0c0d10;
---cx-head-bg:color-mix(in srgb,var(--cx-text) 4.5%,var(--cx-surface));
---cx-panel-shadow:0 10px 32px color-mix(in srgb,var(--cx-shadow-ink) 55%,transparent),0 0 0 1px var(--cx-line);
-}
-@media (prefers-color-scheme:dark){
-.cx-host[data-cx-theme="auto"],.cx-static[data-cx-theme="auto"]{
-color-scheme:dark;
---cx-surface:#16181c;
---cx-text:#f2f3f5;
---cx-accent:#37c9b8;
---cx-line:#272a30;
---cx-tone-info:#3ec3dd;
---cx-tone-success:#4cc78a;
---cx-tone-warning:#eeb640;
---cx-tone-danger:#f47171;
---cx-on-accent:#0c0d10;
---cx-head-bg:color-mix(in srgb,var(--cx-text) 4.5%,var(--cx-surface));
---cx-panel-shadow:0 10px 32px color-mix(in srgb,var(--cx-shadow-ink) 55%,transparent),0 0 0 1px var(--cx-line);
-}
 }
 .cx-host{
 box-sizing:border-box;
@@ -150,10 +85,10 @@ display:flex;
 flex-direction:column;
 height:var(--cx-size-480px);
 min-height:0;
-color:var(--cx-text);
-background:var(--cx-surface);
-font-family:var(--cx-font,inherit);
-font-size:var(--cx-font-size,var(--cx-size-14px));
+color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));
+background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));
+font-family:var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);
+font-size:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem));
 line-height:1.4;
 }
 .cx-host *,.cx-host *::before,.cx-host *::after{box-sizing:border-box;}
@@ -165,7 +100,7 @@ line-height:1.4;
 :where(.cx-host,.cx-host *){scrollbar-color:var(--cx-scrollbar-thumb) var(--cx-scrollbar-track);scrollbar-width:thin;}
 .cx-host::-webkit-scrollbar,.cx-host ::-webkit-scrollbar{width:var(--cx-scrollbar-size);height:var(--cx-scrollbar-size);}
 .cx-host::-webkit-scrollbar-track,.cx-host ::-webkit-scrollbar-track,.cx-host ::-webkit-scrollbar-corner{background:var(--cx-scrollbar-track);}
-.cx-host::-webkit-scrollbar-thumb,.cx-host ::-webkit-scrollbar-thumb{background:var(--cx-scrollbar-thumb) padding-box;border:var(--cx-size-2px) solid transparent;border-radius:var(--cx-size-999px);}
+.cx-host::-webkit-scrollbar-thumb,.cx-host ::-webkit-scrollbar-thumb{background:var(--cx-scrollbar-thumb) padding-box;border:var(--cx-size-2px) solid transparent;border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));}
 .cx-host ::-webkit-scrollbar-thumb:hover{background-color:var(--cx-scrollbar-thumb-hover);}
 }
 .cx-sr-only{
@@ -173,6 +108,12 @@ line-height:1.4;
 position:absolute !important;
 width:var(--cx-size-1px);height:var(--cx-size-1px);padding:0;margin:var(--cx-size-neg-1px);
 overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+.cx-host[data-cx-density="compact"]{--cx-compact:1;}
+@layer hfx.fallbacks{
+:where([data-cx-fallback-mode="auto"],.cx-static[data-theme="auto"],.cx-static[data-cx-theme="auto"]){color-scheme:light dark;}
+:where([data-cx-fallback-mode="light"],.cx-static[data-theme="light"],.cx-static[data-cx-theme="light"]){color-scheme:light;}
+:where([data-cx-fallback-mode="dark"],.cx-static[data-theme="dark"],.cx-static[data-cx-theme="dark"]){color-scheme:dark;}
 }
 .cx-host.cx-flow-host{min-height:0;display:block;background:transparent;}
 .cx-host:where(.cx-flow-host:not([data-cx-height])){height:auto;}

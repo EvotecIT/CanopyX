@@ -1,5 +1,5 @@
 /* Flow-host part: what the host-connected parts share,loading lines and quiet buttons. Each feature part brings its own */
-.cx-flow-loading{margin-top:var(--cx-size-4px);font-size:var(--cx-size-13px);color:var(--cx-muted);}
-.cx-flow-loading.cx-flow-error{color:var(--cx-tone-danger);}
-.cx-flow-btn.cx-flow-quiet{border-color:transparent;background:transparent;color:var(--cx-text-2);}
-.cx-flow-btn.cx-flow-quiet:hover{background:var(--cx-hover-bg);color:var(--cx-text);}
+.cx-flow-loading{margin-top:var(--cx-size-4px);font-size:var(--cx-size-13px);color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));}
+.cx-flow-loading.cx-flow-error{color:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));}
+.cx-flow-btn.cx-flow-quiet{border-color:transparent;background:transparent;color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));}
+.cx-flow-btn.cx-flow-quiet:hover{background:var(--hfx-color-hover,light-dark(#f5f5f5,#232529));color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));}

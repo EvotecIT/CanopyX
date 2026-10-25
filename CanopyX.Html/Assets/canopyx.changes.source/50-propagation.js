@@ -10,7 +10,6 @@
       this.labels = changeLabels(this.doc.labels, options.labels);
       this.lang = host.closest("[lang]")?.getAttribute("lang") || document.documentElement.lang || "en";
       this.format = numberFormat(this.lang);
-      if (!host.closest("[data-cx-theme]")) { host.setAttribute("data-cx-theme", "auto"); this.addedTheme = true; }
       this.root = h("div", "cx-prop");
       host.appendChild(this.root);
       this.render();
@@ -102,7 +101,6 @@
       destroy: () => {
         if (view.destroyed) return;
         view.destroyed = true; view.lifetime.abort(); view.root.remove(); host.removeAttribute("data-cx-ready");
-        if (view.addedTheme) host.removeAttribute("data-cx-theme");
       }
     };
     return impl;

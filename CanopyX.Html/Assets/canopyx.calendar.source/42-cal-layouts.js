@@ -52,7 +52,7 @@
         if (!events.length) { const empty = h("p", "cx-cal-empty"); setText(empty, this.calLabels.calendarNoEvents); empty.setAttribute("aria-hidden", "true"); cell.appendChild(empty); }
         for (const event of events) cell.appendChild(this.calEventElement(event, "item"));
         const backgrounds = this.calBackgroundsOn(day);
-        if (backgrounds.length) { cell.classList.add("cx-cal-bgday"); cell.style.setProperty("--cx-bg-tone", "var(--cx-tone-" + backgrounds[0].tone + ",var(--cx-tone-info))"); }
+        if (backgrounds.length) { cell.classList.add("cx-cal-bgday"); cell.style.setProperty("--cx-bg-tone", toneVariable(backgrounds[0].tone, false, "var(--hfx-color-status-info-fg)")); }
         this.calCells.set(day, cell); row.appendChild(cell);
       }
       grid.appendChild(row);

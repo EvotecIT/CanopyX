@@ -95,7 +95,6 @@
       delete view.stateKey; delete view.deepLink;
       if (context.signal.aborted) return;
       const host = h("div", "cx-detail-view");
-      host.setAttribute("data-cx-theme", this.host.getAttribute("data-cx-theme") || "auto");
       entry.body.replaceChildren(host);
       // A nested view starts without its own toolbar (sorting stays in its headers); the host's options can bring it back.
       entry.api = (tree ? createTreeGrid : createDataGrid)(host, { labels: this.opts.labels, toolbar: false, ...(spec?.options || {}), view, ...(source ? { source } : {}) });

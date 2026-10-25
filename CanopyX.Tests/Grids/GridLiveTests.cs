@@ -96,8 +96,8 @@ public sealed class GridLiveTests {
         Assert.Contains("function liveTransaction(", part.Script);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         // The new part's size plus about 15%.
-        Assert.True(Gzip(part.Script) <= 12288, "The live part is " + Gzip(part.Script) + " bytes gzip; the guard is 12 KiB.");
-        Assert.True(Gzip(part.Style!) <= 1024, "The live stylesheet is " + Gzip(part.Style!) + " bytes gzip; the guard is 1 KiB.");
+        Assert.True(ComponentGzip(part.Script) <= 12288, "The live part is " + ComponentGzip(part.Script) + " bytes gzip; the guard is 12 KiB.");
+        Assert.True(ComponentGzip(part.Style!) <= 1024, "The live stylesheet is " + ComponentGzip(part.Style!) + " bytes gzip; the guard is 1 KiB.");
 
         var plain = Grid();
         Assert.DoesNotContain("x-canopyx-live\"", plain.ToHtmlFragment());
@@ -127,9 +127,10 @@ public sealed class GridLiveTests {
         return grid;
     }
 
-    private static long Gzip(string value) {
+    // Token fallback bytes have their own shared allowance; keep this component ceiling unchanged.
+    private static long ComponentGzip(string value) {
         using var output = new MemoryStream();
-        using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize, true)) { var bytes = Encoding.UTF8.GetBytes(value); gzip.Write(bytes, 0, bytes.Length); }
+        using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize, true)) { var bytes = Encoding.UTF8.GetBytes(CanopyX.Tests.Html.SharedTokenAssets.WithoutFallbackPayload(value)); gzip.Write(bytes, 0, bytes.Length); }
         return output.Length;
     }
 }

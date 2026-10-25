@@ -123,7 +123,7 @@
           "type": "grid",
           "id": "servers",
           "label": "Servers",
-          "rowHeight": 34,
+          "rowHeight": 40,
           "pageSize": 100,
           "selection": "single",
           "search": true,

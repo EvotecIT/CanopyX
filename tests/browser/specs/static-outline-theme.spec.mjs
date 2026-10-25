@@ -1,6 +1,6 @@
 // The static outline is themed without script. As literal colours it is light or dark wherever it lands; written with
-// theme variables it follows the page: the palettes of canopyx.css inside a .cx-static element, or the colours a host
-// sets from its own design tokens.
+// theme variables it follows the page's colour scheme through inline fallbacks, or the colours a host sets from its
+// own design tokens. CanopyX consumes the host's roles without defining them.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { exampleUrl } from "./support.mjs";
@@ -19,7 +19,7 @@ function colors(page) {
   return page.evaluate(() => {
     const table = document.querySelector("main table");
     const style = getComputedStyle(table);
-    const badge = [...table.querySelectorAll("span")].find((span) => getComputedStyle(span).borderRadius === "9px");
+    const badge = [...table.querySelectorAll("span")].find((span) => getComputedStyle(span).borderRadius === "4px");
     return { surface: style.backgroundColor, text: style.color, note: getComputedStyle(table.querySelector(":scope > tbody:last-of-type td")).color,
       badge: badge ? getComputedStyle(badge).backgroundColor : null, scripts: document.scripts.length };
   });
@@ -33,7 +33,7 @@ test("the dark theme is written as literal colours and carries its own surface o
 });
 
 for (const [scheme, palette] of [["light", LIGHT], ["dark", DARK]]) {
-  test("with theme variables the outline takes the " + scheme + " palette of the stylesheet from the system preference", async ({ page }) => {
+  test("with theme variables the outline takes the " + scheme + " palette from the system preference", async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
     await page.goto(exampleUrl("outline-page.html"));
     const seen = await colors(page);
@@ -44,28 +44,39 @@ for (const [scheme, palette] of [["light", LIGHT], ["dark", DARK]]) {
 }
 
 test("a host that sets the runtime's properties from its own tokens themes the outline with them", async ({ page }) => {
-  // The reader prefers dark, and the host's theme is its own: neither palette of canopyx.css may show through.
+  // The reader prefers dark, and the host's theme is its own: neither built-in fallback palette may show through.
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto(exampleUrl("outline-page.html"));
-  const before = await colors(page);
   // What a host stylesheet does for the grid, here for the host's own element around the outline.
   await page.evaluate(() => {
     const wrapper = document.querySelector("main .cx-static");
     wrapper.className = "report-outline";
     wrapper.removeAttribute("data-cx-theme");
   });
-  await page.addStyleTag({ content: ".report-outline { --cx-surface: rgb(20, 30, 40); --cx-text: rgb(250, 240, 230); --cx-tone-warning: rgb(255, 200, 0); }" });
+  await page.addStyleTag({ content: ".report-outline { --hfx-color-surface: rgb(20, 30, 40); --hfx-color-text: rgb(250, 240, 230); --hfx-color-text-muted: rgb(210, 200, 190); --hfx-color-status-info-fg: rgb(150, 200, 240); --hfx-color-status-info-bg: rgb(20, 50, 80); }" });
   const after = await colors(page);
   expect({ surface: after.surface, text: after.text }).toEqual({ surface: "rgb(20, 30, 40)", text: "rgb(250, 240, 230)" });
-  // Mixed colours follow too: the muted note and the tint behind a badge are derived from the host's colours.
-  expect(after.note).not.toBe(before.note);
-  expect(after.badge).not.toBe(before.badge);
+  // Muted notes and badge backgrounds consume their semantic roles directly.
+  expect(after.note).toBe("rgb(210, 200, 190)");
+  expect(after.badge).toBe("rgb(20, 50, 80)");
 });
 
-test("without the stylesheet the literals apply", async ({ page }) => {
-  await page.emulateMedia({ colorScheme: "dark" });
-  await page.goto(exampleUrl("outline-page.html"));
-  await page.evaluate(() => document.querySelectorAll('link[rel="stylesheet"]').forEach(link => link.remove()));
-  const seen = await colors(page);
-  expect({ surface: seen.surface, text: seen.text }).toEqual(LIGHT);
+test.describe("literal-only static clients", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("the literal declarations apply when a client drops variable-valued declarations and the stylesheet", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto(exampleUrl("outline-page.html"));
+    // Model an email client's CSS filtering. Removing the stylesheet alone leaves modern inline fallbacks active.
+    await page.evaluate(() => {
+      document.querySelectorAll('link[rel="stylesheet"]').forEach(link => link.remove());
+      for (const element of document.querySelectorAll("[style]")) {
+        // Read the attribute, since CSSOM has already discarded earlier declarations of the same property.
+        const literal = element.getAttribute("style").split(";").filter(declaration => !/var\s*\(/i.test(declaration)).join(";");
+        element.setAttribute("style", literal);
+      }
+    });
+    const seen = await colors(page);
+    expect({ surface: seen.surface, text: seen.text, scripts: seen.scripts }).toEqual({ ...LIGHT, scripts: 0 });
+  });
 });

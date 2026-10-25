@@ -9,15 +9,20 @@ namespace CanopyX.Rendering;
 /// CSS custom properties, so every colour is written as a literal. With
 /// <see cref="CanopyStaticHtmlOptions.UseThemeVariables"/> each literal is followed by the same declaration in terms
 /// of the runtime's custom properties: a client that does not know <c>var()</c> drops that declaration and keeps the
-/// literal, and a browser takes the colours the page defines. (A browser that knows <c>var()</c> but not
-/// <c>color-mix()</c>, from before 2023, loses the mixed colours: muted text and tints fall back to the inherited
-/// colour and no background, which stays legible.)
+/// literal, and a modern browser takes the colours the page defines. The complete presets use <c>light-dark()</c>
+/// at each base role's use site when the page defines no role; custom palettes keep their fixed fallbacks. Browsers
+/// that know <c>var()</c> but lack the colour functions can invalidate those themed declarations.
 /// </summary>
 internal sealed partial class CanopyStaticStyles {
-    private const string BadgeShape = "display:inline-block;margin-left:6px;padding:0 6px;border-radius:9px;font-size:11px;";
+    private static readonly CanopyStaticTheme LightTheme = CanopyStaticTheme.Light();
+    private static readonly CanopyStaticTheme DarkTheme = CanopyStaticTheme.Dark();
+
+    private string BadgeShape => "display:inline-block;margin-left:6px;padding:0 6px;border-radius:4px;"
+        + (_variables ? "border-radius:var(--hfx-radius-badge,4px);" : string.Empty) + "font-size:11px;";
 
     private readonly CanopyStaticHtmlOptions _options;
     private readonly bool _variables;
+    private readonly bool _adaptive;
     private readonly Ink _surface;
     private readonly Ink _text;
     private readonly Ink _line;
@@ -30,20 +35,35 @@ internal sealed partial class CanopyStaticStyles {
         _options = options;
         _variables = options.UseThemeVariables;
         var theme = options.Theme;
-        _surface = Base("--cx-surface", theme.Surface);
-        _text = Base("--cx-text", theme.Text);
-        _line = Base("--cx-line", theme.Line);
-        // The mixes of canopyx.css: --cx-muted, --cx-alt-bg, --cx-line-strong, and --cx-head-bg.
-        _muted = Mix(_text, 66, _surface);
-        _quiet = Mix(_text, 2.5, _surface);
-        var strong = Mix(_text, 22, _surface);
+        // A custom palette is a coherent set of host colours. Do not replace some of its colours with preset
+        // fallbacks when the page changes scheme; only the two complete presets have a known companion palette.
+        _adaptive = _variables && (IsPalette(theme, LightTheme) || IsPalette(theme, DarkTheme));
+        _surface = Base("--hfx-color-surface", theme.Surface, LightTheme.Surface, DarkTheme.Surface);
+        _text = Base("--hfx-color-text", theme.Text, LightTheme.Text, DarkTheme.Text);
+        _line = Base("--hfx-color-border", theme.Line, LightTheme.Line, DarkTheme.Line);
+        // The mixes of canopyx.css: --hfx-color-text-muted, --hfx-color-row-alt, --hfx-color-border-strong, and --hfx-color-surface-sunken.
+        _muted = Role("--hfx-color-text-muted", Mix(_text, 66, _surface));
+        _quiet = Role("--hfx-color-row-alt", Mix(_text, 2.5, _surface));
+        var strong = Role("--hfx-color-border-strong", Mix(_text, 22, _surface));
         var mutedColor = Declare("color", _muted);
         var rowLine = Border("border-bottom", _line);
 
-        Table = "border-collapse:collapse;font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:13px;line-height:1.4;" + Declare("color", _text) + Declare("background", _surface);
+        Table = "border-collapse:collapse;font-family:'Segoe UI Variable Text','Segoe UI',Arial,Helvetica,sans-serif;"
+            + (_variables ? "font-family:var(--hfx-font-sans,'Segoe UI Variable Text','Segoe UI',Arial,Helvetica,sans-serif);" : string.Empty)
+            + "font-size:13px;line-height:1.4;" + Declare("color", _text) + Declare("background", _surface);
         // A caption lies outside the table's own box, so it carries the surface itself.
         Caption = "text-align:left;font-weight:600;font-size:14px;padding:4px 8px 6px 8px;" + Declare("background", _surface);
-        Header = "text-align:left;font-weight:700;padding:4px 12px;" + Border("border-bottom", strong) + Declare("background", Mix(_text, theme.Surface == "#16181c" ? 4.5 : 3.5, _surface)) + "white-space:nowrap;";
+        var header = Mix(_text, theme.Surface == DarkTheme.Surface ? 4.5 : 3.5, _surface);
+        if (_adaptive) {
+            header = new Ink(header.Literal, "light-dark(" + Mix(_text, 3.5, _surface).Css + "," + Mix(_text, 4.5, _surface).Css + ")");
+        }
+        Header = "text-align:left;font-size:12px;font-weight:600;line-height:1.35;vertical-align:middle;padding:4px 12px;"
+            + (_variables ? "font-size:var(--hfx-table-header-size,var(--hfx-type-caption-size,12px));"
+                + "font-weight:var(--hfx-table-header-weight,var(--hfx-weight-semibold,600));"
+                + "line-height:var(--hfx-table-header-line-height,var(--hfx-type-caption-line-height,1.35));" : string.Empty)
+            + Border("border-bottom", strong)
+            + Declare("color", Role("--hfx-table-header-color", Role("--hfx-color-text-secondary", _text)))
+            + Declare("background", Role("--hfx-table-header-background", Role("--hfx-color-surface-sunken", header))) + "white-space:nowrap;";
         Cell = "padding:3px 8px;" + rowLine + "vertical-align:top;";
         Detail = "padding:4px 8px 6px 8px;" + rowLine + Declare("background", _quiet);
         DetailCaption = "text-align:left;" + mutedColor + "padding:0 0 2px 0;";
@@ -52,7 +72,7 @@ internal sealed partial class CanopyStaticStyles {
         PropertyName = "text-align:left;padding:2px 6px;" + mutedColor + "font-weight:400;";
         InnerCell = "padding:2px 6px;" + rowLine + "vertical-align:top;";
         Note = "padding:6px 8px;font-size:12px;font-weight:400;text-align:left;" + mutedColor;
-        Link = Declare("color", Base("--cx-accent", theme.Accent));
+        Link = Declare("color", Base("--hfx-color-accent", theme.Accent, LightTheme.Accent, DarkTheme.Accent));
         Hidden = mutedColor + "font-weight:400;font-size:11px;";
     }
 
@@ -121,14 +141,15 @@ internal sealed partial class CanopyStaticStyles {
                 background = _quiet;
             } else if (tone.IsBuiltIn) {
                 text = BuiltIn(tone);
-                background = Mix(text, 12, _surface);
+                var status = tone.Name == "success" ? "good" : tone.Name == "warning" ? "warn" : tone.Name == "danger" ? "bad" : "info";
+                background = Role("--hfx-color-status-" + status + "-bg", Mix(text, 12, _surface));
             } else {
                 var literal = HostColor(tone);
                 text = new Ink(literal ?? _text.Literal, _variables ? HostVariable(tone, literal ?? _text.Css!) : null);
                 // The page can name the badge background of its tone; otherwise it is the tint of the tone's colour,
                 // or of the text colour for a tone nobody gave one, as in the runtime.
                 var tint = Mix(text, 12, _surface);
-                background = new Ink(tint.Literal, _variables ? "var(--cx-tone-" + tone.Name + "-bg," + tint.Css + ")" : null);
+                background = new Ink(tint.Literal, _variables ? "var(--hfx-color-status-" + tone.Name + "-bg," + tint.Css + ")" : null);
             }
 
             style = BadgeShape + Border("border", _line) + Declare("background", background) + Declare("color", text);
@@ -142,13 +163,13 @@ internal sealed partial class CanopyStaticStyles {
     private Ink BuiltIn(CanopyTone tone) {
         switch (tone.Name) {
             case "info":
-                return Base("--cx-tone-info", _options.Theme.Info);
+                return Base("--hfx-color-status-info-fg", _options.Theme.Info, LightTheme.Info, DarkTheme.Info);
             case "success":
-                return Base("--cx-tone-success", _options.Theme.Success);
+                return Base("--hfx-color-status-good-fg", _options.Theme.Success, LightTheme.Success, DarkTheme.Success);
             case "warning":
-                return Base("--cx-tone-warning", _options.Theme.Warning);
+                return Base("--hfx-color-status-warn-fg", _options.Theme.Warning, LightTheme.Warning, DarkTheme.Warning);
             case "danger":
-                return Base("--cx-tone-danger", _options.Theme.Danger);
+                return Base("--hfx-color-status-bad-fg", _options.Theme.Danger, LightTheme.Danger, DarkTheme.Danger);
             default:
                 return _muted;
         }
@@ -169,10 +190,25 @@ internal sealed partial class CanopyStaticStyles {
         return color;
     }
 
-    /// <summary>The theme's colour of a host tone, <c>--cx-tone-&lt;name&gt;</c> as the runtime reads it. A tone name is safe in a style.</summary>
-    private static string HostVariable(CanopyTone tone, string fallback) => "var(--cx-tone-" + tone.Name + "," + fallback + ")";
+    /// <summary>The theme's colour of a host tone, <c>--hfx-color-status-&lt;name&gt;-fg</c> as the runtime reads it. A tone name is safe in a style.</summary>
+    private static string HostVariable(CanopyTone tone, string fallback) => "var(--hfx-color-status-" + tone.Name + "-fg," + fallback + ")";
 
-    private Ink Base(string variable, string literal) => new Ink(literal, _variables ? "var(" + variable + "," + literal + ")" : null);
+    /// <summary>Reads a base role, using both standalone palettes only when the options select a complete preset.</summary>
+    private Ink Base(string variable, string literal, string light, string dark) =>
+        new Ink(literal, _variables ? "var(" + variable + "," + (_adaptive ? "light-dark(" + light + "," + dark + ")" : literal) + ")" : null);
+
+    private static bool IsPalette(CanopyStaticTheme theme, CanopyStaticTheme preset) =>
+        string.Equals(theme.Surface, preset.Surface, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(theme.Text, preset.Text, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(theme.Line, preset.Line, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(theme.Accent, preset.Accent, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(theme.Info, preset.Info, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(theme.Success, preset.Success, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(theme.Warning, preset.Warning, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(theme.Danger, preset.Danger, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Reads a semantic role while retaining the inline literal for email and Word.</summary>
+    private Ink Role(string variable, Ink fallback) => new Ink(fallback.Literal, _variables ? "var(" + variable + "," + fallback.Css + ")" : null);
 
     /// <summary><c>color-mix(in srgb, a percent%, b)</c>, as a literal and, with theme variables, as that expression.</summary>
     private Ink Mix(Ink a, double percent, Ink b) => new Ink(
