@@ -4,8 +4,10 @@
     readGridState: DataGrid.prototype.readGridState, applyStatePresentation: DataGrid.prototype.applyStatePresentation };
   function intentStateKey(grid) { return JSON.stringify(grid.getState()); }
   function intentPresentationKey(grid) {
-    const state = grid.getState();
-    return JSON.stringify({ columns: state.columns, timeZone: state.timeZone, selection: state.selection, formatRules: state.formatRules });
+    // Every saved presentation extension can be restored, including lazy layout, highlight, facets and pivot state.
+    // Query acceptance and paging have separate epochs; viewport scrolling is not a preference change.
+    const { query, paging, scrollTop, ...presentation } = grid.getState();
+    return JSON.stringify(presentation);
   }
   function retireViewIntent(grid, reason) {
     const preview = grid.viewIntentPreview;

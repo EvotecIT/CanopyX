@@ -52,7 +52,9 @@
         recordTokens(ctx, spec, change.before.items, change.after.items, before, "cx-diff-removed", labels.recordRemoved);
         recordTokens(ctx, spec, change.after.items, change.before.items, after, "cx-diff-added", labels.recordAdded);
       } else {
-        const paint = (value, element) => recordKind(value) ? recordValue(ctx, spec, value, element, 1) : setText(element, changeCellText(value, spec, ctx.fmt));
+        // Keep scalar references, tones, tooltips and badges on the ordinary nested-value path. Only its endpoint text differs.
+        const paint = (value, element) => recordValue(ctx, spec, recordKind(value) ? value :
+          { ...(isCellObject(value) ? value : { value }), text: changeCellText(value, spec, ctx.fmt) }, element, 1);
         paint(change.before, before); paint(change.after, after);
       }
       line.append(name, before, after); body.appendChild(line);
