@@ -3,11 +3,18 @@ param([switch] $Check)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $source = Get-Content -LiteralPath (Join-Path $root 'CanopyX/Views/Locales/labels.json') -Raw | ConvertFrom-Json
-# The English defaults live in their own file, so CanopyLabels.cs and the label partials stay within the file size budget.
-$defaults = [regex]::Matches([System.IO.File]::ReadAllText((Join-Path $root 'CanopyX/Views/CanopyLabels.Defaults.cs')),
-    '\[nameof\((\w+)\)\] = ("(?:[^"\\]|\\.)*")')
+# English default tables are split by feature so each C# source stays within the file size budget.
+$defaultFiles = @((Join-Path $root 'CanopyX/Views/CanopyLabels.Defaults.cs')) + @(
+    Get-ChildItem -LiteralPath (Join-Path $root 'CanopyX/Views') -Filter 'CanopyLabels.Defaults.*.cs' |
+        Sort-Object Name | ForEach-Object FullName
+)
+$defaults = @(
+    foreach ($defaultFile in $defaultFiles) {
+        [regex]::Matches([System.IO.File]::ReadAllText($defaultFile), '\[nameof\((\w+)\)\] = ("(?:[^"\\]|\\.)*")')
+    }
+)
 $names = @($defaults | ForEach-Object { $_.Groups[1].Value })
-if ($names.Count -lt 100 -or @($names | Sort-Object -Unique).Count -ne $names.Count) { throw 'CanopyLabels.Defaults.cs must declare every label default once.' }
+if ($names.Count -lt 100 -or @($names | Sort-Object -Unique).Count -ne $names.Count) { throw 'The CanopyLabels.Defaults tables must declare every label default once.' }
 $actual = @($source.PSObject.Properties.Name)
 if (@(Compare-Object $names $actual).Count) { throw 'Every locale must declare exactly the CanopyLabels keys.' }
 $outline = @('OverflowNote', 'UnknownTotal', 'HiddenRows', 'FullReport')
@@ -63,6 +70,18 @@ foreach ($language in $languages) {
     Write-Generated "JavaScript/locales/$($language.Id).mjs" ($header + "`n" + $labels + $staticLabels + "export { labels, staticLabels };`nexport default labels;`n")
     Write-Generated "CanopyX.Html/Assets/canopyx-labels-$($language.Id).js" ($header + "`n(function (global) {`n" + $labels + $staticLabels +
         'const packs = global.CanopyXLocales || (global.CanopyXLocales = {});' + "`n" + "packs.$($language.Id) = Object.freeze({ labels, staticLabels });`n})(globalThis);`n")
+    # Factories keep their public API; bounded generated partials hold the assignments as the label catalog grows.
+    $calls = [System.Collections.Generic.List[string]]::new()
+    for ($start = 0; $start -lt $properties.Count; $start += 500) {
+        $part = [int]($start / 500) + 1
+        $method = "Set$($language.Name)Part$part"
+        $calls.Add("        $method(labels);")
+        $assignments = for ($index = $start; $index -lt [Math]::Min($start + 500, $properties.Count); $index++) {
+            '        labels.' + $properties[$index].Trim().TrimEnd(',') + ';'
+        }
+        Write-Generated "CanopyX/Views/CanopyLabels.$($language.Name).Part$part.cs" ($header + "`nnamespace CanopyX;`n`n" +
+            "public sealed partial class CanopyLabels {`n    private static void $method(CanopyLabels labels) {`n" + ($assignments -join "`n") + "`n    }`n}`n")
+    }
     Write-Generated "CanopyX/Views/CanopyLabels.$($language.Name).cs" ($header + "`nnamespace CanopyX;`n`n" +
         "public sealed partial class CanopyLabels {`n    /// <summary>Creates complete $($language.Name) labels. Each call returns an independent, editable pack.</summary>`n" +
         "    public static CanopyLabels $($language.Name)() => With$($language.Name)Ui(new CanopyLabels {`n" + ($properties -join "`n") + "`n    });`n}`n")

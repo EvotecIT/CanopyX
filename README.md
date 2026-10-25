@@ -16,7 +16,7 @@ Turn application data into searchable trees, sortable tables and standalone HTML
 
 - **File and folder explorers** with expandable branches, lazy loading, search and multi-selection.
 - **Inventory and results tables** with typed sorting, filters, column resizing and saved views.
-- **Analytical reports** with calendar and numeric buckets, aggregate display modes and optional [pivot tables](docs/pivot.md), backed by inline records or one grouped hosted query.
+- **Analytical reports** with calendar and numeric buckets, aggregate display modes and optional [pivot tables](docs/pivot.md), backed by inline records or one grouped hosted query. [Calculated columns](docs/calculated-columns.md) use the same bounded expression grammar in C# and the browser.
 - **HTML reports** that include their own runtime and data and can be opened from disk or a file share.
 - **Application views** backed by paged or cursor-based data sources, with selection and detail callbacks.
 - **Email and print tables** rendered from the same .NET view without JavaScript.

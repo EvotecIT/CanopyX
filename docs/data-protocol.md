@@ -467,6 +467,31 @@ grouping, an adapter such as `CanopyX.Data` (which serves single-level `gridSumm
 5. **Echo and checks.** Echo the normalized query including `groupBy`; validate sibling order, contiguity and
    `sum(count) == matched` at every level before writing, as `CanopyGridSummary.ToJson` does for native responses.
 
+### Calculated columns
+
+A grid column may add `calculation`, a nonblank expression string of 1..2048 UTF-16 code units. Calculated columns
+are read-only (`editable: true` is invalid) and are not supported by tree columns. A view may add
+`calculatedColumnsEditable: true` to enable the definition editor; this requires inline data. Authored calculations
+do not require that editor opt-in. Grids allow at most 32 calculated columns.
+
+The scalar grammar includes JSON scalar literals, `[columnId]` references, arithmetic, same-kind comparisons, and
+`IF`, `COALESCE`, `ROUND`, `CONCAT`, `DATEPART` and `DATEDIFF`. Function names are case-insensitive. Program limits are
+32 AST levels, 256 nodes, 32 arguments and 64 distinct references; text is bounded to 4096 UTF-16 code units and
+numbers use finite binary64. Definition validation rejects unknown references and cycles. Result kinds are strict:
+number columns take numbers, text columns take strings or booleans, and datetime columns take valid dates. A
+row-level error becomes a null raw value with `#ERROR` text and a localized `gridCalculationError` tooltip containing
+a stable code. Independent columns continue; evaluated dependency errors propagate.
+
+Editor-enabled state may carry `calculatedColumns: [{ id, title, kind, expression }]`, at most 32 definitions.
+Restoration validates the prospective column set, retains authored calculation IDs and can remove reader-added
+columns. `getCalculatedColumns()` returns read-only definitions; `setCalculatedColumns(defs)` resolves with accepted
+definitions; `openCalculatedColumn(anchor?)` opens the optional inline editor.
+
+These fields are additive within `canopyx/2`. Programs stay in column definitions and permitted inline state, not in
+query documents. Hosted calculated values come from the server: in-memory providers materialize before querying,
+while queryable providers use an authorized translatable host mapping without client-page calculation. See
+[Calculated columns](calculated-columns.md) for the precise null, lazy-branch, date, rounding and error contracts.
+
 ### Pivot analysis
 
 `reporting.pivot` declares `{ rows, columns, values, maxColumns?, topNColumns?, sortByTotal? }`;

@@ -94,6 +94,6 @@
       walk(""); return result;
     };
     return { protocol: "canopyx/2", type: "gridPivot", view: grid.view.id, matched: source.length, distinctColumns: paths.size, columnsLimited: limited, definition,
-      rows: order(rowNodes, definition.rows, true), columns: order(columnNodes, definition.columns, false), retainedColumns: leaves.map(leaf => leaf.path), cells, query, revision: "inline" };
+      rows: order(rowNodes, definition.rows, true), columns: order(columnNodes, definition.columns, false), retainedColumns: leaves.map(leaf => leaf.path), cells, query, revision: query.revision };
   }
   Object.assign(GRID_PIVOT, { inline: pivotInline, key: pivotKey });

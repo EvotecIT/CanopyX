@@ -64,6 +64,7 @@
         }
         if (change.kind === "update" && !before) { result.missing.push(change.id); continue; }
         const after = change.kind === "add" ? change.row : liveMerged(before, change.row);
+        GRID_CALCULATIONS.apply?.(this.view, [after]);
         if (before && liveSameRow(before, after)) continue;
         rows.set(change.id, after); (before ? result.updated : result.added).push(change.id);
         changed.set(change.id, liveChangedColumns(before, after));

@@ -193,6 +193,7 @@ public sealed partial class CanopyDataGridView {
         if (Zebra) writer.Property("zebra", true);
         writer.OptionalProperty("noun", Noun).OptionalProperty("emptyReason", EmptyReason);
         if (StatusBar) writer.Property("statusBar", true);
+        if (CalculatedColumnsEditable) writer.Property("calculatedColumnsEditable", true);
         if (!Toolbar.IsDefault) { writer.Name("toolbar"); Toolbar.WriteJson(writer); }
         if (!Editing.IsDefault) { writer.Name("editing"); Editing.WriteJson(writer); }
         if (ExportFormats.Count > 0) {
@@ -248,7 +249,7 @@ public sealed partial class CanopyDataGridView {
             rowData.WriteDescriptor(writer, rowDataBase);
         } else if (Source.Kind == CanopyGridSourceKind.Inline) {
             writer.Name("rows").BeginArray();
-            foreach (var row in Rows) row.WriteJson(writer);
+            foreach (var row in CalculateRows(Rows)) row.WriteJson(writer);
             writer.EndArray();
         }
         return writer.EndObject().ToString();
@@ -300,6 +301,7 @@ public sealed partial class CanopyDataGridView {
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
+        ValidateCalculations();
         ValidateGridOptions();
         ValidateColumnGroups();
         ValidateCellRanges();

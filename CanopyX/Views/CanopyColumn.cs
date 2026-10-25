@@ -124,6 +124,7 @@ public sealed partial class CanopyColumn {
     }
 
     internal void WriteJson(CanopyJsonWriter writer, bool grid = false) {
+        if (Calculation != null && !grid) throw new InvalidOperationException("Calculated columns apply to flat grids only.");
         writer.BeginObject()
             .Property("id", Id)
             .Property("title", Title);
@@ -138,6 +139,7 @@ public sealed partial class CanopyColumn {
         }
         if (grid && (!Filterable || HasDefaultRules && _filterable.HasValue)) writer.Property("filterable", Filterable);
         if (grid && !Exportable) writer.Property("exportable", false);
+        if (grid && Calculation != null) writer.Property("calculation", Calculation.Expression);
         if (Editable) writer.Property("editable", true);
         if (grid && Editor != null) { writer.Name("editor"); Editor.WriteJson(writer); }
         if (grid && Validation != null) { writer.Name("validation"); Validation.WriteJson(writer); }

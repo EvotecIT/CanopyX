@@ -124,7 +124,7 @@
       if (!query.groupBy) return plain.call(base, query, options);
       if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
       if (gridResultShape(query) !== shape) { ordered = GRID_ROWS.order(view, query); shape = gridResultShape(query); }
-      return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
+      return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: gridInlineRevision(view), offset: query.offset,
         total: view.rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
     };
     return base;

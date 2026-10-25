@@ -64,6 +64,8 @@ public static partial class CanopyStaticHtml {
     }
 
     private static CanopyStaticHtmlResult RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, int offset, CanopyStaticHtmlOptions? options, IDictionary<string, IDictionary<string, double?>>? footerValues = null) {
+        var allRows = view.Source.Kind == CanopyGridSourceKind.Inline ? view.CalculateRows(view.Rows).ToList() : supplied;
+        supplied = ReferenceEquals(supplied, view.Rows) ? allRows : view.CalculateRows(supplied).ToList();
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
         var columns = view.Columns.Where(column => !column.Hidden).ToArray();
@@ -78,7 +80,7 @@ public static partial class CanopyStaticHtml {
         html.Append("</thead><tbody>");
         var remaining = settings.MaxRows;
         var shown = AppendGridRecords(html, view, supplied, columns, settings, styles, ref remaining, printedRows, null, out var complete,
-            view.Source.Kind == CanopyGridSourceKind.Inline ? view.Rows : supplied);
+            allRows);
         html.Append("</tbody>");
         if (!matching.HasValue || shown < matching.Value) {
             html.Append("<tbody>");

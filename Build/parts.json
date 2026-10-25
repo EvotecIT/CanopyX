@@ -213,7 +213,7 @@
       "views": [],
       "features": ["rowData"],
       "key": "GRID_DATA_IMPL",
-      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "inlineGridSource", "loadSidecar", "gridIdOrder"],
+      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "inlineGridSource", "loadSidecar", "gridIdOrder", "gridInlineRevision"],
       "end": "GRID_DATA_IMPL.source = rowDataSource;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.data.source/10-row-data.js"
@@ -654,6 +654,17 @@
       ]
     },
     {
+      "name": "calculations",
+      "label": "calculated columns",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calculations"],
+      "key": "GRID_CALCULATIONS",
+      "context": ["DataGrid", "GRID_CALCULATIONS", "requireIdentifier", "cellValue", "h", "setText", "fill", "gridButton", "gridQuery", "gridQueryStart", "inlineGridSource", "rowDataSource", "loadGridFilterEditor", "gridFreeze", "gridFitPrepare"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.calculations.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.calculations.source/calculations.css"]
+    },
+    {
       "name": "pivot",
       "label": "pivot analysis",
       "runtimes": ["grid"],
@@ -754,7 +765,7 @@
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQuery", "gridResultShape", "gridQueryRows", "gridCompare", "gridOrder", "gridIdOrder",
         "validateGridRows", "validateGridPage", "validateGridCursorPage", "gridFreeze", "requireIdentifier", "checkDocument", "cellValue", "PROTOCOL",
-        "GRID_REPORTING", "VIEW_MODES", "inlineGridSource"],
+        "GRID_REPORTING", "GRID_CALCULATIONS", "VIEW_MODES", "inlineGridSource"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.live.source"
       ],

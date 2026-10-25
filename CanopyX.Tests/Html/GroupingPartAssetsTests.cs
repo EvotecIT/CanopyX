@@ -11,7 +11,7 @@ public sealed class GroupingPartAssetsTests {
         var detail = CanopyHtmlAssets.GetPart("detail-rows");
         var grouping = CanopyHtmlAssets.GetPart("grouping");
         Assert.True(Gzip(detail.Script) + Gzip(detail.Style!) <= 9728, "The detail rows part is " + (Gzip(detail.Script) + Gzip(detail.Style!)) + " bytes gzip; the guard is 9.5 KiB.");
-        Assert.True(Gzip(grouping.Script) + Gzip(grouping.Style!) <= 13824, "The grouping part is " + (Gzip(grouping.Script) + Gzip(grouping.Style!)) + " bytes gzip; the guard is 13.5 KiB (combined roadmap integration: its size plus about 15%).");
+        Assert.True(Gzip(grouping.Script) + Gzip(grouping.Style!) <= 14080, "The grouping part is " + (Gzip(grouping.Script) + Gzip(grouping.Style!)) + " bytes gzip; the guard is 13.75 KiB, including bucket choices and correlated criteria.");
         Assert.Equal(new[] { "detail-rows" }, grouping.Requires);
         Assert.Empty(detail.Requires);
         Assert.True(grouping.IsShippedWith(CanopyRuntime.ReportingGrid) && !grouping.IsShippedWith(CanopyRuntime.TreeGrid));

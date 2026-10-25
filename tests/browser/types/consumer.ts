@@ -8,6 +8,30 @@ import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, typ
 import ReportingRuntime from "@evotecit/canopyx/reporting";
 import type { GridTupleColumn, GridTupleFilter } from "@evotecit/canopyx/grid";
 import type { GridPivotDefinition, GridPivotLevel, GridPivotResult, GridPivotAcceptedResult, GridPivotExportSnapshot } from "@evotecit/canopyx/grid";
+import type { GridCalculatedColumnDefinition, GridColumn } from "@evotecit/canopyx/grid";
+const calculationDefinitions: readonly GridCalculatedColumnDefinition[] = [
+  { id: "total", title: "Total", kind: "number", expression: "[quantity] * [price]" }
+];
+const calculationView: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "calculated", label: "Calculated records",
+  source: { kind: "inline" }, rows: [{ id: "r1", cells: { quantity: 3, price: 12.5 } }], pageSize: 100, selection: "none", search: true,
+  calculatedColumnsEditable: true, labels: { gridCalculationError: "Calculation failed: {error}" },
+  columns: [{ id: "quantity", title: "Quantity", kind: "number" }, { id: "price", title: "Price", kind: "number" },
+    { id: "total", title: "Total", kind: "number", calculation: "[quantity] * [price]", editable: false }] };
+const calculationApi = createDataGrid(document.createElement("div"), { view: calculationView });
+const readCalculations: readonly GridCalculatedColumnDefinition[] = calculationApi.getCalculatedColumns();
+const updatedCalculations: Promise<readonly GridCalculatedColumnDefinition[]> = calculationApi.setCalculatedColumns(calculationDefinitions);
+const openedCalculation: Promise<void> = calculationApi.openCalculatedColumn(document.createElement("button"));
+const calculationState = calculationApi.getState(); calculationState.calculatedColumns = calculationDefinitions;
+// @ts-expect-error Accepted calculation definitions are read-only snapshots.
+readCalculations[0].expression = "1";
+// @ts-expect-error Calculated cells cannot be directly editable.
+const editableCalculation: GridColumn = { id: "bad", title: "Bad", kind: "number", calculation: "1", editable: true };
+const hostedCalculationView: HostGridView = { ...calculationView, rows: undefined, source: { kind: "host" },
+  // @ts-expect-error Hosted calculations use server values; the client editor requires inline data.
+  calculatedColumnsEditable: true };
+// @ts-expect-error Query documents carry declared column references, not calculation definitions.
+calculationApi.setQuery({ calculatedColumns: calculationDefinitions });
+void updatedCalculations; void openedCalculation; void calculationState; void editableCalculation; void hostedCalculationView;
 const tupleField: GridTupleColumn = { column: "days", bucket: { kind: "width", width: 10 } };
 const tupleFilter: GridTupleFilter = { columns: [{ column: "name" }, tupleField], values: [["review", 1], [null, null]], exclude: true };
 const invalidTuple: GridTupleFilter = { columns: [tupleField], values: [[1]],
