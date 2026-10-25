@@ -12,7 +12,7 @@ public sealed partial class CanopyLabels {
         nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView),
         nameof(GridApply), nameof(GridFindColumn), nameof(GridShowAllColumns), nameof(GridResetColumns), nameof(GridReorderColumn),
         nameof(GridPinnedLeft), nameof(GridPinnedRight), nameof(GridResponsiveHidden), nameof(GridExport), nameof(GridVisibleRows),
-        nameof(GridSelectedRows), nameof(GridAllRows), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridExportProgress),
+        nameof(GridSelectedRows), nameof(GridAllRows), nameof(GridDownloadCsv), nameof(GridDownloadXlsx), nameof(GridDownloadPdf), nameof(GridCopy), nameof(GridExportProgress),
         nameof(GridExportReading), nameof(GridExportCancelled), nameof(GridCancelExport), nameof(GridMore), nameof(GridPrint),
         nameof(GridDetails), nameof(GridDetailsSection), nameof(GridPreviousRecord), nameof(GridNextRecord), nameof(GridCloseRecord)
     };

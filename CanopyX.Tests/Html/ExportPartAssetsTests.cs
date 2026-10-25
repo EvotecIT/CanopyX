@@ -13,8 +13,8 @@ public sealed class ExportPartAssetsTests {
         Assert.Contains(CanopyHtmlAssets.HashedExportScriptFileName, CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid));
         Assert.DoesNotContain("</script", CanopyHtmlAssets.ExportScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain('\r', CanopyHtmlAssets.ExportScript);
-        // Combined roadmap integration: its size plus about 15%.
-        Assert.True(Gzip(CanopyHtmlAssets.ExportScript) <= 5120, "The export part is " + Gzip(CanopyHtmlAssets.ExportScript) + " bytes gzip; the budget is 5 KiB.");
+        // Bounded complete print snapshots add about 1.7 KiB gzip; document engines remain a separate opt-in part.
+        Assert.True(Gzip(CanopyHtmlAssets.ExportScript) <= 6912, "The export part is " + Gzip(CanopyHtmlAssets.ExportScript) + " bytes gzip; the budget is 6.75 KiB.");
         var view = new CanopyDataGridView("grid", "Grid"); view.Columns.Add(new CanopyColumn("name", "Name"));
         var fragment = view.ToHtmlFragment();
         Assert.Contains("<script type=\"application/x-canopyx-export\" data-cx-version=\"" + CanopyHtmlAssets.ExportVersion + "\">", fragment);
@@ -28,7 +28,7 @@ public sealed class ExportPartAssetsTests {
         foreach (var path in parts) {
             var part = Path.GetFileName(path);
             Assert.True(File.Exists(path), "Missing export part " + part);
-            var signature = File.ReadAllLines(path).Select(line => line.Trim()).First(line => line.StartsWith("Object.assign(", StringComparison.Ordinal) || line.StartsWith("function ", StringComparison.Ordinal) || line.StartsWith("DataGrid.prototype.", StringComparison.Ordinal));
+            var signature = File.ReadAllLines(path).Select(line => line.Trim()).First(line => line.StartsWith("Object.assign(", StringComparison.Ordinal) || line.StartsWith("function ", StringComparison.Ordinal) || line.StartsWith("DataGrid.prototype.", StringComparison.Ordinal) || line.StartsWith("EXPORT_IMPL.", StringComparison.Ordinal));
             Assert.Contains(signature.Replace(" ", string.Empty), CanopyHtmlAssets.ExportScript.Replace(" ", string.Empty));
             Assert.DoesNotContain(signature.Replace(" ", string.Empty), CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid).Replace(" ", string.Empty));
         }

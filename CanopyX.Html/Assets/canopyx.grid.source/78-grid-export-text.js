@@ -39,7 +39,7 @@
                 cells: Object.fromEntries(request.columns.map(column => [column.id,
                   { value: cellValue(row.cells[column.id]) ?? null, text: cellText(row.cells[column.id], column, fmt) }])) });
               // The formatting part adds each cell's resolved format (canopyx-formatting.js).
-              yield GRID_REPORTING.formatRecord ? GRID_REPORTING.formatRecord(this, row, record) : record;
+              yield GRID_REPORTING.formatRecord ? GRID_REPORTING.formatRecord(this, row, record, request) : record;
             }
           }
           offset += this.cursor ? page.items.length : request.query.limit;

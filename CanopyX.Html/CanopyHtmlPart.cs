@@ -32,7 +32,7 @@ public sealed class CanopyHtmlPart {
 
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
-        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
+        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "officeExport",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
         "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus"
     };
@@ -192,6 +192,7 @@ public sealed class CanopyHtmlPart {
             "formatEditor" => view.Formatting?.Editor == true,
             "columnGroups" => view.ColumnGroups.Count > 0,
             "rangeSelection" => view.RangeSelection != null,
+            "officeExport" => view.ExportFormats.Contains("xlsx") || view.ExportFormats.Contains("pdf"),
             "grouping" => reporting != null && (reporting.Grouping != null || reporting.GroupBy.Count != 0 || reporting.Groupable || reporting.Aggregates.Count != 0),
             "detail" => reporting?.Detail != null,
             "searchHighlight" => view.SearchHighlight != null,
@@ -221,6 +222,7 @@ public sealed class CanopyHtmlPart {
         "contextActions" => view.ContextActions.Count > 0 || view.DragDrop || view.Columns.Any(column => column.Editable),
         "searchHighlight" => view.SearchHighlight != null,
         "layout" => view.Layout != null,
+        "officeExport" => view.ExportFormats.Contains("xlsx") || view.ExportFormats.Contains("pdf"),
         "record" => UsesRecordPanel(view),
         _ => false
     };

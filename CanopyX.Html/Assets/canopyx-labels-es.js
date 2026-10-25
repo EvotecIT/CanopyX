@@ -2,7 +2,10 @@
 (function (global) {
 const labels = Object.freeze({
   gridNoExportColumns: "Ninguna columna visible permite exportar.",
+  gridDownloadXlsx: "Descargar Excel",
+  gridDownloadPdf: "Descargar PDF",
   searchPlaceholder: "Buscar",
+  gridRegexSearch: "Patrón de búsqueda",
   searchResults: "Resultados de búsqueda",
   searchResultCount: "{count} resultados",
   searchResultCountOfTotal: "{count} de {total} resultados",

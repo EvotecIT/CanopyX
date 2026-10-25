@@ -8,6 +8,8 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(GridNoExportColumns)] = "No visible columns allow export.",
+        [nameof(GridDownloadXlsx)] = "Download Excel",
+        [nameof(GridDownloadPdf)] = "Download PDF",
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(GridRegexSearch)] = "Search pattern",
         [nameof(SearchResults)] = "Search results",

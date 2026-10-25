@@ -5,6 +5,21 @@ namespace CanopyX.Tests.Grids;
 
 public sealed class GridExportFormatTests {
     [Fact]
+    public void OfficeFormats_OptInWithoutChangingAnotherViewsFormats() {
+        var view = new CanopyDataGridView("office-records", "Records") { ExportFormats = CanopyExportFormats.Office() };
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        var other = new CanopyDataGridView("other-records", "Other") { ExportFormats = CanopyExportFormats.Office() };
+        other.Columns.Add(new CanopyColumn("name", "Name"));
+        view.ExportFormats.Remove("pdf");
+        Assert.Equal(new[] { "xlsx" }, view.ExportFormats);
+        Assert.Equal(new[] { "xlsx", "pdf" }, other.ExportFormats);
+        ProtocolSchema.AssertValid(other.ToJson(), "optional Office export formats");
+        var tree = new CanopyTreeView("office-tree", "Tree") { ExportFormats = CanopyExportFormats.Office() };
+        tree.Columns.Add(new CanopyColumn("name", "Name"));
+        ProtocolSchema.AssertValid(tree.ToJson(), "optional Office tree export formats");
+    }
+
+    [Fact]
     public void ExportFormats_AreDeclaredIdentitiesInOrderAndOptional() {
         var view = new CanopyDataGridView("records", "Records");
         view.Columns.Add(new CanopyColumn("name", "Name"));

@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "08c894338ee197ea",
+      "version": "ccfd9d1f21b12e2e",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -146,7 +146,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "1d967e8c2f01a01b",
+      "version": "1f4d32c7992ed599",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -158,6 +158,23 @@
       ],
       "requires": [
         "ui-overlays"
+      ]
+    },
+    {
+      "name": "office-export",
+      "label": "Office export writers",
+      "version": "de14bde00ba47083",
+      "script": "canopyx-office-export.js",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "officeExport"
       ]
     },
     {
@@ -601,7 +618,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "42086775ae0af70b",
+      "version": "b5c0daeddd58e86a",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -650,7 +667,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "32121fa6878954a2",
+      "version": "c35daddcd3ba38db",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -752,7 +769,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "5a115e486067eada",
+      "version": "df13cf6435c5a5d4",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [
@@ -823,7 +840,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "cec16b6240faaff8",
+      "version": "3a453d0426c583f1",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [

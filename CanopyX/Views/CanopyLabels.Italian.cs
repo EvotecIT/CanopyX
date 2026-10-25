@@ -5,6 +5,8 @@ public sealed partial class CanopyLabels {
     /// <summary>Creates complete Italian labels. Each call returns an independent, editable pack.</summary>
     public static CanopyLabels Italian() => WithItalianUi(new CanopyLabels {
         GridNoExportColumns = "Nessuna colonna visibile consente l’esportazione.",
+        GridDownloadXlsx = "Scarica Excel",
+        GridDownloadPdf = "Scarica PDF",
         SearchPlaceholder = "Cerca",
         GridRegexSearch = "Schema di ricerca",
         SearchResults = "Risultati della ricerca",

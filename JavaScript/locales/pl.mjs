@@ -1,6 +1,8 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 const labels = Object.freeze({
   gridNoExportColumns: "Żadna widoczna kolumna nie obsługuje eksportu.",
+  gridDownloadXlsx: "Pobierz Excel",
+  gridDownloadPdf: "Pobierz PDF",
   searchPlaceholder: "Szukaj",
   gridRegexSearch: "Szukaj według wzorca",
   searchResults: "Wyniki wyszukiwania",

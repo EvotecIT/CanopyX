@@ -1,6 +1,7 @@
   // Portable export semantics are captured independently of DOM rendering and CSS.
   const GRID_EXPORT_PRESENTATION = new WeakMap();
   function gridCopyExportPresentation(from, to) {
+    GRID_REPORTING.copyExportFormatting?.(from, to);
     const capture = GRID_EXPORT_PRESENTATION.get(from);
     if (capture) GRID_EXPORT_PRESENTATION.set(to, capture);
   }
@@ -10,7 +11,8 @@
     const policy = grid.columnLayouts?.get(column.id), presenter = column.presenter || grid.view.reporting?.presenters?.[column.id];
     const minimum = column.minWidth ?? policy?.minimum ?? 40, maximum = column.maxWidth ?? policy?.maximum;
     return { id: column.id, title: column.title, kind: column.kind,
-      width: { unit: "css-px", preferred: column.width, minimum, ...(maximum === undefined ? {} : { maximum }) },
+      width: { unit: "css-px", preferred: column.renderWidth ?? column.width, minimum, ...(maximum === undefined ? {} : { maximum }) },
+      pinned: column.effectivePin === "left" || column.effectivePin === "right" ? column.effectivePin : null,
       wrap: !!column.wrap, alignment: column.kind === "number" ? "right" : "left", ...(column.format ? { format: { ...column.format } } : {}),
       ...(presenter ? { presenter: JSON.parse(JSON.stringify(presenter)) } : {}),
       ...JSON.parse(JSON.stringify({ valueLabels:column.valueLabels, valueTones:column.valueTones, numericTones:column.numericTones })),

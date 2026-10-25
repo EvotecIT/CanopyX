@@ -5,6 +5,8 @@ public sealed partial class CanopyLabels {
     /// <summary>Creates complete Polish labels. Each call returns an independent, editable pack.</summary>
     public static CanopyLabels Polish() => WithPolishUi(new CanopyLabels {
         GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
+        GridDownloadXlsx = "Pobierz Excel",
+        GridDownloadPdf = "Pobierz PDF",
         SearchPlaceholder = "Szukaj",
         GridRegexSearch = "Szukaj według wzorca",
         SearchResults = "Wyniki wyszukiwania",

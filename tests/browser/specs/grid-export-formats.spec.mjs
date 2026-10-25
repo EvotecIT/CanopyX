@@ -167,12 +167,13 @@ test("a provider failure surfaces in the menu status and the error event without
 test("formats register globally, per grid and as declared view IDs, and invalid formats are rejected", async ({ page }) => {
   await open(page, definition({ exportFormats: ["pdf", "missing"] }), fakeFormats);
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download PDF", "Copy"]);
+  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download PDF", "Copy", "Print"]);
   const result = await page.evaluate(async api => {
     const grid = eval(api), errors = [];
     for (const format of [null, { id: "csv", label: "CSV", extension: "csv", write() {} }, { id: "Bad", label: "X", extension: "x", write() {} },
       { id: "ok", label: " ", extension: "x", write() {} }, { id: "ok", label: "X", extension: "x.y", write() {} }, { id: "ok", label: "X", extension: "x" },
-      { id: "ok", label: "X", extension: "x", showInMenu: "false", write() {} }])
+      { id: "ok", label: "X", extension: "x", showInMenu: "false", write() {} },
+      { id: "ok", label: "X", extension: "x", values: "invalid", write() {} }])
       try { CanopyX.registerExportFormat(format); errors.push(null); } catch (error) { errors.push(error.message); }
     const dispose = CanopyX.registerExportFormat(fakeFormat("later", "Download later", "txt", "text/plain"));
     const missing = await grid.exportAs("xlsx", { scope: "all" }).then(() => null, error => error.message);
@@ -181,14 +182,14 @@ test("formats register globally, per grid and as declared view IDs, and invalid 
     dispose();
     return { errors, missing, scope, type: result.blob.type, name: result.fileName, format: result.format, modules: typeof CanopyX.registerExportFormat };
   }, api);
-  expect(result.errors).toEqual(Array(7).fill("CanopyX: invalid export format."));
+  expect(result.errors).toEqual(Array(8).fill("CanopyX: invalid export format."));
   expect(result.missing).toBe("CanopyX: export format 'xlsx' is not available.");
   expect(result.scope).toBe("CanopyX: explicit export scope required.");
   expect(result).toMatchObject({ type: "application/pdf", name: "records.pdf", format: "pdf", modules: "function" });
   // A host option wins over the view's declared IDs and can carry its own provider objects.
   await open(page, definition({ exportFormats: ["pdf"] }), fakeFormats + "CanopyX.configure('records',{exportFormats:['xlsx',fakeFormat('own','Download own','own','text/plain'),{...fakeFormat('private','Host export','txt','text/plain'),showInMenu:false}]});");
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download own", "Copy"]);
+  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download own", "Copy", "Print"]);
   const download = page.waitForEvent("download"); await page.getByRole("button", { name: "Download own", exact: true }).click();
   expect((await download).suggestedFilename()).toBe("records.own");
   const privateExport = await page.evaluate(async api => {
@@ -203,7 +204,7 @@ test("formats register globally, per grid and as declared view IDs, and invalid 
   // Formats registered after the menu was first drawn appear when it opens again.
   await page.evaluate(() => CanopyX.registerExportFormat(fakeFormat("pdf2", "Download late", "pdf", "application/pdf")));
   await page.locator(".cx-grid-export > summary").click(); await page.locator(".cx-grid-export > summary").click();
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download own", "Copy"]);
+  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download own", "Copy", "Print"]);
   await open(page, definition(), fakeFormats + "CanopyX.registerExportFormat(fakeFormat('late','Download late','txt','text/plain'));");
   await openGridControl(page, "export"); await page.evaluate(() => CanopyX.registerExportFormat(fakeFormat("later", "Download later", "txt", "text/plain")));
   await page.locator(".cx-grid-export > summary").click(); await page.locator(".cx-grid-export > summary").click();

@@ -107,6 +107,7 @@ ContentGridExample.Write(output);
 LocalizedGridsExample.Write(output);
 RichGridExample.Write(output);
 GridPolishExample.Write(output);
+OfficeExportExample.Write(output);
 GraphiteGridExample.Write(output);
 ServiceStatusExample.Write(output);
 WideTreeExample.Write(output);

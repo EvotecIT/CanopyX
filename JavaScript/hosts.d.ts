@@ -13,6 +13,8 @@ export interface ExportMenuOptions {
   csv?: boolean;
   /** Offers the clipboard action. Defaults to true. */
   copy?: boolean;
+  /** Offers a grid's default static print action. Defaults to true for declared XLSX/PDF formats; hosts can override printing. */
+  print?: boolean;
   /** Values captured by native menu actions. Defaults to display. */
   values?: "raw" | "display";
 }
@@ -113,6 +115,8 @@ export interface ExportFormat<C extends ExportCapture = ExportCapture> {
   readonly mime?: string;
   /** False omits this writer from the Export menu; exportAs still runs it. Default true. */
   readonly showInMenu?: boolean;
+  /** Default capture values for this format, used only when the caller does not choose raw/display explicitly. */
+  readonly values?: "raw" | "display";
   /** Returns the file: a Blob (a File names the download itself), or bytes typed with mime. */
   write(capture: C, context: ExportFormatContext): Blob | ArrayBuffer | ArrayBufferView | PromiseLike<Blob | ArrayBuffer | ArrayBufferView>;
 }

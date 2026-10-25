@@ -2,6 +2,7 @@
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridExport: "Export", gridFilteredResults: "Filtered results", gridSelectedRows: "Selected rows",
     gridAllResults: "All results", gridVisibleRows: "Visible rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details",
+    gridDownloadXlsx: "Download Excel", gridDownloadPdf: "Download PDF",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
     gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", gridNoExportColumns: "No visible columns allow export."
   }));
@@ -16,6 +17,24 @@
   Object.assign(DataGrid.prototype, {
     async *exportRows(...args){await loadExportPart();yield*EXPORT_IMPL.exportRows.apply(this,args);},
     exportAs(format,options){return exportAs(this,format,options);},
+    exportFromMenu(action) { return loadExportPart().then(() => EXPORT_IMPL.exportFromMenu.call(this, action)); },
+    syncPrintAvailability() {
+      if (this.printButton) this.printButton.disabled = !!this.exportControl?.panel?.cxExportBusy?.() || !this.defaultExportColumns().length;
+    },
+    print(options) {
+      const { onProgress, maxRows = 1000, timeoutMs, ...capture } = options || {};
+      if (onProgress !== undefined && typeof onProgress !== "function") throw new Error("CanopyX: print progress needs a callback.");
+      const exported = this.prepareExport(capture), layout = this.layoutMode === "cards" ? "stacked" : "table",
+        template = layout === "stacked" && this.view.cardTemplate ? JSON.parse(JSON.stringify(this.view.cardTemplate)) : null;
+      return this.runGridHook(async signal => {
+        await loadExportPart();
+        const progress = (phase, completed) => onProgress?.(Object.freeze({ phase, completed, total: exported.request.recordCount }));
+        const snapshot = await EXPORT_IMPL.snapshot(this, exported, maxRows, signal, progress);
+        if (typeof this.opts.onPrint === "function") await this.opts.onPrint({ snapshot, signal, layout });
+        else await EXPORT_IMPL.printSnapshot(this, snapshot, signal, layout, template);
+        gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
+      }, capture.signal, exportTimeout(this, { timeoutMs }));
+    },
     // Record details is a more-menu entry, kept when the Export menu is switched off.
     buildExportControls() {
       this.toolbar.appendChild(Object.assign(gridButton(this.labels.gridDetails, () => {
@@ -25,6 +44,10 @@
           this.openDetails(row.key).catch(error => this.emit("error", { error }));
         } catch (error) { this.emit("error", { error }); }
       }), { className: "cx-button cx-grid-details" }));
+      const print = this.printButton = gridButton(this.labels.gridPrint, () => Promise.resolve().then(() => this.exportControl ?
+        this.exportFromMenu((options, onProgress) => this.print({ ...options, onProgress })) : this.print({ scope: "filtered" }))
+        .catch(error => this.emit("error", { error })));
+      print.classList.add("cx-grid-print"); this.toolbar.appendChild(print);
       if (this.tools.export !== false) this.exportControl = this.controlPanel(this.labels.gridExport, "cx-grid-export", panel => this.renderGridExport(panel));
     },
     // Replaced by the export part's menu once it is installed.

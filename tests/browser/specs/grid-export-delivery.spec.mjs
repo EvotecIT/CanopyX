@@ -49,9 +49,9 @@ test('snapshot bounds reject full scopes without truncation and ordinary grids r
   const errors=await page.evaluate(async()=>{
     const grid=document.querySelector('[data-canopyx-host]').canopyx;
     return [await grid.materializeExport({scope:'all',maxRows:10}).catch(e=>e.message),
-      await Promise.resolve().then(()=>grid.print({scope:'all'})).catch(e=>e.message)];
+      await Promise.resolve().then(()=>grid.print({scope:'all',maxRows:10})).catch(e=>e.message)];
   });
-  expect(errors[0]).toContain('row bound');expect(errors[1]).toContain('onPrint');
+  expect(errors[0]).toContain('row bound');expect(errors[1]).toContain('row bound');
   await page.unroute('http://canopyx.test/delivery');const plain=definition();delete plain.reporting;await open(page,plain);
   expect(await page.evaluate(`Promise.resolve().then(()=>${api}.toCsv({scope:'all',locale:'pl-PL'})).catch(e=>e.message)`)).toContain('export metadata requires reporting');
 });

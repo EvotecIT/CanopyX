@@ -235,7 +235,33 @@ The referenced columns must be declared; progress uses a numeric column, while l
 
 ### Export formats
 
-Register extra export formats, such as an XLSX or PDF writer, and they appear in the grid's own Export menu after Download CSV, with the same scope picker (filtered, selected, all), progress meter, Cancel export action and error status:
+Opt into offline Excel and PDF exports through the optional OfficeIMO integration:
+
+```csharp
+inventory.ExportFormats = CanopyExportFormats.Office();
+```
+
+JavaScript definitions use `exportFormats: ["xlsx", "pdf"]`. The Export menu offers Excel, PDF and Print alongside CSV and Copy,
+with the same filtered/selected/all scope picker, progress meter and Cancel export action. Office writers default to raw typed
+values; an explicit `values` option still takes precedence. The `office-export.html` gallery example combines grouped costs,
+number and date formats, pinned columns, links and formatting rules.
+
+The document engines stay outside the base runtimes. They load from `canopyx-office-export.js` on the first Office export.
+The C# writers include an inert payload only for views that opt in, so single-file exports work offline. JavaScript hosts serve
+that companion beside the runtime, or embed the matching payload. A host or page registration with the same format id takes
+precedence over the built-in writer.
+
+Every flat grid also has `await api.print({ scope: "filtered" })`. It reads the complete captured record scope into a bounded,
+script-free document with repeating table headings, or stacked records for cards. Card templates remain literal text. The
+default bound is 1,000 records; `maxRows` can raise it to 10,000, within 4 Mi UTF-16 units of snapshot text. A larger result
+fails without truncation. Included table and property details follow their records. Set `includeDetails: false` to omit them;
+otherwise the detail definition's print policy applies. HTML details require an `onPrint` hook, since the default document
+never interprets host markup. The browser owns the print dialog. The optional `onPrint({ snapshot, signal, layout })` hook replaces
+that delivery when the host has its own renderer. `exportMenu: { print: true }` offers Print without enabling Office files;
+`print: false` hides it while retaining `api.print`.
+
+Register additional export formats when a host needs another writer. They appear after Download CSV with the same scope,
+progress, cancellation and error controls:
 
 ```js
 import { registerExportFormat } from "@evotecit/canopyx/reporting"; // also CanopyX.registerExportFormat for classic scripts
@@ -256,7 +282,7 @@ registerExportFormat({
 
 The writer receives the same immutable capture as `prepareExport`: the accepted query and sort, the visible columns in their current order, typed `value`, formatted `text` and, on the reporting runtime, semantic tones, links and column intent. CanopyX names the file `fileName` plus the format's extension (a writer that returns a `File` names it itself) and starts the download; `await api.exportAs("xlsx", { scope: "selected", download: false })` returns `{ blob, fileName, format }` instead, for a host that delivers the file itself.
 
-A registered format is offered by every grid on the page that does not choose its own. A grid chooses with the `exportFormats` option (ids of registered formats or provider objects, in order; `[]` offers none) or, from C#, `inventory.ExportFormats.Add("xlsx")`; an id the page does not register is skipped. The browser option wins over the view's list. Formats registered after a grid mounted appear the next time its Export menu opens.
+A registered format is offered by every grid on the page that does not choose its own. A grid chooses with the `exportFormats` option (ids of registered formats or provider objects, in order; `[]` offers none) or, from C#, `inventory.ExportFormats.Add("archive")`; an unknown id is skipped. The browser option wins over the view's list. Formats registered after a grid mounted appear the next time its Export menu opens. The built-in `xlsx` and `pdf` formats are offered only when explicitly listed.
 
 Set `showInMenu: false` on a provider when a host draws its own export button. The provider stays available through `api.exportAs(id, options)`, with the same capture, cancellation and timeout behavior, but adds no button to the native Export menu. Omit the option or set it to `true` to show the provider. CSV, Copy and other providers keep their existing controls.
 

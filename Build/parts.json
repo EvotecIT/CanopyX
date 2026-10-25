@@ -161,10 +161,22 @@
         "validateGridCursorPage", "validateGridPage", "GRID_REPORTING", "gridFreeze", "cellValue", "cellText", "isCellObject", "exportTimeout", "exportFormat", "EXPORT_FORMATS", "gridExportField"],
       "end": "DataGrid.prototype.renderGridExport = exportMenu;",
       "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/86-export-print.js",
         "CanopyX.Html/Assets/canopyx.grid.source/87-export-formats.js",
         "CanopyX.Html/Assets/canopyx.grid.source/78-grid-export-text.js",
         "CanopyX.Html/Assets/canopyx.grid.source/79-grid-export-menu.js"
       ]
+    },
+    {
+      "name": "office-export",
+      "notice": "ThirdParty/OfficeIMO/LICENSE",
+      "label": "Office export writers",
+      "runtimes": ["tree", "grid"],
+      "views": ["tree", "grid"],
+      "features": ["officeExport"],
+      "key": "EXPORT_IMPL",
+      "context": ["EXPORT_IMPL"],
+      "scripts": ["ThirdParty/OfficeIMO/officeimo-canopyx.js", "CanopyX.Html/Assets/canopyx.office-export.source"]
     },
     {
       "name": "history",

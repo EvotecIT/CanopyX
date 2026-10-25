@@ -11,6 +11,7 @@
     let provider, resolutionError;
     try { provider = EXPORT_IMPL.formatsOf(grid).find(item => item.id === format); }
     catch (error) { resolutionError = error; }
+    if (capture.values === undefined && provider?.values !== undefined) capture.values = provider.values;
     const prepared = grid.calIcsFormatWriter && provider?.write === grid.calIcsFormatWriter ? grid.calPrepareIcsExport(capture) : grid.prepareExport(capture);
     return exportPartReady().then(() => {
       if (resolutionError) throw resolutionError;

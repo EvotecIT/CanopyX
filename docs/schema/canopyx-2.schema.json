@@ -2092,6 +2092,8 @@
             "gridVisibleRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridAllRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridDownloadCsv": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDownloadXlsx": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDownloadPdf": { "$ref": "#/$defs/accessibleLabel" },
             "gridCopy": { "$ref": "#/$defs/accessibleLabel" },
             "gridDetails": { "$ref": "#/$defs/accessibleLabel" },
             "gridCellRangeSelected": { "$ref": "#/$defs/accessibleLabel" },

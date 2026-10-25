@@ -90,8 +90,16 @@
     return out;
   }
   // The export part hands each record here after building it (78-grid-export-text.js); grids without rules keep theirs.
-  GRID_REPORTING.formatRecord = (grid, row, record) => {
-    const result = grid.formatResult && grid.formatResult(row);
+  const FORMAT_EXPORTS = new WeakMap(), FORMAT_PREPARE_EXPORT = DataGrid.prototype.prepareExport;
+  DataGrid.prototype.prepareExport = function (options) {
+    const capture = FORMAT_PREPARE_EXPORT.call(this, options), now = Date.now(), rules = this.getFormatRules();
+    const compiled = formatCompile(rules, this, () => now), stats = compiled.length && this.formatCompiled ? formatStats(this) : new Map();
+    FORMAT_EXPORTS.set(capture.request, { rules: compiled, stats: new Map([...stats].map(([id, range]) => [id, range && { ...range }])) });
+    return capture;
+  };
+  GRID_REPORTING.copyExportFormatting = (from, to) => { if (FORMAT_EXPORTS.has(from)) FORMAT_EXPORTS.set(to, FORMAT_EXPORTS.get(from)); };
+  GRID_REPORTING.formatRecord = (grid, row, record, request) => {
+    const capture = FORMAT_EXPORTS.get(request), result = capture && formatEvaluate(capture.rules, capture.stats, row);
     if (!result) return record;
     const cells = {};
     for (const [id, cell] of Object.entries(record.cells)) { const format = formatExported(result.cells.get(id)); cells[id] = format ? { ...cell, format } : cell; }

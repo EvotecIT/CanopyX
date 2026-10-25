@@ -142,9 +142,13 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Gets how the grid edits when columns are <see cref="CanopyColumn.Editable"/>: read-only, cell or full-row mode, the phone edit form and the edit bar.</summary>
     public CanopyGridEditing Editing { get; } = new CanopyGridEditing();
 
-    /// <summary>Gets the identities of the export formats the Export menu offers, in this order, after the built-in CSV.</summary>
-    /// <remarks>Each identity names a format the page registers in the browser with <c>CanopyX.registerExportFormat</c>; an identity no page registers is skipped. Empty writes nothing, which offers every registered format; a browser host that offers none passes an empty <c>exportFormats</c> option, which takes precedence over this list. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
-    public IList<string> ExportFormats { get; } = new List<string>();
+    /// <summary>Gets or sets the identities of the export formats the Export menu offers, in this order, after the built-in CSV.</summary>
+    /// <remarks><c>xlsx</c> and <c>pdf</c> select the optional offline writers. Other identities name formats registered with <c>CanopyX.registerExportFormat</c>; unknown identities are skipped. Empty writes nothing, which offers every registered format; a browser host that offers none passes an empty <c>exportFormats</c> option, which takes precedence over this list. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
+    public IList<string> ExportFormats {
+        get => _exportFormats;
+        set => _exportFormats = value ?? throw new ArgumentNullException(nameof(value));
+    }
+    private IList<string> _exportFormats = new List<string>();
 
     /// <summary>Gets or sets whether the grid exposes its search control. Defaults to true.</summary>
     public bool Search { get; set; } = true;

@@ -9,6 +9,7 @@
     gridResetColumns: "Reset columns", gridReorderColumn: "{column}: drag, or press Alt+Up or Alt+Down to move", gridPinnedLeft: "Pinned left",
     gridPinnedRight: "Pinned right", gridResponsiveHidden: "Hidden at this width", gridExport: "Export", gridVisibleRows: "Visible rows",
     gridSelectedRows: "Selected rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy",
+    gridDownloadXlsx: "Download Excel", gridDownloadPdf: "Download PDF",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records", gridExportCancelled: "Export cancelled",
     gridCancelExport: "Cancel export", gridMore: "More", gridPrint: "Print", gridDetails: "Record details", gridDetailsSection: "Details",
     gridPreviousRecord: "Previous record", gridNextRecord: "Next record", gridCloseRecord: "Close"
