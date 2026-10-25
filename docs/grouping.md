@@ -20,6 +20,27 @@ distinct-count aggregates and expands each order into a nested grid of its order
 
 ## Grouping
 
+Date and number columns offer a bucket choice in their grouping chip. Calendar choices are day, week, month, quarter,
+year, hour of day and weekday. Weeks start on Monday by default and use ISO week years; definitions can select another
+first weekday or time zone. Numeric ranges accept a positive width and origin or explicit ascending edges. Bounds are
+half-open, with separate underflow and overflow buckets for explicit edges. Choices travel with `groupBy` in queries,
+saved views and shared views. The underlying record values keep their original types.
+
+```csharp
+view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("observed",
+    bucket: CanopyBucket.Calendar(CanopyBucketKind.Month)));
+view.FacetPanel = new CanopyFacetPanel();
+view.FacetPanel.Facets.Add(new CanopyFacet("amount") {
+    Bucket = CanopyBucket.ExplicitEdges(0, 100, 1000)
+});
+```
+
+The optional `buckets` part evaluates the same numeric keys in the browser that `CanopyBucket.Key` produces in C#.
+`CanopyX.Data` groups UTC calendar parts in the store. A host maps its provider's named-zone conversion through
+`BucketTimeZone`; it must preserve daylight-saving rules. `CanopyStaticHtml.RenderGridSummary(view, summary)` writes
+the accepted group labels and totals as a script-free inline-styled table. The gallery includes `analysis-buckets.html`
+and `analysis-summary.html`.
+
 ### Declaring it
 
 A fixed grouping (`grouping: { column, direction }`, `CanopyGridReporting.Grouping`) keeps one level the reader cannot

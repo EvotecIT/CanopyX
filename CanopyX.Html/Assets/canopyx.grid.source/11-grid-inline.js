@@ -39,6 +39,7 @@
 
   function gridMatches(row, predicate, column) {
     if (!Object.hasOwn(GRID_FILTER_LABELS, predicate.operator)) throw new Error("CanopyX: no plugin provides filter operator '" + predicate.operator + "'.");
+    if (predicate.bucket) return cellMatches(GRID_BUCKETS.key(predicate.bucket, gridScalar(row.cells[column.id], column)), predicate, { ...column, kind: "number" });
     return cellMatches(row.cells[column.id], predicate, column);
   }
 

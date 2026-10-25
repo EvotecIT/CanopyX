@@ -1,9 +1,11 @@
 // The facet panel of flat grids (docs/facets.md): value lists with counts and ranges with histograms that filter each other.
-import type { GridRow, GridColumnId } from "./grid.js";
+import type { GridRow, GridColumnId, GridBucket } from "./grid.js";
 
 /** One facet: a column id, or a column with its settings. */
 export type GridFacet<Row extends GridRow = GridRow> = GridColumnId<Row> | {
   column: GridColumnId<Row>;
+  /** Calendar or numeric partition, shown as a chronological value list. */
+  bucket?: GridBucket;
   /** "list" (text columns by default) or "range" with a histogram (number and date columns by default). */
   kind?: "list" | "range";
   /** The facet's heading; the column's title by default. */

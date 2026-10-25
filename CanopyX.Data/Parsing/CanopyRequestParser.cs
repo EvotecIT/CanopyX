@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -108,7 +109,7 @@ public static partial class CanopyRequestParser {
         var query = Query(queryElement, schema, limits, true);
         if (query.Revision == null) throw CanopyRequestException.Document("A value list needs the accepted revision.");
         if (!include) query = query.WithFilter(CanopyFilters.WithoutColumn(query.Filter, column.Id));
-        return new CanopyFacetRequest(query, column, search, limit, include);
+        return new CanopyFacetRequest(query, column, search, limit, include, CanopyBucketParser.Read(root, column.Definition));
     }
 
     /// <summary>Validates a typed query built in C#, applying the same allow-list and limits as wire requests.</summary>
@@ -189,7 +190,7 @@ public static partial class CanopyRequestParser {
         var levels = new List<CanopySummaryLevel>();
         if (!present) {
             foreach (var declared in schema.GroupBy)
-                levels.Add(new CanopySummaryLevel(schema.GetColumn(declared.Column), declared.Descending, declared.Aggregate == null ? null : schema.FindAggregate(declared.Aggregate)));
+                levels.Add(new CanopySummaryLevel(schema.GetColumn(declared.Column), declared.Descending, declared.Aggregate == null ? null : schema.FindAggregate(declared.Aggregate), declared.Bucket));
         } else {
             if (element.ValueKind != JsonValueKind.Array) throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "groupBy must be an array of levels.");
             if (element.GetArrayLength() > 4) throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "groupBy lists at most four levels.");
@@ -205,14 +206,14 @@ public static partial class CanopyRequestParser {
                 CanopySummaryAggregate? aggregate = null;
                 if (aggregateId != null && (aggregate = schema.FindAggregate(aggregateId)) == null)
                     throw new CanopyRequestException(CanopyRequestError.InvalidGroupBy, "A grouping level orders by a declared aggregate.");
-                levels.Add(new CanopySummaryLevel(column, direction == "desc", aggregate));
+                levels.Add(new CanopySummaryLevel(column, direction == "desc", aggregate, CanopyBucketParser.Read(item, schema.ProtocolView.GetColumn(column.Id), schema.GroupBy.FirstOrDefault(level => level.Column == column.Id)?.Bucket)));
             }
         }
         for (var i = 0; i < levels.Count; i++) {
             var level = levels[i];
             if (level.Aggregate != null) continue;
             var key = sort.Find(item => item.Column.Id == level.Column.Id);
-            if (key != null && key.Descending != level.Descending) levels[i] = new CanopySummaryLevel(level.Column, key.Descending);
+            if (key != null && key.Descending != level.Descending) levels[i] = new CanopySummaryLevel(level.Column, key.Descending, bucket: level.Bucket);
         }
         sort.RemoveAll(key => levels.Exists(level => level.Column.Id == key.Column.Id));
         sort.InsertRange(0, levels.ConvertAll(level => new CanopySortKey(level.Column, level.Aggregate == null && level.Descending)));
@@ -273,6 +274,7 @@ public static partial class CanopyRequestParser {
         var name = RequireString(filter, "operator");
         var custom = System.Linq.Enumerable.Contains(schema.CustomFilterOperators, name);
         var op = custom ? CanopyGridFilterOperator.Custom : Operator(name);
+        var bucket = CanopyBucketParser.Read(filter, column.Definition);
         var textMatch = op == CanopyGridFilterOperator.Contains || op == CanopyGridFilterOperator.StartsWith;
         var range = op == CanopyGridFilterOperator.GreaterThan || op == CanopyGridFilterOperator.GreaterThanOrEqual
             || op == CanopyGridFilterOperator.LessThan || op == CanopyGridFilterOperator.LessThanOrEqual;
@@ -286,11 +288,12 @@ public static partial class CanopyRequestParser {
             throw CanopyRequestException.Operand("Null tests take no values, membership takes 1 to 1,000, and other operators take one.");
         var operands = new List<object>(count);
         foreach (var value in values.EnumerateArray()) {
-            var operand = Operand(value, column, limits);
+            var operand = bucket == null ? Operand(value, column, limits) : value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number) && CanopyBucket.Finite(number) ? (object)number : throw CanopyRequestException.Operand("A bucket operand must be a finite number.");
             if (textMatch && !(operand is string)) throw CanopyRequestException.Operand("Text matching needs a text operand.");
             operands.Add(operand);
         }
-        return custom ? new CanopyFilterCondition(column, name, operands) : new CanopyFilterCondition(column, op, operands);
+        if (bucket != null && (textMatch || custom)) throw new CanopyRequestException(CanopyRequestError.InvalidOperator, "Buckets use built-in numeric comparisons.");
+        return custom ? new CanopyFilterCondition(column, name, operands) : new CanopyFilterCondition(column, op, operands, bucket);
     }
 
     private static CanopyGridFilterOperator Operator(string text) => text switch {

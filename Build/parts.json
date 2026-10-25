@@ -654,6 +654,16 @@
       ]
     },
     {
+      "name": "buckets",
+      "label": "date and range buckets",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["buckets"],
+      "key": "GRID_BUCKETS",
+      "context": ["GRID_BUCKETS"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.buckets.source"]
+    },
+    {
       "name": "grouping",
       "label": "row grouping",
       "runtimes": ["grid"],
@@ -664,7 +674,7 @@
       "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "GRID_OPTIONS", "GRID_OPTION_GRIDS", "h", "setText", "fill", "numberFormat", "formatValue", "cellValue", "cellText", "isCellObject",
         "gridScalar", "gridQuery", "gridFreeze", "gridOrder", "gridIdOrder", "gridQueryRows", "gridButton", "gridDecorateButton", "gridCellRenderer", "gridPresenterTone",
         "GRID_TONE_RANK", "validateGridRows", "validateGridPage", "checkDocument", "requireIdentifier", "validStructuralCount", "PROTOCOL", "gridOperationActive",
-        "reportingGroupKey", "reportingGroupCompare", "reportingSummaryEnabled", "reportingDynamicGroups", "GROUP_OPERATIONS", "reportingAggregateParts", "disposeRowHostCells", "quietControls", "TreeGrid"],
+        "reportingGroupKey", "reportingGroupCompare", "reportingSummaryEnabled", "reportingDynamicGroups", "GROUP_OPERATIONS", "reportingAggregateParts", "disposeRowHostCells", "quietControls", "TreeGrid", "GRID_BUCKETS", "gridBucketDefinition"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.aggregates.source",
         "CanopyX.Html/Assets/canopyx.grouping.source"
@@ -703,7 +713,7 @@
       "features": ["facets"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQueryStart", "gridQueryRows", "gridColumnProjection", "gridScalar",
-        "gridOrder", "gridKeyCompare", "gridFacetKey", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze", "overlayTheme", "watchOverlayTheme"],
+        "gridOrder", "gridKeyCompare", "gridFacetKey", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze", "overlayTheme", "watchOverlayTheme", "GRID_BUCKETS", "gridBucketDefinition"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",
         "CanopyX.Html/Assets/canopyx.facets.source"

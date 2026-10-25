@@ -7,6 +7,19 @@ namespace CanopyX;
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
+        [nameof(GridBucket)] = "Bucket",
+        [nameof(GridBucketNone)] = "Exact values",
+        [nameof(GridBucketDay)] = "Day",
+        [nameof(GridBucketWeek)] = "Week",
+        [nameof(GridBucketMonth)] = "Month",
+        [nameof(GridBucketQuarter)] = "Quarter",
+        [nameof(GridBucketYear)] = "Year",
+        [nameof(GridBucketHour)] = "Hour of day",
+        [nameof(GridBucketWeekday)] = "Weekday",
+        [nameof(GridBucketWidth)] = "Range width",
+        [nameof(GridBucketEdges)] = "Range edges",
+        [nameof(GridBucketOrigin)] = "Range origin",
+        [nameof(GridBucketInvalid)] = "Enter valid bucket settings.",
         [nameof(GridNoExportColumns)] = "No visible columns allow export.",
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(SearchResults)] = "Search results",

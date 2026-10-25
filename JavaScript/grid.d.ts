@@ -272,11 +272,11 @@ export type GridAction<Q extends AcceptedGridQuery = GridQuery> =
   /** render fills container on the entry's first open (and again after a render that threw); close() closes the menu and
    * focuses its button; signal aborts when the grid is destroyed. */
   | { label: string; render: (container: HTMLElement, context: { close(): void; signal: AbortSignal }) => void; run?: never };
-export type GridBuiltinFilter = {
+export type GridBuiltinFilter = ({
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";
   readonly values: readonly Exclude<CellValue, null>[];
-} | { readonly column: string; readonly operator: "isNull" | "isNotNull"; readonly values: readonly []; };
+} | { readonly column: string; readonly operator: "isNull" | "isNotNull"; readonly values: readonly []; }) & { readonly bucket?: GridBucket };
 
 /** A registered custom operator uses one typed, non-null operand. */
 export type GridFilter = GridBuiltinFilter | { readonly column: string; readonly operator: string & {}; readonly values: readonly Exclude<CellValue, null>[] };
@@ -453,13 +453,15 @@ export interface GridPage<Row extends GridRow = GridRow> {
   items: Row[];
 }
 /** Hosts own data access, authorization and query execution; cancellation does not grant write authority. */
-export interface GridFacetOptions { readonly search?: string; readonly limit?: number; readonly includeCurrentFilter?: boolean; readonly signal?: AbortSignal; }
+export interface GridFacetOptions { readonly search?: string; readonly limit?: number; readonly includeCurrentFilter?: boolean; readonly signal?: AbortSignal; readonly bucket?: GridBucket; }
 /** Facet values/counts ignore the query window and sort; excluding the current column replaces its predicates by true. */
 export interface GridFacetQuery<Q extends AcceptedGridQuery = AcceptedGridQuery> {
+  readonly bucket?: GridBucket;
   readonly protocol: "canopyx/2"; readonly type: "gridFacetQuery"; readonly query: Q & { readonly revision: string };
   readonly column: string; readonly search: string; readonly limit: number; readonly includeCurrentFilter: boolean;
 }
 export interface GridFacetPage {
+  readonly bucket?: GridBucket;
   readonly protocol: "canopyx/2"; readonly type: "gridFacetPage"; readonly view: string; readonly revision: string;
   readonly column: string; readonly search: string; readonly includeCurrentFilter: boolean;
   readonly matched: number; readonly totalValues: number; readonly truncated: boolean;
@@ -496,7 +498,14 @@ export interface GridAggregate {
   readonly format?: GridNumberFormat;
 }
 /** One runtime grouping level: groups order by value, or by a declared aggregate (nulls last, ties by value). */
+/** Numeric keys partition calendar instants or half-open numeric intervals. Monday and UTC are the calendar defaults. */
+export type GridBucket =
+  | { readonly kind: "day" | "week" | "month" | "quarter" | "year" | "hour" | "weekday"; readonly timeZone?: string; readonly firstWeekday?: 0 | 1 | 2 | 3 | 4 | 5 | 6 }
+  | { readonly kind: "width"; readonly width: number; readonly origin?: number }
+  | { readonly kind: "edges"; readonly edges: readonly number[] };
+
 export interface GridGroupLevel {
+  readonly bucket?: GridBucket;
   readonly column: string; readonly direction: "asc" | "desc"; readonly aggregate?: string;
 }
 /** Declared detail rows: one content source (a page template, a plugin detail renderer or a nested view), else record payloads. */

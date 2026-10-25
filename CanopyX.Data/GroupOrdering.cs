@@ -15,9 +15,9 @@ internal static class GroupOrdering {
     /// aggregate by that aggregate in the level's direction, missing aggregates last and equal values by raw value ascending.
     /// </summary>
     internal static Comparison<TGroup> Create<TGroup>(CanopyDataSchema schema, CanopySummaryLevel level, Func<TGroup, object?> value, Func<TGroup, double?> aggregate) {
-        var byValue = schema.GroupComparer(level.Column.Id, level.Descending);
+        var byValue = level.Bucket == null ? schema.GroupComparer(level.Column.Id, level.Descending) : Comparer<CanopyCell>.Create((left, right) => CanopyBucket.CompareKeys(left?.Value, right?.Value, level.Descending));
         if (level.Aggregate == null) return (left, right) => byValue.Compare(Cell(value(left)), Cell(value(right)));
-        var ascending = schema.GroupComparer(level.Column.Id, false);
+        var ascending = level.Bucket == null ? schema.GroupComparer(level.Column.Id, false) : Comparer<CanopyCell>.Create((left, right) => CanopyBucket.CompareKeys(left?.Value, right?.Value, false));
         return (left, right) => {
             var x = aggregate(left);
             var y = aggregate(right);
