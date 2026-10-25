@@ -39,8 +39,8 @@ public static partial class CanopyStaticHtml {
                 html.Append("<div style=\"font-size:12px;margin-bottom:4px;\">");
                 AppendVisibleText(html, view.Labels.PathStep.Replace("{number}", (index + 1).ToString(settings.Culture))
                     .Replace("{total}", chain.Hops.Count.ToString(settings.Culture)), text);
-                if (index == 0) AppendVisibleText(html, view.Labels.PathSource, text, true);
-                if (index == chain.Hops.Count - 1) AppendVisibleText(html, view.Labels.PathTarget, text, true);
+                if (index == 0) { html.Append(" · "); AppendVisibleText(html, view.Labels.PathSource, text, true); }
+                if (index == chain.Hops.Count - 1) { html.Append(" · "); AppendVisibleText(html, view.Labels.PathTarget, text, true); }
                 html.Append("</div><strong>");
                 var title = GridPresenterText(view, row, titleColumn, cell);
                 AppendVisibleText(html, title.Length > 0 ? title : row.Id, text, true);

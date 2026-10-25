@@ -18,6 +18,8 @@ public sealed class StaticPathTests {
         Assert.True(result.IsComplete);
         Assert.Equal(3L, result.TotalRows);
         Assert.Equal(3, result.Rows.Count);
+        Assert.Contains("Step 1 of 3 · Source", result.Html);
+        Assert.Contains("Step 3 of 3 · Target", result.Html);
         Assert.Contains("Review <script>", result.Rows[0][0]);
         Assert.Contains("Foreign", result.Rows[0][0]);
         Assert.Contains("Disabled", result.Rows[0][0]);
