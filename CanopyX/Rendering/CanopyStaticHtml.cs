@@ -324,7 +324,7 @@ public static partial class CanopyStaticHtml {
         text?.Append(value);
     }
 
-    private static string Align(CanopyColumn column) => column.Kind == CanopyColumnKind.Number ? "text-align:right;" : string.Empty;
+    private static string Align(CanopyColumn column) => column.Alignment != null ? "text-align:" + column.Alignment + ";" : column.Kind == CanopyColumnKind.Number ? "text-align:right;" : string.Empty;
 
     private static bool IsSafeReportUrl(string? url) {
         if (string.IsNullOrEmpty(url)) return false;

@@ -1351,7 +1351,7 @@ export type GridRowDetail=|{
   roots:unknown[]
 }
 ;
-export type GridHighlightRule=GridFilter&{
+export type GridHighlightRule=GridBuiltinFilter&{
   target?:"row"|"cell"
 }
 &({tone:string;className?:string}|{tone?:string;className:string});
@@ -1391,6 +1391,11 @@ export interface GridNumberFormat{
 }
 export type GridColumn<Row extends GridRow=GridRow>=Omit<CanopyColumn,"id"|"editable"|"width">&{
   id:GridColumnId<Row>;
+  className?:string|null;
+  alignment?:"start"|"center"|"end"|null;
+  orderData?:readonly string[];
+  orderSequence?:readonly("asc"|"desc"|"none")[];
+  sortComparator?:string|null;
   filterable?:boolean;
   exportable?:boolean;
   editable?:boolean;
@@ -1508,7 +1513,7 @@ export interface GridPager{
   readonly info?:"range"|"sentence"|"none";
 }
 export interface GridReporting{
-  readonly grouping?:GridSort;
+  readonly grouping?:GridSort&{readonly headerTemplate?:string};
   readonly groupBy?:readonly GridGroupLevel[];
   readonly groupable?:boolean;
   readonly detail?:GridDetailDefinition;
@@ -1570,7 +1575,7 @@ export type GridAction<Q extends AcceptedGridQuery=GridQuery>=|{
   run?:never
 }
 ;
-export type GridFilter={
+export type GridBuiltinFilter={
   readonly column:string;
   readonly operator:"eq"|"ne"|"contains"|"startsWith"|"in"|"gt"|"ge"|"lt"|"le";
   readonly values:readonly Exclude<CellValue,null>[];
@@ -1579,6 +1584,12 @@ export type GridFilter={
   readonly column:string;
   readonly operator:"isNull"|"isNotNull";
   readonly values:readonly[];
+}
+;
+export type GridFilter=GridBuiltinFilter|{
+  readonly column:string;
+  readonly operator:string&{};
+  readonly values:readonly Exclude<CellValue,null>[]
 }
 ;
 export interface GridFilterGroup{
@@ -1613,6 +1624,9 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   id:string;
   label:string;
   columns:GridColumn<Row>[];
+  columnDefaults?:readonly GridColumnDefaults[];
+  preSort?:readonly GridSort[];
+  footers?:readonly GridFooter[];
   rowHeight?:number|"auto";
   density?:"compact"|"default"|"comfortable";
   zebra?:boolean;
@@ -1688,6 +1702,7 @@ export interface CursorGridView<Row extends GridRow=GridRow>extends GridDefiniti
 }
 export type GridView<Row extends GridRow=GridRow>=InlineGridView<Row>|CompactGridView<Row>|HostGridView<Row>|CursorGridView<Row>;
 export interface GridPage<Row extends GridRow=GridRow>{
+  readonly footerValues?:Readonly<Record<string,Readonly<Record<string,number|null>>>>;
   protocol:"canopyx/2";
   type:"gridPage";
   view:string;
@@ -1737,6 +1752,16 @@ export interface GridSource<Row extends GridRow=GridRow>extends GridFacetSource<
   position?(query:GridQuery,id:string,options:{signal:AbortSignal}):number|PromiseLike<number>;
 }
 export type GridAggregateOperation="count"|"sum"|"average"|"minimum"|"maximum"|"distinctCount"|(string&{});
+export type GridColumnDefaults=Pick<GridColumn,"className"|"alignment"|"sortable"|"filterable"|"hidden"|"orderData"|"orderSequence"|"sortComparator">&{
+  readonly targets:readonly string[]
+}
+;
+export interface GridFooter{
+  readonly id:string;
+  readonly label:string;
+  readonly scope:"page"|"all";
+  readonly aggregates:readonly GridAggregate[];
+}
 export interface GridAggregate{
   readonly id:string;
   readonly column:string;
@@ -2783,6 +2808,8 @@ export type CanopyPluginItem=|{
 ;
 export type CanopyPluginEventHandler=(event:CustomEvent,context:CanopyPluginContext) => void;
 export interface CanopyPlugin{
+  readonly filterOperators?:Readonly<Record<string,(value:unknown,operands:readonly unknown[],context:{readonly column:string;readonly signal:AbortSignal}) => boolean>>;
+  readonly sortComparators?:Readonly<Record<string,(left:unknown,right:unknown,context:{readonly column:string;readonly signal:AbortSignal}) => number>>;
   readonly name:string;
   readonly requires?:readonly string[];
   readonly views?:readonly CanopyViewKind[];

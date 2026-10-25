@@ -19,6 +19,23 @@ public sealed class CanopyGridFilter {
         ValidateArity();
     }
 
+    /// <summary>Creates a named custom filter for a browser plugin or host source.</summary>
+    /// <param name="column">The declared column identity.</param>
+    /// <param name="op">A safe plugin identity, other than a built-in operator.</param>
+    /// <param name="values">One raw typed operand.</param>
+    public CanopyGridFilter(string column, string op, params CanopyCell[] values) {
+        CanopyIdentifiers.Require(column, nameof(column));
+        if (op == null || !System.Text.RegularExpressions.Regex.IsMatch(op, "^[a-z][a-zA-Z0-9]{0,31}$") ||
+            Array.IndexOf(new[] { "eq", "ne", "contains", "startsWith", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull", "and", "or" }, op) >= 0)
+            throw new ArgumentException("A custom filter requires a safe non-built-in plugin identity.", nameof(op));
+        Column = column; Operator = CanopyGridFilterOperator.Custom; CustomOperator = op;
+        Values = Array.AsReadOnly((CanopyCell[])(values ?? throw new ArgumentNullException(nameof(values))).Clone());
+        ValidateArity();
+    }
+
+    /// <summary>Gets the named custom operator, or null for a built-in operator.</summary>
+    public string? CustomOperator { get; }
+
     /// <summary>Gets the declared column identity.</summary>
     public string Column { get; }
 
@@ -28,7 +45,7 @@ public sealed class CanopyGridFilter {
     /// <summary>Gets the raw typed operands; cell display text and decorations do not affect them.</summary>
     public IReadOnlyList<CanopyCell> Values { get; }
 
-    internal string WireOperator => Operator switch {
+    internal string WireOperator => CustomOperator ?? (Operator switch {
         CanopyGridFilterOperator.Equal => "eq",
         CanopyGridFilterOperator.NotEqual => "ne",
         CanopyGridFilterOperator.Contains => "contains",
@@ -41,7 +58,7 @@ public sealed class CanopyGridFilter {
         CanopyGridFilterOperator.IsNull => "isNull",
         CanopyGridFilterOperator.IsNotNull => "isNotNull",
         _ => throw new ArgumentOutOfRangeException(nameof(Operator), Operator, "Unknown grid filter operator.")
-    };
+    });
 
     internal void Validate(CanopyColumn column) {
         ValidateArity();

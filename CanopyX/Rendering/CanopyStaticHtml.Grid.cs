@@ -34,7 +34,7 @@ public static partial class CanopyStaticHtml {
         view.Validate();
         if (page != null) _ = page.ToJson(view);
         else if (view.Source.Kind == CanopyGridSourceKind.Host) throw new InvalidOperationException("A host grid fallback requires an explicit result page.");
-        return RenderGridRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
+        return RenderGridRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options, page?.FooterValues);
     }
 
     /// <summary>Renders a supplied cursor window without inventing a complete matching count.</summary>
@@ -63,7 +63,7 @@ public static partial class CanopyStaticHtml {
         return RenderGridRows(view, page.Rows, page.Matched, page.Offset, options);
     }
 
-    private static CanopyStaticHtmlResult RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, int offset, CanopyStaticHtmlOptions? options) {
+    private static CanopyStaticHtmlResult RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, int offset, CanopyStaticHtmlOptions? options, IDictionary<string, IDictionary<string, double?>>? footerValues = null) {
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
         var columns = view.Columns.Where(column => !column.Hidden).ToArray();
@@ -85,6 +85,7 @@ public static partial class CanopyStaticHtml {
             AppendOverflow(html, shown, matching, columns.Length, settings, styles, view.Labels);
             html.Append("</tbody>");
         }
+        AppendGridFooters(html, view, columns, supplied, matching, offset, footerValues, styles, settings);
         AppendFormatLegend(html, view, columns.Length, styles, settings.Culture);
         return new CanopyStaticHtmlResult(html.Append("</table>").ToString(), printedRows.AsReadOnly(),
             matching.HasValue ? matching.Value : (long)offset + supplied.Count, !matching.HasValue,
@@ -115,6 +116,8 @@ public static partial class CanopyStaticHtml {
                 if (level == path.Count) {
                     html.Append("<th scope=\"col\"");
                     if (depth > level) html.Append(" rowspan=\"").Append(depth - level + 1).Append('"');
+                    var className = columns[index].ClassName;
+                    if (className != null) html.Append(" class=\"").Append(Encode(className)).Append('"');
                     html.Append(" style=\"").Append(text == null ? styles.Header : styles.InnerHeader).Append(Align(columns[index])).Append("\">");
                     AppendVisibleText(html, columns[index].Title, text, true); html.Append("</th>");
                 }

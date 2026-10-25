@@ -38,14 +38,16 @@
   }
 
   function gridMatches(row, predicate, column) {
+    if (!Object.hasOwn(GRID_FILTER_LABELS, predicate.operator)) throw new Error("CanopyX: no plugin provides filter operator '" + predicate.operator + "'.");
     return cellMatches(row.cells[column.id], predicate, column);
   }
 
-  function gridQueryRows(view, query, columns, compare = gridCompare) {
+  function gridQueryRows(view, query, columns, compare = gridCompare, matches = gridMatches, extended = false) {
+    if (!extended && GRID_OPTIONS.queryRows && GRID_OPTION_GRIDS.has(view)) return GRID_OPTIONS.queryRows(view, query, columns, compare);
     const terms = gridSearchTerms(query.search, query.searchMode),
       searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
     const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
-      query.filters.every(predicate => gridMatches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns));
+      query.filters.every(predicate => matches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns, matches));
     if (compare !== gridCompare || !query.sort.length) return compare ? rows.sort((a, b) => {
       for (const sort of query.sort) {
         const compared = compare(a, b, columns.get(sort.column), sort.direction);

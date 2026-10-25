@@ -10,6 +10,8 @@ internal static class CanopyDataSnapshot {
         Filterable = source.Filterable, Exportable = source.Exportable,
         Editable = source.Editable, Editor = Editor(source.Editor), Validation = Validation(source.Validation),
         Sizing = source.Sizing, Wrap = source.Wrap, Presenter = source.Presenter, Aggregatable = source.Aggregatable, Format = source.Format,
+        ClassName = source.ClassName, Alignment = source.Alignment, SortComparator = source.SortComparator,
+        OrderData = new System.Collections.Generic.List<string>(source.OrderData), OrderSequence = new System.Collections.Generic.List<string>(source.OrderSequence),
         Section = source.Section, ShowInDrawer = source.ShowInDrawer, Renderer = source.Renderer,
         ResponsivePriority = source.ResponsivePriority, AlwaysVisible = source.AlwaysVisible, Pinned = source.Pinned,
         RowHeader = source.RowHeader, Tooltip = source.Tooltip, MaxLines = source.MaxLines, HeaderDescription = source.HeaderDescription
@@ -55,12 +57,18 @@ internal static class CanopyDataSnapshot {
         };
         foreach (var column in source.Columns) copy.Columns.Add(Column(column));
         foreach (var id in source.SearchColumns) copy.SearchColumns.Add(id);
+        foreach (var sort in source.PreSort) copy.PreSort.Add(sort);
+        foreach (var footer in source.Footers) {
+            var row = new CanopyGridFooter(footer.Id, footer.Label, footer.Scope);
+            foreach (var aggregate in footer.Aggregates) row.Aggregates.Add(aggregate);
+            copy.Footers.Add(row);
+        }
         return copy;
     }
 
     private static CanopyGridReporting? Reporting(CanopyGridReporting? source) {
         if (source == null) return null;
-        var copy = new CanopyGridReporting { Grouping = source.Grouping, Groupable = source.Groupable };
+        var copy = new CanopyGridReporting { Grouping = source.Grouping == null ? null : new CanopyGridGrouping(source.Grouping.Column, source.Grouping.Descending) { HeaderTemplate = source.Grouping.HeaderTemplate }, Groupable = source.Groupable };
         foreach (var level in source.GroupBy) copy.GroupBy.Add(level);
         foreach (var aggregate in source.Aggregates) copy.Aggregates.Add(aggregate);
         foreach (var id in source.FacetColumns) copy.FacetColumns.Add(id);

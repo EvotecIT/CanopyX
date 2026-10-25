@@ -32,7 +32,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "22fdbf4ed0bee629",
+      "version": "e0db9c3f94866fa2",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -105,7 +105,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "f07aebe37f3d1bb4",
+      "version": "d74a01c46f1c40cc",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -592,7 +592,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "3dfd1da815b23dd6",
+      "version": "eedafc8438ac1b2b",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -663,7 +663,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "6e96e14a242efb36",
+      "version": "42ad4b814f47bd00",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -782,6 +782,22 @@
       ],
       "requires": [
         "calendar"
+      ]
+    },
+    {
+      "name": "grid-options",
+      "label": "grid footer and query extensions",
+      "version": "e74170bbb841519c",
+      "script": "canopyx-grid-options.js",
+      "style": "canopyx-grid-options.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "gridOptions"
       ]
     }
   ]

@@ -51,7 +51,7 @@ public sealed class CanopyGridQuery {
     /// <summary>The grouping levels this query applies: its own, or the definition's declared levels.</summary>
     internal IList<CanopyGridGroupLevel> Levels(CanopyDataGridView view) => GroupBy ?? view.Reporting?.GroupBy ?? (IList<CanopyGridGroupLevel>)Array.Empty<CanopyGridGroupLevel>();
 
-    /// <summary>Gets the ordered sort keys. The runtime appends stable identity as the final tie-breaker.</summary>
+    /// <summary>Gets ordered column aliases. OrderData is resolved by the query engine; the wire retains aliases and the runtime appends stable identity as the final tie-breaker.</summary>
     public IList<CanopyGridSort> Sort { get; } = new List<CanopyGridSort>();
 
     /// <summary>Gets or sets the nonnegative offset into ordered matching rows. Cursor sources require zero and omit this field.</summary>
@@ -122,7 +122,8 @@ public sealed class CanopyGridQuery {
         var leading = new HashSet<string>(StringComparer.Ordinal);
         if (grouping != null) { new CanopyGridSort(grouping.Column, grouping.Descending).WriteJson(writer); leading.Add(grouping.Column); }
         foreach (var level in levels) { new CanopyGridSort(level.Column, level.Aggregate == null && level.Descending).WriteJson(writer); leading.Add(level.Column); }
-        foreach (var sort in Sort) if (!leading.Contains(sort.Column)) sort.WriteJson(writer);
+        foreach (var sort in view.PreSort) if (leading.Add(sort.Column)) sort.WriteJson(writer);
+        foreach (var sort in Sort) if (leading.Add(sort.Column)) sort.WriteJson(writer);
         writer.EndArray().Name("filters").BeginArray();
         foreach (var filter in Filters) filter.WriteJson(writer);
         writer.EndArray();

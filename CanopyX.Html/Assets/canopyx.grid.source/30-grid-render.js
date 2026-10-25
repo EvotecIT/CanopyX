@@ -111,10 +111,16 @@
     hasGridSize() { return !!(this.grid.clientWidth && this.grid.clientHeight && this.grid.checkVisibility()); },
 
     buildHeader() {
-      const sorts = this.acceptedQuery ? this.acceptedQuery.sort : [];
+      const fixed = new Set((this.view.preSort || []).map(sort => sort.column));
+      const sorts = (this.acceptedQuery?.sort || []).filter(sort => !fixed.has(sort.column));
+      const fixedText = (this.view.preSort || []).map(sort => (this.columns.find(column => column.id === sort.column)?.title || sort.column) + " " + sort.direction).join(", ");
       this.sortState = sorts[0] || null; ROW_HELPERS.buildHeader.call(this);
       for (const cell of this.headCells) {
+        const column = this.columns.find(column => column.id === cell.getAttribute("data-cx-column"));
+        if (column?.className) cell.classList.add(...column.className.split(/ +/));
+        if (column?.alignment) cell.style.textAlign = column.alignment;
         const button = cell.querySelector(".cx-sort");
+        if (fixedText) cell.title += "\nAlways sorted by " + fixedText + " first";
         if (button) { const label = h("span", "cx-htext"); setText(label, button.textContent); button.replaceChildren(label); }
         const index = sorts.findIndex(sort => sort.column === cell.getAttribute("data-cx-column"));
         if (index >= 0) {
@@ -122,7 +128,7 @@
           cell.setAttribute("data-cx-sort", sorts[index].direction); cell.setAttribute("data-cx-sort-priority", String(index + 1));
           button.setAttribute("data-cx-sort-priority", String(index + 1));
           if (sorts.length > 1) { const priority = h("sup", "cx-sort-priority"); setText(priority, String(index + 1)); button.appendChild(priority); }
-          button.setAttribute("aria-label", cell.getAttribute("aria-label") + ", " + sorts[index].direction + ", " + (index + 1));
+          button.setAttribute("aria-label", cell.getAttribute("aria-label") + ", " + sorts[index].direction + (sorts.length > 1 ? ", " + (index + 1) : "") + (fixedText ? ". " + cell.title : ""));
         }
       }
       this.buildHeaderSelection?.();
@@ -144,7 +150,8 @@
           if (!column) cell.setAttribute("aria-colspan", String(this.cols.length));
           // Native selection chrome keeps its cell while a host renderer replaces only its owned content.
           const content = index === 0 && column?.render && this.view.reporting?.selectionControls ? cell.appendChild(h("span", "cx-content")) : cell;
-          const slot = { cell, content, base: cell.className + (column?.wrap ? " cx-wrap" : ""), cls: null, title: null, badges: [], mode: "default" };
+          if (column?.alignment) cell.style.textAlign = column.alignment;
+          const slot = { cell, content, base: cell.className + (column?.className ? " " + column.className : "") + (column?.wrap ? " cx-wrap" : ""), cls: null, title: null, badges: [], mode: "default" };
           slot.textSpan = content.appendChild(h("span", "cx-text")); slot.text = slot.textSpan.appendChild(document.createTextNode("")); return slot;
         });
       }

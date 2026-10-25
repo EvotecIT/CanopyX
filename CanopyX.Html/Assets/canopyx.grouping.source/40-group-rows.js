@@ -43,15 +43,16 @@
         catch (error) { this.emit("error", { error }); }
       });
       const value = group.value === null ? this.labels.gridGroupMissing : cellText(group.value, groupColumn, this.fmt), count = numberFormat(this.lang).format(group.count);
-      const label = fill(this.labels.gridGroupHeading, { column: groupColumn.title, value, count }), cells = [];
+      const label = fill(this.view.reporting?.grouping?.headerTemplate || this.labels.gridGroupHeading, { column: groupColumn.title, value, count }), cells = [];
       this.cols.forEach((column, index) => {
         const cell = previous?.[index].cell || this.cell(element, index, column.width, column.kind); cells.push({ cell, content: cell });
         if (index === 0) {
           const priorHeading = cell.querySelector(".cx-grid-group-label"), heading = priorHeading || h("span", "cx-grid-group-label");
           const text = heading.querySelector(".cx-grid-group-text") || h("span", "cx-grid-group-text"), badge = heading.querySelector(".cx-grid-group-count") || h("span", "cx-grid-group-count");
           text.replaceChildren();
-          if (levels.length > 1) { const name = h("span", "cx-grid-group-column"); setText(name, groupColumn.title); text.append(name, document.createTextNode(" ")); }
-          text.appendChild(document.createTextNode(value)); setText(badge, count);
+          if (levels.length > 1 && !this.view.reporting?.grouping?.headerTemplate) { const name = h("span", "cx-grid-group-column"); setText(name, groupColumn.title); text.append(name, document.createTextNode(" ")); }
+          text.appendChild(document.createTextNode(this.view.reporting?.grouping?.headerTemplate ? label : value)); setText(badge, count);
+          badge.hidden = !!this.view.reporting?.grouping?.headerTemplate;
           if (!priorHeading) heading.append(text, badge);
           if (!priorButton) cell.append(button);
           this.paintGroupSelection(cell, group); if (!priorHeading) cell.append(heading); cell.title = label;

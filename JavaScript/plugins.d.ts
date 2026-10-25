@@ -68,6 +68,10 @@ export type CanopyPluginEventHandler = (event: CustomEvent, context: CanopyPlugi
  * grid with the plugins option. Every member except name is optional.
  */
 export interface CanopyPlugin {
+  /** Inline predicate hooks over raw values; cannot replace built-in operators. */
+  readonly filterOperators?: Readonly<Record<string, (value: unknown, operands: readonly unknown[], context: { readonly column: string; readonly signal: AbortSignal }) => boolean>>;
+  /** Inline ascending comparator hooks over raw sort values; missing values stay last in either direction. */
+  readonly sortComparators?: Readonly<Record<string, (left: unknown, right: unknown, context: { readonly column: string; readonly signal: AbortSignal }) => number>>;
   /** 1 to 32 lowercase ASCII letters, digits and hyphens, starting with a letter; unique on the page. */
   readonly name: string;
   /** Plugins that start first, and parts of the runtime (for example "export") that load before init. */

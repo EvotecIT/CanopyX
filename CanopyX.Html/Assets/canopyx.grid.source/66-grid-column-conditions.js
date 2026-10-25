@@ -26,6 +26,8 @@
     const add=filter=>{
       if(rows.children.length>=2)return;const row=h("div","cx-column-condition"),operator=h("select","cx-input"),input=h("input","cx-input");
       for(const value of text?["contains","eq","ne","startsWith","isNull","isNotNull"]:["eq","ne","gt","ge","lt","le","isNull","isNotNull"])operator.appendChild(gridOption(value,this.labels[GRID_FILTER_LABELS[value]]||GRID_FILTER_LABELS[value]));
+      for(const name of new Set([...this.plugins.flatMap(plugin=>Object.keys(plugin.filterOperators||{})),filter?.operator].filter(Boolean)))
+        if(![...operator.options].some(option=>option.value===name))operator.appendChild(gridOption(name,GRID_FILTER_LABELS[name]||name));
       operator.setAttribute("aria-label",this.labels.gridOperator);input.setAttribute("aria-label",this.labels.gridConditionValue);input.type=date?"datetime-local":text?"text":"number";if(!text)input.step="any";
       if(filter){operator.value=filter.operator;input.value=date?gridDateInput(filter.values[0],this.local):String(filter.values[0]??"");}
       input.disabled=["isNull","isNotNull"].includes(operator.value);row._condition={operator,input,original:filter?{filter,input:input.value}:null};

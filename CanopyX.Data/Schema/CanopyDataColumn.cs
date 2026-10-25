@@ -37,6 +37,8 @@ public sealed class CanopyDataColumn {
     /// <summary>Gets whether requests may sort by this column.</summary>
     public bool Sortable => _definition.Sortable;
 
+    internal void DisableSort() => _definition.Sortable = false;
+
     /// <summary>Gets whether the captured column starts hidden and is omitted from default exports.</summary>
     public bool Hidden => _definition.Hidden;
 

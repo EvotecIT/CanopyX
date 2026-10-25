@@ -9,7 +9,7 @@ namespace CanopyX;
 /// Total is the unfiltered dataset size; matched is its size after the accepted query. Offset is measured
 /// in the ordered matching rows. A revision identifies one consistent dataset snapshot across all pages.
 /// </remarks>
-public sealed class CanopyGridPage {
+public sealed partial class CanopyGridPage {
     /// <summary>Creates a host query result page.</summary>
     /// <param name="view">The target grid identity.</param>
     /// <param name="revision">The dataset snapshot identity.</param>
@@ -63,6 +63,8 @@ public sealed class CanopyGridPage {
             .Property("offset", Offset).Property("total", Total).Property("matched", Matched)
             .Name("items").BeginArray();
         foreach (var row in Rows) row.WriteJson(writer);
-        return writer.EndArray().EndObject().ToString();
+        writer.EndArray();
+        WriteFooterValues(writer, view);
+        return writer.EndObject().ToString();
     }
 }

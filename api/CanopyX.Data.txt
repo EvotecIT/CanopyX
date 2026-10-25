@@ -111,6 +111,7 @@ CanopyX.Data.CanopyDataRequest.System.String Search { get; }
 CanopyX.Data.CanopyDataRequest.System.String? Revision { get; }
 CanopyX.Data.CanopyDataSchema : sealed class
 CanopyX.Data.CanopyDataSchema..ctor(CanopyX.CanopyDataGridView view, System.Collections.Generic.IEnumerable<System.String>? columns = null, System.Collections.Generic.IEnumerable<System.String>? notFilterable = null)
+CanopyX.Data.CanopyDataSchema..ctor(CanopyX.CanopyDataGridView view, System.Collections.Generic.IEnumerable<System.String>? columns, System.Collections.Generic.IEnumerable<System.String>? notFilterable, System.Collections.Generic.IEnumerable<System.String>? customFilterOperators)
 CanopyX.Data.CanopyDataSchema.CanopyX.CanopyDataGridView View { get; }
 CanopyX.Data.CanopyDataSchema.CanopyX.CanopyGridGrouping? Grouping { get; }
 CanopyX.Data.CanopyDataSchema.CanopyX.Data.CanopyDataColumn GetColumn(System.String id)
@@ -124,6 +125,7 @@ CanopyX.Data.CanopyDataSchema.System.Collections.Generic.IReadOnlyList<CanopyX.C
 CanopyX.Data.CanopyDataSchema.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyDataColumn> Columns { get; }
 CanopyX.Data.CanopyDataSchema.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyDataColumn> EditableColumns { get; }
 CanopyX.Data.CanopyDataSchema.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyDataColumn> SearchColumns { get; }
+CanopyX.Data.CanopyDataSchema.System.Collections.Generic.IReadOnlyList<System.String> CustomFilterOperators { get; }
 CanopyX.Data.CanopyDataSchema.System.String ToJson()
 CanopyX.Data.CanopyDataSchema.System.String ViewId { get; }
 CanopyX.Data.CanopyDataValues : static class
@@ -181,10 +183,12 @@ CanopyX.Data.CanopyFacetResult.System.Int32 Matched { get; }
 CanopyX.Data.CanopyFacetResult.System.Int32 TotalValues { get; }
 CanopyX.Data.CanopyFilterCondition : sealed class (CanopyX.Data.CanopyFilterNode)
 CanopyX.Data.CanopyFilterCondition..ctor(CanopyX.Data.CanopyDataColumn column, CanopyX.CanopyGridFilterOperator op, System.Collections.Generic.IEnumerable<System.Object> values)
+CanopyX.Data.CanopyFilterCondition..ctor(CanopyX.Data.CanopyDataColumn column, System.String op, System.Collections.Generic.IEnumerable<System.Object> values)
 CanopyX.Data.CanopyFilterCondition.CanopyX.CanopyGridFilterOperator Operator { get; }
 CanopyX.Data.CanopyFilterCondition.CanopyX.Data.CanopyDataColumn Column { get; }
 CanopyX.Data.CanopyFilterCondition.CanopyX.Data.CanopyFilterNodeKind Kind { get; }
 CanopyX.Data.CanopyFilterCondition.System.Collections.Generic.IReadOnlyList<System.Object> Values { get; }
+CanopyX.Data.CanopyFilterCondition.System.String? CustomOperator { get; }
 CanopyX.Data.CanopyFilterConstant : sealed class (CanopyX.Data.CanopyFilterNode)
 CanopyX.Data.CanopyFilterConstant.CanopyX.Data.CanopyFilterNodeKind Kind { get; }
 CanopyX.Data.CanopyFilterConstant.System.Boolean Value { get; }
@@ -373,6 +377,7 @@ CanopyX.Data.CanopyInMemoryRecordProvider<T>.CanopyX.Data.CanopyRecordSchema Sch
 CanopyX.Data.CanopyInMemoryRecordProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.CanopyGridRecord?> GetRecordAsync(CanopyX.Data.CanopyRecordRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyPageResult : sealed class
 CanopyX.Data.CanopyPageResult..ctor(System.Int32 total, System.Int32 matched, System.Collections.Generic.IEnumerable<CanopyX.CanopyGridRow> rows)
+CanopyX.Data.CanopyPageResult.System.Collections.Generic.IDictionary<System.String, System.Collections.Generic.IDictionary<System.String, System.Nullable<System.Double>>> FooterValues { get; }
 CanopyX.Data.CanopyPageResult.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyGridRow> Rows { get; }
 CanopyX.Data.CanopyPageResult.System.Int32 Matched { get; }
 CanopyX.Data.CanopyPageResult.System.Int32 Total { get; }

@@ -24,6 +24,21 @@ public sealed class CanopyFilterCondition : CanopyFilterNode {
         Values = new ReadOnlyCollection<object>(list);
     }
 
+    /// <summary>Creates a named predicate for a host provider.</summary>
+    /// <param name="column">The allowed column.</param>
+    /// <param name="op">The named operator.</param>
+    /// <param name="values">The typed operands.</param>
+    public CanopyFilterCondition(CanopyDataColumn column, string op, IEnumerable<object> values)
+        : this(column, CanopyGridFilterOperator.Custom, values) {
+        var cells = new List<CanopyCell>();
+        foreach (var value in Values) cells.Add(CanopyDataValues.ToCell(value)!);
+        _ = new CanopyGridFilter(column.Id, op, cells.ToArray());
+        CustomOperator = op;
+    }
+
+    /// <summary>Gets the named custom operator, or null for a built-in predicate.</summary>
+    public string? CustomOperator { get; }
+
     /// <inheritdoc />
     public override CanopyFilterNodeKind Kind => CanopyFilterNodeKind.Condition;
 

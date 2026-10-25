@@ -8,10 +8,10 @@
   // restore the same places.
   Object.assign(DataGrid.prototype, {
     liveInline() { return this.view.source.kind === "inline" && !this.opts.source; },
-    /** Whether the accepted result is projected into group headings, summaries or detail rows. */
+    /** Whether the accepted result needs group, summary, footer or detail projection. */
     liveProjected() {
       const reporting = this.view.reporting;
-      return !!(reporting && (reporting.grouping || this.acceptedQuery?.groupBy?.length || reporting.aggregates?.length || reporting.detail) || this.opts.detail);
+      return !!(this.view.footers?.length || reporting && (reporting.grouping || this.acceptedQuery?.groupBy?.length || reporting.aggregates?.length || reporting.detail) || this.opts.detail);
     },
     liveAnchor() {
       const top = this.logicalTop(), index = this.rowAt(top), row = this.rowCache.get(index);

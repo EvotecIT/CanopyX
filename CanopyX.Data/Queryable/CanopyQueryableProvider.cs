@@ -63,7 +63,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         Own(request);
         var source = _source();
         var translator = Translator(source);
-        translator.ValidateOrder(request.InnerSort);
+        translator.ValidateOrder(request.ProviderSort(insideGroups: true));
         var total = await Executor.CountAsync(source, cancellationToken).ConfigureAwait(false);
         var filtered = translator.Apply(source, request);
         var matched = ReferenceEquals(filtered, source) ? total : await Executor.CountAsync(filtered, cancellationToken).ConfigureAwait(false);
@@ -75,7 +75,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
             rows = new List<CanopyGridRow>(take);
             await foreach (var row in GroupedRowsAsync(translator, filtered, request, request.Offset, take, columns, PageGroups, cancellationToken).ConfigureAwait(false)) rows.Add(row);
         } else {
-            rows = await RowsAsync(translator, translator.Order(filtered, request.Sort).Skip(request.Offset).Take(take), columns, cancellationToken).ConfigureAwait(false);
+            rows = await RowsAsync(translator, translator.Order(filtered, request.ProviderSort()).Skip(request.Offset).Take(take), columns, cancellationToken).ConfigureAwait(false);
         }
         return new CanopyPageResult(total, matched, rows);
     }
@@ -85,7 +85,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         Own(request);
         var source = _source();
         var translator = Translator(source);
-        translator.ValidateOrder(request.InnerSort);
+        translator.ValidateOrder(request.ProviderSort(insideGroups: true));
         return new ValueTask<int>(Executor.CountAsync(translator.Apply(source, request), cancellationToken));
     }
 
@@ -94,7 +94,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         Own(request);
         var source = _source();
         var translator = Translator(source);
-        translator.ValidateOrder(request.InnerSort);
+        translator.ValidateOrder(request.ProviderSort(insideGroups: true));
         var columns = Map.Columns.Select(column => column.Id).ToList();
         var filtered = translator.Apply(source, request);
         // A grouped export follows the grid's record order, so outline ranges written from the summary fit its rows.
@@ -102,7 +102,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
             await foreach (var row in GroupedRowsAsync(translator, filtered, request, request.Offset, request.Limit, columns, 10000, cancellationToken).ConfigureAwait(false)) yield return row;
             yield break;
         }
-        var query = translator.Order(filtered, request.Sort).Skip(request.Offset).Take(request.Limit).Select(translator.Projection(columns));
+        var query = translator.Order(filtered, request.ProviderSort()).Skip(request.Offset).Take(request.Limit).Select(translator.Projection(columns));
         await foreach (var values in Executor.StreamAsync(query, cancellationToken).ConfigureAwait(false)) yield return translator.ToRow(values, columns);
     }
 
@@ -341,7 +341,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         var overlapping = leaves.Where(item => item.Start + item.Group.Count > offset && item.Start < end).ToList();
         // Each run of groups is a query: a page may span at most 1,000 groups (16 queries), an export every group.
         if (overlapping.Count > maxGroups) throw CanopyRequestException.Limit("The page spans too many groups; request a smaller page.");
-        var rest = request.InnerSort;
+        var rest = request.ProviderSort(insideGroups: true);
         var values = request.Levels.Select(level => translator.GroupValue(level.Column.Id)).ToArray();
         Expression Match(QueryTranslator<T>.StoreGroup group) {
             Expression? test = null;

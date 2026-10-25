@@ -8,6 +8,7 @@ namespace CanopyX.Data;
 
 internal sealed partial class QueryTranslator<T> {
     private Expression Condition(CanopyFilterCondition condition) {
+        if (condition.Operator == CanopyGridFilterOperator.Custom) throw new CanopyRequestException(CanopyRequestError.Unsupported, "A named filter requires a host provider that implements it.");
         var mapped = Map.Get(condition.Column.Id);
         var value = _values[condition.Column.Id];
         var nullable = ExpressionTools.IsNullable(value.Type);

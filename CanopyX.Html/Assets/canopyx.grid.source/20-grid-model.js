@@ -83,7 +83,8 @@
     async setQuery(input, paging) {
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       const length = paging ? paging.pageLength : this.pageLength;
-      const initial = gridQuery(this.view, this.cursor ? { ...input, limit: length } : input);
+      const footerPage = this.paged && this.view.source.kind === "host" && this.view.footers?.some(footer => footer.scope === "page");
+      const initial = gridQuery(this.view, this.cursor || footerPage ? { ...input, limit: length } : input);
       const desired = this.cursor ? 0 : Math.floor(initial.offset / length) * length;
       const same = this.acceptedQuery && gridResultShape(initial) === gridResultShape(this.acceptedQuery) && initial.revision === this.acceptedQuery.revision;
       let query = this.paged && !this.cursor ? gridQuery(this.view, { ...initial, offset: same ? Math.min(desired, Math.max(0, Math.ceil(this.rowCount() / length) - 1) * length) : 0 }) : initial;
@@ -150,7 +151,10 @@
     querySortHeader(id, event) {
       const previous = gridQuery(this.view, this.queryForChange(true)), sorts = previous.sort.slice();
       const found = sorts.findIndex(sort => sort.column === id), old = found >= 0 ? sorts[found].direction : null;
-      const next = old === "asc" ? "desc" : old === "desc" ? null : "asc";
+      const authored = this.columns.find(column => column.id === id).orderSequence;
+      const sequence = authored?.length ? authored : ["asc", "desc", "none"];
+      const direction = sequence[(sequence.indexOf(old || "none") + 1) % sequence.length];
+      const next = direction === "none" ? null : direction;
       const changed = event && event.shiftKey ? sorts.filter(sort => sort.column !== id) : [];
       if (next) changed.splice(event && event.shiftKey && found >= 0 ? Math.min(found, changed.length) : changed.length, 0, { column: id, direction: next });
       this.setQuery(gridQueryStart(previous, { sort: changed })).catch(() => {});

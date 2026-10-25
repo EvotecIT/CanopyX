@@ -26,4 +26,7 @@ public sealed class CanopyPageResult {
 
     /// <summary>Gets the records of the window.</summary>
     public IReadOnlyList<CanopyGridRow> Rows { get; }
+
+    /// <summary>Gets host-computed footer values by footer and aggregate identity, including custom operations. Omitted values remain unavailable.</summary>
+    public IDictionary<string, IDictionary<string, double?>> FooterValues { get; } = new Dictionary<string, IDictionary<string, double?>>(StringComparer.Ordinal);
 }

@@ -38,7 +38,7 @@ export type GridRowDetail =
   | { type: "grid"; rows: GridRow[] }
   | { type: "tree"; roots: unknown[] };
 /** First match wins separately for the row and each condition-column cell; raw filter semantics apply. */
-export type GridHighlightRule = GridFilter & { target?: "row" | "cell" } &
+export type GridHighlightRule = GridBuiltinFilter & { target?: "row" | "cell" } &
   ({ tone: string; className?: string } | { tone?: string; className: string });
 /** Portable cell semantics, independent of DOM renderers and stylesheet rules. Datetime values retain the original ISO string and its explicit time zone and precision. */
 export interface GridExportCell {
@@ -84,6 +84,14 @@ export interface GridNumberFormat {
 export type GridColumn<Row extends GridRow = GridRow> = Omit<CanopyColumn, "id" | "editable" | "width"> & {
   /** The column's id; for a typed row, one of its cells. */
   id: GridColumnId<Row>;
+  /** CSS class tokens applied to the column header, data and footer cells. */
+  className?: string | null;
+  alignment?: "start" | "center" | "end" | null;
+  /** Ordered raw columns used when this column is sorted. */
+  orderData?: readonly string[];
+  orderSequence?: readonly ("asc" | "desc" | "none")[];
+  /** A sortComparators plugin hook. */
+  sortComparator?: string | null;
   /** Supports query predicates and filter controls. Default true; does not hide values, supported read-only facets, or presentation rules. */
   filterable?: boolean;
   /** Supports grid exports. Default true. Default export selection omits false; explicit requests reject it. */
@@ -179,7 +187,7 @@ export interface GridPager {
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
-  readonly grouping?: GridSort;
+  readonly grouping?: GridSort & { readonly headerTemplate?: string };
   /** Initial runtime grouping levels, outermost first (at most four). Not combined with grouping. */
   readonly groupBy?: readonly GridGroupLevel[];
   /** Readers group by sortable columns from column menus, the group-by bar and dragged headers. Not combined with grouping. */
@@ -263,11 +271,14 @@ export type GridAction<Q extends AcceptedGridQuery = GridQuery> =
   /** render fills container on the entry's first open (and again after a render that threw); close() closes the menu and
    * focuses its button; signal aborts when the grid is destroyed. */
   | { label: string; render: (container: HTMLElement, context: { close(): void; signal: AbortSignal }) => void; run?: never };
-export type GridFilter = {
+export type GridBuiltinFilter = {
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";
   readonly values: readonly Exclude<CellValue, null>[];
 } | { readonly column: string; readonly operator: "isNull" | "isNotNull"; readonly values: readonly []; };
+
+/** A registered custom operator uses one typed, non-null operand. */
+export type GridFilter = GridBuiltinFilter | { readonly column: string; readonly operator: string & {}; readonly values: readonly Exclude<CellValue, null>[] };
 
 /** A nonempty nested expression: at most eight levels, 64 groups and 64 total predicates including flat filters. */
 export interface GridFilterGroup {
@@ -309,6 +320,10 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   id: string;
   label: string;
   columns: GridColumn<Row>[];
+  /** First matching rule per setting; explicit column properties win. */
+  columnDefaults?: readonly GridColumnDefaults[];
+  preSort?: readonly GridSort[];
+  footers?: readonly GridFooter[];
   /** Fixed CSS pixel height (20..64), or content measurement. Fixed is the default writer behavior. */
   rowHeight?: number | "auto";
   /** Graphite spacing; an explicit rowHeight remains authoritative. */
@@ -425,6 +440,8 @@ export type GridView<Row extends GridRow = GridRow> = InlineGridView<Row> | Comp
 
 /** A complete requested window from one dataset revision, with full and matching counts. */
 export interface GridPage<Row extends GridRow = GridRow> {
+  /** Host-computed values by footer row id, then aggregate id; tied to this accepted revision and window. */
+  readonly footerValues?: Readonly<Record<string, Readonly<Record<string, number | null>>>>;
   protocol: "canopyx/2";
   type: "gridPage";
   view: string;
@@ -464,6 +481,12 @@ export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSour
 }
 /** Built-in operations, or the name of a custom aggregate a plugin registers (inline data) or the host source computes. */
 export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | (string & {});
+/** Declarative defaults selected by *, #columnId, .classToken or index:N (zero based). */
+export type GridColumnDefaults = Pick<GridColumn, "className" | "alignment" | "sortable" | "filterable" | "hidden" | "orderData" | "orderSequence" | "sortComparator"> & { readonly targets: readonly string[] };
+export interface GridFooter {
+  readonly id: string; readonly label: string; readonly scope: "page" | "all";
+  readonly aggregates: readonly GridAggregate[];
+}
 export interface GridAggregate {
   /** The label is shown beside the value in group headings and the query totals row. */
   readonly id: string; readonly column: string; readonly label: string;

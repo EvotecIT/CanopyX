@@ -9,6 +9,7 @@
 
   function validateGridView(view) {
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
+    view = gridColumnDefaults(view);
     if (view.rowIdentity !== undefined && !["stableKey", "ordinal"].includes(view.rowIdentity))
       throw new Error("CanopyX: rowIdentity must be stableKey or ordinal.");
     if (view.rowIdentity === "ordinal" && view.live)
@@ -32,6 +33,7 @@
           column.pinned !== undefined && ![null, "left", "right"].includes(column.pinned) || column.priority !== undefined && !gridPriority(column.priority) ||
           column.fixed && column.width === undefined || column.tooltip !== undefined && column.tooltip !== "auto" && !view.columns.some(item => item.id === column.tooltip))
         throw new Error("CanopyX: invalid or duplicate grid column.");
+      gridColumnOptions(column, view.columns);
       ids.add(column.id);
       validateColumnValues(column);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
@@ -104,6 +106,15 @@
         throw new Error("CanopyX: invalid grid sort column or direction.");
       sorts.add(sort.column); return gridQueryRecord(sort, { column: sort.column, direction: sort.direction }, strict);
     });
+    if (view.preSort !== undefined) {
+      if (!Array.isArray(view.preSort) || view.preSort.length > 32) throw new Error("CanopyX: invalid fixed pre-sort.");
+      const fixed = new Set();
+      for (const sort of view.preSort) {
+        if (!columns.get(sort?.column)?.sortable || !["asc", "desc"].includes(sort.direction) || fixed.has(sort.column)) throw new Error("CanopyX: invalid fixed pre-sort.");
+        fixed.add(sort.column);
+      }
+      query.sort = [...view.preSort.map(sort => ({column:sort.column,direction:sort.direction})), ...query.sort.filter(sort => !fixed.has(sort.column))];
+    }
     const budget = { predicates: 0, groups: 0, strict, filterable: true };
     query.filters = (input.filters || []).map(filter => gridPredicate(filter, columns, budget));
     if (input.filterGroup !== undefined) query.filterGroup = gridFilterGroup(input.filterGroup, columns, budget, 1);
