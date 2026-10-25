@@ -96,9 +96,14 @@ layout already gives the tree column the width while "+N" opens a node's other f
 
 ## Print
 
-Print never scrolls. A flat grid's `onPrint` hook receives `layout: "stacked"` from a grid in the card layout and
-`layout: "table"` otherwise, so the host prints stacked records or a table; a tree prints its outline table in every
-layout.
+Print never scrolls. Without an `onPrint` hook, a flat grid prints its bounded captured records as stacked cards or a
+table. Card templates keep their formatted token values, including inputs from hidden exportable columns, without adding
+those inputs as separate printed fields. Tokens use the same formatted cell text as the card, without adding secondary
+presenter text. If a template references a non-exportable column, that slot prints its own formatted cell text instead.
+CSV and other exports retain their own column projection.
+
+A flat grid's `onPrint` hook receives `layout: "stacked"` from a grid in the card layout and `layout: "table"` otherwise,
+with the original export projection. A tree prints its outline table in every layout.
 
 ## API
 

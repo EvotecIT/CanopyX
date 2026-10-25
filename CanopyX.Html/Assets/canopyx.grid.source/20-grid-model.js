@@ -133,7 +133,8 @@
         this.host.setAttribute("data-cx-ready", "true");
         if (this.searchInput && !this.searchComposing && this.searchTimer == null) this.searchInput.value = query.search;
         if (this.searchInput) {
-          const label = query.searchMode === "regex" ? this.labels.gridRegexSearch : this.labels.searchPlaceholder;
+          const label = query.searchMode === "regex" ? this.labels.gridRegexSearch : this.view.noun ?
+            fill(this.labels.gridSearchNoun, { noun: this.noun }) : this.labels.searchPlaceholder;
           this.searchInput.placeholder = label; this.searchInput.setAttribute("aria-label", label);
           this.searchInput.maxLength = query.searchMode === "regex" ? 256 : 524288;
           this.searchInput.setCustomValidity("");

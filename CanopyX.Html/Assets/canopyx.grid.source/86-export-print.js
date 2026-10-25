@@ -14,7 +14,7 @@
     gridOperationActive(grid, signal); progress("generating", rows.length);
     return gridFreeze({ request: capture.request, rows });
   };
-  EXPORT_IMPL.printSnapshot = async function (grid, snapshot, signal, layout, templates) {
+  EXPORT_IMPL.printSnapshot = async function (grid, snapshot, signal, layout, templates, projection) {
     gridOperationActive(grid, signal);
     for (const row of snapshot.rows) if (row.detail != null) {
       const detail = row.detail;
@@ -29,7 +29,7 @@
     const dispose = () => frame.remove();
     signal?.addEventListener("abort", dispose, { once: true });
     try {
-      const doc = frame.contentDocument, columns = snapshot.request.columns;
+      const doc = frame.contentDocument, columns = projection ? snapshot.request.columns.filter(column => projection.includes(column.id)) : snapshot.request.columns;
       doc.documentElement.lang = snapshot.request.locale || grid.lang || "en";
       doc.title = grid.view.label;
       const add = (tag, parent, text, css) => {
@@ -69,12 +69,15 @@
           }
         }
       };
-      const cell = (row, column) => templates && Object.hasOwn(templates, column.id) ? {
-        text: templates[column.id].replace(/\{([^{}]+)\}/g, (_, id) => {
+      const cell = (row, column) => {
+        if (!templates || !Object.hasOwn(templates, column.id)) return row.cells[column.id];
+        const text = id => {
+          if (row.templateText && Object.hasOwn(row.templateText, id)) return row.templateText[id];
           const input = row.cells[id];
           return input && typeof input === "object" ? input.text ?? input.value ?? "" : input ?? "";
-        })
-      } : row.cells[column.id];
+        };
+        return { text: typeof templates[column.id] === "string" ? templates[column.id].replace(/\{([^{}]+)\}/g, (_, id) => text(id)) : text(column.id) };
+      };
       const grouping = snapshot.request.grouping, starts = new Map();
       const collect = (groups, depth) => {
         for (const group of groups || []) {

@@ -7,6 +7,7 @@
   }
   GRID_REPORTING.captureExport = (grid, request) => GRID_EXPORT_PRESENTATION.set(request,
     JSON.parse(JSON.stringify({ rules: grid.view.highlightRules || [], columns: grid.view.columns, labels: grid.labels, locale: grid.lang })));
+  GRID_REPORTING.captureCardText = (request, columns) => { GRID_EXPORT_PRESENTATION.get(request).cardTextColumns = new Set(columns); };
   GRID_REPORTING.exportColumn = function (grid, column) {
     const policy = grid.columnLayouts?.get(column.id), presenter = column.presenter || grid.view.reporting?.presenters?.[column.id];
     const minimum = column.minWidth ?? policy?.minimum ?? 40, maximum = column.maxWidth ?? policy?.maximum;
@@ -19,7 +20,8 @@
       ...(column.render && column.hostRenderer !== false ? { diagnostics: ["custom-renderer"] } : {}) };
   };
   GRID_REPORTING.exportRecord = function (grid, request, row) {
-    const capture = GRID_EXPORT_PRESENTATION.get(request), matches = new Map(), cells = Object.create(null);
+    const capture = GRID_EXPORT_PRESENTATION.get(request), matches = new Map(), cells = Object.create(null),
+      templateText = capture.cardTextColumns ? Object.create(null) : null;
     for (const rule of capture.rules) {
       const key = rule.target === "cell" ? rule.column : null;
       if (!matches.has(key) && gridMatches(row, rule, capture.columns.find(column => column.id === rule.column))) matches.set(key, rule);
@@ -28,6 +30,7 @@
     for (const column of request.columns) {
       const cell = row.cells[column.id], object = isCellObject(cell), value = cellValue(cell) ?? null, presenter = column.presenter;
       let text = cellText(cell, column, fmt);
+      if (capture.cardTextColumns?.has(column.id)) templateText[column.id] = text;
       const missing = presenter && (value === null && (!object || cell.text === undefined) || text === "");
       const diagnostics = [...(column.diagnostics || [])];
       if (object && cell.className) diagnostics.push("custom-class");
@@ -62,5 +65,5 @@
       cells[column.id] = { value, text, ...(tone ? { tone } : {}), ...(link ? { link } : {}), ...(diagnostics.length ? { diagnostics: [...new Set(diagnostics)] } : {}) };
     }
     const mark = matches.get(null), tone = mark?.tone ?? row.tone, diagnostics = row.className || mark?.className ? ["custom-class"] : [];
-    return gridFreeze({ id: row.id, cells, ...(tone ? { tone } : {}), ...(diagnostics.length ? { diagnostics } : {}) });
+    return gridFreeze({ id: row.id, cells, ...(templateText ? { templateText } : {}), ...(tone ? { tone } : {}), ...(diagnostics.length ? { diagnostics } : {}) });
   };

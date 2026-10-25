@@ -81,14 +81,14 @@ for (const copy of [false, true]) test(`fill handle ${copy ? "copies while Ctrl 
 });
 
 test("opt-in regex quick search filters raw values and rejects unsafe patterns without replacing the accepted query", async ({ page }) => {
-  await serveGrid(page, view({ allowRegexSearch: true, query: { searchMode: "regex" } }));
+  await serveGrid(page, view({ noun: "work items", allowRegexSearch: true, query: { searchMode: "regex" } }));
   const input = page.getByRole("searchbox", { name: "Search pattern", exact: true });
   await input.fill("^Item [12]$");
-  await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 20 rows");
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 20 work items");
   await input.fill("(a+)+$");
   await expect.poll(() => input.evaluate(element => element.validity.valid)).toBe(false);
   expect(await page.evaluate(() => api.getQuery().search)).toBe("^Item [12]$");
-  await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 20 rows");
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("2 of 20 work items");
   await input.fill("^Item [12]$");
   await expect.poll(() => input.evaluate(element => element.validity.valid)).toBe(true);
   await input.fill("");
@@ -98,7 +98,13 @@ test("opt-in regex quick search filters raw values and rejects unsafe patterns w
   await input.fill("");
   await expect.poll(() => input.evaluate(element => element.validity.valid)).toBe(true);
   await input.fill("^Item 20$");
-  await expect(page.locator(".cx-grid-result-count")).toHaveText("1 of 20 rows");
+  await expect(page.locator(".cx-grid-result-count")).toHaveText("1 of 20 work items");
   await expect.poll(() => input.evaluate(element => element.validity.valid)).toBe(true);
   await expect(bodyCell(page, 19, 0)).toHaveText("Item 20");
+  await page.evaluate(() => api.setQuery({ search: "", searchMode: "substring" }));
+  await expect(page.getByRole("searchbox", { name: "Search work items", exact: true })).toHaveAttribute("placeholder", "Search work items");
+  await page.evaluate(() => api.setQuery({ search: "Item 1" }));
+  await expect(page.getByRole("searchbox", { name: "Search work items", exact: true })).toBeVisible();
+  await page.evaluate(() => api.setQuery({ search: "", searchMode: "regex" }));
+  await expect(page.getByRole("searchbox", { name: "Search pattern", exact: true })).toBeVisible();
 });

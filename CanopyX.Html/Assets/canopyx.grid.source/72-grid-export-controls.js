@@ -24,14 +24,35 @@
     print(options) {
       const { onProgress, maxRows = 1000, timeoutMs, ...capture } = options || {};
       if (onProgress !== undefined && typeof onProgress !== "function") throw new Error("CanopyX: print progress needs a callback.");
-      const exported = this.prepareExport(capture), layout = this.layoutMode === "cards" ? "stacked" : "table",
-        template = layout === "stacked" && this.view.cardTemplate ? JSON.parse(JSON.stringify(this.view.cardTemplate)) : null;
+      const layout = this.layoutMode === "cards" ? "stacked" : "table";
+      const tokenColumns = new Set();
+      let template = layout === "stacked" && this.view.cardTemplate ? JSON.parse(JSON.stringify(this.view.cardTemplate)) : null,
+        projection = null, capturedOptions = capture;
+      if (template && typeof this.opts.onPrint !== "function") {
+        projection = capture.columns === undefined ? this.defaultExportColumns().map(column => column.id) :
+          Array.isArray(capture.columns) ? capture.columns.slice() : null;
+        if (projection?.length) {
+          const columns = projection.slice();
+          for (const [slot, text] of Object.entries(template)) {
+            if (!projection.includes(slot)) { delete template[slot]; continue; }
+            tokenColumns.add(slot);
+            const inputs = [...text.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
+            if (inputs.some(id => !this.columns.some(column => column.id === id && column.exportable !== false))) {
+              template[slot] = null; continue;
+            }
+            for (const id of inputs) { tokenColumns.add(id); if (!columns.includes(id)) columns.push(id); }
+          }
+          capturedOptions = { ...capture, columns };
+        }
+      }
+      const exported = this.prepareExport(capturedOptions);
+      if (projection) GRID_REPORTING.captureCardText?.(exported.request, tokenColumns);
       return this.runGridHook(async signal => {
         await loadExportPart();
         const progress = (phase, completed) => onProgress?.(Object.freeze({ phase, completed, total: exported.request.recordCount }));
         const snapshot = await EXPORT_IMPL.snapshot(this, exported, maxRows, signal, progress);
         if (typeof this.opts.onPrint === "function") await this.opts.onPrint({ snapshot, signal, layout });
-        else await EXPORT_IMPL.printSnapshot(this, snapshot, signal, layout, template);
+        else await EXPORT_IMPL.printSnapshot(this, snapshot, signal, layout, template, projection);
         gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
       }, capture.signal, exportTimeout(this, { timeoutMs }));
     },
