@@ -10,6 +10,25 @@ public sealed partial class CanopyLabels {
 
     private static Dictionary<string, string> CreateDefaults() {
         var defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
+        [nameof(ViewIntentWords)] = "Whole words",
+        [nameof(ViewIntentSubstring)] = "Text contains",
+
+        [nameof(ViewIntentPreview)] = "Preview view changes",
+        [nameof(ViewIntentApplied)] = "View changes applied.",
+        [nameof(ViewIntentSuperseded)] = "The view changed. Preview the proposal again.",
+        [nameof(ViewIntentSearch)] = "Search: {search}",
+        [nameof(ViewIntentSort)] = "Sort: {columns}",
+        [nameof(ViewIntentGroup)] = "Group by: {columns}",
+        [nameof(ViewIntentColumns)] = "Columns: {columns}",
+
+        [nameof(CompareSummary)] = "Dataset comparison",
+        [nameof(CompareAdded)] = "Added",
+        [nameof(CompareRemoved)] = "Removed",
+        [nameof(CompareChanged)] = "Changed",
+        [nameof(CompareUnchanged)] = "Unchanged",
+        [nameof(CompareOnlyChanges)] = "Only changes",
+        [nameof(CompareColumnChanges)] = "{column}: {count} changed cells",
+
         [nameof(GridNoExportColumns)] = "No visible columns allow export.",
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(SearchResults)] = "Search results",

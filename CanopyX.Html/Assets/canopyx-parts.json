@@ -114,7 +114,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "4337e3756b443220",
+      "version": "307c034f80979b66",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -927,6 +927,41 @@
       ],
       "features": [
         "gridOptions"
+      ]
+    },
+    {
+      "name": "view-intents",
+      "label": "view intents",
+      "version": "ba204487356be9b1",
+      "script": "canopyx-view-intents.js",
+      "style": "canopyx-view-intents.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "viewIntents"
+      ]
+    },
+    {
+      "name": "compare",
+      "label": "dataset comparison",
+      "version": "5f1d7c3b749d40e0",
+      "script": "canopyx-compare.js",
+      "style": "canopyx-compare.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "compare"
+      ],
+      "requires": [
+        "presenters"
       ]
     }
   ]

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-cx-theme="{{theme}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Dataset comparison and view intents</title>
+  <style>{{style}}</style>
+  <style>
+    html { color-scheme:light; background:#f4f5f7; color:#242832; font:14px/1.5 system-ui,sans-serif; }
+    html[data-cx-theme="dark"] { color-scheme:dark; background:#17191d; color:#e4e7ed; }
+    body { max-width:1328px; margin:0 auto; padding:32px 40px 48px; }
+    header { margin-bottom:28px; } h1 { font-size:28px; letter-spacing:-.5px; margin:0 0 8px; }
+    h2 { font-size:19px; margin:0 0 8px; } p { margin:0 0 16px; max-width:76ch; opacity:.85; }
+    section { margin:0 0 32px; } .cx-host { border:1px solid var(--cx-line); border-radius:8px; overflow:hidden; }
+    #preview-intent { font:inherit; font-weight:600; padding:9px 14px; margin-bottom:12px; border:1px solid currentColor; border-radius:6px; background:transparent; color:inherit; cursor:pointer; }
+    #preview-intent:focus-visible { outline:2px solid #528bdd; outline-offset:3px; }
+    #intent-feedback { min-height:1.5em; }
+    @media(max-width:640px) { body { padding:20px 12px 32px; } h1 { font-size:23px; } header { margin-bottom:24px; } }
+    @media print { #preview-intent,#intent-feedback { display:none; } body { padding:0; } }
+  </style>
+  <script>{{script}}</script>
+</head>
+<body>
+  <header><h1>Review changes, then explore</h1><p>Two inventory snapshots share stable item keys. Review the difference, or preview a proposed view before applying it. All data on this page is invented.</p></header>
+  <section aria-labelledby="compare-title"><h2 id="compare-title">Inventory changes</h2><p>Earlier snapshot → current snapshot. The column counts describe changed cells in matched rows; additions and removals have their own totals.</p>{{compare}}</section>
+  <section aria-labelledby="intent-title"><h2 id="intent-title">Ask the grid</h2><p>The host supplies a view proposal. This example offers “Show active items, grouped by location”; it uses no language model or network service.</p>
+    <button id="preview-intent" type="button">Preview: active items by location</button><p id="intent-feedback" role="status"></p>{{intent}}
+  </section>
+  <script>
+    document.getElementById("preview-intent").addEventListener("click", async () => {
+      const feedback = document.getElementById("intent-feedback");
+      try {
+        const host = [...document.querySelectorAll('[data-canopyx-host]')].find(item => item.canopyx?.view.id === "inventory-intent"), api = host.canopyx;
+        await api.ready;
+        await api.applyViewIntent({ protocol:"canopyx/2", type:"viewIntent", version:1, view:api.view.id,
+          query:{ filters:[{ column:"stage", operator:"eq", values:["Active"] }], groupBy:[{ column:"location", direction:"asc" }] },
+          columns:["name","location","stage","units"] });
+        feedback.textContent = "Review the proposed view below, then choose Apply or Cancel.";
+      } catch (error) { feedback.textContent = error.message; }
+    });
+  </script>
+</body>
+</html>

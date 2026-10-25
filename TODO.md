@@ -381,6 +381,11 @@ Gate: a 150 × 25 status matrix and a representative relationship matrix meet th
 
 Consumers: file-change drawers and email cards through the HtmlForgeX bridge ([changes.md](docs/changes.md)).
 
+- [x] Keyed dataset comparison for baseline and inventory review, with row status, per-column counts, before/after
+  cells, a changes-only query scope, hosted two-query mapping and script-free email output ([dataset-compare.md](docs/dataset-compare.md)).
+- [ ] Finish pivot state bindings for host-supplied view intents with a versioned schema, target validator and explicit chip preview/apply flow
+  ([view-intents.md](docs/view-intents.md)). Model access and tool governance stay in the host.
+
 - [ ] Wrapped lines in the diff for short diffs (today long lines scroll sideways).
 - [ ] Syntax colouring of diff lines through a host renderer, if a consumer asks for it.
 

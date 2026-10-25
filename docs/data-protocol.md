@@ -27,6 +27,15 @@ with calendar/range labels and inline styles. `CanopyX.Data` translates UTC keys
 `CanopyColumnMapping.BucketTimeZone`, since database time-zone functions differ. The host's mapping must use the same
 time-zone rules as the descriptor. Hosts with different native and browser zone identifiers can supply a `TimeZoneInfo`
 and the corresponding browser identifier to `CanopyBucket.Calendar`.
+Dataset comparison adds optional `compare` metadata to grid documents: the declared `statusColumn`, complete
+`counts` (`added`, `removed`, `changed`, `unchanged`), `columns` mapping column IDs to changed matched-cell counts,
+and the initial `onlyChanges` boolean. Cells use the existing `changes` payload with a
+`{ "kind": "change", "beforeAfter": true }` presenter. The numeric-delta change presenter retains its existing shape.
+See [dataset comparison](dataset-compare.md).
+
+The optional grid flag `viewIntents: true` includes the view-proposal preview part. View proposals have their own
+[versioned JSON Schema](schema/canopyx-view-state-1.schema.json), separate from transport queries and saved-view
+storage. They contain no write actions or model endpoint; see [view intents](view-intents.md).
 
 Grid columns optionally declare `wrap` and `maxLines` (integer 1–12, default 2).
 Wrapped columns enable measured rows, as do `autoRowHeight: true` and

@@ -121,7 +121,7 @@ public static partial class CanopyStaticHtml {
                     var className = columns[index].ClassName;
                     if (className != null) html.Append(" class=\"").Append(Encode(className)).Append('"');
                     html.Append(" style=\"").Append(text == null ? styles.Header : styles.InnerHeader).Append(Align(columns[index])).Append("\">");
-                    AppendVisibleText(html, columns[index].Title, text, true); html.Append("</th>");
+                    AppendVisibleText(html, ComparisonHeaderText(view, columns[index]), text, true); html.Append("</th>");
                 }
                 index++;
             }

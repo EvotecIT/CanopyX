@@ -32,7 +32,7 @@ public sealed class CanopyHtmlPart {
 
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
-        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
+        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "compare", "viewIntents",
         "searchHighlight", "layout", "record", "live", "facets", "buckets", "aggregateValues", "pivot", "calculations", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
         "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus"
     };
@@ -186,6 +186,8 @@ public sealed class CanopyHtmlPart {
             "gridOptions" => view.Footers.Count > 0 || view.PreSort.Count > 0 || view.ColumnDefaults.Count > 0 || view.Columns.Any(column => column.OrderData.Count > 0 || column.OrderSequence.Count > 0 || column.SortComparator != null) || view.Query?.Filters.Any(filter => filter.CustomOperator != null) == true || HasNamedFilter(view.Query?.FilterGroup),
             "presenters" => view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column.Presenter != null || column.Wrap),
             "columnMenus" => view.Toolbar.ColumnMenus,
+            "compare" => view.Compare != null,
+            "viewIntents" => view.ViewIntents,
             "pager" => view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault,
             "editable" => view.Columns.Any(column => column.Editable) || view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "formatting" => view.FormatRules.Count > 0 || view.Formatting != null,

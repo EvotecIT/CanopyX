@@ -7,6 +7,9 @@ namespace CanopyX.Rendering;
 public static partial class CanopyStaticHtml {
     private static string GridPresenterText(CanopyDataGridView view, CanopyGridRow row, CanopyColumn column, CanopyCell? cell) {
         var presenter = column.Presenter;
+        if (view.Compare != null && column.Id == view.Compare.StatusColumn) return ComparisonStatusText(view.Compare, column, cell, view.Labels);
+        if (presenter?.BeforeAfterValues == true && cell?.Changes.Count > 0)
+            return string.Join("; ", cell.Changes.Select(change => BeforeAfterText(change, column, view.Labels)));
         var text = cell?.DisplayText(column, view.Labels) ?? string.Empty;
         if (presenter?.Kind == CanopyGridPresenterKind.StatusStrip && cell != null && cell.Series.Count > 0) {
             return string.Join("; ", cell.Series.GroupBy(point => point.State ?? (point.Value.HasValue ? point.Value.Value.ToString("G", CultureInfo.InvariantCulture) : view.Labels.GridNoData))

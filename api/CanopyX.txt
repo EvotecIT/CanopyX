@@ -592,6 +592,12 @@ CanopyX.CanopyColumnSizing.static CanopyX.CanopyColumnSizing Content(System.Int3
 CanopyX.CanopyColumnSizing.static CanopyX.CanopyColumnSizing Fixed(System.Int32 width, System.Int32 minimum = 40, System.Int32 maximum = 2147483647)
 CanopyX.CanopyColumnSizing.static CanopyX.CanopyColumnSizing Flex(System.Double weight = 1, System.Int32 minimum = 40, System.Int32 maximum = 2147483647, System.Nullable<System.Int32> preferredWidth = null, CanopyX.CanopyColumnAutoSize measure = Content)
 CanopyX.CanopyColumnSizing.static CanopyX.CanopyColumnSizing Preferred(System.Int32 width, System.Int32 minimum = 40, System.Int32 maximum = 2147483647, CanopyX.CanopyColumnAutoSize measure = Content)
+CanopyX.CanopyComparedRow : sealed class
+CanopyX.CanopyComparedRow.CanopyX.CanopyDatasetRowStatus Status { get; }
+CanopyX.CanopyComparedRow.CanopyX.CanopyGridRow? After { get; }
+CanopyX.CanopyComparedRow.CanopyX.CanopyGridRow? Before { get; }
+CanopyX.CanopyComparedRow.System.Collections.Generic.IReadOnlyList<System.String> ChangedColumns { get; }
+CanopyX.CanopyComparedRow.System.String Id { get; }
 CanopyX.CanopyContextAction : sealed class
 CanopyX.CanopyContextAction..ctor(System.String id, System.String label)
 CanopyX.CanopyContextAction.System.String Id { get; }
@@ -611,6 +617,7 @@ CanopyX.CanopyDataGridView : sealed class
 CanopyX.CanopyDataGridView..ctor(System.String id, System.String label)
 CanopyX.CanopyDataGridView.CanopyX.CanopyCalendar? Calendar { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyColumn GetColumn(System.String id)
+CanopyX.CanopyDataGridView.CanopyX.CanopyDatasetCompareInfo? Compare { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyFacetPanel? FacetPanel { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyFormatOptions? Formatting { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyGridClipboard Clipboard { get; }
@@ -640,6 +647,7 @@ CanopyX.CanopyDataGridView.System.Boolean DragRows { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean RowAccents { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean Search { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean StatusBar { get; set; }
+CanopyX.CanopyDataGridView.System.Boolean ViewIntents { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean Zebra { get; set; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyColumn> Columns { get; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyColumnGroup> ColumnGroups { get; }
@@ -680,6 +688,33 @@ CanopyX.CanopyDataGridView<T>.CanopyX.CanopyGridRow Row(T record)
 CanopyX.CanopyDataGridView<T>.System.String ColumnId<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member)
 CanopyX.CanopyDataGridView<T>.System.String ToJson()
 CanopyX.CanopyDataGridView<T>.static CanopyX.CanopyDataGridView op_Implicit(CanopyX.CanopyDataGridView<T> grid)
+CanopyX.CanopyDatasetCompareCounts : sealed class
+CanopyX.CanopyDatasetCompareCounts..ctor(System.Int32 added, System.Int32 removed, System.Int32 changed, System.Int32 unchanged)
+CanopyX.CanopyDatasetCompareCounts.System.Int32 Added { get; }
+CanopyX.CanopyDatasetCompareCounts.System.Int32 Changed { get; }
+CanopyX.CanopyDatasetCompareCounts.System.Int32 Removed { get; }
+CanopyX.CanopyDatasetCompareCounts.System.Int32 Unchanged { get; }
+CanopyX.CanopyDatasetCompareCounts.System.Int64 Total { get; }
+CanopyX.CanopyDatasetCompareInfo : sealed class
+CanopyX.CanopyDatasetCompareInfo..ctor(System.String statusColumn, CanopyX.CanopyDatasetCompareCounts counts, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Int32> columns, System.Boolean onlyChanges = False)
+CanopyX.CanopyDatasetCompareInfo.CanopyX.CanopyDatasetCompareCounts Counts { get; }
+CanopyX.CanopyDatasetCompareInfo.System.Boolean OnlyChanges { get; }
+CanopyX.CanopyDatasetCompareInfo.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Int32> Columns { get; }
+CanopyX.CanopyDatasetCompareInfo.System.String StatusColumn { get; }
+CanopyX.CanopyDatasetComparer : static class
+CanopyX.CanopyDatasetComparer.static CanopyX.CanopyDatasetComparison Compare(System.Collections.Generic.IEnumerable<CanopyX.CanopyGridRow> before, System.Collections.Generic.IEnumerable<CanopyX.CanopyGridRow> after, System.Collections.Generic.IEnumerable<System.String>? columns = null, System.Threading.CancellationToken cancellationToken = null)
+CanopyX.CanopyDatasetComparison : sealed class
+CanopyX.CanopyDatasetComparison.CanopyX.CanopyDataGridView ToView(System.String id, System.String label, System.Collections.Generic.IEnumerable<CanopyX.CanopyColumn> columns, System.Boolean onlyChanges = False, System.String statusTitle = "Change")
+CanopyX.CanopyDatasetComparison.CanopyX.CanopyDatasetCompareCounts Counts { get; }
+CanopyX.CanopyDatasetComparison.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Int32> ColumnChanges { get; }
+CanopyX.CanopyDatasetComparison.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyComparedRow> Rows { get; }
+CanopyX.CanopyDatasetComparison.System.Collections.Generic.IReadOnlyList<System.String> Columns { get; }
+CanopyX.CanopyDatasetComparison.System.String StatusColumn { get; }
+CanopyX.CanopyDatasetRowStatus : enum System.Int32
+CanopyX.CanopyDatasetRowStatus.const CanopyX.CanopyDatasetRowStatus Added = 0
+CanopyX.CanopyDatasetRowStatus.const CanopyX.CanopyDatasetRowStatus Changed = 2
+CanopyX.CanopyDatasetRowStatus.const CanopyX.CanopyDatasetRowStatus Removed = 1
+CanopyX.CanopyDatasetRowStatus.const CanopyX.CanopyDatasetRowStatus Unchanged = 3
 CanopyX.CanopyDetail : abstract class
 CanopyX.CanopyDetail.System.Int32 Height { get; set; }
 CanopyX.CanopyDetail.const System.Int32 MaxHeight = 40
@@ -1538,6 +1573,7 @@ CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenter WithQuietStyle(CanopyX.C
 CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenter WithQuietTones(params CanopyX.CanopyTone[] tones)
 CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenterKind Kind { get; }
 CanopyX.CanopyGridPresenter.CanopyX.CanopyGridQuietStyle QuietStyle { get; }
+CanopyX.CanopyGridPresenter.System.Boolean BeforeAfterValues { get; }
 CanopyX.CanopyGridPresenter.System.Boolean HigherIsGood { get; }
 CanopyX.CanopyGridPresenter.System.Boolean Inverted { get; }
 CanopyX.CanopyGridPresenter.System.Boolean MarkLast { get; }
@@ -1557,6 +1593,7 @@ CanopyX.CanopyGridPresenter.System.String? Glyph { get; }
 CanopyX.CanopyGridPresenter.System.String? HrefColumn { get; }
 CanopyX.CanopyGridPresenter.System.String? SecondaryColumn { get; }
 CanopyX.CanopyGridPresenter.System.String? Separator { get; }
+CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter BeforeAfter()
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Boolean()
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Boolean(System.Boolean inverted)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Change(System.String deltaColumn, System.Boolean higherIsGood = False)
@@ -1977,6 +2014,13 @@ CanopyX.CanopyLabels.System.String ChangeUnknown { get; set; }
 CanopyX.CanopyLabels.System.String ChangeUtcTime { get; set; }
 CanopyX.CanopyLabels.System.String ColumnWidth { get; set; }
 CanopyX.CanopyLabels.System.String Columns { get; set; }
+CanopyX.CanopyLabels.System.String CompareAdded { get; set; }
+CanopyX.CanopyLabels.System.String CompareChanged { get; set; }
+CanopyX.CanopyLabels.System.String CompareColumnChanges { get; set; }
+CanopyX.CanopyLabels.System.String CompareOnlyChanges { get; set; }
+CanopyX.CanopyLabels.System.String CompareRemoved { get; set; }
+CanopyX.CanopyLabels.System.String CompareSummary { get; set; }
+CanopyX.CanopyLabels.System.String CompareUnchanged { get; set; }
 CanopyX.CanopyLabels.System.String DialogClose { get; set; }
 CanopyX.CanopyLabels.System.String DrawerClose { get; set; }
 CanopyX.CanopyLabels.System.String DrawerNext { get; set; }
@@ -2668,6 +2712,15 @@ CanopyX.CanopyLabels.System.String TabsScrollPrevious { get; set; }
 CanopyX.CanopyLabels.System.String TabsSection { get; set; }
 CanopyX.CanopyLabels.System.String UnknownTotal { get; set; }
 CanopyX.CanopyLabels.System.String UtcTime { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentApplied { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentColumns { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentGroup { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentPreview { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentSearch { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentSort { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentSubstring { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentSuperseded { get; set; }
+CanopyX.CanopyLabels.System.String ViewIntentWords { get; set; }
 CanopyX.CanopyLabels.System.String VisibleColumns { get; set; }
 CanopyX.CanopyLabels.System.String Yes { get; set; }
 CanopyX.CanopyLabels.static CanopyX.CanopyLabels French()
@@ -3204,6 +3257,14 @@ CanopyX.CanopyTreeView.System.Void WriteJson(System.IO.Stream stream)
 CanopyX.CanopyTreeView.System.Void WriteJson(System.IO.Stream stream, System.Collections.Generic.ICollection<System.String>? hiddenFilterIds)
 CanopyX.CanopyTreeView.System.Void WriteJson(System.IO.TextWriter writer)
 CanopyX.CanopyTreeView.System.Void WriteJson(System.IO.TextWriter writer, System.Collections.Generic.ICollection<System.String>? hiddenFilterIds)
+CanopyX.CanopyViewIntent : sealed class
+CanopyX.CanopyViewIntent.System.Collections.Generic.IReadOnlyList<System.String>? Columns { get; }
+CanopyX.CanopyViewIntent.System.String ToJson()
+CanopyX.CanopyViewIntent.System.String View { get; }
+CanopyX.CanopyViewIntent.const System.Int32 Version = 1
+CanopyX.CanopyViewIntentValidator : static class
+CanopyX.CanopyViewIntentValidator.const System.Int32 MaximumLength = 65536
+CanopyX.CanopyViewIntentValidator.static CanopyX.CanopyViewIntent Validate(System.String json, CanopyX.CanopyDataGridView view)
 CanopyX.Rendering.CanopyStaticHtml : static class
 CanopyX.Rendering.CanopyStaticHtml.const System.Int32 MaxStaticMatrixCells = 2500
 CanopyX.Rendering.CanopyStaticHtml.static CanopyX.Rendering.CanopyStaticHtmlResult RenderGridWithResult(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridCursorPage page, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
@@ -3211,6 +3272,7 @@ CanopyX.Rendering.CanopyStaticHtml.static CanopyX.Rendering.CanopyStaticHtmlResu
 CanopyX.Rendering.CanopyStaticHtml.static CanopyX.Rendering.CanopyStaticHtmlResult RenderWithResult(CanopyX.CanopyTreeView view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String Render(CanopyX.CanopyTreeView view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderChanges(CanopyX.CanopyChangeList list, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
+CanopyX.Rendering.CanopyStaticHtml.static System.String RenderComparison(CanopyX.CanopyDataGridView view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderDiff(CanopyX.CanopyTextDiff diff, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGrid(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridCursorPage page, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGrid(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridPage? page = null, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)

@@ -1,4 +1,6 @@
 import CanopyX from "./index.js";
+import type { GridViewIntentApi } from "./view-intents.js";
+export type { GridViewIntent, GridViewIntentPreview, GridViewIntentApi } from "./view-intents.js";
 import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone, SearchHighlightOptions, LayoutOptions, LayoutState, ViewModeMethods } from "./protocol.js";
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult, ExportMenuOptions, LinkedView } from "./hosts.js";
@@ -174,6 +176,7 @@ export type GridPresenter =
   | { readonly kind: "longText"; readonly mono?: boolean }
   | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain text instead of a chip or dot. */ readonly quietTones?: readonly string[]; /** Quiet values muted (default) or in the normal text colour. */ readonly quietStyle?: "muted" | "plain" }
   | { readonly kind: "change"; readonly deltaColumn: string; readonly higherIsGood?: boolean }
+  | { readonly kind: "change"; readonly beforeAfter: true }
   | { readonly kind: "statusStrip" | "missing" }
   | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
   | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean }
@@ -350,9 +353,21 @@ export type AcceptedGridQuery = GridQuery | GridCursorQuery;
 export type GridQueryInput<Q extends AcceptedGridQuery = GridQuery> = Partial<Q>;
 type GridCount<Q extends AcceptedGridQuery> = Q extends GridCursorQuery ? number | null : number;
 
+/** Complete summary counts remain stable when the displayed comparison is filtered. */
+export interface DatasetCompare {
+  readonly statusColumn: string;
+  readonly counts: Readonly<{ added: number; removed: number; changed: number; unchanged: number }>;
+  /** Changed matched-cell counts by declared column, excluding added and removed rows. */
+  readonly columns: Readonly<Record<string, number>>;
+  readonly onlyChanges: boolean;
+}
 interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> {
   /** Enables the calculated-column editor and saved definitions. Only built-in inline sources support it. */
   calculatedColumnsEditable?: boolean;
+  /** Complete keyed comparison metadata; loads the optional comparison controls. */
+  compare?: DatasetCompare;
+  /** Carry the optional validated view-intent preview part. No model or transport is provided. */
+  viewIntents?: boolean;
   protocol: "canopyx/2";
   type: "grid";
   id: string;
@@ -906,11 +921,15 @@ export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQue
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridPivotApi, GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridPivotApi, GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi, GridViewIntentApi<Q> {
   readonly element: HTMLElement;
   readonly view: GridView<Row>;
   readonly ready: Promise<Q>;
   getQuery(): Q | null;
+  /** Whether the comparison's unchanged rows are excluded by the accepted query. */
+  getOnlyChanges(): boolean;
+  /** Change the comparison scope through its ordinary status-column filter. */
+  setOnlyChanges(enabled: boolean): Promise<Q>;
   setQuery(query: GridQueryInput<Q>): Promise<Q>;
   /** Immutable definitions of the declared calculated columns; [] when none are configured. */
   getCalculatedColumns(): readonly GridCalculatedColumnDefinition[];

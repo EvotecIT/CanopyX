@@ -223,6 +223,8 @@ public sealed partial class CanopyDataGridView {
         WriteLiveJson(writer);
         WriteFacetPanelJson(writer);
         WriteCalendarJson(writer);
+        if (Compare != null) { writer.Name("compare"); Compare.WriteJson(writer); }
+        if (ViewIntents) writer.Property("viewIntents", true);
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
         if (Record != null) { writer.Name("record"); Record.WriteJson(writer, grid: true); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
@@ -317,6 +319,7 @@ public sealed partial class CanopyDataGridView {
         Reporting?.Pivot?.Validate(this);
         ValidateFacetPanel();
         ValidateCalendar();
+        Compare?.Validate(this);
         if ((Reporting?.Grouping != null || Reporting?.DynamicGrouping == true || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
             throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");
         if (Reporting?.ViewStorage == CanopyGridViewStorage.Local && (string.IsNullOrWhiteSpace(StateKey) || StateKey!.Length > 512))

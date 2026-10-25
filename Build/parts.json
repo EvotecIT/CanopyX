@@ -917,6 +917,69 @@
       "styles": [
         "CanopyX.Html/Assets/canopyx.grid-options.source/footer.css"
       ]
+    },
+    {
+      "name": "view-intents",
+      "label": "view intents",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "viewIntents"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridQuery",
+        "gridQueryStart",
+        "gridFreeze",
+        "GRID_FILTER_LABELS"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.view-intents.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.view-intents.source/view-intents.css"
+      ]
+    },
+    {
+      "name": "compare",
+      "label": "dataset comparison",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "compare"
+      ],
+      "requires": [
+        "presenters"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "cellValue",
+        "numberFormat",
+        "gridQueryStart"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.compare.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.compare.source/compare.css"
+      ]
     }
   ]
 }

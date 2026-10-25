@@ -403,6 +403,8 @@ CanopyX.Data.CanopyQueryOptions..ctor()
 CanopyX.Data.CanopyQueryOptions.CanopyX.Data.CanopyQueryExecutor Executor { get; set; }
 CanopyX.Data.CanopyQueryOptions.CanopyX.Data.CanopyTextComparison TextComparison { get; set; }
 CanopyX.Data.CanopyQueryOptions.System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.String>>? Revision { get; set; }
+CanopyX.Data.CanopyQueryableComparison : static class
+CanopyX.Data.CanopyQueryableComparison.static System.Threading.Tasks.Task<CanopyX.CanopyDatasetComparison> CompareAsync<TBefore, TAfter>(System.Linq.IQueryable<TBefore> before, System.Linq.IQueryable<TAfter> after, System.Func<TBefore, CanopyX.CanopyGridRow> mapBefore, System.Func<TAfter, CanopyX.CanopyGridRow> mapAfter, System.Int32 rowLimit = 100000, System.Collections.Generic.IEnumerable<System.String>? columns = null, CanopyX.Data.CanopyQueryExecutor? executor = null, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyQueryableProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider, CanopyX.Data.ICanopyPivotProvider, CanopyX.Data.ICanopyRangeProvider)
 CanopyX.Data.CanopyQueryableProvider<T>..ctor(System.Func<System.Linq.IQueryable<T>> source, CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.CanopyQueryOptions? options = null)
 CanopyX.Data.CanopyQueryableProvider<T>..ctor(System.Linq.IQueryable<T> source, CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.CanopyQueryOptions? options = null)

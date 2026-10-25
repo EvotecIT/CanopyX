@@ -134,7 +134,7 @@ public sealed partial class CanopyGridPresenter {
     }
     internal static bool Safe(double value) => !double.IsNaN(value) && !double.IsInfinity(value) && Math.Abs(value) <= 9007199254740991d;
     internal void Validate(CanopyColumn column, IList<CanopyColumn> columns) {
-        if ((Kind == CanopyGridPresenterKind.Progress || Kind == CanopyGridPresenterKind.Change) && column.Kind != CanopyColumnKind.Number)
+        if ((Kind == CanopyGridPresenterKind.Progress || Kind == CanopyGridPresenterKind.Change && !BeforeAfterValues) && column.Kind != CanopyColumnKind.Number)
             throw new InvalidOperationException("Progress and change presenters require numeric raw values.");
         if ((Kind == CanopyGridPresenterKind.Boolean || Kind == CanopyGridPresenterKind.List || Kind == CanopyGridPresenterKind.Tags || Kind == CanopyGridPresenterKind.Link) && column.Kind != CanopyColumnKind.Text)
             throw new InvalidOperationException("This presenter requires text or boolean raw values.");
@@ -145,6 +145,7 @@ public sealed partial class CanopyGridPresenter {
         }
     }
     private void WriteDesignJson(CanopyJsonWriter writer) {
+        if (BeforeAfterValues) writer.Property("beforeAfter", true);
         if (Inverted) writer.Property("inverted", true);
         if (Mono) writer.Property("mono", true);
         if (HigherIsGood) writer.Property("higherIsGood", true);

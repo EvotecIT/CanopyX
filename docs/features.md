@@ -1,5 +1,8 @@
 # CanopyX features
 
+Keyed [dataset comparison](dataset-compare.md) combines two versions in one grid with change counts and a script-free
+email fallback. [View intents](view-intents.md) validate host-supplied JSON and preview view changes before applying them.
+
 CanopyX has two interactive views: a **data grid** for flat records and a **tree grid** for hierarchies. Both can be written
 from typed C# or mounted from JavaScript, and both can render as a script-free table for email and print. A **flow** is a guided
 form for setup and edit tasks that raises one proposal to the host (see [Flows](#flows)). This page lists
@@ -291,5 +294,5 @@ Spoken screen-reader output has not been recorded for a release yet. Calendar an
 | npm package with ES modules, classic scripts, styles and TypeScript types | `@evotecit/canopyx` | [JavaScript hosts](authoring.md#javascript-hosts) |
 | Public API baselines for C# and TypeScript, checked on every build, and a versioning and deprecation policy | `api/`, `ApiSurfaceTests`, `npm run test:api` | [versioning.md](versioning.md) |
 | Single-file pages, fragments and content-hashed asset files | `SaveHtmlPage`, `ToHtmlFragment`, `CanopyHtmlAssets.WriteTo` | [Assets and caching](architecture.md#assets-and-caching) |
-| Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 119.5 KiB, reporting 147.5 KiB, flow 10 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
+| Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 123 KiB, reporting 147.5 KiB, flow 10 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
 | A strict Content Security Policy with a nonce, and Trusted Types | Grid, Tree | `CanopyHtmlOptions.Nonce`, `CanopyX.setNonce` | [security.md](security.md) |
