@@ -422,6 +422,12 @@ Consumers: certificate expiries and renewals, monitoring incidents, outages and 
 
 Gate: the calendar examples pass the browser suites on Chromium, Firefox and WebKit at desktop and phone widths in both palettes, the month paints 5,000 events and the timeline 5,000 resources and 100,000 events within the performance gates, and the parts stay under their gzip guards.
 
+## Board and plan views
+
+- [x] Board lanes from column values, WIP limits, optional swimlanes, virtual cards and a phone lane picker, sharing search, facets, views and record details. Drag and keyboard moves raise host-governed edits.
+- [x] Task plans on the resource timeline: finish-to-start dependencies, milestones, elapsed-duration critical paths, baseline comparisons and date/resource proposals with conflict marks.
+- [x] Typed C# definitions, optional browser parts, translated labels and script-free board/plan snapshots for email and print.
+
 ## 1.0 Public-Grade
 
 Consumers: external users of the published packages, and write-governed tools such as CA Noob Desktop for editing.

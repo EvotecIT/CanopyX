@@ -1,5 +1,7 @@
 # CanopyX Data Protocol (`canopyx/2`)
 
+Flat-grid definitions can declare optional `board` or `plan` settings. A [board](board.md) names the lane, title and optional swimlane columns, ordered typed lane values with WIP limits, card fields and whether moves are offered. Its `boardMove` event carries an ordinary `gridCommit` proposal. A [plan](plan.md) extends `calendar` resource timelines with finish-to-start `dependencies` (`predecessor`, `successor`, optional nonnegative `lagMinutes`), paired baseline date columns, a milestone column and proposal settings. `planChangeProposal` carries previous and proposed dates/resources plus conflict descriptions; it never changes actual records. These additive settings stay in `canopyx/2` and are declared in the [schema](schema/canopyx-2.schema.json).
+
 Grid columns optionally declare `wrap` and `maxLines` (integer 1–12, default 2).
 Wrapped columns enable measured rows, as do `autoRowHeight: true` and
 `rowHeight: "auto"`. Explicit JavaScript `autoRowHeight: false` keeps a fixed

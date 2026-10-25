@@ -165,6 +165,18 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Several sources with a legend; iCalendar import (browser and .NET) | Grid | `sources`, `source`; `CanopyICalendar.Parse` | [Sources and iCalendar](calendar.md#sources-and-icalendar), [icalendar.md](icalendar.md) |
 | Shading outside ranges; context menus and hover cards | Grid | `ranges[].inverse`, `menu`, `hover`, `calendar.menu` hook | [Context menus](calendar.md#context-menus-and-hover-cards) |
 
+## Boards and task plans
+
+| Feature | Entry point | How | Reference |
+|---|---|---|---|
+| Lanes from raw column values, WIP limits and optional swimlanes | Grid | `board`; C# `CanopyBoard` | [board.md](board.md) |
+| Drag, keyboard and phone lane proposals through the grid edit contract | Grid | `board.editable`, `onBoardMove`, `editing.commit` | [Governed moves](board.md#governed-moves) |
+| Independent virtual lanes, shared search, facets, saved views and record panel | Grid | Existing grid query and state APIs | [Phones, keyboard and print](board.md#phones-keyboard-and-print) |
+| Script-free board output for email, Word and print | .NET | `ToBoardStaticHtml`, `CanopyStaticHtml.RenderGrid` | [board.md](board.md) |
+| Finish-to-start arrows, milestones, elapsed-duration critical path and baseline comparison | Grid | `plan`; C# `CanopyPlan`, `CanopyPlanDependency` | [plan.md](plan.md) |
+| Date/resource proposals with dependency and overlap conflict marks | Grid | `plan.proposeMoves`, `plan.propose`, `planChangeProposal` | [plan.md](plan.md) |
+| Print and script-free plan snapshots | Grid, .NET | Timeline print; `CanopyStaticHtml.RenderGrid` | [plan.md](plan.md) |
+
 ## Flows
 
 CanopyX never writes: a flow collects answers, checks them and raises one proposal; the host applies it and answers.
