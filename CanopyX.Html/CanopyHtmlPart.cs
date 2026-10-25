@@ -33,7 +33,7 @@ public sealed class CanopyHtmlPart {
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
-        "searchHighlight", "layout", "record", "live", "facets", "buckets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
+        "searchHighlight", "layout", "record", "live", "facets", "buckets", "aggregateValues", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
         "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus"
     };
 
@@ -199,6 +199,7 @@ public sealed class CanopyHtmlPart {
             "record" => UsesRecordPanel(view),
             "live" => view.Live != null,
             "facets" => view.FacetPanel != null,
+            "aggregateValues" => reporting?.Aggregates.Count > 0,
             "buckets" => reporting?.Groupable == true && view.Columns.Any(column => column.Kind == CanopyColumnKind.DateTime || column.Kind == CanopyColumnKind.Number) || reporting?.GroupBy.Any(level => level.Bucket != null) == true || view.Query?.GroupBy?.Any(level => level.Bucket != null) == true || view.FacetPanel?.Facets.Any(facet => facet.Bucket != null) == true,
             "calendar" => view.Calendar != null,
             "calendarResources" => view.Calendar != null && (view.Calendar.Resources != null || view.Calendar.View == CanopyCalendarView.Timeline || view.Calendar.Views.Contains(CanopyCalendarView.Timeline)),

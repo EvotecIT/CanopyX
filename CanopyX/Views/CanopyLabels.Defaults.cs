@@ -7,6 +7,16 @@ namespace CanopyX;
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
+        [nameof(GridShowAs)] = "Show values as",
+        [nameof(GridShowAsValue)] = "Value",
+        [nameof(GridShowAsPercentGrandTotal)] = "as % of total",
+        [nameof(GridShowAsPercentParent)] = "as % of parent",
+        [nameof(GridShowAsPercentColumn)] = "as % of column",
+        [nameof(GridShowAsPercentRow)] = "as % of row",
+        [nameof(GridShowAsRunningTotal)] = "as running total",
+        [nameof(GridShowAsRank)] = "as rank",
+        [nameof(GridShowAsDifference)] = "as difference from previous",
+        [nameof(GridShowAsPercentChange)] = "as % change from previous",
         [nameof(GridBucket)] = "Bucket",
         [nameof(GridBucketNone)] = "Exact values",
         [nameof(GridBucketDay)] = "Day",

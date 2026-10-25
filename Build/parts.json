@@ -654,6 +654,17 @@
       ]
     },
     {
+      "name": "values",
+      "label": "aggregate display modes",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["aggregateValues"],
+      "key": "GRID_SHOW_AS",
+      "context": ["DataGrid", "GRID_SHOW_AS", "GRID_SHOW_AS_MODES", "h", "setText", "gridFreeze", "reportingAggregateParts"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.values.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.values.source/values.css"]
+    },
+    {
       "name": "buckets",
       "label": "date and range buckets",
       "runtimes": ["grid"],

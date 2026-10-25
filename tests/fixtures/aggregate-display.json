@@ -1,0 +1,14 @@
+[
+  { "id": "value", "mode": "value", "values": [10,null,-5,20,20,0], "expected": [10,null,-5,20,20,0] },
+  { "id": "grand-share", "mode": "percentGrandTotal", "values": [10,null,-5,20,20,0], "grand": 45, "expected": [0.2222222222222222,null,-0.1111111111111111,0.4444444444444444,0.4444444444444444,0] },
+  { "id": "parent-share", "mode": "percentParent", "values": [10,null,-5,20,20,0], "parent": 50, "expected": [0.2,null,-0.1,0.4,0.4,0] },
+  { "id": "row-share", "mode": "percentRow", "values": [10,null,-5,20,20,0], "rows": [20,20,10,40,100,0], "expected": [0.5,null,-0.5,0.5,0.2,null] },
+  { "id": "column-share", "mode": "percentColumn", "values": [10,null,-5,20,20,0], "columns": [20,20,-10,20,40,1], "expected": [0.5,null,0.5,1,0.5,0] },
+  { "id": "running", "mode": "runningTotal", "values": [10,null,-5,20,20,0], "expected": [10,null,5,25,45,45] },
+  { "id": "competition-rank", "mode": "rank", "values": [10,null,-5,20,20,0], "expected": [3,null,5,1,1,4] },
+  { "id": "previous-difference", "mode": "difference", "values": [10,null,-5,20,20,0], "expected": [null,null,null,25,0,-20] },
+  { "id": "previous-percent", "mode": "percentChange", "values": [10,null,-5,20,20,0], "expected": [null,null,null,-5,0,-1] },
+  { "id": "zero-denominator", "mode": "percentGrandTotal", "values": [0,1,-1,null], "grand": 0, "expected": [null,null,null,null] },
+  { "id": "negative-denominator", "mode": "percentGrandTotal", "values": [-10,5], "grand": -5, "expected": [2,-1] },
+  { "id": "empty", "mode": "runningTotal", "values": [], "expected": [] }
+]

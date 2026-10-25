@@ -44,5 +44,11 @@ internal static class AnalystExample {
         }
         summary.Aggregates["total"] = summary.Groups.Sum(group => group.Aggregates["total"]);
         File.WriteAllText(Path.Combine(output, "analysis-summary.html"), CanopyStaticHtml.RenderGridSummary(view, summary));
+        view.Reporting.Aggregates[0] = view.Reporting.Aggregates[0].ShowValuesAs(CanopyShowAs.PercentGrandTotal);
+        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+            File.WriteAllText(Path.Combine(output, "analysis-values" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Shares by month" }));
+        }
+        File.WriteAllText(Path.Combine(output, "analysis-values-summary.html"), CanopyStaticHtml.RenderGridSummary(view, summary));
     }
 }
