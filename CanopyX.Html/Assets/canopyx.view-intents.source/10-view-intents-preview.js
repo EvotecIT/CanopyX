@@ -105,7 +105,8 @@
       const intent = this.validateViewIntent(input);
       if (!this.getQuery() || this.pendingQuery) throw new Error("CanopyX: preview needs a settled accepted query.");
       const state = this.getState(); intentCandidate(this, intent, state);
-      container ||= this.host;
+      const adjacent = !container;
+      container ||= this.host.parentElement || this.host;
       if (!container || container.nodeType !== 1 || container.ownerDocument !== this.host.ownerDocument || !container.isConnected || container === this.grid || this.grid.contains(container))
         throw new Error("CanopyX: preview needs a connected container outside the grid rows.");
       retireViewIntent(this);
@@ -133,7 +134,8 @@
         this.viewIntentCleanup = () => { retireViewIntent(this); this.viewIntentElement?.remove(); };
         this.lifetime.signal.addEventListener("abort", this.viewIntentCleanup, { once: true });
       }
-      this.lifetime.signal.addEventListener("abort", preview.destroy, { once: true }); container.appendChild(element);
+      this.lifetime.signal.addEventListener("abort", preview.destroy, { once: true });
+      if (adjacent && this.host.parentElement) this.host.after(element); else container.appendChild(element);
       return handle;
     },
     async applyViewIntent(input, container) { return this.previewViewIntent(input, container); },

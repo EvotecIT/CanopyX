@@ -26,7 +26,9 @@ const preview = await grid.applyViewIntent(proposal);
 `applyViewIntent(state)` validates and previews. It does not bypass confirmation. The returned `preview.apply()` is a
 one-use operation that applies the captured state through the existing query and saved-view methods. `preview.cancel()`
 closes it without changing the view. `previewViewIntent(state, element)` places the same preview in a connected host
-element outside the grid rows. The preview preserves outside focus and supports keyboard Apply and Cancel.
+element outside the grid rows. The default preview sits immediately after the grid host, so a fixed-height grid
+retains its full data viewport. An explicit container keeps the placement supplied by the host. The preview preserves
+outside focus and supports keyboard Apply and Cancel.
 
 `await grid.getViewIntent()` exports the accepted query, ordered visible columns and the pivot definition for opted-in views. `await grid.validateViewIntent(input)`
 returns a validated snapshot without making a query or changing preferences. Exported intents omit paging cursors,

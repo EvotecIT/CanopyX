@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { repo } from "./support.mjs";
+import { repo, settleGrid } from "./support.mjs";
 import { definition, open, api } from "./grid-grouping-fixtures.mjs";
 
 const assets = path.join(repo, "CanopyX.Html/Assets");
@@ -12,6 +12,7 @@ const pivot = (rows = "region", columns = "status", values = ["total"]) => ({ ro
 async function start(page, options = {}) {
   const view = definition({ viewIntents: true }); delete view.reporting.detail; view.reporting.groupBy = [];
   view.reporting.pivotable = options.pivotable !== false;
+  if (options.fixedHeight) view.autoHeight = false;
   if (options.locale) {
     const source = JSON.parse(fs.readFileSync(path.join(repo, "CanopyX/Views/Locales/labels.json"), "utf8"));
     view.labels = Object.fromEntries(Object.entries(source).filter(([name]) => !["OverflowNote", "UnknownTotal", "HiddenRows", "FullReport"].includes(name)).map(([name, value]) => [name[0].toLowerCase() + name.slice(1), value[["pl", "de", "es", "fr", "it"].indexOf(options.locale)]]));
@@ -160,3 +161,35 @@ for (const kind of ["pivot cap", "pivot bucket zone", "pivot bucket weekday", "g
     }, proposal(input))).toBe(true);
     expect(await page.evaluate(api + ".getState()")).toEqual(before);
   });
+
+for (const [width, theme] of [[1440, "light"], [390, "dark"]]) test(`default preview preserves a fixed grid viewport and reachable controls at ${width}`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 1000 });
+  const errors = await start(page, { theme, fixedHeight: true });
+  await page.locator("[data-canopyx-host]").evaluate(host => { host.style.height = "440px"; host.style.maxHeight = "440px"; host.style.overflow = "hidden"; });
+  await settleGrid(page);
+  const grid = page.getByRole("grid"), before = await grid.evaluate(grid => grid.clientHeight);
+  await preview(page, proposal({ pivot: pivot(), columns: ["order", "customer", "region", "status", "placed", "items", "amount"] }));
+  await settleGrid(page);
+  expect(await grid.evaluate(grid => grid.clientHeight)).toBeGreaterThanOrEqual(before - 1);
+  const region = page.locator(".cx-view-intent-preview"); await region.scrollIntoViewIfNeeded();
+  expect(await region.getByRole("button", { name: "Apply", exact: true }).evaluate(button => {
+    const rect = button.getBoundingClientRect();
+    for (let parent = button.parentElement; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent), bounds = parent.getBoundingClientRect();
+      if (/(hidden|clip|auto|scroll)/.test(style.overflowY) && (rect.top < bounds.top - 1 || rect.bottom > bounds.bottom + 1)) return false;
+    }
+    return true;
+  })).toBe(true);
+  await region.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(region).toHaveCount(0);
+  await page.evaluate(async input => {
+    const host = document.querySelector("[data-canopyx-host]"), target = document.createElement("div");
+    target.id = "explicit-intent-target"; host.after(target);
+    window.customPreview = await host.canopyx.previewViewIntent(input, target);
+  }, proposal({ columns: ["order", "amount"] }));
+  await expect(page.locator("#explicit-intent-target .cx-view-intent-preview")).toBeVisible();
+  await page.evaluate("customPreview.cancel()");
+  await preview(page, proposal({ pivot: pivot() }));
+  await page.evaluate(api + ".destroy()");
+  await expect(region).toHaveCount(0); expect(errors).toEqual([]);
+});
