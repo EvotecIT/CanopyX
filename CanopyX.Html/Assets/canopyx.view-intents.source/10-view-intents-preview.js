@@ -96,7 +96,7 @@
       if (!current || this.pendingQuery) throw new Error("CanopyX: exporting a view intent needs a settled accepted query.");
       const query = { search: current.search, searchMode: current.searchMode || "substring", sort: current.sort, filters: current.filters, filterGroup: current.filterGroup || null };
       if (current.groupBy) query.groupBy = current.groupBy;
-      if (current.tupleFilters) query.tupleFilters = current.tupleFilters;
+      query.tupleFilters = viewIntentTupleExport(this, current.tupleFilters || []);
       return this.validateViewIntent({ protocol: "canopyx/2", type: "viewIntent", version: 1, view: this.view.id, query,
         columns: this.columns.filter(column => !column.hidden).map(column => column.id),
         ...(this.view.reporting?.pivot || this.view.reporting?.pivotable ? { pivot: viewIntentPivotExport(this) } : {}) });

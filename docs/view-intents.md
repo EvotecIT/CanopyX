@@ -80,7 +80,9 @@ const preview = await grid.applyViewIntent({
 Preview chips name both axes, values, bucket settings and explicit caps before Apply. They use the reporting view's
 localized labels. The target's existing pivot and group validators check column capabilities, aggregate identities and
 bucket bounds. Bucket predicates and exact correlated `tupleFilters` from pivot drill-through also roundtrip;
-`tupleFilters: []` clears those predicates without broadening other criteria. There is no second analysis engine in the intent part. Grouping proposals use the same optional `bucket`
+`tupleFilters: []` clears those predicates without broadening other criteria. Exported snapshots always include that
+array, so replaying an unrestricted export clears newer drill-through restrictions. Raw datetime operands in intents
+use UTC timestamps; export converts accepted explicit-offset datetime tuples to the equivalent UTC instants. There is no second analysis engine in the intent part. Grouping proposals use the same optional `bucket`
 on each `query.groupBy` level. As with other query changes, the host retains authorization and rejection control.
 
 ## Read-only IntelligenceX tool integration

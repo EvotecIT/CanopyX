@@ -236,7 +236,8 @@ test("accepted state export roundtrips grouped filters and visibility without cu
   expect(exported.query.filterGroup).toEqual(input.query.filterGroup);
   expect(exported.query.groupBy).toEqual(input.query.groupBy);
   expect(exported.columns).toEqual(input.columns);
-  expect(Object.keys(exported.query).sort()).toEqual(["filterGroup", "filters", "groupBy", "search", "searchMode", "sort"]);
+  expect(exported.query.tupleFilters).toEqual([]);
+  expect(Object.keys(exported.query).sort()).toEqual(["filterGroup", "filters", "groupBy", "search", "searchMode", "sort", "tupleFilters"]);
   await page.evaluate(`${api}.resetView()`);
   await preview(page, exported); await page.evaluate("preview.apply()");
   expect(await page.evaluate(`${api}.getViewIntent()`)).toEqual(exported);

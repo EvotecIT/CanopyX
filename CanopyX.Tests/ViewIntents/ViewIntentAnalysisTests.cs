@@ -365,6 +365,28 @@ public sealed class ViewIntentAnalysisTests {
     }
 
     [Theory]
+    [InlineData("timeZone")]
+    [InlineData("firstWeekday")]
+    public void ExplicitNullCalendarOptionsAreRejectedAcrossAnalysisBoundaries(string field) {
+        var bucket = new JsonObject { ["kind"] = "month", [field] = null };
+        var pivot = Pivot(); pivot["rows"] = new JsonArray(Level("date", bucket.DeepClone().AsObject()));
+        var proposals = new[] {
+            new JsonObject { ["pivot"] = pivot },
+            new JsonObject { ["query"] = GroupQuery(Level("date", bucket.DeepClone().AsObject())) },
+            new JsonObject { ["query"] = new JsonObject { ["filters"] = new JsonArray(Filter("date", bucket.DeepClone().AsObject(), 24300)) } },
+            new JsonObject { ["query"] = new JsonObject { ["tupleFilters"] = new JsonArray(new JsonObject {
+                ["columns"] = new JsonArray(new JsonObject { ["column"] = "date", ["bucket"] = bucket.DeepClone() }),
+                ["values"] = new JsonArray(new JsonArray(24300))
+            }) } }
+        };
+        foreach (var fields in proposals) {
+            var root = Intent(); foreach (var property in fields) root[property.Key] = property.Value?.DeepClone();
+            Assert.False(Evaluate(root.ToJsonString()));
+            Assert.ThrowsAny<Exception>(() => CanopyViewIntentValidator.Validate(root.ToJsonString(), View()));
+        }
+    }
+
+    [Theory]
     [InlineData("tuples", 8, true)]
     [InlineData("tuples", 9, false)]
     [InlineData("fields", 0, false)]

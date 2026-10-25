@@ -45,6 +45,7 @@ const VIEW_INTENT_LABELS = {viewIntentPreview: "Preview view changes", viewInten
     const filter = item => {
       if (++predicates > 64) throw new Error("CanopyX: at most 64 intent predicates.");
       viewIntentObject(item, ["column", "operator", "values", "bucket"], "intent predicate");
+      viewIntentBucketShape(item.bucket);
       viewIntentArray(item.values, 1000, "intent operands").forEach(value => {
         if (typeof value === "string" && value.length > 16384) throw new Error("CanopyX: intent operand is too long.");
         const column = grid.view.columns.find(column => column.id === item.column);
@@ -63,12 +64,14 @@ const VIEW_INTENT_LABELS = {viewIntentPreview: "Preview view changes", viewInten
     };
     if (patch.filters !== undefined) viewIntentArray(patch.filters, 64, "intent filters").forEach(filter);
     if (patch.filterGroup !== undefined && patch.filterGroup !== null) group(patch.filterGroup, 1);
-    if (patch.groupBy !== undefined) viewIntentArray(patch.groupBy, 4, "intent grouping levels").forEach(level =>
-      viewIntentObject(level, ["column", "direction", "aggregate", "bucket"], "intent grouping level"));
+    if (patch.groupBy !== undefined) viewIntentArray(patch.groupBy, 4, "intent grouping levels").forEach(level => {
+      viewIntentObject(level, ["column", "direction", "aggregate", "bucket"], "intent grouping level");
+      viewIntentBucketShape(level.bucket);
+    });
     if (patch.tupleFilters !== undefined) viewIntentArray(patch.tupleFilters, 8, "intent tuples").forEach(tuple => {
       viewIntentObject(tuple, ["columns", "values", "exclude"], "intent tuple");
       const columns = viewIntentArray(tuple.columns, 6, "intent tuple columns");
-      columns.forEach(field => viewIntentObject(field, ["column", "bucket"], "intent tuple column"));
+      columns.forEach(field => { viewIntentObject(field, ["column", "bucket"], "intent tuple column"); viewIntentBucketShape(field.bucket); });
       viewIntentArray(tuple.values, 200, "intent tuple values").forEach(row => viewIntentArray(row, 6, "intent tuple row").forEach((value, index) => {
         if (typeof value === "string" && value.length > 16384) throw new Error("CanopyX: intent tuple operand is too long.");
         const field = columns[index], column = grid.view.columns.find(column => column.id === field?.column);

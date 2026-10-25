@@ -121,3 +121,42 @@ for (const locale of ["pl", "de", "es", "fr", "it"]) test(`pivot preview uses ${
   await page.evaluate("preview.cancel()");
   expect(await page.evaluate("intentQueries.length")).toBe(count); expect(requests).toEqual([]); expect(errors).toEqual([]);
 });
+
+test("an unrestricted exported intent clears newer drill-through restrictions on replay", async ({ page }) => {
+  await start(page);
+  const exported = await page.evaluate(api + ".getViewIntent()");
+  await page.evaluate(api + ".setQuery({tupleFilters:[{columns:[{column:'region'}],values:[['North']]}]})");
+  expect((await page.evaluate(api + ".getSummary()")).matched).toBe(12);
+  await preview(page, exported); await page.evaluate("preview.apply()");
+  expect((await page.evaluate(api + ".getSummary()")).matched).toBe(48);
+  expect((await page.evaluate(api + ".getViewIntent()")).query.tupleFilters).toEqual([]);
+});
+
+test("an accepted explicit-offset datetime tuple exports as UTC and replays the same records", async ({ page }) => {
+  await start(page);
+  await page.evaluate(api + ".setQuery({tupleFilters:[{columns:[{column:'placed'}],values:[['2026-01-01T02:00:00+02:00'],[null]]}]})");
+  expect((await page.evaluate(api + ".getSummary()")).matched).toBe(1);
+  const exported = await page.evaluate(api + ".getViewIntent()");
+  expect(exported.query.tupleFilters[0].values).toEqual([["2026-01-01T00:00:00.000Z"], [null]]);
+  await page.evaluate(api + ".setQuery({tupleFilters:[]})");
+  await preview(page, exported); await page.evaluate("preview.apply()");
+  expect((await page.evaluate(api + ".getSummary()")).matched).toBe(1);
+  await expect(page.locator('.cx-row[data-cx-id="o000"]')).toBeVisible();
+});
+
+for (const kind of ["pivot cap", "pivot bucket zone", "pivot bucket weekday", "group bucket", "filter bucket", "nested filter bucket", "tuple bucket"])
+  test(`explicit-null ${kind} is rejected before a validated snapshot`, async ({ page }) => {
+    await start(page);
+    const bucket = { kind: "month", timeZone: null }, level = { column: "placed", direction: "asc", bucket };
+    const input = kind === "pivot cap" ? { pivot: { ...pivot(), maxColumns: null } } :
+      kind.startsWith("pivot") ? { pivot: { ...pivot(), rows: [{ ...level, bucket: kind.endsWith("weekday") ? { kind: "month", firstWeekday: null } : bucket }] } } :
+      kind === "group bucket" ? { query: { groupBy: [level] } } :
+      kind === "tuple bucket" ? { query: { tupleFilters: [{ columns: [{ column: "placed", bucket }], values: [[24300]] }] } } :
+      kind === "nested filter bucket" ? { query: { filterGroup: { operator: "and", filters: [{ column: "placed", bucket, operator: "eq", values: [24300] }], groups: [] } } } :
+      { query: { filters: [{ column: "placed", bucket, operator: "eq", values: [24300] }] } };
+    const before = await page.evaluate(api + ".getState()");
+    expect(await page.evaluate(async input => {
+      try { await document.querySelector("[data-canopyx-host]").canopyx.validateViewIntent(input); return false; } catch { return true; }
+    }, proposal(input))).toBe(true);
+    expect(await page.evaluate(api + ".getState()")).toEqual(before);
+  });

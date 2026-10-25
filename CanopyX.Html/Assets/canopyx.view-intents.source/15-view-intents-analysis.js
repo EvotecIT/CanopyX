@@ -7,6 +7,10 @@
       if (state.pivot) state.pivot.active = false;
     } else {
       viewIntentObject(input, ["rows", "columns", "values", "maxColumns", "topNColumns", "sortByTotal"], "intent pivot");
+      if (input.maxColumns === null) throw new Error("CanopyX: an explicit intent column limit is an integer.");
+      for (const levels of [input.rows, input.columns]) if (Array.isArray(levels)) levels.forEach(level => {
+        viewIntentObject(level, ["column", "direction", "bucket"], "intent pivot level"); viewIntentBucketShape(level.bucket);
+      });
       state.pivot = { ...input, active: true, collapsedRows: [], collapsedColumns: [] };
     }
     return grid.readGridState(state);
@@ -43,4 +47,17 @@
     const column = id => grid.view.columns.find(column => column.id === id)?.title || id;
     return tuples.map(tuple => "(" + tuple.columns.map(field => column(field.column) + viewIntentBucketCaption(grid, field.bucket)).join(", ") +
       ") " + (tuple.exclude ? "∉" : "∈") + " " + tuple.values.map(row => "(" + row.map(value => value === null ? "null" : JSON.stringify(value)).join(", ") + ")").join(", "));
+  }
+  function viewIntentBucketShape(input) {
+    if (input === undefined) return;
+    viewIntentObject(input, ["kind", "width", "origin", "edges", "timeZone", "firstWeekday"], "intent bucket");
+    // Saved-state migration defaults null calendar options. Proposals default only omitted fields, as the schema does.
+    if (Object.values(input).some(value => value === null)) throw new Error("CanopyX: explicit intent bucket fields cannot be null.");
+  }
+  function viewIntentTupleExport(grid, tuples) {
+    return tuples.map(tuple => ({ ...tuple, values: tuple.values.map(row => row.map((value, index) => {
+      const field = tuple.columns[index], column = grid.view.columns.find(column => column.id === field.column);
+      // Accepted drill-through paths may use explicit offsets; the proposal's UTC representation preserves their instant.
+      return value !== null && !field.bucket && column.kind === "datetime" ? new Date(value).toISOString() : value;
+    })) }));
   }
