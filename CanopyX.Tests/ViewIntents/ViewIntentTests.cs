@@ -4,7 +4,7 @@ using Json.Schema;
 namespace CanopyX.Tests.ViewIntents;
 
 public sealed class ViewIntentTests {
-    private static readonly JsonSchema Schema = JsonSchema.FromFile(Path.Combine(AppContext.BaseDirectory, "Schema", "canopyx-view-state-1.schema.json"));
+    private static readonly JsonSchema Schema = ViewIntentSchema.Value;
 
     [Fact]
     public void ValidatesTypedSnapshotAndSchemaWithoutChangingGrid() {

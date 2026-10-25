@@ -29,7 +29,7 @@
         .map(id => ({ ...columns.get(id), hidden: !visible.has(id) }));
     }
     // Existing saved-state readers validate presentation, selection and reporting extensions after strict intent validation.
-    return grid.readGridState(state);
+    return intent.pivot === undefined ? grid.readGridState(state) : viewIntentPivotState(grid, intent.pivot, state);
   }
   function intentChips(grid, intent) {
     const labels = grid.labels, query = intent.query || {}, title = id => grid.columns.find(column => column.id === id)?.title || id;
@@ -37,15 +37,17 @@
     if (Object.hasOwn(query, "search")) chips.push(fill(labels.viewIntentSearch, { search: query.search || "∅" }));
     if (query.searchMode) chips.push(query.searchMode === "words" ? labels.viewIntentWords : labels.viewIntentSubstring);
     if (query.sort) chips.push(fill(labels.viewIntentSort, { columns: query.sort.map(sort => title(sort.column) + (sort.direction === "desc" ? " ↓" : " ↑")).join(", ") || "∅" }));
-    const predicate = filter => title(filter.column) + " " + (labels[GRID_FILTER_LABELS[filter.operator]] || GRID_FILTER_LABELS[filter.operator]) +
+    const predicate = filter => title(filter.column) + viewIntentBucketCaption(grid, filter.bucket) + " " + (labels[GRID_FILTER_LABELS[filter.operator]] || GRID_FILTER_LABELS[filter.operator]) +
       (filter.values.length ? " " + filter.values.join(", ") : "");
     if (query.filters) chips.push(...query.filters.map(predicate));
     if (query.filters && !query.filters.length) chips.push(labels.gridClearFilters);
     const group = item => "(" + [...item.filters.map(predicate), ...item.groups.map(group)].join(" " + (item.operator === "and" ? labels.gridAnd : labels.gridOr) + " ") + ")";
     if (Object.hasOwn(query, "filterGroup")) chips.push(query.filterGroup ? group(query.filterGroup) : labels.gridRemoveGroup);
     if (query.groupBy) chips.push(fill(labels.viewIntentGroup, { columns: query.groupBy.map(level => title(level.column) + (level.direction === "desc" ? " ↓" : " ↑") +
-      (level.aggregate ? " (" + level.aggregate + ")" : "")).join(", ") || "∅" }));
+      (level.aggregate ? " (" + level.aggregate + ")" : "") + viewIntentBucketCaption(grid, level.bucket)).join(", ") || "∅" }));
     if (intent.columns) chips.push(fill(labels.viewIntentColumns, { columns: intent.columns.map(title).join(", ") }));
+    if (query.tupleFilters) chips.push(...viewIntentTupleChips(grid, query.tupleFilters));
+    if (intent.pivot !== undefined) chips.push(...viewIntentPivotChips(grid, intent.pivot));
     return chips;
   }
   async function confirmViewIntent(grid, handle) {
@@ -91,11 +93,13 @@
     getViewIntent() {
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       const current = this.getQuery();
-      if (!current) throw new Error("CanopyX: exporting a view intent needs an accepted query.");
+      if (!current || this.pendingQuery) throw new Error("CanopyX: exporting a view intent needs a settled accepted query.");
       const query = { search: current.search, searchMode: current.searchMode || "substring", sort: current.sort, filters: current.filters, filterGroup: current.filterGroup || null };
       if (current.groupBy) query.groupBy = current.groupBy;
+      if (current.tupleFilters) query.tupleFilters = current.tupleFilters;
       return this.validateViewIntent({ protocol: "canopyx/2", type: "viewIntent", version: 1, view: this.view.id, query,
-        columns: this.columns.filter(column => !column.hidden).map(column => column.id) });
+        columns: this.columns.filter(column => !column.hidden).map(column => column.id),
+        ...(this.view.reporting?.pivot || this.view.reporting?.pivotable ? { pivot: viewIntentPivotExport(this) } : {}) });
     },
     previewViewIntent(input, container) {
       const intent = this.validateViewIntent(input);

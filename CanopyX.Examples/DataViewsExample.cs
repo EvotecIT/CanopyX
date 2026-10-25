@@ -15,8 +15,9 @@ internal static class DataViewsExample {
         var comparison = CanopyDatasetComparer.Compare(before, after, new[] { "name", "location", "stage", "units" });
         var compare = comparison.ToView("inventory-compare", "Inventory changes", Columns());
         var ask = new CanopyDataGridView("inventory-intent", "Explore the current inventory") {
-            ViewIntents = true, Reporting = new CanopyGridReporting { Groupable = true }
+            ViewIntents = true, Reporting = new CanopyGridReporting { Groupable = true, Pivotable = true }
         };
+        ask.Reporting.Aggregates.Add(new CanopyGridAggregate("units", "units", CanopyGridAggregateOperation.Sum, "Total units"));
         foreach (var column in Columns()) ask.Columns.Add(column);
         foreach (var row in after) ask.Rows.Add(row);
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {

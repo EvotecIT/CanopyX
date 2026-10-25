@@ -9,19 +9,22 @@ public static class CanopyViewIntentValidator {
     /// <summary>The maximum proposal length in UTF-16 code units.</summary>
     public const int MaximumLength = 65536;
 
-    /// <summary>Reads a strict JSON snapshot and reuses the grid's typed query validation.</summary>
+    /// <summary>Reads a strict JSON snapshot and reuses the grid's typed query, pivot and bucket validation.</summary>
     /// <param name="json">A <c>canopyx/2</c>, <c>viewIntent</c> document, version 1.</param>
-    /// <param name="view">The owning grid, including its column capabilities and grouping policy.</param>
+    /// <param name="view">The owning grid, including its column capabilities, grouping policy and pivot opt-in.</param>
     /// <returns>An immutable proposal safe to preview; applying it remains an explicit browser or host operation.</returns>
     /// <exception cref="ArgumentNullException">An argument is null.</exception>
     /// <exception cref="FormatException">The text is malformed, duplicated, too large, or exceeds the JSON reader bounds.</exception>
     /// <exception cref="InvalidOperationException">The envelope or a requested operation is not supported by this grid.</exception>
+    /// <exception cref="ArgumentException">A typed grouping, pivot, tuple or bucket argument is invalid.</exception>
+    /// <exception cref="TimeZoneNotFoundException">A calendar bucket names a time zone unavailable on this host.</exception>
+    /// <exception cref="InvalidTimeZoneException">A calendar bucket's native time-zone rules are invalid.</exception>
     public static CanopyViewIntent Validate(string json, CanopyDataGridView view) {
         if (json == null) throw new ArgumentNullException(nameof(json));
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (json.Length > MaximumLength) throw new FormatException("A view intent holds at most 65,536 characters.");
         view.Validate();
-        var root = CanopyFlowContract.Object(CanopyJsonReader.Parse(json), "View intent", "protocol", "type", "version", "view", "query", "columns");
+        var root = CanopyFlowContract.Object(CanopyJsonReader.Parse(json), "View intent", "protocol", "type", "version", "view", "query", "columns", "pivot");
         if (CanopyFlowContract.RequiredText(root, "protocol", "View intent") != CanopyProtocol.Version ||
             CanopyFlowContract.RequiredText(root, "type", "View intent") != "viewIntent" ||
             CanopyFlowContract.Number(root, "version", "View intent") != CanopyViewIntent.Version ||
@@ -31,7 +34,7 @@ public static class CanopyViewIntentValidator {
         foreach (var column in view.Columns) columns.Add(column.Id, column);
         Dictionary<string, object?>? patch = null;
         if (root.TryGetValue("query", out var queryNode)) {
-            patch = CanopyFlowContract.Object(queryNode, "Intent query", "search", "searchMode", "sort", "filters", "filterGroup", "groupBy");
+            patch = CanopyFlowContract.Object(queryNode, "Intent query", "search", "searchMode", "sort", "filters", "filterGroup", "groupBy", "tupleFilters");
             var query = CanopyViewIntentQuery.Read(patch, view, columns);
             query.Validate(view);
         }
@@ -47,7 +50,10 @@ public static class CanopyViewIntentValidator {
                 visible[index] = id;
             }
         }
-        if ((patch == null || patch.Count == 0) && visible == null) throw new InvalidOperationException("A view intent needs a query change or visible columns.");
+        var hasPivot = root.TryGetValue("pivot", out var pivot);
+        if (hasPivot) CanopyViewIntentAnalysis.Pivot(pivot, view, columns);
+        if ((patch == null || patch.Count == 0) && visible == null && !hasPivot)
+            throw new InvalidOperationException("A view intent needs a query change, visible columns or a pivot change.");
         var writer = new CanopyJsonWriter();
         CanopyFlowContract.WriteNode(writer, root);
         return new CanopyViewIntent(view.Id, writer.ToString(), visible);

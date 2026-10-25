@@ -303,3 +303,17 @@ for (const width of [1280, 390]) test(`preview chips wrap long untrusted text an
   await page.screenshot({ path: test.info().outputPath(`view-intent-${width}.png`), fullPage: true });
   expect(errors).toEqual([]);
 });
+
+test("exporting a view intent waits for a settled accepted host query", async ({ page }) => {
+  await open(page, { host: true });
+  await page.evaluate(() => {
+    window.holdQuery = true;
+    window.pendingExportQuery = document.querySelector("[data-canopyx-host]").canopyx.setQuery({ search: "new" });
+  });
+  await expect.poll(() => page.evaluate("window.requested")).toBe(2);
+  expect(await page.evaluate(async () => {
+    try { await document.querySelector("[data-canopyx-host]").canopyx.getViewIntent(); return false; } catch { return true; }
+  })).toBe(true);
+  await page.evaluate(async () => { window.holdQuery = false; window.releaseQuery(); await window.pendingExportQuery; });
+  expect((await page.evaluate(`${api}.getViewIntent()`)).query.search).toBe("new");
+});

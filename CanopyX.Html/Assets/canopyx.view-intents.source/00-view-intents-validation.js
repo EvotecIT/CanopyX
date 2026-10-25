@@ -37,18 +37,18 @@ const VIEW_INTENT_LABELS = {viewIntentPreview: "Preview view changes", viewInten
   }
   // Strictness is checked before gridQuery or saved-state migration can drop unknown columns or normalize fields.
   function viewIntentQuery(grid, patch) {
-    viewIntentObject(patch, ["search", "searchMode", "sort", "filters", "filterGroup", "groupBy"], "view intent query");
+    viewIntentObject(patch, ["search", "searchMode", "sort", "filters", "filterGroup", "groupBy", "tupleFilters"], "view intent query");
     if (patch.search !== undefined && (typeof patch.search !== "string" || patch.search.length > 16384)) throw new Error("CanopyX: invalid intent search.");
     if (patch.searchMode !== undefined && !["substring", "words"].includes(patch.searchMode)) throw new Error("CanopyX: invalid intent search mode.");
     if (patch.sort !== undefined) viewIntentArray(patch.sort, 64, "intent sorts").forEach(sort => viewIntentObject(sort, ["column", "direction"], "intent sort"));
     let predicates = 0, groups = 0;
     const filter = item => {
       if (++predicates > 64) throw new Error("CanopyX: at most 64 intent predicates.");
-      viewIntentObject(item, ["column", "operator", "values"], "intent predicate");
+      viewIntentObject(item, ["column", "operator", "values", "bucket"], "intent predicate");
       viewIntentArray(item.values, 1000, "intent operands").forEach(value => {
         if (typeof value === "string" && value.length > 16384) throw new Error("CanopyX: intent operand is too long.");
         const column = grid.view.columns.find(column => column.id === item.column);
-        if (column?.kind === "datetime") {
+        if (column?.kind === "datetime" && !item.bucket) {
           const match = typeof value === "string" && /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d{1,7}))?Z$/.exec(value);
           if (!match || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0, 19) !== match[1] || match[1].startsWith("0000"))
             throw new Error("CanopyX: intent date operands need valid UTC timestamps.");
@@ -64,7 +64,21 @@ const VIEW_INTENT_LABELS = {viewIntentPreview: "Preview view changes", viewInten
     if (patch.filters !== undefined) viewIntentArray(patch.filters, 64, "intent filters").forEach(filter);
     if (patch.filterGroup !== undefined && patch.filterGroup !== null) group(patch.filterGroup, 1);
     if (patch.groupBy !== undefined) viewIntentArray(patch.groupBy, 4, "intent grouping levels").forEach(level =>
-      viewIntentObject(level, ["column", "direction", "aggregate"], "intent grouping level"));
+      viewIntentObject(level, ["column", "direction", "aggregate", "bucket"], "intent grouping level"));
+    if (patch.tupleFilters !== undefined) viewIntentArray(patch.tupleFilters, 8, "intent tuples").forEach(tuple => {
+      viewIntentObject(tuple, ["columns", "values", "exclude"], "intent tuple");
+      const columns = viewIntentArray(tuple.columns, 6, "intent tuple columns");
+      columns.forEach(field => viewIntentObject(field, ["column", "bucket"], "intent tuple column"));
+      viewIntentArray(tuple.values, 200, "intent tuple values").forEach(row => viewIntentArray(row, 6, "intent tuple row").forEach((value, index) => {
+        if (typeof value === "string" && value.length > 16384) throw new Error("CanopyX: intent tuple operand is too long.");
+        const field = columns[index], column = grid.view.columns.find(column => column.id === field?.column);
+        if (value !== null && !field?.bucket && column?.kind === "datetime") {
+          const match = typeof value === "string" && /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d{1,7}))?Z$/.exec(value);
+          if (!match || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0, 19) !== match[1] || match[1].startsWith("0000"))
+            throw new Error("CanopyX: intent date operands need valid UTC timestamps.");
+        }
+      }));
+    });
     // Suppress null only for the explicitly nullable clear operation; do not relax any other query fields.
     gridQuery(grid.view, { ...patch, filterGroup: patch.filterGroup === null ? undefined : patch.filterGroup }, true);
   }
@@ -73,15 +87,16 @@ const VIEW_INTENT_LABELS = {viewIntentPreview: "Preview view changes", viewInten
     if (grid.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
     if (grid.view.viewIntents !== true) throw new Error("CanopyX: this grid has not enabled view intents.");
     const intent = viewIntentSnapshot(input);
-    viewIntentObject(intent, ["protocol", "type", "version", "view", "query", "columns"], "view intent");
+    viewIntentObject(intent, ["protocol", "type", "version", "view", "query", "columns", "pivot"], "view intent");
     if (intent.protocol !== "canopyx/2" || intent.type !== "viewIntent" || intent.version !== 1 || intent.view !== grid.view.id)
       throw new Error("CanopyX: invalid view intent identity or version.");
     if (intent.query !== undefined) viewIntentQuery(grid, intent.query);
+    if (intent.pivot !== undefined) viewIntentPivotState(grid, intent.pivot, grid.getState());
     if (intent.columns !== undefined) {
       const columns = viewIntentArray(intent.columns, 256, "intent visible columns");
       if (!columns.length || new Set(columns).size !== columns.length || columns.some(id => typeof id !== "string" || !grid.columns.some(column => column.id === id)))
         throw new Error("CanopyX: intent visible columns must be unique declared columns and keep one visible.");
     }
-    if ((!intent.query || !Object.keys(intent.query).length) && intent.columns === undefined) throw new Error("CanopyX: empty view intent.");
+    if ((!intent.query || !Object.keys(intent.query).length) && intent.columns === undefined && intent.pivot === undefined) throw new Error("CanopyX: empty view intent.");
     return gridFreeze(intent);
   }

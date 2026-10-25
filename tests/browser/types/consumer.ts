@@ -1004,3 +1004,22 @@ const disposeMenu = contextMenu(".record", (_event, element) => [{ id: element.i
 void disposeMenu.ready.then(() => disposeMenu());
 void GridRuntime.drawer("#details").ready;
 void ReportingRuntime.dialog("#confirm").ready;
+
+// View proposals carry the same analysis contracts while retaining an explicit preview/apply boundary.
+import type { GridViewIntent } from "@evotecit/canopyx/grid";
+const proposedView: GridViewIntent = {
+  protocol: "canopyx/2", type: "viewIntent", version: 1, view: "orders",
+  query: {
+    groupBy: [{ column: "placed", direction: "asc", bucket: { kind: "month", timeZone: "UTC" } }],
+    tupleFilters: [{ columns: [{ column: "region" }, { column: "stage" }], values: [["North", "Active"], [null, "Paused"]] }]
+  },
+  pivot: { rows: [{ column: "region", direction: "asc" }], columns: [{ column: "stage", direction: "asc" }], values: ["total"], maxColumns: 24 }
+};
+const exportedViewIntent: Promise<GridViewIntent> = dataGrid.getViewIntent();
+const proposedPreview = dataGrid.applyViewIntent(proposedView);
+void proposedPreview.then(preview => preview.cancel());
+void dataGrid.validateViewIntent({ ...proposedView, pivot: false });
+void exportedViewIntent;
+// @ts-expect-error View intent pivot definitions exclude saved-state presentation flags.
+const runtimePivotIntent: GridViewIntent = { ...proposedView, pivot: { rows: [], columns: [], values: ["total"], active: true } };
+void runtimePivotIntent;

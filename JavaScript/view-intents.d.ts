@@ -1,4 +1,5 @@
-import type { AcceptedGridQuery, GridFilter, GridFilterGroup, GridGroupLevel, GridSort } from "./grid.js";
+import type { AcceptedGridQuery, GridFilter, GridFilterGroup, GridGroupLevel, GridSort, GridTupleFilter } from "./grid.js";
+import type { GridPivotDefinition } from "./pivot.js";
 
 /** A data-only view proposal. Missing fields preserve the current view; empty arrays clear the corresponding setting. */
 export interface GridViewIntent {
@@ -12,10 +13,14 @@ export interface GridViewIntent {
     readonly sort?: readonly GridSort[];
     readonly filters?: readonly GridFilter[];
     readonly filterGroup?: GridFilterGroup | null;
+    /** Exact correlated predicates used by pivot drill-through; [] clears them. */
+    readonly tupleFilters?: readonly GridTupleFilter[];
     readonly groupBy?: readonly GridGroupLevel[];
   };
   /** Visible column identities in display order. Hidden columns remain available to queries and host policy. */
   readonly columns?: readonly string[];
+  /** A pivot definition activates/replaces the axes and values; false returns to records. Omission preserves the mode. */
+  readonly pivot?: GridPivotDefinition | false;
 }
 
 /** A one-use proposal preview, tied to the grid's accepted state. It never grants data or write authorization. */

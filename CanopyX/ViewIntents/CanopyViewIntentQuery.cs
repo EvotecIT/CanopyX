@@ -16,16 +16,14 @@ internal static class CanopyViewIntentQuery {
             query.Sort.Add(new CanopyGridSort(CanopyFlowContract.RequiredText(sort, "column", "Intent sort"), Descending(sort, "Intent sort")));
         }
         foreach (var item in CanopyFlowContract.Items(map, "filters", "Intent query", 64)) query.Filters.Add(Filter(item, columns));
+        foreach (var item in CanopyFlowContract.Items(map, "tupleFilters", "Intent query", 8)) query.TupleFilters.Add(TupleFilter(item, columns));
         var predicates = query.Filters.Count;
         var groups = 0;
         if (map.TryGetValue("filterGroup", out var group) && group != null) query.FilterGroup = Group(group, columns, 1, ref predicates, ref groups);
         if (map.ContainsKey("groupBy")) {
             query.GroupBy = new List<CanopyGridGroupLevel>();
-            foreach (var item in CanopyFlowContract.Items(map, "groupBy", "Intent query", 4)) {
-                var level = CanopyFlowContract.Object(item, "Intent group level", "column", "direction", "aggregate");
-                query.GroupBy.Add(new CanopyGridGroupLevel(CanopyFlowContract.RequiredText(level, "column", "Intent group level"),
-                    Descending(level, "Intent group level"), CanopyFlowContract.Text(level, "aggregate", "Intent group level")));
-            }
+            foreach (var item in CanopyFlowContract.Items(map, "groupBy", "Intent query", 4))
+                query.GroupBy.Add(CanopyViewIntentAnalysis.Level(item, columns, false));
         }
         return query;
     }
@@ -34,7 +32,7 @@ internal static class CanopyViewIntentQuery {
         CanopyFlowContract.Choose(CanopyFlowContract.RequiredText(map, "direction", what), what, "direction", ("asc", false), ("desc", true));
 
     private static CanopyGridFilter Filter(object? node, IDictionary<string, CanopyColumn> columns) {
-        var map = CanopyFlowContract.Object(node, "Intent filter", "column", "operator", "values");
+        var map = CanopyFlowContract.Object(node, "Intent filter", "column", "operator", "values", "bucket");
         var id = CanopyFlowContract.RequiredText(map, "column", "Intent filter");
         if (!columns.TryGetValue(id, out var column)) throw new InvalidOperationException("An intent filter must identify a declared column.");
         var op = CanopyFlowContract.Choose(CanopyFlowContract.RequiredText(map, "operator", "Intent filter"), "Intent filter", "operator",
@@ -43,13 +41,42 @@ internal static class CanopyViewIntentQuery {
             ("ge", CanopyGridFilterOperator.GreaterThanOrEqual), ("lt", CanopyGridFilterOperator.LessThan), ("le", CanopyGridFilterOperator.LessThanOrEqual),
             ("isNull", CanopyGridFilterOperator.IsNull), ("isNotNull", CanopyGridFilterOperator.IsNotNull));
         if (!map.ContainsKey("values")) throw new InvalidOperationException("An intent filter requires its raw operand array.");
+        var bucket = CanopyViewIntentAnalysis.Bucket(map, column);
         var items = CanopyFlowContract.Items(map, "values", "Intent filter", 1000);
         var values = new CanopyCell[items.Count];
-        for (var index = 0; index < items.Count; index++) values[index] = Operand(items[index], column);
-        return new CanopyGridFilter(id, op, values);
+        for (var index = 0; index < items.Count; index++) values[index] = Operand(items[index], column, bucket != null);
+        return new CanopyGridFilter(id, op, values) { Bucket = bucket };
     }
 
-    private static CanopyCell Operand(object? value, CanopyColumn column) {
+    private static CanopyGridTupleFilter TupleFilter(object? node, IDictionary<string, CanopyColumn> columns) {
+        var map = CanopyFlowContract.Object(node, "Intent tuple filter", "columns", "values", "exclude");
+        var fields = new List<CanopyGridTupleColumn>();
+        var declared = new List<CanopyColumn>();
+        foreach (var item in CanopyFlowContract.Items(map, "columns", "Intent tuple filter", 6)) {
+            var field = CanopyFlowContract.Object(item, "Intent tuple column", "column", "bucket");
+            var id = CanopyFlowContract.RequiredText(field, "column", "Intent tuple column");
+            if (!columns.TryGetValue(id, out var column)) throw new InvalidOperationException("An intent tuple field identifies a declared column.");
+            fields.Add(new CanopyGridTupleColumn(id, CanopyViewIntentAnalysis.Bucket(field, column)));
+            declared.Add(column);
+        }
+        var rows = new List<IEnumerable<CanopyCell?>>();
+        foreach (var item in CanopyFlowContract.Items(map, "values", "Intent tuple filter", 200)) {
+            if (!(item is List<object?> row) || row.Count != fields.Count)
+                throw new InvalidOperationException("Intent tuple widths must match their fields.");
+            var cells = new CanopyCell?[row.Count];
+            for (var index = 0; index < row.Count; index++)
+                cells[index] = row[index] == null ? null : Operand(row[index], declared[index], fields[index].Bucket != null);
+            rows.Add(cells);
+        }
+        return new CanopyGridTupleFilter(fields, rows, CanopyFlowContract.Boolean(map, "exclude", "Intent tuple filter") ?? false);
+    }
+
+    private static CanopyCell Operand(object? value, CanopyColumn column, bool bucketed = false) {
+        if (bucketed) {
+            if (value is long key) return new CanopyCell(key);
+            if (value is double numericKey) return new CanopyCell(numericKey);
+            throw new InvalidOperationException("An intent bucket operand must be a numeric key.");
+        }
         if (value is string text) {
             if (text.Length > 16384) throw new InvalidOperationException("An intent operand holds at most 16,384 characters.");
             if (column.Kind != CanopyColumnKind.DateTime) return new CanopyCell(text);

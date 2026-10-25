@@ -13,29 +13,34 @@
     header { margin-bottom:28px; } h1 { font-size:28px; letter-spacing:-.5px; margin:0 0 8px; }
     h2 { font-size:19px; margin:0 0 8px; } p { margin:0 0 16px; max-width:76ch; opacity:.85; }
     section { margin:0 0 32px; } .cx-host { border:1px solid var(--cx-line); border-radius:8px; overflow:hidden; }
-    #preview-intent { font:inherit; font-weight:600; padding:9px 14px; margin-bottom:12px; border:1px solid currentColor; border-radius:6px; background:transparent; color:inherit; cursor:pointer; }
-    #preview-intent:focus-visible { outline:2px solid #528bdd; outline-offset:3px; }
+    [data-preview-intent] { font:inherit; font-weight:600; padding:9px 14px; margin:0 8px 12px 0; border:1px solid currentColor; border-radius:6px; background:transparent; color:inherit; cursor:pointer; }
+    [data-preview-intent]:focus-visible { outline:2px solid #528bdd; outline-offset:3px; }
     #intent-feedback { min-height:1.5em; }
     @media(max-width:640px) { body { padding:20px 12px 32px; } h1 { font-size:23px; } header { margin-bottom:24px; } }
-    @media print { #preview-intent,#intent-feedback { display:none; } body { padding:0; } }
+    @media print { [data-preview-intent],#intent-feedback { display:none; } body { padding:0; } }
   </style>
   <script>{{script}}</script>
 </head>
 <body>
   <header><h1>Review changes, then explore</h1><p>Two inventory snapshots share stable item keys. Review the difference, or preview a proposed view before applying it. All data on this page is invented.</p></header>
   <section aria-labelledby="compare-title"><h2 id="compare-title">Inventory changes</h2><p>Earlier snapshot → current snapshot. The column counts describe changed cells in matched rows; additions and removals have their own totals.</p>{{compare}}</section>
-  <section aria-labelledby="intent-title"><h2 id="intent-title">Ask the grid</h2><p>The host supplies a view proposal. This example offers “Show active items, grouped by location”; it uses no language model or network service.</p>
-    <button id="preview-intent" type="button">Preview: active items by location</button><p id="intent-feedback" role="status"></p>{{intent}}
+  <section aria-labelledby="intent-title"><h2 id="intent-title">Ask the grid</h2><p>The host supplies a view proposal. Preview active items grouped by location, or total units by location and stage. It uses no language model or network service.</p>
+    <button id="preview-intent" data-preview-intent type="button">Preview: active items by location</button>
+    <button id="preview-pivot" data-preview-intent type="button">Preview: units by location × stage</button><p id="intent-feedback" role="status"></p>{{intent}}
   </section>
   <script>
-    document.getElementById("preview-intent").addEventListener("click", async () => {
+    for (const button of document.querySelectorAll("[data-preview-intent]")) button.addEventListener("click", async () => {
       const feedback = document.getElementById("intent-feedback");
       try {
         const host = [...document.querySelectorAll('[data-canopyx-host]')].find(item => item.canopyx?.view.id === "inventory-intent"), api = host.canopyx;
         await api.ready;
-        await api.applyViewIntent({ protocol:"canopyx/2", type:"viewIntent", version:1, view:api.view.id,
+        const analysis = button.id === "preview-pivot" ? { query: { groupBy: [] }, pivot: {
+          rows: [{ column: "location", direction: "asc" }], columns: [{ column: "stage", direction: "asc" }],
+          values: ["units"], maxColumns: 12 } } : {
           query:{ filters:[{ column:"stage", operator:"eq", values:["Active"] }], groupBy:[{ column:"location", direction:"asc" }] },
-          columns:["name","location","stage","units"] });
+          columns:["name","location","stage","units"], pivot: false };
+        await api.applyViewIntent({ protocol:"canopyx/2", type:"viewIntent", version:1, view:api.view.id,
+          ...analysis });
         feedback.textContent = "Review the proposed view below, then choose Apply or Cancel.";
       } catch (error) { feedback.textContent = error.message; }
     });

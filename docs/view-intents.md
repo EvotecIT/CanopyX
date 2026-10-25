@@ -28,7 +28,7 @@ one-use operation that applies the captured state through the existing query and
 closes it without changing the view. `previewViewIntent(state, element)` places the same preview in a connected host
 element outside the grid rows. The preview preserves outside focus and supports keyboard Apply and Cancel.
 
-`await grid.getViewIntent()` exports the accepted query and ordered visible columns. `await grid.validateViewIntent(input)`
+`await grid.getViewIntent()` exports the accepted query, ordered visible columns and the pivot definition for opted-in views. `await grid.validateViewIntent(input)`
 returns a validated snapshot without making a query or changing preferences. Exported intents omit paging cursors,
 dataset revisions, selection and scroll position. Missing query fields preserve accepted values; an empty array clears
 that setting, and `filterGroup: null` clears nested conditions. A new accepted query, changed presentation state,
@@ -38,7 +38,7 @@ neither the chips nor the proposal that will be applied.
 ## Schema and target validation
 
 The independently versioned [view-state schema](schema/canopyx-view-state-1.schema.json) defines JSON-only proposals.
-It describes the search query, typed filters, sort, grouping and visible column order. Structural schema validation is
+It describes the search query, typed filters, sort, bucketed grouping, visible column order and pivot axes/values. Structural schema validation is
 followed by target-aware validation: column IDs must exist and permit the requested operation, operators and operand
 types must match their columns, and the ordinary grid predicate and grouping limits apply to the merged query too.
 Unknown fields, executable content, endpoints, unknown operators and empty proposals fail before preview. Proposals
@@ -56,6 +56,32 @@ string validatedJson = proposal.ToJson();
 The returned object owns an immutable, HTML-safe JSON snapshot. It grants no access to data and does not change the
 definition. The browser revalidates against its own target definition before preview and apply. Hosts must still
 enforce authorization on every normal query: hiding a column is a presentation choice, not a security boundary.
+
+## Pivot and bucket proposals
+
+A pivot-enabled reporting view accepts a top-level `pivot` definition with the same bounded rows, columns, values,
+column cap, optional top-N and total sort as [pivot analysis](pivot.md). Its axes can use calendar or numeric buckets.
+A definition activates or replaces the pivot; `pivot: false` returns to records. Omitting `pivot` preserves the current
+mode. A pivot-only proposal is valid. Runtime preferences such as `active`, collapse keys and the compact column picker
+are excluded from proposals and exported intents.
+
+```js
+const preview = await grid.applyViewIntent({
+  protocol: "canopyx/2", type: "viewIntent", version: 1, view: grid.view.id,
+  pivot: {
+    rows: [{ column: "stage", direction: "asc" }],
+    columns: [{ column: "created", direction: "asc", bucket: { kind: "month", timeZone: "UTC" } }],
+    values: ["count"], maxColumns: 24,
+    sortByTotal: { aggregate: "count", direction: "desc" }
+  }
+});
+```
+
+Preview chips name both axes, values, bucket settings and explicit caps before Apply. They use the reporting view's
+localized labels. The target's existing pivot and group validators check column capabilities, aggregate identities and
+bucket bounds. Bucket predicates and exact correlated `tupleFilters` from pivot drill-through also roundtrip;
+`tupleFilters: []` clears those predicates without broadening other criteria. There is no second analysis engine in the intent part. Grouping proposals use the same optional `bucket`
+on each `query.groupBy` level. As with other query changes, the host retains authorization and rejection control.
 
 ## Read-only IntelligenceX tool integration
 
