@@ -78,6 +78,8 @@ if (searchBench) {
     return;
 }
 
+if (args.Contains("--grid-footers")) { GridFootersExample.Write(output); return; }
+
 var smallTree = new SyntheticFileTree();
 var inline = ExampleViews.FileShares("files-inline", smallTree.Build(shares: 4, departments: 5, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 240));
 inline.SaveHtmlPage(Path.Combine(output, "inline.html"), new CanopyHtmlOptions { Title = "CanopyX inline file shares" });
@@ -88,6 +90,7 @@ OrdinalGridExample.Write(output);
 ReportGridLayoutExample.Write(output);
 CursorGridExample.Write(output);
 ReportingGridExample.Write(output);
+GridFootersExample.Write(output);
 ExportFormatsExample.Write(output);
 SidecarKeysExample.Write(output);
 GroupedGridExample.Write(output);

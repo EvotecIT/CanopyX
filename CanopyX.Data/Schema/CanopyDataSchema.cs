@@ -22,7 +22,21 @@ public sealed class CanopyDataSchema {
     /// <param name="notFilterable">Allowed columns that requests may read and sort but not filter on.</param>
     /// <exception cref="ArgumentException">The view uses cursor navigation, a column is not declared, or the initial query
     /// uses a column or operation the remote schema does not allow.</exception>
-    public CanopyDataSchema(CanopyDataGridView view, IEnumerable<string>? columns = null, IEnumerable<string>? notFilterable = null) {
+    public CanopyDataSchema(CanopyDataGridView view, IEnumerable<string>? columns = null, IEnumerable<string>? notFilterable = null)
+        : this(view, columns, notFilterable, null) { }
+
+    /// <summary>Creates a schema with explicitly allowed named filter operators implemented by the host provider.</summary>
+    /// <param name="view">The grid definition.</param>
+    /// <param name="columns">Allowed column identities, or null for all.</param>
+    /// <param name="notFilterable">Columns whose filtering is disabled.</param>
+    /// <param name="customFilterOperators">Safe named operators this endpoint permits. Built-in providers reject these operators.</param>
+    public CanopyDataSchema(CanopyDataGridView view, IEnumerable<string>? columns, IEnumerable<string>? notFilterable, IEnumerable<string>? customFilterOperators) {
+        var operators = new HashSet<string>(StringComparer.Ordinal);
+        if (customFilterOperators != null) foreach (var name in customFilterOperators) {
+            _ = new CanopyGridFilter("operator", name, new CanopyCell("probe"));
+            if (!operators.Add(name)) throw new ArgumentException("Custom operators must be unique.", nameof(customFilterOperators));
+        }
+        CustomFilterOperators = new ReadOnlyCollection<string>(new List<string>(operators));
         View = view ?? throw new ArgumentNullException(nameof(view));
         var definitionJson = view.ToJson();
         ProtocolView = CanopyDataSnapshot.View(view);
@@ -49,12 +63,16 @@ public sealed class CanopyDataSchema {
         if (list.Count == 0) throw new ArgumentException("A remote schema needs at least one allowed column.", nameof(columns));
         Columns = new ReadOnlyCollection<CanopyDataColumn>(list);
         SearchColumns = new ReadOnlyCollection<CanopyDataColumn>(search);
-        Grouping = view.Reporting?.Grouping;
+        foreach (var column in list) foreach (var target in column.Definition.OrderData)
+            if (!_byId.ContainsKey(target)) column.DisableSort();
+        foreach (var key in ProtocolView.PreSort) if (!_byId.ContainsKey(key.Column))
+            throw new ArgumentException("The fixed pre-sort column '" + key.Column + "' must be allowed.", nameof(columns));
+        Grouping = ProtocolView.Reporting?.Grouping;
         if (Grouping != null && !_byId.ContainsKey(Grouping.Column))
             throw new ArgumentException("The grouping column '" + Grouping.Column + "' must be allowed.", nameof(columns));
         var aggregates = new List<CanopyGridAggregate>();
         var bindings = new List<CanopySummaryAggregate>();
-        if (view.Reporting != null) foreach (var aggregate in view.Reporting.Aggregates) {
+        foreach (var aggregate in view.GetSummaryAggregates()) {
             if (!_byId.TryGetValue(aggregate.Column, out var column)) throw new ArgumentException("The aggregate column '" + aggregate.Column + "' must be allowed.", nameof(columns));
             aggregates.Add(aggregate);
             bindings.Add(new CanopySummaryAggregate(aggregate.Id, column, aggregate.Operation, aggregate.CustomOperation));
@@ -100,6 +118,9 @@ public sealed class CanopyDataSchema {
 
     /// <summary>Gets the original authoring definition. Changes do not alter the captured schema or <see cref="ToJson"/>.</summary>
     public CanopyDataGridView View { get; }
+
+    /// <summary>Gets the named filter operators explicitly permitted by this endpoint and implemented by its host provider.</summary>
+    public IReadOnlyList<string> CustomFilterOperators { get; }
 
     /// <summary>The private captured metadata used by typed request and response validation.</summary>
     internal CanopyDataGridView ProtocolView { get; }

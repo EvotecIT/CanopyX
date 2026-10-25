@@ -57,6 +57,9 @@ public sealed class CanopyGridReporting {
     public int MinimumCenterWidth { get; set; } = 128;
 
     internal void Validate(IList<CanopyColumn> columns) {
+        var headerTemplate = Grouping?.HeaderTemplate;
+        if (headerTemplate != null && (string.IsNullOrWhiteSpace(headerTemplate) || headerTemplate.Length > 512))
+            throw new InvalidOperationException("A group header template must be nonblank and at most 512 characters.");
         CanopyColumn? groupColumn = null;
         foreach (var column in columns) if (column.Id == Grouping?.Column) groupColumn = column;
         if (Grouping != null && (groupColumn == null || !groupColumn.Sortable))

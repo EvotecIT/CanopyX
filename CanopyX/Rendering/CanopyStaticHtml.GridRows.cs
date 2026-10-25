@@ -50,7 +50,7 @@ public static partial class CanopyStaticHtml {
             html.Append("<td style=\"").Append((inner ? styles.InnerCell : styles.Cell)).Append(Align(column)).Append(styles.ToneColor(tone)).Append(Encode(FormatCellStyle(paint, outcome?.Row, first, styles)));
             if (column.Wrap) html.Append("white-space:pre-wrap;overflow-wrap:anywhere;");
             html.Append('"');
-            var classes = string.Join(" ", new[] { rule?.ClassName, FormatClasses(paint) }.Where(value => value != null));
+            var classes = string.Join(" ", new[] { column.ClassName, rule?.ClassName, FormatClasses(paint) }.Where(value => value != null));
             if (classes.Length != 0) html.Append(" class=\"").Append(Encode(classes)).Append('"');
             var title = FormatTitle(column.NumericTone(cell)?.Label ?? cell?.Title, paint, outcome?.Row, first);
             if (title != null) html.Append(" title=\"").Append(Encode(title)).Append('"');

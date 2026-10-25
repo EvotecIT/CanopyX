@@ -8,6 +8,7 @@
           rule.target !== undefined && !["row", "cell"].includes(rule.target) || rule.tone === undefined && rule.className === undefined)
         throw new Error("CanopyX: invalid highlight rule.");
       const { column, operator, values } = rule;
+      if (!Object.hasOwn(GRID_FILTER_LABELS, operator)) throw new Error("CanopyX: highlight rules use built-in operators.");
       gridPredicate({ column, operator, values }, columns, budget);
       gridDecoration(rule.tone, rule.className);
     }

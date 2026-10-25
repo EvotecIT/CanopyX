@@ -14,6 +14,7 @@ public sealed class CanopyGridHighlightRule {
     public CanopyGridHighlightRule(CanopyGridFilter condition, CanopyTone tone = default, string? className = null,
         CanopyGridHighlightTarget target = CanopyGridHighlightTarget.Row) {
         Condition = condition ?? throw new ArgumentNullException(nameof(condition));
+        if (condition.Operator == CanopyGridFilterOperator.Custom) throw new ArgumentException("Highlight conditions use built-in operators; named hooks apply only to queries.", nameof(condition));
         if (!Enum.IsDefined(typeof(CanopyGridHighlightTarget), target)) throw new ArgumentOutOfRangeException(nameof(target));
         ValidateClassName(className);
         if (tone == CanopyTone.None && className == null) throw new ArgumentException("A highlight requires a tone or CSS classes.");

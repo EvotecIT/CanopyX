@@ -9,7 +9,7 @@ internal static class CanopySchemaDefinition {
     internal static string Capture(string definition, CanopyDataSchema schema) {
         var changed = false;
         foreach (var column in schema.View.Columns) {
-            if (!schema.TryGetColumn(column.Id, out var allowed) || allowed.Filterable != column.Filterable) {
+            if (!schema.TryGetColumn(column.Id, out var allowed) || allowed.Filterable != column.Filterable || allowed.Sortable != column.Sortable) {
                 changed = true;
                 break;
             }
@@ -57,12 +57,17 @@ internal static class CanopySchemaDefinition {
             if (!mapped && (property.Name == "sortable" || property.Name == "editable" || property.Name == "editor" ||
                 property.Name == "validation" || property.Name == "filterable" || property.Name == "exportable" || property.Name == "aggregatable")) continue;
             if (mapped && !column.Filterable && property.Name == "filterable") continue;
+            if (mapped && !column.Sortable && property.Name == "sortable") continue;
             property.WriteTo(writer);
         }
         if (!mapped) {
+            writer.WriteBoolean("sortable", false);
             writer.WriteBoolean("filterable", false);
             writer.WriteBoolean("exportable", false);
-        } else if (!column.Filterable) writer.WriteBoolean("filterable", false);
+        } else {
+            if (!column.Filterable) writer.WriteBoolean("filterable", false);
+            if (!column.Sortable) writer.WriteBoolean("sortable", false);
+        }
         writer.WriteEndObject();
     }
 

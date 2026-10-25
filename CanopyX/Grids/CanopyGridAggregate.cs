@@ -5,7 +5,7 @@ using CanopyX.Json;
 namespace CanopyX;
 
 /// <summary>An immutable labelled aggregate bound to one declared raw column.</summary>
-public sealed class CanopyGridAggregate {
+public sealed partial class CanopyGridAggregate {
     /// <summary>Creates a generic aggregate. Numeric operations require a numeric column.</summary>
     /// <param name="id">Stable aggregate identity, independent of the column and display label.</param>
     /// <param name="column">The declared raw column identity.</param>

@@ -87,8 +87,10 @@
         if (current !== column.value) { if (current !== undefined) multiple._reset(); current = column.value; }
         const operators = definition.kind === "text" ? ["eq", "ne", "contains", "startsWith", "in", "isNull", "isNotNull"] :
           ["eq", "ne", "in", "gt", "ge", "lt", "le", "isNull", "isNotNull"];
+        const custom = [...this.plugins.flatMap(plugin => Object.keys(plugin.filterOperators || {})), predicate?.column === column.value ? predicate.operator : null, previous];
+        for (const name of custom) if (name && !operators.includes(name) && /^[a-z][a-zA-Z\d]{0,31}$/.test(name)) operators.push(name);
         operator.textContent = "";
-        operators.forEach(name => operator.appendChild(gridOption(name, this.labels[GRID_FILTER_LABELS[name]] || GRID_FILTER_LABELS[name])));
+        operators.forEach(name => operator.appendChild(gridOption(name, this.labels[GRID_FILTER_LABELS[name]] || GRID_FILTER_LABELS[name] || name)));
         if (definition.kind === "datetime") for (const [name, label] of GRID_DATE_PRESETS) operator.appendChild(gridOption(name, this.labels[label]));
         if ([...operator.options].some(option => option.value === previous)) operator.value = previous;
         const raw = input.value, boolean=definition.kind==="text"&&type.value==="boolean", next = h(boolean?"select":"input", "cx-grid-filter-value");

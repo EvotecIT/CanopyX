@@ -52,11 +52,11 @@ public sealed partial class CanopyColumn {
     public CanopyColumnKind Kind { get; set; }
 
     /// <summary>Gets or sets whether the column can sort cell values; tree views sort siblings.</summary>
-    public bool Sortable { get; set; }
+    public bool Sortable { get => _sortable ?? Defaults?.Sortable ?? false; set => _sortable = value; }
 
     /// <summary>Gets or sets whether a flat-grid column supports query predicates and filter controls. Default true.</summary>
     /// <remarks>This capability does not hide cell values or change search, supported read-only facets, formatting, or highlight rules.</remarks>
-    public bool Filterable { get; set; } = true;
+    public bool Filterable { get => _filterable ?? Defaults?.Filterable ?? true; set => _filterable = value; }
 
     /// <summary>Gets or sets whether a flat-grid column can be included in grid exports. Default true.</summary>
     /// <remarks>Default exports omit disabled columns; explicit requests reject them. This is an operation capability, not a data-access restriction.</remarks>
@@ -77,7 +77,7 @@ public sealed partial class CanopyColumn {
     public bool Editable { get; set; }
 
     /// <summary>Gets or sets whether the column starts hidden. Tree views cannot hide their tree column.</summary>
-    public bool Hidden { get; set; }
+    public bool Hidden { get => _hidden ?? Defaults?.Hidden ?? false; set => _hidden = value; }
 
     /// <summary>Gets or sets whether flat-grid cell text wraps within the column and enables measured row heights.</summary>
     public bool Wrap { get; set; }
@@ -133,10 +133,10 @@ public sealed partial class CanopyColumn {
         if (Sizing.Maximum != int.MaxValue) writer.Property("maxWidth", Sizing.Maximum);
         if (!Sizing.Width.HasValue) writer.Property("autoWidth", true);
         writer.Property("kind", CanopyJsonNames.ColumnKind(Kind));
-        if (Sortable) {
-            writer.Property("sortable", true);
+        if (Sortable || grid && HasDefaultRules && _sortable.HasValue) {
+            writer.Property("sortable", Sortable);
         }
-        if (grid && !Filterable) writer.Property("filterable", false);
+        if (grid && (!Filterable || HasDefaultRules && _filterable.HasValue)) writer.Property("filterable", Filterable);
         if (grid && !Exportable) writer.Property("exportable", false);
         if (Editable) writer.Property("editable", true);
         if (grid && Editor != null) { writer.Name("editor"); Editor.WriteJson(writer); }
@@ -151,10 +151,11 @@ public sealed partial class CanopyColumn {
         if (!ShowInDrawer) writer.Property("drawer", false);
         writer.OptionalProperty("renderer", Renderer);
 
-        if (Hidden) {
-            writer.Property("hidden", true);
+        if (Hidden || grid && HasDefaultRules && _hidden.HasValue) {
+            writer.Property("hidden", Hidden);
         }
 
+        if (grid) WriteGridDefaultsJson(writer);
         writer.EndObject();
     }
 }

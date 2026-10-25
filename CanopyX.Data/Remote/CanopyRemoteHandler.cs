@@ -95,6 +95,8 @@ public sealed partial class CanopyRemoteHandler {
         if (result.Rows.Count != expected) throw new CanopyRequestException(CanopyRequestError.StaleRevision, "The data changed; reload the grid.");
         var page = new CanopyGridPage(Schema.ViewId, revision, request.Offset, result.Total, result.Matched);
         foreach (var row in result.Rows) page.Rows.Add(row);
+        await PopulateFootersAsync(page, result, request, cancellationToken).ConfigureAwait(false);
+        await RevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         return page.ToJson(Schema.ProtocolView);
     }
 
