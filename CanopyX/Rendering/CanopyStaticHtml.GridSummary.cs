@@ -15,7 +15,7 @@ public static partial class CanopyStaticHtml {
     public static string RenderGridSummary(CanopyDataGridView view, CanopyGridSummary summary, CanopyStaticHtmlOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         if (summary == null) throw new ArgumentNullException(nameof(summary));
-        _ = summary.ToJson(view);
+        var display = CanopyAggregateDisplay.FromSummary(view, summary);
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
         var aggregates = view.Reporting!.Aggregates;
@@ -26,13 +26,17 @@ public static partial class CanopyStaticHtml {
         var caption = settings.Caption ?? view.Label;
         if (caption.Length > 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
         html.Append("<thead><tr><th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(view.Label)).Append("</th>");
-        foreach (var aggregate in aggregates) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(aggregate.Label)).Append("</th>");
+        foreach (var aggregate in aggregates) {
+            html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(aggregate.Label));
+            if (aggregate.ShowAs != CanopyShowAs.Value) html.Append("<br><span style=\"").Append(styles.Hidden).Append("\">").Append(Encode(CanopyAggregateDisplay.Caption(aggregate.ShowAs, view.Labels))).Append("</span>");
+            html.Append("</th>");
+        }
         html.Append("</tr></thead><tbody>");
-        void Values(IDictionary<string, double?> values) {
+        void Values(IReadOnlyDictionary<string, CanopyAggregateDisplayValue> values) {
             foreach (var aggregate in aggregates) {
-                values.TryGetValue(aggregate.Id, out var value);
+                var shownValue = values[aggregate.Id]; var value = shownValue.Value;
                 var format = aggregate.Format ?? (aggregate.Counting ? CanopyGridNumberFormat.Fixed(0) : view.GetColumn(aggregate.Column).Format);
-                var text = value.HasValue ? format?.Format(value.Value, settings.Culture) ?? value.Value.ToString("G", settings.Culture) : string.Empty;
+                var text = !value.HasValue ? string.Empty : CanopyAggregateDisplay.IsPercentage(shownValue.Mode) ? value.Value.ToString("P2", settings.Culture) : shownValue.Mode == CanopyShowAs.Rank ? value.Value.ToString("0", settings.Culture) : format?.Format(value.Value, settings.Culture) ?? value.Value.ToString("G", settings.Culture);
                 html.Append("<td style=\"").Append(styles.Cell).Append("text-align:right;\">").Append(Encode(text)).Append("</td>");
             }
         }
@@ -45,7 +49,7 @@ public static partial class CanopyStaticHtml {
                     level.Bucket.Label(CanopyNumericValues.ToDouble(group.Value.Value), settings.Culture) : Convert.ToString(group.Value.Value, settings.Culture) ?? string.Empty;
                 html.Append("<tr><th scope=\"row\" style=\"").Append(styles.Cell).Append("text-align:left;padding-left:").Append(8 + depth * 16).Append("px;\">")
                     .Append(Encode(view.GetColumn(level.Column).Title)).Append(": ").Append(Encode(text)).Append(" (").Append(group.Count.ToString(settings.Culture)).Append(")</th>");
-                Values(group.Aggregates); html.Append("</tr>"); shown++;
+                Values(display.Groups[group.Key]); html.Append("</tr>"); shown++;
                 Groups(group.Groups, depth + 1);
             }
         }
@@ -54,7 +58,7 @@ public static partial class CanopyStaticHtml {
         var totalGroups = Count(summary.Groups);
         if (shown < totalGroups) AppendOverflow(html, shown, totalGroups, aggregates.Count + 1, settings, styles, view.Labels);
         html.Append("</tbody><tfoot><tr><th scope=\"row\" style=\"").Append(styles.Header).Append("\">").Append(Encode(view.Labels.GridSummary)).Append("</th>");
-        Values(summary.Aggregates);
+        Values(display.Totals);
         return html.Append("</tr></tfoot></table>").ToString();
     }
 }

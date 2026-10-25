@@ -1,6 +1,16 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 (function (global) {
 const labels = Object.freeze({
+  gridShowAs: "Pokaż wartości jako",
+  gridShowAsValue: "Wartość",
+  gridShowAsPercentGrandTotal: "jako % całości",
+  gridShowAsPercentParent: "jako % grupy nadrzędnej",
+  gridShowAsPercentColumn: "jako % kolumny",
+  gridShowAsPercentRow: "jako % wiersza",
+  gridShowAsRunningTotal: "jako suma narastająca",
+  gridShowAsRank: "jako pozycja",
+  gridShowAsDifference: "jako różnica od poprzedniej",
+  gridShowAsPercentChange: "jako zmiana % od poprzedniej",
   gridBucket: "Przedział",
   gridBucketNone: "Dokładne wartości",
   gridBucketDay: "Dzień",

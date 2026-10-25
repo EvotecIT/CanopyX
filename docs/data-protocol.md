@@ -1,5 +1,11 @@
 # CanopyX Data Protocol (`canopyx/2`)
 
+Aggregate descriptors may declare `showAs`: `value`, `percentGrandTotal`, `percentParent`, `percentColumn`, `percentRow`,
+`runningTotal`, `rank`, `difference` or `percentChange`. Saved grid state may carry up to 32 `aggregateShowAs` entries
+mapping aggregate identities to those modes. Raw `gridSummary.aggregates` and group aggregates do not change. Display
+results pair finite numeric values (or null) with number formats; percentages remain fractions using `0.00%`, while rank
+uses `0`. These are post-aggregation transformations, independent of filtering, paging and grouping order.
+
 Grouping levels, facet definitions/requests/responses and column predicates may carry an optional `bucket`.
 Calendar buckets declare `kind` (`day`, `week`, `month`, `quarter`, `year`, `hour`, `weekday`), `timeZone`
 (UTC by default) and `firstWeekday` (0 Sunday through 6 Saturday; Monday by default). Numeric buckets use

@@ -491,6 +491,8 @@ export interface GridFooter {
   readonly aggregates: readonly GridAggregate[];
 }
 export interface GridAggregate {
+  /** A display transformation; raw aggregates remain unchanged. */
+  readonly showAs?: GridShowAs;
   /** The label is shown beside the value in group headings and the query totals row. */
   readonly id: string; readonly column: string; readonly label: string;
   readonly operation: GridAggregateOperation;
@@ -555,6 +557,14 @@ export interface GridSummary {
   readonly protocol: "canopyx/2"; readonly type: "gridSummary"; readonly view: string; readonly revision: string;
   readonly query: GridQuery & { readonly revision: string }; readonly matched: number;
   readonly groups: readonly GridGroup[]; readonly aggregates: Readonly<Record<string, number | null>>;
+}
+
+/** Percent modes return fractions; rank uses descending competition order. Null/zero denominators produce null. */
+export type GridShowAs = "value" | "percentGrandTotal" | "percentParent" | "percentColumn" | "percentRow" | "runningTotal" | "rank" | "difference" | "percentChange";
+export interface GridAggregateDisplayValue { readonly value: number | null; readonly mode: GridShowAs; readonly numberFormat: string; }
+export interface GridSummaryDisplay {
+  readonly totals: Readonly<Record<string, GridAggregateDisplayValue>>;
+  readonly groups: Readonly<Record<string, Readonly<Record<string, GridAggregateDisplayValue>>>>;
 }
 /** One complete visible page. Null counts remain unknown; ordinal positions do not grant random access. */
 export interface GridCursorPage<Row extends GridRow = GridRow> extends Omit<GridPage<Row>, "type" | "total" | "matched"> {
@@ -689,6 +699,7 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   scrollTop: number;
   /** Reporting grouping only. At most 10000 bounded stable keys; omitted from shareable state. */
   collapsedGroups?: string[];
+  aggregateShowAs?: Record<string, GridShowAs>;
   /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
   paging?: { pageLength: number; offset: number; allRows?: boolean };
   /** Formatting rules edited at run time, when they differ from the view's; restored with the view. */
@@ -901,6 +912,10 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   getSelectionDescriptor?(): GridSelection<Q>;
   /** Reporting summary capability only; null before acceptance. */
   getSummary?(): GridSummary | null;
+  /** Changes only presentation, then updates saved/share state. */
+  setAggregateShowAs?(aggregate: string, mode: GridShowAs): Promise<void>;
+  /** Loads the optional values part and returns numeric values paired with export number formats. */
+  getDisplaySummary?(): Promise<GridSummaryDisplay | null>;
   /** Grouped reporting grids (fixed or runtime). Keys name groups of any level. Collapse affects display; record query/selection/export scope remain intact. */
   setGroupCollapsed?(key: string, collapsed: boolean): void;
   getCollapsedGroups?(): string[];

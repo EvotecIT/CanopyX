@@ -242,6 +242,29 @@ keeping HTML payloads as text.
 | `getExpandedDetails()` | The expanded record IDs. |
 | `canopyx:detail` | `{ id, expanded }`. |
 
+## Show values as
+
+An aggregate's menu chooses its display mode: value, percent of grand total or parent, running total, rank, difference
+from the preceding sibling, or percent change. Pivot views also supply row and column percentages. A muted caption names
+the active mode. Changing it preserves the accepted query and the raw aggregates used by grouping order and later calculations.
+Modes are saved as `aggregateShowAs`, keyed by aggregate identity. `setAggregateShowAs(id, mode)` changes the presentation;
+`getDisplaySummary()` returns numeric values and spreadsheet number formats for totals and groups.
+
+```csharp
+var total = new CanopyGridAggregate("total", "amount", CanopyGridAggregateOperation.Sum, "Total")
+    .ShowValuesAs(CanopyShowAs.PercentGrandTotal);
+var display = CanopyAggregateDisplay.FromSummary(view, acceptedSummary);
+// display.Groups[groupKey]["total"].Value stays a numeric fraction.
+// Its NumberFormat is "0.00%", suitable for a numeric spreadsheet cell.
+```
+
+Ranks use descending competition order (`1, 1, 3`). Running totals follow accepted sibling order and leave missing values
+empty without advancing the total. Differences and percent changes use the immediately preceding sibling; a missing
+predecessor leaves the result empty. A zero or missing denominator leaves a percentage empty. Percent change divides
+the difference by the preceding value, including its sign. Empty groups stay empty. The optional `values` part owns
+browser mathematics and the menu; C# and JavaScript share the conformance vectors in `tests/fixtures/aggregate-display.json`.
+`CanopyStaticHtml.RenderGridSummary` applies declared modes and captions to the script-free output.
+
 ## Labels
 
 `gridGroupBy`, `gridUngroup`, `gridGroupDrop`, `gridExpandAll`, `gridCollapseAll`, `gridExpandLevel`, `gridCollapseLevel`,

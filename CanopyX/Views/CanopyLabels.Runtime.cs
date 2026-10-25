@@ -6,6 +6,7 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
+        nameof(GridShowAs), nameof(GridShowAsValue), nameof(GridShowAsPercentGrandTotal), nameof(GridShowAsPercentParent), nameof(GridShowAsPercentColumn), nameof(GridShowAsPercentRow), nameof(GridShowAsRunningTotal), nameof(GridShowAsRank), nameof(GridShowAsDifference), nameof(GridShowAsPercentChange),
         nameof(GridBucket), nameof(GridBucketNone), nameof(GridBucketDay), nameof(GridBucketWeek), nameof(GridBucketMonth), nameof(GridBucketQuarter), nameof(GridBucketYear), nameof(GridBucketHour), nameof(GridBucketWeekday), nameof(GridBucketWidth), nameof(GridBucketEdges), nameof(GridBucketOrigin), nameof(GridBucketInvalid),
         nameof(GridEditCell), nameof(GridEditSave), nameof(GridEditCancel), nameof(GridEditDiscard), nameof(GridEditUndo), nameof(GridEditRedo),
         nameof(GridEditEdited), nameof(GridEditChanges), nameof(GridEditErrors), nameof(GridEditSaving), nameof(GridEditSaved), nameof(GridEditFailed),
