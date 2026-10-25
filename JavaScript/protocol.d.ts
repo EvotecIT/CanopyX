@@ -275,7 +275,8 @@ export type LabelName =
   | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
-  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails";
+  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails"
+  | "boardLane" | "boardUnassigned" | "boardEmpty" | "boardWip" | "boardWipFull" | "boardMove" | "boardMoved" | "boardRejected" | "boardPending" | "boardPartial" | "boardKeys" | "planMilestone" | "planCritical" | "planBaseline" | "planDependency" | "planDependencyConflict" | "planOverlapConflict" | "planIncomplete" | "planInvalidRange" | "planInvalidResource" | "planProposal" | "planMoveHint" | "planActual" | "planPending" | "planBaselineLabel" | "planDependencies";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

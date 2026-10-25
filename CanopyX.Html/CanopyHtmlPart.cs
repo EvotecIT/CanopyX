@@ -32,9 +32,7 @@ public sealed class CanopyHtmlPart {
 
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
-        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
-        "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus"
+        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs", "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -200,6 +198,8 @@ public sealed class CanopyHtmlPart {
             "live" => view.Live != null,
             "facets" => view.FacetPanel != null,
             "calendar" => view.Calendar != null,
+            "board" => view.Board != null,
+            "plan" => view.Plan != null,
             "calendarResources" => view.Calendar != null && (view.Calendar.Resources != null || view.Calendar.View == CanopyCalendarView.Timeline || view.Calendar.Views.Contains(CanopyCalendarView.Timeline)),
             "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null || source.Url != null)),
             "calendarEditing" => view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),

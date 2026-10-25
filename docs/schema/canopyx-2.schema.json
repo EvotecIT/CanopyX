@@ -626,6 +626,121 @@
         "density": { "enum": ["compact", "default", "comfortable"] }
       }
     },
+    "gridBoard": {
+      "type": "object",
+      "required": [
+        "column"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "$ref": "#/$defs/identifier"
+        },
+        "titleColumn": {
+          "$ref": "#/$defs/identifier"
+        },
+        "swimlaneColumn": {
+          "$ref": "#/$defs/identifier"
+        },
+        "editable": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "lanes": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "label"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "label": {
+                "$ref": "#/$defs/accessibleLabel"
+              },
+              "wipLimit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              }
+            }
+          }
+        }
+      }
+    },
+    "gridPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baselineStart": {
+          "$ref": "#/$defs/identifier"
+        },
+        "baselineEnd": {
+          "$ref": "#/$defs/identifier"
+        },
+        "milestone": {
+          "$ref": "#/$defs/identifier"
+        },
+        "criticalPath": {
+          "type": "boolean"
+        },
+        "proposeMoves": {
+          "type": "boolean"
+        },
+        "avoidOverlap": {
+          "type": "boolean"
+        },
+        "dependencies": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": {
+            "type": "object",
+            "required": [
+              "predecessor",
+              "successor"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "predecessor": {
+                "$ref": "#/$defs/identifier"
+              },
+              "successor": {
+                "$ref": "#/$defs/identifier"
+              },
+              "lagMinutes": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
+      "dependentRequired": {
+        "baselineStart": [
+          "baselineEnd"
+        ],
+        "baselineEnd": [
+          "baselineStart"
+        ]
+      }
+    },
     "grid": {
       "description": "A flat data-grid definition. All columns contain cells; none represents hierarchy.",
       "type": "object",
@@ -663,6 +778,8 @@
         "live": { "$ref": "#/$defs/gridLive" },
         "facets": { "$ref": "#/$defs/gridFacetPanel" },
         "calendar": { "$ref": "#/$defs/gridCalendar" },
+        "board": { "$ref": "#/$defs/gridBoard" },
+        "plan": { "$ref": "#/$defs/gridPlan" },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
         "formatRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatRule" }, "description": "Conditional formatting rules in priority order (docs/conditional-formatting.md)." },
         "formatting": { "type": "object", "additionalProperties": false, "description": "A legend of the labelled rules and the rule editor in the more menu.", "properties": { "legend": { "type": "boolean" }, "editor": { "type": "boolean" } } },
@@ -2340,7 +2457,33 @@
             "calendarOccurrenceReadOnly": { "type": "string" }, "calendarOccurrenceTitle": { "type": "string" }, "calendarEditOccurrence": { "type": "string" }, "calendarRemoveOccurrence": { "type": "string" }, "calendarOccurrenceScope": { "type": "string" }, "calendarSharedResources": { "type": "string" }, "calendarResourceWindow": { "type": "string" }, "calendarThisEvent": { "type": "string" }, "calendarThisAndFollowing": { "type": "string" }, "calendarAllEvents": { "type": "string" },
             "calendarSources": { "type": "string" }, "calendarImportFailed": { "type": "string" }, "calendarActions": { "type": "string" }, "calendarOpen": { "type": "string" },
             "calendarMove": { "type": "string" }, "calendarNewHere": { "type": "string" }, "calendarOutsideRange": { "type": "string" }, "calendarClose": { "type": "string" },
-            "calendarDetailsOf": { "type": "string" }
+            "calendarDetailsOf": { "type": "string" },
+            "boardLane": { "type": "string" },
+            "boardUnassigned": { "type": "string" },
+            "boardEmpty": { "type": "string" },
+            "boardWip": { "type": "string" },
+            "boardWipFull": { "type": "string" },
+            "boardMove": { "type": "string" },
+            "boardMoved": { "type": "string" },
+            "boardRejected": { "type": "string" },
+            "boardPending": { "type": "string" },
+            "boardPartial": { "type": "string" },
+            "boardKeys": { "type": "string" },
+            "planMilestone": { "type": "string" },
+            "planCritical": { "type": "string" },
+            "planBaseline": { "type": "string" },
+            "planDependency": { "type": "string" },
+            "planDependencyConflict": { "type": "string" },
+            "planOverlapConflict": { "type": "string" },
+            "planIncomplete": { "type": "string" },
+            "planInvalidRange": { "type": "string" },
+            "planInvalidResource": { "type": "string" },
+            "planProposal": { "type": "string" },
+            "planMoveHint": { "type": "string" },
+            "planActual": { "type": "string" },
+            "planPending": { "type": "string" },
+            "planBaselineLabel": { "type": "string" },
+            "planDependencies": { "type": "string" }
           }
         },
         "source": { "$ref": "#/$defs/source" },

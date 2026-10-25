@@ -38,6 +38,21 @@ CanopyX.CanopyBadge..ctor(System.String text, CanopyX.CanopyTone tone)
 CanopyX.CanopyBadge.CanopyX.CanopyTone Tone { get; set; }
 CanopyX.CanopyBadge.System.String Text { get; }
 CanopyX.CanopyBadge.System.String? Title { get; set; }
+CanopyX.CanopyBoard : sealed class
+CanopyX.CanopyBoard..ctor(System.String column)
+CanopyX.CanopyBoard.System.Boolean Editable { get; set; }
+CanopyX.CanopyBoard.System.Collections.Generic.IList<CanopyX.CanopyBoardLane> Lanes { get; }
+CanopyX.CanopyBoard.System.Collections.Generic.IList<System.String> Fields { get; }
+CanopyX.CanopyBoard.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyBoardLane> GetLanes(CanopyX.CanopyDataGridView view, System.Collections.Generic.IEnumerable<CanopyX.CanopyGridRow>? rows = null)
+CanopyX.CanopyBoard.System.String Column { get; set; }
+CanopyX.CanopyBoard.System.String? SwimlaneColumn { get; set; }
+CanopyX.CanopyBoard.System.String? TitleColumn { get; set; }
+CanopyX.CanopyBoardLane : sealed class
+CanopyX.CanopyBoardLane..ctor(CanopyX.CanopyCell? value, System.String label)
+CanopyX.CanopyBoardLane.CanopyX.CanopyCell? Value { get; }
+CanopyX.CanopyBoardLane.System.Boolean Matches(CanopyX.CanopyCell? value)
+CanopyX.CanopyBoardLane.System.Nullable<System.Int32> WipLimit { get; set; }
+CanopyX.CanopyBoardLane.System.String Label { get; set; }
 CanopyX.CanopyCalendar : sealed class
 CanopyX.CanopyCalendar..ctor(System.Collections.Generic.IEnumerable<CanopyX.CanopyCalendarEvent> events, CanopyX.CanopyCalendarPreset preset = Basic)
 CanopyX.CanopyCalendar..ctor(System.String id, System.String label, System.Collections.Generic.IEnumerable<CanopyX.CanopyCalendarEvent> events, CanopyX.CanopyCalendarPreset preset = Basic)
@@ -561,6 +576,7 @@ CanopyX.CanopyCounts.System.String ToJson()
 CanopyX.CanopyCounts.System.String? Revision { get; set; }
 CanopyX.CanopyDataGridView : sealed class
 CanopyX.CanopyDataGridView..ctor(System.String id, System.String label)
+CanopyX.CanopyDataGridView.CanopyX.CanopyBoard? Board { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyCalendar? Calendar { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyColumn GetColumn(System.String id)
 CanopyX.CanopyDataGridView.CanopyX.CanopyFacetPanel? FacetPanel { get; set; }
@@ -581,6 +597,7 @@ CanopyX.CanopyDataGridView.CanopyX.CanopyGridSource Source { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyGridToolbar Toolbar { get; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyLabels Labels { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyLayoutOptions? Layout { get; set; }
+CanopyX.CanopyDataGridView.CanopyX.CanopyPlan? Plan { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyRecordPanel? Record { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopySearchHighlight? SearchHighlight { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopySelectionMode Selection { get; set; }
@@ -1739,6 +1756,17 @@ CanopyX.CanopyLabels.System.Boolean RequiresDataGridRuntime { get; }
 CanopyX.CanopyLabels.System.Boolean RequiresInteractiveRuntime { get; }
 CanopyX.CanopyLabels.System.Boolean RequiresReportingRuntime { get; }
 CanopyX.CanopyLabels.System.String Actions { get; set; }
+CanopyX.CanopyLabels.System.String BoardEmpty { get; set; }
+CanopyX.CanopyLabels.System.String BoardKeys { get; set; }
+CanopyX.CanopyLabels.System.String BoardLane { get; set; }
+CanopyX.CanopyLabels.System.String BoardMove { get; set; }
+CanopyX.CanopyLabels.System.String BoardMoved { get; set; }
+CanopyX.CanopyLabels.System.String BoardPartial { get; set; }
+CanopyX.CanopyLabels.System.String BoardPending { get; set; }
+CanopyX.CanopyLabels.System.String BoardRejected { get; set; }
+CanopyX.CanopyLabels.System.String BoardUnassigned { get; set; }
+CanopyX.CanopyLabels.System.String BoardWip { get; set; }
+CanopyX.CanopyLabels.System.String BoardWipFull { get; set; }
 CanopyX.CanopyLabels.System.String CalendarActions { get; set; }
 CanopyX.CanopyLabels.System.String CalendarAgenda { get; set; }
 CanopyX.CanopyLabels.System.String CalendarAllDay { get; set; }
@@ -2468,6 +2496,21 @@ CanopyX.CanopyLabels.System.String MoveHere { get; set; }
 CanopyX.CanopyLabels.System.String No { get; set; }
 CanopyX.CanopyLabels.System.String OverflowNote { get; set; }
 CanopyX.CanopyLabels.System.String PageLoaded { get; set; }
+CanopyX.CanopyLabels.System.String PlanActual { get; set; }
+CanopyX.CanopyLabels.System.String PlanBaseline { get; set; }
+CanopyX.CanopyLabels.System.String PlanBaselineLabel { get; set; }
+CanopyX.CanopyLabels.System.String PlanCritical { get; set; }
+CanopyX.CanopyLabels.System.String PlanDependencies { get; set; }
+CanopyX.CanopyLabels.System.String PlanDependency { get; set; }
+CanopyX.CanopyLabels.System.String PlanDependencyConflict { get; set; }
+CanopyX.CanopyLabels.System.String PlanIncomplete { get; set; }
+CanopyX.CanopyLabels.System.String PlanInvalidRange { get; set; }
+CanopyX.CanopyLabels.System.String PlanInvalidResource { get; set; }
+CanopyX.CanopyLabels.System.String PlanMilestone { get; set; }
+CanopyX.CanopyLabels.System.String PlanMoveHint { get; set; }
+CanopyX.CanopyLabels.System.String PlanOverlapConflict { get; set; }
+CanopyX.CanopyLabels.System.String PlanPending { get; set; }
+CanopyX.CanopyLabels.System.String PlanProposal { get; set; }
 CanopyX.CanopyLabels.System.String QueryFailed { get; set; }
 CanopyX.CanopyLabels.System.String RecordActions { get; set; }
 CanopyX.CanopyLabels.System.String RecordAdded { get; set; }
@@ -2699,6 +2742,20 @@ CanopyX.CanopyPage.System.String ToJson()
 CanopyX.CanopyPage.System.String? Next { get; set; }
 CanopyX.CanopyPage.System.String? ParentId { get; }
 CanopyX.CanopyPage.System.String? Revision { get; set; }
+CanopyX.CanopyPlan : sealed class
+CanopyX.CanopyPlan..ctor()
+CanopyX.CanopyPlan.System.Boolean AvoidOverlap { get; set; }
+CanopyX.CanopyPlan.System.Boolean CriticalPath { get; set; }
+CanopyX.CanopyPlan.System.Boolean ProposeMoves { get; set; }
+CanopyX.CanopyPlan.System.Collections.Generic.IList<CanopyX.CanopyPlanDependency> Dependencies { get; }
+CanopyX.CanopyPlan.System.String? BaselineEnd { get; set; }
+CanopyX.CanopyPlan.System.String? BaselineStart { get; set; }
+CanopyX.CanopyPlan.System.String? Milestone { get; set; }
+CanopyX.CanopyPlanDependency : sealed class
+CanopyX.CanopyPlanDependency..ctor(System.String predecessor, System.String successor)
+CanopyX.CanopyPlanDependency.System.String Predecessor { get; }
+CanopyX.CanopyPlanDependency.System.String Successor { get; }
+CanopyX.CanopyPlanDependency.System.TimeSpan Lag { get; set; }
 CanopyX.CanopyPropagation : sealed class
 CanopyX.CanopyPropagation..ctor(System.String id, System.String label)
 CanopyX.CanopyPropagation.CanopyX.CanopyLabels? Labels { get; set; }

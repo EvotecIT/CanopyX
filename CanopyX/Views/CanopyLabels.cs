@@ -212,7 +212,7 @@ public sealed partial class CanopyLabels {
     /// </summary>
     public bool RequiresDataGridRuntime {
         get {
-            foreach (var name in _values.Keys) if (name.StartsWith("Grid", StringComparison.Ordinal) || name.StartsWith("Calendar", StringComparison.Ordinal)) return true;
+            foreach (var name in _values.Keys) if (name.StartsWith("Grid", StringComparison.Ordinal) || name.StartsWith("Calendar", StringComparison.Ordinal) || name.StartsWith("Board", StringComparison.Ordinal) || name.StartsWith("Plan", StringComparison.Ordinal)) return true;
             return false;
         }
     }

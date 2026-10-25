@@ -131,6 +131,8 @@ CalendarBasicExample.Write(output);
 CalendarResourcesExample.Write(output);
 CalendarExample.Write(output);
 CalendarTimelineExample.Write(output);
+BoardExample.Write(output);
+PlanExample.Write(output);
 CalendarCertificatesExample.Write(output);
 CalendarLinkedExample.Write(output);
 FlowMailServerExample.Write(output);

@@ -22,5 +22,6 @@ public sealed partial class CanopyLabels {
     /// flat-grid labels, the calendar's among them, reach only flat grids, so a tree view leaves them out of its document.
     /// </summary>
     private static bool ReadByTrees(string name) =>
-        !name.StartsWith("Grid", StringComparison.Ordinal) && !name.StartsWith("Format", StringComparison.Ordinal) && !name.StartsWith("Calendar", StringComparison.Ordinal) || TreeToolNames.Contains(name);
+        !name.StartsWith("Grid", StringComparison.Ordinal) && !name.StartsWith("Format", StringComparison.Ordinal) && !name.StartsWith("Calendar", StringComparison.Ordinal) &&
+        !name.StartsWith("Board", StringComparison.Ordinal) && !name.StartsWith("Plan", StringComparison.Ordinal) || TreeToolNames.Contains(name);
 }
