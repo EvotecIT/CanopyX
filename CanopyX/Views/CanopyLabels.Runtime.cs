@@ -6,6 +6,7 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
+        nameof(PathEmpty), nameof(PathSource), nameof(PathTarget), nameof(PathStep), nameof(PathCycle), nameof(PathForeign), nameof(PathDisabled), nameof(PathKeys), nameof(PathPartial), nameof(StackWinner), nameof(StackEnforced), nameof(StackFiltered), nameof(StackEmpty), nameof(StackOrder), nameof(StackTruncated),
         nameof(BoardLane), nameof(BoardUnassigned), nameof(BoardEmpty), nameof(BoardWip), nameof(BoardWipFull), nameof(BoardMove), nameof(BoardMoved), nameof(BoardRejected), nameof(BoardPending), nameof(BoardPartial), nameof(BoardKeys),
         nameof(PlanMilestone), nameof(PlanCritical), nameof(PlanBaseline), nameof(PlanDependency), nameof(PlanDependencyConflict), nameof(PlanOverlapConflict), nameof(PlanIncomplete), nameof(PlanInvalidRange), nameof(PlanInvalidResource), nameof(PlanProposal), nameof(PlanMoveHint), nameof(PlanActual), nameof(PlanPending), nameof(PlanBaselineLabel), nameof(PlanDependencies),
         nameof(GridEditCell), nameof(GridEditSave), nameof(GridEditCancel), nameof(GridEditDiscard), nameof(GridEditUndo), nameof(GridEditRedo),

@@ -222,6 +222,8 @@ public sealed partial class CanopyDataGridView {
         WriteLiveJson(writer);
         WriteFacetPanelJson(writer);
         WriteCalendarJson(writer);
+        WritePathJson(writer);
+        WriteStackJson(writer);
         WriteBoardJson(writer);
         WritePlanJson(writer);
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
@@ -316,6 +318,10 @@ public sealed partial class CanopyDataGridView {
         Reporting?.Validate(Columns);
         ValidateFacetPanel();
         ValidateCalendar();
+        if ((Board != null ? 1 : 0) + (Path != null ? 1 : 0) + (Stack != null ? 1 : 0) + (Calendar != null ? 1 : 0) > 1)
+            throw new InvalidOperationException("Choose one grid presentation: board, path, stack or calendar (with optional plan). ");
+        ValidatePath();
+        ValidateStack();
         ValidateBoard();
         ValidatePlan();
         if ((Reporting?.Grouping != null || Reporting?.DynamicGrouping == true || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)

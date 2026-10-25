@@ -32,7 +32,7 @@ public sealed class CanopyHtmlPart {
 
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
-        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs", "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan"
+        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs", "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -168,7 +168,9 @@ public sealed class CanopyHtmlPart {
     }
 
     /// <summary>Whether a matrix loads this part: a part for matrices (<c>"views": ["matrix"]</c>).</summary>
-    internal bool IsNeededBy(CanopyMatrix matrix) => matrix != null && Array.IndexOf(_views, "matrix") >= 0;
+    internal bool IsNeededBy(CanopyMatrix matrix) => matrix != null && Array.IndexOf(_views, "matrix") >= 0 && (_features.Length == 0 || _features.Contains("timeSlider") && matrix.TimeSlider != null);
+
+    internal bool IsNeededBy(CanopyPropagation view) => view != null && (IsNeededByChangeView || Array.IndexOf(_views, "propagation") >= 0 && (_features.Length == 0 || _features.Contains("timeSlider") && view.TimeSlider != null));
 
     /// <summary>Whether a change view (a diff, a change list or a propagation view) loads this part: the changes part.</summary>
     internal bool IsNeededByChangeView => Array.IndexOf(_views, "changes") >= 0;
@@ -198,6 +200,8 @@ public sealed class CanopyHtmlPart {
             "live" => view.Live != null,
             "facets" => view.FacetPanel != null,
             "calendar" => view.Calendar != null,
+            "path" => view.Path != null,
+            "stack" => view.Stack != null,
             "board" => view.Board != null,
             "plan" => view.Plan != null,
             "calendarResources" => view.Calendar != null && (view.Calendar.Resources != null || view.Calendar.View == CanopyCalendarView.Timeline || view.Calendar.Views.Contains(CanopyCalendarView.Timeline)),
@@ -227,7 +231,7 @@ public sealed class CanopyHtmlPart {
 
     /// <summary>Whether a grid uses the record panel part: a record panel, a structured summary column, or structured cells or record links.</summary>
     private static bool UsesRecordPanel(CanopyDataGridView view) {
-        if (view.Record != null || view.Source.Kind == CanopyGridSourceKind.Host) return true;
+        if (view.Record != null || view.Path != null || view.Stack != null || view.Source.Kind == CanopyGridSourceKind.Host) return true;
         foreach (var column in view.Columns) if (column?.Presenter?.Kind == CanopyGridPresenterKind.Structured) return true;
         foreach (var row in view.Rows) if (row != null && (row.HasFields || Structured(row.Cells.Values))) return true;
         return false;

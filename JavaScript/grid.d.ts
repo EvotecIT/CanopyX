@@ -1,3 +1,8 @@
+import type { GridPathDefinition } from "./path.js";
+export * from "./path.js";
+import type { GridStackDefinition } from "./stack.js";
+export * from "./stack.js";
+export * from "./time-slider.js";
 import CanopyX from "./index.js";
 import type { GridBoardDefinition, GridBoardMove, GridBoardState } from "./board.js";
 export * from "./board.js";
@@ -397,6 +402,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   /** Shows the records as a calendar: month, week, day, N days, agenda, year and the resource timeline (calendar.d.ts). */
   calendar?: GridCalendarDefinition<Row>;
   /** Lane cards with the grid's search, facets, saved views and record panel; loaded as an optional part. */
+  path?: GridPathDefinition;
+  stack?: GridStackDefinition;
   board?: GridBoardDefinition;
   /** Dependencies, baseline and governed proposals on the calendar's resource timeline. */
   plan?: GridPlanDefinition;

@@ -426,6 +426,8 @@ Gate: the calendar examples pass the browser suites on Chromium, Firefox and Web
 
 - [x] Board lanes from column values, WIP limits, optional swimlanes, virtual cards and a phone lane picker, sharing search, facets, views and record details. Drag and keyboard moves raise host-governed edits.
 - [x] Task plans on the resource timeline: finish-to-start dependencies, milestones, elapsed-duration critical paths, baseline comparisons and date/resource proposals with conflict marks.
+- [x] Explicit path explanations and ordered stack explanations over inline records, with record-panel navigation, semantic annotations and static output. Consumers supply relationship paths and configuration precedence.
+- [x] Matrix and propagation snapshot replay with manual stepping, play/pause, reduced motion and selected-frame static output. Consumers supply monitoring history.
 - [x] Typed C# definitions, optional browser parts, translated labels and script-free board/plan snapshots for email and print.
 
 ## 1.0 Public-Grade

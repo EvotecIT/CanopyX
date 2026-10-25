@@ -60,6 +60,7 @@
       errorText = notice.textContent; host.setAttribute("data-cx-error", errorText);
       host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true }));
     });
+    bindTimeSlider(api, options, "matrix", value => MATRIX_IMPL.validate(value));
     Object.freeze(api);
     activeMatrices.set(host, api);
     host.classList.add("cx-host", "cx-matrix-host");

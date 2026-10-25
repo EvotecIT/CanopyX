@@ -34,6 +34,8 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | --- | --- |
 | ![File explorer in the dark theme](docs/images/tree-grid-dark.png) | ![Static outline table](docs/images/static-outline.png) |
 
+Path and stack views explain explicit host-supplied chains and ordered layers over existing records. Matrix and propagation views replay supplied snapshots with manual stepping, play/pause, and reduced-motion support. Each ships as an optional part with typed C# authoring and script-free static output. See [paths](docs/path.md), [stacks](docs/stack.md), and [snapshot playback](docs/time-slider.md).
+
 ## Features
 
 | | Tree grid | Data grid |

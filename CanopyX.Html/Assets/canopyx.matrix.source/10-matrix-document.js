@@ -4,7 +4,7 @@
   const MATRIX_DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz", MATRIX_NONE = 255, MATRIX_SELF = 254;
   const MATRIX_SYMBOLS = ["check", "cross", "warning", "info", "dot", "dash", "question", "clock", "pause"];
   const MATRIX_KEYS = ["protocol", "type", "id", "label", "rows", "columns", "square", "columnTitle", "diagonal", "states", "cells", "notes", "totals", "attentionOnly",
-    "hideEmpty", "cellWidth", "density", "details", "phone", "legend", "autoHeight", "labels"];
+    "hideEmpty", "cellWidth", "density", "details", "phone", "legend", "autoHeight", "labels", "timeSlider"];
   const matrixObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
   function matrixKeys(value, keys, what) {
     if (!matrixObject(value)) matrixFail(what + " must be an object");

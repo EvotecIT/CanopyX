@@ -102,6 +102,7 @@
       "description": "A state matrix with at most one million row/column pairs. Writers and readers also enforce axis sizes, declared state digits, note coordinates and uniqueness, and total-state references.",
       "type": "object", "required": ["protocol", "type", "id", "label", "rows", "states", "cells"], "additionalProperties": false,
       "properties": {
+        "timeSlider": { "$ref": "#/$defs/matrixTimeSlider" },
         "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "matrix" },
         "id": { "$ref": "#/$defs/matrixId" }, "label": { "$ref": "#/$defs/matrixText" },
         "rows": { "$ref": "#/$defs/matrixAxis" }, "columns": { "$ref": "#/$defs/matrixAxis" },
@@ -212,6 +213,7 @@
       "description": "How a change reached its replicas. Writers and readers also check unique replica ids and that times are in order.",
       "type": "object", "required": ["protocol", "type", "id", "label", "witnesses"], "additionalProperties": false,
       "properties": {
+        "timeSlider": { "$ref": "#/$defs/propagationTimeSlider" },
         "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "propagation" },
         "id": { "$ref": "#/$defs/matrixId" }, "label": { "$ref": "#/$defs/changeText" },
         "start": { "$ref": "#/$defs/changeTime" }, "asOf": { "$ref": "#/$defs/changeTime" },
@@ -778,6 +780,8 @@
         "live": { "$ref": "#/$defs/gridLive" },
         "facets": { "$ref": "#/$defs/gridFacetPanel" },
         "calendar": { "$ref": "#/$defs/gridCalendar" },
+        "path": { "$ref": "#/$defs/gridPath" },
+        "stack": { "$ref": "#/$defs/gridStack" },
         "board": { "$ref": "#/$defs/gridBoard" },
         "plan": { "$ref": "#/$defs/gridPlan" },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
@@ -813,6 +817,8 @@
       "then": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] },
       "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
       "allOf": [{
+        "not": {"anyOf": [{"required": ["board", "path"]}, {"required": ["board", "stack"]}, {"required": ["board", "calendar"]}, {"required": ["path", "stack"]}, {"required": ["path", "calendar"]}, {"required": ["stack", "calendar"]}]}
+      }, {"if": {"anyOf": [{"required": ["path"]}, {"required": ["stack"]}]}, "then": {"properties": {"source": {"properties": {"kind": {"const": "inline"}}}, "rowIdentity": {"const": "stableKey"}}}}, {
         "if": { "required": ["plan"] },
         "then": { "required": ["calendar"], "properties": { "calendar": { "not": { "required": ["create"] }, "properties": { "drop": { "const": false } } } } }
       }, {
@@ -2461,6 +2467,21 @@
             "calendarSources": { "type": "string" }, "calendarImportFailed": { "type": "string" }, "calendarActions": { "type": "string" }, "calendarOpen": { "type": "string" },
             "calendarMove": { "type": "string" }, "calendarNewHere": { "type": "string" }, "calendarOutsideRange": { "type": "string" }, "calendarClose": { "type": "string" },
             "calendarDetailsOf": { "type": "string" },
+            "pathEmpty": { "type": "string" },
+            "pathSource": { "type": "string" },
+            "pathTarget": { "type": "string" },
+            "pathStep": { "type": "string" },
+            "pathCycle": { "type": "string" },
+            "pathForeign": { "type": "string" },
+            "pathDisabled": { "type": "string" },
+            "pathKeys": { "type": "string" },
+            "pathPartial": { "type": "string" },
+            "stackWinner": { "type": "string" },
+            "stackEnforced": { "type": "string" },
+            "stackFiltered": { "type": "string" },
+            "stackEmpty": { "type": "string" },
+            "stackOrder": { "type": "string" },
+            "stackTruncated": { "type": "string" },
             "boardLane": { "type": "string" },
             "boardUnassigned": { "type": "string" },
             "boardEmpty": { "type": "string" },
@@ -2787,6 +2808,308 @@
         },
         "entries": { "type": "array", "items": { "$ref": "#/$defs/searchEntry" } }
       }
+    },
+    "gridPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chains"
+      ],
+      "properties": {
+        "titleColumn": {
+          "$ref": "#/$defs/identifier"
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "hops"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S",
+                "maxLength": 256
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S",
+                "maxLength": 4096
+              },
+              "hops": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "record"
+                  ],
+                  "properties": {
+                    "record": {
+                      "$ref": "#/$defs/identifier"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "pattern": "\\S",
+                      "maxLength": 4096
+                    },
+                    "flags": {
+                      "type": "array",
+                      "items": {
+                        "enum": [
+                          "cycle",
+                          "foreign",
+                          "disabled"
+                        ]
+                      },
+                      "uniqueItems": true,
+                      "maxItems": 3
+                    },
+                    "badges": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/badge"
+                      },
+                      "maxItems": 16
+                    }
+                  }
+                },
+                "minItems": 1,
+                "maxItems": 256
+              }
+            }
+          },
+          "maxItems": 200
+        }
+      },
+      "description": "Explicit host-provided chains over stable inline records. At most 10,000 total hop occurrences; every reference must exist."
+    },
+    "gridStack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layers"
+      ],
+      "properties": {
+        "titleColumn": {
+          "$ref": "#/$defs/identifier"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "record",
+              "reason"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/identifier"
+              },
+              "record": {
+                "$ref": "#/$defs/identifier"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "winner": {
+                "type": "boolean"
+              },
+              "enforced": {
+                "type": "boolean"
+              },
+              "filtered": {
+                "type": "boolean"
+              },
+              "badges": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/badge"
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "winner"
+                  ],
+                  "properties": {
+                    "winner": {
+                      "const": true
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "filtered": {
+                      "const": false
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 1000,
+          "allOf": [
+            {
+              "if": {
+                "minItems": 1
+              },
+              "then": {
+                "contains": {
+                  "required": [
+                    "winner"
+                  ],
+                  "properties": {
+                    "winner": {
+                      "const": true
+                    }
+                  }
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    "matrixTimeSlider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshots"
+      ],
+      "properties": {
+        "interval": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 60000
+        },
+        "initial": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 499
+        },
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "at",
+              "view"
+            ],
+            "properties": {
+              "at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,7})?(?:Z|[+-]\\d\\d:\\d\\d)$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S",
+                "maxLength": 200
+              },
+              "view": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/matrix"
+                  },
+                  {
+                    "not": {
+                      "required": [
+                        "timeSlider"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "minItems": 1,
+          "maxItems": 500
+        }
+      },
+      "description": "Host snapshots with strictly increasing millisecond instants, matching view type and id. Initial must be within supplied frames; defaults to latest. No nested histories."
+    },
+    "propagationTimeSlider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshots"
+      ],
+      "properties": {
+        "interval": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 60000
+        },
+        "initial": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 499
+        },
+        "snapshots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "at",
+              "view"
+            ],
+            "properties": {
+              "at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d{1,7})?(?:Z|[+-]\\d\\d:\\d\\d)$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S",
+                "maxLength": 200
+              },
+              "view": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/propagation"
+                  },
+                  {
+                    "not": {
+                      "required": [
+                        "timeSlider"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "minItems": 1,
+          "maxItems": 500
+        }
+      },
+      "description": "Host snapshots with strictly increasing millisecond instants, matching view type and id. Initial must be within supplied frames; defaults to latest. No nested histories."
     }
   }
 }

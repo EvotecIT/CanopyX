@@ -5822,5 +5822,159 @@
     "Dependencias",
     "Dépendances",
     "Dipendenze"
+  ],
+  "PathEmpty": [
+    "Brak ścieżek do wyświetlenia",
+    "Keine Pfade vorhanden",
+    "No hay rutas para mostrar",
+    "Aucun chemin à afficher",
+    "Nessun percorso da mostrare"
+  ],
+  "PathSource": [
+    "Źródło",
+    "Quelle",
+    "Origen",
+    "Source",
+    "Origine"
+  ],
+  "PathTarget": [
+    "Cel",
+    "Ziel",
+    "Destino",
+    "Cible",
+    "Destinazione"
+  ],
+  "PathStep": [
+    "Krok {number} z {total}",
+    "Schritt {number} von {total}",
+    "Paso {number} de {total}",
+    "Étape {number} sur {total}",
+    "Passaggio {number} di {total}"
+  ],
+  "PathCycle": [
+    "Cykl",
+    "Zyklus",
+    "Ciclo",
+    "Cycle",
+    "Ciclo"
+  ],
+  "PathForeign": [
+    "Zewnętrzny",
+    "Extern",
+    "Externo",
+    "Externe",
+    "Esterno"
+  ],
+  "PathDisabled": [
+    "Wyłączony",
+    "Deaktiviert",
+    "Deshabilitado",
+    "Désactivé",
+    "Disabilitato"
+  ],
+  "PathKeys": [
+    "Przeglądaj kroki klawiszem Tab lub strzałkami; Enter lub Spacja otwiera rekord.",
+    "Mit Tab oder Pfeiltasten Schritte durchsuchen; Eingabe oder Leertaste öffnet den Datensatz.",
+    "Usa Tab o las flechas para recorrer los pasos; Intro o Espacio abre el registro.",
+    "Parcourez les étapes avec Tab ou les flèches ; Entrée ou Espace ouvre la fiche.",
+    "Usa Tab o le frecce per scorrere i passaggi; Invio o Spazio apre il record."
+  ],
+  "PathPartial": [
+    "Wyświetlono {shown} z {total} kroków.",
+    "{shown} von {total} Schritten angezeigt.",
+    "Se muestran {shown} de {total} pasos.",
+    "{shown} étapes affichées sur {total}.",
+    "{shown} passaggi mostrati su {total}."
+  ],
+  "StackWinner": [
+    "Wynik wybrany",
+    "Gewinner",
+    "Ganador",
+    "Gagnant",
+    "Vincitore"
+  ],
+  "StackEnforced": [
+    "Wymuszona",
+    "Erzwungen",
+    "Aplicado obligatoriamente",
+    "Imposé",
+    "Imposto"
+  ],
+  "StackFiltered": [
+    "Odfiltrowana",
+    "Ausgefiltert",
+    "Filtrado",
+    "Filtré",
+    "Filtrato"
+  ],
+  "StackEmpty": [
+    "Brak warstw do wyświetlenia.",
+    "Keine Ebenen vorhanden.",
+    "No hay capas para mostrar.",
+    "Aucune couche à afficher.",
+    "Nessun livello da mostrare."
+  ],
+  "StackOrder": [
+    "Kolejność przetwarzania",
+    "Verarbeitungsreihenfolge",
+    "Orden de procesamiento",
+    "Ordre de traitement",
+    "Ordine di elaborazione"
+  ],
+  "StackTruncated": [
+    "Wyświetlono {shown} z {total} warstw w kolejności przetwarzania; wybrana warstwa jest zawsze uwzględniona.",
+    "{shown} von {total} Ebenen in Verarbeitungsreihenfolge angezeigt; die gewinnende Ebene ist immer enthalten.",
+    "Se muestran {shown} de {total} capas en orden de procesamiento; siempre se incluye la capa ganadora.",
+    "{shown} couches affichées sur {total} dans l’ordre de traitement ; la couche gagnante est toujours incluse.",
+    "{shown} livelli mostrati su {total} in ordine di elaborazione; il livello vincente è sempre incluso."
+  ],
+  "TimePlay": [
+    "Odtwórz",
+    "Wiedergabe",
+    "Reproducir",
+    "Lire",
+    "Riproduci"
+  ],
+  "TimePause": [
+    "Wstrzymaj",
+    "Pause",
+    "Pausar",
+    "Pause",
+    "Pausa"
+  ],
+  "TimePrevious": [
+    "Poprzedni stan",
+    "Vorherige Momentaufnahme",
+    "Instantánea anterior",
+    "Instantané précédent",
+    "Istantanea precedente"
+  ],
+  "TimeNext": [
+    "Następny stan",
+    "Nächste Momentaufnahme",
+    "Instantánea siguiente",
+    "Instantané suivant",
+    "Istantanea successiva"
+  ],
+  "TimePosition": [
+    "Stan {index} z {count}",
+    "Momentaufnahme {index} von {count}",
+    "Instantánea {index} de {count}",
+    "Instantané {index} sur {count}",
+    "Istantanea {index} di {count}"
+  ],
+  "TimeFrame": [
+    "Stan z {time}",
+    "Momentaufnahme um {time}",
+    "Instantánea de {time}",
+    "Instantané du {time}",
+    "Istantanea del {time}"
+  ],
+  "TimeReducedMotion": [
+    "Automatyczne odtwarzanie jest wyłączone z powodu ograniczenia ruchu. Przeglądaj stany ręcznie.",
+    "Die zeitgesteuerte Wiedergabe ist wegen reduzierter Bewegung deaktiviert. Momentaufnahmen manuell durchgehen.",
+    "La reproducción automática está desactivada porque el movimiento reducido está activado. Recorre las instantáneas manualmente.",
+    "La lecture automatique est désactivée car les mouvements réduits sont activés. Parcourez les instantanés manuellement.",
+    "La riproduzione automatica è disattivata perché è attiva la riduzione del movimento. Scorri le istantanee manualmente."
   ]
 }

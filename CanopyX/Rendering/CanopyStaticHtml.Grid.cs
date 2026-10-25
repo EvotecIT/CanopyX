@@ -34,6 +34,8 @@ public static partial class CanopyStaticHtml {
         view.Validate();
         if (page != null) _ = page.ToJson(view);
         else if (view.Source.Kind == CanopyGridSourceKind.Host) throw new InvalidOperationException("A host grid fallback requires an explicit result page.");
+        if (view.Path != null) return RenderPathRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
+        if (view.Stack != null) return RenderStackRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
         if (view.Board != null) return RenderBoardRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
         if (view.Plan != null) return RenderPlanRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
         return RenderGridRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options, page?.FooterValues);

@@ -276,7 +276,8 @@ export type LabelName =
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
   | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails"
-  | "boardLane" | "boardUnassigned" | "boardEmpty" | "boardWip" | "boardWipFull" | "boardMove" | "boardMoved" | "boardRejected" | "boardPending" | "boardPartial" | "boardKeys" | "planMilestone" | "planCritical" | "planBaseline" | "planDependency" | "planDependencyConflict" | "planOverlapConflict" | "planIncomplete" | "planInvalidRange" | "planInvalidResource" | "planProposal" | "planMoveHint" | "planActual" | "planPending" | "planBaselineLabel" | "planDependencies";
+  | "boardLane" | "boardUnassigned" | "boardEmpty" | "boardWip" | "boardWipFull" | "boardMove" | "boardMoved" | "boardRejected" | "boardPending" | "boardPartial" | "boardKeys" | "planMilestone" | "planCritical" | "planBaseline" | "planDependency" | "planDependencyConflict" | "planOverlapConflict" | "planIncomplete" | "planInvalidRange" | "planInvalidResource" | "planProposal" | "planMoveHint" | "planActual" | "planPending" | "planBaselineLabel" | "planDependencies"
+  | "pathEmpty" | "pathSource" | "pathTarget" | "pathStep" | "pathCycle" | "pathForeign" | "pathDisabled" | "pathKeys" | "pathPartial" | "stackWinner" | "stackEnforced" | "stackFiltered" | "stackEmpty" | "stackOrder" | "stackTruncated" | "timePlay" | "timePause" | "timePrevious" | "timeNext" | "timePosition" | "timeFrame" | "timeReducedMotion";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

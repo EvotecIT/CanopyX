@@ -6,7 +6,7 @@ namespace CanopyX;
 // The English default of every label, one entry per line. Build/Sync-Labels.ps1 reads this file, then the Defaults.*.cs partials, and
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
-    private static readonly Dictionary<string, string> Defaults = WithBoardPlanDefaults(new Dictionary<string, string>(StringComparer.Ordinal) {
+    private static readonly Dictionary<string, string> Defaults = WithForestDefaults(WithBoardPlanDefaults(new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(GridNoExportColumns)] = "No visible columns allow export.",
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(SearchResults)] = "Search results",
@@ -813,5 +813,5 @@ public sealed partial class CanopyLabels {
             [nameof(StateLoading)] = "Loading…",
             [nameof(StateRetry)] = "Retry",
             [nameof(StateDetails)] = "Details",
-    });
+    }));
 }

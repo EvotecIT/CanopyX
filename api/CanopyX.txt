@@ -597,10 +597,12 @@ CanopyX.CanopyDataGridView.CanopyX.CanopyGridSource Source { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyGridToolbar Toolbar { get; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyLabels Labels { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyLayoutOptions? Layout { get; set; }
+CanopyX.CanopyDataGridView.CanopyX.CanopyPath? Path { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyPlan? Plan { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyRecordPanel? Record { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopySearchHighlight? SearchHighlight { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopySelectionMode Selection { get; set; }
+CanopyX.CanopyDataGridView.CanopyX.CanopyStack? Stack { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyTimeZone TimeZone { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean AutoHeight { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean AutoRowHeight { get; set; }
@@ -2496,6 +2498,15 @@ CanopyX.CanopyLabels.System.String MoveHere { get; set; }
 CanopyX.CanopyLabels.System.String No { get; set; }
 CanopyX.CanopyLabels.System.String OverflowNote { get; set; }
 CanopyX.CanopyLabels.System.String PageLoaded { get; set; }
+CanopyX.CanopyLabels.System.String PathCycle { get; set; }
+CanopyX.CanopyLabels.System.String PathDisabled { get; set; }
+CanopyX.CanopyLabels.System.String PathEmpty { get; set; }
+CanopyX.CanopyLabels.System.String PathForeign { get; set; }
+CanopyX.CanopyLabels.System.String PathKeys { get; set; }
+CanopyX.CanopyLabels.System.String PathPartial { get; set; }
+CanopyX.CanopyLabels.System.String PathSource { get; set; }
+CanopyX.CanopyLabels.System.String PathStep { get; set; }
+CanopyX.CanopyLabels.System.String PathTarget { get; set; }
 CanopyX.CanopyLabels.System.String PlanActual { get; set; }
 CanopyX.CanopyLabels.System.String PlanBaseline { get; set; }
 CanopyX.CanopyLabels.System.String PlanBaselineLabel { get; set; }
@@ -2559,6 +2570,12 @@ CanopyX.CanopyLabels.System.String SearchTooShort { get; set; }
 CanopyX.CanopyLabels.System.String SearchWordTooShort { get; set; }
 CanopyX.CanopyLabels.System.String ShowMore { get; set; }
 CanopyX.CanopyLabels.System.String ShowMoreUnknownTotal { get; set; }
+CanopyX.CanopyLabels.System.String StackEmpty { get; set; }
+CanopyX.CanopyLabels.System.String StackEnforced { get; set; }
+CanopyX.CanopyLabels.System.String StackFiltered { get; set; }
+CanopyX.CanopyLabels.System.String StackOrder { get; set; }
+CanopyX.CanopyLabels.System.String StackTruncated { get; set; }
+CanopyX.CanopyLabels.System.String StackWinner { get; set; }
 CanopyX.CanopyLabels.System.String StateDetails { get; set; }
 CanopyX.CanopyLabels.System.String StateLoading { get; set; }
 CanopyX.CanopyLabels.System.String StateRetry { get; set; }
@@ -2583,6 +2600,13 @@ CanopyX.CanopyLabels.System.String TabsPosition { get; set; }
 CanopyX.CanopyLabels.System.String TabsScrollNext { get; set; }
 CanopyX.CanopyLabels.System.String TabsScrollPrevious { get; set; }
 CanopyX.CanopyLabels.System.String TabsSection { get; set; }
+CanopyX.CanopyLabels.System.String TimeFrame { get; set; }
+CanopyX.CanopyLabels.System.String TimeNext { get; set; }
+CanopyX.CanopyLabels.System.String TimePause { get; set; }
+CanopyX.CanopyLabels.System.String TimePlay { get; set; }
+CanopyX.CanopyLabels.System.String TimePosition { get; set; }
+CanopyX.CanopyLabels.System.String TimePrevious { get; set; }
+CanopyX.CanopyLabels.System.String TimeReducedMotion { get; set; }
 CanopyX.CanopyLabels.System.String UnknownTotal { get; set; }
 CanopyX.CanopyLabels.System.String UtcTime { get; set; }
 CanopyX.CanopyLabels.System.String VisibleColumns { get; set; }
@@ -2612,6 +2636,7 @@ CanopyX.CanopyMatrix.CanopyX.CanopyMatrixCell Set(System.String row, System.Stri
 CanopyX.CanopyMatrix.CanopyX.CanopyMatrixDetails Details { get; set; }
 CanopyX.CanopyMatrix.CanopyX.CanopyMatrixDiagonal Diagonal { get; set; }
 CanopyX.CanopyMatrix.CanopyX.CanopyMatrixPhoneLayout Phone { get; set; }
+CanopyX.CanopyMatrix.CanopyX.CanopyTimeSlider<CanopyX.CanopyMatrix>? TimeSlider { get; set; }
 CanopyX.CanopyMatrix.System.Boolean AttentionOnly { get; set; }
 CanopyX.CanopyMatrix.System.Boolean AutoHeight { get; set; }
 CanopyX.CanopyMatrix.System.Boolean ColumnTotals { get; set; }
@@ -2742,6 +2767,25 @@ CanopyX.CanopyPage.System.String ToJson()
 CanopyX.CanopyPage.System.String? Next { get; set; }
 CanopyX.CanopyPage.System.String? ParentId { get; }
 CanopyX.CanopyPage.System.String? Revision { get; set; }
+CanopyX.CanopyPath : sealed class
+CanopyX.CanopyPath..ctor()
+CanopyX.CanopyPath.System.Collections.Generic.IList<CanopyX.CanopyPathChain> Chains { get; }
+CanopyX.CanopyPath.System.String? TitleColumn { get; set; }
+CanopyX.CanopyPathChain : sealed class
+CanopyX.CanopyPathChain..ctor(System.String id, System.String label)
+CanopyX.CanopyPathChain.System.Collections.Generic.IList<CanopyX.CanopyPathHop> Hops { get; }
+CanopyX.CanopyPathChain.System.String Id { get; }
+CanopyX.CanopyPathChain.System.String Label { get; set; }
+CanopyX.CanopyPathFlag : enum System.Int32
+CanopyX.CanopyPathFlag.const CanopyX.CanopyPathFlag Cycle = 0
+CanopyX.CanopyPathFlag.const CanopyX.CanopyPathFlag Disabled = 2
+CanopyX.CanopyPathFlag.const CanopyX.CanopyPathFlag Foreign = 1
+CanopyX.CanopyPathHop : sealed class
+CanopyX.CanopyPathHop..ctor(System.String record, System.String? label = null)
+CanopyX.CanopyPathHop.System.Collections.Generic.IList<CanopyX.CanopyBadge> Badges { get; }
+CanopyX.CanopyPathHop.System.Collections.Generic.IList<CanopyX.CanopyPathFlag> Flags { get; }
+CanopyX.CanopyPathHop.System.String Record { get; }
+CanopyX.CanopyPathHop.System.String? Label { get; set; }
 CanopyX.CanopyPlan : sealed class
 CanopyX.CanopyPlan..ctor()
 CanopyX.CanopyPlan.System.Boolean AvoidOverlap { get; set; }
@@ -2761,6 +2805,7 @@ CanopyX.CanopyPropagation..ctor(System.String id, System.String label)
 CanopyX.CanopyPropagation.CanopyX.CanopyLabels? Labels { get; set; }
 CanopyX.CanopyPropagation.CanopyX.CanopyPropagationState OverallState { get; }
 CanopyX.CanopyPropagation.CanopyX.CanopyPropagationWitness Witness(System.String id, System.String label, CanopyX.CanopyPropagationState state)
+CanopyX.CanopyPropagation.CanopyX.CanopyTimeSlider<CanopyX.CanopyPropagation>? TimeSlider { get; set; }
 CanopyX.CanopyPropagation.CanopyX.CanopyTimeZone TimeZone { get; set; }
 CanopyX.CanopyPropagation.System.Collections.Generic.IList<CanopyX.CanopyPropagationWitness> Witnesses { get; }
 CanopyX.CanopyPropagation.System.Nullable<CanopyX.CanopyPropagationState> State { get; set; }
@@ -2988,6 +3033,20 @@ CanopyX.CanopySourceKind : enum System.Int32
 CanopyX.CanopySourceKind.const CanopyX.CanopySourceKind Inline = 0
 CanopyX.CanopySourceKind.const CanopyX.CanopySourceKind Remote = 2
 CanopyX.CanopySourceKind.const CanopyX.CanopySourceKind Sidecar = 1
+CanopyX.CanopyStack : sealed class
+CanopyX.CanopyStack..ctor()
+CanopyX.CanopyStack.System.Collections.Generic.IList<CanopyX.CanopyStackLayer> Layers { get; }
+CanopyX.CanopyStack.System.String? TitleColumn { get; set; }
+CanopyX.CanopyStackLayer : sealed class
+CanopyX.CanopyStackLayer..ctor(System.String id, System.String record, System.String reason)
+CanopyX.CanopyStackLayer.System.Boolean Enforced { get; set; }
+CanopyX.CanopyStackLayer.System.Boolean Filtered { get; set; }
+CanopyX.CanopyStackLayer.System.Boolean Winner { get; set; }
+CanopyX.CanopyStackLayer.System.Collections.Generic.IList<CanopyX.CanopyBadge> Badges { get; }
+CanopyX.CanopyStackLayer.System.String Id { get; }
+CanopyX.CanopyStackLayer.System.String Reason { get; set; }
+CanopyX.CanopyStackLayer.System.String Record { get; }
+CanopyX.CanopyStackLayer.System.String? Label { get; set; }
 CanopyX.CanopyTableDetail : sealed class (CanopyX.CanopyDetail)
 CanopyX.CanopyTableDetail..ctor(System.String? caption = null)
 CanopyX.CanopyTableDetail.CanopyX.CanopyTableDetail AddColumns(params System.String[] titles)
@@ -3030,6 +3089,16 @@ CanopyX.CanopyTextDiff.static CanopyX.CanopyTextDiff FromTexts(System.String id,
 CanopyX.CanopyTextFolding : static class
 CanopyX.CanopyTextFolding.static System.Char Fold(System.Char unit)
 CanopyX.CanopyTextFolding.static System.String? Fold(System.String? text)
+CanopyX.CanopyTimeSlider<T> : sealed class where T : class
+CanopyX.CanopyTimeSlider<T>..ctor()
+CanopyX.CanopyTimeSlider<T>.System.Collections.Generic.IList<CanopyX.CanopyTimeSnapshot<T>> Snapshots { get; }
+CanopyX.CanopyTimeSlider<T>.System.Int32 IntervalMilliseconds { get; set; }
+CanopyX.CanopyTimeSlider<T>.System.Nullable<System.Int32> InitialIndex { get; set; }
+CanopyX.CanopyTimeSnapshot<T> : sealed class where T : class
+CanopyX.CanopyTimeSnapshot<T>..ctor(System.DateTimeOffset at, T view, System.String? label = null)
+CanopyX.CanopyTimeSnapshot<T>.System.DateTimeOffset At { get; }
+CanopyX.CanopyTimeSnapshot<T>.System.String? Label { get; set; }
+CanopyX.CanopyTimeSnapshot<T>.T View { get; }
 CanopyX.CanopyTimeZone : enum System.Int32
 CanopyX.CanopyTimeZone.const CanopyX.CanopyTimeZone Local = 1
 CanopyX.CanopyTimeZone.const CanopyX.CanopyTimeZone Utc = 0

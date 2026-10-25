@@ -52,10 +52,10 @@
 
   async function recordOpenRow(view, id, options) {
     await view.requirePart("filter-editor");
-    let index = null, row = view.board?.rows.find(row => row.id === id) || null;
+    let index = null, row = view.board?.rows.find(row => row.id === id) || view.path?.rows.find(row => row.id === id) || view.stack?.settings.records.get(id) || null;
     const loaded = [...view.rowCache.values()].find(item => !item.status && item.key === id);
     // The grid scrolls to the record it opens, so the drawer and the row stay together.
-    if (loaded) { row = loaded.h; index = loaded._ri; if (!view.pendingQuery) await view.focusResult(index, false).catch(() => {}); }
+    if (loaded) { row = loaded.h; index = loaded._ri; if (!view.grid.hidden && !view.pendingQuery) await view.focusResult(index, false).catch(() => {}); }
     else if (!row && view.acceptedQuery && !view.pendingQuery && typeof view.source.position === "function") {
       const position = await view.runGridHook(signal => view.source.position(view.acceptedQuery, id, { signal }));
       if (Number.isInteger(position) && position >= 0 && position < view.rowCount()) {

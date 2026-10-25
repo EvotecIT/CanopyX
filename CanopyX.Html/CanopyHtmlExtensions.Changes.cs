@@ -70,7 +70,7 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The view is invalid, tree filter IDs are specified, or a requested part does not ship with the data-grid entry point.</exception>
     public static string ToHtmlFragment(this CanopyPropagation view, CanopyHtmlOptions? options = null) =>
-        CanopyHtmlWriter.ChangeFragment((view ?? throw new ArgumentNullException(nameof(view))).ToJson(), options ?? new CanopyHtmlOptions());
+        CanopyHtmlWriter.ChangeFragment((view ?? throw new ArgumentNullException(nameof(view))).ToJson(), options ?? new CanopyHtmlOptions(), CanopyHtmlAssets.GetRequiredParts(view));
 
     /// <summary>Writes a complete page with the data-grid entry point and the changes part, inline or referenced as external assets.</summary>
     /// <param name="view">The propagation view.</param>
@@ -79,7 +79,7 @@ public static partial class CanopyHtmlExtensions {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The view is invalid, tree filter IDs are specified, or a requested part does not ship with the data-grid entry point.</exception>
     public static string ToHtmlPage(this CanopyPropagation view, CanopyHtmlOptions? options = null) =>
-        CanopyHtmlWriter.ChangePage((view ?? throw new ArgumentNullException(nameof(view))).ToJson(), view.Label, options ?? new CanopyHtmlOptions());
+        CanopyHtmlWriter.ChangePage((view ?? throw new ArgumentNullException(nameof(view))).ToJson(), view.Label, options ?? new CanopyHtmlOptions(), CanopyHtmlAssets.GetRequiredParts(view));
 
     /// <summary>Saves a complete propagation page as UTF-8, creating its directory when needed.</summary>
     /// <param name="view">The propagation view.</param>
