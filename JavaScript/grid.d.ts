@@ -24,6 +24,8 @@ import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, Grid
 export * from "./facets.js";
 export * from "./calendar.js";
 export * from "./live.js";
+import type { GridPivotApi, GridPivotDefinition, GridPivotState, GridPivotQuery, GridPivotAcceptedResult } from "./pivot.js";
+export * from "./pivot.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string;
@@ -187,6 +189,10 @@ export interface GridPager {
 }
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
+  /** Initial full-query pivot; requires offset navigation and declared aggregates. */
+  readonly pivot?: GridPivotDefinition;
+  /** Readers can configure pivots over declared sortable/filterable fields and aggregates. */
+  readonly pivotable?: boolean;
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
   readonly grouping?: GridSort & { readonly headerTemplate?: string };
   /** Initial runtime grouping levels, outermost first (at most four). Not combined with grouping. */
@@ -288,6 +294,16 @@ export interface GridFilterGroup {
   readonly groups: readonly GridFilterGroup[];
 }
 
+/** A raw or bucketed field in an exact correlated tuple. */
+export interface GridTupleColumn { readonly column: string; readonly bucket?: GridBucket; }
+/** One to six fields and one to 200 equally wide tuples. Strings are exact; null is an explicit missing value. */
+export interface GridTupleFilter {
+  readonly columns: readonly GridTupleColumn[];
+  readonly values: readonly (readonly CellValue[])[];
+  /** Complements membership, including rows containing null. Defaults to false. */
+  readonly exclude?: boolean;
+}
+
 /** A frozen accepted query. Sorting/filtering cover the entire source before the requested window. */
 export interface GridQuery {
   readonly protocol: "canopyx/2";
@@ -303,6 +319,8 @@ export interface GridQuery {
   readonly filters: readonly GridFilter[];
   /** Combined with search and flat filters using AND. */
   readonly filterGroup?: GridFilterGroup;
+  /** At most eight atomic predicates, AND-combined with the other query criteria. Empty input is omitted. */
+  readonly tupleFilters?: readonly GridTupleFilter[];
   /** Runtime grouping levels (reporting groupBy/groupable definitions); omitted input uses the declared levels, [] ungroups. */
   readonly groupBy?: readonly GridGroupLevel[];
 }
@@ -475,6 +493,8 @@ export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSour
   query(query: GridQuery, options: { signal: AbortSignal }): GridPage<Row> | PromiseLike<GridPage<Row>>;
   /** Complete-query metadata, echoing the normalized accepted request, revision and matched count. */
   summary?(query: GridQuery & { readonly revision: string }, options: { signal: AbortSignal }): GridSummary | PromiseLike<GridSummary>;
+  /** Computes the full accepted query, echoing its query/revision; requires an explicit endpoint capability. */
+  pivot?(request: GridPivotQuery, options: { signal: AbortSignal }): GridPivotAcceptedResult | PromiseLike<GridPivotAcceptedResult>;
   /** Saves changed rows (a remote source posts the gridCommit document to its commit endpoint) and answers per row. */
   commit?(batch: GridCommit, options: { signal: AbortSignal }): GridCommitResult | PromiseLike<GridCommitResult>;
   /** A record's details when its drawer opens (a gridRecordQuery answered with a gridRecord), as a remote protocol client sends it. */
@@ -712,6 +732,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   facets?: { open: boolean };
   /** The calendar's view, date, zoom and collapsed resources, in a grid with a calendar. */
   calendar?: GridCalendarSavedState;
+  /** Pivot definition, active mode, collapsed prefixes and compact-screen column choice. */
+  pivot?: GridPivotState;
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -858,7 +880,7 @@ export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQue
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridPivotApi, GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi {
   readonly element: HTMLElement;
   readonly view: GridView<Row>;
   readonly ready: Promise<Q>;

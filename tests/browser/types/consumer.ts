@@ -6,6 +6,14 @@ import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView
   GridColumnGroup, GridCellRange, GridPasteEvent, GridPasteResult, GridColumnGroupState } from "@evotecit/canopyx/grid";
 import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, type GridPager } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
+import type { GridTupleColumn, GridTupleFilter } from "@evotecit/canopyx/grid";
+import type { GridPivotDefinition, GridPivotLevel, GridPivotResult, GridPivotAcceptedResult, GridPivotExportSnapshot } from "@evotecit/canopyx/grid";
+const tupleField: GridTupleColumn = { column: "days", bucket: { kind: "width", width: 10 } };
+const tupleFilter: GridTupleFilter = { columns: [{ column: "name" }, tupleField], values: [["review", 1], [null, null]], exclude: true };
+const invalidTuple: GridTupleFilter = { columns: [tupleField], values: [[1]],
+  // @ts-expect-error Exclusion is a boolean; operands retain their scalar types.
+  exclude: "true" };
+void invalidTuple;
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
 import spanish from "@evotecit/canopyx/locales/es";
@@ -42,6 +50,37 @@ const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { pr
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
 reportingApi.autoFitColumns();
+reportingApi.setQuery({ tupleFilters: [tupleFilter] });
+const pivotDefinition: GridPivotDefinition = {
+  rows: [{ column: "name", direction: "asc" }], columns: [{ column: "days", direction: "asc", bucket: { kind: "width", width: 10 } }],
+  values: ["total"], maxColumns: 200, topNColumns: 12, sortByTotal: { aggregate: "total", direction: "desc" }
+};
+const pivotReporting: InlineGridView["reporting"] = { pivot: pivotDefinition, pivotable: true,
+  aggregates: [{ id: "total", column: "days", operation: "sum", label: "Total" }] };
+const pivotSource: Pick<GridSource, "pivot"> = {
+  pivot(request, { signal }) {
+    const accepted: GridPivotAcceptedResult = { protocol: "canopyx/2", type: "gridPivot", view: request.query.view,
+      query: request.query, revision: request.query.revision, definition: request.definition, matched: 0, distinctColumns: 0,
+      columnsLimited: false, rows: [{ key: "r", path: [], other: false }], columns: [{ key: "c", path: [], other: false }],
+      retainedColumns: [], cells: [{ row: "r", column: "c", count: 0, aggregates: { total: null } }] };
+    void signal; return Promise.resolve(accepted);
+  }
+};
+declare const computedPivot: GridPivotResult;
+const unrevisionedPivotSource: Pick<GridSource, "pivot"> = {
+  // @ts-expect-error A direct computed result needs accepted query/revision ownership before a host can return it.
+  pivot: () => computedPivot
+};
+const invalidPivotLevel: GridPivotLevel = { column: "name", direction: "asc",
+  // @ts-expect-error Pivot axis levels use sortByTotal instead of an aggregate field.
+  aggregate: "total" };
+reportingApi.setPivot?.(pivotDefinition);
+reportingApi.setPivot?.(false);
+reportingApi.setPivotCollapsed?.("rows", "opaque-prefix", true);
+const pivotState = reportingApi.getPivot?.();
+const pivotResult: GridPivotAcceptedResult | null | undefined = reportingApi.getPivotResult?.();
+const pivotExport: Promise<GridPivotExportSnapshot> | undefined = reportingApi.getPivotExport?.();
+void pivotReporting; void pivotSource; void unrevisionedPivotSource; void invalidPivotLevel; void pivotState; void pivotResult; void pivotExport;
 // Compact row data in place of rows: chunks inline in the document, as host scripts (a count) or as sidecar files.
 const compactRows: GridCompactRow[] = [["r1", "Item 1", 10], [{ id: "r2", tone: "warning" }, "Item 2", null, { value: 3, text: "three" }]];
 const compactView: CompactGridView = { protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact rows",

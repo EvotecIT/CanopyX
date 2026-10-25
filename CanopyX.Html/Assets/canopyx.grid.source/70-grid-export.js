@@ -21,6 +21,7 @@
       const query = gridQuery(this.view, { ...this.acceptedQuery, offset: 0, cursor: undefined, limit: this.pageSize,
         search: filtered ? this.acceptedQuery.search : "",
         filterGroup: filtered ? this.acceptedQuery.filterGroup : undefined,
+        tupleFilters: filtered ? this.acceptedQuery.tupleFilters : undefined,
         filters: filtered ? this.acceptedQuery.filters : [] });
       const { revision, total, matched } = this.snapshot;
       const request = gridFreeze({ scope, query, revision, total, matched, recordCount: scope === "selected" ? selection.length :

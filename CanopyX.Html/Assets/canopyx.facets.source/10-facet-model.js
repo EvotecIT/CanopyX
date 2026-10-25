@@ -101,7 +101,7 @@
     } catch (_) { return query; }
   }
   /** Whether two queries count the same rows: facets ignore sort, paging and the window. */
-  const facetShape = query => query ? JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.revision]) : "";
+  const facetShape = query => query ? JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.tupleFilters, query.revision]) : "";
   /** The same typed identity used by facet pages and the column filter picker. */
   const facetKey = gridFacetKey;
 

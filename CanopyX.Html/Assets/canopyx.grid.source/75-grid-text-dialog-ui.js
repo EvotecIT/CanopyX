@@ -7,7 +7,7 @@
     title.id=this.id+"-text-title";title.setAttribute("aria-level","2");setText(title,column.title);dialog.setAttribute("aria-labelledby",title.id);
     const copy=gridDecorateButton(gridButton(this.labels.gridCopy,()=>this.writeClipboard(text).catch(error=>this.emit("error",{error}))),"copy",true);
     const close=gridDecorateButton(gridButton("",()=>dialog._cxOverlay.close()),"close",true);close.classList.add("icon");close.setAttribute("aria-label",this.labels.gridCloseCell);
-    setText(content,text);content.tabIndex=0;head.append(title,copy,close);dialog.append(head);if(extra)dialog.append(extra);dialog.append(content);document.body.appendChild(dialog);this.reportingText=dialog;
+    setText(content,text);content.hidden=!!extra&&!text;copy.hidden=content.hidden;content.tabIndex=0;head.append(title,copy,close);dialog.append(head);if(extra)dialog.append(extra);dialog.append(content);document.body.appendChild(dialog);this.reportingText=dialog;
     const lifetime=new AbortController(),overlay=dialog._cxOverlay=UI_IMPL.dialog(dialog,{host:this.host,container:this.host,focus:false},lifetime.signal);
     const signal=this.dataLifetime.signal,abort=()=>overlay.close("data",false,true);signal.addEventListener("abort",abort,{once:true});
     dialog.addEventListener("close",()=>{lifetime.abort();signal.removeEventListener("abort",abort);dialog.remove();if(this.reportingText===dialog)this.reportingText=null;

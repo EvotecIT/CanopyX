@@ -108,7 +108,7 @@ public static partial class CanopyRequestParser {
         if (!root.TryGetProperty("query", out var queryElement)) throw CanopyRequestException.Document("A value list needs its accepted query.");
         var query = Query(queryElement, schema, limits, true);
         if (query.Revision == null) throw CanopyRequestException.Document("A value list needs the accepted revision.");
-        if (!include) query = query.WithFilter(CanopyFilters.WithoutColumn(query.Filter, column.Id));
+        if (!include) query = query.WithFilter(CanopyFilters.WithoutColumn(query.Filter, column.Id)).WithTupleFilters(query.TupleFilters.Where(tuple => !tuple.Columns.Any(field => field.Id == column.Id)));
         return new CanopyFacetRequest(query, column, search, limit, include, CanopyBucketParser.Read(root, column.Definition));
     }
 
@@ -172,7 +172,7 @@ public static partial class CanopyRequestParser {
         if (root.TryGetProperty("filterGroup", out var group) && group.ValueKind != JsonValueKind.Null) children.Add(Group(group, schema, limits, budget, 1));
         if (CanopyDataRequest.SplitTerms(search, mode).Count > limits.MaxSearchTerms) throw CanopyRequestException.Limit("The search has too many words.");
         var request = new CanopyDataRequest(schema, children.Count == 0 ? null : children.Count == 1 ? children[0] : new CanopyFilterGroup(CanopyGridFilterJunction.All, children),
-            sort, search, mode, offset, limit, revision, levels);
+            sort, search, mode, offset, limit, revision, levels, TupleFilters(root, schema, limits));
         return request.WithRaw(root.GetRawText());
     }
 
@@ -368,6 +368,7 @@ public static partial class CanopyRequestParser {
             }
             WriteJson(writer, values, "filters", JsonValueKind.Array);
             WriteJson(writer, values, "filterGroup", JsonValueKind.Object);
+            WriteJson(writer, values, "tupleFilters", JsonValueKind.Array);
             WriteJson(writer, values, "groupBy", JsonValueKind.Array);
             writer.WriteEndObject();
         }

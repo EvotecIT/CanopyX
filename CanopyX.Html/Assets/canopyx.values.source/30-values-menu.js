@@ -1,4 +1,4 @@
-  DataGrid.prototype.openAggregateMenu = function (column, aggregates, values, button) {
+  DataGrid.prototype.openAggregateMenu = function (column, aggregates, values, button, text) {
     const controls = h("div", "cx-show-as-fields");
     for (const aggregate of aggregates) {
       const label = h("label", "cx-show-as-field"), name = h("span"), select = h("select", "cx-input");
@@ -10,5 +10,5 @@
       select.addEventListener("change", () => this.setAggregateShowAs(aggregate.id, select.value).then(() => this.reportingText?.close()).catch(error => this.emit("error", { error })));
       label.append(name, select); controls.append(label);
     }
-    this.showReportingText(column, reportingAggregateParts(this, column, aggregates, values).title, button, undefined, false, controls);
+    this.showReportingText(column, text ?? reportingAggregateParts(this, column, aggregates, values).title, button, undefined, false, controls);
   };

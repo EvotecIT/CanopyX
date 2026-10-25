@@ -46,7 +46,7 @@ public static partial class CanopyStaticHtml {
                 if (shown >= settings.MaxRows) return;
                 var level = levels[depth];
                 var text = group.Value?.Value == null ? view.Labels.GridGroupMissing : level.Bucket != null ?
-                    level.Bucket.Label(CanopyNumericValues.ToDouble(group.Value.Value), settings.Culture) : Convert.ToString(group.Value.Value, settings.Culture) ?? string.Empty;
+                    level.Bucket.Label(CanopyNumericValues.ToDouble(group.Value.Value), settings.Culture) : group.Value.DisplayText(view.GetColumn(level.Column), view.Labels);
                 html.Append("<tr><th scope=\"row\" style=\"").Append(styles.Cell).Append("text-align:left;padding-left:").Append(8 + depth * 16).Append("px;\">")
                     .Append(Encode(view.GetColumn(level.Column).Title)).Append(": ").Append(Encode(text)).Append(" (").Append(group.Count.ToString(settings.Culture)).Append(")</th>");
                 Values(display.Groups[group.Key]); html.Append("</tr>"); shown++;

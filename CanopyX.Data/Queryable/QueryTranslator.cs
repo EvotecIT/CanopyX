@@ -72,6 +72,7 @@ internal sealed partial class QueryTranslator<T> {
         if (request.ExcludedIds.Count != 0) body = ExpressionTools.And(body, Expression.Not(KeyIn(request.ExcludedIds)));
         foreach (var term in request.SearchTerms) body = ExpressionTools.And(body, SearchTerm(request.Schema, term));
         if (request.Filter != null) body = ExpressionTools.And(body, Predicate(request.Filter));
+        foreach (var tuple in request.TupleFilters) body = ExpressionTools.And(body, TuplePredicate(tuple));
         return body == null ? null : Expression.Lambda<Func<T, bool>>(body, Row);
     }
 

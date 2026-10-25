@@ -7,7 +7,7 @@ using System.Reflection;
 namespace CanopyX.Data;
 
 /// <summary>
-/// Grouping keys of two to four columns. They are built as constructor calls that name their members, the shape of an
+/// Nested grouping keys. They are built as constructor calls that name their members, the shape of an
 /// anonymous type, so LINQ providers translate them to a multi-column <c>GROUP BY</c>; in memory they compare by value.
 /// </summary>
 internal static class CompositeKeys {
@@ -15,7 +15,8 @@ internal static class CompositeKeys {
 
     /// <summary>A key over the given column expressions.</summary>
     internal static NewExpression New(IReadOnlyList<Expression> parts) {
-        if (parts.Count < 2 || parts.Count > 4) throw new ArgumentOutOfRangeException(nameof(parts));
+        if (parts.Count < 2 || parts.Count > 38) throw new ArgumentOutOfRangeException(nameof(parts));
+        if (parts.Count > 4) return New(parts.Take(3).Concat(new[] { (Expression)New(parts.Skip(3).ToArray()) }).ToArray());
         var type = Definitions[parts.Count - 2].MakeGenericType(parts.Select(part => part.Type).ToArray());
         return Expression.New(type.GetConstructors()[0], parts, Members(type));
     }
@@ -25,7 +26,14 @@ internal static class CompositeKeys {
         .OrderBy(property => property.Name, StringComparer.Ordinal).ToArray();
 
     /// <summary>The component values of a key, outermost column first.</summary>
-    internal static object?[] Values(object key) => Members(key.GetType()).Select(member => member.GetValue(key)).ToArray();
+    internal static object?[] Values(object key) => Members(key.GetType()).SelectMany(member => Nested(member.PropertyType) ? Values(member.GetValue(key)!) : new[] { member.GetValue(key) }).ToArray();
+
+    /// <summary>Every scalar member access, including nested constructor members.</summary>
+    internal static Expression[] Leaves(Expression key) => Members(key.Type).SelectMany(member => {
+        var access = Expression.Property(key, member);
+        return Nested(member.PropertyType) ? Leaves(access) : new Expression[] { access };
+    }).ToArray();
+    private static bool Nested(Type type) => type.IsGenericType && Definitions.Contains(type.GetGenericTypeDefinition());
 }
 
 /// <summary>A grouping key of two columns.</summary>

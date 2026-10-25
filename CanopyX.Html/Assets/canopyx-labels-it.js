@@ -1,6 +1,20 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 (function (global) {
 const labels = Object.freeze({
+  gridPivot: "Tabella pivot",
+  gridPivotRows: "Gruppi di righe",
+  gridPivotColumns: "Gruppi di colonne",
+  gridPivotValues: "Valori",
+  gridPivotFlat: "Mostra record",
+  gridPivotConfigure: "Configura tabella pivot",
+  gridPivotOther: "Altri",
+  gridPivotLimited: "Mostrati {shown} di {total} percorsi di colonne; gli altri sono raggruppati in Altri. I subtotali includono tutti i valori discendenti corrispondenti.",
+  gridPivotColumn: "Scegli colonna",
+  gridPivotTopN: "Prime colonne",
+  gridPivotSort: "Ordina righe per totale",
+  gridPivotDrill: "Mostra record per {row}, {column}",
+  gridPivotReturn: "Torna alla tabella pivot",
+  gridPivotInvalid: "Scegli assi validi e almeno un valore.",
   gridShowAs: "Mostra valori come",
   gridShowAsValue: "Valore",
   gridShowAsPercentGrandTotal: "come % del totale",

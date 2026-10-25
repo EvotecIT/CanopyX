@@ -50,5 +50,17 @@ internal static class AnalystExample {
             File.WriteAllText(Path.Combine(output, "analysis-values" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Shares by month" }));
         }
         File.WriteAllText(Path.Combine(output, "analysis-values-summary.html"), CanopyStaticHtml.RenderGridSummary(view, summary));
+        view.Reporting.Aggregates[0] = view.Reporting.Aggregates[0].ShowValuesAs(CanopyShowAs.Value);
+        view.Reporting.Aggregates.Add(new CanopyGridAggregate("records", "record", CanopyGridAggregateOperation.Count, "Records"));
+        view.Reporting.Pivotable = true;
+        var pivot = view.Reporting.Pivot = new CanopyGridPivot();
+        pivot.Rows.Add(new CanopyGridGroupLevel("region"));
+        pivot.Columns.Add(new CanopyGridGroupLevel("observed", bucket: month));
+        pivot.Values.Add("total"); pivot.Values.Add("records");
+        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+            File.WriteAllText(Path.Combine(output, "analysis-pivot" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Regions by month" }));
+        }
+        File.WriteAllText(Path.Combine(output, "analysis-pivot-static.html"), CanopyStaticHtml.RenderGridPivot(view, CanopyPivot.Compute(view, pivot, view.Rows)));
     }
 }

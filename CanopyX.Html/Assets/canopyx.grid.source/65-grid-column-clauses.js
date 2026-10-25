@@ -9,6 +9,7 @@
     return !filters.length&&!groups.length?operator==="and":!filters.length&&groups.length===1?groups[0]:{operator,filters,groups};
   }
   function gridColumnClauses(query,id){
+    if(query.tupleFilters?.some(tuple=>tuple.columns.some(field=>field.column===id)))throw new Error("complex");
     const clauses=[],has=group=>group.filters.some(item=>item.column===id)||group.groups.some(has),only=group=>group.filters.every(item=>item.column===id)&&group.groups.every(only);
     const remove=group=>{if(!group)return undefined;if(only(group)){clauses.push(group);return undefined;}
       if(group.operator==="or"&&has(group))throw new Error("complex");

@@ -149,6 +149,7 @@ public static class CanopyRemoteEndpointExtensions {
         }
         group.MapPost("/facet", Json(Handler, options.Limits, FacetAnswer));
         group.MapPost("/summary", Json(Handler, options.Limits, SummaryAnswer));
+        group.MapPost("/pivot", Json(Handler, options.Limits, PivotAnswer));
         group.MapPost("/range", Json(Handler, options.Limits, RangeAnswer));
         group.MapPost("/export/{format}", (RequestDelegate)(context => CanopyRemoteHttp.RunAsync(context, async token => {
             var body = await CanopyRemoteHttp.ReadJsonBodyAsync(context, options.Limits, token).ConfigureAwait(false);
@@ -164,6 +165,7 @@ public static class CanopyRemoteEndpointExtensions {
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> QueryAnswer = (handler, body, token) => handler.QueryAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> FacetAnswer = (handler, body, token) => handler.FacetAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> SummaryAnswer = (handler, body, token) => handler.SummaryAsync(body, token);
+    private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> PivotAnswer = (handler, body, token) => handler.PivotAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> RangeAnswer = (handler, body, token) => handler.RangeAsync(body, token);
     private static readonly Func<CanopyRemoteHandler, string, CancellationToken, Task<string>> CommitAnswer = (handler, body, token) => handler.CommitAsync(body, token);
 

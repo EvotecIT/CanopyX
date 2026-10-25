@@ -288,7 +288,9 @@ Consumers: the HtmlForgeX DataExplorer's wide datasets and live inventories; the
 - [ ] Map formatting rules into the styled spreadsheet export format once the OfficeIMO-based writer lands: native conditional formatting for conditions, data bars, colour scales and bands, with theme tones resolved to the export palette.
 - [x] Search-hit highlighting: marks for search and column-filter hits in cells, the record drawer and tree nodes, a live match count and next/previous navigation that reaches virtual rows, case and accent options, a saved switch (docs/search-highlight.md).
 - [x] Layout modes: fit, scroll sideways and cards, with compact, normal and comfortable densities, switched from a Layout menu or the API and kept in saved views; trees offer fit and scroll (docs/layout-modes.md).
-- [ ] Evaluate pivot presentation only after a real inventory needs it and grouping/aggregate semantics are stable. Hosted pivot data is computed through the host/data owner; full charts remain ChartForgeX integrations. A 2D categorical matrix remains its own view rather than an overloaded table option.
+- [x] Add calendar/date/time and numeric range buckets to grouping and facets, with matching typed filters, static summaries and hosted translation.
+- [x] Add aggregate display modes, numeric values with spreadsheet formats, saved presentation intent and a lazy menu that remains available on phones.
+- [ ] Complete pivot delivery for inventory and monitoring analysis: the typed inline/hosted pivot, bounded axes, totals, collapse, top-N/Other, exact drill-through, static output and numeric outlined capture are implemented ([pivot](docs/pivot.md)); spreadsheet outline/print integration and combined release qualification remain. Full charts stay in ChartForgeX; the categorical matrix remains its own view.
 - [ ] Compose ChartForgeX charts for a selected range or group and richer chart cells through host renderers. Preserve the existing bar/line/period-strip presenters for small host-supplied histories.
 - [ ] Qualify sticky headers during page scrolling for grids that grow with their rows.
 

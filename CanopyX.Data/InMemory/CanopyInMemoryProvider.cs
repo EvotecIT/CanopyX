@@ -19,7 +19,7 @@ namespace CanopyX.Data;
 /// </para>
 /// <para>Each request reads the records again; use it for modest datasets, fixtures and tests.</para>
 /// </remarks>
-public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRangeProvider {
+public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRangeProvider, ICanopyPivotProvider {
     private readonly Func<IEnumerable<T>> _records;
     private readonly Func<T, string> _id;
     private readonly Func<T, object?>[] _values;
@@ -159,6 +159,17 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
     }
 
     /// <inheritdoc />
+    public ValueTask<CanopyPivotResult> PivotAsync(CanopyPivotRequest request, CancellationToken cancellationToken) {
+        if (request == null) throw new ArgumentNullException(nameof(request));
+        Own(request.Query);
+        foreach (var aggregate in request.Aggregates) Supported(aggregate);
+        var records = Select(Load(cancellationToken), request.Query, cancellationToken);
+        var result = CanopyPivot.Compute(Schema.ProtocolView, request.Definition, records.Select(record => Row(record, cancellationToken)));
+        cancellationToken.ThrowIfCancellationRequested();
+        return new ValueTask<CanopyPivotResult>(result);
+    }
+
+    /// <inheritdoc />
     public ValueTask<CanopySummaryResult> SummarizeAsync(CanopySummaryRequest request, CancellationToken cancellationToken) {
         if (request == null) throw new ArgumentNullException(nameof(request));
         Own(request.Query);
@@ -269,7 +280,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
                 terms.All(term => Schema.SearchColumns.Any(column => {
                     cancellationToken.ThrowIfCancellationRequested();
                     return ProtocolSemantics.ContainsTerm(record.Values[column.Ordinal], term);
-                })) && (request.Filter == null || Matches(record, request.Filter, cancellationToken));
+                })) && (request.Filter == null || Matches(record, request.Filter, cancellationToken)) && request.TupleFilters.All(tuple => tuple.Matches(column => record.Values[column.Ordinal]));
         }).ToList();
     }
 

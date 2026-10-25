@@ -107,22 +107,26 @@
     },
     // Aggregates of columns out of view (hidden, or left out on a phone) follow the first cell, so none is lost.
     paintHiddenAggregates(target, values, cell = target, headingColumn = null, title = this.labels.gridSummary || this.view.label) {
-      const shown = new Set(this.cols.filter(column => column.id !== headingColumn).map(column => column.id)), parts = [], details = [];
+      const shown = new Set(this.cols.filter(column => column.id !== headingColumn).map(column => column.id)), parts = [], details = [], bindings = [];
       for (const column of this.columns) {
         const aggregates = shown.has(column.id) ? [] : (this.view.reporting.aggregates || []).filter(item => item.column === column.id);
         if (aggregates.length) {
           const formatted = reportingAggregateParts(this, column, aggregates, values);
-          if (formatted.text) { parts.push(column.title + " " + formatted.text); details.push(column.title + "\n" + formatted.title); }
+          if (formatted.text || aggregates.some(aggregate => (this.aggregateShowAs?.[aggregate.id] ?? aggregate.showAs ?? "value") !== "value")) {
+            parts.push(column.title + " " + (formatted.text || "—") + (formatted.caption ? " (" + formatted.caption + ")" : ""));
+            details.push(column.title + "\n" + formatted.title); bindings.push(...aggregates);
+          }
         }
       }
       const previous = target.querySelector(":scope > .cx-hidden-aggregates");
       if (!parts.length) { previous?.remove(); return; }
       const extra = previous || h("button", "cx-grid-group-aggregates cx-hidden-aggregates"); if (!previous) extra.type = "button";
       extra.setAttribute("aria-haspopup", "dialog"); if (extra.textContent !== parts.join(" · ")) setText(extra, parts.join(" · "));
-      extra._cxAggregateText = { title, text: details.join("\n") }; extra.title = details.join("\n");
+      extra._cxAggregateText = { title, text: details.join("\n"), bindings, values }; extra.title = details.join("\n");
       extra.setAttribute("aria-label", details.join(", "));
       if (!previous) { target.appendChild(extra); extra.addEventListener("click", event => {
-        event.stopPropagation(); this.showReportingText({ title: extra._cxAggregateText.title }, extra._cxAggregateText.text, extra);
+        event.stopPropagation(); const current = extra._cxAggregateText;
+        this.showAggregateMenu({ id: current.bindings[0].column, title: current.title }, current.bindings, current.values, extra, current.text).catch(error => this.emit("error", { error }));
       });
       }
       cell.title = (cell.title ? cell.title + " · " : "") + parts.join(" · ");

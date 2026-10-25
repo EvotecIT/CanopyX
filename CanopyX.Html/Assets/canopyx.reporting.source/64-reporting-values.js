@@ -19,9 +19,9 @@
     return VALUES_PAGE.call(this, query, signal);
   };
   Object.assign(DataGrid.prototype, {
-    async showAggregateMenu(column, aggregates, values, button) {
+    async showAggregateMenu(column, aggregates, values, button, text) {
       await loadPart(VALUES_PART); await this.requirePart("filter-editor");
-      if (!this.destroyed && !this.pendingQuery) this.openAggregateMenu(column, aggregates, values, button);
+      if (!this.destroyed && !this.pendingQuery) this.openAggregateMenu(column, aggregates, values, button, text);
     },
     async setAggregateShowAs(id, mode) {
       await loadPart(VALUES_PART);

@@ -80,6 +80,8 @@
 
   function gridQuery(view, input, strict) {
     input = input || {};
+    // Empty optional tuple criteria retain the original query shape, including strict saved-state reads.
+    if (Array.isArray(input.tupleFilters) && !input.tupleFilters.length) { input = { ...input }; delete input.tupleFilters; }
     const cursor = view.source.navigation === "cursor", type = cursor ? "gridCursorQuery" : "gridQuery";
     if (typeof input !== "object" || Array.isArray(input) ||
         input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
@@ -118,6 +120,7 @@
     const budget = { predicates: 0, groups: 0, strict, filterable: true };
     query.filters = (input.filters || []).map(filter => gridPredicate(filter, columns, budget));
     if (input.filterGroup !== undefined) query.filterGroup = gridFilterGroup(input.filterGroup, columns, budget, 1);
+    if (input.tupleFilters !== undefined) query.tupleFilters = gridTupleFilters(input.tupleFilters, columns, strict);
     // Sorting and paging normalize reader queries; preserve their internal origin without adding wire fields.
     if (input[LINK_IMPL.queryOwn]) query[LINK_IMPL.queryOwn] = true;
     return gridQueryRecord(input, query, strict, cursor);

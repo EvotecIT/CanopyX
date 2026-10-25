@@ -48,7 +48,7 @@
     const terms = gridSearchTerms(query.search, query.searchMode),
       searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
     const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
-      query.filters.every(predicate => matches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns, matches));
+      query.filters.every(predicate => matches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns, matches) && gridMatchesTuples(row, query.tupleFilters, columns));
     if (compare !== gridCompare || !query.sort.length) return compare ? rows.sort((a, b) => {
       for (const sort of query.sort) {
         const compared = compare(a, b, columns.get(sort.column), sort.direction);

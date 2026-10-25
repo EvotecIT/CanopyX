@@ -7,7 +7,7 @@
     gridPageInfo: "Showing {first} to {last} of {count} rows", gridPageInfoFiltered: "Showing {first} to {last} of {count} rows (filtered from {total})",
     gridPageButton: "Page {page}"
   }));
-  function gridResultShape(query) { return JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.sort]); }
+  function gridResultShape(query) { return JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.tupleFilters, query.sort]); }
 
   Object.assign(DataGrid.prototype, {
     getPaging() {

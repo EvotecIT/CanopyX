@@ -68,3 +68,18 @@ test("an undefined difference keeps its caption and menu available", async ({ pa
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator(".cx-grid-group .cx-aggregate-button")).not.toContainText("—");
 });
+
+test("phone aggregates retain their display-mode menu when the source columns are hidden", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const view = definition(); delete view.reporting.detail; view.reporting.aggregates[0].showAs = "percentGrandTotal";
+  await open(page, view, valuesPart(), "dark");
+  await page.locator(".cx-grid-group .cx-hidden-aggregates").first().click();
+  expect(await page.getByRole("dialog").evaluate(dialog => dialog.getBoundingClientRect().height)).toBeLessThan(450);
+  await page.getByLabel("Total amount: Show values as", { exact: true }).selectOption("rank");
+  expect((await page.evaluate(api + ".getState()")).aggregateShowAs.total).toBe("rank");
+  await expect(page.locator(".cx-grid-group .cx-hidden-aggregates").first()).toContainText("rank");
+  const geometry = await page.evaluate(() => {
+    const button = document.querySelector(".cx-grid-group .cx-hidden-aggregates"); return { hasTitle: !!button.title, overflow: document.documentElement.scrollWidth > innerWidth };
+  });
+  expect(geometry).toEqual({ hasTitle: true, overflow: false });
+});
