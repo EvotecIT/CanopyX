@@ -42,7 +42,7 @@
     return { required: [...names], optional: [typeof hooks.preview === "function" && "preview", object(hooks.presetStore) && "drafts"].filter(name => name && !names.has(name)) };
   }
   const FLOW_ASYNC_METHODS = ["next", "back", "goTo", "setState", "validate", "submit", "runCheck", "refreshOptions", "saveDraft", "setPreset"];
-  const FLOW_SYNC_METHODS = ["getStep", "getValues", "setValues", "getState", "isDirty", "reset", "setFieldError", "setProgress", "complete", "setStepState", "open", "close"];
+  const FLOW_SYNC_METHODS = ["getStep", "getValues", "setValues", "getState", "isDirty", "reset", "setFieldError", "setProgress", "complete", "setStepState", "invalidateChecks", "open", "close"];
 
   /**
    * Creates a flow in a host element from a flow document (docs/flow.md).

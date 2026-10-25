@@ -1149,6 +1149,7 @@ export interface FlowApi{
   setProgress(progress:{done?:number;total?:number;message?:string}):boolean;
   complete(answer:FlowAnswer):boolean;
   runCheck(checkId:string):Promise<{status:FlowCheckStatus;message:string|null;details:{label:string;value:string}[];at:string}|null>;
+  invalidateChecks(checkIds?:readonly string[]):void;
   refreshOptions(fieldId:string):Promise<void>;
   setStepState(stepId:string,state:FlowStepState|null):void;
   saveDraft():Promise<boolean>;

@@ -356,6 +356,14 @@ The proposal's `checks` carries
 `{ status, at }` for the results that are still current. Those are what the browser saw: a host that relies on a check runs
 it again on the submitted answers. `api.runCheck(id)` runs one from script; `canopyx:flowCheck` reports each result.
 
+A host whose tested settings also change outside the flow calls `api.invalidateChecks(["sign-in-test"])`, or
+`api.invalidateChecks()` for every check. Completed results and details stay visible as stale evidence. Matching running
+checks are cancelled, their secrets are revoked, and late answers cannot replace a newer result. Pending validation or
+submission that relied on the invalidated evidence is retired too, including its submission secret reader. Field values and the
+form's dirty state stay unchanged. Required checks need a current result at the next validation or submission. An empty
+array does nothing; unknown ids are rejected before any check changes. Await `api.ready` first, as for other synchronous
+members. Flows with no checks do not load the checks part and reject this operation.
+
 ### Host options and dependent fields
 
 ```csharp
@@ -610,6 +618,7 @@ destroying a flow also releases its host so `CanopyX.mount(host)` can mount it a
 | `submit()` | Validates and raises `flowSubmit`; resolves with the host's answer. |
 | `setProgress({ done, total, message })`, `complete(answer)` | Drive an `accepted` answer to its end. |
 | `runCheck(checkId)` | Runs a check; resolves with its result, or null when it was cancelled. |
+| `invalidateChecks(checkIds?)` | Marks selected checks stale (all when omitted), cancels their runs and ignores late answers after an external dependency changes. |
 | `refreshOptions(fieldId)` | Loads a host-option field's options again. |
 | `setStepState(stepId, state)` | Sets a task's state as the host sees it; null returns it to what the answers say. |
 | `saveDraft()`, `setPreset(presetId)` | Saves the draft now; starts from a preset (null for the plain start). |

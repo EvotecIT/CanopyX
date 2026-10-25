@@ -136,7 +136,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "e7dea789e4893860",
+      "version": "966dd269fa2222bd",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -173,7 +173,7 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "version": "3ca22040c60d5689",
+      "version": "db1e49f2c5e2fb8c",
       "script": "canopyx-flow-checks.js",
       "style": "canopyx-flow-checks.css",
       "runtimes": [

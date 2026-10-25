@@ -371,6 +371,8 @@ export interface FlowApi {
   /** Runs a check now; resolves with its result as the flow keeps it (field messages show in place), or null when it was cancelled.
    *  Rejects for a check the flow does not have. */
   runCheck(checkId: string): Promise<{ status: FlowCheckStatus; message: string | null; details: { label: string; value: string }[]; at: string } | null>;
+  /** Marks selected checks (all when omitted) stale after an external dependency changes. Cancels runs and ignores late answers without changing field values or dirty state. */
+  invalidateChecks(checkIds?: readonly string[]): void;
   /** Loads a host-option field's options again. Rejects for any other field. */
   refreshOptions(fieldId: string): Promise<void>;
   /** Sets a task's state as the host sees it; null returns it to what the answers say. Throws for a flow that is no task list. */
