@@ -204,8 +204,8 @@ export type InlineNode = LeafNode | DetailNode | InlineBranch<InlineNode>;
 export type LabelName =
   | "gridPaging" | "gridPageRange" | "gridPageNumber" | "gridPageLength" | "gridFirstPage" | "gridPreviousPage" | "gridNextPage" | "gridLastPage" | "gridPageInfo" | "gridPageInfoFiltered" | "gridPageButton"
   | "gridUnknownCount" | "gridMatchedCount" | "gridCursorRange"
-  | "gridResultCount" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"
-  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridVisibleRows" | "gridAllRows" | "gridDownloadCsv" | "gridCopy" | "gridDetails"
+  | "gridResultCount" | "gridRegexSearch" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"
+  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridVisibleRows" | "gridAllRows" | "gridDownloadCsv" | "gridDownloadXlsx" | "gridDownloadPdf" | "gridCopy" | "gridDetails"
   | "searchPlaceholder" | "searchResults" | "searchResultCount" | "searchResultCountOfTotal"
   | "searchResultCountOfMany" | "searchNoResults" | "searchTooShort" | "searchWordTooShort" | "searchFailed"
   | "columns" | "hiddenColumns" | "visibleColumns" | "resizeColumn" | "columnWidth" | "loading" | "loadError" | "queryFailed"

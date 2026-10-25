@@ -195,7 +195,7 @@ public sealed class CanopyHtmlPart {
             "grouping" => reporting != null && (reporting.Grouping != null || reporting.GroupBy.Count != 0 || reporting.Groupable || reporting.Aggregates.Count != 0),
             "detail" => reporting?.Detail != null,
             "searchHighlight" => view.SearchHighlight != null,
-            "layout" => view.Layout != null,
+            "layout" => view.Layout != null || view.StickyHeader,
             "record" => UsesRecordPanel(view),
             "live" => view.Live != null,
             "facets" => view.FacetPanel != null,

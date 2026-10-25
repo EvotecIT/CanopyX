@@ -34,7 +34,11 @@ public sealed partial class CanopyDataRequest {
         Levels = levels == null ? DefaultLevels(schema) : CheckLevels(schema, levels);
         if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
         if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit));
-        if (searchMode != CanopyGridSearchMode.Substring && searchMode != CanopyGridSearchMode.Words) throw new ArgumentOutOfRangeException(nameof(searchMode));
+        if (!Enum.IsDefined(typeof(CanopyGridSearchMode), searchMode)) throw new ArgumentOutOfRangeException(nameof(searchMode));
+        if (searchMode == CanopyGridSearchMode.Regex) {
+            if (!schema.AllowRegexSearch) throw new ArgumentException("This grid does not allow regex search.", nameof(searchMode));
+            if (!string.IsNullOrEmpty(search)) _ = new CanopyGridRegexSearch(search!);
+        }
         Filter = filter;
         var keys = new List<CanopySortKey>();
         if (sort != null) foreach (var key in sort) keys.Add(key ?? throw new ArgumentException("Sort keys cannot be null.", nameof(sort)));

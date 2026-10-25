@@ -58,8 +58,13 @@ public static partial class CanopyStaticHtml {
             html.Append('>');
             AppendFormatBefore(html, paint, outcome?.Row, first, styles, text);
             if (paint?.BarValue == false) html.Append("<span style=\"position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;\">");
-            AppendVisibleText(html, GridPresenterText(view, row, column, cell), text);
-            if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
+            var template = view.Layout?.Mode == CanopyLayoutMode.Cards && view.CardTemplate != null && view.CardTemplate.Slots.TryGetValue(column.Id, out var slotTemplate) ? slotTemplate : null;
+            var displayed = template == null ? GridPresenterText(view, row, column, cell) : CanopyCardTemplate.Format(template, id => {
+                row.Cells.TryGetValue(id, out var value);
+                return value?.DisplayText(view.GetColumn(id), view.Labels) ?? string.Empty;
+            });
+            AppendVisibleText(html, displayed, text);
+            if (template == null && cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
             if (paint?.BarValue == false) html.Append("</span>");
             AppendFormatAfter(html, paint, outcome?.Row, first, styles, text);
             html.Append("</td>");

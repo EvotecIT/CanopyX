@@ -42,6 +42,7 @@
   }
 
   function gridSearchTerms(text, mode) {
+    if (mode === "regex") return text ? [{ pattern: boundedPattern(text, false), deadline: performance.now() + 50 }] : [];
     if (mode !== "words") return text ? [foldText(text)] : [];
     // Quoted text is one phrase; an unfinished quote runs through the end of the input.
     return [...text.matchAll(/"([^"]*)(?:"|$)|([^\s"]+)/g)].map(match => foldText(match[1] === undefined ? match[2] : match[1])).filter(Boolean);
@@ -50,6 +51,12 @@
   function gridMatchesSearch(row, terms, columns) {
     return terms.every(term => columns.some(column => {
       const cell = row.cells[column.id], text = isCellObject(cell) && cell.searchText !== undefined ? cell.searchText : cellValue(cell);
+      if (term.pattern) {
+        if (performance.now() > term.deadline) throw new Error("CanopyX: regex search exceeded its 50 ms evaluation budget.");
+        const input = text == null ? "" : String(text);
+        if (input.length > 4096) throw new Error("CanopyX: regex search cell input exceeds 4,096 characters.");
+        return term.pattern.test(input);
+      }
       return foldText(text).includes(term);
     }));
   }

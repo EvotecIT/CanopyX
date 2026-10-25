@@ -45,6 +45,16 @@
 .cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group) > .cx-cell[data-cx-card="wide"] { grid-column:span var(--cx-card-span,1); }
 .cx-data-grid[data-cx-layout="cards"] .cx-cell[data-cx-label]::before { content:attr(data-cx-label) / "";display:block;flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--cx-size-11d5px);font-weight:600;line-height:1.35;color:var(--hfx-color-text-muted); }
 .cx-data-grid[data-cx-layout="cards"] .cx-cell > :is(.cx-text,.cx-presenter-text) { max-width:100%; }
+.cx-data-grid[data-cx-layout="cards"] .cx-card-templated > :not(.cx-card-slot):not(.cx-grid-row-select) { display:none; }
+.cx-card-slot { display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:pre; }
+.cx-page-header-space { flex:none; }
+.cx-page-header-space[hidden] { display:none; }
+/* Layout/paint containment would make a fixed header relative to the grid and clip it during page scrolling. */
+.cx-data-grid[data-cx-page-header] .cx-grid { contain:size style; }
+@media print {
+  .cx-data-grid[data-cx-page-header] .cx-head { position:static !important;clip-path:none !important; }
+  .cx-page-header-space { display:none; }
+}
 .cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group) > .cx-cell:first-child::before { content:none; }
 .cx-data-grid[data-cx-layout="cards"] .cx-row[aria-selected="true"] { box-shadow:inset var(--cx-size-3px) 0 0 var(--hfx-color-accent); }
 @media (forced-colors:active) {

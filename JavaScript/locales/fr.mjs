@@ -2,6 +2,7 @@
 const labels = Object.freeze({
   gridNoExportColumns: "Aucune colonne visible ne permet l’exportation.",
   searchPlaceholder: "Rechercher",
+  gridRegexSearch: "Motif de recherche",
   searchResults: "Résultats de la recherche",
   searchResultCount: "Résultats : {count}",
   searchResultCountOfTotal: "Résultats : {count} sur {total}",

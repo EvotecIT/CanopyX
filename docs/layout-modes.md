@@ -52,6 +52,33 @@ are painted; cards, and a tree's remembered layout, follow as soon as the layout
 
 ## Cards
 
+### Safe card token slots
+
+`cardTemplate` replaces text within named column slots while retaining their column order, labels, selection controls and
+keyboard navigation. Each `{columnId}` token reads that column's formatted cell text. Unspecified slots keep their ordinary
+presenters. Templates and substituted values are literal text; HTML is displayed as text. A template allows at most 64 slots
+of 2,048 UTF-16 code units each. Both slot names and tokens must refer to declared columns, and braces must form complete tokens.
+
+```js
+layout: { mode: "cards" },
+cardTemplate: { name: "{name} — {status}", due: "Due: {due}" }
+```
+
+In C#, set `view.CardTemplate = new CanopyCardTemplate()` and populate `view.CardTemplate.Slots` with the same strings.
+The static fallback uses those text templates when the declared layout is cards and escapes them as ordinary table content.
+Switching back to fit or scroll restores each slot's ordinary presenter. The gallery's `template-cards.html` demonstrates the API.
+
+### Page-scroll headers
+
+Set `stickyHeader: true` (`CanopyDataGridView.StickyHeader`) to keep an auto-height grid's real header visible while the page
+scrolls through the grid. The default is off. It applies when all rows fit inside the grid; a vertically scrolling grid or
+`autoHeight: false` keeps its ordinary header. Cards have no visible column header. Sorting, column menus and keyboard focus
+continue to use the original header; there is no cloned interactive row. Set `--cx-sticky-top: 48px` on the host when a page
+toolbar occupies the top of the viewport. The header stops at the grid's end, restores on layout changes and is released on
+destruction. It uses the optional layouts part even when the view has no Layout menu. See `sticky-grid.html` in the gallery.
+
+### Card sizing
+
 A card's height follows the grid's width: the fields flow into as many columns as fit (each at least 140 px wide), spread
 evenly over the fewest lines; free text (wrapping, long text, tags, lists and flexible columns) takes two slots. Every card
 of a grid has the same height, so virtual rows, scroll positions, `scrollToRow` and Page Up/Down keep working on any number

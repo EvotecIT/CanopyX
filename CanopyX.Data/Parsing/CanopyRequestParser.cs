@@ -157,7 +157,15 @@ public static partial class CanopyRequestParser {
         var mode = CanopyGridSearchMode.Substring;
         var modeText = OptionalString(root, "searchMode");
         if (modeText == "words") mode = CanopyGridSearchMode.Words;
-        else if (modeText != null && modeText != "substring") throw CanopyRequestException.Document("The search mode is substring or words.");
+        else if (modeText == "regex") {
+            if (!schema.AllowRegexSearch) throw CanopyRequestException.Document("This grid does not allow regex search.");
+            mode = CanopyGridSearchMode.Regex;
+            try { if (search.Length != 0) _ = new CanopyGridRegexSearch(search); }
+            catch (Exception error) when (error is ArgumentException || error is InvalidOperationException) {
+                throw CanopyRequestException.Document("The regex search pattern is invalid: " + error.Message);
+            }
+        }
+        else if (modeText != null && modeText != "substring") throw CanopyRequestException.Document("The search mode is substring, words or regex.");
         var revision = OptionalString(root, "revision");
         if (revision != null) RequireIdentifier(revision, "revision");
         var sort = Sorts(root, schema);

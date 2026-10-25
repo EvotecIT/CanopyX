@@ -47,7 +47,7 @@
       global.removeEventListener("pointermove", move); global.removeEventListener("pointerup", stop); global.removeEventListener("pointercancel", stop);
       grid.lifetime.signal.removeEventListener("abort", stop);
       if (grid.cellDrag === stop) grid.cellDrag = null;
-      done(ev?.type === "pointerup");
+      done(ev?.type === "pointerup", ev);
     };
     grid.cellDrag?.(); grid.cellDrag = stop;
     global.addEventListener("pointermove", move); global.addEventListener("pointerup", stop); global.addEventListener("pointercancel", stop);

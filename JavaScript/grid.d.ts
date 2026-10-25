@@ -298,7 +298,7 @@ export interface GridQuery {
   readonly limit: number;
   readonly search: string;
   /** Absent preserves substring matching; words matches all words/quoted phrases across searchable cells. */
-  readonly searchMode?: "substring" | "words";
+  readonly searchMode?: "substring" | "words" | "regex";
   readonly sort: readonly GridSort[];
   readonly filters: readonly GridFilter[];
   /** Combined with search and flat filters using AND. */
@@ -355,6 +355,12 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   layout?: LayoutOptions;
   /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
   autoRowHeight?: boolean;
+  /** Literal templates keyed by card column slot. {columnId} inserts formatted text; markup is never parsed. */
+  cardTemplate?: Readonly<Record<string, string>>;
+  /** Follow page scrolling only when an auto-height grid fits all rows. Default false. */
+  stickyHeader?: boolean;
+  /** Permit searchMode: "regex" with the bounded condition grammar. Default false. */
+  allowRegexSearch?: boolean;
   /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */
   estimatedRowHeight?: number;
   /** At most 64 ordered rules; a tone or className is required on each rule. */

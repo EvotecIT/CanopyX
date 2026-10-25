@@ -27,7 +27,7 @@ public sealed class CanopyGridQuery {
     /// <summary>Gets or sets search text over raw values of declared columns. Null is empty search.</summary>
     public string? Search { get; set; }
 
-    /// <summary>Gets or sets substring or all-word/quoted-phrase matching. Existing queries default to substring matching.</summary>
+    /// <summary>Gets or sets substring, all-word/quoted-phrase or opt-in bounded regex matching. Existing queries default to substring matching.</summary>
     public CanopyGridSearchMode SearchMode { get; set; }
 
     /// <summary>Gets or sets the expected dataset snapshot identity. Null requests the current snapshot.</summary>
@@ -84,7 +84,11 @@ public sealed class CanopyGridQuery {
     }
 
     internal void Validate(CanopyDataGridView view) {
-        if (SearchMode != CanopyGridSearchMode.Substring && SearchMode != CanopyGridSearchMode.Words) throw new ArgumentOutOfRangeException(nameof(SearchMode));
+        if (!Enum.IsDefined(typeof(CanopyGridSearchMode), SearchMode)) throw new ArgumentOutOfRangeException(nameof(SearchMode));
+        if (SearchMode == CanopyGridSearchMode.Regex) {
+            if (!view.AllowRegexSearch) throw new InvalidOperationException("This grid does not allow regex search.");
+            if (!string.IsNullOrEmpty(Search)) _ = new CanopyGridRegexSearch(Search!);
+        }
         if (view.Id != View) throw new InvalidOperationException("A grid query must target its owning view.");
         if (Revision != null) CanopyIdentifiers.Require(Revision, nameof(Revision));
         CanopyGridCursors.Validate(Cursor, nameof(Cursor));
@@ -128,6 +132,7 @@ public sealed class CanopyGridQuery {
         foreach (var filter in Filters) filter.WriteJson(writer);
         writer.EndArray();
         if (SearchMode == CanopyGridSearchMode.Words) writer.Property("searchMode", "words");
+        if (SearchMode == CanopyGridSearchMode.Regex) writer.Property("searchMode", "regex");
         if (view.Reporting?.DynamicGrouping == true) { writer.Name("groupBy").BeginArray(); foreach (var level in levels) level.WriteJson(writer); writer.EndArray(); }
         if (FilterGroup != null) {
             writer.Name("filterGroup");

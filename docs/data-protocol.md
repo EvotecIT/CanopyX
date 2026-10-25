@@ -262,6 +262,19 @@ A `gridQuery` contains `view`, `offset`, `limit`, `search`, `sort`, and `filters
 
 An absent `searchMode` means `substring`: the complete search text must be a substring of one searchable cell. `words` requires every whitespace-separated word or double-quoted phrase to match at least one searchable cell; different words may match different columns. A phrase matches within one cell, empty quoted phrases are ignored, and an unfinished quote extends to the end of the input. Words are partial matches, not regular expressions. Hosts implement the same folding and matching semantics and receive the resolved search mode in query documents. `CanopyTextFolding.Fold` is the folding in C#, and `CanopyX.Data` implements the hosted grid documents on the server (see [remote-dotnet.md](remote-dotnet.md)).
 
+`searchMode: "regex"` additionally requires `allowRegexSearch: true` on the owning grid. It uses the existing bounded condition
+pattern grammar: literals, character classes and at most one variable repetition anchored at `^`; groups, alternatives and
+backreferences are rejected. Matching is case-insensitive, without accent folding, against each searchable raw/search-text cell.
+Patterns are limited to 256 UTF-16 code units, cell inputs to 4,096; oversized input is rejected rather than truncated. Empty
+search still matches all rows. The browser allows 50 ms of regex evaluation per query and retains the previous accepted query
+when validation or execution fails. The input reports an invalid pattern and uses the translated `gridRegexSearch` label.
+C# uses `AllowRegexSearch`, `CanopyGridSearchMode.Regex` and `CanopyGridRegexSearch`; the in-memory provider implements the same
+grammar with a 100 ms query budget and native match timeout. The portable IQueryable provider rejects regex execution explicitly;
+it never downloads a database result to simulate matching. Other hosts implement or reject regex queries themselves.
+
+The optional grid properties `stickyHeader` and `cardTemplate` configure page-scroll headers and literal card token slots
+respectively. They use the lazy layouts part; see [layout modes](layout-modes.md). Both default to the ordinary grid behavior.
+
 The optional grid definition field `searchDelayMs` sets the search-input debounce from 0 to 5,000 milliseconds; browser options of the same name override it. Without a setting, inline sources apply input immediately and host sources wait 300 ms. Enter applies immediately except during input-method composition, whose partial input is never submitted. Sorting, filter edits and chip actions include queued search text in the same immediate request; they never include unfinished composition. Explicit `setQuery`, view restoration and reset replace queued text. Accepted-result counts and removable search, flat-predicate and grouped-filter chips update only after a query succeeds; pending or failed queries retain the previous summary. Clear search and filters removes both predicate forms, resets the offset and cancels any queued text.
 
 All flat `filters` combine with AND. An optional `filterGroup` adds a nested expression, also combined with search and flat predicates using AND. A group is `{ "operator": "and" | "or", "filters": [...], "groups": [...] }`: `and` requires every predicate and child group to match; `or` requires at least one. Both arrays are required and their combined length cannot be zero. Queries allow eight group levels, 64 groups and 64 total predicates including flat predicates. The .NET writer and browser enforce these semantic bounds in addition to schema shape validation. Operands and column rules are identical at every depth. Invalid or incompatible grouped state is rejected rather than restored with silently broadened filters.

@@ -45,8 +45,9 @@
 
   VIEW_MODES.layoutsStart = view => {
     // The menu needs the toolbar menus (a tree's tree tools part): it is built on the first start that finds them.
-    if (!view.layoutMenu) layoutMenu(view);
-    if (!view.sortMenu) sortMenu(view);
+    if (view.layoutOptions && !view.layoutMenu) layoutMenu(view);
+    if (view.layoutOptions && !view.sortMenu) sortMenu(view);
+    if (view.kind === "grid" && view.view.stickyHeader) pageHeaderStart(view);
     if (view.layoutStarted) return;
     view.layoutStarted = true;
     view.host.classList.add("cx-layouts");
@@ -90,6 +91,7 @@
         const label = index ? column.title : null, wide = index && cardWide(column) ? "wide" : null;
         if ((cell.getAttribute("data-cx-label") ?? null) !== label) { if (label === null) cell.removeAttribute("data-cx-label"); else cell.setAttribute("data-cx-label", label); }
         if ((cell.getAttribute("data-cx-card") ?? null) !== wide) { if (wide) cell.setAttribute("data-cx-card", wide); else cell.removeAttribute("data-cx-card"); }
+        cardTemplateSlot(this, row, column, slot);
       });
     };
     // A new width can change how many fields fit on a line, and so the card height.

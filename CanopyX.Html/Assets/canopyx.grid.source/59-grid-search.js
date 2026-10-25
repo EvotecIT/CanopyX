@@ -7,6 +7,7 @@
   }
   // ---------- search input and the accepted query's visible conditions ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+    gridRegexSearch: "Search pattern",
     gridResultCount: "{count} of {total} rows", gridClearQuery: "Clear search and filters",
     gridRemoveSearch: "Clear search: {search}", gridGroupedFilters: "Grouped filters ({count} conditions)",
     gridRemoveGroup: "Clear grouped filters", gridRemoveCondition: "Remove condition: {condition}"
@@ -19,8 +20,9 @@
       const update = () => {
         clearTimeout(this.searchTimer); this.searchTimer = null;
         if (this.destroyed || this.searchComposing) return;
-        if (this.queryForChange().search === input.value) return;
-        this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).catch(() => {});
+        if (this.queryForChange().search === input.value) { input.setCustomValidity(""); return; }
+        this.setQuery(gridQueryStart(this.queryForChange(), { search: input.value })).then(() => input.setCustomValidity(""))
+          .catch(error => { if (!this.destroyed && this.queryForChange().searchMode === "regex") { input.setCustomValidity(error.message); input.reportValidity(); } });
       };
       GRID_REPORTING.search?.(this, update);
       const schedule = () => {

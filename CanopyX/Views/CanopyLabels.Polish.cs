@@ -6,6 +6,7 @@ public sealed partial class CanopyLabels {
     public static CanopyLabels Polish() => WithPolishUi(new CanopyLabels {
         GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
         SearchPlaceholder = "Szukaj",
+        GridRegexSearch = "Szukaj według wzorca",
         SearchResults = "Wyniki wyszukiwania",
         SearchResultCount = "Wyniki: {count}",
         SearchResultCountOfTotal = "Wyniki: {count} z {total}",

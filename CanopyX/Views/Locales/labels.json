@@ -5,6 +5,7 @@
   "CalendarSharedResources": ["{count} {resources}","{count} {resources}","{count} {resources}","{count} {resources}","{count} {resources}"],
   "CalendarResourceWindow": ["{resources} {start}–{end} z {total}","{resources} {start}–{end} von {total}","{resources} {start}–{end} de {total}","{resources} {start}–{end} sur {total}","{resources} {start}–{end} di {total}"],
   "SearchPlaceholder": ["Szukaj","Suchen","Buscar","Rechercher","Cerca"],
+  "GridRegexSearch": ["Szukaj według wzorca","Suchmuster","Patrón de búsqueda","Motif de recherche","Schema di ricerca"],
   "SearchResults": ["Wyniki wyszukiwania","Suchergebnisse","Resultados de búsqueda","Résultats de la recherche","Risultati della ricerca"],
   "SearchResultCount": ["Wyniki: {count}","{count} Ergebnisse","{count} resultados","Résultats : {count}","Risultati: {count}"],
   "SearchResultCountOfTotal": ["Wyniki: {count} z {total}","{count} von {total} Ergebnissen","{count} de {total} resultados","Résultats : {count} sur {total}","Risultati: {count} su {total}"],

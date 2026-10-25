@@ -67,6 +67,8 @@ internal sealed partial class QueryTranslator<T> {
     }
 
     internal Expression<Func<T, bool>>? Where(CanopyDataRequest request) {
+        if (request.SearchMode == CanopyGridSearchMode.Regex && request.Search.Length != 0)
+            throw new NotSupportedException("Bounded regex quick search requires an in-memory provider or an explicit host implementation; it cannot be translated to this query provider.");
         Expression? body = null;
         if (request.Ids != null) body = ExpressionTools.And(body, KeyIn(request.Ids));
         if (request.ExcludedIds.Count != 0) body = ExpressionTools.And(body, Expression.Not(KeyIn(request.ExcludedIds)));
