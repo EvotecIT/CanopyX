@@ -11,7 +11,7 @@ internal static class GridPolishExample {
             var view = View();
             view.StickyHeader = true;
             var page = view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Height = "2600px", Title = "Work schedule with a page-scroll header" });
-            const string pageStyle = "<style>html body.cx-page{height:auto;overflow:visible}.cx-main{height:auto;display:block;padding:24px}body.cx-page>.cx-main>.cx-host{height:2600px}.polish-copy{max-width:60rem;margin:0 0 24px;line-height:1.6}</style>";
+            const string pageStyle = "<style>html body.cx-page{height:auto;overflow:visible;color:CanvasText;background:Canvas}.cx-main{height:auto;display:block;padding:24px}body.cx-page>.cx-main>.cx-host{height:2600px}.polish-copy{max-width:60rem;margin:0 0 24px;line-height:1.6}</style>";
             const string introduction = "<section class=\"polish-copy\"><h2>Work schedule</h2><p>Scroll the page: the grid header stays in view while this auto-height schedule fits every record. Sort the Name column from the header as usual.</p></section>";
             page = page.Replace("</head>", pageStyle + "</head>").Replace("<main class=\"cx-main\">", "<main class=\"cx-main\">" + introduction);
             File.WriteAllText(Path.Combine(output, "sticky-grid" + suffix + ".html"), page);

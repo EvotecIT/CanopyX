@@ -33,7 +33,7 @@ const menuButtons = page => page.locator(".cx-grid-export .cx-grid-panel button:
 
 for (const reporting of [false, true]) test("native exportMenu chooses raw values and only provider actions for " + (reporting ? "reporting" : "ordinary") + " grids", async ({ page }) => {
   await open(page, definition(reporting ? { reporting: {} } : {}), fakeFormats +
-    "CanopyX.configure('records',{exportFormats:['xlsx'],exportMenu:{csv:false,copy:false,values:'raw'}});");
+    "CanopyX.configure('records',{exportFormats:['xlsx'],exportMenu:{csv:false,copy:false,print:false,values:'raw'}});");
   await page.evaluate(async () => {
     const grid = document.querySelector('[data-canopyx-host]').canopyx;
     await grid.setQuery({search:'Archive',sort:[{column:'size',direction:'desc'}]});
@@ -56,7 +56,7 @@ for (const reporting of [false, true]) test("format providers join the " + (repo
     grid.setColumnOrder(["size", "name", "kind"]); grid.setColumnVisible("kind", false);
     await grid.setQuery({ search: "Archive", sort: [{ column: "size", direction: "desc" }] }); grid.setSelection(["003", "010", "079"]); }, api);
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Copy"]);
+  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Copy", "Print"]);
   const expected = {
     filtered: Array.from({ length: 40 }, (_, i) => String(79 - 2 * i).padStart(3, "0")),
     selected: ["079", "010", "003"],
@@ -208,7 +208,7 @@ test("formats register globally, per grid and as declared view IDs, and invalid 
   await open(page, definition(), fakeFormats + "CanopyX.registerExportFormat(fakeFormat('late','Download late','txt','text/plain'));");
   await openGridControl(page, "export"); await page.evaluate(() => CanopyX.registerExportFormat(fakeFormat("later", "Download later", "txt", "text/plain")));
   await page.locator(".cx-grid-export > summary").click(); await page.locator(".cx-grid-export > summary").click();
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Download late", "Download later", "Copy"]);
+  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Download late", "Download later", "Copy", "Print"]);
   // Declared IDs are validated with the view.
   await page.route("http://canopyx.test/invalid", route => route.fulfill({ contentType: "text/html", body: viewPage(definition({ exportFormats: ["pdf", "pdf"] })) }));
   await page.goto("http://canopyx.test/invalid");
@@ -230,7 +230,7 @@ test("hidden providers remain callable while default and visible providers stay 
     CanopyX.registerExportFormat({...fakeFormat('hidden','Host-only export','txt','text/plain'),showInMenu:false});
     CanopyX.registerExportFormat({...fakeFormat('visible','Visible export','txt','text/plain'),showInMenu:true});`, runtime);
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Visible export", ...(view.type === "grid" ? ["Copy"] : [])]);
+  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Visible export", ...(view.type === "grid" ? ["Copy", "Print"] : [])]);
   await expect(page.getByRole("button", { name: "Host-only export", exact: true })).toHaveCount(0);
   const result = await page.evaluate(async api => {
     const grid = eval(api), hidden = await grid.exportAs("hidden", { scope: "all", values: "raw", download: false });
@@ -323,7 +323,7 @@ for (const theme of ["light", "dark"]) for (const width of [1440, 390]) test("th
   await openGridControl(page, "export");
   const panel = page.locator(".cx-grid-export .cx-grid-panel");
   await expect(panel.getByRole("combobox")).toBeVisible();
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Copy"]);
+  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Copy", "Print"]);
   const box = await panel.boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(width);
   for (const button of await menuButtons(page).all()) {
