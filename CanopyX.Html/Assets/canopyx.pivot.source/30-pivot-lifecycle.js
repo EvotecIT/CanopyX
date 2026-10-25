@@ -1,13 +1,17 @@
   const PIVOT_RENDER_BASE = DataGrid.prototype.render, PIVOT_DESTROY_BASE = DataGrid.prototype.destroy;
   Object.assign(DataGrid.prototype, {
-    async requestPivot(query, page, signal) {
-      const { query: accepted, definition } = pivotRequestOf(this, query, page.revision), key = JSON.stringify({ query: accepted, definition });
-      if (this.pivotCandidate?.key === key) return;
+    async requestPivot(query, page, signal, restore, state) {
+      const { query: accepted, definition } = pivotRequestOf(this, query, page.revision, state), key = JSON.stringify({ query: accepted, definition });
+      if (this.pivotCandidate?.key === key) {
+        if (restore) restore.pivotCandidate = this.pivotCandidate;
+        return;
+      }
       const request = { protocol: "canopyx/2", type: "gridPivotQuery", query: accepted, definition };
       const value = this.source.pivot ? await this.runGridHook(signal => this.source.pivot(request, { signal }), signal) : this.view.source.kind === "inline" ? pivotInline(this, definition, accepted) : null;
       gridOperationActive(this, signal);
       if (!value) throw new Error("CanopyX: hosted pivots need an explicit source.pivot hook.");
-      this.pivotCandidate = { key, query: accepted, result: pivotResult(this, definition, accepted, page, value) };
+      const candidate = { key, query: accepted, result: pivotResult(this, definition, accepted, page, value) };
+      if (restore) restore.pivotCandidate = candidate; else this.pivotCandidate = candidate;
     },
     render() {
       if (!pivotEnabledLocal(this) || !pivotIntent(this)?.active) {
