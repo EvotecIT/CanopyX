@@ -30,8 +30,11 @@
 
     // A grid with conditional formatting is ready once its formatting part is too (52-grid-formatting.js).
     initializeState() {
-      const ready = this.initialState ? this.setState(this.initialState) : this.setQuery(this.view.query || {});
-      return this.view.formatRules || this.view.formatting ? Promise.all([ready, this.loadFormatting().catch(error => this.emit("error", { error }))]).then(([result]) => result) : ready;
+      const start = () => {
+        const ready = this.initialState ? this.setState(this.initialState) : this.setQuery(this.view.query || {});
+        return this.view.formatRules || this.view.formatting ? Promise.all([ready, this.loadFormatting().catch(error => this.emit("error", { error }))]).then(([result]) => result) : ready;
+      };
+      return gridUsesCalculations(this.view) && !this.calculationPrepared ? this.prepareCalculations().then(start) : start();
     },
     getState() {
       const query = this.getQuery() || this.defaultState.query;

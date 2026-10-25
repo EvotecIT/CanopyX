@@ -29,7 +29,7 @@
         if (typeof a.value !== typeof b.value) return typeof a.value === "boolean" ? -1 : 1;
         return gridOrder(typeof a.value === "string" ? foldText(a.value) : a.value, typeof b.value === "string" ? foldText(b.value) : b.value);
       });
-      return { protocol: PROTOCOL, type: "gridFacetPage", view: view.id, revision: "inline", column: column.id,
+      return { protocol: PROTOCOL, type: "gridFacetPage", view: view.id, revision: gridInlineRevision(view), column: column.id,
         search: request.search, includeCurrentFilter: request.includeCurrentFilter, matched: rows.length,
         totalValues: items.length, truncated: items.length > request.limit, items: items.slice(0, request.limit), ...(request.bucket ? { bucket: request.bucket } : {}) };
     };

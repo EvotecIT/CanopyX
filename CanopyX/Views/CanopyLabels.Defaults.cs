@@ -6,44 +6,10 @@ namespace CanopyX;
 // The English default of every label. Build/Sync-Labels.ps1 reads the entries of this file in this order and
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
-    private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
-        [nameof(GridPivot)] = "Pivot",
-        [nameof(GridPivotRows)] = "Row groups",
-        [nameof(GridPivotColumns)] = "Column groups",
-        [nameof(GridPivotValues)] = "Values",
-        [nameof(GridPivotFlat)] = "Show records",
-        [nameof(GridPivotConfigure)] = "Configure pivot",
-        [nameof(GridPivotOther)] = "Other",
-        [nameof(GridPivotLimited)] = "Showing {shown} of {total} column paths; the rest are combined in Other. Subtotals include all matching descendants.",
-        [nameof(GridPivotColumn)] = "Choose column",
-        [nameof(GridPivotTopN)] = "Top columns",
-        [nameof(GridPivotSort)] = "Sort rows by total",
-        [nameof(GridPivotDrill)] = "Show records for {row}, {column}",
-        [nameof(GridPivotReturn)] = "Return to pivot",
-        [nameof(GridPivotInvalid)] = "Choose valid pivot axes and at least one value.",
-        [nameof(GridShowAs)] = "Show values as",
-        [nameof(GridShowAsValue)] = "Value",
-        [nameof(GridShowAsPercentGrandTotal)] = "as % of total",
-        [nameof(GridShowAsPercentParent)] = "as % of parent",
-        [nameof(GridShowAsPercentColumn)] = "as % of column",
-        [nameof(GridShowAsPercentRow)] = "as % of row",
-        [nameof(GridShowAsRunningTotal)] = "as running total",
-        [nameof(GridShowAsRank)] = "as rank",
-        [nameof(GridShowAsDifference)] = "as difference from previous",
-        [nameof(GridShowAsPercentChange)] = "as % change from previous",
-        [nameof(GridBucket)] = "Bucket",
-        [nameof(GridBucketNone)] = "Exact values",
-        [nameof(GridBucketDay)] = "Day",
-        [nameof(GridBucketWeek)] = "Week",
-        [nameof(GridBucketMonth)] = "Month",
-        [nameof(GridBucketQuarter)] = "Quarter",
-        [nameof(GridBucketYear)] = "Year",
-        [nameof(GridBucketHour)] = "Hour of day",
-        [nameof(GridBucketWeekday)] = "Weekday",
-        [nameof(GridBucketWidth)] = "Range width",
-        [nameof(GridBucketEdges)] = "Range edges",
-        [nameof(GridBucketOrigin)] = "Range origin",
-        [nameof(GridBucketInvalid)] = "Enter valid bucket settings.",
+    private static readonly Dictionary<string, string> Defaults = CreateDefaults();
+
+    private static Dictionary<string, string> CreateDefaults() {
+        var defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(GridNoExportColumns)] = "No visible columns allow export.",
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(SearchResults)] = "Search results",

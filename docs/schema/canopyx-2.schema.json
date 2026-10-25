@@ -651,6 +651,7 @@
         "footers": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/gridFooter" } },
         "preSort": { "type": "array", "maxItems": 32, "items": { "type": "object", "required": ["column", "direction"], "additionalProperties": false, "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] } } } },
         "columnDefaults": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridColumnDefaults" } },
+        "calculatedColumnsEditable": { "type": "boolean", "description": "Allows inline readers to edit calculation definitions and persist them in saved state." },
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "grid" },
         "rowIdentity": { "enum": ["stableKey", "ordinal"], "description": "Default stableKey. Ordinal IDs are source positions in one dataset snapshot; saved selections and keyed live updates are unavailable." },
@@ -721,7 +722,10 @@
         "if": { "properties": { "source": { "required": ["navigation"], "properties": { "navigation": { "const": "cursor" } } } } },
         "then": { "required": ["presentation"], "properties": { "presentation": { "const": "paged" }, "source": { "properties": { "kind": { "const": "host" } } }, "query": { "$ref": "#/$defs/gridCursorQuery" } } },
         "else": { "properties": { "query": { "$ref": "#/$defs/gridQuery" } } }
-      }]
+      },
+        { "properties": { "columns": { "contains": { "required": ["calculation"] }, "minContains": 0, "maxContains": 32 } } },
+        { "if": { "required": ["calculatedColumnsEditable"], "properties": { "calculatedColumnsEditable": { "const": true } } }, "then": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } } }
+      ]
     },
     "gridFacetQuery": {
       "type": "object", "required": ["protocol", "type", "query", "column", "search", "limit", "includeCurrentFilter"], "additionalProperties": false,
@@ -801,6 +805,7 @@
       "description": "Canonical browser preference snapshot. Runtime binds columns, queries and selection policy to the current definition.",
       "type": "object", "required": ["version", "view", "columns", "query", "timeZone", "selection", "scrollTop"], "additionalProperties": false,
       "properties": {
+        "calculatedColumns": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridCalculatedColumnDefinition" }, "$comment": "Accepted only when the current view enables its inline calculation editor. Readers bind unique IDs and dependencies, retain every authored calculation ID, and reject invalid programs." },
         "version": { "const": 1 }, "view": { "$ref": "#/$defs/identifier" },
         "columns": { "type": "array", "minItems": 1, "items": {
           "type": "object", "required": ["id", "width", "hidden"], "additionalProperties": false,
@@ -2099,6 +2104,19 @@
         "pinned": { "enum": ["left", "right", null], "description": "Initial pin of every column of a top-level group; null scrolls. Nested groups take none." }
       }
     },
+    "gridCalculationExpression": {
+      "type": "string", "minLength": 1, "maxLength": 2048, "pattern": "\\S",
+      "$comment": "Readers enforce the 2048 UTF-16-code-unit limit and parse the bounded scalar grammar: depth 32, 256 AST nodes, 32 function arguments and 64 references. JSON Schema maxLength counts Unicode characters, so it is not a replacement for the code-unit check."
+    },
+    "gridCalculatedColumnDefinition": {
+      "type": "object", "required": ["id", "title", "kind", "expression"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" },
+        "kind": { "enum": ["text", "number", "datetime"] },
+        "expression": { "$ref": "#/$defs/gridCalculationExpression" }
+      }
+    },
     "gridColumn": {
       "type": "object",
       "required": [
@@ -2114,6 +2132,7 @@
         "orderData": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
         "orderSequence": { "type": "array", "maxItems": 3, "uniqueItems": true, "items": { "enum": ["asc", "desc", "none"] } },
         "sortComparator": { "type": ["string", "null"], "pattern": "^[a-z][a-zA-Z0-9]{0,31}$" },
+        "calculation": { "$ref": "#/$defs/gridCalculationExpression" },
         "id": {
           "$ref": "#/$defs/column/properties/id"
         },
@@ -2180,7 +2199,8 @@
           "description": "How the column gives way when narrow. Integers follow responsivePriority: 0-1 essential, 10000+ optional." },
         "pinned": { "enum": ["left", "right", null], "description": "Requested edge; null unpins. The identity column pins left by default." },
         "rowHeader": { "type": "boolean", "description": "The identity column; defaults to the first column. At most one." }
-      }
+      },
+      "allOf": [{ "if": { "required": ["calculation"] }, "then": { "properties": { "editable": { "const": false } } } }]
     },
     "quietTones": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/tone" },
       "description": "Tones an enum or state presenter shows as plain muted text." },
@@ -2638,6 +2658,15 @@
             "gridGroupHeading": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupMissing": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupExpand": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationAdd": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationTitle": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationId": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationExpression": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationError": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationInvalid": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationHelp": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationNumber": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationDate": { "$ref": "#/$defs/accessibleLabel" },
             "gridPivot": { "$ref": "#/$defs/accessibleLabel" },
             "gridPivotRows": { "$ref": "#/$defs/accessibleLabel" },
             "gridPivotColumns": { "$ref": "#/$defs/accessibleLabel" },

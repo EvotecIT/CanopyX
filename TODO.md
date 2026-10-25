@@ -292,6 +292,7 @@ Consumers: the HtmlForgeX DataExplorer's wide datasets and live inventories; the
 - [x] Add aggregate display modes, numeric values with spreadsheet formats, saved presentation intent and a lazy menu that remains available on phones.
 - [ ] Complete pivot delivery for inventory and monitoring analysis: the typed inline/hosted pivot, bounded axes, totals, collapse, top-N/Other, exact drill-through, static output and numeric outlined capture are implemented ([pivot](docs/pivot.md)); spreadsheet outline/print integration and combined release qualification remain. Full charts stay in ChartForgeX; the categorical matrix remains its own view.
 - [ ] Compose ChartForgeX charts for a selected range or group and richer chart cells through host renderers. Preserve the existing bar/line/period-strip presenters for small host-supplied histories.
+- [x] Add calculated columns with a bounded scalar grammar, matching C# and browser evaluation, shared conformance vectors, inline editing, query/export participation and script-free output ([calculated columns](docs/calculated-columns.md)).
 - [ ] Qualify sticky headers during page scrolling for grids that grow with their rows.
 
 Gate: produce a measured wide/live inventory demonstration. Record DOM/cache bounds, browser memory, query/render/input latency, sustained scroll and update behavior at normal and 4x slowdown. Keyboard navigation, cell identity and frozen headers remain correct when columns/rows leave the mounted window. Ship only the extensions that improve the demonstrated consumer.

@@ -14,6 +14,7 @@
         find.type = "search"; find.placeholder = this.labels.gridFindColumn; find.setAttribute("aria-label", find.placeholder);
         find.hidden = this.columns.length < 9; find.oninput = () => this.syncColumnControls();
         actions.append(gridButton(this.labels.gridShowAllColumns, () => this.showAllColumns()), gridButton(this.labels.gridResetColumns, () => this.resetColumns()));
+        if (this.view.calculatedColumnsEditable) actions.append(gridButton(this.labels.gridCalculationAdd, event => this.openCalculatedColumn(event.currentTarget)));
         panel.replaceChildren(find, this.columnList = h("div"), actions);
       }
       this.syncColumnControls();

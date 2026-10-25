@@ -138,7 +138,19 @@ export type GridColumn<Row extends GridRow = GridRow> = Omit<CanopyColumn, "id" 
   alwaysVisible?: boolean;
   /** Hover tooltip: "auto" shows a cell's full value while it is cut off; a declared column id shows that column's text. */
   tooltip?: string;
-};
+} & (
+  | { readonly calculation?: never }
+  /** A bounded expression over raw row values. Calculated cells are read-only; hosted values come from the server. */
+  | { readonly calculation: string; editable?: false }
+);
+/** One reader-editable calculation definition; all authored calculation IDs must remain in the submitted set. */
+export interface GridCalculatedColumnDefinition {
+  readonly id: string;
+  readonly title: string;
+  readonly kind: "text" | "number" | "datetime";
+  /** One to 2048 UTF-16 code units, parsed as the bounded calculation grammar. */
+  readonly expression: string;
+}
 export type GridColumnPriority = "essential" | "normal" | "optional" | number;
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 /** Code-unit collation; natural digit runs never convert to floating-point numbers. */
@@ -334,6 +346,8 @@ export type GridQueryInput<Q extends AcceptedGridQuery = GridQuery> = Partial<Q>
 type GridCount<Q extends AcceptedGridQuery> = Q extends GridCursorQuery ? number | null : number;
 
 interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> {
+  /** Enables the calculated-column editor and saved definitions. Only built-in inline sources support it. */
+  calculatedColumnsEditable?: boolean;
   protocol: "canopyx/2";
   type: "grid";
   id: string;
@@ -449,8 +463,9 @@ export interface GridRowData {
 }
 /** An inline grid whose rows the data part decodes from compact row data, chunk by chunk, after the first paint. */
 export interface CompactGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "inline"; navigation?: "offset" }; rowData: GridRowData; rows?: never; }
-export interface HostGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "host"; navigation?: "offset" }; rows?: never; }
+export interface HostGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { calculatedColumnsEditable?: false; source: { kind: "host"; navigation?: "offset" }; rows?: never; }
 export interface CursorGridView<Row extends GridRow = GridRow> extends GridDefinition<GridCursorQuery, Row> {
+  calculatedColumnsEditable?: false;
   source: { kind: "host"; navigation: "cursor" };
   presentation: "paged";
   rows?: never;
@@ -734,6 +749,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   calendar?: GridCalendarSavedState;
   /** Pivot definition, active mode, collapsed prefixes and compact-screen column choice. */
   pivot?: GridPivotState;
+  /** Up to 32 definitions, allowed only when the current view enables calculatedColumnsEditable. */
+  calculatedColumns?: readonly GridCalculatedColumnDefinition[];
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -886,6 +903,12 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   readonly ready: Promise<Q>;
   getQuery(): Q | null;
   setQuery(query: GridQueryInput<Q>): Promise<Q>;
+  /** Immutable definitions of the declared calculated columns; [] when none are configured. */
+  getCalculatedColumns(): readonly GridCalculatedColumnDefinition[];
+  /** Replaces the complete definition set after validation. Requires calculatedColumnsEditable and built-in inline data. */
+  setCalculatedColumns(definitions: readonly GridCalculatedColumnDefinition[]): Promise<readonly GridCalculatedColumnDefinition[]>;
+  /** Opens the inline calculated-column editor, optionally anchored to a host element. */
+  openCalculatedColumn(anchor?: HTMLElement): Promise<void>;
   sort(sorts: readonly GridSort[]): Promise<Q>;
   getPaging(): GridPaging<Q>;
   /** Offset sources only. Cursor sources reject random page access. */

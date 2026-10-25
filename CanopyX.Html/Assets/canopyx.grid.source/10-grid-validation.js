@@ -35,6 +35,8 @@
         throw new Error("CanopyX: invalid or duplicate grid column.");
       gridColumnOptions(column, view.columns);
       ids.add(column.id);
+      if (column.calculation !== undefined && (typeof column.calculation !== "string" || !column.calculation.trim() || column.calculation.length > 2048 || column.editable))
+        throw new Error("CanopyX: calculated columns need a bounded expression and cannot be editable.");
       validateColumnValues(column);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
       if (column.format !== undefined) { if (column.kind !== "number") throw new Error("CanopyX: number formats need number columns."); gridNumberFormat(column.format); }
@@ -62,6 +64,8 @@
         !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
         !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
     if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
+    if (view.calculatedColumnsEditable !== undefined && (typeof view.calculatedColumnsEditable !== "boolean" || view.calculatedColumnsEditable && view.source.kind !== "inline"))
+      throw new Error("CanopyX: the calculated-column editor requires an inline grid.");
     if (view.source.navigation !== undefined && !["offset", "cursor"].includes(view.source.navigation))
       throw new Error("CanopyX: invalid grid source navigation.");
     if (view.source.navigation === "cursor" && (view.source.kind !== "host" || view.presentation !== "paged"))

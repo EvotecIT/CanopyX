@@ -63,14 +63,16 @@ internal static class AnalystExample {
         }
         var result = CanopyPivot.Compute(view, pivot, view.Rows);
         WriteStatic(output, "analysis-pivot-static", settings => CanopyStaticHtml.RenderGridPivot(view, result, settings));
+        CalculatedColumnExample.Write(output);
+        BucketFilterExample.Write(output);
     }
 
-    private static void WriteStatic(string output, string name, Func<CanopyStaticHtmlOptions, string> render) {
+    internal static void WriteStatic(string output, string name, Func<CanopyStaticHtmlOptions, string> render) {
         foreach (var dark in new[] { false, true }) {
             var theme = dark ? CanopyStaticTheme.Dark() : CanopyStaticTheme.Light();
             var table = render(new CanopyStaticHtmlOptions { Theme = theme });
             var page = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Analytical report</title></head>" +
-                "<body style=\"margin:12px;background:" + theme.Surface + ";color:" + theme.Text + ";font-family:Calibri,Arial,sans-serif;\"><div style=\"max-width:100%;overflow:auto;\">" + table + "</div></body></html>";
+                "<body style=\"margin:12px;background:" + theme.Surface + ";color:" + theme.Text + ";font-family:Calibri,Arial,sans-serif;\"><div tabindex=\"0\" role=\"region\" aria-label=\"Analytical report\" style=\"max-width:100%;overflow:auto;\">" + table + "</div></body></html>";
             File.WriteAllText(Path.Combine(output, name + (dark ? "-dark" : string.Empty) + ".html"), page);
         }
     }

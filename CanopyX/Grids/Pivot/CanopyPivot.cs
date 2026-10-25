@@ -22,7 +22,7 @@ public static partial class CanopyPivot {
         view.Validate(); definition.Validate(view);
         var aggregates = definition.Values.Select(id => view.Reporting!.Aggregates.First(value => value.Id == id)).ToArray();
         var contributions = new List<CanopyPivotContribution>();
-        foreach (var row in rows) {
+        foreach (var row in view.CalculateRows(rows)) {
             if (row == null || contributions.Count == 100000) throw new InvalidOperationException("Inline pivot input supports at most 100,000 records. Use a hosted pivot for larger datasets.");
             object? Raw(string column) => row.Cells.TryGetValue(column, out var value) ? CanopyGridValues.Normalize(value?.Value) : null;
             object? Axis(CanopyGridGroupLevel level) => level.Bucket == null ? Normalize(Raw(level.Column)) : level.Bucket.Key(Raw(level.Column));

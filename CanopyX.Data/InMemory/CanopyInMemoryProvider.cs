@@ -19,7 +19,7 @@ namespace CanopyX.Data;
 /// </para>
 /// <para>Each request reads the records again; use it for modest datasets, fixtures and tests.</para>
 /// </remarks>
-public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRangeProvider, ICanopyPivotProvider {
+public sealed partial class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRangeProvider, ICanopyPivotProvider {
     private readonly Func<IEnumerable<T>> _records;
     private readonly Func<T, string> _id;
     private readonly Func<T, object?>[] _values;
@@ -30,7 +30,9 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
     /// <param name="records">Returns the records, read once per request.</param>
     /// <param name="id">Returns a record's stable identity.</param>
     /// <param name="values">Returns a record's raw value for each schema column. A value may be a <see cref="CanopyCell"/>,
-    /// whose <see cref="CanopyCell.Value"/> is the raw value and whose display fields are written as they are.</param>
+    /// whose <see cref="CanopyCell.Value"/> is the raw value and whose display fields are written as they are.
+    /// Calculated columns need no accessor; their expressions use the captured schema and run before querying.
+    /// Inputs outside the allowed output columns need accessors when an allowed calculation depends on them.</param>
     /// <param name="revision">Returns the dataset revision; null uses the constant <c>memory</c>.</param>
     public CanopyInMemoryProvider(CanopyDataSchema schema, Func<IEnumerable<T>> records, Func<T, string> id,
         IReadOnlyDictionary<string, Func<T, object?>> values, Func<string>? revision = null) {
@@ -40,9 +42,11 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
         if (values == null) throw new ArgumentNullException(nameof(values));
         _values = new Func<T, object?>[schema.Columns.Count];
         foreach (var column in schema.Columns) {
+            if (schema.ProtocolView.GetColumn(column.Id).Calculation != null) { _values[column.Ordinal] = _ => null; continue; }
             if (!values.TryGetValue(column.Id, out var accessor) || accessor == null) throw new ArgumentException("Column '" + column.Id + "' needs a value accessor.", nameof(values));
             _values[column.Ordinal] = accessor;
         }
+        InitializeCalculations(values);
         _revision = revision ?? (() => "memory");
     }
 
@@ -240,6 +244,10 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
             if (!more) break;
             var item = items.Current;
             cancellationToken.ThrowIfCancellationRequested();
+            if (_calculations != null) {
+                list.Add(LoadCalculated(item, cancellationToken));
+                continue;
+            }
             var cells = new CanopyCell?[_values.Length];
             var raw = new object?[_values.Length];
             for (var i = 0; i < _values.Length; i++) {

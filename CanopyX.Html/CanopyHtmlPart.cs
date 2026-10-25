@@ -33,7 +33,7 @@ public sealed class CanopyHtmlPart {
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
-        "searchHighlight", "layout", "record", "live", "facets", "buckets", "aggregateValues", "pivot", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
+        "searchHighlight", "layout", "record", "live", "facets", "buckets", "aggregateValues", "pivot", "calculations", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
         "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus"
     };
 
@@ -201,7 +201,8 @@ public sealed class CanopyHtmlPart {
             "facets" => view.FacetPanel != null,
             "aggregateValues" => reporting?.Aggregates.Count > 0,
             "pivot" => reporting?.Pivot != null || reporting?.Pivotable == true,
-            "buckets" => reporting?.Groupable == true && view.Columns.Any(column => column.Kind == CanopyColumnKind.DateTime || column.Kind == CanopyColumnKind.Number) || reporting?.GroupBy.Any(level => level.Bucket != null) == true || view.Query?.GroupBy?.Any(level => level.Bucket != null) == true || view.FacetPanel?.Facets.Any(facet => facet.Bucket != null) == true,
+            "calculations" => view.CalculatedColumnsEditable || view.Columns.Any(column => column.Calculation != null),
+            "buckets" => reporting?.Groupable == true && view.Columns.Any(column => column.Kind == CanopyColumnKind.DateTime || column.Kind == CanopyColumnKind.Number) || reporting?.GroupBy.Any(level => level.Bucket != null) == true || view.Query?.GroupBy?.Any(level => level.Bucket != null) == true || view.FacetPanel?.Facets.Any(facet => facet.Bucket != null) == true || UsesBucketFilters(view.Query),
             "calendar" => view.Calendar != null,
             "calendarResources" => view.Calendar != null && (view.Calendar.Resources != null || view.Calendar.View == CanopyCalendarView.Timeline || view.Calendar.Views.Contains(CanopyCalendarView.Timeline)),
             "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null || source.Url != null)),
@@ -249,8 +250,7 @@ public sealed class CanopyHtmlPart {
         return false;
     }
 
-    private static bool HasNamedFilter(CanopyGridFilterGroup? group) => group != null &&
-        (group.Filters.Any(filter => filter.CustomOperator != null) || group.Groups.Any(HasNamedFilter));
+        ,
 
     private static bool Structured(IEnumerable<CanopyCell> cells) => cells.Any(cell => cell != null && (cell.IsStructured || cell.Ref != null));
 

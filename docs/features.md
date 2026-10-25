@@ -144,6 +144,7 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Calendar and numeric range buckets for grouping and facets | Reporting | `bucket`; C# `CanopyBucket`, hosted `IQueryable` translation | [grouping.md](grouping.md#grouping) |
 | Percent shares, running totals, rank, difference and percent change | Reporting | Aggregate `showAs`, `setAggregateShowAs()`, numeric `getDisplaySummary()`; C# `CanopyAggregateDisplay` | [grouping.md](grouping.md#show-values-as) |
 | Pivot rows and columns, totals, both-axis collapse, top-N/Other and exact drill-through | Reporting | `reporting.pivot`, `pivotable`, `setPivot()`, `source.pivot`; C# `CanopyGridPivot`, `CanopyPivot` | [pivot.md](pivot.md) |
+| Calculated columns with bounded arithmetic, comparisons, text/date functions and saved definitions | Grid | Column `calculation`, `calculatedColumnsEditable`, `setCalculatedColumns()`; C# `CanopyCalculation`, `CanopyCalculationSet` | [calculated-columns.md](calculated-columns.md) |
 | Expandable detail rows: a template, HTML, or a nested grid or tree | Reporting | `reporting.detail` | [grouping.md](grouping.md#detail-rows) |
 
 ## Calendar and resource timeline
