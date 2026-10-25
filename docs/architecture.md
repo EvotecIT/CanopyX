@@ -95,6 +95,12 @@ File names keep that rule when files are cached or shared:
 - The data folder of a bundle is not named by content: republish a bundle's page and data together, into a folder of their own. A page cached by a browser while its data folder was overwritten by a newer build would pair an old runtime with new data. Serve `index.html` with revalidation (`no-cache`), or write each build into a new folder.
 - A host with an asset pipeline of its own takes the text from `CanopyHtmlAssets.Script` and `Style` and names the files itself; `ScriptHash` and `StyleHash` give it the same content hash for names and cache keys (16 hex digits of the SHA-256; not a subresource integrity digest). `CanopyAssetNaming.Plain` (on `CanopyHtmlOptions.AssetNaming` and `WriteTo`, which take the same value: a page references what the assets were written as) writes and references the fixed names `canopyx.js` and `canopyx.css`; every page that uses them is then republished with each new build.
 
+### Optional view templates
+
+Board, plan, path, stack and snapshot playback keep visual construction in `15-*-templates.js` and their styles in the same optional part's `.css` file. Templates construct DOM/SVG and return named controls; the render/controller files attach events, preserve focus, run virtual layout and apply host-governed proposals. Model files retain validation and data transformations. The part loader assembles these files in filename order, so the templates remain lazy and add no runtime dependency.
+
+Visual dimensions consumed by layout live in the templates: board card and group heights are `BOARD_METRICS`, and plan baseline dimensions are `PLAN_METRICS`. A template change must keep the returned control handles, stable record attributes, accessible names and controller selectors coherent. A changed visual rule that affects measurement or keyboard navigation also needs a corresponding plumbing change and interaction proof. Static C# rendering and browser print output follow the same visual rules within their script-free and inline-style constraints.
+
 ## Static Fallback
 
 

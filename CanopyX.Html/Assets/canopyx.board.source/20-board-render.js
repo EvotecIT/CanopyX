@@ -1,4 +1,4 @@
-  const BOARD_CARD_H = 152, BOARD_GROUP_H = 36;
+  const BOARD_CARD_H = BOARD_METRICS.cardHeight, BOARD_GROUP_H = BOARD_METRICS.groupHeight;
   function boardItems(board, lane) {
     const group = board.settings.swimlaneColumn;
     if (!group) return lane.rows.map(row => ({ row, height: BOARD_CARD_H }));
@@ -17,24 +17,11 @@
       const positions = new Map([...this.boardFrame.querySelectorAll(".cx-board-scroll")].map(node => [node.dataset.lane, node.scrollTop]));
       this.boardFrame.replaceChildren();
       if (!board.lanes.some(lane => lane.key === board.lane)) board.lane = board.lanes[0]?.key;
-      const toolbar = h("div", "cx-board-tools"), label = h("label"), picker = h("select", "cx-board-picker");
-      label.htmlFor = this.id + "-board-lane"; picker.id = label.htmlFor; setText(label, board.labels.boardLane);
-      for (const lane of board.lanes) { const option = h("option"); option.value = lane.key; setText(option, lane.label + " (" + lane.rows.length + ")"); picker.appendChild(option); }
-      picker.value = board.lane || ""; picker.addEventListener("change", () => {
-        board.lane = picker.value; this.boardSyncLane(); this.stateChanged();
-      });
-      const help = h("p", "cx-board-help"); help.id = this.id + "-board-help"; setText(help, board.labels.boardKeys);
-      toolbar.append(label, picker); this.boardFrame.append(toolbar, help);
-      if (board.partial) { const warning = h("p", "cx-board-warning"); warning.setAttribute("role", "status"); setText(warning, fill(board.labels.boardPartial, { count: board.rows.length })); this.boardFrame.appendChild(warning); }
+      const picker = boardToolsTemplate.call(this, board);
+      picker.addEventListener("change", () => { board.lane = picker.value; this.boardSyncLane(); this.stateChanged(); });
       const lanes = h("div", "cx-board-lanes"); this.boardFrame.appendChild(lanes);
       for (const lane of board.lanes) {
-        const section = h("section", "cx-board-lane"), header = h("header", "cx-board-heading"), title = h("h3"), count = h("span", "cx-board-count");
-        section.dataset.lane = lane.key; title.id = this.id + "-lane-" + board.lanes.indexOf(lane); setText(title, lane.label); section.setAttribute("aria-labelledby", title.id);
-        setText(count, lane.wipLimit ? fill(board.labels.boardWip, { count: lane.count, limit: lane.wipLimit }) : String(lane.rows.length));
-        count.title = lane.wipLimit ? fill(board.labels.boardWipFull, { lane: lane.label, limit: lane.wipLimit }) : lane.label;
-        section.classList.toggle("cx-board-full", !!lane.wipLimit && lane.count >= lane.wipLimit); header.append(title, count); section.appendChild(header);
-        const scroll = h("div", "cx-board-scroll"), canvas = h("div", "cx-board-canvas"); scroll.dataset.lane = lane.key;
-        scroll.tabIndex = 0; scroll.setAttribute("aria-label", lane.label); scroll.appendChild(canvas); section.appendChild(scroll); lanes.appendChild(section);
+        const { section, scroll, canvas } = boardLaneTemplate.call(this, board, lane, lanes);
         const items = boardItems(board, lane); let top = 0;
         for (const item of items) { item.top = top; top += item.height; }
         canvas.style.height = top + "px";
@@ -74,18 +61,16 @@
       [...lane.scroll.querySelectorAll("[data-cx-board-record]")].find(node => node.dataset.cxBoardRecord === id)?.focus({ preventScroll: true });
     },
     boardCard(row, lane) {
-      const board = this.board, settings = board.settings, card = h("article", "cx-board-card"), title = h("button", "cx-board-title");
-      const text = boardText(this, row, settings.titleColumn); card.dataset.cxBoardRecord = row.id; card.tabIndex = 0;
-      card.setAttribute("aria-label", text); card.setAttribute("aria-describedby", this.id + "-board-help"); title.type = "button"; setText(title, text); title.title = text;
-      title.addEventListener("click", () => this.openRecord(row.id).catch(error => this.emit("error", { error }))); card.appendChild(title);
+      const board = this.board, settings = board.settings, text = boardText(this, row, settings.titleColumn);
       const fields = settings.fields || this.columns.filter(column => !column.hidden && ![settings.column, settings.titleColumn, settings.swimlaneColumn].includes(column.id)).slice(0, 2).map(column => column.id);
-      const details = h("dl", "cx-board-fields");
-      for (const id of fields.slice(0, 2)) { const key = h("dt"), value = h("dd"), text = boardText(this, row, id); setText(key, this.columns.find(column => column.id === id).title); setText(value, text); value.title = text; details.append(key, value); }
-      card.appendChild(details);
+      const values = fields.slice(0, 2).map(id => ({ title: this.columns.find(column => column.id === id).title, text: boardText(this, row, id) }));
+      const { card, title } = boardCardTemplate.call(this, row, text, values);
+      title.addEventListener("click", () => this.openRecord(row.id).catch(error => this.emit("error", { error })));
       if (settings.editable) {
-        const move = h("select", "cx-board-move"); move.setAttribute("aria-label", board.labels.boardMove + ": " + text);
-        for (const target of board.lanes) { const option = h("option"); option.value = target.key; option.disabled = target.key !== lane.key && !this.boardCanMove(row, target); setText(option, target.label); move.appendChild(option); }
-        move.value = lane.key; move.disabled = board.pending.has(row.id) || this.editReadOnly || !!this.edit && !this.canEditCell(row, settings.column); move.addEventListener("change", () => { const key = move.value; move.value = lane.key; this.boardMove(row.id, key); }); card.appendChild(move);
+        const options = board.lanes.map(target => ({ key: target.key, label: target.label, disabled: target.key !== lane.key && !this.boardCanMove(row, target) }));
+        const disabled = board.pending.has(row.id) || this.editReadOnly || !!this.edit && !this.canEditCell(row, settings.column);
+        const move = boardMoveTemplate(board.labels.boardMove + ": " + text, options, lane.key, disabled, card);
+        move.addEventListener("change", () => { const key = move.value; move.value = lane.key; this.boardMove(row.id, key); });
         card.draggable = !move.disabled;
         card.addEventListener("dragstart", event => { board.drag = row; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", row.id); });
         card.addEventListener("dragend", () => { board.drag = null; for (const node of this.boardFrame.querySelectorAll(".cx-board-drop")) node.classList.remove("cx-board-drop"); });
