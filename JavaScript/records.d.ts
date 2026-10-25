@@ -112,6 +112,8 @@ export type RecordSectionRenderer = (record: Readonly<{ id: string; cells?: Read
   element: HTMLElement, context: RecordSectionContext) => void | PromiseLike<void>;
 /** An action of the record panel's actions menu. */
 export interface RecordAction {
+  /** Also renders this action as a visible footer button. Menu access is retained. */
+  readonly prominent?: boolean;
   readonly label: string;
   run(context: { readonly record: Readonly<{ id: string; cells?: Readonly<Record<string, Cell>>; fields?: Readonly<Record<string, Cell>> }>; readonly view: string; readonly api: unknown;
     readonly payload: GridRecord | null; readonly signal: AbortSignal }): void | PromiseLike<void>;
@@ -125,6 +127,8 @@ export interface RecordOpenAll {
 export interface OpenRecordOptions { readonly returnFocus?: Element | null; readonly path?: readonly string[]; readonly tab?: string; }
 /** Host options of the record panel, on grids and trees. */
 export interface RecordPanelOptions {
+  /** Plain-text heading projection. The record is a detached read-only snapshot; title and subtitle are bounded. */
+  recordHeading?: (record: Readonly<{id:string; cells?:Readonly<Record<string,Cell>>; fields?:Readonly<Record<string,Cell>>}>) => {title:string;subtitle?:string};
   /** Loads a record's details when its drawer opens; used whatever the declared source. */
   loadRecord?: RecordLoader;
   /** Section renderers by name, beside the plugins' drawerSections. */

@@ -22,3 +22,6 @@
 .cx-flow-answer[data-cx-state="warning"] .cx-flow-answer-value { color:var(--hfx-color-status-warn-fg); }
 @media (forced-colors:active) { .cx-flow-check-mark { forced-color-adjust:none;border:var(--cx-size-1px) solid CanvasText; } }
 @media print { .cx-flow-check-head button,.cx-flow-check-again { display:none; } }
+
+/* Failed external checks read as one alert rather than detached red text. */
+.cx-flow-check-item[data-cx-state="fail"] { padding:var(--cx-size-12px); border:var(--cx-size-1px) solid var(--hfx-color-status-bad-fg); border-radius:var(--hfx-radius-sm); background:var(--hfx-color-status-bad-bg); color:var(--hfx-color-status-bad-fg); }

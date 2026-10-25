@@ -3,6 +3,7 @@
   // record alone, then the host's recordActions option and plugins' recordActions ({ label, run({ record, view, api, payload,
   // signal }) }). record.actions switches the built-in ones off. Exports carry every field with its section, empty ones too.
   function recordActionsMenu(view, dialog, identity) {
+    dialog.querySelector(".cx-record-footer")?.remove();
     const spec = recordSpec(view), switches = spec.actions || {}, labels = view.labels, items = [];
     const add = (label, task) => items.push({ label, task });
     if (switches.link !== false && spec.deepLink) add(labels.recordCopyLink, () => recordCopy(view, dialog, recordAddress(view, dialog._cxRecord)));
@@ -11,8 +12,20 @@
     if (switches.print !== false) add(labels.recordPrint, () => recordPrint(view, dialog));
     for (const action of [...(Array.isArray(view.opts.recordActions) ? view.opts.recordActions : []), ...view.plugins.flatMap(item => item.recordActions || [])]) {
       if (!action || typeof action.label !== "string" || typeof action.run !== "function") continue;
-      add(action.label, () => { const record = dialog._cxRecord, entry = recordEntry(view, record.id);
-        return action.run(Object.freeze({ record: JSON.parse(JSON.stringify(record)), view: view.view.id, api: view.host.canopyx, payload: entry?.payload || null, signal: view.lifetime.signal })); });
+      const task = () => { const record = dialog._cxRecord, entry = recordEntry(view, record.id);
+        return action.run(Object.freeze({ record: JSON.parse(JSON.stringify(record)), view: view.view.id, api: view.host.canopyx, payload: entry?.payload || null, signal: view.lifetime.signal })); };
+      add(action.label, task);
+      if (action.prominent === true) {
+        let footer = dialog.querySelector(".cx-record-footer");
+        if (!footer) { footer = h("footer", "cx-record-footer"); dialog.appendChild(footer); }
+        const button = recordButton(action.label, () => {
+          if (button.disabled) return;
+          button.disabled = true;
+          Promise.resolve().then(task).catch(error => { recordAnnounce(dialog, error.message); view.emit("error", { error }); })
+            .finally(() => { button.disabled = false; });
+        }, "cx-record-btn cx-record-primary");
+        footer.appendChild(button);
+      }
     }
     if (!items.length) return;
     // A menu button: Enter, Space or a click opens the menu on its first item; arrows move, Escape or Tab closes it.

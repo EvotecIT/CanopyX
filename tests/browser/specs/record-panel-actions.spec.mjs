@@ -4,7 +4,7 @@ import { api, definition, drawer } from "./record-panel-fixtures.mjs";
 import { viewPage } from "./support.mjs";
 
 // The page registers a plugin with a drawer section and a record action, and stubs the clipboard and print.
-async function openWithPlugin(page, view = definition()) {
+async function openWithPlugin(page, view = definition(), prominent = false) {
   view.record.sections[5].renderer = "trend-chart";
   const script = `<script>
 window.copied = []; window.printed = [];
@@ -18,7 +18,7 @@ CanopyX.use({ name: "trend-chart",
     box.textContent = "Chart of " + record.id + " at " + context.width + " px, " + context.values.days.value + " days"; element.appendChild(box);
     context.onDispose(() => { window.disposed = (window.disposed || 0) + 1; }); } },
   recordActions: [{ label: "Open in the issuing portal", run: ({ record, view }) => { window.portal = view + "/" + record.id; } }] });
-CanopyX.configure("certificates", { recordActions: [{ label: "Request renewal", run: ({ record }) => { window.renewal = record.id; } }] });
+CanopyX.configure("certificates", { recordHeading: ${prominent} ? record => ({title:"Change by " + record.id, subtitle:"Recorded at <12:00>"}) : undefined, recordActions: [{ label: "Request renewal", prominent: ${prominent}, run: ({ record }) => { window.renewal = record.id; } }] });
 </script>`;
   await page.route("http://canopyx.test/records.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("<body class=\"cx-page\">", "<body class=\"cx-page\">" + script) }));
   await page.goto("http://canopyx.test/records.html");
@@ -119,4 +119,16 @@ test("a plugin's drawer section draws content (a chart) with the record's values
   await page.keyboard.press("ArrowDown");
   await expect(drawer(page).locator(".cx-record-custom .trend-chart")).toHaveText(/Chart of c002/);
   expect(await page.evaluate("window.disposed")).toBeGreaterThan(0);
+});
+
+
+test("prominent record action stays visible and projected headings are plain text", async ({ page }) => {
+  await openWithPlugin(page, definition(), true);
+  await expect(drawer(page).getByRole("heading", {name:"Change by c001", exact:true})).toBeVisible();
+  await expect(drawer(page).locator(".cx-record-subtitle")).toHaveText("Recorded at <12:00>");
+  await expect(drawer(page).locator(".cx-record-subtitle")).toBeVisible();
+  await drawer(page).getByRole("button", {name:"Request renewal",exact:true}).click();
+  await expect.poll(() => page.evaluate(() => window.renewal)).toBe("c001");
+  await action(page, "Request renewal");
+  await expect.poll(() => page.evaluate(() => window.renewal)).toBe("c001");
 });

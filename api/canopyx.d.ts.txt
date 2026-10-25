@@ -1279,7 +1279,7 @@ import type{
 }
 from "./editing.js";
 import type{
-  RecordPanelDefinition,RecordLoader,RecordSectionRenderer,RecordAction,RecordOpenAll,OpenRecordOptions
+  RecordPanelDefinition,RecordPanelOptions,RecordLoader,RecordSectionRenderer,RecordAction,RecordOpenAll,OpenRecordOptions
 }
 from "./records.js";
 export * from "./records.js";
@@ -1990,6 +1990,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends Gri
   loadRecord?:RecordLoader;
   recordSections?:Readonly<Record<string,RecordSectionRenderer>>;
   recordActions?:readonly RecordAction[];
+  recordHeading?:RecordPanelOptions["recordHeading"];
   onOpenAll?:(event:RecordOpenAll) => boolean|void;
   onRecordPrint?:(event:{readonly id:string;readonly element:HTMLElement;readonly dispose:() => void}) => boolean|void;
   onRowActivate?:(event:GridRowActivation<Row>) => boolean|void;
@@ -3297,6 +3298,7 @@ export interface RecordSectionContext{
 }
 export type RecordSectionRenderer=(record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>;label?:string}>,element:HTMLElement,context:RecordSectionContext) => void|PromiseLike<void>;
 export interface RecordAction{
+  readonly prominent?:boolean;
   readonly label:string;
   run(context:{readonly record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>;readonly view:string;readonly api:unknown;readonly payload:GridRecord|null;readonly signal:AbortSignal}):void|PromiseLike<void>;
 }
@@ -3314,6 +3316,7 @@ export interface OpenRecordOptions{
   readonly tab?:string;
 }
 export interface RecordPanelOptions{
+  recordHeading?:(record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>) => {title:string;subtitle?:string};
   loadRecord?:RecordLoader;
   recordSections?:Readonly<Record<string,RecordSectionRenderer>>;
   recordActions?:readonly RecordAction[];

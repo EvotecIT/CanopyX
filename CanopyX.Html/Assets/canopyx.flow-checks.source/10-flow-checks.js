@@ -86,6 +86,9 @@
       const parts = item._cx, state = this.checkState.get(check.id), labels = this.labels, result = state?.result;
       const phase = state?.running ? "running" : !result ? "none" : state.stale ? "stale" : result.status;
       item.dataset.cxState = phase;
+      setText(parts.run, result ? labels.flowRunAgain : check.label);
+      parts.run.setAttribute("aria-label", result ? fill(labels.flowRunCheckAgain, { check: check.label }) : check.label);
+      parts.run.classList.toggle("cx-primary", phase === "fail");
       setText(parts.mark, FLOW_CHECK_MARKS[phase] || "");
       setText(parts.text, phase === "running" ? labels.flowCheckRunning : phase === "none" ? labels.flowCheckNotRun : phase === "stale" ? labels.flowCheckStale :
         fill(phase === "pass" ? labels.flowCheckPassed : phase === "warning" ? labels.flowCheckWarning : labels.flowCheckFailed, { time: this.checkTime(state.at) }));

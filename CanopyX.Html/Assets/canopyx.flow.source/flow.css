@@ -206,3 +206,6 @@ progress.cx-flow-bar { display:block;width:100%;max-width:var(--cx-size-440px);h
   .cx-flow .cx-flow-toggle input::after { background:CanvasText; }
 }
 @media print { .cx-flow-actions,.cx-flow-rail,.cx-flow-change { display:none; } }
+
+/* Read-only context is descriptive text, distinct from editable inputs. */
+.cx-flow input.cx-flow-input[readonly] { padding-inline:0; border-color:transparent; background:transparent; box-shadow:none; color:var(--hfx-color-text-secondary); }

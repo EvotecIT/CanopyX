@@ -75,7 +75,9 @@ const graphiteView: InlineGridView = {
 const ticketsView: InlineGridView = { ...measuredWireView, id: "tickets",
   searchHighlight: { ignoreAccents: true, matchCase: false, minLength: 2, filterTones: { name: "info" } },
   layout: { mode: "cards", modes: ["cards", "fit", "scroll"], density: "compact" }, toolbar: { matches: true, layout: true } };
-const tickets = createDataGrid(document.createElement("div"), { view: ticketsView, onPrint: ({ layout }) => { const stacked: boolean = layout === "stacked"; } });
+const tickets = createDataGrid(document.createElement("div"), { view: ticketsView,
+  recordHeading: record => ({ title: "Change " + record.id, subtitle: String(record.cells?.when || "") }),
+  onPrint: ({ layout }) => { const stacked: boolean = layout === "stacked"; } });
 const layout = await tickets.setLayout({ mode: "scroll", density: "comfortable" });
 const layoutModes: readonly ("fit" | "scroll" | "cards")[] = layout.modes;
 const matchCount: number = tickets.getMatches().total;

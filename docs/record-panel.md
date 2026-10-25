@@ -285,3 +285,5 @@ Record-only fields use `Wrap` and `MaxLines` just like visible grid columns. A n
 
 The panel's texts are labels of every runtime (`recordBack`, `recordShowEmpty`, `recordOpenAll`, … in `CanopyLabels`), with
 Polish, German, Spanish, French and Italian translations; see [labels.md](labels.md).
+
+Host actions may set `prominent: true` to expose the same action in the drawer footer as well as the menu. The footer disables that button while its task is running. `recordHeading(record)` optionally returns a plain-text `{ title, subtitle }` projection (up to 512 and 2,000 characters respectively); it receives a detached record snapshot. These presentation options do not change record identity or action authorization.

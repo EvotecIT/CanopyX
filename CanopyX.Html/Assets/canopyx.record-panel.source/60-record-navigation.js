@@ -169,6 +169,15 @@
       trail.append(back, crumbs); identity.prepend(trail);
     }
     const summary = h("div", "cx-record-summary"); summary.hidden = true; head.after(summary);
+    if (typeof view.opts.recordHeading === "function") dialog.addEventListener("cx-drawer-paint", () => {
+      try {
+        const heading = view.opts.recordHeading(Object.freeze(JSON.parse(JSON.stringify(dialog._cxRecord))));
+        if (heading && typeof heading.title === "string" && heading.title.length <= 512) setText(identity.querySelector("h4"), heading.title);
+        if (heading && typeof heading.subtitle === "string" && heading.subtitle.length <= 2000) {
+          const subtitle = identity.querySelector("p"); subtitle.classList.add("cx-record-subtitle"); setText(subtitle, heading.subtitle); subtitle.hidden = !heading.subtitle;
+        }
+      } catch (error) { view.emit("error", { error }); }
+    });
     recordActionsMenu(view, dialog, identity);
     dialog.addEventListener("keydown", event => {
       if (event.altKey && event.key === "ArrowLeft" && state.stack.length) { event.preventDefault(); recordBack(view, dialog); }
