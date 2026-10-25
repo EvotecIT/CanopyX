@@ -25,6 +25,24 @@
     scope.setAttribute("aria-label", labels.gridExport);
     for (const [value, label] of this.exportScopes || [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])
       scope.appendChild(gridOption(value, labels[label]));
+    panel.classList.add("cx-export-panel");
+    const count = h("p", "cx-export-count"), list = h("div", "cx-export-formats"), actions = h("div", "cx-export-actions");
+    count.setAttribute("role", "status");
+    const updateCount = () => {
+      try {
+        const request = this.prepareExport({ scope: scope.value }).request;
+        setText(count, scope.selectedOptions[0].textContent + " · " + (request.recordCount === null ? labels.gridUnknownCount :
+          numberFormat(this.lang).format(request.recordCount) + " " + labels.gridRows));
+      } catch { setText(count, scope.selectedOptions[0].textContent); }
+    };
+    scope.addEventListener("change", updateCount);
+    const decorate = (button, title, hint, icon) => {
+      button.classList.add("cx-export-choice"); button.setAttribute("aria-label", title);
+      const symbol = h("span", "cx-export-icon"); symbol.setAttribute("aria-hidden", "true"); setText(symbol, icon);
+      const content = h("span", "cx-export-choice-text"), name = h("span", "cx-export-choice-title"); setText(name, title); content.append(name);
+      if (hint) { const note = h("span", "cx-export-hint"); setText(note, hint); content.append(note); }
+      button.replaceChildren(symbol, content); return button;
+    };
     const status = h("p", "cx-grid-delivery-status"); status.setAttribute("role", "status");
     const meter = h("progress"); meter.setAttribute("aria-label", labels.gridExport); meter.hidden = true;
     let operation = null, formats = [];
@@ -64,25 +82,30 @@
       const text = await this.exportText(exported, 50000, ",", options.signal); gridOperationActive(this, options.signal);
       saveExport(new Blob([text], { type: "text/csv;charset=utf-8" }), (exported.request.fileName || this.view.id.replace(/[^a-z0-9_-]/gi, "_")) + ".csv");
     }));
-    const copy = this.copy ? gridButton(labels.gridCopy, () => panel.cxRun((options, onProgress) => this.copy(traced(options, onProgress)))) : h("span");
+    decorate(csv, labels.gridDownloadCsv, labels.gridExportCsvHint, "CSV");
+    const copy = this.copy ? decorate(gridButton(labels.gridCopy, () => panel.cxRun((options, onProgress) => this.copy(traced(options, onProgress)))),
+      labels.gridExportCopy, null, "⧉") : h("span");
     const print = typeof this.print === "function" ? gridButton(labels.gridPrint, () => panel.cxRun((options, onProgress) =>
       this.print({ ...options, onProgress }))) : h("span");
-    print.hidden = true;
-    csv.hidden = menu.csv === false; copy.hidden = menu.copy === false;
+    decorate(print, labels.gridPrint, null, "▤"); print.hidden = true;
+    csv.hidden = menu.csv === false; copy.hidden = !this.copy || menu.copy === false;
     panel.cxFormats = () => {
       if (operation) return;
       formats.forEach(button => button.remove());
       try {
         const available = EXPORT_IMPL.formatsOf(this);
         print.hidden = !(typeof this.print === "function" && (menu.print ?? available.some(format => format.id === "xlsx" || format.id === "pdf")));
-        formats = available.filter(format => format.showInMenu).map(format => Object.assign(gridButton(format.label, () =>
-          panel.cxRun((options, onProgress) => this.exportAs(format.id, { ...options, onProgress }))), { value: format.id }));
+        formats = available.filter(format => format.showInMenu).map(format => Object.assign(decorate(gridButton(format.label, () =>
+          panel.cxRun((options, onProgress) => this.exportAs(format.id, { ...options, onProgress }))), format.label,
+          format.id === "xlsx" ? labels.gridExportWorkbookHint : format.id === "pdf" ? labels.gridExportPdfHint : null,
+          format.extension.toUpperCase()), { value: format.id }));
       } catch (error) { formats = []; this.emit("error", { error }); }
-      copy.before(...formats);
+      list.replaceChildren(...formats, csv); actions.hidden = copy.hidden && print.hidden;
+      updateCount();
       busy(false);
       if (!canExport()) setText(status, labels.gridNoExportColumns);
       else if (status.textContent === labels.gridNoExportColumns) setText(status, "");
     };
-    panel.append(scope, csv, copy, print, cancel, meter, status);
+    actions.append(copy, print); panel.append(scope, count, meter, status, cancel, list, actions);
     panel.cxFormats();
   };

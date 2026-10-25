@@ -13,7 +13,7 @@ test("Office writers stay inert until first use and generate offline artifacts f
   await page.waitForSelector("[data-cx-ready]");
   expect(await page.evaluate(() => typeof globalThis.OfficeIMO)).toBe("undefined");
   await openGridControl(page, "export");
-  await expect(page.locator(".cx-grid-export .cx-grid-panel button:not([hidden])")).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Copy", "Print"]);
+  await expect(page.locator(".cx-grid-export .cx-grid-panel button:not([hidden]) .cx-export-choice-title")).toHaveText(["Excel workbook (.xlsx)", "PDF", "CSV", "Copy to clipboard", "Print"]);
   await context.setOffline(true);
   for (const [format, scope, count] of [["xlsx", "filtered", 30], ["xlsx", "selected", 2], ["xlsx", "all", 60], ["pdf", "all", 60]]) {
     const result = await page.evaluate(async ({ format, scope }) => {
@@ -70,13 +70,13 @@ test("the real Office writer reports progress and cancels a pending record windo
   await context.setOffline(true);
   await openGridControl(page, "export");
   const panel = page.locator('.cx-grid-export .cx-grid-panel');
-  await panel.getByRole('button', { name: 'Download Excel', exact: true }).click();
+  await panel.getByRole('button', { name: 'Excel workbook (.xlsx)', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.officePending)).toBeGreaterThan(0);
   await expect(panel.locator('progress')).toBeVisible();
   await expect(panel.locator('.cx-grid-delivery-status')).toHaveText('1,000 of 6,000 records');
   await panel.getByRole('button', { name: 'Cancel export', exact: true }).click();
   await expect(panel.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled');
-  await expect(panel.getByRole('button', { name: 'Download Excel', exact: true })).toBeEnabled();
+  await expect(panel.getByRole('button', { name: 'Excel workbook (.xlsx)', exact: true })).toBeEnabled();
   expect(await page.evaluate(() => window.officeAborted)).toBe(true);
   expect(downloads).toHaveLength(0); expect(errors).toEqual([]);
 });

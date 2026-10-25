@@ -5,8 +5,12 @@ public sealed partial class CanopyLabels {
     /// <summary>Creates complete Spanish labels. Each call returns an independent, editable pack.</summary>
     public static CanopyLabels Spanish() => WithSpanishUi(new CanopyLabels {
         GridNoExportColumns = "Ninguna columna visible permite exportar.",
-        GridDownloadXlsx = "Descargar Excel",
-        GridDownloadPdf = "Descargar PDF",
+        GridDownloadXlsx = "Libro de Excel (.xlsx)",
+        GridDownloadPdf = "PDF",
+        GridExportWorkbookHint = "Con formato, grupos y totales",
+        GridExportPdfHint = "Informe paginado con encabezados repetidos",
+        GridExportCsvHint = "Valores de texto (.csv)",
+        GridExportCopy = "Copiar al portapapeles",
         SearchPlaceholder = "Buscar",
         GridRegexSearch = "Patrón de búsqueda",
         SearchResults = "Resultados de búsqueda",
@@ -123,7 +127,7 @@ public sealed partial class CanopyLabels {
         GridAllResults = "Todos los resultados",
         GridVisibleRows = "Filas visibles",
         GridAllRows = "Todas las filas",
-        GridDownloadCsv = "Descargar CSV",
+        GridDownloadCsv = "CSV",
         GridCopy = "Copiar",
         GridDetails = "Detalles del registro",
         GridCellRangeSelected = "{rows} filas × {columns} columnas seleccionadas",

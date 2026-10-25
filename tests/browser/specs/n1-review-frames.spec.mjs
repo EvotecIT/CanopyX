@@ -13,6 +13,7 @@ for (const { width, theme } of [{ width: 1440, theme: "light" }, { width: 390, t
     test.use({ viewport: { width, height: 900 }, colorScheme: theme, locale: "en-US", timezoneId: "UTC", reducedMotion: "reduce" });
     for (const state of ["export-menu", "print", "cards", "sticky-header", "card-print"]) test(state, async ({ page }, info) => {
       const errors = []; page.on("pageerror", error => errors.push(error.message));
+      await page.clock.setFixedTime(new Date("2026-10-25T15:00:00Z"));
       if (state === "print" || state === "card-print") await page.addInitScript(() => {
         window.print = () => { window.parent.__printedDocument = "<!doctype html>" + document.documentElement.outerHTML; };
       });
@@ -21,7 +22,7 @@ for (const { width, theme } of [{ width: 1440, theme: "light" }, { width: 390, t
       await page.waitForSelector('[data-cx-ready]'); await settleGrid(page);
       if (state === "export-menu") {
         await openGridControl(page, "export");
-        await expect(page.getByRole('button', { name: 'Download Excel', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Excel workbook (.xlsx)', exact: true })).toBeVisible();
         await expect(page.locator('.cx-grid-export').getByRole('button', { name: 'Print', exact: true })).toBeVisible();
       } else if (state === "print" || state === "card-print") {
         const html = await page.evaluate(async () => {
@@ -31,18 +32,26 @@ for (const { width, theme } of [{ width: 1440, theme: "light" }, { width: 390, t
         const file = info.outputPath('print.html'); await fs.writeFile(file, html);
         await info.attach('script-free-print', { path: file, contentType: 'text/html' });
         await page.route(server.url + '__print-review.html', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: html }));
-        await page.goto(server.url + '__print-review.html'); await page.emulateMedia({ media: 'print' });
+        await page.goto(server.url + '__print-review.html'); await page.emulateMedia({ media: 'screen' });
+        if (state === "print" && width === 1440 && info.project.name === "chromium") {
+          const pdf = info.outputPath("print-pages.pdf");
+          await page.emulateMedia({ media: "print" });
+          await page.pdf({ path: pdf, preferCSSPageSize: true, printBackground: true });
+          await info.attach("browser-print-pages", { path: pdf, contentType: "application/pdf" });
+          await page.emulateMedia({ media: "screen" });
+        }
         if (state === "card-print") {
           await expect(page.locator('main > section')).toHaveCount(40);
-          await expect(page.locator('main > section').first().locator('dt')).toHaveText(['Name', 'Due']);
-          await expect(page.locator('dd').first()).toHaveText('Item 1 — Needs review');
+          await expect(page.locator('main > section').first().locator('dt')).toHaveText(['Name', 'Status', 'Owner', 'Team', 'Priority', 'Due']);
+          await expect(page.locator('dd').first()).toHaveText('Item 1');
         } else {
-          await expect(page.locator('tbody tr:has(td)')).toHaveCount(60);
+          await expect(page.locator('tbody tr[data-cx-print-record]')).toHaveCount(60);
           await expect(page.locator('thead th')).toHaveCount(5);
         }
         await expect(page.locator('script')).toHaveCount(0);
       } else if (state === "cards") {
-        await expect(page.locator('.cx-card-slot').first()).toContainText('Item 1 — Needs review');
+        await expect(page.locator('.cx-card-slot').first()).toHaveText('Item 1');
+        await expect(page.locator('.cx-row[data-cx-id="item-000"] .p-pill')).toContainText('Needs review');
       } else {
         await page.locator('.cx-grid').evaluate(grid => window.scrollTo(0, grid.getBoundingClientRect().top + scrollY + 120));
         await expect(page.locator('[data-cx-page-header]')).toBeVisible();

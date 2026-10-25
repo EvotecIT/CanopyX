@@ -8,8 +8,12 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(GridNoExportColumns)] = "No visible columns allow export.",
-        [nameof(GridDownloadXlsx)] = "Download Excel",
-        [nameof(GridDownloadPdf)] = "Download PDF",
+        [nameof(GridDownloadXlsx)] = "Excel workbook (.xlsx)",
+        [nameof(GridDownloadPdf)] = "PDF",
+        [nameof(GridExportWorkbookHint)] = "Formatted, with groups and totals",
+        [nameof(GridExportPdfHint)] = "Paged report with repeating headings",
+        [nameof(GridExportCsvHint)] = "Plain text values (.csv)",
+        [nameof(GridExportCopy)] = "Copy to clipboard",
         [nameof(SearchPlaceholder)] = "Search",
         [nameof(GridRegexSearch)] = "Search pattern",
         [nameof(SearchResults)] = "Search results",
@@ -126,7 +130,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridAllResults)] = "All results",
         [nameof(GridVisibleRows)] = "Visible rows",
         [nameof(GridAllRows)] = "All rows",
-        [nameof(GridDownloadCsv)] = "Download CSV",
+        [nameof(GridDownloadCsv)] = "CSV",
         [nameof(GridCopy)] = "Copy",
         [nameof(GridDetails)] = "Record details",
         [nameof(GridCellRangeSelected)] = "{rows} rows × {columns} columns selected",

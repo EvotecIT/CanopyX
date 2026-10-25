@@ -59,10 +59,11 @@ test("default print keeps captured grouping, totals, formatted text and safe lin
       await grid.print({ scope: "filtered", locale: "en-US" });
       const doc = new DOMParser().parseFromString(window.__printedDocument, "text/html");
       return { headings: [...doc.querySelectorAll('tbody th')].map(cell => cell.textContent),
-        records: doc.querySelectorAll('tbody tr:has(td)').length, total: doc.querySelector('tfoot').textContent,
+        records: doc.querySelectorAll('tbody tr[data-cx-print-record]').length, total: doc.querySelector('tfoot').textContent,
+        subtotals: doc.querySelectorAll('[data-cx-print-subtotal]').length,
         link: doc.querySelector('tbody td a')?.getAttribute('href'), executable: doc.querySelectorAll('script').length };
     });
-    expect(printed).toMatchObject({ headings: ["Region: North"], records: 30, link: "https://example.com/resources/0", executable: 0 });
+    expect(printed).toMatchObject({ headings: ["Region: North"], records: 30, subtotals: 1, link: "https://example.com/resources/0", executable: 0 });
     expect(printed.total.replace(/[^\d]/g, "")).toContain("707250");
   } finally { await server.close(); }
 });

@@ -52,16 +52,17 @@
     view.layoutStarted = true;
     view.host.classList.add("cx-layouts");
     view.lifetime.signal.addEventListener("abort", () => {
+      cancelAnimationFrame(view.cardFocusFrame);
       view.host.classList.remove("cx-layouts");
-      for (const name of ["cols", "span", "pad", "field", "gap", "title"]) view.host.style.removeProperty("--cx-card-" + name);
+      for (const name of ["cols", "span", "pad", "field", "gap", "title", "width", "height"]) view.host.style.removeProperty("--cx-card-" + name);
     }, { once: true });
     view.host.setAttribute("data-cx-density", view.density);
     if (view.layoutMode !== "fit" || view.kind === "grid" && view.density !== view.declaredDensity) layoutApply(view, view.layoutMode, view.density);
   };
   VIEW_MODES.refreshCardDensity = view => {
     const anchor = layoutAnchor(view), geometry = cardGeometry(view);
-    cardStyle(view, geometry); view.rowH = geometry.height; view.version++;
-    layoutRows(view, anchor);
+    cardStyle(view, geometry); view.rowH = geometry.pitch; view.version++;
+    layoutCardRows(view, anchor);
   };
   VIEW_MODES.setLayout = (view, change) => {
     if (!change || typeof change !== "object" || Array.isArray(change) || Object.keys(change).some(key => !["mode", "density"].includes(key)) ||
@@ -82,13 +83,58 @@
   // Cards label their fields (the column title, drawn by the stylesheet) and let long text take a whole line.
   if (VIEW_MODES.DataGrid) {
     const proto = VIEW_MODES.DataGrid.prototype, paint = proto.fillRow, widths = proto.applyWidths;
+    const rowTop = proto.rowTop, rowAt = proto.rowAt, renderPass = proto.renderPass, pageStep = proto.gridPageStep;
+    const tiled = view => view.layoutMode === "cards" && view.cardGeometry && !view.rowProjection;
+    proto.rowTop = function (index) {
+      if (!tiled(this)) return rowTop.call(this, index);
+      return CARD_GUTTER + Math.floor((index - this.pageOffset) / this.cardGeometry.lanes) * this.rowH;
+    };
+    proto.rowAt = function (top) {
+      if (!tiled(this)) return rowAt.call(this, top);
+      const bounds = this.rowBounds();
+      return Math.max(bounds.first, Math.min(bounds.last, bounds.first + Math.max(0, Math.floor((top - CARD_GUTTER) / this.rowH)) * this.cardGeometry.lanes));
+    };
+    proto.gridPageStep = function (row, direction, ...args) {
+      if (!tiled(this)) return pageStep.call(this, row, direction, ...args);
+      return row._ri + direction * this.cardGeometry.lanes * Math.max(1, Math.floor((this.grid.clientHeight - this.head.offsetHeight) / this.rowH));
+    };
+    proto.renderPass = function (...args) {
+      const cards = this.layoutMode === "cards" && this.cardGeometry;
+      if (cards && !!this.rowProjection !== !!this.cardProjection) {
+        const geometry = cardGeometry(this);
+        if (geometry.lanes !== this.cardGeometry.lanes || geometry.height !== this.cardGeometry.height) {
+          cardStyle(this, geometry); this.rowH = geometry.pitch; this.layout = (this.layout || 0) + 1; this.version++;
+        }
+        this.cardProjection = !!this.rowProjection;
+      }
+      const tile = tiled(this), viewport = this.viewportHeight;
+      if (cards) cardMinHeight(this);
+      if (tile) {
+        const total = cardTotal(this);
+        if (this.total !== total) { this.total = total; this.syncScrollRange(this.logicalTop()); }
+        // Include the entire final visual band even without overscan. ARIA indices and DOM order still count records.
+        this.viewportHeight = (viewport ?? this.grid.clientHeight - this.head.offsetHeight) + this.rowH;
+      }
+      try { return renderPass.apply(this, args); }
+      finally {
+        this.viewportHeight = viewport;
+        for (const [row, element] of this.rendered) {
+          const lane = tile ? (row._ri - this.pageOffset) % this.cardGeometry.lanes : 0;
+          element.style.left = cards && !row.group && !row.status ? CARD_GUTTER + lane * (this.cardGeometry.width + CARD_COLUMN_GAP) + "px" : "";
+          if (cards && tile && row.status) {
+            element.style.left = CARD_GUTTER + lane * (this.cardGeometry.width + CARD_COLUMN_GAP) + "px";
+            element.style.width = this.cardGeometry.width + "px";
+          }
+        }
+      }
+    };
     proto.fillRow = function (element, row) {
       paint.call(this, element, row);
       if (this.layoutMode !== "cards" || !element._cells || row.status || row.group) return;
       element._cells.forEach((slot, index) => {
         const column = this.cols[index], cell = slot && slot.cell;
         if (!column || !cell) return;
-        const label = index ? column.title : null, wide = index && cardWide(column) ? "wide" : null;
+        const label = index ? column.title : null, wide = cardRole(column, index, this.cols);
         if ((cell.getAttribute("data-cx-label") ?? null) !== label) { if (label === null) cell.removeAttribute("data-cx-label"); else cell.setAttribute("data-cx-label", label); }
         if ((cell.getAttribute("data-cx-card") ?? null) !== wide) { if (wide) cell.setAttribute("data-cx-card", wide); else cell.removeAttribute("data-cx-card"); }
         cardTemplateSlot(this, row, column, slot);
@@ -98,13 +144,13 @@
     proto.applyWidths = function (...args) {
       const result = widths.apply(this, args);
       if (this.layoutMode === "cards" && !this.layoutApplying && this.cols && this.sized) {
-        const geometry = cardGeometry(this);
+        const anchor = layoutAnchor(this), previous = this.cardGeometry, geometry = cardGeometry(this);
         cardStyle(this, geometry);
-        if (geometry.height !== this.rowH) {
-          const anchor = layoutAnchor(this);
-          this.rowH = geometry.height; this.layout = (this.layout || 0) + 1; this.version++;
-          layoutRows(this, anchor);
+        if (geometry.pitch !== this.rowH || geometry.lanes !== previous?.lanes || geometry.width !== previous?.width) {
+          this.rowH = geometry.pitch; this.layout = (this.layout || 0) + 1; this.version++;
+          layoutCardRows(this, anchor);
         }
+        layoutKeepFocus(this);
       }
       return result;
     };

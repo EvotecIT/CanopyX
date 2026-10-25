@@ -1,8 +1,12 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 const labels = Object.freeze({
   gridNoExportColumns: "Żadna widoczna kolumna nie obsługuje eksportu.",
-  gridDownloadXlsx: "Pobierz Excel",
-  gridDownloadPdf: "Pobierz PDF",
+  gridDownloadXlsx: "Skoroszyt Excel (.xlsx)",
+  gridDownloadPdf: "PDF",
+  gridExportWorkbookHint: "Formatowanie, grupy i sumy",
+  gridExportPdfHint: "Raport stronicowany z powtarzanymi nagłówkami",
+  gridExportCsvHint: "Wartości tekstowe (.csv)",
+  gridExportCopy: "Kopiuj do schowka",
   searchPlaceholder: "Szukaj",
   gridRegexSearch: "Szukaj według wzorca",
   searchResults: "Wyniki wyszukiwania",
@@ -119,7 +123,7 @@ const labels = Object.freeze({
   gridAllResults: "Wszystkie wyniki",
   gridVisibleRows: "Widoczne wiersze",
   gridAllRows: "Wszystkie wiersze",
-  gridDownloadCsv: "Pobierz plik CSV",
+  gridDownloadCsv: "CSV",
   gridCopy: "Kopiuj",
   gridDetails: "Szczegóły rekordu",
   gridCellRangeSelected: "Zaznaczono wiersze: {rows} × kolumny: {columns}",

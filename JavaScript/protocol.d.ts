@@ -225,6 +225,7 @@ export type LabelName =
   | "gridSelectionQueryCount" | "gridSelectionQueryUnknown" | "gridSelectRecord"
   | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder" | "gridAggregateCount" | "gridAggregateSum" | "gridAggregateAverage" | "gridAggregateMinimum" | "gridAggregateMaximum" | "gridGroupBy" | "gridUngroup" | "gridGroupDrop" | "gridExpandAll" | "gridCollapseAll" | "gridExpandLevel" | "gridCollapseLevel" | "gridGroupMove" | "gridGroupSortBy" | "gridGroupSortValue" | "gridGroupSortAggregate" | "gridSelectGroup" | "gridAggregateDistinct" | "gridShowDetail" | "gridHideDetail" | "gridDetailOf" | "gridDetailFailed"
   | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridNoExportColumns" | "gridPrint"
+  | "gridExportWorkbookHint" | "gridExportPdfHint" | "gridExportCsvHint" | "gridExportCopy"
   | "matchesHighlight" | "matchesCount" | "matchesPosition" | "matchesNone" | "matchesLoaded" | "matchesPrevious" | "matchesNext" | "matchesAnnounce"
   | "layoutMenu" | "layoutFit" | "layoutScroll" | "layoutCards" | "layoutDensity" | "layoutCompact" | "layoutNormal" | "layoutComfortable" | "layoutChanged" | "layoutSort"
   | "gridFitContent"

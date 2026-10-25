@@ -1,8 +1,10 @@
   // ---------- explicit client export scope ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridExport: "Export", gridFilteredResults: "Filtered results", gridSelectedRows: "Selected rows",
-    gridAllResults: "All results", gridVisibleRows: "Visible rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details",
-    gridDownloadXlsx: "Download Excel", gridDownloadPdf: "Download PDF",
+    gridAllResults: "All results", gridVisibleRows: "Visible rows", gridAllRows: "All rows", gridDownloadCsv: "CSV", gridCopy: "Copy", gridDetails: "Record details",
+    gridDownloadXlsx: "Excel workbook (.xlsx)", gridDownloadPdf: "PDF",
+    gridExportWorkbookHint: "Formatted, with groups and totals", gridExportPdfHint: "Paged report with repeating headings",
+    gridExportCsvHint: "Plain text values (.csv)", gridExportCopy: "Copy to clipboard",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
     gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", gridNoExportColumns: "No visible columns allow export."
   }));

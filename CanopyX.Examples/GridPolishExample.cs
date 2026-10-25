@@ -16,14 +16,30 @@ internal static class GridPolishExample {
             page = page.Replace("</head>", pageStyle + "</head>").Replace("<main class=\"cx-main\">", "<main class=\"cx-main\">" + introduction);
             File.WriteAllText(Path.Combine(output, "sticky-grid" + suffix + ".html"), page);
 
-            view = View();
+            view = CardsView();
             view.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Cards };
-            view.GetColumn("status").Hidden = true;
             view.CardTemplate = new CanopyCardTemplate();
-            view.CardTemplate.Slots.Add("name", "{name} — {status}");
+            view.CardTemplate.Slots.Add("name", "{name}");
+            view.CardTemplate.Slots.Add("due", "{due}");
             view.SaveHtmlPage(Path.Combine(output, "template-cards" + suffix + ".html"),
                 new CanopyHtmlOptions { Theme = theme, Title = "Work item cards with safe token slots", Height = "720px" });
         }
+    }
+
+    private static CanopyDataGridView CardsView() {
+        var view = View();
+        view.GetColumn("status").Presenter = CanopyGridPresenter.Enum();
+        view.Columns.Insert(2, new CanopyColumn("owner", "Owner") { Sizing = CanopyColumnSizing.Preferred(160) });
+        view.Columns.Insert(3, new CanopyColumn("team", "Team") { Sizing = CanopyColumnSizing.Preferred(160) });
+        view.Columns.Insert(4, new CanopyColumn("priority", "Priority") { Sizing = CanopyColumnSizing.Preferred(120) });
+        for (var index = 0; index < view.Rows.Count; index++) {
+            var row = view.Rows[index];
+            row.Cells["status"] = new CanopyCell(index % 3 == 0 ? "Needs review" : "Scheduled") { Tone = index % 3 == 0 ? CanopyTone.Warning : CanopyTone.Info };
+            row.Cells["owner"] = new[] { "Alex Morgan", "Sam Rivera", "Jordan Lee", "Casey Taylor" }[index % 4];
+            row.Cells["team"] = new[] { "Platform", "Customer success", "Operations" }[index % 3];
+            row.Cells["priority"] = index % 4 == 0 ? "High" : "Normal";
+        }
+        return view;
     }
 
     private static CanopyDataGridView View() {

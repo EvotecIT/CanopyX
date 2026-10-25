@@ -252,7 +252,10 @@ that companion beside the runtime, or embed the matching payload. A host or page
 precedence over the built-in writer.
 
 Every flat grid also has `await api.print({ scope: "filtered" })`. It reads the complete captured record scope into a bounded,
-script-free document with repeating table headings, or stacked records for cards. Card templates remain literal text. The
+script-free document with repeating table headings, or stacked records for cards. The report header records the scope,
+row count, grouping, active query and print time. Group subtotals and query totals follow the captured scope. Numeric
+columns fit their values and align right; links print in the body colour. A4 pages have margins and page numbers where
+the browser supports page-margin counters; reports with more than six columns use landscape pages. Card templates remain literal text. The
 default bound is 1,000 records; `maxRows` can raise it to 10,000, within 4 Mi UTF-16 units of snapshot text. A larger result
 fails without truncation. Included table and property details follow their records. Set `includeDetails: false` to omit them;
 otherwise the detail definition's print policy applies. HTML details require an `onPrint` hook, since the default document
@@ -260,7 +263,7 @@ never interprets host markup. The browser owns the print dialog. The optional `o
 that delivery when the host has its own renderer. `exportMenu: { print: true }` offers Print without enabling Office files;
 `print: false` hides it while retaining `api.print`.
 
-Register additional export formats when a host needs another writer. They appear after Download CSV with the same scope,
+Register additional export formats when a host needs another writer. They appear above CSV in the vertical format list with the same scope,
 progress, cancellation and error controls:
 
 ```js

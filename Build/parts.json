@@ -161,6 +161,7 @@
         "validateGridCursorPage", "validateGridPage", "GRID_REPORTING", "gridFreeze", "cellValue", "cellText", "isCellObject", "exportTimeout", "exportFormat", "EXPORT_FORMATS", "gridExportField"],
       "end": "DataGrid.prototype.renderGridExport = exportMenu;",
       "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/85-export-print-context.js",
         "CanopyX.Html/Assets/canopyx.grid.source/86-export-print.js",
         "CanopyX.Html/Assets/canopyx.grid.source/87-export-formats.js",
         "CanopyX.Html/Assets/canopyx.grid.source/78-grid-export-text.js",

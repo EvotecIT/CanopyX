@@ -7,6 +7,7 @@ public sealed partial class CanopyLabels {
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
         nameof(GridDownloadXlsx), nameof(GridDownloadPdf),
+        nameof(GridExportWorkbookHint), nameof(GridExportPdfHint), nameof(GridExportCsvHint), nameof(GridExportCopy),
         nameof(GridRegexSearch),
         nameof(GridEditCell), nameof(GridEditSave), nameof(GridEditCancel), nameof(GridEditDiscard), nameof(GridEditUndo), nameof(GridEditRedo),
         nameof(GridEditEdited), nameof(GridEditChanges), nameof(GridEditErrors), nameof(GridEditSaving), nameof(GridEditSaved), nameof(GridEditFailed),

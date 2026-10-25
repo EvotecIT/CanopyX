@@ -7,7 +7,7 @@ the rows are, and the choice is part of the state saved views and the remembered
 | --- | --- | --- |
 | **Fit to width** (`fit`) | Today's behaviour: columns size to their content and give way by priority; hidden fields wait behind "+N" and the record drawer. | grids, trees |
 | **All columns, scroll sideways** (`scroll`) | Every column keeps its own width, the identity column (the row header, or a tree's tree column) stays pinned, and the view scrolls sideways. | grids, trees |
-| **Cards** (`cards`) | Each record is a card: its first shown column (the row header by default) as the title, then every other shown field with its column title as a label. For phones and narrow panels. Group headings of a grouped grid stay one-line headings. | grids |
+| **Cards** (`cards`) | Records form a responsive grid of raised cards, with the first shown column as the title, presenter status pills and labeled fields. Phones show one card across. Group headings and expanded details retain their single-column projection. | grids |
 
 | Density | Grid rows | Tree rows |
 | --- | --- | --- |
@@ -66,7 +66,9 @@ cardTemplate: { name: "{name} — {status}", due: "Due: {due}" }
 
 In C#, set `view.CardTemplate = new CanopyCardTemplate()` and populate `view.CardTemplate.Slots` with the same strings.
 The static fallback uses those text templates when the declared layout is cards and escapes them as ordinary table content.
-Switching back to fit or scroll restores each slot's ordinary presenter. The gallery's `template-cards.html` demonstrates the API.
+Switching back to fit or scroll restores each slot's ordinary presenter. Leave a status slot untemplated to keep its
+existing `enum` or `state` presenter and tone. The gallery's `template-cards.html` combines a literal title slot with a
+Status pill, Owner, Team and Priority fields, and a muted Due footer. No HTML or object-valued template is needed.
 
 ### Page-scroll headers
 
@@ -79,11 +81,21 @@ destruction. It uses the optional layouts part even when the view has no Layout 
 
 ### Card sizing
 
-A card's height follows the grid's width: the fields flow into as many columns as fit (each at least 140 px wide), spread
-evenly over the fewest lines; free text (wrapping, long text, tags, lists and flexible columns) takes two slots. Every card
-of a grid has the same height, so virtual rows, scroll positions, `scrollToRow` and Page Up/Down keep working on any number
-of records; a wider panel re-flows the cards and keeps the first card in view. Values that do not fit their slot end with an
-ellipsis: the record drawer (a tap on a phone, Enter, or the "+N" button) shows them whole.
+Cards share the available width in equal columns with a minimum width of about 280 px and 16 px gutters. A 1440 px
+page normally shows four cards across; a 390 px page shows one. Inside each card, the first shown column is a strong title,
+`enum` and `state` presenters occupy a full-width status slot, and ordinary fields flow in column order into a label/value
+grid. Wrapping and long-text fields occupy a full line. A final date/time column becomes a muted footer. Colors, border,
+radius and selection use the host's existing theme tokens.
+
+Every card has the same computed height. The optional layouts part maps logical record positions into visual bands;
+virtualization, paging and `scrollToRow` still count records. ARIA indices and DOM order stay in logical record order,
+Arrow Up/Down continue moving by one record, and Page Up/Down move by a viewport of card bands. Resizing retains the first
+visible band and focused record; changing layout retains the query and selection. Values that do not fit their slot end
+with an ellipsis: the record drawer (a tap on a phone or Enter) shows them whole.
+
+Group and expanded-detail projections retain their existing single-column layout and measured offsets. Their records
+receive the same card surfaces and field hierarchy while full-width headings, collapse controls and detail rows keep their
+existing navigation and loading behavior. Hosted flat grids use the responsive grid, including loading placeholders.
 
 The header row steps aside in the card layout, since every field carries its column title. A **Sort by** menu appears in the
 toolbar instead (a bottom sheet on phones): a press on a column sorts by it and a second press reverses it (Shift adds it to

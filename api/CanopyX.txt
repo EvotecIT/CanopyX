@@ -2232,8 +2232,12 @@ CanopyX.CanopyLabels.System.String GridExpandCell { get; set; }
 CanopyX.CanopyLabels.System.String GridExpandLevel { get; set; }
 CanopyX.CanopyLabels.System.String GridExport { get; set; }
 CanopyX.CanopyLabels.System.String GridExportCancelled { get; set; }
+CanopyX.CanopyLabels.System.String GridExportCopy { get; set; }
+CanopyX.CanopyLabels.System.String GridExportCsvHint { get; set; }
+CanopyX.CanopyLabels.System.String GridExportPdfHint { get; set; }
 CanopyX.CanopyLabels.System.String GridExportProgress { get; set; }
 CanopyX.CanopyLabels.System.String GridExportReading { get; set; }
+CanopyX.CanopyLabels.System.String GridExportWorkbookHint { get; set; }
 CanopyX.CanopyLabels.System.String GridFacetBin { get; set; }
 CanopyX.CanopyLabels.System.String GridFacetChoose { get; set; }
 CanopyX.CanopyLabels.System.String GridFacetClear { get; set; }

@@ -17,7 +17,7 @@
 .cx-layouts:not(.cx-data-grid)[data-cx-layout="scroll"] .cx-hcell:first-child { z-index:2;background:var(--hfx-table-header-background,var(--hfx-color-surface-sunken)); }
 .cx-layouts:not(.cx-data-grid)[data-cx-layout="scroll"] .cx-row > .cx-tree { background:inherit; }
 /* Cards: each record is a card of labelled fields under its title, at the height the runtime computes for the width. */
-.cx-data-grid[data-cx-layout="cards"] .cx-grid { overflow-x:hidden; }
+.cx-data-grid[data-cx-layout="cards"] .cx-grid { overflow-x:hidden;overflow-anchor:none; }
 .cx-data-grid[data-cx-layout="cards"] :is(.cx-canvas,.cx-head) { width:100% !important;min-width:0; }
 /* Each card labels its fields, so the header row steps aside; the Sort by menu offers its sorting and column menus. */
 .cx-data-grid[data-cx-layout="cards"] .cx-head { display:none; }
@@ -32,18 +32,34 @@
 .cx-chrome.cx-phone .cx-grid-sort > summary { width:var(--cx-size-44px);font-size:0;padding:0; }
 .cx-chrome.cx-phone .cx-sort-choice { min-height:var(--cx-size-44px); }
 .cx-chrome.cx-phone .cx-sort-choice .cx-button { min-height:var(--cx-size-44px); }
-.cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group) {
-  width:100% !important;min-width:0;display:grid;grid-template-columns:repeat(var(--cx-card-cols,1),minmax(0,1fr));grid-template-rows:var(--cx-card-title);grid-auto-rows:var(--cx-card-field);
-  grid-auto-flow:row dense;align-content:start;column-gap:var(--cx-size-16px);row-gap:var(--cx-card-gap);padding:var(--cx-card-pad) var(--cx-size-16px);
+.cx-data-grid[data-cx-layout="cards"] .cx-grid { background:color-mix(in srgb,var(--hfx-color-surface) 96%,var(--hfx-color-text)); }
+.cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-grid-group):not(.cx-detail-row) {
+  width:var(--cx-card-width) !important;min-width:0;height:var(--cx-card-height) !important;
+  border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-container);background:var(--hfx-color-surface);
+  box-shadow:0 var(--cx-size-2px) var(--cx-size-6px) color-mix(in srgb,var(--hfx-color-text) 8%,transparent);
 }
-.cx-data-grid[data-cx-layout="cards"] .cx-row:is(.cx-status,.cx-grid-group) { width:100% !important; }
+.cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group) {
+  display:grid;grid-template-columns:repeat(var(--cx-card-cols,1),minmax(0,1fr));grid-template-rows:var(--cx-card-title);grid-auto-rows:var(--cx-card-field);
+  grid-auto-flow:row;align-content:start;column-gap:var(--cx-size-16px);row-gap:var(--cx-card-gap);padding:var(--cx-card-pad);
+}
+.cx-data-grid[data-cx-layout="cards"] .cx-row:is(.cx-grid-group,.cx-detail-row) { width:100% !important; }
 .cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group) > .cx-cell {
   width:auto !important;height:auto;min-width:0;padding:0;position:relative !important;left:auto !important;right:auto !important;box-shadow:none;background:transparent;
-  flex-direction:column;align-items:flex-start;justify-content:center;gap:var(--cx-size-1px);text-align:left;
+  flex-direction:column;align-items:flex-start;justify-content:center;gap:var(--cx-size-2px);text-align:left;
 }
-.cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group) > .cx-cell:first-child { grid-column:1/-1;height:var(--cx-card-title);flex-direction:row;align-items:center;justify-content:flex-start;gap:var(--cx-size-6px);font-weight:600;font-size:calc(var(--hfx-control-font-size) + 1px); }
-.cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group) > .cx-cell[data-cx-card="wide"] { grid-column:span var(--cx-card-span,1); }
-.cx-data-grid[data-cx-layout="cards"] .cx-cell[data-cx-label]::before { content:attr(data-cx-label) / "";display:block;flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--cx-size-11d5px);font-weight:600;line-height:1.35;color:var(--hfx-color-text-muted); }
+.cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group) > .cx-cell:first-child {
+  grid-column:1/-1;height:var(--cx-card-title);flex-direction:row;align-items:center;justify-content:flex-start;gap:var(--cx-size-6px);font-weight:750;font-size:calc(var(--hfx-control-font-size) + 2px);
+}
+.cx-data-grid[data-cx-layout="cards"] .cx-cell:is([data-cx-card="wide"],[data-cx-card="pill"],[data-cx-card="footer"]) { grid-column:1/-1; }
+.cx-data-grid[data-cx-layout="cards"] .cx-cell[data-cx-label]::before {
+  content:attr(data-cx-label) / "";display:block;flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:var(--cx-size-11d5px);font-weight:600;line-height:1.35;color:var(--hfx-color-text-muted);
+}
+.cx-data-grid[data-cx-layout="cards"] .cx-row > .cx-cell[data-cx-card="footer"] {
+  flex-direction:row;justify-content:flex-start;gap:var(--cx-size-6px);border-top:var(--cx-size-1px) solid var(--hfx-color-border);color:var(--hfx-color-text-muted);font-size:var(--cx-size-12px);
+}
+.cx-data-grid[data-cx-layout="cards"] .cx-cell[data-cx-card="pill"] :is(.p-pill,.p-state) { border-radius:999px;max-width:100%;overflow:hidden;text-overflow:ellipsis; }
+.cx-data-grid[data-cx-layout="cards"] .cx-cell[data-cx-card="pill"] .p-state { padding:var(--cx-size-2px) var(--cx-size-8px);background:color-mix(in srgb,currentColor 8%,var(--hfx-color-surface)); }
 .cx-data-grid[data-cx-layout="cards"] .cx-cell > :is(.cx-text,.cx-presenter-text) { max-width:100%; }
 .cx-data-grid[data-cx-layout="cards"] .cx-card-templated > :not(.cx-card-slot):not(.cx-grid-row-select) { display:none; }
 .cx-card-slot { display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:pre; }
@@ -60,3 +76,8 @@
 @media (forced-colors:active) {
   .cx-data-grid[data-cx-layout="cards"] .cx-row[aria-selected="true"] { forced-color-adjust:none;box-shadow:inset var(--cx-size-3px) 0 0 Highlight; }
 }
+
+.cx-data-grid[data-cx-page-header] .cx-head { box-shadow:inset 0 calc(-1 * var(--cx-size-1px)) 0 var(--cx-line-strong); }
+
+.cx-data-grid[data-cx-layout="cards"] .cx-row:not(.cx-status):not(.cx-grid-group):hover { background:var(--cx-hover-bg); }
+.cx-data-grid[data-cx-layout="cards"] .cx-row[aria-selected="true"] { background:var(--cx-selected-bg);border-color:var(--hfx-color-accent); }

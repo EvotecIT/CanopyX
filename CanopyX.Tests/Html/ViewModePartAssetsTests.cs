@@ -9,8 +9,8 @@ public sealed class ViewModePartAssetsTests {
     [Theory]
     // Combined roadmap integration: each part's size plus about 15%.
     [InlineData("highlight", "function hlMarkCell", 9.5)]
-    // Literal card slots and the optional page-scroll header add about 1 KiB gzip.
-    [InlineData("layouts", "function cardGeometry", 7.75)]
+    // Responsive card bands and safe slots stay with the optional layout and page-scroll header owner.
+    [InlineData("layouts", "function cardGeometry", 9)]
     public void Part_IsBoundedAndOutsideTheEntryPoints(string name, string marker, double guardKiB) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Contains(marker, part.Script);

@@ -135,21 +135,21 @@ test('ordinary grid CSV and Copy retain their controls on a reporting runtime pa
   const plain=definition();delete plain.reporting;
   await open(page,plain,"window.copied=[];Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>copied.push(text)}});",'reporting');
   await page.locator('.cx-grid-export > summary').click();
-  await page.getByRole('button',{name:'Copy',exact:true}).click();
+  await page.getByRole('button',{name:'Copy to clipboard',exact:true}).click();
   await expect.poll(()=>page.evaluate('copied.length')).toBe(1);
   expect(await page.evaluate('copied[0]')).toContain('136.5');
-  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download CSV',exact:true}).click();
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'CSV',exact:true}).click();
   const download=await pending;expect(fs.readFileSync(await download.path(),'utf8')).toContain('136.5');
 });
 
 const deferredClipboard="window.clipboardStarted=false;Object.defineProperty(navigator,'clipboard',{value:{writeText(){clipboardStarted=true;return new Promise(resolve=>window.finishClipboard=resolve);}}});";
 test('Cancel settles a pending clipboard permission and ignores its late completion',async({page})=>{
   await open(page,definition(),deferredClipboard);
-  await page.locator('.cx-grid-export > summary').click();await page.getByRole('button',{name:'Copy',exact:true}).click();
+  await page.locator('.cx-grid-export > summary').click();await page.getByRole('button',{name:'Copy to clipboard',exact:true}).click();
   await expect.poll(()=>page.evaluate('clipboardStarted')).toBe(true);
   await page.getByRole('button',{name:'Cancel export',exact:true}).click();
   await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled',{timeout:1500});
-  await expect(page.getByRole('button',{name:'Copy',exact:true})).toBeEnabled();
+  await expect(page.getByRole('button',{name:'Copy to clipboard',exact:true})).toBeEnabled();
   await page.evaluate('finishClipboard()');await nextFrames(page);
   await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled');
 });

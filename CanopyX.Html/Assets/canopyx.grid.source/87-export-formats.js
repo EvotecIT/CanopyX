@@ -24,7 +24,7 @@
       const failure = () => signal.reason?.name === "TimeoutError" ? new Error("CanopyX: export timed out.") : new DOMException("Export cancelled.", "AbortError");
       // Phases and counts only advance and repeat nothing; a count a writer reports that is not a record count is ignored.
       const phases = ["reading", "generating", "ready"];
-      let phase = -1, done = 0, read = 0, stop;
+      let phase = -1, done = 0, read = 0, inputsComplete = false, stop;
       const report = (name, completed) => {
         const next = phases.indexOf(name), count = total === null ? completed : Math.min(completed, total);
         if (signal.aborted || next < phase || !Number.isSafeInteger(completed) || completed < 0 || next === phase && count <= done) return;
@@ -38,14 +38,15 @@
         const counted = Object.freeze({ request: capture.request, rows: async function* (more) {
           read = 0;
           for await (const row of capture.rows({ signal: AbortSignal.any([signal, more?.signal].filter(Boolean)) })) {
-            yield row; if (++read % 100 === 0) report("reading", read);
+            if (++read % 100 === 0) report(inputsComplete ? "generating" : "reading", read);
+            yield row;
           }
-          report("generating", read);
+          inputsComplete = true; report("generating", read);
         } });
         const base = capture.request.fileName || grid.view.id.replace(/[^a-z0-9_-]/gi, "_");
         report("reading", 0);
         let blob = await Promise.race([Promise.resolve().then(() => format.write(counted,
-          Object.freeze({ signal, fileName: base, format: format.id, progress: completed => report("generating", completed) }))), stopped]).catch(error => {
+          Object.freeze({ signal, fileName: base, format: format.id, progress: completed => report(inputsComplete ? "generating" : "reading", completed) }))), stopped]).catch(error => {
           throw error instanceof Error || error instanceof DOMException ? error : new Error("CanopyX: export format '" + id + "' failed: " + String(error));
         });
         if (signal.aborted) throw failure();
@@ -54,7 +55,7 @@
         // A writer that names its file returns a File; otherwise the suggested name gets the format's extension.
         const fileName = blob.name || base + "." + format.extension;
         if (options.download !== false) saveExport(blob, fileName);
-        report("ready", read);
+        report("generating", read); report("ready", read);
         return Object.freeze({ blob, fileName, format: format.id });
       } finally { clearTimeout(clock); signal.removeEventListener("abort", stop); }
     },

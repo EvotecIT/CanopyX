@@ -110,13 +110,13 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void Assets_StayWithinTheCompressedBudget() {
-        // Combined roadmap integration: its size plus about 15%.
+        // Localized vertical export chrome adds room outside the separate shared-token allowance.
         SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.TreeGrid, 60928);
     }
 
     [Fact]
     public void InteractiveAssets_StayWithinTheirCompressedBudget() {
-        // Combined roadmap integration: its size plus about 15%.
+        // Localized vertical export chrome adds room outside the separate shared-token allowance.
         SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.InteractiveTreeGrid, 71168);
     }
 

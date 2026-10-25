@@ -2,8 +2,12 @@
 (function (global) {
 const labels = Object.freeze({
   gridNoExportColumns: "Aucune colonne visible ne permet l’exportation.",
-  gridDownloadXlsx: "Télécharger Excel",
-  gridDownloadPdf: "Télécharger le PDF",
+  gridDownloadXlsx: "Classeur Excel (.xlsx)",
+  gridDownloadPdf: "PDF",
+  gridExportWorkbookHint: "Mise en forme, groupes et totaux",
+  gridExportPdfHint: "Rapport paginé avec en-têtes répétés",
+  gridExportCsvHint: "Valeurs en texte brut (.csv)",
+  gridExportCopy: "Copier dans le presse-papiers",
   searchPlaceholder: "Rechercher",
   gridRegexSearch: "Motif de recherche",
   searchResults: "Résultats de la recherche",
@@ -120,7 +124,7 @@ const labels = Object.freeze({
   gridAllResults: "Tous les résultats",
   gridVisibleRows: "Lignes visibles",
   gridAllRows: "Toutes les lignes",
-  gridDownloadCsv: "Télécharger le CSV",
+  gridDownloadCsv: "CSV",
   gridCopy: "Copier",
   gridDetails: "Détails de l'enregistrement",
   gridCellRangeSelected: "{rows} lignes × {columns} colonnes sélectionnées",

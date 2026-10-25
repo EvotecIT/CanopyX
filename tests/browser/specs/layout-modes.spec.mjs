@@ -253,10 +253,14 @@ test("cards keep virtual rows: a card height for the width, and scrolling to the
   expect(await page.locator(".cx-canvas .cx-row[data-cx-id]").count()).toBeLessThan(40);
   await call(page, "scrollToRow", 99999); await settle(page);
   await expect(page.locator(".cx-canvas .cx-row[data-cx-id='t99999']")).toBeVisible();
-  // A wider panel fits more fields on a line: the cards get shorter.
+  // A wider panel fits several cards in each visual band while retaining logical record navigation.
   await page.setViewportSize({ width: 1440, height: 800 }); await settle(page); await page.waitForTimeout(100); await settle(page);
-  const wide = await page.locator(".cx-canvas .cx-row[data-cx-id]").first().evaluate(row => row.getBoundingClientRect().height);
-  expect(wide).toBeLessThan(heights[0]);
+  const wide = await page.locator(".cx-canvas .cx-row[data-cx-id]").evaluateAll(rows => rows.map(row => {
+    const box = row.getBoundingClientRect(); return { left: box.left, height: box.height, width: box.width };
+  }));
+  expect(new Set(wide.map(row => row.left)).size).toBeGreaterThanOrEqual(3);
+  expect(new Set(wide.map(row => row.height)).size).toBe(1);
+  expect(wide[0].width).toBeLessThan(400);
   await expect(page.locator(".cx-canvas .cx-row[data-cx-id='t99999']")).toBeVisible();
 });
 
