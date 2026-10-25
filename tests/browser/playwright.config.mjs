@@ -30,6 +30,8 @@ const visualSpec = /visual-baselines\.spec\.mjs$/;
 // Explicit benchmark runs include the calendar measurements on Chromium after the other selected projects finish.
 // Ordinary correctness CI does not create this project.
 const calendarPerformanceSpec = /calendar-performance\.spec\.mjs$/;
+// Computed-layout quality rules run once per platform, on Chromium. Interaction contracts still use every engine.
+const galleryFinishSpec = /gallery-finish-quality\.spec\.mjs$/;
 const calendarPerformance = benchmarks && browserNames.includes("chromium") && !customChromium;
 
 export default defineConfig({
@@ -52,7 +54,7 @@ export default defineConfig({
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
   outputDir: "test-results",
   projects: [
-    ...browserNames.map(browserName => ({ name: browserName, testIgnore: [visualSpec, calendarPerformanceSpec], use: {
+    ...browserNames.map(browserName => ({ name: browserName, testIgnore: [visualSpec, calendarPerformanceSpec, ...(browserName === "chromium" ? [] : [galleryFinishSpec])], use: {
       browserName,
       ...(browserName === "chromium" ? {
         channel: process.env.CANOPYX_BROWSER_CHANNEL || undefined,

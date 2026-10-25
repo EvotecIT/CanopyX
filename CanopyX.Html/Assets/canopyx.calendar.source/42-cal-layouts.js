@@ -12,6 +12,7 @@
       const range = this.calRange;
       this.calCells = new Map();
       const grid = this.calMonthGrid(range.firstDay, range.lastDay, range.month, { rowHeight: 34, dots: true, outside: this.cal.outsideDays, labelledBy: this.calTitle.id, className: "cx-cal-mini" });
+      grid.setAttribute("data-cx-finish-allow", "empty-band");
       this.calBody.replaceChildren(grid);
       this.calGrid = grid;
     },

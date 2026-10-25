@@ -71,7 +71,9 @@ internal static class ConditionalFormattingExample {
                 new CanopyHtmlOptions { Title = "CanopyX conditional formatting", Theme = theme });
         // The same rules in the script-free table that email, print and Word receive.
         var fallback = CanopyStaticHtml.RenderGrid(view, (CanopyGridPage?)null, new CanopyStaticHtmlOptions { MaxRows = 24 });
+        using var template = typeof(ConditionalFormattingExample).Assembly.GetManifestResourceStream("CanopyX.Examples.Templates.conditional-formatting-static.html")!;
+        using var reader = new StreamReader(template);
         File.WriteAllText(Path.Combine(output, "conditional-formatting-static.html"),
-            "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>CanopyX conditional formatting (static)</title></head><body style=\"margin:16px\">" + fallback + "</body></html>");
+            reader.ReadToEnd().Replace("{{content}}", fallback));
     }
 }
