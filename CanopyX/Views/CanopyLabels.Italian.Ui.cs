@@ -11,6 +11,7 @@ public sealed partial class CanopyLabels {
         labels.TabsPosition = "{current} di {total}";
         labels.TabsPause = "Pausa";
         labels.TabsPlay = "Riproduci";
+        labels.TabsMotionDisabled = "Il cambio automatico delle schede è disattivato con movimento ridotto";
         labels.StepperStepOf = "Passaggio {current} di {total}";
         labels.StepperBack = "Indietro";
         labels.StepperNext = "Avanti";

@@ -213,7 +213,7 @@
       const paragraph = document.createElement('p'); paragraph.textContent = 'Recovered successfully. The latest workspace summary is now available.'; return paragraph;
     } }
   ] });
-  bind('tabs', 'tour', { autoAdvance: { interval: 8000, loop: true, pauseOnHover: true, pauseOnFocus: true } });
+  bind('tabs', 'tour', { autoProgress: { interval: 8000, pauseOnHover: true, pauseOnFocus: true } });
   bind('stepper', 'setup', {
     validate: step => {
       if (step.id !== 'details') return true;

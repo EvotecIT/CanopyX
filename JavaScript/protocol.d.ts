@@ -272,7 +272,7 @@ export type LabelName =
   | "calendarResized" | "calendarSeriesMoved" | "calendarSeriesTime" | "calendarMoveHelp" | "calendarEdit" | "calendarSaveFailed" | "calendarExport" | "calendarTimeRange" | "calendarSelected"
   | "calendarLane" | "calendarHighlighted"
   /** Standalone UI primitives; their English defaults load with the optional UI parts. */
-  | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay"
+  | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
   | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails";

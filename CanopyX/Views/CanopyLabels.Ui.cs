@@ -26,6 +26,9 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the button that resumes automatic tab advancement. Default "Play".</summary>
     public string TabsPlay { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the explanation for the disabled Play control under reduced motion. Default "Automatic tabs are disabled by reduced motion".</summary>
+    public string TabsMotionDisabled { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the step position, including <c>{current}</c> and <c>{total}</c>. Default "Step {current} of {total}".</summary>
     public string StepperStepOf { get => Get(); set => Set(value); }
 

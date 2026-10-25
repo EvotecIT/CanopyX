@@ -320,9 +320,15 @@ CanopyX.Html.Ui.CanopyTabs.System.Collections.Generic.IList<CanopyX.Html.Ui.Cano
 CanopyX.Html.Ui.CanopyTabs.System.String Id { get; }
 CanopyX.Html.Ui.CanopyTabs.System.String Label { get; }
 CanopyX.Html.Ui.CanopyTabs.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyTabsAutoProgress : sealed class
+CanopyX.Html.Ui.CanopyTabsAutoProgress..ctor()
+CanopyX.Html.Ui.CanopyTabsAutoProgress.System.Boolean PauseOnFocus { get; set; }
+CanopyX.Html.Ui.CanopyTabsAutoProgress.System.Boolean PauseOnHover { get; set; }
+CanopyX.Html.Ui.CanopyTabsAutoProgress.System.Int32 Interval { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions : sealed class
 CanopyX.Html.Ui.CanopyTabsOptions..ctor()
 CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabActivation Activation { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsAutoProgress? AutoProgress { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsOverflow Overflow { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsStyle Style { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.System.Boolean PrintAll { get; set; }

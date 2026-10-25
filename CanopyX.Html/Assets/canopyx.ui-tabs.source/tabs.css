@@ -125,15 +125,8 @@
   :is(.cx-tabs-scroll, .cx-tabs-play):hover { background: var(--hfx-color-hover); }
   .cx-tabs-play { grid-column: 2;display:inline-flex;align-items:center;gap:var(--hfx-space-2);border:var(--hfx-border-width) solid var(--hfx-color-border-control);background:var(--hfx-color-surface); }
   .cx-tabs-play::before { content:'\25b6' / ''; }
-  .cx-tabs-play[aria-pressed="true"]::before { content:'\23f8' / ''; }
-  .cx-tabs-progress {
-    position: absolute;
-    inset-inline-start: 0;
-    inset-block-end: 0;
-    block-size: var(--hfx-indicator-width);
-    background: var(--hfx-color-accent-indicator);
-    pointer-events: none;
-  }
+  .cx-tabs-play[data-state="playing"]::before { content:'\23f8' / ''; }
+  .cx-tabs-play:disabled { color: var(--hfx-color-text-disabled); cursor: default; }
   .cx-tabpanel { grid-column: 1 / -1; min-inline-size: 0; padding-block: var(--hfx-space-4); }
   .cx-tabs--vertical > .cx-tabpanel { grid-column: 2; grid-row: 1 / span 3; padding-inline-start: var(--hfx-space-4); }
   .cx-tabs[data-cx-ready] > .cx-tabpanel > .cx-tabpanel-heading { display: none; }

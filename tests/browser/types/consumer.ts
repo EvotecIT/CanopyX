@@ -914,6 +914,7 @@ createPropagation(document.createElement("div"), { view: propagationDocument }).
 // Standalone UI shares the lazy API across tree and grid entry points.
 import { tabs, stepper, contextMenu, type UiTabsController } from "@evotecit/canopyx";
 const uiTabs: UiTabsController = tabs("#sections", {
+  autoProgress: { interval: 5000, pauseOnHover: true, pauseOnFocus: true },
   labels: polish,
   beforeChange: async (from, to, signal) => !signal.aborted && from?.id !== to.id,
   renderIcon: name => { const span = document.createElement("span"); span.textContent = name; return span; }

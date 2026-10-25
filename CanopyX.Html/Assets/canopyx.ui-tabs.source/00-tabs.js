@@ -42,9 +42,9 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
   });
   function select(value, source = 'api') {
     if (destroyed) return Promise.resolve(false);
+    if (source !== 'auto' && source !== 'initial') auto?.stop();
     const target = n.resolve(items, value);
     if (!target || target.disabled) { selection.cancel(); return Promise.resolve(false); }
-    if (source !== 'auto' && source !== 'initial') auto?.stop();
     if (target === current && !deferred.isDeferred(target)) { selection.cancel(); return Promise.resolve(true); }
     return selection.request(target, undefined, source);
   }
@@ -135,12 +135,13 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
   }
   refresh();
   layout = UI_TOOLS.tabsLayout(root, list, options, labels, life, id => select(id, 'user'));
-  auto = UI_TOOLS.tabsAuto(root, list, options, labels, life, () => ({ items, current }), id => select(id, 'auto'));
   root.dataset.cxReady = 'true'; render();
   const requested = options.hash && n.resolve(items, hashId()) || n.resolve(items, options.selectedIndex ?? options.selected);
   const initial = requested && !requested.disabled ? requested : current;
   if (options.hash && root.id && initial === current && current) writeHash(current.id);
   const ready = select(initial?.id, 'initial');
+  auto = UI_TOOLS.tabsAuto(root, list, options, labels, life, () => ({ items, current }),
+    id => select(id, 'auto'), () => selection.cancel(), ready);
   signal?.addEventListener('abort', destroy, { once: true });
   return { select, getSelected: () => current?.id ?? null, refresh, preparePrint: () => deferred.preparePrint(), destroy, ready };
 };

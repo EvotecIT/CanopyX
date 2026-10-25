@@ -45,7 +45,53 @@ await sections.select('activity');
 sections.destroy();
 ```
 
-Tabs support underline, pills, segmented and vertical styles; scroll, More and pill-wrap overflow; deferred panels; hash state; and optional auto-advance with Pause/Play controls. A deferred loader receives the destination record and an `AbortSignal`. New navigation cancels stale guards and loaders. `keepAlive: false` reloads deferred content after leaving it.
+Tabs support underline, pills, segmented and vertical styles; scroll, More and pill-wrap overflow; deferred panels; hash state; and optional automatic progression with a visible Pause/Play control. A deferred loader receives the destination record and an `AbortSignal`. New navigation cancels stale guards and loaders. `keepAlive: false` reloads deferred content after leaving it.
+
+### Automatic tab progression
+
+```javascript
+const sections = CanopyX.tabs('#workspace', {
+  autoProgress: { interval: 5000, pauseOnHover: true, pauseOnFocus: true }
+});
+await sections.ready;
+```
+
+`interval` is a positive number of milliseconds. Both pause options default to `true`.
+Progression waits for the initial panel, skips disabled tabs, and wraps after the last enabled tab.
+Each interval starts after the previous selection and its deferred content settle. A rejected change
+pauses progression. Hover, focus and a hidden document suspend the timer without catching up later.
+
+The visible, keyboard-accessible Pause/Play button gives readers control over automatic updates
+as required by WCAG 2.2.2. Selecting a tab by click, keyboard, picker, swipe, hash navigation or
+the controller stops progression, including attempts to select the current or a disabled tab.
+Leaving hover or focus does not restart a stopped timer; Play explicitly starts a fresh interval.
+Pause cancels a pending automatic selection without taking ownership of manual navigation.
+
+Reduced motion disables automatic selection and the animated progress fill. Play remains disabled,
+with a localized explanation. Changing to reduced motion cancels a pending automatic guard or
+loader. Changing back leaves progression paused until Play. Manual navigation remains available.
+The built-in locale packs supply `tabsPause`, `tabsPlay` and `tabsMotionDisabled`; pass a locale's
+`labels` or override those keys in the component's `labels` option.
+
+The .NET builder emits the same settings as declarative attributes:
+
+```csharp
+var tabs = new CanopyTabs("workspace", "Workspace sections", new CanopyTabsOptions {
+    AutoProgress = new CanopyTabsAutoProgress {
+        Interval = 5000,
+        PauseOnHover = true,
+        PauseOnFocus = true
+    }
+});
+tabs.Tabs.Add(new CanopyTab("overview", "Overview") { ContentHtml = "<p>Summary.</p>" });
+tabs.Tabs.Add(new CanopyTab("activity", "Activity") { ContentHtml = "<p>Recent activity.</p>" });
+string fragment = tabs.ToHtmlFragment();
+```
+
+`AutoProgress` defaults to null (off); a new settings object defaults to a 5000 ms interval.
+JavaScript `autoProgress` replaces the declarative settings, and `autoProgress: false` disables them.
+Before 1.0, replace `autoAdvance` with `autoProgress` and remove `loop`; progression wraps through
+enabled tabs. No compatibility alias is provided.
 
 `CanopyX.stepper(root, options)` adds guarded steps, optional skipping, validation, drafts and finish callbacks. A validation callback returns `false` or a list of messages to keep the current step open. Messages appear in a focused alert and are linked to invalid fields. Report and static stepper modes remain script-free. Tabs and interactive steppers share the same phone picker, preserving badges and counts. Tabs measure their labels, icons and badges before collapsing, with an eight-pixel resize margin to prevent repeated switching near the boundary. Menu overflow keeps at least three visible choices plus More while they fit. Interactive steppers use the picker below a container width of 640 px.
 

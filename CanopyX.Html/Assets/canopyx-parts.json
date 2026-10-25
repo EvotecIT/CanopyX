@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "5242a4606845d60d",
+      "version": "32e3c191ea17a3b4",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -52,7 +52,7 @@
     {
       "name": "ui-navigation",
       "label": "UI navigation",
-      "version": "e8fbe76c4fbe0097",
+      "version": "e7815ee277df3a57",
       "script": "canopyx-ui-navigation.js",
       "style": "canopyx-ui-navigation.css",
       "runtimes": [
@@ -67,7 +67,7 @@
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "cbbd305ef07da7e7",
+      "version": "9a9d561fc49d21f8",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [

@@ -778,6 +778,7 @@ const labels = Object.freeze({
   tabsPosition: "{current} de {total}",
   tabsPause: "Pausar",
   tabsPlay: "Reproducir",
+  tabsMotionDisabled: "El cambio automático de pestañas está desactivado con movimiento reducido",
   stepperStepOf: "Paso {current} de {total}",
   stepperBack: "Atrás",
   stepperNext: "Siguiente",

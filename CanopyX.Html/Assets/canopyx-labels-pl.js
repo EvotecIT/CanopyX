@@ -778,6 +778,7 @@ const labels = Object.freeze({
   tabsPosition: "{current} z {total}",
   tabsPause: "Wstrzymaj",
   tabsPlay: "Odtwórz",
+  tabsMotionDisabled: "Automatyczne przełączanie kart jest wyłączone przy ograniczeniu ruchu",
   stepperStepOf: "Krok {current} z {total}",
   stepperBack: "Wstecz",
   stepperNext: "Dalej",

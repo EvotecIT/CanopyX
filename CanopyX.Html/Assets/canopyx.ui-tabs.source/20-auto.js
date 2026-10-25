@@ -1,53 +1,103 @@
-UI_TOOLS.tabsAuto = (root, list, options, labels, life, read, select) => {
-  const config = options.autoAdvance;
-  if (!config || !Number.isFinite(config.interval) || config.interval <= 0) return { stop() {}, reset() {}, destroy() {} };
+UI_TOOLS.tabsAuto = (root, list, options, labels, life, read, select, cancel, ready) => {
+  const config = options.autoProgress === undefined
+    ? root.dataset.autoProgressInterval === undefined ? null : {
+      interval: Number(root.dataset.autoProgressInterval),
+      pauseOnHover: root.dataset.autoProgressPauseOnHover !== 'false',
+      pauseOnFocus: root.dataset.autoProgressPauseOnFocus !== 'false'
+    } : options.autoProgress;
+  const idle = { stop() {}, reset() {}, destroy() {} };
+  if (!config || !Number.isFinite(config.interval) || config.interval <= 0 || life.signal.aborted) return idle;
   const n = UI_TOOLS.navigation, control = n.button(labels.tabsPause, 'cx-tabs-play');
-  const progress = h('span', 'cx-tabs-progress'); progress.setAttribute('aria-hidden', 'true');
   const media = matchMedia('(prefers-reduced-motion: reduce)');
-  let paused = false, stopped = false, hovered = false, focused = false, pending = false;
-  let elapsed = 0, previous, frame;
+  let paused = media.matches, hovered = config.pauseOnHover !== false && root.matches(':hover');
+  let focused = config.pauseOnFocus !== false && root.contains(document.activeElement);
+  let started = false, pending = false, destroyed = false, generation = 0;
+  let elapsed = 0, previous = null, frame = null;
   const tools = n.owned(root, '.cx-tabs-tools')[0];
   if (tools) tools.append(control); else list?.after(control);
   function paint() {
-    setText(control, paused || stopped ? labels.tabsPlay : labels.tabsPause);
+    setText(control, paused || media.matches ? labels.tabsPlay : labels.tabsPause);
     control.setAttribute('aria-label', control.textContent);
-    control.setAttribute('aria-pressed', String(!paused && !stopped));
+    control.dataset.state = paused || media.matches ? 'paused' : 'playing';
+    control.disabled = media.matches;
+    if (media.matches) {
+      control.setAttribute('title', labels.tabsMotionDisabled);
+      control.setAttribute('aria-description', labels.tabsMotionDisabled);
+    } else {
+      control.removeAttribute('title'); control.removeAttribute('aria-description');
+    }
   }
-  function blocked() { return paused || stopped || hovered || focused || document.hidden || pending; }
+  function blocked() {
+    return destroyed || life.signal.aborted || !started || paused || media.matches || hovered || focused || document.hidden || pending;
+  }
+  function schedule() { if (frame == null && !blocked()) frame = requestAnimationFrame(tick); }
+  function sync() {
+    if (pending && (hovered || focused || document.hidden)) cancelPending();
+    previous = null;
+    if (blocked()) { cancelAnimationFrame(frame); frame = null; }
+    else schedule();
+    paint();
+  }
+  // Only cancel a request made by this timer. Initial and manual requests keep
+  // their existing selection/deferred ownership and lifetime.
+  function cancelPending() {
+    generation++;
+    if (pending) { pending = false; cancel(); }
+  }
   async function advance() {
     const { items, current } = read(), enabled = items.filter(item => !item.disabled);
-    const index = enabled.indexOf(current), next = enabled[index + 1] || (config.loop !== false ? enabled[0] : null);
-    if (!next || next === current) { paused = true; paint(); return; }
-    pending = true;
-    const changed = await select(next.id);
-    pending = false; elapsed = 0;
-    if (!changed) { paused = true; paint(); }
+    const next = enabled[(enabled.indexOf(current) + 1) % enabled.length];
+    if (!next || next === current) { stop(); return; }
+    const ticket = ++generation;
+    pending = true; previous = null;
+    let changed = false;
+    try { changed = await select(next.id); }
+    finally {
+      if (ticket === generation && !destroyed && !life.signal.aborted) {
+        pending = false; elapsed = 0;
+        if (!changed) paused = true;
+        sync();
+      }
+    }
   }
   function tick(now) {
-    if (life.signal.aborted) return;
-    const { current } = read();
-    if (current && progress.parentElement !== current.element) current.element.append(progress);
-    if (previous != null && !blocked()) elapsed += now - previous;
-    previous = now;
-    // Reduced motion keeps discrete progress; no continuous animated fill.
-    progress.style.inlineSize = (media.matches ? 0 : Math.min(100, elapsed / config.interval * 100)) + '%';
-    if (!blocked() && elapsed >= config.interval) advance();
-    frame = requestAnimationFrame(tick);
+    frame = null;
+    if (blocked()) { previous = null; return; }
+    if (previous != null) elapsed += now - previous;
+    previous = now; paint();
+    if (elapsed >= config.interval) { elapsed = 0; void advance(); }
+    else schedule();
   }
-  control.addEventListener('click', () => { stopped = false; paused = !paused; elapsed = 0; paint(); }, { signal: life.signal });
+  control.addEventListener('click', () => {
+    if (media.matches || destroyed) return;
+    if (!paused) stop();
+    else { paused = false; elapsed = 0; sync(); }
+  }, { signal: life.signal });
   if (config.pauseOnHover !== false) {
-    root.addEventListener('pointerenter', () => { hovered = true; }, { signal: life.signal });
-    root.addEventListener('pointerleave', () => { hovered = false; previous = null; }, { signal: life.signal });
+    root.addEventListener('pointerenter', () => { hovered = true; sync(); }, { signal: life.signal });
+    root.addEventListener('pointerleave', () => { hovered = false; sync(); }, { signal: life.signal });
   }
   if (config.pauseOnFocus !== false) {
-    root.addEventListener('focusin', () => { focused = true; }, { signal: life.signal });
-    root.addEventListener('focusout', event => { focused = root.contains(event.relatedTarget); previous = null; }, { signal: life.signal });
+    root.addEventListener('focusin', () => { focused = true; sync(); }, { signal: life.signal });
+    root.addEventListener('focusout', event => { focused = root.contains(event.relatedTarget); sync(); }, { signal: life.signal });
   }
-  document.addEventListener('visibilitychange', () => { previous = null; }, { signal: life.signal });
-  function stop() { stopped = true; paused = true; elapsed = 0; paint(); }
-  function reset() { elapsed = 0; previous = null; }
-  function destroy() { cancelAnimationFrame(frame); control.remove(); progress.remove(); }
+  document.addEventListener('visibilitychange', sync, { signal: life.signal });
+  media.addEventListener('change', () => {
+    if (media.matches) stop();
+    else sync();
+  }, { signal: life.signal });
+  function stop() { cancelPending(); paused = true; elapsed = 0; sync(); }
+  function reset() { cancelPending(); elapsed = 0; sync(); }
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true; cancelPending(); cancelAnimationFrame(frame); frame = null;
+    control.remove();
+  }
   life.signal.addEventListener('abort', destroy, { once: true });
-  paint(); frame = requestAnimationFrame(tick);
+  // Do not race the initially selected panel's guard or deferred loader.
+  Promise.resolve(ready).then(() => {
+    if (!destroyed && !life.signal.aborted) { started = true; sync(); }
+  }, () => { if (!destroyed && !life.signal.aborted) stop(); });
+  paint();
   return { stop, reset, destroy };
 };

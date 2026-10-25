@@ -71,11 +71,14 @@ export interface UiTabsOptions extends UiNavigationOptions {
   hash?: boolean;
   hashHistory?: "replace" | "push";
   tabs?: readonly UiTabOptions[];
-  autoAdvance?: {
+  /** Optional automatic progression. Manual selection stops it; reduced motion disables it.
+   * False disables settings emitted by the .NET builder. */
+  autoProgress?: false | {
     /** A positive interval in milliseconds. */
     interval: number;
-    loop?: boolean;
+    /** Suspends the interval while hovered. Defaults to true. */
     pauseOnHover?: boolean;
+    /** Suspends the interval while focus is inside. Defaults to true. */
     pauseOnFocus?: boolean;
   };
   /** Enables the development warning when segmented tabs fall back to pills above five items. */

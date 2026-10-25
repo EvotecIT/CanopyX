@@ -31,6 +31,8 @@ public sealed class CanopyTabs {
         UiHtml.EnumValue(Options.Style);
         UiHtml.EnumValue(Options.Overflow);
         UiHtml.EnumValue(Options.Activation);
+        if (Options.AutoProgress != null && Options.AutoProgress.Interval <= 0)
+            throw new ArgumentOutOfRangeException(nameof(Options.AutoProgress.Interval), "The interval must be positive milliseconds.");
         var style = Options.Style == CanopyTabsStyle.Segmented && Tabs.Count > 5 ? CanopyTabsStyle.Pills : Options.Style;
         if (style == CanopyTabsStyle.Segmented && Tabs.Count < 2)
             throw new ArgumentException("Segmented tabs require at least two tabs.");
@@ -53,6 +55,11 @@ public sealed class CanopyTabs {
         UiHtml.Attribute(html, "data-activation", UiHtml.Token(Options.Activation));
         UiHtml.Attribute(html, "data-collapse", (Options.CollapseToPicker ?? style != CanopyTabsStyle.Segmented) ? "picker" : "none");
         UiHtml.Attribute(html, "data-print", Options.PrintAll ? "all" : "selected");
+        if (Options.AutoProgress != null) {
+            UiHtml.Attribute(html, "data-auto-progress-interval", UiHtml.Number(Options.AutoProgress.Interval));
+            UiHtml.Attribute(html, "data-auto-progress-pause-on-hover", UiHtml.Bool(Options.AutoProgress.PauseOnHover));
+            UiHtml.Attribute(html, "data-auto-progress-pause-on-focus", UiHtml.Bool(Options.AutoProgress.PauseOnFocus));
+        }
         html.Append("><div class=\"cx-tablist\" role=\"tablist\"");
         UiHtml.Attribute(html, "aria-label", Label);
         UiHtml.Attribute(html, "aria-orientation", style == CanopyTabsStyle.Vertical ? "vertical" : "horizontal");

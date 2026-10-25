@@ -778,6 +778,7 @@ const labels = Object.freeze({
   tabsPosition: "{current} sur {total}",
   tabsPause: "Mettre en pause",
   tabsPlay: "Lire",
+  tabsMotionDisabled: "Le changement automatique d’onglet est désactivé lorsque les animations sont réduites",
   stepperStepOf: "Étape {current} sur {total}",
   stepperBack: "Retour",
   stepperNext: "Suivant",

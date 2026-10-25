@@ -2480,6 +2480,7 @@ CanopyX.CanopyLabels.System.String StepperSkipped { get; set; }
 CanopyX.CanopyLabels.System.String StepperStepOf { get; set; }
 CanopyX.CanopyLabels.System.String TabsMore { get; set; }
 CanopyX.CanopyLabels.System.String TabsMoreSelected { get; set; }
+CanopyX.CanopyLabels.System.String TabsMotionDisabled { get; set; }
 CanopyX.CanopyLabels.System.String TabsPause { get; set; }
 CanopyX.CanopyLabels.System.String TabsPlay { get; set; }
 CanopyX.CanopyLabels.System.String TabsPosition { get; set; }

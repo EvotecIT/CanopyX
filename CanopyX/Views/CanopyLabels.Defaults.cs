@@ -784,6 +784,7 @@ public sealed partial class CanopyLabels {
         [nameof(TabsScrollPrevious)] = "Previous tabs", [nameof(TabsScrollNext)] = "Next tabs",
         [nameof(TabsSection)] = "Section", [nameof(TabsPosition)] = "{current} of {total}",
         [nameof(TabsPause)] = "Pause", [nameof(TabsPlay)] = "Play",
+        [nameof(TabsMotionDisabled)] = "Automatic tabs are disabled by reduced motion",
         [nameof(StepperStepOf)] = "Step {current} of {total}", [nameof(StepperBack)] = "Back",
         [nameof(StepperNext)] = "Next", [nameof(StepperFinish)] = "Finish",
         [nameof(StepperSkip)] = "Skip", [nameof(StepperSaveDraft)] = "Save draft",

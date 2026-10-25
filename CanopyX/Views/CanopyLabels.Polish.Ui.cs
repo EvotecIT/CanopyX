@@ -11,6 +11,7 @@ public sealed partial class CanopyLabels {
         labels.TabsPosition = "{current} z {total}";
         labels.TabsPause = "Wstrzymaj";
         labels.TabsPlay = "Odtwórz";
+        labels.TabsMotionDisabled = "Automatyczne przełączanie kart jest wyłączone przy ograniczeniu ruchu";
         labels.StepperStepOf = "Krok {current} z {total}";
         labels.StepperBack = "Wstecz";
         labels.StepperNext = "Dalej";

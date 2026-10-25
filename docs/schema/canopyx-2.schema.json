@@ -1849,6 +1849,7 @@
             "tabsScrollNext": { "type": "string" },
             "tabsSection": { "type": "string" },
             "tabsPosition": { "type": "string" },
+            "tabsMotionDisabled": { "type": "string" },
             "tabsPause": { "type": "string" },
             "tabsPlay": { "type": "string" },
             "stepperStepOf": { "type": "string" },

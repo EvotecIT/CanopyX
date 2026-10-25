@@ -10,6 +10,8 @@ public sealed class CanopyTabsOptions {
     public CanopyTabsOverflow Overflow { get; set; }
     /// <summary>Gets or sets the keyboard activation policy. Auto lets the runtime account for deferred panels and host guards.</summary>
     public CanopyTabActivation Activation { get; set; } = CanopyTabActivation.Auto;
+    /// <summary>Gets or sets automatic progression settings. Null leaves progression disabled.</summary>
+    public CanopyTabsAutoProgress? AutoProgress { get; set; }
     /// <summary>Gets or sets whether narrow containers use the shared picker. Null selects the style default.</summary>
     public bool? CollapseToPicker { get; set; }
     /// <summary>Gets or sets whether all panels print, rather than only the selected panel.</summary>

@@ -212,9 +212,9 @@ test('overflow menu can select a hidden tab while pills wrap without a menu', as
   expect(await page.getByRole('tab').last().evaluate(el => el.getBoundingClientRect().top > el.parentElement.firstElementChild.getBoundingClientRect().top)).toBe(true);
 });
 
-test('auto advance pauses, resumes and stops after user selection', async ({ page }) => {
+test('auto progress pauses, resumes and stops after user selection', async ({ page }) => {
   await page.clock.install();
-  await openUi(page, tabs(), initTabs('{ autoAdvance: { interval: 2000, pauseOnHover: true, pauseOnFocus: true } }'));
+  await openUi(page, tabs(), initTabs('{ autoProgress: { interval: 2000, pauseOnHover: true, pauseOnFocus: true } }'));
   await page.mouse.move(1200, 800);
   await page.clock.runFor(2100);
   await expect(page.getByRole('tabpanel', { name: 'Checks' })).toBeVisible();

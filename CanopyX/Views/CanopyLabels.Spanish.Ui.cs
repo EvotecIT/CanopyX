@@ -11,6 +11,7 @@ public sealed partial class CanopyLabels {
         labels.TabsPosition = "{current} de {total}";
         labels.TabsPause = "Pausar";
         labels.TabsPlay = "Reproducir";
+        labels.TabsMotionDisabled = "El cambio automático de pestañas está desactivado con movimiento reducido";
         labels.StepperStepOf = "Paso {current} de {total}";
         labels.StepperBack = "Atrás";
         labels.StepperNext = "Siguiente";

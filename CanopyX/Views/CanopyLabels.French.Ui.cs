@@ -11,6 +11,7 @@ public sealed partial class CanopyLabels {
         labels.TabsPosition = "{current} sur {total}";
         labels.TabsPause = "Mettre en pause";
         labels.TabsPlay = "Lire";
+        labels.TabsMotionDisabled = "Le changement automatique d’onglet est désactivé lorsque les animations sont réduites";
         labels.StepperStepOf = "Étape {current} sur {total}";
         labels.StepperBack = "Retour";
         labels.StepperNext = "Suivant";

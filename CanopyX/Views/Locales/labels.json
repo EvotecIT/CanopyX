@@ -780,6 +780,7 @@
   "TabsPosition": ["{current} z {total}","{current} von {total}","{current} de {total}","{current} sur {total}","{current} di {total}"],
   "TabsPause": ["Wstrzymaj","Pausieren","Pausar","Mettre en pause","Pausa"],
   "TabsPlay": ["Odtwórz","Wiedergeben","Reproducir","Lire","Riproduci"],
+  "TabsMotionDisabled": ["Automatyczne przełączanie kart jest wyłączone przy ograniczeniu ruchu","Automatischer Tabwechsel ist bei reduzierter Bewegung deaktiviert","El cambio automático de pestañas está desactivado con movimiento reducido","Le changement automatique d’onglet est désactivé lorsque les animations sont réduites","Il cambio automatico delle schede è disattivato con movimento ridotto"],
   "StepperStepOf": ["Krok {current} z {total}","Schritt {current} von {total}","Paso {current} de {total}","Étape {current} sur {total}","Passaggio {current} di {total}"],
   "StepperBack": ["Wstecz","Zurück","Atrás","Retour","Indietro"],
   "StepperNext": ["Dalej","Weiter","Siguiente","Suivant","Avanti"],

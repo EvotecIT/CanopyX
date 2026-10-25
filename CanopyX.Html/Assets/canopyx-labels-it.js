@@ -778,6 +778,7 @@ const labels = Object.freeze({
   tabsPosition: "{current} di {total}",
   tabsPause: "Pausa",
   tabsPlay: "Riproduci",
+  tabsMotionDisabled: "Il cambio automatico delle schede è disattivato con movimento ridotto",
   stepperStepOf: "Passaggio {current} di {total}",
   stepperBack: "Indietro",
   stepperNext: "Avanti",

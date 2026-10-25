@@ -52,6 +52,8 @@ UI_TOOLS.navigation = (() => {
       const live = () => ticket === version && !controller.signal.aborted && !life.signal.aborted;
       const from = read();
       const restoreFocus = () => {
+        // Automatic progression leaves the user's focus where it is.
+        if (context === 'auto') return;
         const target = prefix === 'tabs' ? from?.element : from?.element.querySelector('button') || from?.panel?.querySelector('[data-hfx-part="title"],h3');
         target?.focus();
       };

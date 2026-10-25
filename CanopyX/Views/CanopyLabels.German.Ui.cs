@@ -11,6 +11,7 @@ public sealed partial class CanopyLabels {
         labels.TabsPosition = "{current} von {total}";
         labels.TabsPause = "Pausieren";
         labels.TabsPlay = "Wiedergeben";
+        labels.TabsMotionDisabled = "Automatischer Tabwechsel ist bei reduzierter Bewegung deaktiviert";
         labels.StepperStepOf = "Schritt {current} von {total}";
         labels.StepperBack = "Zurück";
         labels.StepperNext = "Weiter";
