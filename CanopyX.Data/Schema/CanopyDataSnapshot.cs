@@ -68,7 +68,10 @@ internal static class CanopyDataSnapshot {
 
     private static CanopyGridReporting? Reporting(CanopyGridReporting? source) {
         if (source == null) return null;
-        var copy = new CanopyGridReporting { Grouping = source.Grouping == null ? null : new CanopyGridGrouping(source.Grouping.Column, source.Grouping.Descending) { HeaderTemplate = source.Grouping.HeaderTemplate }, Groupable = source.Groupable };
+        var copy = new CanopyGridReporting {
+            Grouping = source.Grouping == null ? null : new CanopyGridGrouping(source.Grouping.Column, source.Grouping.Descending) { HeaderTemplate = source.Grouping.HeaderTemplate },
+            Groupable = source.Groupable, Pivot = source.Pivot?.Copy(), Pivotable = source.Pivotable
+        };
         foreach (var level in source.GroupBy) copy.GroupBy.Add(level);
         foreach (var aggregate in source.Aggregates) copy.Aggregates.Add(aggregate);
         foreach (var id in source.FacetColumns) copy.FacetColumns.Add(id);

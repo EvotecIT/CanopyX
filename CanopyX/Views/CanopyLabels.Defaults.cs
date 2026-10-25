@@ -7,6 +7,20 @@ namespace CanopyX;
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
+        [nameof(GridPivot)] = "Pivot",
+        [nameof(GridPivotRows)] = "Row groups",
+        [nameof(GridPivotColumns)] = "Column groups",
+        [nameof(GridPivotValues)] = "Values",
+        [nameof(GridPivotFlat)] = "Show records",
+        [nameof(GridPivotConfigure)] = "Configure pivot",
+        [nameof(GridPivotOther)] = "Other",
+        [nameof(GridPivotLimited)] = "Showing {shown} of {total} column paths; the rest are combined in Other. Subtotals include all matching descendants.",
+        [nameof(GridPivotColumn)] = "Choose column",
+        [nameof(GridPivotTopN)] = "Top columns",
+        [nameof(GridPivotSort)] = "Sort rows by total",
+        [nameof(GridPivotDrill)] = "Show records for {row}, {column}",
+        [nameof(GridPivotReturn)] = "Return to pivot",
+        [nameof(GridPivotInvalid)] = "Choose valid pivot axes and at least one value.",
         [nameof(GridShowAs)] = "Show values as",
         [nameof(GridShowAsValue)] = "Value",
         [nameof(GridShowAsPercentGrandTotal)] = "as % of total",

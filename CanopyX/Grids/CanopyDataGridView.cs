@@ -312,6 +312,7 @@ public sealed partial class CanopyDataGridView {
         }
         ValidateFormatting();
         Reporting?.Validate(Columns);
+        Reporting?.Pivot?.Validate(this);
         ValidateFacetPanel();
         ValidateCalendar();
         if ((Reporting?.Grouping != null || Reporting?.DynamicGrouping == true || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)

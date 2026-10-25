@@ -7,7 +7,7 @@
     view.query?.groupBy?.some(level => level.bucket) || gridQueryUsesBucketFilters(view.query);
   function gridQueryUsesBucketFilters(query) {
     const group = node => !!node && (node.filters?.some(filter => filter.bucket) || node.groups?.some(group));
-    return query?.filters?.some(filter => filter.bucket) || group(query?.filterGroup);
+    return query?.filters?.some(filter => filter.bucket) || group(query?.filterGroup) || query?.tupleFilters?.some(tuple => tuple.columns?.some(field => field.bucket));
   }
   const BUCKET_REQUEST_PAGE = DataGrid.prototype.requestPage;
   DataGrid.prototype.requestPage = async function (query, signal) {

@@ -1,6 +1,20 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 (function (global) {
 const labels = Object.freeze({
+  gridPivot: "Kreuztabelle",
+  gridPivotRows: "Zeilengruppen",
+  gridPivotColumns: "Spaltengruppen",
+  gridPivotValues: "Werte",
+  gridPivotFlat: "Datensätze anzeigen",
+  gridPivotConfigure: "Kreuztabelle konfigurieren",
+  gridPivotOther: "Andere",
+  gridPivotLimited: "{shown} von {total} Spaltenpfaden; der Rest ist unter Andere zusammengefasst. Zwischensummen enthalten alle passenden untergeordneten Werte.",
+  gridPivotColumn: "Spalte wählen",
+  gridPivotTopN: "Führende Spalten",
+  gridPivotSort: "Zeilen nach Gesamtwert sortieren",
+  gridPivotDrill: "Datensätze für {row}, {column} anzeigen",
+  gridPivotReturn: "Zurück zur Kreuztabelle",
+  gridPivotInvalid: "Gültige Achsen und mindestens einen Wert wählen.",
   gridShowAs: "Werte anzeigen als",
   gridShowAsValue: "Wert",
   gridShowAsPercentGrandTotal: "als % der Gesamtsumme",

@@ -181,6 +181,9 @@ public sealed partial class CanopyRemoteHandler {
             foreach (var filter in filters.EnumerateArray()) WriteWireFilter(writer, filter);
         writer.WriteEndArray();
         if (raw != null) {
+            if (raw.RootElement.TryGetProperty("tupleFilters", out var tuples) && tuples.ValueKind == JsonValueKind.Array && tuples.GetArrayLength() > 0) {
+                writer.WritePropertyName("tupleFilters"); tuples.WriteTo(writer);
+            }
             // Preserve accepted predicate shape and operand text: the browser compares the normalized query's
             // ownership, and equivalent date spellings or moving a flat predicate into a group changes that shape.
             if (raw.RootElement.TryGetProperty("filterGroup", out var group) && group.ValueKind == JsonValueKind.Object) {
@@ -190,6 +193,14 @@ public sealed partial class CanopyRemoteHandler {
         } else if (query.Filter != null) {
             writer.WritePropertyName("filterGroup");
             WriteFilter(writer, query.Filter is CanopyFilterGroup ? query.Filter : new CanopyFilterGroup(CanopyGridFilterJunction.All, new[] { query.Filter }));
+        }
+        if (raw == null && query.TupleFilters.Count > 0) {
+            writer.WriteStartArray("tupleFilters");
+            foreach (var tuple in query.TupleFilters) {
+                var tupleWriter = new CanopyX.Json.CanopyJsonWriter(); tuple.Definition.WriteJson(tupleWriter);
+                using var value = JsonDocument.Parse(tupleWriter.ToString()); value.RootElement.WriteTo(writer);
+            }
+            writer.WriteEndArray();
         }
         if (query.Schema.DynamicGrouping) {
             writer.WriteStartArray("groupBy");

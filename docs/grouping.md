@@ -18,6 +18,10 @@ such a page, or serve the files.
 The example `orders-by-region.html` (CanopyX.Examples) groups orders by region and status with sum, average, count and
 distinct-count aggregates and expands each order into a nested grid of its order lines.
 
+For two-axis analysis, reporting grids also offer [pivots](pivot.md): bounded row and column fields, exact prefix
+totals, TopN/Other columns and correlated record drill-through. Ordinary grouping and pivot analysis share the
+declared aggregate and bucket contracts.
+
 ## Grouping
 
 Date and number columns offer a bucket choice in their grouping chip. Calendar choices are day, week, month, quarter,

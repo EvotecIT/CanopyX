@@ -26,5 +26,5 @@
   }
   function gridFilterCount(query) {
     const count = group => group ? group.filters.length + group.groups.reduce((sum, child) => sum + count(child), 0) : 0;
-    return (query?.filters?.length || 0) + count(query?.filterGroup);
+    return (query?.filters?.length || 0) + count(query?.filterGroup) + (query?.tupleFilters?.length || 0);
   }

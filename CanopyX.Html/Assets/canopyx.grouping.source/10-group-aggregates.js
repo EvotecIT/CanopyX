@@ -4,6 +4,7 @@
     for (const aggregate of groupSummaryAggregates(grid.view)) values[aggregate.id] = groupAggregateValue(grid, aggregate, rows, first, last);
     return values;
   }
+  GRID_ROWS.aggregateValue = groupAggregateValue;
   // The aggregates of a summary or a group: every declared binding, counts within the record count, numbers in range.
   function groupCheckValues(view, values, count) {
     const declarations = groupSummaryAggregates(view);

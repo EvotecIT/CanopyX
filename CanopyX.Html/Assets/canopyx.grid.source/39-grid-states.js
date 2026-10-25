@@ -24,7 +24,7 @@
         const query=this.acceptedQuery,active=!!query.search||gridFilterCount(query)>0,title=h("h4"),reason=h("p"),actions=h("div","acts");
         this.host.classList.add("cx-grid-awaiting");this.notice.classList.add("cx-state");this.host.insertBefore(this.notice,this.grid.nextSibling);title.setAttribute("aria-level","2");setText(title,fill(active?this.labels.gridNoMatches:this.labels.gridEmpty,{noun:this.noun}));
         setText(reason,active?fill(this.labels.gridNoMatchesReason,{search:query.search||"—",count:gridFilterCount(query)}):this.view.emptyReason||this.labels.gridEmptyReason);
-        if(active)actions.appendChild(gridButton(this.labels.gridClearAll,()=>this.setQuery(gridQueryStart(this.queryForChange(true),{search:"",filters:[],filterGroup:undefined})).catch(()=>{})));
+        if(active)actions.appendChild(gridButton(this.labels.gridClearAll,()=>this.setQuery(gridQueryStart(this.queryForChange(true),{search:"",filters:[],filterGroup:undefined,tupleFilters:undefined})).catch(()=>{})));
         this.notice.append(title,reason,actions);this.notice.hidden=false;setText(this.live,title.textContent+" "+reason.textContent);
       }else if(text){setText(this.notice,text);this.notice.hidden=false;}
     },

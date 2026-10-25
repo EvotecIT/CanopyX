@@ -47,9 +47,9 @@ internal sealed partial class QueryTranslator<T> {
 
     /// <summary>Groups by the exact values of up to four columns (or a constant for complete-query totals) and evaluates the aggregates in the store.</summary>
     internal Task<List<StoreGroup>> GroupsAsync(IQueryable<T> source, IReadOnlyList<string> columns, IReadOnlyList<CanopySummaryAggregate> aggregates, int take,
-        CanopyQueryExecutor executor, CancellationToken cancellationToken, IReadOnlyList<CanopySummaryLevel>? levels = null) {
+        CanopyQueryExecutor executor, CancellationToken cancellationToken, IReadOnlyList<CanopySummaryLevel>? levels = null, bool pivot = false) {
         if (aggregates.Count > 32) throw new ArgumentException("At most 32 aggregates are supported.", nameof(aggregates));
-        if (columns.Count > 4) throw new ArgumentException("At most four grouping columns are supported.", nameof(columns));
+        if (columns.Count > (pivot ? 38 : 4)) throw new ArgumentException("The grouping exceeds its column bound.", nameof(columns));
         foreach (var aggregate in aggregates) {
             if (aggregate.Operation == CanopyGridAggregateOperation.Custom)
                 throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not compute the custom aggregate '" + aggregate.CustomOperation + "'.");
@@ -67,7 +67,7 @@ internal sealed partial class QueryTranslator<T> {
         var rowType = typeof(AggregateRow<TKey>);
         Expression groupKey = Expression.Property(group, nameof(IGrouping<TKey, T>.Key));
         // A composite key is rebuilt from its members, which every provider projects as plain grouped columns.
-        if (width > 1) groupKey = CompositeKeys.New(CompositeKeys.Members(typeof(TKey)).Select(member => (Expression)Expression.Property(groupKey, member)).ToArray());
+        if (width > 1) groupKey = CompositeKeys.New(CompositeKeys.Leaves(groupKey));
         var bindings = new List<MemberBinding> {
             Expression.Bind(rowType.GetProperty(nameof(AggregateRow<TKey>.Key))!, groupKey),
             Expression.Bind(rowType.GetProperty(nameof(AggregateRow<TKey>.Rows))!, Expression.Call(CountAll.MakeGenericMethod(typeof(T)), group))
@@ -107,9 +107,9 @@ internal sealed partial class QueryTranslator<T> {
         if (width <= 1) {
             rows = rows.OrderBy(Expression.Lambda<Func<AggregateRow<TKey>, TKey>>(key0, item));
         } else {
-            var members = CompositeKeys.Members(typeof(TKey));
-            var ordered = (IOrderedQueryable<AggregateRow<TKey>>)Order(rows, Expression.Lambda(Expression.Property(key0, members[0]), item), nameof(Queryable.OrderBy));
-            for (var i = 1; i < members.Length; i++) ordered = (IOrderedQueryable<AggregateRow<TKey>>)Order(ordered, Expression.Lambda(Expression.Property(key0, members[i]), item), nameof(Queryable.ThenBy));
+            var members = CompositeKeys.Leaves(key0);
+            var ordered = (IOrderedQueryable<AggregateRow<TKey>>)Order(rows, Expression.Lambda(members[0], item), nameof(Queryable.OrderBy));
+            for (var i = 1; i < members.Length; i++) ordered = (IOrderedQueryable<AggregateRow<TKey>>)Order(ordered, Expression.Lambda(members[i], item), nameof(Queryable.ThenBy));
             rows = ordered;
         }
         var list = await executor.ToListAsync(rows.Take(take), cancellationToken).ConfigureAwait(false);

@@ -1,6 +1,20 @@
 // Generated from CanopyX/Views/Locales/labels.json by Build/Sync-Assets.ps1.
 (function (global) {
 const labels = Object.freeze({
+  gridPivot: "Tabela przestawna",
+  gridPivotRows: "Grupy wierszy",
+  gridPivotColumns: "Grupy kolumn",
+  gridPivotValues: "Wartości",
+  gridPivotFlat: "Pokaż rekordy",
+  gridPivotConfigure: "Konfiguruj tabelę przestawną",
+  gridPivotOther: "Pozostałe",
+  gridPivotLimited: "Widoczne ścieżki kolumn: {shown} z {total}; reszta w grupie Pozostałe. Sumy częściowe obejmują wszystkie pasujące elementy podrzędne.",
+  gridPivotColumn: "Wybierz kolumnę",
+  gridPivotTopN: "Najwyższe kolumny",
+  gridPivotSort: "Sortuj wiersze według sumy",
+  gridPivotDrill: "Pokaż rekordy dla: {row}, {column}",
+  gridPivotReturn: "Wróć do tabeli przestawnej",
+  gridPivotInvalid: "Wybierz poprawne osie i co najmniej jedną wartość.",
   gridShowAs: "Pokaż wartości jako",
   gridShowAsValue: "Wartość",
   gridShowAsPercentGrandTotal: "jako % całości",
