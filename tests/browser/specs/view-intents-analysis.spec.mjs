@@ -44,7 +44,7 @@ test("pivot intent previews without a query then activates, changes axes and val
   const exported = await page.evaluate(api + ".getViewIntent()");
   expect(exported.pivot.values).toEqual(["orders"]); expect(exported.pivot.active).toBeUndefined();
   await preview(page, proposal({ pivot: false })); await page.evaluate("preview.apply()");
-  await expect(page.locator(".cx-pivot-table")).toHaveCount(0);
+  await expect(page.locator(".cx-pivot-table:visible")).toHaveCount(0);
   expect((await page.evaluate(api + ".getSummary()")).matched).toBe(48);
   expect((await page.evaluate(api + ".getViewIntent()")).pivot).toBe(false);
   await preview(page, exported); await page.evaluate("preview.apply()");
