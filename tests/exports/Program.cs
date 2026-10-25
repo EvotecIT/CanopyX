@@ -24,6 +24,8 @@ foreach (var sidecar in Directory.EnumerateFiles(args[0], "*.json", SearchOption
         using var reader = ExcelDocument.OpenDataReader(file, new ExcelReadOptions { HasHeaderRow = true });
         var columns = contract.GetProperty("columns").EnumerateArray().ToArray();
         if (reader.FieldCount != columns.Length) throw new InvalidDataException("Column count differs.");
+        for (int ordinal = 0; ordinal < columns.Length; ordinal++)
+            Require(reader.GetName(ordinal) == columns[ordinal].GetProperty("title").GetString(), "Workbook header differs: " + ordinal);
         var expectedRows = contract.GetProperty("rows").EnumerateArray().ToArray();
         var sheet = sdk.WorkbookPart!.WorksheetParts.First().Worksheet ?? throw new InvalidDataException("Worksheet is missing.");
         var structural = new WorkbookRecordProof(contract, columns);
