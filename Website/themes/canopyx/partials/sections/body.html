@@ -97,7 +97,7 @@ await grid.ready;</code></pre>
     </div>
     {{~ for p in data.views.packages ~}}
     <div class="cnx-packages__row" role="row">
-      <span role="cell" class="cnx-packages__name"><a href="{{ p.url }}">{{ p.name }}<span class="cnx-sr"> on {{ p.where }}</span></a><small aria-hidden="true">{{ p.where }}</small></span>
+      <span role="cell" class="cnx-packages__name"><span class="cnx-pkgicon cnx-pkgicon--{{ p.where | string.downcase }}" aria-hidden="true"></span><a href="{{ p.url }}">{{ p.name }}<span class="cnx-sr"> on {{ p.where }}</span></a><small aria-hidden="true">{{ p.where }}</small></span>
       <span role="cell" class="cnx-packages__body">{{ p.body }}</span>
       <span role="cell" class="cnx-packages__install"><code>{{ p.install }}</code><button type="button" class="cnx-copy" data-cnx-copy="{{ p.install }}" aria-label="Copy {{ p.install }}">Copy</button></span>
     </div>

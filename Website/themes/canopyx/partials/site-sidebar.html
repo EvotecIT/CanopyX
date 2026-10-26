@@ -1,6 +1,6 @@
 {{~ ## The site sidebar, on every page: the views tree (families from data/views.json are group rows, each view links to
-     its own page), then the documentation tree and the packages. The current page carries the selected-row treatment of a
-     CanopyX tree. On narrow screens the header's menu button opens it as a sheet. ## ~}}
+     its own page), then the documentation tree. Packages are linked from the header and the home page. The current page
+     carries the selected-row treatment of a CanopyX tree. On narrow screens the header's menu button opens it as a sheet. ## ~}}
 {{~ views = data.views ~}}
 <aside class="cnx-side" id="cnx-side" aria-label="Site">
   <nav class="cnx-side__section" aria-labelledby="cnx-side-views">
@@ -16,11 +16,4 @@
     {{~ end ~}}
   </nav>
   {{ include "docs-sidebar" }}
-  <nav class="cnx-side__section" aria-labelledby="cnx-side-packages">
-    <h2 class="cnx-side__title" id="cnx-side-packages">Packages</h2>
-    <ul class="cnx-side__list cnx-side__list--flat">
-      <li><a href="https://www.nuget.org/packages?q=CanopyX">NuGet<span class="cnx-sr"> packages</span></a></li>
-      <li><a href="https://www.npmjs.com/package/@evotecit/canopyx">npm<span class="cnx-sr"> package</span></a></li>
-    </ul>
-  </nav>
 </aside>
