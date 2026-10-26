@@ -115,3 +115,5 @@ html.cx-record-printing .cx-record-print{display:block;padding:0;font:var(--cx-s
 .cx-record-subtitle{margin:var(--cx-size-4px) 0 0;font-size:var(--cx-size-13px);color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));}
 .cx-record-drawer .cx-dl dt{color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));font-size:var(--cx-size-12px);font-weight:normal;}
 .cx-record-drawer .cx-dl dd{font-size:var(--cx-size-14px);}
+.cx-drawer.cx-record-drawer .cx-drawer-h h4{width:auto;max-width:100%;overflow-wrap:anywhere;}
+.cx-drawer.cx-record-drawer .cx-drawer-h > :not(:first-child){flex:none;}

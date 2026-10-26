@@ -129,3 +129,6 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
 .cx-record-subtitle { margin:var(--cx-size-4px) 0 0; font-size:var(--cx-size-13px); color:var(--hfx-color-text-muted); }
 .cx-record-drawer .cx-dl dt { color:var(--hfx-color-text-muted); font-size:var(--cx-size-12px); font-weight:normal; }
 .cx-record-drawer .cx-dl dd { font-size:var(--cx-size-14px); }
+/* A long record title wraps inside the drawer head instead of running under the navigation and close buttons. */
+.cx-drawer.cx-record-drawer .cx-drawer-h h4 { width:auto; max-width:100%; overflow-wrap:anywhere; }
+.cx-drawer.cx-record-drawer .cx-drawer-h > :not(:first-child) { flex:none; }

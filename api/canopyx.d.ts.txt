@@ -2601,6 +2601,7 @@ export interface GridLiveState{
   readonly revision:string|null;
 }
 export interface GridPollOptions<Row extends GridRow=GridRow,Q extends AcceptedGridQuery=GridQuery>{
+  onRefresh?:(result:GridLiveResult) => void;
   intervalMs?:number;
   immediate?:boolean;
   pauseWhenHidden?:boolean;

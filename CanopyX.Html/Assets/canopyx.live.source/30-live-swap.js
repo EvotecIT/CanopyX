@@ -94,14 +94,23 @@
      * A projected view (groups, summaries, detail rows) runs its query again and restores the reader's place. The work of
      * the accepted result (the open drawer above all) stays bound to its lifetime until the next query of the reader.
      */
-    async liveRequery(changed, removed) {
+    async liveRequery(changed, removed, ownerSignal) {
       const anchor = this.liveAnchor(), active = document.activeElement, hadFocus = this.canvas.contains(active);
       const focusedId = this.focused && !this.focused.status ? this.focused.key : null, keep = this.dataLifetime;
       this.dataLifetime = new AbortController();
       // The grouping part keeps the summary of a query and revision; inline rows changed under the same revision.
       this.summaryCandidate = null;
-      try { await this.setQuery({ ...this.acceptedQuery, offset: this.paged ? this.pageOffset : 0, revision: undefined }); }
+      let queryLifetime;
+      const cancel = () => queryLifetime?.abort();
+      try {
+        const query = this.setQuery({ ...this.acceptedQuery, offset: this.paged ? this.pageOffset : 0, revision: undefined });
+        queryLifetime = this.dataLifetime;
+        ownerSignal?.addEventListener("abort", cancel, { once: true });
+        if (ownerSignal?.aborted) cancel();
+        await query;
+      }
       finally {
+        ownerSignal?.removeEventListener("abort", cancel);
         const current = this.dataLifetime;
         if (current.signal.aborted || this.destroyed) keep.abort(); else current.signal.addEventListener("abort", () => keep.abort(), { once: true });
       }

@@ -16,13 +16,13 @@
         for (let page = Math.floor(Math.max(bounds.first, range.first) / size) * size; page <= Math.min(bounds.last, range.last); page += size) offsets.add(page);
       return [...offsets].slice(0, 4).sort((a, b) => a - b);
     },
-    async liveRefreshHost(force) {
-      if (this.cursor) return this.liveRefreshCursor();
+    async liveRefreshHost(force, signal = this.dataLifetime.signal) {
+      if (this.cursor) return this.liveRefreshCursor(signal);
       const offsets = this.liveHeldOffsets(), lifetime = this.dataLifetime, epoch = this.queryEpoch, accepted = this.acceptedQuery;
       const ask = async (offset, snapshot) => {
         const query = gridQuery(this.view, { ...accepted, offset, limit: this.pageSize, revision: snapshot ? snapshot.revision : undefined });
-        const page = validateGridPage(await this.requestPage(query, lifetime.signal), this.view, query, snapshot);
-        if (this.destroyed || epoch !== this.queryEpoch || this.acceptedQuery !== accepted) throw new DOMException("The refresh was superseded.", "AbortError");
+        const page = validateGridPage(await this.requestPage(query, signal), this.view, query, snapshot);
+        if (signal.aborted || this.destroyed || epoch !== this.queryEpoch || this.acceptedQuery !== accepted) throw new DOMException("The refresh was superseded.", "AbortError");
         return page;
       };
       const first = await ask(0, null);
@@ -30,7 +30,7 @@
       const snapshot = { revision: first.revision, total: first.total, matched: first.matched };
       if (this.liveProjected()) {
         this.livePending = null; this.liveMoved = false;
-        await this.liveRequery(new Map(), []);
+        await this.liveRequery(new Map(), [], signal);
         return { changed: new Map(), removed: [], orderChanged: false, revision: this.snapshot.revision };
       }
       const pages = new Map([[0, first.items]]);
@@ -55,9 +55,10 @@
       this.liveSyncPrompt();
       return { changed, removed: [], orderChanged: false, revision: snapshot.revision };
     },
-    async liveRefreshCursor() {
+    async liveRefreshCursor(signal = this.dataLifetime.signal) {
       const query = gridQuery(this.view, { ...this.acceptedQuery, cursor: undefined, revision: undefined, limit: this.pageLength });
-      const page = validateGridCursorPage(await this.requestPage(query, this.dataLifetime.signal), this.view, query, null);
+      const page = validateGridCursorPage(await this.requestPage(query, signal), this.view, query, null);
+      if (signal.aborted) throw new DOMException("The refresh was superseded.", "AbortError");
       if (this.destroyed || page.revision === this.snapshot.revision || page.revision === this.livePending?.revision) return null;
       this.livePending = { cursor: true, revision: page.revision }; this.liveSyncPrompt();
       return { changed: new Map(), removed: [], orderChanged: false, newData: true, revision: page.revision };

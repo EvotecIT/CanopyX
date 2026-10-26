@@ -663,7 +663,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "42ad4b814f47bd00",
+      "version": "12d9b3ad0a424a2f",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -679,7 +679,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "49bf7899c3dec732",
+      "version": "02c431b36c83da1c",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
