@@ -16,6 +16,12 @@ const markup = (attributes = '') => `<div id="sections" class="cx-tabs cx-tabs--
 
 const init = options => `window.sections = CanopyX.tabs('#sections', ${options});`;
 const selected = page => page.evaluate(() => sections.getSelected());
+// Media query changes are reported when the browser renders a frame. With the clock installed, requestAnimationFrame no
+// longer drives frames, so a mid-test switch also touches the DOM to make sure one is rendered.
+async function switchMotion(page, reducedMotion) {
+  await page.emulateMedia({ reducedMotion });
+  await page.evaluate(() => { document.body.dataset.motionSwitch = String(Number(document.body.dataset.motionSwitch || 0) + 1); });
+}
 async function releasePointerAndFocus(page) {
   await page.mouse.move(1200, 800);
   await page.locator('#outside').focus();
@@ -42,10 +48,10 @@ test('initial and dynamic reduced motion block advancement and require explicit 
   await expect(play).toHaveAttribute('aria-description', 'Automatic tabs are disabled by reduced motion');
   await page.clock.runFor(10000); expect(await selected(page)).toBe('first');
   await page.getByRole('tab', { name: 'third', exact: true }).click(); expect(await selected(page)).toBe('third');
-  await page.emulateMedia({ reducedMotion: 'no-preference' }); await expect(play).toBeEnabled();
+  await switchMotion(page, 'no-preference'); await expect(play).toBeEnabled();
   await page.clock.runFor(5000); expect(await selected(page)).toBe('third');
   await play.click(); await page.clock.runFor(2100); expect(await selected(page)).toBe('first');
-  await page.emulateMedia({ reducedMotion: 'reduce' }); await expect(play).toBeDisabled();
+  await switchMotion(page, 'reduce'); await expect(play).toBeDisabled();
   await page.clock.runFor(10000); expect(await selected(page)).toBe('first');
   await expect(page.locator('.cx-tabs-progress')).toBeHidden();
 });
@@ -55,7 +61,7 @@ test('reduced motion aborts a pending automatic guard without a late commit', as
   await openUi(page, markup(), init(`{ autoProgress: { interval: 2000, pauseOnHover: false, pauseOnFocus: false },
     beforeChange: (from, to, signal) => new Promise(resolve => { window.guardSignal = signal; window.resolveGuard = resolve; }) }`));
   await page.clock.runFor(2100); await expect.poll(() => page.evaluate(() => !!window.guardSignal)).toBe(true);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await switchMotion(page, 'reduce');
   await expect.poll(() => page.evaluate(() => guardSignal.aborted)).toBe(true);
   await page.evaluate(() => resolveGuard(true)); await page.clock.runFor(5000);
   expect(await selected(page)).toBe('first');
@@ -102,7 +108,7 @@ test('manual selection supersedes an automatic deferred load and destroy release
 });
 
 test('localized reduced-motion control uses host labels without changing content labels', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await switchMotion(page, 'reduce');
   await openUi(page, markup(), init(`{ autoProgress: { interval: 2000 }, labels: {
     tabsPause: 'Wstrzymaj', tabsPlay: 'Odtwórz',
     tabsMotionDisabled: 'Automatyczne przełączanie kart jest wyłączone przy ograniczeniu ruchu'
