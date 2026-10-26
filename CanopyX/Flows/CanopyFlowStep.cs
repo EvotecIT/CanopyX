@@ -226,11 +226,12 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
             ShowsPreview = CanopyFlowContract.Boolean(map, "preview", what) ?? false
         };
         var type = CanopyFlowContract.Text(map, "type", what);
+        if (type != null) step.Kind = CanopyFlowContract.Choose(type, what, "type", ("form", CanopyFlowStepKind.Form), ("info", CanopyFlowStepKind.Info), ("review", CanopyFlowStepKind.Review), ("pick", CanopyFlowStepKind.Pick));
+        if (map.ContainsKey("facts") && step.Kind != CanopyFlowStepKind.Info) throw new InvalidOperationException("Only information steps hold facts.");
         foreach (var item in CanopyFlowContract.Items(map, "facts", what, 32)) {
             var fact = CanopyFlowContract.Object(item, "A flow fact", "label", "value");
             step.Facts.Add(new CanopyFlowFact(CanopyFlowContract.RequiredText(fact, "label", "A flow fact"), CanopyFlowContract.RequiredText(fact, "value", "A flow fact")));
         }
-        if (type != null) step.Kind = CanopyFlowContract.Choose(type, what, "type", ("form", CanopyFlowStepKind.Form), ("info", CanopyFlowStepKind.Info), ("review", CanopyFlowStepKind.Review), ("pick", CanopyFlowStepKind.Pick));
         if (map.TryGetValue("pick", out var pick)) step.Picker = CanopyFlowPicker.Read(pick, what);
         foreach (var item in CanopyFlowContract.Items(map, "checks", what, 8)) step.Checks.Add(CanopyFlowCheck.Read(item, what));
         if (map.TryGetValue("confirm", out var confirm)) step.Confirmation = CanopyFlowConfirmation.Read(confirm);

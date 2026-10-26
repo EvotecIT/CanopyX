@@ -138,7 +138,7 @@
         this.stateChanged(); return this.getQuery();
       } catch (error) {
         if (epoch === this.queryEpoch && !this.destroyed) {
-          const cancelled = error?.name === "AbortError";
+          const cancelled = lifetime.signal.aborted && error?.name === "AbortError";
           this.pendingQuery = null; this.pendingPaging = null; this.lastFailedQuery = cancelled ? null : initial; this.lastFailedPaging = cancelled ? null : { ...paging, pageLength: length };
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
           this.grid.setAttribute("aria-busy", "false"); this.setNotice(cancelled ? "" : fill(this.labels.queryFailed, { error: error.message }), !cancelled);

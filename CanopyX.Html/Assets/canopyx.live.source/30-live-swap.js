@@ -100,11 +100,12 @@
       this.dataLifetime = new AbortController();
       // The grouping part keeps the summary of a query and revision; inline rows changed under the same revision.
       this.summaryCandidate = null;
-      let queryLifetime;
+      let queryLifetime, queryEpoch;
       const cancel = () => queryLifetime?.abort();
       try {
         const query = this.setQuery({ ...this.acceptedQuery, offset: this.paged ? this.pageOffset : 0, revision: undefined });
         queryLifetime = this.dataLifetime;
+        queryEpoch = this.queryEpoch;
         ownerSignal?.addEventListener("abort", cancel, { once: true });
         if (ownerSignal?.aborted) cancel();
         await query;
@@ -112,7 +113,7 @@
       finally {
         ownerSignal?.removeEventListener("abort", cancel);
         const current = this.dataLifetime;
-        if (current.signal.aborted || this.destroyed) keep.abort(); else current.signal.addEventListener("abort", () => keep.abort(), { once: true });
+        if (this.queryEpoch !== queryEpoch || current.signal.aborted || this.destroyed) keep.abort(); else current.signal.addEventListener("abort", () => keep.abort(), { once: true });
       }
       this.setLogicalTop(Math.min(anchor.top, this.total)); this.render();
       for (let wait = 0; wait < 8 && this.pendingPages.size && !this.destroyed; wait++) await Promise.race([...this.pendingPages.values()].map(token => token.promise));

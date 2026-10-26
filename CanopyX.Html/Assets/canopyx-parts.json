@@ -682,7 +682,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "12d9b3ad0a424a2f",
+      "version": "3b3c9833ff68a72b",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

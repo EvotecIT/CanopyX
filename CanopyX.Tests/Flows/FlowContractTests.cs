@@ -6,6 +6,19 @@ namespace CanopyX.Tests.Flows;
 
 /// <summary>The flow document: its shape, the round trip through <see cref="CanopyFlow.FromContract"/>, the schema and the strict reader.</summary>
 public sealed class FlowContractTests {
+    [Theory]
+    [InlineData(null)]
+    [InlineData("form")]
+    [InlineData("review")]
+    public void FromContractRejectsDefinedFactsOnNonInformationStepsEvenWhenEmpty(string? kind) {
+        var step = new JsonObject { ["id"] = "step", ["title"] = "Step", ["facts"] = new JsonArray() };
+        if (kind != null) step["type"] = kind;
+        var document = new JsonObject { ["kind"] = "flow", ["version"] = 1, ["id"] = "probe", ["title"] = "Probe", ["steps"] = new JsonArray(step) };
+        Assert.False(FlowSamples.Evaluate(document.ToJsonString()).IsValid);
+        var error = Assert.Throws<InvalidOperationException>(() => CanopyFlow.FromContract(document.ToJsonString()));
+        Assert.Contains("information", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void InformationFactsRoundTripWithoutTruncatingEvidenceAndNeverBecomeAnswerFields() {
         string evidence = new string('x', 2000) + "<not-html>";

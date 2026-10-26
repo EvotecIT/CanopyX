@@ -9,15 +9,16 @@
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (this.liveOpts) return;
       this.liveOpts = liveOptions(this.view, this.opts);
-      this.liveQueue = new Map(); this.liveWaiters = []; this.liveScheduled = new Set();
+      this.liveQueue = new Map(); this.liveWaiters = []; this.liveScheduled = new Set(); this.liveProjection = null;
       if (this.liveOpts.flashMs) this.host.style.setProperty("--cx-live-flash-ms", this.liveOpts.flashMs + "ms");
       // A new accepted query (another sort, search or filters, a reload) starts from a freshly sorted order.
       this.host.addEventListener("canopyx:query", () => {
         if (this.liveOrder && this.liveOrder.shape !== gridResultShape(this.acceptedQuery)) this.liveOrder = null;
-        this.livePending = null; this.liveMoved = false; this.liveSyncPrompt();
+        this.livePending = null; this.liveMoved = false; this.liveProjection = null; this.liveSyncPrompt();
       }, { signal: this.lifetime.signal });
       this.lifetime.signal.addEventListener("abort", () => {
         clearTimeout(this.liveTimer); clearTimeout(this.liveFlashTimer); clearTimeout(this.liveAnnounceTimer);
+        this.liveProjection = null;
         this.host.style.removeProperty("--cx-live-flash-ms");
         for (const waiter of this.liveWaiters.splice(0)) waiter.reject(new DOMException("Grid was destroyed.", "AbortError"));
       }, { once: true });
@@ -25,6 +26,7 @@
     },
     liveStatus() {
       const queued = new Set(this.liveQueue?.keys());
+      for (const id of this.liveProjection?.ids || []) queued.add(id);
       for (const { change } of this.liveScheduled || []) if (change) {
         for (const row of [...change.add, ...change.update]) queued.add(row.id);
         change.remove.forEach(id => queued.add(id));
@@ -84,10 +86,10 @@
     async liveFlush() {
       clearTimeout(this.liveTimer); this.liveTimer = 0;
       // The queue is taken once the result is settled, so changes made meanwhile join this batch.
-      const queue = this.liveQueue, waiters = this.liveWaiters.splice(0), source = this.liveSource || "api";
+      const queue = this.liveQueue, waiters = this.liveWaiters.splice(0), source = this.liveSource || this.liveProjection?.source || "api";
       this.liveQueue = new Map(); this.liveSource = null;
       try {
-        const result = queue.size ? await this.liveApply(queue, source) : liveResult();
+        const result = queue.size || this.liveProjection ? await this.liveApply(queue, source) : liveResult();
         waiters.forEach(waiter => waiter.resolve(result));
         return result;
       } catch (error) { waiters.forEach(waiter => waiter.reject(error)); throw error; }
@@ -121,12 +123,28 @@
     async liveApply(queue, source, ownerSignal) {
       let outcome;
       if (this.liveInline()) {
-        const projected = this.liveProjected(), { result, changed } = this.liveApplyRows(queue, !projected);
+        const projected = this.liveProjected(), before = this.view.rows;
+        let { result, changed } = this.liveApplyRows(queue, !projected);
         if (changed.size || result.removed.length) {
           if (!this.opts.source) this.source = inlineGridSource(this.view);
           this.liveOrderSource = this.source;
-          if (projected) await this.liveRequery(changed, result.removed, ownerSignal);
+          if (projected) {
+            this.liveProjection ||= { rows: new Map(before.map(row => [row.id, row])), source };
+            if (this.liveProjection.source !== source) this.liveProjection.source = "api";
+          }
           else this.liveSwapInline(changed, result.removed, result.added.length > 0 || result.removed.length > 0 || !this.liveOpts.stableOrder);
+        }
+        if (projected && this.liveProjection) {
+          // Keep one accepted baseline until a query consumes the new owned rows. Never rewind an in-flight successor.
+          // Even an identical next load must retry projection, including its record repaint and change notification.
+          const pending = this.liveProjection, delta = liveDiff(this.view.rows, pending.rows);
+          source = pending.source;
+          changed = new Map(delta.add.map(row => [row.id, "*"]));
+          result = { ...result, added: delta.add.filter(row => !pending.rows.has(row.id)).map(row => row.id),
+            updated: delta.add.filter(row => pending.rows.has(row.id)).map(row => row.id), removed: delta.remove };
+          pending.ids = new Set([...result.added, ...result.updated, ...result.removed]);
+          await this.liveRequery(changed, result.removed, ownerSignal);
+          if (this.liveProjection === pending) this.liveProjection = null;
         }
         outcome = { ...result, orderChanged: !!this.liveOrder?.dirty };
       } else {
@@ -153,7 +171,7 @@
     liveRefresh(source, pollSignal) {
       return this.liveRun(async () => {
         if (this.liveInline()) {
-          if (!this.liveOpts.load) return liveResult();
+          if (!this.liveOpts.load) return this.liveProjection ? this.liveFlush() : liveResult();
           await this.liveFlush().catch(() => {});
         }
         const dataSignal = this.dataLifetime.signal, controller = new AbortController();
@@ -176,6 +194,10 @@
           const changed = [...outcome.changed].filter(([, columns]) => columns !== "*").map(([id]) => id);
           this.liveSpeak();
           return this.liveReport({ updated: changed, orderChanged: outcome.orderChanged, newData: outcome.newData, revision: outcome.revision, refreshed: true }, source);
+        } catch (error) {
+          // A host may use AbortError for its own timeout. A still-active poll must report that failure.
+          if (source === "poll" && error?.name === "AbortError" && !controller.signal.aborted) throw new Error(error.message, { cause: error });
+          throw error;
         } finally { for (const signal of signals) signal.removeEventListener("abort", abort); }
       });
     },
