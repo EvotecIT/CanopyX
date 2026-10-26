@@ -4,6 +4,28 @@ using CanopyX.Rendering;
 namespace CanopyX.Tests.Html;
 
 public sealed class GridHtmlTests {
+    [Theory]
+    [InlineData("auto", null)]
+    [InlineData("600px", null)]
+    [InlineData("auto", "YWJj")]
+    [InlineData("600px", "YWJj")]
+    public void Pages_PreserveAutoHeightAndIgnoreFixedFragmentHeights(string height, string? nonce) {
+        var options = new CanopyHtmlOptions { Height = height, Nonce = nonce, AssetMode = CanopyAssetMode.External };
+        var tree = new CanopyTreeView("tree", "Tree");
+        tree.Columns.Add(new CanopyColumn("name", "Name"));
+        foreach (var page in new[] { View().ToHtmlPage(options), tree.ToHtmlPage(options) }) {
+            if (height != "auto") {
+                Assert.DoesNotContain("style=\"height:" + height + "\"", page);
+                Assert.DoesNotContain("data-cx-height=\"" + height + "\"", page);
+            } else if (nonce == null) Assert.Contains("style=\"height:" + height + "\"", page);
+            else {
+                Assert.Contains("data-cx-height=\"" + height + "\"", page);
+                Assert.Contains("<style nonce=\"" + nonce + "\">", page);
+                Assert.Contains("[data-cx-height=\"" + height + "\"]{height:" + height + "}", page);
+            }
+        }
+    }
+
     [Fact]
     public void GridPage_UsesTheSupersetRuntimeAndEscapesHostContent() {
         var view = View();

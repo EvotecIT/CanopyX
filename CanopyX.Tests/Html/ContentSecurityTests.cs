@@ -72,7 +72,7 @@ public sealed class ContentSecurityTests {
 
         AssertStrict(strict);
         Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-height=\"calc(70vh - 2rem)\">", strict);
-        Assert.Contains("<style nonce=\"" + Nonce + "\">[data-cx-height=\"calc(70vh - 2rem)\"]{height:calc(70vh - 2rem)}</style>", strict);
+        Assert.Contains("<style nonce=\"" + Nonce + "\">body .cx-host[data-canopyx-host][data-cx-height=\"calc(70vh - 2rem)\"]{height:calc(70vh - 2rem)}</style>", strict);
         // Without a nonce the fragment keeps its style attribute, as before.
         Assert.Contains("style=\"height:70vh\"", plain);
         Assert.Throws<ArgumentException>(() => view.ToHtmlFragment(new CanopyHtmlOptions { Nonce = Nonce, Height = "1px\\\"]{x:y" }));

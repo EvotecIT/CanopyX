@@ -171,8 +171,9 @@ for (const [label, policy] of Object.entries(POLICIES)) {
       const heights = await page.locator("[data-canopyx-host]").evaluateAll(hosts => hosts.map(host => Math.round(host.getBoundingClientRect().height)));
       expect(heights[0]).toBeLessThanOrEqual(450);
       expect(heights[1]).toBe(540);
-      expect(await page.evaluate(() => [...document.styleSheets].flatMap(sheet => [...sheet.cssRules]).map(rule => rule.selectorText)
-        .filter(selector => selector?.startsWith("[data-cx-height")))).toEqual(['[data-cx-height="50vh"]', '[data-cx-height="60vh"]']);
+      // The same explicit height wins inside full-page chrome, including its nested main host default.
+      await page.evaluate(() => { document.body.classList.add("cx-page"); document.querySelector("main").classList.add("cx-main"); });
+      await expect.poll(() => page.locator("[data-canopyx-host]").nth(1).evaluate(host => Math.round(host.getBoundingClientRect().height))).toBe(540);
       await exerciseGrid(page);
       await expectClean(page, report);
     });
