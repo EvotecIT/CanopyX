@@ -801,6 +801,7 @@ public sealed partial class CanopyLabels {
         [nameof(StateDetails)] = "Details"
         };
         AddAnalysisDefaults(defaults);
+        AddDataViewsDefaults(defaults);
         return defaults;
     }
 }

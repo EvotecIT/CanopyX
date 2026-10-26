@@ -4,7 +4,8 @@ namespace CanopyX;
 
 // Optional data-view English labels share the default lookup without growing its original table.
 public sealed partial class CanopyLabels {
-    static CanopyLabels() {
+    /// <summary>Adds the comparison and view-intent labels to the shared English defaults.</summary>
+    private static void AddDataViewsDefaults(Dictionary<string, string> defaults) {
         foreach (var item in new Dictionary<string, string> {
             [nameof(ViewIntentWords)] = "Whole words",
             [nameof(ViewIntentSubstring)] = "Text contains",
@@ -22,6 +23,6 @@ public sealed partial class CanopyLabels {
             [nameof(CompareUnchanged)] = "Unchanged",
             [nameof(CompareOnlyChanges)] = "Only changes",
             [nameof(CompareColumnChanges)] = "{column}: {count} changed cells",
-        }) Defaults.Add(item.Key, item.Value);
+        }) defaults.Add(item.Key, item.Value);
     }
 }
