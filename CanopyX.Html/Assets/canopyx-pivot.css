@@ -49,6 +49,7 @@ body.cx-page > .cx-host.cx-pivot-active,body.cx-page > .cx-main > .cx-host.cx-pi
 .cx-pivot-table{font-size:var(--cx-size-10px);}
 .cx-pivot-table thead{display:table-header-group;}
 .cx-pivot-table tr{break-inside:avoid;}
+.cx-pivot-table button{display:contents;}
 .cx-pivot-table :is(thead th,tfoot){position:static;}
-.cx-pivot-zones,.cx-pivot-picker,.cx-pivot-return,.cx-pivot-collapse{display:none;}
+.cx-pivot-zones,.cx-pivot-picker,.cx-pivot-return,.cx-pivot-collapse{display:none !important;}
 }
