@@ -74,7 +74,7 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
-      - uses: EvotecIT/PSPublishModule/.github/actions/setup-dotnet@97c8ff542123b3e2feae0a9d0ea2639a5f0c7c24
+      - uses: EvotecIT/.github/actions/setup-dotnet@6a07f68bbcf97cfce479f930590d4fe4d85ef715
         with:
           dotnet-version: 10.0.x
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
