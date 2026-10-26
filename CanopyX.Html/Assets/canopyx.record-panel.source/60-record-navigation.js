@@ -169,12 +169,17 @@
       trail.append(back, crumbs); identity.prepend(trail);
     }
     const summary = h("div", "cx-record-summary"); summary.hidden = true; head.after(summary);
+    let projectedSubtitle;
     if (typeof view.opts.recordHeading === "function") dialog.addEventListener("cx-drawer-paint", () => {
+      // A tree has no native subtitle to repaint when the next projection omits it.
+      if (projectedSubtitle) { setText(projectedSubtitle, ""); projectedSubtitle.hidden = true; }
       try {
         const heading = view.opts.recordHeading(Object.freeze(JSON.parse(JSON.stringify(dialog._cxRecord))));
         if (heading && typeof heading.title === "string" && heading.title.length <= 512) setText(identity.querySelector("h4"), heading.title);
         if (heading && typeof heading.subtitle === "string" && heading.subtitle.length <= 2000) {
-          const subtitle = identity.querySelector("p"); subtitle.classList.add("cx-record-subtitle"); setText(subtitle, heading.subtitle); subtitle.hidden = !heading.subtitle;
+          let subtitle = identity.querySelector("p");
+          if (!subtitle) { subtitle = projectedSubtitle = h("p"); identity.appendChild(subtitle); }
+          subtitle.classList.add("cx-record-subtitle"); setText(subtitle, heading.subtitle); subtitle.hidden = !heading.subtitle;
         }
       } catch (error) { view.emit("error", { error }); }
     });

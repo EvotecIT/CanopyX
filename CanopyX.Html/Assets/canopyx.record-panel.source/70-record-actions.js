@@ -5,7 +5,23 @@
   function recordActionsMenu(view, dialog, identity) {
     dialog.querySelector(".cx-record-footer")?.remove();
     const spec = recordSpec(view), switches = spec.actions || {}, labels = view.labels, items = [];
-    const add = (label, task) => items.push({ label, task });
+    const failed = error => { recordAnnounce(dialog, error?.message ?? String(error)); view.emit("error", { error }); };
+    const add = (label, task, prominent = false) => {
+      let running = false, button;
+      const run = async () => {
+        if (running) return;
+        running = true; if (button) button.disabled = true;
+        try { return await task(); }
+        finally { running = false; if (button) button.disabled = false; }
+      };
+      items.push({ label, task: run });
+      if (prominent) {
+        let footer = dialog.querySelector(".cx-record-footer");
+        if (!footer) { footer = h("footer", "cx-record-footer"); dialog.appendChild(footer); }
+        button = recordButton(label, () => { Promise.resolve().then(run).catch(failed); }, "cx-record-btn cx-record-primary");
+        footer.appendChild(button);
+      }
+    };
     if (switches.link !== false && spec.deepLink) add(labels.recordCopyLink, () => recordCopy(view, dialog, recordAddress(view, dialog._cxRecord)));
     if (switches.copy !== false) { add(labels.recordCopyValues, () => recordCopy(view, dialog, recordExport(view, dialog, "text"))); add(labels.recordCopyJson, () => recordCopy(view, dialog, recordExport(view, dialog, "json"))); }
     if (switches.export !== false) { add(labels.recordExportCsv, () => recordDownload(view, dialog, "csv")); add(labels.recordExportJson, () => recordDownload(view, dialog, "json")); }
@@ -14,18 +30,7 @@
       if (!action || typeof action.label !== "string" || typeof action.run !== "function") continue;
       const task = () => { const record = dialog._cxRecord, entry = recordEntry(view, record.id);
         return action.run(Object.freeze({ record: JSON.parse(JSON.stringify(record)), view: view.view.id, api: view.host.canopyx, payload: entry?.payload || null, signal: view.lifetime.signal })); };
-      add(action.label, task);
-      if (action.prominent === true) {
-        let footer = dialog.querySelector(".cx-record-footer");
-        if (!footer) { footer = h("footer", "cx-record-footer"); dialog.appendChild(footer); }
-        const button = recordButton(action.label, () => {
-          if (button.disabled) return;
-          button.disabled = true;
-          Promise.resolve().then(task).catch(error => { recordAnnounce(dialog, error.message); view.emit("error", { error }); })
-            .finally(() => { button.disabled = false; });
-        }, "cx-record-btn cx-record-primary");
-        footer.appendChild(button);
-      }
+      add(action.label, task, action.prominent === true);
     }
     if (!items.length) return;
     // A menu button: Enter, Space or a click opens the menu on its first item; arrows move, Escape or Tab closes it.
@@ -40,7 +45,7 @@
     const buttons = items.map(item => {
       const button = recordButton(item.label, () => {
         show(false); toggle.focus();
-        Promise.resolve().then(item.task).catch(error => { recordAnnounce(dialog, error.message); view.emit("error", { error }); });
+        Promise.resolve().then(item.task).catch(failed);
       }, "cx-record-menu-item");
       button.setAttribute("role", "menuitem"); button.tabIndex = -1;
       return button;
