@@ -12,6 +12,9 @@
   {{ head_html }}</head>
 <body class="cnx-body cnx-body--docsmap{{ if body_class != "" }} {{ body_class }}{{ end }}">
 {{ include "site-header" }}
+<div class="cnx-shell">
+{{ include "site-sidebar" }}
+<div class="cnx-shell__content">
 {{~ ## The documentation index: a forest band with the install command, then every topic as a row of a tree grid,
      grouped by what a reader is doing, with the output that topic produces rendered by CanopyX. Topics, their groups
      and their thumbnails come from the "Docs" group of the main menu in site.json. ## ~}}
@@ -85,6 +88,8 @@
   {{~ end ~}}
 </main>
 {{ include "site-footer" }}
+</div>
+</div>
 {{ assets.js_html }}
 {{ extra_scripts_html }}
 </body>

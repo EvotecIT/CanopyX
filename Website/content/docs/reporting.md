@@ -29,4 +29,4 @@ A cell's `Tone` names a state (`success`, `warning`, `danger`, `info`, `muted` o
 
 The export menu distinguishes filtered results, selected records and all results, and exports use the accepted query and stable record IDs, independently of the rows on screen. CSV and copying run in the browser; larger Office files go through your own `onExport` callback, which receives the same captured rows.
 
-The [device inventory demo](/demos/#inventory) combines all of this over 1,200 records with a 14-day status strip and sign-in sparklines.
+The [device inventory demo](/views/inventory/) combines all of this over 1,200 records with a 14-day status strip and sign-in sparklines.

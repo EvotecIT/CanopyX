@@ -50,6 +50,22 @@
           "Title": "{title} | {site} documentation"
         }
       }
+    },
+    {
+      "Name": "views",
+      "Input": "content/views",
+      "Output": "/views",
+      "DefaultLayout": "view",
+      "UseToc": false,
+      "Include": [
+        "*.md",
+        "**/*.md"
+      ],
+      "Seo": {
+        "Templates": {
+          "Title": "{title} | {site} views"
+        }
+      }
     }
   ],
   "Head": {
@@ -122,12 +138,15 @@
           "Name": "canopyx-site-assistant",
           "Type": "skill-md",
           "Description": "Use CanopyX documentation, demos, sitemap, and llms files.",
-          "Content": "---\nname: canopyx-site-assistant\ndescription: Use CanopyX documentation, demos, sitemap, and llms resources.\n---\n\n# CanopyX Site Assistant\n\nUse this skill when answering questions about CanopyX, the interactive tree grid and data grid library for .NET and JavaScript.\n\n- Prefer canonical pages from https://canopyx.dev.\n- Start with `/llms.txt` for curated Markdown guides and `/llms.json` for package metadata.\n- Use `/docs/index.md` for product guidance and `/demos/index.md` for examples. The corresponding HTML pages contain live interactive demos.\n- The npm package is `@evotecit/canopyx`; the NuGet packages are `CanopyX`, `CanopyX.Html`, `CanopyX.Data` and `CanopyX.AspNetCore`.\n- Package versions in the discovery manifest describe the website's source; check the public package registry for published availability.\n- Respect `/robots.txt` and Content-Signal preferences.\n"
+          "Content": "---\nname: canopyx-site-assistant\ndescription: Use CanopyX documentation, demos, sitemap, and llms resources.\n---\n\n# CanopyX Site Assistant\n\nUse this skill when answering questions about CanopyX, the interactive data views library (tree grids, data grids, calendars, timelines, matrices, change reviews and guided flows) for .NET and JavaScript.\n\n- Prefer canonical pages from https://canopyx.dev.\n- Start with `/llms.txt` for curated Markdown guides and `/llms.json` for package metadata.\n- Use `/docs/index.md` for product guidance and `/views/index.md` for every view with live demos and code. The corresponding HTML pages contain live interactive demos.\n- The npm package is `@evotecit/canopyx`; the NuGet packages are `CanopyX`, `CanopyX.Html`, `CanopyX.Data` and `CanopyX.AspNetCore`.\n- Package versions in the discovery manifest describe the website's source; check the public package registry for published availability.\n- Respect `/robots.txt` and Content-Signal preferences.\n"
         }
       ]
     },
     "MarkdownNegotiation": false,
-    "MarkdownArtifacts": { "Enabled": true, "MaxPages": 0 }
+    "MarkdownArtifacts": {
+      "Enabled": true,
+      "MaxPages": 0
+    }
   },
   "EditLinks": {
     "Enabled": false
@@ -162,6 +181,12 @@
         "Css": [
           "/themes/canopyx/assets/docs.css"
         ]
+      },
+      {
+        "Name": "views",
+        "Css": [
+          "/themes/canopyx/assets/views.css"
+        ]
       }
     ],
     "RouteBundles": [
@@ -174,14 +199,16 @@
       {
         "Match": "/",
         "Bundles": [
-          "home"
+          "home",
+          "views"
         ]
       },
       {
-        "Match": "/demos/**",
+        "Match": "/views/**",
         "Bundles": [
           "docs",
-          "pages"
+          "pages",
+          "views"
         ]
       },
       {
@@ -255,18 +282,7 @@
           {
             "Id": "views",
             "Title": "Views",
-            "Description": "Every view CanopyX draws, each with a live demo generated in C#.",
-            "Items": [
-              { "Id": "view-all", "Title": "All live demos", "Url": "/demos/", "Description": "Every view on one page, with steps to try in each.", "Meta": { "tone": "all" } },
-              { "Id": "view-files", "Title": "Tree grid", "Url": "/demos/#files", "Description": "A file explorer over 113,550 nodes.", "Meta": { "tone": "explore" } },
-              { "Id": "view-inventory", "Title": "Data grid", "Url": "/demos/#inventory", "Description": "A reporting grid with facets and grouping.", "Meta": { "tone": "explore" } },
-              { "Id": "view-calendar", "Title": "Calendar", "Url": "/demos/#calendar", "Description": "Month, week, day, agenda and year.", "Meta": { "tone": "plan" } },
-              { "Id": "view-timeline", "Title": "Resource timeline", "Url": "/demos/#timeline", "Description": "Events on a tree of hosts.", "Meta": { "tone": "plan" } },
-              { "Id": "view-matrix", "Title": "Status matrix", "Url": "/demos/#matrix", "Description": "Services by server, both axes grouped.", "Meta": { "tone": "compare" } },
-              { "Id": "view-changes", "Title": "Change review", "Url": "/demos/#changes", "Description": "Flags, propagation and diffs.", "Meta": { "tone": "compare" } },
-              { "Id": "view-flow", "Title": "Guided flow", "Url": "/demos/#flow", "Description": "Tasks, checks and a review page.", "Meta": { "tone": "guide" } },
-              { "Id": "view-email", "Title": "Script-free table", "Url": "/demos/#email", "Description": "Script-free tables from the same view.", "Meta": { "tone": "deliver" } }
-            ]
+            "Url": "/views/"
           },
           {
             "Id": "docs",
@@ -348,12 +364,8 @@
                   "api": "canopyx/2 view, page, grid"
                 }
               }
-            ]
-          },
-          {
-            "Id": "github-link",
-            "Title": "GitHub",
-            "Url": "https://github.com/EvotecIT/CanopyX"
+            ],
+            "Url": "/docs/"
           }
         ]
       },
@@ -361,8 +373,8 @@
         "Name": "footer-product",
         "Items": [
           {
-            "Url": "/demos/",
-            "Title": "Live demos"
+            "Url": "/views/",
+            "Title": "Views and live demos"
           },
           {
             "Url": "/docs/",
@@ -441,6 +453,14 @@
     ],
     "Actions": [
       {
+        "Title": "CanopyX on GitHub",
+        "Url": "https://github.com/EvotecIT/CanopyX",
+        "External": true,
+        "CssClass": "cnx-icon-link",
+        "AriaLabel": "CanopyX on GitHub",
+        "IconHtml": "<svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" aria-hidden=\"true\" fill=\"currentColor\"><path d=\"M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z\"/></svg>"
+      },
+      {
         "Title": "Evotec Discord",
         "Url": "https://evo.yt/discord",
         "External": true,
@@ -454,5 +474,13 @@
         "CssClass": "cnx-btn cnx-btn--small"
       }
     ]
-  }
+  },
+  "Redirects": [
+    {
+      "From": "/demos/",
+      "To": "/views/",
+      "Status": 301,
+      "MatchType": "Exact"
+    }
+  ]
 }

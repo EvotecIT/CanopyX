@@ -1,0 +1,23 @@
+{{~ ## Every view, grouped by family: each family is a row of a grid, its name in the first column and its views as cells
+     that open the view's own page. From data/views.json. ## ~}}
+{{~ views = data.views ~}}
+<div class="cnx-catalog__rows">
+  {{~ for f in views.families ~}}
+  <div class="cnx-catalog__row">
+    <div class="cnx-catalog__family">
+      <h3><span class="cnx-tone cnx-tone--{{ f.tone }}" aria-hidden="true"></span>{{ f.name }}</h3>
+      <p>{{ f.body }}</p>
+    </div>
+    <ul class="cnx-catalog__views">
+      {{~ for v in views.views ~}}
+      {{~ if v.family == f.id; d = data.demos[v.id] ~}}
+      <li class="cnx-viewcard cnx-tone--{{ f.tone }}">
+        <h4><a href="/views/{{ v.id }}/">{{ v.name }}</a></h4>
+        <p>{{ v.body }}</p>
+        <p class="cnx-viewcard__meta"><code>{{ v.api }}</code>{{ if d }}<span>{{ d.stat }}</span>{{ end }}</p>
+      </li>
+      {{~ end; end ~}}
+    </ul>
+  </div>
+  {{~ end ~}}
+</div>

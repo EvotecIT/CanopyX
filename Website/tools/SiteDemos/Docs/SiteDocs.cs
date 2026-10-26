@@ -308,14 +308,14 @@ internal sealed class SiteDocs {
     /// <summary>The site's bar on every page that opens full screen, so leaving and returning to the site feels like one place.</summary>
     private void Bars() {
         var live = Path.Combine(_website, "static", "live");
-        var demos = ("/demos/", "Live demos");
-        LiveBar.Apply(Path.Combine(live, "files", "index.html"), "File explorer", demos, "/demos/#files", _utf8);
-        LiveBar.Apply(Path.Combine(live, "inventory.html"), "Device inventory", demos, "/demos/#inventory", _utf8);
+        var demos = ("/views/", "Views");
+        LiveBar.Apply(Path.Combine(live, "files", "index.html"), "File explorer", demos, "/views/files/", _utf8);
+        LiveBar.Apply(Path.Combine(live, "inventory.html"), "Device inventory", demos, "/views/inventory/", _utf8);
         foreach (var (page, title, id) in new[] {
             ("calendar", "Operations calendar", "calendar"), ("timeline", "Incidents by host", "timeline"), ("matrix", "Services by server", "matrix") }) {
-            LiveBar.Apply(Path.Combine(live, page + ".html"), title, demos, "/demos/#" + id, _utf8);
+            LiveBar.Apply(Path.Combine(live, page + ".html"), title, demos, "/views/" + id + "/", _utf8);
         }
-        LiveBar.Apply(Path.Combine(_liveDocs, "explorer-layout.html"), "The explorer's files", demos, "/demos/#files", _utf8);
+        LiveBar.Apply(Path.Combine(_liveDocs, "explorer-layout.html"), "The explorer's files", demos, "/views/files/", _utf8);
         foreach (var (page, title, url, name) in new[] {
             ("tree", "Project files", "/docs/getting-started/", "Getting started"),
             ("grid", "Inventory", "/docs/getting-started/", "Getting started"),

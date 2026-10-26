@@ -1,201 +1,95 @@
-/* Home page. The hero states the promise and installs; the view explorer below it is the page's one bold moment: a
-   rail drawn as an expanded CanopyX tree (families are group rows, views are their children) beside the live view.
-   Everything after it is quiet: a catalogue in grid rows, a definition list, delivery steps, code and packages. */
+/* Home page. A short left-aligned promise with the install line beside it, then the workbench: view tabs over the live
+   view and the code that builds one like it. That is the page's one bold element; everything after it is quiet. */
+
+.cnx-hero,
+.cnx-bench { width: min(100% - 2 * clamp(16px, 3.5vw, 48px), var(--cnx-wide)); margin-inline: auto; }
 
 /* Hero */
-.cnx-hero { padding-block: clamp(56px, 9vw, 112px) clamp(48px, 6vw, 72px); }
-.cnx-hero__inner {
+.cnx-hero {
   display: grid;
-  justify-items: center;
-  gap: 22px;
-  width: min(100% - 2 * clamp(16px, 4vw, 40px), 900px);
-  margin-inline: auto;
-  text-align: center;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr);
+  gap: clamp(28px, 5vw, 72px);
+  align-items: end;
+  padding-block: clamp(40px, 6vw, 80px) clamp(28px, 4vw, 44px);
 }
-.cnx-hero__title {
-  max-width: 17ch;
-  font-size: clamp(2.5rem, 1.2rem + 5.2vw, 4.75rem);
-  line-height: 1.02;
-}
-.cnx-hero__lede { max-width: 62ch; color: var(--cnx-ink-2); font-size: clamp(1.0625rem, 1rem + .3vw, 1.1875rem); line-height: 1.6; }
-.cnx-hero .cnx-install { width: min(100%, 520px); margin-top: 8px; text-align: left; }
-.cnx-hero__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.cnx-hero__facts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px 20px;
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-  color: var(--cnx-ink-3);
-  font-size: .875rem;
-}
-.cnx-hero__facts li { display: inline-flex; align-items: center; gap: 7px; }
-.cnx-hero__facts li::before {
-  content: "";
-  width: 12px;
-  height: 12px;
-  background: var(--cnx-accent);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
-}
+.cnx-hero__title { max-width: 14ch; font-size: clamp(2.5rem, 1.4rem + 3.8vw, 4.25rem); line-height: 1.02; }
+.cnx-hero__lede { margin-top: 18px; max-width: 58ch; color: var(--cnx-ink-2); font-size: clamp(1.0625rem, 1rem + .25vw, 1.1875rem); line-height: 1.6; }
+.cnx-hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.cnx-hero__side { display: grid; gap: 16px; }
+.cnx-hero__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; margin: 0; padding: 0; list-style: none; color: var(--cnx-ink-2); font-size: .875rem; }
+.cnx-hero__facts li { display: flex; align-items: baseline; gap: 8px; }
+.cnx-hero__facts li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 2px; background: var(--cnx-accent); transform: translateY(-1px); }
 
-/* The install line sits on the light page in the light theme, so it takes the code surface's own colours. */
+/* The install line uses the code surface's own colours in both themes. */
 .cnx-install { border-color: var(--cnx-code-line); background: var(--cnx-code-bg); }
-.cnx-install .cnx-codeblock__bar { background: var(--cnx-code-bar); border-bottom-color: var(--cnx-code-line); }
+.cnx-install .cnx-codeblock__bar { background: var(--cnx-code-bar); border-bottom-color: var(--cnx-code-line); padding-block: 0; }
 
-/* View explorer */
-.cnx-explorer {
+/* Workbench */
+.cnx-bench__tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+}
+.cnx-bench__tabs::-webkit-scrollbar { display: none; }
+.cnx-bench__tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--cnx-line);
+  border-radius: 8px;
+  background: var(--cnx-card);
+  color: var(--cnx-ink-2);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 620;
+  cursor: pointer;
+}
+.cnx-bench__tab .cnx-tone { width: 8px; height: 8px; border-radius: 2px; }
+.cnx-bench__tab:hover { color: var(--cnx-ink); border-color: var(--cnx-line-strong); }
+.cnx-bench__tab[aria-selected="true"] { color: var(--cnx-ink); border-color: var(--cnx-accent); background: var(--cnx-select); box-shadow: inset 0 0 0 1px var(--cnx-accent); }
+
+.cnx-bench__panel {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
-  width: min(100% - 2 * clamp(16px, 4vw, 40px), var(--cnx-wide));
-  margin: clamp(48px, 6vw, 72px) auto 0;
+  grid-template-columns: minmax(0, 1.65fr) minmax(340px, 1fr);
   overflow: hidden;
   border: 1px solid var(--cnx-line-strong);
   border-radius: var(--cnx-radius);
   background: var(--cnx-card);
   box-shadow: var(--cnx-shadow);
 }
-
-.cnx-explorer__rail { min-width: 0; border-right: 1px solid var(--cnx-line); background: var(--cnx-card-alt); }
-/* The rail's column header, like the header row of the tree it draws. */
-.cnx-explorer__head {
-  display: flex;
-  justify-content: space-between;
-  height: 50px;
-  align-items: center;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--cnx-line-strong);
-  color: var(--cnx-ink);
-  font-size: .8125rem;
-  font-weight: 680;
-}
-.cnx-explorer__head span + span { color: var(--cnx-ink-3); font-weight: 500; font-variant-numeric: tabular-nums; }
-.cnx-explorer__tree { display: grid; padding: 6px 0 12px; }
-
-.cnx-explorer__family {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px 4px 12px;
-  color: var(--cnx-ink);
-  font-size: .8125rem;
-  font-weight: 700;
-}
-.cnx-explorer__family .cnx-chev { width: 14px; height: 14px; color: var(--cnx-ink-3); -webkit-mask-size: 14px; mask-size: 14px; }
-.cnx-explorer__family .cnx-tone { width: 10px; height: 10px; }
-
-/* Each view is a child row hung from its family's guide line, with an elbow into the row. */
-.cnx-explorer__view {
-  position: relative;
-  display: grid;
-  gap: 1px;
-  margin: 0 8px 0 0;
-  padding: 7px 12px 7px 46px;
-  border: 0;
-  border-radius: 0 7px 7px 0;
-  background: transparent;
-  color: var(--cnx-ink-2);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.cnx-explorer__view::before { content: ""; position: absolute; left: 18px; top: 0; bottom: 0; border-left: 1px solid var(--cnx-guide); }
-.cnx-explorer__view::after { content: ""; position: absolute; left: 18px; top: 50%; width: 14px; border-top: 1px solid var(--cnx-guide); }
-.cnx-explorer__view:has(+ .cnx-explorer__family)::before,
-.cnx-explorer__view:last-child::before { bottom: 50%; }
-.cnx-explorer__view:hover { color: var(--cnx-ink); background: color-mix(in srgb, var(--cnx-ink) 5%, transparent); }
-.cnx-explorer__view[aria-selected="true"] { color: var(--cnx-ink); background: var(--cnx-select); box-shadow: inset 2px 0 0 var(--cnx-accent); }
-.cnx-explorer__view[aria-selected="true"]::after { border-top-color: var(--cnx-accent); }
-.cnx-explorer__view:focus-visible { outline-offset: -2px; }
-.cnx-explorer__name { font-size: .9063rem; font-weight: 640; line-height: 1.3; }
-.cnx-explorer__example { color: var(--cnx-ink-3); font-size: .78rem; line-height: 1.3; }
-
-.cnx-explorer__stage { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; margin: 0; }
-.cnx-explorer__bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 50px;
-  padding: 7px 8px 7px 18px;
-  border-bottom: 1px solid var(--cnx-line);
-}
-.cnx-explorer__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-width: 0; }
-.cnx-explorer__title strong { color: var(--cnx-ink); font-size: .9688rem; }
-.cnx-explorer__title code { color: var(--cnx-accent); font-size: .78rem; }
-.cnx-explorer__title span { color: var(--cnx-ink-3); font-size: .8125rem; }
-.cnx-explorer__bar .cnx-frame__open { margin-left: auto; }
-.cnx-explorer__screen { position: relative; height: clamp(520px, 70vh, 700px); background: var(--cnx-card); }
+.cnx-bench__demo { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; margin: 0; }
+.cnx-bench__bar { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 8px 6px 16px; border-bottom: 1px solid var(--cnx-line); }
+.cnx-bench__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
+.cnx-bench__title strong { color: var(--cnx-ink); font-size: .9688rem; }
+.cnx-bench__title span { color: var(--cnx-ink-3); font-size: .8125rem; }
+.cnx-bench__bar .cnx-frame__open { margin-left: auto; }
+.cnx-bench__screen { position: relative; height: clamp(520px, 68vh, 680px); background: var(--cnx-card); }
 .cnx-demo { position: absolute; inset: 0; }
 .cnx-demo iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--cnx-card); }
 .cnx-demo--email { overflow: auto; background: var(--cnx-card-alt); }
-.cnx-explorer__caption {
-  padding: 12px 18px 14px;
-  border-top: 1px solid var(--cnx-line);
-  color: var(--cnx-ink-2);
-  font-size: .875rem;
-  line-height: 1.55;
-}
+
+/* The code column takes the demo's height and scrolls inside it instead of stretching the panel. */
+.cnx-bench__code { display: flex; min-width: 0; min-height: 0; contain: size; background: var(--cnx-code-bg); }
+.cnx-bench__snippet { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+.cnx-bench__snippet[hidden] { display: none; }
+.cnx-bench__code .cnx-viewcode { flex: 1; border: 0; border-radius: 0; }
+.cnx-bench__code .cnx-viewcode pre { max-height: none; overflow: auto; }
+.cnx-bench__code .cnx-viewcode__panel { min-height: 0; overflow: hidden; }
+.cnx-bench__more { margin: 0; padding: 12px 18px 14px; border-top: 1px solid var(--cnx-code-line); font-size: .875rem; }
+.cnx-bench__more .cnx-link { color: #fff; border-bottom-color: var(--cnx-code-key); }
 
 /* Sections */
-.cnx-main > .cnx-section { padding-block: clamp(64px, 8vw, 112px) 0; }
+.cnx-main > .cnx-section { padding-block: clamp(64px, 8vw, 104px) 0; }
 .cnx-section__head { display: grid; gap: 14px; }
 .cnx-section__head p { color: var(--cnx-ink-2); max-width: 64ch; }
 
-/* Catalogue: each family is a row of a grid, its label in the first column and its views as cells. */
-.cnx-catalog__rows { border-top: 1px solid var(--cnx-line-strong); }
-.cnx-catalog__row {
-  display: grid;
-  grid-template-columns: minmax(180px, 3fr) minmax(0, 9fr);
-  gap: 24px;
-  padding-block: 22px;
-  border-bottom: 1px solid var(--cnx-line);
-}
-.cnx-catalog__family h3 { display: flex; align-items: center; gap: 10px; font-size: 1.125rem; }
-.cnx-catalog__family p { margin-top: 6px; color: var(--cnx-ink-3); font-size: .9063rem; max-width: 28ch; }
-.cnx-catalog__views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
-.cnx-viewcard {
-  position: relative;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 6px;
-  padding: 16px 18px 14px;
-  border: 1px solid var(--cnx-line);
-  border-radius: var(--cnx-radius-sm);
-  background: var(--cnx-card);
-  box-shadow: inset 3px 0 0 var(--cnx-tone);
-}
-.cnx-viewcard h4 { font-size: 1.0313rem; }
-.cnx-viewcard h4 a { color: var(--cnx-ink); text-decoration: none; }
-.cnx-viewcard h4 a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
-.cnx-viewcard:hover { border-color: color-mix(in srgb, var(--cnx-tone) 45%, var(--cnx-line)); }
-.cnx-viewcard:hover h4 a { color: var(--cnx-accent); }
-.cnx-viewcard:has(h4 a:focus-visible) { outline: 2px solid var(--cnx-focus); outline-offset: 2px; }
-.cnx-viewcard h4 a:focus-visible { outline: 0; }
-.cnx-viewcard p { color: var(--cnx-ink-2); font-size: .9063rem; line-height: 1.5; }
-.cnx-viewcard code { justify-self: start; margin-top: 4px; color: var(--cnx-ink-3); font-size: .75rem; }
-.cnx-viewcard__docs {
-  position: absolute;
-  z-index: 1;
-  right: 12px;
-  bottom: 10px;
-  padding: 2px 6px;
-  border-radius: 5px;
-  color: var(--cnx-ink-3);
-  font-size: .8125rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-.cnx-viewcard__docs:hover { color: var(--cnx-accent); background: var(--cnx-accent-soft); }
-
-/* Shared capabilities: a definition list hung from guide lines, four columns wide. */
-.cnx-shared__list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 26px 28px;
-  margin: 0;
-}
+/* Shared capabilities: a definition list hung from guide lines. */
+.cnx-shared__list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 26px 28px; margin: 0; }
 .cnx-shared__list div { position: relative; padding-left: 16px; border-left: 1px solid var(--cnx-guide); }
 .cnx-shared__list div::before { content: ""; position: absolute; left: -1px; top: 4px; height: 16px; border-left: 2px solid var(--cnx-accent); }
 .cnx-shared__list dt { color: var(--cnx-ink); font-weight: 680; }
@@ -217,17 +111,7 @@
 .cnx-delivery__item + .cnx-delivery__item { border-left: 1px solid var(--cnx-line); }
 .cnx-delivery__item h3 { font-size: 1.0625rem; }
 .cnx-delivery__item p { color: var(--cnx-ink-2); font-size: .9063rem; line-height: 1.5; }
-.cnx-delivery__code {
-  display: block;
-  margin-top: 8px;
-  overflow-x: auto;
-  padding: 8px 10px;
-  border-radius: var(--cnx-radius-sm);
-  background: var(--cnx-code-bg);
-  color: var(--cnx-code-ink);
-  font-size: .75rem;
-  white-space: nowrap;
-}
+.cnx-delivery__code { display: block; margin-top: 8px; overflow-x: auto; padding: 8px 10px; border-radius: var(--cnx-radius-sm); background: var(--cnx-code-bg); color: var(--cnx-code-ink); font-size: .75rem; white-space: nowrap; }
 .cnx-delivery__more { margin-top: 18px; }
 
 /* Code: the explanation beside the snippet. */
@@ -262,24 +146,23 @@
 .cnx-family__list a:hover strong { color: var(--cnx-accent); }
 
 /* Closing call to action: the one dark band, the colour of the code surfaces. */
-.cnx-cta { margin-top: clamp(72px, 9vw, 120px); background: var(--cnx-code-bg); color: var(--cnx-code-ink); }
-.cnx-cta__inner {
-  display: grid;
-  justify-items: center;
-  gap: 24px;
-  width: min(100% - 2 * clamp(16px, 4vw, 40px), 760px);
-  margin-inline: auto;
-  padding-block: clamp(56px, 8vw, 96px);
-  text-align: center;
-}
-.cnx-cta h2 { color: #fff; font-size: clamp(1.875rem, 1.1rem + 2.6vw, 3rem); line-height: 1.08; }
-.cnx-cta__lines { display: grid; gap: 8px; width: min(100%, 480px); text-align: left; }
+.cnx-cta { margin-top: clamp(72px, 9vw, 112px); background: var(--cnx-code-bg); color: var(--cnx-code-ink); }
+.cnx-cta__inner { display: grid; justify-items: start; gap: 22px; width: min(100% - 2 * clamp(16px, 3.5vw, 48px), var(--cnx-max)); margin-inline: auto; padding-block: clamp(48px, 7vw, 80px); }
+.cnx-cta h2 { max-width: 22ch; color: #fff; font-size: clamp(1.875rem, 1.1rem + 2.4vw, 2.75rem); line-height: 1.08; }
+.cnx-cta__lines { display: grid; gap: 8px; width: min(100%, 480px); }
 .cnx-cta .cnx-install__line { border: 1px solid var(--cnx-code-line); border-radius: var(--cnx-radius-sm); background: var(--cnx-code-bar); }
-.cnx-cta .cnx-btn { background: var(--cnx-leaf); border-color: var(--cnx-leaf); color: #04130d; }
-.cnx-cta .cnx-btn:hover { background: #8ae3bb; }
+.cnx-cta .cnx-btn { background: var(--cnx-code-key); border-color: var(--cnx-code-key); color: #0e0b26; }
+.cnx-cta .cnx-btn:hover { background: #c3cdff; }
 .cnx-body--home .cnx-footer { margin-top: 0; }
 
+@media (max-width: 1720px) {
+  .cnx-bench__panel { grid-template-columns: minmax(0, 1fr); }
+  .cnx-bench__code { contain: none; }
+  .cnx-bench__code .cnx-viewcode__panel, .cnx-bench__code .cnx-viewcode pre { flex: none; }
+  .cnx-bench__code .cnx-viewcode pre { max-height: 420px; }
+}
 @media (max-width: 1080px) {
+  .cnx-hero { grid-template-columns: minmax(0, 1fr); align-items: start; }
   .cnx-shared__list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cnx-delivery__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cnx-delivery__item:nth-child(3) { border-left: 0; }
@@ -287,28 +170,15 @@
   .cnx-code-section__inner { grid-template-columns: minmax(0, 1fr); }
   .cnx-family__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-
-/* The rail turns into a row of chips above the view on narrower screens. */
 @media (max-width: 860px) {
-  .cnx-explorer { grid-template-columns: minmax(0, 1fr); }
-  .cnx-explorer__rail { border-right: 0; border-bottom: 1px solid var(--cnx-line); }
-  .cnx-explorer__head, .cnx-explorer__family { display: none; }
-  .cnx-explorer__tree { display: flex; gap: 6px; overflow-x: auto; padding: 10px 12px; scrollbar-width: none; }
-  .cnx-explorer__tree::-webkit-scrollbar { display: none; }
-  .cnx-explorer__view { flex: none; margin: 0; padding: 6px 12px; border: 1px solid var(--cnx-line); border-radius: 999px; background: var(--cnx-card); }
-  .cnx-explorer__view::before, .cnx-explorer__view::after, .cnx-explorer__example { display: none; }
-  .cnx-explorer__view[aria-selected="true"] { border-color: var(--cnx-accent); box-shadow: none; }
-  .cnx-explorer__name { font-size: .875rem; white-space: nowrap; }
-  .cnx-catalog__row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .cnx-catalog__family p { max-width: none; }
   .cnx-packages__head { display: none; }
   .cnx-packages__row { grid-template-columns: minmax(0, 1fr); }
   .cnx-packages__row > span + span { box-shadow: none; padding-top: 0; }
 }
-
 @media (max-width: 640px) {
-  .cnx-explorer__screen { height: 540px; }
-  .cnx-explorer__title span { display: none; }
-  .cnx-catalog__views, .cnx-shared__list, .cnx-delivery__grid, .cnx-family__list { grid-template-columns: minmax(0, 1fr); }
+  .cnx-bench__screen { height: 540px; }
+  .cnx-bench__title span { display: none; }
+  .cnx-hero__facts { grid-template-columns: minmax(0, 1fr); }
+  .cnx-shared__list, .cnx-delivery__grid, .cnx-family__list { grid-template-columns: minmax(0, 1fr); }
   .cnx-delivery__item + .cnx-delivery__item { border-left: 0; border-top: 1px solid var(--cnx-line); }
 }

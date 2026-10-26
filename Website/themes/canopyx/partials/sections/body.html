@@ -1,31 +1,9 @@
-{{~ views = data.views ~}}
 <section class="cnx-section cnx-catalog" id="views" aria-labelledby="cnx-catalog-title">
   <div class="cnx-section__head">
     <h2 id="cnx-catalog-title">One model, every view</h2>
-    <p>Each view reads the same columns, cells, tones and themes, so the records you map once can be a tree today and a calendar tomorrow. Every one ships as a live demo generated in C#.</p>
+    <p>Each view reads the same columns, cells, tones and themes, so the records you map once can be a tree today and a calendar tomorrow. Every one has a page with a live demo and the code to build it.</p>
   </div>
-  <div class="cnx-catalog__rows">
-    {{~ for f in views.families ~}}
-    <div class="cnx-catalog__row">
-      <div class="cnx-catalog__family">
-        <h3><span class="cnx-tone cnx-tone--{{ f.tone }}" aria-hidden="true"></span>{{ f.name }}</h3>
-        <p>{{ f.body }}</p>
-      </div>
-      <ul class="cnx-catalog__views">
-        {{~ for v in views.views ~}}
-        {{~ if v.family == f.id ~}}
-        <li class="cnx-viewcard cnx-tone--{{ f.tone }}">
-          <h4><a href="/demos/#{{ v.id }}">{{ v.name }}</a></h4>
-          <p>{{ v.body }}</p>
-          <code>{{ v.api }}</code>
-          <a class="cnx-viewcard__docs" href="{{ v.docs }}">Docs<span class="cnx-sr"> for the {{ v.name | string.downcase }}</span></a>
-        </li>
-        {{~ end ~}}
-        {{~ end ~}}
-      </ul>
-    </div>
-    {{~ end ~}}
-  </div>
+  {{ include "view-catalog" }}
 </section>
 
 <section class="cnx-section cnx-shared" aria-labelledby="cnx-shared-title">
@@ -34,7 +12,7 @@
     <p>The parts readers rely on are part of the runtime, not plug-ins you assemble, and they behave the same in each view that uses them.</p>
   </div>
   <dl class="cnx-shared__list">
-    {{~ for s in views.shared ~}}
+    {{~ for s in data.views.shared ~}}
     <div><dt>{{ s.name }}</dt><dd>{{ s.body }}</dd></div>
     {{~ end ~}}
   </dl>
@@ -117,7 +95,7 @@ await grid.ready;</code></pre>
     <div class="cnx-packages__head" role="row">
       <span role="columnheader">Package</span><span role="columnheader">What it adds</span><span role="columnheader">Install</span>
     </div>
-    {{~ for p in views.packages ~}}
+    {{~ for p in data.views.packages ~}}
     <div class="cnx-packages__row" role="row">
       <span role="cell" class="cnx-packages__name"><a href="{{ p.url }}">{{ p.name }}<span class="cnx-sr"> on {{ p.where }}</span></a><small aria-hidden="true">{{ p.where }}</small></span>
       <span role="cell" class="cnx-packages__body">{{ p.body }}</span>

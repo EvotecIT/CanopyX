@@ -40,13 +40,15 @@ var changeDocument = new CanopyHtmlDocument();
 CanopyHtmlOptions ChangeOptions() => new CanopyHtmlOptions { Theme = CanopyTheme.Auto, Document = changeDocument };
 File.WriteAllText(Path.Combine(demos, "changes.html"),
     "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>CanopyX change review</title><style>" +
-    CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid) + "body{margin:0;padding:16px;font:14px/1.5 system-ui,sans-serif;background:#fff;color:#16181c}@media (prefers-color-scheme:dark){body{background:#16181c;color:#f2f3f5}}" +
+    // Canvas follows the root's color-scheme, which the site sets on the frame along with the grids' theme.
+    CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid) + ":root{color-scheme:light dark}body{margin:0;padding:16px;font:14px/1.5 system-ui,sans-serif;background:Canvas;color:CanvasText}" +
     "h2{font-size:15px;margin:20px 0 8px}</style><script>" + CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid) + "</script></head><body><h2>Changed files</h2>" +
     ChangeViewsExample.List().ToHtmlFragment(ChangeOptions()) + "<h2>Propagation</h2>" + ChangeViewsExample.Propagation().ToHtmlFragment(ChangeOptions()) +
     "<h2>map-drives.ps1</h2>" + ChangeViewsExample.ScriptDiff().ToHtmlFragment(ChangeOptions()) + "</body></html>", utf8);
 
 // Calendar, resource timeline, matrix and guided flow, from the repository's examples.
 var viewStats = SiteDemos.ViewDemos.Write(demos);
+Console.WriteLine(SiteDemos.Views.ViewCode.Write(website, utf8));
 
 // Email and print: the script-free outline of a smaller tree, following the page's theme variables.
 var outlineTree = new SyntheticFileTree();

@@ -1,0 +1,65 @@
+/* Views: the catalogue of every view (home and the views index) and the code panel that shows how to build one
+   (home workbench and each view's page). */
+
+/* Catalogue: each family is a row of a grid, its name in the first column and its views as cells. */
+.cnx-catalog__rows { border-top: 1px solid var(--cnx-line-strong); }
+.cnx-catalog__row {
+  display: grid;
+  grid-template-columns: minmax(170px, 3fr) minmax(0, 9fr);
+  gap: 24px;
+  padding-block: 22px;
+  border-bottom: 1px solid var(--cnx-line);
+}
+.cnx-catalog__family h3 { display: flex; align-items: center; gap: 10px; font-size: 1.125rem; }
+.cnx-catalog__family p { margin-top: 6px; color: var(--cnx-ink-3); font-size: .9063rem; max-width: 28ch; }
+.cnx-catalog__views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.cnx-viewcard {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 6px;
+  padding: 16px 18px 14px;
+  border: 1px solid var(--cnx-line);
+  border-radius: var(--cnx-radius-sm);
+  background: var(--cnx-card);
+  box-shadow: inset 3px 0 0 var(--cnx-tone);
+}
+.cnx-viewcard h4 { font-size: 1.0313rem; }
+.cnx-viewcard h4 a { color: var(--cnx-ink); text-decoration: none; }
+.cnx-viewcard h4 a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.cnx-viewcard:hover { border-color: color-mix(in srgb, var(--cnx-tone) 45%, var(--cnx-line)); }
+.cnx-viewcard:hover h4 a { color: var(--cnx-accent); }
+.cnx-viewcard:has(h4 a:focus-visible) { outline: 2px solid var(--cnx-focus); outline-offset: 2px; }
+.cnx-viewcard h4 a:focus-visible { outline: 0; }
+.cnx-viewcard p { color: var(--cnx-ink-2); font-size: .9063rem; line-height: 1.5; }
+.cnx-viewcard__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 4px; }
+.cnx-viewcard__meta code { color: var(--cnx-ink-2); font-size: .75rem; }
+.cnx-viewcard__meta span { color: var(--cnx-ink-3); font-size: .8125rem; }
+
+/* Code panel: one tab per language, the snippet, and a link to the page that snippet produced. */
+.cnx-viewcode { display: flex; flex-direction: column; min-height: 0; }
+.cnx-viewcode .cnx-codeblock__bar { padding-block: 0; }
+.cnx-viewcode__panel { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.cnx-viewcode__panel[hidden] { display: none; }
+.cnx-viewcode pre { flex: 1; }
+.cnx-viewcode__run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 10px 18px 12px;
+  border-top: 1px solid var(--cnx-code-line);
+  font-size: .8125rem;
+}
+.cnx-viewcode__run a { color: var(--cnx-code-key); font-weight: 650; }
+.cnx-viewcode__run span { color: var(--cnx-code-muted); }
+.cnx-viewcode__missing { color: var(--cnx-ink-3); font-size: .875rem; }
+
+@media (max-width: 860px) {
+  .cnx-catalog__row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .cnx-catalog__family p { max-width: none; }
+}
+@media (max-width: 640px) {
+  .cnx-catalog__views { grid-template-columns: minmax(0, 1fr); }
+}

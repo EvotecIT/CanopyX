@@ -1,0 +1,9 @@
+---
+title: Resource timeline
+description: Resources as a tree with capacity per group, events on a scrolling time axis, and rescheduling by drag.
+slug: timeline
+order: 4
+layout: view
+meta.view: timeline
+meta.seo_title: Resource timeline: events on a resource tree | CanopyX
+---

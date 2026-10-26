@@ -1,11 +1,16 @@
-{{~ ## The home hero: the promise and the install line, then the view explorer. The explorer's rail is drawn as a CanopyX
-     tree (families are expanded group rows, views are their children) and each row opens that view live beside it.
-     Views, families and their copy come from data/views.json; the one-line stats come from data/demos.json. ## ~}}
+{{~ ## The home hero, then the workbench: a row of view tabs over the live view and the code that builds one like it.
+     Views and their copy come from data/views.json, stats from data/demos.json and code from data/viewcode.json. ## ~}}
 {{~ hero = data.home.hero; views = data.views ~}}
 <section class="cnx-hero" aria-labelledby="cnx-intro-title">
-  <div class="cnx-hero__inner">
+  <div class="cnx-hero__copy">
     <h1 id="cnx-intro-title" class="cnx-hero__title cnx-display">{{ hero.title }}</h1>
     <p class="cnx-hero__lede">{{ hero.lede }}</p>
+    <div class="cnx-hero__actions">
+      <a class="cnx-btn" href="{{ hero.primary.url }}">{{ hero.primary.label }}</a>
+      <a class="cnx-btn cnx-btn--quiet" href="{{ hero.secondary.url }}">{{ hero.secondary.label }}</a>
+    </div>
+  </div>
+  <div class="cnx-hero__side">
     <div class="cnx-codeblock cnx-install" data-cnx-tabs>
       <div class="cnx-codeblock__bar">
         <div class="cnx-tabs cnx-tabs--code" role="tablist" aria-label="Package">
@@ -21,49 +26,31 @@
       </div>
       {{~ end ~}}
     </div>
-    <div class="cnx-hero__actions">
-      <a class="cnx-btn" href="{{ hero.primary.url }}">{{ hero.primary.label }}</a>
-      <a class="cnx-btn cnx-btn--quiet" href="{{ hero.secondary.url }}">{{ hero.secondary.label }}</a>
-    </div>
     <ul class="cnx-hero__facts">
       {{~ for f in hero.facts ~}}
       <li>{{ f }}</li>
       {{~ end ~}}
     </ul>
   </div>
+</section>
 
-  <div class="cnx-explorer" data-cnx-stage>
-    <div class="cnx-explorer__rail">
-      <p class="cnx-explorer__head" aria-hidden="true"><span>View</span><span>{{ views.views.size }}</span></p>
-      <div class="cnx-explorer__tree" role="tablist" aria-orientation="vertical" aria-label="Views">
-        {{~ for f in views.families ~}}
-        <div class="cnx-explorer__family" aria-hidden="true"><span class="cnx-chev"></span><span class="cnx-tone cnx-tone--{{ f.tone }}"></span>{{ f.name }}</div>
-        {{~ for v in views.views ~}}
-        {{~ if v.family == f.id ~}}
-        {{~ first = v.id == views.views[0].id ~}}
-        <button type="button" role="tab" class="cnx-explorer__view" id="cnx-demo-tab-{{ v.id }}" aria-controls="cnx-demo-{{ v.id }}" aria-selected="{{ if first }}true{{ else }}false{{ end }}" tabindex="{{ if first }}0{{ else }}-1{{ end }}" data-cnx-demo="{{ v.id }}">
-          <span class="cnx-explorer__name">{{ v.name }}</span>
-          <span class="cnx-explorer__example"><span class="cnx-sr">{{ f.name }}: </span>{{ v.example }}</span>
-        </button>
-        {{~ end ~}}
-        {{~ end ~}}
-        {{~ end ~}}
-      </div>
-    </div>
-
-    <figure class="cnx-explorer__stage">
-      <div class="cnx-explorer__bar">
-        {{~ for v in views.views ~}}
-        {{~ d = data.demos[v.id] ~}}
-        <p class="cnx-explorer__title" data-cnx-caption="{{ v.id }}"{{ if !for.first }} hidden{{ end }}>
-          <strong>{{ v.example }}</strong>
-          <code>{{ v.api }}</code>
-          {{~ if d ~}}<span>{{ d.stat }}</span>{{~ end ~}}
-        </p>
+<section class="cnx-bench" data-cnx-stage aria-labelledby="cnx-bench-title">
+  <h2 id="cnx-bench-title" class="cnx-sr">Every view, live, with its code</h2>
+  <div class="cnx-bench__tabs" role="tablist" aria-label="Views">
+    {{~ for v in views.views ~}}
+    {{~ family = null; for f in views.families; if f.id == v.family; family = f; end; end ~}}
+    <button type="button" role="tab" class="cnx-bench__tab" id="cnx-demo-tab-{{ v.id }}" aria-controls="cnx-demo-{{ v.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" data-cnx-demo="{{ v.id }}"><span class="cnx-tone cnx-tone--{{ family.tone }}" aria-hidden="true"></span>{{ v.name }}</button>
+    {{~ end ~}}
+  </div>
+  <div class="cnx-bench__panel">
+    <figure class="cnx-bench__demo">
+      <div class="cnx-bench__bar">
+        {{~ for v in views.views; d = data.demos[v.id] ~}}
+        <p class="cnx-bench__title" data-cnx-caption="{{ v.id }}"{{ if !for.first }} hidden{{ end }}><strong>{{ v.example }}</strong>{{ if d }}<span>{{ d.stat }}</span>{{ end }}</p>
         {{~ end ~}}
         <a class="cnx-frame__open" data-cnx-demo-open href="{{ views.views[0].src }}">Open full screen</a>
       </div>
-      <div class="cnx-explorer__screen">
+      <div class="cnx-bench__screen">
         {{~ for v in views.views ~}}
         <div class="cnx-demo{{ if !v.src }} cnx-demo--email{{ end }}" role="tabpanel" id="cnx-demo-{{ v.id }}" aria-labelledby="cnx-demo-tab-{{ v.id }}"{{ if !for.first }} hidden{{ end }}>
           {{~ if v.src ~}}
@@ -83,11 +70,14 @@
         </div>
         {{~ end ~}}
       </div>
-      <figcaption class="cnx-explorer__caption">
-        {{~ for v in views.views ~}}
-        <p data-cnx-caption="{{ v.id }}"{{ if !for.first }} hidden{{ end }}>{{ v.body }} <a class="cnx-link" href="/demos/#{{ v.id }}">Steps to try<span class="cnx-sr"> in the {{ v.name | string.downcase }}</span></a></p>
-        {{~ end ~}}
-      </figcaption>
     </figure>
+    <div class="cnx-bench__code">
+      {{~ for v in views.views ~}}
+      <div class="cnx-bench__snippet" data-cnx-caption="{{ v.id }}"{{ if !for.first }} hidden{{ end }}>
+        {{~ codeid = "cnx-home-code-" + v.id; include "view-code" ~}}
+        <p class="cnx-bench__more"><a class="cnx-link" href="/views/{{ v.id }}/">The {{ v.name | string.downcase }}, step by step</a></p>
+      </div>
+      {{~ end ~}}
+    </div>
   </div>
 </section>

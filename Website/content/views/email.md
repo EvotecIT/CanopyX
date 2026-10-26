@@ -1,0 +1,9 @@
+---
+title: Script-free table
+description: Script-free tables from the same view definition, with inline styles that survive mail clients, print and Word.
+slug: email
+order: 8
+layout: view
+meta.view: email
+meta.seo_title: Script-free tables for email and print | CanopyX
+---

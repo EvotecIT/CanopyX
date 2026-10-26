@@ -12,6 +12,9 @@
   {{ head_html }}</head>
 <body class="cnx-body cnx-body--page{{ if body_class != "" }} {{ body_class }}{{ end }}">
 {{ include "site-header" }}
+<div class="cnx-shell">
+{{ include "site-sidebar" }}
+<div class="cnx-shell__content">
 <main id="main" class="cnx-main">
   <article class="cnx-page">
     {{ include "pagehead" }}
@@ -22,6 +25,8 @@
   </article>
 </main>
 {{ include "site-footer" }}
+</div>
+</div>
 {{ assets.js_html }}
 {{ extra_scripts_html }}
 </body>

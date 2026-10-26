@@ -16,19 +16,18 @@
   },
   "tokens": {
     "color": {
-      "page": "#f3f6f2",
+      "page": "#f6f6f9",
       "card": "#ffffff",
-      "ink": "#12201a",
-      "accent": "#1b7548",
-      "forest": "#0e2419"
+      "ink": "#16151f",
+      "accent": "#5b4bdb",
+      "forest": "#17162a"
     },
     "font": {
       "body": "Schibsted Grotesk, system-ui, sans-serif",
-      "display": "Fraunces, Georgia, serif",
       "mono": "JetBrains Mono, Cascadia Code, Consolas, monospace"
     },
     "layout": {
-      "maxWidth": "1240px"
+      "maxWidth": "1160px"
     }
   },
   "features": [

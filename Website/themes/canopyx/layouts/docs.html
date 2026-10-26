@@ -12,8 +12,10 @@
   {{ head_html }}</head>
 <body class="cnx-body cnx-body--docs{{ if body_class != "" }} {{ body_class }}{{ end }}">
 {{ include "site-header" }}
+<div class="cnx-shell">
+{{ include "site-sidebar" }}
+<div class="cnx-shell__content">
 <main id="main" class="cnx-main cnx-docs{{ if page.meta.wide }} cnx-docs--wide{{ end }}">
-  {{ include "docs-sidebar" }}
   <article class="cnx-docs__article">
     {{ include "pagehead" }}
 
@@ -25,6 +27,8 @@
   {{ if toc != "" && !page.meta.wide }}<aside class="cnx-docs__toc" aria-label="On this page">{{ toc }}</aside>{{ end }}
 </main>
 {{ include "site-footer" }}
+</div>
+</div>
 {{ assets.js_html }}
 {{ extra_scripts_html }}
 </body>

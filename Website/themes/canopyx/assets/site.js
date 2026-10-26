@@ -15,13 +15,10 @@
     });
   });
 
-  // Header navigation. Each group button discloses its panel: one panel at a time on wide screens, closed by Escape,
-  // a click outside or tabbing out of the group. The phone sheet lists every group open. A panel's thumbnails are
-  // CanopyX renders fetched the first time the group is hovered, focused or opened.
-  var header = document.querySelector('[data-cnx-header]');
-  var compactNav = window.matchMedia('(max-width: 900px)');
+  // The menu button opens the sidebar as a sheet on narrow screens; Escape closes it.
   var navToggle = document.getElementById('cnx-nav-toggle');
 
+  // Thumbnails are CanopyX renders fetched when their slot is shown.
   function loadThumbs(scope) {
     scope.querySelectorAll('[data-cnx-thumb]').forEach(function (slot) {
       var src = slot.getAttribute('data-cnx-thumb');
@@ -33,75 +30,12 @@
     });
   }
 
-  if (header) {
-    var groups = Array.prototype.slice.call(header.querySelectorAll('[data-cnx-navgroup]'));
-    var triggerOf = function (group) { return group.querySelector('.cnx-navgroup__trigger'); };
-    var setOpen = function (group, open) {
-      triggerOf(group).setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open && !compactNav.matches) loadThumbs(group);
-    };
-    var closeAll = function (except) { groups.forEach(function (group) { if (group !== except) setOpen(group, false); }); };
-
-    groups.forEach(function (group) {
-      var trigger = triggerOf(group);
-      var links = Array.prototype.slice.call(group.querySelectorAll('.cnx-navitem__link'));
-      var warm = function () { if (!compactNav.matches) loadThumbs(group); };
-      trigger.addEventListener('pointerenter', warm);
-      trigger.addEventListener('focus', warm);
-      trigger.addEventListener('click', function () {
-        var open = trigger.getAttribute('aria-expanded') !== 'true';
-        if (!compactNav.matches) closeAll(group);
-        setOpen(group, open);
-      });
-      trigger.addEventListener('keydown', function (event) {
-        if (event.key !== 'ArrowDown' || compactNav.matches || !links.length) return;
-        event.preventDefault();
-        event.stopPropagation();
-        closeAll(group);
-        setOpen(group, true);
-        links[0].focus();
-      });
-      group.addEventListener('keydown', function (event) {
-        var index = links.indexOf(document.activeElement);
-        if (event.key === 'Escape' && !compactNav.matches && trigger.getAttribute('aria-expanded') === 'true') {
-          setOpen(group, false);
-          trigger.focus();
-        } else if (index >= 0 && !compactNav.matches && /^Arrow(Left|Right|Up|Down)$/.test(event.key)) {
-          event.preventDefault();
-          var step = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
-          links[(index + step + links.length) % links.length].focus();
-        }
-      });
-      group.addEventListener('focusout', function (event) {
-        if (!compactNav.matches && event.relatedTarget && !group.contains(event.relatedTarget)) setOpen(group, false);
-      });
-    });
-
-    document.addEventListener('click', function (event) {
-      if (!compactNav.matches && !header.contains(event.target)) closeAll(null);
-    });
-    var reset = function () {
-      if (compactNav.matches) groups.forEach(function (group) { setOpen(group, true); });
-      else { closeAll(null); if (navToggle) navToggle.checked = false; }
-    };
-    if (compactNav.addEventListener) compactNav.addEventListener('change', reset);
-    reset();
-  }
-
   if (navToggle) {
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && navToggle.checked && compactNav.matches) { navToggle.checked = false; navToggle.focus(); }
+      if (event.key === 'Escape' && navToggle.checked) { navToggle.checked = false; navToggle.focus(); }
     });
   }
 
-  // The docs contents start folded on phones and open on wider screens.
-  var docsMenu = document.querySelector('[data-cnx-docs-menu]');
-  if (docsMenu) {
-    var phone = window.matchMedia('(max-width: 760px)');
-    var fold = function () { docsMenu.open = !phone.matches; };
-    fold();
-    if (phone.addEventListener) phone.addEventListener('change', fold);
-  }
   // Docs map and other inline thumbnails that were not rendered into the page.
   document.querySelectorAll('main [data-cnx-thumb]').forEach(function (slot) { loadThumbs(slot.parentNode); });
 
@@ -173,7 +107,7 @@
     button.setAttribute('aria-label', 'Copy code');
     bar.appendChild(button);
     wireCopy(button, function () {
-      var visible = figure.querySelector('pre:not([hidden]) code') || figure.querySelector('pre code');
+      var visible = figure.querySelector('[role="tabpanel"]:not([hidden]) code') || figure.querySelector('pre:not([hidden]) code') || figure.querySelector('pre code');
       return visible ? visible.textContent.replace(/\n$/, '') : '';
     });
   });

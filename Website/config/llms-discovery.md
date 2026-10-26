@@ -10,8 +10,8 @@
 
 ## Examples and discovery
 
-- [Demo guide](https://canopyx.dev/demos/index.md): tree grids and data tables with their intended interactions.
-- [Live demos](https://canopyx.dev/demos/): open the interactive examples in a browser.
+- [Demo guide](https://canopyx.dev/views/index.md): tree grids and data tables with their intended interactions.
+- [Live demos](https://canopyx.dev/views/): open the interactive examples in a browser.
 - [Full context](https://canopyx.dev/llms-full.txt): package metadata and the complete discovery guide.
 - [Machine-readable manifest](https://canopyx.dev/llms.json): .NET package identities, source versions and installation commands.
 - [Sitemap](https://canopyx.dev/sitemap.xml): current public page list.
