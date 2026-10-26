@@ -27,6 +27,7 @@ public sealed partial class CanopyCalendar {
     private string? _timeZone;
     private DateTime? _date;
     private CanopyCalendarResources? _resources;
+    private string? _resourceIds;
 
     /// <summary>Creates a calendar of the grid's records.</summary>
     /// <param name="start">The id of the date-and-time column that holds each event's start.</param>
@@ -62,6 +63,9 @@ public sealed partial class CanopyCalendar {
 
     /// <summary>Gets or sets the text column of each event's resource id, a node id of <see cref="Resources"/>.</summary>
     public string? Resource { get => _resource; set => _resource = Column(value); }
+
+    /// <summary>Gets or sets a text column containing a JSON array of resource ids. Each event appears in every assigned resource with one event identity.</summary>
+    public string? ResourceIds { get => _resourceIds; set => _resourceIds = Column(value); }
 
     /// <summary>Gets or sets the column of each event's status, of any kind, shown with the column's presenter; its tone colours the event.</summary>
     public string? Status { get => _status; set => _status = Column(value); }

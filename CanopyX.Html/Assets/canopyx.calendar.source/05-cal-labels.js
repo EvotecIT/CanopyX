@@ -22,6 +22,9 @@
     calendarWeekShort: "W{number}", calendarNewEvent: "New event", calendarEventTitle: "Title", calendarCreate: "Add", calendarCancel: "Cancel",
     calendarCreated: "{title} added on {time}", calendarReceived: "{title} scheduled on {time}", calendarOccurrenceTitle: "Change a repeating event",
     calendarOccurrenceReadOnly: "This part of the series cannot be saved because some values are read-only.",
+    calendarEditOccurrence: "Edit this occurrence", calendarRemoveOccurrence: "Remove this occurrence",
+    calendarOccurrenceScope: "Only {date} changes; other dates of {title} stay as they are.",
+    calendarSharedResources: "{count} {resources}", calendarResourceWindow: "{resources} {start}–{end} of {total}",
     calendarThisEvent: "This event", calendarThisAndFollowing: "This and following events", calendarAllEvents: "All events", calendarSources: "Calendars",
     calendarImportFailed: "Could not read {source}: {error}", calendarActions: "Actions for {title}", calendarOpen: "Open", calendarMove: "Move",
     calendarNewHere: "New event here", calendarOutsideRange: "Outside the dates this calendar shows", calendarClose: "Close", calendarDetailsOf: "Details of {title}"

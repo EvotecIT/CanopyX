@@ -415,8 +415,9 @@ Consumers: certificate expiries and renewals, monitoring incidents, outages and 
 - [x] Drag to move and resize across resources with keyboard moves, overlap, allowed-resource and working-hour rules shown before the drop, through the editing contract with commit and undo.
 - [x] Recurrence (an RFC 5545 RRULE subset with exceptions and overriding records) expanded per visible range, matched in C# by `CanopyRecurrence` against one fixture.
 - [x] Range queries for hosted grids (`gridRangeQuery`, `POST {pattern}/range` over `IQueryable`), iCalendar export.
-- [ ] Editing a single occurrence of a series in the calendar itself: today the host handles `canopyx:occurrenceChange` by adding an overriding record.
-- [ ] Resource columns for trees with more than 24 leaves (a chosen subset), and events with several resources.
+- [x] Edit a single recurring occurrence in the calendar, with an override and writable EXDATE, through the host editing contract.
+- [x] Virtual resource columns for large inline resource trees and events assigned to several resources.
+- [x] Per-source JSON feeds with range parameters, colour and visibility switches.
 - [ ] Backlog by owner decision, not a release blocker: screen-reader speech checks of the calendar views with NVDA and Narrator.
 
 Gate: the calendar examples pass the browser suites on Chromium, Firefox and WebKit at desktop and phone widths in both palettes, the month paints 5,000 events and the timeline 5,000 resources and 100,000 events within the performance gates, and the parts stay under their gzip guards.

@@ -12,9 +12,11 @@
       for (const event of this.calEvents) { const span = this.calDisplaySpan(event); event.tlStart = span.start; event.tlEnd = span.end; }
       if (this.tlSolo) return this.tlIndexSolo(backgrounds);
       for (const event of this.calEvents) {
-        const target = event.background ? backgrounds : byResource, key = event.resource ?? "";
-        if (!target.has(key)) target.set(key, []);
-        target.get(key).push(event);
+        const target = event.background ? backgrounds : byResource, resources = this.calEventResources(event);
+        for (const key of resources.length ? resources : [""]) {
+          if (!target.has(key)) target.set(key, []);
+          target.get(key).push({ ...event, resource: key || null });
+        }
       }
       for (const list of byResource.values()) {
         list.sort((a, b) => a.tlStart - b.tlStart || b.tlEnd - a.tlEnd);

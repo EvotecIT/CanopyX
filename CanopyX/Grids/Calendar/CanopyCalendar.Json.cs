@@ -9,7 +9,7 @@ public sealed partial class CanopyCalendar {
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("start", _start)
             .OptionalProperty("end", _end).OptionalProperty("title", _title).OptionalProperty("subtitle", _subtitle)
-            .OptionalProperty("allDay", _allDay).OptionalProperty("resource", _resource).OptionalProperty("status", _status)
+            .OptionalProperty("allDay", _allDay).OptionalProperty("resource", _resource).OptionalProperty("resourceIds", ResourceIds).OptionalProperty("status", _status)
             .OptionalProperty("recurrence", _recurrence).OptionalProperty("exceptions", _exceptions).OptionalProperty("series", _series)
             .OptionalProperty("recurrenceId", _recurrenceId).OptionalProperty("display", _display).OptionalProperty("seriesEnd", _seriesEnd)
             .OptionalProperty("description", _description).OptionalProperty("tone", _tone).OptionalProperty("source", _source);

@@ -13,6 +13,8 @@
   function calSafeTone(tone) { return typeof tone === "string" && CAL_TONE_NAME.test(tone) && !tone.endsWith("-bg") ? tone : null; }
   /** The day an all-day value names: the date it is written with, whatever offset follows. */
   function calDateOf(value) { return typeof value === "string" ? calParseDay(value.slice(0, 10)) : NaN; }
+  /** Host record keys stay unchanged; calendar identities escape the feed namespace and their own escape prefix. */
+  function calNativeIdentity(id) { return /^(json:|grid:)/.test(id) ? "grid:" + id : id; }
 
   /** The event a record holds, or null when its start is missing or invalid. */
   function calBase(view, row) {
@@ -33,15 +35,17 @@
         base = { start: first * CAL_DAY, end: (endDay > first ? endDay : first + 1) * CAL_DAY };
       } else base = { start, end: Number.isFinite(end) && end >= start ? end : start };
       const ownTone = cal.tone && !fields ? calSafeTone(String(read(cal.tone) ?? "").trim()) : null;
+      const series = value("series") || null;
       Object.assign(base, { key: row.id, row, allDay, marker: !allDay && base.end === base.start,
+        identity: fields ? row.id : calNativeIdentity(row.id), seriesIdentity: fields ? series : series && calNativeIdentity(series),
         title: (fields ? fields.title : cellText(cells[cal.title.id], cal.title, view.fmt)) || row.id, subtitle: cal.subtitle && !fields ? cellText(cells[cal.subtitle.id], cal.subtitle, view.fmt) : "",
         // The tone column wins, then the status tone, then the tone of the record's source.
         tone: ownTone || (fields ? null : calTone(cal.status, cells)) || calSourceTone(cal, fields ? row.external : read(cal.source)),
         source: fields ? row.external : cal.source ? calResourceOf(read(cal.source)) : null, external: !!fields, toneFromStatus: !ownTone && !fields,
-        resource: cal.resource ? calResourceOf(read(cal.resource)) : null,
+        resource: calResourceOf(value("resource")), resourceIds: calResourceIds(value("resourceIds")), color: cal.sources?.find(source => source.id === (fields ? row.external : read(cal.source)))?.color,
         background: cal.display ? String(read(cal.display) || "").toLowerCase() === "background" : false, rule: null, ruleError: null,
         seriesZone: allDay ? CAL_UTC() : fields?.seriesZone ? calZone(fields.seriesZone) : view.calSeriesZone,
-        series: fields ? fields.series || null : cal.series ? read(cal.series) || null : null, recurrenceId: calInstant(fields ? fields.recurrenceId : read(cal.recurrenceId)) });
+        series, recurrenceId: calInstant(value("recurrenceId")) });
       const text = value("recurrence");
       if (typeof text === "string" && text.trim() && !base.series) {
         try { const rec = calRec(); if (!rec) throw new Error("CanopyX: the calendar recurrence part is not loaded."); base.rule = rec.calRule(text); Object.assign(base, rec.calExceptions(value("exceptions"), base.seriesZone)); }
@@ -55,6 +59,26 @@
   function calSourceTone(cal, id) { return id != null && cal.sources?.length ? cal.sources.find(source => source.id === String(id).trim())?.tone ?? null : null; }
   /** A resource cell's id: text, trimmed; empty means none. */
   function calResourceOf(value) { return typeof value === "string" && value.trim() ? value.trim() : null; }
+  /** Multi-resource cells contain a JSON array, preserving every identifier without delimiter ambiguity. */
+  function calResourceIds(value) {
+    if (value == null || value === "") return [];
+    const list = typeof value === "string" ? JSON.parse(value) : value;
+    if (!Array.isArray(list) || list.length > 1000 || list.some(id => typeof id !== "string" || !id || id.isWellFormed && !id.isWellFormed())) throw new Error("CanopyX: resourceIds is an array of at most 1,000 resource ids.");
+    return [...new Set(list)];
+  }
+  Object.assign(DataGrid.prototype, {
+    calEventResources(event) { return [...new Set([event.base?.resource ?? event.resource, ...(event.resourceIds || event.base?.resourceIds || [])].filter(id => id != null))]; },
+    calHasResource(event, resource) { const ids = this.calEventResources(event); return resource == null ? !ids.length : ids.includes(resource); },
+    /** Moving one drawn assignment preserves the event's other assigned resources. */
+    calResourceValues(event, resource) {
+      const values = [], base = event.base, cal = this.cal;
+      if (resource === undefined || resource === event.resource) return values;
+      if (cal.resource && base.resource === event.resource) values.push([cal.resource.id, resource]);
+      if (cal.resourceIds && base.resourceIds.includes(event.resource)) values.push([cal.resourceIds.id, JSON.stringify([...new Set(base.resourceIds.map(id => id === event.resource ? resource : id).filter(id => id != null))])]);
+      if (!values.length && cal.resource) values.push([cal.resource.id, resource]);
+      return values;
+    }
+  });
   /** The tone of the status column's cell: its presenter's tone for the value, else the cell's own tone. */
   function calTone(column, cells) {
     if (!column) return null;
@@ -64,13 +88,13 @@
   }
   /** The occurrences of a list of records that overlap [from, to), sorted by start, then the longest first, then id. */
   function calOccurrences(view, rows, from, to, metadata) {
-    const out = [], overrides = new Map([...(metadata || [])].map(([id, starts]) => [id, new Set(starts)])), bases = [], limit = view.cal.limit;
+    const out = [], overrides = new Map([...(metadata || [])].map(([id, starts]) => [calNativeIdentity(id), new Set(starts)])), bases = [], limit = view.cal.limit;
     for (const row of rows) {
       const base = calBase(view, row);
       if (!base) continue;
       if (base.series && Number.isFinite(base.recurrenceId)) {
-        if (!overrides.has(base.series)) overrides.set(base.series, new Set());
-        overrides.get(base.series).add(base.recurrenceId);
+        if (!overrides.has(base.seriesIdentity)) overrides.set(base.seriesIdentity, new Set());
+        overrides.get(base.seriesIdentity).add(base.recurrenceId);
       }
       bases.push(base);
     }
@@ -81,7 +105,7 @@
         if (calOverlaps(span.start, span.end, from, to)) out.push(calOccurrence(view, base, base.start, false));
         continue;
       }
-      const duration = base.end - base.start, moved = overrides.get(base.key), excluded = moved ? new Set([...base.excluded, ...moved]) : base.excluded;
+      const duration = base.end - base.start, moved = overrides.get(base.identity), excluded = moved ? new Set([...base.excluded, ...moved]) : base.excluded;
       // Editing reads it (with calOverridden for records outside these rows): a series cannot shift without detaching them.
       base.overridden = !!moved;
       // Expand dates against the same dates in UTC, then map their presentation span to the display zone. One extra
@@ -103,9 +127,9 @@
   function calOccurrence(view, base, start, recurring) {
     const end = start + (base.end - base.start), zone = base.allDay ? CAL_UTC() : view.calZone;
     const sd = zone.day(start), ed = end > start ? zone.day(end - 1) : sd;
-    return { id: recurring ? base.key + "@" + calIso(start) : base.key, key: base.key, base, row: base.row, start, end, allDay: base.allDay,
+    return { id: recurring ? base.identity + "@" + calIso(start) : base.identity, key: base.key, base, row: base.row, start, end, allDay: base.allDay,
       marker: base.marker, sd, ed, recurring, occurrence: recurring ? start : null, background: base.background, resource: base.resource,
-      title: base.title, subtitle: base.subtitle, tone: base.tone };
+      title: base.title, subtitle: base.subtitle, tone: base.tone, color: base.color, resourceIds: base.resourceIds };
   }
 
   /** The static background ranges (holidays, freezes, maintenance) that overlap [from, to), expanded when they recur. */

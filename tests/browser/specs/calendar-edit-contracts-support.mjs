@@ -36,7 +36,15 @@ function installCalendarEditHost() {
       ...(o.scrollTime ? { scrollTime: o.scrollTime } : {}),
       ...(o.validRange ? { validRange: o.validRange } : {}),
       ...(o.ranges ? { ranges: o.ranges } : {}),
+      ...(o.sources ? { sources: o.sources } : {}),
       editable: { overlap: o.overlap ?? true, resources: true, ...(o.manual ? { commit: "manual" } : {}) } } };
+  if (o.resourceIdsOnly) {
+    delete view.calendar.resource; view.calendar.resourceIds = "assignments";
+    columns.push({ id: "assignments", title: "Assignments", kind: "text", editable: true });
+    for (const row of window.records) row.cells.assignments = JSON.stringify(["Room A"]);
+    if (view.rows) for (const row of view.rows) row.cells.assignments = JSON.stringify(["Room A"]);
+  }
+  if (o.create) view.calendar.create = true;
   if (o.resources) view.calendar.resources = { view: { protocol: "canopyx/2", type: "view", id: "rooms", label: "Rooms", rowHeight: 34,
     selection: "single", columns: [{ id: "name", title: "Room", kind: "text", rowHeader: true }], source: { kind: "inline" },
     roots: ["Room A", "Room B"].map(id => ({ id, label: id, cells: { name: id } })) } };
@@ -56,7 +64,8 @@ function installCalendarEditHost() {
     block.filters.some(filter => matches(row, filter)) || block.groups.some(child => group(row, child)));
   const source = {
     query(query) {
-      const items = window.records.filter(row => query.filters.every(filter => matches(row, filter)) && group(row, query.filterGroup));
+      const rangeOnlyId = typeof o.rangeOnlyMaster === "string" ? o.rangeOnlyMaster : "event";
+      const items = window.records.filter(row => (!o.rangeOnlyMaster || row.id !== rangeOnlyId) && query.filters.every(filter => matches(row, filter)) && group(row, query.filterGroup));
       return { protocol: "canopyx/2", type: "gridPage", view: view.id, revision: "r1", offset: query.offset, total: window.records.length, matched: items.length,
         items: copy(items.slice(query.offset, query.offset + query.limit)) };
     },
@@ -70,6 +79,8 @@ function installCalendarEditHost() {
     isEditable: (row, column) => !window.policy.denied.includes(column),
     ...(o.local ? {} : { commit(batch) {
       window.commits.push(copy(batch));
+      if (o.rejectCommit) return { protocol: "canopyx/2", type: "gridCommitResult", view: view.id,
+        rows: batch.rows.map(change => ({ id: change.id, status: "error", error: "Save refused" })) };
       const answers = batch.rows.map(change => {
         if (change.op === "insert") {
           const id = "stored-" + window.records.length, record = { id, cells: copy(change.values) };

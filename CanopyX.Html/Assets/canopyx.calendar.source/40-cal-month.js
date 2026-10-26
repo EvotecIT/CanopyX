@@ -44,7 +44,7 @@
       // The time outside a resource's inverse ranges belongs to that resource's column or lane, never to a view of everyone.
       for (const range of this.calRanges) if (range.sd <= day && range.ed >= day && (resource === undefined ? !range.inverse || range.resource == null : range.resource == null || range.resource === resource) &&
           (partial || !range.inverse || range.start <= this.calZone.start(day) && range.end >= this.calZone.start(day + 1))) out.push(range);
-      for (const event of this.calEvents) if (event.background && event.sd <= day && event.ed >= day && (resource === undefined || event.resource == null || event.resource === resource))
+      for (const event of this.calEvents) if (event.background && event.sd <= day && event.ed >= day && (resource === undefined || !this.calEventResources(event).length || this.calHasResource(event, resource)))
         out.push({ id: event.id, label: event.title, tone: event.tone || "info", kind: "background", sd: event.sd, ed: event.ed, start: event.start, end: event.end, resource: event.resource });
       return out;
     },

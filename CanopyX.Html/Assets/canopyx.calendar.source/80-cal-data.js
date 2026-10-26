@@ -109,7 +109,8 @@
       const slow = setTimeout(() => { if (epoch === this.calEpoch) this.calNotice(this.calLabels.calendarLoading, false); }, 200);
       // iCalendar sources load once (the iCalendar part fetches and reads them); their events join every range read-only.
       if (this.cal.sources.some(source => source.ics) && !this.calIcsLoad) this.calIcsLoad = this.calLoadPart("calendar-ics").then(() => this.calLoadIcs()).catch(error => { this.calIcsLoad = null; throw error; });
-      try { answer = await this.calRecords(from, to, signal); if (this.calIcsLoad) await this.calIcsLoad; }
+      let feeds;
+      try { [answer, feeds] = await Promise.all([this.calRecords(from, to, signal), this.calLoadJson(from, to, signal)]); if (this.calIcsLoad) await this.calIcsLoad; }
       catch (error) {
         clearTimeout(slow);
         if (epoch !== this.calEpoch || error.name === "AbortError" || this.destroyed) return;
@@ -118,7 +119,7 @@
       }
       clearTimeout(slow);
       if (epoch !== this.calEpoch || signal.aborted || this.destroyed) return;
-      const rows = this.calIcsRows?.length ? [...answer.rows, ...this.calIcsRows] : answer.rows;
+      const rows = [...answer.rows, ...(this.calIcsRows || []), ...feeds.rows];
       // Export can need a master that produced no visible occurrence. Retain only this winning answer, never support rows.
       this.calAnswer = { rows, query: this.acceptedQuery, source: this.source, signal, epoch };
       const events = calOccurrences(this, rows, from, to, answer.overrides);
@@ -127,7 +128,7 @@
       // or view drops it. A truncated period says so as well.
       const sticky = this.calSticky?.at === this.calStickyKey() ? this.calSticky.text : "";
       const truncated = answer.truncated || events.truncated ? fill(this.calLabels.calendarTruncated, { count: numberFormat(this.lang).format(events.length) }) : "";
-      const imported = this.calIcsErrors?.join(" ") || "";
+      const imported = [...(this.calIcsErrors || []), ...feeds.errors].join(" ");
       setText(this.calNoticeElement, [sticky, truncated, imported].filter(Boolean).join(" ")); this.calNoticeElement.hidden = !sticky && !truncated && !imported;
       this.calNoticeElement.classList.toggle("cx-cal-error", !!sticky || !!imported);
       this.calPaint(options);
