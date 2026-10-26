@@ -39,7 +39,10 @@
       else if (side === "left" && x < offsetX) { x = target.right + gap; actual = "right"; }
       x = Math.max(offsetX + edge, Math.min(x, offsetX + width - box.width - edge));
       y = Math.max(offsetY + edge, Math.min(y, offsetY + height - box.height - edge));
-      element.style.left = x - marginX + "px"; element.style.top = y - gap + "px";
+      // Whole device pixels: content inside a scroller is snapped to them, so an overlay on a fractional position would shift a
+      // list's rows against the rows outside it by a sub-pixel amount.
+      const ratio = global.devicePixelRatio || 1, snap = value => Math.round(value * ratio) / ratio;
+      element.style.left = snap(x) - marginX + "px"; element.style.top = snap(y) - gap + "px";
       element.dataset.side = actual;
     }
   });

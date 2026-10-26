@@ -135,6 +135,22 @@ for (const kind of ['dialog', 'drawer']) for (const sequence of ['open/open', 'c
 const popover = `<button id="help-trigger">Settings help</button><div id="help" class="cx-popover" data-cx-popover data-cx-trigger="help-trigger" role="dialog" aria-labelledby="help-title" hidden>
   <h2 id="help-title">Settings help</h2><button>First choice</button><button>Last choice</button></div><button id="next">Next control</button>`;
 
+for (const ratio of [1, 2]) test.describe(`device pixel ratio ${ratio}`, () => {
+  test.use({ deviceScaleFactor: ratio });
+  test('an anchored popover opens on whole device pixels next to a fractional trigger', async ({ page }) => {
+    await openUi(page, `<div style="padding:13.37px 0 0 27.41px">${popover}</div>`);
+    await page.locator('#help-trigger').click();
+    await expect(page.locator('#help')).toBeVisible();
+    const edges = await page.locator('#help').evaluate(async element => {
+      // Measured after the opening animation, whose scale would move the edges.
+      await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => {})));
+      const box = element.getBoundingClientRect(), ratio = devicePixelRatio;
+      return [box.left * ratio, box.top * ratio];
+    });
+    for (const edge of edges) expect(Math.abs(edge - Math.round(edge))).toBeLessThan(0.01);
+  });
+});
+
 test('Tab exits an anchored popover into the surrounding form', async ({ page }) => {
   await openUi(page, popover);
   await page.locator('#help-trigger').click();
