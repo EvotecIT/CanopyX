@@ -9,6 +9,22 @@ import { readAsset as read, assetHash as hash, partFixture } from "./part-fixtur
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const rows = Array.from({ length: 80 }, (_, i) => ({ id: String(i).padStart(3, "0"),
   cells: { name: i % 2 ? "Archive" : "Source", size: { value: i, text: i + " KiB" }, kind: i % 3 ? "file" : "folder" } }));
+
+test("format metadata and diagnostics stay with one export and retire when it finishes", async ({ page }) => {
+  await open(page, definition(), `CanopyX.registerExportFormat({id:'proof',label:'Proof',extension:'bin',async write(capture,context){
+    window.metadata=context.includeMetadata;window.captureMetadata=Object.hasOwn(capture.request,'includeMetadata');
+    window.lateDiagnostic=context.diagnostic;const item={code:'VALUE_ONLY',columnId:'size'};
+    context.diagnostic(item);context.diagnostic(item);item.code='mutated';return new Blob(['done']);}});`);
+  const result = await page.evaluate(async code => {
+    const grid = eval(code), received = [];
+    const output = await grid.exportAs('proof', { scope: 'filtered', includeMetadata: true, download: false, onDiagnostic: item => received.push(item) });
+    window.lateDiagnostic({ code: 'RETIRED' });
+    return { received, diagnostics: output.diagnostics, metadata: window.metadata, captureMetadata: window.captureMetadata,
+      frozen: Object.isFrozen(output.diagnostics) && Object.isFrozen(output.diagnostics[0]) };
+  }, api);
+  expect(result).toEqual({ received: [{ code: 'VALUE_ONLY', columnId: 'size' }], diagnostics: [{ code: 'VALUE_ONLY', columnId: 'size' }],
+    metadata: true, captureMetadata: false, frozen: true });
+});
 const definition = (extra = {}) => ({ protocol: "canopyx/2", type: "grid", id: "records", label: "Records", source: { kind: "inline" },
   rowHeight: 28, pageSize: 20, selection: "multiple", search: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 180, sortable: true }, { id: "size", title: "Size", kind: "number", width: 100, sortable: true },

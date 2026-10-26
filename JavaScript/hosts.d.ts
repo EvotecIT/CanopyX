@@ -100,6 +100,10 @@ export interface ExportFormatContext {
   readonly fileName: string;
   /** The format's id. */
   readonly format: string;
+  /** True requests a captured metadata section when the writer supports it. Default false. */
+  readonly includeMetadata: boolean;
+  /** Reports a bounded, structured limitation without changing captured values. */
+  diagnostic(value: ExportDiagnostic): void;
   /** Reports written records (a nonnegative integer; other values are ignored); the Export menu shows them as progress. */
   progress(completed: number): void;
 }
@@ -121,15 +125,20 @@ export interface ExportFormat<C extends ExportCapture = ExportCapture> {
   write(capture: C, context: ExportFormatContext): Blob | ArrayBuffer | ArrayBufferView | PromiseLike<Blob | ArrayBuffer | ArrayBufferView>;
 }
 export interface ExportProgress { readonly phase: "reading" | "generating" | "ready"; readonly completed: number; readonly total: number | null; }
+/** A document writer's limitation, with optional stable source identities. */
+export interface ExportDiagnostic { readonly code: string; readonly columnId?: string; readonly rowId?: string; }
 export interface ExportFormatOptions {
   signal?: AbortSignal;
   onProgress?: (progress: ExportProgress) => void;
+  onDiagnostic?: (diagnostic: ExportDiagnostic) => void;
+  /** Requests captured metadata; the built-in XLSX writer adds an About worksheet. Default false. */
+  includeMetadata?: boolean;
   /** Safety timeout for the writer, 1..2147483647 ms; overrides the grid's exportTimeoutMs (default 600000). */
   timeoutMs?: number;
   /** False returns the file without starting a browser download. Default true. */
   download?: boolean;
 }
-export interface ExportFormatResult { readonly blob: Blob; readonly fileName: string; readonly format: string; }
+export interface ExportFormatResult { readonly blob: Blob; readonly fileName: string; readonly format: string; readonly diagnostics: readonly ExportDiagnostic[]; }
 export interface TreeExportOptions {
   /** "visible" (default): the rows the reader can see, in order. "selected": the loaded selected nodes in tree order, including collapsed ones.
    * "all": every node in the current sort order, the whole tree of an inline source and the loaded nodes of a lazy one. */

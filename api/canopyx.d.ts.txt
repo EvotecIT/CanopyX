@@ -2303,6 +2303,8 @@ export interface ExportFormatContext{
   readonly signal:AbortSignal;
   readonly fileName:string;
   readonly format:string;
+  readonly includeMetadata:boolean;
+  diagnostic(value:ExportDiagnostic):void;
   progress(completed:number):void;
 }
 export interface ExportFormat<C extends ExportCapture=ExportCapture>{
@@ -2319,9 +2321,16 @@ export interface ExportProgress{
   readonly completed:number;
   readonly total:number|null;
 }
+export interface ExportDiagnostic{
+  readonly code:string;
+  readonly columnId?:string;
+  readonly rowId?:string;
+}
 export interface ExportFormatOptions{
   signal?:AbortSignal;
   onProgress?:(progress:ExportProgress) => void;
+  onDiagnostic?:(diagnostic:ExportDiagnostic) => void;
+  includeMetadata?:boolean;
   timeoutMs?:number;
   download?:boolean;
 }
@@ -2329,6 +2338,7 @@ export interface ExportFormatResult{
   readonly blob:Blob;
   readonly fileName:string;
   readonly format:string;
+  readonly diagnostics:readonly ExportDiagnostic[];
 }
 export interface TreeExportOptions{
   scope?:"visible"|"selected"|"all";
@@ -2468,7 +2478,7 @@ import type{
 }
 from "./protocol.js";
 import type{
-  TreeGridOptions,HostOptions,Sources,ExpandPathOptions,NodeFilter,FilterOptions,InteractionOptions,DropPlacement,ExportFormat,ExportFormatOptions,ExportFormatResult,TreeExport,TreeExportOptions,LinkedView
+  TreeGridOptions,HostOptions,Sources,ExpandPathOptions,NodeFilter,FilterOptions,InteractionOptions,DropPlacement,ExportFormat,ExportFormatContext,ExportDiagnostic,ExportFormatOptions,ExportFormatResult,TreeExport,TreeExportOptions,LinkedView
 }
 from "./hosts.js";
 import type{

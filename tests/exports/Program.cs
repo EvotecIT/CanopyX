@@ -23,28 +23,34 @@ foreach (var sidecar in Directory.EnumerateFiles(args[0], "*.json", SearchOption
         using var model = ExcelDocument.Load(file, new ExcelLoadOptions { AccessMode = OfficeIMO.DocumentAccessMode.ReadOnly });
         using var reader = ExcelDocument.OpenDataReader(file, new ExcelReadOptions { HasHeaderRow = true });
         var columns = contract.GetProperty("columns").EnumerateArray().ToArray();
-        if (reader.FieldCount != columns.Length) throw new InvalidDataException("Column count differs.");
+        int dataOffset = contract.TryGetProperty("grouping", out _) ? 1 : 0;
+        if (reader.FieldCount != columns.Length + dataOffset) throw new InvalidDataException("Column count differs.");
         for (int ordinal = 0; ordinal < columns.Length; ordinal++)
-            Require(reader.GetName(ordinal) == columns[ordinal].GetProperty("title").GetString(), "Workbook header differs: " + ordinal);
+            Require(reader.GetName(ordinal + dataOffset) == columns[ordinal].GetProperty("title").GetString(), "Workbook header differs: " + ordinal);
         var expectedRows = contract.GetProperty("rows").EnumerateArray().ToArray();
-        var sheet = sdk.WorkbookPart!.WorksheetParts.First().Worksheet ?? throw new InvalidDataException("Worksheet is missing.");
+        var workbook = sdk.WorkbookPart ?? throw new InvalidDataException("Workbook is missing.");
+        var workbookRoot = workbook.Workbook ?? throw new InvalidDataException("Workbook root is missing.");
+        var sheetPart = (WorksheetPart)workbook.GetPartById(workbookRoot.Sheets!.Elements<Sheet>().First().Id!);
+        var sheet = sheetPart.Worksheet ?? throw new InvalidDataException("Worksheet is missing.");
         var structural = new WorkbookRecordProof(contract, columns);
         var xmlRows = sheet.GetFirstChild<SheetData>()!.Elements<Row>().ToDictionary(row => row.RowIndex!.Value);
+        var detailRows = new HashSet<uint>();
         int rowIndex = 0; uint worksheetRow = 1;
         while (reader.Read()) {
             worksheetRow++;
             var values = new object[reader.FieldCount]; reader.GetValues(values);
             var identity = rowIndex < expectedRows.Length ? expectedRows[rowIndex].GetProperty("cells")
                 .GetProperty(columns[0].GetProperty("id").GetString()!).GetProperty("value").GetString() : null;
-            if (rowIndex >= expectedRows.Length || !Equals(values[0], identity)) {
+            if (rowIndex >= expectedRows.Length || !Equals(values[dataOffset], identity)) {
                 structural.AcceptStructuralRow(values, xmlRows.GetValueOrDefault(worksheetRow), rowIndex);
                 continue;
             }
+            detailRows.Add(worksheetRow);
             var row = expectedRows[rowIndex];
             for (int index = 0; index < columns.Length; index++) {
                 var column = columns[index];
                 var wanted = row.GetProperty("cells").GetProperty(column.GetProperty("id").GetString()!).GetProperty("value");
-                object actual = reader.GetValue(index);
+                object actual = reader.GetValue(index + dataOffset);
                 bool equal = wanted.ValueKind switch {
                     JsonValueKind.Null => actual is DBNull,
                     JsonValueKind.Number => Math.Abs(Convert.ToDouble(actual, CultureInfo.InvariantCulture) - wanted.GetDouble()) < 0.000001,
@@ -63,21 +69,51 @@ foreach (var sidecar in Directory.EnumerateFiles(args[0], "*.json", SearchOption
             continue;
         }
         var requirements = contract.GetProperty("requirements");
+        bool metadata = requirements.TryGetProperty("metadata", out var metadataFlag) && metadataFlag.GetBoolean();
+        Require(workbookRoot.Sheets!.Elements<Sheet>().Any(item => item.Name == "About") == metadata,
+            "The optional metadata worksheet does not match the export request.");
+        if (metadata) {
+            var about = (WorksheetPart)workbook.GetPartById(workbookRoot.Sheets!.Elements<Sheet>().Single(item => item.Name == "About").Id!);
+            string CellText(Cell cell) => cell.InlineString?.InnerText ?? cell.CellValue?.Text ?? "";
+            var fields = about.Worksheet!.Descendants<Row>().Skip(1).Select(row => row.Elements<Cell>().ToArray())
+                .ToDictionary(cells => CellText(cells[0]), cells => CellText(cells[1]), StringComparer.Ordinal);
+            foreach (string name in new[] { "scope", "revision", "recordCount", "total", "matched", "generatedAt" })
+                Require(fields.GetValueOrDefault(name) == contract.GetProperty(name).ToString(), "Captured metadata differs: " + name);
+            using var query = JsonDocument.Parse(fields["query"]);
+            Require(JsonElement.DeepEquals(query.RootElement, contract.GetProperty("query")), "The metadata query differs from the accepted export query.");
+        }
         var pane = sheet.Descendants<Pane>().SingleOrDefault();
         Require(pane != null && pane.VerticalSplit?.Value >= 1, "The workbook does not freeze its header.");
-        Require(pane!.HorizontalSplit?.Value >= requirements.GetProperty("leadingPinnedColumns").GetInt32(), "The workbook does not freeze its leading pinned columns.");
+        Require(pane!.HorizontalSplit?.Value >= requirements.GetProperty("leadingPinnedColumns").GetInt32() + dataOffset, "The workbook does not freeze its leading pinned columns.");
         var widths = sheet.Descendants<Column>().ToArray();
         for (int index = 0; index < columns.Length; index++) {
-            var actual = widths.SingleOrDefault(column => column.Min?.Value <= index + 1 && column.Max?.Value >= index + 1)?.Width?.Value;
+            var actual = widths.SingleOrDefault(column => column.Min?.Value <= index + dataOffset + 1 && column.Max?.Value >= index + dataOffset + 1)?.Width?.Value;
             var pixels = columns[index].GetProperty("width").GetProperty("preferred").GetDouble();
             Require(actual.HasValue && Math.Abs(actual.Value * 7 + 5 - pixels) <= 14, "Fitted column width was lost: " + index);
         }
-        var numberFormats = sdk.WorkbookPart.WorkbookStylesPart?.Stylesheet?.NumberingFormats?.Elements<NumberingFormat>() ?? [];
+        var numberFormats = workbook.WorkbookStylesPart?.Stylesheet?.NumberingFormats?.Elements<NumberingFormat>() ?? [];
         Require(numberFormats.Any(format => format.FormatCode?.Value?.Contains("$", StringComparison.Ordinal) == true), "The declared currency number format was lost.");
         Require(sheet.Descendants<DataBar>().Any(), "The native data-bar rule was lost.");
         Require(sheet.Descendants<ColorScale>().Any(), "The native colour-scale rule was lost.");
         Require(sheet.Descendants<ConditionalFormattingRule>().Any(rule => rule.Type?.Value == ConditionalFormatValues.Expression), "The native row-tone rule was lost.");
         Require(sheet.Descendants<Hyperlink>().Count() == count, "Exported hyperlinks were lost.");
+        foreach (var rule in sheet.Descendants<ConditionalFormatting>()) {
+            foreach (string range in (rule.SequenceOfReferences?.InnerText ?? throw new InvalidDataException("A conditional rule has no range.")).Split(' ', StringSplitOptions.RemoveEmptyEntries)) {
+                var ends = range.Split(':');
+                uint first = uint.Parse(Regex.Match(ends[0], @"\d+$").Value, CultureInfo.InvariantCulture);
+                uint last = uint.Parse(Regex.Match(ends[^1], @"\d+$").Value, CultureInfo.InvariantCulture);
+                Require(first <= last && last <= xmlRows.Keys.Max(), "A conditional rule has an invalid row range.");
+                for (uint number = first; number <= last; number++) Require(detailRows.Contains(number), "A conditional rule includes generated summaries.");
+            }
+        }
+        foreach (var link in sheet.Descendants<Hyperlink>()) {
+            uint number = uint.Parse(Regex.Match(link.Reference!.Value!, @"\d+$").Value, CultureInfo.InvariantCulture);
+            int ordinal = detailRows.Order().ToList().IndexOf(number);
+            Require(ordinal >= 0, "A hyperlink targets a generated row.");
+            string target = expectedRows[ordinal].GetProperty("cells").GetProperty(columns[0].GetProperty("id").GetString()!)
+                .GetProperty("link").GetProperty("target").GetString()!;
+            Require(sheetPart.GetReferenceRelationship(link.Id!).Uri.AbsoluteUri == target, "A captured hyperlink target differs.");
+        }
         if (requirements.GetProperty("outlineAndSummary").GetBoolean()) {
             Require(sheet.Descendants<Row>().Any(row => row.OutlineLevel?.Value > 0), "The group outline was lost.");
             Require(sheet.Descendants<CellFormula>().Count() >= 2, "Group or summary aggregate formulas were lost.");
@@ -90,8 +126,11 @@ foreach (var sidecar in Directory.EnumerateFiles(args[0], "*.json", SearchOption
         var pdf = PdfReadDocument.Open(file);
         if (pdf.RepairReport.HasRepairs) throw new InvalidDataException("PDF requires repair.");
         var columns = contract.GetProperty("columns").EnumerateArray().ToArray();
+        string identityPattern = contract.GetProperty("requirements").GetProperty("recordIdentityPattern").GetString()!;
         foreach (var page in pdf.Pages) {
             string text = string.Concat(page.GetTextSpans().Select(span => span.Text));
+            // Grouped reports may end with a separate summary table. Every page containing details repeats all headers.
+            if (!Regex.IsMatch(text, identityPattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100))) continue;
             foreach (var column in columns) if (!text.Contains(column.GetProperty("title").GetString()!, StringComparison.Ordinal))
                 throw new InvalidDataException("A PDF page lost a repeating header.");
         }
@@ -99,14 +138,33 @@ foreach (var sidecar in Directory.EnumerateFiles(args[0], "*.json", SearchOption
         // The fixture is a left-to-right table. Use page geometry, since late page-count spans may be emitted last.
         string content = Normalize(string.Join(" ", pdf.Pages.SelectMany(page => page.GetTextSpans()
             .OrderByDescending(span => Math.Round(span.Y, 1)).ThenBy(span => span.X)).Select(span => span.Text)));
-        var pattern = new Regex(contract.GetProperty("requirements").GetProperty("recordIdentityPattern").GetString()!, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+        var pattern = new Regex(identityPattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
         var records = pattern.Matches(content).Cast<Match>().ToArray();
         var expectedRows = contract.GetProperty("rows").EnumerateArray().ToArray();
         var identities = expectedRows.Select(row => Normalize(row.GetProperty("cells").GetProperty(columns[0].GetProperty("id").GetString()!).GetProperty("text").GetString()!)).ToArray();
         Require(records.Select(match => Normalize(match.Value)).SequenceEqual(identities), "PDF record content, count or order differs from the captured scope.");
+        var groupText = new HashSet<string>(StringComparer.Ordinal);
+        if (contract.TryGetProperty("grouping", out var pdfGrouping)) {
+            groupText.UnionWith(["Group", "Grand", "total"]);
+            void GroupTokens(JsonElement groups) {
+                foreach (var group in groups.EnumerateArray()) {
+                    groupText.Add(group.GetProperty("text").GetString()!);
+                    foreach (var value in group.GetProperty("aggregates").EnumerateObject()) groupText.Add(value.Value.ToString());
+                    if (group.TryGetProperty("groups", out var children)) GroupTokens(children);
+                }
+            }
+            GroupTokens(pdfGrouping.GetProperty("groups"));
+            foreach (var value in pdfGrouping.GetProperty("totals").EnumerateObject()) groupText.Add(value.Value.ToString());
+            foreach (var aggregate in pdfGrouping.GetProperty("aggregates").EnumerateArray())
+                groupText.Add(aggregate.GetProperty("label").GetString()!);
+            Require(content.Contains("Grand total", StringComparison.Ordinal), "The PDF grand total is missing.");
+        }
         void StructureOnly(string text) {
             string remainder = Regex.Replace(text, @"\bPage \d+ of(?: \d+)?\b", "");
             remainder = remainder.Replace(string.Join(" ", columns.Select(column => column.GetProperty("title").GetString())), "", StringComparison.Ordinal);
+            foreach (var item in groupText.OrderByDescending(item => item.Length))
+                remainder = Regex.Replace(remainder, @"(?<![\p{L}\p{N}])" + Regex.Escape(item) + @"(?![\p{L}\p{N}])", "",
+                    RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
             if (contract.GetProperty("requirements").TryGetProperty("structuralText", out var allowed))
                 foreach (var item in allowed.EnumerateArray().Select(item => item.GetString()!).OrderByDescending(item => item.Length))
                     remainder = remainder.Replace(item, "", StringComparison.Ordinal);

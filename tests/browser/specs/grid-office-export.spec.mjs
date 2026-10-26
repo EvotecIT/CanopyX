@@ -9,27 +9,36 @@ test.afterAll(async () => { await server?.close(); });
 
 test("Office writers stay inert until first use and generate offline artifacts for every scope", async ({ page, context }, info) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await page.clock.setFixedTime(new Date("2026-10-26T15:00:00Z"));
   await page.goto(server.url + "office-export.html");
   await page.waitForSelector("[data-cx-ready]");
   expect(await page.evaluate(() => typeof globalThis.OfficeIMO)).toBe("undefined");
   await openGridControl(page, "export");
   await expect(page.locator(".cx-grid-export .cx-grid-panel button:not([hidden]) .cx-export-choice-title")).toHaveText(["Excel workbook (.xlsx)", "PDF", "CSV", "Copy to clipboard", "Print"]);
-  await context.setOffline(true);
-  for (const [format, scope, count] of [["xlsx", "filtered", 30], ["xlsx", "selected", 2], ["xlsx", "all", 60], ["pdf", "all", 60]]) {
-    const result = await page.evaluate(async ({ format, scope }) => {
+  // WebKit's offline emulation also prevents reading an ordinary in-memory Blob. Block all HTTP(S) traffic after
+  // loading instead, so real export generation and artifact reads run with every network destination unavailable.
+  await context.route(/^https?:/, route => route.abort("internetdisconnected"));
+  for (const [format, scope, count] of [["xlsx", "filtered", 30], ["xlsx", "selected", 2], ["xlsx", "all", 60],
+    ["pdf", "filtered", 30], ["pdf", "selected", 2], ["pdf", "all", 60]]) {
+    const result = await page.evaluate(async ({ format, scope }) => { try {
       const grid = document.querySelector("[data-canopyx-host]").canopyx;
       await grid.setQuery({ search: "North" }); grid.setSelection(["resource-000", "resource-001"]);
       const capture = grid.prepareExport({ scope, values: "raw" }), rows = [];
       for await (const row of capture.rows()) rows.push(row);
-      const progress = [], output = await grid.exportAs(format, { scope, download: false, onProgress: value => progress.push(value) });
-      return { bytes: [...new Uint8Array(await output.blob.arrayBuffer())], request: capture.request, rows, progress, fileName: output.fileName };
+      const progress = [], diagnostics = [], output = await grid.exportAs(format, { scope, download: false,
+        includeMetadata: scope === "filtered", onProgress: value => progress.push(value), onDiagnostic: value => diagnostics.push(value) });
+      if (JSON.stringify(output.diagnostics) !== JSON.stringify(diagnostics)) throw new Error("Export diagnostics differ.");
+      return { bytes: [...new Uint8Array(await output.blob.arrayBuffer())], request: capture.request, rows, progress, diagnostics, fileName: output.fileName };
+    } catch (error) { throw new Error(format + "/" + scope + ": " + error.name + ": " + error.message); }
     }, { format, scope });
     expect(result.rows).toHaveLength(count);
     expect(result.progress.at(-1)).toMatchObject({ phase: "ready", completed: count, total: count });
+    expect(result.diagnostics.map(value => value.code)).toEqual(format === "pdf" ?
+      ["PDF_NATIVE_RULE_NOT_RENDERED:usage-bar", "PDF_NATIVE_RULE_NOT_RENDERED:cost-scale", "PDF_NATIVE_RULE_NOT_RENDERED:high-usage"] : []);
     const file = info.outputPath(scope + "." + format), contract = file + ".json";
     await fs.writeFile(file, Buffer.from(result.bytes));
     await fs.writeFile(contract, JSON.stringify({ ...result.request, expectedCount: count, rows: result.rows,
-      requirements: { leadingPinnedColumns: 1, outlineAndSummary: scope === "filtered", landscape: true,
+      requirements: { leadingPinnedColumns: 1, outlineAndSummary: scope === "filtered", metadata: scope === "filtered", landscape: true,
         recordIdentityPattern: "Compute\\s+node\\s+\\d{2}" } }, null, 2));
     await info.attach(scope + "-" + format, { path: file });
     await info.attach(scope + "-contract", { path: contract, contentType: "application/json" });
