@@ -72,7 +72,7 @@
   /* Segmented control: a sunken track whose chosen option is raised. Buttons carry aria-pressed or role="radio". */
   :where(.cx-segmented,.cx-seg) {
     display:inline-flex;align-items:center;gap:var(--hfx-space-0-5);padding:var(--hfx-space-0-5);
-    border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface-sunken);
+    border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface-sunken);
   }
   :where(.cx-segmented,.cx-seg) > :where(button,[role="radio"]) {
     display:inline-flex;align-items:center;justify-content:center;gap:var(--hfx-space-1-5);
@@ -80,7 +80,7 @@
     background:transparent;color:var(--hfx-color-text-secondary);font:var(--hfx-weight-medium) var(--hfx-control-font-size) var(--hfx-font-sans);cursor:pointer;white-space:nowrap;
   }
   :where(.cx-segmented,.cx-seg) > :where(button,[role="radio"]):hover { color:var(--hfx-color-text); }
-  :where(.cx-segmented,.cx-seg) > :where([aria-pressed="true"],[aria-checked="true"],.active,.on) { background:var(--hfx-color-surface-raised);color:var(--hfx-color-text);box-shadow:var(--hfx-elevation-1); }
+  :where(.cx-segmented,.cx-seg) > :where([aria-pressed="true"],[aria-checked="true"],.active,.on) { background:var(--hfx-color-surface-raised);color:var(--hfx-color-text);box-shadow:var(--hfx-elevation-1);outline:var(--hfx-border-width) solid var(--hfx-color-border-strong);outline-offset:calc(var(--hfx-border-width)*-1); }
   :where(.cx-segmented,.cx-seg) > :where(button,[role="radio"]):focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(var(--hfx-focus-width)*-1); }
   :where(.cx-segmented,.cx-seg):is([data-size="sm"],.sm) > :where(button,[role="radio"]) { block-size:calc(var(--hfx-control-height-sm) - var(--hfx-space-1));padding:0 var(--hfx-space-2); }
 
@@ -100,6 +100,8 @@
     display:inline-flex;align-items:center;gap:var(--hfx-space-1);block-size:var(--hfx-badge-height);padding:0 var(--hfx-space-2);
     border-radius:var(--hfx-radius-status);background:var(--hfx-color-status-neutral-bg);color:var(--hfx-color-status-neutral-fg);
     font:var(--hfx-weight-semibold) var(--hfx-type-caption-size) var(--hfx-font-sans);white-space:nowrap;
+    /* The tone's own colour draws the edge, so a pill reads on a row of the same tint. */
+    outline:var(--hfx-border-width) solid color-mix(in srgb,currentColor 24%,transparent);outline-offset:calc(var(--hfx-border-width)*-1);
   }
   :where(.cx-pill,.p-pill):is(.cx-tone-info,.info) { background:var(--hfx-color-status-info-bg);color:var(--hfx-color-status-info-fg); }
   :where(.cx-pill,.p-pill):is(.cx-tone-success,.success) { background:var(--hfx-color-status-good-bg);color:var(--hfx-color-status-good-fg); }

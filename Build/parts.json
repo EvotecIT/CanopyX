@@ -578,7 +578,7 @@
       "features": ["formatting"],
       "key": "DataGrid.prototype",
       "context": ["toneVariable", "DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "gridDateInputMoment", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
-        "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon", "overlayTheme"],
+        "gridButton", "gridVariant", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon", "overlayTheme"],
       "scripts": ["CanopyX.Html/Assets/canopyx.formatting.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.formatting.source/formatting.css"]
     },

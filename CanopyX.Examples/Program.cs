@@ -90,6 +90,7 @@ inline.SaveHtmlPage(Path.Combine(output, "inline.html"), new CanopyHtmlOptions {
 Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
 SharedTokensExample.Write(output);
+ThemeProofExample.Write(output);
 OrdinalGridExample.Write(output);
 ReportGridLayoutExample.Write(output);
 CursorGridExample.Write(output);

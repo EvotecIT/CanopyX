@@ -15,6 +15,7 @@
     <ProjectReference Include="..\CanopyX.Html\CanopyX.Html.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Templates\theme-proof.html" LogicalName="CanopyX.Examples.Templates.theme-proof.html" />
     <EmbeddedResource Include="Templates\ui-primitives.html" LogicalName="CanopyX.Examples.Templates.ui-primitives.html" />
     <EmbeddedResource Include="Templates\index.html" LogicalName="CanopyX.Examples.Templates.index.html" />
     <EmbeddedResource Include="Templates\outline.html" LogicalName="CanopyX.Examples.Templates.outline.html" />

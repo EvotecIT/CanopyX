@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CanopyX theme proof</title>
+<script>
+(() => {
+  // ?style picks a host palette (only when the host stylesheet is present); ?mode picks light or dark.
+  const params = new URLSearchParams(location.search), root = document.documentElement;
+  const mode = params.get("mode") === "dark" ? "dark" : "light";
+  root.dataset.theme = mode; root.dataset.hfxMode = mode; root.style.colorScheme = mode;
+  root.dataset.hfxStyle = params.get("style") || "evotec";
+  root.dataset.hfxDensity = params.get("density") === "compact" ? "compact" : "comfortable";
+})();
+</script>
+<style>{{style}}</style>
+<style>
+body.proof { box-sizing:border-box;margin:0;padding:var(--hfx-space-6);background:var(--hfx-color-surface-page);color:var(--hfx-color-text);font-family:var(--hfx-font-sans);font-size:var(--hfx-type-body-size);line-height:var(--hfx-type-body-line); }
+.proof > header, .proof > main { max-width:1200px;margin:0 auto; }
+.proof > header { display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--hfx-space-4);margin-bottom:var(--hfx-space-5); }
+.proof h1 { margin:0 0 var(--hfx-space-1);font-family:var(--hfx-font-display);font-size:var(--hfx-type-title-size);font-weight:var(--hfx-weight-semibold); }
+.proof h2 { margin:0 0 var(--hfx-space-3);font-size:var(--hfx-type-heading-size);font-weight:var(--hfx-weight-semibold); }
+.proof h3 { margin:0 0 var(--hfx-space-2);font-size:var(--hfx-type-small-size);font-weight:var(--hfx-weight-semibold);color:var(--hfx-color-text-secondary); }
+.proof p { margin:0;color:var(--hfx-color-text-secondary); }
+.proof-switch { display:flex;flex-wrap:wrap;gap:var(--hfx-space-3);align-items:center; }
+.proof-switch label { display:inline-flex;align-items:center;gap:var(--hfx-space-2);font-size:var(--hfx-type-small-size);color:var(--hfx-color-text-secondary); }
+html:not([data-proof-host]) #proof-style { display:none; }
+.proof-card { margin-bottom:var(--hfx-space-5);padding:var(--hfx-space-5);background:var(--hfx-color-surface);border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-lg);box-shadow:var(--hfx-elevation-1); }
+.proof-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:var(--hfx-space-5); }
+.proof-row { display:flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-2);margin-bottom:var(--hfx-space-3); }
+.proof-stack { display:grid;gap:var(--hfx-space-2); }
+.proof-option { display:inline-flex;align-items:center;gap:var(--hfx-space-2); }
+.proof-views { display:grid;gap:var(--hfx-space-5); }
+.proof-views .cx-host { border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-md); }
+@media (max-width:640px) { body.proof { padding:var(--hfx-space-4); } }
+</style>
+<script>{{script}}</script>
+</head>
+<body class="proof">
+<header>
+  <div>
+    <h1>Theme proof</h1>
+    <p>Shared controls, a grid and a tree under one set of design roles.</p>
+  </div>
+  <div class="proof-switch">
+    <label id="proof-style">Style <select class="cx-select" data-size="sm" data-proof="style">
+      <option>evotec</option><option>neutral</option><option>slate</option><option>warm</option><option>contrast</option>
+    </select></label>
+    <label>Mode <select class="cx-select" data-size="sm" data-proof="mode"><option>light</option><option>dark</option></select></label>
+    <label>Density <select class="cx-select" data-size="sm" data-proof="density"><option>comfortable</option><option>compact</option></select></label>
+  </div>
+</header>
+<main>
+  <section class="proof-card" aria-labelledby="controls-title" id="controls">
+    <h2 id="controls-title">Controls</h2>
+    <div class="proof-grid">
+      <div>
+        <h3>Buttons</h3>
+        <div class="proof-row">
+          <button class="cx-btn" type="button">Default</button>
+          <button class="cx-btn" type="button" data-variant="primary">Save changes</button>
+          <button class="cx-btn" type="button" data-variant="ghost">Cancel</button>
+          <button class="cx-btn" type="button" data-variant="danger">Delete</button>
+        </div>
+        <div class="proof-row">
+          <button class="cx-btn" type="button" aria-pressed="true">Pressed</button>
+          <button class="cx-btn" type="button" disabled>Disabled</button>
+          <button class="cx-btn" type="button">Filters <span class="badge">3</span></button>
+          <button class="cx-btn" type="button" data-icon aria-label="More actions">&#8943;</button>
+        </div>
+        <div class="proof-row">
+          <button class="cx-btn" type="button" data-size="sm">Small</button>
+          <button class="cx-btn" type="button" data-size="sm" data-variant="primary">Small primary</button>
+          <button class="cx-btn" type="button" data-size="lg" data-variant="primary">Large primary</button>
+        </div>
+      </div>
+      <div>
+        <h3>Fields</h3>
+        <div class="proof-stack">
+          <input class="cx-input" type="search" placeholder="Search records" aria-label="Search records">
+          <input class="cx-input" type="text" value="not-an-address" aria-invalid="true" aria-label="Email address">
+          <select class="cx-select" aria-label="Team"><option>Operations</option><option>Platform</option><option>Support</option></select>
+          <textarea class="cx-textarea" aria-label="Notes">Notes keep their roles too.</textarea>
+          <input class="cx-input" data-size="sm" type="text" value="Small field" aria-label="Small field">
+        </div>
+      </div>
+      <div>
+        <h3>Choices</h3>
+        <div class="proof-row">
+          <label class="proof-option"><input class="cx-check" type="checkbox" checked> Include archived</label>
+          <label class="proof-option"><input class="cx-check" type="checkbox"> Only mine</label>
+        </div>
+        <div class="proof-row">
+          <label class="proof-option"><input class="cx-toggle" type="checkbox" role="switch" checked> Live updates</label>
+          <label class="proof-option"><input class="cx-toggle" type="checkbox" role="switch"> Wrap text</label>
+        </div>
+        <div class="proof-row">
+          <div class="cx-segmented" role="group" aria-label="Period">
+            <button type="button" aria-pressed="false">Day</button><button type="button" aria-pressed="true">Week</button><button type="button" aria-pressed="false">Month</button>
+          </div>
+        </div>
+        <div class="proof-row">
+          <button class="cx-chip" type="button" aria-pressed="true">Operations</button>
+          <button class="cx-chip" type="button" aria-pressed="false">Platform</button>
+          <span class="cx-chip">Read only</span>
+        </div>
+      </div>
+      <div>
+        <h3>Status</h3>
+        <div class="proof-row">
+          <span class="cx-pill">Draft</span>
+          <span class="cx-pill cx-tone-info">In progress</span>
+          <span class="cx-pill cx-tone-success">Ready</span>
+          <span class="cx-pill cx-tone-warning">Needs review</span>
+          <span class="cx-pill cx-tone-danger">Failed</span>
+        </div>
+        <div class="proof-stack">
+          <div class="cx-notice cx-tone-info" role="status">Records refresh every five minutes.</div>
+          <div class="cx-notice cx-tone-warning" role="status">Two records need an owner.</div>
+          <div class="cx-notice cx-tone-danger" role="alert">The last export failed. Try again.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="proof-card" aria-labelledby="views-title">
+    <h2 id="views-title">Views</h2>
+    <div class="proof-views">
+      <div>{{grid}}</div>
+      <div>{{tree}}</div>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search), root = document.documentElement;
+  const current = { style: root.dataset.hfxStyle, mode: root.dataset.theme, density: root.dataset.hfxDensity };
+  for (const select of document.querySelectorAll("[data-proof]")) {
+    select.value = current[select.dataset.proof];
+    select.addEventListener("change", () => { params.set(select.dataset.proof, select.value); location.search = params.toString(); });
+  }
+  document.getElementById("controls").addEventListener("click", event => {
+    const button = event.target.closest("button[aria-pressed]");
+    if (!button) return;
+    if (button.parentElement.classList.contains("cx-segmented")) for (const item of button.parentElement.children) item.setAttribute("aria-pressed", String(item === button));
+    else button.setAttribute("aria-pressed", String(button.getAttribute("aria-pressed") !== "true"));
+  });
+})();
+</script>
+</body>
+</html>
