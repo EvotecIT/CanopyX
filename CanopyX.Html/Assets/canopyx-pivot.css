@@ -43,6 +43,7 @@ body.cx-page > .cx-host.cx-pivot-active,body.cx-page > .cx-main > .cx-host.cx-pi
 .cx-pivot-table :is(th,td){padding:var(--cx-size-7px);}
 }
 @media print{
+.cx-host.cx-pivot-active{max-height:none !important;overflow:visible !important;}
 .cx-pivot{display:block;overflow:visible;}
 .cx-pivot-scroll{overflow:visible;}
 .cx-pivot-table{font-size:var(--cx-size-10px);}
