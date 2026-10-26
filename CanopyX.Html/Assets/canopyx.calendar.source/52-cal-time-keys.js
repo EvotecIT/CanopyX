@@ -19,7 +19,7 @@
         if (!this.calAllowsSpan(day * CAL_DAY, (day + 1) * CAL_DAY, true)) return;
         this.calFocus = { day, minutes: at, event: null, resource: target.dataset.cxResource };
         const element = at === null ? target : this.calGrid.querySelector('.cx-cal-slot[data-cx-day="' + day + '"][data-cx-minutes="' + at + '"]' + (target.dataset.cxResource !== undefined ? '[data-cx-resource="' + CSS.escape(target.dataset.cxResource) + '"]' : ""));
-        if (element) { for (const other of this.calBody.querySelectorAll('[tabindex="0"]')) other.tabIndex = -1; element.tabIndex = 0; element.focus(); }
+        if (element) { element.tabIndex = 0; element.focus(); }
       };
       if (eventElement) {
         if (key === "Escape" || key === "ArrowLeft" || key === "ArrowRight") { event.preventDefault(); go(column + (key === "ArrowLeft" ? -1 : key === "ArrowRight" ? 1 : 0), minutes); return; }
@@ -35,6 +35,7 @@
       if (key === "ArrowLeft" || key === "ArrowRight") {
         event.preventDefault();
         const next = column + (key === "ArrowLeft" ? -1 : 1), pages = this.calResourcePages;
+        if (this.calTimeWindow && this.calTimeReveal(this.calTimeWindow.first + next, minutes)) return;
         // Past the edge of a page of resource columns (phones), the next page comes before the next period.
         if (pages && (next < 0 ? pages.page > 0 : next >= columns.length && pages.page < pages.pages - 1)) {
           this.calResourceFirst = (pages.page + (next < 0 ? -1 : 1)) * pages.size; this.calPaint({ keep: true }); go(next < 0 ? "last" : 0, minutes); return;

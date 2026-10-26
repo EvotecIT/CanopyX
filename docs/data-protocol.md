@@ -512,6 +512,10 @@ not change.
 
 ### Calendar
 
+The optional `calendar.resourceIds` names a text column containing a JSON array of resource ids, added to `resource`.
+Sources may declare `url`, `fetchParams` (string query parameters), `color` (`#RRGGBB`) and `hidden`; JSON feeds use the
+visible start/end/timeZone and return basic calendar events. Feeds are read-only and same-origin. See [calendar sources](calendar.md#sources-and-icalendar).
+
 A grid's optional `calendar` object presents its records as events ([calendar.md](calendar.md)): month, week, day, N-day
 (`days`), agenda, year, mini month (`mini`), week and day lists (`weekList`, `dayList`) and stacked months (`months`) views, and a timeline. Only `start` is required; every other key is written only when it
 differs from its default. Column references are ids of the same grid: `start`, `end`, `recurrenceId` and `seriesEnd` name
@@ -540,8 +544,8 @@ occurrences one range shows.
 
 The chrome and interaction keys are `toolbar` (`true`, `false` for the calendar's own bar only, or the grid toolbar controls
 to show: `search`, `filters`, `columns`, `views`, `export`, `more`), `details` (`drawer` or `popover`), `print` (a Print
-button), `sources` (1 to 50 `{ id, label, tone?, ics?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
-iCalendar file read within the limits of [icalendar.md](icalendar.md); without `ics` on every source, `source` is required),
+button), `sources` (1 to 50 `{ id, label, tone?, color?, ics?, url?, fetchParams?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
+iCalendar file read within the limits of [icalendar.md](icalendar.md); without `ics` or `url` on every source, `source` is required),
 `create` (`true` or `{ minutes, allDay }`, minutes 5 to 1,440, default 60) and `drop` (external drops), both needing editable
 start and title columns and saved as inserts ([Editing and commit](#editing-and-commit)), `occurrence` (`ask`, `this`,
 `following` or `all`; default `ask` with `series` and `recurrenceId`, else `all`; `this` and `following` need them),

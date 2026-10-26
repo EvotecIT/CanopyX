@@ -127,8 +127,9 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
-        // Combined roadmap integration: its size plus about 15%.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 151040);
+        // The optional flow-facts part adds one lazy index entry (version and script fingerprint).
+        // Reserve 64 bytes for that metadata; the base Flow part retains its separate 29 KiB limit.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 151104);
     }
 
     [Fact]

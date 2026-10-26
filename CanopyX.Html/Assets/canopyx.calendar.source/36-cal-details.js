@@ -11,7 +11,7 @@
       const title = h("h3", "cx-cal-det-title"), when = h("p", "cx-cal-det-when"), parts = [title, when];
       if (titleId) title.id = titleId;
       setText(title, event.title); setText(when, this.calTimeText(event));
-      const status = this.calStatusText(event), resource = event.resource != null ? (this.calResourceName ? this.calResourceName(event.resource) : event.resource) : "";
+      const status = this.calStatusText(event), resource = this.calEventResources(event).map(id => this.calResourceName ? this.calResourceName(id) : id).join(", ");
       const fields = event.base?.external ? event.row.fields : null, sourceName = fields ? this.cal.sources.find(source => source.id === event.base.source)?.label : "";
       const facts = [status, resource, event.subtitle, fields?.location, sourceName].filter(Boolean);
       if (facts.length) { const line = h("p", "cx-cal-det-facts"); setText(line, facts.join(" · ")); parts.push(line); }

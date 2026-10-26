@@ -81,6 +81,7 @@
       if (cal.end) cells[cal.end.id] = calIso(proposal.end);
       if (cal.allDay?.editable && proposal.allDay) cells[cal.allDay.id] = true;
       if (cal.resource?.editable && proposal.resource != null) cells[cal.resource.id] = proposal.resource;
+      else if (!cal.resource && cal.resourceIds?.editable && proposal.resource != null) cells[cal.resourceIds.id] = JSON.stringify([proposal.resource]);
       await this.loadEditing();
       const result = await this.insertRow({ cells });
       if (!result.applied) return false;

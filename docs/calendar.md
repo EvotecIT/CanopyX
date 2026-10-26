@@ -42,7 +42,7 @@ var fromItems = CanopyCalendar.From(meetings, x => x.Subject, x => x.Starts, x =
 
 That is a basic calendar: month, week, day and agenda; the calendar's own controls (Today, previous and next, the range, go to
 date, the views) and no grid toolbar; read-only; clicking an event opens a small popover with its title, time and description.
-The page loads only the core calendar part. Events may also carry `id`, `tone`, `resource`, `recurrence`, `exceptions` and
+The page loads only the core calendar part. Events may also carry `id`, `tone`, `resource`, `resourceIds`, `recurrence`, `exceptions`, `series`, `recurrenceId` and
 `source`; ids default to `e1`, `e2`, ... in order.
 
 ## Levels and options
@@ -113,6 +113,7 @@ the recurrence rule), and `Definition` holds every other setting. `CanopyCalenda
 | `allDay` | Text column holding booleans. An all-day event is a run of dates: its start and end read as UTC dates, the end exclusive at midnight, as an iCalendar `DTEND`. A password that expires on 2026-10-16 shows on the 16th in every time zone. Without an end it lasts its start day. |
 | `status` | The column whose presenter draws the event's status (pills and tones from the grid's presenters); its tone colours the event. |
 | `resource` | Text column with the event's resource id, a node id of `resources.view`. |
+| `resourceIds` | Text column containing a JSON array of resource ids. Assignments join `resource`, with duplicates removed. Basic calendar events take a `resourceIds` array directly (.NET `CanopyCalendarEvent.ResourceIds`). The event keeps one identity in every assigned resource. |
 | `recurrence`, `exceptions`, `series`, `recurrenceId`, `seriesEnd` | [Recurrence](#recurrence). |
 | `display` | Text column; `background` draws the record as a background range instead of an event. |
 | `view`, `views` | The first view and the views offered: `month`, `week`, `day`, `days`, `agenda`, `year`, `timeline`, `mini`, `weekList`, `dayList`, `months`. Default `month`, `week`, `day`, `agenda`, plus `timeline` with resources. |
@@ -152,8 +153,7 @@ The JSON schema is `gridCalendar` in [schema/canopyx-2.schema.json](schema/canop
   list of the focused day sits under the month.
 - **Week, day and N days**: a header of days, an all-day row (all-day events and events of a day or longer), then a column of
   time slots. Overlapping events share their column side by side and widen over free columns; an event over midnight shows in
-  each day. Working hours, unavailable time and background ranges shade the columns; a line marks now. With resources of at
-  most 24 leaves, day and week views get [resource columns](resource-timeline.md#resource-columns-in-day-and-week-views).
+  each day. Working hours, unavailable time and background ranges shade the columns; a line marks now. With an inline resource tree, day and week views get [resource columns](resource-timeline.md#resource-columns-in-day-and-week-views).
 - **Agenda**: the period's events grouped by day, with their time (or All day), title, subtitle and status. Phones start here.
 - **Year**: twelve small months; each day is shaded by its number of events, which its accessible name and tooltip give.
 - **Timeline**: resources as rows, time across; see [resource-timeline.md](resource-timeline.md). Without resources its rows
@@ -350,6 +350,25 @@ in a small dialog (This event, This and following events, All events, Cancel; ar
 setting but `all` needs them), and a
 host's `calendar.occurrence(change)` hook may decide first (return a mode, false to cancel, or nothing to keep the setting).
 
+The event menu's **This event** command opens a title/start/end form for that recurring occurrence. The original date and
+repeat indicator identify its scope. Save uses the host writer; Cancel or Escape leaves the series unchanged.
+`editCalendarOccurrence(occurrenceId)` opens the same form programmatically and returns false for a read-only event.
+
+The editor names the chosen date and explains that other occurrences stay unchanged. Date/time fields show minute
+precision; an untouched endpoint keeps its original instant. **Remove this occurrence** adds an EXDATE through the
+ordinary validated editing/undo/writer path, and is unavailable when the exception field cannot be edited. Phones use a
+bottom sheet. Shared assignments are named in the editor, marked on event cards, and highlighted together on hover or focus.
+
+Large day/week schedules put previous/next controls and a range picker beside their resource headers. The picker jumps
+between bounded column windows; keyboard traversal can still reveal each offscreen column. Phone day headings retain
+short weekday names, and resource ranges name the first/last index and total. `CalendarResources` customizes the noun
+(for example, "Rooms"); the occurrence and range labels are also available through `CanopyLabels`.
+Basic calendars built from events automatically provide editable `series`, `recurrenceId` and `exceptions` columns when editing
+is enabled. For existing grids, map these columns explicitly. A writable exceptions column adds the original start to EXDATE
+in the same undo group and commit batch as the override. If a writer only saves part of that batch, the failed override
+stays pending with a save-failure notice so it can be retried. A host without writable exceptions can still suppress through the
+override link. The occurrence form always edits this instance; the drag/move flow retains its host occurrence-choice hook.
+
 - **This event** inserts an overriding record: the series' values with the new times, `series` set to the series id and
   `recurrenceId` to the occurrence's original start. The series skips that occurrence.
 - **This and following events** ends the series before the occurrence and starts a new series there: the old record's rule
@@ -372,7 +391,7 @@ operation. A local inline calendar without a commit writer keeps the copied valu
 
 ## Sources and iCalendar
 
-`sources` lists up to 50 event sources: `{ id, label, tone?, ics?, hidden? }`. A legend under the bar shows one switch per
+`sources` lists up to 50 event sources: `{ id, label, tone?, color?, ics?, url?, fetchParams?, hidden? }`. A legend under the bar shows one switch per
 source in its tone; switching one off hides its events in every view at once (`setCalendarSource(id, visible)` does the same
 from code, and `canopyx:calendarSource` reports it). Records name their source in the `source` column; a source's tone colours
 records without a tone or status tone of their own. `hidden` starts a source switched off.
@@ -385,6 +404,31 @@ events, 75,000 lines, 10,000 characters a line, 1,000 characters of summary, loc
 1,000 exceptions an event. A file past a limit, without a calendar, or that cannot be fetched fails with a notice ("Could not
 read Holidays: ..."), and `canopyx:calendarImport` reports each source's event count, skipped events and notes. The .NET
 `CanopyICalendar.Parse` reads the same subset within the same limits ([icalendar.md](icalendar.md)).
+
+A source with `url` reads a same-origin JSON array for each visible period. It sends `start` (inclusive), `end` (exclusive)
+and `timeZone`, plus the string query parameters in `fetchParams`; those three names are reserved. `url` and `ics` are
+mutually exclusive. Each JSON event has `id` (optional), `title`, `start`, optional `end`, `allDay`, `description`, `resource`,
+`resourceIds`, `recurrence`, `exceptions`, `series` and `recurrenceId`, using the basic event shape. Instants need an offset;
+`yyyy-MM-dd` denotes a date. A feed has at most 5,000 events, 8 MB and 2 million characters. A reload fetches at most four
+sources concurrently and accepts at most 16 MB across all feeds and the calendar's `limit` events, including cached answers.
+Reaching a combined limit reports an error and stops loading further sources; already accepted sources remain usable.
+Feed events are read-only and have
+source-scoped identities: `series` names the master's original id in that same feed. Treat the occurrence `id` returned by
+`getCalendarEvents()` as opaque and use it when opening or editing an occurrence. The `record` field retains the host record
+key; external records also carry `source` and `external`, so a matching host key does not identify the same event.
+External events do not contribute host row keys to linked selections or receive host row highlights.
+Failed sources show a notice while other sources remain usable. A newer range or destruction aborts
+the obsolete request. Hidden JSON sources make no request until shown; the last twelve source/range results are cached.
+`color: "#2563eb"` supplies a source colour for events and its legend switch; absent it, the existing tone rules apply.
+
+```javascript
+sources: [{ id: "team", label: "Team", url: "/calendar/team.json",
+  fetchParams: { location: "studio" }, color: "#2563eb", hidden: false }]
+```
+
+The .NET equivalent is `CanopyCalendarSource.Url`, `.FetchParams`, `.Color` and `.Hidden`. A calendar whose sources all have
+`url` or `ics` needs no source column. Serve generated examples over HTTP to use feeds; files opened from disk cannot fetch
+HTTP sources. The generated `calendar-resource-window.html` schedule includes a hidden optional JSON feed.
 
 ## Context menus and hover cards
 
@@ -435,7 +479,8 @@ writes them in a canonical order (`ToString()`), parses them (`Parse`, `TryParse
   of the visible occurrences (`visible`, the default) or of the grid's `filtered`, `selected` and `all` scopes, resolving with
   `{ blob, fileName, text }` (`download: true` saves the file). Each record is one `VEVENT`: a series keeps its `RRULE` and
   `EXDATE`, written in its zone's wall time with a `VTIMEZONE`; an overriding record carries `RECURRENCE-ID`; all-day events are
-  dates. Text is escaped and lines are folded at 75 octets.
+  dates. Text is escaped and lines are folded at 75 octets. Multiple `resourceIds` assignments have no iCalendar `LOCATION`
+  mapping; export uses the single `resource` or an imported location when present.
 - **CSV and Excel:** the grid's Export menu and `toCsv`, `copy`, `exportAs` and `exportToHost` export the records of the query,
   so the calendar's filters, facets and external filters apply.
 - **Print:** the month prints every event (rows grow instead of folding into "+N more"), week and day views print every hour,

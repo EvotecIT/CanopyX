@@ -10,7 +10,7 @@
     calTimeColumns(days) {
       const all = this.calResourceColumns?.() || null;
       this.calResourcePages = null;
-      if (!all) return days.map(day => ({ day, resource: null }));
+      if (!all) { this.calTimeWindow = null; return days.map(day => ({ day, resource: null })); }
       // Phones show two resources of a day (one a day in longer views) at a time, so titles stay readable; a picker above
       // the grid chooses which.
       // The first resource shown is kept, not a page number, so day and week views show the same resources after a switch.
@@ -20,20 +20,30 @@
       const resources = all.slice(page * size, page * size + size);
       const out = [];
       for (const day of days) for (const resource of resources) out.push({ day, resource: resource.id, label: resource.label, group: resource.group });
-      return out;
+      return this.calWindowTimeColumns(out);
     },
 
-    /** The phone's choice of resource columns: one option per page, named by its resources. */
+    /** A range picker beside the resource headers; native fitting still owns the mounted column window. */
     calResourcePicker() {
-      const { all, size, pages, page } = this.calResourcePages, bar = h("div", "cx-cal-rpick"), select = h("select", "cx-cal-rpick-select");
-      select.setAttribute("aria-label", this.calLabels.calendarResources);
-      for (let at = 0; at < pages; at++) {
-        const option = h("option"); option.value = String(at);
-        setText(option, all.slice(at * size, at * size + size).map(item => item.label).join(", ")); select.appendChild(option);
+      const window = this.calTimeWindow, paging = this.calResourcePages;
+      const total = window?.total ?? paging.all.length, size = window?.size ?? paging.size, first = window?.first ?? paging.page * size;
+      const bar = h("div", "cx-cal-rpick"), select = h("select", "cx-cal-rpick-select"), maximum = window ? total - size : Math.floor((total - 1) / size) * size;
+      const multiDay = window && window.columns[0].day !== window.columns.at(-1).day;
+      const caption = column => this.calFmt.day({ weekday: "short", month: "short", day: "numeric" }, column.day) + " " + column.label;
+      const range = at => multiDay ? caption(window.columns[at]) + " – " + caption(window.columns[Math.min(total - 1, at + size - 1)]) :
+        fill(this.calLabels.calendarResourceWindow, { resources: this.calLabels.calendarResources, start: this.calFmt.number(at + 1), end: this.calFmt.number(Math.min(total, at + size)), total: this.calFmt.number(total) });
+      const choices = new Set([first, maximum]); for (let at = 0; at < total; at += size) choices.add(Math.min(at, maximum));
+      select.setAttribute("aria-label", range(first));
+      for (const at of [...choices].sort((a,b) => a - b)) {
+        const option = h("option"); option.value = String(at); setText(option, range(at)); select.appendChild(option);
       }
-      select.value = String(page);
-      select.addEventListener("change", () => { this.calResourceFirst = Number(select.value) * size; this.calPaint({ keep: true }); this.calBody.querySelector(".cx-cal-rpick-select")?.focus(); });
-      bar.appendChild(select);
+      const show = (at, focus) => { if (window) this.calTimeFirst = at; else this.calResourceFirst = at;
+        this.calPaint({ keep: true }); this.calBody.querySelector(focus)?.focus({ preventScroll: true }); };
+      select.value = String(first); select.addEventListener("change", () => show(Number(select.value), ".cx-cal-rpick-select"));
+      const buttons = [-1,1].map(sign => { const button = h("button", "cx-btn ghost cx-cal-rpick-" + (sign < 0 ? "prev" : "next")), at = Math.max(0, Math.min(maximum, first + sign * size));
+        button.type = "button"; button.disabled = at === first; setText(button, sign < 0 ? "←" : "→"); button.setAttribute("aria-label", (sign < 0 ? this.calLabels.calendarPrevious : this.calLabels.calendarNext) + ": " + range(at));
+        button.addEventListener("click", () => show(at, ".cx-cal-rpick-select")); return button; });
+      bar.append(buttons[0], select, buttons[1]);
       return bar;
     },
     calPaintTime() {
@@ -45,13 +55,19 @@
       const head = h("div", "cx-cal-thead"); head.setAttribute("role", "rowgroup");
       const dayRow = h("div", "cx-cal-trow cx-cal-heads"); dayRow.setAttribute("role", "row");
       const corner = h("div", "cx-cal-corner"); corner.setAttribute("role", "columnheader"); dayRow.appendChild(corner);
-      const perDay = columns.length / days.length;
-      for (const day of days) {
+      const resourceColumns = columns.some(column => column.resource != null), perDay = resourceColumns ? 2 : 1;
+      const dayRuns = [];
+      for (const column of columns) {
+        const last = dayRuns.at(-1);
+        if (last?.day === column.day) last.count++; else dayRuns.push({ day: column.day, count: 1, index: column.index ?? columns.indexOf(column) });
+      }
+      for (const { day, count, index } of dayRuns) {
         const cell = h("div", "cx-cal-dayhead" + (day === today ? " cx-cal-today" : "")); cell.setAttribute("role", "columnheader"); cell.dataset.cxDay = String(day);
-        cell.style.flexGrow = String(perDay); cell.setAttribute("aria-label", fmt.longDay(day)); if (perDay > 1) cell.setAttribute("aria-colspan", String(perDay));
+        cell.setAttribute("aria-colindex", String(index + 2));
+        cell.style.flexGrow = String(count); cell.setAttribute("aria-label", fmt.longDay(day)); if (count > 1) cell.setAttribute("aria-colspan", String(count));
         if (!this.calAllowsSpan(day * CAL_DAY, (day + 1) * CAL_DAY, true)) { cell.classList.add("cx-cal-invalid"); cell.setAttribute("aria-disabled", "true"); }
         const name = h("span", "cx-cal-dayname"), number = h("span", "cx-cal-daynum");
-        setText(name, fmt.weekday(day, this.calPhone ? "narrow" : "short")); setText(number, fmt.dayNumber(day)); cell.append(name, number);
+        setText(name, fmt.weekday(day, "short")); setText(number, fmt.dayNumber(day)); cell.append(name, number);
         if (day === today) cell.setAttribute("aria-current", "date");
         dayRow.appendChild(cell);
       }
@@ -63,6 +79,7 @@
         for (let at = 0; at < columns.length;) {
           let end = at; while (end + 1 < columns.length && columns[end + 1].group === columns[at].group && columns[end + 1].day === columns[at].day) end++;
           const cell = h("div", "cx-cal-ghead"); cell.setAttribute("role", "columnheader"); cell.setAttribute("aria-colspan", String(end - at + 1));
+          cell.setAttribute("aria-colindex", String((columns[at].index ?? at) + 2));
           cell.style.flexGrow = String(end - at + 1); setText(cell, columns[at].group || ""); cell.title = columns[at].group || "";
           groupRow.appendChild(cell); at = end + 1;
         }
@@ -71,7 +88,7 @@
       if (perDay > 1) {
         const resourceRow = h("div", "cx-cal-trow cx-cal-rheads"); resourceRow.setAttribute("role", "row");
         const blank = h("div", "cx-cal-corner"); blank.setAttribute("role", "columnheader"); resourceRow.appendChild(blank);
-        for (const column of columns) { const cell = h("div", "cx-cal-rhead"); cell.setAttribute("role", "columnheader"); setText(cell, column.label); cell.title = column.label; resourceRow.appendChild(cell); }
+        for (const column of columns) { const cell = h("div", "cx-cal-rhead"); cell.setAttribute("role", "columnheader"); cell.setAttribute("aria-colindex", String((column.index ?? columns.indexOf(column)) + 2)); setText(cell, column.label); cell.title = column.label; resourceRow.appendChild(cell); }
         head.appendChild(resourceRow);
       }
       head.appendChild(this.calAllDayRow(columns, days));
@@ -80,8 +97,9 @@
       slots.setAttribute("role", "rowgroup");
       const visible = cal.maxMinutes - cal.minMinutes;
       slots.style.height = visible * ppm + "px";
+      scroller.style.setProperty("--cx-cal-slots-height", visible * ppm + "px");
       this.calSlotCells = new Map();
-      const segmentsByColumn = columns.map(column => calSegments(this, this.calEvents.filter(event => column.resource == null || event.resource === column.resource), column.day, cal.minMinutes, cal.maxMinutes));
+      const segmentsByColumn = columns.map(column => calSegments(this, this.calEvents.filter(event => column.resource == null || this.calHasResource(event, column.resource)).map(event => column.resource == null ? event : { ...event, resource: column.resource }), column.day, cal.minMinutes, cal.maxMinutes));
       for (let minutes = cal.minMinutes; minutes < cal.maxMinutes; minutes += slot) {
         const row = h("div", "cx-cal-srow" + (minutes % 60 === 0 ? " cx-cal-hour" : "")); row.setAttribute("role", "row");
         const label = h("div", "cx-cal-stime"); label.setAttribute("role", "rowheader");
@@ -89,6 +107,7 @@
         row.appendChild(label);
         columns.forEach((column, index) => {
           const cell = h("div", "cx-cal-slot"); cell.setAttribute("role", "gridcell"); cell.tabIndex = -1;
+          cell.setAttribute("aria-colindex", String((column.index ?? index) + 2));
           cell.dataset.cxDay = String(column.day); cell.dataset.cxMinutes = String(minutes); if (column.resource != null) cell.dataset.cxResource = column.resource;
           if (!this.calAllowsSpan(column.day * CAL_DAY, (column.day + 1) * CAL_DAY, true)) { cell.classList.add("cx-cal-invalid"); cell.setAttribute("aria-disabled", "true"); }
           cell.setAttribute("aria-label", fmt.longDay(column.day) + ", " + fmt.clock(minutes) + (column.label ? ", " + column.label : ""));
@@ -119,7 +138,9 @@
       });
       if (cal.now) { this.calNowLine = h("div", "cx-cal-now"); this.calNowLine.setAttribute("aria-hidden", "true"); slots.appendChild(this.calNowLine); this.calNowColumns = columns; }
       scroller.appendChild(slots); grid.appendChild(scroller);
-      this.calBody.replaceChildren(...(this.calResourcePages ? [this.calResourcePicker()] : []), grid);
+      this.calBody.replaceChildren(...(this.calResourcePages || this.calTimeWindow ? [this.calResourcePicker()] : []), grid);
+      grid.style.maxHeight = (visible * ppm + head.offsetHeight + 2) + "px";
+      if (this.calTimeWindow) grid.setAttribute("aria-colcount", String(this.calTimeWindow.total + 1));
       this.calGrid = grid;
       if (cal.now) this.calTick();
       // The header leaves room for the slots' scrollbar, so the day columns line up.
@@ -139,9 +160,9 @@
       const row = h("div", "cx-cal-trow cx-cal-allrow"); row.setAttribute("role", "row");
       const label = h("div", "cx-cal-stime cx-cal-alllabel"); label.setAttribute("role", "rowheader"); setText(label, this.calLabels.calendarAllDay); row.appendChild(label);
       const index = new Map(), events = this.calEvents.filter(event => !event.background && calInAllDayRow(event));
-      const perDay = columns.length / days.length, cells = [];
+      const perDay = columns.some(column => column.resource != null) ? 2 : 1, cells = [];
       columns.forEach((column, at) => {
-        const cell = h("div", "cx-cal-allcell"); cell.setAttribute("role", "gridcell"); cell.tabIndex = -1; cell.dataset.cxDay = String(column.day);
+        const cell = h("div", "cx-cal-allcell"); cell.setAttribute("role", "gridcell"); cell.tabIndex = -1; cell.dataset.cxDay = String(column.day); cell.setAttribute("aria-colindex", String((column.index ?? at) + 2));
         if (!this.calAllowsSpan(column.day * CAL_DAY, (column.day + 1) * CAL_DAY, true)) { cell.classList.add("cx-cal-invalid"); cell.setAttribute("aria-disabled", "true"); }
         if (column.resource != null) cell.dataset.cxResource = column.resource;
         cells.push(cell); row.appendChild(cell);
@@ -149,7 +170,7 @@
       });
       const placed = [];
       if (perDay === 1) placed.push(...calLanes(events, days[0], days[days.length - 1], day => index.has(day) ? index.get(day) : -1));
-      else columns.forEach((column, at) => { for (const event of events) if (event.sd <= column.day && event.ed >= column.day && event.resource === column.resource) placed.push({ event, lane: 0, from: at, to: at }); });
+      else columns.forEach((column, at) => { for (const event of events) if (event.sd <= column.day && event.ed >= column.day && this.calHasResource(event, column.resource)) placed.push({ event: { ...event, resource: column.resource }, lane: 0, from: at, to: at }); });
       if (perDay > 1) { const lanes = new Map(); for (const item of placed) { item.lane = lanes.get(item.from) || 0; lanes.set(item.from, item.lane + 1); } }
       const totals = new Array(columns.length).fill(0), shown = new Array(columns.length).fill(0);
       for (const item of placed) for (let at = item.from; at <= item.to; at++) totals[at]++;

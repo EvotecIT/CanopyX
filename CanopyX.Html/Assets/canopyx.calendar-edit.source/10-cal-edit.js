@@ -24,20 +24,23 @@
       if (!this.edit || this.destroyed) return labels.calendarUnavailable;
       const resize = proposal.end - proposal.start !== event.end - event.start;
       if (!this.calCanEdit(event, resize)) return this.edit.labels.gridEditNotSaved;
-      if (resource !== undefined && resource !== event.resource && (!edit.resources || !this.cal.resource ||
-          !this.canEditCell(this.editRecord?.(event.key) || event.row, this.cal.resource.id))) return this.edit.labels.gridEditNotSaved;
+      if (resource !== undefined && resource !== event.resource && (!edit.resources || !(this.cal.resource || this.cal.resourceIds) ||
+          this.calResourceValues(event, resource).some(([id]) => !this.canEditCell(this.editRecord?.(event.key) || event.row, id)))) return this.edit.labels.gridEditNotSaved;
       if (!this.calAllowsSpan(proposal.start, proposal.end, proposal.allDay)) return labels.calendarOutsideRange;
       // Series-only constraints wait for the host's final occurrence choice, including when the preset is "all".
       if (edit.allowed && resource != null) {
         const allowed = String(cellValue(event.row.cells[edit.allowed.id]) ?? "").split(/[\s,;]+/).filter(Boolean);
         if (allowed.length && !allowed.includes(resource)) return fill(labels.calendarNotAllowed, { resource: this.calResourceName ? this.calResourceName(resource) : resource });
       }
-      const spanProblem = this.calSpanProblem(proposal);
+      const resources = this.calEventResources(event).map(id => id === event.resource && resource !== undefined ? resource : id);
+      if (resource != null && !resources.includes(resource)) resources.push(resource);
+      if (!resources.length) resources.push(null);
+      const spanProblem = (resources.length ? resources : [null]).map(resource => this.calSpanProblem({ ...proposal, resource })).find(Boolean);
       if (spanProblem) return spanProblem;
       if (plan) return plan.problem || this.calOccurrenceProblem(event, proposal, plan);
       if (!edit.overlap) {
         for (const other of this.calEvents) {
-          if (other.key === event.key || other.background || (this.cal.resource && other.resource !== resource)) continue;
+          if (other.base.identity === event.base.identity || other.background || ((this.cal.resource || this.cal.resourceIds) && !resources.some(id => this.calHasResource(other, id)))) continue;
           if (other.start < proposal.end && other.end > proposal.start || other.marker && other.start >= proposal.start && other.start < proposal.end) return fill(labels.calendarConflict, { title: other.title });
         }
       }
@@ -62,19 +65,20 @@
 
     /** Checks the resolved recurrence change once, against the accepted occurrences in the loaded range. */
     calOccurrenceProblem(event, proposal, plan) {
-      const items = this.calEvents.filter(other => !other.background && (other.key !== event.key ||
+      const items = this.calEvents.filter(other => !other.background && (other.base.identity !== event.base.identity ||
         plan.mode === "this" && other.id !== event.id || plan.mode === "following" && other.start < event.start))
         .map(other => ({ ...other, changed: false }));
       items.push(...plan.spans.map(span => ({ ...span, title: event.title, changed: true })));
       for (const item of items) if (item.changed) {
-        const problem = this.calSpanProblem({ ...item, allDay: proposal.allDay });
+        const problem = [...new Set([item.resource, ...(item.resourceIds || [])])].map(resource => this.calSpanProblem({ ...item, resource, allDay: proposal.allDay })).find(Boolean);
         if (problem) return problem;
       }
       if (this.cal.editable.overlap) return null;
-      items.sort((a, b) => a.start - b.start || b.end - a.end);
+      const assignments = items.flatMap(item => { const ids = item.resourceIds?.length ? [...new Set([item.resource, ...item.resourceIds].filter(Boolean))] : [item.resource]; return ids.map(resource => ({ ...item, resource })); });
+      assignments.sort((a, b) => a.start - b.start || b.end - a.end);
       const active = new Map();
-      for (const item of items) {
-        const resource = this.cal.resource ? item.resource : null, previous = active.get(resource) || { any: null, changed: null };
+      for (const item of assignments) {
+        const resource = this.cal.resource || this.cal.resourceIds ? item.resource : null, previous = active.get(resource) || { any: null, changed: null };
         const other = item.changed ? previous.any : previous.changed;
         if (other && (calOverlaps(item.start, item.end, other.start, other.end) || calOverlaps(other.start, other.end, item.start, item.end)))
           return fill(this.calLabels.calendarConflict, { title: item.changed ? other.title : item.title });
@@ -110,7 +114,7 @@
       }
       const base = event.base, values = plan ? plan.values : [[cal.start.id, calIso(proposal.start)]];
       if (!plan && cal.end && (proposal.end !== base.end || proposal.start !== base.start)) values.push([cal.end.id, proposal.end > proposal.start || !base.marker ? calIso(proposal.end) : null]);
-      if (!plan && cal.resource && proposal.resource !== undefined && proposal.resource !== event.resource) values.push([cal.resource.id, proposal.resource]);
+      if (!plan) values.push(...this.calResourceValues(event, proposal.resource));
       // A refused change takes back only the columns this move set, never the record's other unsaved edits.
       const record = this.editRecord(event.key), applied = [];
       if (values.some(([column]) => !this.canEditCell(record, column))) {
@@ -183,7 +187,7 @@
     DataGrid.prototype.editRecord = function (id) {
       const found = current.call(this, id);
       if (found || !this.cal) return found;
-      const event = this.calEvents.find(item => item.key === id);
+      const event = this.calEvents.find(item => item.key === id && !item.base?.external);
       return event ? JSON.parse(JSON.stringify(event.base.row)) : found;
     };
     DataGrid.prototype.editRecord._calendar = true;

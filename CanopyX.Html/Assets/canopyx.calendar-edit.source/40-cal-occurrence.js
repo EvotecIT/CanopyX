@@ -45,7 +45,7 @@
   Object.assign(DataGrid.prototype, {
     /** A pending choice belongs to this provider, writer and selected calendar identity, not a later row with the same id. */
     calEditSnapshot(event) {
-      const columns = [this.cal.start, this.cal.end, this.cal.allDay, this.cal.resource, this.cal.recurrence, this.cal.exceptions, this.cal.series, this.cal.recurrenceId].filter(Boolean);
+      const columns = [this.cal.start, this.cal.end, this.cal.allDay, this.cal.resource, this.cal.resourceIds, this.cal.recurrence, this.cal.exceptions, this.cal.series, this.cal.recurrenceId].filter(Boolean);
       return { cal: this.cal, view: this.view, source: this.source, edit: this.edit, options: this.edit?.options,
         writer: this.edit?.options.commit, sourceWriter: this.source.commit,
         cells: columns.map(column => [column.id, cellValue(event.base.row.cells[column.id]) ?? null]) };
@@ -59,7 +59,7 @@
       if (!current) return null;
       const record = this.editRecord(event.key) || current.base.row;
       if (decision.cells.some(([id, value]) => (cellValue(current.base.row.cells[id]) ?? null) !== value || (cellValue(record.cells[id]) ?? null) !== value)) return null;
-      return { ...current, row: record, base: { ...current.base, row: record } };
+      return { ...current, resource: this.calHasResource(current, event.resource) ? event.resource : current.resource, row: record, base: { ...current.base, row: record } };
     },
     calRefuseDecision() {
       if (!this.destroyed && this.calBody?.isConnected) { this.calAnnounce(this.calLabels.calendarUnavailable); this.calNotice(this.calLabels.calendarUnavailable, true, true); }
@@ -73,11 +73,11 @@
       const resource = proposal.resource !== undefined ? proposal.resource : event.resource, cells = this.calSeriesValues(event);
       cells[cal.start.id] = calIso(proposal.start);
       if (cal.end) cells[cal.end.id] = calIso(proposal.end);
-      if (cal.resource && proposal.resource !== undefined && (mode !== "all" || proposal.resource !== event.resource)) cells[cal.resource.id] = proposal.resource;
+      for (const [id, value] of this.calResourceValues(event, proposal.resource)) cells[id] = value;
       if (mode === "this") {
         if (!cal.series || !cal.recurrenceId) return refused();
         cells[cal.series.id] = event.key; cells[cal.recurrenceId.id] = calIso(event.start);
-        return { mode, cells, spans: [{ ...proposal, resource }] };
+        return { mode, cells, spans: [{ ...proposal, resource, resourceIds: this.calEventResources(event).map(id => id === event.resource ? resource : id) }] };
       }
       if (zone.day(proposal.start) !== zone.day(event.start) || this.calOverridden(event) !== false) return refused();
       const minutes = zone.parts(proposal.start).minutes - zone.parts(event.start).minutes;
@@ -98,7 +98,7 @@
       const excludedDays = new Set([...base.excludedDays].filter(day => mode === "all" || day >= zone.day(event.start)));
       const from = base.allDay ? this.calRange.firstDay * CAL_DAY : this.calZone.start(this.calRange.firstDay);
       const to = base.allDay ? (this.calRange.lastDay + 1) * CAL_DAY : this.calZone.start(this.calRange.lastDay + 1);
-      const loadedDays = new Set(this.calEvents.filter(other => other.key === event.key).map(other => zone.day(other.start)));
+      const loadedDays = new Set(this.calEvents.filter(other => other.base.identity === event.base.identity).map(other => zone.day(other.start)));
       // The supported move keeps civil dates. One batched window also certifies timed EXDATE identities outside the view;
       // the existing output limit plus a sentinel refuses a window whose identity mapping cannot be certified.
       let first = from, last = to;
@@ -126,9 +126,9 @@
         cellValue(base.row.cells[cal.exceptions.id]) : [...[...excludedDays].map(calDayText), ...[...movedExcluded].map(calIso)].join(",") || null;
       const spans = candidate.filter(time => !movedExcluded.has(time) && !excludedDays.has(zone.day(time)) &&
         (loadedDays.has(zone.day(time)) || calOverlaps(time, time + duration, from, to)))
-        .map(time => ({ start: time, end: time + duration, allDay: base.allDay, resource }));
+        .map(time => ({ start: time, end: time + duration, allDay: base.allDay, resource, resourceIds: this.calEventResources(event).map(id => id === event.resource ? resource : id) }));
       const values = [[cal.start.id, cells[cal.start.id]]];
-      for (const column of [cal.end, cal.resource, cal.recurrence, cal.exceptions].filter(Boolean))
+      for (const column of [cal.end, cal.resource, cal.resourceIds, cal.recurrence, cal.exceptions].filter(Boolean))
         if ((cells[column.id] ?? null) !== (cellValue(base.row.cells[column.id]) ?? null)) values.push([column.id, cells[column.id]]);
       return { mode, cells, values, oldRule, spans };
     },
@@ -193,18 +193,34 @@
     },
     /** "This event": an overriding record for the occurrence at the proposal's times. */
     async calApplyThis(event, proposal, plan, decision) {
-      const cal = this.cal, cells = plan.cells;
+      const cal = this.cal, labels = this.calLabels, cells = plan.cells;
+      calWrapEditRecord();
       event = this.calEditCurrent(event, decision);
       if (!event) return this.calRefuseDecision();
       const problem = this.calCheck(event, proposal, plan) || this.calOccurrenceCopyProblem(cells);
       if (problem) { this.calAnnounce(problem); this.calNotice(problem, true, true); return false; }
-      const result = await this.insertRow({ cells });
+      const exception = cal.exceptions && this.edit.specs.get(cal.exceptions.id), master = this.editRecord(event.key);
+      let result, excluded = false;
+      if (exception && this.canEditCell(master, exception.id)) {
+        const previous = String(cellValue(master.cells[exception.id]) || "").trim();
+        if (previous.split(/[\s,;]+/).filter(Boolean).length >= 1000) { this.calNotice(labels.calendarSeriesTime, true, true); return false; }
+        const done = this.editGroupIf(() => {
+          result = this.editInsertNow({ cells }, "calendar");
+          if (!result.applied) return false;
+          excluded = this.editApply(event.key, exception, previous ? previous + "," + calIso(event.start) : calIso(event.start), "calendar", master);
+          if (!excluded) this.editRemoveInserted(result.id);
+          return excluded;
+        });
+        if (!done) return false;
+        const checked = await this.editValidateRow(result.id); result = { ...result, ...checked };
+      } else result = await this.insertRow({ cells });
       if (!result.applied) return false;
       this.calVersion++;
       this.calAnnounce(fill(this.calLabels.calendarMoved, { title: event.title, time: this.calFmt.shortDay(this.calZone.day(proposal.start)) + (proposal.allDay ? "" : " " + this.calFmt.time(proposal.start)) }));
       if (!result.valid) { this.calInvalidInsert(result); return true; }
       if ((cal.editable?.commit ?? "auto") === "manual") { this.calReload({ keep: true }); return true; }
-      return this.calCommit([result.id], event.title);
+      // A writer may save only part of a batch. Keep a failed override pending if its EXDATE was saved, so the occurrence is not lost.
+      return this.calCommit(excluded ? [event.key, result.id] : [result.id], event.title, excluded);
     },
     /** "This and following events": the series ends before the occurrence, and a new series starts at it with the rest of the rule. */
     async calApplyFollowing(event, proposal, plan, decision) {

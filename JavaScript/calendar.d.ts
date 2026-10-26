@@ -18,6 +18,12 @@ export interface GridCalendarSource {
   label: string;
   tone?: string;
   ics?: string;
+  /** Same-origin JSON event array, requested with start/end/timeZone for each visible range. */
+  url?: string;
+  /** Extra query parameters; start, end and timeZone are reserved. */
+  fetchParams?: Readonly<Record<string, string>>;
+  /** A six-digit hexadecimal source colour. */
+  color?: string;
   /** Starts switched off. */
   hidden?: boolean;
 }
@@ -86,6 +92,8 @@ export interface GridCalendarDefinition<Row extends GridRow = GridRow> {
   allDay?: GridColumnId<Row>;
   /** A text column with the event's resource id (a node id of resources.view). */
   resource?: GridColumnId<Row>;
+  /** A text column containing a JSON array of resource ids, added to the single resource. */
+  resourceIds?: GridColumnId<Row>;
   /** The column whose presenter draws the event's status; its tone colours the event. */
   status?: GridColumnId<Row>;
   /** A text column with an RRULE (FREQ DAILY, WEEKLY, MONTHLY or YEARLY with INTERVAL, COUNT, UNTIL, BYDAY, BYMONTHDAY, BYMONTH, BYSETPOS, WKST). */
@@ -186,6 +194,7 @@ export interface GridCalendarEvent {
   readonly allDay: boolean;
   readonly title: string;
   readonly resource: string | null;
+  readonly resourceIds?: readonly string[];
   readonly recurring: boolean;
   readonly background?: boolean;
   /** The event's source id (sources), or null. */
@@ -252,6 +261,10 @@ export interface CalendarEventInput {
   description?: string;
   tone?: string;
   resource?: string;
+  resourceIds?: readonly string[];
+  /** Master event id and original occurrence start for an override. */
+  series?: string;
+  recurrenceId?: Date | string;
   recurrence?: string;
   exceptions?: string;
   source?: string;
@@ -356,6 +369,8 @@ export interface GridCalendarApi {
   exportCalendar(options?: { scope?: "visible" | "filtered" | "selected" | "all"; fileName?: string; download?: boolean }): Promise<{ blob: Blob; fileName: string; text: string }>;
   /** Opens an event's record (by occurrence or record id). */
   openCalendarEvent(id: string): Promise<unknown>;
+  /** Opens the title/time form for one recurring occurrence. False if this event cannot be edited. */
+  editCalendarOccurrence(id: string): Promise<boolean>;
   clearCalendarSelection(): void | Promise<void>;
   /** Shows (true) or hides a source's events; omitted switches it. Resolves with whether they show. */
   setCalendarSource(id: string, visible?: boolean): boolean | Promise<boolean>;

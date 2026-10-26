@@ -123,6 +123,7 @@ SupportTicketsExample.Write(output);
 QuarterlyBudgetExample.Write(output);
 CertificateInventoryExample.Write(output);
 CalendarBasicExample.Write(output);
+CalendarResourcesExample.Write(output);
 CalendarExample.Write(output);
 CalendarTimelineExample.Write(output);
 CalendarCertificatesExample.Write(output);

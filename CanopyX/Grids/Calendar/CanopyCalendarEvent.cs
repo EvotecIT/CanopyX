@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CanopyX;
 
@@ -91,6 +92,15 @@ public sealed class CanopyCalendarEvent {
 
     /// <summary>Gets or sets the rule the event repeats by; null for a single event.</summary>
     public CanopyRecurrence? Recurrence { get; set; }
+
+    /// <summary>Gets the resource ids assigned to this event, in addition to <see cref="Resource"/>. Written as a JSON array in a text cell.</summary>
+    public IList<string> ResourceIds { get; } = new List<string>();
+
+    /// <summary>Gets or sets the master event id replaced by this override; use with <see cref="RecurrenceId"/>.</summary>
+    public string? Series { get; set; }
+
+    /// <summary>Gets or sets the original occurrence start replaced by this override; use with <see cref="Series"/>.</summary>
+    public DateTime? RecurrenceId { get; set; }
 
     /// <summary>Gets or sets the excluded occurrences of a repeating event: ISO date-times or <c>yyyy-MM-dd</c> dates separated by commas, semicolons or white space, at most 1000; null for none.</summary>
     public string? Exceptions { get; set; }

@@ -200,7 +200,7 @@ public sealed class CanopyHtmlPart {
             "facets" => view.FacetPanel != null,
             "calendar" => view.Calendar != null,
             "calendarResources" => view.Calendar != null && (view.Calendar.Resources != null || view.Calendar.View == CanopyCalendarView.Timeline || view.Calendar.Views.Contains(CanopyCalendarView.Timeline)),
-            "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null)),
+            "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null || source.Url != null)),
             "calendarEditing" => view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "calendarIcs" => view.Calendar != null && UsesCalendarIcs(view.Calendar),
             _ => false
