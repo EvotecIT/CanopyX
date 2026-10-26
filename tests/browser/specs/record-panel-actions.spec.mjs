@@ -139,8 +139,10 @@ test("a pending record action cannot run twice through the menu and footer", asy
     await new Promise(resolve => { window.finishAction = resolve; });
   });
   const footer = drawer(page).getByRole("button", { name: "Request renewal", exact: true });
+  const readyBackground = await footer.evaluate(button => getComputedStyle(button).backgroundColor);
   await action(page, "Request renewal");
   await expect(footer).toBeDisabled();
+  expect(await footer.evaluate(button => getComputedStyle(button).backgroundColor)).not.toBe(readyBackground);
   await action(page, "Request renewal");
   expect(await page.evaluate(() => window.actionCalls)).toBe(1);
   await page.evaluate(() => window.finishAction());
