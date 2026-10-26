@@ -104,7 +104,7 @@ for (const width of [1440, 390]) test(`cards hide the header row and offer sorti
   await expect(page.locator(".cx-hcell").first()).toBeVisible();
 });
 
-for (const width of [1440, 390]) test(`card filter handoff retains its toolbar trigger after host query refresh (${width})`, async ({ page }) => {
+for (const width of [1440, 390]) test(`card filter handoff retains its toolbar trigger after host query refresh (${width})`, async ({ page, browserName }) => {
   await page.setViewportSize({ width, height: 900 });
   await open(page, ticketView(120, { layout: { mode: "cards" } }));
   const sort = page.locator(".cx-grid-sort"); await sort.locator(":scope > summary").click();
@@ -131,7 +131,7 @@ for (const width of [1440, 390]) test(`card filter handoff retains its toolbar t
   await expect(menu).toBeVisible();
   await call(page, "setQuery", await call(page, "getQuery"));
   await expect(menu).toBeVisible(); await expect(trigger).toHaveAttribute("aria-expanded", "true");
-  await page.keyboard.press("Tab");
+  await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
   await expect(menu).toHaveCount(0);
   await expect(sort.getByRole("button", { name: "Replies", exact: true })).toBeFocused();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");

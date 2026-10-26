@@ -143,7 +143,8 @@ test("large notes and lists retain complete exports with bounded mounted preview
   expect(csv).toContain(notes); expect(csv).toContain(owners);
 });
 
-test("compact dark complete-text sheets stay within the phone and retain keyboard close controls", async ({ page }) => {
+test("compact dark complete-text sheets stay within the phone and retain keyboard close controls", async ({ page, browserName }) => {
+  const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
   await page.setViewportSize({ width: 390, height: 700 }); await open(page);
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').setAttribute('data-cx-theme', 'dark'));
   await row(page, "a").getByRole("button", { name: "Notes: show complete text" }).click();
@@ -151,16 +152,16 @@ test("compact dark complete-text sheets stay within the phone and retain keyboar
   const bounds = await dialog.boundingBox();
   expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
   expect(bounds.y).toBeGreaterThanOrEqual(0); expect(bounds.y + bounds.height).toBeLessThanOrEqual(700);
-  await dialog.locator("pre").press("Tab");
+  await dialog.locator("pre").press(tab);
   const copy = dialog.getByRole("button", {name:"Copy",exact:true}); await expect(copy).toBeFocused();
   const close = page.getByRole("button", { name: "Close complete text" });
-  await copy.press("Tab"); await expect(close).toBeFocused();
-  await close.press("Shift+Tab"); await expect(copy).toBeFocused();
-  await copy.press("Shift+Tab"); await expect(dialog.locator("pre")).toBeFocused();
-  await dialog.locator("pre").press("Shift+Tab"); await expect(close).toBeFocused();
-  await close.press("Tab"); await expect(dialog.locator("pre")).toBeFocused();
-  await dialog.locator("pre").press("Tab"); await expect(copy).toBeFocused();
-  await copy.press("Tab"); await expect(close).toBeFocused();
+  await copy.press(tab); await expect(close).toBeFocused();
+  await close.press("Shift+" + tab); await expect(copy).toBeFocused();
+  await copy.press("Shift+" + tab); await expect(dialog.locator("pre")).toBeFocused();
+  await dialog.locator("pre").press("Shift+" + tab); await expect(close).toBeFocused();
+  await close.press(tab); await expect(dialog.locator("pre")).toBeFocused();
+  await dialog.locator("pre").press(tab); await expect(copy).toBeFocused();
+  await copy.press(tab); await expect(close).toBeFocused();
   await close.press("Enter"); await expect(dialog).toHaveCount(0);
 });
 
