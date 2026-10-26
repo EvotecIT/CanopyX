@@ -941,6 +941,7 @@
         "gridQueryStart",
         "gridFreeze",
         "GRID_FILTER_LABELS",
+        "GRID_REPORTING",
         "watchOverlayTheme"
       ],
       "scripts": [

@@ -1,4 +1,4 @@
-  // The reporting saved-state reader owns pivot axes, buckets, bounds and aggregate identities.
+  // Reporting's definition validator owns pivot axes, buckets, bounds and aggregate identities.
   function viewIntentPivotState(grid, input, current) {
     if (!grid.view.reporting?.pivot && grid.view.reporting?.pivotable !== true)
       throw new Error("CanopyX: this view does not enable pivots.");
@@ -11,9 +11,9 @@
       for (const levels of [input.rows, input.columns]) if (Array.isArray(levels)) levels.forEach(level => {
         viewIntentObject(level, ["column", "direction", "bucket"], "intent pivot level"); viewIntentBucketShape(level.bucket);
       });
-      state.pivot = { ...input, active: true, collapsedRows: [], collapsedColumns: [] };
+      state.pivot = { ...GRID_REPORTING.pivotDefinition(grid.view, input), active: true, collapsedRows: [], collapsedColumns: [] };
     }
-    return grid.readGridState(state);
+    return state;
   }
   function viewIntentPivotExport(grid) {
     const state = grid.getState().pivot;
