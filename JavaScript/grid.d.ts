@@ -297,7 +297,7 @@ export type GridBuiltinFilter = ({
 } | { readonly column: string; readonly operator: "isNull" | "isNotNull"; readonly values: readonly []; }) & { readonly bucket?: GridBucket };
 
 /** A registered custom operator uses one typed, non-null operand. */
-export type GridFilter = GridBuiltinFilter | { readonly column: string; readonly operator: string & {}; readonly values: readonly Exclude<CellValue, null>[] };
+export type GridFilter = GridBuiltinFilter | { readonly column: string; readonly operator: string & {}; readonly values: readonly Exclude<CellValue, null>[]; readonly bucket?: never };
 
 /** A nonempty nested expression: at most eight levels, 64 groups and 64 total predicates including flat filters. */
 export interface GridFilterGroup {

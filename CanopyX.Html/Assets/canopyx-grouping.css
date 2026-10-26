@@ -37,7 +37,7 @@
 .cx-phone .cx-gchip-name{min-width:0;overflow:hidden;text-overflow:ellipsis;}
 .cx-phone :is(.cx-groupbar-label,.cx-gchip-order,.cx-gchip-fold){display:none;}
 @media (forced-colors:active){.cx-gchip{border-color:CanvasText;}}
-.cx-gchip-bucket-value{width:7rem;min-width:3rem;max-width:10rem;padding:2px 4px;font:inherit;}
-.cx-phone .cx-gchip-bucket{display:inline-block;max-width:6rem;}
-.cx-phone .cx-gchip-bucket-value{width:3.5rem;min-width:2rem;}
-.cx-phone .cx-gchip:has(.cx-gchip-bucket) .cx-gchip-name{max-width:3.5rem;}
+.cx-gchip-bucket-value{--cx-bucket-width:7rem;--cx-bucket-min-width:3rem;--cx-bucket-max-width:10rem;width:var(--cx-bucket-width);min-width:var(--cx-bucket-min-width);max-width:var(--cx-bucket-max-width);padding:var(--cx-size-2px) var(--cx-size-4px);font:inherit;}
+.cx-phone .cx-gchip-bucket{--cx-bucket-label-limit:6rem;display:inline-block;max-width:var(--cx-bucket-label-limit);}
+.cx-phone .cx-gchip-bucket-value{--cx-bucket-width:3.5rem;--cx-bucket-min-width:2rem;}
+.cx-phone .cx-gchip:has(.cx-gchip-bucket) .cx-gchip-name{--cx-bucket-name-limit:3.5rem;max-width:var(--cx-bucket-name-limit);}

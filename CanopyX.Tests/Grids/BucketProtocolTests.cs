@@ -6,6 +6,15 @@ namespace CanopyX.Tests;
 
 public sealed class BucketProtocolTests {
     [Fact]
+    public void NamedRawCellFiltersRejectBucketOperandsBeforeWritingAQuery() {
+        var view = new CanopyDataGridView("analysis", "Records");
+        view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number });
+        var query = new CanopyGridQuery(view.Id);
+        query.Filters.Add(new CanopyGridFilter("amount", "named", new CanopyCell(1d)) { Bucket = CanopyBucket.FixedWidth(10) });
+        Assert.Throws<System.InvalidOperationException>(() => query.ToJson(view));
+    }
+
+    [Fact]
     public void BucketDefinitionsQueriesFacetsAndSummariesFollowTheSchemaAndRenderWithoutScripts() {
         var view = new CanopyDataGridView("analysis", "Records by month") { Reporting = new CanopyGridReporting { Groupable = true } };
         view.Columns.Add(new CanopyColumn("at", "Observed") { Kind = CanopyColumnKind.DateTime, Sortable = true });

@@ -8,6 +8,7 @@ CanopyX.Data.CanopyColumnMap<T>.CanopyX.Data.CanopyColumnMap<T> Key<TKey>(System
 CanopyX.Data.CanopyColumnMap<T>.CanopyX.Data.CanopyDataSchema Schema { get; }
 CanopyX.Data.CanopyColumnMap<T>.System.Linq.Expressions.LambdaExpression? KeyExpression { get; }
 CanopyX.Data.CanopyColumnMapping<T, TValue> : sealed class
+CanopyX.Data.CanopyColumnMapping<T, TValue>.CanopyX.Data.CanopyColumnMapping<T, TValue> BucketTimeZone(System.String timeZone, System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTime>>> localTime)
 CanopyX.Data.CanopyColumnMapping<T, TValue>.CanopyX.Data.CanopyColumnMapping<T, TValue> Cell(System.Func<TValue, CanopyX.CanopyCell?> format)
 CanopyX.Data.CanopyColumnMapping<T, TValue>.CanopyX.Data.CanopyColumnMapping<T, TValue> Filterable(System.Boolean filterable = True)
 CanopyX.Data.CanopyColumnMapping<T, TValue>.CanopyX.Data.CanopyColumnMapping<T, TValue> NotNull()
@@ -172,7 +173,8 @@ CanopyX.Data.CanopyFacetBucket..ctor(System.Object? value, System.Int32 count)
 CanopyX.Data.CanopyFacetBucket.System.Int32 Count { get; }
 CanopyX.Data.CanopyFacetBucket.System.Object? Value { get; }
 CanopyX.Data.CanopyFacetRequest : sealed class
-CanopyX.Data.CanopyFacetRequest..ctor(CanopyX.Data.CanopyDataRequest query, CanopyX.Data.CanopyDataColumn column, System.String? search, System.Int32 limit, System.Boolean includeCurrentFilter)
+CanopyX.Data.CanopyFacetRequest..ctor(CanopyX.Data.CanopyDataRequest query, CanopyX.Data.CanopyDataColumn column, System.String? search, System.Int32 limit, System.Boolean includeCurrentFilter, CanopyX.CanopyBucket? bucket = null)
+CanopyX.Data.CanopyFacetRequest.CanopyX.CanopyBucket? Bucket { get; }
 CanopyX.Data.CanopyFacetRequest.CanopyX.Data.CanopyDataColumn Column { get; }
 CanopyX.Data.CanopyFacetRequest.CanopyX.Data.CanopyDataRequest Query { get; }
 CanopyX.Data.CanopyFacetRequest.System.Boolean IncludeCurrentFilter { get; }
@@ -184,8 +186,9 @@ CanopyX.Data.CanopyFacetResult.System.Collections.Generic.IReadOnlyList<CanopyX.
 CanopyX.Data.CanopyFacetResult.System.Int32 Matched { get; }
 CanopyX.Data.CanopyFacetResult.System.Int32 TotalValues { get; }
 CanopyX.Data.CanopyFilterCondition : sealed class (CanopyX.Data.CanopyFilterNode)
-CanopyX.Data.CanopyFilterCondition..ctor(CanopyX.Data.CanopyDataColumn column, CanopyX.CanopyGridFilterOperator op, System.Collections.Generic.IEnumerable<System.Object> values)
+CanopyX.Data.CanopyFilterCondition..ctor(CanopyX.Data.CanopyDataColumn column, CanopyX.CanopyGridFilterOperator op, System.Collections.Generic.IEnumerable<System.Object> values, CanopyX.CanopyBucket? bucket = null)
 CanopyX.Data.CanopyFilterCondition..ctor(CanopyX.Data.CanopyDataColumn column, System.String op, System.Collections.Generic.IEnumerable<System.Object> values)
+CanopyX.Data.CanopyFilterCondition.CanopyX.CanopyBucket? Bucket { get; }
 CanopyX.Data.CanopyFilterCondition.CanopyX.CanopyGridFilterOperator Operator { get; }
 CanopyX.Data.CanopyFilterCondition.CanopyX.Data.CanopyDataColumn Column { get; }
 CanopyX.Data.CanopyFilterCondition.CanopyX.Data.CanopyFilterNodeKind Kind { get; }
@@ -629,7 +632,8 @@ CanopyX.Data.CanopySummaryGroup.System.Collections.Generic.IReadOnlyList<CanopyX
 CanopyX.Data.CanopySummaryGroup.System.Int32 Count { get; }
 CanopyX.Data.CanopySummaryGroup.System.Object? Value { get; }
 CanopyX.Data.CanopySummaryLevel : sealed class
-CanopyX.Data.CanopySummaryLevel..ctor(CanopyX.Data.CanopyDataColumn column, System.Boolean descending, CanopyX.Data.CanopySummaryAggregate? aggregate = null)
+CanopyX.Data.CanopySummaryLevel..ctor(CanopyX.Data.CanopyDataColumn column, System.Boolean descending, CanopyX.Data.CanopySummaryAggregate? aggregate = null, CanopyX.CanopyBucket? bucket = null)
+CanopyX.Data.CanopySummaryLevel.CanopyX.CanopyBucket? Bucket { get; }
 CanopyX.Data.CanopySummaryLevel.CanopyX.Data.CanopyDataColumn Column { get; }
 CanopyX.Data.CanopySummaryLevel.CanopyX.Data.CanopySummaryAggregate? Aggregate { get; }
 CanopyX.Data.CanopySummaryLevel.System.Boolean Descending { get; }

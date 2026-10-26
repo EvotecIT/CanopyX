@@ -13,6 +13,11 @@ public sealed partial class CanopyLabels {
         labels.CalendarOccurrenceTitle = "Wiederkehrenden Termin ändern";
         labels.CalendarOccurrenceReadOnly = "Dieser Teil der Serie kann nicht gespeichert werden, weil einige Werte schreibgeschützt sind.";
         labels.CalendarThisEvent = "Nur dieser Termin";
+        labels.CalendarEditOccurrence = "Dieses Vorkommen bearbeiten";
+        labels.CalendarRemoveOccurrence = "Dieses Vorkommen entfernen";
+        labels.CalendarOccurrenceScope = "Nur {date} ändert sich; andere Termine von {title} bleiben unverändert.";
+        labels.CalendarSharedResources = "{count} {resources}";
+        labels.CalendarResourceWindow = "{resources} {start}–{end} von {total}";
         labels.CalendarThisAndFollowing = "Dieser und alle folgenden Termine";
         labels.CalendarAllEvents = "Alle Termine";
         labels.CalendarSources = "Kalender";

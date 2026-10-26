@@ -27,7 +27,7 @@
     if (!this.pivotPanel || this.pivotPanel.hidden || !pivotIntent(this)?.active || !this.pivotResult || this.destroyed) return;
     this.updateGridPhone();
     const state = pivotIntent(this), result = this.pivotResult, phone = this.host.clientWidth <= 640, active = document.activeElement;
-    const focus = this.pivotPanel.contains(active) ? active.dataset.pivotFocus : null;
+    const hadFocus = this.pivotPanel.contains(active), focus = hadFocus ? active.dataset.pivotFocus : null;
     const columns = pivotVisible(result.columns, state.collapsedColumns, true), rows = pivotVisible(result.rows, state.collapsedRows, false), totalColumn = result.columns[0];
     const aggregates = state.values.map(id => this.view.reporting.aggregates.find(value => value.id === id));
     const zones = this.pivotZones(), mobile = h("label", "cx-pivot-picker"), picker = h("select", "cx-input"), pickerName = h("span");
@@ -89,5 +89,13 @@
     const note = h("p", "cx-pivot-note"); note.hidden = !result.columnsLimited;
     if (result.columnsLimited) setText(note, fill(this.labels.gridPivotLimited, { shown: String(result.retainedColumns.length), total: String(result.distinctColumns) }));
     this.pivotPanel.replaceChildren(zones, mobile, note, scroll);
+    // A short embedded host scrolls its controls instead of squeezing data beneath the sticky header and total.
+    const firstRow = body.firstElementChild;
+    const minimum = Math.ceil(head.getBoundingClientRect().height + (firstRow?.getBoundingClientRect().height || 0) + foot.getBoundingClientRect().height + 2);
+    scroll.style.minHeight = minimum + "px";
+    if ((this.pivotRevealData || !hadFocus) && firstRow && this.pivotPanel.clientHeight) {
+      this.pivotPanel.scrollTop += Math.max(0, scroll.getBoundingClientRect().bottom - this.pivotPanel.getBoundingClientRect().bottom);
+      this.pivotRevealData = false;
+    }
     if (focus) [...this.pivotPanel.querySelectorAll("[data-pivot-focus]")].find(control => control.dataset.pivotFocus === focus)?.focus({ preventScroll: true });
   };
