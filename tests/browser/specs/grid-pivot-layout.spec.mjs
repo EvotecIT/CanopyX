@@ -54,3 +54,26 @@ for (const [width, theme] of [[390, "dark"], [1440, "light"]]) {
     })).toBeGreaterThanOrEqual(3);
   });
 }
+
+for (const embedded of [false, true]) {
+  test(`print expands the ${embedded ? "embedded" : "standalone"} pivot beyond its screen height without clipping the final rows`, async ({ page }) => {
+    const view = definition(); delete view.reporting.detail; view.reporting.groupBy = []; view.reporting.pivotable = true;
+    view.reporting.pivot = { rows: [{ column: "region", direction: "asc" }, { column: "customer", direction: "asc" }],
+      columns: [{ column: "status", direction: "asc" }], values: ["total"] };
+    let html = viewPage(view).replace('</head>', () => '<script>' + parts() + '</script><style>' +
+      fs.readFileSync(path.join(assets, "canopyx-pivot.css"), "utf8") + '</style></head>');
+    if (embedded) html = html.replace('<div class="cx-host"', '<section><div class="cx-host" style="height:300px;max-height:300px"')
+      .replace('</div></body>', '</div></section></body>');
+    await page.route("http://127.0.0.1/pivot-print", route => route.fulfill({ contentType: "text/html", body: html }));
+    await page.goto("http://127.0.0.1/pivot-print"); await page.waitForSelector("[data-cx-ready]");
+    await page.emulateMedia({ media: "print" }); await nextFrames(page);
+    const print = await page.evaluate(() => {
+      const host = document.querySelector("[data-canopyx-host]"), table = host.querySelector(".cx-pivot-table"), box = host.getBoundingClientRect();
+      const last = table.tBodies[0].lastElementChild.getBoundingClientRect(), foot = table.tFoot.getBoundingClientRect();
+      return { hostBottom: box.bottom, lastBottom: last.bottom, totalBottom: foot.bottom, rows: table.tBodies[0].rows.length };
+    });
+    expect(print.rows).toBeGreaterThan(30);
+    expect(print.lastBottom).toBeLessThanOrEqual(print.hostBottom + 1);
+    expect(print.totalBottom).toBeLessThanOrEqual(print.hostBottom + 1);
+  });
+}
