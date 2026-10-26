@@ -60,6 +60,8 @@ test("text and list dialogs escape markup, return focus and leave fixed row heig
   const dialog = page.getByRole("dialog", { name: "Notes", exact: true });
   await expect(dialog).toBeVisible(); await expect(dialog.locator("img")).toHaveCount(0);
   await expect(dialog.locator("pre")).toHaveText(view.rows[0].cells.notes);
+  // Contrast is measured on the settled dialog: while it fades in, every colour is blended with the page behind it.
+  await dialog.evaluate(element => Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished)));
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(await row(page, "a").evaluate(item => item.getBoundingClientRect().height)).toBe(28);
   await dialog.locator("pre").press("Escape"); await expect(dialog).toHaveCount(0); await expect(button).toBeFocused();
