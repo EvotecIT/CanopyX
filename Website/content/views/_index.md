@@ -2,6 +2,7 @@
 title: Views
 description: Every view CanopyX draws from your records, each with a live demo and the C# and JavaScript to build it yourself.
 layout: viewsindex
+meta.prism: true
 meta.seo_title: CanopyX views - trees, grids, calendars, matrices and more
 ---
 

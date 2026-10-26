@@ -4,6 +4,7 @@ description: Resources as a tree with capacity per group, events on a scrolling 
 slug: timeline
 order: 4
 layout: view
+meta.prism: true
 meta.view: timeline
 meta.seo_title: Resource timeline: events on a resource tree | CanopyX
 ---

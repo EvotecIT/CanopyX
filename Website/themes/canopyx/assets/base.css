@@ -241,9 +241,9 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 .cnx-tabs--code {
   --cnx-tab-line: var(--cnx-code-line);
   --cnx-tab-ink: var(--cnx-code-muted);
-  --cnx-tab-ink-on: #fff;
-  --cnx-tab-on: rgba(167, 196, 178, .1);
-  --cnx-tab-bar: var(--cnx-leaf);
+  --cnx-tab-ink-on: var(--cnx-code-on);
+  --cnx-tab-on: var(--cnx-code-tab-on);
+  --cnx-tab-bar: var(--cnx-code-key);
 }
 .cnx-tabs--code .cnx-tab { min-height: 40px; font-family: var(--cnx-mono); font-size: .78rem; font-weight: 500; }
 
@@ -270,28 +270,28 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 }
 
 /* Install command: the code block component with package tabs in its caption bar. */
-.cnx-install { border-color: rgba(167, 196, 178, .24); background: rgba(4, 14, 9, .55); }
-.cnx-install .cnx-codeblock__bar { padding: 0 6px 0 0; background: rgba(4, 14, 9, .35); border-bottom-color: rgba(167, 196, 178, .18); }
+.cnx-install { border-color: var(--cnx-code-line); background: var(--cnx-code-bg); }
+.cnx-install .cnx-codeblock__bar { padding: 0 6px 0 0; background: var(--cnx-code-bar); border-bottom-color: var(--cnx-code-line); }
 .cnx-install__line { display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 14px; }
-.cnx-install__line code { flex: 1; min-width: 0; overflow-x: auto; color: #fff; font-size: .9375rem; white-space: nowrap; }
-.cnx-install__prompt { color: var(--cnx-leaf); font-weight: 700; }
+.cnx-install__line code { flex: 1; min-width: 0; overflow-x: auto; color: var(--cnx-code-on); font-size: .9375rem; white-space: nowrap; }
+.cnx-install__prompt { color: var(--cnx-code-key); font-weight: 700; }
 
-/* Copy buttons sit on the dark code surfaces, so they use fixed light-on-dark colours. */
+/* Copy buttons sit on the code surfaces and take their colours. */
 .cnx-copy {
   flex: none;
   min-height: 30px;
   padding: 0 11px;
-  border: 1px solid rgba(167, 196, 178, .3);
+  border: 1px solid var(--cnx-code-line);
   border-radius: var(--cnx-radius-sm);
   background: transparent;
-  color: #c9dccf;
+  color: var(--cnx-code-muted);
   font: inherit;
   font-size: .8125rem;
   font-weight: 600;
   cursor: pointer;
 }
-.cnx-copy:hover { color: #fff; border-color: rgba(167, 196, 178, .6); }
-.cnx-copy[data-copied] { color: var(--cnx-leaf); border-color: var(--cnx-leaf); }
+.cnx-copy:hover { color: var(--cnx-code-on); border-color: var(--cnx-code-muted); }
+.cnx-copy[data-copied] { color: var(--cnx-code-key); border-color: var(--cnx-code-key); }
 
 /* Page header: a breadcrumb path opens the node, its guide line runs down the header and turns into the rule. */
 .cnx-pagehead {
@@ -360,7 +360,7 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 .cnx-node p { color: var(--cnx-ink-2); max-width: 62ch; }
 .cnx-node:has(> :only-child)::after { display: none; }
 
-/* Code block: one component for every snippet on the site. The surface stays dark in both themes. */
+/* Code block: one component for every snippet on the site, on the theme's code surface. */
 .cnx-codeblock {
   min-width: 0;
   margin: 0;
@@ -369,7 +369,7 @@ code, pre, kbd { font-family: var(--cnx-mono); }
   border-radius: var(--cnx-radius);
   background: var(--cnx-code-bg);
   color: var(--cnx-code-ink);
-  --cnx-scroll-thumb: rgba(200, 220, 206, .26);
+  --cnx-scroll-thumb: color-mix(in srgb, var(--cnx-code-muted) 45%, transparent);
 }
 .cnx-codeblock__bar {
   display: flex;
@@ -687,12 +687,12 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 }
 
 /* Scrollbars that belong to the theme: thin, a track that blends into the surface, and a muted thumb that brightens on hover. */
-:root { --cnx-scroll-thumb: rgba(69, 86, 76, .32); --cnx-scroll-thumb-hover: rgba(27, 117, 72, .6); }
-:root[data-theme="dark"] { --cnx-scroll-thumb: rgba(200, 220, 206, .26); --cnx-scroll-thumb-hover: rgba(110, 214, 150, .55); }
+:root { --cnx-scroll-thumb: rgba(75, 74, 94, .3); --cnx-scroll-thumb-hover: rgba(91, 75, 219, .6); }
+:root[data-theme="dark"] { --cnx-scroll-thumb: rgba(200, 200, 230, .24); --cnx-scroll-thumb-hover: rgba(139, 125, 255, .6); }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --cnx-scroll-thumb: rgba(200, 220, 206, .26); --cnx-scroll-thumb-hover: rgba(110, 214, 150, .55); }
+  :root:not([data-theme="light"]) { --cnx-scroll-thumb: rgba(200, 200, 230, .24); --cnx-scroll-thumb-hover: rgba(139, 125, 255, .6); }
 }
-.cnx-cta, .cnx-codeblock { --cnx-scroll-thumb: rgba(200, 220, 206, .26); }
+.cnx-cta { --cnx-scroll-thumb: rgba(200, 200, 230, .26); }
 * { scrollbar-width: thin; scrollbar-color: var(--cnx-scroll-thumb) transparent; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }

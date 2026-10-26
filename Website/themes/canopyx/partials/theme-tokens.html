@@ -27,15 +27,22 @@
   --cnx-tone-compare: #b4690e;
   --cnx-tone-guide: #b5398c;
   --cnx-tone-deliver: #64748b;
-  --cnx-code-bg: #17162a;
-  --cnx-code-bar: #1d1c33;
-  --cnx-code-line: #2c2b48;
-  --cnx-code-ink: #e8e7f5;
-  --cnx-code-muted: #8e8ca8;
-  --cnx-code-key: #a5b4ff;
-  --cnx-code-str: #f7c97e;
-  --cnx-code-num: #f5a97f;
-  --cnx-code-type: #7ee0c7;
+  /* Code: a light surface in the light theme, every token at AA contrast on --cnx-code-bg. */
+  --cnx-code-bg: #f8f8fc;
+  --cnx-code-bar: #f0f0f7;
+  --cnx-code-line: #e2e2ee;
+  --cnx-code-ink: #24223a;
+  --cnx-code-muted: #67657f;
+  --cnx-code-on: #16151f;
+  --cnx-code-tab-on: #ffffff;
+  --cnx-code-key: #5b3fd0;
+  --cnx-code-str: #9a4a00;
+  --cnx-code-num: #b0245a;
+  --cnx-code-type: #0b6f62;
+  --cnx-code-fn: #2558b0;
+  --cnx-code-punct: #6d6b86;
+  --cnx-code-op: #4b4a5e;
+  --cnx-code-prop: #34325a;
   --cnx-shadow: 0 1px 2px rgba(22, 21, 31, .05), 0 22px 44px -28px rgba(22, 21, 31, .3);
   --cnx-radius: 12px;
   --cnx-radius-sm: 7px;
@@ -77,9 +84,21 @@
   --cnx-tone-compare: #f0a748;
   --cnx-tone-guide: #e57fc2;
   --cnx-tone-deliver: #98a4b6;
-  --cnx-code-bg: #0d0c18;
-  --cnx-code-bar: #131226;
-  --cnx-code-line: #262540;
+  --cnx-code-bg: #0f0e1c;
+  --cnx-code-bar: #15142a;
+  --cnx-code-line: #2a2945;
+  --cnx-code-ink: #e8e7f5;
+  --cnx-code-muted: #8e8ca8;
+  --cnx-code-on: #ffffff;
+  --cnx-code-tab-on: #1f1d38;
+  --cnx-code-key: #a5b4ff;
+  --cnx-code-str: #f7c97e;
+  --cnx-code-num: #f5a97f;
+  --cnx-code-type: #7ee0c7;
+  --cnx-code-fn: #c7d0ff;
+  --cnx-code-punct: #9a98b8;
+  --cnx-code-op: #b9b8d0;
+  --cnx-code-prop: #dcdcf0;
   --cnx-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 30px 60px -30px rgba(0, 0, 0, .9);
   --cx-surface: #17171f;
   --cx-text: #ececf3;
@@ -89,5 +108,11 @@
   --cx-tone-warning: #f0b052;
   --cx-tone-danger: #f28b82;
   color-scheme: dark;
+}
+/* Bands that stay dark in both themes (the closing call to action, the docs hero) keep the dark code palette inside them. */
+.cnx-cta, .cnx-maphero {
+  --cnx-code-bg: #0f0e1c; --cnx-code-bar: #15142a; --cnx-code-line: #2a2945; --cnx-code-ink: #e8e7f5; --cnx-code-muted: #8e8ca8;
+  --cnx-code-on: #ffffff; --cnx-code-tab-on: #1f1d38; --cnx-code-key: #a5b4ff; --cnx-code-str: #f7c97e; --cnx-code-num: #f5a97f;
+  --cnx-code-type: #7ee0c7; --cnx-code-fn: #c7d0ff; --cnx-code-punct: #9a98b8; --cnx-code-op: #b9b8d0; --cnx-code-prop: #dcdcf0;
 }
 </style>

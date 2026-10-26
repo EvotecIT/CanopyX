@@ -15,15 +15,40 @@
 .cnx-view__meta code { padding: .2em .5em; border-radius: 6px; background: color-mix(in srgb, var(--cnx-tone) 13%, var(--cnx-card)); color: var(--cnx-ink); font-size: .8125rem; }
 .cnx-view__meta span { color: var(--cnx-ink-3); }
 
+/* Demos: the featured demo and the gallery as a row of tabs over one frame. */
+.cnx-view__demohead { display: grid; gap: 10px; margin-bottom: 12px; }
+.cnx-view__demohead h2 { font-size: .9375rem; color: var(--cnx-ink-3); font-weight: 680; letter-spacing: 0; }
+.cnx-demotabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.cnx-demotab {
+  height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--cnx-line);
+  border-radius: 8px;
+  background: var(--cnx-card);
+  color: var(--cnx-ink-2);
+  font: inherit;
+  font-size: .8438rem;
+  font-weight: 620;
+  cursor: pointer;
+}
+.cnx-demotab:hover { color: var(--cnx-ink); border-color: var(--cnx-line-strong); }
+.cnx-demotab[aria-selected="true"] { color: var(--cnx-ink); border-color: var(--cnx-accent); background: var(--cnx-select); box-shadow: inset 0 0 0 1px var(--cnx-accent); }
 .cnx-view__demo .cnx-frame__screen { height: clamp(520px, 74vh, 780px); }
+.cnx-view__demo .cnx-demo { position: absolute; inset: 0; }
+.cnx-view__demo .cnx-demo iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--cnx-card); }
+.cnx-view__demo .cnx-demo--email { overflow: auto; background: var(--cnx-card-alt); }
 .cnx-view__mail { max-height: 660px; overflow: auto; background: var(--cnx-card-alt); }
 
-.cnx-view__build { display: grid; grid-template-columns: minmax(0, 7fr) minmax(300px, 5fr); gap: 28px; align-items: start; margin-top: clamp(36px, 4vw, 56px); }
+.cnx-view__build { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(32px, 4vw, 48px); margin-top: clamp(36px, 4vw, 56px); }
 .cnx-view__build h2 { font-size: 1.375rem; }
 .cnx-view__build h2 + p { margin-top: 8px; color: var(--cnx-ink-2); font-size: .9688rem; max-width: 60ch; }
 .cnx-view__code > .cnx-viewcode, .cnx-view__code > .cnx-viewcode__missing { margin-top: 16px; }
-.cnx-view__code .cnx-viewcode pre { max-height: 560px; }
+.cnx-view__code .cnx-viewcode pre { max-height: 620px; font-size: .8438rem; }
 .cnx-view__try .cnx-steps { margin-top: 16px; }
+/* The steps run as one row of cells under the code. */
+.cnx-view__try .cnx-steps__rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.cnx-view__try .cnx-step + .cnx-step { border-top: 0; box-shadow: inset 1px 0 0 var(--cnx-line); }
+.cnx-view__try .cnx-step:hover { box-shadow: inset 0 2px 0 var(--cnx-accent); }
 .cnx-view__disk { margin-top: 40px; }
 .cnx-view__notes { margin-top: 40px; }
 

@@ -10,11 +10,11 @@
     </div>
     <ul class="cnx-catalog__views">
       {{~ for v in views.views ~}}
-      {{~ if v.family == f.id; d = data.demos[v.id] ~}}
+      {{~ if v.family == f.id; d = data.demos[v.id]; g = data.gallery ? data.gallery[v.id] : null; count = 1 + (g ? g.size : 0) ~}}
       <li class="cnx-viewcard cnx-tone--{{ f.tone }}">
         <h4><a href="/views/{{ v.id }}/">{{ v.name }}</a></h4>
         <p>{{ v.body }}</p>
-        <p class="cnx-viewcard__meta"><code>{{ v.api }}</code>{{ if d }}<span>{{ d.stat }}</span>{{ end }}</p>
+        <p class="cnx-viewcard__meta"><code>{{ v.api }}</code><span>{{ count }} {{ if count == 1 }}demo{{ else }}demos{{ end }}</span></p>
       </li>
       {{~ end; end ~}}
     </ul>

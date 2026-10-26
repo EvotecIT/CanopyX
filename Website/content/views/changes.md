@@ -4,6 +4,7 @@ description: A change list with risk flags and reasons, propagation to each repl
 slug: changes
 order: 6
 layout: view
+meta.prism: true
 meta.view: changes
 meta.seo_title: Change review: change lists and diffs | CanopyX
 ---

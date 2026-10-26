@@ -81,7 +81,7 @@
 .cnx-bench__code .cnx-viewcode pre { max-height: none; overflow: auto; }
 .cnx-bench__code .cnx-viewcode__panel { min-height: 0; overflow: hidden; }
 .cnx-bench__more { margin: 0; padding: 12px 18px 14px; border-top: 1px solid var(--cnx-code-line); font-size: .875rem; }
-.cnx-bench__more .cnx-link { color: #fff; border-bottom-color: var(--cnx-code-key); }
+.cnx-bench__more .cnx-link { color: var(--cnx-code-on); border-bottom-color: var(--cnx-code-key); }
 
 /* Sections */
 .cnx-main > .cnx-section { padding-block: clamp(64px, 8vw, 104px) 0; }

@@ -89,6 +89,9 @@ Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
 // The documentation's visuals: output under each snippet, file layouts, protocol messages and navigation thumbnails.
 Console.WriteLine(SiteDemos.Docs.SiteDocs.Write(website, utf8));
 
+// The demo galleries of the view pages, copied from the examples program's output.
+Console.WriteLine(SiteDemos.Gallery.GalleryDemos.Write(website, utf8));
+
 /// <summary>A deterministic device inventory with the kind of data an endpoint report carries.</summary>
 internal static class DeviceInventory {
     private static readonly string[] Sites = { "Warsaw", "London", "Berlin", "Madrid", "Remote" };

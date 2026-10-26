@@ -33,35 +33,54 @@
     <p class="cnx-view__meta"><code>{{ v.api }}</code>{{ if d }}<span>{{ d.stat }}</span>{{ end }}<a class="cnx-link" href="{{ v.docs }}">Documentation<span class="cnx-sr"> for the {{ v.name | string.downcase }}</span></a></p>
   </header>
 
-  <figure class="cnx-frame cnx-view__demo">
-    <div class="cnx-frame__bar">
-      <span class="cnx-frame__title">{{ v.example }}</span>
-      {{~ if v.src ~}}
-      <span class="cnx-frame__path">{{ v.src }}</span>
-      <a class="cnx-frame__open" href="{{ v.src }}" data-cnx-demo-open><span>Open<span class="cnx-sr"> the {{ v.example | string.downcase }}</span> full screen</span></a>
-      {{~ else ~}}
-      <span class="cnx-frame__path">CanopyStaticHtml.Render(view, options)</span>
-      {{~ end ~}}
-    </div>
-    {{~ if v.src ~}}
-    <div class="cnx-frame__screen">
-      <iframe title="CanopyX {{ v.name | string.downcase }}: {{ v.example | string.downcase }}" data-cnx-frame data-src="{{ v.src }}"{{ if v.srcDark }} data-src-dark="{{ v.srcDark }}"{{ end }}></iframe>
-    </div>
-    {{~ else ~}}
-    <div class="cnx-view__mail">
-      <div class="cnx-mail">
-        <dl class="cnx-mail__head">
-          <div><dt>From</dt><dd>File share report</dd></div>
-          <div><dt>Subject</dt><dd>Weekly changes on three shares</dd></div>
-        </dl>
-        <div class="cnx-mail__body">
-          <p>Here is this week's outline. The interactive report is attached.</p>
-          {{ include "generated/outline" }}
-        </div>
+  {{~ ## The demos: the view's featured demo, then its gallery from data/gallery.json (examples from the repository),
+       as tabs over one frame. Each tab loads its page the first time it opens. ## ~}}
+  {{~ gallery = data.gallery ? data.gallery[v.id] : null
+      demos = [{ id: "main", title: v.example, body: v.body, src: v.src, srcDark: v.srcDark }]
+      if gallery; for g in gallery; demos = demos | array.add g; end; end ~}}
+  <section class="cnx-view__demos" data-cnx-stage aria-labelledby="cnx-view-demos-title">
+    <div class="cnx-view__demohead">
+      <h2 id="cnx-view-demos-title">{{ demos.size }} {{ if demos.size == 1 }}demo{{ else }}demos{{ end }}</h2>
+      <div class="cnx-demotabs" role="tablist" aria-label="Demos of the {{ v.name | string.downcase }}">
+        {{~ for d in demos ~}}
+        <button type="button" role="tab" class="cnx-demotab" id="cnx-demo-tab-{{ d.id }}" aria-controls="cnx-demo-{{ d.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" data-cnx-demo="{{ d.id }}">{{ d.title }}</button>
+        {{~ end ~}}
       </div>
     </div>
-    {{~ end ~}}
-  </figure>
+    <figure class="cnx-frame cnx-view__demo">
+      <div class="cnx-frame__bar">
+        {{~ for d in demos ~}}
+        <span class="cnx-frame__title" data-cnx-caption="{{ d.id }}"{{ if !for.first }} hidden{{ end }}>{{ d.title }}</span>
+        {{~ end ~}}
+        <a class="cnx-frame__open" href="{{ if v.src }}{{ v.src }}{{ else }}/views/{{ v.id }}/{{ end }}" data-cnx-demo-open><span>Open<span class="cnx-sr"> this demo</span> full screen</span></a>
+      </div>
+      <div class="cnx-frame__screen">
+        {{~ for d in demos ~}}
+        <div class="cnx-demo{{ if !d.src }} cnx-demo--email{{ end }}" role="tabpanel" id="cnx-demo-{{ d.id }}" aria-labelledby="cnx-demo-tab-{{ d.id }}"{{ if !for.first }} hidden{{ end }}>
+          {{~ if d.src ~}}
+          <iframe title="CanopyX {{ v.name | string.downcase }}: {{ d.title | string.downcase }}" data-cnx-frame data-src="{{ d.src }}"{{ if d.srcDark }} data-src-dark="{{ d.srcDark }}"{{ end }}></iframe>
+          {{~ else ~}}
+          <div class="cnx-mail">
+            <dl class="cnx-mail__head">
+              <div><dt>From</dt><dd>File share report</dd></div>
+              <div><dt>Subject</dt><dd>Weekly changes on three shares</dd></div>
+            </dl>
+            <div class="cnx-mail__body">
+              <p>Here is this week's outline. The interactive report is attached.</p>
+              {{ include "generated/outline" }}
+            </div>
+          </div>
+          {{~ end ~}}
+        </div>
+        {{~ end ~}}
+      </div>
+      <figcaption class="cnx-frame__caption">
+        {{~ for d in demos ~}}
+        <p data-cnx-caption="{{ d.id }}"{{ if !for.first }} hidden{{ end }}>{{ d.body }}</p>
+        {{~ end ~}}
+      </figcaption>
+    </figure>
+  </section>
 
   <div class="cnx-view__build">
     <section class="cnx-view__code" aria-labelledby="cnx-view-code-title">

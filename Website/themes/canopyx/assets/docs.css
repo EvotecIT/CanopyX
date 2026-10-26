@@ -194,9 +194,9 @@
 .cnx-maphero .cnx-crumbs [aria-current] { color: #f1f8f3; }
 .cnx-maphero .cnx-crumbs li + li::before { background: var(--cnx-forest-muted); }
 .cnx-maphero h1 { color: #f1f8f3; font-size: clamp(2.5rem, 1.4rem + 3vw, 4rem); line-height: 1.02; }
-.cnx-maphero__lede { max-width: 54ch; color: #c9dccf; font-size: clamp(1.0625rem, 1rem + .3vw, 1.1875rem); }
+.cnx-maphero__lede { max-width: 54ch; color: var(--cnx-forest-muted); font-size: clamp(1.0625rem, 1rem + .3vw, 1.1875rem); }
 .cnx-maphero .cnx-install { max-width: 520px; }
-.cnx-maphero__render { border-color: rgba(167, 196, 178, .3); box-shadow: 0 40px 80px -36px rgba(0, 0, 0, .55); }
+.cnx-maphero__render { border-color: rgba(165, 180, 255, .3); box-shadow: 0 40px 80px -36px rgba(0, 0, 0, .55); }
 .cnx-maphero__render .cnx-frame__body { padding: 10px 12px; }
 .cnx-maphero__render .cnx-thumb__render { zoom: 1; padding: 0; }
 

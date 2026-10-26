@@ -4,6 +4,7 @@ description: A state for each pair of two sets, with totals, grouping and sortin
 slug: matrix
 order: 5
 layout: view
+meta.prism: true
 meta.view: matrix
 meta.seo_title: Status matrix: a state for every pair | CanopyX
 ---

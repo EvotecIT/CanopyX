@@ -1,9 +1,17 @@
 import { createCalendar } from "@evotecit/canopyx/grid";
 import "@evotecit/canopyx/grid.css";
 
+const on16th = hour => `2026-10-16T${String(hour).padStart(2, "0")}:00:00Z`;
+const event = (title, tone, resource, from, to) =>
+  ({ title, tone, resource, start: on16th(from), end: on16th(to) });
+
 createCalendar(document.getElementById("timeline"), {
-  id: "host-events", label: "Incidents by host",
-  timeline: true, view: "timeline", date: "2026-10-16", calendar: { zoom: "hour" },
+  id: "host-events",
+  label: "Incidents by host",
+  timeline: true,
+  view: "timeline",
+  date: "2026-10-16",
+  calendar: { zoom: "hour" },
   resources: [
     { id: "site-warsaw", label: "Warsaw" },
     { id: "waw-web-01", label: "waw-web-01", parent: "site-warsaw" },
@@ -13,10 +21,10 @@ createCalendar(document.getElementById("timeline"), {
     { id: "ber-db-01", label: "ber-db-01", parent: "site-berlin" }
   ],
   events: [
-    { title: "Patch window", start: "2026-10-16T06:00:00Z", end: "2026-10-16T09:00:00Z", resource: "waw-web-01", tone: "info" },
-    { title: "Replication lag", start: "2026-10-16T09:00:00Z", end: "2026-10-16T11:00:00Z", resource: "waw-db-01", tone: "warning" },
-    { title: "Power feed lost", start: "2026-10-16T11:00:00Z", end: "2026-10-16T12:00:00Z", resource: "ber-web-01", tone: "danger" },
-    { title: "Index rebuild", start: "2026-10-16T14:00:00Z", end: "2026-10-16T18:00:00Z", resource: "ber-db-01", tone: "info" },
-    { title: "Disk alerts", start: "2026-10-16T16:00:00Z", end: "2026-10-16T18:00:00Z", resource: "waw-db-01", tone: "warning" }
+    event("Patch window", "info", "waw-web-01", 6, 9),
+    event("Replication lag", "warning", "waw-db-01", 9, 11),
+    event("Power feed lost", "danger", "ber-web-01", 11, 12),
+    event("Index rebuild", "info", "ber-db-01", 14, 18),
+    event("Disk alerts", "warning", "waw-db-01", 16, 18)
   ]
 });

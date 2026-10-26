@@ -4,6 +4,7 @@ description: Script-free tables from the same view definition, with inline style
 slug: email
 order: 8
 layout: view
+meta.prism: true
 meta.view: email
 meta.seo_title: Script-free tables for email and print | CanopyX
 ---

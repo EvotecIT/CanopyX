@@ -4,6 +4,7 @@ description: Expandable branches with lazy children, path search, filters that k
 slug: files
 order: 1
 layout: view
+meta.prism: true
 meta.view: files
 meta.seo_title: Tree grid: lazy branches and search | CanopyX
 ---
