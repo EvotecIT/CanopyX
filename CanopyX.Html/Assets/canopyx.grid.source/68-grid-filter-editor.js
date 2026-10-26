@@ -1,6 +1,6 @@
   // Query parsing and matching stay in the core. The editor part (menus, editors, drawer, selected aggregates) and the export
   // part install on first use through the runtime's part loader (82-parts.js).
-  const FILTER_EDITOR=definePart(DataGrid,"filter-editor","filter editor",()=>({DataGrid,h,setText,gridButton,gridInputLabel,gridOption,gridScalar,gridDateInputMoment,gridQuery,gridQueryStart,
+  const FILTER_EDITOR=definePart(DataGrid,"filter-editor","filter editor",()=>({DataGrid,h,setText,gridButton,gridVariant,gridInputLabel,gridOption,gridScalar,gridDateInputMoment,gridQuery,gridQueryStart,
     GRID_FILTER_LABELS,gridResultShape,gridQueryRows,gridOrder,gridKeyCompare,gridFacetKey,columnNumericTone,columnValueTone,gridColumnProjection,gridCellRenderer,cellValue,cellText,foldText,
     reachable,gridMatchesGroup,gridDecorateButton,gridIcon,numberFormat,numberText,fill,announceMenu,applyTone,toneOf,badgeElement,isCellObject,RECORD_IMPL,
     GRID_REPORTING,overlayTheme,UI_IMPL,UI_TOOLS,reportingRangeRows:typeof reportingRangeRows==="function"?reportingRangeRows:null}));

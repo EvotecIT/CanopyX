@@ -1,4 +1,5 @@
-/* Graphite chrome shared by flat grids and trees: the card,toolbar,search,buttons,menus,header and cells. */
+/* Graphite chrome shared by flat grids and trees: the card,toolbar,search,menus,header and cells. Buttons,fields,chips
+   and badges are the shared controls (canopyx.source/controls.css). */
 .cx-tree-tools{border:var(--cx-size-1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));border-radius:var(--hfx-radius-container,var(--hfx-radius-lg,10px));overflow:hidden;font:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem))/1.4 var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);}
 .cx-page > .cx-tree-tools,.cx-page > .cx-main > .cx-tree-tools{padding:0;}
 body .cx-host.cx-tree-tools{padding:0;}
@@ -11,14 +12,7 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-tree-tools .cx-search:focus-within{outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));outline-offset:var(--hfx-focus-offset,2px);}
 .cx-tree-tools .cx-search .cx-search-input:focus-visible{outline:0;}
 .cx-tree-tools .cx-search kbd{font:var(--cx-size-11px) var(--hfx-font-mono,"Cascadia Mono","Cascadia Code",Consolas,"SFMono-Regular",Menlo,monospace);border:var(--cx-size-1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));padding:0 var(--cx-size-5px);}
-.cx-tree-tools .cx-button,.cx-tree-tools .cx-btn{height:var(--hfx-control-height-md,calc(36px - var(--cx-compact,0) * 8px));min-height:var(--cx-ui-touch-target,var(--hfx-control-height-md,calc(36px - var(--cx-compact,0) * 8px)));display:inline-flex;align-items:center;justify-content:center;gap:var(--cx-size-6px);padding:0 var(--cx-size-11px);border:var(--cx-size-1px) solid var(--hfx-color-border-strong,light-dark(#cdd0d5,#363a42));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));font:var(--hfx-weight-medium,500) var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem)) var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);cursor:pointer;white-space:nowrap;}
 .cx-tree-tools .cx-columns > summary::after{display:none;}
-.cx-tree-tools .cx-button:hover,.cx-tree-tools .cx-btn:hover{background:var(--hfx-color-hover,light-dark(#f5f5f5,#232529));}
-.cx-tree-tools .ghost{border-color:transparent;color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));}
-.cx-tree-tools .icon{width:var(--hfx-control-height-md,calc(36px - var(--cx-compact,0) * 8px));padding:0;}
-.cx-tree-tools .active{border-color:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));color:var(--hfx-color-accent-text,light-dark(#02726a,#37c9b8));background:var(--hfx-color-accent-subtle,light-dark(#e7f1f1,#1b3435));}
-.cx-tree-tools .badge{min-width:var(--cx-size-18px);height:var(--cx-size-18px);padding:0 var(--cx-size-5px);border-radius:var(--hfx-radius-badge,var(--hfx-radius-sm,4px));background:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));color:var(--hfx-color-accent-contrast,light-dark(#ffffff,#0c0d10));font-size:var(--cx-size-11d5px);font-weight:700;display:inline-grid;place-items:center;}
-.cx-tree-tools .cx-button:disabled{opacity:.4;cursor:default;}
 .cx-spacer{flex:1;}
 .cx-sep{width:var(--cx-size-1px);height:var(--cx-size-20px);background:var(--hfx-color-border,light-dark(#e2e4e7,#272a30));}
 .cx-tree-tools .cx-hrow{height:var(--hfx-table-header-height,calc(40px - var(--cx-compact,0) * 8px));}

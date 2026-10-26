@@ -28,8 +28,8 @@
       const apply=clause=>{draft=clause??null;clearTimeout(timer);timer=setTimeout(flush,200);};
       apply.cancel=()=>{clearTimeout(timer);draft=undefined;};
       signal.addEventListener("abort",()=>clearTimeout(timer),{once:true});
-      footer.append(gridButton(this.labels.gridClearColumnFilter,()=>{clearTimeout(timer);this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,null)).catch(failure=>this.emit("error",{error:failure}));this.closeGridPopover();}),
-        gridButton(this.labels.gridDone,()=>{flush();this.closeGridPopover();}));
+      footer.append(gridVariant(gridButton(this.labels.gridClearColumnFilter,()=>{clearTimeout(timer);this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,null)).catch(failure=>this.emit("error",{error:failure}));this.closeGridPopover();}),"ghost"),
+        gridVariant(gridButton(this.labels.gridDone,()=>{flush();this.closeGridPopover();}),"primary"));
       const custom=item=>item.groups?item.filters.some(custom)||item.groups.some(custom):!Object.hasOwn(GRID_FILTER_LABELS,item.operator);
       const faceted=!clauses.some(custom)&&column.kind==="text"&&(this.view.source.kind==="inline"||this.view.reporting?.facetColumns?.includes(id)&&typeof this.source.facet==="function");
       if(!faceted&&clauses.some(item=>item.groups&&(item.groups.length||item.filters.length>2))||!faceted&&clauses.length>2)complex();

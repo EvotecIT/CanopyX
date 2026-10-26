@@ -1,6 +1,8 @@
   // ---------- toolbar menus shared by flat grids and trees ----------
   // Flat grids mix these into DataGrid; the tree tools part includes this part and mixes the same methods into TreeGrid.
   // They read only what both views have: toolbar, labels, lifetime, the saved-view methods and destroyed.
+  /** Marks a shared button as primary, ghost or danger (canopyx.source/controls.css). */
+  function gridVariant(button, variant) { button.dataset.variant = variant; return button; }
   function gridButton(text, run) {
     const button = h("button", "cx-button"); button.type = "button"; setText(button, text);
     // WebKit does not focus buttons on pointer activation. Keep subsequent menu keys with the clicked control.

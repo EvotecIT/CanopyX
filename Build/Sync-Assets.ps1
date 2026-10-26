@@ -84,7 +84,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
-        Extension = 'CanopyX.Html/Assets/canopyx.source/canopyx.css'
+        Extension = @('CanopyX.Html/Assets/canopyx.source/controls.css', 'CanopyX.Html/Assets/canopyx.source/canopyx.css')
         Target = 'CanopyX.Html/Assets/canopyx.css'
     }
     @{
@@ -95,7 +95,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css')
+        Extension = @('CanopyX.Html/Assets/canopyx.source/controls.css', 'CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css')
         Target = 'CanopyX.Html/Assets/canopyx-interactive.css'
     }
     @{
@@ -113,7 +113,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', $flowHostStyle)
+        Extension = @('CanopyX.Html/Assets/canopyx.source/controls.css', 'CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', $flowHostStyle)
         Target = 'CanopyX.Html/Assets/canopyx-grid.css'
     }
     @{
@@ -132,7 +132,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
-        Extension = @('CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css', $flowHostStyle)
+        Extension = @('CanopyX.Html/Assets/canopyx.source/controls.css', 'CanopyX.Html/Assets/canopyx.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.interactive.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.grid.source/chrome.css', 'CanopyX.Html/Assets/canopyx.grid.source/canopyx.css', 'CanopyX.Html/Assets/canopyx.reporting.source/canopyx.css', $flowHostStyle)
         Target = 'CanopyX.Html/Assets/canopyx-reporting.css'
     }
     @{
@@ -157,7 +157,7 @@ $assets = @(
     }
     @{
         Source = 'CanopyX.Html/Assets/canopyx.source/base.css'
-        Extension = $flowHostStyle
+        Extension = @('CanopyX.Html/Assets/canopyx.source/controls.css', $flowHostStyle)
         Target = 'CanopyX.Html/Assets/canopyx-flow-entry.css'
     }
     @{

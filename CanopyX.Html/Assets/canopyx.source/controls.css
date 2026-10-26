@@ -1,0 +1,145 @@
+/* Shared controls: one button, field, checkbox, switch, segmented control, chip, badge, disclosure and state for every view,
+   every lazy part and any host page. Everything comes from the shared --hfx-* roles, so a host's palette, type scale,
+   spacing, radii and density restyle all of them together. Views keep their own class names as aliases of these. */
+@layer hfx.components {
+  /* Button: default, primary, ghost, danger and icon variants in three sizes. Selected (pressed) buttons use the accent. */
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close) {
+    display:inline-flex;align-items:center;justify-content:center;gap:var(--hfx-space-1-5);
+    min-block-size:var(--cx-ui-touch-target,var(--hfx-control-height-md));block-size:var(--hfx-control-height-md);padding:0 var(--hfx-control-padding-x);
+    border:var(--hfx-border-width) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-control);
+    background:var(--hfx-color-surface);color:var(--hfx-color-text);
+    font:var(--hfx-weight-medium) var(--hfx-control-font-size) var(--hfx-font-sans);line-height:1;white-space:nowrap;cursor:pointer;
+  }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):hover { background:var(--hfx-color-hover); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):active { background:var(--hfx-color-active); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):disabled,:where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close)[aria-disabled="true"] {
+    color:var(--hfx-color-text-disabled);background:var(--hfx-color-surface);border-color:var(--hfx-color-border);cursor:default;
+  }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-variant="primary"],[data-primary],.primary) {
+    background:var(--hfx-color-accent);border-color:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast);
+  }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-variant="primary"],[data-primary],.primary):hover { background:var(--hfx-color-accent-hover);border-color:var(--hfx-color-accent-hover); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-variant="ghost"],[data-ghost],.ghost) { background:transparent;border-color:transparent;color:var(--hfx-color-text-secondary); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-variant="ghost"],[data-ghost],.ghost):hover { background:var(--hfx-color-hover);color:var(--hfx-color-text); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-variant="danger"],.danger) { color:var(--hfx-color-status-bad-fg);border-color:var(--hfx-color-status-bad-border); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([aria-pressed="true"],.active) {
+    border-color:var(--hfx-color-accent);background:var(--hfx-color-accent-subtle);color:var(--hfx-color-accent-text);
+  }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-size="sm"],.sm) { block-size:var(--hfx-control-height-sm);min-block-size:var(--hfx-control-height-sm);padding:0 var(--hfx-space-2); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-size="lg"],.lg) { block-size:var(--hfx-control-height-lg);min-block-size:var(--hfx-control-height-lg); }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-icon],.icon) { inline-size:var(--hfx-control-height-md);padding:0; }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-icon],.icon):is([data-size="sm"],.sm) { inline-size:var(--hfx-control-height-sm); }
+  /* A count on a button (filters applied, items selected). */
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close) :where(.badge,.cx-count) {
+    display:inline-grid;place-items:center;min-inline-size:var(--hfx-badge-height);block-size:var(--hfx-badge-height);padding:0 var(--hfx-space-1);
+    border-radius:var(--hfx-radius-pill);background:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast);
+    font-size:var(--hfx-type-caption-size);font-weight:var(--hfx-weight-semibold);
+  }
+
+  /* Field: text, number, date, search and select inputs, one look in every view. */
+  :where(.cx-input,.cx-select,.cx-textarea) {
+    min-inline-size:0;block-size:var(--hfx-control-height-md);padding:0 calc(var(--hfx-space-1)*2.5);
+    border:var(--hfx-border-width) solid var(--hfx-color-border-control);border-radius:var(--hfx-radius-control);
+    background:var(--hfx-color-surface);color:var(--hfx-color-text);font:inherit;font-size:var(--hfx-control-font-size);
+  }
+  :where(.cx-textarea) { block-size:auto;min-block-size:calc(var(--hfx-control-height-md)*2);padding-block:var(--hfx-space-2); }
+  :where(.cx-input,.cx-select,.cx-textarea)::placeholder { color:var(--hfx-color-text-muted);opacity:1; }
+  :where(.cx-input,.cx-select,.cx-textarea):focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset);border-color:var(--hfx-color-accent); }
+  :where(.cx-input,.cx-select,.cx-textarea):disabled { color:var(--hfx-color-text-disabled);background:var(--hfx-color-surface-sunken); }
+  :where(.cx-input,.cx-select,.cx-textarea)[aria-invalid="true"] { border-color:var(--hfx-color-status-bad-fg); }
+  :where(.cx-input,.cx-select,.cx-textarea):is([data-size="sm"],.sm) { block-size:var(--hfx-control-height-sm);padding:0 var(--hfx-space-2); }
+
+  /* Checkbox and radio: the native control in the accent, one size everywhere. */
+  :where(.cx-check) { inline-size:var(--hfx-icon-md);block-size:var(--hfx-icon-md);margin:0;accent-color:var(--hfx-color-accent);flex:none; }
+  /* Switch: a checkbox drawn as a track and thumb (role="switch" on the input), with its label beside it. */
+  :where(.cx-toggle) {
+    appearance:none;flex:none;position:relative;inline-size:calc(var(--hfx-icon-md)*2.25);block-size:calc(var(--hfx-icon-md)*1.25);margin:0;
+    border-radius:var(--hfx-radius-pill);background:var(--hfx-color-border-strong);cursor:pointer;
+    transition:background-color var(--hfx-motion-duration-fast) var(--hfx-motion-easing-standard);
+  }
+  :where(.cx-toggle)::before {
+    content:"";position:absolute;inset-block-start:calc(var(--hfx-icon-md)*.125);inset-inline-start:calc(var(--hfx-icon-md)*.125);
+    inline-size:var(--hfx-icon-md);block-size:var(--hfx-icon-md);border-radius:var(--hfx-radius-pill);background:var(--hfx-color-surface);box-shadow:var(--hfx-elevation-1);
+    transition:transform var(--hfx-motion-duration-fast) var(--hfx-motion-easing-standard);
+  }
+  :where(.cx-toggle):checked { background:var(--hfx-color-accent); }
+  :where(.cx-toggle):checked::before { transform:translateX(var(--hfx-icon-md)); }
+  :where(:dir(rtl)) :where(.cx-toggle):checked::before { transform:translateX(calc(var(--hfx-icon-md)*-1)); }
+  :where(.cx-toggle):disabled { background:var(--hfx-color-border);cursor:default; }
+  :where(.cx-toggle,.cx-check):focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
+
+  /* Segmented control: a sunken track whose chosen option is raised. Buttons carry aria-pressed or role="radio". */
+  :where(.cx-segmented,.cx-seg) {
+    display:inline-flex;align-items:center;gap:var(--hfx-space-0-5);padding:var(--hfx-space-0-5);
+    border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface-sunken);
+  }
+  :where(.cx-segmented,.cx-seg) > :where(button,[role="radio"]) {
+    display:inline-flex;align-items:center;justify-content:center;gap:var(--hfx-space-1-5);
+    block-size:calc(var(--hfx-control-height-md) - var(--hfx-space-1));padding:0 var(--hfx-space-3);border:0;border-radius:calc(var(--hfx-radius-control) - var(--hfx-space-0-5));
+    background:transparent;color:var(--hfx-color-text-secondary);font:var(--hfx-weight-medium) var(--hfx-control-font-size) var(--hfx-font-sans);cursor:pointer;white-space:nowrap;
+  }
+  :where(.cx-segmented,.cx-seg) > :where(button,[role="radio"]):hover { color:var(--hfx-color-text); }
+  :where(.cx-segmented,.cx-seg) > :where([aria-pressed="true"],[aria-checked="true"],.active,.on) { background:var(--hfx-color-surface-raised);color:var(--hfx-color-text);box-shadow:var(--hfx-elevation-1); }
+  :where(.cx-segmented,.cx-seg) > :where(button,[role="radio"]):focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(var(--hfx-focus-width)*-1); }
+  :where(.cx-segmented,.cx-seg):is([data-size="sm"],.sm) > :where(button,[role="radio"]) { block-size:calc(var(--hfx-control-height-sm) - var(--hfx-space-1));padding:0 var(--hfx-space-2); }
+
+  /* Chip: a filter, a group or a toggle in a row of choices; pressed chips take the accent. */
+  :where(.cx-chip) {
+    display:inline-flex;align-items:center;gap:var(--hfx-space-1-5);max-inline-size:100%;block-size:var(--hfx-control-height-sm);padding:0 calc(var(--hfx-space-1)*2.5);
+    border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-status);
+    background:var(--hfx-color-surface);color:var(--hfx-color-text);font:var(--hfx-weight-medium) var(--hfx-type-small-size) var(--hfx-font-sans);white-space:nowrap;
+  }
+  :where(button.cx-chip) { cursor:pointer; }
+  :where(button.cx-chip):hover { background:var(--hfx-color-hover); }
+  :where(.cx-chip):is([aria-pressed="true"],.active) { border-color:var(--hfx-color-accent);background:var(--hfx-color-accent-subtle);color:var(--hfx-color-accent-text); }
+  :where(.cx-chip):focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
+
+  /* Status pill: a tone in a rounded label, the same in cells, legends and lists. */
+  :where(.cx-pill,.p-pill) {
+    display:inline-flex;align-items:center;gap:var(--hfx-space-1);block-size:var(--hfx-badge-height);padding:0 var(--hfx-space-2);
+    border-radius:var(--hfx-radius-status);background:var(--hfx-color-status-neutral-bg);color:var(--hfx-color-status-neutral-fg);
+    font:var(--hfx-weight-semibold) var(--hfx-type-caption-size) var(--hfx-font-sans);white-space:nowrap;
+  }
+  :where(.cx-pill,.p-pill):is(.cx-tone-info,.info) { background:var(--hfx-color-status-info-bg);color:var(--hfx-color-status-info-fg); }
+  :where(.cx-pill,.p-pill):is(.cx-tone-success,.success) { background:var(--hfx-color-status-good-bg);color:var(--hfx-color-status-good-fg); }
+  :where(.cx-pill,.p-pill):is(.cx-tone-warning,.warning) { background:var(--hfx-color-status-warn-bg);color:var(--hfx-color-status-warn-fg); }
+  :where(.cx-pill,.p-pill):is(.cx-tone-danger,.danger) { background:var(--hfx-color-status-bad-bg);color:var(--hfx-color-status-bad-fg); }
+  :where(.cx-pill,.p-pill).cx-toned { background:var(--cx-t-bg,color-mix(in srgb,var(--cx-t,var(--hfx-color-text)) 12%,var(--hfx-color-surface)));color:var(--cx-t,var(--hfx-color-text)); }
+
+  /* Disclosure: the chevron of anything that opens and closes. */
+  :where(.cx-disclosure) {
+    flex:none;display:inline-grid;place-items:center;inline-size:var(--hfx-icon-md);block-size:var(--hfx-icon-md);color:var(--hfx-color-text-muted);
+    transition:transform var(--hfx-motion-duration-fast) var(--hfx-motion-easing-standard);
+  }
+  :where(.cx-disclosure)::before {
+    content:"";inline-size:calc(var(--hfx-icon-md)*.4375);block-size:calc(var(--hfx-icon-md)*.4375);
+    border-inline-end:calc(var(--hfx-border-width)*1.6) solid currentColor;border-block-end:calc(var(--hfx-border-width)*1.6) solid currentColor;transform:rotate(-45deg);
+  }
+  :where([aria-expanded="true"]) > :where(.cx-disclosure),:where(.cx-disclosure)[data-open] { transform:rotate(90deg); }
+  :where(:dir(rtl)) :where(.cx-disclosure)::before { transform:rotate(135deg); }
+
+  /* State: empty, error and loading messages where content would be. */
+  :where(.cx-empty-state) {
+    display:grid;justify-items:center;gap:var(--hfx-space-2);padding:var(--hfx-space-6) var(--hfx-space-4);text-align:center;color:var(--hfx-color-text-secondary);
+  }
+  :where(.cx-empty-state) > :where(strong,h2,h3) { color:var(--hfx-color-text);font-size:var(--hfx-type-heading-size);font-weight:var(--hfx-weight-semibold); }
+  :where(.cx-empty-state)[data-tone="danger"] > :where(strong,h2,h3) { color:var(--hfx-color-status-bad-fg); }
+  /* Banner: one line of news above content, toned by what it says. */
+  :where(.cx-notice) {
+    display:flex;align-items:center;gap:var(--hfx-space-2);padding:var(--hfx-space-2) var(--hfx-space-3);
+    border:var(--hfx-border-width) solid var(--hfx-color-border);border-inline-start:calc(var(--hfx-border-width)*3) solid var(--cx-notice,var(--hfx-color-accent));
+    border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font-size:var(--hfx-type-small-size);
+  }
+  :where(.cx-notice).cx-tone-info { --cx-notice:var(--hfx-color-status-info-fg); }
+  :where(.cx-notice).cx-tone-success { --cx-notice:var(--hfx-color-status-good-fg); }
+  :where(.cx-notice).cx-tone-warning { --cx-notice:var(--hfx-color-status-warn-fg); }
+  :where(.cx-notice).cx-tone-danger { --cx-notice:var(--hfx-color-status-bad-fg); }
+
+  @media (prefers-reduced-motion:reduce) { :where(.cx-toggle,.cx-toggle::before,.cx-disclosure) { transition:none; } }
+  @media (forced-colors:active) {
+    :where(.cx-btn,.cx-button,.cx-ui-button,.cx-chip,.cx-segmented > *):is([aria-pressed="true"],[aria-checked="true"],.active) { forced-color-adjust:none;background:Highlight;color:HighlightText; }
+    :where(.cx-toggle) { border:var(--hfx-border-width) solid ButtonText; }
+    :where(.cx-toggle):checked { background:Highlight; }
+  }
+}

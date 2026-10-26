@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "32e3c191ea17a3b4",
+      "version": "2a402c9e90e43127",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "32a654d0267288d5",
+      "version": "8f018261b388a13e",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "5c35579bfa956dbe",
+      "version": "042f3cb3d690a086",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -546,7 +546,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "579a74b205923fd5",
+      "version": "23c058b9f6307983",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -631,7 +631,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "d3795e4b933d83a8",
+      "version": "c755f0e99e297994",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -647,7 +647,7 @@
     {
       "name": "format-editor",
       "label": "formatting rule editor",
-      "version": "b8c229ddfc1f218b",
+      "version": "5398e457a885ef0d",
       "script": "canopyx-format-editor.js",
       "style": "canopyx-format-editor.css",
       "runtimes": [
@@ -751,7 +751,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "2ffa91f40c9b9b21",
+      "version": "5be91a5b89c84b73",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -767,7 +767,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "42ad4b814f47bd00",
+      "version": "29c51bcf7d80b88e",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
