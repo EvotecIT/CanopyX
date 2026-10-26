@@ -35,3 +35,22 @@ for (const [width, height, theme] of [[390, 440, "dark"], [390, 300, "dark"], [1
     expect(errors).toEqual([]);
   });
 }
+
+for (const [width, theme] of [[390, "dark"], [1440, "light"]]) {
+  test(`a standalone auto-height pivot at ${width}px uses available room for multiple complete rows`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const view = definition(); delete view.reporting.detail; view.reporting.groupBy = []; view.reporting.pivotable = true;
+    view.reporting.pivot = { rows: [{ column: "region", direction: "asc" }, { column: "status", direction: "asc" }],
+      columns: [{ column: "placed", direction: "asc", bucket: { kind: "month" } }], values: ["total", "orders"] };
+    const html = viewPage(view, theme).replace('</head>', () => '<script>' + parts() + '</script><style>' +
+      fs.readFileSync(path.join(assets, "canopyx-pivot.css"), "utf8") + '</style></head>');
+    await page.route("http://127.0.0.1/pivot-page", route => route.fulfill({ contentType: "text/html", body: html }));
+    await page.goto("http://127.0.0.1/pivot-page"); await page.waitForSelector("[data-cx-ready]"); await nextFrames(page);
+    await expect.poll(() => page.locator(".cx-pivot-table").evaluate(table => {
+      const head = table.tHead.getBoundingClientRect(), foot = table.tFoot.getBoundingClientRect(),
+        scroll = table.parentElement.getBoundingClientRect(), panel = table.closest(".cx-pivot").getBoundingClientRect();
+      const top = Math.max(head.bottom, scroll.top, panel.top), bottom = Math.min(foot.top, scroll.bottom, panel.bottom, innerHeight);
+      return [...table.tBodies[0].rows].filter(row => { const box = row.getBoundingClientRect(); return box.top >= top - 1 && box.bottom <= bottom + 1; }).length;
+    })).toBeGreaterThanOrEqual(3);
+  });
+}
