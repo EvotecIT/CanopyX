@@ -86,6 +86,12 @@ font-family:var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-a
 font-size:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem));
 line-height:var(--hfx-type-small-line,1.4);
 }
+.cx-host[data-cx-chrome="embedded"]{background:transparent;border:0;border-radius:0;}
+.cx-host[data-cx-chrome="embedded"] > .cx-grid{border-inline:0;border-bottom:0;border-radius:0;background:transparent;}
+.cx-host[data-cx-chrome="embedded"] > :is(.cx-grid-notice,.cx-grid-status,.cx-grid-pager){background:transparent;}
+.cx-host[data-cx-chrome="embedded"] :is(.cx-toolbar,.cx-grid-query-summary,.cx-grid-status,.cx-grid-pager){padding-inline:var(--hfx-card-padding-x,calc(20px - var(--cx-compact,0) * 4px));}
+.cx-host.cx-data-grid[data-cx-chrome="embedded"] :is(.cx-hrow,.cx-row) > :first-child{padding-inline-start:var(--hfx-card-padding-x,calc(20px - var(--cx-compact,0) * 4px));}
+.cx-host.cx-data-grid[data-cx-chrome="embedded"] :is(.cx-hrow,.cx-row) > :last-child{padding-inline-end:var(--hfx-card-padding-x,calc(20px - var(--cx-compact,0) * 4px));}
 .cx-host *,.cx-host *::before,.cx-host *::after{box-sizing:border-box;}
 .cx-host .cx-button.cx-filter-chip{display:inline-flex;align-items:center;justify-content:flex-start;gap:var(--hfx-space-1-5,6px);min-width:0;}
 .cx-filter-chip > .cx-chip-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}

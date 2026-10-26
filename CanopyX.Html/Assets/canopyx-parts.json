@@ -206,7 +206,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "d74a01c46f1c40cc",
+      "version": "09a3dd9c052adf69",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -823,7 +823,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "cec16b6240faaff8",
+      "version": "fccf12f8c2b56932",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [

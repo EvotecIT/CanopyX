@@ -25,7 +25,10 @@ for (const style of Object.keys(surfaces)) for (const mode of ["light", "dark"])
     await page.setViewportSize({ width: 1440, height: 1000 });
     await openThemeProof(page, style, mode);
     const surface = surfaces[style][mode === "dark" ? 1 : 0];
-    for (const host of await page.locator("[data-canopyx-host]").all()) await expect(host).toHaveCSS("background-color", surface);
+    for (const host of await page.locator("[data-canopyx-host]:not([data-cx-chrome='embedded'])").all()) await expect(host).toHaveCSS("background-color", surface);
+    // The embedded grid paints nothing of its own; the card around it carries the surface.
+    await expect(page.locator("[data-cx-chrome='embedded']")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(page.locator("#embedded")).toHaveCSS("background-color", surface);
     // The shared primary button and the grid's own toolbar button both resolve from the host's roles.
     const accent = await page.evaluate(() => {
       const probe = document.createElement("i"); probe.style.color = "var(--hfx-color-accent)"; document.body.append(probe);

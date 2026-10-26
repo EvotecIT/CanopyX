@@ -11,6 +11,17 @@ namespace CanopyX.Tests.Html;
 /// </summary>
 public sealed class HtmlWriterTests {
     [Fact]
+    public void Chrome_EmbeddedMarksTheFragmentHostAndStandaloneWritesNothing() {
+        var view = SampleDocuments.FullView();
+
+        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-chrome=\"embedded\">", view.ToHtmlFragment(new CanopyHtmlOptions { Chrome = CanopyChrome.Embedded }));
+        Assert.DoesNotContain("data-cx-chrome", view.ToHtmlFragment());
+        // A page fills the window, so it keeps its own frame whatever the option says.
+        Assert.DoesNotContain("data-cx-chrome", view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Chrome = CanopyChrome.Embedded }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyHtmlOptions { Chrome = (CanopyChrome)2 });
+    }
+
+    [Fact]
     public void ToHtmlFragment_CarriesTheViewDocumentWithoutAssets() {
         var view = SampleDocuments.FullView();
 
