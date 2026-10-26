@@ -40,3 +40,24 @@ test("minute precision also checks rendered date-column values", async ({ page }
   await page.locator('.cx-cell').evaluate(cell => { cell.textContent = "16 Oct 2026 11:00 UTC"; });
   expect(await page.evaluate(inspectFinishQuality)).toEqual([]);
 });
+
+test("controls clipped by a fixed-height ancestor fail even with a nonzero layout box", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setContent(`<style>body{margin:0}#host{height:440px;overflow:hidden}#body{height:440px}</style>
+    <main id="host"><div id="body">Grid</div><section><h3>Preview</h3>
+      <button class="cx-btn">Apply</button><p role="status">Ready to apply</p></section></main>`);
+  expect(await page.locator('button').evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThan(0);
+  expect((await page.evaluate(inspectFinishQuality)).filter(finding => finding.rule === "text-clipped")
+    .map(finding => finding.selector)).toHaveLength(2);
+  await page.locator('#host').evaluate(host => { host.after(host.querySelector('section')); });
+  expect(await page.evaluate(inspectFinishQuality)).toEqual([]);
+});
+
+test("ancestor clipping respects scrollable content and explicit local exceptions", async ({ page }) => {
+  await page.setContent(`<style>body{margin:0}.frame{height:80px;overflow:hidden}.scroll{height:80px;overflow:auto}
+    .space{height:100px}</style><main>
+    <div class="frame"><div class="scroll"><div class="space"></div><button class="cx-btn">Scroll to reach</button></div></div>
+    <div class="frame" data-cx-finish-allow="text-clipped"><div class="space"></div><button class="cx-btn">Allowed</button></div>
+    </main>`);
+  expect(await page.evaluate(inspectFinishQuality)).toEqual([]);
+});

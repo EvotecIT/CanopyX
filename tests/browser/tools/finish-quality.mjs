@@ -111,6 +111,31 @@ export function inspectFinishQuality(root = document) {
     report("text-clipped", element, "Text is clipped without ellipsis or a tooltip.");
   }
 
+  // A control can have an ordinary layout box while a fixed-height host cuts it off entirely. Scrollports make their
+  // descendants reachable; compare that port with outer clips instead of treating offscreen scroll content as lost.
+  for (const element of all('button,[role="button"],[role="status"],[data-cx-finish-text]')) {
+    if (!element.textContent.trim()) continue;
+    const bounds = box(element), reachable = { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom };
+    if (bounds.width <= tolerance || bounds.height <= tolerance) continue;
+    for (let at = element.parentElement; at && at !== document.body; at = at.parentElement) {
+      const style = getComputedStyle(at), frame = box(at);
+      const edges = { left: frame.left + at.clientLeft, top: frame.top + at.clientTop };
+      edges.right = edges.left + at.clientWidth; edges.bottom = edges.top + at.clientHeight;
+      let clipped = false;
+      for (const [axis, start, end, size] of [["X", "left", "right", "Width"], ["Y", "top", "bottom", "Height"]]) {
+        const overflow = style["overflow" + axis];
+        if (["auto", "scroll"].includes(overflow) && at["scroll" + size] > at["client" + size] + tolerance) {
+          reachable[start] = edges[start]; reachable[end] = edges[end];
+        } else if (["hidden", "clip"].includes(overflow) &&
+            (reachable[start] < edges[start] - tolerance || reachable[end] > edges[end] + tolerance)) clipped = true;
+      }
+      if (clipped) {
+        report("text-clipped", element, "A clipping ancestor cuts off a control or status.", { ancestor: location(at) });
+        break;
+      }
+    }
+  }
+
   if (innerWidth <= 390) {
     for (const element of all('body *')) {
       const bounds = box(element);
