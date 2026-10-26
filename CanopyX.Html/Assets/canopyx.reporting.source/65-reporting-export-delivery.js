@@ -34,7 +34,7 @@
   Object.assign(DataGrid.prototype, {
     prepareExport(options) {
       if (options?.onProgress !== undefined && typeof options.onProgress !== "function") throw new Error("CanopyX: export progress needs a callback.");
-      const exported = DELIVERY_PREPARE.call(this, options);
+      const ordinary = options?.pivot === true ? null : DELIVERY_PREPARE.call(this, options);
       let locale = this.lang;
       if (options.locale !== undefined) {
         if (typeof options.locale !== "string" || options.locale.length > 128)
@@ -45,12 +45,17 @@
         } catch { throw new Error("CanopyX: export locale must be supported by this browser."); }
       }
       if (options.timeZone !== undefined && !["utc", "local"].includes(options.timeZone)) throw new Error("CanopyX: export time zone is utc or local.");
+      const pivot = options.pivot === true ? GRID_REPORTING.preparePivotExport?.(this, {
+        ...options, locale, timeZone: options.timeZone || (this.local ? "local" : "utc")
+      }) : null;
+      if (options.pivot === true && !pivot) throw new Error("CanopyX: pivot table capture requires an active pivot producer.");
+      const exported = pivot || ordinary;
       const fileName = reportingFileName(options.fileName ?? ("canopyx-" + this.view.id.replace(/[^a-z0-9_-]/gi, "_")).slice(0, 100));
       const request = gridFreeze({ ...exported.request, locale, fileName, timeZone: options.timeZone || exported.request.timeZone,
-        formatRules: this.getFormatRules(), generatedAt: new Date().toISOString(),
-        columns: exported.request.columns.map(column => GRID_REPORTING.exportColumn(this, this.columns.find(item => item.id === column.id))) }), grid = this,
+        formatRules: pivot ? exported.request.formatRules || [] : this.getFormatRules(), generatedAt: new Date().toISOString(),
+        columns: pivot ? exported.request.columns : exported.request.columns.map(column => GRID_REPORTING.exportColumn(this, this.columns.find(item => item.id === column.id))) }), grid = this,
         signal = options.signal, callback = options.onProgress;
-      GRID_REPORTING.captureExport(this, request);
+      if (!pivot) GRID_REPORTING.captureExport(this, request);
       const result = Object.freeze({ request, rows: async function* (options) {
         const enumerationSignal = gridExportSignal(signal, options);
         const progress = reportingExportProgress(grid, request, callback, enumerationSignal); let count = 0;
