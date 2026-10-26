@@ -110,12 +110,9 @@
       if (!container || container.nodeType !== 1 || container.ownerDocument !== this.host.ownerDocument || !container.isConnected || container === this.grid || this.grid.contains(container))
         throw new Error("CanopyX: preview needs a connected container outside the grid rows.");
       retireViewIntent(this);
+      this.viewIntentTheme?.();
       this.viewIntentElement?.remove();
       const element = h("section", "cx-host cx-chrome cx-view-intent-preview"), heading = h("h3"), chips = h("div", "cx-grid-query-chips"), status = h("p");
-      // Like the facet panel, a host-targeted preview carries the originating grid's palette outside its DOM scope.
-      const theme = getComputedStyle(this.host);
-      for (const name of theme) if (name.startsWith("--cx-")) element.style.setProperty(name, theme.getPropertyValue(name));
-      element.style.colorScheme = theme.colorScheme;
       element.setAttribute("aria-label", this.labels.viewIntentPreview); setText(heading, this.labels.viewIntentPreview);
       status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
       for (const text of intentChips(this, intent)) { const chip = h("span", "cx-grid-chip"); setText(chip, text); chip.title = text; chips.appendChild(chip); }
@@ -124,8 +121,9 @@
       }), cancel = gridButton(this.labels.gridEditCancel || "Cancel", () => handle.cancel());
       actions.append(apply, cancel); element.append(heading, chips, actions, status);
       const preview = { intent, key: JSON.stringify(state), epoch: this.queryEpoch, active: true, apply, cancel, status, element,
-        destroy: () => { retireViewIntent(this); element.remove(); } };
+        destroy: () => { preview.disposeTheme?.(); retireViewIntent(this); element.remove(); } };
       const handle = Object.freeze({ element, intent, apply: () => confirmViewIntent(this, handle), cancel: () => {
+        preview.disposeTheme?.();
         if (this.viewIntentPreview === preview) retireViewIntent(this, ""); element.remove();
       } });
       VIEW_INTENT_PREVIEWS.set(handle, { grid: this, preview }); this.viewIntentPreview = preview;
@@ -136,6 +134,7 @@
       }
       this.lifetime.signal.addEventListener("abort", preview.destroy, { once: true });
       if (adjacent && this.host.parentElement) this.host.after(element); else container.appendChild(element);
+      preview.disposeTheme = this.viewIntentTheme = watchOverlayTheme(this.host, element, this.lifetime.signal);
       return handle;
     },
     async applyViewIntent(input, container) { return this.previewViewIntent(input, container); },

@@ -940,7 +940,8 @@
         "gridQuery",
         "gridQueryStart",
         "gridFreeze",
-        "GRID_FILTER_LABELS"
+        "GRID_FILTER_LABELS",
+        "watchOverlayTheme"
       ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.view-intents.source"

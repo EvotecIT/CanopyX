@@ -92,6 +92,7 @@ test("unknown columns, operators and executable fields fail before preview UI or
     const cases = [ { query: { sort: [{ column: "missing", direction: "asc" }] } },
       { query: { filters: [{ column: "missing", operator: "eq", values: [1] }] } },
       { query: { filters: [{ column: "name", operator: "execute", values: ["code"] }] } },
+      { query: { filterGroup: { operator: "and", filters: [{ column: "name", operator: "execute", values: ["code"] }], groups: [] } } },
       { query: { filters: [{ column: "secret", operator: "eq", values: ["private"] }] } },
       { query: { filters: [{ column: "date", operator: "eq", values: ["2026-02-30T00:00:00Z"] }] } },
       { columns: ["name", "missing"] }, { columns: ["name", "name"] }, { columns: [] },
@@ -100,10 +101,10 @@ test("unknown columns, operators and executable fields fail before preview UI or
       { query: { search: "x", filterGroup: { operator: "and", filters: [], groups: [] } } },
       { query: { search: "x", sort: [{ column: "name", direction: "asc", code: "alert()" }] } } ];
     const failed = [];
-    for (const item of cases) { try { await grid.applyViewIntent({ ...base, ...item }); failed.push(false); } catch { failed.push(true); } }
+    for (const item of cases) { try { await grid.applyViewIntent({ ...base, ...item }); failed.push(item); } catch {} }
     return failed;
   });
-  expect(failures.every(Boolean)).toBe(true);
+  expect(failures).toEqual([]);
   await expect(region(page)).toHaveCount(0);
   expect(await page.evaluate("queryCalls.length")).toBe(1);
 });
@@ -287,6 +288,11 @@ for (const width of [1280, 390]) test(`preview chips wrap long untrusted text an
   await page.setViewportSize({ width, height: 800 });
   const errors = await open(page);
   if (width === 390) await page.evaluate(() => { document.querySelector("[data-canopyx-host]").dataset.cxTheme = "dark"; });
+  await page.locator("[data-canopyx-host]").evaluate(host => {
+    host.style.setProperty("--hfx-color-surface", "rgb(23, 31, 45)");
+    host.style.setProperty("--hfx-color-text", "rgb(231, 237, 245)");
+    host.style.setProperty("--hfx-font-sans", "monospace");
+  });
   await page.locator("#outside").focus();
   await preview(page, intent({ search: '<img src=x onerror="window.injected=true">' + "Longword".repeat(24) }));
   await expect(region(page)).toContainText("<img src=x");
@@ -297,6 +303,9 @@ for (const width of [1280, 390]) test(`preview chips wrap long untrusted text an
     const original = getComputedStyle(document.querySelector("[data-canopyx-host]")), preview = getComputedStyle(element);
     return preview.backgroundColor === original.backgroundColor && preview.color === original.color && preview.fontFamily === original.fontFamily;
   })).toBe(true);
+  await page.locator("[data-canopyx-host]").evaluate(host => host.style.setProperty("--hfx-color-surface", "rgb(37, 45, 61)"));
+  await expect.poll(() => region(page).evaluate(element =>
+    getComputedStyle(element).backgroundColor === getComputedStyle(document.querySelector("[data-canopyx-host]")).backgroundColor)).toBe(true);
   const geometry = await region(page).evaluate(element => ({ width: element.clientWidth, scroll: element.scrollWidth, height: element.getBoundingClientRect().height,
     page: document.documentElement.scrollWidth, viewport: innerWidth }));
   expect(geometry.scroll).toBeLessThanOrEqual(geometry.width + 1); expect(geometry.height).toBeGreaterThan(90);

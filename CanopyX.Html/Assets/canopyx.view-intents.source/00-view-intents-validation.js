@@ -45,6 +45,8 @@ const VIEW_INTENT_LABELS = {viewIntentPreview: "Preview view changes", viewInten
     const filter = item => {
       if (++predicates > 64) throw new Error("CanopyX: at most 64 intent predicates.");
       viewIntentObject(item, ["column", "operator", "values", "bucket"], "intent predicate");
+      // Host query hooks can accept custom names; version 1 intents retain the schema's built-in operator allow-list.
+      if (!Object.hasOwn(GRID_FILTER_LABELS, item.operator)) throw new Error("CanopyX: invalid intent predicate operator.");
       viewIntentBucketShape(item.bucket);
       viewIntentArray(item.values, 1000, "intent operands").forEach(value => {
         if (typeof value === "string" && value.length > 16384) throw new Error("CanopyX: intent operand is too long.");
