@@ -981,6 +981,7 @@ export interface FlowStep{
   title?:string;
   description?:string;
   type?:"form"|"info"|"pick"|"review";
+  facts?:readonly{readonly label:string;readonly value:string}[];
   fields?:readonly FlowField[];
   sections?:readonly FlowSection[];
   when?:FlowCondition;
@@ -1068,6 +1069,7 @@ export interface FlowHookContext{
   signal:AbortSignal
 }
 export interface FlowSubmitDetail extends Readonly<FlowSubmission>{
+  readonly signal:AbortSignal;
   respondWith(answer:FlowAnswer|Promise<FlowAnswer>):void;
   secret(fieldId:string):string|null;
 }
@@ -3298,10 +3300,18 @@ export interface RecordSectionContext{
   onDispose(cleanup:() => void):void;
 }
 export type RecordSectionRenderer=(record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>;label?:string}>,element:HTMLElement,context:RecordSectionContext) => void|PromiseLike<void>;
+export interface RecordActionContext{
+  readonly record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>;
+  readonly view:string;
+  readonly api:unknown;
+  readonly payload:GridRecord|null;
+  readonly signal:AbortSignal;
+}
 export interface RecordAction{
-  readonly prominent?:boolean;
+  readonly visible?:boolean|((context:RecordActionContext) => boolean);
+  readonly prominent?:boolean|((context:RecordActionContext) => boolean);
   readonly label:string;
-  run(context:{readonly record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>;readonly view:string;readonly api:unknown;readonly payload:GridRecord|null;readonly signal:AbortSignal}):void|PromiseLike<void>;
+  run(context:RecordActionContext):void|PromiseLike<void>;
 }
 export interface RecordOpenAll{
   readonly view:string;
@@ -3315,6 +3325,7 @@ export interface OpenRecordOptions{
   readonly returnFocus?:Element|null;
   readonly path?:readonly string[];
   readonly tab?:string;
+  readonly reload?:boolean;
 }
 export interface RecordPanelOptions{
   recordHeading?:(record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>) => {title:string;subtitle?:string};

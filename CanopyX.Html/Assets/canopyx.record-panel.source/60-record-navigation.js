@@ -40,6 +40,7 @@
     requireIdentifier(id, "record ID");
     if (view.destroyed) recordFail("the view was destroyed.");
     await view.ready;
+    if (options.reload === true) RECORD_IMPL.invalidate(view, id);
     const dialog = view.kind === "tree" ? await recordOpenNode(view, id, options) : await recordOpenRow(view, id, options);
     if (!dialog) return;
     const origin = options.origin && dialog.querySelector('[data-cx-origin="' + CSS.escape(options.origin) + '"]');

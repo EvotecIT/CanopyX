@@ -828,6 +828,10 @@ CanopyX.CanopyFlowEndpoint : sealed class
 CanopyX.CanopyFlowEndpoint..ctor(System.String url, CanopyX.CanopyFlowRoutes routes)
 CanopyX.CanopyFlowEndpoint.CanopyX.CanopyFlowRoutes Routes { get; set; }
 CanopyX.CanopyFlowEndpoint.System.String Url { get; set; }
+CanopyX.CanopyFlowFact : sealed class
+CanopyX.CanopyFlowFact..ctor(System.String label, System.String value)
+CanopyX.CanopyFlowFact.System.String Label { get; set; }
+CanopyX.CanopyFlowFact.System.String Value { get; set; }
 CanopyX.CanopyFlowField : sealed class
 CanopyX.CanopyFlowField..ctor(System.String id, CanopyX.CanopyFlowFieldKind kind, System.String label)
 CanopyX.CanopyFlowField.CanopyX.CanopyCellValidation Validation { get; }
@@ -1063,6 +1067,7 @@ CanopyX.CanopyFlowStep.CanopyX.CanopyFlowStepKind Kind { get; set; }
 CanopyX.CanopyFlowStep.System.Boolean IsOptional { get; set; }
 CanopyX.CanopyFlowStep.System.Boolean ShowsPreview { get; set; }
 CanopyX.CanopyFlowStep.System.Collections.Generic.IList<CanopyX.CanopyFlowCheck> Checks { get; }
+CanopyX.CanopyFlowStep.System.Collections.Generic.IList<CanopyX.CanopyFlowFact> Facts { get; }
 CanopyX.CanopyFlowStep.System.Collections.Generic.IList<CanopyX.CanopyFlowSection> Sections { get; }
 CanopyX.CanopyFlowStep.System.Nullable<System.Boolean> ShowChangesOnly { get; set; }
 CanopyX.CanopyFlowStep.System.String Id { get; }

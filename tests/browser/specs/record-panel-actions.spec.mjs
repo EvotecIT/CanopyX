@@ -170,3 +170,36 @@ test("record action failures announce null primitive and Error rejections from e
   }
   expect(errors).toEqual([]);
 });
+
+test("host action availability follows loaded evidence and record navigation, and stale controls cannot execute", async ({ page }) => {
+  const view = definition();
+  const script = `<script>
+window.actionAllowed = true; window.actionCalls = [];
+CanopyX.configure("certificates", {
+  loadRecord: request => new Promise(resolve => { window.finishRecord = () => resolve({fields:{allowed:request.id === "c001"}}); }),
+  recordActions: [{label:"Review current request", visible: context => window.actionAllowed && context.payload?.fields?.allowed === true,
+    prominent: context => context.record.id === "c001", run: context => { window.actionCalls.push(context.record.id); }}]
+});
+</script>`;
+  await page.route("http://canopyx.test/records.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace('<body class="cx-page">', '<body class="cx-page">' + script) }));
+  await page.goto("http://canopyx.test/records.html");
+  await page.evaluate(api + ".ready");
+  await page.evaluate(api + ".openDetails('c001')");
+  const review = drawer(page).getByRole("button", {name:"Review current request",exact:true});
+  await expect(review).toBeHidden();
+  await expect.poll(() => page.evaluate(() => typeof window.finishRecord)).toBe("function");
+  await page.evaluate(() => window.finishRecord());
+  await expect(review).toBeVisible();
+  await review.click();
+  expect(await page.evaluate(() => window.actionCalls)).toEqual(["c001"]);
+  // Permission changed since the last paint: even a retained DOM control is rechecked before execution.
+  await page.evaluate(() => { window.actionAllowed = false; document.querySelector('.cx-record-primary').click(); });
+  expect(await page.evaluate(() => window.actionCalls)).toEqual(["c001"]);
+  await drawer(page).locator("h4").focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(review).toBeHidden();
+  await page.evaluate(() => { window.actionAllowed = true; window.finishRecord(); });
+  await expect(review).toBeHidden();
+  await drawer(page).getByRole("button", {name:"Record actions"}).click();
+  await expect(drawer(page).getByRole("menuitem",{name:"Review current request"})).toBeHidden();
+});

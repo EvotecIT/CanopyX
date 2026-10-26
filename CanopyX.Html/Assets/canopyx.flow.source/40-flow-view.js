@@ -94,8 +94,9 @@
     /** Owns busy state and asynchronous waits for one navigation or submission operation. */
     beginOperation() {
       let cancel;
-      const cancelled = new Promise(resolve => { cancel = resolve; });
-      const generation = this.generation, revision = this.answerRevision, ticket = { cancel };
+      const cancelled = new Promise(resolve => cancel = resolve);
+      const abort = new AbortController();
+      const generation = this.generation, revision = this.answerRevision, ticket = { cancel: () => { abort.abort(); cancel(); }, signal: abort.signal };
       ticket.current = () => !this.destroyed && generation === this.generation && revision === this.answerRevision && this.operation === ticket;
       ticket.wait = work => Promise.race([work, cancelled]);
       this.operation = ticket; this.busy = true;

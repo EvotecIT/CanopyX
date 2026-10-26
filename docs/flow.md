@@ -5,6 +5,13 @@ proposal to the host when the reader submits. It is the CanopyX view for setup, 
 CanopyX never writes: the flow collects the answers and raises `canopyx:flowSubmit`, and the host applies the change and
 answers with what happened.
 
+Information steps can carry up to 32 read-only `facts`, each with a plain `label` and `value`. In C#, add
+`new CanopyFlowFact(label, value)` to an information step's `Facts`. The existing answer-list layout wraps the complete
+value, up to 32,768 characters; facts do not become editable answers, dirty state or submission values.
+The submit callback also receives `detail.signal`, cancelled when its operation retires through changed answers, reset,
+destruction or settlement. Pass it to host transport where useful. It is not serialized with the submission, and cancelling
+a browser operation cannot undo a write the server has already committed.
+
 A flow is a document, like a grid view. C# writes it with `CanopyFlow`; the browser reads it with `CanopyX.createFlow`.
 The document shape on this page is the flow contract. CanopyX owns it, and any host can map its own model onto it
 (`docs/schema/canopyx-flow-1.schema.json` describes it as a JSON Schema).
@@ -708,3 +715,5 @@ A page with only flows includes the flow entry point; the parts load on first us
 payloads a single-file page carries. The data-grid and reporting entry points know the same parts, so a grid page creates
 flows with `CanopyX.createFlow` and mounts flow fragments without a second entry point. A single-file grid page that creates flows from script carries the parts too: add `"flow"` to `CanopyHtmlOptions.Parts` (it brings `forms`), and the feature parts its flows use (`"flow-checks"`, which brings `flow-host`, …), since there are no files beside the page to load them from. Include one entry point per page.
 `CanopyX.Html` writes flow pages with the flow entry point (`CanopyRuntime.Flow`), or with the reporting entry point when a pick step embeds a grid or tree (`CanopyHtmlAssets.GetRuntime(CanopyFlow)`); `CanopyHtmlAssets.GetRequiredParts(CanopyFlow)` adds the parts the embedded views need.
+
+Information-step facts load the `flow-facts` runtime part only when present. They reuse the flow answer-list styles and do not increase the base flow budget.

@@ -1,5 +1,35 @@
 import { test, expect } from "@playwright/test";
 import { mountContract as mount } from "./flow-contract-support.mjs";
+import { mountRuntime, documentOf } from "./flow-host-regression-support.mjs";
+
+test("read-only information facts preserve full evidence on a phone without entering submitted answers", async ({ page }, testInfo) => {
+  await page.setViewportSize({width:390,height:844});
+  const evidence = "review/".repeat(300) + "<img src=x onerror=alert(1)>";
+  await mountRuntime(page, testInfo, documentOf([{id:"evidence",title:"Evidence",type:"info",facts:[{label:"Reason",value:evidence}]}]), "({onSubmit:detail=>{window.proposal=detail;return {status:'saved'};}})");
+  await expect(page.locator('.cx-flow-answer-value')).toHaveText(evidence);
+  expect(await page.locator('.cx-flow-answer-value img').count()).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await page.evaluate(() => window.__api.submit());
+  expect(await page.evaluate(() => window.proposal.values)).toEqual({});
+  expect(await page.evaluate(() => 'signal' in JSON.parse(JSON.stringify(window.proposal)))).toBe(false);
+});
+
+test("the submit hook signal retires on changed answers, reset, destruction and successful settlement", async ({ page }, testInfo) => {
+  for (const retirement of ["change", "reset", "destroy", "settle"]) {
+    await mountRuntime(page, testInfo, documentOf([{id:"one",title:"Answers",fields:[{id:"name",type:"text",label:"Name"}]}]), "({onSubmit:detail=>{window.submitSignal=detail.signal;return new Promise(resolve=>{window.finishSubmit=resolve;});}})");
+    await page.evaluate(() => { window.submitResult = window.__api.submit(); });
+    await expect.poll(() => page.evaluate(() => !!window.submitSignal)).toBe(true);
+    expect(await page.evaluate(() => window.submitSignal.aborted)).toBe(false);
+    await page.evaluate(retirement => {
+      if (retirement === "change") window.__api.setValues({name:"Changed"});
+      else if (retirement === "settle") window.finishSubmit({status:"saved"});
+      else window.__api[retirement]();
+    }, retirement);
+    await expect.poll(() => page.evaluate(() => window.submitSignal.aborted)).toBe(true);
+    expect(await page.evaluate(async () => (await window.submitResult)?.status ?? null)).toBe(retirement === "settle" ? "saved" : null);
+    await page.evaluate(() => { window.finishSubmit({status:"saved"}); window.submitSignal = null; });
+  }
+});
 
 for (const metadata of [{ baseline: "r1" }, { storedSecrets: ["token"] }]) {
   test(`edit metadata ${Object.keys(metadata)[0]} never applies create defaults`, async ({ page }) => {

@@ -64,6 +64,13 @@ internal static class CanopyFlowValidator {
         var review = step.Kind == CanopyFlowStepKind.Review;
         CanopyFlowValues.CheckShort(step.Title, what + " (title)", required: !review);
         CanopyFlowValues.CheckLong(step.Description, what + " (description)");
+        if (step.Facts.Count > 32 || step.Facts.Count > 0 && step.Kind != CanopyFlowStepKind.Info) throw new InvalidOperationException(what + ": only information steps hold up to 32 read-only facts.");
+        foreach (var fact in step.Facts) {
+            if (fact == null) throw new InvalidOperationException(what + ": a fact cannot be null.");
+            CanopyFlowValues.CheckShort(fact.Label, "A fact label", required: true);
+            if (fact.Value == null) throw new InvalidOperationException("A fact value is required.");
+            CanopyFlowValues.CheckText(fact.Value, "A fact value", 32768);
+        }
         if (step.Kind != CanopyFlowStepKind.Form && (step.Fields.Count > 0 || step.Sections.Count > 0)) throw new InvalidOperationException(what + ": only form steps hold fields and sections.");
         if (review) {
             if (!last) throw new InvalidOperationException("A review step is the last step of a flow, and a flow has at most one.");

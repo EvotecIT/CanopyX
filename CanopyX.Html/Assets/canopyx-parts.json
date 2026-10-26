@@ -136,7 +136,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "966dd269fa2222bd",
+      "version": "93f8d2eb57cc1770",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -394,6 +394,25 @@
       "requires": [
         "flow",
         "flow-host"
+      ]
+    },
+    {
+      "name": "flow-facts",
+      "label": "flow facts",
+      "version": "385b5e61ed487e16",
+      "script": "canopyx-flow-facts.js",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowFacts"
+      ],
+      "requires": [
+        "flow"
       ]
     },
     {
@@ -679,7 +698,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "02c431b36c83da1c",
+      "version": "82aa828bc880087b",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

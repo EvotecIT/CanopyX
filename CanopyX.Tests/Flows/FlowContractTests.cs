@@ -7,6 +7,19 @@ namespace CanopyX.Tests.Flows;
 /// <summary>The flow document: its shape, the round trip through <see cref="CanopyFlow.FromContract"/>, the schema and the strict reader.</summary>
 public sealed class FlowContractTests {
     [Fact]
+    public void InformationFactsRoundTripWithoutTruncatingEvidenceAndNeverBecomeAnswerFields() {
+        string evidence = new string('x', 2000) + "<not-html>";
+        var flow = new CanopyFlow("review", "Review evidence").Info("evidence", "Evidence");
+        flow.Steps[0].Facts.Add(new("Reason", evidence));
+        string json = flow.ToContract(); FlowSamples.AssertValid(json, "Read-only evidence facts");
+        var roundTrip = CanopyFlow.FromContract(json);
+        Assert.Equal(evidence, Assert.Single(roundTrip.Steps[0].Facts).Value);
+        Assert.Empty(roundTrip.Steps[0].Fields);
+        Assert.DoesNotContain("<not-html>", json);
+        roundTrip.Steps[0].Kind = CanopyFlowStepKind.Form;
+        Assert.Throws<InvalidOperationException>(() => roundTrip.Validate());
+    }
+    [Fact]
     public void FromContract_EmptyInitial_PreservesEditModeBaseline() {
         const string json = "{\"kind\":\"flow\",\"version\":1,\"id\":\"edit\",\"title\":\"Edit settings\",\"steps\":[{\"id\":\"settings\",\"title\":\"Settings\"}],\"initial\":{}}";
         var flow = CanopyFlow.FromContract(json);
