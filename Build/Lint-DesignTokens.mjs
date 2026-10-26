@@ -29,21 +29,35 @@ export function violations(css) {
     } else if (clean[index] === ";") {
       const declaration = clean.slice(start, index).trim(), colon = declaration.indexOf(":");
       if (colon > 0) {
-        const property = declaration.slice(0, colon).trim(), value = declaration.slice(colon + 1).trim();
+        const property = declaration.slice(0, colon).trim();
+        // A --cx-size-NN alias is the fixed length it names, not a role: 13d5px is 13.5px, neg-2px is -2px, d8em is .8em.
+        const value = declaration.slice(colon + 1).trim().replace(/var\(\s*--cx-size-(neg-)?(\d*)(?:d(\d+))?([a-z%]+)\s*\)/gi,
+          (_, negative, whole, fraction, unit) => (negative ? "-" : "") + (whole || "0") + (fraction ? "." + fraction : "") + unit);
         const forced = blocks.some(block => /@media\s*\(forced-colors\s*:\s*active\)/i.test(block));
         const lineEnd = css.indexOf("\n", index), lineStart = css.lastIndexOf("\n", start) + 1;
-        const layout = /\/\*\s*lint-allow layout:\s*[^*]+\*\//.test(css.slice(lineStart, lineEnd < 0 ? css.length : lineEnd));
+        // The allowance sits on the declaration's line or alone on the line above it (whole-line comments do not ship).
+        const previousStart = css.lastIndexOf("\n", Math.max(lineStart - 2, 0)) + 1;
+        const allowance = /\/\*\s*lint-allow layout:\s*[^*]+\*\//;
+        const layout = allowance.test(css.slice(lineStart, lineEnd < 0 ? css.length : lineEnd)) ||
+          lineStart > 0 && /^\s*\/\*\s*lint-allow layout:\s*[^*]+\*\/\s*$/.test(css.slice(previousStart, lineStart - 1));
         const add = kind => found.push({ kind, declaration: declaration.replace(/\s+/g, " ") });
         // Functions with variable inputs are roles; literal colour functions remain forbidden.
         const withoutVars = value.replace(/var\((?:[^()]|\([^()]*\))*\)/g, "TOKEN");
         if (colours.test(withoutVars) || !forced && system.test(withoutVars)) add("colour");
         colours.lastIndex = system.lastIndex = 0;
-        if (property.startsWith("--")) { start = index + 1; continue; }
+        if (property.startsWith("--")) {
+          // A custom property holding a bare length is a fixed size wearing a variable's name; roles come from --hfx-*.
+          if (!layout && !/var\(/.test(value) && length.test(value)) add("alias");
+          length.lastIndex = 0;
+          start = index + 1; continue;
+        }
         const residual = withoutVars.replace(/TOKEN|!important/g, "").replace(/calc\([^)]*\)/g, "").trim();
         const literals = residual.split(/[\s,]+/).filter(Boolean).filter(word => !allowed.test(word));
         const hasLength = length.test(withoutVars); length.lastIndex = 0;
         if (properties.radius.test(property) && (hasLength || literals.some(word => word !== "50%"))) add("radius");
-        if (properties.type.test(property) && literals.some(word => property !== "line-height" || word !== "1")) add("type");
+        // Relative font sizes (em, %) follow the role-based size they sit in, so only fixed ones are findings.
+        const relative = word => /^(?:font-size|font)$/.test(property) && /^-?(?:\d*\.)?\d+(?:em|%)$/.test(word);
+        if (properties.type.test(property) && literals.some(word => !relative(word) && (property !== "line-height" || word !== "1"))) add("type");
         if (properties.spacing.test(property) && hasLength) add("spacing");
         if (properties.border.test(property) && hasLength) add("border");
         if (properties.shadow.test(property) && literals.length) add("shadow");

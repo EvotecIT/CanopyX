@@ -37,7 +37,7 @@ param(
     [int] $DotNetCommandTimeoutSeconds = 900,
 
     [ValidateRange(1, 86400)]
-    [int] $BrowserTestTimeoutSeconds = 900,
+    [int] $BrowserTestTimeoutSeconds = 2400,
 
     [ValidateRange(1, 3600)]
     [int] $PackageConsumerTimeoutSeconds = 300

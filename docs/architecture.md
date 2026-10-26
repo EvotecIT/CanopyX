@@ -247,7 +247,24 @@ Grid `density` is `compact` (32 pixel rows, 8 pixel horizontal padding) or `comf
 
 Built-in tones retain their public names: `success` reads `status-good`, `warning` reads `status-warn`, and `danger` reads `status-bad`. A named host tone reads `--hfx-color-status-<name>-fg` and `--hfx-color-status-<name>-bg`. Host renderers use `CanopyX.badge({ text, tone, title })` for the same badge treatment as view cells. Badges use `--hfx-radius-badge`; status pills use `--hfx-radius-status`; every popup uses `--hfx-radius-overlay`. The categorical `--hfx-color-series-1` through `-6` roles carry palette v1.1 in a fixed order, independently of status colours.
 
-Migration: replace former `--cx-*` colour, font and radius overrides with their shared roles. For example, `--cx-surface` becomes `--hfx-color-surface`, `--cx-tone-warning` becomes `--hfx-color-status-warn-fg`, and `--cx-font` becomes `--hfx-font-sans`. Component geometry hooks such as `--cx-row-h` and `--cx-scrollbar-*` remain available. `Build/Sync-DesignTokens.mjs` imports fallback values and the shared lint rules from the canonical generated tokens. `Build/Sync-Assets.ps1` inserts those values at use sites. `Build/Lint-DesignTokens.mjs` checks maintained runtime CSS for new literals; its baseline can only shrink. Shared fallback data and density/theme wiring have a separate 6 KiB gzip guard. Every existing component ceiling stays unchanged; both the component bytes and added shared overhead are checked.
+Migration: replace former `--cx-*` colour, font and radius overrides with their shared roles. For example, `--cx-surface` becomes `--hfx-color-surface`, `--cx-tone-warning` becomes `--hfx-color-status-warn-fg`, and `--cx-font` becomes `--hfx-font-sans`. Component geometry hooks such as `--cx-row-h` and `--cx-scrollbar-*` remain available. `Build/Sync-DesignTokens.mjs` imports fallback values and the shared lint rules from the canonical generated tokens. `Build/Sync-Assets.ps1` inserts those values at use sites. `Build/Lint-DesignTokens.mjs` checks maintained runtime CSS for new literals; its baseline can only shrink. Shared fallback data, density/theme wiring and role multiples (sizes between role steps) have a separate 6 KiB gzip guard. Every existing component ceiling stays unchanged; both the component bytes and added shared overhead are checked.
+
+#### Sizes are roles too
+
+Type, spacing, borders, icons, radii, weights and layers come from the shared roles, so a host's type scale, spacing scale and density reach every view, not only its colours:
+
+| Value in a stylesheet | Role |
+| --- | --- |
+| 12, 13, 14, 15, 20 and 28 pixel text | `--hfx-type-caption-size`, `-small-size`, `-body-size`, `-heading-size`, `-title-size`, `-display-size` |
+| 2, 4, 6, 8, 12, 16, 24 and 32 pixel spacing | `--hfx-space-0-5`, `-1`, `-1-5`, `-2`, `-3`, `-4`, `-5`, `-6` |
+| 1 pixel borders and outlines | `--hfx-border-width` |
+| 14, 16 and 20 pixel icons | `--hfx-icon-sm`, `-md`, `-lg` |
+| Control, row, menu item and tab heights | `--hfx-control-height-sm`/`-md`/`-lg`, `--hfx-row-height`, `--hfx-menu-item-height`, `--hfx-tab-height` (these follow density) |
+| Weights, popover and drawer layers | `--hfx-weight-regular`/`-medium`/`-semibold`, `--hfx-z-popover`, `--hfx-z-drawer`, `--hfx-z-tooltip` |
+
+A value between steps is a multiple of the nearest role (`calc(var(--hfx-space-1) * 2.5)` for 10 pixels, `calc(var(--hfx-type-caption-size) * .9583)` for 11.5 pixels), which keeps the default rendering and still follows the host's scale. Font sizes in `em` or `%` are relative and need no role. Viewport sizes and wide panel dimensions are layout, not theme: they stay literal with a `/* lint-allow layout: reason */` comment on the line.
+
+The lint reads a `var(--cx-size-NN)` alias as the fixed length it is and flags a custom property that holds a bare length, so the remaining aliases are recorded debt that can only shrink. They are defined in `canopyx.source/base.css` until the last part stops using them; `Build/Migrate-SizeRoles.mjs <part folder>` rewrites a part's aliases by these rules, and each part moves when its components move to the shared UI primitives, where values between steps are also brought onto the scale.
 
 #### Theming scrollbars
 

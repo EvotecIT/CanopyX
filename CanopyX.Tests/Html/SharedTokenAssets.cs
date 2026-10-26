@@ -72,7 +72,9 @@ internal static class SharedTokenAssets {
             output.Append("var(").Append(match.Groups[1].Value).Append(')');
             offset = end;
         }
-        return output.Append(asset, offset, asset.Length - offset).ToString();
+        // A size between role steps is a multiple of a role (calc(var(--hfx-space-1)*2.5)); like the fallbacks, that is
+        // theming overhead under the shared allowance, so the component budget measures it as the bare role.
+        return Regex.Replace(output.Append(asset, offset, asset.Length - offset).ToString(), @"calc\(var\((--hfx-[a-z0-9-]+)\)\*-?[\d.]+\)", "var($1)");
     }
 
     internal static long Gzip(string value) {
