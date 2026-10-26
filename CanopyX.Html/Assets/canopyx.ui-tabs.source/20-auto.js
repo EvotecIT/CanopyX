@@ -9,7 +9,7 @@ UI_TOOLS.tabsAuto = (root, list, options, labels, life, read, select, cancel, re
   if (!config || !Number.isFinite(config.interval) || config.interval <= 0 || life.signal.aborted) return idle;
   const n = UI_TOOLS.navigation, control = n.button(labels.tabsPause, 'cx-tabs-play');
   const media = matchMedia('(prefers-reduced-motion: reduce)');
-  let paused = media.matches, hovered = config.pauseOnHover !== false && root.matches(':hover');
+  let reduced = media.matches, paused = reduced, hovered = config.pauseOnHover !== false && root.matches(':hover');
   let focused = config.pauseOnFocus !== false && root.contains(document.activeElement);
   let started = false, pending = false, destroyed = false, generation = 0;
   let elapsed = 0, previous = null, frame = null;
@@ -65,6 +65,9 @@ UI_TOOLS.tabsAuto = (root, list, options, labels, life, read, select, cancel, re
   }
   function tick(now) {
     frame = null;
+    // Reading media.matches can update the value Chromium compares for its change event, so that event may never come;
+    // a running timer also notices the switch itself.
+    if (media.matches !== reduced) { motionChanged(); return; }
     if (blocked()) { previous = null; return; }
     if (previous != null) elapsed += now - previous;
     previous = now; paint();
@@ -85,10 +88,13 @@ UI_TOOLS.tabsAuto = (root, list, options, labels, life, read, select, cancel, re
     root.addEventListener('focusout', event => { focused = root.contains(event.relatedTarget); sync(); }, { signal: life.signal });
   }
   document.addEventListener('visibilitychange', sync, { signal: life.signal });
-  media.addEventListener('change', () => {
-    if (media.matches) stop();
+  function motionChanged() {
+    if (media.matches === reduced) return;
+    reduced = media.matches;
+    if (reduced) stop();
     else sync();
-  }, { signal: life.signal });
+  }
+  media.addEventListener('change', motionChanged, { signal: life.signal });
   function stop() { cancelPending(); paused = true; elapsed = 0; sync(); }
   function reset() { cancelPending(); elapsed = 0; sync(); }
   function destroy() {

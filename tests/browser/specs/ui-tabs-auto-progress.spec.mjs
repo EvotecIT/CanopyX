@@ -16,11 +16,11 @@ const markup = (attributes = '') => `<div id="sections" class="cx-tabs cx-tabs--
 
 const init = options => `window.sections = CanopyX.tabs('#sections', ${options});`;
 const selected = page => page.evaluate(() => sections.getSelected());
-// Media query changes are reported when the browser renders a frame. With the clock installed, requestAnimationFrame no
-// longer drives frames, so a mid-test switch also touches the DOM to make sure one is rendered.
+// Switches reduced motion once the emulated value is in effect, then lets a running timer see it for a frame or two.
 async function switchMotion(page, reducedMotion) {
   await page.emulateMedia({ reducedMotion });
-  await page.evaluate(() => { document.body.dataset.motionSwitch = String(Number(document.body.dataset.motionSwitch || 0) + 1); });
+  await expect.poll(() => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(reducedMotion === 'reduce');
+  await page.clock.runFor(50);
 }
 async function releasePointerAndFocus(page) {
   await page.mouse.move(1200, 800);

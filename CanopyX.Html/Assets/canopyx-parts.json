@@ -67,7 +67,7 @@
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "fd5ee9aee0fa3837",
+      "version": "96f562187c7e0732",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [
