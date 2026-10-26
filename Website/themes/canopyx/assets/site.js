@@ -2,6 +2,13 @@
 (function () {
   'use strict';
 
+  // /demos/ redirects to /views/ and keeps its hash; the old demo anchors open the view that replaced them.
+  var legacyDemos = { files: 'files', inventory: 'inventory', outline: 'email', changes: 'changes' };
+  if (/^\/views\/?(index\.html)?$/.test(location.pathname) && legacyDemos[location.hash.slice(1)]) {
+    location.replace('/views/' + legacyDemos[location.hash.slice(1)] + '/');
+    return;
+  }
+
   var root = document.documentElement;
   var theme = function () { return root.dataset.theme === 'dark' ? 'dark' : 'light'; };
   var themeListeners = [];
