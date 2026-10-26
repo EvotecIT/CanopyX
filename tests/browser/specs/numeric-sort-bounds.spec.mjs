@@ -19,22 +19,22 @@ async function open(page) {
   await page.evaluate(api + ".ready");
 }
 
-test("inline numeric sort keys reject both unsafe magnitudes instead of collapsing distinct JSON integers", async ({ page }) => {
+test("inline numeric sort keys outside the safe magnitude are dropped instead of collapsing distinct JSON integers", async ({ page }) => {
   await open(page);
   const result = await page.evaluate(base => {
     const collapsed = JSON.parse('[9007199254740993,9007199254740992]');
     const cases = [Number.MAX_SAFE_INTEGER + 1, -(Number.MAX_SAFE_INTEGER + 1)].map(sort => {
       const host = document.createElement("div"); document.body.append(host);
-      try { const grid = CanopyX.createDataGrid(host, { view: { ...base, rows: [{ id: "a", cells: { name: { value: "Visible name", sort } } }] } }); grid.destroy(); return null; }
-      catch (error) { return error.message; } finally { host.remove(); }
+      const grid = CanopyX.createDataGrid(host, { view: { ...base, rows: [{ id: "a", cells: { name: { value: "Visible name", sort } } }] } });
+      try { return grid.view.rows[0].cells.name; } finally { grid.destroy(); host.remove(); }
     });
     return { collapsed, cases };
   }, base);
   expect(result.collapsed[0]).toBe(result.collapsed[1]);
-  for (const error of result.cases) expect(error).toContain("safe integer magnitude");
+  expect(result.cases).toEqual([{ value: "Visible name" }, { value: "Visible name" }]);
 });
 
-test("custom-source pages reject unsafe numeric sort keys and recover through reload", async ({ page }) => {
+test("custom-source pages drop unsafe numeric sort keys and keep their rows", async ({ page }) => {
   await open(page);
   const result = await page.evaluate(async base => {
     const host = document.createElement("div"); document.body.append(host); const errors = []; let sort = Number.MAX_SAFE_INTEGER + 1;
@@ -45,24 +45,23 @@ test("custom-source pages reject unsafe numeric sort keys and recover through re
       sort = .75; const recovered = await grid.reload(); return { failed, recovered, errors, rows: grid.getPaging().matched }; }
     finally { grid.destroy(); host.remove(); }
   }, base);
-  expect(result.failed.accepted).toBe(false); expect(result.failed.visible).toBe(0);
-  expect(result.failed.rejection).toContain("safe integer magnitude");
-  expect(result.failed.errors).toEqual([expect.stringContaining("safe integer magnitude")]);
+  expect(result.failed.accepted).toBeTruthy(); expect(result.failed.visible).toBe(1);
+  expect(result.failed.rejection).toBeUndefined(); expect(result.errors).toEqual([]);
   expect(result.recovered).toBeTruthy(); expect(result.rows).toBe(1);
 });
 
-test("compact row chunks reject unsafe numeric sort metadata before attaching decoded rows", async ({ page }) => {
+test("compact row chunks drop unsafe numeric sort metadata and attach their rows", async ({ page }) => {
   await open(page);
   const result = await page.evaluate(async base => {
     const host = document.createElement("div"); document.body.append(host); const errors = [];
     const grid = CanopyX.createDataGrid(host, { view: { ...base, rows: undefined,
       rowData: { version: 1, columns: ["name"], count: 1, ordered: true, chunks: [[["a", { value: "Unsafe compact row", sort: -(Number.MAX_SAFE_INTEGER + 1) }]]] } },
       onError: event => errors.push(event.error.message) });
-    try { const accepted = await grid.ready.catch(error => false); return { accepted, errors, rows: grid.view.rows.length }; }
+    try { const accepted = await grid.ready.catch(error => false); return { accepted: accepted !== false, errors, rows: grid.view.rows.map(row => row.cells.name) }; }
     finally { grid.destroy(); host.remove(); }
   }, base);
-  expect(result.accepted).toBe(false); expect(result.rows).toBe(0);
-  expect(result.errors).toEqual([expect.stringContaining("safe integer magnitude")]);
+  expect(result.accepted).toBe(true); expect(result.rows).toEqual([{ value: "Unsafe compact row" }]);
+  expect(result.errors).toEqual([]);
 });
 
 test("an unloaded record rejects unsafe numeric sort metadata before opening its drawer", async ({ page }) => {
@@ -79,7 +78,7 @@ test("an unloaded record rejects unsafe numeric sort metadata before opening its
   expect(result.error).toContain("safe integer magnitude"); expect(result.dialogs).toBe(0); expect(result.recovered).toBe("Recovered record");
 });
 
-test("record collection rows reject unsafe numeric sort metadata before rendering nested records", async ({ page }) => {
+test("record collection rows drop unsafe numeric sort metadata and still render their nested records", async ({ page }) => {
   await open(page);
   await page.evaluate(async base => {
     const host = document.createElement("div"); document.body.append(host); const errors = [];
@@ -94,7 +93,7 @@ test("record collection rows reject unsafe numeric sort metadata before renderin
     await expect.poll(() => page.evaluate(() => collectionProbe.errors.length > 0 || !!document.querySelector("dialog.cx-drawer")?.textContent.includes("Unsafe related row"))).toBe(true);
     const result = await page.evaluate(() => ({ errors: collectionProbe.errors,
       unsafeRendered: !!document.querySelector("dialog.cx-drawer")?.textContent.includes("Unsafe related row") }));
-    expect(result.errors).toEqual([expect.stringContaining("safe integer magnitude")]); expect(result.unsafeRendered).toBe(false);
+    expect(result.errors).toEqual([]); expect(result.unsafeRendered).toBe(true);
   } finally { await page.evaluate(() => { collectionProbe.grid.destroy(); collectionProbe.host.remove(); }); }
 });
 
@@ -167,13 +166,13 @@ test("inline and hosted trees ignore unsafe numeric sort keys and retain raw-val
   expect(result).toEqual([["a", "b", "z"], ["z", "b", "a"], ["a", "b", "z"], ["z", "b", "a"]]);
 });
 
-test("safe numeric guards retain fractions and reject nonnumeric or nonfinite raw values", async ({ page }) => {
+test("safe numeric guards retain fractions and repair nonnumeric or nonfinite raw values", async ({ page }) => {
   await open(page);
-  const result = await page.evaluate(base => ["1", NaN, Infinity, -Infinity, .125, -.125, Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER].map(value => {
+  const result = await page.evaluate(base => ["1", "many", NaN, Infinity, -Infinity, .125, -.125, Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER].map(value => {
     const host = document.createElement("div"); document.body.append(host);
-    try { const grid = CanopyX.createDataGrid(host, { view: { ...base, columns: base.columns.map(column => ({ ...column, kind: "number" })), rows: [{ id: "a", cells: { name: value } }] } }); grid.destroy(); return null; }
-    catch (error) { return error.message; } finally { host.remove(); }
+    const grid = CanopyX.createDataGrid(host, { view: { ...base, columns: base.columns.map(column => ({ ...column, kind: "number" })), rows: [{ id: "a", cells: { name: value } }] } });
+    try { return grid.view.rows[0].cells.name; } finally { grid.destroy(); host.remove(); }
   }), base);
-  for (const error of result.slice(0, 4)) expect(error).toContain("safe integer magnitude");
-  expect(result.slice(4)).toEqual([null, null, null, null]);
+  // A numeric string becomes its number, other text keeps showing, and a nonfinite number shows nothing.
+  expect(result).toEqual([1, { value: null, text: "many" }, null, null, null, .125, -.125, Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER]);
 });

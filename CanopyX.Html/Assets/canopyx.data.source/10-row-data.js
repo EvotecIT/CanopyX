@@ -70,7 +70,7 @@
         }
         if (!Array.isArray(chunk)) throw new Error("CanopyX: a row data chunk is not an array of rows.");
         const decoded = chunk.map(expand);
-        validateGridRows(decoded, view.columns, ids);
+        validateGridRows(decoded, view.columns, ids, true);
         // Identity order puts canonical integer ids first, as numbers. Rows written by an older writer in plain code-unit order
         // are still read: from the first row out of order on, queries wait for every chunk, like unordered rows, and the windows
         // answered before it are drawn again in identity order when decoding finishes.

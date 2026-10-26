@@ -72,7 +72,7 @@
     // rowData replaces an inline grid's rows; the data part (52-grid-row-data.js) decodes and validates it with the first query.
     if (view.rowData !== undefined) {
       if (view.source.kind !== "inline" || view.rows !== undefined || !validStructuralCount(view.rowData?.count)) throw new Error("CanopyX: invalid grid rowData.");
-    } else if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
+    } else if (view.source.kind === "inline") validateGridRows(view.rows, view.columns, undefined, true);
     else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
     return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 32 : 40) };
@@ -135,6 +135,7 @@
     if (query.revision !== undefined && page.revision !== query.revision || accepted &&
         (page.revision !== accepted.revision || accepted.total !== undefined && page.total !== accepted.total ||
           accepted.matched !== undefined && page.matched !== accepted.matched)) throw new Error("CanopyX: grid page snapshot changed.");
-    validateGridRows(page.items, view.columns);
-    return { ...page, items: JSON.parse(JSON.stringify(page.items)) };
+    const items = JSON.parse(JSON.stringify(page.items));
+    validateGridRows(items, view.columns, undefined, true);
+    return { ...page, items };
   }
