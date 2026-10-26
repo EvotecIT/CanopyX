@@ -13,87 +13,57 @@
 </head>
 <body class="cnx-body cnx-body--demos{{ if body_class != "" }} {{ body_class }}{{ end }}">
 {{ include "site-header" }}
-{{~ ## Live demos with a guided tour: each demo is a frame beside the steps to try in it (data/tour.json), drawn as the
-     numbered rows of a grid. Every frame is CanopyX output written by tools/SiteDemos. ## ~}}
+{{~ ## Every view as a live demo beside the steps to try in it. Views and families come from data/views.json, the steps
+     from data/tour.json (keyed by view id) and the one-line stats from data/demos.json. Every frame is CanopyX output
+     written by tools/SiteDemos, and frames load as they come near the viewport. ## ~}}
+{{~ views = data.views ~}}
 <main id="main" class="cnx-main">
   <article class="cnx-page cnx-page--wide cnx-demos">
     {{ include "pagehead" }}
 
-    <nav class="cnx-demos__index" aria-label="Demos on this page">
-      <a href="#files"><span class="cnx-demos__num">1</span><strong>File explorer</strong><span>{{ data.demos.files.nodes }} nodes, sidecar bundle</span></a>
-      <a href="#inventory"><span class="cnx-demos__num">2</span><strong>Device inventory</strong><span>{{ data.demos.inventory.rows }} rows, one HTML page</span></a>
-      <a href="#outline"><span class="cnx-demos__num">3</span><strong>Static outline</strong><span>Script-free HTML</span></a>
-      <a href="#changes"><span class="cnx-demos__num">4</span><strong>Change review</strong><span>Diff, change list, propagation</span></a>
+    <nav class="cnx-demos__index" aria-label="Views on this page">
+      {{~ for f in views.families ~}}
+      <div class="cnx-demos__family">
+        <p class="cnx-demos__familyname"><span class="cnx-tone cnx-tone--{{ f.tone }}" aria-hidden="true"></span>{{ f.name }}</p>
+        <ul>
+          {{~ for v in views.views ~}}
+          {{~ if v.family == f.id ~}}
+          <li><a href="#{{ v.id }}"><strong>{{ v.name }}</strong><span>{{ v.example }}</span></a></li>
+          {{~ end ~}}
+          {{~ end ~}}
+        </ul>
+      </div>
+      {{~ end ~}}
     </nav>
 
-    <section class="cnx-tour" id="files" aria-labelledby="cnx-demo-files-title">
-      <div class="cnx-node cnx-tour__head">
-        <h2 id="cnx-demo-files-title">File explorer</h2>
-        <p>A share audit across 26 shares, written with <code>SaveHtmlBundle</code> into static files. Nothing here runs on a server: branches and search results are files read as you need them.</p>
-      </div>
-      <dl class="cnx-tour__facts">
-        <div><dt>Nodes</dt><dd>{{ data.demos.files.nodes }}</dd></div>
-        <div><dt>Data files</dt><dd>{{ data.demos.files.dataFiles }}</dd></div>
-        <div><dt>On disk</dt><dd>{{ data.demos.files.size }}</dd></div>
-        <div><dt>Largest file</dt><dd>{{ data.demos.files.largestFile }}</dd></div>
-      </dl>
+    {{~ for v in views.views ~}}
+    {{~ d = data.demos[v.id]; tour = data.tour[v.id]
+        family = null
+        for f in views.families; if f.id == v.family; family = f; end; end ~}}
+    <section class="cnx-tour cnx-tone--{{ family.tone }}" id="{{ v.id }}" aria-labelledby="cnx-demo-{{ v.id }}-title">
+      <header class="cnx-tour__head">
+        <p class="cnx-tour__family"><span class="cnx-tone cnx-tone--{{ family.tone }}" aria-hidden="true"></span>{{ family.name }}</p>
+        <h2 id="cnx-demo-{{ v.id }}-title">{{ v.name }}<span class="cnx-tour__example">{{ v.example }}</span></h2>
+        <p>{{ v.body }}</p>
+        <p class="cnx-tour__meta"><code>{{ v.api }}</code>{{ if d }}<span>{{ d.stat }}</span>{{ end }}<a class="cnx-link" href="{{ v.docs }}">Docs<span class="cnx-sr"> for the {{ v.name | string.downcase }}</span></a></p>
+      </header>
       <div class="cnx-tour__body">
+        {{~ if v.src ~}}
         <figure class="cnx-frame">
           <div class="cnx-frame__bar">
-            <span class="cnx-frame__title">File explorer</span>
-            <span class="cnx-frame__path">/live/files/index.html</span>
-            <a class="cnx-frame__open" href="/live/files/index.html"><span>Open<span class="cnx-sr"> the file explorer</span> full screen</span></a>
+            <span class="cnx-frame__title">{{ v.example }}</span>
+            <span class="cnx-frame__path">{{ v.src }}</span>
+            <a class="cnx-frame__open" href="{{ v.src }}"><span>Open<span class="cnx-sr"> the {{ v.example | string.downcase }}</span> full screen</span></a>
           </div>
           <div class="cnx-frame__screen">
-            <iframe title="CanopyX file explorer" data-cnx-frame data-eager data-src="/live/files/index.html"></iframe>
+            <iframe title="CanopyX {{ v.name | string.downcase }}: {{ v.example | string.downcase }}" data-cnx-frame data-src="{{ v.src }}"{{ if v.srcDark }} data-src-dark="{{ v.srcDark }}"{{ end }}></iframe>
           </div>
         </figure>
-        {{ tour = data.tour.files; include "tour-steps" }}
-      </div>
-      <figure class="cnx-example cnx-tour__disk">
-        <div class="cnx-example__out">
-          <div class="cnx-example__bar"><span class="cnx-example__tag">On disk</span><code class="cnx-example__label">/live/files/</code><span class="cnx-example__meta">The explorer's own files, explored with CanopyX</span><a class="cnx-frame__open" href="/live/docs/explorer-layout.html">Open<span class="cnx-sr"> the file layout</span></a></div>
-          <div class="cnx-example__screen" style="height: 380px"><iframe src="/live/docs/explorer-layout.html" title="The files of the explorer bundle, as a CanopyX tree" loading="lazy" data-cnx-frame></iframe></div>
-        </div>
-        <figcaption class="cnx-example__caption">Every file the bundle writer produced for the demo above, with its size and role. Open data/ and its packs to see why one branch costs a single small file.</figcaption>
-      </figure>
-    </section>
-
-    <section class="cnx-tour" id="inventory" aria-labelledby="cnx-demo-inventory-title">
-      <div class="cnx-node cnx-tour__head">
-        <h2 id="cnx-demo-inventory-title">Device inventory</h2>
-        <p>A reporting grid over {{ data.demos.inventory.rows }} devices, written with <code>ToHtmlPage</code>: data and runtime in a single file you can attach to a ticket or open from disk.</p>
-      </div>
-      <dl class="cnx-tour__facts">
-        <div><dt>Records</dt><dd>{{ data.demos.inventory.rows }}</dd></div>
-        <div><dt>Grouped by</dt><dd>Site</dd></div>
-        <div><dt>Facets</dt><dd>Site, OS, encryption</dd></div>
-        <div><dt>Files</dt><dd>1 page</dd></div>
-      </dl>
-      <div class="cnx-tour__body">
-        <figure class="cnx-frame">
-          <div class="cnx-frame__bar">
-            <span class="cnx-frame__title">Device inventory</span>
-            <span class="cnx-frame__path">/live/inventory.html</span>
-            <a class="cnx-frame__open" href="/live/inventory.html"><span>Open<span class="cnx-sr"> the device inventory</span> full screen</span></a>
-          </div>
-          <div class="cnx-frame__screen">
-            <iframe title="CanopyX device inventory" data-cnx-frame data-eager data-src="/live/inventory.html"></iframe>
-          </div>
-        </figure>
-        {{ tour = data.tour.inventory; include "tour-steps" }}
-      </div>
-    </section>
-
-    <section class="cnx-tour" id="outline" aria-labelledby="cnx-demo-outline-title">
-      <div class="cnx-node cnx-tour__head">
-        <h2 id="cnx-demo-outline-title">Static outline</h2>
-        <p>A smaller file tree as a plain table with no script, for email, print and Word. It is the same view definition as an interactive tree.</p>
-      </div>
-      <div class="cnx-tour__body">
+        {{~ if tour; include "tour-steps"; end ~}}
+        {{~ else ~}}
         <figure class="cnx-frame cnx-frame--flat">
           <div class="cnx-frame__bar">
-            <span class="cnx-frame__title">Weekly changes</span>
+            <span class="cnx-frame__title">{{ v.example }}</span>
             <span class="cnx-frame__path">CanopyStaticHtml.Render(view, options)</span>
           </div>
           <div class="cnx-tour__mail">
@@ -110,7 +80,7 @@
           </div>
         </figure>
         <div class="cnx-tour__side">
-          {{ tour = data.tour.outline; include "tour-steps" }}
+          {{~ if tour; include "tour-steps"; end ~}}
           <figure class="cnx-codeblock">
             <figcaption class="cnx-codeblock__bar"><span class="cnx-codeblock__file">SiteDemos/Program.cs</span><span class="cnx-codeblock__lang">C#</span></figcaption>
 <pre><code class="language-csharp">var options = new CanopyStaticHtmlOptions {
@@ -119,28 +89,19 @@
 string html = CanopyStaticHtml.Render(outline, options);</code></pre>
           </figure>
         </div>
+        {{~ end ~}}
       </div>
+      {{~ if v.id == "files" ~}}
+      <figure class="cnx-example cnx-tour__disk">
+        <div class="cnx-example__out">
+          <div class="cnx-example__bar"><span class="cnx-example__tag">On disk</span><code class="cnx-example__label">/live/files/</code><span class="cnx-example__meta">The explorer's own {{ data.demos.files.dataFiles }} files, {{ data.demos.files.size }}, explored with CanopyX</span><a class="cnx-frame__open" href="/live/docs/explorer-layout.html">Open<span class="cnx-sr"> the file layout</span></a></div>
+          <div class="cnx-example__screen" style="height: 380px"><iframe title="The files of the explorer bundle, as a CanopyX tree" data-cnx-frame data-src="/live/docs/explorer-layout.html"></iframe></div>
+        </div>
+        <figcaption class="cnx-example__caption">Every file the bundle writer produced for the demo above, with its size and role. Open data/ and its packs to see why one branch costs a single small file.</figcaption>
+      </figure>
+      {{~ end ~}}
     </section>
-
-    <section class="cnx-tour" id="changes" aria-labelledby="cnx-demo-changes-title">
-      <div class="cnx-node cnx-tour__head">
-        <h2 id="cnx-demo-changes-title">Change review</h2>
-        <p>A change set on a replicated share, written with <code>CanopyChangeList</code>, <code>CanopyPropagation</code> and <code>CanopyTextDiff</code>: what changed and why it is flagged, how it reached each server, and what changed inside a script.</p>
-      </div>
-      <div class="cnx-tour__body">
-        <figure class="cnx-frame">
-          <div class="cnx-frame__bar">
-            <span class="cnx-frame__title">Change review</span>
-            <span class="cnx-frame__path">/live/changes.html</span>
-            <a class="cnx-frame__open" href="/live/changes.html"><span>Open<span class="cnx-sr"> the change review</span> full screen</span></a>
-          </div>
-          <div class="cnx-frame__screen">
-            <iframe title="CanopyX change review" data-cnx-frame data-src="/live/changes.html"></iframe>
-          </div>
-        </figure>
-        {{ tour = data.tour.changes; include "tour-steps" }}
-      </div>
-    </section>
+    {{~ end ~}}
 
     <div class="cnx-prose cnx-demos__about">
 {{ content }}

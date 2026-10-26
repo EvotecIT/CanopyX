@@ -14,5 +14,10 @@
     <Compile Include="..\..\..\CanopyX.Examples\SyntheticFileTree.cs" Link="Examples\SyntheticFileTree.cs" />
     <Compile Include="..\..\..\CanopyX.Examples\ExampleViews.cs" Link="Examples\ExampleViews.cs" />
     <Compile Include="..\..\..\CanopyX.Examples\ChangeViewsExample.cs" Link="Examples\ChangeViewsExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\CalendarExample.cs" Link="Examples\CalendarExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\CalendarTimelineExample.cs" Link="Examples\CalendarTimelineExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\MatrixExamples.cs" Link="Examples\MatrixExamples.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\FlowExamplePage.cs" Link="Examples\FlowExamplePage.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\FlowSetupTasksExample.cs" Link="Examples\FlowSetupTasksExample.cs" />
   </ItemGroup>
 </Project>

@@ -69,13 +69,6 @@
         "As": "font",
         "Rel": "preload",
         "Type": "font/woff2"
-      },
-      {
-        "Href": "/fonts/fraunces-latin.woff2",
-        "Crossorigin": "anonymous",
-        "As": "font",
-        "Rel": "preload",
-        "Type": "font/woff2"
       }
     ],
     "Meta": [
@@ -260,9 +253,20 @@
         "Name": "main",
         "Items": [
           {
-            "Id": "demos",
-            "Title": "Demos",
-            "Url": "/demos/"
+            "Id": "views",
+            "Title": "Views",
+            "Description": "Every view CanopyX draws, each with a live demo generated in C#.",
+            "Items": [
+              { "Id": "view-all", "Title": "All live demos", "Url": "/demos/", "Description": "Every view on one page, with steps to try in each.", "Meta": { "tone": "all" } },
+              { "Id": "view-files", "Title": "Tree grid", "Url": "/demos/#files", "Description": "A file explorer over 113,550 nodes.", "Meta": { "tone": "explore" } },
+              { "Id": "view-inventory", "Title": "Data grid", "Url": "/demos/#inventory", "Description": "A reporting grid with facets and grouping.", "Meta": { "tone": "explore" } },
+              { "Id": "view-calendar", "Title": "Calendar", "Url": "/demos/#calendar", "Description": "Month, week, day, agenda and year.", "Meta": { "tone": "plan" } },
+              { "Id": "view-timeline", "Title": "Resource timeline", "Url": "/demos/#timeline", "Description": "Events on a tree of hosts.", "Meta": { "tone": "plan" } },
+              { "Id": "view-matrix", "Title": "Status matrix", "Url": "/demos/#matrix", "Description": "Services by server, both axes grouped.", "Meta": { "tone": "compare" } },
+              { "Id": "view-changes", "Title": "Change review", "Url": "/demos/#changes", "Description": "Flags, propagation and diffs.", "Meta": { "tone": "compare" } },
+              { "Id": "view-flow", "Title": "Guided flow", "Url": "/demos/#flow", "Description": "Tasks, checks and a review page.", "Meta": { "tone": "guide" } },
+              { "Id": "view-email", "Title": "Script-free table", "Url": "/demos/#email", "Description": "Script-free tables from the same view.", "Meta": { "tone": "deliver" } }
+            ]
           },
           {
             "Id": "docs",
@@ -347,9 +351,9 @@
             ]
           },
           {
-            "Id": "javascript-link",
-            "Title": "JavaScript",
-            "Url": "/docs/javascript/"
+            "Id": "github-link",
+            "Title": "GitHub",
+            "Url": "https://github.com/EvotecIT/CanopyX"
           }
         ]
       },

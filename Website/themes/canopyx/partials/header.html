@@ -31,10 +31,16 @@
             <p class="cnx-navpanel__lede">{{ g.description }}</p>
             <ul class="cnx-navpanel__items">
               {{~ for item in g.items ~}}
-              {{~ t = thumbs[item.meta.thumb] ~}}
-              <li class="cnx-navitem{{ if item.is_active }} is-current{{ end }}">
+              {{~ t = item.meta.thumb ? thumbs[item.meta.thumb] : null
+                  ## A link to a section of a page (/demos/#calendar) is never the current page; the page's own item is. ##
+                  itemCurrent = item.is_active && !(item.url | string.contains "#") ~}}
+              <li class="cnx-navitem{{ if itemCurrent }} is-current{{ end }}">
+                {{~ if item.meta.tone ~}}
+                <span class="cnx-navitem__tone cnx-tone cnx-tone--{{ item.meta.tone }}" aria-hidden="true"></span>
+                {{~ else ~}}
                 <span class="cnx-navitem__thumb cnx-thumb" aria-hidden="true"{{ if t }} data-cnx-thumb="{{ t.src }}"{{ end }}></span>
-                <a class="cnx-navitem__link" href="{{ item.url }}" aria-describedby="cnx-nav-{{ item.id }}-desc"{{ if item.is_active }} aria-current="page"{{ end }}>{{ item.title }}{{ if item.external }}<span class="cnx-sr"> (GitHub)</span>{{ end }}</a>
+                {{~ end ~}}
+                <a class="cnx-navitem__link" href="{{ item.url }}" aria-describedby="cnx-nav-{{ item.id }}-desc"{{ if itemCurrent }} aria-current="page"{{ end }}>{{ item.title }}{{ if item.external }}<span class="cnx-sr"> (GitHub)</span>{{ end }}</a>
                 <span class="cnx-navitem__desc" id="cnx-nav-{{ item.id }}-desc">{{ item.description }}</span>
               </li>
               {{~ end ~}}

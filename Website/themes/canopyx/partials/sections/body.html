@@ -1,82 +1,76 @@
-<section class="cnx-section cnx-views" aria-labelledby="cnx-views-title">
-  <div class="cnx-section__head cnx-node">
-    <h2 id="cnx-views-title">Two views, one model</h2>
-    <p>Use a tree grid when records have parents, and a data grid when they are a flat list. Both share columns, cells, themes and the <code>canopyx/2</code> data protocol.</p>
+{{~ views = data.views ~}}
+<section class="cnx-section cnx-catalog" id="views" aria-labelledby="cnx-catalog-title">
+  <div class="cnx-section__head">
+    <h2 id="cnx-catalog-title">One model, every view</h2>
+    <p>Each view reads the same columns, cells, tones and themes, so the records you map once can be a tree today and a calendar tomorrow. Every one ships as a live demo generated in C#.</p>
   </div>
-  <figure class="cnx-frame cnx-frame--flat">
-    <div class="cnx-frame__bar">
-      <span class="cnx-frame__title">Capabilities</span>
-      <span class="cnx-frame__path">CanopyStaticHtml.RenderGrid(view)</span>
-      <span class="cnx-frame__meta">Script-free HTML</span>
+  <div class="cnx-catalog__rows">
+    {{~ for f in views.families ~}}
+    <div class="cnx-catalog__row">
+      <div class="cnx-catalog__family">
+        <h3><span class="cnx-tone cnx-tone--{{ f.tone }}" aria-hidden="true"></span>{{ f.name }}</h3>
+        <p>{{ f.body }}</p>
+      </div>
+      <ul class="cnx-catalog__views">
+        {{~ for v in views.views ~}}
+        {{~ if v.family == f.id ~}}
+        <li class="cnx-viewcard cnx-tone--{{ f.tone }}">
+          <h4><a href="/demos/#{{ v.id }}">{{ v.name }}</a></h4>
+          <p>{{ v.body }}</p>
+          <code>{{ v.api }}</code>
+          <a class="cnx-viewcard__docs" href="{{ v.docs }}">Docs<span class="cnx-sr"> for the {{ v.name | string.downcase }}</span></a>
+        </li>
+        {{~ end ~}}
+        {{~ end ~}}
+      </ul>
     </div>
-    <div class="cnx-frame__body">
-      {{ include "generated/features" }}
-    </div>
-    <figcaption class="cnx-frame__caption">This table is <code>CanopyStaticHtml.RenderGrid</code> output, the same script-free HTML your emails get.</figcaption>
-  </figure>
-</section>
-
-<section class="cnx-showcase" aria-labelledby="cnx-showcase-title">
-  <div class="cnx-showcase__inner">
-    <div class="cnx-showcase__head">
-      <h2 id="cnx-showcase-title">Reports people actually open</h2>
-      <p>Both demos are generated in C# and served as static files. They follow your theme and work the same from a laptop, a file share or a web server.</p>
-    </div>
-    <div class="cnx-showcase__grid">
-      {{~ for c in data.home.showcases ~}}
-      <a class="cnx-frame cnx-shot" href="{{ c.url }}">
-        <span class="cnx-frame__bar">
-          <span class="cnx-frame__title">{{ c.title }}</span>
-          <span class="cnx-frame__path">{{ c.url }}</span>
-          <span class="cnx-frame__open">Open full screen</span>
-        </span>
-        <span class="cnx-shot__media">
-          <img class="cnx-only-light" src="{{ c.light }}" width="1440" height="820" loading="lazy" decoding="async" alt="{{ c.title }} in the light theme" />
-          <img class="cnx-only-dark" src="{{ c.dark }}" width="1440" height="820" loading="lazy" decoding="async" alt="{{ c.title }} in the dark theme" />
-        </span>
-        <span class="cnx-frame__caption">{{ c.body }}</span>
-      </a>
-      {{~ end ~}}
-    </div>
-  </div>
-</section>
-
-<section class="cnx-section cnx-delivery" aria-labelledby="cnx-delivery-title">
-  <div class="cnx-section__head cnx-node">
-    <h2 id="cnx-delivery-title">Ship it the way your readers work</h2>
-    <p>The same view definition becomes a self-contained page, a folder that opens from a file share, or a front end for your own API.</p>
-  </div>
-  <div class="cnx-delivery__grid">
-    {{~ for d in data.home.delivery ~}}
-    <article class="cnx-delivery__item">
-      <h3>{{ d.title }}</h3>
-      <p>{{ d.body }}</p>
-      {{~ if d.code ~}}
-      <figure class="cnx-codeblock">
-        <figcaption class="cnx-codeblock__bar"><span class="cnx-codeblock__lang">C#</span></figcaption>
-        <pre><code class="language-csharp">{{ d.code | html.escape }}</code></pre>
-      </figure>
-      {{~ end ~}}
-      {{~ if d.link ~}}
-      <p><a class="cnx-link" href="{{ d.link.url }}">{{ d.link.label }}</a></p>
-      {{~ end ~}}
-    </article>
     {{~ end ~}}
   </div>
 </section>
 
-<section class="cnx-section cnx-code-section" aria-labelledby="cnx-code-title">
-  <div class="cnx-section__head cnx-node">
-    <h2 id="cnx-code-title">Write it in C# or JavaScript</h2>
-    <p>Build the view from your .NET objects and save it, or mount it in a page you already have. Both produce the same grid.</p>
+<section class="cnx-section cnx-shared" aria-labelledby="cnx-shared-title">
+  <div class="cnx-section__head">
+    <h2 id="cnx-shared-title">Built into every view</h2>
+    <p>The parts readers rely on are part of the runtime, not plug-ins you assemble, and they behave the same in each view that uses them.</p>
   </div>
-  <figure class="cnx-codeblock cnx-code-tabs" data-cnx-tabs>
-    <figcaption class="cnx-codeblock__bar">
-      <span class="cnx-tabs cnx-tabs--code" role="tablist" aria-label="Language">
-        <button type="button" role="tab" id="cnx-code-tab-cs" aria-controls="cnx-code-cs" aria-selected="true" tabindex="0" class="cnx-tab">Program.cs<span class="cnx-tab__sort" aria-hidden="true"></span></button>
-        <button type="button" role="tab" id="cnx-code-tab-js" aria-controls="cnx-code-js" aria-selected="false" tabindex="-1" class="cnx-tab">files.js<span class="cnx-tab__sort" aria-hidden="true"></span></button>
-      </span>
-    </figcaption>
+  <dl class="cnx-shared__list">
+    {{~ for s in views.shared ~}}
+    <div><dt>{{ s.name }}</dt><dd>{{ s.body }}</dd></div>
+    {{~ end ~}}
+  </dl>
+</section>
+
+<section class="cnx-section cnx-delivery" aria-labelledby="cnx-delivery-title">
+  <div class="cnx-section__head">
+    <h2 id="cnx-delivery-title">Ship it the way your readers work</h2>
+    <p>The same view definition becomes a file, a folder, a front end for your API or a table in an email. Pick per report, not per project.</p>
+  </div>
+  <ol class="cnx-delivery__grid">
+    {{~ for d in data.home.delivery ~}}
+    <li class="cnx-delivery__item">
+      <h3>{{ d.title }}</h3>
+      <p>{{ d.body }}</p>
+      <code class="cnx-delivery__code">{{ d.code }}</code>
+    </li>
+    {{~ end ~}}
+  </ol>
+  <p class="cnx-delivery__more"><a class="cnx-link" href="/docs/delivery/">Compare the delivery modes</a></p>
+</section>
+
+<section class="cnx-section cnx-code-section" aria-labelledby="cnx-code-title">
+  <div class="cnx-code-section__inner">
+    <div class="cnx-section__head">
+      <h2 id="cnx-code-title">Write it in C# or JavaScript</h2>
+      <p>Build the view from your .NET objects and save it, or mount it in a page you already have. Both produce the same grid from the same <code>canopyx/2</code> document.</p>
+      <p><a class="cnx-link" href="/docs/javascript/">Use it from npm</a></p>
+    </div>
+    <figure class="cnx-codeblock cnx-code-tabs" data-cnx-tabs>
+      <figcaption class="cnx-codeblock__bar">
+        <span class="cnx-tabs cnx-tabs--code" role="tablist" aria-label="Language">
+          <button type="button" role="tab" id="cnx-code-tab-cs" aria-controls="cnx-code-cs" aria-selected="true" tabindex="0" class="cnx-tab">Program.cs<span class="cnx-tab__sort" aria-hidden="true"></span></button>
+          <button type="button" role="tab" id="cnx-code-tab-js" aria-controls="cnx-code-js" aria-selected="false" tabindex="-1" class="cnx-tab">files.js<span class="cnx-tab__sort" aria-hidden="true"></span></button>
+        </span>
+      </figcaption>
 <pre role="tabpanel" id="cnx-code-cs" aria-labelledby="cnx-code-tab-cs"><code class="language-csharp">using CanopyX;
 using CanopyX.Html;
 
@@ -110,12 +104,32 @@ const grid = createTreeGrid(document.getElementById("files"), {
 });
 
 await grid.ready;</code></pre>
-  </figure>
+    </figure>
+  </div>
+</section>
+
+<section class="cnx-section cnx-packages" id="packages" aria-labelledby="cnx-packages-title">
+  <div class="cnx-section__head">
+    <h2 id="cnx-packages-title">Packages</h2>
+    <p>Install only what the report needs. None of them adds a third-party runtime dependency, and generating a report from C# needs no Node.js or build step.</p>
+  </div>
+  <div class="cnx-packages__table" role="table" aria-label="CanopyX packages">
+    <div class="cnx-packages__head" role="row">
+      <span role="columnheader">Package</span><span role="columnheader">What it adds</span><span role="columnheader">Install</span>
+    </div>
+    {{~ for p in views.packages ~}}
+    <div class="cnx-packages__row" role="row">
+      <span role="cell" class="cnx-packages__name"><a href="{{ p.url }}">{{ p.name }}<span class="cnx-sr"> on {{ p.where }}</span></a><small aria-hidden="true">{{ p.where }}</small></span>
+      <span role="cell" class="cnx-packages__body">{{ p.body }}</span>
+      <span role="cell" class="cnx-packages__install"><code>{{ p.install }}</code><button type="button" class="cnx-copy" data-cnx-copy="{{ p.install }}" aria-label="Copy {{ p.install }}">Copy</button></span>
+    </div>
+    {{~ end ~}}
+  </div>
 </section>
 
 <section class="cnx-section cnx-family" aria-labelledby="cnx-family-title">
-  <div class="cnx-section__head cnx-node">
-    <h2 id="cnx-family-title">Part of the Evotec toolkit</h2>
+  <div class="cnx-section__head">
+    <h2 id="cnx-family-title">Works with the rest of the Evotec toolkit</h2>
   </div>
   <ul class="cnx-family__list">
     {{~ for f in data.home.family ~}}
@@ -125,11 +139,13 @@ await grid.ready;</code></pre>
 </section>
 
 <section class="cnx-cta" aria-labelledby="cnx-cta-title">
-  <h2 id="cnx-cta-title">Put your data in front of people who need to explore it</h2>
-  <div class="cnx-cta__lines">
-    {{~ for i in data.home.install ~}}
-    <div class="cnx-install__line"><code><span class="cnx-install__prompt" aria-hidden="true">&gt;</span> {{ i.command }}</code><button type="button" class="cnx-copy" data-cnx-copy="{{ i.command }}" aria-label="Copy {{ i.command }}">Copy</button></div>
-    {{~ end ~}}
+  <div class="cnx-cta__inner">
+    <h2 id="cnx-cta-title" class="cnx-display">Put your data in front of the people who need to explore it.</h2>
+    <div class="cnx-cta__lines">
+      {{~ for i in data.home.install ~}}
+      <div class="cnx-install__line"><code><span class="cnx-install__prompt" aria-hidden="true">&gt;</span> {{ i.command }}</code><button type="button" class="cnx-copy" data-cnx-copy="{{ i.command }}" aria-label="Copy {{ i.command }}">Copy</button></div>
+      {{~ end ~}}
+    </div>
+    <p><a class="cnx-btn" href="/docs/getting-started/">Read the getting started guide</a></p>
   </div>
-  <p><a class="cnx-link" href="/docs/getting-started/">Start with the getting started guide</a></p>
 </section>

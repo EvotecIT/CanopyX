@@ -1,93 +1,93 @@
-{{~ hero = data.home.hero ~}}
+{{~ ## The home hero: the promise and the install line, then the view explorer. The explorer's rail is drawn as a CanopyX
+     tree (families are expanded group rows, views are their children) and each row opens that view live beside it.
+     Views, families and their copy come from data/views.json; the one-line stats come from data/demos.json. ## ~}}
+{{~ hero = data.home.hero; views = data.views ~}}
 <section class="cnx-hero" aria-labelledby="cnx-intro-title">
   <div class="cnx-hero__inner">
-    <div class="cnx-hero__copy">
-      <h1 id="cnx-intro-title" class="cnx-hero__title"><span>{{ hero.title_line_1 }}</span> <span>{{ hero.title_line_2 }}</span></h1>
-      <p class="cnx-hero__lede">{{ hero.lede }}</p>
-    </div>
-    <div class="cnx-hero__side">
-      <div class="cnx-codeblock cnx-install" data-cnx-tabs>
-        <div class="cnx-codeblock__bar">
-          <div class="cnx-tabs cnx-tabs--code" role="tablist" aria-label="Package">
-            {{~ for i in data.home.install ~}}
-            <button type="button" role="tab" id="cnx-install-tab-{{ i.id }}" aria-controls="cnx-install-{{ i.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" class="cnx-tab">{{ i.label }}<span class="cnx-tab__sort" aria-hidden="true"></span></button>
-            {{~ end ~}}
-          </div>
+    <h1 id="cnx-intro-title" class="cnx-hero__title cnx-display">{{ hero.title }}</h1>
+    <p class="cnx-hero__lede">{{ hero.lede }}</p>
+    <div class="cnx-codeblock cnx-install" data-cnx-tabs>
+      <div class="cnx-codeblock__bar">
+        <div class="cnx-tabs cnx-tabs--code" role="tablist" aria-label="Package">
+          {{~ for i in data.home.install ~}}
+          <button type="button" role="tab" id="cnx-install-tab-{{ i.id }}" aria-controls="cnx-install-{{ i.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" class="cnx-tab">{{ i.label }}<span class="cnx-tab__sort" aria-hidden="true"></span></button>
+          {{~ end ~}}
         </div>
-        {{~ for i in data.home.install ~}}
-        <div class="cnx-install__line" role="tabpanel" id="cnx-install-{{ i.id }}" aria-labelledby="cnx-install-tab-{{ i.id }}"{{ if !for.first }} hidden{{ end }}>
-          <code><span class="cnx-install__prompt" aria-hidden="true">&gt;</span> {{ i.command }}</code>
-          <button type="button" class="cnx-copy" data-cnx-copy="{{ i.command }}" aria-label="Copy {{ i.command }}">Copy</button>
+      </div>
+      {{~ for i in data.home.install ~}}
+      <div class="cnx-install__line" role="tabpanel" id="cnx-install-{{ i.id }}" aria-labelledby="cnx-install-tab-{{ i.id }}"{{ if !for.first }} hidden{{ end }}>
+        <code><span class="cnx-install__prompt" aria-hidden="true">&gt;</span> {{ i.command }}</code>
+        <button type="button" class="cnx-copy" data-cnx-copy="{{ i.command }}" aria-label="Copy {{ i.command }}">Copy</button>
+      </div>
+      {{~ end ~}}
+    </div>
+    <div class="cnx-hero__actions">
+      <a class="cnx-btn" href="{{ hero.primary.url }}">{{ hero.primary.label }}</a>
+      <a class="cnx-btn cnx-btn--quiet" href="{{ hero.secondary.url }}">{{ hero.secondary.label }}</a>
+    </div>
+    <ul class="cnx-hero__facts">
+      {{~ for f in hero.facts ~}}
+      <li>{{ f }}</li>
+      {{~ end ~}}
+    </ul>
+  </div>
+
+  <div class="cnx-explorer" data-cnx-stage>
+    <div class="cnx-explorer__rail">
+      <p class="cnx-explorer__head" aria-hidden="true"><span>View</span><span>{{ views.views.size }}</span></p>
+      <div class="cnx-explorer__tree" role="tablist" aria-orientation="vertical" aria-label="Views">
+        {{~ for f in views.families ~}}
+        <div class="cnx-explorer__family" aria-hidden="true"><span class="cnx-chev"></span><span class="cnx-tone cnx-tone--{{ f.tone }}"></span>{{ f.name }}</div>
+        {{~ for v in views.views ~}}
+        {{~ if v.family == f.id ~}}
+        {{~ first = v.id == views.views[0].id ~}}
+        <button type="button" role="tab" class="cnx-explorer__view" id="cnx-demo-tab-{{ v.id }}" aria-controls="cnx-demo-{{ v.id }}" aria-selected="{{ if first }}true{{ else }}false{{ end }}" tabindex="{{ if first }}0{{ else }}-1{{ end }}" data-cnx-demo="{{ v.id }}">
+          <span class="cnx-explorer__name">{{ v.name }}</span>
+          <span class="cnx-explorer__example"><span class="cnx-sr">{{ f.name }}: </span>{{ v.example }}</span>
+        </button>
+        {{~ end ~}}
+        {{~ end ~}}
+        {{~ end ~}}
+      </div>
+    </div>
+
+    <figure class="cnx-explorer__stage">
+      <div class="cnx-explorer__bar">
+        {{~ for v in views.views ~}}
+        {{~ d = data.demos[v.id] ~}}
+        <p class="cnx-explorer__title" data-cnx-caption="{{ v.id }}"{{ if !for.first }} hidden{{ end }}>
+          <strong>{{ v.example }}</strong>
+          <code>{{ v.api }}</code>
+          {{~ if d ~}}<span>{{ d.stat }}</span>{{~ end ~}}
+        </p>
+        {{~ end ~}}
+        <a class="cnx-frame__open" data-cnx-demo-open href="{{ views.views[0].src }}">Open full screen</a>
+      </div>
+      <div class="cnx-explorer__screen">
+        {{~ for v in views.views ~}}
+        <div class="cnx-demo{{ if !v.src }} cnx-demo--email{{ end }}" role="tabpanel" id="cnx-demo-{{ v.id }}" aria-labelledby="cnx-demo-tab-{{ v.id }}"{{ if !for.first }} hidden{{ end }}>
+          {{~ if v.src ~}}
+          <iframe title="CanopyX {{ v.name | string.downcase }}: {{ v.example | string.downcase }}" data-cnx-frame data-src="{{ v.src }}"{{ if v.srcDark }} data-src-dark="{{ v.srcDark }}"{{ end }}></iframe>
+          {{~ else ~}}
+          <div class="cnx-mail">
+            <dl class="cnx-mail__head">
+              <div><dt>From</dt><dd>File share report</dd></div>
+              <div><dt>Subject</dt><dd>Weekly changes on three shares</dd></div>
+            </dl>
+            <div class="cnx-mail__body">
+              <p>Here is this week's outline. The interactive report is attached.</p>
+              {{ include "generated/outline" }}
+            </div>
+          </div>
+          {{~ end ~}}
         </div>
         {{~ end ~}}
       </div>
-      <div class="cnx-hero__actions">
-        <a class="cnx-btn" href="{{ hero.primary.url }}">{{ hero.primary.label }}</a>
-        <a class="cnx-btn cnx-btn--ghost" href="{{ hero.secondary.url }}">{{ hero.secondary.label }}</a>
-      </div>
-    </div>
+      <figcaption class="cnx-explorer__caption">
+        {{~ for v in views.views ~}}
+        <p data-cnx-caption="{{ v.id }}"{{ if !for.first }} hidden{{ end }}>{{ v.body }} <a class="cnx-link" href="/demos/#{{ v.id }}">Steps to try<span class="cnx-sr"> in the {{ v.name | string.downcase }}</span></a></p>
+        {{~ end ~}}
+      </figcaption>
+    </figure>
   </div>
-
-  <ul class="cnx-stats" aria-label="What the demos below contain">
-    <li><strong>{{ data.demos.files.nodes }}</strong><span>nodes in the explorer below</span></li>
-    <li><strong>{{ data.demos.files.dataFiles }}</strong><span>static files, no server</span></li>
-    <li><strong>{{ data.demos.inventory.rows }}</strong><span>devices in the inventory grid</span></li>
-    <li><strong>0</strong><span>runtime dependencies</span></li>
-  </ul>
-
-  <figure class="cnx-frame cnx-stage" data-cnx-stage>
-    <div class="cnx-frame__bar">
-      <div class="cnx-tabs" role="tablist" aria-label="Live demo">
-        <button type="button" role="tab" id="cnx-demo-tab-files" aria-controls="cnx-demo-files" aria-selected="true" tabindex="0" data-cnx-demo="files" class="cnx-tab">File explorer<span class="cnx-tab__sort" aria-hidden="true"></span></button>
-        <button type="button" role="tab" id="cnx-demo-tab-inventory" aria-controls="cnx-demo-inventory" aria-selected="false" tabindex="-1" data-cnx-demo="inventory" class="cnx-tab">Device inventory<span class="cnx-tab__sort" aria-hidden="true"></span></button>
-        <button type="button" role="tab" id="cnx-demo-tab-email" aria-controls="cnx-demo-email" aria-selected="false" tabindex="-1" data-cnx-demo="email" class="cnx-tab">Email table<span class="cnx-tab__sort" aria-hidden="true"></span></button>
-      </div>
-      <span class="cnx-frame__meta">
-        <span data-cnx-caption="files">{{ data.demos.files.nodes }} nodes, {{ data.demos.files.size }}</span>
-        <span data-cnx-caption="inventory" hidden>{{ data.demos.inventory.rows }} rows, one page</span>
-        <span data-cnx-caption="email" hidden>Script-free HTML</span>
-      </span>
-      <a class="cnx-frame__open" data-cnx-demo-open href="/live/files/index.html">Open full screen</a>
-    </div>
-    <div class="cnx-frame__screen">
-      <div class="cnx-demo" role="tabpanel" id="cnx-demo-files" aria-labelledby="cnx-demo-tab-files">
-        <iframe title="CanopyX file explorer with {{ data.demos.files.nodes }} nodes" data-cnx-frame data-src="/live/files/index.html"></iframe>
-      </div>
-      <div class="cnx-demo" role="tabpanel" id="cnx-demo-inventory" aria-labelledby="cnx-demo-tab-inventory" hidden>
-        <iframe title="CanopyX device inventory reporting grid" data-cnx-frame data-src="/live/inventory.html"></iframe>
-      </div>
-      <div class="cnx-demo cnx-demo--email" role="tabpanel" id="cnx-demo-email" aria-labelledby="cnx-demo-tab-email" hidden>
-        <div class="cnx-mail">
-          <dl class="cnx-mail__head">
-            <div><dt>From</dt><dd>File share report</dd></div>
-            <div><dt>Subject</dt><dd>Weekly changes on three shares</dd></div>
-          </dl>
-          <div class="cnx-mail__body">
-            <p>Here is this week's outline. The interactive report is attached.</p>
-            {{ include "generated/outline" }}
-          </div>
-        </div>
-      </div>
-    </div>
-    <figcaption class="cnx-frame__caption">
-      <p data-cnx-caption="files"><strong>{{ data.demos.files.nodes }} nodes</strong> written by <code>SaveHtmlBundle</code> into {{ data.demos.files.dataFiles }} static files. Branches and search shards load as you open them, so the page works from a file share with no server.</p>
-      <p data-cnx-caption="inventory" hidden><strong>{{ data.demos.inventory.rows }} devices</strong> in a reporting grid: grouped by site, with header filters, facets, aggregates, a 14-day status strip and sign-in sparklines.</p>
-      <p data-cnx-caption="email" hidden><strong>The same tree as a plain table.</strong> <code>CanopyStaticHtml.Render</code> returns HTML with no script for email, print and Word. This one follows the page theme.</p>
-    </figcaption>
-  </figure>
-</section>
-
-<section class="cnx-reach" aria-labelledby="cnx-reach-title">
-  <h2 id="cnx-reach-title" class="cnx-reach__root"><span class="cnx-chev" aria-hidden="true"></span>One view definition, five places to put it</h2>
-  <ul class="cnx-reach__branches">
-    {{~ for s in data.home.surfaces ~}}
-    <li>
-      <a href="{{ s.url }}">
-        <strong>{{ s.name }}</strong>
-        <span>{{ s.body }}</span>
-        <em>{{ s.action }}</em>
-      </a>
-    </li>
-    {{~ end ~}}
-  </ul>
 </section>

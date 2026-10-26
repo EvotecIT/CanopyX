@@ -195,6 +195,20 @@
 }
 .cnx-thumb__render td, .cnx-thumb__render th { white-space: nowrap; }
 
+/* The Views panel: compact rows keyed by the family tone instead of render thumbnails. */
+.cnx-navpanel:has(.cnx-navitem__tone) { width: min(100%, 900px); }
+.cnx-navpanel:has(.cnx-navitem__tone) .cnx-navpanel__items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cnx-navitem:has(.cnx-navitem__tone) { grid-template-columns: 14px minmax(0, 1fr); column-gap: 10px; row-gap: 2px; }
+.cnx-navitem__tone { grid-row: span 2; margin-top: 5px; }
+@media (max-width: 900px) {
+  .cnx-navpanel:has(.cnx-navitem__tone) .cnx-navpanel__items { grid-template-columns: minmax(0, 1fr); }
+  .cnx-navitem:has(.cnx-navitem__tone) { grid-template-columns: minmax(0, 1fr); }
+  .cnx-navitem__tone { display: none; }
+}
+@media (min-width: 901px) {
+  .cnx-navpanel:has(.cnx-navitem__tone) .cnx-navitem:nth-child(n+4)::before { display: none; }
+}
+
 @media (max-width: 900px) {
   .cnx-navgroup--link .cnx-navgroup__trigger { padding-left: 30px; }
 }

@@ -58,21 +58,60 @@
       "watch": "Named views keep columns, filters and sorting, and Reset view returns to the definition."
     }
   ],
-  "outline": [
+  "calendar": [
     {
-      "feature": "No script",
-      "try": "Switch the site theme in the header.",
-      "watch": "The outline follows it through the page's --cx-* properties. In a mail client its literal colours apply."
+      "feature": "Views of one record set",
+      "try": "Switch between Month, Week, 3 days, Agenda and Year.",
+      "watch": "Every view reads the same grid records; search, filters and saved views carry across."
     },
     {
-      "feature": "Row limits",
-      "try": "Look for the counts after a cut branch.",
-      "watch": "MaxRows and MaxDepth cut the outline, and each cut branch shows how many rows it hides."
+      "feature": "Recurring windows",
+      "try": "Find the daily stand-up and the weekly maintenance window, then open one occurrence.",
+      "watch": "Series come from a recurrence rule, with one skipped date and one moved occurrence kept as exceptions."
     },
     {
-      "feature": "Print",
-      "try": "Print this page or save it as PDF.",
-      "watch": "The table is plain HTML with inline styles, so it prints and pastes into Word as it looks here."
+      "feature": "Background ranges",
+      "try": "Look at the change freeze and the company holiday in month view.",
+      "watch": "Ranges shade the days behind the events instead of competing with them."
+    },
+    {
+      "feature": "Record panel",
+      "try": "Open any event.",
+      "watch": "The record opens in the panel with its ticket, owner and notes, the same panel the grid uses."
+    }
+  ],
+  "timeline": [
+    {
+      "feature": "Resources as a tree",
+      "try": "Collapse a site, then a role, in the tree on the left.",
+      "watch": "Each resource shows its event count and busy hours; group rows roll them up."
+    },
+    {
+      "feature": "Capacity per group",
+      "try": "Look along the group rows for amber and red cells.",
+      "watch": "Group rows turn amber, then red, as more events run at the same time."
+    },
+    {
+      "feature": "Reschedule by drag",
+      "try": "Drag an incident onto another host in the same role.",
+      "watch": "Moves go through the grid's editing contract; a move that would overlap is refused."
+    }
+  ],
+  "matrix": [
+    {
+      "feature": "Attention first",
+      "try": "Turn on Only problems.",
+      "watch": "Rows and columns without a critical or warning cell fold away, and the totals follow."
+    },
+    {
+      "feature": "Grouping on an axis",
+      "try": "Collapse a site.",
+      "watch": "The heading keeps its server count and its totals while its rows are hidden."
+    },
+    {
+      "feature": "Both axes windowed",
+      "try": "Search for a service or a server, then scroll both ways.",
+      "watch": "Only the cells on screen are in the page, so wide matrices stay quick."
     }
   ],
   "changes": [
@@ -95,6 +134,45 @@
       "feature": "Host actions",
       "try": "Use Copy the network path on a row.",
       "watch": "CanopyX copies the value and tells the host; every other action is the host's to carry out."
+    }
+  ],
+  "flow": [
+    {
+      "feature": "Tasks in any order",
+      "try": "Open Connect the database.",
+      "watch": "Each task opens on its own; the hub keeps its state and the host's summary line."
+    },
+    {
+      "feature": "Fields from the host",
+      "try": "Switch the engine between SQL Server and PostgreSQL.",
+      "watch": "The engine options are fields the host returns, so the flow asks only what that engine needs."
+    },
+    {
+      "feature": "Checks",
+      "try": "Type a server name containing fail and test the connection.",
+      "watch": "The host's check fails with its message; a passing check lists what it found."
+    },
+    {
+      "feature": "One proposal",
+      "try": "Finish the required tasks, then review and submit.",
+      "watch": "The flow hands the host one document; secrets are read once and never echo back."
+    }
+  ],
+  "email": [
+    {
+      "feature": "No script",
+      "try": "Switch the site theme in the header.",
+      "watch": "The outline follows it through the page's --cx-* properties. In a mail client its literal colours apply."
+    },
+    {
+      "feature": "Row limits",
+      "try": "Look for the counts after a cut branch.",
+      "watch": "MaxRows and MaxDepth cut the outline, and each cut branch shows how many rows it hides."
+    },
+    {
+      "feature": "Print",
+      "try": "Print this page or save it as PDF.",
+      "watch": "The table is plain HTML with inline styles, so it prints and pastes into Word as it looks here."
     }
   ]
 }

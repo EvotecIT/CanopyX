@@ -12,9 +12,9 @@ internal static class LiveBar {
 
     private const string Style = "<style>\n"
         + "@font-face{font-family:\"Schibsted Grotesk\";font-weight:400 900;font-display:swap;src:url(/fonts/schibsted-grotesk-latin.woff2) format(\"woff2\")}\n"
-        + ":root{--bar-bg:#f3f6f2;--bar-line:#dce4dd;--bar-ink:#12201a;--bar-ink-2:#45564c;--bar-accent:#1b7548;--bar-select:#e2f1e7;--bar-focus:#b9770e}\n"
-        + ":root[data-theme=dark]{--bar-bg:#0a110d;--bar-line:#21302a;--bar-ink:#e5eee8;--bar-ink-2:#a7b7ad;--bar-accent:#5cc68e;--bar-select:#133323;--bar-focus:#e8b45a}\n"
-        + ":root[data-theme=dark] body.cx-page{background:#0a110d}\n"
+        + ":root{--bar-bg:#f3f5f4;--bar-line:#dfe5e2;--bar-ink:#0d1f1a;--bar-ink-2:#3f514a;--bar-accent:#0b7a55;--bar-select:#e3f2eb;--bar-focus:#b46a00}\n"
+        + ":root[data-theme=dark]{--bar-bg:#0b1311;--bar-line:#213029;--bar-ink:#e4ede9;--bar-ink-2:#a9b9b2;--bar-accent:#4fcc95;--bar-select:#14332a;--bar-focus:#f0b85c}\n"
+        + ":root[data-theme=dark] body.cx-page{background:#0b1311}\n"
         + ".cnx-livebar{box-sizing:border-box;display:flex;align-items:center;gap:14px;height:48px;padding:0 16px;border-bottom:1px solid var(--bar-line);background:var(--bar-bg);color:var(--bar-ink);font:600 14px/1.2 \"Schibsted Grotesk\",system-ui,sans-serif}\n"
         + ".cnx-livebar a{color:inherit;text-decoration:none}.cnx-livebar a:hover{color:var(--bar-accent)}\n"
         + ".cnx-livebar :focus-visible{outline:2px solid var(--bar-focus);outline-offset:2px;border-radius:4px}\n"

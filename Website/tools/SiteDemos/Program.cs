@@ -45,6 +45,9 @@ File.WriteAllText(Path.Combine(demos, "changes.html"),
     ChangeViewsExample.List().ToHtmlFragment(ChangeOptions()) + "<h2>Propagation</h2>" + ChangeViewsExample.Propagation().ToHtmlFragment(ChangeOptions()) +
     "<h2>map-drives.ps1</h2>" + ChangeViewsExample.ScriptDiff().ToHtmlFragment(ChangeOptions()) + "</body></html>", utf8);
 
+// Calendar, resource timeline, matrix and guided flow, from the repository's examples.
+var viewStats = SiteDemos.ViewDemos.Write(demos);
+
 // Email and print: the script-free outline of a smaller tree, following the page's theme variables.
 var outlineTree = new SyntheticFileTree();
 var outline = ExampleViews.FileShares("files-outline", outlineTree.Build(shares: 3, departments: 4, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 5));
@@ -61,9 +64,19 @@ var manifest = new {
         nodes = bundle.NodeCount.ToString("N0", CultureInfo.InvariantCulture),
         dataFiles = bundle.FileCount.ToString("N0", CultureInfo.InvariantCulture),
         size = (bundle.TotalBytes / 1048576.0).ToString("0.0", CultureInfo.InvariantCulture) + " MB",
-        largestFile = Math.Ceiling(bundle.LargestFileBytes / 1024.0).ToString("0", CultureInfo.InvariantCulture) + " KB"
+        largestFile = Math.Ceiling(bundle.LargestFileBytes / 1024.0).ToString("0", CultureInfo.InvariantCulture) + " KB",
+        stat = bundle.NodeCount.ToString("N0", CultureInfo.InvariantCulture) + " nodes in " + bundle.FileCount.ToString("N0", CultureInfo.InvariantCulture) + " static files"
     },
-    inventory = new { rows = inventory.Rows.Count.ToString("N0", CultureInfo.InvariantCulture) }
+    inventory = new {
+        rows = inventory.Rows.Count.ToString("N0", CultureInfo.InvariantCulture),
+        stat = inventory.Rows.Count.ToString("N0", CultureInfo.InvariantCulture) + " devices in one HTML page"
+    },
+    calendar = new { stat = viewStats["calendar"] },
+    timeline = new { stat = viewStats["timeline"] },
+    matrix = new { stat = viewStats["matrix"] },
+    changes = new { stat = "Change list, propagation and a script diff" },
+    flow = new { stat = viewStats["flow"] },
+    email = new { stat = "Script-free HTML for mail, print and Word" }
 };
 File.WriteAllText(Path.Combine(website, "data", "demos.json"),
     JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }) + "\n", utf8);

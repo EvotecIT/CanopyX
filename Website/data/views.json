@@ -1,0 +1,112 @@
+{
+  "families": [
+    { "id": "explore", "name": "Explore", "tone": "explore", "body": "Records with parents, and flat lists of any size." },
+    { "id": "plan", "name": "Plan", "tone": "plan", "body": "The same records on a calendar or a timeline." },
+    { "id": "compare", "name": "Compare", "tone": "compare", "body": "State across two sets of things, and what changed." },
+    { "id": "guide", "name": "Guide", "tone": "guide", "body": "Steps, checks and a review before the host acts." },
+    { "id": "deliver", "name": "Deliver", "tone": "deliver", "body": "The same view as plain HTML for mail and print." }
+  ],
+  "views": [
+    {
+      "id": "files",
+      "family": "explore",
+      "name": "Tree grid",
+      "example": "File explorer",
+      "api": "CanopyTreeView",
+      "body": "Expandable branches with lazy children, path search, filters that keep the tree's shape, detail rows and checkboxes.",
+      "src": "/live/files/index.html",
+      "docs": "/docs/getting-started/"
+    },
+    {
+      "id": "inventory",
+      "family": "explore",
+      "name": "Data grid",
+      "example": "Device inventory",
+      "api": "CanopyDataGridView",
+      "body": "Typed sorting and filters, facets, grouping with aggregates, pinned columns, saved views, editing and export.",
+      "src": "/live/inventory.html",
+      "docs": "/docs/reporting/"
+    },
+    {
+      "id": "calendar",
+      "family": "plan",
+      "name": "Calendar",
+      "example": "Operations calendar",
+      "api": "CanopyCalendar",
+      "body": "Month, week, day, agenda and year views of grid records, with recurrence, time zones and iCalendar export.",
+      "src": "/live/calendar.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/calendar.md"
+    },
+    {
+      "id": "timeline",
+      "family": "plan",
+      "name": "Resource timeline",
+      "example": "Incidents by host",
+      "api": "CanopyCalendarResources",
+      "body": "Resources as a tree with capacity per group, events on a scrolling time axis, and rescheduling by drag.",
+      "src": "/live/timeline.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/resource-timeline.md"
+    },
+    {
+      "id": "matrix",
+      "family": "compare",
+      "name": "Status matrix",
+      "example": "Services by server",
+      "api": "CanopyMatrix",
+      "body": "A state for each pair of two sets, with totals, grouping and sorting on both axes and both axes windowed.",
+      "src": "/live/matrix.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/matrix.md"
+    },
+    {
+      "id": "changes",
+      "family": "compare",
+      "name": "Change review",
+      "example": "Replicated share",
+      "api": "CanopyChangeList, CanopyTextDiff",
+      "body": "A change list with risk flags and reasons, propagation to each replica, and inline or side-by-side diffs.",
+      "src": "/live/changes.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/changes.md"
+    },
+    {
+      "id": "flow",
+      "family": "guide",
+      "name": "Guided flow",
+      "example": "Service setup",
+      "api": "CanopyFlow",
+      "body": "Steps with typed fields, conditions as data, live checks, a review page and one proposal handed to the host.",
+      "src": "/live/flow-setup-tasks.html",
+      "srcDark": "/live/flow-setup-tasks-dark.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/flow.md"
+    },
+    {
+      "id": "email",
+      "family": "deliver",
+      "name": "Script-free table",
+      "example": "Weekly changes",
+      "api": "CanopyStaticHtml",
+      "body": "Script-free tables from the same view definition, with inline styles that survive mail clients, print and Word.",
+      "docs": "/docs/static-tables/"
+    }
+  ],
+  "shared": [
+    { "name": "Record panel", "body": "Open any record in tabs and sections, with links, timelines and deep links." },
+    { "name": "Linked views", "body": "A chart, list or grid filters or highlights another view." },
+    { "name": "Search highlighting", "body": "Matches marked in place, with a count and next and previous." },
+    { "name": "Saved views", "body": "Named layouts keep columns, filters, sorting and grouping." },
+    { "name": "Export", "body": "CSV built in; register Excel or PDF writers with the same scope choice." },
+    { "name": "Editing", "body": "Typed editors, validation, undo, and commits your host saves." },
+    { "name": "Conditional formatting", "body": "Data bars, colour scales and badges from filter conditions." },
+    { "name": "Layout modes", "body": "Fit, scroll sideways or switch to cards, in three densities." },
+    { "name": "Six languages", "body": "English, Polish, German, Spanish, French and Italian label packs." },
+    { "name": "Strict security", "body": "Runs under CSP without unsafe-inline and with Trusted Types." },
+    { "name": "Accessibility", "body": "ARIA grid and tree roles, a full keyboard model, forced colours." },
+    { "name": "Virtual rows", "body": "Only visible rows are in the page, so 100,000 nodes stay quick." }
+  ],
+  "packages": [
+    { "name": "CanopyX.Html", "where": "NuGet", "body": "Views, browser runtime and the HTML writers. Start here.", "install": "dotnet add package CanopyX.Html", "url": "https://www.nuget.org/packages/CanopyX.Html" },
+    { "name": "CanopyX", "where": "NuGet", "body": "The model, bundle writer and script-free renderer alone.", "install": "dotnet add package CanopyX", "url": "https://www.nuget.org/packages/CanopyX" },
+    { "name": "CanopyX.Data", "where": "NuGet", "body": "Server-side paging, filters, summaries and edits over IQueryable.", "install": "dotnet add package CanopyX.Data", "url": "https://www.nuget.org/packages/CanopyX.Data" },
+    { "name": "CanopyX.AspNetCore", "where": "NuGet", "body": "Endpoints that serve a hosted grid from ASP.NET Core.", "install": "dotnet add package CanopyX.AspNetCore", "url": "https://www.nuget.org/packages/CanopyX.AspNetCore" },
+    { "name": "@evotecit/canopyx", "where": "npm", "body": "ES modules, classic scripts, styles and TypeScript types.", "install": "npm install @evotecit/canopyx", "url": "https://www.npmjs.com/package/@evotecit/canopyx" }
+  ]
+}

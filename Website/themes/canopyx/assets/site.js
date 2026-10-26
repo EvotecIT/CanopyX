@@ -216,8 +216,9 @@
       tab.addEventListener('click', function () { onSelect(tab); });
       tab.addEventListener('keydown', function (event) {
         var next = null;
-        if (event.key === 'ArrowRight') next = tabs[(index + 1) % tabs.length];
-        if (event.key === 'ArrowLeft') next = tabs[(index - 1 + tabs.length) % tabs.length];
+        var vertical = tab.closest('[aria-orientation="vertical"]');
+        if (event.key === (vertical ? 'ArrowDown' : 'ArrowRight')) next = tabs[(index + 1) % tabs.length];
+        if (event.key === (vertical ? 'ArrowUp' : 'ArrowLeft')) next = tabs[(index - 1 + tabs.length) % tabs.length];
         if (event.key === 'Home') next = tabs[0];
         if (event.key === 'End') next = tabs[tabs.length - 1];
         if (next) { event.preventDefault(); next.focus(); onSelect(next); }
@@ -258,13 +259,32 @@
     });
   }
 
+  // A demo written as separate light and dark pages (data-src-dark) loads the one that matches the site theme.
+  function frameSource(frame) {
+    var dark = frame.getAttribute('data-src-dark');
+    return dark && theme() === 'dark' ? dark : frame.getAttribute('data-src');
+  }
+
   function loadFrame(frame) {
     if (!frame || frame.getAttribute('src')) return;
     watchFrame(frame);
-    frame.setAttribute('src', frame.getAttribute('data-src'));
+    frame.setAttribute('src', frameSource(frame));
   }
 
-  document.querySelectorAll('[data-cnx-frame][data-eager]').forEach(loadFrame);
+  // Frames load when they come near the viewport, so a page of demos does not open every one at once.
+  var lazyFrames = document.querySelectorAll('[data-cnx-frame][data-src]:not([data-cnx-stage] [data-cnx-frame])');
+  if ('IntersectionObserver' in window) {
+    var frameObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        frameObserver.unobserve(entry.target);
+        loadFrame(entry.target);
+      });
+    }, { rootMargin: '400px' });
+    lazyFrames.forEach(function (frame) { frameObserver.observe(frame); });
+  } else {
+    lazyFrames.forEach(loadFrame);
+  }
   // Frames that load lazily by themselves (documentation output) only need the theme.
   document.querySelectorAll('iframe[data-cnx-frame][src]').forEach(function (frame) {
     watchFrame(frame);
@@ -272,7 +292,10 @@
   });
 
   themeListeners.push(function () {
-    document.querySelectorAll('[data-cnx-frame][src]').forEach(syncFrameTheme);
+    document.querySelectorAll('[data-cnx-frame][src]').forEach(function (frame) {
+      if (frame.hasAttribute('data-src-dark')) frame.setAttribute('src', frameSource(frame));
+      else syncFrameTheme(frame);
+    });
   });
 
   var stage = document.querySelector('[data-cnx-stage]');
@@ -290,7 +313,7 @@
       loadFrame(frame);
       if (open) {
         open.hidden = !frame;
-        if (frame) open.href = frame.getAttribute('data-src');
+        if (frame) open.href = frameSource(frame);
       }
     };
     wireTabs(stageTabs, show);

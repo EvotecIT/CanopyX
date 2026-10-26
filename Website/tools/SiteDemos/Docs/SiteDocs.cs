@@ -311,6 +311,10 @@ internal sealed class SiteDocs {
         var demos = ("/demos/", "Live demos");
         LiveBar.Apply(Path.Combine(live, "files", "index.html"), "File explorer", demos, "/demos/#files", _utf8);
         LiveBar.Apply(Path.Combine(live, "inventory.html"), "Device inventory", demos, "/demos/#inventory", _utf8);
+        foreach (var (page, title, id) in new[] {
+            ("calendar", "Operations calendar", "calendar"), ("timeline", "Incidents by host", "timeline"), ("matrix", "Services by server", "matrix") }) {
+            LiveBar.Apply(Path.Combine(live, page + ".html"), title, demos, "/demos/#" + id, _utf8);
+        }
         LiveBar.Apply(Path.Combine(_liveDocs, "explorer-layout.html"), "The explorer's files", demos, "/demos/#files", _utf8);
         foreach (var (page, title, url, name) in new[] {
             ("tree", "Project files", "/docs/getting-started/", "Getting started"),
