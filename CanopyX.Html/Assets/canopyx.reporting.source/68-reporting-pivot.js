@@ -21,6 +21,10 @@
     return gridFreeze({ rows, columns, values: [...values], maxColumns, ...(topNColumns === undefined ? {} : { topNColumns }), ...(sort === undefined ? {} : { sortByTotal: { ...sort } }) });
   }
   GRID_REPORTING.pivotDefinition = pivotDefinition;
+  GRID_REPORTING.preparePivotExport = (grid, options) => {
+    if (!GRID_PIVOT.prepareExport) throw new Error("CanopyX: pivot table capture needs an accepted active pivot.");
+    return GRID_PIVOT.prepareExport(grid, options);
+  };
   function pivotDefaultState(view) {
     return view.reporting?.pivot ? { ...pivotDefinition(view, view.reporting.pivot), active: true, collapsedRows: [], collapsedColumns: [] } : null;
   }
@@ -32,9 +36,9 @@
     const { active, collapsedRows, collapsedColumns, columnKey, ...definition } = state;
     return { query: gridQuery(grid.view, { ...query, revision }), definition: pivotDefinition(grid.view, definition) };
   }
-  const PIVOT_PART = definePart(DataGrid, "pivot", "pivot analysis", () => ({ DataGrid, GRID_PIVOT, GRID_ROWS, GRID_SHOW_AS, GRID_SHOW_AS_MODES, GRID_BUCKETS,
+  const PIVOT_PART = definePart(DataGrid, "pivot", "pivot analysis", () => ({ DataGrid, GRID_PIVOT, GRID_ROWS, GRID_SHOW_AS, GRID_SHOW_AS_MODES, GRID_BUCKETS, GRID_CALCULATIONS,
     h, setText, fill, gridButton, gridFreeze, gridQuery, gridQueryStart, gridQueryRows, gridScalar, cellValue, cellText, gridKeyCompare, gridOrder,
-    numberFormat, validateGridPage, checkDocument, validStructuralCount, gridOperationActive, pivotDefinition, pivotIntent, pivotRequestOf, showAsMode, showAsCaption }));
+    numberFormat, formatting, gridExportSignal, validateGridPage, checkDocument, validStructuralCount, gridOperationActive, pivotDefinition, pivotIntent, pivotRequestOf, showAsMode, showAsCaption }));
   const PIVOT_VALIDATE = GRID_REPORTING.validate, PIVOT_CHROME = DataGrid.prototype.buildGridChrome, PIVOT_REQUEST = DataGrid.prototype.requestPage;
   GRID_REPORTING.validate = view => {
     PIVOT_VALIDATE(view);
