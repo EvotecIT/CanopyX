@@ -100,12 +100,14 @@ test('submenu actions close the entire menu and return to the root trigger', asy
   await expect.poll(() => page.evaluate(() => window.selected)).toEqual(['csv']);
 });
 
-test('Tab leaves the menu from its trigger in both directions', async ({ page }) => {
+test('Tab leaves the menu from its trigger in both directions', async ({ page, browserName }) => {
+  // WebKit on macOS reaches buttons with Alt+Tab, as Safari does without Full Keyboard Access.
+  const tab = process.platform === 'darwin' && browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
   await openUi(page, `<button id="before">Before menu</button>${markup}`, menuInit);
   const trigger = page.getByRole('button', { name: 'Actions', exact: true });
-  await trigger.click(); await page.keyboard.press('Tab');
+  await trigger.click(); await page.keyboard.press(tab);
   await expect(page.locator('#actions')).toBeHidden(); await expect(page.locator('#after')).toBeFocused();
-  await trigger.click(); await page.keyboard.press('Shift+Tab');
+  await trigger.click(); await page.keyboard.press('Shift+' + tab);
   await expect(page.locator('#actions')).toBeHidden(); await expect(page.locator('#before')).toBeFocused();
 });
 
@@ -172,6 +174,29 @@ test('delegated context menus use the current matched element and keyboard ancho
   await row.dispatchEvent('keydown', { key: 'ContextMenu', bubbles: true });
   await expect(page.getByRole('menuitem', { name: 'Inspect Record one 3' })).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.calls)).toEqual([['contextmenu', 'two'], ['keydown', 'one'], ['keydown', 'one']]);
+});
+
+test('a right-click that selects the word under the pointer, as on macOS, still opens the menu and drops that selection', async ({ page }) => {
+  await openUi(page, region, contextInit + `
+    // macOS selects the word under the pointer when the secondary button goes down, before contextmenu.
+    document.addEventListener('mousedown', event => {
+      if (event.button !== 2) return;
+      const range = document.createRange(); range.selectNodeContents(event.target);
+      getSelection().removeAllRanges(); getSelection().addRange(range);
+    });`);
+  await page.waitForFunction(() => window.contextReady);
+  await page.getByRole('button', { name: 'Record one' }).click({ button: 'right' });
+  await expect(page.getByRole('menu')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Inspect Record one 3' })).toBeFocused();
+  expect(await page.evaluate(() => getSelection().toString())).toBe('');
+  await page.keyboard.press('Escape'); await expect(page.getByRole('menu')).toHaveCount(0);
+  // Text the user had selected before the press still keeps the browser's own menu.
+  await page.evaluate(() => {
+    const range = document.createRange(); range.selectNodeContents(document.querySelector('#selection'));
+    getSelection().removeAllRanges(); getSelection().addRange(range);
+  });
+  await page.getByRole('button', { name: 'Record one' }).click({ button: 'right' });
+  await expect(page.getByRole('menu')).toHaveCount(0);
 });
 
 test('context menus preserve links, editable controls, selected text and Shift right-click', async ({ page }) => {

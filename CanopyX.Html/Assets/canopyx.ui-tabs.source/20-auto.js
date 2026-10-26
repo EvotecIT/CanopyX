@@ -16,8 +16,11 @@ UI_TOOLS.tabsAuto = (root, list, options, labels, life, read, select, cancel, re
   const tools = n.owned(root, '.cx-tabs-tools')[0];
   if (tools) tools.append(control); else list?.after(control);
   function paint() {
-    setText(control, paused || media.matches ? labels.tabsPlay : labels.tabsPause);
-    control.setAttribute('aria-label', control.textContent);
+    // Touch the label only when it changes: replacing the text under the pointer between mousedown and mouseup (focusin
+    // repaints, and WebKit on Linux focuses buttons on mousedown) makes WebKit drop the click.
+    const label = paused || media.matches ? labels.tabsPlay : labels.tabsPause;
+    if (control.textContent !== label) setText(control, label);
+    if (control.getAttribute('aria-label') !== label) control.setAttribute('aria-label', label);
     control.dataset.state = paused || media.matches ? 'paused' : 'playing';
     control.disabled = media.matches;
     if (media.matches) {

@@ -15,7 +15,7 @@
     {
       "name": "ui-menu",
       "label": "UI menu",
-      "version": "50348de1b71e6085",
+      "version": "c86ee2a16b5a5a46",
       "script": "canopyx-ui-menu.js",
       "style": "canopyx-ui-menu.css",
       "runtimes": [
@@ -67,7 +67,7 @@
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "9a9d561fc49d21f8",
+      "version": "fd5ee9aee0fa3837",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [

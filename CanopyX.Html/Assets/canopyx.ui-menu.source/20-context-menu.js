@@ -2,14 +2,17 @@ UI_IMPL.contextMenu = (target, itemsOrFactory, options = {}) => {
   const lifetime = new AbortController(), signal = lifetime.signal;
   const delegated = typeof target === 'string', listener = delegated ? document : target;
   const editable = 'a[href],area[href],input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"]';
-  let current, pressTimer, press, suppressClick = false, destroyed = false;
+  // The selection as it was when the secondary button went down: on macOS a right-click first selects the word under the
+  // pointer, which must not count as text the user selected for the browser's own menu.
+  let current, pressTimer, press, suppressClick = false, destroyed = false, pressSelection = null;
   const nodeOf = event => event?.target?.nodeType === 1 ? event.target : event?.target?.parentElement;
   const match = event => {
     const node = nodeOf(event), element = delegated ? node?.closest(target) : target.contains(node) ? target : null;
     return element && (options.match ? options.match(event, element) : element);
   };
   const keyboard = event => event?.type === 'keydown' || event?.type === 'contextmenu' && event.button !== 2 && event.clientX === 0 && event.clientY === 0;
-  const nativeMenu = event => !!event && ((event.shiftKey && !keyboard(event)) || !!nodeOf(event)?.closest(editable) || !!document.getSelection()?.toString());
+  const selected = event => event?.type === 'contextmenu' && pressSelection !== null ? !!pressSelection : !!document.getSelection()?.toString();
+  const nativeMenu = event => !!event && ((event.shiftKey && !keyboard(event)) || !!nodeOf(event)?.closest(editable) || selected(event));
   function clearPress() { clearTimeout(pressTimer); pressTimer = null; press = null; }
   function release(entry, reason) {
     if (current !== entry) return;
@@ -76,8 +79,17 @@ UI_IMPL.contextMenu = (target, itemsOrFactory, options = {}) => {
     if (current?.surface.contains(event.target)) { event.preventDefault(); return; }
     const element = match(event); if (!element) return;
     if (suppressClick || press || event.pointerType === 'touch') { event.preventDefault(); return; }
-    if (open(event, element)) event.preventDefault();
+    if (open(event, element)) {
+      event.preventDefault();
+      // Drop the word the right-click selected (macOS), so it does not stay highlighted under the menu.
+      if (pressSelection === '') document.getSelection()?.removeAllRanges();
+    }
   }, { signal });
+  document.addEventListener('pointerdown', event => {
+    pressSelection = event.button === 2 ? document.getSelection()?.toString() || '' : null;
+  }, { signal, capture: true });
+  // A menu the keyboard raises reads the live selection.
+  document.addEventListener('keydown', () => { pressSelection = null; }, { signal, capture: true });
   listener.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.key !== 'ContextMenu' && !(event.key === 'F10' && event.shiftKey)) return;
     const element = match(event);
