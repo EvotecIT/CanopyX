@@ -70,10 +70,14 @@ for (const embedded of [false, true]) {
     const print = await page.evaluate(() => {
       const host = document.querySelector("[data-canopyx-host]"), table = host.querySelector(".cx-pivot-table"), box = host.getBoundingClientRect();
       const last = table.tBodies[0].lastElementChild.getBoundingClientRect(), foot = table.tFoot.getBoundingClientRect();
-      return { hostBottom: box.bottom, lastBottom: last.bottom, totalBottom: foot.bottom, rows: table.tBodies[0].rows.length };
+      const value = document.createRange(); value.selectNodeContents(table.tFoot.querySelector("button"));
+      const valueBox = value.getBoundingClientRect();
+      return { hostBottom: box.bottom, lastBottom: last.bottom, totalBottom: foot.bottom, rows: table.tBodies[0].rows.length,
+        valueArea: valueBox.width * valueBox.height, controls: [...table.querySelectorAll("button")].some(button => button.getClientRects().length) };
     });
     expect(print.rows).toBeGreaterThan(30);
     expect(print.lastBottom).toBeLessThanOrEqual(print.hostBottom + 1);
     expect(print.totalBottom).toBeLessThanOrEqual(print.hostBottom + 1);
+    expect(print.valueArea).toBeGreaterThan(0); expect(print.controls).toBe(false);
   });
 }
