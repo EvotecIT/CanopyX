@@ -30,8 +30,10 @@
       this.host.classList.add("cx-pivot-active");
       if (!this.pivotPanel) {
         this.pivotPanel = h("section", "cx-pivot"); this.pivotPanel.setAttribute("aria-label", this.labels.gridPivot); this.grid.after(this.pivotPanel);
+        this.pivotPanel.tabIndex = 0; this.pivotRevealData = true;
         this.pivotResize = new ResizeObserver(() => this.renderPivot()); this.pivotResize.observe(this.pivotPanel);
       }
+      if (this.pivotPanel.hidden) this.pivotRevealData = true;
       this.pivotPanel.hidden = false; this.renderPivot();
     },
     setPivotCollapsed(axis, key, collapsed) {

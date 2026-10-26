@@ -64,6 +64,7 @@ public sealed class CanopyGridFilter {
     });
 
     internal void Validate(CanopyColumn column) {
+        if (Bucket != null && CustomOperator != null) throw new InvalidOperationException("Buckets use built-in numeric comparisons; named filters receive raw cells.");
         Bucket?.Validate(column);
         if (Bucket != null) column = new CanopyColumn(column.Id, column.Title) { Kind = CanopyColumnKind.Number };
         ValidateArity();

@@ -250,7 +250,15 @@ public sealed class CanopyHtmlPart {
         return false;
     }
 
-        ,
+    private static bool HasNamedFilter(CanopyGridFilterGroup? group) => group != null &&
+        (group.Filters.Any(filter => filter.CustomOperator != null) || group.Groups.Any(HasNamedFilter));
+
+    private static bool UsesBucketFilters(CanopyGridQuery? query) => query != null &&
+        (query.Filters.Any(filter => filter?.Bucket != null) || UsesBucketGroup(query.FilterGroup, 1) ||
+         query.TupleFilters.Any(tuple => tuple != null && tuple.Columns.Any(column => column.Bucket != null)));
+
+    private static bool UsesBucketGroup(CanopyGridFilterGroup? group, int depth) => group != null && depth <= 8 &&
+        (group.Filters.Any(filter => filter?.Bucket != null) || group.Groups.Any(child => UsesBucketGroup(child, depth + 1)));
 
     private static bool Structured(IEnumerable<CanopyCell> cells) => cells.Any(cell => cell != null && (cell.IsStructured || cell.Ref != null));
 

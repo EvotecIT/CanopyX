@@ -20,6 +20,7 @@
         !values.includes(sort.aggregate) || !["asc", "desc"].includes(sort.direction))) throw new Error("CanopyX: invalid pivot total sort.");
     return gridFreeze({ rows, columns, values: [...values], maxColumns, ...(topNColumns === undefined ? {} : { topNColumns }), ...(sort === undefined ? {} : { sortByTotal: { ...sort } }) });
   }
+  GRID_REPORTING.pivotDefinition = pivotDefinition;
   function pivotDefaultState(view) {
     return view.reporting?.pivot ? { ...pivotDefinition(view, view.reporting.pivot), active: true, collapsedRows: [], collapsedColumns: [] } : null;
   }

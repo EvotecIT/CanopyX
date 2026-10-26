@@ -30,6 +30,9 @@ first weekday or time zone. Numeric ranges accept a positive width and origin or
 half-open, with separate underflow and overflow buckets for explicit edges. Choices travel with `groupBy` in queries,
 saved views and shared views. The underlying record values keep their original types.
 
+Bucket predicates use the built-in numeric comparisons against bucket keys. Named custom filters receive raw cell
+values, so a predicate cannot combine a custom operator with a bucket.
+
 ```csharp
 view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("observed",
     bucket: CanopyBucket.Calendar(CanopyBucketKind.Month)));

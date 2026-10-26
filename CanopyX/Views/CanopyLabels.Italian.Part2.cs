@@ -13,6 +13,11 @@ public sealed partial class CanopyLabels {
         labels.CalendarOccurrenceTitle = "Modifica un evento ricorrente";
         labels.CalendarOccurrenceReadOnly = "Questa parte della serie non può essere salvata perché alcuni valori sono di sola lettura.";
         labels.CalendarThisEvent = "Questo evento";
+        labels.CalendarEditOccurrence = "Modifica questa occorrenza";
+        labels.CalendarRemoveOccurrence = "Rimuovi questa occorrenza";
+        labels.CalendarOccurrenceScope = "Cambia solo {date}; le altre date di {title} restano invariate.";
+        labels.CalendarSharedResources = "{count} {resources}";
+        labels.CalendarResourceWindow = "{resources} {start}–{end} di {total}";
         labels.CalendarThisAndFollowing = "Questo evento e i successivi";
         labels.CalendarAllEvents = "Tutti gli eventi";
         labels.CalendarSources = "Calendari";

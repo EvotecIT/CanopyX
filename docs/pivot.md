@@ -186,6 +186,13 @@ shows flat records while retaining the configured definition. `setPivotCollapsed
 `"rows"` or `"columns"` and an accepted non-total prefix with children. Collapse changes presentation, not totals.
 These optional controller methods are installed only on grids that enable pivots.
 
+Optional reporting parts in the same runtime reuse `GRID_REPORTING.pivotDefinition(view, input)` for canonical
+definition validation and normalization. It returns the frozen definition. Intent envelopes handle omission and
+`false` before calling this hook; saved-state readers continue to validate the complete state through `readGridState`.
+
+Embedded pivots honor their host's height. When controls would squeeze out the table, the pivot region scrolls and
+keeps space for its header, a data row and its total; activation reveals that first row without expanding the host.
+
 `await grid.setState(savedState)` requests the saved pivot or flat mode in the same query restore. Axis and value
 changes are validated before requesting their result; switching back to records fetches the flat page and its summary.
 The pivot presentation changes only after that query succeeds. A rejected or superseded request retains the accepted

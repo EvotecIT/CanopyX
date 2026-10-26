@@ -1,8 +1,8 @@
-.cx-calculation-editor{display:grid;gap:12px;max-height:min(72vh,720px);overflow:auto;padding:16px;}
-.cx-calculation-editor label{display:grid;gap:4px;min-width:0;}
+.cx-calculation-editor{--cx-calculation-editor-limit:min(72vh,720px);display:grid;gap:var(--cx-size-12px);max-height:var(--cx-calculation-editor-limit);overflow:auto;padding:var(--cx-size-16px);}
+.cx-calculation-editor label{display:grid;gap:var(--cx-size-4px);min-width:0;}
 .cx-calculation-editor .cx-input{width:100%;min-width:0;box-sizing:border-box;}
-.cx-calculation-editor textarea{resize:vertical;font-family:var(--cx-font-mono,monospace);}
-.cx-calculation-editor p{margin:0;line-height:1.5;}
+.cx-calculation-editor textarea{resize:vertical;font-family:var(--hfx-font-mono,"Cascadia Mono","Cascadia Code",Consolas,"SFMono-Regular",Menlo,monospace);}
+.cx-calculation-editor p{margin:0;line-height:var(--hfx-type-caption-line-height,1.35);}
 .cx-calculation-editor button{justify-self:start;}
-.cx-calculation-error{color:var(--cx-danger,#b91c1c);}
+.cx-calculation-error{color:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));}
 @media print{.cx-calculation-editor{display:none;}}
