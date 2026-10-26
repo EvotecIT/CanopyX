@@ -104,6 +104,18 @@ reportingApi.setPivotCollapsed?.("rows", "opaque-prefix", true);
 const pivotState = reportingApi.getPivot?.();
 const pivotResult: GridPivotAcceptedResult | null | undefined = reportingApi.getPivotResult?.();
 const pivotExport: Promise<GridPivotExportSnapshot> | undefined = reportingApi.getPivotExport?.();
+void pivotExport?.then(snapshot => {
+  const typedPath = snapshot.columnAxis.find(node => node.other)?.path;
+  const range = snapshot.columnGroups[0];
+  const rangeColumns = range ? snapshot.columns.slice(range.firstColumn, range.firstColumn + range.columnCount) : [];
+  for (const column of rangeColumns) if (column.kind === "number") {
+    const rawValue = snapshot.rows[0]?.cells[column.id].value;
+    const identity: string = column.axisKey, aggregate: string = column.aggregate;
+    const summary: boolean = column.summary, hidden: boolean = column.hidden;
+    void rawValue; void identity; void aggregate; void summary; void hidden;
+  }
+  void typedPath; void snapshot.distinctColumns; void snapshot.retainedColumns;
+});
 void pivotReporting; void pivotSource; void unrevisionedPivotSource; void invalidPivotLevel; void pivotState; void pivotResult; void pivotExport;
 // Compact row data in place of rows: chunks inline in the document, as host scripts (a count) or as sidecar files.
 const compactRows: GridCompactRow[] = [["r1", "Item 1", 10], [{ id: "r2", tone: "warning" }, "Item 2", null, { value: 3, text: "three" }]];

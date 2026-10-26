@@ -198,11 +198,28 @@ changes are validated before requesting their result; switching back to records 
 The pivot presentation changes only after that query succeeds. A rejected or superseded request retains the accepted
 pivot intent and result, and a successful restore emits one accepted query without a second presentation query.
 
-`await grid.getPivotExport?.()` returns a frozen snapshot with `view`, `query`, `definition`, `columns`, `rows`,
-`matched` and `columnsLimited`. It exports expanded leaf columns plus the grand-total column. Row prefixes remain
-present with `outlineLevel`, `summary`, `collapsed` and `hidden`, so an adapter can reproduce row outlines without
-losing descendants. The row-axis label cell contains `{ value, text }`; numeric cells contain
-`{ value, text, mode, numberFormat }`. Percentages stay numeric fractions with a format such as `0.00%`.
+`await grid.getPivotExport?.()` returns a frozen snapshot of the accepted `query` and `definition`. Its `rowAxis` and
+`columnAxis` retain the result's opaque keys, parent links, typed paths and synthetic `other` identity. Rows and
+numeric columns name their `axisKey`; numeric columns also name their `aggregate`. A text label such as “Other” never
+identifies the synthetic group by itself.
+
+The projected `rows` and `columns` include every prefix and descendant in depth-first order, with prefix summaries
+before their descendants and grand totals last. Both carry `outlineLevel`, `summary`, `grandTotal`, `collapsed` and
+`hidden`. Collapsing retains all values and hides descendants; the prefix summary stays available. Earlier snapshots
+projected only leaf columns. Adapters now select `!column.summary` for leaves and `column.grandTotal` for totals when
+they need that presentation.
+
+`columnGroups` describes contiguous descendant ranges with `key`, optional `parent`, `firstColumn`, `columnCount`,
+`depth`, `collapsed` and `hidden`. `firstColumn` is a zero-based physical index into `columns`, including the row-label
+column. The range excludes its own leading prefix summary columns; `depth` starts at one. A collapsed group hides
+the range while retaining that summary. These ranges describe outlines, separately from merged heading labels.
+
+The row-axis label cell contains `{ value, text }`; numeric cells contain `{ value, text, mode, numberFormat }`.
+Percentages stay numeric fractions with a format such as `0.00%`. `matched` counts underlying accepted records, not
+projected prefix rows. `distinctColumns`, `retainedColumns` and `columnsLimited` retain the accepted cap metadata:
+omitted complete column paths are combined in synthetic Other, while the full accepted record scope and exact totals
+remain available. A retained prefix total includes all of its raw descendants and can overlap Other; do not sum
+prefix summaries and Other as if they were disjoint leaves.
 
 Use those numeric values and formats in spreadsheet/document adapters. The flat grid's `prepareExport` scopes remain
 record exports: filtered exports keep tuple criteria, while all-record and selected-record exports clear query

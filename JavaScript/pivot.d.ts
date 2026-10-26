@@ -72,22 +72,53 @@ export interface GridPivotAcceptedResult extends GridPivotResult {
 }
 /** Numeric export values stay numeric; adapters apply numberFormat instead of parsing text. */
 export interface GridPivotExportValue extends GridAggregateDisplayValue { readonly text: string; }
-export interface GridPivotExportRow {
-  readonly id: string;
+/** Presentation of an accepted axis identity. Prefix summaries precede their descendants; grand totals follow them. */
+export interface GridPivotExportAxisPresentation {
+  /** Opaque key into rowAxis or columnAxis; do not infer identity from a localized title. */
+  readonly axisKey: string;
   readonly outlineLevel: number;
   readonly summary: boolean;
+  readonly grandTotal: boolean;
   readonly collapsed: boolean;
   readonly hidden: boolean;
+}
+export interface GridPivotExportRow extends GridPivotExportAxisPresentation {
+  readonly id: string;
   readonly cells: Readonly<Record<string, GridPivotExportValue | { readonly value: string; readonly text: string }>>;
 }
-/** Frozen pivot export, independent of flat-record export scopes. It includes row outlines and expanded leaf columns. */
+export interface GridPivotExportColumn extends GridPivotExportAxisPresentation {
+  readonly id: string;
+  readonly title: string;
+  readonly kind: "number";
+  readonly aggregate: string;
+}
+/** A contiguous descendant range, excluding its leading prefix summary columns. */
+export interface GridPivotExportColumnGroup {
+  readonly key: string;
+  readonly parent?: string;
+  /** Zero-based index into snapshot.columns, including the row-label column. */
+  readonly firstColumn: number;
+  readonly columnCount: number;
+  /** One-based axis depth. */
+  readonly depth: number;
+  readonly collapsed: boolean;
+  readonly hidden: boolean;
+}
+/** Frozen full-query pivot export, independent of flat-record export scopes. Includes all prefixes and descendants. */
 export interface GridPivotExportSnapshot {
   readonly view: string;
   readonly query: GridQuery;
   readonly definition: GridPivotDefinition;
-  readonly columns: readonly { readonly id: string; readonly title: string; readonly kind: "text" | "number" }[];
+  readonly columns: readonly ({ readonly id: string; readonly title: string; readonly kind: "text" } | GridPivotExportColumn)[];
   readonly rows: readonly GridPivotExportRow[];
+  readonly columnGroups: readonly GridPivotExportColumnGroup[];
+  readonly rowAxis: readonly GridPivotAxisNode[];
+  readonly columnAxis: readonly GridPivotAxisNode[];
+  /** Underlying accepted records, not the number of projected prefix rows. */
   readonly matched: number;
+  readonly distinctColumns: number;
+  readonly retainedColumns: readonly (readonly CellValue[])[];
+  /** Omitted complete paths are combined in Other; the accepted record scope and totals remain complete. */
   readonly columnsLimited: boolean;
 }
 /** Available only on reporting grids with an initial pivot or pivotable enabled. */
