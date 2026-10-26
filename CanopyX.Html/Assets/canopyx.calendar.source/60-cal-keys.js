@@ -8,7 +8,9 @@
       if (!this.calBody || this.destroyed) return;
       this.calDisposeEventRenderers();
       // Focus in the body comes back after the repaint; focus in the bar, the legend, a popover or a menu stays where it is.
-      const owned = (this.calBody.contains(document.activeElement) && !this.calMore) || !!this.calMenu?.contains(document.activeElement);
+      const independent = document.activeElement?.closest(".cx-cal-rpick");
+      const resourceControl = independent && this.calBody.contains(independent) ? document.activeElement.classList.contains("cx-cal-rpick-prev") ? ".cx-cal-rpick-prev" : document.activeElement.classList.contains("cx-cal-rpick-next") ? ".cx-cal-rpick-next" : ".cx-cal-rpick-select" : null;
+      const owned = (this.calBody.contains(document.activeElement) && !this.calMore && !independent) || !!this.calMenu?.contains(document.activeElement);
       this.calMenuBinding?.close("render", false, true);
       this.calCloseMore(false); this.calHideHover();
       const scroll = options.keep ? this.calScrollState?.() : null;
@@ -26,12 +28,21 @@
       if (!restored && view === "agenda") this.calScrollAgenda();
       this.calMarkSelection();
       this.calRestoreFocus(owned);
+      if (resourceControl) { const target = this.calBody.querySelector(resourceControl); (target?.disabled ? this.calBody.querySelector(".cx-cal-rpick-select") : target)?.focus({ preventScroll: true }); }
     },
 
+    /** Finds the focused drawing of an event, preserving its assignment and day/segment when several are mounted. */
+    calEventTarget(id, preferred) {
+      const anchor = preferred?.closest?.(".cx-cal-ev");
+      if (anchor?.dataset.cxEvent === id && this.calBody.contains(anchor)) return anchor;
+      const elements = [...this.calBody.querySelectorAll('[data-cx-event="' + CSS.escape(id) + '"]')], focus = this.calFocus;
+      const assignments = focus?.event === id && focus.resource != null ? elements.filter(element => element._calEvent?.resource === focus.resource) : elements;
+      return assignments.find(element => Number(element.closest("[data-cx-day]")?.dataset.cxDay) === focus?.day) || assignments[0] || elements[0] || null;
+    },
     /** The element that holds focus for the current focus state: an event, a slot, a day or the first cell. */
     calFocusTarget() {
       const focus = this.calFocus, body = this.calBody;
-      if (focus?.event) { const element = body.querySelector('[data-cx-event="' + CSS.escape(focus.event) + '"]'); if (element) return element; }
+      if (focus?.event) { const element = this.calEventTarget(focus.event); if (element) return element; }
       if (focus?.unit != null && focus.resource != null) { const element = body.querySelector('.cx-tl-cell[data-cx-unit="' + focus.unit + '"][data-cx-resource="' + CSS.escape(focus.resource) + '"]'); if (element) return element; }
       // A zoom change leaves the unit stale: the resource's cell of the focused day, else of any day, keeps the tab stop.
       if (focus?.resource != null && this.calView === "timeline" && this.tlAxis) {
@@ -49,8 +60,8 @@
     /** Gives the focus target the tab stop, and DOM focus when the calendar held it (or force). */
     calRestoreFocus(force) {
       const target = this.calFocusTarget();
-      // The year's event lists keep their own tab stops.
-      for (const element of this.calBody.querySelectorAll('[tabindex="0"]')) if (element !== target && !element.closest(".cx-cal-ylist")) element.tabIndex = -1;
+      // The year's event lists and the independent resource scrollbar keep their own tab stops.
+      for (const element of this.calBody.querySelectorAll('[tabindex="0"]')) if (element !== target && !element.closest(".cx-cal-ylist,.cx-cal-rpick")) element.tabIndex = -1;
       if (!target) return;
       target.tabIndex = 0;
       if (force) target.focus({ preventScroll: false });
@@ -59,9 +70,9 @@
       const element = event.target, eventElement = element.closest(".cx-cal-ev"), cell = element.closest("[data-cx-day]");
       // Controls in the body (the phone's resource picker, the year's event lists) keep the grid's tab stop where it is.
       if (!eventElement && !cell || element.closest(".cx-cal-ylist")) return;
-      if (eventElement?._calEvent) this.calFocus = { day: eventElement._calEvent.sd, minutes: null, event: eventElement._calEvent.id };
+      if (eventElement?._calEvent) this.calFocus = { day: cell ? Number(cell.dataset.cxDay) : eventElement._calEvent.sd, minutes: null, event: eventElement._calEvent.id, resource: eventElement._calEvent.resource };
       else if (cell) this.calFocus = { day: Number(cell.dataset.cxDay), minutes: cell.dataset.cxMinutes !== undefined ? Number(cell.dataset.cxMinutes) : null, event: null, resource: cell.dataset.cxResource, agendaRow: cell.dataset.cxEventRow, unit: cell.dataset.cxUnit !== undefined ? Number(cell.dataset.cxUnit) : null };
-      for (const other of this.calBody.querySelectorAll('[tabindex="0"]')) if (other !== element && !other.closest(".cx-cal-ylist")) other.tabIndex = -1;
+      for (const other of this.calBody.querySelectorAll('[tabindex="0"]')) if (other !== element && !other.closest(".cx-cal-ylist,.cx-cal-rpick")) other.tabIndex = -1;
       if (element.tabIndex < 0 && (eventElement || cell)) element.tabIndex = 0;
     },
 
@@ -139,7 +150,7 @@
     calReportSelection(label) {
       const selection = this.calSelection, events = this.calEvents.filter(event => {
         const span = this.calDisplaySpan(event);
-        return !event.background && calOverlaps(span.start, span.end, selection.from, selection.to) && (selection.resource == null || event.resource === selection.resource);
+        return !event.background && calOverlaps(span.start, span.end, selection.from, selection.to) && (selection.resource == null || this.calHasResource(event, selection.resource));
       });
       this.calMarkSelection();
       this.calAnnounce(fill(this.calLabels.calendarSelected, { range: label }));
@@ -164,7 +175,7 @@
     /** canopyx:linkchange from the calendar: keys are the records in the selection, range is its instants on the start column. */
     calEmitLink(action, events, label, selection) {
       if (this.opts.linkEvents !== true && !this.linkWatching) return;
-      const keys = [...new Set(events.map(event => event.key))].slice(0, 10000), values = Object.create(null);
+      const keys = [...new Set(events.filter(event => !event.base?.external).map(event => event.key))].slice(0, 10000), values = Object.create(null);
       if (selection?.resource != null && this.cal.resource) values[this.cal.resource.id] = [selection.resource];
       this.emit("linkchange", { view: this.view.id, action, scope: "select", keys, values, label,
         range: selection ? { column: this.cal.start.id, from: calIso(selection.from), to: calIso(selection.to) } : null });

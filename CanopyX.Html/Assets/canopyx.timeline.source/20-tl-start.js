@@ -27,11 +27,11 @@
       }
     },
     calResourceName(id) { return this.tl?.names.get(id) ?? id; },
-    /** Resource columns for day and week views: the leaf resources when there are at most 24, grouped by their parent. */
+    /** Resource columns for day and week views: the leaf resources with a virtual column window for large schedules, grouped by their parent. */
     calResourceColumns() {
       if (!this.tl || !this.tlInline) return null;
       const leaves = this.tl.order.filter(id => !this.tl.children.has(id));
-      if (!leaves.length || leaves.length > 24) return null;
+      if (!leaves.length) return null;
       return leaves.map(id => ({ id, label: this.calResourceName(id), group: this.tl.parent.get(id) == null ? null : this.calResourceName(this.tl.parent.get(id)) }));
     },
     /** Business hours of a resource on a weekday, from availability (its own entries, else the entries for every resource). */
@@ -52,7 +52,7 @@
     },
     /** Visible resources and their known descendants, bounded to the hosted request's 1,000 identities. */
     calResourceWindow() {
-      if (this.calView !== "timeline" || this.tlSolo || this.view.source.kind === "inline" && !this.opts.source) return null;
+      if (this.cal.resourceIds || this.calView !== "timeline" || this.tlSolo || this.view.source.kind === "inline" && !this.opts.source) return null;
       // The first load comes before the first paint: the tree is built now, so even that load names only the resources in view,
       // and before the lanes have a height the rows of a tall screen stand in for the visible ones.
       this.tlEnsure();
@@ -154,7 +154,7 @@
         if (!node) { this.clearCalendarSelection(); return; }
         const zone = this.calZone, range = this.calRange, ids = new Set([node.id, ...this.tlDescendants(node.id)]);
         this.calSelection = { first: range.firstDay, last: range.lastDay, from: zone.start(range.firstDay), to: zone.start(range.lastDay + 1), resource: node.id };
-        const events = this.calEvents.filter(item => !item.background && ids.has(item.resource));
+        const events = this.calEvents.filter(item => !item.background && this.calEventResources(item).some(id => ids.has(id)));
         this.calAnnounce(fill(this.calLabels.calendarSelected, { range: this.calResourceName(node.id) }));
         this.calEmitLink("select", events, this.calResourceName(node.id), this.calSelection);
       }, { signal });

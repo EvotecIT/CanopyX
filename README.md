@@ -143,6 +143,8 @@ Event snapshots without a key column opt in to `CanopyGridRowIdentity.Ordinal`; 
 
 Grid fitting reserves readable header and content minimums before preferred whitespace. Spare width restores headers first, then preferred widths, then ordinary column growth. Headers yield with a full-title tooltip only when their capped minimums cannot collectively fit; content that still needs more room scrolls horizontally. Auto height includes the actual horizontal scrollbar gutter. The [column-fitting algorithm](docs/column-fitting.md) and `report-grid-layout.html` example describe the policy.
 
+Grids can show page totals and all-matching totals in declarative footer rows, including the script-free fallback. Columns support safe CSS classes, logical alignment, selector-based defaults, alternate sort keys and direction cycles. Plugins can add filter operators, sort comparators and custom aggregates. See [column options and footers](docs/data-protocol.md#column-defaults-ordering-hooks-and-footer-rows), and the generated `grid-footers.html`, `grid-footers-dark.html` and `grid-footers-static.html` examples.
+
 ### Render a table for email or print
 
 ```csharp

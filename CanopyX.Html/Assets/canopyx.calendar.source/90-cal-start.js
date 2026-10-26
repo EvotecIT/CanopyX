@@ -50,7 +50,7 @@
       // it) keeps the view's place, its focus and scroll.
       host.addEventListener("canopyx:query", () => {
         const shape = gridResultShape(this.acceptedQuery || {}), same = this.calQueryShape === shape;
-        this.calQueryShape = shape; this.calCache?.clear(); this.calReload(same ? { keep: true } : {});
+        this.calQueryShape = shape; this.calCache?.clear(); this.calJsonCache?.clear(); this.calReload(same ? { keep: true } : {});
       }, { signal });
       host.addEventListener("canopyx:rowsChanged", () => { this.calCache?.clear(); this.calVersion++; this.calReload({ keep: true }); }, { signal });
       host.addEventListener("canopyx:commit", () => { this.calCache?.clear(); this.calVersion++; this.calReload({ keep: true }); }, { signal });
@@ -77,7 +77,7 @@
         if (switched) { this.calPhone = phone; host.classList.toggle("cx-cal-phone", phone); this.calSyncBar(false); }
         if (!changed || !this.calRange) return;
         // Only the month (its rows and "+N more" follow the height) and a phone switch rebuild; other views follow by CSS.
-        if (switched || this.calView === "month") this.calPaint({ keep: true, resize: true });
+        if (switched || this.calView === "month" || this.calTimeWindow) this.calPaint({ keep: true, resize: true });
         else if (this.calView === "timeline") this.tlPaintLanes?.();
         else if (this.calScroller?.isConnected) this.calGrid.querySelector(".cx-cal-thead").style.paddingInlineEnd = Math.max(0, this.calScroller.offsetWidth - this.calScroller.clientWidth) + "px";
       };
@@ -93,7 +93,7 @@
         this.calCancelGesture?.(); this.calDragEnd?.(null, true); this.calStopMoving?.(); if (this.calDropDrag) this.calDropClear?.();
         this.calDisposeEventRenderers();
         this.calMenuBinding?.(); this.calMenuBinding = null;
-        root.remove(); host.classList.remove("cx-calendar", "cx-cal-phone", "cx-cal-bare", "cx-cal-rtl", ...CAL_TOOLBAR.map(item => "cx-cal-no-" + item)); this.calHideHover(); this.calCloseDetails(false); this.calCloseCreate?.(false); this.calCloseAsk?.(null); host.removeAttribute("data-cx-event-style"); host.removeAttribute("data-cx-calendar-ready");
+        root.remove(); host.classList.remove("cx-calendar", "cx-cal-phone", "cx-cal-bare", "cx-cal-rtl", ...CAL_TOOLBAR.map(item => "cx-cal-no-" + item)); this.calHideHover(); this.calCloseDetails(false); this.calCloseCreate?.(false); this.calCloseAsk?.(null); this.calCloseOccurrence?.(false); host.removeAttribute("data-cx-event-style"); host.removeAttribute("data-cx-calendar-ready");
       }, { once: true });
       calWrapHighlight();
       // The Export menu offers iCalendar on this grid only, as a format a plugin given to one grid would.
@@ -214,7 +214,7 @@
     /** The occurrences shown, as plain copies: id, record id, start and end (ISO), all-day, title and resource. */
     getCalendarEvents() {
       return gridFreeze(this.calEvents.map(event => gridFreeze({ id: event.id, record: event.key, start: calIso(event.start), end: calIso(event.end), allDay: event.allDay,
-        title: event.title, resource: event.resource, recurring: event.recurring, background: event.background })));
+        title: event.title, resource: event.resource, resourceIds: this.calEventResources(event), recurring: event.recurring, background: event.background, source: event.base.source, external: event.base.external })));
     },
 
     /**

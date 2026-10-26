@@ -113,6 +113,29 @@ All documents are UTF-8 JSON. The C# writer escapes `<`, `>`, `&`, U+2028, and U
 
 Flat grids use their own document types, without parents, child references, or a special tree column. Existing tree documents and readers retain their contracts. A host uses a grid-capable runtime to consume `grid` and `gridPage` documents; a tree-only runtime does not reinterpret them as trees.
 
+### Column defaults, ordering hooks and footer rows
+
+Flat grids accept `columnDefaults`, an ordered list of rules with `targets` and optional column settings. Selectors are `*` (every column), `#id` (the exact column identity), `.class` (an authored class token), or `index:N` (zero-based declaration position). Each setting comes from the first matching rule, then an explicit column property overrides it. Selectors match the authored columns; a class added by a rule does not change which later rules match.
+
+Columns accept `className` (space-separated CSS class tokens), `alignment` (`start`, `center`, `end`), `orderData` (one or more raw column identities), `orderSequence` (a nonempty cycle drawn from `asc`, `desc`, `none`) and `sortComparator` (a named plugin comparator). An explicit null class/alignment/comparator clears an inherited setting; empty `orderData` or `orderSequence` restores the built-in behavior. Class and alignment apply to headers, record cells and footers. `orderData` changes the raw keys of that column's sort without changing the visible sort indicator. `preSort` is an ordered list of fixed `{column,direction}` keys that lead every reader query. Grouping keys retain their existing priority and raw-value grouping semantics.
+
+The optional `grid-options` part implements query hooks and footer rendering. Plugins register `filterOperators` and `sortComparators` maps. A filter receives `(rawValue, operands, {column, signal})` and returns a boolean; a comparator receives `(leftSortValue, rightSortValue, {column, signal})` and returns a finite number for ascending order. Names are a lowercase letter followed by up to 31 ASCII letters or digits. Built-in filters cannot be replaced. Custom filters use one non-null operand and can occur in flat or nested filter groups. Missing sort values remain last in both directions. Hooks are scoped to the grid's resolved plugins. A host source owns its server equivalents and receives the accepted query; browser hooks never silently filter one cached server page.
+
+`footers` contains at most 16 rows with unique `id`, a plain-text `label`, `scope` (`page` or `all`) and up to 32 existing [aggregate descriptors](#flat-groups-and-complete-query-totals). `page` means the visible page of matching records; `all` means every matching record after filtering. A continuous grid has one matching result rather than visible pages, so both scopes cover it. Counts ignore missing values, numeric operations use raw number cells, empty numeric inputs yield null, and custom operations reuse the plugin `aggregates` extension point.
+
+```js
+view.footers = [
+  { id: "page", label: "Current page", scope: "page",
+    aggregates: [{ id: "cost", column: "cost", operation: "sum", label: "Cost" }] },
+  { id: "total", label: "All matching records", scope: "all",
+    aggregates: [{ id: "cost", column: "cost", operation: "sum", label: "Cost" }] }
+];
+```
+
+A host `gridPage` can supply `footerValues: {rowId: {aggregateId: numberOrNull}}` for its accepted revision and window. The browser computes built-in page values only when the returned records cover that entire scope. An unavailable full-result or custom server value is shown as unavailable; cached records never stand in for a complete result. Footer rows require offset navigation. The script-free fallback renders footer text and supplied values as part of its table, using inline alignment styles.
+
+Fixed grouping accepts an optional, nonblank `headerTemplate` of at most 512 characters with `{column}`, `{value}` and `{count}` tokens. The result is plain text in browser group headings. Markup is never interpreted; unknown tokens remain literal text. The static fallback does not render group headers.
+
 ### Export, clipboard and record details
 
 Prepared exports retain an immutable request and a fresh `rows({ signal })` factory. `request.recordCount` is the exact captured scope count (including selected-query exclusions), or null when unknown. Each enumeration links its signal with the invocation signal, requests serial pages from the captured revision and validates counts, unique record identities and cursor transitions. The host export event includes `capture`, the already-prepared export, as well as `request`, `signal` and reporting progress. A host can pass this capture directly to a format writer without rebuilding queries.
@@ -377,7 +400,7 @@ With several levels, every group of an outer level lists the next level's groups
              { "key": "north/closed", "value": "Closed", "offset": 2, "count": 1, "aggregates": { "total": 10 } }] }]
 ```
 
-Groups cover every matching record in contiguous declared order, level by level. Keys are unique across the whole summary (an inner key usually extends its outer group's key), so collapse state names a group of any level. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supplies exactly the declared aggregates. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups across all levels and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges at every level, level order, aggregate bindings and page-to-group membership (each record's value at each level) before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
+Groups cover every matching record in contiguous declared order, level by level. Keys are unique across the whole summary (an inner key usually extends its outer group's key), so collapse state names a group of any level. Keys are stable host identities, bounded to 4,096 well-formed UTF-16 code units; they are independent of labels and page-local indices. Raw values have no display-cell wrapper. Each group and the complete result supply exactly the union of reporting aggregates and all-matching footer aggregates. Continuous grids also include page-footer aggregates in this union because both footer scopes cover the complete matching result. A reused aggregate ID must refer to the same column and operation everywhere, including the same custom operation name; the union contains at most 32 unique IDs. Ungrouped summaries return an empty `groups` array. Metadata is bounded to 10,000 groups across all levels and 4,194,304 serialized UTF-16 code units. `CanopyGridSummary.ToJson(view)` checks native responses; `CanopyGridGrouping.CreateComparer(view)` supplies equivalent raw group ordering for hosts. The browser checks query/revision ownership, ranges at every level, level order, aggregate bindings and page-to-group membership (each record's value at each level) before accepting metadata. Cancellation, bounded hook deadlines and stale-response protection retain the existing source lifetime.
 
 Summaries require known-count offset sources; cursor sources reject them. Paging, `matched`, selection ranges and `scrollToRow` count records. A page crossing a group boundary repeats its relevant headings. A heading displays the full group's count and totals, and the toolbar displays totals for the complete accepted query. Each aggregate cell names its function through the `gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`, `gridAggregateMinimum`, `gridAggregateMaximum` and `gridAggregateDistinct` labels (a custom aggregate through the `{value}` label its plugin registers) (`{value}` is the formatted number, for example `avg 36.2`). Values use the column's precision (the most fraction digits among its loaded raw values, at most three; averages one more, counts none) and a compact form from one million (`sum 12.7M`); the cell's tooltip gives the aggregate's label and the full value. Collapse hides the group's records in the current presentation without changing the query, page count, selected records or exports. Metadata and a sparse viewport projection support large hosted results without constructing a wrapper for every record.
 
@@ -489,6 +512,10 @@ not change.
 
 ### Calendar
 
+The optional `calendar.resourceIds` names a text column containing a JSON array of resource ids, added to `resource`.
+Sources may declare `url`, `fetchParams` (string query parameters), `color` (`#RRGGBB`) and `hidden`; JSON feeds use the
+visible start/end/timeZone and return basic calendar events. Feeds are read-only and same-origin. See [calendar sources](calendar.md#sources-and-icalendar).
+
 A grid's optional `calendar` object presents its records as events ([calendar.md](calendar.md)): month, week, day, N-day
 (`days`), agenda, year, mini month (`mini`), week and day lists (`weekList`, `dayList`) and stacked months (`months`) views, and a timeline. Only `start` is required; every other key is written only when it
 differs from its default. Column references are ids of the same grid: `start`, `end`, `recurrenceId` and `seriesEnd` name
@@ -517,8 +544,8 @@ occurrences one range shows.
 
 The chrome and interaction keys are `toolbar` (`true`, `false` for the calendar's own bar only, or the grid toolbar controls
 to show: `search`, `filters`, `columns`, `views`, `export`, `more`), `details` (`drawer` or `popover`), `print` (a Print
-button), `sources` (1 to 50 `{ id, label, tone?, ics?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
-iCalendar file read within the limits of [icalendar.md](icalendar.md); without `ics` on every source, `source` is required),
+button), `sources` (1 to 50 `{ id, label, tone?, color?, ics?, url?, fetchParams?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
+iCalendar file read within the limits of [icalendar.md](icalendar.md); without `ics` or `url` on every source, `source` is required),
 `create` (`true` or `{ minutes, allDay }`, minutes 5 to 1,440, default 60) and `drop` (external drops), both needing editable
 start and title columns and saved as inserts ([Editing and commit](#editing-and-commit)), `occurrence` (`ask`, `this`,
 `following` or `all`; default `ask` with `series` and `recurrenceId`, else `all`; `this` and `following` need them),

@@ -22,7 +22,8 @@
       const parts = [event.title, event.allDay && event.ed > event.sd ? this.calFmt.dayRange(event.sd, event.ed) : this.calTimeText(event)];
       const status = this.calStatusText(event); if (status) parts.push(status);
       if (event.subtitle) parts.push(event.subtitle);
-      if (event.resource && this.calResourceName) parts.push(this.calResourceName(event.resource));
+      if (this.calResourceName) parts.push(...this.calEventResources(event).map(id => this.calResourceName(id)));
+      if (this.calEventResources(event).length > 1) parts.push(calCount(this, this.calLabels.calendarSharedResources, this.calEventResources(event).length, { resources: this.calLabels.calendarResources.toLocaleLowerCase(this.lang) }));
       if (event.recurring) parts.push(this.calLabels.calendarRepeats);
       return parts.filter(Boolean).join(", ");
     },
@@ -41,8 +42,17 @@
       element.dataset.cxEvent = event.id; element.dataset.cxRecord = event.key;
       element._calEvent = event;
       if (event.tone) { element.dataset.cxTone = event.tone; element.style.setProperty("--cx-ev", event.tone === "neutral" ? "var(--hfx-color-status-neutral-fg,var(--hfx-color-text-muted))" : toneVariable(event.tone, false, "var(--hfx-color-accent)")); element.style.setProperty("--cx-ev-bg", toneVariable(event.tone, true, "color-mix(in srgb,var(--cx-ev) 14%,var(--hfx-color-surface))")); }
+      if (event.color) { element.style.setProperty("--cx-ev", event.color); element.style.setProperty("--cx-ev-bg", "color-mix(in srgb,var(--cx-ev) 14%,var(--hfx-color-surface))"); }
       element.setAttribute("aria-label", this.calEventName(event));
-      if (this.linkHighlight?.has(event.key)) element.dataset.cxLinked = "true";
+      const assignments = this.calEventResources(event);
+      if (assignments.length > 1) {
+        element.title = this.calEventName(event);
+        const mark = (kind, on) => { this[kind] = on ? event.id : this[kind] === event.id ? null : this[kind];
+          for (const card of this.calRoot.querySelectorAll(".cx-cal-ev")) card.classList.toggle("cx-cal-shared-active", card.dataset.cxEvent === this.calSharedHover || card.dataset.cxEvent === this.calSharedFocus); };
+        element.addEventListener("pointerenter", () => mark("calSharedHover", true)); element.addEventListener("pointerleave", () => mark("calSharedHover", false));
+        element.addEventListener("focus", () => mark("calSharedFocus", true)); element.addEventListener("blur", () => mark("calSharedFocus", false));
+      }
+      if (!event.base?.external && this.linkHighlight?.has(event.key)) element.dataset.cxLinked = "true";
       const template = this.opts.calendar?.render;
       if (typeof template === "function") {
         // One frozen copy per record object serves every paint of it.
@@ -55,6 +65,7 @@
       const time = h("span", "cx-cal-ev-time"), title = h("span", "cx-cal-ev-title");
       if (!event.allDay && kind !== "bar" && kind !== "lane") { setText(time, kind === "item" ? this.calTimeText(event) : this.calFmt.time(event.start)); element.appendChild(time); }
       setText(title, event.title); element.appendChild(title);
+      if (assignments.length > 1) { const shared = h("span", "cx-cal-shared"); setText(shared, calCount(this, this.calLabels.calendarSharedResources, assignments.length, { resources: this.calLabels.calendarResources.toLocaleLowerCase(this.lang) })); shared.setAttribute("aria-hidden", "true"); element.appendChild(shared); }
       if (kind === "block" || kind === "item" || kind === "lane") {
         if (event.subtitle) { const subtitle = h("span", "cx-cal-ev-sub"); setText(subtitle, event.subtitle); element.appendChild(subtitle); }
         const column = this.cal.status;
@@ -78,19 +89,19 @@
     calPublicEvent(event) {
       // source names the event's source; external marks an iCalendar event, whose record id is not a record of the grid.
       return gridFreeze({ id: event.id, record: event.key, start: calIso(event.start), end: calIso(event.end), allDay: event.allDay, title: event.title, resource: event.resource, recurring: event.recurring,
-        source: event.base?.source ?? null, external: !!event.base?.external });
+        resourceIds: this.calEventResources(event), source: event.base?.source ?? null, external: !!event.base?.external });
     },
 
     /** Opens an event's record: canopyx:rowActivate first (cancelable), then the host's onDetails or the record drawer. */
     async calOpenEvent(event, keyboard, returnFocus) {
       // An event of an iCalendar source has no record in the grid: it always shows its details.
-      if (event.base?.external) return this.calShowDetails(event, this.calBody.querySelector('[data-cx-event="' + CSS.escape(event.id) + '"]') || returnFocus);
+      if (event.base?.external) return this.calShowDetails(event, this.calEventTarget(event.id, returnFocus) || returnFocus);
       const row = gridFreeze(JSON.parse(JSON.stringify(event.row)));
       if (!this.emit("rowActivate", { id: event.key, row, keyboard: !!keyboard, occurrence: event.recurring ? calIso(event.start) : null })) return;
       if (typeof this.opts.onDetails === "function")
         return this.runGridHook(signal => this.opts.onDetails({ row, query: this.acceptedQuery, signal, returnFocus, occurrence: event.recurring ? calIso(event.start) : null }), this.dataLifetime.signal);
       // A basic calendar shows a small details popover instead of the record drawer.
-      if (this.cal.details === "popover") return this.calShowDetails(event, this.calBody.querySelector('[data-cx-event="' + CSS.escape(event.id) + '"]') || returnFocus);
+      if (this.cal.details === "popover") return this.calShowDetails(event, this.calEventTarget(event.id, returnFocus) || returnFocus);
       await this.requirePart("filter-editor");
       if (this.recordNeeded(event.row)) await this.loadRecordPanel();
       if (this.destroyed) return;
@@ -103,7 +114,7 @@
       return dialog;
     },
     async openCalendarEvent(id) {
-      const event = this.calEvents.find(item => item.id === id || item.key === id);
+      const event = this.calEvents.find(item => item.id === id) || this.calEvents.find(item => item.key === id);
       if (!event) throw new Error("CanopyX: the calendar does not show event " + id + ".");
       return this.calOpenEvent(event, false, document.activeElement);
     },
@@ -155,7 +166,7 @@
       const keys = this.linkHighlight;
       let count = 0;
       for (const element of this.calBody.querySelectorAll(".cx-cal-ev")) {
-        const on = !!keys?.has(element.dataset.cxRecord);
+        const on = !element._calEvent?.base?.external && !!keys?.has(element.dataset.cxRecord);
         if (on) count++;
         if (on) element.dataset.cxLinked = "true"; else delete element.dataset.cxLinked;
       }

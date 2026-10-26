@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "346ce0d68b57aef8",
+      "version": "0f686d9a2611a31b",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -206,7 +206,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "f07aebe37f3d1bb4",
+      "version": "d74a01c46f1c40cc",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -696,7 +696,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "1c56e291cf80d4f2",
+      "version": "d96c2721c6968666",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -767,7 +767,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "6e96e14a242efb36",
+      "version": "42ad4b814f47bd00",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -804,7 +804,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "88778cf0984048fa",
+      "version": "5d61972e1f56ecba",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -841,7 +841,7 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "version": "bdde26d4b7de2096",
+      "version": "29a711a1cfd4be9a",
       "script": "canopyx-calendar-edit.js",
       "runtimes": [
         "grid"
@@ -859,7 +859,7 @@
     {
       "name": "calendar-ics",
       "label": "iCalendar",
-      "version": "feb3ed2cd67d057f",
+      "version": "ac8b2950fccbfb0f",
       "script": "canopyx-calendar-ics.js",
       "runtimes": [
         "grid"
@@ -878,7 +878,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "11d7ecf140c93c25",
+      "version": "22c9e15c108aeaa1",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
@@ -892,6 +892,22 @@
       ],
       "requires": [
         "calendar"
+      ]
+    },
+    {
+      "name": "grid-options",
+      "label": "grid footer and query extensions",
+      "version": "e74170bbb841519c",
+      "script": "canopyx-grid-options.js",
+      "style": "canopyx-grid-options.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "gridOptions"
       ]
     }
   ]

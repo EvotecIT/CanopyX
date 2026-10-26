@@ -101,6 +101,13 @@ public sealed class CanopyCalendar<T> {
     /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
     public CanopyCalendar<T> Resource(Expression<Func<T, string?>> member) { Definition.Resource = Bind(member, false); return this; }
 
+    /// <summary>Sets a text member containing a JSON array of resource ids assigned to each event.</summary>
+    /// <param name="member">The member containing the resource-id array as JSON text.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
+    /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
+    public CanopyCalendar<T> ResourceIds(Expression<Func<T, string?>> member) { Definition.ResourceIds = Bind(member, true); return this; }
+
     /// <summary>Sets the member that marks all-day events.</summary>
     /// <param name="member">The member.</param>
     /// <returns>This builder.</returns>

@@ -9,7 +9,8 @@
   function gridPredicate(filter, columns, budget) {
     if (++budget.predicates > 64) throw new Error("CanopyX: at most 64 grid predicates.");
     const column = filter && columns.get(filter.column), values = filter && filter.values;
-    if (!column || budget.filterable && column.filterable === false || !Object.keys(GRID_FILTER_LABELS).includes(filter.operator) ||
+    if (!column || budget.filterable && column.filterable === false || typeof filter.operator !== "string" ||
+        !(Object.hasOwn(GRID_FILTER_LABELS, filter.operator) || /^[a-z][a-zA-Z\d]{0,31}$/.test(filter.operator)) ||
         !Array.isArray(values))
       throw new Error("CanopyX: invalid grid predicate.");
     const nullTest = filter.operator === "isNull" || filter.operator === "isNotNull";
@@ -32,12 +33,12 @@
     return gridQueryRecord(group, { operator: group.operator, filters, groups }, budget.strict);
   }
 
-  function gridMatchesGroup(row, group, columns) {
+  function gridMatchesGroup(row, group, columns, matches = gridMatches) {
     if (!group) return true;
-    if (group.operator === "and") return group.filters.every(filter => gridMatches(row, filter, columns.get(filter.column))) &&
-      group.groups.every(child => gridMatchesGroup(row, child, columns));
-    return group.filters.some(filter => gridMatches(row, filter, columns.get(filter.column))) ||
-      group.groups.some(child => gridMatchesGroup(row, child, columns));
+    if (group.operator === "and") return group.filters.every(filter => matches(row, filter, columns.get(filter.column))) &&
+      group.groups.every(child => gridMatchesGroup(row, child, columns, matches));
+    return group.filters.some(filter => matches(row, filter, columns.get(filter.column))) ||
+      group.groups.some(child => gridMatchesGroup(row, child, columns, matches));
   }
 
   function gridSearchTerms(text, mode) {

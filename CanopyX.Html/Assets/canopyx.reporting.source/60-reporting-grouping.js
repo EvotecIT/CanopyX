@@ -41,6 +41,8 @@
     if (grouping !== undefined && (!grouping || typeof grouping !== "object" || Array.isArray(grouping) ||
         !["asc", "desc"].includes(grouping.direction) ||
         !view.columns.some(column => column.id === grouping.column && column.sortable))) throw new Error("CanopyX: invalid grouping column or order.");
+    if (grouping?.headerTemplate !== undefined && (typeof grouping.headerTemplate !== "string" || !grouping.headerTemplate.trim() || grouping.headerTemplate.length > 512))
+      throw new Error("CanopyX: invalid group heading template.");
     if (options.groupable !== undefined && typeof options.groupable !== "boolean" || grouping !== undefined && reportingDynamicGroups(view))
       throw new Error("CanopyX: a fixed grouping cannot be combined with groupBy or groupable.");
     if (!Array.isArray(aggregates) || aggregates.length > 32) throw new Error("CanopyX: at most 32 aggregates are supported.");
@@ -75,7 +77,7 @@
     const grouping = view.reporting?.grouping;
     if (grouping) {
       const query = GROUPING_QUERY(view, input, strict);
-      return gridFreeze({ ...query, sort: [grouping, ...query.sort.filter(sort => sort.column !== grouping.column)] });
+      return gridFreeze({ ...query, sort: [{ column: grouping.column, direction: grouping.direction }, ...query.sort.filter(sort => sort.column !== grouping.column)] });
     }
     if (!reportingDynamicGroups(view) || !input || typeof input !== "object") return GROUPING_QUERY(view, input, strict);
     const { groupBy, ...rest } = input, query = GROUPING_QUERY(view, rest, strict);
@@ -131,7 +133,7 @@
   // The parts install on the grid's first page request; every later request (pages, exports, ranges) waits for the same load.
   const DETAIL_ROWS = definePart(DataGrid, "detail-rows", "detail rows", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, gridButton, gridFreeze,
     cellText, formatting, labelsFor, requireIdentifier, GridRowOffsets, TreeGrid, createDataGrid, createTreeGrid, disposeRowHostCells, OWN_ARROWS, hostHtml }));
-  const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, numberFormat,
+  const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, GRID_OPTIONS, GRID_OPTION_GRIDS, h, setText, fill, numberFormat,
     formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridIdOrder, gridQueryRows, gridButton, gridDecorateButton,
     gridCellRenderer, gridPresenterTone, GRID_TONE_RANK, validateGridRows, validateGridPage, checkDocument, requireIdentifier, validStructuralCount, PROTOCOL,
     gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, disposeRowHostCells, quietControls, TreeGrid }));

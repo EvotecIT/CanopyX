@@ -276,7 +276,8 @@ Consumers: the HtmlForgeX DataExplorer's wide datasets and live inventories; the
 
 - [x] Add grouped headers for wide reports: up to three levels of column groups with ARIA spans, groups kept whole by pins, priority hiding, resizing and moves, a nested Columns menu, drawer sections and the script-free header (docs/column-groups.md).
 - [ ] Verify the explicit accessible header associations of footer cells in the pinned summary row (the summary row with reporting aggregates exists).
-- [x] Read `<tfoot>` rows when enhancing a table (`enhance` reads `tFoot`, docs/enhance.md). Per-page footer totals stay with the summary row item above.
+- [x] Read `<tfoot>` rows when enhancing a table (`enhance` reads `tFoot`, docs/enhance.md).
+- [x] Declarative footer rows with page and all-matching aggregates, script-free output and server-computed totals; safe group-heading templates, column classes/alignment/default rules, alternate sort fields, direction cycles, fixed pre-sorts and plugin filter/comparator hooks ([protocol](docs/data-protocol.md#column-defaults-ordering-hooks-and-footer-rows)). Consumer: the HtmlForgeX table bridge.
 - [x] An always-visible faceted filter panel (the `facets` part, `CanopyFacetPanel`, docs/facets.md) when a report needs several value lists side by side. Reuse the existing complete-query facet values and counts rather than deriving them from mounted rows.
 - [x] Measure realistic 50/100/200-column fixtures before implementing column virtualization (`tests/browser/bench/columns-benchmark.mjs`): mounted cells grow with the columns, and from about 100 columns scrolling drops frames at 1x CPU (200 columns: 13 frames over 50 ms in 40 steps), so windowing columns pays off. `AxisWindow` (the grid runtimes' `31-axis-window.js`) windows one axis; the matrix uses it for both.
 - [ ] Window flat-grid columns with `AxisWindow` when a wide consumer needs it, retaining pinned columns, logical ARIA indices, offscreen keyboard navigation, details and exports. Do not introduce a second row engine.
@@ -289,7 +290,7 @@ Consumers: the HtmlForgeX DataExplorer's wide datasets and live inventories; the
 - [x] Layout modes: fit, scroll sideways and cards, with compact, normal and comfortable densities, switched from a Layout menu or the API and kept in saved views; trees offer fit and scroll (docs/layout-modes.md).
 - [ ] Evaluate pivot presentation only after a real inventory needs it and grouping/aggregate semantics are stable. Hosted pivot data is computed through the host/data owner; full charts remain ChartForgeX integrations. A 2D categorical matrix remains its own view rather than an overloaded table option.
 - [ ] Compose ChartForgeX charts for a selected range or group and richer chart cells through host renderers. Preserve the existing bar/line/period-strip presenters for small host-supplied histories.
-- [ ] Qualify sticky headers during page scrolling for grids that grow with their rows, and per-column class names when a demonstrated host styling need requires them.
+- [ ] Qualify sticky headers during page scrolling for grids that grow with their rows.
 
 Gate: produce a measured wide/live inventory demonstration. Record DOM/cache bounds, browser memory, query/render/input latency, sustained scroll and update behavior at normal and 4x slowdown. Keyboard navigation, cell identity and frozen headers remain correct when columns/rows leave the mounted window. Ship only the extensions that improve the demonstrated consumer.
 
@@ -414,8 +415,9 @@ Consumers: certificate expiries and renewals, monitoring incidents, outages and 
 - [x] Drag to move and resize across resources with keyboard moves, overlap, allowed-resource and working-hour rules shown before the drop, through the editing contract with commit and undo.
 - [x] Recurrence (an RFC 5545 RRULE subset with exceptions and overriding records) expanded per visible range, matched in C# by `CanopyRecurrence` against one fixture.
 - [x] Range queries for hosted grids (`gridRangeQuery`, `POST {pattern}/range` over `IQueryable`), iCalendar export.
-- [ ] Editing a single occurrence of a series in the calendar itself: today the host handles `canopyx:occurrenceChange` by adding an overriding record.
-- [ ] Resource columns for trees with more than 24 leaves (a chosen subset), and events with several resources.
+- [x] Edit a single recurring occurrence in the calendar, with an override and writable EXDATE, through the host editing contract.
+- [x] Virtual resource columns for large inline resource trees and events assigned to several resources.
+- [x] Per-source JSON feeds with range parameters, colour and visibility switches.
 - [ ] Backlog by owner decision, not a release blocker: screen-reader speech checks of the calendar views with NVDA and Narrator.
 
 Gate: the calendar examples pass the browser suites on Chromium, Firefox and WebKit at desktop and phone widths in both palettes, the month paints 5,000 events and the timeline 5,000 resources and 100,000 events within the performance gates, and the parts stay under their gzip guards.

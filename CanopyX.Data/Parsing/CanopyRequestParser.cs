@@ -270,7 +270,9 @@ public static partial class CanopyRequestParser {
         var filter = RequireObject(element, "filter");
         var column = schema.GetColumn(RequireString(filter, "column"));
         if (!column.Filterable) throw new CanopyRequestException(CanopyRequestError.ColumnNotFilterable, "The column cannot be filtered.");
-        var op = Operator(RequireString(filter, "operator"));
+        var name = RequireString(filter, "operator");
+        var custom = System.Linq.Enumerable.Contains(schema.CustomFilterOperators, name);
+        var op = custom ? CanopyGridFilterOperator.Custom : Operator(name);
         var textMatch = op == CanopyGridFilterOperator.Contains || op == CanopyGridFilterOperator.StartsWith;
         var range = op == CanopyGridFilterOperator.GreaterThan || op == CanopyGridFilterOperator.GreaterThanOrEqual
             || op == CanopyGridFilterOperator.LessThan || op == CanopyGridFilterOperator.LessThanOrEqual;
@@ -288,7 +290,7 @@ public static partial class CanopyRequestParser {
             if (textMatch && !(operand is string)) throw CanopyRequestException.Operand("Text matching needs a text operand.");
             operands.Add(operand);
         }
-        return new CanopyFilterCondition(column, op, operands);
+        return custom ? new CanopyFilterCondition(column, name, operands) : new CanopyFilterCondition(column, op, operands);
     }
 
     private static CanopyGridFilterOperator Operator(string text) => text switch {

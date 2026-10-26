@@ -3,10 +3,11 @@
   // (moving, resizing, creating and dropping events) and iCalendar (export and import) are parts of their own that load before
   // the calendar starts when the definition uses them, or on first use (the Export menu, exportCalendar).
   Object.assign(DataGrid.prototype, {
+    editCalendarOccurrence() { return Promise.resolve(false); },
     calParts() {
       const input = this.view.calendar || {}, ranges = Array.isArray(input.ranges) ? input.ranges : [], sources = Array.isArray(input.sources) ? input.sources : [];
       const ics = sources.some(source => source && source.ics !== undefined), needs = [];
-      if (input.recurrence !== undefined || ics || ranges.some(range => range && range.recurrence !== undefined)) needs.push("calendar-recurrence");
+      if (input.recurrence !== undefined || ics || sources.some(source => source?.url) || ranges.some(range => range && range.recurrence !== undefined)) needs.push("calendar-recurrence");
       if (input.editable || input.create || input.drop) needs.push("calendar-edit");
       if (ics) needs.push("calendar-ics");
       return Promise.all(needs.map(name => this.calLoadPart(name)));

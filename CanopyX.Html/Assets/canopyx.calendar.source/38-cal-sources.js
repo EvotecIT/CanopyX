@@ -13,6 +13,7 @@
         const button = h("button", "cx-cal-src"), swatch = h("i", "cx-cal-src-swatch"), text = h("span");
         button.type = "button"; button.dataset.cxSource = source.id; button.setAttribute("aria-pressed", String(!this.calHiddenSources.has(source.id)));
         if (source.tone) button.style.setProperty("--cx-ev", toneVariable(source.tone, false, "var(--hfx-color-accent)"));
+        if (source.color) button.style.setProperty("--cx-ev", source.color);
         swatch.setAttribute("aria-hidden", "true"); setText(text, source.label);
         button.append(swatch, text);
         button.addEventListener("click", () => this.calToggleSource(source.id));
@@ -32,6 +33,7 @@
       this.calSourceVersion = (this.calSourceVersion || 0) + 1;
       if (this.calAllEvents) { this.calEvents = this.calShownEvents(this.calAllEvents); this.calPaint({ keep: true }); }
       this.emit("calendarSource", { id, visible });
+      if (source.url) this.calReload({ keep: true });
       return visible;
     },
     /** The events of the sources switched on. */

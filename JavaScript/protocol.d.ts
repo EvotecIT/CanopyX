@@ -264,7 +264,7 @@ export type LabelName =
   /** The record panel (docs/record-panel.md). */
   | "recordBack" | "recordBackTo" | "recordTrail" | "recordShowing" | "recordTabs" | "recordSections" | "recordOtherFields" | "recordShowEmpty" | "recordHideEmpty" | "recordActions" | "recordCopyValues" | "recordCopyJson" | "recordCopyLink" | "recordCopied" | "recordPrint" | "recordExportCsv" | "recordExportJson" | "recordOpenAll" | "recordLoadMore" | "recordCount" | "recordItems" | "recordMore" | "recordShowAll" | "recordRetry" | "recordLoadFailed" | "recordUnavailable" | "recordField" | "recordValue" | "recordSection" | "recordBefore" | "recordAfter" | "recordAdded" | "recordRemoved" | "recordChanged"
   /** The calendar and resource timeline (the calendar and timeline parts of flat grids). */
-  | "calendarToday" | "calendarPrevious" | "calendarNext" | "calendarViews" | "calendarMonth" | "calendarWeek" | "calendarDay" | "calendarDays"
+  | "calendarEditOccurrence" | "calendarRemoveOccurrence" | "calendarOccurrenceScope" | "calendarSharedResources" | "calendarResourceWindow" | "calendarToday" | "calendarPrevious" | "calendarNext" | "calendarViews" | "calendarMonth" | "calendarWeek" | "calendarDay" | "calendarDays"
   | "calendarAgenda" | "calendarYear" | "calendarTimeline" | "calendarGoTo" | "calendarAllDay" | "calendarMore" | "calendarMoreLabel" | "calendarDayEvents"
   | "calendarNoEvents" | "calendarEvents" | "calendarShowing" | "calendarRepeats" | "calendarTruncated" | "calendarLoading" | "calendarLoadError" | "calendarNow"
   | "calendarZoom" | "calendarZoomHour" | "calendarZoomDay" | "calendarZoomWeek" | "calendarZoomMonth" | "calendarZoomQuarter" | "calendarResources" | "calendarCapacity"

@@ -197,35 +197,12 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
 
     private static double? Aggregate(CanopySummaryAggregate aggregate, IReadOnlyList<Record> records, CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
-        var ordinal = aggregate.Column.Ordinal;
-        int count = 0;
-        double sum = 0, compensation = 0, minimum = double.MaxValue, maximum = double.MinValue;
-        var distinct = aggregate.Operation == CanopyGridAggregateOperation.DistinctCount ? new HashSet<string>(StringComparer.Ordinal) : null;
-        foreach (var record in records) {
+        Supported(aggregate);
+        var definition = new CanopyGridAggregate(aggregate.Id, aggregate.Column.Id, aggregate.Operation, aggregate.Id);
+        return definition.Evaluate(records.Select(record => {
             cancellationToken.ThrowIfCancellationRequested();
-            var raw = record.Values[ordinal];
-            if (raw == null) continue;
-            count++;
-            if (distinct != null) { distinct.Add(CanopyRemoteHandler.GroupKey(raw)); continue; }
-            if (aggregate.Operation == CanopyGridAggregateOperation.Count) continue;
-            var number = CanopyDataValues.ToDouble(raw);
-            // Neumaier's compensated summation, as the browser runtime sums inline groups.
-            var total = sum + number;
-            compensation += Math.Abs(sum) >= Math.Abs(number) ? sum - total + number : number - total + sum;
-            sum = total;
-            minimum = Math.Min(minimum, number);
-            maximum = Math.Max(maximum, number);
-        }
-        return aggregate.Operation switch {
-            CanopyGridAggregateOperation.Count => count,
-            CanopyGridAggregateOperation.DistinctCount => distinct!.Count,
-            _ when count == 0 => null,
-            CanopyGridAggregateOperation.Sum => sum + compensation,
-            CanopyGridAggregateOperation.Average => (sum + compensation) / count,
-            CanopyGridAggregateOperation.Minimum => minimum,
-            CanopyGridAggregateOperation.Maximum => maximum,
-            _ => throw Unsupported(aggregate)
-        };
+            return CanopyDataValues.ToCell(record.Values[aggregate.Column.Ordinal]);
+        }));
     }
 
     private static void Supported(CanopySummaryAggregate aggregate) {
@@ -269,6 +246,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
 
     private List<Record> Select(List<Record> records, CanopyDataRequest request, CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
+        RejectCustomFilters(request.Filter);
         var ids = request.Ids == null ? null : new HashSet<string>(StringComparer.Ordinal);
         if (request.Ids != null) foreach (var id in request.Ids) {
             cancellationToken.ThrowIfCancellationRequested();
@@ -293,6 +271,12 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
         }).ToList();
     }
 
+    private static void RejectCustomFilters(CanopyFilterNode? node) {
+        if (node is CanopyFilterCondition condition && condition.Operator == CanopyGridFilterOperator.Custom)
+            throw new CanopyRequestException(CanopyRequestError.Unsupported, "A named filter requires a host provider that implements it.");
+        if (node is CanopyFilterGroup group) foreach (var child in group.Children) RejectCustomFilters(child);
+    }
+
     private static bool Matches(Record record, CanopyFilterNode node, CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
         return node switch {
@@ -308,7 +292,7 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
     /// <summary>Orders matching records: level by level (each level's groups in their order: by value, or by an aggregate of the
     /// group), then by the other sort keys inside the innermost groups, and by record identity last.</summary>
     private List<Record> Arrange(List<Record> records, CanopyDataRequest request, CancellationToken cancellationToken) =>
-        request.Levels.Count == 0 ? Order(records, request.Sort, cancellationToken) : Arrange(records, request.Levels, 0, request.InnerSort, cancellationToken);
+        request.Levels.Count == 0 ? Order(records, request.ProviderSort(), cancellationToken) : Arrange(records, request.Levels, 0, request.ProviderSort(insideGroups: true), cancellationToken);
 
     private List<Record> Arrange(List<Record> records, IReadOnlyList<CanopySummaryLevel> levels, int depth, IReadOnlyList<CanopySortKey> inner, CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();

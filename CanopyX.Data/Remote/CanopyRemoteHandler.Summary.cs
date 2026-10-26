@@ -246,12 +246,12 @@ public sealed partial class CanopyRemoteHandler {
         if (node is not CanopyFilterCondition condition) throw new InvalidOperationException("Constant filters have no wire form.");
         writer.WriteStartObject();
         writer.WriteString("column", condition.Column.Id);
-        writer.WriteString("operator", condition.Operator switch {
+        writer.WriteString("operator", condition.CustomOperator ?? (condition.Operator switch {
             CanopyGridFilterOperator.Equal => "eq", CanopyGridFilterOperator.NotEqual => "ne", CanopyGridFilterOperator.Contains => "contains",
             CanopyGridFilterOperator.StartsWith => "startsWith", CanopyGridFilterOperator.In => "in", CanopyGridFilterOperator.GreaterThan => "gt",
             CanopyGridFilterOperator.GreaterThanOrEqual => "ge", CanopyGridFilterOperator.LessThan => "lt", CanopyGridFilterOperator.LessThanOrEqual => "le",
             CanopyGridFilterOperator.IsNull => "isNull", _ => "isNotNull"
-        });
+        }));
         writer.WriteStartArray("values");
         foreach (var value in condition.Values) WriteValue(writer, value);
         writer.WriteEndArray();

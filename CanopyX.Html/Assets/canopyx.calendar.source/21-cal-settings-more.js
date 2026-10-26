@@ -45,18 +45,24 @@
     if (!Array.isArray(list) || !list.length || list.length > 50) calInvalid("calendar sources are a list of 1 to 50.");
     const ids = new Set();
     return list.map(item => {
-      if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).some(key => !["id", "label", "tone", "ics", "hidden"].includes(key)) ||
+      if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).some(key => !["id", "label", "tone", "ics", "url", "fetchParams", "color", "hidden"].includes(key)) ||
           typeof item.id !== "string" || !CAL_ID.test(item.id) || ids.has(item.id) || typeof item.label !== "string" || !item.label.trim() || item.label.length > 256 ||
-          item.tone !== undefined && !CAL_TONE.test(item.tone) || item.ics !== undefined && !calSameOrigin(item.ics) || item.hidden !== undefined && typeof item.hidden !== "boolean")
+          item.tone !== undefined && !CAL_TONE.test(item.tone) || item.url !== undefined && (!calSameOrigin(item.url) || item.ics !== undefined) ||
+          item.color !== undefined && !/^#[0-9a-fA-F]{6}$/.test(item.color) || !calFetchParams(item.fetchParams, item.url) || item.ics !== undefined && !calSameOrigin(item.ics) || item.hidden !== undefined && typeof item.hidden !== "boolean")
         calInvalid("a calendar source has a unique id, a label, and optional tone, ics (a same-origin address) and hidden.");
-      if (item.ics === undefined && !sourceColumn) calInvalid("calendar sources without ics need the source column.");
+      if (item.ics === undefined && item.url === undefined && !sourceColumn) calInvalid("calendar sources without ics need the source column.");
       ids.add(item.id);
-      return { id: item.id, label: item.label, tone: calSafeTone(item.tone), ics: item.ics ?? null, hidden: item.hidden === true };
+      return { id: item.id, label: item.label, tone: calSafeTone(item.tone), ics: item.ics ?? null, url: item.url ?? null, fetchParams: item.fetchParams || {}, color: item.color ?? null, hidden: item.hidden === true };
     });
+  }
+  function calFetchParams(value, url) {
+    if (value === undefined) return true;
+    return !!url && value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length <= 50 &&
+      Object.entries(value).every(([key, text]) => key.trim() && key.length <= 128 && !["start", "end", "timeZone"].includes(key) && typeof text === "string" && text.length <= 2048);
   }
   /** A relative address, or an absolute one on the page's own origin: an iCalendar source never reaches another site. */
   function calSameOrigin(value) {
-    if (typeof value !== "string" || !value || value.length > 2048) return false;
+    if (typeof value !== "string" || !value || value.length > 2048 || /[\s\\\x00-\x1f\x7f]/.test(value)) return false;
     try {
       const base = typeof location !== "undefined" ? location.href : "https://localhost/", url = new URL(value, base);
       // A relative address is allowed anywhere (a page from disk reports it cannot load it); an absolute one names this web origin.

@@ -39,10 +39,10 @@ public sealed class CanopyGridSummary {
         if (Query.Revision != Revision || Query.Offset != 0 || Query.Cursor != null || Query.Limit != view.PageSize)
             throw new InvalidOperationException("Summary query ownership cannot change after construction.");
         var reporting = view.Reporting;
-        if (view.Id != View || reporting == null || reporting.Grouping == null && !reporting.DynamicGrouping && reporting.Aggregates.Count == 0)
+        if (view.Id != View || reporting?.Grouping == null && reporting?.DynamicGrouping != true && view.GetSummaryAggregates().Count == 0)
             throw new InvalidOperationException("Summary metadata needs its owning opted-in reporting view.");
         var levels = new List<CanopyGridGroupLevel>();
-        if (reporting.Grouping != null) levels.Add(new CanopyGridGroupLevel(reporting.Grouping.Column, reporting.Grouping.Descending));
+        if (reporting?.Grouping != null) levels.Add(new CanopyGridGroupLevel(reporting.Grouping.Column, reporting.Grouping.Descending));
         else levels.AddRange(Query.Levels(view));
         if (levels.Count == 0 && Groups.Count != 0) throw new InvalidOperationException("An ungrouped summary has no groups.");
         if ((long)Matched + Groups.Count > int.MaxValue) throw new InvalidOperationException("Summary metadata supports at most 10,000 declared groups.");
@@ -92,7 +92,7 @@ public sealed class CanopyGridSummary {
     }
 
     internal static void WriteAggregates(CanopyJsonWriter writer, IDictionary<string, double?> values, CanopyDataGridView view, int count) {
-        var declarations = view.Reporting!.Aggregates;
+        var declarations = view.GetSummaryAggregates();
         if (values.Count != declarations.Count) throw new InvalidOperationException("Summary values must match every declared aggregate.");
         writer.Name("aggregates").BeginObject();
         foreach (var aggregate in declarations) {

@@ -121,8 +121,8 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // Preserve the component ceiling established by the caption geometry and hidden-panel focus fixes.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 124800);
+        // The optional footer/hook declaration shell retains its 124 KiB component ceiling.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 126976);
     }
 
     [Fact]

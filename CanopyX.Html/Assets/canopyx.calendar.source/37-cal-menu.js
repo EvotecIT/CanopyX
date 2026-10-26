@@ -18,6 +18,8 @@
       const labels = this.calLabels, items = [];
       if (context.kind === "event") {
         items.push({ id: "open", label: labels.calendarOpen, run: () => this.calOpenEvent(context.raw, true, context.target) });
+        if (context.raw.recurring && this.cal.editable && this.cal.series?.editable && this.cal.recurrenceId?.editable && this.calCanEdit?.(context.raw, false))
+          items.push({ id: "occurrence", label: labels.calendarEditOccurrence, run: () => this.editCalendarOccurrence(context.raw.id) });
         if (this.calStartMove && this.cal.editable && (this.calCanEdit(context.raw, false) || this.calCanEdit(context.raw, true))) items.push({ id: "move", label: labels.calendarMove, run: () => this.calStartMove(context.target) });
       } else if (this.cal.create && this.calCreateFromClick) {
         items.push({ id: "new", label: labels.calendarNewHere, run: () => this.calCreateFromClick(context.target) });

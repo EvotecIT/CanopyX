@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CanopyX.Json;
 
 namespace CanopyX;
 
@@ -7,10 +8,11 @@ namespace CanopyX;
 public sealed partial class CanopyCalendar {
     /// <summary>The fixed column ids of a calendar built from events.</summary>
     private const string ColumnTitle = "title", ColumnStart = "start", ColumnEnd = "end", ColumnAllDay = "allDay", ColumnDescription = "description", ColumnTone = "tone",
-        ColumnResource = "resource", ColumnRecurrence = "recurrence", ColumnExceptions = "exceptions", ColumnSource = "source";
+        ColumnResource = "resource", ColumnResourceIds = "resourceIds", ColumnRecurrence = "recurrence", ColumnExceptions = "exceptions", ColumnSource = "source",
+        ColumnSeries = "series", ColumnRecurrenceId = "recurrenceId";
 
     /// <summary>The columns of a calendar built from events that editing changes, and so are editable while the calendar edits.</summary>
-    private static readonly string[] EditedColumns = { ColumnTitle, ColumnStart, ColumnEnd, ColumnResource, ColumnAllDay, ColumnRecurrence, ColumnExceptions };
+    private static readonly string[] EditedColumns = { ColumnTitle, ColumnStart, ColumnEnd, ColumnResource, ColumnResourceIds, ColumnAllDay, ColumnRecurrence, ColumnExceptions, ColumnSeries, ColumnRecurrenceId };
 
     /// <summary>
     /// Creates a basic calendar of events, with its own grid (<see cref="Grid"/>, id <c>calendar</c>), set up by a preset.
@@ -54,8 +56,14 @@ public sealed partial class CanopyCalendar {
         if (list.Exists(item => item.Description != null)) _description = Optional(grid, ColumnDescription, "Description", false);
         if (list.Exists(item => item.Tone.Name != null)) _tone = Optional(grid, ColumnTone, "Tone", true);
         if (list.Exists(item => item.Resource != null)) _resource = Optional(grid, ColumnResource, "Resource", true);
+        if (list.Exists(item => item.ResourceIds.Count > 0)) ResourceIds = Optional(grid, ColumnResourceIds, "Resources", true);
         if (list.Exists(item => item.Recurrence != null)) _recurrence = Optional(grid, ColumnRecurrence, "Repeats", true);
-        if (list.Exists(item => item.Exceptions != null)) _exceptions = Optional(grid, ColumnExceptions, "Exceptions", true);
+        if (_recurrence != null || list.Exists(item => item.Exceptions != null)) _exceptions = Optional(grid, ColumnExceptions, "Exceptions", true);
+        if (_recurrence != null || list.Exists(item => item.Series != null || item.RecurrenceId.HasValue)) {
+            _series = Optional(grid, ColumnSeries, "Series", true);
+            grid.Columns.Add(new CanopyColumn(ColumnRecurrenceId, "Original start") { Kind = CanopyColumnKind.DateTime, Hidden = true });
+            _recurrenceId = ColumnRecurrenceId;
+        }
         if (list.Exists(item => item.Source != null)) _source = Optional(grid, ColumnSource, "Source", true);
 
         var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -71,6 +79,20 @@ public sealed partial class CanopyCalendar {
             if (item.Description != null) row.Cells[ColumnDescription] = item.Description;
             if (item.Tone.Name != null) row.Cells[ColumnTone] = item.Tone.Name;
             if (item.Resource != null) row.Cells[ColumnResource] = item.Resource;
+            if (item.ResourceIds.Count > 0) {
+                var writer = new CanopyJsonWriter();
+                var resources = new HashSet<string>(StringComparer.Ordinal);
+                writer.BeginArray();
+                foreach (var resource in item.ResourceIds) {
+                    CanopyIdentifiers.Require(resource, nameof(events));
+                    if (resources.Add(resource)) writer.String(resource);
+                }
+                if (resources.Count > 1000) throw new ArgumentException("An event has at most 1,000 resources.", nameof(events));
+                writer.EndArray(); row.Cells[ColumnResourceIds] = writer.ToString();
+            }
+            if ((item.Series == null) != !item.RecurrenceId.HasValue) throw new ArgumentException("An override needs series and recurrenceId.", nameof(events));
+            if (item.Series != null) { CanopyIdentifiers.Require(item.Series, nameof(events)); row.Cells[ColumnSeries] = item.Series; }
+            if (item.RecurrenceId.HasValue) row.Cells[ColumnRecurrenceId] = CanopyCalendarValues.Utc(item.RecurrenceId.Value);
             if (item.Recurrence != null) row.Cells[ColumnRecurrence] = item.Recurrence.ToString();
             if (item.Exceptions != null) row.Cells[ColumnExceptions] = item.Exceptions;
             if (item.Source != null) row.Cells[ColumnSource] = item.Source;

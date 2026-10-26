@@ -109,11 +109,13 @@
   /** The iCalendar text of calendar records (row objects with raw cells). */
   function calIcs(view, rows) {
     const stamp = calIcsUtc(Date.now()), names = new Map(), zones = new Map(), events = [];
+    const masters = new Map();
+    for (const row of rows) { const base = calBase(view, row); if (base?.rule && !base.series) masters.set(base.identity, base); }
     for (const row of rows) {
       const base = calBase(view, row);
       if (!base) continue;
       const zone = base.seriesZone;
-      const lines = ["BEGIN:VEVENT", "UID:" + calIcsText(view.view.id + "-" + row.id + "@canopyx"), "DTSTAMP:" + stamp];
+      const lines = ["BEGIN:VEVENT", "UID:" + calIcsText(view.view.id + "-" + base.identity + "@canopyx"), "DTSTAMP:" + stamp];
       let name;
       if (base.rule && !base.allDay) {
         name = names.get(zone.name);
@@ -129,9 +131,11 @@
       lines.push("DTSTART" + time(base.start));
       if (base.end > base.start) lines.push("DTEND" + time(base.end));
       if (base.series && Number.isFinite(base.recurrenceId)) {
-        lines.push("UID:" + calIcsText(view.view.id + "-" + base.series + "@canopyx"));
+        lines.push("UID:" + calIcsText(view.view.id + "-" + base.seriesIdentity + "@canopyx"));
         lines.splice(1, 1);
-        lines.push("RECURRENCE-ID" + time(base.recurrenceId));
+        // The original occurrence has the master's value type, independent of its replacement's DTSTART.
+        const original = masters.get(base.seriesIdentity);
+        lines.push("RECURRENCE-ID" + (original?.allDay ? ";VALUE=DATE:" + calIcsDate(Math.floor(base.recurrenceId / CAL_DAY)) : ":" + calIcsUtc(base.recurrenceId)));
       }
       lines.push("SUMMARY:" + calIcsText(base.title));
       const fields = base.external ? row.fields : null;
@@ -188,13 +192,14 @@
         this.calIcsExportColumns();
         const seen = new Set(), rows = [];
         for (const event of this.calEvents) {
-          if (!seen.has(event.key)) { seen.add(event.key); rows.push(event.row); }
+          if (!seen.has(event.base.identity)) { seen.add(event.base.identity); rows.push(event.row); }
           // An override of a series' occurrence travels with its series.
-          if (event.base.series && !seen.has(event.base.series)) {
+          if (event.base.series && !seen.has(event.base.seriesIdentity)) {
             const inline = this.view.source.kind === "inline" && !this.opts.source;
-            const series = answer.rows.find(row => row.id === event.base.series) || (inline ? this.calRowsCache?.rows?.find(row => row.id === event.base.series) : null);
+            const matches = row => row.id === event.base.series && (row.external || null) === (event.row.external || null);
+            const series = answer.rows.find(matches) || (inline ? this.calRowsCache?.rows?.find(matches) : null);
             if (!series) throw new Error("CanopyX: visible iCalendar export needs the recurring master in the current calendar answer.");
-            seen.add(series.id); rows.push(series);
+            seen.add(event.base.seriesIdentity); rows.push(series);
           }
         }
         text = calIcs(this, rows);

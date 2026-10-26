@@ -13,7 +13,7 @@ namespace CanopyX.Data;
 /// window (<see cref="Offset"/>, <see cref="Limit"/>).
 /// Instances are immutable; the <c>With…</c> methods return copies.
 /// </remarks>
-public sealed class CanopyDataRequest {
+public sealed partial class CanopyDataRequest {
     private static readonly Regex Words = new Regex("\"([^\"]*)(?:\"|$)|([^\\s\"]+)", RegexOptions.CultureInvariant);
 
     /// <summary>Creates a request.</summary>
@@ -38,7 +38,11 @@ public sealed class CanopyDataRequest {
         Filter = filter;
         var keys = new List<CanopySortKey>();
         if (sort != null) foreach (var key in sort) keys.Add(key ?? throw new ArgumentException("Sort keys cannot be null.", nameof(sort)));
-        Sort = new ReadOnlyCollection<CanopySortKey>(keys);
+        var fixedKeys = new List<CanopySortKey>();
+        var fixedColumns = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var key in schema.ProtocolView.PreSort) { fixedKeys.Add(new CanopySortKey(schema.GetColumn(key.Column), key.Descending)); fixedColumns.Add(key.Column); }
+        fixedKeys.AddRange(keys.FindAll(key => !fixedColumns.Contains(key.Column.Id)));
+        Sort = new ReadOnlyCollection<CanopySortKey>(fixedKeys);
         Search = search ?? string.Empty;
         SearchMode = searchMode;
         SearchTerms = SplitTerms(Search, searchMode);
@@ -95,7 +99,8 @@ public sealed class CanopyDataRequest {
     /// <summary>Gets the filter expression, or null when every record matches.</summary>
     public CanopyFilterNode? Filter { get; private set; }
 
-    /// <summary>Gets the sort keys. Providers append stable record identity as the final key.</summary>
+    /// <summary>Gets accepted column aliases, including fixed pre-sort keys. Their definitions retain OrderData and SortComparator intent for host providers.</summary>
+    /// <remarks>Built-in providers expand OrderData once, after grouping and fixed keys, and append stable record identity as the final key.</remarks>
     public IReadOnlyList<CanopySortKey> Sort { get; private set; }
 
     /// <summary>Gets the offset into the ordered matching records.</summary>

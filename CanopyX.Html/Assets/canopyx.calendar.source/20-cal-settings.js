@@ -4,7 +4,7 @@
   // ("background" marks a background range) and seriesEnd (what a server reads to find series in a range). The rest are the
   // views and how they look. Everything is optional except start; an unknown key or a column of the wrong kind is an error.
   const CAL_VIEWS = ["month", "week", "day", "days", "agenda", "year", "timeline", "mini", "weekList", "dayList", "months"], CAL_ZOOMS = ["hour", "day", "week", "month", "quarter"];
-  const CAL_KEYS = new Set(["start", "end", "title", "subtitle", "allDay", "resource", "status", "recurrence", "exceptions", "series", "recurrenceId", "display",
+  const CAL_KEYS = new Set(["start", "end", "title", "subtitle", "allDay", "resource", "resourceIds", "status", "recurrence", "exceptions", "series", "recurrenceId", "display",
     "seriesEnd", "view", "views", "date", "days", "firstDay", "hiddenDays", "slotMinutes", "minTime", "maxTime", "scrollTime", "workingHours", "nowIndicator",
     "eventLimit", "eventStyle", "timeZone", "editable", "resources", "zoom", "zooms", "capacity", "ranges", "availability", "limit", "phone",
     "toolbar", "details", "description", "tone", "source", "sources", "create", "drop", "occurrence", "weekNumbers", "navLinks", "validRange", "fixedWeeks",
@@ -37,7 +37,7 @@
     const settings = {
       start: column("start", ["datetime"], true), end: column("end", ["datetime"]), allDay: column("allDay", ["text"]),
       title: column("title") || grid.columns.find(item => item.rowHeader) || grid.columns.find(item => !item.hidden), subtitle: column("subtitle"),
-      resource: column("resource", ["text"]), status: column("status"), recurrence: column("recurrence", ["text"]), exceptions: column("exceptions", ["text"]),
+      resource: column("resource", ["text"]), resourceIds: column("resourceIds", ["text"]), status: column("status"), recurrence: column("recurrence", ["text"]), exceptions: column("exceptions", ["text"]),
       series: column("series", ["text"]), recurrenceId: column("recurrenceId", ["datetime"]), display: column("display", ["text"]), seriesEnd: column("seriesEnd", ["datetime"])
     };
     if (!settings.series !== !settings.recurrenceId) calInvalid("calendar series and recurrenceId come together.");
@@ -105,7 +105,7 @@
     const snap = input.snapMinutes === undefined ? settings.slotMinutes : input.snapMinutes;
     if (![1, 5, 10, 15, 20, 30, 60].includes(snap)) calInvalid("calendar editable snapMinutes is 1, 5, 10, 15, 20, 30 or 60.");
     if (input.commit !== undefined && !["auto", "manual"].includes(input.commit)) calInvalid("calendar editable commit is auto or manual.");
-    return { move: input.move !== false, resize: input.resize !== false && !!settings.end, resources: input.resources !== false && !!settings.resource,
+    return { move: input.move !== false, resize: input.resize !== false && !!settings.end, resources: input.resources !== false && !!(settings.resource || settings.resourceIds),
       overlap: input.overlap !== false, working: !!input.workingHours, allowed, snap, commit: input.commit || "auto" };
   }
 

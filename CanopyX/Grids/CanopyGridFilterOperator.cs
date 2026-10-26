@@ -23,5 +23,7 @@ public enum CanopyGridFilterOperator {
     /// <summary>Is missing or null. An empty string is a value.</summary>
     IsNull,
     /// <summary>Is neither missing nor null.</summary>
-    IsNotNull
+    IsNotNull,
+    /// <summary>A named operator evaluated by a registered browser plugin or host source.</summary>
+    Custom
 }
