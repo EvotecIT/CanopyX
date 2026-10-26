@@ -24,7 +24,7 @@ import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, Grid
 export * from "./facets.js";
 export * from "./calendar.js";
 export * from "./live.js";
-import type { GridPivotApi, GridPivotDefinition, GridPivotState, GridPivotQuery, GridPivotAcceptedResult } from "./pivot.js";
+import type { GridPivotApi, GridPivotDefinition, GridPivotState, GridPivotQuery, GridPivotAcceptedResult, GridPivotExportAxisPresentation, GridPivotExportDescriptor } from "./pivot.js";
 export * from "./pivot.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
@@ -47,6 +47,9 @@ export type GridHighlightRule = GridBuiltinFilter & { target?: "row" | "cell" } 
 export interface GridExportCell {
   readonly value: CellValue;
   readonly text: string;
+  /** Pivot-table captures retain numeric display modes and native number formats. */
+  readonly mode?: GridShowAs;
+  readonly numberFormat?: string;
   readonly tone?: string;
   readonly link?: { readonly target: string; readonly tooltip?: string };
   /** The cell's conditional formatting, present when the grid has rules that format it. CSV reads only value and text. */
@@ -55,7 +58,7 @@ export interface GridExportCell {
   readonly diagnostics?: readonly string[];
 }
 /** An immutable record projected onto the declared export columns. Group headings and summaries are not records. */
-export interface GridExportRow {
+export interface GridExportRow extends Partial<GridPivotExportAxisPresentation> {
   readonly id: string; readonly cells: Readonly<Record<string, GridExportCell>>;
   readonly tone?: string; readonly diagnostics?: readonly string[];
   /** The record's row formatting, present when a row rule matched it. */
@@ -64,8 +67,10 @@ export interface GridExportRow {
   readonly detail?: Extract<GridRowDetail, { type: "table" | "properties" | "html" }>;
 }
 /** Captured column intent. Hosts map semantic tones and CSS pixel widths into their output format. */
-export interface GridExportColumn {
+export interface GridExportColumn extends Partial<GridPivotExportAxisPresentation> {
   readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime";
+  /** Present on numeric pivot-table columns. */
+  readonly aggregate?: string;
   /** Reporting runtime only. */
   readonly width?: { readonly unit: "css-px"; readonly preferred: number; readonly minimum: number; readonly maximum?: number };
   readonly wrap?: boolean; readonly alignment?: "left" | "right";
@@ -664,6 +669,8 @@ export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
     readonly totals: Readonly<Record<string, number | null>>; readonly groups: readonly (GridGroup & { readonly text: string })[] };
   /** Records carry their detail payloads. */
   readonly details?: true;
+  /** Explicit full-query pivot table. Rows are enumerated once through the ordinary capture; they are not duplicated here. */
+  readonly pivot?: GridPivotExportDescriptor;
 }
 /** Record counts refer to the complete captured export scope, including selected-query exclusions. */
 export interface GridExportProgress {
@@ -691,6 +698,8 @@ export interface GridRowActivation<Row extends GridRow = GridRow> {
 }
 export interface GridExportOptions {
   scope: GridExportRequest["scope"];
+  /** Reporting bridge only: capture the active complete pivot table. Requires filtered scope; defaults to record capture. */
+  pivot?: boolean;
   /** Defaults to visible exportable columns in their current order. Explicit non-exportable columns are rejected. */
   columns?: string[];
   values?: GridExportRequest["values"];

@@ -121,6 +121,9 @@ export interface GridPivotExportSnapshot {
   /** Omitted complete paths are combined in Other; the accepted record scope and totals remain complete. */
   readonly columnsLimited: boolean;
 }
+/** Data-only pivot metadata accompanying an ordinary frozen export capture. Columns and enumerated rows stay outside it. */
+export type GridPivotExportDescriptor = Pick<GridPivotExportSnapshot,
+  "definition" | "rowAxis" | "columnAxis" | "columnGroups" | "distinctColumns" | "retainedColumns" | "columnsLimited">;
 /** Available only on reporting grids with an initial pivot or pivotable enabled. */
 export interface GridPivotApi {
   getPivot?(): GridPivotState | null;

@@ -672,7 +672,7 @@
       "features": ["pivot"],
       "requires": ["grouping", "values", "buckets"],
       "key": "GRID_PIVOT",
-      "context": ["DataGrid", "GRID_PIVOT", "GRID_ROWS", "GRID_SHOW_AS", "GRID_SHOW_AS_MODES", "GRID_BUCKETS", "h", "setText", "fill", "gridButton", "gridFreeze", "gridQuery", "gridQueryStart", "gridQueryRows", "gridScalar", "cellValue", "cellText", "gridKeyCompare", "gridOrder", "numberFormat", "validateGridPage", "checkDocument", "validStructuralCount", "gridOperationActive", "pivotDefinition", "pivotIntent", "pivotRequestOf", "showAsMode", "showAsCaption"],
+      "context": ["DataGrid", "GRID_PIVOT", "GRID_ROWS", "GRID_SHOW_AS", "GRID_SHOW_AS_MODES", "GRID_BUCKETS", "GRID_CALCULATIONS", "h", "setText", "fill", "gridButton", "gridFreeze", "gridQuery", "gridQueryStart", "gridQueryRows", "gridScalar", "cellValue", "cellText", "gridKeyCompare", "gridOrder", "numberFormat", "formatting", "gridExportSignal", "validateGridPage", "checkDocument", "validStructuralCount", "gridOperationActive", "pivotDefinition", "pivotIntent", "pivotRequestOf", "showAsMode", "showAsCaption"],
       "scripts": ["CanopyX.Html/Assets/canopyx.pivot.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.pivot.source/pivot.css"]
     },

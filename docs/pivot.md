@@ -225,3 +225,16 @@ Use those numeric values and formats in spreadsheet/document adapters. The flat 
 record exports: filtered exports keep tuple criteria, while all-record and selected-record exports clear query
 filters. See the [data protocol](data-protocol.md) for wire definitions and [row grouping](grouping.md) for ordinary
 single-axis groups.
+
+The reporting delivery bridge uses `prepareExport({ scope: "filtered", pivot: true })` for an explicit pivot-table
+capture. The default remains a record capture, including CSV and clipboard exports. An explicit pivot request needs
+an accepted active pivot and its complete projected columns; unsupported scopes, missing bridge support and inactive
+pivots fail clearly. Delivery methods such as `materializeExport`, `exportAs` and `print` accept the same option.
+
+`request.pivot` carries the definition, typed axes, column outlines and cap metadata without duplicating the matrix.
+The ordinary `columns` and row enumeration carry the projected table and presentation flags. `recordCount` counts
+those physical table rows; `matched` still counts source records. Pivot captures have no ordinary record grouping or
+raw-grid formatting rules to reapply. Locale and time-zone options format the captured labels and numeric text through
+the same formatting owner as record exports. Bounded materialization, cancellation and revision checks remain active;
+a changed data or calculated-column revision requires a fresh capture. Moving between records and pivot presentation
+does not rewrite an already captured table.
