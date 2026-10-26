@@ -116,7 +116,7 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void InteractiveAssets_StayWithinTheirCompressedBudget() {
-        // Localized vertical export chrome adds room outside the separate shared-token allowance.
+        // Interactive components retain their separate shared-token allowance.
         SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.InteractiveTreeGrid, 71168);
     }
 

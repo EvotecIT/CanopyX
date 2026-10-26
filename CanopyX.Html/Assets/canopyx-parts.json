@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "fbd2d1a661e4c528",
+      "version": "22d594b2f16f9587",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -769,7 +769,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "4a0fb671b0776443",
+      "version": "cb330cf5775411f4",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [
