@@ -97,7 +97,7 @@
 
   /* Status pill: a tone in a rounded label, the same in cells, legends and lists. */
   :where(.cx-pill,.p-pill) {
-    display:inline-flex;align-items:center;gap:var(--hfx-space-1);block-size:var(--hfx-badge-height);padding:0 var(--hfx-space-2);
+    display:inline-flex;align-items:center;gap:var(--hfx-space-1);block-size:var(--hfx-pill-height);padding:0 var(--hfx-space-2);
     border-radius:var(--hfx-radius-status);background:var(--hfx-color-status-neutral-bg);color:var(--hfx-color-status-neutral-fg);
     font:var(--hfx-weight-semibold) var(--hfx-type-caption-size) var(--hfx-font-sans);white-space:nowrap;
     /* The tone's own colour draws the edge, so a pill reads on a row of the same tint. */

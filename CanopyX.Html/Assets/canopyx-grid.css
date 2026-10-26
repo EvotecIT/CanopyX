@@ -192,7 +192,7 @@ background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));color:var(--hfx-
 :where(.cx-chip):is([aria-pressed="true"],.active){border-color:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));background:var(--hfx-color-accent-subtle,light-dark(#e7f1f1,#1b3435));color:var(--hfx-color-accent-text,light-dark(#02726a,#37c9b8));}
 :where(.cx-chip):focus-visible{outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));outline-offset:var(--hfx-focus-offset,2px);}
 :where(.cx-pill,.p-pill){
-display:inline-flex;align-items:center;gap:var(--hfx-space-1,0.25rem);block-size:var(--hfx-badge-height,20px);padding:0 var(--hfx-space-2,0.5rem);
+display:inline-flex;align-items:center;gap:var(--hfx-space-1,0.25rem);block-size:var(--hfx-pill-height,22px);padding:0 var(--hfx-space-2,0.5rem);
 border-radius:var(--hfx-radius-status,999px);background:var(--hfx-color-status-neutral-bg,light-dark(#eeeff0,#2a2c31));color:var(--hfx-color-status-neutral-fg,light-dark(#5b6069,#a0a5ae));
 font:var(--hfx-weight-semibold,600) var(--hfx-type-caption-size,0.75rem) var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);white-space:nowrap;
 outline:var(--hfx-border-width,1px) solid color-mix(in srgb,currentColor 24%,transparent);outline-offset:calc(var(--hfx-border-width,1px)*-1);

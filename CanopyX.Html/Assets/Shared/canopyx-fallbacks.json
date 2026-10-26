@@ -1,5 +1,6 @@
 {
   "--hfx-badge-height": "20px",
+  "--hfx-pill-height": "22px",
   "--hfx-border-width": "1px",
   "--hfx-card-header-height": "calc(52px - var(--cx-compact,0) * 8px)",
   "--hfx-card-padding-x": "calc(20px - var(--cx-compact,0) * 4px)",
