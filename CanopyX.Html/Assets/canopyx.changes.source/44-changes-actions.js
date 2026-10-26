@@ -60,7 +60,7 @@
       const href = action.link === null ? null : changeHref(value(action.link));
       if (action.link !== null && href === null) return null;
       if (action.reveal === "diff" && !item.diff) return null;
-      const control = h(href ? "a" : "button", "cx-chg-action" + (action.icon === "none" || !item ? " cx-chg-textaction" : ""));
+      const control = h(href ? "a" : "button", "cx-btn cx-chg-action" + (action.icon === "none" || !item ? " cx-chg-textaction" : "")); control.dataset.size = "sm";
       if (href) control.href = href; else control.type = "button";
       control._action = action; control._item = item;
       control.setAttribute("data-cx-action", action.id);
@@ -76,7 +76,7 @@
       tools.setAttribute("role", "group"); tools.setAttribute("aria-label", fill(this.labels.changeActions, { name: this.doc.label }));
       for (const action of this.doc.toolbar) { const control = this.actionControl(action, null); if (control) tools.appendChild(control); }
       for (const format of this.doc.exports) {
-        const button = h("button", "cx-chg-action cx-chg-textaction cx-chg-export"); button.type = "button"; button._export = format;
+        const button = h("button", "cx-btn cx-chg-action cx-chg-textaction cx-chg-export"); button.type = "button"; button.dataset.size = "sm"; button._export = format;
         button.append(changeIcon("download"), document.createTextNode(format === "csv" ? this.labels.changeExportCsv : this.labels.changeExportJson));
         tools.appendChild(button);
       }
@@ -134,22 +134,22 @@
       this.panelLife?.abort(); this.panelLife = new AbortController();
       const pending = this.pending, labels = this.labels, signal = this.panelLife.signal, box = h("div", "cx-chg-panel");
       box.setAttribute("role", "group"); box.setAttribute("aria-label", pending.action.label);
-      const cancel = h("button", "cx-chg-action cx-chg-textaction"); cancel.type = "button"; setText(cancel, labels.changeCancel);
+      const cancel = h("button", "cx-btn cx-chg-action cx-chg-textaction"); cancel.type = "button"; cancel.dataset.size = "sm"; setText(cancel, labels.changeCancel);
       cancel.addEventListener("click", () => { const { action, item } = pending; this.pending = null; this.render(); this.focusAction(action, item); }, { signal });
       if (pending.mode === "note") {
-        const text = h("p", "cx-chg-note"), copy = h("button", "cx-chg-action cx-chg-textaction"); copy.type = "button";
+        const text = h("p", "cx-chg-note"), copy = h("button", "cx-btn cx-chg-action cx-chg-textaction"); copy.type = "button"; copy.dataset.size = "sm";
         setText(text, fill(labels.changeUnclaimed, { action: pending.action.label }));
         copy.append(changeIcon("copy"), document.createTextNode(labels.changeCopyRequest));
         copy.addEventListener("click", () => this.copyText(JSON.stringify(pending.detail, null, 2)), { signal });
         const buttons = h("div", "cx-chg-askbtns"); buttons.append(copy, cancel); box.append(text, buttons);
         return box;
       }
-      const id = (this.host.id || "cx-changes") + "-reason-" + this.uid(), field = h("textarea", "cx-chg-reasonbox"), label = h("label", "cx-chg-asklabel"), hint = h("div", "cx-chg-hint");
+      const id = (this.host.id || "cx-changes") + "-reason-" + this.uid(), field = h("textarea", "cx-textarea cx-chg-reasonbox"), label = h("label", "cx-chg-asklabel"), hint = h("div", "cx-chg-hint");
       field.id = id; field.rows = 2; field.maxLength = 1000; field.value = pending.text; field.setAttribute("aria-describedby", id + "-hint");
       label.htmlFor = id; setText(label, labels.changeReason); hint.id = id + "-hint"; setText(hint, fill(labels.changeReasonHint, { action: pending.action.label }));
       const error = h("div", "cx-chg-askerror"); error.setAttribute("role", "alert"); setText(error, pending.error ? labels.changeReasonRequired : "");
       if (pending.error) field.setAttribute("aria-invalid", "true");
-      const confirm = h("button", "cx-chg-action cx-chg-textaction cx-chg-primary"); confirm.type = "button"; setText(confirm, pending.action.label);
+      const confirm = h("button", "cx-btn cx-chg-action cx-chg-textaction cx-chg-primary"); confirm.dataset.variant = "primary"; confirm.dataset.size = "sm"; confirm.type = "button"; setText(confirm, pending.action.label);
       const submit = () => {
         const reason = field.value.trim();
         if (!reason) { pending.error = true; pending.text = field.value; this.render(); this.focusPanel(); return; }

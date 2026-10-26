@@ -25,7 +25,7 @@
       this.bar = h("div", "cx-chg-bar");
       this.list = h("ul", "cx-chg-list"); this.list.setAttribute("aria-label", this.doc.label);
       this.empty = h("div", "cx-chg-empty"); this.empty.hidden = true;
-      this.more = h("button", "cx-chg-more"); this.more.type = "button"; this.more.hidden = true;
+      this.more = h("button", "cx-btn cx-chg-more"); this.more.dataset.size = "sm"; this.more.type = "button"; this.more.hidden = true;
       this.live = h("div", "cx-sr-only"); this.live.setAttribute("aria-live", "polite");
       this.barPanel = h("div", "cx-chg-barpanel");
       root.append(this.bar, this.barPanel, this.list, this.empty, this.more, this.live);
@@ -66,14 +66,14 @@
       for (const kind of CHANGE_KINDS) {
         const count = items.filter(item => item.kind === kind).length;
         if (!count) continue;
-        const button = h("button", "cx-chg-kind"), badge = h("span"), number = h("span", "cx-chg-count");
+        const button = h("button", "cx-chip cx-chg-kind"), badge = h("span"), number = h("span", "cx-chg-count");
         button.type = "button"; button._kind = kind; button.setAttribute("aria-pressed", String(this.kinds.has(kind)));
-        applyTone(badge, "cx-chg-badge", toneOf(CHANGE_TONES[kind])); setText(badge, labels["change" + kind[0].toUpperCase() + kind.slice(1)]);
+        applyTone(badge, "cx-pill cx-chg-badge", toneOf(CHANGE_TONES[kind])); setText(badge, labels["change" + kind[0].toUpperCase() + kind.slice(1)]);
         setText(number, this.format.format(count)); button.append(badge, number); kinds.appendChild(button);
       }
       const children = [kinds], flagged = items.filter(item => item.flags.length).length;
       if (flagged) {
-        const label = h("label", "cx-chg-switch"), box = this.flagSwitch = h("input"), text = h("span");
+        const label = h("label", "cx-chg-switch"), box = this.flagSwitch = h("input", "cx-check"), text = h("span");
         box.type = "checkbox"; box.checked = this.flaggedOnly;
         setText(text, labels.changeFlaggedOnly + " · " + changeCount(labels.changeFlaggedCount, flagged, this.lang, { count: this.format.format(flagged) }));
         label.append(box, text); children.push(label);

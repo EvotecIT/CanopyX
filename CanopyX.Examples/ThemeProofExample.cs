@@ -5,7 +5,7 @@ using CanopyX.Html;
 
 namespace CanopyX.Examples;
 
-/// <summary>The shared controls, a grid and a tree on one page, so a host palette can be checked against all of them at once.</summary>
+/// <summary>The shared controls, a grid, a tree, a calendar, a matrix and a change list on one page, so a host palette can be checked against all of them at once.</summary>
 internal static class ThemeProofExample {
     internal static void Write(string output) {
         var grid = new CanopyDataGridView("proof-grid", "Workspace records") {
@@ -38,8 +38,13 @@ internal static class ThemeProofExample {
         // The page's own layout uses the same fallbacks as the runtime, so it reads correctly without a host stylesheet.
         var page = Regex.Replace(reader.ReadToEnd(), @"var\((--hfx-[a-z0-9-]+)\)", match => values.TryGetValue(match.Groups[1].Value, out var value)
             ? "var(" + match.Groups[1].Value + "," + value + ")" : match.Value);
-        var options = new CanopyHtmlOptions { Height = "420px" };
-        page = page.Replace("{{grid}}", grid.ToHtmlFragment(options)).Replace("{{tree}}", tree.ToHtmlFragment(options))
+        var document = new CanopyHtmlDocument();
+        CanopyHtmlOptions Options(string height) => new CanopyHtmlOptions { Height = height, Document = document };
+        var matrix = MatrixExamples.Services(12);
+        page = page.Replace("{{grid}}", grid.ToHtmlFragment(Options("420px"))).Replace("{{tree}}", tree.ToHtmlFragment(Options("420px")))
+            .Replace("{{calendar}}", CalendarBasicExample.Basic().ToHtmlFragment(Options("560px")))
+            .Replace("{{matrix}}", matrix.ToHtmlFragment(Options("420px")))
+            .Replace("{{changes}}", ChangeViewsExample.List().ToHtmlFragment(Options("480px")))
             .Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
             .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid));
         File.WriteAllText(Path.Combine(output, "theme-proof.html"), page);

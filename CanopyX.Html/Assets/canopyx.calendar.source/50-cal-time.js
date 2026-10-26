@@ -27,7 +27,7 @@
     calResourcePicker() {
       const window = this.calTimeWindow, paging = this.calResourcePages;
       const total = window?.total ?? paging.all.length, size = window?.size ?? paging.size, first = window?.first ?? paging.page * size;
-      const bar = h("div", "cx-cal-rpick"), select = h("select", "cx-cal-rpick-select"), maximum = window ? total - size : Math.floor((total - 1) / size) * size;
+      const bar = h("div", "cx-cal-rpick"), select = h("select", "cx-select cx-cal-rpick-select"), maximum = window ? total - size : Math.floor((total - 1) / size) * size;
       const multiDay = window && window.columns[0].day !== window.columns.at(-1).day;
       const caption = column => this.calFmt.day({ weekday: "short", month: "short", day: "numeric" }, column.day) + " " + column.label;
       const range = at => multiDay ? caption(window.columns[at]) + " – " + caption(window.columns[Math.min(total - 1, at + size - 1)]) :

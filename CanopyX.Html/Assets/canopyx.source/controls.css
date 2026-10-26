@@ -13,9 +13,6 @@
   :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):hover { background:var(--hfx-color-hover); }
   :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):active { background:var(--hfx-color-active); }
   :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
-  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):disabled,:where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close)[aria-disabled="true"] {
-    color:var(--hfx-color-text-disabled);background:var(--hfx-color-surface);border-color:var(--hfx-color-border);cursor:default;
-  }
   :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-variant="primary"],[data-primary],.primary) {
     background:var(--hfx-color-accent);border-color:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast);
   }
@@ -26,6 +23,9 @@
   :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([aria-pressed="true"],.active) {
     border-color:var(--hfx-color-accent);background:var(--hfx-color-accent-subtle);color:var(--hfx-color-accent-text);
   }
+  /* Disabled after the variants, so a disabled primary or danger button reads as unavailable; a ghost one stays frameless. */
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is(:disabled,[aria-disabled="true"]),:where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is(:disabled,[aria-disabled="true"]):hover { color:var(--hfx-color-text-disabled);background:var(--hfx-color-surface);border-color:var(--hfx-color-border);cursor:default; }
+  :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-variant="ghost"],[data-ghost],.ghost):is(:disabled,[aria-disabled="true"]),:where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-variant="ghost"],[data-ghost],.ghost):is(:disabled,[aria-disabled="true"]):hover { background:transparent;border-color:transparent; }
   :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-size="sm"],.sm) { block-size:var(--hfx-control-height-sm);min-block-size:var(--hfx-control-height-sm);padding:0 var(--hfx-space-2); }
   :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-size="lg"],.lg) { block-size:var(--hfx-control-height-lg);min-block-size:var(--hfx-control-height-lg); }
   :where(.cx-btn,.cx-button,.cx-ui-button,[data-cx-open],.cx-overlay-close):is([data-icon],.icon) { inline-size:var(--hfx-control-height-md);padding:0; }

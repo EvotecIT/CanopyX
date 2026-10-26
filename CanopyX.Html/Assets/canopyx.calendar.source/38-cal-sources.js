@@ -10,7 +10,7 @@
       const legend = this.calLegend = h("div", "cx-cal-legend");
       legend.setAttribute("role", "group"); legend.setAttribute("aria-label", this.calLabels.calendarSources);
       for (const source of sources) {
-        const button = h("button", "cx-cal-src"), swatch = h("i", "cx-cal-src-swatch"), text = h("span");
+        const button = h("button", "cx-chip cx-cal-src"), swatch = h("i", "cx-cal-src-swatch"), text = h("span");
         button.type = "button"; button.dataset.cxSource = source.id; button.setAttribute("aria-pressed", String(!this.calHiddenSources.has(source.id)));
         if (source.tone) button.style.setProperty("--cx-ev", toneVariable(source.tone, false, "var(--hfx-color-accent)"));
         if (source.color) button.style.setProperty("--cx-ev", source.color);

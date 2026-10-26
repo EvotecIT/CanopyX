@@ -63,14 +63,15 @@ for (const style of ["evotec", "neutral", "slate", "warm", "contrast"]) for (con
   test(`theme-proof matches its baseline (${style}, ${theme})`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await pinTestFont(page);
+    // The calendar marks today, so the page opens at the same fixed moment as the calendar baselines.
+    await page.clock.setFixedTime(new Date("2026-10-16T10:30:00Z"));
     await page.addInitScript(css => {
       const sheet = new CSSStyleSheet(); sheet.replaceSync(css);
       document.adoptedStyleSheets = [sheet, ...document.adoptedStyleSheets]; addEventListener("DOMContentLoaded", () => document.documentElement.dataset.proofHost = "true", { capture: true, once: true });
     }, hostCss);
     await page.emulateMedia({ reducedMotion: "reduce", colorScheme: theme });
     await page.goto(exampleUrl("theme-proof.html") + `?style=${style}&mode=${theme}`);
-    await page.waitForSelector(".cx-data-grid[data-cx-ready]");
-    await page.waitForSelector(".cx-tree-tools[data-cx-ready]");
+    await page.waitForFunction(() => [...document.querySelectorAll("[data-canopyx-host]")].every(host => host.hasAttribute("data-cx-ready")));
     await nextFrames(page);
     await page.evaluate(() => { scrollTo(0, 0); document.activeElement?.blur?.(); });
     await expect(page).toHaveScreenshot(`theme-proof-${style}-${theme}.png`, { fullPage: true, animations: "disabled", caret: "hide" });

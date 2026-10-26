@@ -69,7 +69,7 @@
     }
     buildTools() {
       const labels = this.labels, tools = this.tools, signal = this.lifetime.signal;
-      const group = this.layoutGroup = h("div", "cx-diff-seg");
+      const group = this.layoutGroup = h("div", "cx-segmented cx-diff-seg"); group.dataset.size = "sm";
       group.setAttribute("role", "radiogroup"); group.setAttribute("aria-label", labels.changeLayout);
       this.layoutButtons = ["inline", "split"].map(mode => {
         const button = h("button", "cx-diff-segbtn"); button.type = "button"; button.setAttribute("role", "radio"); button._mode = mode;
@@ -83,10 +83,10 @@
         return button;
       });
       const button = (label, icon, action, text) => {
-        const element = h("button", "cx-diff-btn"); element.type = "button";
+        const element = h("button", "cx-btn cx-diff-btn"); element.type = "button"; element.dataset.size = "sm";
         element.appendChild(changeIcon(icon));
         // An icon-only button names itself and shows its label as a tooltip on hover and on keyboard focus.
-        if (text) { const name = h("span"); setText(name, label); element.appendChild(name); } else { element.setAttribute("aria-label", label); element.setAttribute("data-cx-tip", label); }
+        if (text) { const name = h("span"); setText(name, label); element.appendChild(name); } else { element.dataset.icon = ""; element.setAttribute("aria-label", label); element.setAttribute("data-cx-tip", label); }
         element.addEventListener("click", action, { signal });
         return element;
       };

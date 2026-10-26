@@ -520,7 +520,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "da5c61ff2cb9ebda",
+      "version": "d579489f471f12e8",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -533,7 +533,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "2810fb06a78b85e3",
+      "version": "3b2551152989cc25",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [
@@ -804,7 +804,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "5d61972e1f56ecba",
+      "version": "cec16b6240faaff8",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -841,7 +841,7 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "version": "29a711a1cfd4be9a",
+      "version": "09747e191820d94c",
       "script": "canopyx-calendar-edit.js",
       "runtimes": [
         "grid"
