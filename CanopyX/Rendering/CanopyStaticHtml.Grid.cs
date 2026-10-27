@@ -63,7 +63,7 @@ public static partial class CanopyStaticHtml {
         return RenderGridRows(view, page.Rows, page.Matched, page.Offset, options);
     }
 
-    private static CanopyStaticHtmlResult RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, int offset, CanopyStaticHtmlOptions? options, IDictionary<string, IDictionary<string, double?>>? footerValues = null) {
+    private static CanopyStaticHtmlResult RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, int offset, CanopyStaticHtmlOptions? options, IDictionary<string, IDictionary<string, double?>>? footerValues = null, bool includeCaption = true) {
         var allRows = view.Source.Kind == CanopyGridSourceKind.Inline ? view.CalculateRows(view.Rows).ToList() : supplied;
         supplied = ReferenceEquals(supplied, view.Rows) ? allRows : view.CalculateRows(supplied).ToList();
         var settings = options ?? new CanopyStaticHtmlOptions();
@@ -73,7 +73,7 @@ public static partial class CanopyStaticHtml {
         var html = new StringBuilder(256 + capacity * 160);
         var printedRows = new List<IReadOnlyList<string>>(capacity);
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append("\">");
-        var caption = settings.Caption ?? view.Label;
+        var caption = includeCaption ? settings.Caption ?? view.Label : string.Empty;
         if (caption.Length != 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
         html.Append("<thead>");
         AppendGridHeader(html, view, columns, styles);
@@ -122,7 +122,7 @@ public static partial class CanopyStaticHtml {
                     if (className != null) html.Append(" class=\"").Append(Encode(className)).Append('"');
                     html.Append(" style=\"").Append(text == null ? styles.Header : styles.InnerHeader)
                         .Append(view.Compare != null ? "white-space:normal;" : string.Empty).Append(Align(columns[index])).Append("\">");
-                    AppendVisibleText(html, ComparisonHeaderText(view, columns[index]), text, true); html.Append("</th>");
+                    AppendVisibleText(html, columns[index].Title, text, true); html.Append("</th>");
                 }
                 index++;
             }

@@ -44,7 +44,7 @@ async function preview(page, input) {
     return { frozen: Object.isFrozen(window.preview.intent), columns: window.preview.intent.columns };
   }, input);
 }
-const region = page => page.getByRole("region", { name: "Preview view changes", exact: true });
+const region = page => page.getByRole("region", { name: "Proposed changes", exact: true });
 const query = page => page.evaluate(`${api}.getQuery()`);
 
 test("applyViewIntent previews safely, snapshots caller input and applies exactly once from keyboard", async ({ page }) => {
@@ -53,8 +53,8 @@ test("applyViewIntent previews safely, snapshots caller input and applies exactl
   await page.evaluate(() => { window.input = { protocol: "canopyx/2", type: "viewIntent", version: 1, view: "intent-grid",
     query: { filters: [{ column: "amount", operator: "ge", values: [3] }], sort: [{ column: "amount", direction: "desc" }] }, columns: ["amount", "name"] }; });
   await page.evaluate(`(async()=>{window.preview = await ${api}.applyViewIntent(window.input, document.querySelector('#preview')); window.input.query.filters[0].values[0] = 100; window.input.columns[0] = 'secret';})()`);
-  await expect(region(page)).toContainText("Amount ≥ 3");
-  await expect(region(page)).toContainText("Columns: Amount, Name");
+  await expect(region(page)).toContainText("Amount at least 3");
+  await expect(region(page)).toContainText("Show columns: Amount, Name");
   expect(await query(page)).toEqual(before);
   expect(await page.evaluate("queryCalls.length")).toBe(1);
   expect(await page.evaluate("Object.isFrozen(preview.intent.query.filters[0].values)")).toBe(true);
@@ -74,7 +74,8 @@ test("applyViewIntent previews safely, snapshots caller input and applies exactl
   expect(surface.background).not.toBe("rgba(0, 0, 0, 0)");
   expect(surface.framedChildren).toBe(0);
   await apply.focus(); await apply.press("Enter");
-  await expect(region(page).getByRole("status")).toHaveText("View changes applied.");
+  await expect(region(page)).toHaveCount(0);
+  await expect(page.locator(".cx-sr-only[role=status]")).toHaveText("View changes applied.");
   expect((await query(page)).filters).toEqual([predicate("amount", "ge", 3)]);
   expect(await page.evaluate(`${api}.getState().columns.filter(column=>!column.hidden).map(column=>column.id)`)).toEqual(["amount", "name"]);
   expect(await page.evaluate("queryCalls.length")).toBe(2);
@@ -341,4 +342,26 @@ test("exporting a view intent waits for a settled accepted host query", async ({
   })).toBe(true);
   await page.evaluate(async () => { window.holdQuery = false; window.releaseQuery(); await window.pendingExportQuery; });
   expect((await page.evaluate(`${api}.getViewIntent()`)).query.search).toBe("new");
+});
+
+
+test("proposal descriptions contain only changed aspects in plain words and keep stale panels dismissible", async ({ page }) => {
+  await open(page);
+  await page.evaluate(async () => {
+    const grid = document.querySelector("[data-canopyx-host]").canopyx;
+    window.preview = await grid.applyViewIntent(await grid.getViewIntent(), document.querySelector("#preview"));
+  });
+  await expect(region(page).locator(".cx-grid-chip")).toHaveCount(0);
+  await expect(region(page)).toContainText("This view is already selected.");
+  await preview(page, intent({ filters: [predicate("amount", "le", 12)], sort: [{ column: "amount", direction: "desc" }],
+    groupBy: [{ column: "name", direction: "asc" }] }, { columns: ["name", "amount", "date", "secret"] }));
+  await expect(region(page)).toContainText("Amount at most 12");
+  await expect(region(page)).toContainText("Sort by Amount descending");
+  await expect(region(page)).toContainText("Group rows by Name (ascending)");
+  const text = await region(page).innerText();
+  expect(text).not.toMatch(/∅|≤|≥|↑|↓|Show columns|Show records/);
+  await page.evaluate(`${api}.setQuery({search:'Record'})`);
+  await expect(region(page).getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
+  const cancel = region(page).getByRole("button", { name: "Cancel", exact: true });
+  await expect(cancel).toBeEnabled(); await cancel.click(); await expect(region(page)).toHaveCount(0);
 });

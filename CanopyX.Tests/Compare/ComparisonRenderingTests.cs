@@ -44,17 +44,17 @@ public sealed class ComparisonRenderingTests {
         view.Labels.CompareChanged = "Changed translated"; view.Labels.CompareUnchanged = "Unchanged translated";
         var html = CanopyStaticHtml.RenderComparison(view);
         Assert.Contains("&lt;Comparison&gt;", html); Assert.Contains("&lt;Value&gt;", html);
-        Assert.Contains("Before: &lt;script&gt;old&lt;/script&gt; → After: &lt;img", html);
+        Assert.Contains("<del>&lt;script&gt;old&lt;/script&gt;</del> → <ins style=\"text-decoration:none;\">&lt;img", html);
         Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("<img", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("<style", html, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("style=\"", html);
-        Assert.Contains("Added translated: 1", html); Assert.Contains("Removed translated: 1", html);
-        Assert.Contains("Changed translated: 1", html); Assert.Contains("Unchanged translated: 1", html);
-        Assert.Contains("Before: former → After: —", html);
+        Assert.Contains("1 Added translated", html); Assert.Contains("1 Removed translated", html);
+        Assert.Contains("1 Changed translated", html); Assert.Contains("1 Unchanged translated", html);
+        Assert.Contains(">former</td>", html);
         Assert.Contains("Changed translated</td>", html);
         Assert.Contains("Unchanged translated</td>", html);
-        Assert.Contains("<Value> · 1", System.Net.WebUtility.HtmlDecode(html));
+        Assert.Contains("<Value>: 1 changed cell", System.Net.WebUtility.HtmlDecode(html));
         Assert.DoesNotContain("{column}", html);
         Assert.DoesNotContain("{count}", html);
     }
@@ -69,11 +69,11 @@ public sealed class ComparisonRenderingTests {
             new CanopyColumn("number", "Amount") { Kind = CanopyColumnKind.Number, Format = CanopyGridNumberFormat.Fixed(2, suffix: " units") }
         });
         var html = CanopyStaticHtml.RenderComparison(view);
-        Assert.Contains("Before: — → After: null", html);
-        Assert.Contains("Before: &quot;&quot; → After: null", html);
-        Assert.Contains("Before: 10.00 units → After: 20.00 units", html);
+        Assert.Contains("<del>—</del> → <ins style=\"text-decoration:none;\">null", html);
+        Assert.Contains("<del>&quot;&quot;</del> → <ins style=\"text-decoration:none;\">null", html);
+        Assert.Contains("<del>10.00 units</del> → <ins style=\"text-decoration:none;\">20.00 units", html);
         var captured = CanopyStaticHtml.RenderGridWithResult(view);
-        Assert.Contains("Before: 10.00 units → After: 20.00 units", captured.Rows[0]);
+        Assert.Contains("10.00 units → 20.00 units", captured.Rows[0]);
     }
 
     [Fact]
@@ -84,11 +84,26 @@ public sealed class ComparisonRenderingTests {
         var view = result.ToView("comparison", "Comparison", new[] { new CanopyColumn("value", "Value") }, onlyChanges: true);
         var html = CanopyStaticHtml.RenderComparison(view, new CanopyStaticHtmlOptions { MaxRows = 1 });
         Assert.DoesNotContain("hidden unchanged", html);
-        Assert.Contains("Unchanged: 1", html); Assert.Contains("Added: 1", html); Assert.Contains("Removed: 1", html);
-        Assert.Contains("Before: former", html);
+        Assert.Contains("1 Unchanged", html); Assert.Contains("1 Added", html); Assert.Contains("1 Removed", html);
+        Assert.Contains(">former</td>", html);
         Assert.Equal(3, view.Rows.Count);
         Assert.Contains("Showing 1 of 2 rows.", html);
         Assert.DoesNotContain(">added</td>", html);
+    }
+
+    [Fact]
+    public void StaticComparison_OmitsZeroCountsAndUsesPluralFormsWithoutChangingTitles() {
+        var before = new[] { DatasetComparisonTests.Row("one", "old"), DatasetComparisonTests.Row("two", "same") };
+        var after = new[] { DatasetComparisonTests.Row("one", "new"), DatasetComparisonTests.Row("two", "same") };
+        var view = CanopyDatasetComparer.Compare(before, after).ToView("comparison", "Inventory", new[] { new CanopyColumn("value", "Value") });
+        var html = CanopyStaticHtml.RenderComparison(view);
+        Assert.Contains("Value: 1 changed cell</span>", html);
+        Assert.DoesNotContain("0 Added", html); Assert.DoesNotContain("0 Removed", html);
+        Assert.DoesNotContain("1 changed cells", html);
+        Assert.Equal("Value", view.Columns[1].Title);
+        Assert.True(html.IndexOf("Inventory", StringComparison.Ordinal) < html.IndexOf("1 Changed", StringComparison.Ordinal));
+        var unchanged = CanopyDatasetComparer.Compare(after, after).ToView("unchanged", "Inventory", new[] { new CanopyColumn("value", "Value") });
+        Assert.DoesNotContain("changed cell", CanopyStaticHtml.RenderComparison(unchanged));
     }
 
     [Fact]

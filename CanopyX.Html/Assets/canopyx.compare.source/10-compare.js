@@ -1,4 +1,4 @@
-const COMPARE_LABELS = {compareSummary: "Dataset comparison", compareAdded: "Added", compareRemoved: "Removed", compareChanged: "Changed", compareUnchanged: "Unchanged", compareOnlyChanges: "Only changes", compareColumnChanges: "{column}: {count} changed cells"};
+const COMPARE_LABELS = {compareSummary: "Dataset comparison", compareAdded: "Added", compareRemoved: "Removed", compareChanged: "Changed", compareUnchanged: "Unchanged", compareOnlyChanges: "Changed only", compareColumnChanges: "[one]{column}: {count} changed cell[other]{column}: {count} changed cells", compareChanges: "Changes"};
 // Comparison controls use the ordinary query contract, so hosts, saved views and exports see the same scope.
 function compareDefinition(grid) {
   const value = grid.view.compare, columns = new Set(grid.columns.map(column => column.id));
@@ -38,12 +38,18 @@ Object.assign(DataGrid.prototype, {
     const status = this.columns.find(column => column.id === info.statusColumn);
     if (!status.render) status.render = (row, element) => {
       const state = cellValue(row.cells[status.id]), label = this.labels["compare" + String(state)[0]?.toUpperCase() + String(state).slice(1)];
+      element.closest(".cx-row")?.classList.toggle("cx-compare-removed-row", state === "removed");
       const badge = h("span", "cx-compare-status cx-compare-" + state); setText(badge, label || state); element.append(badge); return true;
     };
+    const details = h("div", "cx-compare-column-counts");
     for (const column of this.columns) {
       const count = Object.hasOwn(info.columns, column.id) ? info.columns[column.id] : 0;
-      if (count) { column.title += " · " + number.format(count); column.headerDescription = fill(this.labels.compareColumnChanges, { column: column.title, count: number.format(count) }); }
+      if (!count) continue;
+      const caption = fill(plural(this.labels.compareColumnChanges, count, this.lang), { column: column.title, count: number.format(count) });
+      column.headerDescription = [column.headerDescription, caption].filter(Boolean).join(". ");
+      const item = h("span"); setText(item, caption); details.append(item);
     }
+    details.hidden = !details.firstChild; strip.append(details); this.host.classList.add("cx-compare-view");
     this.buildHeader();
     if (info.onlyChanges) {
       const query = this.view.query || {};

@@ -30,7 +30,7 @@ test("pivot intent previews without a query then activates, changes axes and val
   const initial = await page.evaluate(api + ".getQuery()");
   await preview(page, proposal({ pivot: pivot() }));
   expect(await state(page)).toBeNull(); expect(await page.evaluate(api + ".getQuery()")).toEqual(initial);
-  await expect(page.locator(".cx-view-intent-preview")).toContainText("Row groups: Region");
+  await expect(page.locator(".cx-view-intent-preview")).toContainText("Switch to pivot: Region");
   await page.evaluate("preview.apply()");
   await expect(page.locator(".cx-pivot-table")).toBeVisible();
   expect((await state(page)).rows[0].column).toBe("region");
@@ -42,6 +42,12 @@ test("pivot intent previews without a query then activates, changes axes and val
   expect(result.rows.some(node => node.path[0] === "Open")).toBe(true);
   expect(result.columns.some(node => node.path[0] === "North")).toBe(true);
   expect(result.definition.values).toEqual(["orders"]);
+  await preview(page, proposal({ pivot: { ...pivot("status", "region", ["orders"]), maxColumns: 1 } }));
+  await expect(page.locator(".cx-view-intent-preview")).toContainText("Column groups: 1");
+  await page.evaluate("preview.cancel()");
+  await preview(page, proposal({ pivot: { ...pivot("status", "region", ["orders"]), maxColumns: 200 } }));
+  await expect(page.locator(".cx-view-intent-preview .cx-grid-chip")).toHaveCount(0);
+  await page.evaluate("preview.cancel()");
   const exported = await page.evaluate(api + ".getViewIntent()");
   expect(exported.pivot.values).toEqual(["orders"]); expect(exported.pivot.active).toBeUndefined();
   await preview(page, proposal({ pivot: false })); await page.evaluate("preview.apply()");
@@ -62,7 +68,7 @@ test("bucket grouping and pivot chips roundtrip canonical analysis definitions",
     sortByTotal: { aggregate: "orders", direction: "desc" } } });
   await preview(page, input);
   await expect(page.locator(".cx-view-intent-preview")).toContainText("Month, UTC");
-  await expect(page.locator(".cx-view-intent-preview")).toContainText("7");
+  await expect(page.locator(".cx-view-intent-preview")).toContainText("Sort by Orders descending");
   await page.evaluate("preview.apply()");
   expect((await page.evaluate(api + ".getViewIntent()")).pivot).toEqual(input.pivot);
 });
@@ -117,8 +123,8 @@ for (const locale of ["pl", "de", "es", "fr", "it"]) test(`pivot preview uses ${
   const count = await page.evaluate("intentQueries.length");
   const source = JSON.parse(fs.readFileSync(path.join(repo, "CanopyX/Views/Locales/labels.json"), "utf8"));
   await preview(page, proposal({ pivot: pivot() }));
-  await expect(page.locator(".cx-view-intent-preview")).toContainText(source.GridPivotRows[["pl", "de", "es", "fr", "it"].indexOf(locale)]);
-  await expect(page.locator(".cx-view-intent-preview")).toContainText(source.GridPivotValues[["pl", "de", "es", "fr", "it"].indexOf(locale)]);
+  await expect(page.locator(".cx-view-intent-preview")).toContainText(source.ViewIntentPivot[["pl", "de", "es", "fr", "it"].indexOf(locale)].split("{rows}")[0]);
+  await expect(page.locator(".cx-view-intent-preview")).toContainText(source.ViewIntentAscending[["pl", "de", "es", "fr", "it"].indexOf(locale)]);
   await page.evaluate("preview.cancel()");
   expect(await page.evaluate("intentQueries.length")).toBe(count); expect(requests).toEqual([]); expect(errors).toEqual([]);
 });

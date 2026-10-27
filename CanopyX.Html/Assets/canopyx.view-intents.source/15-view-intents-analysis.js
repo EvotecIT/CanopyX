@@ -28,26 +28,6 @@
       bucket.kind === "edges" ? ": " + bucket.edges.join(", ") :
         ", " + (bucket.timeZone || "UTC") + (bucket.firstWeekday === undefined ? "" : ", " + bucket.firstWeekday)) + ")";
   }
-  function viewIntentPivotChips(grid, input) {
-    const labels = grid.labels;
-    if (input === false) return [labels.gridPivot + ": " + labels.gridPivotFlat];
-    const column = id => grid.view.columns.find(column => column.id === id)?.title || id;
-    const level = value => column(value.column) + (value.direction === "desc" ? " ↓" : " ↑") + viewIntentBucketCaption(grid, value.bucket);
-    const aggregate = id => grid.view.reporting.aggregates.find(value => value.id === id)?.label || id;
-    const chips = [labels.gridPivotRows + ": " + (input.rows.map(level).join(", ") || "∅"),
-      labels.gridPivotColumns + ": " + (input.columns.map(level).join(", ") || "∅"),
-      labels.gridPivotValues + ": " + input.values.map(aggregate).join(", "),
-      labels.gridPivotColumns + " ≤ " + (input.maxColumns ?? 200)];
-    if (input.topNColumns !== undefined) chips.push(labels.gridPivotTopN + ": " + input.topNColumns);
-    if (input.sortByTotal) chips.push(labels.gridPivotSort + ": " + aggregate(input.sortByTotal.aggregate) +
-      (input.sortByTotal.direction === "desc" ? " ↓" : " ↑"));
-    return chips;
-  }
-  function viewIntentTupleChips(grid, tuples) {
-    const column = id => grid.view.columns.find(column => column.id === id)?.title || id;
-    return tuples.map(tuple => "(" + tuple.columns.map(field => column(field.column) + viewIntentBucketCaption(grid, field.bucket)).join(", ") +
-      ") " + (tuple.exclude ? "∉" : "∈") + " " + tuple.values.map(row => "(" + row.map(value => value === null ? "null" : JSON.stringify(value)).join(", ") + ")").join(", "));
-  }
   function viewIntentBucketShape(input) {
     if (input === undefined) return;
     viewIntentObject(input, ["kind", "width", "origin", "edges", "timeZone", "firstWeekday"], "intent bucket");

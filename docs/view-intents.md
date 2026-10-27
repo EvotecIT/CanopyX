@@ -28,7 +28,9 @@ one-use operation that applies the captured state through the existing query and
 closes it without changing the view. `previewViewIntent(state, element)` places the same preview in a connected host
 element outside the grid rows. The default preview sits immediately after the grid host, so a fixed-height grid
 retains its full data viewport. An explicit container keeps the placement supplied by the host. The preview preserves
-outside focus and supports keyboard Apply and Cancel.
+outside focus and supports keyboard Apply and Cancel. Descriptions name only differences from the current validated
+view, in plain words. Successful Apply dismisses the panel and announces the result through a live region; failed or
+superseded proposals retain a working Cancel control.
 
 `await grid.getViewIntent()` exports the accepted query, ordered visible columns and the pivot definition for opted-in views. `await grid.validateViewIntent(input)`
 returns a validated snapshot without making a query or changing preferences. Exported intents omit paging cursors,
@@ -80,8 +82,8 @@ const preview = await grid.applyViewIntent({
 });
 ```
 
-Preview chips name both axes, values, bucket settings and explicit caps before Apply. They use the reporting view's
-localized labels. The target's existing pivot and group validators check column capabilities, aggregate identities and
+Preview descriptions name changed axes, values and bucket settings before Apply, using the reporting view's
+localized labels. Unchanged columns, an already inactive pivot and unused internal limits do not add chips. The target's existing pivot and group validators check column capabilities, aggregate identities and
 bucket bounds. Bucket predicates and exact correlated `tupleFilters` from pivot drill-through also roundtrip;
 `tupleFilters: []` clears those predicates without broadening other criteria. Exported snapshots always include that
 array, so replaying an unrestricted export clears newer drill-through restrictions. Raw datetime operands in intents

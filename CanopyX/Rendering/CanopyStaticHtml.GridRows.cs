@@ -58,7 +58,8 @@ public static partial class CanopyStaticHtml {
             html.Append('>');
             AppendFormatBefore(html, paint, outcome?.Row, first, styles, text);
             if (paint?.BarValue == false) html.Append("<span style=\"position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;\">");
-            AppendVisibleText(html, GridPresenterText(view, row, column, cell), text);
+            if (!AppendComparisonCell(html, text, view, row, column, cell))
+                AppendVisibleText(html, GridPresenterText(view, row, column, cell), text);
             if (cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
             if (paint?.BarValue == false) html.Append("</span>");
             AppendFormatAfter(html, paint, outcome?.Row, first, styles, text);

@@ -973,6 +973,7 @@
         "h",
         "setText",
         "fill",
+        "plural",
         "cellValue",
         "numberFormat",
         "gridQueryStart",

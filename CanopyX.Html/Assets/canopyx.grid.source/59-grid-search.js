@@ -75,7 +75,7 @@
       });
       query.filters.forEach((filter, index) => {
         const column = this.columns.find(item => item.id === filter.column), name = GRID_FILTER_LABELS[filter.operator] || filter.operator;
-        const condition = column.title + " " + (this.labels[name] || name) + (filter.values.length ? " " + filter.values.join(", ") : "");
+        const condition = this.filterCaption?.(filter) || column.title + " " + (this.labels[name] || name) + (filter.values.length ? " " + filter.values.join(", ") : "");
         chip(condition, fill(this.labels.gridRemoveCondition, { condition }), "filter-" + index, () => {
           const filters = this.queryForChange().filters.slice(), at = filters.findIndex(item => JSON.stringify(item) === JSON.stringify(filter));
           if (at >= 0) { filters.splice(at, 1); apply({ filters }); }

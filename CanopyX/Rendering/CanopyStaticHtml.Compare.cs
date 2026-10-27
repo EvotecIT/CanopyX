@@ -22,28 +22,35 @@ public static partial class CanopyStaticHtml {
         var styles = new CanopyStaticStyles(settings);
         var labels = view.Labels;
         var html = new StringBuilder();
-        html.Append("<div style=\"").Append(styles.Note).Append("\">").Append(Encode(labels.CompareSummary)).Append(": ");
+        var caption = settings.Caption ?? view.Label;
+        if (caption.Length != 0) html.Append("<h2 style=\"").Append(styles.ComparisonHeading).Append("margin:0;\">").Append(Encode(caption)).Append("</h2>");
+        html.Append("<div role=\"group\" aria-label=\"").Append(Encode(labels.CompareSummary)).Append("\" style=\"").Append(styles.Note).Append("\">");
         var counts = info.Counts;
         var names = new[] { labels.CompareAdded, labels.CompareRemoved, labels.CompareChanged, labels.CompareUnchanged };
         var values = new[] { counts.Added, counts.Removed, counts.Changed, counts.Unchanged };
+        var firstCount = true;
         for (var index = 0; index < names.Length; index++) {
-            if (index > 0) html.Append(" · ");
-            html.Append(Encode(names[index])).Append(": ").Append(values[index].ToString("N0", settings.Culture));
+            if (values[index] == 0) continue;
+            if (!firstCount) html.Append(" · ");
+            firstCount = false;
+            html.Append("<span style=\"white-space:nowrap;\">").Append(values[index].ToString("N0", settings.Culture)).Append(" ").Append(Encode(names[index])).Append("</span>");
         }
-        html.Append("</div><div style=\"").Append(styles.Note).Append("\">");
+        if (firstCount) html.Append(Encode(labels.GridNoData));
+        html.Append("</div>");
         var first = true;
         foreach (var column in view.Columns) {
-            if (!info.Columns.TryGetValue(column.Id, out var count)) continue;
-            if (!first) html.Append(" · ");
+            if (!info.Columns.TryGetValue(column.Id, out var count) || count == 0) continue;
+            if (first) html.Append("<div style=\"").Append(styles.Note).Append("\">");
+            else html.Append(" · ");
             first = false;
-            html.Append(Encode(labels.CompareColumnChanges.Replace("{column}", column.Title)
-                .Replace("{count}", count.ToString("N0", settings.Culture))));
+            html.Append("<span style=\"white-space:nowrap;\">").Append(Encode(CanopyPlural.Pick(labels.CompareColumnChanges, count, settings.Culture).Replace("{column}", column.Title)
+                .Replace("{count}", count.ToString("N0", settings.Culture)))).Append("</span>");
         }
-        html.Append("</div>");
-        if (!info.OnlyChanges) return html.Append(RenderGrid(view, options: settings)).ToString();
+        if (!first) html.Append("</div>");
+        if (!info.OnlyChanges) return html.Append(RenderGridRows(view, view.Rows, view.Rows.Count, 0, settings, includeCaption: false).Html).ToString();
         var rows = new System.Collections.Generic.List<CanopyGridRow>();
         foreach (var row in view.Rows) if (!row.Cells.TryGetValue(info.StatusColumn, out var status) || !Equals(status?.Value, "unchanged")) rows.Add(row);
-        return html.Append(RenderGridRows(view, rows, rows.Count, 0, settings).Html).ToString();
+        return html.Append(RenderGridRows(view, rows, rows.Count, 0, settings, includeCaption: false).Html).ToString();
     }
 
     private static string ComparisonStatusText(CanopyDatasetCompareInfo info, CanopyColumn column, CanopyCell? cell, CanopyLabels labels) {
@@ -55,10 +62,23 @@ public static partial class CanopyStaticHtml {
         };
     }
 
-    private static string ComparisonHeaderText(CanopyDataGridView view, CanopyColumn column) =>
-        view.Compare != null && view.Compare.Columns.TryGetValue(column.Id, out var count) && count > 0
-            ? column.Title + " · " + count.ToString(CultureInfo.InvariantCulture)
-            : column.Title;
+    // Only compared cells use this compact HTML; captures retain the same complete plain-text values.
+    private static bool AppendComparisonCell(StringBuilder html, StringBuilder text, CanopyDataGridView view,
+        CanopyGridRow row, CanopyColumn column, CanopyCell? cell) {
+        if (view.Compare == null || column.Presenter?.BeforeAfterValues != true || cell?.Changes.Count == 0 || cell == null) return false;
+        if (row.Cells.TryGetValue(view.Compare.StatusColumn, out var status) && Equals(status.Value, "removed")) return false;
+        var first = true;
+        foreach (var change in cell.Changes) {
+            if (!first) { html.Append("; "); text.Append("; "); }
+            first = false;
+            var before = ComparisonValueText(change.Before, column, view.Labels);
+            var after = ComparisonValueText(change.After, column, view.Labels);
+            html.Append("<span style=\"white-space:nowrap;\"><del>").Append(Encode(before))
+                .Append("</del> → <ins style=\"text-decoration:none;\">").Append(Encode(after)).Append("</ins></span>");
+            text.Append(before).Append(" → ").Append(after);
+        }
+        return true;
+    }
 
     private static string BeforeAfterText(CanopyFieldChange change, CanopyColumn column, CanopyLabels labels) =>
         labels.RecordBefore + ": " + ComparisonValueText(change.Before, column, labels) + " → " +

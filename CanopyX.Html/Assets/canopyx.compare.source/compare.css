@@ -16,3 +16,25 @@
 .cx-before-after ins { color:var(--hfx-color-status-good-fg); text-decoration:none; overflow-wrap:anywhere; }
 @media(max-width:480px) { .cx-compare-summary { padding:var(--hfx-space-3); gap:calc(var(--hfx-space-1)*3.5); } .cx-compare-counts { gap:var(--hfx-space-2) var(--hfx-space-4); } .cx-compare-toggle { min-height:calc(var(--hfx-space-1)*7); } }
 @media print { .cx-compare-toggle { display:none; } .cx-compare-summary { break-inside:avoid; } }
+
+.cx-compare-column-counts { display:flex;flex-wrap:wrap;gap:var(--hfx-space-1) var(--hfx-space-4);flex-basis:100%;color:var(--hfx-color-text-secondary);font-size:var(--hfx-type-caption-size); }
+.cx-compare-column-counts > span { white-space:nowrap; }
+.cx-compare-column-counts[hidden] { display:none; }
+.cx-compare-view.cx-phone .cx-phone-fields { gap:var(--hfx-space-1) var(--hfx-space-2); }
+.cx-compare-view.cx-phone .cx-phone-fields > .cx-hidden-fields { margin-inline-start:0; }
+.cx-compare-view.cx-phone .cx-phone-field { overflow:visible; }
+.cx-compare-view.cx-phone .cx-phone-value { white-space:normal;overflow:visible; }
+/* The host's physical height must yield to the shared overlay's viewport geometry. */
+body .cx-host.cx-compare-drawer { height:var(--cx-ui-viewport-block);min-height:0;padding:0;border-radius:var(--hfx-radius-none); }
+.cx-compare-drawer .cx-drawer-body { padding-block:var(--hfx-space-3); }
+.cx-compare-drawer .cx-record-section { margin:0; }
+.cx-compare-drawer .cx-drawer-body .cx-dl { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:var(--hfx-space-3) var(--hfx-space-4);margin:0;padding:var(--hfx-space-3) 0; }
+.cx-compare-drawer .cx-dl dt { font-size:var(--hfx-type-small-size);color:var(--hfx-color-text-secondary); }
+.cx-compare-drawer .cx-dl dd { margin:0; }
+.cx-compare-record-changes { margin:0;padding:0 0 var(--hfx-space-3);border-bottom:var(--hfx-border-width) solid var(--hfx-color-border); }
+.cx-compare-record-changes h3 { margin:0;font-size:var(--hfx-type-heading-size); }
+.cx-compare-drawer[data-phone="true"] .cx-dl { grid-template-columns:minmax(0,1fr);gap:var(--hfx-space-1); }
+.cx-compare-drawer[data-phone="true"] .cx-dl dd { margin-block-end:var(--hfx-space-2); }
+@media (forced-colors:active) { .cx-before-after del { color:CanvasText; } .cx-before-after ins { color:CanvasText; } }
+
+.cx-compare-removed-row .cx-before-after del { color:var(--hfx-color-text-muted); }

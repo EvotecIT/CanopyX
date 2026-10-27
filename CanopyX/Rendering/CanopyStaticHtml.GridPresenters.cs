@@ -8,6 +8,8 @@ public static partial class CanopyStaticHtml {
     private static string GridPresenterText(CanopyDataGridView view, CanopyGridRow row, CanopyColumn column, CanopyCell? cell) {
         var presenter = column.Presenter;
         if (view.Compare != null && column.Id == view.Compare.StatusColumn) return ComparisonStatusText(view.Compare, column, cell, view.Labels);
+        if (view.Compare != null && row.Cells.TryGetValue(view.Compare.StatusColumn, out var status) && Equals(status.Value, "removed") && cell?.Changes.Count > 0)
+            return ComparisonValueText(cell.Changes[0].Before, column, view.Labels);
         if (presenter?.BeforeAfterValues == true && cell?.Changes.Count > 0)
             return string.Join("; ", cell.Changes.Select(change => BeforeAfterText(change, column, view.Labels)));
         var text = cell?.DisplayText(column, view.Labels) ?? string.Empty;

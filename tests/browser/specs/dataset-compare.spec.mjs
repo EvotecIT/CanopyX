@@ -91,8 +91,8 @@ for (const [width, file, theme] of [[1440, "data-views.html", "light"], [390, "d
       await expect(summary.locator(".cx-compare-" + status + " strong")).toHaveText(String(count));
     if (width > 640) {
       const titles = await host(page).getByRole("columnheader").allTextContents();
-      expect(titles.some(title => title.includes("Stage · 1"))).toBe(true);
-      expect(titles.some(title => title.includes("Units · 1"))).toBe(true);
+      expect(titles.some(title => title.includes("Stage"))).toBe(true);
+      expect(titles.some(title => title.includes("Units"))).toBe(true);
       await expect(row(page, "a").locator("del")).toHaveText("24");
       await expect(row(page, "a").locator("ins")).toHaveText("32");
       await expect(row(page, "b").locator("del")).toHaveText("Paused");
@@ -105,27 +105,32 @@ for (const [width, file, theme] of [[1440, "data-views.html", "light"], [390, "d
       const columns = host(page).locator(".cx-grid-columns"), summary = columns.locator(":scope > summary");
       if (!await summary.isVisible()) await host(page).locator(".cx-grid-overflow > summary").click();
       await summary.click();
-      await expect(columns.getByRole("checkbox", { name: "Stage · 1", exact: true })).toBeChecked();
-      await expect(columns.getByRole("checkbox", { name: "Units · 1", exact: true })).toBeChecked();
+      await expect(columns.getByRole("checkbox", { name: "Stage", exact: true })).toBeChecked();
+      await expect(columns.getByRole("checkbox", { name: "Units", exact: true })).toBeChecked();
       await page.evaluate(() => compareGrid.closeMenus());
-      // Structured change cells open the record panel's labelled Before/After table in the native drawer.
+      await expect(row(page, "a").locator(".cx-phone-field del")).toHaveText("24");
+      await expect(row(page, "a").locator(".cx-phone-field ins")).toHaveText("32");
       const disclosure = row(page, "a").locator(".cx-hidden-fields");
-      await expect(disclosure).toHaveAttribute("title", /Units · 1/);
+      await expect(disclosure).toHaveAttribute("title", "Location, Stage");
       await disclosure.click();
       const drawer = page.locator("dialog.cx-drawer[open]");
       await expect(drawer).toBeVisible();
-      const changes = drawer.locator('.cx-record-block-b[data-cx-field="units"] .cx-record-diff');
-      await expect(changes.getByRole("columnheader")).toHaveText(["Field", "Before", "After"]);
-      const units = changes.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Units", exact: true }) });
-      await expect(units.getByRole("cell")).toHaveText(["24", "32"]);
+      await expect(drawer).toHaveAttribute("aria-modal", "true");
+      const changes = drawer.locator(".cx-compare-record-changes");
+      await expect(changes.getByRole("heading")).toHaveText("Changes");
+      await expect(changes.locator("dt")).toHaveText("Units");
+      await expect(changes.locator("del")).toHaveText("24");
+      await expect(changes.locator("ins")).toHaveText("32");
+      expect(await drawer.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThan(880);
       await page.keyboard.press("Escape");
       await expect(drawer).toHaveCount(0);
       await expect(row(page, "b").locator(".cx-phone-field del")).toHaveText("Paused");
       await expect(row(page, "b").locator(".cx-phone-field ins")).toHaveText("Active");
     }
-    const toggle = summary.getByRole("switch", { name: "Only changes" });
+    const toggle = summary.getByRole("switch", { name: "Changed only" });
     await expect(toggle).not.toBeChecked();
     await toggle.check();
+    await expect(host(page).locator(".cx-chip-label")).toContainText("Changed only");
     await expect.poll(() => ids(page)).toEqual(["a", "b", "d", "e"]);
     expect(await page.evaluate(() => compareGrid.getOnlyChanges())).toBe(true);
     await expect(toggle).toBeEnabled();
@@ -148,7 +153,7 @@ test("before-after cells preserve text, typed numbers and dates, null endpoints 
   await expect(cell(page, "nulls", 2).locator("del")).toHaveText("—");
   await expect(cell(page, "nulls", 2).locator("ins")).toHaveText("0");
   await expect(cell(page, "removed", 1).locator("del")).toHaveText("Retired");
-  await expect(cell(page, "removed", 1).locator("ins")).toHaveText("—");
+  await expect(cell(page, "removed", 1).locator("ins")).toHaveCount(0);
   await expect(cell(page, "added", 1)).toHaveText("New item");
   await expect(cell(page, "stable", 1)).toHaveText("Stable item");
 });
@@ -158,7 +163,7 @@ test("reset view restores declared only-changes mode after mounting and after re
   const view = definition(); view.compare.onlyChanges = true;
   await mount(page, view);
   const changedIds = ["added", "nulls", "removed", "typed"];
-  const toggle = host(page).getByRole("switch", { name: "Only changes" });
+  const toggle = host(page).getByRole("switch", { name: "Changed only" });
   await expect.poll(async () => (await ids(page)).sort()).toEqual(changedIds);
   await page.evaluate(() => compareGrid.resetView());
   await expect.poll(async () => (await ids(page)).sort()).toEqual(changedIds);
@@ -210,11 +215,11 @@ test("change endpoints distinguish missing, explicit null, empty text, zero and 
       await page.evaluate(id => compareGrid.openDetails(id), item.id);
       const drawer = page.locator("dialog.cx-drawer[open]");
       await expect(drawer).toBeVisible();
-      const changes = drawer.locator('.cx-record-block-b[data-cx-field="' + (item.numeric ? "numeric" : "endpoint") + '"] .cx-record-diff');
-      await expect(changes.locator("caption")).toHaveText("Changed fields: 1");
-      await expect(changes.getByRole("columnheader")).toHaveText(["Field", "Before", "After"]);
-      const change = changes.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Endpoint", exact: true }) });
-      await expect(change.getByRole("cell")).toHaveText(item.text);
+      const changes = drawer.locator(".cx-compare-record-changes");
+      await expect(changes.getByRole("heading")).toHaveText("Changes");
+      const change = changes.locator('dd[data-cx-field="' + (item.numeric ? "numeric" : "endpoint") + '"]');
+      await expect(change.locator("del")).toHaveText(item.text[0]);
+      await expect(change.locator("ins")).toHaveText(item.text[1]);
       await page.keyboard.press("Escape");
       await expect(drawer).toHaveCount(0);
     });
@@ -285,7 +290,7 @@ test("only-changes roundtrips through query and state and exports the same filte
   await expect.poll(() => ids(page)).toEqual(["a"]);
   expect(await page.evaluate(() => ({ only: compareGrid.getOnlyChanges(), selected: compareGrid.getSelection(), query: compareGrid.getState().query })))
     .toEqual({ only: true, selected: ["a"], query: saved.query });
-  await expect(host(page).getByRole("switch", { name: "Only changes" })).toBeChecked();
+  await expect(host(page).getByRole("switch", { name: "Changed only" })).toBeChecked();
 });
 
 test("the static comparison example includes every status and before-after value without scripts", async ({ page }) => {
@@ -298,7 +303,7 @@ test("the static comparison example includes every status and before-after value
     await expect(rows.filter({ hasText: item })).toContainText(status);
   await expect(rows.filter({ hasText: "Atlas" })).toContainText(/24.*→.*32/);
   await expect(rows.filter({ hasText: "Birch" })).toContainText(/Paused.*→.*Active/);
-  await expect(rows.filter({ hasText: "Delta" })).toContainText(/Delta.*→.*—/);
+  await expect(rows.filter({ hasText: "Delta" }).getByRole("cell")).toHaveText(["Removed", "Delta", "West", "Active", "40"]);
 });
 
 test("the optional compare part stays off ordinary grids and comparisons make only runtime asset requests", async ({ page }) => {
@@ -313,7 +318,7 @@ test("the optional compare part stays off ordinary grids and comparisons make on
   await mount(page, compared);
   expect(await page.evaluate(() => compareGrid.getOnlyChanges())).toBe(true);
   expect((await ids(page)).sort()).toEqual(["added", "nulls", "removed", "typed"]);
-  await expect(host(page).getByRole("switch", { name: "Only changes" })).toBeChecked();
+  await expect(host(page).getByRole("switch", { name: "Changed only" })).toBeChecked();
   expect(requested.filter(request => new URL(request.url).pathname === "/canopyx-compare.js")).toHaveLength(1);
   await page.evaluate(async () => { await compareGrid.setOnlyChanges(false); await compareGrid.setOnlyChanges(true); });
   expect(requested.every(request => request.method === "GET" && new URL(request.url).origin === origin &&
@@ -335,4 +340,29 @@ test("invalid compare metadata rejects ready instead of showing misleading contr
   }
   expect(rejected).toEqual(Array(4).fill("CanopyX: invalid dataset comparison."));
   await expect(page.locator(".cx-compare-summary")).toHaveCount(0);
+});
+
+
+for (const width of [1440, 390]) test(`comparison drawer leads with changes and uses the full shared modal layout at ${width}`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 }); await serve(page); await mount(page, definition());
+  await page.evaluate(() => compareGrid.openDetails("typed"));
+  const drawer = page.locator("dialog.cx-drawer[open]");
+  await expect(drawer).toHaveAttribute("aria-modal", "true");
+  await expect(drawer.locator(".cx-compare-record-changes h3")).toHaveText("Changes");
+  await expect(drawer.locator(".cx-compare-record-changes dt")).toHaveText(["Item", "Amount", "Date"]);
+  expect(await drawer.locator(".cx-drawer-body").evaluate(body => body.firstElementChild.classList.contains("cx-compare-record-changes"))).toBe(true);
+  expect(await drawer.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThan(880);
+  await expect(drawer.locator(".cx-compare-record-changes del")).toHaveCount(3);
+  await expect(drawer.locator(".cx-compare-record-changes ins")).toHaveCount(3);
+  await page.keyboard.press("Escape"); await expect(drawer).toHaveCount(0);
+});
+
+test("removed records keep one row marker and struck earlier values without missing-value arrows", async ({ page }) => {
+  await serve(page); await mount(page, definition());
+  await expect(row(page, "removed").locator(".cx-compare-status")).toHaveText("Removed");
+  await expect(row(page, "removed").locator(".cx-before-after del")).toHaveText("Retired");
+  await expect(row(page, "removed").locator(".cx-before-after ins")).toHaveCount(0);
+  expect(await row(page, "removed").innerText()).not.toContain("→");
+  await expect(row(page, "added").locator(".cx-compare-status")).toHaveText("Added");
+  await expect(row(page, "added").locator(".cx-before-after")).toHaveCount(0);
 });

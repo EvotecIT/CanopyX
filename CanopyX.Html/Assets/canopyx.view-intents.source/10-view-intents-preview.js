@@ -13,7 +13,7 @@
     const preview = grid.viewIntentPreview;
     if (!preview) return;
     grid.viewIntentPreview = null;
-    preview.active = false; preview.apply.disabled = true; preview.cancel.disabled = true;
+    preview.active = false; preview.apply.disabled = true; preview.cancel.disabled = false;
     grid.lifetime.signal.removeEventListener("abort", preview.destroy);
     setText(preview.status, reason || grid.labels.viewIntentSuperseded);
   }
@@ -31,25 +31,6 @@
     // Existing saved-state readers validate presentation, selection and reporting extensions after strict intent validation.
     return intent.pivot === undefined ? grid.readGridState(state) : viewIntentPivotState(grid, intent.pivot, state);
   }
-  function intentChips(grid, intent) {
-    const labels = grid.labels, query = intent.query || {}, title = id => grid.columns.find(column => column.id === id)?.title || id;
-    const chips = [];
-    if (Object.hasOwn(query, "search")) chips.push(fill(labels.viewIntentSearch, { search: query.search || "∅" }));
-    if (query.searchMode) chips.push(query.searchMode === "words" ? labels.viewIntentWords : labels.viewIntentSubstring);
-    if (query.sort) chips.push(fill(labels.viewIntentSort, { columns: query.sort.map(sort => title(sort.column) + (sort.direction === "desc" ? " ↓" : " ↑")).join(", ") || "∅" }));
-    const predicate = filter => title(filter.column) + viewIntentBucketCaption(grid, filter.bucket) + " " + (labels[GRID_FILTER_LABELS[filter.operator]] || GRID_FILTER_LABELS[filter.operator]) +
-      (filter.values.length ? " " + filter.values.join(", ") : "");
-    if (query.filters) chips.push(...query.filters.map(predicate));
-    if (query.filters && !query.filters.length) chips.push(labels.gridClearFilters);
-    const group = item => "(" + [...item.filters.map(predicate), ...item.groups.map(group)].join(" " + (item.operator === "and" ? labels.gridAnd : labels.gridOr) + " ") + ")";
-    if (Object.hasOwn(query, "filterGroup")) chips.push(query.filterGroup ? group(query.filterGroup) : labels.gridRemoveGroup);
-    if (query.groupBy) chips.push(fill(labels.viewIntentGroup, { columns: query.groupBy.map(level => title(level.column) + (level.direction === "desc" ? " ↓" : " ↑") +
-      (level.aggregate ? " (" + level.aggregate + ")" : "") + viewIntentBucketCaption(grid, level.bucket)).join(", ") || "∅" }));
-    if (intent.columns) chips.push(fill(labels.viewIntentColumns, { columns: intent.columns.map(title).join(", ") }));
-    if (query.tupleFilters) chips.push(...viewIntentTupleChips(grid, query.tupleFilters));
-    if (intent.pivot !== undefined) chips.push(...viewIntentPivotChips(grid, intent.pivot));
-    return chips;
-  }
   async function confirmViewIntent(grid, handle) {
     const entry = VIEW_INTENT_PREVIEWS.get(handle), preview = entry?.preview;
     if (!preview || entry.grid !== grid || !preview.active || grid.destroyed || grid.pendingQuery || preview.epoch !== grid.queryEpoch || preview.key !== intentStateKey(grid))
@@ -66,7 +47,15 @@
       // Saved-state restore retains pins. Explicit column order uses the ordinary reorder API, which unpins columns
       // moved out of their pinned segment, so the accepted order matches the order the reader previewed.
       if (intent.columns) grid.setColumnOrder(state.columns.map(column => column.id));
-      setText(preview.status, grid.labels.viewIntentApplied); return query;
+      const focused = preview.element.contains(document.activeElement);
+      preview.disposeTheme?.(); preview.element.remove();
+      if (grid.viewIntentElement === preview.element) grid.viewIntentElement = null;
+      const announcement = grid.viewIntentStatus ||= h("p", "cx-sr-only");
+      announcement.setAttribute("role", "status"); announcement.setAttribute("aria-live", "polite");
+      if (!announcement.isConnected) grid.host.append(announcement);
+      setText(announcement, grid.labels.viewIntentApplied);
+      if (focused) (preview.returnFocus?.isConnected ? preview.returnFocus : grid.grid).focus({ preventScroll: true });
+      return query;
     } catch (error) { if (!grid.destroyed) setText(preview.status, error.message); throw error; }
     finally { if (grid.viewIntentApply === restore) grid.viewIntentApply = null; }
   }
@@ -112,15 +101,18 @@
       retireViewIntent(this);
       this.viewIntentTheme?.();
       this.viewIntentElement?.remove();
+      if (this.viewIntentStatus) setText(this.viewIntentStatus, "");
       const element = h("section", "cx-host cx-chrome cx-view-intent-preview"), heading = h("h3"), chips = h("div", "cx-grid-query-chips"), status = h("p");
       element.setAttribute("aria-label", this.labels.viewIntentPreview); setText(heading, this.labels.viewIntentPreview);
       status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
-      for (const text of intentChips(this, intent)) { const chip = h("span", "cx-grid-chip"); setText(chip, text); chip.title = text; chips.appendChild(chip); }
+      const descriptions = intentChips(this, intent, state);
+      if (!descriptions.length) setText(chips, this.labels.viewIntentNoChanges);
+      for (const text of descriptions) { const chip = h("span", "cx-grid-chip"); setText(chip, text); chip.title = text; chips.appendChild(chip); }
       const actions = h("div", "cx-view-intent-actions"), apply = gridVariant(gridButton(this.labels.gridApply, () => {
         confirmViewIntent(this, handle).catch(error => { if (!this.destroyed) setText(status, error.name === "AbortError" ? this.labels.viewIntentSuperseded : error.message); });
       }), "primary"), cancel = gridVariant(gridButton(this.labels.gridEditCancel || "Cancel", () => handle.cancel()), "secondary");
       actions.append(apply, cancel); element.append(heading, chips, actions, status);
-      const preview = { intent, key: JSON.stringify(state), epoch: this.queryEpoch, active: true, apply, cancel, status, element,
+      const preview = { returnFocus: document.activeElement, intent, key: JSON.stringify(state), epoch: this.queryEpoch, active: true, apply, cancel, status, element,
         destroy: () => { preview.disposeTheme?.(); retireViewIntent(this); element.remove(); } };
       const handle = Object.freeze({ element, intent, apply: () => confirmViewIntent(this, handle), cancel: () => {
         preview.disposeTheme?.();
