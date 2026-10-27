@@ -74,18 +74,18 @@ public sealed class RuntimePartTests {
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Equal(new[] { "ui-overlays", "tree-tools", "export" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
         tree.DeepLink = true;
-        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "office-export", "links" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
+        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "links" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
         tree.Source = CanopySource.Sidecar("data/tree/");
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "tree-tools", "export", "office-export", "links", "search", "record-panel" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "tree-tools", "export", "links", "search", "record-panel" }, Names(CanopyHtmlAssets.GetRequiredParts(tree)));
 
         var grid = new CanopyDataGridView("grid", "Grid");
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         grid.Columns.Add(new CanopyColumn("trend", "Trend") { Presenter = CanopyGridPresenter.StatusStrip() });
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "office-export", "history" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "history" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         // An editable column brings the editing part; a tree's editable column keeps the tree's own proposals.
         grid.Columns[0].Editable = true;
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "office-export", "history", "forms", "editing" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "history", "forms", "editing" }, Names(CanopyHtmlAssets.GetRequiredParts(grid)));
         tree.Columns[0].Editable = true;
         Assert.DoesNotContain("editing", Names(CanopyHtmlAssets.GetRequiredParts(tree)));
         Assert.DoesNotContain("forms", Names(CanopyHtmlAssets.GetRequiredParts(tree)));
@@ -108,7 +108,7 @@ public sealed class RuntimePartTests {
         var second = tree.ToHtmlFragment(new CanopyHtmlOptions { Document = document });
         Assert.Contains("application/x-canopyx-links", first);
         Assert.DoesNotContain("application/x-canopyx-", second.Replace("application/json", ""));
-        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "office-export", "links" }, document.EmbeddedParts.Select(marker => marker.Substring(0, marker.IndexOf('@'))));
+        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "links" }, document.EmbeddedParts.Select(marker => marker.Substring(0, marker.IndexOf('@'))));
         Assert.Equal(string.Empty, document.EmbedOnce(CanopyHtmlAssets.GetPart("links")));
         Assert.Equal(CanopyHtmlAssets.GetPart("search").Markup, document.EmbedOnce(CanopyHtmlAssets.GetPart("search")));
         Assert.Throws<ArgumentNullException>(() => document.EmbedOnce(null!));

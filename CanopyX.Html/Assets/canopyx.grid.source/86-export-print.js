@@ -32,22 +32,26 @@
       const doc = frame.contentDocument, columns = projection ? snapshot.request.columns.filter(column => projection.includes(column.id)) : snapshot.request.columns;
       doc.documentElement.lang = snapshot.request.locale || grid.lang || "en";
       doc.title = grid.view.label;
+      doc.documentElement.style.colorScheme = "light";
+      const theme = getComputedStyle(grid.host);
+      // Paper uses the shared light palette; host typography can follow its report identity.
+      for (const name of theme) if (/^--hfx-(?:font|type|weight)-/.test(name)) doc.documentElement.style.setProperty(name, theme.getPropertyValue(name));
       const add = (tag, parent, text, css) => {
         const element = doc.createElement(tag);
         if (text !== undefined) element.textContent = String(text);
         if (css) element.style.cssText = css;
         parent.appendChild(element); return element;
       };
-      add("style", doc.head, "@page{size:A4 " + (columns.length > 6 ? "landscape" : "portrait") + ";margin:16mm 14mm;@bottom-right{content:counter(page);font:9pt Arial;color:#66717c}}" +
+      add("style", doc.head, "@page{size:A4 " + (columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans);color:var(--hfx-color-text-muted)}}' +
         "thead{display:table-header-group}tfoot{display:table-row-group}tr{break-inside:avoid}a{color:inherit;text-decoration:none}" +
         "@media screen{body{padding:40px}main{max-width:1100px;margin:auto}}@media screen and (max-width:600px){body{padding:20px}}" +
         "@media (max-width:600px){body{font-size:10px!important}td,th{padding:6px 4px!important;white-space:normal!important}td.cx-print-number{white-space:nowrap!important}col.cx-print-date{width:80px!important}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
-      doc.body.style.cssText = "margin:0;background:#fff;color:#25313c;font:11px/1.4 Arial,sans-serif";
-      const main = add("main", doc.body), reportHeader = add("header", main, undefined, "margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid #334b56");
+      doc.body.style.cssText = 'margin:0;background:var(--hfx-color-surface);color:var(--hfx-color-text);font:11px/1.4 var(--hfx-font-sans)';
+      const main = add("main", doc.body), reportHeader = add("header", main, undefined, "margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid var(--hfx-color-border-strong)");
       add("h1", reportHeader, grid.view.label, "font-size:26px;letter-spacing:-.5px;line-height:1.2;margin:0 0 8px");
-      add("p", reportHeader, printContext(grid, snapshot), "margin:0;max-width:90ch;color:#66717c;font-size:11px;line-height:1.6");
-      const cellStyle = "padding:5px 8px;border-bottom:1px solid #dce1e5;text-align:left;vertical-align:top;overflow-wrap:anywhere";
+      add("p", reportHeader, printContext(grid, snapshot), "margin:0;max-width:90ch;color:var(--hfx-color-text-muted);font-size:11px;line-height:1.6");
+      const cellStyle = "padding:5px 8px;border-bottom:1px solid var(--hfx-color-border);text-align:left;vertical-align:top;overflow-wrap:anywhere";
       const value = (parent, cell) => {
         const text = cell && typeof cell === "object" ? cell.text ?? cell.value ?? "" : cell ?? "";
         const link = cell && typeof cell === "object" && cell.link?.target;
@@ -60,7 +64,7 @@
         parent.setAttribute("data-cx-print-detail", "");
         if (payload.type === "table") {
           const table = add("table", parent, undefined, "border-collapse:collapse;width:100%;font:inherit");
-          if (payload.caption) add("caption", table, payload.caption, "text-align:left;font-weight:600;margin:4px 0");
+          if (payload.caption) add("caption", table, payload.caption, "text-align:left;font-weight:var(--hfx-weight-semibold);margin:4px 0");
           const headings = add("tr", add("thead", table));
           for (const column of payload.columns) add("th", headings, column, cellStyle + ";overflow-wrap:normal");
           const body = add("tbody", table);
@@ -71,7 +75,7 @@
         } else {
           const list = add("dl", parent);
           for (const item of payload.items) {
-            add("dt", list, item.name, "font-weight:600");
+            add("dt", list, item.name, "font-weight:var(--hfx-weight-semibold)");
             value(add("dd", list, undefined, "margin:0 0 6px;overflow-wrap:anywhere"), item.value);
           }
         }
@@ -101,7 +105,7 @@
       if (layout === "stacked") {
         const summary = (values, label, subtotal) => {
           if (!values || !grouping?.aggregates.length) return;
-          const section = add("div", main, undefined, "break-inside:avoid;padding:8px 10px;margin:0 0 12px;background:#f4f6f7;border-top:1px solid #c8ccd0;font-weight:600");
+          const section = add("div", main, undefined, "break-inside:avoid;padding:8px 10px;margin:0 0 12px;background:var(--hfx-color-surface-sunken);border-top:1px solid var(--hfx-color-border);font-weight:var(--hfx-weight-semibold)");
           section.setAttribute(subtotal ? "data-cx-print-subtotal" : "data-cx-print-total", "");
           add("div", section, label);
           for (const aggregate of grouping.aggregates) {
@@ -111,9 +115,9 @@
         };
         for (const [index, row] of snapshot.rows.entries()) {
           for (const heading of starts.get(index) || []) add("h2", main, heading.text, "font-size:15px;margin:12px 0 6px");
-          const section = add("section", main, undefined, "break-inside:avoid;border:1px solid #c8ccd0;margin:0 0 12px;padding:10px"), list = add("dl", section);
+          const section = add("section", main, undefined, "break-inside:avoid;border:1px solid var(--hfx-color-border);margin:0 0 12px;padding:10px"), list = add("dl", section);
           for (const column of columns) {
-            add("dt", list, column.title, "font-weight:600;margin:4px 0 0");
+            add("dt", list, column.title, "font-weight:var(--hfx-weight-semibold);margin:4px 0 0");
             value(add("dd", list, undefined, "margin:0;overflow-wrap:anywhere"), cell(row, column));
           }
           if (row.detail) detail(add("div", section, undefined, "margin-top:8px"), row.detail);
@@ -126,7 +130,7 @@
         for (const column of columns) {
           const col = add("col", widths, undefined, column.kind === "number" ? "width:1%" : column.kind === "datetime" ? "width:144px" : undefined);
           if (column.kind === "datetime") col.className = "cx-print-date";
-          add("th", header, column.title, cellStyle + ";overflow-wrap:normal;background:#edf1f3;font-weight:600;white-space:nowrap" + (column.kind === "number" ? ";text-align:right" : ""));
+          add("th", header, column.title, cellStyle + ";overflow-wrap:normal;background:var(--hfx-color-surface-sunken);font-weight:var(--hfx-weight-semibold);white-space:nowrap" + (column.kind === "number" ? ";text-align:right" : ""));
         }
         const body = add("tbody", table);
         const summary = (parent, values, label, subtotal) => {
@@ -134,18 +138,18 @@
           const tr = add("tr", parent); tr.setAttribute(subtotal ? "data-cx-print-subtotal" : "data-cx-print-total", "");
           for (const [index, column] of columns.entries()) {
             const summaries = grouping.aggregates.filter(aggregate => aggregate.column === column.id),
-              td = add("td", tr, summaries.length ? undefined : index === 0 ? label : "", cellStyle + ";font-weight:600;background:#f4f6f7" +
+              td = add("td", tr, summaries.length ? undefined : index === 0 ? label : "", cellStyle + ";font-weight:var(--hfx-weight-semibold);background:var(--hfx-color-surface-sunken)" +
                 (column.kind === "number" ? ";text-align:right" : ""));
             for (const aggregate of summaries) {
               const pair = add("div", td);
-              add("span", pair, (aggregate.label || aggregate.operation) + ": ", "display:block;color:#66717c;font-size:9px;font-weight:400");
+              add("span", pair, (aggregate.label || aggregate.operation) + ": ", "display:block;color:var(--hfx-color-text-muted);font-size:9px;font-weight:var(--hfx-weight-regular)");
               add("span", pair, cellText(values[aggregate.id], column, fmt), "display:block;white-space:nowrap");
             }
           }
         };
         for (const [index, row] of snapshot.rows.entries()) {
           for (const heading of starts.get(index) || []) {
-            const group = add("tr", body), title = add("th", group, heading.text, cellStyle + ";background:#f3f4f6");
+            const group = add("tr", body), title = add("th", group, heading.text, cellStyle + ";background:var(--hfx-color-surface-sunken)");
             title.colSpan = columns.length; title.style.paddingInlineStart = (8 + heading.depth * 12) + "px";
           }
           const tr = add("tr", body, undefined, "break-inside:avoid"); tr.setAttribute("data-cx-print-record", "");

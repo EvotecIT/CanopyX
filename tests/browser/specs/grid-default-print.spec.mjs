@@ -48,13 +48,20 @@ test("default print is offered explicitly and its row bound never silently trunc
   expect(failure).toEqual({ message: "CanopyX: snapshot exceeds its row bound; use a host export hook.", frames: 0 });
 });
 
-test("default print keeps captured grouping, totals, formatted text and safe links", async ({ page }) => {
+test("default print keeps captured grouping, totals and safe links legible under literal dark host roles", async ({ page }) => {
   const server = await serveExamples(examples);
   try {
-    await page.addInitScript(() => { window.print = () => { window.parent.__printedDocument = document.documentElement.outerHTML; }; });
+    await page.addInitScript(() => { window.print = () => {
+      window.parent.__printedDocument = document.documentElement.outerHTML;
+      const body = getComputedStyle(document.body), heading = getComputedStyle(document.querySelector('tbody th'));
+      window.parent.__printPalette = { text: body.color, paper: body.backgroundColor, headingText: heading.color, headingPaper: heading.backgroundColor };
+    }; });
     await page.goto(server.url + "office-export.html"); await page.waitForSelector("[data-cx-ready]");
     const printed = await page.evaluate(async () => {
       const grid = document.querySelector('[data-canopyx-host]').canopyx;
+      const host = document.querySelector('[data-canopyx-host]');
+      host.style.setProperty('--hfx-color-surface', '#16181c'); host.style.setProperty('--hfx-color-text', '#f2f3f5');
+      host.style.setProperty('--hfx-color-surface-sunken', '#111317');
       await grid.setQuery({ search: "North" });
       await grid.print({ scope: "filtered", locale: "en-US" });
       const doc = new DOMParser().parseFromString(window.__printedDocument, "text/html");
@@ -65,6 +72,8 @@ test("default print keeps captured grouping, totals, formatted text and safe lin
     });
     expect(printed).toMatchObject({ headings: ["Region: North"], records: 30, subtotals: 1, link: "https://example.com/resources/0", executable: 0 });
     expect(printed.total.replace(/[^\d]/g, "")).toContain("707250");
+    expect(await page.evaluate(() => window.__printPalette)).toEqual({ text: 'rgb(22, 24, 28)', paper: 'rgb(255, 255, 255)',
+      headingText: 'rgb(22, 24, 28)', headingPaper: 'rgb(247, 248, 249)' });
   } finally { await server.close(); }
 });
 

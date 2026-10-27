@@ -47,6 +47,23 @@ async function open(page, view = definition(), setup = "", runtime) {
 }
 const menuButtons = page => page.locator(".cx-grid-export .cx-grid-panel button:not([hidden])");
 
+for (const width of [1440, 390]) test(`export panel closes through the shared overlay and restores focus at ${width}`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await open(page, definition(), fakeFormats);
+  await openGridControl(page, "export");
+  const control = page.locator(".cx-grid-export"), panel = control.locator(":scope > .cx-grid-panel");
+  await expect(panel).toHaveAttribute("role", "dialog");
+  await expect(panel).toBeVisible();
+  if (width === 1440) expect(await panel.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+  await panel.getByRole("combobox").focus();
+  await page.keyboard.press("Escape");
+  await expect(control).not.toHaveAttribute("open");
+  await expect(control.locator(":scope > summary")).toBeFocused();
+  await control.locator(":scope > summary").click();
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Download Excel", exact: true })).toBeVisible();
+});
+
 test("a streaming writer keeps the reading phase until its input is consumed", async ({ page }) => {
   await open(page, definition(), `window.streamEvents=[];CanopyX.registerExportFormat({id:'stream',label:'Stream',extension:'txt',async write(capture,{progress}){
     let count=0;for await(const row of capture.rows()) { progress(++count); if(count===5) await new Promise(resolve=>{window.resumeStream=resolve;}); }

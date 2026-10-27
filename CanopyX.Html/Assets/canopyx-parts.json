@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "3880165ccfb53427",
+      "version": "3485ad357ae86b5b",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "22d594b2f16f9587",
+      "version": "cb0356d1f53f539f",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -146,7 +146,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "d5cb0fbce328ebe5",
+      "version": "d80efc8e11ff9b2b",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -769,7 +769,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "cb330cf5775411f4",
+      "version": "9fcc77adf9b8f717",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [

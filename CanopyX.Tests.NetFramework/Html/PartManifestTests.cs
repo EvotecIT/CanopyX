@@ -16,7 +16,7 @@ public sealed class PartManifestTests {
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }, CanopyHtmlAssets.GetPart("history").Runtimes);
         var tree = new CanopyTreeView("tree", "Tree") { DeepLink = true };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "office-export", "links" }, CanopyHtmlAssets.GetRequiredParts(tree).Select(part => part.Name).ToArray());
+        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "links" }, CanopyHtmlAssets.GetRequiredParts(tree).Select(part => part.Name).ToArray());
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid, CanopyRuntime.Flow }, CanopyHtmlAssets.GetPart("flow").Runtimes);
     }
 
