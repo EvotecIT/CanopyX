@@ -124,7 +124,14 @@ export function inspectFinishQuality(root = document) {
       let clipped = false;
       for (const [axis, start, end, size] of [["X", "left", "right", "Width"], ["Y", "top", "bottom", "Height"]]) {
         const overflow = style["overflow" + axis];
-        if (["auto", "scroll"].includes(overflow) && at["scroll" + size] > at["client" + size] + tolerance) {
+        // The timeline tree hides its own vertical bar; the adjacent lane scroller and keyboard move both panes.
+        const timelineScroll = axis === "Y" && at.matches('.cx-tl-tree > .cx-grid') &&
+          at.closest('.cx-tl')?.querySelector('.cx-tl-main');
+        const linkedScroll = timelineScroll && timelineScroll.getAttribute("aria-controls")?.split(/\s+/).includes(at.id) &&
+          reachable.top - edges.top + at.scrollTop >= -tolerance && reachable.bottom - reachable.top <= at.clientHeight + tolerance &&
+          Math.min(timelineScroll.scrollHeight - timelineScroll.clientHeight, at.scrollHeight - at.clientHeight) >=
+            Math.max(0, reachable.bottom - edges.bottom + at.scrollTop) - tolerance;
+        if ((["auto", "scroll"].includes(overflow) || linkedScroll) && at["scroll" + size] > at["client" + size] + tolerance) {
           reachable[start] = edges[start]; reachable[end] = edges[end];
         } else if (["hidden", "clip"].includes(overflow) &&
             (reachable[start] < edges[start] - tolerance || reachable[end] > edges[end] + tolerance)) clipped = true;

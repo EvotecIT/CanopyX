@@ -13,6 +13,14 @@ for (const vector of vectors) test("shared calculation vector: " + vector.name, 
   const result = pure.calculations.evaluate(pure.calculations.parse(vector.expression), id => vector.row[id] ?? null);
   expect(result).toEqual({ value: vector.value, error: vector.error });
 });
+
+test("native browser rounding agrees with the shared negative-scale vectors", async ({ page }) => {
+  const cases = vectors.filter(vector => ["round-binary-negative-scale", "round-negative-binary-scale"].includes(vector.name));
+  await page.addScriptTag({ content: source("canopyx.calculations.source/00-calculation-parser.js") +
+    source("canopyx.calculations.source/10-calculation-evaluator.js") });
+  expect(await page.evaluate(cases => cases.map(vector => calculationEvaluate(calculationParse(vector.expression), () => null)), cases))
+    .toEqual(cases.map(vector => ({ value: vector.value, error: vector.error })));
+});
 const parts = () => source("canopyx-calculations.js") + "\n" + source("canopyx-values.js") +
   ";document.head.append(Object.assign(document.createElement('style'),{textContent:" + JSON.stringify(source("canopyx-calculations.css")) + "}));";
 export function calculationView() {

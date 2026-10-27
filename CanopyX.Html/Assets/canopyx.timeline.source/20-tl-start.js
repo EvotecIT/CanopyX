@@ -127,6 +127,7 @@
       for (const [column, kind] of Object.entries(aggregates)) renderers[column] = (node, element) => { setText(element, this.tlAggregateText(node.id, kind)); element.classList.add("cx-tl-agg"); return true; };
       const view = { ...resources.view, rowHeight: this.view.plan ? Math.max(64, resources.view.rowHeight || this.rowH) : resources.view.rowHeight || this.rowH, labels: { ...this.view.labels, ...resources.view.labels } };
       const tree = this.tlTree = new TreeGrid(host, { view, toolbar: false, renderers, labels: this.opts.labels });
+      main.setAttribute("aria-controls", tree.grid.id);
       // The resource tree's events stay inside the calendar: the grid host has its own events of the same names.
       tree.emit = (name, detail) => { if (!tree.destroyed) host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail })); };
       const render = tree.render.bind(tree);

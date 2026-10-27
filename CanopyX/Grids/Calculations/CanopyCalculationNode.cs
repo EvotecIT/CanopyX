@@ -63,7 +63,7 @@ internal sealed class CanopyCalculationNode {
             case "%": return right == 0 ? Error("divide-by-zero") : Number(left % right);
             case "ROUND":
                 if (right < -12 || right > 12 || right != Math.Truncate(right)) return Error("type");
-                var scale = Math.Pow(10, right);
+                var scale = double.Parse("1e" + right.ToString(System.Globalization.CultureInfo.InvariantCulture), System.Globalization.CultureInfo.InvariantCulture);
                 var scaled = left * scale;
                 if (double.IsInfinity(scaled)) return Error("number-range");
                 // Avoid x + .5 changing an already-integral value at the binary64 precision boundary.

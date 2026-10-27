@@ -61,3 +61,28 @@ test("ancestor clipping respects scrollable content and explicit local exception
     </main>`);
   expect(await page.evaluate(inspectFinishQuality)).toEqual([]);
 });
+
+test("timeline tree overscan remains reachable through its linked lane scroller", async ({ page }) => {
+  await page.setContent(`<style>.cx-tl{display:flex}.cx-tl-tree>.cx-grid{height:80px;overflow:hidden}
+    .cx-tl-tree,.cx-tl-main{width:200px;flex:none}.cx-tl-main{height:80px;overflow:auto}.space{height:200px}</style>
+    <div class="cx-tl"><div class="cx-tl-tree"><div id="resources" class="cx-grid"><div class="space"></div>
+    <button>Resource details</button></div></div><div class="cx-tl-main" aria-controls="resources"><div style="height:240px"></div></div></div>`);
+  await page.evaluate(() => {
+    const main = document.querySelector('.cx-tl-main'), tree = document.getElementById('resources');
+    main.addEventListener('scroll', () => { tree.scrollTop = main.scrollTop; });
+    main.scrollTop = 150;
+  });
+  await expect.poll(() => page.locator('#resources').evaluate(tree => tree.scrollTop === tree.scrollHeight - tree.clientHeight)).toBe(true);
+  expect(await page.getByRole('button').evaluate(button => {
+    const box = button.getBoundingClientRect(), port = button.parentElement.getBoundingClientRect();
+    return box.top >= port.top && box.bottom <= port.bottom;
+  })).toBe(true);
+  await page.locator('.cx-tl-main').evaluate(main => { main.scrollTop = 0; });
+  await expect.poll(() => page.locator('#resources').evaluate(tree => tree.scrollTop)).toBe(0);
+  expect(await page.evaluate(inspectFinishQuality)).toEqual([]);
+  await page.locator('.cx-tl-main > div').evaluate(content => { content.style.height = '100px'; });
+  expect((await page.evaluate(inspectFinishQuality)).map(item => item.rule)).toContain("text-clipped");
+  await page.locator('.cx-tl-main > div').evaluate(content => { content.style.height = '240px'; });
+  await page.locator('.cx-tl-main').evaluate(scroller => scroller.removeAttribute('aria-controls'));
+  expect((await page.evaluate(inspectFinishQuality)).map(item => item.rule)).toContain("text-clipped");
+});

@@ -73,7 +73,7 @@ public static partial class CanopyStaticHtml {
             first = false;
             var before = ComparisonValueText(change.Before, column, view.Labels);
             var after = ComparisonValueText(change.After, column, view.Labels);
-            html.Append("<span style=\"white-space:nowrap;\"><del>").Append(Encode(before))
+            html.Append(column.Kind == CanopyColumnKind.Number ? "<span style=\"white-space:nowrap;\"><del>" : "<span><del>").Append(Encode(before))
                 .Append("</del> → <ins style=\"text-decoration:none;\">").Append(Encode(after)).Append("</ins></span>");
             text.Append(before).Append(" → ").Append(after);
         }

@@ -732,7 +732,7 @@
     {
       "name": "calculations",
       "label": "calculated columns",
-      "version": "e4732ff1ff103318",
+      "version": "7152dd5e78326693",
       "script": "canopyx-calculations.js",
       "style": "canopyx-calculations.css",
       "runtimes": [
@@ -982,7 +982,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "44d1c5f9bef8a06d",
+      "version": "ece982b3b7277183",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
@@ -1084,7 +1084,7 @@
     {
       "name": "time-slider",
       "label": "snapshot playback",
-      "version": "44b750861a921bd5",
+      "version": "21850a86caee7b6d",
       "script": "canopyx-time-slider.js",
       "style": "canopyx-time-slider.css",
       "runtimes": [

@@ -21,6 +21,8 @@ test("an opt-in auto-height page header stays usable on page scroll and leaves f
   expect(await page.locator('.cx-head [role="columnheader"]').count()).toBe(3);
   await page.evaluate(() => api.setQuery({ search: "Item 1" }));
   await page.setViewportSize({ width: 1180, height: 900 });
+  // WebKit can reset document scrolling when the viewport changes. Re-establish the page-scroll precondition.
+  await page.evaluate(() => window.scrollTo(0, 400));
   await expect(host).toHaveAttribute("data-cx-page-header", "true");
   await expect.poll(() => page.evaluate(() => {
     const grid = document.querySelector(".cx-grid");

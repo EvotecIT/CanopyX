@@ -16,7 +16,8 @@
     };
     const tick = () => {
       timer = setTimeout(() => {
-        if (disposed || !playing || media.matches) return;
+        if (disposed || !playing) return;
+        if (media.matches) { pause(); return; }
         try { update(model.snapshots[index + 1].view); ++index; }
         catch (error) { pause(); host.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true })); return; }
         if (index === model.snapshots.length - 1) pause(); else { paint(); tick(); }

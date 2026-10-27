@@ -64,7 +64,8 @@
       const y = number(b);
       if (op === "ROUND") {
         if (!Number.isInteger(y) || y < -12 || y > 12) failure("type");
-        const scale = 10 ** y, scaled = finite(x * scale);
+        // Parse the decimal power: exponentiation differs by one binary64 ULP between engines.
+        const scale = Number("1e" + y), scaled = finite(x * scale);
         return finite(Math.round(scaled) / scale);
       }
       if ((op === "/" || op === "%") && y === 0) failure("divide-by-zero");

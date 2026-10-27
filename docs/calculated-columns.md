@@ -70,7 +70,7 @@ An error in an evaluated operand propagates.
 | --- | --- |
 | `IF(condition, whenTrue, whenFalse)` | Exactly three arguments. The condition is a boolean or null; null selects the false branch. Only the selected branch is evaluated. |
 | `COALESCE(value, ...)` | One to 32 arguments. Returns the first non-null value, evaluating only as far as needed. An encountered error propagates; it is not treated as null. |
-| `ROUND(number, digits)` | Exactly two arguments. Integer digits from -12 to 12. Uses binary64 arithmetic with ties toward positive infinity, matching `Math.round`. Thus `ROUND(-1.5, 0)` is -1. |
+| `ROUND(number, digits)` | Exactly two arguments. Integer digits from -12 to 12. Uses binary64 arithmetic with ties toward positive infinity, matching `Math.round`. The decimal scale is parsed from `1e<digits>` in both runtimes so exponentiation differences cannot change rounding. Thus `ROUND(-1.5, 0)` is -1. |
 | `CONCAT(value, ...)` | One to 32 arguments. Null becomes empty text; finite numbers and booleans use invariant scalar text. The complete result is bounded to 4,096 UTF-16 code units. |
 | `DATEPART(unit, date)` | Exactly two arguments. Returns the named UTC calendar part. |
 | `DATEDIFF(unit, start, end)` | Exactly three arguments. Returns elapsed time, including a fractional remainder, rather than a count of crossed calendar boundaries. |

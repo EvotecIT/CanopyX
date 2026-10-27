@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { test, expect } from "@playwright/test";
-import { examples, nextFrames } from "./support.mjs";
+import { examples, nextFrames, settleGrid } from "./support.mjs";
 
 const ORIGIN = "http://canopyx.test";
 const PLACEHOLDER = "CANOPYXNONCE";
@@ -78,6 +78,8 @@ async function exerciseTree(page) {
 /** The grid page's parts: history presenters on load, the column menu and Filters (filter editor), the Export menu and CSV. */
 async function exerciseGrid(page, root = page.locator(".cx-data-grid").first()) {
   await expect(root.locator(".cx-row[data-cx-id] svg").first()).toBeAttached();
+  await root.scrollIntoViewIfNeeded();
+  await settleGrid(page);
   await root.locator(".cx-grid-column-menu").first().click();
   await expect(page.locator(".cx-column-menu [role=menuitem]").first()).toBeVisible();
   await page.keyboard.press("Escape");
