@@ -83,8 +83,10 @@
       panel.popover = "manual";
       const flyout = watchFlyout(details, panel, () => details.open); this.controlFlyouts.push(flyout);
       details.addEventListener("toggle", () => { if (details.open) { announceMenu(details); if (onOpen) onOpen(panel); flyout.open(); } else { flyout.close(); for (const inner of panel.querySelectorAll("details[open]")) inner.open = false; } });
+      // The toggle event is queued, so Escape leaves the overlay stack at once: a second Escape then reaches the dialog
+      // that holds the grid.
       details.addEventListener("keydown", event => {
-        if (event.key === "Escape" && details.open) { details.open = false; summary.focus(); event.preventDefault(); event.stopPropagation(); }
+        if (event.key === "Escape" && details.open) { details.open = false; flyout.close(); summary.focus(); event.preventDefault(); event.stopPropagation(); }
       });
       return { details, panel };
     },

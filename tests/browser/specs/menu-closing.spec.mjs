@@ -127,7 +127,7 @@ test("host dismissal cancels a column-menu opening that is still loading its par
   await expect(page.locator(".cx-column-menu")).toBeVisible();
 });
 
-test("a grid toolbar inside a modal closes before its containing dialog", async ({ page }) => {
+async function gridInDialog(page) {
   await open(page, [grid("first")]);
   await host(page, 0).evaluate(async element => {
     const dialog = document.createElement("dialog"); dialog.id = "nested-grid";
@@ -137,7 +137,11 @@ test("a grid toolbar inside a modal closes before its containing dialog", async 
     window.modalUi = CanopyX.dialog(dialog, { trigger: document.getElementById("host-popover") });
     await modalUi.ready; await modalUi.open();
   });
-  const dialog = page.locator("#nested-grid"), trigger = dialog.locator(".cx-grid-columns > summary");
+  return page.locator("#nested-grid");
+}
+
+test("a grid toolbar inside a modal closes before its containing dialog", async ({ page }) => {
+  const dialog = await gridInDialog(page), trigger = dialog.locator(".cx-grid-columns > summary");
   await trigger.focus(); await page.keyboard.press("Enter");
   await expect(dialog.locator(".cx-grid-columns")).toHaveAttribute("open", "");
   await dialog.locator(".cx-grid-columns input").first().focus();
@@ -145,6 +149,19 @@ test("a grid toolbar inside a modal closes before its containing dialog", async 
   await expect(dialog.locator(".cx-grid-columns")).not.toHaveAttribute("open", "");
   await expect(dialog).toBeVisible(); await expect(trigger).toBeFocused();
   await page.keyboard.press("Escape"); await expect(dialog).not.toBeVisible();
+});
+
+test("two quick Escapes close a grid toolbar menu and then its dialog", async ({ page }) => {
+  const dialog = await gridInDialog(page), trigger = dialog.locator(".cx-grid-columns > summary");
+  await trigger.focus(); await page.keyboard.press("Enter");
+  await expect(dialog.locator(".cx-grid-columns")).toHaveAttribute("open", "");
+  await dialog.locator(".cx-grid-columns input").first().focus();
+  // Both presses land in one task, before the menu's queued toggle event.
+  await page.evaluate(() => {
+    for (let i = 0; i < 2; i++) document.activeElement.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+  });
+  await expect(dialog.locator(".cx-grid-columns")).not.toHaveAttribute("open", "");
+  await expect(dialog).not.toBeVisible();
 });
 
 test("tree action menus stay inside a native modal with keyboard activation and dismissal", async ({ page }) => {

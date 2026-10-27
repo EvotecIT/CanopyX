@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "8f018261b388a13e",
+      "version": "08c894338ee197ea",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
