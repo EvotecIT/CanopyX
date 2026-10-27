@@ -4,7 +4,7 @@ import type {
 } from "./protocol.js";
 import type {
   TreeGridOptions, HostOptions, Sources, ExpandPathOptions, NodeFilter, FilterOptions,
-  InteractionOptions, DropPlacement, ExportFormat, ExportFormatOptions, ExportFormatResult, TreeExport, TreeExportOptions, LinkedView
+  InteractionOptions, DropPlacement, ExportFormat, ExportFormatContext, ExportDiagnostic, ExportFormatOptions, ExportFormatResult, TreeExport, TreeExportOptions, LinkedView
 } from "./hosts.js";
 import type { CanopyPlugin, CanopyPartDefinition } from "./plugins.js";
 import type { UiApi } from "./ui.js";

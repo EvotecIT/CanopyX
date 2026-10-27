@@ -67,6 +67,8 @@ export interface GridExportColumn {
   /** Reporting runtime only. */
   readonly width?: { readonly unit: "css-px"; readonly preferred: number; readonly minimum: number; readonly maximum?: number };
   readonly wrap?: boolean; readonly alignment?: "left" | "right";
+  /** The effective pin in the captured layout; null when the column is unpinned. */
+  readonly pinned?: "left" | "right" | null;
   readonly presenter?: GridPresenter;
   /** The column number format that produced the display text. */
   readonly format?: GridNumberFormat;
@@ -298,7 +300,7 @@ export interface GridQuery {
   readonly limit: number;
   readonly search: string;
   /** Absent preserves substring matching; words matches all words/quoted phrases across searchable cells. */
-  readonly searchMode?: "substring" | "words";
+  readonly searchMode?: "substring" | "words" | "regex";
   readonly sort: readonly GridSort[];
   readonly filters: readonly GridFilter[];
   /** Combined with search and flat filters using AND. */
@@ -353,6 +355,12 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   searchHighlight?: boolean | SearchHighlightOptions;
   /** The Layout menu: fit, scroll and cards, and the density (docs/layout-modes.md); layout.density starts the grid at that density. */
   layout?: LayoutOptions;
+  /** Literal templates keyed by card column slot. {columnId} inserts formatted text; markup is never parsed. */
+  cardTemplate?: Readonly<Record<string, string>>;
+  /** Follow page scrolling only when an auto-height grid fits all rows. Default false. */
+  stickyHeader?: boolean;
+  /** Permit searchMode: "regex" with the bounded condition grammar. Default false. */
+  allowRegexSearch?: boolean;
   /** Wire documents retain numeric rowHeight and enable measurement with this optional flag. */
   autoRowHeight?: boolean;
   /** Minimum and estimate for the rowHeight: "auto" API shorthand (20..64, default 28). */
@@ -587,6 +595,10 @@ export interface GridQuerySelection<Q extends AcceptedGridQuery = GridQuery> {
 }
 /** Exports retain the accepted revision, query ordering, columns and selected IDs at invocation. */
 export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
+  /** Reporting captures preserve the declared native rules for document writers; resolved cell formats stay on rows. */
+  readonly formatRules?: readonly GridFormatRule[];
+  /** UTC instant captured at invocation, for export metadata. */
+  readonly generatedAt?: string;
   /** Ordinary grids capture text only; the reporting runtime resolves semantic presentation and diagnostics. */
   readonly presentation: "text" | "semantic";
   readonly scope: "filtered" | "selected" | "all";
@@ -637,11 +649,13 @@ export interface GridRowActivation<Row extends GridRow = GridRow> {
 }
 export interface GridExportOptions {
   scope: GridExportRequest["scope"];
+  /** Include declared detail payloads; false omits them. Defaults to the detail definition's print policy. */
+  includeDetails?: boolean;
   /** Defaults to visible exportable columns in their current order. Explicit non-exportable columns are rejected. */
   columns?: string[];
   values?: GridExportRequest["values"];
   signal?: AbortSignal;
-  /** Client CSV defaults to 50000; clipboard to 10000. Larger results use a host hook. */
+  /** Client CSV defaults to 50000; clipboard to 10000; print to 1000 (maximum 10000). Larger results use a host hook. */
   maxRows?: number;
   /** Reporting runtime only. A safe basename up to 100 UTF-16 units; hosts append their format extension. */
   fileName?: string;
@@ -649,7 +663,7 @@ export interface GridExportOptions {
   locale?: string;
   /** Reporting runtime only. Overrides the captured display zone without changing the view. */
   timeZone?: TimeZone;
-  /** Reporting runtime only. Observational synchronous progress; a throwing callback aborts the operation. */
+  /** Observational synchronous progress for print and reporting exports; a throwing callback aborts the operation. */
   onProgress?: (progress: GridExportProgress) => void;
 }
 /** A complete bounded snapshot for a host renderer: at most 10000 records and 4 Mi UTF-16 units. */
@@ -747,12 +761,11 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   onExport?: (event: { format: string; request: GridExportRequest<Q>; capture: GridExport<Q>; signal: AbortSignal;
     /** Reporting runtime only. Monotonic record counts and phases; late calls after cancellation are ignored. */
     reportProgress?: (phase: GridExportProgress["phase"], completed: number) => void }) => void | PromiseLike<void>;
-  /** Reporting runtime only. Render the complete snapshot through a host-owned renderer; honor cancellation before delivery. */
   /** After a layout or density switch; the canopyx:layout event carries the same detail. */
   onLayout?: (detail: LayoutState) => void | boolean;
   /** After each finished match count and each move between matches; the canopyx:matches event carries the same detail. */
   onMatches?: (detail: { total: number; current: number; complete: boolean }) => void | boolean;
-  /** layout asks for stacked records from a grid in the card layout and a table otherwise; print never scrolls. */
+  /** Overrides the script-free print renderer. layout is stacked for cards and table otherwise; honor cancellation before delivery. */
   onPrint?: (event: { snapshot: GridExportSnapshot<Q>; signal: AbortSignal; layout: "table" | "stacked" }) => void | PromiseLike<void>;
   /** Hosts compose a drawer or details view and restore returnFocus when it closes. */
   onDetails?: (event: { row: Readonly<Row>; query: Q; signal: AbortSignal; returnFocus: Element | null }) => void | PromiseLike<void>;
@@ -932,8 +945,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   exportAs(format: string, options: Omit<GridExportOptions, "onProgress" | "maxRows"> & ExportFormatOptions): Promise<ExportFormatResult>;
   /** Reporting runtime only. Complete bounded record snapshot; default maxRows is 1000, never silently truncates. */
   materializeExport?(options: GridExportOptions): Promise<GridExportSnapshot<Q>>;
-  /** Reporting runtime only. Passes the same bounded snapshot to onPrint; never prints viewport DOM. */
-  print?(options: GridExportOptions): Promise<void>;
+  /** Prints a bounded complete static snapshot, or passes it to onPrint. Default maxRows is 1000; never prints viewport DOM. */
+  print(options: GridExportOptions): Promise<void>;
   /** Details are opened for loaded records, by toolbar, double click or Ctrl/Command+Enter. */
   openDetails(id: string): Promise<void>;
   /** The current formatting rules: the view's, or the ones set since. */

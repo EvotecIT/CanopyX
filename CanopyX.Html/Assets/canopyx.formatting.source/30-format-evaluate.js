@@ -73,6 +73,20 @@
     target.glyph = name && name !== "none" ? FORMAT_ICONS[name] || name : null;
     return target;
   }
+  function formatEvaluate(rules, stats, data, details = false) {
+    let row = null, cells = null;
+    for (const rule of rules) {
+      if (!rule.enabled || rule.test && !rule.test(data)) continue;
+      const style = formatResolve(rule, data, stats);
+      if (style && (!details || rule.details)) {
+        if (rule.target === "row") row = formatMerge(row, rule, style);
+        else for (const id of rule.columns) (cells ||= new Map()).set(id, formatMerge(cells.get(id), rule, style));
+      }
+      if (rule.stop) break;
+    }
+    if (cells) for (const target of cells.values()) formatFinish(target);
+    return row || cells ? { row: formatFinish(row), cells: cells || new Map() } : null;
+  }
   Object.assign(DataGrid.prototype, {
     // { row, cells: Map of column id -> target } for a row's data, or null when no rule applies.
     formatResult(data, details = false) {
@@ -81,18 +95,7 @@
       const cache = details ? this.formatDetailCache ||= new WeakMap() : this.formatCache;
       const stats = formatStats(this), cached = cache.get(data);
       if (cached && cached.version === this.formatVersion) return cached.result;
-      let row = null, cells = null;
-      for (const rule of rules) {
-        if (!rule.enabled || rule.test && !rule.test(data)) continue;
-        const style = formatResolve(rule, data, stats);
-        if (style && (!details || rule.details)) {
-          if (rule.target === "row") row = formatMerge(row, rule, style);
-          else for (const id of rule.columns) (cells ||= new Map()).set(id, formatMerge(cells.get(id), rule, style));
-        }
-        if (rule.stop) break;
-      }
-      if (cells) for (const target of cells.values()) formatFinish(target);
-      const result = row || cells ? { row: formatFinish(row), cells: cells || new Map() } : null;
+      const result = formatEvaluate(rules, stats, data, details);
       cache.set(data, { version: this.formatVersion, result });
       return result;
     }

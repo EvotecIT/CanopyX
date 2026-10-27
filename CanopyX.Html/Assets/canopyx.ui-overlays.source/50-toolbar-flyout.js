@@ -15,7 +15,7 @@
       const box = trigger.getBoundingClientRect(), fixed = getComputedStyle(panel).position === "fixed";
       const below = Math.max(0, global.innerHeight - box.bottom - 8), above = Math.max(0, box.top - 8);
       const top = below < 120 && above > below, room = top ? above : below;
-      panel.style.maxHeight = (panel.classList.contains("cx-fb") ? room : Math.min(320, room)) + "px";
+      panel.style.maxHeight = (panel.matches(".cx-fb,.cx-export-panel") ? room : Math.min(320, room)) + "px";
       panel.style.bottom = "auto";
       UI_TOOLS.position(panel, trigger, top ? "top-start" : "bottom-start");
       if (!fixed && panel.offsetParent) {

@@ -51,10 +51,13 @@ internal static partial class CanopyHtmlWriter {
     /// <summary>The options of the fragment inside a grid page.</summary>
     private static CanopyHtmlOptions PageFragmentOptions(CanopyHtmlOptions options) {
         var fragment = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible,
-            AssetMode = options.AssetMode, RowData = options.RowData, Nonce = options.Nonce };
+            AssetMode = options.AssetMode, RowData = options.RowData, Nonce = options.Nonce, Height = PageHeight(options) };
         fragment.Parts.UnionWith(options.Parts);
         return fragment;
     }
+
+    // Full pages fill the window; only explicit content sizing overrides that default.
+    private static string? PageHeight(CanopyHtmlOptions options) => options.Height == "auto" ? "auto" : null;
 
     private static string FragmentDocument(string json, CanopyHtmlOptions options, string? content = null, string hostClass = "cx-host") {
         var builder = new StringBuilder(json.Length + (content?.Length ?? 0) + 160);
@@ -79,7 +82,8 @@ internal static partial class CanopyHtmlWriter {
         // The JSON writer escapes <, > and &, so the document cannot close the script element early.
         builder.Append("><script type=\"application/json\" class=\"cx-config\">").Append(json).Append("</script>").Append(content).Append("</div>");
         if (height != null && options.Nonce != null) {
-            builder.Append("<style").Append(CanopyContentSecurity.Attribute(options.Nonce)).Append(">[data-cx-height=\"").Append(height)
+            // Explicit sizing also overrides the full-page and nested main-host stylesheet defaults.
+            builder.Append("<style").Append(CanopyContentSecurity.Attribute(options.Nonce)).Append(">body .cx-host[data-canopyx-host][data-cx-height=\"").Append(height)
                 .Append("\"]{height:").Append(height).Append("}</style>");
         }
 
@@ -87,7 +91,7 @@ internal static partial class CanopyHtmlWriter {
     }
 
     internal static string Page(CanopyTreeView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible, Runtime = options.Runtime, AssetMode = options.AssetMode, Nonce = options.Nonce };
+        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible, Runtime = options.Runtime, AssetMode = options.AssetMode, Nonce = options.Nonce, Height = PageHeight(options) };
         fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
         fragmentOptions.Parts.UnionWith(options.Parts);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {

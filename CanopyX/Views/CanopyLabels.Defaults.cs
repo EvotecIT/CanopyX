@@ -6,9 +6,19 @@ namespace CanopyX;
 // The English default of every label. Build/Sync-Labels.ps1 reads the entries of this file in this order and
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
-    private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
+    private static readonly Dictionary<string, string> Defaults = CreateDefaults();
+
+    private static Dictionary<string, string> CreateDefaults() {
+        var defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(GridNoExportColumns)] = "No visible columns allow export.",
+        [nameof(GridDownloadXlsx)] = "Excel workbook (.xlsx)",
+        [nameof(GridDownloadPdf)] = "PDF",
+        [nameof(GridExportWorkbookHint)] = "Formatted, with groups and totals",
+        [nameof(GridExportPdfHint)] = "Paged report with repeating headings",
+        [nameof(GridExportCsvHint)] = "Plain text values (.csv)",
+        [nameof(GridExportCopy)] = "Copy to clipboard",
         [nameof(SearchPlaceholder)] = "Search",
+        [nameof(GridRegexSearch)] = "Search pattern",
         [nameof(SearchResults)] = "Search results",
         [nameof(SearchResultCount)] = "{count} results",
         [nameof(SearchResultCountOfTotal)] = "{count} of {total} results",
@@ -123,7 +133,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridAllResults)] = "All results",
         [nameof(GridVisibleRows)] = "Visible rows",
         [nameof(GridAllRows)] = "All rows",
-        [nameof(GridDownloadCsv)] = "Download CSV",
+        [nameof(GridDownloadCsv)] = "CSV",
         [nameof(GridCopy)] = "Copy",
         [nameof(GridDetails)] = "Record details",
         [nameof(GridCellRangeSelected)] = "{rows} rows × {columns} columns selected",
@@ -778,20 +788,8 @@ public sealed partial class CanopyLabels {
         [nameof(ChangeCopyRequest)] = "Copy request",
         [nameof(ChangeFiltered)] = "Filtered: {filters}",
         [nameof(ChangePrintLimit)] = "[one]{count} more line is not printed.[other]{count} more lines are not printed.",
-        [nameof(TabsMore)] = "More", [nameof(TabsMoreSelected)] = "More: {label}",
-        [nameof(TabsScrollPrevious)] = "Previous tabs", [nameof(TabsScrollNext)] = "Next tabs",
-        [nameof(TabsSection)] = "Section", [nameof(TabsPosition)] = "{current} of {total}",
-        [nameof(TabsPause)] = "Pause", [nameof(TabsPlay)] = "Play",
-        [nameof(TabsMotionDisabled)] = "Automatic tabs are disabled by reduced motion",
-        [nameof(StepperStepOf)] = "Step {current} of {total}", [nameof(StepperBack)] = "Back",
-        [nameof(StepperNext)] = "Next", [nameof(StepperFinish)] = "Finish",
-        [nameof(StepperSkip)] = "Skip", [nameof(StepperSaveDraft)] = "Save draft",
-        [nameof(StepperAllSteps)] = "All steps", [nameof(StepperOptional)] = "Optional",
-        [nameof(StepperCompleted)] = "Completed", [nameof(StepperSkipped)] = "Skipped",
-        [nameof(StepperIssues)] = "{count} issues to fix", [nameof(StepperIssue)] = "1 issue to fix",
-        [nameof(DialogClose)] = "Close", [nameof(DrawerClose)] = "Close",
-        [nameof(DrawerPrevious)] = "Previous record", [nameof(DrawerNext)] = "Next record",
-        [nameof(StateLoading)] = "Loading…", [nameof(StateRetry)] = "Retry",
-        [nameof(StateDetails)] = "Details"
-    };
+        };
+        AddUiDefaults(defaults);
+        return defaults;
+    }
 }

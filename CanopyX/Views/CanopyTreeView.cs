@@ -122,9 +122,13 @@ public sealed partial class CanopyTreeView {
     /// <summary>Gets the per-control toolbar switches: filter switches, Columns, Views, Export and the more menu. All default to on.</summary>
     public CanopyTreeToolbar Toolbar { get; } = new CanopyTreeToolbar();
 
-    /// <summary>Gets the identities of the registered export formats the Export menu offers, in order.</summary>
-    /// <remarks>Each identity names a format the page registers in the browser with <c>CanopyX.registerExportFormat</c>; an identity no page registers is skipped. Empty writes nothing, which offers every registered format; a browser host's <c>exportFormats</c> option takes precedence. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
-    public IList<string> ExportFormats { get; } = new List<string>();
+    /// <summary>Gets or sets the identities of the export formats the Export menu offers, in order.</summary>
+    /// <remarks><c>xlsx</c> and <c>pdf</c> select the optional offline writers. Other identities name formats registered with <c>CanopyX.registerExportFormat</c>; unknown identities are skipped. Empty writes nothing, which offers every registered format; a browser host's <c>exportFormats</c> option takes precedence. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
+    public IList<string> ExportFormats {
+        get => _exportFormats;
+        set => _exportFormats = value ?? throw new ArgumentNullException(nameof(value));
+    }
+    private IList<string> _exportFormats = new List<string>();
 
     /// <summary>
     /// Gets or sets whether a tree with few visible rows is only as tall as its toolbar, header and rows. Longer trees keep

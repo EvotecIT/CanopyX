@@ -40,6 +40,11 @@ calendar.SaveHtmlPage("team.html");
 var fromItems = CanopyCalendar.From(meetings, x => x.Subject, x => x.Starts, x => x.Ends);
 ```
 
+For a page that ends at the calendar's content, pass `new CanopyHtmlOptions { Height = "auto" }` to `SaveHtmlPage`.
+This is useful for a short day range such as 08:00–18:00: the resource picker, headings and time slots determine the height,
+with no empty band below them. JavaScript hosts use `height: auto` on the host element. Ordinary full pages fill the window;
+fixed heights such as `600px` apply to fragments. Time slots keep their normal height and scroll inside a bounded host.
+
 That is a basic calendar: month, week, day and agenda; the calendar's own controls (Today, previous and next, the range, go to
 date, the views) and no grid toolbar; read-only; clicking an event opens a small popover with its title, time and description.
 The page loads only the core calendar part. Events may also carry `id`, `tone`, `resource`, `resourceIds`, `recurrence`, `exceptions`, `series`, `recurrenceId` and

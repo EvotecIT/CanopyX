@@ -116,6 +116,7 @@ CanopyX.Data.CanopyDataSchema.CanopyX.CanopyDataGridView View { get; }
 CanopyX.Data.CanopyDataSchema.CanopyX.CanopyGridGrouping? Grouping { get; }
 CanopyX.Data.CanopyDataSchema.CanopyX.Data.CanopyDataColumn GetColumn(System.String id)
 CanopyX.Data.CanopyDataSchema.CanopyX.Data.CanopySummaryAggregate GetAggregate(System.String id)
+CanopyX.Data.CanopyDataSchema.System.Boolean AllowRegexSearch { get; }
 CanopyX.Data.CanopyDataSchema.System.Boolean DynamicGrouping { get; }
 CanopyX.Data.CanopyDataSchema.System.Boolean Groupable { get; }
 CanopyX.Data.CanopyDataSchema.System.Boolean HasSummary { get; }

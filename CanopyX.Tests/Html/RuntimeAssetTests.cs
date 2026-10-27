@@ -110,29 +110,29 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void Assets_StayWithinTheCompressedBudget() {
-        // Combined roadmap integration: its size plus about 15%.
+        // Localized vertical export chrome adds room outside the separate shared-token allowance.
         SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.TreeGrid, 60928);
     }
 
     [Fact]
     public void InteractiveAssets_StayWithinTheirCompressedBudget() {
-        // Combined roadmap integration: its size plus about 15%.
+        // Interactive components retain their separate shared-token allowance.
         SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.InteractiveTreeGrid, 71168);
     }
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // The optional footer/hook declaration shell retains its 124 KiB component ceiling.
+        // Native fit/search/export declarations plus the merged shared-control shell measure 129,999 bytes gzip.
         // Includes the shared controls (canopyx.source/controls.css) every view now uses instead of its own copies.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 126 * 1024);
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 130560);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         // Combined roadmap integration: its size plus about 15%.
         // Includes the shared controls (canopyx.source/controls.css) every view now uses instead of its own copies.
-        // The optional flow-facts part adds one lazy index entry (version and script fingerprint): 64 bytes.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 150 * 1024 + 64);
+        // The combined N1/shared-control shell measures 154,399 bytes gzip; document engines stay lazy.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 154624);
     }
 
     [Fact]
@@ -247,7 +247,7 @@ public sealed class RuntimeAssetTests {
             // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, links and search parts,
             // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the six lazy UI parts
             // (one script and one stylesheet each).
-            Assert.Equal(27, Directory.GetFiles(directory).Length);
+            Assert.Equal(28, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

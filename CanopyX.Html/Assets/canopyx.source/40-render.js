@@ -12,6 +12,8 @@
       const grid = this.grid = h("div", "cx-grid");
       grid.id = this.id;
       grid.setAttribute("role", "treegrid");
+      // Tree canvases deliberately retain their fixed scrolling viewport when only a few rows are open.
+      grid.setAttribute("data-cx-finish-allow", "empty-band");
       grid.setAttribute("aria-label", this.view.label);
       if (this.multi) {
         grid.setAttribute("aria-multiselectable", "true");

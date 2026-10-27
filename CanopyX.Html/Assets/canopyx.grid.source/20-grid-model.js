@@ -132,6 +132,13 @@
         if (hadFocus) { const element = this.focused && this.rendered.get(this.focused); (element || this.grid).focus({ preventScroll: true }); }
         this.host.setAttribute("data-cx-ready", "true");
         if (this.searchInput && !this.searchComposing && this.searchTimer == null) this.searchInput.value = query.search;
+        if (this.searchInput) {
+          const label = query.searchMode === "regex" ? this.labels.gridRegexSearch : this.view.noun ?
+            fill(this.labels.gridSearchNoun, { noun: this.noun }) : this.labels.searchPlaceholder;
+          this.searchInput.placeholder = label; this.searchInput.setAttribute("aria-label", label);
+          this.searchInput.maxLength = query.searchMode === "regex" ? 256 : 524288;
+          this.searchInput.setCustomValidity("");
+        }
         this.syncQuerySummary();
         this.syncPager();
         this.emit("query", { query: this.acceptedQuery, revision: page.revision, total: page.total, matched: page.matched });

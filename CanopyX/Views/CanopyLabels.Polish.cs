@@ -5,7 +5,14 @@ public sealed partial class CanopyLabels {
     /// <summary>Creates complete Polish labels. Each call returns an independent, editable pack.</summary>
     public static CanopyLabels Polish() => WithPolishUi(new CanopyLabels {
         GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
+        GridDownloadXlsx = "Skoroszyt Excel (.xlsx)",
+        GridDownloadPdf = "PDF",
+        GridExportWorkbookHint = "Formatowanie, grupy i sumy",
+        GridExportPdfHint = "Raport stronicowany z powtarzanymi nagłówkami",
+        GridExportCsvHint = "Wartości tekstowe (.csv)",
+        GridExportCopy = "Kopiuj do schowka",
         SearchPlaceholder = "Szukaj",
+        GridRegexSearch = "Szukaj według wzorca",
         SearchResults = "Wyniki wyszukiwania",
         SearchResultCount = "Wyniki: {count}",
         SearchResultCountOfTotal = "Wyniki: {count} z {total}",
@@ -120,7 +127,7 @@ public sealed partial class CanopyLabels {
         GridAllResults = "Wszystkie wyniki",
         GridVisibleRows = "Widoczne wiersze",
         GridAllRows = "Wszystkie wiersze",
-        GridDownloadCsv = "Pobierz plik CSV",
+        GridDownloadCsv = "CSV",
         GridCopy = "Kopiuj",
         GridDetails = "Szczegóły rekordu",
         GridCellRangeSelected = "Zaznaczono wiersze: {rows} × kolumny: {columns}",

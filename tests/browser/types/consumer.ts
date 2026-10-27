@@ -220,8 +220,10 @@ await dataGrid.setQuery({ search: 'ready "north office"', searchMode: "words", f
   operator: "or", filters: [{ column: "name", operator: "eq", values: ["Alpha"] }],
   groups: [{ operator: "and", filters: [{ column: "name", operator: "isNotNull", values: [] }], groups: [] }]
 } });
+gridView.allowRegexSearch = true;
+await dataGrid.setQuery({ searchMode: "regex", search: "^Ready" });
 // @ts-expect-error Query modes name a supported matching contract.
-await dataGrid.setQuery({ searchMode: "regex" });
+await dataGrid.setQuery({ searchMode: "fuzzy" });
 const alternateSearchCell = { value: "Alpha", text: "Visible", searchText: "north office" };
 const searchRow: import("@evotecit/canopyx/grid").GridRow = { id: "alternate", cells: { name: alternateSearchCell } };
 GridRuntime.configure(gridView.id, { source: gridSource });
@@ -238,7 +240,8 @@ await dataGrid.toCsv({ scope: "filtered", maxRows: 1000 });
 await dataGrid.exportToHost("xlsx", { scope: "all" });
 await reportingApi.materializeExport?.({ scope: "filtered", maxRows: 500, fileName: "October inventory", locale: "pl-PL", timeZone: "utc",
   onProgress(progress) { const total: number | null = progress.total; const count: number = progress.completed; void total; void count; } });
-await reportingApi.print?.({ scope: "selected", columns: ["name"], values: "raw" });
+await reportingApi.print({ scope: "selected", columns: ["name"], values: "raw" });
+await dataGrid.print({ scope: "all", maxRows: 1000, onProgress(progress) { progress.completed.toFixed(); } });
 // @ts-expect-error Delivery phases have a fixed read/generate/ready vocabulary.
 const invalidDeliveryPhase: import("@evotecit/canopyx/grid").GridExportProgress["phase"] = "downloaded";
 createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { search: false, export: false, count: false },

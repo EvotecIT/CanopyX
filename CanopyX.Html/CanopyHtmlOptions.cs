@@ -123,7 +123,8 @@ public sealed class CanopyHtmlOptions {
 
     /// <summary>
     /// Gets or sets the height of the view as a CSS length, for example <c>600px</c> or <c>70vh</c>. Fragments without
-    /// a height use the stylesheet default (480px); full pages fill the window.
+    /// a height use the stylesheet default (480px). Full pages fill the window and ignore fixed fragment heights.
+    /// Use <c>auto</c> to let content determine the host height in either form, including short-range calendar pages.
     /// </summary>
     public string? Height { get; set; }
 

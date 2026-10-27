@@ -106,7 +106,7 @@ test("export controls download the chosen scope and preserve the existing Enter 
   const row=page.locator('.cx-row[data-cx-id="000"]');await row.focus();await page.keyboard.press('F2');await expect(row.getByRole('gridcell').first()).toBeFocused();
   await page.keyboard.press('F2');await expect(row).toBeFocused();await page.keyboard.press('Control+Enter');await expect.poll(()=>page.evaluate(()=>window.opened)).toEqual(['000']);
   await page.locator('.cx-grid-export > summary').click();await page.locator('.cx-grid-export').getByRole('combobox').selectOption('all');
-  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download CSV',exact:true}).click();
+  const download=page.waitForEvent('download');await page.getByRole('button',{name:'CSV',exact:true}).click();
   const file = await download;
   expect(file.suggestedFilename()).toBe('records.csv');
   const csv = await fs.readFile(await file.path(), 'utf8');

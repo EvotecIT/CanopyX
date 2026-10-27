@@ -40,6 +40,7 @@
     "./filter-editor.js": "./CanopyX.Html/Assets/canopyx-filter-editor.js",
     "./filter-editor.css": "./CanopyX.Html/Assets/canopyx-filter-editor.css",
     "./export.js": "./CanopyX.Html/Assets/canopyx-export.js",
+    "./office-export.js": "./CanopyX.Html/Assets/canopyx-office-export.js",
     "./history.js": "./CanopyX.Html/Assets/canopyx-history.js",
     "./grid-options.js": "./CanopyX.Html/Assets/canopyx-grid-options.js",
     "./grid-options.css": "./CanopyX.Html/Assets/canopyx-grid-options.css",
@@ -116,6 +117,9 @@
     "./locales/it.js": "./CanopyX.Html/Assets/canopyx-labels-it.js"
   },
   "files": [
+    "CanopyX.Html/Assets/canopyx-office-export.js",
+    "ThirdParty/OfficeIMO/LICENSE",
+    "ThirdParty/OfficeIMO/README.md",
     "docs/images/*.png",
     "JavaScript/*.d.ts",
     "JavaScript/locales/*.d.ts",

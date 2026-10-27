@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "3880165ccfb53427",
+      "version": "3485ad357ae86b5b",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "08c894338ee197ea",
+      "version": "cdada3cfc5cedfc2",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -146,7 +146,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "1d967e8c2f01a01b",
+      "version": "4c3dc2a47ee1f3d0",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -158,6 +158,23 @@
       ],
       "requires": [
         "ui-overlays"
+      ]
+    },
+    {
+      "name": "office-export",
+      "label": "Office export writers",
+      "version": "fe5a48454fff59fe",
+      "script": "canopyx-office-export.js",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "officeExport"
       ]
     },
     {
@@ -601,7 +618,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "42086775ae0af70b",
+      "version": "b5c0daeddd58e86a",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -650,7 +667,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "32121fa6878954a2",
+      "version": "7d7402e30ec311ca",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -752,7 +769,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "5a115e486067eada",
+      "version": "077268d4fb78c464",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [
@@ -823,7 +840,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "cceaa51540180a4b",
+      "version": "bfdf00a1fa5fc6f2",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [

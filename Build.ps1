@@ -306,6 +306,16 @@ try {
             try {
                 Invoke-ToolCommand -FileName 'npm' -Arguments @('run', 'test:distribution') -WorkingDirectory $browserRoot -Description 'JavaScript package consumer smoke' -TimeoutSeconds $DotNetCommandTimeoutSeconds
                 Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $BrowserTestTimeoutSeconds
+                # Chromium includes the real offline Office artifacts. Other engines/shards retain their browser contracts.
+                if (-not $env:CANOPYX_TEST_BROWSERS -or $env:CANOPYX_TEST_BROWSERS -eq 'all' -or ($env:CANOPYX_TEST_BROWSERS -split '\s*,\s*') -contains 'chromium') {
+                    $exportResults = Join-Path $browserRoot 'test-results'
+                    $hasOfficeArtifacts = Get-ChildItem -LiteralPath $exportResults -Filter '*.xlsx.json' -File -Recurse | Select-Object -First 1
+                    if ($env:CANOPYX_TEST_SHARD -and -not $hasOfficeArtifacts) {
+                        Write-Host 'Office artifacts belong to another browser shard; its build validates them.'
+                    } else {
+                        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('run', '--project', (Join-Path $root 'tests/exports/CanopyX.ExportValidation.csproj'), '-c', $Configuration, '--', $exportResults) -Description 'Independent Office artifact validation' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+                    }
+                }
             } finally {
                 $env:CANOPYX_EXAMPLES = $previousExamples
                 $env:CANOPYX_BENCHMARKS = $previousBenchmarks

@@ -5,7 +5,14 @@ public sealed partial class CanopyLabels {
     /// <summary>Creates complete German labels. Each call returns an independent, editable pack.</summary>
     public static CanopyLabels German() => WithGermanUi(new CanopyLabels {
         GridNoExportColumns = "Keine sichtbare Spalte unterstützt den Export.",
+        GridDownloadXlsx = "Excel-Arbeitsmappe (.xlsx)",
+        GridDownloadPdf = "PDF",
+        GridExportWorkbookHint = "Formatiert, mit Gruppen und Summen",
+        GridExportPdfHint = "Seitenbericht mit wiederholten Überschriften",
+        GridExportCsvHint = "Textwerte (.csv)",
+        GridExportCopy = "In Zwischenablage kopieren",
         SearchPlaceholder = "Suchen",
+        GridRegexSearch = "Suchmuster",
         SearchResults = "Suchergebnisse",
         SearchResultCount = "{count} Ergebnisse",
         SearchResultCountOfTotal = "{count} von {total} Ergebnissen",
@@ -120,7 +127,7 @@ public sealed partial class CanopyLabels {
         GridAllResults = "Alle Ergebnisse",
         GridVisibleRows = "Sichtbare Zeilen",
         GridAllRows = "Alle Zeilen",
-        GridDownloadCsv = "CSV herunterladen",
+        GridDownloadCsv = "CSV",
         GridCopy = "Kopieren",
         GridDetails = "Datensatzdetails",
         GridCellRangeSelected = "{rows} Zeilen × {columns} Spalten ausgewählt",

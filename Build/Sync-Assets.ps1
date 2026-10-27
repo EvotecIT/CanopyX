@@ -403,6 +403,10 @@ $partBuilds = foreach ($part in $partList) {
     $footer = $(if ($part.end) { $part.end + "`n" } else { '' }) + "installed.add($key);`n}};`n" +
         "(global.CanopyXParts ||= []).push([`"$($part.name)`", part]);`n})(typeof window !== `"undefined`" ? window : globalThis);`n"
     $script = Compress-ScriptSpacing ($header.Replace("`r`n", "`n") + $body + $footer.Replace("`r`n", "`n"))
+    if ($part.notice) {
+        $notice = [IO.File]::ReadAllText((Join-Path $root $part.notice)).Replace("`r`n", "`n").TrimEnd()
+        $script = "/*`n" + $notice + "`n*/`n" + $script
+    }
     $version = Get-AssetHash ($script + $style)
     $script = $script.Replace('__CX_PART_VERSION__', $version)
     [pscustomobject]@{

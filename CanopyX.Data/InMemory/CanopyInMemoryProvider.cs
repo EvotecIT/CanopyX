@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -257,16 +258,23 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
             cancellationToken.ThrowIfCancellationRequested();
             excluded.Add(id);
         }
-        var terms = request.SearchTerms.Select(term => {
+        var pattern = request.SearchMode == CanopyGridSearchMode.Regex && request.Search.Length != 0 ? new CanopyGridRegexSearch(request.Search) : null;
+        var clock = pattern == null ? null : Stopwatch.StartNew();
+        var terms = (pattern == null ? request.SearchTerms : Array.Empty<string>()).Select(term => {
             cancellationToken.ThrowIfCancellationRequested();
             return CanopyTextFolding.Fold(term)!;
         }).ToList();
         return records.Where(record => {
             cancellationToken.ThrowIfCancellationRequested();
             return (ids == null || ids.Contains(record.Id)) && !excluded.Contains(record.Id) &&
+                (pattern == null || Schema.SearchColumns.Any(column => {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (clock!.ElapsedMilliseconds > 100) throw new TimeoutException("Regex search exceeded its 100 ms evaluation budget.");
+                    return pattern.IsMatch(CanopyDataValues.ToSearchText(SearchValue(record, column)) ?? string.Empty);
+                })) &&
                 terms.All(term => Schema.SearchColumns.Any(column => {
                     cancellationToken.ThrowIfCancellationRequested();
-                    return ProtocolSemantics.ContainsTerm(record.Values[column.Ordinal], term);
+                    return ProtocolSemantics.ContainsTerm(SearchValue(record, column), term);
                 })) && (request.Filter == null || Matches(record, request.Filter, cancellationToken));
         }).ToList();
     }
@@ -276,6 +284,8 @@ public sealed class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICanopyRang
             throw new CanopyRequestException(CanopyRequestError.Unsupported, "A named filter requires a host provider that implements it.");
         if (node is CanopyFilterGroup group) foreach (var child in group.Children) RejectCustomFilters(child);
     }
+    private static object? SearchValue(Record record, CanopyDataColumn column) =>
+        record.Cells[column.Ordinal]?.SearchText ?? record.Values[column.Ordinal];
 
     private static bool Matches(Record record, CanopyFilterNode node, CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();

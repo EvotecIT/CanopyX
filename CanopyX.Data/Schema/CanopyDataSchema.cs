@@ -40,6 +40,7 @@ public sealed class CanopyDataSchema {
         View = view ?? throw new ArgumentNullException(nameof(view));
         var definitionJson = view.ToJson();
         ProtocolView = CanopyDataSnapshot.View(view);
+        AllowRegexSearch = view.AllowRegexSearch;
         if (view.Navigation != CanopyGridNavigation.Offset)
             throw new ArgumentException("The remote data adapter serves offset navigation; cursor views are not supported.", nameof(view));
         var allowed = columns == null ? null : new HashSet<string>(columns, StringComparer.Ordinal);
@@ -137,6 +138,9 @@ public sealed class CanopyDataSchema {
 
     /// <summary>Gets the allowed columns quick search reads.</summary>
     public IReadOnlyList<CanopyDataColumn> SearchColumns { get; }
+
+    /// <summary>Gets whether the captured grid definition allows bounded regex quick-search requests.</summary>
+    public bool AllowRegexSearch { get; }
 
     /// <summary>Gets the fixed grouping of the view, if any.</summary>
     public CanopyGridGrouping? Grouping { get; }

@@ -280,6 +280,9 @@ CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Hour = 0
 CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Month = 3
 CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Quarter = 4
 CanopyX.CanopyCalendarZoom.const CanopyX.CanopyCalendarZoom Week = 2
+CanopyX.CanopyCardTemplate : sealed class
+CanopyX.CanopyCardTemplate..ctor()
+CanopyX.CanopyCardTemplate.System.Collections.Generic.IDictionary<System.String, System.String> Slots { get; }
 CanopyX.CanopyCell : sealed class
 CanopyX.CanopyCell..ctor()
 CanopyX.CanopyCell..ctor(System.Boolean value)
@@ -562,6 +565,7 @@ CanopyX.CanopyCounts.System.String? Revision { get; set; }
 CanopyX.CanopyDataGridView : sealed class
 CanopyX.CanopyDataGridView..ctor(System.String id, System.String label)
 CanopyX.CanopyDataGridView.CanopyX.CanopyCalendar? Calendar { get; set; }
+CanopyX.CanopyDataGridView.CanopyX.CanopyCardTemplate? CardTemplate { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyColumn GetColumn(System.String id)
 CanopyX.CanopyDataGridView.CanopyX.CanopyFacetPanel? FacetPanel { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyFormatOptions? Formatting { get; set; }
@@ -585,12 +589,14 @@ CanopyX.CanopyDataGridView.CanopyX.CanopyRecordPanel? Record { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopySearchHighlight? SearchHighlight { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopySelectionMode Selection { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyTimeZone TimeZone { get; set; }
+CanopyX.CanopyDataGridView.System.Boolean AllowRegexSearch { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean AutoHeight { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean AutoRowHeight { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean DragRows { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean RowAccents { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean Search { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean StatusBar { get; set; }
+CanopyX.CanopyDataGridView.System.Boolean StickyHeader { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean Zebra { get; set; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyColumn> Columns { get; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyColumnGroup> ColumnGroups { get; }
@@ -600,7 +606,7 @@ CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyGridFo
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyGridHighlightRule> HighlightRules { get; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyGridRow> Rows { get; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyGridSort> PreSort { get; }
-CanopyX.CanopyDataGridView.System.Collections.Generic.IList<System.String> ExportFormats { get; }
+CanopyX.CanopyDataGridView.System.Collections.Generic.IList<System.String> ExportFormats { get; set; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<System.String> SearchColumns { get; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyGridAggregate> GetSummaryAggregates()
 CanopyX.CanopyDataGridView.System.Int32 PageLength { get; set; }
@@ -668,6 +674,8 @@ CanopyX.CanopyEditorOption..ctor(System.String value, System.String? label = nul
 CanopyX.CanopyEditorOption.System.Object Value { get; }
 CanopyX.CanopyEditorOption.System.String? Label { get; }
 CanopyX.CanopyEditorOption.virtual System.String ToString()
+CanopyX.CanopyExportFormats : static class
+CanopyX.CanopyExportFormats.static System.Collections.Generic.IList<System.String> Office()
 CanopyX.CanopyFacet : sealed class
 CanopyX.CanopyFacet..ctor(System.String column)
 CanopyX.CanopyFacet.CanopyX.CanopyFacetKind Kind { get; set; }
@@ -1593,6 +1601,11 @@ CanopyX.CanopyGridRecordQuery.System.String ToJson()
 CanopyX.CanopyGridRecordQuery.System.String View { get; }
 CanopyX.CanopyGridRecordQuery.System.String? Field { get; set; }
 CanopyX.CanopyGridRecordQuery.System.String? Revision { get; set; }
+CanopyX.CanopyGridRegexSearch : sealed class
+CanopyX.CanopyGridRegexSearch..ctor(System.String pattern)
+CanopyX.CanopyGridRegexSearch.System.Boolean IsMatch(System.String text)
+CanopyX.CanopyGridRegexSearch.const System.Int32 MaximumInputLength = 4096
+CanopyX.CanopyGridRegexSearch.const System.Int32 MaximumPatternLength = 256
 CanopyX.CanopyGridReporting : sealed class
 CanopyX.CanopyGridReporting..ctor()
 CanopyX.CanopyGridReporting.CanopyX.CanopyGridDetail? Detail { get; set; }
@@ -1641,6 +1654,7 @@ CanopyX.CanopyGridRowsDetail : sealed class (CanopyX.CanopyDetail)
 CanopyX.CanopyGridRowsDetail..ctor()
 CanopyX.CanopyGridRowsDetail.System.Collections.Generic.IList<CanopyX.CanopyGridRow> Rows { get; }
 CanopyX.CanopyGridSearchMode : enum System.Int32
+CanopyX.CanopyGridSearchMode.const CanopyX.CanopyGridSearchMode Regex = 2
 CanopyX.CanopyGridSearchMode.const CanopyX.CanopyGridSearchMode Substring = 0
 CanopyX.CanopyGridSearchMode.const CanopyX.CanopyGridSearchMode Words = 1
 CanopyX.CanopyGridSort : sealed class
@@ -2178,6 +2192,8 @@ CanopyX.CanopyLabels.System.String GridDetails { get; set; }
 CanopyX.CanopyLabels.System.String GridDetailsSection { get; set; }
 CanopyX.CanopyLabels.System.String GridDone { get; set; }
 CanopyX.CanopyLabels.System.String GridDownloadCsv { get; set; }
+CanopyX.CanopyLabels.System.String GridDownloadPdf { get; set; }
+CanopyX.CanopyLabels.System.String GridDownloadXlsx { get; set; }
 CanopyX.CanopyLabels.System.String GridEditAsText { get; set; }
 CanopyX.CanopyLabels.System.String GridEditCancel { get; set; }
 CanopyX.CanopyLabels.System.String GridEditCell { get; set; }
@@ -2216,8 +2232,12 @@ CanopyX.CanopyLabels.System.String GridExpandCell { get; set; }
 CanopyX.CanopyLabels.System.String GridExpandLevel { get; set; }
 CanopyX.CanopyLabels.System.String GridExport { get; set; }
 CanopyX.CanopyLabels.System.String GridExportCancelled { get; set; }
+CanopyX.CanopyLabels.System.String GridExportCopy { get; set; }
+CanopyX.CanopyLabels.System.String GridExportCsvHint { get; set; }
+CanopyX.CanopyLabels.System.String GridExportPdfHint { get; set; }
 CanopyX.CanopyLabels.System.String GridExportProgress { get; set; }
 CanopyX.CanopyLabels.System.String GridExportReading { get; set; }
+CanopyX.CanopyLabels.System.String GridExportWorkbookHint { get; set; }
 CanopyX.CanopyLabels.System.String GridFacetBin { get; set; }
 CanopyX.CanopyLabels.System.String GridFacetChoose { get; set; }
 CanopyX.CanopyLabels.System.String GridFacetClear { get; set; }
@@ -2337,6 +2357,7 @@ CanopyX.CanopyLabels.System.String GridPreviousPage { get; set; }
 CanopyX.CanopyLabels.System.String GridPreviousRecord { get; set; }
 CanopyX.CanopyLabels.System.String GridPrint { get; set; }
 CanopyX.CanopyLabels.System.String GridRangeEnd { get; set; }
+CanopyX.CanopyLabels.System.String GridRegexSearch { get; set; }
 CanopyX.CanopyLabels.System.String GridRemoveCondition { get; set; }
 CanopyX.CanopyLabels.System.String GridRemoveFilter { get; set; }
 CanopyX.CanopyLabels.System.String GridRemoveGroup { get; set; }
@@ -3028,7 +3049,7 @@ CanopyX.CanopyTreeView.System.Collections.Generic.IList<CanopyX.CanopyColumn> Co
 CanopyX.CanopyTreeView.System.Collections.Generic.IList<CanopyX.CanopyContextAction> ContextActions { get; }
 CanopyX.CanopyTreeView.System.Collections.Generic.IList<CanopyX.CanopyFilter> Filters { get; }
 CanopyX.CanopyTreeView.System.Collections.Generic.IList<CanopyX.CanopyNode> Roots { get; }
-CanopyX.CanopyTreeView.System.Collections.Generic.IList<System.String> ExportFormats { get; }
+CanopyX.CanopyTreeView.System.Collections.Generic.IList<System.String> ExportFormats { get; set; }
 CanopyX.CanopyTreeView.System.Int32 PageSize { get; set; }
 CanopyX.CanopyTreeView.System.Int32 RowHeight { get; set; }
 CanopyX.CanopyTreeView.System.String Id { get; }

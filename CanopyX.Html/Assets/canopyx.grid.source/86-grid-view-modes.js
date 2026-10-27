@@ -10,6 +10,8 @@
   Object.assign(DataGrid.prototype, {
     prepareState() {
       this.prepareViewModes();
+      if (this.view.stickyHeader !== undefined && typeof this.view.stickyHeader !== "boolean") throw new Error("CanopyX: stickyHeader is a boolean.");
+      readCardTemplate(this.view.cardTemplate, this.columns, this.layoutOptions);
       const result = MODES_BASE.prepareState.call(this);
       this.modeState(this.defaultState);
       if (this.initialState) this.adoptModes(this.initialState);
@@ -21,7 +23,7 @@
       MODES_BASE.build.call(this);
       this.host.setAttribute("data-cx-density", this.density);
       this.lifetime.signal.addEventListener("abort", () => this.host.removeAttribute("data-cx-layout"), { once: true });
-      this.modesStarted = this.highlightOptions || this.layoutOptions ? this.startViewModes() : null;
+      this.modesStarted = this.highlightOptions || this.layoutOptions || this.view.stickyHeader ? this.startViewModes() : null;
     },
     getState() { return this.modeState(MODES_BASE.getState.call(this)); },
     readGridState(state) { return Object.assign(MODES_BASE.readGridState.call(this, state), readModeState(this, state)); },

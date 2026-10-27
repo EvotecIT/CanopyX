@@ -2,7 +2,14 @@
 (function (global) {
 const labels = Object.freeze({
   gridNoExportColumns: "Nessuna colonna visibile consente l’esportazione.",
+  gridDownloadXlsx: "Cartella Excel (.xlsx)",
+  gridDownloadPdf: "PDF",
+  gridExportWorkbookHint: "Formattato, con gruppi e totali",
+  gridExportPdfHint: "Rapporto impaginato con intestazioni ripetute",
+  gridExportCsvHint: "Valori di testo (.csv)",
+  gridExportCopy: "Copia negli appunti",
   searchPlaceholder: "Cerca",
+  gridRegexSearch: "Schema di ricerca",
   searchResults: "Risultati della ricerca",
   searchResultCount: "Risultati: {count}",
   searchResultCountOfTotal: "Risultati: {count} su {total}",
@@ -117,7 +124,7 @@ const labels = Object.freeze({
   gridAllResults: "Tutti i risultati",
   gridVisibleRows: "Righe visibili",
   gridAllRows: "Tutte le righe",
-  gridDownloadCsv: "Scarica CSV",
+  gridDownloadCsv: "CSV",
   gridCopy: "Copia",
   gridDetails: "Dettagli del record",
   gridCellRangeSelected: "{rows} righe × {columns} colonne selezionate",

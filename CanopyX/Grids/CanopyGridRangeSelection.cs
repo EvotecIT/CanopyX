@@ -17,7 +17,9 @@ public sealed class CanopyGridRangeSelection {
     public bool MultipleRanges { get; set; } = true;
 
     /// <summary>Gets or sets whether a single range shows the fill handle, which drags down to repeat or continue its values. Defaults to false.</summary>
-    /// <remarks>Filled values go through the paste event and the editing part, as pasted values do.</remarks>
+    /// <remarks>Numbers, ISO dates and numbered labels continue their step (one day or one unit for a single seed).
+    /// Ctrl or Cmd held at drag release copies the seed values instead. Ctrl/Cmd+D also copies the range's first row.
+    /// Filled values go through the paste event and the editing part, as pasted values do.</remarks>
     public bool FillHandle { get; set; }
 
     internal void WriteJson(CanopyJsonWriter writer) {

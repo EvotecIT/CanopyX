@@ -109,8 +109,8 @@
         case "endsWith": return String(value).endsWith(String(operand));
         case "like": case "matches": return pattern.test(String(value).slice(0, 4096));
         case "notLike": case "notMatches": return !pattern.test(String(value).slice(0, 4096));
-        case "olderThan": return value < Date.now() - operand;
-        case "withinLast": { const now = Date.now(); return value >= now - operand && value <= now; }
+        case "olderThan": return value < budget.now() - operand;
+        case "withinLast": { const now = budget.now(); return value >= now - operand && value <= now; }
       }
       return false;
     };

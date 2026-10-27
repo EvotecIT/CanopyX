@@ -10,6 +10,7 @@
   function validateGridView(view) {
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
     view = gridColumnDefaults(view);
+    if (view.allowRegexSearch !== undefined && typeof view.allowRegexSearch !== "boolean") throw new Error("CanopyX: allowRegexSearch is a boolean.");
     if (view.rowIdentity !== undefined && !["stableKey", "ordinal"].includes(view.rowIdentity))
       throw new Error("CanopyX: rowIdentity must be stableKey or ordinal.");
     if (view.rowIdentity === "ordinal" && view.live)
@@ -97,7 +98,11 @@
     if (input.cursor !== undefined) {
       gridCursor(input.cursor); if (!query.revision) throw new Error("CanopyX: a cursor requires its dataset revision.");
     }
-    if (input.searchMode !== undefined && !["substring", "words"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
+    if (input.searchMode !== undefined && !["substring", "words", "regex"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
+    if (query.searchMode === "regex") {
+      if (!view.allowRegexSearch) throw new Error("CanopyX: this grid does not allow regex search.");
+      if (query.search) boundedPattern(query.search, false);
+    }
     const columns = new Map(view.columns.map(column => [column.id, column])), sorts = new Set();
     if (input.sort !== undefined && !Array.isArray(input.sort) || input.filters !== undefined && !Array.isArray(input.filters))
       throw new Error("CanopyX: grid sort and filters must be arrays.");
