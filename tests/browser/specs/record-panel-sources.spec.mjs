@@ -52,6 +52,8 @@ async function openOnDemand(page, mode, extra) {
 test("a host mutation reloads one cached record without changing the grid revision", async ({ page }) => {
   await openOnDemand(page, "loader", "window.changeRecord = () => { records.c001.thumbprint = 'Reloaded evidence'; };");
   await page.evaluate(api + ".openRecord('c001')");
+  // The cache contract starts after loading; its repaint can otherwise replace the tab during the click.
+  await expect(drawer(page).locator(".cx-record-note")).toHaveCount(0);
   await drawer(page).getByRole("tab",{name:"Fields",exact:true}).click();
   await expect(drawer(page).getByText("A1B2C3D4E5F60001", {exact:true})).toBeVisible();
   await drawer(page).getByRole("button",{name:"Close",exact:true}).click();
@@ -60,6 +62,7 @@ test("a host mutation reloads one cached record without changing the grid revisi
   await page.evaluate(api + ".openRecord('c001')");
   expect(await page.evaluate(() => window.requests.length)).toBe(before);
   await page.evaluate(api + ".openRecord('c001', {reload:true})");
+  await expect(drawer(page).locator(".cx-record-note")).toHaveCount(0);
   await drawer(page).getByRole("tab",{name:"Fields",exact:true}).click();
   await expect.poll(() => page.evaluate(() => window.requests.length)).toBe(before + 1);
   await expect(drawer(page).getByText("Reloaded evidence", {exact:true})).toBeVisible();
