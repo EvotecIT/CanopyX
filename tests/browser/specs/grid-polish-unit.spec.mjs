@@ -47,7 +47,7 @@ test("bounded regex search reuses the condition grammar and rejects overlong inp
 });
 
 test("card slot templates bind declared columns and insert literal text without parsing markup", () => {
-  const validate = helpers(["canopyx.source/87-view-modes.js"], "readCardTemplate"),
+  const validate = helpers(["canopyx.grid.source/11-card-template.js"], "readCardTemplate"),
     columns = [{ id: "name" }, { id: "count" }], layout = { modes: ["fit", "cards"] };
   validate({ name: "{name} · {count}" }, columns, layout);
   for (const templates of [{ missing: "{name}" }, { name: "{missing}" }, { name: "{name" }, { name: "x".repeat(2049) }])

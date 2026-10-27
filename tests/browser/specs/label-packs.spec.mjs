@@ -37,7 +37,7 @@ for (const [language,labels,staticLabels] of packs) {
     const classic = fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-labels-${language}.js`),'utf8');
     const html = viewPage(view).replace('<body class="cx-page">','<body class="cx-page"><main><h1>Host inventory</h1>')
       .replace('</body>','</main></body>').replace('lang="en"',`lang="${language}"`).replace('</head>',
-      `<script>${classic}\nCanopyX.configure('translated',{labels:{...CanopyXLocales.${language}.labels,gridCopy:'Host copy'}});</script></head>`);
+      `<script>${classic}\nCanopyX.configure('translated',{labels:{...CanopyXLocales.${language}.labels,gridExportCopy:'Host copy'}});</script></head>`);
     await page.route('http://canopyx.test/translated',route=>route.fulfill({contentType:'text/html',body:html}));
     await page.goto('http://canopyx.test/translated');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
     // Lazy parts bring their own labels; flow features use the same manifest as the runtime and C# embedding.

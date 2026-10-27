@@ -10,8 +10,10 @@ internal static class PlanExample {
             var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
             Create().SaveHtmlPage(Path.Combine(output, "plan" + suffix + ".html"), new CanopyHtmlOptions { Title = "Migration plan", Theme = theme, Height = "1000px" });
         }
-        File.WriteAllText(Path.Combine(output, "plan-static.html"), "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Migration plan</title>" +
-            CanopyStaticHtml.RenderGrid(Create()) + "</html>");
+        File.WriteAllText(Path.Combine(output, "plan-static.html"), "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Migration plan</title></head><body>" +
+            "<div role=\"region\" aria-label=\"Migration plan table\" tabindex=\"0\" style=\"max-width:100%;overflow-x:auto\">" +
+            CanopyStaticHtml.RenderGrid(Create()) + "</div></body></html>");
     }
 
     internal static CanopyDataGridView Create() {
