@@ -58,7 +58,7 @@ export default defineConfig({
   workers: localWorkers ? Number(localWorkers) : process.env.CI ? 1 : 2,
   retries: 0,
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
-  outputDir: "test-results",
+  outputDir: process.env.CANOPYX_TEST_OUTPUT_DIR || "test-results",
   projects: [
     ...browserNames.map(browserName => ({ name: browserName, testIgnore: [visualSpec, calendarPerformanceSpec, ...(browserName === "chromium" ? [] : [galleryFinishSpec])], use: {
       browserName,

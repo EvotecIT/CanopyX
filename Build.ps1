@@ -308,7 +308,10 @@ try {
                 Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $BrowserTestTimeoutSeconds
                 # Chromium includes the real offline Office artifacts. Other engines/shards retain their browser contracts.
                 if (-not $env:CANOPYX_TEST_BROWSERS -or $env:CANOPYX_TEST_BROWSERS -eq 'all' -or ($env:CANOPYX_TEST_BROWSERS -split '\s*,\s*') -contains 'chromium') {
-                    $exportResults = Join-Path $browserRoot 'test-results'
+                    $exportResults = if ($env:CANOPYX_TEST_OUTPUT_DIR) {
+                        if ([IO.Path]::IsPathRooted($env:CANOPYX_TEST_OUTPUT_DIR)) { $env:CANOPYX_TEST_OUTPUT_DIR }
+                        else { Join-Path $browserRoot $env:CANOPYX_TEST_OUTPUT_DIR }
+                    } else { Join-Path $browserRoot 'test-results' }
                     $hasOfficeArtifacts = Get-ChildItem -LiteralPath $exportResults -Filter '*.xlsx.json' -File -Recurse | Select-Object -First 1
                     if ($env:CANOPYX_TEST_SHARD -and -not $hasOfficeArtifacts) {
                         Write-Host 'Office artifacts belong to another browser shard; its build validates them.'

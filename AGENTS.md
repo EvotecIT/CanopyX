@@ -63,3 +63,5 @@ After editing runtime source parts, reassemble the runtime, then rebuild so the 
 ./Build/Sync-Assets.ps1
 ./Build.ps1 -Configuration Release -SkipPack
 ```
+
+`CANOPYX_TEST_OUTPUT_DIR` can place browser artifacts outside the checkout; the quality loop uses the same directory for independent Office artifact validation. `CANOPYX_TEST_WORKERS` overrides the local worker count when the machine has room for it.

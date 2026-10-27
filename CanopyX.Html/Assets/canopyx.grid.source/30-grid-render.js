@@ -79,8 +79,7 @@
           // An earlier frame may reveal a hidden host before its positive width is observed.
           // Keep it transparent until fitting can use that measurement instead of the cached zero.
           if (this.fitContentWidth === 0) return;
-          style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
-            height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
+          style.setProperty("--cx-min-h", this.minimumGridHeight() + "px");
           this.fitHeight();
           if (!(this.sized = this.hasGridSize())) return;
           this.applyWidths();
@@ -99,6 +98,23 @@
       this.resizeObserver.observe(grid);
       this.resizeObserver.observe(this.head);
       this.resizeObserver.observe(host);
+    },
+
+    // Flexible empty states fill the remaining host space. Their assigned height cannot feed the host's minimum.
+    minimumGridHeight() {
+      if (this.toolbar.hidden) return 0;
+      return [...this.host.children].reduce((height, child) => {
+        if (child === this.grid) return height;
+        const css = getComputedStyle(child);
+        if (css.position === "absolute" || css.position === "fixed") return height;
+        let block = child.offsetHeight;
+        if (child === this.notice && child.classList.contains("cx-state")) {
+          const items = [...child.children];
+          block = (items.length ? items.at(-1).getBoundingClientRect().bottom - items[0].getBoundingClientRect().top : 0) +
+            parseFloat(css.paddingTop) + parseFloat(css.paddingBottom);
+        }
+        return height + block;
+      }, this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2);
     },
 
     setLogicalTop(top) {
