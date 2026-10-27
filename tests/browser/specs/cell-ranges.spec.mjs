@@ -207,8 +207,9 @@ test("the cell menu copies, pastes, selects all and clears; the keyboard opens i
   await serveGrid(page, budgetView({ rangeSelection: true }));
   await page.evaluate(() => api.setCellRanges([{ startRow: 1, endRow: 2, startColumn: "mar", endColumn: "apr" }]));
   await bodyCell(page, 1, 4).click({ button: "right" });
-  const menu = page.locator(".cx-cell-menu [role=menu]");
+  const menu = page.getByRole("menu", { name: "Cell actions" });
   await expect(menu).toBeVisible();
+  await expect(menu).toHaveAttribute("data-hfx-part", "menu");
   expect(await menu.locator("[role=menuitem]").allTextContents()).toEqual(["Copy cells", "Copy cells with headers", "Paste", "Select all cells", "Clear cell selection"]);
   expect(await ranges(page)).toHaveLength(1);
   await page.keyboard.press("Enter");
@@ -228,12 +229,53 @@ test("the cell menu copies, pastes, selects all and clears; the keyboard opens i
   await page.keyboard.press("Escape");
 });
 
+test("host menu dismissal closes the migrated cell menu with view and event scope", async ({ page }) => {
+  await serveGrid(page, budgetView({ rangeSelection: true }));
+  await page.evaluate(() => api.setCellRanges([{ startRow: 1, startColumn: "mar" }]));
+  const menu = page.getByRole("menu", { name: "Cell actions" });
+  const open = async () => {
+    await bodyCell(page, 1, 4).click({ button: "right" });
+    await expect(menu).toBeVisible();
+  };
+  await open();
+  await page.evaluate(() => document.getElementById("host").dispatchEvent(new CustomEvent("canopyx:state", { detail: { query: api.getQuery(), state: api.getState() } })));
+  await expect(menu).toBeVisible();
+  await page.evaluate(() => api.closeMenus());
+  await expect(menu).not.toBeVisible();
+  await open();
+  await page.evaluate(() => {
+    const unrelated = document.createElement("section"); document.body.append(unrelated);
+    unrelated.dispatchEvent(new CustomEvent("canopyx:closemenus", { bubbles: true })); unrelated.remove();
+  });
+  await expect(menu).toBeVisible();
+  await page.evaluate(() => document.getElementById("host").dispatchEvent(new CustomEvent("canopyx:closemenus", { bubbles: true })));
+  await expect(menu).not.toBeVisible();
+  await open();
+  await page.evaluate(() => document.dispatchEvent(new CustomEvent("canopyx:closemenus")));
+  await expect(menu).not.toBeVisible();
+});
+
 test("the more menu copies the ranges", async ({ page }) => {
   await serveGrid(page, budgetView({ rangeSelection: true }));
   await page.evaluate(() => api.setCellRanges([{ startRow: 0, startColumn: "jan" }]));
   await page.locator(".cx-grid-overflow > summary").click();
   await page.locator(".cx-grid-overflow").getByRole("button", { name: "Copy cells" }).click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("1,000\r\n");
+});
+
+test("a press inside a cell range opens a shared sheet and destroy releases its modal lock", async ({ page }) => {
+  await serveGrid(page, budgetView({ rangeSelection: true }));
+  await page.evaluate(() => api.setCellRanges([{ startRow: 1, endRow: 2, startColumn: "jan", endColumn: "feb" }]));
+  const before = await ranges(page), overflow = await page.evaluate(() => document.documentElement.style.overflow);
+  const cell = bodyCell(page, 1, 2), box = await cell.boundingBox();
+  await cell.dispatchEvent("pointerdown", { pointerType: "touch", pointerId: 17, isPrimary: true, clientX: box.x + 5, clientY: box.y + 5, bubbles: true });
+  await expect(page.getByRole("dialog", { name: "Cell actions" })).toHaveAttribute("data-side", "bottom");
+  await expect(page.getByRole("menu", { name: "Cell actions" }).getByRole("menuitem").first()).toBeFocused();
+  expect(await ranges(page)).toEqual(before);
+  await page.evaluate(() => api.destroy());
+  await expect(page.getByRole("menu", { name: "Cell actions" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Cell actions" })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe(overflow);
 });
 
 test("row selection keeps its own controls beside cell ranges", async ({ page }) => {

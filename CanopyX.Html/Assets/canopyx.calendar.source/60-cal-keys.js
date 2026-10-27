@@ -10,7 +10,8 @@
       // Focus in the body comes back after the repaint; focus in the bar, the legend, a popover or a menu stays where it is.
       const independent = document.activeElement?.closest(".cx-cal-rpick");
       const resourceControl = independent && this.calBody.contains(independent) ? document.activeElement.classList.contains("cx-cal-rpick-prev") ? ".cx-cal-rpick-prev" : document.activeElement.classList.contains("cx-cal-rpick-next") ? ".cx-cal-rpick-next" : ".cx-cal-rpick-select" : null;
-      const owned = this.calBody.contains(document.activeElement) && !this.calMore && !independent;
+      const owned = (this.calBody.contains(document.activeElement) && !this.calMore && !independent) || !!this.calMenu?.contains(document.activeElement);
+      this.calMenuBinding?.close("render", false, true);
       this.calCloseMore(false); this.calHideHover();
       const scroll = options.keep ? this.calScrollState?.() : null;
       const view = this.calView;
@@ -82,7 +83,7 @@
         const real = event, key = event.key === "ArrowLeft" ? "ArrowRight" : "ArrowLeft";
         event = new Proxy(real, { get: (target, name) => name === "key" ? key : typeof target[name] === "function" ? target[name].bind(target) : target[name] });
       }
-      if (this.calEditKey?.(event) || this.calMenuKey(event)) return;
+      if (this.calEditKey?.(event)) return;
       const target = event.target, eventElement = target.closest(".cx-cal-ev"), more = target.closest(".cx-cal-more-btn");
       if ((event.ctrlKey || event.metaKey) && (event.key === "z" || event.key === "y" || event.key === "Z")) {
         if (!this.cal.editable) return;

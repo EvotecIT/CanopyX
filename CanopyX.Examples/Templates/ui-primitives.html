@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-hfx-style="evotec" data-hfx-mode="light" data-hfx-density="comfortable">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UI primitives · CanopyX</title>
+  <style>{{style}}</style>
+  <style>
+    html { color-scheme:light; }
+    html[data-theme="dark"] { color-scheme:dark; }
+    *,*::before,*::after { box-sizing:border-box; }
+    body { margin:0;background:var(--hfx-color-surface-page);color:var(--hfx-color-text);font-family:var(--hfx-font-sans);font-size:var(--hfx-type-body-size);line-height:var(--hfx-type-body-line); }
+    .gallery { max-inline-size:1280px;margin-inline:auto;padding:var(--hfx-space-6); }
+    .gallery-header { display:flex;align-items:start;justify-content:space-between;gap:var(--hfx-space-5);margin-block-end:var(--hfx-space-6); }
+    .gallery-header h1 { margin:var(--hfx-space-2) 0;font:var(--hfx-weight-display) var(--hfx-type-display-size)/var(--hfx-type-display-line) var(--hfx-font-display);letter-spacing:var(--hfx-tracking-display); }
+    .gallery-header p { max-inline-size:64ch; }
+    .gallery-eyebrow { font-size:var(--hfx-type-caption-size);font-weight:var(--hfx-weight-semibold);letter-spacing:var(--hfx-tracking-overline);text-transform:uppercase;color:var(--hfx-color-accent-text); }
+    .gallery p { margin-block:var(--hfx-space-2) var(--hfx-space-4);color:var(--hfx-color-text-secondary); }
+    .gallery :is(.cx-dialog,.cx-drawer,.cx-popover) [data-hfx-part="body"] > :first-child { margin-block-start:0; }
+    .gallery h2 { margin:0;font:var(--hfx-weight-semibold) var(--hfx-type-title-size)/var(--hfx-type-title-line) var(--hfx-font-display); }
+    .gallery h3 { font-size:var(--hfx-type-heading-size);line-height:var(--hfx-type-heading-line); }
+    .gallery-toolbar { display:flex;flex-wrap:wrap;gap:var(--hfx-space-3);align-items:end; }
+    .gallery-toolbar label[hidden] { display:none; }
+    .gallery-toolbar label,.gallery-field { display:grid;gap:var(--hfx-space-1);font-size:var(--hfx-type-small-size);color:var(--hfx-color-text-secondary); }
+    .gallery-page :where(input:not([type="checkbox"]),select) { min-block-size:var(--hfx-control-height-md);max-inline-size:100%;padding:var(--hfx-space-1) var(--hfx-space-2);border:var(--hfx-border-width) solid var(--hfx-color-border-control);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:inherit; }
+    .gallery-page input[type="checkbox"] { accent-color:var(--hfx-color-accent); }
+    .gallery-page :where(button:not(.cx-tab):not(.cx-menu-item):not(.cx-step-btn):not(.cx-overlay-close):not(.cx-picker-trigger):not(.cx-tabs-scroll):not(.cx-tabs-play)) { min-block-size:var(--hfx-control-height-md);padding:var(--hfx-space-1) var(--hfx-control-padding-x);border:var(--hfx-border-width) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:inherit;cursor:pointer; }
+    .gallery-page :where(button:not(.cx-tab):not(.cx-menu-item):not(.cx-step-btn)):hover { background:var(--hfx-color-hover); }
+    .gallery-page button.gallery-primary { background:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast);border-color:var(--hfx-color-accent); }
+    .gallery-page button.gallery-primary:hover { background:var(--hfx-color-accent-hover); }
+    .gallery-page button.gallery-danger { color:var(--hfx-color-status-bad-fg);border-color:var(--hfx-color-status-bad-border); }
+    .gallery-page :focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
+    .gallery a { color:var(--hfx-color-accent-text);text-underline-offset:var(--hfx-space-1); }
+    .gallery-nav { display:flex;flex-wrap:wrap;gap:var(--hfx-space-4);margin-block:var(--hfx-space-4); }
+    .gallery-section { margin-block-end:var(--hfx-space-6); }
+    .gallery-section-heading { margin-block-end:var(--hfx-space-4); }
+    .gallery-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--hfx-space-4);align-items:start; }
+    .gallery-card { min-inline-size:0;padding:var(--hfx-card-padding-y) var(--hfx-card-padding-x);border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-container);background:var(--hfx-color-surface); }
+    .gallery-card > h3 { margin-block:0 var(--hfx-space-1); }
+    .gallery-card > p { font-size:var(--hfx-type-small-size); }
+    .gallery-wide { grid-column:1 / -1; }
+    .gallery-demo { border-block-start:var(--hfx-border-width) solid var(--hfx-color-border);padding-block-start:var(--hfx-space-4); }
+    .gallery-demo p:last-child { margin-block-end:0; }
+    .gallery [data-cx-tabs]:not([data-cx-ready]) { display:block; }
+    .gallery-actions { display:flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-2);margin-block:var(--hfx-space-3); }
+    .gallery-note { display:flex;align-items:start;gap:var(--hfx-space-2);font-size:var(--hfx-type-small-size); }
+    .gallery-note input { margin-block-start:var(--hfx-space-1); }
+    .gallery-summary { display:grid;grid-template-columns:max-content minmax(0,1fr);gap:var(--hfx-space-2) var(--hfx-space-4);margin:0; }
+    .gallery-summary dt { color:var(--hfx-color-text-muted); }
+    .gallery-summary dd { margin:0;overflow-wrap:anywhere; }
+    .gallery-help { font-size:var(--hfx-type-caption-size);color:var(--hfx-color-text-muted); }
+    .gallery-status { display:inline-flex;padding:var(--hfx-space-0-5) var(--hfx-space-2);border:var(--hfx-border-width) solid var(--hfx-color-status-good-border);border-radius:var(--hfx-radius-status);background:var(--hfx-color-status-good-bg);color:var(--hfx-color-status-good-fg);font-size:var(--hfx-type-caption-size); }
+    .gallery-log { padding-inline-start:var(--hfx-space-5);margin-block-end:0;overflow-wrap:anywhere; }
+    .gallery-log li { padding-block:var(--hfx-space-1);color:var(--hfx-color-text-secondary); }
+    .gallery-count { font-family:var(--hfx-font-mono);font-variant-numeric:tabular-nums; }
+    .gallery details > summary { cursor:pointer;font-weight:var(--hfx-weight-semibold); }
+    .gallery details[open] > summary { margin-block-end:var(--hfx-space-4); }
+    .gallery-fallback { margin-block:var(--hfx-space-4);padding:var(--hfx-space-4);border:var(--hfx-border-width) solid var(--hfx-color-border); }
+    [data-gallery-needs-js] { display:none; }
+    html[data-gallery-ready] [data-gallery-needs-js] { display:flex; }
+    @media(max-width:800px) { .gallery-header { flex-direction:column; }.gallery-grid { grid-template-columns:minmax(0,1fr); }.gallery { padding:var(--hfx-space-4); } }
+    @media(forced-colors:active) { .gallery-card { border-color:CanvasText; }.gallery-status { border-color:CanvasText;background:Canvas;color:CanvasText; }.gallery-primary { border:var(--hfx-border-width) solid ButtonText; } }
+    @media print { .gallery-toolbar,.gallery-nav,.gallery-actions,.gallery-note,#activity-log-section { display:none!important; }.gallery { max-inline-size:none;padding:0; }.gallery-grid { display:block; }.gallery-card { break-inside:avoid;margin-block-end:var(--hfx-space-4); } }
+  </style>
+  <script>
+    (() => {
+      const root = document.documentElement, params = new URLSearchParams(location.search);
+      const style = params.get('style'), mode = params.get('mode'), density = params.get('density');
+      if (['evotec','neutral','slate','warm','contrast'].includes(style)) root.dataset.hfxStyle = style;
+      const chosenMode = ['light','dark'].includes(mode) ? mode : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.dataset.theme = chosenMode; root.dataset.hfxMode = chosenMode; root.style.colorScheme = chosenMode;
+      if (['comfortable','compact'].includes(density)) root.dataset.hfxDensity = density;
+    })();
+  </script>
+</head>
+<body class="gallery-page">
+<main class="gallery">
+  <header class="gallery-header">
+    <div><span class="gallery-eyebrow">CanopyX · UI primitives</span><h1>Small controls. Complete flows.</h1><p>Explore tabs, guided steps and overlays. Every example keeps its content readable and its actions visible.</p>
+      <nav class="gallery-nav" aria-label="Gallery sections"><a href="#navigation">Tabs</a><a href="#guided-steps">Steppers</a><a href="#overlays">Overlays</a><a href="#activity-log-section">Activity log</a></nav>
+    </div>
+    <div class="gallery-toolbar" role="group" aria-label="Gallery appearance" data-gallery-needs-js>
+      <label>Theme<select id="gallery-theme"><option value="evotec">Evotec</option><option value="neutral">Neutral</option><option value="slate">Slate</option><option value="warm">Warm</option><option value="contrast">High contrast</option></select></label>
+      <label>Mode<select id="gallery-mode"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <label>Spacing<select id="gallery-density"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>
+    </div>
+  </header>
+  <noscript><p>JavaScript is disabled. All tab and step panels are shown below. Overlay content is included after the overlay examples.</p></noscript>
+  <p id="gallery-runtime-status" role="status">All section content is available below.</p>
+  <section id="navigation" class="gallery-section" aria-labelledby="navigation-title">
+    <div class="gallery-section-heading"><h2 id="navigation-title">Find your place</h2><p>Four tab styles, the same keyboard model. Narrow containers switch to a picker that keeps labels and counts together.</p></div>
+    <div class="gallery-grid">
+      <article class="gallery-card gallery-wide"><h3>Underline</h3><p>Page sections with shareable links and a visible selection indicator.</p><div class="gallery-demo">{{tabs-underline}}</div></article>
+      <article class="gallery-card gallery-wide"><h3>Pills</h3><p>Compact filters that can wrap when space is limited.</p><div class="gallery-demo">{{tabs-pills}}</div></article>
+      <article class="gallery-card gallery-wide"><h3>Segmented</h3><p>Three mutually exclusive views in one track.</p><div class="gallery-demo">{{tabs-segmented}}</div></article>
+      <article class="gallery-card gallery-wide"><h3>Vertical</h3><p>Settings sections with counts and a disabled destination.</p><div class="gallery-demo">{{tabs-vertical}}</div></article>
+      <article class="gallery-card"><h3>More sections</h3><p>Overflowing sections move into More. Counts remain visible in its menu.</p><div class="gallery-demo">{{tabs-overflow}}</div></article>
+      <article class="gallery-card"><h3>Load, fail, recover</h3><p>Choose Load details to load content on demand. Try recovery fails once; Retry then succeeds.</p><div class="gallery-demo">{{tabs-deferred}}</div></article>
+      <article class="gallery-card"><h3>A guided tour</h3><p>Advances every eight seconds. Pause, focus, hover or choose a section to take control.</p><div class="gallery-demo">{{tabs-auto}}</div><label class="gallery-note" data-gallery-needs-js><input id="guard-selection" type="checkbox">Keep the current section selected. Clear this option to allow section changes.</label></article>
+    </div>
+  </section>
+  <section id="guided-steps" class="gallery-section" aria-labelledby="steps-title">
+    <div class="gallery-section-heading"><h2 id="steps-title">Move work forward</h2><p>Validation, optional steps and clear progress. Use Next with an empty name to see a recoverable error.</p></div>
+    <div class="gallery-grid">
+      <article class="gallery-card gallery-wide"><h3>Create a workspace</h3><p>Enter a name, choose preferences, then create the example workspace. Save draft records progress at any step.</p><div class="gallery-demo">{{stepper}}</div><p id="workspace-result" role="status">No workspace created yet.</p></article>
+      <article class="gallery-card"><h3>Vertical review</h3><p>Completed, error and locked states. Confirm the check to continue.</p><div class="gallery-demo">{{stepper-vertical}}</div></article>
+      <article class="gallery-card"><h3>Static and report views</h3><p>A simple progress header needs no interaction.</p>{{stepper-static}}<details><summary>Read the complete report</summary>{{stepper-report}}</details></article>
+    </div>
+  </section>
+  <section id="overlays" class="gallery-section" aria-labelledby="overlays-title">
+    <div class="gallery-section-heading"><h2 id="overlays-title">Keep the context</h2><p>Open an overlay, complete an action, then return to the same place. Escape closes the top overlay.</p></div>
+    <div class="gallery-grid">
+      <article class="gallery-card"><h3>Dialog</h3><p>Edit a name in a focused form, or review an explicit archive confirmation.</p><div class="gallery-actions">{{dialog-trigger}}{{alert-trigger}}</div><p id="dialog-result" role="status">Workspace name: Research workspace</p></article>
+      <article class="gallery-card"><h3>Drawer</h3><p>Read three records with Previous and Next, or use Up and Down. On a phone the drawer becomes a full-height sheet.</p><div class="gallery-actions">{{drawer-trigger}}</div><p>Current record: <span id="record-summary">Workspace overview</span></p></article>
+      <article class="gallery-card"><h3>Popover and tooltip</h3><p>Apply a small filter without leaving the page. Hover or focus Keyboard help for a tooltip.</p><div class="gallery-actions">{{popover-trigger}}{{tooltip-trigger}}</div><p id="filter-result" role="status">Showing all records.</p></article>
+      <article class="gallery-card"><h3>Menu</h3><p>Try a checkbox, a density choice and the Share submenu. Disabled actions stay readable.</p><div class="gallery-actions">{{menu-trigger}}</div><p id="menu-details">Three example records are included.</p><p id="menu-result" role="status">No menu action selected.</p></article>
+    </div>
+    {{dialog}}{{alert}}{{drawer}}{{popover}}{{tooltip}}{{menu}}
+    <noscript><h3>Overlay content</h3>{{overlay-fallback}}</noscript>
+  </section>
+  <section id="activity-log-section" class="gallery-section gallery-card" aria-labelledby="log-title">
+    <h2 id="log-title">Activity log</h2><p><span id="callback-count" class="gallery-count">0</span> callbacks recorded. The latest eight actions appear here.</p>
+    <p id="callback-status" role="status" aria-live="polite">Choose a tab or open an overlay to begin.</p>
+    <ol id="callback-log" class="gallery-log" reversed><li>No actions yet.</li></ol>
+    <div class="gallery-actions" data-gallery-needs-js><button id="clear-activity" type="button">Clear activity</button></div>
+  </section>
+</main>
+
+<template data-gallery-fragment="overview"><p>A shared place for plans, files and the latest activity.</p><dl class="gallery-summary"><dt>Workspace</dt><dd>Research workspace</dd><dt>Owner</dt><dd>Platform team</dd><dt>Status</dt><dd><span class="gallery-status">Ready</span></dd></dl></template>
+<template data-gallery-fragment="activity"><p>Twelve updates this week, including three new files and a completed review.</p><ul><li>Capacity plan reviewed</li><li>Workspace guide updated</li><li>Three attachments added</li></ul></template>
+<template data-gallery-fragment="files"><p>Three files are ready to review.</p><ul><li>Workspace guide.pdf</li><li>Capacity plan.xlsx</li><li>Meeting notes.docx</li></ul></template>
+<template data-gallery-fragment="archived"><p>Archived content is unavailable in this example. This disabled tab can receive keyboard focus but cannot be selected.</p></template>
+<template data-gallery-fragment="day"><p>Today: review the capacity plan and collect feedback from the team.</p></template>
+<template data-gallery-fragment="week"><p>This week: finish the workspace guide and prepare the monthly review.</p></template>
+<template data-gallery-fragment="month"><p>This month: publish the guide and review all shared records.</p></template>
+<template data-gallery-fragment="overflow"><p>Every section remains available in the overflow menu, including its count and selected state.</p></template>
+<template data-gallery-fragment="ready"><p>This panel is available immediately. Other panels demonstrate loading and recovery.</p></template>
+<template data-gallery-fragment="deferred-fallback"><p>Details include the workspace owner, three files and twelve recent updates.</p></template>
+<template data-gallery-fragment="retry-fallback"><p>The recovered view contains the latest workspace summary. With scripting enabled, the first attempt demonstrates an error and a Retry action.</p></template>
+<template data-gallery-fragment="tour-organize"><p>Organize records into clear sections so that the next action is easy to find.</p></template>
+<template data-gallery-fragment="tour-review"><p>Review details in a drawer while keeping your place in the workspace.</p></template>
+<template data-gallery-fragment="tour-share"><p>Share a focused view with a link to the selected section.</p></template>
+<template data-gallery-fragment="wizard-details"><label class="gallery-field" for="workspace-name">Workspace name<input id="workspace-name" name="workspace-name" required maxlength="80" placeholder="For example, Research workspace" autocomplete="off"></label><p class="gallery-help">A name is required before you continue. Nothing is sent to a server.</p></template>
+<template data-gallery-fragment="wizard-preferences"><label class="gallery-note"><input id="workspace-updates" type="checkbox" checked>Include a weekly activity summary</label><p>This step is optional. Choose Skip to keep the defaults.</p></template>
+<template data-gallery-fragment="wizard-review"><p>Review your choices, then create the workspace.</p><dl class="gallery-summary"><dt>Name</dt><dd id="review-name">Your workspace name appears here.</dd><dt>Weekly summary</dt><dd id="review-updates">Included</dd></dl></template>
+<template data-gallery-fragment="collected"><p>All three records have been collected and are ready for review.</p></template>
+<template data-gallery-fragment="checks"><label class="gallery-note"><input id="review-confirmed" type="checkbox">I have checked the record names and owners.</label><p>Confirm this check before advancing to the summary.</p></template>
+<template data-gallery-fragment="notes"><p>No additional notes are required. This optional step can be skipped.</p></template>
+<template data-gallery-fragment="review-summary"><p>The names and owners have been checked. Finish the review to record the result.</p></template>
+<template data-gallery-fragment="delivery"><p>Delivery is locked until a reviewer approves the records.</p></template>
+<template data-gallery-fragment="dialog-body"><label class="gallery-field" for="dialog-name">Display name<input id="dialog-name" value="Research workspace" required maxlength="80" autocomplete="off"></label></template>
+<template data-gallery-fragment="dialog-footer"><button type="button" data-cx-cancel>Cancel</button><button type="button" id="save-workspace" class="gallery-primary">Save changes</button></template>
+<template data-gallery-fragment="alert-footer"><button type="button" data-cx-cancel>Keep workspace</button><button type="button" id="confirm-archive" class="gallery-danger" data-danger="true">Archive workspace</button></template>
+<template data-gallery-fragment="drawer-body"><h3 id="drawer-record-name">Workspace overview</h3><p><span class="gallery-status">Ready</span></p><dl class="gallery-summary"><dt>Owner</dt><dd id="drawer-record-owner">Platform team</dd><dt>Record</dt><dd id="drawer-record-position">1 of 3</dd><dt>Description</dt><dd id="drawer-record-description">A summary of shared files and recent activity.</dd></dl><div class="gallery-actions"><button type="button" id="previous-record">Previous record</button><button type="button" id="next-record">Next record</button></div></template>
+<template data-gallery-fragment="drawer-footer"><button type="button" data-cx-close>Close</button><button type="button" id="choose-record" class="gallery-primary">Use this record</button></template>
+<template data-gallery-fragment="popover-body"><label class="gallery-field" for="record-status">Record status<select id="record-status"><option value="all">All records</option><option value="ready">Ready</option><option value="review">Needs review</option></select></label></template>
+<template data-gallery-fragment="popover-footer"><button type="button" id="reset-filter">Reset</button><button type="button" id="apply-filter" class="gallery-primary">Apply</button></template>
+
+{{ui-parts}}
+<script>{{script}}</script>
+<script>
+(() => {
+  const root = document.documentElement, byId = id => document.getElementById(id);
+  const status = byId('gallery-runtime-status'), api = window.CanopyX;
+  if (!api?.tabs || !api?.stepper || !api?.dialog) {
+    status.textContent = 'Interactive controls are unavailable. All tab and step content is shown below.';
+    return;
+  }
+  status.textContent = 'Interactive examples are loading. All section content remains available below.';
+  let count = 0;
+  const controllers = [], bind = (kind, id, options = {}) => {
+    const controller = api[kind](byId(id), options); controllers.push(controller); return controller;
+  };
+  function record(message) {
+    count++; byId('callback-count').textContent = String(count); byId('callback-status').textContent = message;
+    const log = byId('callback-log');
+    if (count === 1) log.replaceChildren();
+    const entry = document.createElement('li'); entry.textContent = message; log.prepend(entry); log.start = count;
+    while (log.children.length > 8) log.lastElementChild.remove();
+  }
+  function setAppearance(control, key, value) {
+    control.value = value;
+    control.addEventListener('change', () => {
+      root.dataset[key] = control.value;
+      if (key === 'hfxMode') { root.dataset.theme = control.value; root.style.colorScheme = control.value; }
+      record('Appearance changed: ' + control.options[control.selectedIndex].text);
+    });
+  }
+  byId('gallery-theme').closest('label').hidden = root.dataset.galleryHostThemes !== 'true';
+  setAppearance(byId('gallery-theme'), 'hfxStyle', root.dataset.hfxStyle);
+  setAppearance(byId('gallery-mode'), 'hfxMode', root.dataset.hfxMode);
+  setAppearance(byId('gallery-density'), 'hfxDensity', root.dataset.hfxDensity);
+  bind('tabs', 'sections', { hash: true, transition: 'fade', beforeChange: () => {
+    if (!byId('guard-selection').checked) return true;
+    record('Section change cancelled. Clear Keep the current section selected to continue.'); return false;
+  } });
+  bind('tabs', 'filters'); bind('tabs', 'period', { hash: true }); bind('tabs', 'settings'); bind('tabs', 'more-sections');
+  let recoveryAttempts = 0;
+  const delay = signal => new Promise((resolve, reject) => {
+    const abort = () => { clearTimeout(timer); reject(new DOMException('Cancelled', 'AbortError')); };
+    const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, 650);
+    if (signal.aborted) abort(); else signal.addEventListener('abort', abort, { once: true });
+  });
+  bind('tabs', 'deferred', { tabs: [
+    { id: 'loaded', deferred: true, loader: async (tab, signal) => {
+      await delay(signal); record('Workspace details loaded.');
+      const paragraph = document.createElement('p'); paragraph.textContent = 'Details loaded: Platform team owns three files with twelve recent updates.'; return paragraph;
+    } },
+    { id: 'retry', deferred: true, loader: async (tab, signal) => {
+      await delay(signal);
+      if (++recoveryAttempts === 1) throw new Error('The example request failed. Choose Retry to try again.');
+      record('The request recovered successfully.');
+      const paragraph = document.createElement('p'); paragraph.textContent = 'Recovered successfully. The latest workspace summary is now available.'; return paragraph;
+    } }
+  ] });
+  bind('tabs', 'tour', { autoProgress: { interval: 8000, pauseOnHover: true, pauseOnFocus: true } });
+  bind('stepper', 'setup', {
+    validate: step => {
+      if (step.id !== 'details') return true;
+      const field = byId('workspace-name'), valid = field.value.trim().length > 0;
+      field.setAttribute('aria-invalid', String(!valid));
+      if (!valid) record('Validation needs a workspace name.');
+      return valid || ['Enter a workspace name before continuing.'];
+    },
+    onSaveDraft: state => record('Draft saved at ' + state.selected + '.'),
+    onFinish: () => { byId('workspace-result').textContent = 'Created workspace: ' + byId('workspace-name').value.trim(); record('Workspace created.'); }
+  });
+  bind('stepper', 'review-flow', { validate: step => {
+    if (step.id !== 'checks') return true;
+    const valid = byId('review-confirmed').checked;
+    byId('review-confirmed').setAttribute('aria-invalid', String(!valid));
+    return valid || ['Confirm the record names and owners before continuing.'];
+  }, onFinish: () => record('Record review finished.') });
+  const dialog = bind('dialog', 'edit-workspace'), archive = bind('dialog', 'archive-workspace');
+  const records = [
+    { name: 'Workspace overview', owner: 'Platform team', description: 'A summary of shared files and recent activity.' },
+    { name: 'Service capacity', owner: 'Operations team', description: 'Capacity estimates for the next review period.' },
+    { name: 'Monthly resource summary with a longer descriptive title', owner: 'Support team', description: 'A consolidated view of records awaiting the monthly review.' }
+  ];
+  let recordIndex = 0;
+  function moveRecord(direction) {
+    recordIndex = (recordIndex + direction + records.length) % records.length;
+    const item = records[recordIndex];
+    byId('drawer-record-name').textContent = item.name; byId('drawer-record-owner').textContent = item.owner;
+    byId('drawer-record-description').textContent = item.description; byId('drawer-record-position').textContent = (recordIndex + 1) + ' of ' + records.length;
+    byId('record-summary').textContent = item.name; record('Record selected: ' + item.name);
+  }
+  const drawer = bind('drawer', 'record-details', { records: moveRecord, container: document.documentElement });
+  const popover = bind('popover', 'view-options'); bind('tooltip', 'shortcut-help');
+  bind('menu', 'record-actions', { onSelect: (item, event, element, detail) => {
+    if (item.id === 'comfortable' || item.id === 'compact') { root.dataset.hfxDensity = item.id; byId('gallery-density').value = item.id; }
+    if (item.id === 'show-details') byId('menu-details').hidden = !detail.checked;
+    const message = item.id === 'show-link' ? 'Example link: ' + location.href : item.label + (detail.checked === undefined ? '' : detail.checked ? ' enabled' : ' disabled');
+    byId('menu-result').textContent = message; record('Menu: ' + message);
+  } });
+  byId('previous-record').addEventListener('click', () => moveRecord(-1));
+  byId('next-record').addEventListener('click', () => moveRecord(1));
+  byId('choose-record').addEventListener('click', () => { record('Using record: ' + records[recordIndex].name); drawer.close(); });
+  byId('save-workspace').addEventListener('click', () => {
+    const field = byId('dialog-name');
+    field.setCustomValidity(field.value.trim() ? '' : 'Enter a display name.');
+    if (!field.reportValidity()) return;
+    byId('dialog-result').textContent = 'Workspace name: ' + field.value.trim(); record('Workspace name saved.'); dialog.close();
+  });
+  byId('dialog-name').addEventListener('input', event => event.target.setCustomValidity(''));
+  byId('confirm-archive').addEventListener('click', () => { byId('dialog-result').textContent = 'Example workspace archived.'; record('Workspace archived.'); archive.close(); });
+  byId('apply-filter').addEventListener('click', () => {
+    const select = byId('record-status'); byId('filter-result').textContent = 'Showing: ' + select.options[select.selectedIndex].text + '.';
+    record('Record filter applied: ' + select.value); popover.close();
+  });
+  byId('reset-filter').addEventListener('click', () => { byId('record-status').value = 'all'; byId('filter-result').textContent = 'Showing all records.'; record('Record filter reset.'); });
+  byId('clear-activity').addEventListener('click', () => {
+    count = 0; byId('callback-count').textContent = '0'; byId('callback-status').textContent = 'Activity cleared.';
+    const entry = document.createElement('li'); entry.textContent = 'No actions yet.'; byId('callback-log').replaceChildren(entry); byId('callback-log').removeAttribute('start');
+  });
+  for (const id of ['sections','filters','period','settings','more-sections','deferred','tour']) {
+    byId(id).addEventListener('cx-tabs:change', event => record('Tab selected: ' + event.detail.to.label));
+  }
+  for (const id of ['setup','review-flow']) byId(id).addEventListener('cx-stepper:change', event => {
+    byId('review-name').textContent = byId('workspace-name').value.trim() || 'Unnamed workspace';
+    byId('review-updates').textContent = byId('workspace-updates').checked ? 'Included' : 'Not included';
+    record('Step selected: ' + event.detail.to.label);
+  });
+  for (const [id, kind] of [['edit-workspace','dialog'],['archive-workspace','dialog'],['record-details','drawer'],['view-options','popover'],['shortcut-help','tooltip'],['record-actions','menu']]) {
+    byId(id).addEventListener('cx-' + kind + ':open', () => record(kind.charAt(0).toUpperCase() + kind.slice(1) + ' opened.'));
+  }
+  Promise.all(controllers.map(controller => controller.ready)).then(() => {
+    root.dataset.galleryReady = 'true'; status.textContent = 'Ready. Use Tab to reach controls and arrow keys to explore tabs and menus.';
+  }).catch(error => { status.textContent = 'Some interactive controls could not load. Reload the page to try again.'; console.error(error); });
+  window.addEventListener('pagehide', () => controllers.forEach(controller => controller.destroy()), { once: true });
+})();
+</script>
+</body>
+</html>

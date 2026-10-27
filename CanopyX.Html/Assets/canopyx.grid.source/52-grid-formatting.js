@@ -5,7 +5,7 @@
   // core carries them through readGridState untouched, and the part validates them when the view is applied. A grid whose
   // part cannot load keeps every other feature and reports the error.
   const GRID_FORMAT = definePart(DataGrid, "formatting", "conditional formatting", () => ({ DataGrid, h, setText, setClass, fill, gridFreeze, gridDateInputMoment,
-    cellValue, cellText, foldText, toneOf, toneVariable, numberFormat, gridButton, gridOption, gridInputLabel, gridIcon, gridDecorateButton, GRID_REPORTING, loadPart,
+    cellValue, cellText, foldText, toneOf, toneVariable, numberFormat, gridButton, gridVariant, gridOption, gridInputLabel, gridIcon, gridDecorateButton, GRID_REPORTING, loadPart,
     definePart, announceMenu, boundedPattern, wildcardMatch, svgIcon, overlayTheme }));
   Object.assign(DataGrid.prototype, {
     loadFormatting() { return this.formatLoad ||= loadPart(GRID_FORMAT).then(() => this.startFormatting(), error => { this.formatLoad = null; throw error; }); },

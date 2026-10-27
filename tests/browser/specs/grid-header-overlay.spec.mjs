@@ -172,12 +172,16 @@ test('header context and keyboard menus and the Columns panel reach the same col
   await page.keyboard.press('Escape');
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnVisible('c3', false));
   await openGridControl(page, 'columns');
-  await page.locator('.cx-grid-column-choice[data-cx-column="c3"]').getByRole('button', { name: 'Menu for Port 3', exact: true }).click();
+  const columnsPanel = page.locator('.cx-grid-columns');
+  const hiddenColumnMenu = page.locator('.cx-grid-column-choice[data-cx-column="c3"]').getByRole('button', { name: 'Menu for Port 3', exact: true });
+  await hiddenColumnMenu.click();
   await page.getByRole('menuitem', { name: 'Filter…', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Port 3: Filter…' })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Port 3: Filter…' })).toBeFocused();
   await page.keyboard.press('Escape');
-  await expect(page.locator('.cx-grid')).toBeFocused();
+  await expect(hiddenColumnMenu).toBeFocused();
+  await expect(columnsPanel).toHaveJSProperty('open', true);
+  await expect(page.getByRole('dialog', { name: 'Port 3: Filter…' })).toHaveCount(0);
 });
 
 for (const dark of [false, true]) test(`pinned cells are opaque and show an edge only under scrolling in ${dark ? 'dark' : 'light'}`, async ({ page }) => {

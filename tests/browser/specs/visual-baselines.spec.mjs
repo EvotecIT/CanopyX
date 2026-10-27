@@ -2,7 +2,9 @@
 // Chromium on Windows is the baseline engine (see playwright.config.mjs). Refresh the images after an intended visual
 // change with `npm run test:visual:update` in tests/browser, then review every changed image before committing it.
 import { expect, test } from "@playwright/test";
-import { exampleUrl, nextFrames } from "./support.mjs";
+import fs from "node:fs";
+import path from "node:path";
+import { exampleUrl, nextFrames, repo } from "./support.mjs";
 import { pinTestFont, testFontState } from "./visual-font.mjs";
 
 // Each example has a light page and a dark page; pages without a dark variant follow the system theme.
@@ -53,6 +55,27 @@ async function settledBox(page) {
     box = next;
   }
   throw new Error("The view's height did not settle.");
+}
+
+// The theme proof under each HtmlForgeX host palette: shared controls, a grid and a tree, so a role change shows everywhere.
+const hostCss = fs.readFileSync(path.join(repo, "tests/fixtures/hfx-role-host.css"), "utf8");
+for (const style of ["evotec", "neutral", "slate", "warm", "contrast"]) for (const theme of ["light", "dark"]) {
+  test(`theme-proof matches its baseline (${style}, ${theme})`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await pinTestFont(page);
+    // The calendar marks today, so the page opens at the same fixed moment as the calendar baselines.
+    await page.clock.setFixedTime(new Date("2026-10-16T10:30:00Z"));
+    await page.addInitScript(css => {
+      const sheet = new CSSStyleSheet(); sheet.replaceSync(css);
+      document.adoptedStyleSheets = [sheet, ...document.adoptedStyleSheets]; addEventListener("DOMContentLoaded", () => document.documentElement.dataset.proofHost = "true", { capture: true, once: true });
+    }, hostCss);
+    await page.emulateMedia({ reducedMotion: "reduce", colorScheme: theme });
+    await page.goto(exampleUrl("theme-proof.html") + `?style=${style}&mode=${theme}`);
+    await page.waitForFunction(() => [...document.querySelectorAll("[data-canopyx-host]")].every(host => host.hasAttribute("data-cx-ready")));
+    await nextFrames(page);
+    await page.evaluate(() => { scrollTo(0, 0); document.activeElement?.blur?.(); });
+    await expect(page).toHaveScreenshot(`theme-proof-${style}-${theme}.png`, { fullPage: true, animations: "disabled", caret: "hide" });
+  });
 }
 
 for (const size of sizes) for (const theme of ["light", "dark"]) {

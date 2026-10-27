@@ -99,6 +99,8 @@ test('only a filtered header shows the filled accent funnel; column menus appear
 test('column value filter keeps Select all in the checkbox column with a right-aligned total',async({page})=>{
   await open(page);await menu(page,'State').click();await page.getByRole('menuitem',{name:'Filter…',exact:true}).click();
   const pop=page.getByRole('dialog',{name:'State: Filter…'});await expect(pop.locator('.cx-val')).toHaveCount(2);
+  // Measure the settled popover: during its scale-in entrance a scroller's snapped content and the rows outside it differ.
+  await pop.evaluate(element=>Promise.all(element.getAnimations({subtree:true}).map(animation=>animation.finished)));
   const all=pop.getByRole('checkbox',{name:'Select all values',exact:true}),first=pop.locator('.cx-val input').first();
   const allBox=await box(all),firstBox=await box(first);expect(Math.abs(allBox.left-firstBox.left)).toBeLessThanOrEqual(0.5);
   expect(await all.evaluate(input=>input===input.parentElement.firstElementChild)).toBe(true);

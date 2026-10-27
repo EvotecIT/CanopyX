@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Spanish labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Spanish() => new CanopyLabels {
+    public static CanopyLabels Spanish() => WithSpanishUi(new CanopyLabels {
         GridNoExportColumns = "Ninguna columna visible permite exportar.",
         SearchPlaceholder = "Buscar",
         SearchResults = "Resultados de búsqueda",
@@ -782,5 +782,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Copiar solicitud",
         ChangeFiltered = "Filtrado: {filters}",
         ChangePrintLimit = "{count} líneas más no se imprimen.",
-    };
+    });
 }

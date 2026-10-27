@@ -125,9 +125,9 @@ public sealed class GridFormattingTests {
         Assert.DoesNotContain("formatting", CanopyHtmlAssets.GetRequiredParts(plain).Select(part => part.Name));
         var formatted = View();
         formatted.FormatRules.Add(CanopyFormatRule.ForCell("hot", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Danger)));
-        Assert.Equal(new[] { "presenters", "filter-editor", "export", "formatting" }, CanopyHtmlAssets.GetRequiredParts(formatted).Select(part => part.Name));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "formatting" }, CanopyHtmlAssets.GetRequiredParts(formatted).Select(part => part.Name));
         formatted.Formatting = new CanopyFormatOptions { Editor = true };
-        Assert.Equal(new[] { "presenters", "filter-editor", "export", "formatting", "format-editor" }, CanopyHtmlAssets.GetRequiredParts(formatted).Select(part => part.Name));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "formatting", "format-editor" }, CanopyHtmlAssets.GetRequiredParts(formatted).Select(part => part.Name));
         var fragment = formatted.ToHtmlFragment();
         Assert.Contains("application/x-canopyx-formatting", fragment);
         Assert.Contains("application/x-canopyx-format-editor", fragment);

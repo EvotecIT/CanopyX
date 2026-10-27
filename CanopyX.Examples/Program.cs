@@ -41,6 +41,10 @@ if (Number("--child-pack") is int childPack) bundleOptions.ChildPackBytes = chil
 var positional = args.Where((arg, index) => !arg.StartsWith("--", StringComparison.Ordinal) && (index == 0 || !valueOptions.Contains(args[index - 1]))).ToArray();
 var output = positional.Length > 0 ? positional[0] : Path.Combine(AppContext.BaseDirectory, searchBench ? "search-bench" : packBench ? "pack-bench" : "output");
 Directory.CreateDirectory(output);
+if (args.Contains("--ui-primitives")) {
+    await UiPrimitivesExample.RunAsync(output);
+    return;
+}
 var clock = Stopwatch.StartNew();
 if (args.Contains("--shared-tokens")) {
     SharedTokensExample.Write(output);
@@ -86,6 +90,7 @@ inline.SaveHtmlPage(Path.Combine(output, "inline.html"), new CanopyHtmlOptions {
 Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
 SharedTokensExample.Write(output);
+ThemeProofExample.Write(output);
 OrdinalGridExample.Write(output);
 ReportGridLayoutExample.Write(output);
 CursorGridExample.Write(output);
@@ -180,6 +185,7 @@ WriteTemplate("checkboxes.html", Path.Combine(output, "checkboxes.html"),
     CheckboxView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }), CanopyRuntime.InteractiveTreeGrid);
 WriteTemplate("interactions.html", Path.Combine(output, "interactions.html"),
     InteractionView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }), CanopyRuntime.InteractiveTreeGrid);
+await UiPrimitivesExample.RunAsync(output);
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 

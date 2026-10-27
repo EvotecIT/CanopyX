@@ -2,6 +2,7 @@
 // The checks assert behaviour (what opens, what is selected, what scrolls), not pixels.
 import { expect, test } from "@playwright/test";
 import { viewPage, nextFrames } from "./support.mjs";
+import { waitForEntryMotion } from "./part-fixture-support.mjs";
 
 const columns = [
   { id: "name", title: "Name", kind: "text", sortable: true },
@@ -83,6 +84,7 @@ test("a column menu opens by tap and its entries sort the column", async ({ page
   await page.getByRole("button", { name: "Menu for Name", exact: true }).tap();
   const menu = page.getByRole("menu", { name: "Menu for Name" });
   await expect(menu).toBeVisible();
+  await waitForEntryMotion(menu);
   const box = await menu.boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390 + 0.5);

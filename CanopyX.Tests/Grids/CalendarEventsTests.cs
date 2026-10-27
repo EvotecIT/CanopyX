@@ -213,7 +213,9 @@ public sealed class CalendarEventsTests {
         Assert.Contains("<html lang=\"ar\" dir=\"rtl\">", page);
         Assert.DoesNotContain("{{dir}}", page);
         Assert.Contains("<div class=\"cx-host\" data-canopyx-host dir=\"ltr\"", grid.ToHtmlFragment(new CanopyHtmlOptions { Direction = CanopyTextDirection.Ltr }));
-        Assert.DoesNotContain(" dir=", grid.ToHtmlFragment());
+        var defaultHost = System.Text.RegularExpressions.Regex.Match(grid.ToHtmlFragment(), @"<div\b[^>]*\bdata-canopyx-host\b[^>]*>").Value;
+        Assert.NotEmpty(defaultHost);
+        Assert.DoesNotContain(" dir=", defaultHost);
         Assert.DoesNotContain(" dir=", grid.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }).Substring(0, 200));
         var tree = new CanopyTreeView("tree", "Tree");
         tree.Columns.Add(new CanopyColumn("name", "Name"));

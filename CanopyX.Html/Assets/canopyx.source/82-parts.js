@@ -6,7 +6,7 @@
   // the content-hashed names when the runtime itself is content-hashed, the plain names otherwise. A part installs only
   // when its version is this build's; a failed load can be retried. A part's requires load, and install, before it.
   const PART_URL = typeof document !== "undefined" && document.currentScript?.src;
-  const PARTS = __CX_PARTS__, PART_CODE = new Map(), partName = name => typeof name === "string" && /^[a-z][a-z\d-]{0,31}$/.test(name);
+  const PARTS = __CX_PARTS__, PART_CODE = new Map(), SHARED_PARTS = {}, partName = name => typeof name === "string" && /^[a-z][a-z\d-]{0,31}$/.test(name);
   /** Registers a part's code ({ version, requires?, install(context) }) under its name; parts of this build call it as they run. */
   function registerPart(name, part) {
     if (!partName(name) || !part || typeof part.version !== "string" || typeof part.install !== "function" ||
@@ -48,7 +48,7 @@
       }
       const code = PART_CODE.get(part.name);
       if (code?.version !== part.version) throw new Error("CanopyX: " + part.label + " and runtime must come from the same build.");
-      for (const name of code.requires || []) await loadPart(part.parts[name]);
+      for (const name of code.requires || []) await loadPart(part.parts[name] || SHARED_PARTS[name]);
       code.install(part.context());
     }).catch(error => { part.ready = null; throw error; });
   }

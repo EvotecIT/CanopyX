@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete French labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels French() => new CanopyLabels {
+    public static CanopyLabels French() => WithFrenchUi(new CanopyLabels {
         GridNoExportColumns = "Aucune colonne visible ne permet l’exportation.",
         SearchPlaceholder = "Rechercher",
         SearchResults = "Résultats de la recherche",
@@ -782,5 +782,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Copier la demande",
         ChangeFiltered = "Filtré : {filters}",
         ChangePrintLimit = "{count} lignes de plus ne sont pas imprimées.",
-    };
+    });
 }

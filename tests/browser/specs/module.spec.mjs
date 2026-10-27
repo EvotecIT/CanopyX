@@ -3,10 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
 import { repo, row, nextFrames } from "./support.mjs";
+import { partFixture } from "./part-fixture-support.mjs";
 
 const assets = path.join(repo, "CanopyX.Html/Assets");
 const runtime = fs.readFileSync(path.join(assets, "canopyx-module.mjs"), "utf8");
 const style = fs.readFileSync(path.join(assets, "canopyx-interactive.css"), "utf8");
+const parts = partFixture("tree-tools", "ui-menu");
 const view = { protocol: "canopyx/2", type: "view", id: "module", label: "Module files", rowHeight: 28,
   pageSize: 100, selection: "multiple", checkboxes: "hierarchical", columns: [{ id: "name", title: "Name", kind: "text", width: 320, editable: true },
     { id: "size", title: "Size", kind: "number", width: 120 }],
@@ -17,8 +19,10 @@ async function serve(page, script, body = '<div id="tree" class="cx-host"></div>
     const pathname = new URL(route.request().url()).pathname;
     if (pathname === "/runtime.mjs") return route.fulfill({ contentType: "text/javascript", body: runtime });
     if (pathname === "/classic.js") return route.fulfill({ contentType: "text/javascript", body: classic });
-    // The tree tools part loads from beside the module, as a host serves it.
-    if (/^\/canopyx-tree-tools\.(js|css)$/.test(pathname)) return route.fulfill({ contentType: pathname.endsWith(".css") ? "text/css" : "text/javascript", body: fs.readFileSync(path.join(assets, pathname.slice(1)), "utf8") });
+    // Serve each requested tool and shared dependency from the shipped manifest.
+    const asset = parts.files.get(pathname.slice(1));
+    if (asset) return route.fulfill(asset);
+    if (pathname !== "/") return route.fulfill({ status: 404, body: "" });
     return route.fulfill({ contentType: "text/html", body: '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Module host</title><style>'
       + style + '</style>' + (classic ? '<script src="/classic.js"></script>' : "")
       + '</head><body class="cx-page">' + body + '<script type="module">' + script + '</script></body></html>' });

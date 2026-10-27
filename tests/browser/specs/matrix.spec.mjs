@@ -246,6 +246,24 @@ test("a matrix whose rows fit is as tall as they are, and a long one fills its h
   expect(await page.locator("#host").evaluate(host => [host.style.height, host.style.maxHeight])).toEqual(["520px", ""]);
 });
 
+test("scrolled to the end, the last row sits fully above the sticky totals row", async ({ page }) => {
+  for (const height of [180, 230]) {
+    await mountMatrix(page, matrixDoc(), { height });
+    const scroll = page.locator(".cx-mx-scroll");
+    expect(await scroll.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+    await scroll.evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await nextFrames(page);
+    const box = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll(".cx-mx-row")].filter(row => row.getBoundingClientRect().height > 0);
+      const last = rows.reduce((lowest, row) => row.getBoundingClientRect().bottom > lowest.getBoundingClientRect().bottom ? row : lowest);
+      return { label: last.querySelector(".cx-mx-rowhead").textContent, bottom: last.getBoundingClientRect().bottom,
+        footer: document.querySelector(".cx-mx-frow").getBoundingClientRect().top };
+    });
+    expect(box.label, "the last row is the last one in the matrix").toBe("Row F");
+    expect(box.bottom, box.label + " ends at or above the totals row").toBeLessThanOrEqual(box.footer + 0.5);
+  }
+});
+
 test("the self cells of a square matrix count nowhere, unless the diagonal holds data", async ({ page }) => {
   const square = { protocol: "canopyx/2", type: "matrix", id: "square", label: "Square", square: true, columnTitle: "Source",
     rows: { title: "Destination", items: ["a", "b", "c"].map(id => ({ id, label: id.toUpperCase() })) }, states: STATES, cells: ["000", "201", "220"] };

@@ -4,6 +4,7 @@
 import { test, expect } from "@playwright/test";
 import path from "node:path";
 import { viewPage, nextFrames, openExample, openGridControl } from "./support.mjs";
+import { requiredParts } from "./part-fixture-support.mjs";
 
 async function capture(page, name) { if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, name + ".png") }); }
 async function open(page, document, width = 1100, script = "") {
@@ -311,10 +312,13 @@ test("a tree loads the export part on first use and offers its Export menu", asy
   });
   await openExample(page, "wide-tree.html");
   // The tree tools part is installed; the export part is not, until the menu opens.
-  expect(await page.evaluate(() => window.__canopyxParts)).toEqual(["tree-tools"]);
+  const initialParts = requiredParts("tree-tools").map(part => part.name);
+  expect(await page.evaluate(() => window.__canopyxParts.slice().sort())).toEqual(initialParts.slice().sort());
+  expect(await page.evaluate(() => window.__canopyxParts)).not.toContain("export");
   await page.locator(".cx-grid-export > summary").click();
   await expect(page.locator(".cx-grid-export").getByRole("button", { name: "Download CSV" })).toBeVisible();
-  expect(await page.evaluate(() => window.__canopyxParts)).toEqual(["tree-tools", "export"]);
+  const exportParts = requiredParts("tree-tools", "export").map(part => part.name);
+  expect(await page.evaluate(() => window.__canopyxParts.slice().sort())).toEqual(exportParts.slice().sort());
   expect(page.errors).toEqual([]);
 });
 // Auto height on trees, as on flat grids: a short tree is as tall as its toolbar, header and rows inside the host's height

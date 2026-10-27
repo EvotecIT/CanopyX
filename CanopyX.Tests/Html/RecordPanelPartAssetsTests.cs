@@ -14,7 +14,7 @@ public sealed class RecordPanelPartAssetsTests {
         // Guard: the part's size plus about 15% headroom (docs/plugins.md, size budgets).
         // Combined roadmap integration: its size plus about 15%.
         Assert.True(size <= 22016, "The record panel part is " + size + " bytes gzip; the guard is 21.5 KiB.");
-        Assert.Empty(part.Requires);
+        Assert.Equal(new[] { "ui-menu" }, part.Requires);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid })
             Assert.True(part.IsShippedWith(runtime), "The record panel part ships with " + runtime + ".");
         Assert.Contains("RECORD_IMPL.paint", part.Script);
@@ -39,7 +39,7 @@ public sealed class RecordPanelPartAssetsTests {
         Assert.Contains("record-panel", Names(grid));
         grid.GetColumn("names").Presenter = null;
         grid.Record = new CanopyRecordPanel();
-        Assert.Equal(new[] { "presenters", "filter-editor", "export", "record-panel" }, Names(grid));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "record-panel" }, Names(grid));
         // Record fields with history presenters bring the history part; a tree collection brings the tree tools.
         grid.Record.Fields.Add(new CanopyColumn("trend", "Trend") { Kind = CanopyColumnKind.Number, Presenter = CanopyGridPresenter.SparklineBars() });
         Assert.Contains("history", Names(grid));

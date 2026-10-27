@@ -6,21 +6,21 @@
     dialog.querySelector(".cx-record-footer")?.remove();
     const spec = recordSpec(view), switches = spec.actions || {}, labels = view.labels, items = [];
     const failed = error => { recordAnnounce(dialog, error?.message ?? String(error)); view.emit("error", { error }); };
-    const add = (label, task, prominent = false, visible = () => true) => {
+    const add = (label, task, prominent = false, visible = () => true, disabled = false) => {
       let running = false, button;
       const run = async () => {
-        if (running || !visible()) return;
+        if (running || disabled || !visible()) return;
         running = true; if (button) button.disabled = true;
         try { return await task(); }
-        finally { running = false; if (button) button.disabled = false; }
+        finally { running = false; if (button) button.disabled = disabled; }
       };
-      const item = { label, task: run, visible, primary: typeof prominent === "function" ? prominent : () => prominent === true };
+      const item = { label, task: run, visible, disabled, primary: typeof prominent === "function" ? prominent : () => prominent === true };
       items.push(item);
       if (prominent) {
         let footer = dialog.querySelector(".cx-record-footer");
         if (!footer) { footer = h("footer", "cx-record-footer"); dialog.appendChild(footer); }
         button = recordButton(label, () => { Promise.resolve().then(run).catch(failed); }, "cx-record-btn cx-record-primary");
-        item.footer = button;
+        button.disabled = disabled; item.footer = button;
         footer.appendChild(button);
       }
     };
@@ -39,48 +39,34 @@
         if (typeof value !== "function") return value === undefined ? fallback : value === true;
         try { return value(context()) === true; } catch (error) { failed(error); return false; }
       };
-      add(action.label, () => action.run(context()), () => condition(action.prominent, false), () => condition(action.visible, true));
+      add(action.label, () => action.run(context()), () => condition(action.prominent, false), () => condition(action.visible, true), action.disabled === true);
     }
     if (!items.length) return;
-    // A menu button: Enter, Space or a click opens the menu on its first item; arrows move, Escape or Tab closes it.
-    const menu = h("div", "cx-record-menu"), toggle = recordButton("", () => show(list.hidden), "cx-record-menu-btn", "more"), list = h("div", "cx-record-menu-list");
+    // Share keyboard handling, focus return and nested Escape order with every other menu.
+    const menu = h("div", "cx-record-menu"), toggle = h("button", "cx-record-btn cx-record-menu-btn"), list = h("div", "cx-menu"), actions = new Map();
+    toggle.type = "button"; toggle.appendChild(recordIcon("more"));
     list.id = dialog.id + "-actions"; list.setAttribute("role", "menu"); list.setAttribute("aria-label", labels.recordActions); list.hidden = true;
     toggle.setAttribute("aria-label", labels.recordActions); toggle.title = labels.recordActions;
-    toggle.setAttribute("aria-haspopup", "menu"); toggle.setAttribute("aria-expanded", "false"); toggle.setAttribute("aria-controls", list.id);
-    const show = open => {
-      list.hidden = !open; toggle.setAttribute("aria-expanded", String(open));
-      if (open) buttons.find(button => !button.hidden)?.focus();
-    };
-    const buttons = items.map(item => {
-      const button = recordButton(item.label, () => {
-        show(false); toggle.focus();
-        Promise.resolve().then(item.task).catch(failed);
-      }, "cx-record-menu-item");
-      button.setAttribute("role", "menuitem"); button.tabIndex = -1;
+    for (const item of items) {
+      const button = h("button", "cx-record-btn cx-record-menu-item"); button.type = "button"; setText(button, item.label);
+      button.setAttribute("role", "menuitem"); button.disabled = item.disabled;
+      button.dataset.itemId = String(actions.size); actions.set(button.dataset.itemId, item.task);
       item.button = button;
-      return button;
-    });
-    list.append(...buttons); menu.append(toggle, list); identity.after(menu);
-    menu.addEventListener("keydown", event => {
-      if (list.hidden) return;
-      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); show(false); toggle.focus(); return; }
-      if (event.key === "Tab") { show(false); return; }
-      const visible = buttons.filter(button => !button.hidden), at = visible.indexOf(document.activeElement);
-      if (at < 0 || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
-      event.preventDefault(); event.stopPropagation();
-      visible[{ ArrowDown: (at + 1) % visible.length, ArrowUp: (at - 1 + visible.length) % visible.length, Home: 0, End: visible.length - 1 }[event.key]].focus();
-    });
-    menu.addEventListener("focusout", event => { if (!menu.contains(event.relatedTarget) && event.relatedTarget) show(false); });
-    dialog.addEventListener("pointerdown", event => { if (!menu.contains(event.target)) show(false); });
+    }
+    menu.append(toggle, list); identity.after(menu);
+    const controller = UI_IMPL.menu(list, { host: view.host, trigger: toggle, label: labels.recordActions, placement: "bottom-end",
+      onSelect: item => Promise.resolve().then(actions.get(item.id)).catch(failed) });
+    dialog.addEventListener("close", () => controller.destroy(), { once: true });
+    // Visibility follows each record paint, loaded details included. Only visible actions stay in the menu, so the
+    // shared keyboard model never moves to a hidden one.
     const paint = () => {
-      for (const item of items) {
-        const visible = item.visible(); item.button.hidden = !visible;
-        if (item.footer) item.footer.hidden = !visible || !item.primary();
-      }
-      menu.hidden = !items.some(item => !item.button.hidden);
+      const shown = items.filter(item => item.visible());
+      for (const item of items) if (item.footer) item.footer.hidden = !shown.includes(item) || !item.primary();
+      list.replaceChildren(...shown.map(item => item.button)); controller.refresh();
+      menu.hidden = !shown.length;
       const footer = dialog.querySelector(".cx-record-footer");
       if (footer) footer.hidden = !items.some(item => item.footer && !item.footer.hidden);
-      if (menu.hidden) show(false);
+      if (menu.hidden) controller.close("hidden", false, true);
     };
     dialog.addEventListener("cx-drawer-paint", paint); paint();
   }

@@ -95,7 +95,7 @@
       const legend = h("input"), legendLabel = gridInputLabel(labels.formatShowLegend, legend);
       legend.type = "checkbox"; legend.checked = !!this.formatLegendShown; legendLabel.classList.add("cx-format-legend-switch");
       legend.addEventListener("change", () => this.setFormatLegend(legend.checked));
-      const done = gridButton(this.labels.gridDone, () => editor.dialog.close());
+      const done = gridVariant(gridButton(this.labels.gridDone, () => editor.dialog.close()), "primary");
       foot.append(add, legendLabel, done);
       const target = focus && editor.dialog.querySelector('[data-cx-focus="' + focus + '"]');
       if (target && !target.disabled) target.focus({ preventScroll: true }); else if (focus) add.focus({ preventScroll: true });

@@ -49,14 +49,17 @@
         return Promise.resolve(this.opts.onDetails({ node, signal: controller.signal, returnFocus }));
       }
       // The drawer it replaces leaves the page at once; its close event still runs.
-      if (TREE_DETAILS.active) { TREE_DETAILS.active._replaced = true; TREE_DETAILS.active.close(); TREE_DETAILS.active.remove(); }
+      if (TREE_DETAILS.active) { TREE_DETAILS.active._replaced = true; TREE_DETAILS.active._cxOverlay.close("replace", false, true); TREE_DETAILS.active.remove(); }
       const dialog = TREE_DETAILS.active = this.recordDrawer = h("dialog", "cx-host cx-tree-tools cx-drawer"), head = h("div", "cx-drawer-h"), title = h("h4"), body = h("div", "cx-drawer-body");
-      dialog._returnFocus = returnFocus; overlayTheme(this.host, dialog);
+      dialog._returnFocus = returnFocus;
+      // Nested views and host renderers inherit the theme on their first paint, before opening the dialog.
+      const restoreTheme = UI_TOOLS.theme(this.host, dialog);
+      dialog.dataset.hfxPart = "drawer"; dialog.dataset.side = "end"; head.dataset.hfxPart = "header"; title.dataset.hfxPart = "title"; body.dataset.hfxPart = "body";
       title.id = this.id + "-record-title"; title.tabIndex = -1; title.setAttribute("aria-level", "2"); dialog.setAttribute("aria-labelledby", title.id);
       const button = (icon, label, run) => { const item = gridDecorateButton(gridButton("", run), icon, true); item.classList.add("icon"); item.setAttribute("aria-label", labels[label]); return item; };
       const step = position => { paint(position); focusDrawerTitle(title); };
       const previous = button("up", "gridPreviousRecord", () => step(index - 1)), next = button("down", "gridNextRecord", () => step(index + 1));
-      head.append(h("div"), previous, next, button("close", "gridCloseRecord", () => dialog.close()));
+      head.append(h("div"), previous, next, button("close", "gridCloseRecord", () => dialog._cxOverlay.close()));
       head.firstChild.appendChild(title); dialog.append(head, body);
       let shown = loose, paints = null;
       const paint = position => {
@@ -71,14 +74,14 @@
       dialog._cxPaint = node => { shown = node; paint(index); };
       dialog.addEventListener("keydown", event => {
         if (event.defaultPrevented) return;
-        if (event.key === "Escape") { event.preventDefault(); dialog.close(); }
-        else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && !event.target.matches("input,textarea,select,[role=tab]") && !event.target.closest(".cx-data-grid,.cx-record-nested")) { event.preventDefault(); step(index + (event.key === "ArrowUp" ? -1 : 1)); }
+        if ((event.key === "ArrowUp" || event.key === "ArrowDown") && !event.target.matches("input,textarea,select,[contenteditable],[role=tab]") && !event.target.closest(".cx-data-grid,.cx-record-nested")) { event.preventDefault(); step(index + (event.key === "ArrowUp" ? -1 : 1)); }
       });
       // The drawer shows the rows of one load: it closes when the tree reloads, its query changes or it is destroyed.
-      const close = () => dialog.close();
+      const close = () => dialog._cxOverlay.close("data", false, true);
+      const lifetime = new AbortController();
       owner.signal.addEventListener("abort", close, { once: true });
       dialog.addEventListener("close", () => {
-        owner.signal.removeEventListener("abort", close); paints?.abort(); dialog.remove();
+        lifetime.abort(); owner.signal.removeEventListener("abort", close); paints?.abort(); dialog.remove();
         if (TREE_DETAILS.active === dialog) TREE_DETAILS.active = null;
         if (this.recordDrawer !== dialog || this.destroyed) return;
         this.recordDrawer = null;
@@ -91,10 +94,9 @@
       }, { once: true });
       RECORD_IMPL.decorate?.(this, dialog, { head, identity: head.firstChild, title, body, options });
       document.body.appendChild(dialog);
-      const phone = this.host.clientWidth <= 640;
-      dialog.classList.toggle("cx-phone", phone);
-      if (phone) dialog.showModal(); else dialog.show();
-      paint(index); focusDrawerTitle(title);
+      const overlay = dialog._cxOverlay = UI_IMPL.drawer(dialog, { host: this.host, container: this.host, focus: false, dismissible: false }, lifetime.signal);
+      lifetime.signal.addEventListener("abort", restoreTheme, { once: true });
+      paint(index); overlay.open(); focusDrawerTitle(title);
       return dialog;
     },
 

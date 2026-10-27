@@ -145,16 +145,18 @@ for (const kind of ["grid", "tree"]) {
   test(`${kind} closing a record preserves a newer deep link from the host`, async ({ page }) => {
     await open(page, linkedView(), "#" + address("c004"));
     await expect(title(page)).toHaveText("host4.example.test");
-    // The native close event is queued. A normal bubbling host handler can accept a query and navigate first.
+    // The cancel lifecycle reaches the host before the queued native close cleanup.
     await page.evaluate(({ kind, next }) => {
-      document.addEventListener("keydown", event => {
-        if (event.key !== "Escape") return;
+      window.recordTransitionStarted = false;
+      document.querySelector("dialog.cx-drawer").addEventListener("cx-drawer:cancel", () => {
+        window.recordTransitionStarted = true;
         const api = document.querySelector("[data-canopyx-host]").canopyx;
         window.recordTransition = Promise.resolve(kind === "grid" ? api.setQuery({ search: "host1.example" }) : undefined)
           .then(() => { location.hash = next; });
       }, { once: true });
     }, { kind, next: address("c005") });
     await page.keyboard.press("Escape");
+    expect(await page.evaluate(() => window.recordTransitionStarted)).toBe(true);
     await page.evaluate(() => window.recordTransition);
     await expect(title(page)).toHaveText("host5.example.test");
     await expect.poll(() => new URL(page.url()).hash).toBe("#" + address("c005"));
@@ -169,23 +171,29 @@ for (const kind of ["grid", "tree"]) {
     await page.evaluate(() => {
       window.closedRecord = document.querySelector("dialog.cx-drawer");
       window.closedRecordEvent = new Promise(resolve => window.closedRecord.addEventListener("close", resolve, { once: true }));
-      document.addEventListener("keydown", event => {
-        if (event.key === "Escape") window.recordTransition = document.querySelector("[data-canopyx-host]").canopyx.openRecord("c004");
+      window.recordTransitionStarted = false;
+      window.closedRecord.addEventListener("cx-drawer:cancel", () => {
+        window.recordTransitionStarted = true;
+        window.recordTransition = document.querySelector("[data-canopyx-host]").canopyx.openRecord("c004");
       }, { once: true });
     });
     await page.keyboard.press("Escape");
+    expect(await page.evaluate(() => window.recordTransitionStarted)).toBe(true);
     await page.evaluate(async () => { await window.recordTransition; await window.closedRecordEvent; });
     await expect(title(page)).toHaveText("host4.example.test");
     expect(await drawer(page).evaluate(dialog => dialog.open && dialog !== window.closedRecord)).toBe(true);
     await expect.poll(() => new URL(page.url()).hash).toBe("#" + address("c004"));
     // A failed public open owns no replacement address: the old closed panel's link still clears normally.
     await page.evaluate(() => {
-      document.addEventListener("keydown", event => {
-        if (event.key === "Escape") window.recordTransition = document.querySelector("[data-canopyx-host]").canopyx.openRecord("missing")
+      window.recordTransitionStarted = false;
+      document.querySelector("dialog.cx-drawer").addEventListener("cx-drawer:cancel", () => {
+        window.recordTransitionStarted = true;
+        window.recordTransition = document.querySelector("[data-canopyx-host]").canopyx.openRecord("missing")
           .then(() => "opened", error => error.message);
       }, { once: true });
     });
     await page.keyboard.press("Escape");
+    expect(await page.evaluate(() => window.recordTransitionStarted)).toBe(true);
     expect(await page.evaluate(() => window.recordTransition)).toContain("not available");
     await expect.poll(() => new URL(page.url()).hash).toBe("#other=1&cert=another-view:keep");
     // A genuine later hashchange can name that same record again after its previous drawer closes.
@@ -230,6 +238,7 @@ for (const [from, to] of [["grid", "grid"], ["tree", "tree"], ["grid", "tree"], 
     await drawer(page).getByRole("button", { name: "Other inventory", exact: true }).click();
     await expect(title(page)).toHaveText("host2.example.test");
     await page.evaluate(() => window.firstRecordClosed);
+    await expect(title(page)).toBeFocused();
     await page.evaluate(() => {
       window.fragmentChanged = new Promise(resolve => addEventListener("hashchange", resolve, { once: true }));
       location.hash += "&hostTab=details";

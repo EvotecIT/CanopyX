@@ -29,7 +29,7 @@
         return calDayText(this.calZone.day(time)) + "T" + pad(Math.floor(minutes / 60)) + ":" + pad(minutes % 60);
       };
       const addField = (name, text, value, type, column) => {
-        const label = h("label", "cx-cal-create-l"), input = h("input", "cx-cal-create-input");
+        const label = h("label", "cx-cal-create-l"), input = h("input", "cx-input cx-cal-create-input");
         input.id = titleId + "-" + name; input.name = name; input.type = type; input.value = value; input.required = true;
         input.disabled = !column?.editable || !this.canEditCell(event.row, column.id);
         if (type === "text") input.maxLength = 1000; else if (type === "datetime-local") input.step = "60";
@@ -41,10 +41,10 @@
       // datetime-local normalizes its value and cannot retain a repeated hour's offset. Untouched endpoints keep their instants.
       const original = new Map([...fields].map(([name, input]) => [name, input.value]));
       const message = h("p", "cx-cal-occurrence-error"); message.setAttribute("role", "status"); message.hidden = true;
-      const actions = h("div", "cx-cal-create-actions"), cancel = h("button", "cx-btn ghost"), save = h("button", "cx-btn cx-cal-create-add");
+      const actions = h("div", "cx-cal-create-actions"), cancel = h("button", "cx-btn ghost"), save = h("button", "cx-btn cx-cal-create-add"); save.dataset.variant = "primary";
       cancel.type = "button"; save.type = "submit"; setText(cancel, labels.calendarCancel); setText(save, this.edit.labels.gridEditSave);
       cancel.addEventListener("click", () => this.calCloseOccurrence(true));
-      const remove = h("button", "cx-btn ghost cx-cal-occurrence-remove"); remove.type = "button"; setText(remove, labels.calendarRemoveOccurrence);
+      const remove = h("button", "cx-btn ghost cx-cal-occurrence-remove"); remove.dataset.variant = "danger"; remove.type = "button"; setText(remove, labels.calendarRemoveOccurrence);
       remove.disabled = !this.cal.exceptions?.editable || !this.canEditCell(event.row, this.cal.exceptions.id);
       remove.addEventListener("click", async () => {
         save.disabled = remove.disabled = true;

@@ -158,3 +158,206 @@ CanopyX.Html.CanopyTheme : enum System.Int32
 CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Auto = 0
 CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Dark = 2
 CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Light = 1
+CanopyX.Html.Ui.CanopyDialog : sealed class
+CanopyX.Html.Ui.CanopyDialog..ctor(System.String id, System.String title, CanopyX.Html.Ui.CanopyDialogOptions? options = null)
+CanopyX.Html.Ui.CanopyDialog.CanopyX.Html.Ui.CanopyDialogOptions Options { get; }
+CanopyX.Html.Ui.CanopyDialog.System.String ContentHtml { get; set; }
+CanopyX.Html.Ui.CanopyDialog.System.String Id { get; }
+CanopyX.Html.Ui.CanopyDialog.System.String Title { get; }
+CanopyX.Html.Ui.CanopyDialog.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyDialog.System.String ToTriggerHtmlFragment(System.String label)
+CanopyX.Html.Ui.CanopyDialog.System.String TriggerId { get; }
+CanopyX.Html.Ui.CanopyDialog.System.String? Description { get; set; }
+CanopyX.Html.Ui.CanopyDialog.System.String? FooterHtml { get; set; }
+CanopyX.Html.Ui.CanopyDialogOptions : sealed class
+CanopyX.Html.Ui.CanopyDialogOptions..ctor()
+CanopyX.Html.Ui.CanopyDialogOptions.CanopyX.Html.Ui.CanopyOverlaySize Size { get; set; }
+CanopyX.Html.Ui.CanopyDialogOptions.System.Boolean Alert { get; set; }
+CanopyX.Html.Ui.CanopyDialogOptions.System.Nullable<System.Boolean> Dismissible { get; set; }
+CanopyX.Html.Ui.CanopyDialogOptions.System.String CloseLabel { get; set; }
+CanopyX.Html.Ui.CanopyDialogOptions.System.String? TriggerId { get; set; }
+CanopyX.Html.Ui.CanopyDialogOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyDrawer : sealed class
+CanopyX.Html.Ui.CanopyDrawer..ctor(System.String id, System.String title, CanopyX.Html.Ui.CanopyDrawerOptions? options = null)
+CanopyX.Html.Ui.CanopyDrawer.CanopyX.Html.Ui.CanopyDrawerOptions Options { get; }
+CanopyX.Html.Ui.CanopyDrawer.System.String ContentHtml { get; set; }
+CanopyX.Html.Ui.CanopyDrawer.System.String Id { get; }
+CanopyX.Html.Ui.CanopyDrawer.System.String Title { get; }
+CanopyX.Html.Ui.CanopyDrawer.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyDrawer.System.String ToTriggerHtmlFragment(System.String label)
+CanopyX.Html.Ui.CanopyDrawer.System.String TriggerId { get; }
+CanopyX.Html.Ui.CanopyDrawer.System.String? Description { get; set; }
+CanopyX.Html.Ui.CanopyDrawer.System.String? FooterHtml { get; set; }
+CanopyX.Html.Ui.CanopyDrawerOptions : sealed class
+CanopyX.Html.Ui.CanopyDrawerOptions..ctor()
+CanopyX.Html.Ui.CanopyDrawerOptions.CanopyX.Html.Ui.CanopyDrawerSide Side { get; set; }
+CanopyX.Html.Ui.CanopyDrawerOptions.CanopyX.Html.Ui.CanopyOverlaySize Size { get; set; }
+CanopyX.Html.Ui.CanopyDrawerOptions.System.Boolean Dismissible { get; set; }
+CanopyX.Html.Ui.CanopyDrawerOptions.System.Boolean Modal { get; set; }
+CanopyX.Html.Ui.CanopyDrawerOptions.System.String CloseLabel { get; set; }
+CanopyX.Html.Ui.CanopyDrawerOptions.System.String? TriggerId { get; set; }
+CanopyX.Html.Ui.CanopyDrawerOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyDrawerSide : enum System.Int32
+CanopyX.Html.Ui.CanopyDrawerSide.const CanopyX.Html.Ui.CanopyDrawerSide Bottom = 2
+CanopyX.Html.Ui.CanopyDrawerSide.const CanopyX.Html.Ui.CanopyDrawerSide End = 0
+CanopyX.Html.Ui.CanopyDrawerSide.const CanopyX.Html.Ui.CanopyDrawerSide Start = 1
+CanopyX.Html.Ui.CanopyMenu : sealed class
+CanopyX.Html.Ui.CanopyMenu..ctor(System.String id, CanopyX.Html.Ui.CanopyMenuOptions? options = null)
+CanopyX.Html.Ui.CanopyMenu.CanopyX.Html.Ui.CanopyMenuOptions Options { get; }
+CanopyX.Html.Ui.CanopyMenu.System.Collections.Generic.IList<CanopyX.Html.Ui.CanopyMenuItem> Items { get; }
+CanopyX.Html.Ui.CanopyMenu.System.String Id { get; }
+CanopyX.Html.Ui.CanopyMenu.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyMenu.System.String ToTriggerHtmlFragment(System.String label)
+CanopyX.Html.Ui.CanopyMenu.System.String TriggerId { get; }
+CanopyX.Html.Ui.CanopyMenuItem : sealed class
+CanopyX.Html.Ui.CanopyMenuItem..ctor(System.String id, System.String label, CanopyX.Html.Ui.CanopyMenuItemKind kind = Action)
+CanopyX.Html.Ui.CanopyMenuItem.CanopyX.Html.Ui.CanopyMenuItemKind Kind { get; }
+CanopyX.Html.Ui.CanopyMenuItem.System.Boolean Danger { get; set; }
+CanopyX.Html.Ui.CanopyMenuItem.System.Boolean Disabled { get; set; }
+CanopyX.Html.Ui.CanopyMenuItem.System.Collections.Generic.IList<CanopyX.Html.Ui.CanopyMenuItem> Children { get; }
+CanopyX.Html.Ui.CanopyMenuItem.System.Nullable<System.Boolean> Checked { get; set; }
+CanopyX.Html.Ui.CanopyMenuItem.System.String Id { get; }
+CanopyX.Html.Ui.CanopyMenuItem.System.String Label { get; }
+CanopyX.Html.Ui.CanopyMenuItem.System.String? Badge { get; set; }
+CanopyX.Html.Ui.CanopyMenuItem.System.String? Icon { get; set; }
+CanopyX.Html.Ui.CanopyMenuItem.System.String? RadioGroup { get; set; }
+CanopyX.Html.Ui.CanopyMenuItem.System.String? Shortcut { get; set; }
+CanopyX.Html.Ui.CanopyMenuItemKind : enum System.Int32
+CanopyX.Html.Ui.CanopyMenuItemKind.const CanopyX.Html.Ui.CanopyMenuItemKind Action = 0
+CanopyX.Html.Ui.CanopyMenuItemKind.const CanopyX.Html.Ui.CanopyMenuItemKind Checkbox = 1
+CanopyX.Html.Ui.CanopyMenuItemKind.const CanopyX.Html.Ui.CanopyMenuItemKind GroupLabel = 4
+CanopyX.Html.Ui.CanopyMenuItemKind.const CanopyX.Html.Ui.CanopyMenuItemKind Radio = 2
+CanopyX.Html.Ui.CanopyMenuItemKind.const CanopyX.Html.Ui.CanopyMenuItemKind Separator = 3
+CanopyX.Html.Ui.CanopyMenuOptions : sealed class
+CanopyX.Html.Ui.CanopyMenuOptions..ctor()
+CanopyX.Html.Ui.CanopyMenuOptions.CanopyX.Html.Ui.CanopyOverlayPlacement Placement { get; set; }
+CanopyX.Html.Ui.CanopyMenuOptions.System.String? TriggerId { get; set; }
+CanopyX.Html.Ui.CanopyMenuOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyOverlayPlacement : enum System.Int32
+CanopyX.Html.Ui.CanopyOverlayPlacement.const CanopyX.Html.Ui.CanopyOverlayPlacement Bottom = 3
+CanopyX.Html.Ui.CanopyOverlayPlacement.const CanopyX.Html.Ui.CanopyOverlayPlacement BottomEnd = 1
+CanopyX.Html.Ui.CanopyOverlayPlacement.const CanopyX.Html.Ui.CanopyOverlayPlacement BottomStart = 0
+CanopyX.Html.Ui.CanopyOverlayPlacement.const CanopyX.Html.Ui.CanopyOverlayPlacement Left = 4
+CanopyX.Html.Ui.CanopyOverlayPlacement.const CanopyX.Html.Ui.CanopyOverlayPlacement Right = 5
+CanopyX.Html.Ui.CanopyOverlayPlacement.const CanopyX.Html.Ui.CanopyOverlayPlacement Top = 2
+CanopyX.Html.Ui.CanopyOverlaySize : enum System.Int32
+CanopyX.Html.Ui.CanopyOverlaySize.const CanopyX.Html.Ui.CanopyOverlaySize Large = 2
+CanopyX.Html.Ui.CanopyOverlaySize.const CanopyX.Html.Ui.CanopyOverlaySize Medium = 1
+CanopyX.Html.Ui.CanopyOverlaySize.const CanopyX.Html.Ui.CanopyOverlaySize Small = 0
+CanopyX.Html.Ui.CanopyPopover : sealed class
+CanopyX.Html.Ui.CanopyPopover..ctor(System.String id, System.String title, CanopyX.Html.Ui.CanopyPopoverOptions? options = null)
+CanopyX.Html.Ui.CanopyPopover.CanopyX.Html.Ui.CanopyPopoverOptions Options { get; }
+CanopyX.Html.Ui.CanopyPopover.System.String ContentHtml { get; set; }
+CanopyX.Html.Ui.CanopyPopover.System.String Id { get; }
+CanopyX.Html.Ui.CanopyPopover.System.String Title { get; }
+CanopyX.Html.Ui.CanopyPopover.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyPopover.System.String ToTriggerHtmlFragment(System.String label)
+CanopyX.Html.Ui.CanopyPopover.System.String TriggerId { get; }
+CanopyX.Html.Ui.CanopyPopover.System.String? Description { get; set; }
+CanopyX.Html.Ui.CanopyPopover.System.String? FooterHtml { get; set; }
+CanopyX.Html.Ui.CanopyPopoverOptions : sealed class
+CanopyX.Html.Ui.CanopyPopoverOptions..ctor()
+CanopyX.Html.Ui.CanopyPopoverOptions.CanopyX.Html.Ui.CanopyOverlayPlacement Placement { get; set; }
+CanopyX.Html.Ui.CanopyPopoverOptions.System.String? TriggerId { get; set; }
+CanopyX.Html.Ui.CanopyPopoverOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyStep : sealed class
+CanopyX.Html.Ui.CanopyStep..ctor(System.String id, System.String label)
+CanopyX.Html.Ui.CanopyStep.CanopyX.Html.Ui.CanopyStepState State { get; set; }
+CanopyX.Html.Ui.CanopyStep.System.Boolean Optional { get; set; }
+CanopyX.Html.Ui.CanopyStep.System.Boolean Visited { get; set; }
+CanopyX.Html.Ui.CanopyStep.System.String ContentHtml { get; set; }
+CanopyX.Html.Ui.CanopyStep.System.String Id { get; }
+CanopyX.Html.Ui.CanopyStep.System.String Label { get; }
+CanopyX.Html.Ui.CanopyStep.System.String? Description { get; set; }
+CanopyX.Html.Ui.CanopyStep.System.String? StateLabel { get; set; }
+CanopyX.Html.Ui.CanopyStepState : enum System.Int32
+CanopyX.Html.Ui.CanopyStepState.const CanopyX.Html.Ui.CanopyStepState Current = 1
+CanopyX.Html.Ui.CanopyStepState.const CanopyX.Html.Ui.CanopyStepState Disabled = 4
+CanopyX.Html.Ui.CanopyStepState.const CanopyX.Html.Ui.CanopyStepState Done = 2
+CanopyX.Html.Ui.CanopyStepState.const CanopyX.Html.Ui.CanopyStepState Error = 3
+CanopyX.Html.Ui.CanopyStepState.const CanopyX.Html.Ui.CanopyStepState Skipped = 5
+CanopyX.Html.Ui.CanopyStepState.const CanopyX.Html.Ui.CanopyStepState Upcoming = 0
+CanopyX.Html.Ui.CanopyStepper : sealed class
+CanopyX.Html.Ui.CanopyStepper..ctor(System.String id, System.String label, CanopyX.Html.Ui.CanopyStepperOptions? options = null)
+CanopyX.Html.Ui.CanopyStepper.CanopyX.Html.Ui.CanopyStepperOptions Options { get; }
+CanopyX.Html.Ui.CanopyStepper.System.Collections.Generic.IList<CanopyX.Html.Ui.CanopyStep> Steps { get; }
+CanopyX.Html.Ui.CanopyStepper.System.String Id { get; }
+CanopyX.Html.Ui.CanopyStepper.System.String Label { get; }
+CanopyX.Html.Ui.CanopyStepper.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyStepperLayout : enum System.Int32
+CanopyX.Html.Ui.CanopyStepperLayout.const CanopyX.Html.Ui.CanopyStepperLayout Horizontal = 0
+CanopyX.Html.Ui.CanopyStepperLayout.const CanopyX.Html.Ui.CanopyStepperLayout Vertical = 1
+CanopyX.Html.Ui.CanopyStepperOptions : sealed class
+CanopyX.Html.Ui.CanopyStepperOptions..ctor()
+CanopyX.Html.Ui.CanopyStepperOptions.CanopyX.Html.Ui.CanopyStepperLayout Layout { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.CanopyX.Html.Ui.CanopyUiMode Mode { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.Boolean Linear { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.Boolean ShowFooter { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.Int32 SelectedIndex { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.String BackLabel { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.String FinishLabel { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.String NextLabel { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.String? SaveDraftLabel { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.String? SkipLabel { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyTab : sealed class
+CanopyX.Html.Ui.CanopyTab..ctor(System.String id, System.String label)
+CanopyX.Html.Ui.CanopyTab.System.Boolean Disabled { get; set; }
+CanopyX.Html.Ui.CanopyTab.System.Boolean HasFocusableContent { get; set; }
+CanopyX.Html.Ui.CanopyTab.System.String ContentHtml { get; set; }
+CanopyX.Html.Ui.CanopyTab.System.String Id { get; }
+CanopyX.Html.Ui.CanopyTab.System.String Label { get; }
+CanopyX.Html.Ui.CanopyTab.System.String? Badge { get; set; }
+CanopyX.Html.Ui.CanopyTab.System.String? Icon { get; set; }
+CanopyX.Html.Ui.CanopyTabActivation : enum System.Int32
+CanopyX.Html.Ui.CanopyTabActivation.const CanopyX.Html.Ui.CanopyTabActivation Auto = 2
+CanopyX.Html.Ui.CanopyTabActivation.const CanopyX.Html.Ui.CanopyTabActivation Automatic = 0
+CanopyX.Html.Ui.CanopyTabActivation.const CanopyX.Html.Ui.CanopyTabActivation Manual = 1
+CanopyX.Html.Ui.CanopyTabs : sealed class
+CanopyX.Html.Ui.CanopyTabs..ctor(System.String id, System.String label, CanopyX.Html.Ui.CanopyTabsOptions? options = null)
+CanopyX.Html.Ui.CanopyTabs.CanopyX.Html.Ui.CanopyTabsOptions Options { get; }
+CanopyX.Html.Ui.CanopyTabs.System.Collections.Generic.IList<CanopyX.Html.Ui.CanopyTab> Tabs { get; }
+CanopyX.Html.Ui.CanopyTabs.System.String Id { get; }
+CanopyX.Html.Ui.CanopyTabs.System.String Label { get; }
+CanopyX.Html.Ui.CanopyTabs.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyTabsAutoProgress : sealed class
+CanopyX.Html.Ui.CanopyTabsAutoProgress..ctor()
+CanopyX.Html.Ui.CanopyTabsAutoProgress.System.Boolean PauseOnFocus { get; set; }
+CanopyX.Html.Ui.CanopyTabsAutoProgress.System.Boolean PauseOnHover { get; set; }
+CanopyX.Html.Ui.CanopyTabsAutoProgress.System.Int32 Interval { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions : sealed class
+CanopyX.Html.Ui.CanopyTabsOptions..ctor()
+CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabActivation Activation { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsAutoProgress? AutoProgress { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsOverflow Overflow { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsStyle Style { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.System.Boolean PrintAll { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.System.Int32 SelectedIndex { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.System.Nullable<System.Boolean> CollapseToPicker { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyTabsOverflow : enum System.Int32
+CanopyX.Html.Ui.CanopyTabsOverflow.const CanopyX.Html.Ui.CanopyTabsOverflow Menu = 1
+CanopyX.Html.Ui.CanopyTabsOverflow.const CanopyX.Html.Ui.CanopyTabsOverflow Scroll = 0
+CanopyX.Html.Ui.CanopyTabsOverflow.const CanopyX.Html.Ui.CanopyTabsOverflow Wrap = 2
+CanopyX.Html.Ui.CanopyTabsStyle : enum System.Int32
+CanopyX.Html.Ui.CanopyTabsStyle.const CanopyX.Html.Ui.CanopyTabsStyle Pills = 1
+CanopyX.Html.Ui.CanopyTabsStyle.const CanopyX.Html.Ui.CanopyTabsStyle Segmented = 2
+CanopyX.Html.Ui.CanopyTabsStyle.const CanopyX.Html.Ui.CanopyTabsStyle Underline = 0
+CanopyX.Html.Ui.CanopyTabsStyle.const CanopyX.Html.Ui.CanopyTabsStyle Vertical = 3
+CanopyX.Html.Ui.CanopyTooltip : sealed class
+CanopyX.Html.Ui.CanopyTooltip..ctor(System.String id, System.String text, CanopyX.Html.Ui.CanopyTooltipOptions? options = null)
+CanopyX.Html.Ui.CanopyTooltip.CanopyX.Html.Ui.CanopyTooltipOptions Options { get; }
+CanopyX.Html.Ui.CanopyTooltip.System.String Id { get; }
+CanopyX.Html.Ui.CanopyTooltip.System.String Text { get; }
+CanopyX.Html.Ui.CanopyTooltip.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyTooltip.System.String ToTriggerHtmlFragment(System.String label)
+CanopyX.Html.Ui.CanopyTooltip.System.String TriggerId { get; }
+CanopyX.Html.Ui.CanopyTooltipOptions : sealed class
+CanopyX.Html.Ui.CanopyTooltipOptions..ctor()
+CanopyX.Html.Ui.CanopyTooltipOptions.CanopyX.Html.Ui.CanopyOverlayPlacement Placement { get; set; }
+CanopyX.Html.Ui.CanopyTooltipOptions.System.String? TriggerId { get; set; }
+CanopyX.Html.Ui.CanopyTooltipOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyUiMode : enum System.Int32
+CanopyX.Html.Ui.CanopyUiMode.const CanopyX.Html.Ui.CanopyUiMode Interactive = 0
+CanopyX.Html.Ui.CanopyUiMode.const CanopyX.Html.Ui.CanopyUiMode Report = 1
+CanopyX.Html.Ui.CanopyUiMode.const CanopyX.Html.Ui.CanopyUiMode Static = 2

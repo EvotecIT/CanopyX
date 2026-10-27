@@ -211,6 +211,7 @@
         showError(host, err, null, view);
       }
     });
+    mountUi(scope);
     return created;
   }
 
@@ -233,7 +234,7 @@
     // The Content Security Policy nonce for the scripts and stylesheets the runtime inserts (docs/security.md).
     setNonce
   }, typeof GRID_API === "object" ? GRID_API : {}, typeof FLOW_API === "object" ? FLOW_API : {}, typeof MATRIX_API === "object" ? MATRIX_API : {},
-    typeof CHANGES_API === "object" ? CHANGES_API : {}));
+    typeof CHANGES_API === "object" ? CHANGES_API : {}, UI_API));
 
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it

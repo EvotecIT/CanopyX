@@ -4,10 +4,11 @@ import { api, definition, drawer } from "./record-panel-fixtures.mjs";
 import { viewPage } from "./support.mjs";
 
 // The page registers a plugin with a drawer section and a record action, and stubs the clipboard and print.
-async function openWithPlugin(page, view = definition(), prominent = false, run = ({ record }) => { window.renewal = record.id; }) {
+async function openWithPlugin(page, view = definition(), { disabled = false, prominent = false,
+  run = ({ record }) => { window.actionCalls.renewal++; window.renewal = record.id; } } = {}) {
   view.record.sections[5].renderer = "trend-chart";
   const script = `<script>
-window.copied = []; window.printed = [];
+window.copied = []; window.printed = []; window.actionCalls = { renewal: 0, portal: 0 };
 Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: text => { window.copied.push(text); return Promise.resolve(); } } });
 window.print = () => { const sheet = document.querySelector(".cx-record-print");
   window.printed.push({ html: document.documentElement.classList.contains("cx-record-printing"), sections: [...sheet.querySelectorAll(".cx-record-section-h")].map(item => item.textContent),
@@ -17,8 +18,8 @@ CanopyX.use({ name: "trend-chart",
   drawerSections: { "trend-chart": (record, element, context) => { const box = document.createElement("div"); box.className = "trend-chart";
     box.textContent = "Chart of " + record.id + " at " + context.width + " px, " + context.values.days.value + " days"; element.appendChild(box);
     context.onDispose(() => { window.disposed = (window.disposed || 0) + 1; }); } },
-  recordActions: [{ label: "Open in the issuing portal", run: ({ record, view }) => { window.portal = view + "/" + record.id; } }] });
-CanopyX.configure("certificates", { recordHeading: ${prominent} ? record => ({title:"Change by " + record.id, subtitle:"Recorded at <12:00>"}) : undefined, recordActions: [{ label: "Request renewal", prominent: ${prominent}, run: ${run.toString()} }] });
+  recordActions: [{ label: "Open in the issuing portal", disabled: ${disabled}, run: ({ record, view }) => { window.actionCalls.portal++; window.portal = view + "/" + record.id; } }] });
+CanopyX.configure("certificates", { recordHeading: ${prominent} ? record => ({title:"Change by " + record.id, subtitle:"Recorded at <12:00>"}) : undefined, recordActions: [{ label: "Request renewal", disabled: ${disabled}, prominent: ${prominent}, run: ${run.toString()} }] });
 </script>`;
   await page.route("http://canopyx.test/records.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("<body class=\"cx-page\">", "<body class=\"cx-page\">" + script) }));
   await page.goto("http://canopyx.test/records.html");
@@ -41,6 +42,7 @@ test("the actions menu is an ARIA menu button with built-in, host and plugin act
   const items = drawer(page).getByRole("menu", { name: "Record actions" }).getByRole("menuitem");
   await expect(items).toHaveText(["Copy link", "Copy values", "Copy as JSON", "Export CSV", "Export JSON", "Print record", "Request renewal", "Open in the issuing portal"]);
   await expect(items.first()).toBeFocused();
+  expect(await items.first().evaluate(item => item.closest('[role="menu"]').parentElement === item.closest("dialog"))).toBe(true);
   await page.keyboard.press("ArrowUp");
   await expect(items.last()).toBeFocused();
   await page.keyboard.press("Escape");
@@ -49,8 +51,55 @@ test("the actions menu is an ARIA menu button with built-in, host and plugin act
   await expect(drawer(page)).toBeVisible();
   await action(page, "Request renewal");
   await expect.poll(() => page.evaluate("window.renewal")).toBe("c001");
-  await action(page, "Open in the issuing portal");
+  expect(await page.evaluate(() => window.actionCalls)).toEqual({ renewal: 1, portal: 0 });
+  await toggle.press("ArrowUp"); await page.keyboard.press("Enter");
   await expect.poll(() => page.evaluate("window.portal")).toBe("certificates/c001");
+  expect(await page.evaluate(() => window.actionCalls)).toEqual({ renewal: 1, portal: 1 });
+});
+
+test("disabled host and plugin record actions remain navigable without activation", async ({ page }) => {
+  await openWithPlugin(page, definition(), { disabled: true });
+  const toggle = drawer(page).getByRole("button", { name: "Record actions" });
+  await toggle.press("ArrowUp");
+  const menu = drawer(page).getByRole("menu", { name: "Record actions" });
+  for (const name of ["Open in the issuing portal", "Request renewal"]) {
+    const item = menu.getByRole("menuitem", { name, exact: true });
+    await expect(item).toBeFocused(); await expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(await item.evaluate(button => button.disabled)).toBe(false);
+    await page.keyboard.press("Enter");
+    const box = await item.boundingBox(); await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(menu).toBeVisible();
+    expect(await page.evaluate(() => window.actionCalls)).toEqual({ renewal: 0, portal: 0 });
+    if (name === "Open in the issuing portal") await page.keyboard.press("ArrowUp");
+  }
+  await page.keyboard.press("Escape"); await expect(toggle).toBeFocused(); await expect(drawer(page)).toBeVisible();
+});
+
+test("retiring a record closes its portalled actions menu and preserves an independent dialog", async ({ page }) => {
+  await openWithPlugin(page);
+  await drawer(page).getByRole("button", { name: "Record actions" }).click();
+  await expect(drawer(page).getByRole("menu", { name: "Record actions" })).toBeVisible();
+  await page.evaluate(async () => {
+    const record = document.querySelector("dialog.cx-drawer");
+    window.retiredRecordMenu = record.querySelector('[role="menu"]');
+    window.recordClosed = new Promise(resolve => record.addEventListener("close", resolve, { once: true }));
+    const sibling = document.createElement("dialog"); sibling.className = "cx-dialog"; sibling.id = "independent-record-dialog";
+    sibling.setAttribute("aria-label", "Independent dialog");
+    const input = document.createElement("input"); input.setAttribute("aria-label", "Independent value"); sibling.appendChild(input);
+    document.body.appendChild(sibling);
+    await CanopyX.dialog(sibling).ready;
+    CanopyX.dialog(sibling).open();
+    record._replaced = true; record._cxOverlay.close("replace", false, true);
+  });
+  await page.evaluate(() => window.recordClosed);
+  await expect(drawer(page)).toHaveCount(0);
+  expect(await page.evaluate(() => window.retiredRecordMenu.hidden && !window.retiredRecordMenu.matches(":popover-open"))).toBe(true);
+  const sibling = page.getByRole("dialog", { name: "Independent dialog" });
+  await expect(sibling).toBeVisible(); await expect(sibling.getByRole("textbox")).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe("hidden");
+  await page.keyboard.press("Escape"); await expect(sibling).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.style.overflow)).not.toBe("hidden");
+  await page.evaluate(() => { const dialog = CanopyX.dialog("#independent-record-dialog"); dialog.destroy(); dialog.element.remove(); });
 });
 
 test("copy values and JSON; record.actions switches built-in actions off", async ({ page }) => {
@@ -123,7 +172,7 @@ test("a plugin's drawer section draws content (a chart) with the record's values
 
 
 test("prominent record action stays visible and projected headings are plain text", async ({ page }) => {
-  await openWithPlugin(page, definition(), true);
+  await openWithPlugin(page, definition(), { prominent: true });
   await expect(drawer(page).getByRole("heading", {name:"Change by c001", exact:true})).toBeVisible();
   await expect(drawer(page).locator(".cx-record-subtitle")).toHaveText("Recorded at <12:00>");
   await expect(drawer(page).locator(".cx-record-subtitle")).toBeVisible();
@@ -134,30 +183,30 @@ test("prominent record action stays visible and projected headings are plain tex
 });
 
 test("a pending record action cannot run twice through the menu and footer", async ({ page }) => {
-  await openWithPlugin(page, definition(), true, async () => {
-    window.actionCalls = (window.actionCalls || 0) + 1;
+  await openWithPlugin(page, definition(), { prominent: true, run: async () => {
+    window.actionCalls.renewal++;
     await new Promise(resolve => { window.finishAction = resolve; });
-  });
+  } });
   const footer = drawer(page).getByRole("button", { name: "Request renewal", exact: true });
   const readyBackground = await footer.evaluate(button => getComputedStyle(button).backgroundColor);
   await action(page, "Request renewal");
   await expect(footer).toBeDisabled();
   expect(await footer.evaluate(button => getComputedStyle(button).backgroundColor)).not.toBe(readyBackground);
   await action(page, "Request renewal");
-  expect(await page.evaluate(() => window.actionCalls)).toBe(1);
+  expect(await page.evaluate(() => window.actionCalls.renewal)).toBe(1);
   await page.evaluate(() => window.finishAction());
   await expect(footer).toBeEnabled();
   await footer.click();
   await expect(footer).toBeDisabled();
   await action(page, "Request renewal");
-  expect(await page.evaluate(() => window.actionCalls)).toBe(2);
+  expect(await page.evaluate(() => window.actionCalls.renewal)).toBe(2);
   await page.evaluate(() => window.finishAction());
   await expect(footer).toBeEnabled();
 });
 
 test("record action failures announce null primitive and Error rejections from either entry", async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
-  await openWithPlugin(page, definition(), true, () => Promise.reject(window.actionFailure));
+  await openWithPlugin(page, definition(), { prominent: true, run: () => Promise.reject(window.actionFailure) });
   const footer = drawer(page).getByRole("button", { name: "Request renewal", exact: true });
   for (const kind of ["null", "primitive", "error"]) {
     await page.evaluate(kind => { window.actionFailure = kind === "null" ? null : kind === "primitive" ? "Host declined" : new Error("Action rejected"); }, kind);

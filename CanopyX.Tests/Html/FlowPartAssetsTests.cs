@@ -72,7 +72,8 @@ public sealed class FlowPartAssetsTests {
     [Fact]
     public void FlowEntryPoint_IsBounded() {
         // Flow wave F1: 8,342 bytes plus about 15%, rounded up to KiB.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Flow, 10 * 1024);
+        // Includes the shared controls (canopyx.source/controls.css) the flow moves onto.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Flow, 12 * 1024);
         Assert.DoesNotContain("</script", CanopyHtmlAssets.GetScript(CanopyRuntime.Flow), StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("</style", CanopyHtmlAssets.GetStyle(CanopyRuntime.Flow), StringComparison.OrdinalIgnoreCase);
     }

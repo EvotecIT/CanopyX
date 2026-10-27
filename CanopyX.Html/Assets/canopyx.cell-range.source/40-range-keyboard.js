@@ -15,7 +15,7 @@
     if (command && letter === "a") { consume(); grid.selectAllCells(); return; }
     if (command && letter === "d" && grid.cellOptions.fillHandle && grid.cellRanges.length === 1) { consume(); crFillDown(grid).catch(error => grid.emit("error", { error })); return; }
     if (key === "Escape" && grid.cellRanges.length) { consume(); grid.clearCellRanges(); return; }
-    if ((key === "ContextMenu" || key === "F10" && event.shiftKey) && hit) { consume(); crMenu(grid, hit.cell); return; }
+
     if (!CR_STEPS[key]) return;
     if (!event.shiftKey) { if (grid.cellRanges.length && !command) { grid.cellRanges = []; grid.cellHandles = false; crChanged(grid); } return; }
     if (!hit) return;
@@ -36,28 +36,26 @@
     crChanged(grid);
   }
 
-  /** Opens the cell menu below a cell: copy, copy with headers, paste, select all and clear. */
-  function crMenu(grid, cell) {
-    loadGridFilterEditor().then(() => {
-      if (grid.destroyed || !cell.isConnected) return;
-      const labels = grid.labels, panel = grid.openGridPopover(cell, "cx-column-menu cx-cell-menu", labels.gridCellMenu), menu = h("div");
-      // Rows recycle their cells for other records: the cell gives back the popover attributes once the menu closes.
-      grid.gridPopover.controller.signal.addEventListener("abort", () => queueMicrotask(() => { cell.removeAttribute("aria-controls"); cell.removeAttribute("aria-expanded"); }), { once: true });
-      menu.setAttribute("role", "menu"); menu.setAttribute("aria-label", panel.getAttribute("aria-label")); panel.appendChild(menu);
-      const add = (label, icon, action, disabled) => {
-        const button = gridButton(label, () => { grid.closeGridPopover(); Promise.resolve().then(action).catch(error => grid.emit("error", { error })); });
-        const mark = h("span", "ico"); if (icon) mark.appendChild(gridIcon(icon)); button.prepend(mark);
-        button.classList.add("cx-mi"); button.setAttribute("role", "menuitem"); button.tabIndex = -1; button.disabled = !!disabled; menu.appendChild(button);
-      };
-      const copy = headers => grid.copyCellRanges({ headers });
-      add(labels.gridCopyCells, "copy", () => copy(false));
-      add(labels.gridCopyCellsWithHeaders, null, () => copy(true));
-      if (grid.cellOptions.paste) add(labels.gridPasteCells, null, () => global.navigator.clipboard.readText().then(text => crPaste(grid, text, null, "clipboard")),
-        typeof global.navigator.clipboard?.readText !== "function");
-      menu.appendChild(h("hr", "cx-menu-rule"));
-      add(labels.gridSelectAllCells, null, () => grid.selectAllCells());
-      add(labels.gridClearCellRanges, "close", () => grid.clearCellRanges(), !grid.cellRanges.length);
-      const first = menu.querySelector('[role="menuitem"]:not(:disabled)');
-      if (first) { first.tabIndex = 0; first.focus(); }
-    }).catch(error => grid.emit("error", { error }));
+  /** Host-owned cell commands projected through the shared menu item model. */
+  function crMenuItems(grid) {
+    const labels = grid.labels, items = [
+      { id: "copy", label: labels.gridCopyCells, icon: "copy", run: () => grid.copyCellRanges({ headers: false }) },
+      { id: "copy-headers", label: labels.gridCopyCellsWithHeaders, run: () => grid.copyCellRanges({ headers: true }) }
+    ];
+    if (grid.cellOptions.paste) items.push({ id: "paste", label: labels.gridPasteCells,
+      disabled: typeof global.navigator.clipboard?.readText !== "function",
+      run: () => global.navigator.clipboard.readText().then(text => crPaste(grid, text, null, "clipboard")) });
+    items.push({ id: "selection-separator", kind: "separator" },
+      { id: "select-all", label: labels.gridSelectAllCells, run: () => grid.selectAllCells() },
+      { id: "clear", label: labels.gridClearCellRanges, icon: "close", disabled: !grid.cellRanges.length, run: () => grid.clearCellRanges() });
+    return items;
+  }
+
+  // The range gesture owns its 500ms timer; the binding owns rendering, dismissal and the touch sheet.
+  function crMenu(grid, cell, event) {
+    const hit = crHit(grid, cell);
+    if (!hit || grid.destroyed) return;
+    hit.record = hit.element._w;
+    Promise.resolve(grid.cellMenuBinding.open(event, cell, { touch: true, hit }))
+      .catch(error => { if (!grid.destroyed) grid.emit("error", { error }); });
   }

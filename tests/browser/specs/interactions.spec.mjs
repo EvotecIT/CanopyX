@@ -189,6 +189,7 @@ test('context menus have keyboard navigation and disabled actions never execute'
   await mount(page,`{onAction(p){window.action=p;return true},isActionEnabled:n=>n.id!=='b'}`);
   await row(page,'b').focus(); await page.keyboard.press('Shift+F10');
   await expect(page.getByRole('menu',{name:'Actions'})).toBeVisible();
+  await expect(page.getByRole('menu',{name:'Actions'})).toHaveAttribute('data-hfx-part','menu');
   await expect(page.getByRole('menuitem',{name:'Inspect record'})).toBeFocused();
   await expect(page.getByRole('menuitem')).toHaveAttribute('aria-disabled','true');
   await page.keyboard.press('Enter'); expect(await page.evaluate(()=>window.action)).toBeUndefined();
@@ -200,6 +201,34 @@ test('context menus have keyboard navigation and disabled actions never execute'
   await page.keyboard.press('Shift+F10');
   await page.getByRole('menuitem',{name:'Inspect record'}).click();
   await expect(row(page,'a')).toBeFocused();
+});
+
+for (const expanded of [true,false]) test('tree context menus preserve '+(expanded?'expanded':'collapsed')+' row state before, during and after opening',async({page})=>{
+  const definition=view();definition.roots[0].expanded=expanded;
+  await mount(page,'{onAction:()=>true}',definition);
+  const parent=row(page,'a'),menu=page.getByRole('menu',{name:'Actions'});
+  await expect(parent).toHaveAttribute('aria-expanded',String(expanded));
+  await parent.focus();await page.keyboard.press('Shift+F10');
+  await expect(menu).toBeVisible();
+  await expect(parent).toHaveAttribute('aria-expanded',String(expanded));
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(parent).toHaveAttribute('aria-expanded',String(expanded));
+  await expect(parent).toBeFocused();
+});
+
+test('tree context actions preserve the browser menu for links, controls, selected text and Shift right-click',async({page})=>{
+  await mount(page,'{onAction:()=>true}');
+  const prevented=await row(page,'a').evaluate(element=>{
+    const fire=(target,shiftKey=false)=>!target.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,button:2,shiftKey}));
+    const link=document.createElement('a');link.href='#record';link.textContent='Record link';element.append(link);
+    const input=document.createElement('input');element.append(input);
+    const results=[fire(link),fire(input),fire(element,true)];
+    const range=document.createRange();range.selectNodeContents(link);getSelection().addRange(range);
+    results.push(fire(element));getSelection().removeAllRanges();link.remove();input.remove();return results;
+  });
+  expect(prevented).toEqual([false,false,false,false]);
+  await expect(page.getByRole('menu',{name:'Actions'})).toHaveCount(0);
 });
 
 test('closing a panel retains focus taken by an external host control',async({page})=>{
@@ -258,10 +287,15 @@ test('translated editor and action controls have no axe violations',async({page}
   await mount(page,`{onEdit:()=>true,onAction:()=>true,onDrop:()=>true}`,definition);
   await row(page,'a').focus(); await page.keyboard.press('Alt+Enter');
   await expect(page.getByRole('dialog',{name:'Edytuj Name'})).toBeVisible();
-  const analyze=async()=>expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa','best-practice']).analyze()).violations
-    .map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)}))).toEqual([]);
+  // Contrast is measured once the dialog or menu has finished its entrance fade.
+  const settle=()=>page.evaluate(()=>Promise.all(document.getAnimations().filter(animation=>animation.effect?.getComputedTiming().endTime!==Infinity).map(animation=>animation.finished)));
+  const analyze=async()=>{await settle();expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa','best-practice']).analyze()).violations
+    .map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)}))).toEqual([]);};
   await analyze(); await page.getByRole('button',{name:'Anuluj'}).click(); await page.keyboard.press('Shift+F10');
-  await expect(page.getByRole('menu',{name:'Akcje'})).toBeVisible(); await analyze();
+  const menu=page.getByRole('menu',{name:'Akcje'});
+  await expect(menu).toBeVisible();
+  expect(await menu.evaluate(element=>element.closest('main,[role="main"]')!==null)).toBe(true);
+  await analyze();
 });
 
 for(const kind of ['draft','accepted']) test(`accepted cell updates close an editor and preserve focus (${kind})`,async({page})=>{

@@ -1,0 +1,13 @@
+/* Component size options from the public anatomy. Colour, type and rhythm come from shared roles. */
+@layer hfx.components {
+  :where(.cx-dialog,.cx-drawer,.cx-popover,.cx-tooltip,.cx-menu) {
+    /* lint-allow layout: dialog, drawer and popup size presets */
+    --cx-ui-dialog-sm:25rem;--cx-ui-dialog-md:35rem;--cx-ui-dialog-lg:50rem;
+    /* lint-allow layout: dialog, drawer and popup size presets */
+    --cx-ui-drawer-sm:22.5rem;--cx-ui-drawer-md:30rem;--cx-ui-drawer-lg:45rem;
+    /* lint-allow layout: dialog, drawer and popup size presets */
+    --cx-ui-popup-min:12.5rem;--cx-ui-popup-max:22.5rem;--cx-ui-menu-max:20rem;--cx-ui-tooltip-max:17.5rem;
+    /* lint-allow layout: dialog, drawer and popup size presets */
+    --cx-ui-dialog-body-max:70dvh;--cx-ui-sheet-max:90dvh;--cx-ui-viewport-block:100dvh;--cx-ui-viewport-inline:100dvw;
+  }
+}

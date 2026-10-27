@@ -15,6 +15,7 @@
       const column=this.columns.find(item=>item.id===id);
       if(!column||column.filterable===false)throw new Error("CanopyX: column filters require a filterable column.");
       const panel=this.openGridPopover(anchor,"cx-column-filter",column.title+": "+this.labels.gridFilterColumn,id);
+      if(!panel)return;
       const head=h("div","cx-pop-h"),body=h("div","cx-pop-b"),footer=h("div","cx-pop-f"),error=h("p","cx-grid-control-error");
       setText(head,column.title);error.setAttribute("role","status");panel.append(head,body,error,footer);
       let timer,clauses,draft;const signal=this.gridPopover.controller.signal,filters=this.reportingFilters;
@@ -27,8 +28,8 @@
       const apply=clause=>{draft=clause??null;clearTimeout(timer);timer=setTimeout(flush,200);};
       apply.cancel=()=>{clearTimeout(timer);draft=undefined;};
       signal.addEventListener("abort",()=>clearTimeout(timer),{once:true});
-      footer.append(gridButton(this.labels.gridClearColumnFilter,()=>{clearTimeout(timer);this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,null)).catch(failure=>this.emit("error",{error:failure}));this.closeGridPopover();}),
-        gridButton(this.labels.gridDone,()=>{flush();this.closeGridPopover();}));
+      footer.append(gridVariant(gridButton(this.labels.gridClearColumnFilter,()=>{clearTimeout(timer);this.setQuery(gridInstallColumnClause(this.queryForChange(true),id,null)).catch(failure=>this.emit("error",{error:failure}));this.closeGridPopover();}),"ghost"),
+        gridVariant(gridButton(this.labels.gridDone,()=>{flush();this.closeGridPopover();}),"primary"));
       const custom=item=>item.groups?item.filters.some(custom)||item.groups.some(custom):!Object.hasOwn(GRID_FILTER_LABELS,item.operator);
       const faceted=!clauses.some(custom)&&column.kind==="text"&&(this.view.source.kind==="inline"||this.view.reporting?.facetColumns?.includes(id)&&typeof this.source.facet==="function");
       if(!faceted&&clauses.some(item=>item.groups&&(item.groups.length||item.filters.length>2))||!faceted&&clauses.length>2)complex();

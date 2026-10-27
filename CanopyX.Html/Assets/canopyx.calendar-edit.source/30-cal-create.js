@@ -43,8 +43,9 @@
     calCreateForm(proposal, anchor) {
       this.calCloseCreate(false);
       const labels = this.calLabels, panel = this.calCreating = h("form", "cx-cal-create"), titleId = this.id + "-cal-new";
-      const heading = h("h3", "cx-cal-create-h"), when = h("p", "cx-cal-det-when"), label = h("label", "cx-cal-create-l"), input = h("input", "cx-cal-create-input");
+      const heading = h("h3", "cx-cal-create-h"), when = h("p", "cx-cal-det-when"), label = h("label", "cx-cal-create-l"), input = h("input", "cx-input cx-cal-create-input");
       const add = h("button", "cx-btn cx-cal-create-add"), cancel = h("button", "cx-btn ghost cx-cal-create-cancel"), actions = h("div", "cx-cal-create-actions");
+      add.dataset.variant = "primary";
       panel.setAttribute("role", "dialog"); panel.setAttribute("aria-modal", "false"); panel.setAttribute("aria-labelledby", titleId);
       heading.id = titleId; setText(heading, labels.calendarNewEvent);
       setText(when, this.calTimeText({ start: proposal.start, end: proposal.end, allDay: proposal.allDay, sd: proposal.allDay ? Math.floor(proposal.start / CAL_DAY) : this.calZone.day(proposal.start),

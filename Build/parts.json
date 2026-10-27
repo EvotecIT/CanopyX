@@ -2,12 +2,82 @@
   "$comment": "Lazy runtime parts. Build/Sync-Assets.ps1 assembles each into canopyx-<name>.js (and .css), registers it with CanopyX.registerPart, writes the build manifest every entry point reads, and writes canopyx-parts.json, which CanopyX.Html reads to write and embed the parts. Entry points leave out every script a part lists, unless the part lists it under shared too. features names the view features that make a view load the part (for example pager, editable, rowData, formatting, formatEditor, columnGroups, rangeSelection, grouping, detail, searchHighlight, layout, record), so only the fragments of views that use one carry its payload; CanopyHtmlPart maps each name to the view settings that turn it on. See docs/plugins.md.",
   "parts": [
     {
+      "name": "ui-overlays",
+      "label": "UI overlays",
+      "runtimes": ["tree", "grid"],
+      "views": [],
+      "key": "UI_IMPL",
+      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.ui-overlays.source"],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-overlays.source/geometry.css",
+        "CanopyX.Html/Assets/canopyx.ui-overlays.source/overlays.css"
+      ]
+    },
+    {
+      "name": "ui-menu",
+      "label": "UI menu",
+      "runtimes": ["tree", "grid"],
+      "views": ["tree", "grid"],
+      "features": ["contextActions", "columnMenus"],
+      "key": "UI_IMPL",
+      "requires": ["ui-overlays"],
+      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.ui-menu.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.ui-menu.source/menu.css"]
+    },
+    {
+      "name": "ui-picker",
+      "label": "UI picker",
+      "runtimes": ["tree", "grid"],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": ["ui-menu"],
+      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.ui-picker.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.ui-picker.source/picker.css"]
+    },
+    {
+      "name": "ui-navigation",
+      "label": "UI navigation",
+      "runtimes": ["tree", "grid"],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": ["ui-picker"],
+      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.ui-navigation.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.ui-navigation.source/navigation.css"]
+    },
+    {
+      "name": "ui-tabs",
+      "label": "UI tabs",
+      "runtimes": ["tree", "grid"],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": ["ui-navigation"],
+      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.ui-tabs.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.ui-tabs.source/tabs.css"]
+    },
+    {
+      "name": "ui-stepper",
+      "label": "UI stepper",
+      "runtimes": ["tree", "grid"],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": ["ui-navigation"],
+      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.ui-stepper.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.ui-stepper.source/stepper.css"]
+    },
+    {
       "name": "tree-tools",
       "label": "tree tools",
       "runtimes": ["tree", "grid"],
       "views": ["tree"],
       "key": "TreeGrid.prototype",
-      "context": ["TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
+      "requires": ["ui-overlays"],
+      "context": ["UI_IMPL", "UI_TOOLS", "TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
         "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "exportFormatsOf", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems",
         "applyTone", "toneOf", "badgeElement", "RECORD_IMPL", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone", "overlayTheme"],
       "start": "const EXPORT_IMPL = { formatsOf: exportFormatsOf };",
@@ -50,11 +120,11 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "requires": ["presenters"],
       "runtimes": ["grid"],
       "views": ["grid"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "gridButton", "gridInputLabel", "gridOption", "gridScalar", "gridDateInputMoment", "gridQuery", "gridQueryStart",
+      "requires": ["ui-overlays", "presenters"],
+      "context": ["UI_IMPL", "UI_TOOLS", "DataGrid", "h", "setText", "gridButton", "gridVariant", "gridInputLabel", "gridOption", "gridScalar", "gridDateInputMoment", "gridQuery", "gridQueryStart",
         "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridKeyCompare", "gridFacetKey", "columnNumericTone", "columnValueTone", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
         "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "numberText", "fill", "announceMenu", "reportingRangeRows",
         "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL", "overlayTheme"],
@@ -86,6 +156,7 @@
       "runtimes": ["tree", "grid"],
       "views": ["tree", "grid"],
       "key": "EXPORT_IMPL",
+      "requires": ["ui-overlays"],
       "context": ["DataGrid", "EXPORT_IMPL", "h", "setText", "gridButton", "gridOption", "fill", "numberFormat", "gridOperationActive", "formatting", "gridQuery",
         "validateGridCursorPage", "validateGridPage", "GRID_REPORTING", "gridFreeze", "cellValue", "cellText", "isCellObject", "exportTimeout", "exportFormat", "EXPORT_FORMATS", "gridExportField"],
       "end": "DataGrid.prototype.renderGridExport = exportMenu;",
@@ -491,7 +562,8 @@
       "views": ["grid"],
       "features": ["rangeSelection"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
+      "requires": ["ui-menu"],
+      "context": ["toneVariable", "bindContextMenu", "DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
         "numberFormat", "gridFreeze", "gridMomentFromParts", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable", "gridExportField"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.cell-range.source"
@@ -534,7 +606,7 @@
       "features": ["formatting"],
       "key": "DataGrid.prototype",
       "context": ["toneVariable", "DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "gridDateInputMoment", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
-        "gridButton", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon", "overlayTheme"],
+        "gridButton", "gridVariant", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon", "overlayTheme"],
       "scripts": ["CanopyX.Html/Assets/canopyx.formatting.source"],
       "styles": ["CanopyX.Html/Assets/canopyx.formatting.source/formatting.css"]
     },
@@ -545,7 +617,7 @@
       "views": ["grid"],
       "features": ["formatEditor"],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridOption", "gridDateInputMoment", "gridInputLabel", "gridIcon", "gridDecorateButton", "announceMenu",
+      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridVariant", "gridOption", "gridDateInputMoment", "gridInputLabel", "gridIcon", "gridDecorateButton", "announceMenu",
         "formatCompile", "formatToneVar", "formatError", "FORMAT_ICONS", "FORMAT_TONE_ICONS", "FORMAT_OPERATORS", "svgIcon", "overlayTheme"],
       "requires": ["filter-editor", "formatting"],
       "scripts": ["CanopyX.Html/Assets/canopyx.format-editor.source"],
@@ -664,7 +736,8 @@
       "views": ["tree", "grid"],
       "features": ["record"],
       "key": "RECORD_IMPL",
-      "context": ["RECORD_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors", "validateGridRows",
+      "requires": ["ui-menu"],
+      "context": ["RECORD_IMPL", "UI_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors", "validateGridRows",
         "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone", "validateColumnValues"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.record-panel.source"
@@ -680,7 +753,8 @@
       "views": ["grid"],
       "features": ["calendar"],
       "key": "DataGrid.prototype",
-      "context": ["toneVariable", "DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
+      "requires": ["ui-menu"],
+      "context": ["toneVariable", "bindContextMenu", "DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
         "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "validateGridPage", "validateGridCursorPage", "validStructuralCount", "checkDocument", "numberFormat",
         "HostCellContext", "disposeHostSlot", "loadPart", "PROTOCOL"],
       "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid };",

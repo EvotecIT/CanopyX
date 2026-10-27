@@ -117,6 +117,8 @@ export interface RecordActionContext {
 }
 /** An action of the record panel's actions menu. Hosts must enforce authorization again when executing it. */
 export interface RecordAction {
+  /** Keeps the action focusable in its menu while preventing activation. */
+  readonly disabled?: boolean;
   /** Evaluated after each record paint, including loaded details. Hidden actions cannot run through a stale control. */
   readonly visible?: boolean | ((context: RecordActionContext) => boolean);
   /** Also renders this action as a visible footer button. Menu access is retained. */
