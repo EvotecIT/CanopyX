@@ -279,7 +279,7 @@ export type LabelName =
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
   | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails"
   /** Calculated-column editor and stable per-cell errors (flat grids only). */
-  | "gridCalculationAdd" | "gridCalculationTitle" | "gridCalculationId" | "gridCalculationExpression" | "gridCalculationError" | "gridCalculationInvalid" | "gridCalculationHelp" | "gridCalculationNumber" | "gridCalculationDate";
+  | "gridCalculationAdd" | "gridCalculationTitle" | "gridCalculationId" | "gridCalculationExpression" | "gridCalculationError" | "gridCalculationInvalid" | "gridCalculationHelp" | "gridCalculationNumber" | "gridPivotFieldOptions" | "gridCalculationResultType" | "gridCalculationDivideZero" | "gridCalculationDate";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

@@ -65,36 +65,48 @@ test("calendar axes keep numeric bucket keys and two-level Other drill-through r
   expect(result.retainedColumns).toHaveLength(2); expect(result.retainedColumns.every(path => typeof path[0] === "number")).toBe(true);
   await expect(page.locator(".cx-pivot-note")).toContainText("combined in Other");
   const other = result.cells.find(cell => cell.row === "r" && cell.column === "c:other");
-  await page.getByRole("button", { name: /^Show records for Query totals, Other: Orders,/ }).click();
+  await page.getByRole("button", { name: /^Show records for Grand total, Other: Orders · Count,/ }).click();
   const query = await page.evaluate(api + ".getQuery()"); expect(query.tupleFilters[0].exclude).toBe(true); expect(query.tupleFilters[0].columns[0].bucket.kind).toBe("month");
   const summary = await page.evaluate(api + ".getSummary()"); expect(summary.matched).toBe(other.count);
 });
 
-test("phone column picker and display menu keep numeric export values", async ({ page }) => {
+test("phone pivot scrolls all column groups and display changes keep numeric export values", async ({ page }) => {
   const view = pivotView(); view.reporting.pivot.rows.push({ column: "customer", direction: "asc" });
   await page.setViewportSize({ width: 390, height: 844 }); await open(page, view, parts(), "dark");
-  const picker = page.getByRole("combobox", { name: "Choose column", exact: true }); await expect(picker).toBeVisible();
-  await picker.selectOption("c");
+  await expect(page.getByRole("combobox", { name: "Choose column", exact: true })).toHaveCount(0);
+  expect(await page.locator(".cx-pivot-scroll").evaluate(scroll => scroll.scrollWidth > scroll.clientWidth)).toBe(true);
+  await page.getByRole("button", { name: "Choose column", exact: true }).click();
+  await expect(page.getByRole("menu", { name: "Choose column", exact: true })).toHaveAttribute("data-hfx-part", "menu");
+  await page.getByRole("menuitem", { name: "Grand total", exact: true }).click();
+  expect(await page.locator(".cx-pivot-scroll").evaluate(scroll => scroll.scrollLeft)).toBeGreaterThan(0);
+  await page.locator(".cx-pivot-scroll").evaluate(scroll => { scroll.scrollLeft = 0; });
   await page.locator(".cx-pivot-value-menu").first().click();
   await page.getByRole("combobox", { name: "Show values as", exact: true }).selectOption("percentRow");
-  await expect(page.locator(".cx-pivot-caption").first()).toHaveText("as % of row");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await expect(page.locator(".cx-pivot-caption").first()).toHaveText("% of row total");
   const snapshot = await page.evaluate(api + ".getPivotExport()");
+  await expect(page.locator(".cx-pivot-cell").first()).toHaveText(snapshot.rows[0].cells.v0_0.text);
   const value = Object.values(snapshot.rows[0].cells).find(cell => cell.mode === "percentRow"); expect(typeof value.value).toBe("number"); expect(value.numberFormat).toBe("0.00%");
   expect(await page.evaluate("document.documentElement.scrollWidth <= innerWidth")).toBe(true);
   expect(await page.locator(".cx-pivot-table tfoot").evaluate(foot => foot.getBoundingClientRect().bottom)).toBeLessThanOrEqual(844);
   expect(await page.locator(".cx-pivot-scroll").evaluate(scroll => scroll.scrollHeight > scroll.clientHeight)).toBe(true);
-  await page.getByRole("button", { name: "Pivot", exact: true }).click();
+  await page.locator(".cx-pivot-toggle").click();
   const apply = page.getByRole("button", { name: "Apply", exact: true }); await apply.scrollIntoViewIfNeeded();
   await apply.click(); await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator(".cx-pivot-table")).toBeVisible();
+  await page.locator(".cx-pivot-toggle").click();
+  await page.getByRole("dialog").getByRole("button", {name:"Show records",exact:true}).click();
+  await expect(page.locator(".cx-pivot-table")).toBeHidden();
+  await expect(page.locator(".cx-grid")).toBeVisible();
 });
 
 test("pivot configuration validates axes and values without a script expression", async ({ page }) => {
   const view = pivotView(); delete view.reporting.pivot; await open(page, view, parts());
-  const trigger = page.getByRole("button", { name: "Pivot", exact: true });
+  const trigger = page.locator(".cx-pivot-toggle");
   await trigger.click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.locator('[data-hfx-part="body"]')).toHaveCount(1);
+  expect(await dialog.locator('input[type="checkbox"]').evaluateAll(inputs => inputs.every(input => input.getBoundingClientRect().width <= 28))).toBe(true);
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(trigger).toBeFocused();
   await trigger.click();
   await page.getByRole("combobox", { name: "Row groups 1", exact: true }).selectOption("region");

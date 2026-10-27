@@ -94,8 +94,9 @@ public sealed class CalculationPipelineTests {
         Assert.Equal(4, page.Matched);
         Assert.All(page.Rows, row => {
             Assert.Null(row.Cells["bad"].Value);
-            Assert.Equal("#ERROR", row.Cells["bad"].Text);
-            Assert.Equal("Failed: divide-by-zero", row.Cells["dependent"].Title);
+            Assert.Equal("#DIV/0", row.Cells["bad"].Text);
+            Assert.Contains("Failed: Division by zero", row.Cells["dependent"].Title);
+            Assert.Contains("[bad]", row.Cells["dependent"].Title);
             Assert.IsType<double>(row.Cells["independent"].Value);
         });
         var summary = await provider.SummarizeAsync(CanopyRequestParser.ParseSummary("{\"revision\":\"r1\"}", schema), CancellationToken.None);
@@ -106,7 +107,7 @@ public sealed class CalculationPipelineTests {
         Assert.Equal(4, missing.Count);
         await foreach (var row in provider.ReadAsync(query, CancellationToken.None)) {
             Assert.Null(row.Cells["dependent"].Value);
-            Assert.Equal("#ERROR", row.Cells["dependent"].Text);
+            Assert.Equal("#DIV/0", row.Cells["dependent"].Text);
         }
     }
 
@@ -127,7 +128,7 @@ public sealed class CalculationPipelineTests {
         var accepted = new CanopyGridSummary(new CanopyGridQuery(view.Id) { Revision = "r1", Limit = view.PageSize }, summary.Matched);
         foreach (var pair in summary.Aggregates) accepted.Aggregates.Add(pair);
         var html = CanopyStaticHtml.RenderGridSummary(view, accepted, new CanopyStaticHtmlOptions { Culture = CultureInfo.InvariantCulture });
-        Assert.Contains(">60<", html);
+        Assert.Contains(">60.00<", html);
         Assert.DoesNotContain("<script", html);
     }
 

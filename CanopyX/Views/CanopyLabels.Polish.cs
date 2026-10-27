@@ -219,7 +219,7 @@ public sealed partial class CanopyLabels {
         GridGroupMissing = "Brak wartości",
         GridGroupExpand = "Rozwiń grupę",
         GridGroupCollapse = "Zwiń grupę",
-        GridSummary = "Podsumowanie wyników",
+        GridSummary = "Suma całkowita",
         GridGroupOrder = "Kolejność grup jest ustalona w raporcie",
         GridAggregateCount = "liczba {value}",
         GridAggregateSum = "suma {value}",

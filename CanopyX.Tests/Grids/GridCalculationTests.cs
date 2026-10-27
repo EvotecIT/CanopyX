@@ -77,8 +77,10 @@ public sealed class GridCalculationTests {
         var result = set.Apply(new CanopyGridRow("row"), labels);
         foreach (var id in new[] { "upstream", "dependent" }) {
             Assert.Null(result.Cells[id].Value);
-            Assert.Equal("#ERROR", result.Cells[id].Text);
-            Assert.Equal("Failed: divide-by-zero", result.Cells[id].Title);
+            Assert.Equal("#DIV/0", result.Cells[id].Text);
+            Assert.Equal(CanopyTone.Danger, result.Cells[id].Tone);
+            Assert.Contains("Failed: Division by zero", result.Cells[id].Title);
+            Assert.StartsWith(id + " (", result.Cells[id].Title);
         }
         Assert.Equal(21d, result.Cells["independent"].Value);
         Assert.Equal(42d, result.Cells["lazy"].Value);
@@ -95,7 +97,7 @@ public sealed class GridCalculationTests {
         var cell = set.Apply(new CanopyGridRow("row")).Cells["value"];
         Assert.Null(cell.Value);
         Assert.Equal("#ERROR", cell.Text);
-        Assert.Equal("Calculation error: " + error, cell.Title);
+        Assert.Equal("Value (" + expression + "): Calculation error: " + error, cell.Title);
     }
 
     [Fact]
@@ -181,10 +183,11 @@ public sealed class GridCalculationTests {
         view.Labels.GridCalculationError = "Failure <{error}>";
         var row = new CanopyGridRow("row"); row.Cells["amount"] = 3; view.Rows.Add(row);
         var rendered = CanopyStaticHtml.RenderGridWithResult(view);
-        Assert.Equal(new[] { "3", "#ERROR" }, Assert.Single(rendered.Rows));
+        Assert.Equal(new[] { "3", "#DIV/0" }, Assert.Single(rendered.Rows));
         var table = XDocument.Parse(rendered.Html);
-        var error = table.Descendants("td").Single(cell => cell.Value == "#ERROR");
-        Assert.Equal("Failure <divide-by-zero>", error.Attribute("title")!.Value);
+        var error = table.Descendants("td").Single(cell => cell.Value == "#DIV/0");
+        Assert.Contains("[amount] / 0", error.Attribute("title")!.Value);
+        Assert.Contains("Failure <Division by zero>", error.Attribute("title")!.Value);
         Assert.DoesNotContain("<script", rendered.Html, StringComparison.OrdinalIgnoreCase);
     }
 

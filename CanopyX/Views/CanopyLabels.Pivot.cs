@@ -1,6 +1,8 @@
 namespace CanopyX;
 
 public sealed partial class CanopyLabels {
+    /// <summary>Gets or sets the field options label.</summary>
+    public string GridPivotFieldOptions { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the pivot label: Pivot</summary>
     public string GridPivot { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the pivot label: Row groups</summary>
@@ -11,7 +13,7 @@ public sealed partial class CanopyLabels {
     public string GridPivotValues { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the pivot label: Show records</summary>
     public string GridPivotFlat { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the pivot label: Configure pivot</summary>
+    /// <summary>Gets or sets the pivot label: Pivot settings</summary>
     public string GridPivotConfigure { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the pivot label: Other</summary>
     public string GridPivotOther { get => Get(); set => Set(value); }

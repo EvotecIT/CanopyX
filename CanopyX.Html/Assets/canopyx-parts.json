@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "29ebfb35890d62ef",
+      "version": "1b2632cd59c4f343",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -715,7 +715,7 @@
     {
       "name": "calculations",
       "label": "calculated columns",
-      "version": "e4732ff1ff103318",
+      "version": "8f541fbb6997688b",
       "script": "canopyx-calculations.js",
       "style": "canopyx-calculations.css",
       "runtimes": [
@@ -731,7 +731,7 @@
     {
       "name": "pivot",
       "label": "pivot analysis",
-      "version": "db24cb198611f8a0",
+      "version": "8045d389da1ede63",
       "script": "canopyx-pivot.js",
       "style": "canopyx-pivot.css",
       "runtimes": [
@@ -752,7 +752,7 @@
     {
       "name": "values",
       "label": "aggregate display modes",
-      "version": "3a8c27773529d5b0",
+      "version": "6cffc68641e6702b",
       "script": "canopyx-values.js",
       "style": "canopyx-values.css",
       "runtimes": [
@@ -783,7 +783,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "49d9f7f66403e301",
+      "version": "6fd67b4887b59371",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -838,7 +838,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "834310017f57670a",
+      "version": "6a60812d1bc4e82b",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [

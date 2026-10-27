@@ -53,7 +53,7 @@
           text.replaceChildren();
           if (levels.length > 1 && !this.view.reporting?.grouping?.headerTemplate) { const name = h("span", "cx-grid-group-column"); setText(name, groupColumn.title); text.append(name, document.createTextNode(" ")); }
           text.appendChild(document.createTextNode(this.view.reporting?.grouping?.headerTemplate ? label : value)); setText(badge, count);
-          badge.hidden = !!this.view.reporting?.grouping?.headerTemplate;
+          badge.hidden = !!this.view.reporting?.grouping?.headerTemplate || this.view.reporting.aggregates.some(aggregate => aggregate.operation === "count" && group.aggregates[aggregate.id] === group.count);
           if (!priorHeading) heading.append(text, badge);
           if (!priorButton) cell.append(button);
           this.paintGroupSelection(cell, group); if (!priorHeading) cell.append(heading); cell.title = label;

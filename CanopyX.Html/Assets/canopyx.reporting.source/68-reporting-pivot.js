@@ -37,8 +37,8 @@
     return { query: gridQuery(grid.view, { ...query, revision }), definition: pivotDefinition(grid.view, definition) };
   }
   const PIVOT_PART = definePart(DataGrid, "pivot", "pivot analysis", () => ({ DataGrid, GRID_PIVOT, GRID_ROWS, GRID_SHOW_AS, GRID_SHOW_AS_MODES, GRID_BUCKETS, GRID_CALCULATIONS,
-    h, setText, fill, gridButton, gridFreeze, gridQuery, gridQueryStart, gridQueryRows, gridScalar, cellValue, cellText, gridKeyCompare, gridOrder,
-    numberFormat, formatting, gridExportSignal, validateGridPage, checkDocument, validStructuralCount, gridOperationActive, pivotDefinition, pivotIntent, pivotRequestOf, showAsMode, showAsCaption }));
+    UI_IMPL, UI_TOOLS, h, setText, fill, gridButton, gridFreeze, gridQuery, gridQueryStart, gridQueryRows, gridScalar, cellValue, cellText, gridKeyCompare, gridOrder,
+    reportingAggregateName, reportingValueText, numberFormat, formatting, gridExportSignal, validateGridPage, checkDocument, validStructuralCount, gridOperationActive, pivotDefinition, pivotIntent, pivotRequestOf, showAsMode, showAsCaption }));
   const PIVOT_VALIDATE = GRID_REPORTING.validate, PIVOT_CHROME = DataGrid.prototype.buildGridChrome, PIVOT_REQUEST = DataGrid.prototype.requestPage;
   GRID_REPORTING.validate = view => {
     PIVOT_VALIDATE(view);

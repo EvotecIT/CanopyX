@@ -225,7 +225,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridGroupMissing)] = "Missing value",
         [nameof(GridGroupExpand)] = "Expand group",
         [nameof(GridGroupCollapse)] = "Collapse group",
-        [nameof(GridSummary)] = "Query totals",
+        [nameof(GridSummary)] = "Grand total",
         [nameof(GridGroupOrder)] = "Group order is fixed by this report",
         [nameof(GridAggregateCount)] = "count {value}",
         [nameof(GridAggregateSum)] = "sum {value}",

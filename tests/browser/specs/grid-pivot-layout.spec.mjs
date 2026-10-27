@@ -6,7 +6,7 @@ import { definition, api } from "./grid-grouping-fixtures.mjs";
 
 const assets = path.join(repo, "CanopyX.Html/Assets");
 const parts = () => ["buckets", "values", "pivot"].map(name => fs.readFileSync(path.join(assets, "canopyx-" + name + ".js"), "utf8")).join("\n");
-for (const [width, height, theme] of [[390, 440, "dark"], [390, 300, "dark"], [1440, 440, "light"]]) {
+for (const [width, height, theme] of [[390, 440, "dark"], [390, 300, "dark"], [1440, 440, "light"], [720, 440, "light"]]) {
   test(`an embedded ${height}px pivot at ${width}px keeps a complete data row reachable without expanding its host`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     const view = definition(); delete view.reporting.detail; view.reporting.groupBy = []; view.reporting.pivotable = true;
@@ -18,6 +18,20 @@ for (const [width, height, theme] of [[390, 440, "dark"], [390, 300, "dark"], [1
     await page.goto("http://127.0.0.1/pivot-fragment"); await page.waitForSelector("[data-cx-ready]");
     await page.evaluate(api + ".setState({..." + api + ".getState(),pivot:{rows:[{column:'region',direction:'asc'},{column:'status',direction:'asc'}],columns:[{column:'placed',direction:'asc',bucket:{kind:'month'}}],values:['total','orders'],active:true,collapsedRows:[],collapsedColumns:[]}})");
     await nextFrames(page);
+    await expect(page.locator(".cx-pivot-table thead tr")).toHaveCount(2);
+    await expect(page.locator(".cx-pivot-table thead th").first()).toHaveText("Region / Status");
+    expect(await page.locator('.cx-pivot-table th[scope="colgroup"]').first().getAttribute("colspan")).toBe("2");
+    expect(await page.locator(".cx-pivot-scroll").evaluate(scroll => scroll.scrollLeft)).toBe(0);
+    expect(await page.locator('.cx-pivot-table th[scope="colgroup"]').first().evaluate(cell => {
+      const range = document.createRange(); range.selectNodeContents(cell.querySelector("span"));
+      const style = getComputedStyle(cell);
+      return Math.abs(range.getBoundingClientRect().right - (cell.getBoundingClientRect().right - parseFloat(style.paddingRight) - parseFloat(style.borderRightWidth)));
+    })).toBeLessThanOrEqual(2);
+    await expect(page.getByRole("combobox", {name:"Choose column",exact:true})).toHaveCount(0);
+    if (width === 390) {
+      await expect(page.locator(".cx-pivot-zones")).toBeHidden();
+      await expect(page.getByRole("button", {name:"Pivot settings",exact:true})).toBeVisible();
+    }
     const geometry = () => page.evaluate(() => {
       const host = document.querySelector("[data-canopyx-host]"), panel = host.querySelector(".cx-pivot"), scroll = panel.querySelector(".cx-pivot-scroll"),
         table = scroll.querySelector("table"), row = table.querySelector("tbody tr"), bounds = [host, panel, scroll].map(node => node.getBoundingClientRect()),
@@ -29,6 +43,10 @@ for (const [width, height, theme] of [[390, 440, "dark"], [390, 300, "dark"], [1
     await expect.poll(async () => { const box = await geometry(); return box.visible >= box.rowHeight - 1; }).toBe(true);
     expect((await geometry()).hostHeight).toBeLessThanOrEqual(height + 1);
     expect((await geometry()).overflow).toBe(false);
+    if (width === 390 && height === 440) expect(await page.locator(".cx-pivot-table").evaluate(table => {
+      const area = table.parentElement.getBoundingClientRect(), head = table.tHead.getBoundingClientRect(), foot = table.tFoot.getBoundingClientRect();
+      return [...table.tBodies[0].rows].filter(row => { const box = row.getBoundingClientRect(); return box.top >= Math.max(area.top,head.bottom)-1 && box.bottom <= Math.min(area.bottom,foot.top)+1; }).length;
+    })).toBeGreaterThanOrEqual(2);
     // Each scroll container can be reached by keyboard, including controls above a short fragment's table.
     await page.locator(".cx-pivot-scroll").focus(); await expect(page.locator(".cx-pivot-scroll")).toBeFocused();
     await page.keyboard.press("ArrowDown");

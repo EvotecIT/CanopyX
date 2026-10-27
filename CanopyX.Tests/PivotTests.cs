@@ -281,14 +281,18 @@ public sealed class PivotTests {
         Assert.Equal(3, table.Element("tbody")!.Elements("tr").Count(row => row.Element("th") != null));
         var footer = table.Element("tfoot")!.Element("tr")!;
         Assert.Equal("Razem", footer.Element("th")!.Value);
+        Assert.All(footer.Elements(), cell => Assert.Contains("font-weight:700", cell.Attribute("style")!.Value));
         Assert.Equal("12", footer.Elements("td").TakeLast(6).First().Value);
-        Assert.Equal("252", footer.Elements("td").TakeLast(5).First().Value);
+        Assert.Equal("252.00", footer.Elements("td").TakeLast(5).First().Value);
         Assert.Contains("Showing 3 of", table.Value);
         var outline = ParseTable(CanopyStaticHtml.RenderGridPivot(view, result));
         Assert.Contains("&child", outline.Value);
         Assert.Contains("Brak", outline.Value);
         Assert.Contains(outline.Element("tbody")!.Elements("tr").Elements("th"), heading => heading.Attribute("style")!.Value.Contains("padding-left:24px", StringComparison.Ordinal));
-        Assert.Contains("year: 2025 / quarter: Q1", outline.Element("thead")!.Value);
+        Assert.Contains("2025", outline.Element("thead")!.Value);
+        Assert.Contains("Q1", outline.Element("thead")!.Value);
+        Assert.Equal(3, outline.Element("thead")!.Elements("tr").Count());
+        Assert.Contains(outline.Descendants("th"), cell => (string?)cell.Attribute("scope") == "colgroup" && (int?)cell.Attribute("colspan") > 1);
     }
 
     [Fact]
@@ -301,7 +305,7 @@ public sealed class PivotTests {
         var table = ParseTable(CanopyStaticHtml.RenderGridPivot(view, result));
         Assert.Contains("[10, 20)", table.Value);
         var values = table.Element("tbody")!.Elements("tr").First().Elements("td").Select(cell => cell.Value).ToArray();
-        Assert.Equal(new[] { (11d / 23).ToString("P2", CultureInfo.InvariantCulture), (12d / 23).ToString("P2", CultureInfo.InvariantCulture), 1d.ToString("P2", CultureInfo.InvariantCulture) }, values);
+        Assert.Equal(new[] { (11d / 23).ToString("P2", CultureInfo.InvariantCulture).Replace(" %", "%"), (12d / 23).ToString("P2", CultureInfo.InvariantCulture).Replace(" %", "%"), 1d.ToString("P2", CultureInfo.InvariantCulture).Replace(" %", "%") }, values);
         var empty = CanopyPivot.Compute(View(), Definition(), Array.Empty<CanopyGridRow>());
         Assert.NotNull(ParseTable(CanopyStaticHtml.RenderGridPivot(View(), empty)).Element("tfoot"));
     }

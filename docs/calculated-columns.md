@@ -140,14 +140,16 @@ grid's narrower wire range; an out-of-range result becomes a `number-range` cell
 
 ## Errors stay with their cells
 
-A row-level calculation error has raw value null, display text `#ERROR`, and a tooltip using the localized
-`gridCalculationError` label (`GridCalculationError` in C#) with `{error}` replaced by a stable code. Codes are
+A row-level calculation error has raw value null and a danger tone. Division or remainder by zero shows `#DIV/0`;
+other errors show `#ERROR`. The tooltip identifies the column and its expression, followed by the localized
+`gridCalculationError` label (`GridCalculationError` in C#). Division by zero uses a translated explanation; other
+reasons retain their stable code. Codes are
 `type`, `divide-by-zero`, `number-range`, `text-limit`, `date` and `reference`. Division or remainder by zero is an
 error; it does not produce infinity.
 
 Dependent calculated columns propagate an evaluated upstream error. Independent columns continue to calculate, and
 unused lazy branches do not introduce errors. Raw filtering and raw exports see the null value; display output can
-retain `#ERROR` and its tooltip. Invalid syntax, unknown references, cycles and definition limits are definition
+retain the error marker and its tooltip, including in script-free output. Invalid syntax, unknown references, cycles and definition limits are definition
 errors, not missing cells silently accepted by the editor.
 
 ## Inline editor and saved state

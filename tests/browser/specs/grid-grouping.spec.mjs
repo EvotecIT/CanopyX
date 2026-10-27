@@ -24,7 +24,7 @@ test("two levels nest complete groups, label their aggregates and make the grid 
   await expect(page.locator(".cx-row[data-cx-id]").first()).toHaveAttribute("aria-level", "3");
   const amount = first.locator('[role="gridcell"]').last();
   await expect(amount).toHaveText(/^sum [\d,.]+ · avg [\d,.]+$/);
-  await expect(amount).toHaveAttribute("title", /^Total amount: [\d,.]+ · Average amount: [\d,.]+$/);
+  await expect(amount).toHaveAttribute("title", /^Total amount · Sum: [\d,.]+ · Average amount · Avg: [\d,.]+$/);
   await expect(page.locator(".cx-summary-row [role='gridcell']").first()).toHaveText(/^count 48/);
   await expect(page.locator(".cx-gchip")).toHaveCount(2);
   const order = await page.locator(".cx-canvas > .cx-row").evaluateAll(list => list.map(row => Number(row.getAttribute("aria-rowindex"))));
@@ -189,9 +189,9 @@ test("every aggregate of one function in a column keeps the same decimals, trail
   view.rows = [["North", 2], ["North", 4], ["South", 1], ["South", 2], ["West", 2.5], ["West", 3.25]].map(([region, amount], i) =>
     ({ id: "r" + i, cells: { order: "SO-" + i, customer: "C", region, status: "Open", amount, items: 1, placed: "2026-01-01T00:00:00Z" } }));
   await open(page, view);
-  // The column's loaded values carry two decimals, so averages show three and sums two, in headings and in the totals row alike.
+  // Undeclared aggregate formats use two decimals consistently in headings and totals, independent of the loaded sample.
   const texts = await page.locator(".cx-grid-group [role='gridcell']:last-child, .cx-summary-row [role='gridcell']:last-child").allTextContents();
-  expect(texts).toEqual(["sum 6.00 · avg 3.000", "sum 3.00 · avg 1.500", "sum 5.75 · avg 2.875", "sum 14.75 · avg 2.458"]);
+  expect(texts).toEqual(["sum 6.00 · avg 3.00", "sum 3.00 · avg 1.50", "sum 5.75 · avg 2.88", "sum 14.75 · avg 2.46"]);
 });
 
 test("runtime grouping keeps the inline source's facet counts", async ({ page }) => {
