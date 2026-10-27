@@ -27,7 +27,7 @@ async function openPath(page, options = {}) {
   }, options);
 }
 
-test("path follows explicit occurrence order and opens out-of-cache records from keyboard", async ({ page }) => {
+test("path follows explicit occurrence order and opens out-of-cache records from keyboard", async ({ page, browserName }) => {
   await openPath(page, { custom: true });
   const buttons = page.locator(".cx-path-title");
   await expect(buttons).toHaveCount(3);
@@ -43,7 +43,8 @@ test("path follows explicit occurrence order and opens out-of-cache records from
   await expect(page.getByRole("dialog")).toContainText("Record details 0");
   await page.keyboard.press("Escape"); await expect(buttons.last()).toBeFocused();
   await page.keyboard.press("Home"); await expect(buttons.first()).toBeFocused();
-  await page.keyboard.press("Tab"); await expect(buttons.nth(1)).toBeFocused();
+  const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
+  await page.keyboard.press(tab); await expect(buttons.nth(1)).toBeFocused();
   expect(await page.evaluate(() => window.pathErrors)).toEqual([]);
 });
 
