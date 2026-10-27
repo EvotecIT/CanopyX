@@ -114,7 +114,25 @@
       // Base widths depend on content, not on the available width, so responsive policies read stable values.
       for (const column of this.columns) { if (!column.fixed && !column.sized) column.width = this.fitSize(column); }
       this.fitHide(shown, width, phone);
-      // Residual disclosure belongs to the context line and takes no width from the identity.
+      this.syncFitDisclosure(phone);
+    },
+    // Intermediate widths need the same disclosure as phone records, before the optional Columns editor loads.
+    syncFitDisclosure(phone) {
+      if (!this.toolbar) return;
+      const columns = this.columns.filter(column => !column.hidden && (column.fitHidden || column.responsiveHidden));
+      if (!this.fitDisclosure) {
+        this.fitDisclosure = h("span", "cx-fit-disclosure p-sub");
+        this.fitDisclosure.id = this.id + "-fit-disclosure";
+        (this.toolbar.querySelector(".cx-grid-columns > summary") || this.toolbar).append(this.fitDisclosure);
+      }
+      this.fitDisclosure.hidden = phone || !columns.length;
+      const label = fill(plural(this.labels.hiddenColumns, columns.length, this.lang), { count: numberFormat(this.lang).format(columns.length) });
+      setText(this.fitDisclosure, " · " + label); this.fitDisclosure.title = columns.map(column => column.title).join(", ");
+      const control = this.fitDisclosure.parentElement;
+      if (control.matches("summary")) {
+        control.setAttribute("aria-label", this.labels.columns);
+        setAttr(control, "aria-describedby", this.fitDisclosure.hidden ? null : this.fitDisclosure.id);
+      }
     },
     measureGridColumn(column) {
       const context = this.fitContext ||= document.createElement("canvas").getContext("2d"), query = this.acceptedQuery;

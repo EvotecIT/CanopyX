@@ -86,6 +86,24 @@ public sealed class GridCalculationTests {
         Assert.Equal(42d, result.Cells["lazy"].Value);
     }
 
+    [Fact]
+    public void StaticErrorsIncludeVisibleReasonsWithoutRequiringTooltips() {
+        var view = new CanopyDataGridView("calculations", "Calculated values");
+        view.Columns.Add(new CanopyColumn("quantity", "Quantity") { Kind = CanopyColumnKind.Number });
+        view.Columns.Add(Number("ratio", "1 / [quantity]"));
+        view.Rows.Add(new CanopyGridRow("first"));
+        view.Rows.Add(new CanopyGridRow("second"));
+        foreach (var row in view.Rows) row.Cells["quantity"] = new CanopyCell(0d);
+        var html = CanopyX.Rendering.CanopyStaticHtml.RenderGrid(view);
+        const string reason = "<li>#DIV/0: ratio (1 / [quantity]): Calculation error: Division by zero</li>";
+        Assert.Contains(reason, html);
+        Assert.Equal(html.IndexOf(reason, StringComparison.Ordinal), html.LastIndexOf(reason, StringComparison.Ordinal));
+        Assert.DoesNotContain("<script", html);
+        var healthy = new CanopyGridRow("healthy"); healthy.Cells["quantity"] = new CanopyCell(1d); view.Rows.Insert(0, healthy);
+        var bounded = CanopyX.Rendering.CanopyStaticHtml.RenderGrid(view, options: new CanopyX.Rendering.CanopyStaticHtmlOptions { MaxRows = 1 });
+        Assert.DoesNotContain("<li>#DIV/0:", bounded);
+    }
+
     [Theory]
     [InlineData(CanopyColumnKind.Number, "\"12\"", "type")]
     [InlineData(CanopyColumnKind.Text, "12", "type")]

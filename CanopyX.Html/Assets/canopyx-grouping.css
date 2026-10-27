@@ -13,7 +13,7 @@
 .cx-data-grid .cx-grid-summary{position:sticky;bottom:0;z-index:4;background:var(--hfx-color-surface-sunken,light-dark(#f7f8f9,#111317));border-top:var(--hfx-border-width,1px) solid var(--hfx-color-border-strong,light-dark(#cdd0d5,#363a42));font:inherit;}
 .cx-summary-row{display:flex;height:var(--hfx-table-header-height,calc(40px - var(--cx-compact,0) * 8px));font-weight:700;}
 .cx-data-grid .cx-summary-row .cx-cell[data-cx-pin]{background:var(--hfx-color-surface-sunken,light-dark(#f7f8f9,#111317));}
-.cx-summary-row .cx-summary-caption{font-size:calc(var(--hfx-type-caption-size,0.75rem)*.9583);letter-spacing:.04em;text-transform:none;color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));}
+.cx-summary-row .cx-summary-caption{font:inherit;letter-spacing:normal;text-transform:none;color:inherit;}
 .cx-groupbar-label{flex:none;}
 .cx-groupbar-hint{font-style:italic;}
 .cx-groupbar-spacer{flex:1 1 auto;}

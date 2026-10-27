@@ -731,7 +731,7 @@
     {
       "name": "pivot",
       "label": "pivot analysis",
-      "version": "8045d389da1ede63",
+      "version": "02c06ad8ddc59ab4",
       "script": "canopyx-pivot.js",
       "style": "canopyx-pivot.css",
       "runtimes": [
@@ -783,7 +783,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "6fd67b4887b59371",
+      "version": "ed493c42b8b5af9c",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -838,7 +838,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "6a60812d1bc4e82b",
+      "version": "d83efab44d326fc0",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [

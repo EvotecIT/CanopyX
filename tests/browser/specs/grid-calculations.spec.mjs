@@ -47,6 +47,31 @@ test("cell errors have a tooltip and leave independent calculations usable", asy
   const loaded = await page.evaluate(api + ".getLoadedRows(['c'])"); expect(loaded[0].cells.amount).toBe(0); expect(loaded[0].cells.caption).toBe("Lamp: 0");
 });
 
+test("intermediate fit discloses hidden columns and clears the hint when they fit", async ({ page }) => {
+  await page.setViewportSize({ width: 720, height: 900 });
+  const view = calculationView();
+  for (const column of view.columns) column.minWidth = 140;
+  await open(page, view, parts());
+  const disclosure = page.locator(".cx-fit-disclosure");
+  await expect(disclosure).toBeVisible();
+  const visible = await page.locator(".cx-hcell[data-cx-column]").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn));
+  const hidden = view.columns.filter(column => !visible.includes(column.id)).map(column => column.title);
+  expect(hidden.length).toBeGreaterThan(0);
+  await expect(disclosure).toContainText(String(hidden.length));
+  await expect(disclosure).toHaveAttribute("title", hidden.join(", "));
+  await expect(page.getByRole("button", { name: "Columns", exact: true })).toHaveAttribute("aria-describedby", await disclosure.getAttribute("id"));
+  await openGridControl(page, "columns");
+  for (const title of hidden) await expect(page.locator(".cx-grid-column-choice").filter({ hasText: title }).first()).toContainText("Hidden at this width");
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(disclosure).toBeHidden();
+  await page.setViewportSize({ width: 720, height: 900 });
+  await expect(disclosure).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(disclosure).toBeHidden();
+  await expect(page.locator(".cx-hidden-fields").first()).toBeVisible();
+});
+
 test("calculated column definitions restore with saved views and reject cycles atomically", async ({ page }) => {
   await open(page, calculationView(), parts());
   await page.evaluate(api + ".setCalculatedColumns([..." + api + ".getCalculatedColumns(),{id:'tax',title:'Tax',kind:'number',expression:'ROUND([amount] * 0.2, 2)'}])");

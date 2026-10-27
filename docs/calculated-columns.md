@@ -140,6 +140,8 @@ grid's narrower wire range; an out-of-range result becomes a `number-range` cell
 
 ## Errors stay with their cells
 
+Static tables include visible error notes with the column, expression and reason. These remain readable in print and on touch devices.
+
 A row-level calculation error has raw value null and a danger tone. Division or remainder by zero shows `#DIV/0`;
 other errors show `#ERROR`. The tooltip identifies the column and its expression, followed by the localized
 `gridCalculationError` label (`GridCalculationError` in C#). Division by zero uses a translated explanation; other
