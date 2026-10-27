@@ -19,6 +19,10 @@ internal static class CanopyGridHighlights {
         return null;
     }
     private static bool Matches(CanopyGridFilter filter, object? raw, CanopyColumn column) {
+        if (filter.Bucket != null) {
+            raw = filter.Bucket.Key(raw);
+            column = new CanopyColumn(column.Id, column.Title) { Kind = CanopyColumnKind.Number };
+        }
         var value = Scalar(raw, column); var op = filter.Operator;
         if (op == CanopyGridFilterOperator.IsNull) return value == null;
         if (op == CanopyGridFilterOperator.IsNotNull) return value != null;

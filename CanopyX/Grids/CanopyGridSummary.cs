@@ -62,13 +62,15 @@ public sealed class CanopyGridSummary {
         var level = levels[depth];
         CanopyColumn? column = null;
         foreach (var declared in view.Columns) if (declared.Id == level.Column) column = declared;
-        var compare = new CanopyGridGrouping(level.Column, level.Descending).CreateComparer(view);
-        var ascending = new CanopyGridGrouping(level.Column).CreateComparer(view);
+        var compare = level.Bucket == null ? new CanopyGridGrouping(level.Column, level.Descending).CreateComparer(view) :
+            Comparer<CanopyCell>.Create((left, right) => CanopyBucket.CompareKeys(left?.Value, right?.Value, level.Descending));
+        var ascending = level.Bucket == null ? new CanopyGridGrouping(level.Column).CreateComparer(view) :
+            Comparer<CanopyCell>.Create((left, right) => CanopyBucket.CompareKeys(left?.Value, right?.Value, false));
         long offset = start; CanopyGridGroup? previous = null;
         foreach (var group in groups) {
             if (group == null || !keys.Add(group.Key) || keys.Count > 10000 || group.Offset != offset)
                 throw new InvalidOperationException("Groups need unique stable keys, at most 10,000 in all, and contiguous complete-query ranges.");
-            CanopyGridValues.Validate(group.Value?.Value, column!);
+            CanopyGridValues.Validate(group.Value?.Value, level.Bucket == null ? column! : new CanopyColumn(column!.Id, column.Title) { Kind = CanopyColumnKind.Number });
             if (previous != null && Order(level, compare, ascending, previous, group) >= 0)
                 throw new InvalidOperationException("Groups must follow their level's order without duplicate values.");
             previous = group;

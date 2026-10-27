@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "08c894338ee197ea",
+      "version": "32717c9c4a81b7b2",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "042f3cb3d690a086",
+      "version": "1b2632cd59c4f343",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -196,7 +196,7 @@
     {
       "name": "enhance",
       "label": "table enhancement",
-      "version": "a101e32b0f8a1644",
+      "version": "c0f4773cf3b59919",
       "script": "canopyx-enhance.js",
       "runtimes": [
         "grid"
@@ -206,7 +206,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "d74a01c46f1c40cc",
+      "version": "038a351aa3bf709e",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -565,7 +565,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "23c058b9f6307983",
+      "version": "25fd83789bef4fcb",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -601,7 +601,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "42086775ae0af70b",
+      "version": "05b7cd7b38341bf0",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -686,7 +686,7 @@
     {
       "name": "link",
       "label": "linked views",
-      "version": "e7268bbe59e2dfa8",
+      "version": "fd21dd4495607a16",
       "script": "canopyx-link.js",
       "style": "canopyx-link.css",
       "runtimes": [
@@ -713,9 +713,77 @@
       ]
     },
     {
+      "name": "calculations",
+      "label": "calculated columns",
+      "version": "8f541fbb6997688b",
+      "script": "canopyx-calculations.js",
+      "style": "canopyx-calculations.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calculations"
+      ]
+    },
+    {
+      "name": "pivot",
+      "label": "pivot analysis",
+      "version": "02c06ad8ddc59ab4",
+      "script": "canopyx-pivot.js",
+      "style": "canopyx-pivot.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "pivot"
+      ],
+      "requires": [
+        "grouping",
+        "values",
+        "buckets"
+      ]
+    },
+    {
+      "name": "values",
+      "label": "aggregate display modes",
+      "version": "6cffc68641e6702b",
+      "script": "canopyx-values.js",
+      "style": "canopyx-values.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "aggregateValues"
+      ]
+    },
+    {
+      "name": "buckets",
+      "label": "date and range buckets",
+      "version": "cc69c8336c15df83",
+      "script": "canopyx-buckets.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "buckets"
+      ]
+    },
+    {
       "name": "grouping",
       "label": "row grouping",
-      "version": "d96c2721c6968666",
+      "version": "ed493c42b8b5af9c",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -770,7 +838,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "5be91a5b89c84b73",
+      "version": "d83efab44d326fc0",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -786,7 +854,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "2f2b2434da0bae6a",
+      "version": "4ef2fb01714f877e",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -823,7 +891,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "cec16b6240faaff8",
+      "version": "2cf8dc29caf80a0b",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [

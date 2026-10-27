@@ -35,6 +35,8 @@
         throw new Error("CanopyX: invalid or duplicate grid column.");
       gridColumnOptions(column, view.columns);
       ids.add(column.id);
+      if (column.calculation !== undefined && (typeof column.calculation !== "string" || !column.calculation.trim() || column.calculation.length > 2048 || column.editable))
+        throw new Error("CanopyX: calculated columns need a bounded expression and cannot be editable.");
       validateColumnValues(column);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
       if (column.format !== undefined) { if (column.kind !== "number") throw new Error("CanopyX: number formats need number columns."); gridNumberFormat(column.format); }
@@ -62,6 +64,8 @@
         !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
         !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
     if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
+    if (view.calculatedColumnsEditable !== undefined && (typeof view.calculatedColumnsEditable !== "boolean" || view.calculatedColumnsEditable && view.source.kind !== "inline"))
+      throw new Error("CanopyX: the calculated-column editor requires an inline grid.");
     if (view.source.navigation !== undefined && !["offset", "cursor"].includes(view.source.navigation))
       throw new Error("CanopyX: invalid grid source navigation.");
     if (view.source.navigation === "cursor" && (view.source.kind !== "host" || view.presentation !== "paged"))
@@ -80,6 +84,8 @@
 
   function gridQuery(view, input, strict) {
     input = input || {};
+    // Empty optional tuple criteria retain the original query shape, including strict saved-state reads.
+    if (Array.isArray(input.tupleFilters) && !input.tupleFilters.length) { input = { ...input }; delete input.tupleFilters; }
     const cursor = view.source.navigation === "cursor", type = cursor ? "gridCursorQuery" : "gridQuery";
     if (typeof input !== "object" || Array.isArray(input) ||
         input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
@@ -118,6 +124,7 @@
     const budget = { predicates: 0, groups: 0, strict, filterable: true };
     query.filters = (input.filters || []).map(filter => gridPredicate(filter, columns, budget));
     if (input.filterGroup !== undefined) query.filterGroup = gridFilterGroup(input.filterGroup, columns, budget, 1);
+    if (input.tupleFilters !== undefined) query.tupleFilters = gridTupleFilters(input.tupleFilters, columns, strict);
     // Sorting and paging normalize reader queries; preserve their internal origin without adding wire fields.
     if (input[LINK_IMPL.queryOwn]) query[LINK_IMPL.queryOwn] = true;
     return gridQueryRecord(input, query, strict, cursor);

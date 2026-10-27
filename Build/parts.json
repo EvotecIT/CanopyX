@@ -213,7 +213,7 @@
       "views": [],
       "features": ["rowData"],
       "key": "GRID_DATA_IMPL",
-      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "inlineGridSource", "loadSidecar", "gridIdOrder"],
+      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "inlineGridSource", "loadSidecar", "gridIdOrder", "gridInlineRevision"],
       "end": "GRID_DATA_IMPL.source = rowDataSource;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.data.source/10-row-data.js"
@@ -654,6 +654,50 @@
       ]
     },
     {
+      "name": "calculations",
+      "label": "calculated columns",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["calculations"],
+      "key": "GRID_CALCULATIONS",
+      "context": ["DataGrid", "GRID_CALCULATIONS", "requireIdentifier", "cellValue", "h", "setText", "fill", "gridButton", "gridQuery", "gridQueryStart", "inlineGridSource", "rowDataSource", "loadGridFilterEditor", "gridFreeze", "gridFitPrepare"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.calculations.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.calculations.source/calculations.css"]
+    },
+    {
+      "name": "pivot",
+      "label": "pivot analysis",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["pivot"],
+      "requires": ["grouping", "values", "buckets"],
+      "key": "GRID_PIVOT",
+      "context": ["DataGrid", "GRID_PIVOT", "GRID_ROWS", "GRID_SHOW_AS", "GRID_SHOW_AS_MODES", "GRID_BUCKETS", "GRID_CALCULATIONS", "h", "setText", "fill", "gridButton", "gridFreeze", "gridQuery", "gridQueryStart", "gridQueryRows", "gridScalar", "cellValue", "cellText", "gridKeyCompare", "gridOrder", "numberFormat", "formatting", "gridExportSignal", "validateGridPage", "checkDocument", "validStructuralCount", "gridOperationActive", "pivotDefinition", "pivotIntent", "pivotRequestOf", "showAsMode", "showAsCaption", "reportingAggregateName", "reportingValueText", "UI_IMPL", "UI_TOOLS"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.pivot.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.pivot.source/pivot.css"]
+    },
+    {
+      "name": "values",
+      "label": "aggregate display modes",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["aggregateValues"],
+      "key": "GRID_SHOW_AS",
+      "context": ["DataGrid", "GRID_SHOW_AS", "GRID_SHOW_AS_MODES", "h", "setText", "gridFreeze", "reportingAggregateParts", "reportingAggregateName", "gridButton"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.values.source"],
+      "styles": ["CanopyX.Html/Assets/canopyx.values.source/values.css"]
+    },
+    {
+      "name": "buckets",
+      "label": "date and range buckets",
+      "runtimes": ["grid"],
+      "views": ["grid"],
+      "features": ["buckets"],
+      "key": "GRID_BUCKETS",
+      "context": ["GRID_BUCKETS"],
+      "scripts": ["CanopyX.Html/Assets/canopyx.buckets.source"]
+    },
+    {
       "name": "grouping",
       "label": "row grouping",
       "runtimes": ["grid"],
@@ -664,7 +708,7 @@
       "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "GRID_OPTIONS", "GRID_OPTION_GRIDS", "h", "setText", "fill", "numberFormat", "formatValue", "cellValue", "cellText", "isCellObject",
         "gridScalar", "gridQuery", "gridFreeze", "gridOrder", "gridIdOrder", "gridQueryRows", "gridButton", "gridDecorateButton", "gridCellRenderer", "gridPresenterTone",
         "GRID_TONE_RANK", "validateGridRows", "validateGridPage", "checkDocument", "requireIdentifier", "validStructuralCount", "PROTOCOL", "gridOperationActive",
-        "reportingGroupKey", "reportingGroupCompare", "reportingSummaryEnabled", "reportingDynamicGroups", "GROUP_OPERATIONS", "reportingAggregateParts", "disposeRowHostCells", "quietControls", "TreeGrid"],
+        "reportingGroupKey", "reportingGroupCompare", "reportingSummaryEnabled", "reportingDynamicGroups", "GROUP_OPERATIONS", "reportingAggregateParts", "disposeRowHostCells", "quietControls", "TreeGrid", "GRID_BUCKETS", "gridBucketDefinition"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.aggregates.source",
         "CanopyX.Html/Assets/canopyx.grouping.source"
@@ -703,7 +747,7 @@
       "features": ["facets"],
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQueryStart", "gridQueryRows", "gridColumnProjection", "gridScalar",
-        "gridOrder", "gridKeyCompare", "gridFacetKey", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze", "overlayTheme", "watchOverlayTheme"],
+        "gridOrder", "gridKeyCompare", "gridFacetKey", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze", "overlayTheme", "watchOverlayTheme", "GRID_BUCKETS", "gridBucketDefinition"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",
         "CanopyX.Html/Assets/canopyx.facets.source"
@@ -721,7 +765,7 @@
       "key": "DataGrid.prototype",
       "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQuery", "gridResultShape", "gridQueryRows", "gridCompare", "gridOrder", "gridIdOrder",
         "validateGridRows", "validateGridPage", "validateGridCursorPage", "gridFreeze", "requireIdentifier", "checkDocument", "cellValue", "PROTOCOL",
-        "GRID_REPORTING", "VIEW_MODES", "inlineGridSource"],
+        "GRID_REPORTING", "GRID_CALCULATIONS", "VIEW_MODES", "inlineGridSource"],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.live.source"
       ],

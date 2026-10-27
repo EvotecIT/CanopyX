@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Polish labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Polish() => WithPolishUi(new CanopyLabels {
+    public static CanopyLabels Polish() => WithPolishUi(WithPolishAnalysis(new CanopyLabels {
         GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
         SearchPlaceholder = "Szukaj",
         SearchResults = "Wyniki wyszukiwania",
@@ -219,7 +219,7 @@ public sealed partial class CanopyLabels {
         GridGroupMissing = "Brak wartości",
         GridGroupExpand = "Rozwiń grupę",
         GridGroupCollapse = "Zwiń grupę",
-        GridSummary = "Podsumowanie wyników",
+        GridSummary = "Suma całkowita",
         GridGroupOrder = "Kolejność grup jest ustalona w raporcie",
         GridAggregateCount = "liczba {value}",
         GridAggregateSum = "suma {value}",
@@ -782,5 +782,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Kopiuj żądanie",
         ChangeFiltered = "Filtry: {filters}",
         ChangePrintLimit = "Pominięte w wydruku wiersze: {count}.",
-    });
+    }));
 }

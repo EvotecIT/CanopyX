@@ -4,7 +4,7 @@
   // with a grid's first page; a page request waits for them, so the first rows already show headings and expanders.
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridGroupHeading: "{column}: {value} ({count} records)", gridGroupMissing: "Missing value",
-    gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Query totals",
+    gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Grand total",
     gridGroupOrder: "Group order is fixed by this report", gridGroupBy: "Group by this column", gridUngroup: "Stop grouping by this column",
     gridGroupDrop: "Drag a column header here to group rows", gridExpandAll: "Expand all", gridCollapseAll: "Collapse all",
     gridExpandLevel: "Expand level {level}", gridCollapseLevel: "Collapse level {level}", gridGroupMove: "Alt+Left and Alt+Right move this level",
@@ -25,11 +25,11 @@
     return input.map(level => {
       const column = level && columns.find(item => item.id === level.column);
       if (!column || !column.sortable || seen.has(level.column) || !["asc", "desc"].includes(level.direction) ||
-          Object.keys(level).some(key => !["column", "direction", "aggregate"].includes(key)) ||
+          Object.keys(level).some(key => !["column", "direction", "aggregate", "bucket"].includes(key)) ||
           level.aggregate !== undefined && !aggregates.some(aggregate => aggregate.id === level.aggregate))
         throw new Error("CanopyX: invalid groupBy level.");
       seen.add(level.column);
-      return gridFreeze({ column: level.column, direction: level.direction, ...(level.aggregate === undefined ? {} : { aggregate: level.aggregate }) });
+      return gridFreeze({ column: level.column, direction: level.direction, ...(level.aggregate === undefined ? {} : { aggregate: level.aggregate }), ...(level.bucket === undefined ? {} : { bucket: gridBucketDefinition(level.bucket, column) }) });
     });
   }
 
@@ -124,7 +124,7 @@
       if (!query.groupBy) return plain.call(base, query, options);
       if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
       if (gridResultShape(query) !== shape) { ordered = GRID_ROWS.order(view, query); shape = gridResultShape(query); }
-      return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
+      return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: gridInlineRevision(view), offset: query.offset,
         total: view.rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
     };
     return base;
@@ -136,7 +136,7 @@
   const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, GRID_OPTIONS, GRID_OPTION_GRIDS, h, setText, fill, numberFormat,
     formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridIdOrder, gridQueryRows, gridButton, gridDecorateButton,
     gridCellRenderer, gridPresenterTone, GRID_TONE_RANK, validateGridRows, validateGridPage, checkDocument, requireIdentifier, validStructuralCount, PROTOCOL,
-    gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, disposeRowHostCells, quietControls, TreeGrid }));
+    gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, disposeRowHostCells, quietControls, TreeGrid, GRID_BUCKETS, gridBucketDefinition }));
   GRID_ROWS.base.requestPage = DataGrid.prototype.requestPage;
   Object.assign(DataGrid.prototype, {
     loadRows() {
@@ -145,6 +145,7 @@
     },
     async requestPage(query, signal) {
       if (!reportingRowsUsed(this)) return GRID_ROWS.base.requestPage.call(this, query, signal);
+      if (query.groupBy?.some(level => level.bucket) || gridUsesBuckets(this.view)) await loadPart(BUCKETS_PART);
       await this.loadRows();
       return (GRID_ROWS.requestPage || GRID_ROWS.base.requestPage).call(this, query, signal);
     },

@@ -133,10 +133,10 @@ test("aggregate overrides and count defaults use the current shared heading and 
   view.rows = [10, 20, null, 2, 4, null].map((amount, i) => ({ id: "r" + i, cells: { name: "Item " + i, category: i < 3 ? "A" : "B", amount } }));
   await open(page, view, `CanopyX.use({name:'format-median',aggregates:{median:{label:'med {value}',compute(values){values=[...values].sort((a,b)=>a-b);const middle=values.length>>1;return !values.length?null:values.length%2?values[middle]:(values[middle-1]+values[middle])/2;}}}});`);
   const first = page.locator(".cx-grid-group").first().locator(".cx-aggregate");
-  await expect(first).toContainText("sum 30%"); await expect(first).toContainText("avg $15.00");
-  await expect(first).toContainText("count 2"); await expect(first).toContainText("distinct 2");
-  await expect(first).toContainText("med 15 ms");
-  await expect(first).toHaveAttribute("title", /Total amount: 30%.*Average amount: \$15.00.*Amounts present: 2.*Distinct amounts: 2.*Median amount: 15 ms/);
+  await expect(first).toContainText("Sum 30%"); await expect(first).toContainText("Avg $15.00");
+  await expect(first).toContainText("Count 2"); await expect(first).toContainText("Distinct 2");
+  await expect(first).toContainText("Med 15 ms");
+  await expect(first).toHaveAttribute("title", /Total amount · Sum: 30%.*Average amount · Avg: \$15.00.*Amounts present · Count: 2.*Distinct amounts · Distinct: 2.*Median amount · Med: 15 ms/);
   await page.evaluate(api + ".setSelection(['r0','r1'])");
   await expect(page.locator(".cx-grid-status .agg")).toHaveText("Amount: 30%");
   await expect(page.locator(".cx-grid-status .agg span")).toHaveAttribute("title", /Average: 15%/);
@@ -156,7 +156,8 @@ test("aggregate overrides and count defaults use the current shared heading and 
   await expect(page.locator('.cx-phone-field-title', { hasText: /^Amount:$/ }).first()).toBeVisible();
   await nextFrames(page);
   const heading = page.locator(".cx-grid-group").first(), phone = heading.locator(".cx-aggregate-button,.cx-hidden-aggregates");
-  await expect(phone).toContainText("avg $15.00");
+  await expect(phone).toContainText("Avg $15.00");
+  await expect(phone).toHaveAttribute("aria-label", /Average amount · Avg: \$15.00.*Median amount · Med: 15 ms/);
   expect(await page.locator(".cx-aggregate-button,.cx-hidden-aggregates").evaluateAll(buttons => buttons.every(button => {
     const box = button.getBoundingClientRect(), cell = button.parentElement.getBoundingClientRect();
     return box.left >= cell.left - 1 && box.right <= cell.right + 1;
@@ -167,29 +168,30 @@ test("aggregate overrides and count defaults use the current shared heading and 
   expect(await held.evaluate(element => element.isConnected)).toBe(true);
   await page.mouse.up();
   const dialog = page.locator(".cx-reporting-text");
-  await expect(dialog).toContainText("Average amount: $15.00");
-  await expect(dialog).toContainText("Median amount: 15 ms");
+  await expect(dialog.getByRole("combobox", { name: /^Average amount:/ })).toHaveValue("value");
+  await expect(dialog.getByRole("combobox", { name: /^Median amount:/ })).toHaveValue("value");
   if (process.env.CANOPYX_EVIDENCE && testInfo.project.name === "chromium") for (const theme of ["light", "dark"]) {
     await page.keyboard.press("Escape");
     await page.locator("[data-canopyx-host]").evaluate((element, theme) => element.dataset.cxTheme = theme, theme);
-    await phone.click(); await expect(dialog).toContainText("Median amount: 15 ms");
+    await phone.click(); await expect(dialog.getByRole("combobox", { name: /^Median amount:/ })).toHaveValue("value");
     await nextFrames(page);
     await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, "number-formats-dialog-390-" + theme + ".png"), fullPage: true });
   }
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(phone).toBeFocused();
   await heading.focus(); await page.keyboard.press("F2"); await page.keyboard.press("End"); await expect(phone).toBeFocused();
-  await page.keyboard.press("Enter"); await expect(dialog).toContainText("Distinct amounts: 2");
+  await page.keyboard.press("Enter"); await expect(dialog.getByRole("combobox", { name: /^Distinct amounts:/ })).toHaveValue("value");
   await page.keyboard.press("Escape"); await expect(phone).toBeFocused();
   expect(await page.evaluate(api + ".getCollapsedGroups()")).toEqual(collapsed);
   // Phone fitting can move Amount into the existing hidden-column summary after the query narrows.
   const totals = page.locator('.cx-summary-row button[aria-haspopup="dialog"]');
-  await totals.click(); await expect(dialog).toContainText("Total amount: 36%"); await page.keyboard.press("Escape");
+  await expect(totals).toHaveAttribute("aria-label", /Total amount · Sum: 36%/);
+  await totals.click(); await expect(dialog.getByRole("combobox", { name: /^Total amount:/ })).toHaveValue("value"); await page.keyboard.press("Escape");
   await page.evaluate(api + ".setQuery({filters:[{column:'amount',operator:'ge',values:[10]}]})");
-  await expect(totals).toHaveAttribute("aria-label", /Total amount: 30%.*Amounts present: 2/);
+  await expect(totals).toHaveAttribute("aria-label", /Total amount · Sum: 30%.*Amounts present · Count: 2/);
   await page.evaluate(api + ".setColumnVisible('amount',false)"); await nextFrames(page);
   const hidden = page.locator(".cx-grid-group").first().locator(".cx-hidden-aggregates");
-  await expect(hidden).toContainText("avg $15.00"); await hidden.click();
-  await expect(dialog).toContainText("Average amount: $15.00");
+  await expect(hidden).toContainText("Avg $15.00"); await hidden.click();
+  await expect(dialog.getByRole("combobox", { name: /^Average amount:/ })).toHaveValue("value");
   await page.keyboard.press("Escape"); await expect(hidden).toBeFocused();
   expect(errors).toEqual([]);
 });
@@ -197,7 +199,7 @@ test("aggregate overrides and count defaults use the current shared heading and 
 test.describe("touch access to complete formatted aggregates", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true,
     isMobile: async ({ browserName }, use) => use(browserName !== "firefox") });
-  test("visible group and query totals open complete formatted values without collapsing the group", async ({ page }) => {
+  test("touch aggregates retain formatted accessible values and open display settings without collapsing groups", async ({ page }) => {
     const view = definition(); view.columns[1].format = { maximumFractionDigits: 0, suffix: "%" };
     view.reporting = { grouping: { column: "name", direction: "asc" }, aggregates: [
       { id: "sum", column: "amount", operation: "sum", label: "Total amount" },
@@ -206,14 +208,15 @@ test.describe("touch access to complete formatted aggregates", () => {
     ] };
     view.rows = [10, 20].map((amount, i) => ({ id: "r" + i, cells: { name: "Group A", amount } }));
     await open(page, view);
-    await page.locator(".cx-grid-group :is(.cx-aggregate-button,.cx-hidden-aggregates)").tap();
+    const groupButton = page.locator(".cx-grid-group :is(.cx-aggregate-button,.cx-hidden-aggregates)");
+    await expect(groupButton).toHaveAttribute("aria-label", /Total amount · Sum: 30%.*Average amount · Avg: \$15.00.*Distinct amounts · Distinct: 2/);
+    await groupButton.tap();
     const dialog = page.locator(".cx-reporting-text");
-    await expect(dialog).toContainText("Total amount: 30%"); await expect(dialog).toContainText("Average amount: $15.00");
-    await expect(dialog).toContainText("Distinct amounts: 2");
+    for (const name of [/^Total amount:/, /^Average amount:/, /^Distinct amounts:/]) await expect(dialog.getByRole("combobox", { name })).toHaveValue("value");
     await dialog.getByRole("button", { name: "Close complete text", exact: true }).tap();
     expect(await page.evaluate(api + ".getCollapsedGroups()")).toEqual([]);
     await page.locator(".cx-summary-row :is(.cx-aggregate-button,.cx-hidden-aggregates)").tap();
-    await expect(dialog).toContainText("Total amount: 30%");
+    await expect(dialog.getByRole("combobox", { name: /^Total amount:/ })).toHaveValue("value");
     await dialog.getByRole("button", { name: "Close complete text", exact: true }).tap();
   });
 });

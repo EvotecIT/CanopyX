@@ -81,6 +81,12 @@
 .cx-text-dialog pre.p-mono{font-family:var(--hfx-font-mono,"Cascadia Mono","Cascadia Code",Consolas,"SFMono-Regular",Menlo,monospace);}
 .cx-data-grid .cx-grid-filter-form,.cx-data-grid .cx-grid-filter-form > div,.cx-data-grid .cx-grid-filter{display:flex;flex-direction:column;gap:var(--hfx-space-2,0.5rem);width:100%;min-width:0;}
 .cx-data-grid .cx-grid-filter{border:var(--hfx-border-width,1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));padding:var(--hfx-space-2,0.5rem);}
+.cx-reporting-text [data-hfx-part="footer"] > button{min-inline-size:calc(var(--hfx-space-6,2rem)*3);}
+.cx-reporting-text[data-phone="true"] [data-hfx-part="footer"] > button{flex:1;}
+@media (max-height:360px){
+.cx-reporting-text [data-hfx-part="header"]{min-block-size:0;padding-block:var(--hfx-space-2,0.5rem);}
+.cx-reporting-text [data-hfx-part="body"],.cx-reporting-text [data-hfx-part="footer"]{padding-block:var(--hfx-space-2,0.5rem);}
+}
 .cx-grid-column-choice{display:flex;align-items:center;border-radius:var(--hfx-radius-sm,4px);}
 .cx-grid-column-choice label{flex:1;min-width:0;white-space:nowrap;}
 .cx-grid-column-name{flex:1;overflow:hidden;text-overflow:ellipsis;}

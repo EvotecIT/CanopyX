@@ -127,6 +127,7 @@ export function runtimeAssets(runtime = "tree") {
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-history.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-presenters.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-data.js"),"utf8") +
         // The detail rows and grouping parts every grid runtime loads for grouped or detail views.
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.js"),"utf8") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-values.js"),"utf8") +
         // The live data part of grids that change in place.
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-live.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-facets.js"),"utf8") +
         // The calendar and resource timeline parts of grids that declare a calendar.
@@ -144,6 +145,7 @@ export function runtimeAssets(runtime = "tree") {
     style: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/" + stem + ".css"), "utf8") +
       (runtime === "grid" || runtime === "reporting" ? "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-filter-editor.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.css"),"utf8") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-values.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-live.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-facets.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-calendar.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-timeline.css"),"utf8") : "") +
       "\n" + treeToolsAssets().style + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.css"),"utf8") +

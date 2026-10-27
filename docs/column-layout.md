@@ -79,6 +79,7 @@ as one cell ("Overall ⋮"), and so does an active header filter.
       reads wrong;
    2. optional columns hide (on phones, at 640 pixels and below, normal columns hide too); hidden columns stay in the
       record drawer, exports and the phone "+N" button, and the Columns menu marks them "Hidden at this width";
+      above the phone breakpoint, a translated count beside Columns discloses fields hidden by fitting or responsive rules;
    3. only then the grid scrolls horizontally inside itself, with pinned columns in place.
 
    On phones the first shown column also holds the "+N" button that opens the hidden fields, so fitting reserves the

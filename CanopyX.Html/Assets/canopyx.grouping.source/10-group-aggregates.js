@@ -4,6 +4,7 @@
     for (const aggregate of groupSummaryAggregates(grid.view)) values[aggregate.id] = groupAggregateValue(grid, aggregate, rows, first, last);
     return values;
   }
+  GRID_ROWS.aggregateValue = groupAggregateValue;
   // The aggregates of a summary or a group: every declared binding, counts within the record count, numbers in range.
   function groupCheckValues(view, values, count) {
     const declarations = groupSummaryAggregates(view);
@@ -44,10 +45,14 @@
         button = h("button", "cx-grid-group-aggregates cx-aggregate-button"); button.type = "button";
         button.setAttribute("aria-haspopup", "dialog"); cell.replaceChildren(button);
         button.addEventListener("click", event => {
-          event.stopPropagation(); this.showReportingText(column, button._cxAggregateText, button);
+          event.stopPropagation(); this.showAggregateMenu(column, aggregates, button._cxAggregateValues, button).catch(error => this.emit("error", { error }));
         });
       }
-      if (button.textContent !== parts.text) setText(button, parts.text);
+      if (button.textContent !== parts.text + (parts.caption || "")) {
+        setText(button, parts.text);
+        if (parts.caption) { const caption = h("span", "cx-aggregate-caption"); setText(caption, parts.caption); button.append(caption); }
+      }
+      button._cxAggregateValues = values;
       button._cxAggregateText = parts.title; button.title = parts.title; button.setAttribute("aria-label", parts.title);
     }
   });

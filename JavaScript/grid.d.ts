@@ -24,6 +24,8 @@ import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, Grid
 export * from "./facets.js";
 export * from "./calendar.js";
 export * from "./live.js";
+import type { GridPivotApi, GridPivotDefinition, GridPivotState, GridPivotQuery, GridPivotAcceptedResult, GridPivotExportAxisPresentation, GridPivotExportDescriptor } from "./pivot.js";
+export * from "./pivot.js";
 
 /** A stable record identity and typed cells. Flat records have no tree fields. */
 export interface GridRow { id: string; cells: Record<string, Cell>; tone?: string; className?: string;
@@ -45,6 +47,9 @@ export type GridHighlightRule = GridBuiltinFilter & { target?: "row" | "cell" } 
 export interface GridExportCell {
   readonly value: CellValue;
   readonly text: string;
+  /** Pivot-table captures retain numeric display modes and native number formats. */
+  readonly mode?: GridShowAs;
+  readonly numberFormat?: string;
   readonly tone?: string;
   readonly link?: { readonly target: string; readonly tooltip?: string };
   /** The cell's conditional formatting, present when the grid has rules that format it. CSV reads only value and text. */
@@ -53,7 +58,7 @@ export interface GridExportCell {
   readonly diagnostics?: readonly string[];
 }
 /** An immutable record projected onto the declared export columns. Group headings and summaries are not records. */
-export interface GridExportRow {
+export interface GridExportRow extends Partial<GridPivotExportAxisPresentation> {
   readonly id: string; readonly cells: Readonly<Record<string, GridExportCell>>;
   readonly tone?: string; readonly diagnostics?: readonly string[];
   /** The record's row formatting, present when a row rule matched it. */
@@ -62,8 +67,10 @@ export interface GridExportRow {
   readonly detail?: Extract<GridRowDetail, { type: "table" | "properties" | "html" }>;
 }
 /** Captured column intent. Hosts map semantic tones and CSS pixel widths into their output format. */
-export interface GridExportColumn {
+export interface GridExportColumn extends Partial<GridPivotExportAxisPresentation> {
   readonly id: string; readonly title: string; readonly kind: "text" | "number" | "datetime";
+  /** Present on numeric pivot-table columns. */
+  readonly aggregate?: string;
   /** Reporting runtime only. */
   readonly width?: { readonly unit: "css-px"; readonly preferred: number; readonly minimum: number; readonly maximum?: number };
   readonly wrap?: boolean; readonly alignment?: "left" | "right";
@@ -136,7 +143,19 @@ export type GridColumn<Row extends GridRow = GridRow> = Omit<CanopyColumn, "id" 
   alwaysVisible?: boolean;
   /** Hover tooltip: "auto" shows a cell's full value while it is cut off; a declared column id shows that column's text. */
   tooltip?: string;
-};
+} & (
+  | { readonly calculation?: never }
+  /** A bounded expression over raw row values. Calculated cells are read-only; hosted values come from the server. */
+  | { readonly calculation: string; editable?: false }
+);
+/** One reader-editable calculation definition; all authored calculation IDs must remain in the submitted set. */
+export interface GridCalculatedColumnDefinition {
+  readonly id: string;
+  readonly title: string;
+  readonly kind: "text" | "number" | "datetime";
+  /** One to 2048 UTF-16 code units, parsed as the bounded calculation grammar. */
+  readonly expression: string;
+}
 export type GridColumnPriority = "essential" | "normal" | "optional" | number;
 export interface GridSort { readonly column: string; readonly direction: SortDirection; }
 /** Code-unit collation; natural digit runs never convert to floating-point numbers. */
@@ -187,6 +206,10 @@ export interface GridPager {
 }
 /** Include the reporting entry point when this optional capability set is present. */
 export interface GridReporting {
+  /** Initial full-query pivot; requires offset navigation and declared aggregates. */
+  readonly pivot?: GridPivotDefinition;
+  /** Readers can configure pivots over declared sortable/filterable fields and aggregates. */
+  readonly pivotable?: boolean;
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
   readonly grouping?: GridSort & { readonly headerTemplate?: string };
   /** Initial runtime grouping levels, outermost first (at most four). Not combined with grouping. */
@@ -272,20 +295,30 @@ export type GridAction<Q extends AcceptedGridQuery = GridQuery> =
   /** render fills container on the entry's first open (and again after a render that threw); close() closes the menu and
    * focuses its button; signal aborts when the grid is destroyed. */
   | { label: string; render: (container: HTMLElement, context: { close(): void; signal: AbortSignal }) => void; run?: never };
-export type GridBuiltinFilter = {
+export type GridBuiltinFilter = ({
   readonly column: string;
   readonly operator: "eq" | "ne" | "contains" | "startsWith" | "in" | "gt" | "ge" | "lt" | "le";
   readonly values: readonly Exclude<CellValue, null>[];
-} | { readonly column: string; readonly operator: "isNull" | "isNotNull"; readonly values: readonly []; };
+} | { readonly column: string; readonly operator: "isNull" | "isNotNull"; readonly values: readonly []; }) & { readonly bucket?: GridBucket };
 
 /** A registered custom operator uses one typed, non-null operand. */
-export type GridFilter = GridBuiltinFilter | { readonly column: string; readonly operator: string & {}; readonly values: readonly Exclude<CellValue, null>[] };
+export type GridFilter = GridBuiltinFilter | { readonly column: string; readonly operator: string & {}; readonly values: readonly Exclude<CellValue, null>[]; readonly bucket?: never };
 
 /** A nonempty nested expression: at most eight levels, 64 groups and 64 total predicates including flat filters. */
 export interface GridFilterGroup {
   readonly operator: "and" | "or";
   readonly filters: readonly GridFilter[];
   readonly groups: readonly GridFilterGroup[];
+}
+
+/** A raw or bucketed field in an exact correlated tuple. */
+export interface GridTupleColumn { readonly column: string; readonly bucket?: GridBucket; }
+/** One to six fields and one to 200 equally wide tuples. Strings are exact; null is an explicit missing value. */
+export interface GridTupleFilter {
+  readonly columns: readonly GridTupleColumn[];
+  readonly values: readonly (readonly CellValue[])[];
+  /** Complements membership, including rows containing null. Defaults to false. */
+  readonly exclude?: boolean;
 }
 
 /** A frozen accepted query. Sorting/filtering cover the entire source before the requested window. */
@@ -303,6 +336,8 @@ export interface GridQuery {
   readonly filters: readonly GridFilter[];
   /** Combined with search and flat filters using AND. */
   readonly filterGroup?: GridFilterGroup;
+  /** At most eight atomic predicates, AND-combined with the other query criteria. Empty input is omitted. */
+  readonly tupleFilters?: readonly GridTupleFilter[];
   /** Runtime grouping levels (reporting groupBy/groupable definitions); omitted input uses the declared levels, [] ungroups. */
   readonly groupBy?: readonly GridGroupLevel[];
 }
@@ -316,6 +351,8 @@ export type GridQueryInput<Q extends AcceptedGridQuery = GridQuery> = Partial<Q>
 type GridCount<Q extends AcceptedGridQuery> = Q extends GridCursorQuery ? number | null : number;
 
 interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> {
+  /** Enables the calculated-column editor and saved definitions. Only built-in inline sources support it. */
+  calculatedColumnsEditable?: boolean;
   protocol: "canopyx/2";
   type: "grid";
   id: string;
@@ -431,8 +468,9 @@ export interface GridRowData {
 }
 /** An inline grid whose rows the data part decodes from compact row data, chunk by chunk, after the first paint. */
 export interface CompactGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "inline"; navigation?: "offset" }; rowData: GridRowData; rows?: never; }
-export interface HostGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "host"; navigation?: "offset" }; rows?: never; }
+export interface HostGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { calculatedColumnsEditable?: false; source: { kind: "host"; navigation?: "offset" }; rows?: never; }
 export interface CursorGridView<Row extends GridRow = GridRow> extends GridDefinition<GridCursorQuery, Row> {
+  calculatedColumnsEditable?: false;
   source: { kind: "host"; navigation: "cursor" };
   presentation: "paged";
   rows?: never;
@@ -453,13 +491,15 @@ export interface GridPage<Row extends GridRow = GridRow> {
   items: Row[];
 }
 /** Hosts own data access, authorization and query execution; cancellation does not grant write authority. */
-export interface GridFacetOptions { readonly search?: string; readonly limit?: number; readonly includeCurrentFilter?: boolean; readonly signal?: AbortSignal; }
+export interface GridFacetOptions { readonly search?: string; readonly limit?: number; readonly includeCurrentFilter?: boolean; readonly signal?: AbortSignal; readonly bucket?: GridBucket; }
 /** Facet values/counts ignore the query window and sort; excluding the current column replaces its predicates by true. */
 export interface GridFacetQuery<Q extends AcceptedGridQuery = AcceptedGridQuery> {
+  readonly bucket?: GridBucket;
   readonly protocol: "canopyx/2"; readonly type: "gridFacetQuery"; readonly query: Q & { readonly revision: string };
   readonly column: string; readonly search: string; readonly limit: number; readonly includeCurrentFilter: boolean;
 }
 export interface GridFacetPage {
+  readonly bucket?: GridBucket;
   readonly protocol: "canopyx/2"; readonly type: "gridFacetPage"; readonly view: string; readonly revision: string;
   readonly column: string; readonly search: string; readonly includeCurrentFilter: boolean;
   readonly matched: number; readonly totalValues: number; readonly truncated: boolean;
@@ -473,6 +513,8 @@ export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSour
   query(query: GridQuery, options: { signal: AbortSignal }): GridPage<Row> | PromiseLike<GridPage<Row>>;
   /** Complete-query metadata, echoing the normalized accepted request, revision and matched count. */
   summary?(query: GridQuery & { readonly revision: string }, options: { signal: AbortSignal }): GridSummary | PromiseLike<GridSummary>;
+  /** Computes the full accepted query, echoing its query/revision; requires an explicit endpoint capability. */
+  pivot?(request: GridPivotQuery, options: { signal: AbortSignal }): GridPivotAcceptedResult | PromiseLike<GridPivotAcceptedResult>;
   /** Saves changed rows (a remote source posts the gridCommit document to its commit endpoint) and answers per row. */
   commit?(batch: GridCommit, options: { signal: AbortSignal }): GridCommitResult | PromiseLike<GridCommitResult>;
   /** A record's details when its drawer opens (a gridRecordQuery answered with a gridRecord), as a remote protocol client sends it. */
@@ -489,6 +531,8 @@ export interface GridFooter {
   readonly aggregates: readonly GridAggregate[];
 }
 export interface GridAggregate {
+  /** A display transformation; raw aggregates remain unchanged. */
+  readonly showAs?: GridShowAs;
   /** The label is shown beside the value in group headings and the query totals row. */
   readonly id: string; readonly column: string; readonly label: string;
   readonly operation: GridAggregateOperation;
@@ -496,7 +540,14 @@ export interface GridAggregate {
   readonly format?: GridNumberFormat;
 }
 /** One runtime grouping level: groups order by value, or by a declared aggregate (nulls last, ties by value). */
+/** Numeric keys partition calendar instants or half-open numeric intervals. Monday and UTC are the calendar defaults. */
+export type GridBucket =
+  | { readonly kind: "day" | "week" | "month" | "quarter" | "year" | "hour" | "weekday"; readonly timeZone?: string; readonly firstWeekday?: 0 | 1 | 2 | 3 | 4 | 5 | 6 }
+  | { readonly kind: "width"; readonly width: number; readonly origin?: number }
+  | { readonly kind: "edges"; readonly edges: readonly number[] };
+
 export interface GridGroupLevel {
+  readonly bucket?: GridBucket;
   readonly column: string; readonly direction: "asc" | "desc"; readonly aggregate?: string;
 }
 /** Declared detail rows: one content source (a page template, a plugin detail renderer or a nested view), else record payloads. */
@@ -546,6 +597,14 @@ export interface GridSummary {
   readonly protocol: "canopyx/2"; readonly type: "gridSummary"; readonly view: string; readonly revision: string;
   readonly query: GridQuery & { readonly revision: string }; readonly matched: number;
   readonly groups: readonly GridGroup[]; readonly aggregates: Readonly<Record<string, number | null>>;
+}
+
+/** Percent modes return fractions; rank uses descending competition order. Null/zero denominators produce null. */
+export type GridShowAs = "value" | "percentGrandTotal" | "percentParent" | "percentColumn" | "percentRow" | "runningTotal" | "rank" | "difference" | "percentChange";
+export interface GridAggregateDisplayValue { readonly value: number | null; readonly mode: GridShowAs; readonly numberFormat: string; }
+export interface GridSummaryDisplay {
+  readonly totals: Readonly<Record<string, GridAggregateDisplayValue>>;
+  readonly groups: Readonly<Record<string, Readonly<Record<string, GridAggregateDisplayValue>>>>;
 }
 /** One complete visible page. Null counts remain unknown; ordinal positions do not grant random access. */
 export interface GridCursorPage<Row extends GridRow = GridRow> extends Omit<GridPage<Row>, "type" | "total" | "matched"> {
@@ -610,6 +669,8 @@ export interface GridExportRequest<Q extends AcceptedGridQuery = GridQuery> {
     readonly totals: Readonly<Record<string, number | null>>; readonly groups: readonly (GridGroup & { readonly text: string })[] };
   /** Records carry their detail payloads. */
   readonly details?: true;
+  /** Explicit full-query pivot table. Rows are enumerated once through the ordinary capture; they are not duplicated here. */
+  readonly pivot?: GridPivotExportDescriptor;
 }
 /** Record counts refer to the complete captured export scope, including selected-query exclusions. */
 export interface GridExportProgress {
@@ -637,6 +698,8 @@ export interface GridRowActivation<Row extends GridRow = GridRow> {
 }
 export interface GridExportOptions {
   scope: GridExportRequest["scope"];
+  /** Reporting bridge only: capture the active complete pivot table. Requires filtered scope; defaults to record capture. */
+  pivot?: boolean;
   /** Defaults to visible exportable columns in their current order. Explicit non-exportable columns are rejected. */
   columns?: string[];
   values?: GridExportRequest["values"];
@@ -680,6 +743,7 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   scrollTop: number;
   /** Reporting grouping only. At most 10000 bounded stable keys; omitted from shareable state. */
   collapsedGroups?: string[];
+  aggregateShowAs?: Record<string, GridShowAs>;
   /** Optional for compatibility with existing continuous snapshots; restored offsets clamp to current results. */
   paging?: { pageLength: number; offset: number; allRows?: boolean };
   /** Formatting rules edited at run time, when they differ from the view's; restored with the view. */
@@ -692,6 +756,10 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   facets?: { open: boolean };
   /** The calendar's view, date, zoom and collapsed resources, in a grid with a calendar. */
   calendar?: GridCalendarSavedState;
+  /** Pivot definition, active mode, collapsed prefixes and compact-screen column choice. */
+  pivot?: GridPivotState;
+  /** Up to 32 definitions, allowed only when the current view enables calculatedColumnsEditable. */
+  calculatedColumns?: readonly GridCalculatedColumnDefinition[];
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -838,12 +906,18 @@ export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQue
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridPivotApi, GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi {
   readonly element: HTMLElement;
   readonly view: GridView<Row>;
   readonly ready: Promise<Q>;
   getQuery(): Q | null;
   setQuery(query: GridQueryInput<Q>): Promise<Q>;
+  /** Immutable definitions of the declared calculated columns; [] when none are configured. */
+  getCalculatedColumns(): readonly GridCalculatedColumnDefinition[];
+  /** Replaces the complete definition set after validation. Requires calculatedColumnsEditable and built-in inline data. */
+  setCalculatedColumns(definitions: readonly GridCalculatedColumnDefinition[]): Promise<readonly GridCalculatedColumnDefinition[]>;
+  /** Opens the inline calculated-column editor, optionally anchored to a host element. */
+  openCalculatedColumn(anchor?: HTMLElement): Promise<void>;
   sort(sorts: readonly GridSort[]): Promise<Q>;
   getPaging(): GridPaging<Q>;
   /** Offset sources only. Cursor sources reject random page access. */
@@ -892,6 +966,10 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   getSelectionDescriptor?(): GridSelection<Q>;
   /** Reporting summary capability only; null before acceptance. */
   getSummary?(): GridSummary | null;
+  /** Changes only presentation, then updates saved/share state. */
+  setAggregateShowAs?(aggregate: string, mode: GridShowAs): Promise<void>;
+  /** Loads the optional values part and returns numeric values paired with export number formats. */
+  getDisplaySummary?(): Promise<GridSummaryDisplay | null>;
   /** Grouped reporting grids (fixed or runtime). Keys name groups of any level. Collapse affects display; record query/selection/export scope remain intact. */
   setGroupCollapsed?(key: string, collapsed: boolean): void;
   getCollapsedGroups?(): string[];

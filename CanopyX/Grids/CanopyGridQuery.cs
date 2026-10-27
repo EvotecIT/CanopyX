@@ -40,6 +40,9 @@ public sealed class CanopyGridQuery {
     /// <summary>Gets the AND-combined typed column predicates.</summary>
     public IList<CanopyGridFilter> Filters { get; } = new List<CanopyGridFilter>();
 
+    /// <summary>Gets up to eight AND-combined exact tuple predicates, used for correlated drill-through scopes.</summary>
+    public IList<CanopyGridTupleFilter> TupleFilters { get; } = new List<CanopyGridTupleFilter>();
+
     /// <summary>Gets or sets an optional bounded AND/OR expression, combined with search and flat predicates using AND.</summary>
     public CanopyGridFilterGroup? FilterGroup { get; set; }
 
@@ -92,6 +95,11 @@ public sealed class CanopyGridQuery {
         if (view.Navigation == CanopyGridNavigation.Cursor ? Offset != 0 : Cursor != null)
             throw new InvalidOperationException("Cursor queries cannot request offsets; offset queries cannot request cursors.");
         if (Filters.Count > 64) throw new InvalidOperationException("A grid query supports at most 64 column predicates.");
+        if (TupleFilters.Count > 8) throw new InvalidOperationException("A grid query supports at most eight tuple predicates.");
+        foreach (var tuple in TupleFilters) {
+            if (tuple == null) throw new InvalidOperationException("A tuple predicate cannot be null.");
+            tuple.Validate(view.GetColumn);
+        }
         var columns = new Dictionary<string, CanopyColumn>(StringComparer.Ordinal);
         foreach (var column in view.Columns) columns.Add(column.Id, column);
         var sorted = new HashSet<string>(StringComparer.Ordinal);
@@ -127,6 +135,9 @@ public sealed class CanopyGridQuery {
         writer.EndArray().Name("filters").BeginArray();
         foreach (var filter in Filters) filter.WriteJson(writer);
         writer.EndArray();
+        if (TupleFilters.Count > 0) {
+            writer.Name("tupleFilters").BeginArray(); foreach (var tuple in TupleFilters) tuple.WriteJson(writer); writer.EndArray();
+        }
         if (SearchMode == CanopyGridSearchMode.Words) writer.Property("searchMode", "words");
         if (view.Reporting?.DynamicGrouping == true) { writer.Name("groupBy").BeginArray(); foreach (var level in levels) level.WriteJson(writer); writer.EndArray(); }
         if (FilterGroup != null) {

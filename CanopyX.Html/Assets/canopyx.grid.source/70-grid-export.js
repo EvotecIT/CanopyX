@@ -5,6 +5,8 @@
     // The installed runtime owns this pure projection; capture and controls ask the same owner.
     defaultExportColumns() { return this.visibleColumns().filter(column => column.exportable !== false); },
     prepareExport(options) {
+      if (options?.pivot !== undefined && typeof options.pivot !== "boolean") throw new Error("CanopyX: pivot table capture requires a boolean option.");
+      if (options?.pivot) throw new Error("CanopyX: pivot table capture requires the reporting export bridge.");
       if (!this.view.reporting && ["fileName", "locale", "timeZone", "onProgress"].some(key => options?.[key] !== undefined))
         throw new Error("CanopyX: export metadata requires reporting.");
       if (this.destroyed || !this.acceptedQuery) throw new Error("CanopyX: export needs an accepted query.");
@@ -21,6 +23,7 @@
       const query = gridQuery(this.view, { ...this.acceptedQuery, offset: 0, cursor: undefined, limit: this.pageSize,
         search: filtered ? this.acceptedQuery.search : "",
         filterGroup: filtered ? this.acceptedQuery.filterGroup : undefined,
+        tupleFilters: filtered ? this.acceptedQuery.tupleFilters : undefined,
         filters: filtered ? this.acceptedQuery.filters : [] });
       const { revision, total, matched } = this.snapshot;
       const request = gridFreeze({ scope, query, revision, total, matched, recordCount: scope === "selected" ? selection.length :

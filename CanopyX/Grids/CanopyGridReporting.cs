@@ -18,6 +18,12 @@ public sealed class CanopyGridReporting {
     /// <summary>Gets or sets whether readers can group by sortable columns: column menus, the group-by bar and dragged headers.</summary>
     public bool Groupable { get; set; }
 
+    /// <summary>Gets or sets the initial optional pivot definition.</summary>
+    public CanopyGridPivot? Pivot { get; set; }
+
+    /// <summary>Gets or sets whether readers can configure a pivot from declared columns and aggregates.</summary>
+    public bool Pivotable { get; set; }
+
     /// <summary>Gets or sets expandable detail rows under the records, or null for none.</summary>
     public CanopyGridDetail? Detail { get; set; }
 
@@ -75,6 +81,7 @@ public sealed class CanopyGridReporting {
         }
         if (Grouping != null && DynamicGrouping) throw new InvalidOperationException("A fixed grouping cannot be combined with GroupBy or Groupable.");
         ValidateLevels(GroupBy, columns);
+        if ((Pivot != null || Pivotable) && Aggregates.Count == 0) throw new InvalidOperationException("Pivot reporting needs declared aggregates.");
         Detail?.Validate();
         if (ViewStorage != CanopyGridViewStorage.Session && ViewStorage != CanopyGridViewStorage.Local)
             throw new ArgumentOutOfRangeException(nameof(ViewStorage));
@@ -99,6 +106,7 @@ public sealed class CanopyGridReporting {
             if (level?.Aggregate != null) foreach (var declared in Aggregates) if (declared.Id == level.Aggregate) aggregate = true;
             if (level == null || column == null || !column.Sortable || !seen.Add(level.Column) || level.Aggregate != null && !aggregate)
                 throw new InvalidOperationException("Grouping levels need unique declared sortable columns and declared aggregates.");
+            level.Bucket?.Validate(column);
         }
     }
 
@@ -107,6 +115,8 @@ public sealed class CanopyGridReporting {
         if (Grouping != null) { writer.Name("grouping"); Grouping.WriteJson(writer); }
         if (GroupBy.Count != 0) { writer.Name("groupBy").BeginArray(); foreach (var level in GroupBy) level.WriteJson(writer); writer.EndArray(); }
         if (Groupable) writer.Property("groupable", true);
+        if (Pivot != null) { writer.Name("pivot"); Pivot.WriteJson(writer); }
+        if (Pivotable) writer.Property("pivotable", true);
         if (Detail != null) { writer.Name("detail"); Detail.WriteJson(writer); }
         if (Aggregates.Count != 0) {
             writer.Name("aggregates").BeginArray(); foreach (var aggregate in Aggregates) aggregate.WriteJson(writer); writer.EndArray();

@@ -27,6 +27,7 @@
     <None Include="..\tests\fixtures\flow-conditions.json" Link="Fixtures\flow-conditions.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\tests\fixtures\search-folding.json" Link="Fixtures\search-folding.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\tests\fixtures\recurrence-cases.json" Link="Fixtures\recurrence-cases.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\tests\fixtures\aggregate-display.json" Link="Fixtures\aggregate-display.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\CanopyX\Views\Locales\labels.json" Link="Fixtures\labels.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>

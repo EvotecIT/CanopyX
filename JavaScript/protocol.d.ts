@@ -202,6 +202,8 @@ export type InlineNode = LeafNode | DetailNode | InlineBranch<InlineNode>;
 
 /** Names accepted by the interactive runtime; omitted translations use English. */
 export type LabelName =
+  | "gridShowAs" | "gridShowAsValue" | "gridShowAsPercentGrandTotal" | "gridShowAsPercentParent" | "gridShowAsPercentColumn" | "gridShowAsPercentRow" | "gridShowAsRunningTotal" | "gridShowAsRank" | "gridShowAsDifference" | "gridShowAsPercentChange"
+  | "gridBucket" | "gridBucketNone" | "gridBucketDay" | "gridBucketWeek" | "gridBucketMonth" | "gridBucketQuarter" | "gridBucketYear" | "gridBucketHour" | "gridBucketWeekday" | "gridBucketWidth" | "gridBucketEdges" | "gridBucketOrigin" | "gridBucketInvalid"
   | "gridPaging" | "gridPageRange" | "gridPageNumber" | "gridPageLength" | "gridFirstPage" | "gridPreviousPage" | "gridNextPage" | "gridLastPage" | "gridPageInfo" | "gridPageInfoFiltered" | "gridPageButton"
   | "gridUnknownCount" | "gridMatchedCount" | "gridCursorRange"
   | "gridResultCount" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"
@@ -275,7 +277,9 @@ export type LabelName =
   | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
-  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails";
+  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails"
+  /** Calculated-column editor and stable per-cell errors (flat grids only). */
+  | "gridCalculationAdd" | "gridCalculationTitle" | "gridCalculationId" | "gridCalculationExpression" | "gridCalculationError" | "gridCalculationInvalid" | "gridCalculationHelp" | "gridCalculationNumber" | "gridPivotFieldOptions" | "gridCalculationResultType" | "gridCalculationDivideZero" | "gridCalculationDate";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }
