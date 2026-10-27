@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames, flushGridFilters, openGridControl } from "./support.mjs";
+import { viewPage, nextFrames, flushGridFilters, openGridControl, settleOverlayMotion } from "./support.mjs";
 
 const definition = () => ({ protocol: "canopyx/2", type: "grid", id: "inventory", label: "Inventory",
   source: { kind: "inline" }, rowHeight: 28, pageSize: 10, selection: "multiple", search: true,
@@ -192,7 +192,7 @@ test("open grid controls remain accessible in compact dark layouts", async ({ pa
   for (const selector of [".cx-grid-columns", ".cx-grid-filters", ".cx-grid-views"]) {
     await openGridControl(page, selector.replace(".cx-grid-", ""));
     if (selector === ".cx-grid-filters") await page.getByRole("button", { name: "+ Condition", exact: true }).click();
-    await nextFrames(page);
+    await settleOverlayMotion(page.locator(selector + " > .cx-grid-panel"));
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     const box = await page.locator(selector + " > .cx-grid-panel").boundingBox();
     expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(390);

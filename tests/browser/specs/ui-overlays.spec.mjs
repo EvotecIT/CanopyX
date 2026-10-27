@@ -260,6 +260,8 @@ test('dialog cancellation can be prevented and destroy still releases its modal 
 test('dialog structure and focus states pass accessibility checks', async ({ page }) => {
   await openUi(page, overlay('dialog', 'accessible'));
   await page.getByRole('button', { name: 'Open accessible' }).click();
+  // Axe sees the modal dialog once its entrance fade has finished, not while it is still transparent.
+  await page.locator('#accessible').evaluate(element => Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished)));
   const violations = (await new AxeBuilder({ page }).analyze()).violations;
   expect(violations).toEqual([]);
 });
