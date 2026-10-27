@@ -23,8 +23,8 @@
       destroy: () => { grid.destroy(); if (activeGrids.get(host) === api) activeGrids.delete(host); if (host.canopyx === api) delete host.canopyx; }
     };
     for (const name of ["getQuery", "setQuery", "sort", "getPaging", "goToPage", "setPageLength", "firstPage", "previousPage", "nextPage",
-      "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
-      "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "exportAs", "print", "openDetails", "openRecord", "scrollToRow", "retry", "closeMenus", "getFormatRules", "setFormatRules", "openFormatRules",
+      "getOnlyChanges", "setOnlyChanges", "setColumnWidth", "autoFitColumn", "autoFitColumns", "autoSizeColumns", "setColumnPriority", "resetColumns", "setColumnPinned", "setColumnVisible", "setColumnOrder", "getState", "setState", "resetView", "getSavedViews", "saveView",
+      "applySavedView", "removeSavedView", "setTimeZone", "setSelection", "prepareExport", "toCsv", "copy", "exportToHost", "exportAs", "print", "openDetails", "openRecord", "scrollToRow", "retry", "closeMenus", "getFormatRules", "setFormatRules", "openFormatRules", "getCalculatedColumns", "setCalculatedColumns", "openCalculatedColumn",
       "getLayout", "setLayout", "getMatches", "setSearchHighlight", "nextMatch", "previousMatch", ...GRID_EDIT_API, ...GRID_LIVE_API, ...GRID_CALENDAR_API, "getLiveState", "getFacetPanel", "setFacetPanelOpen"])
       // Each call looks the method up, so a part installed later (editing, linked views and others) serves the API it replaces.
       api[name] = (...args) => grid[name](...args);
@@ -34,6 +34,8 @@
       for (const name of names) api[name] = (...args) => { try { return Promise.resolve(grid[name](...args)); } catch (error) { return Promise.reject(error); } };
     }
     GRID_REPORTING.api?.(api, grid);
+    for (const name of ["getViewIntent", "validateViewIntent", "previewViewIntent", "applyViewIntent"])
+      api[name] = (...args) => { try { return Promise.resolve(grid[name](...args)); } catch (error) { return Promise.reject(error); } };
     Object.assign(api, linkApi(grid));
     api.ready = linkReady(grid, api.ready);
     Object.freeze(api);

@@ -72,6 +72,7 @@
       const walk = group => { if (!group) return; for (const filter of group.filters) used.add(filter.column); group.groups.forEach(walk); };
       for (const filter of query.filters) used.add(filter.column);
       walk(query.filterGroup);
+      for (const tuple of query.tupleFilters || []) for (const field of tuple.columns) used.add(field.column);
       const searched = !!query.search;
       let moved = false;
       for (const row of this.rowCache.values()) {

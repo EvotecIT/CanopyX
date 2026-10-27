@@ -1,5 +1,8 @@
 # CanopyX features
 
+Keyed [dataset comparison](dataset-compare.md) combines two versions in one grid with change counts and a script-free
+email fallback. [View intents](view-intents.md) validate host-supplied JSON and preview view changes before applying them.
+
 CanopyX has two interactive views: a **data grid** for flat records and a **tree grid** for hierarchies. Both can be written
 from typed C# or mounted from JavaScript, and both can render as a script-free table for email and print. A **flow** is a guided
 form for setup and edit tasks that raises one proposal to the host (see [Flows](#flows)). This page lists
@@ -141,6 +144,10 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Aggregates (count, sum, average, minimum, maximum) in group rows and a pinned summary row | Reporting | `reporting.aggregates`; hosted sources add `source.summary` | [Flat groups](data-protocol.md#flat-groups-and-complete-query-totals) |
 | Hierarchies of any depth | Tree | `CanopyTreeView`, inline or lazy children | [Tree grid features](authoring.md#tree-grid-features) |
 | Grouping by up to four columns, from the column menus or a group-by bar, with labelled aggregates | Reporting | `reporting.groupBy`, `reporting.groupable`, `setGroupBy()` | [grouping.md](grouping.md) |
+| Calendar and numeric range buckets for grouping and facets | Reporting | `bucket`; C# `CanopyBucket`, hosted `IQueryable` translation | [grouping.md](grouping.md#grouping) |
+| Percent shares, running totals, rank, difference and percent change | Reporting | Aggregate `showAs`, `setAggregateShowAs()`, numeric `getDisplaySummary()`; C# `CanopyAggregateDisplay` | [grouping.md](grouping.md#show-values-as) |
+| Pivot rows and columns, totals, both-axis collapse, top-N/Other and exact drill-through | Reporting | `reporting.pivot`, `pivotable`, `setPivot()`, `source.pivot`; C# `CanopyGridPivot`, `CanopyPivot` | [pivot.md](pivot.md) |
+| Calculated columns with bounded arithmetic, comparisons, text/date functions and saved definitions | Grid | Column `calculation`, `calculatedColumnsEditable`, `setCalculatedColumns()`; C# `CanopyCalculation`, `CanopyCalculationSet` | [calculated-columns.md](calculated-columns.md) |
 | Expandable detail rows: a template, HTML, or a nested grid or tree | Reporting | `reporting.detail` | [grouping.md](grouping.md#detail-rows) |
 
 ## Calendar and resource timeline

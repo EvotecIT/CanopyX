@@ -1,0 +1,13 @@
+body .cx-host.cx-view-intent-preview { height:auto;min-width:0;margin-top:var(--hfx-space-3);padding:var(--hfx-space-3);border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text); }
+.cx-view-intent-preview h3 { margin:0 0 var(--hfx-space-2);font-size:inherit;font-weight:var(--hfx-weight-semibold); }
+.cx-view-intent-preview .cx-grid-query-chips { display:flex;flex-wrap:wrap;gap:var(--hfx-space-1-5);margin-bottom:var(--hfx-space-3); }
+.cx-view-intent-preview .cx-grid-chip { display:inline-block;max-width:100%;height:auto;padding:var(--hfx-space-1) var(--hfx-space-2);border-radius:var(--hfx-radius-control);background:var(--hfx-color-accent-subtle);white-space:normal;overflow-wrap:anywhere; }
+.cx-view-intent-actions { display:flex;flex-wrap:wrap;gap:var(--hfx-space-2); }
+.cx-view-intent-preview [role=status] { margin:var(--hfx-space-2) 0 0;overflow-wrap:anywhere; }
+.cx-view-intent-preview [role=status]:empty { display:none; }
+@media print { .cx-view-intent-preview { display:none !important; } }
+
+@media (forced-colors:active) {
+  .cx-view-intent-preview .cx-grid-chip { border:var(--hfx-border-width) solid CanvasText; }
+  .cx-view-intent-actions [data-variant="primary"] { background:Highlight;color:HighlightText;border:var(--hfx-border-width) solid Highlight;forced-color-adjust:none; }
+}

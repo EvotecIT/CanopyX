@@ -91,6 +91,7 @@ public static class CanopyRemoteScript {
             writer.WriteString("endpoint", endpoint.TrimEnd('/'));
             writer.WriteBoolean("facets", facets);
             writer.WriteBoolean("summary", schema.HasSummary);
+            writer.WriteBoolean("pivot", schema.HasPivot);
             writer.WriteBoolean("range", range);
             writer.WriteBoolean("commit", schema.EditableColumns.Count > 0);
             writer.WriteBoolean("records", records);
@@ -157,6 +158,7 @@ function reopenAtCurrentRevision(id) {
 }
 if (settings.facets) source.facet = (request, options) => post("/facet", request, options.signal).then(response => response.json());
 if (settings.summary) source.summary = (query, options) => post("/summary", query, options.signal).then(response => response.json());
+if (settings.pivot) source.pivot = (request, options) => post("/pivot", request, options.signal).then(response => response.json());
 if (settings.range) source.range = (request, options) => post("/range", request, options.signal).then(response => response.json()).catch(error => { if (error.code === "unsupported") delete source.range; throw error; });
 if (settings.commit) {
   // Saving can retire the snapshot even when the server cannot read its new revision after the rows were committed.

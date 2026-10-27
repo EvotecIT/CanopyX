@@ -16,6 +16,7 @@ Turn application data into searchable trees, sortable tables and standalone HTML
 
 - **File and folder explorers** with expandable branches, lazy loading, search and multi-selection.
 - **Inventory and results tables** with typed sorting, filters, column resizing and saved views.
+- **Analytical reports** with calendar and numeric buckets, aggregate display modes and optional [pivot tables](docs/pivot.md), backed by inline records or one grouped hosted query. [Calculated columns](docs/calculated-columns.md) use the same bounded expression grammar in C# and the browser.
 - **HTML reports** that include their own runtime and data and can be opened from disk or a file share.
 - **Application views** backed by paged or cursor-based data sources, with selection and detail callbacks.
 - **Email and print tables** rendered from the same .NET view without JavaScript.
@@ -222,6 +223,15 @@ A page that already has an HTML table needs one call. The table's headers, rows,
 ### Build navigation and overlays
 
 Use standalone tabs, steppers, dialogs, drawers, popovers, tooltips and menus with the same runtime. They load through its optional-parts API and work without a data view or jQuery. `CanopyX.contextMenu(elementOrSelector, items)` also adds actions to an ordinary page element. The `CanopyX.Html.Ui` builders write the accessible markup from .NET. See [UI primitives](docs/ui-primitives.md) for assets, callbacks, keyboard behavior and examples.
+### Compare datasets and preview view changes
+
+`CanopyDatasetComparer.Compare` joins two complete keyed snapshots into one grid, with added/removed/changed rows,
+before → after cells, column counts and an Only changes switch. `CanopyX.Data` can read the two host queries;
+`CanopyStaticHtml.RenderComparison` writes the email fallback. See [dataset comparison](docs/dataset-compare.md).
+
+With `viewIntents: true`, `await grid.applyViewIntent(state)` validates a versioned JSON proposal and previews it as
+chips before the reader applies it. The host supplies the proposal and governs access; CanopyX makes no model calls.
+See [view intents](docs/view-intents.md).
 
 ### Edit data in a grid
 
@@ -262,6 +272,7 @@ CSV export and copying distinguish filtered results, selected records and all re
 - [Features](docs/features.md): everything the tree and data grids do, grouped by capability.
 - [Recipes](docs/recipes.md): short how-tos for server data, cell values, export, phones, grouping, saved views and translations.
 - [Authoring reference](docs/authoring.md), [column layout](docs/column-layout.md), [label packs](docs/labels.md) and the [data protocol](docs/data-protocol.md).
+- [Dataset comparison](docs/dataset-compare.md) and [validated view intents](docs/view-intents.md).
 - [Planned work](TODO.md): remaining capabilities, consumers and acceptance gates.
 - [Testing and benchmarks](docs/testing.md): the required correctness loop and explicit performance measurements.
 

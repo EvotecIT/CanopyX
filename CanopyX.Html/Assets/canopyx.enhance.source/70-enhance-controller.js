@@ -30,7 +30,7 @@
       previous = detail;
       if (before) {
         if (!same(before.query.sort, query.sort)) emit("order", detail, event);
-        if (before.query.search !== query.search || !same([before.query.filters, before.query.filterGroup], [query.filters, query.filterGroup])) emit("search", detail, event);
+        if (before.query.search !== query.search || !same([before.query.filters, before.query.filterGroup, before.query.tupleFilters], [query.filters, query.filterGroup, query.tupleFilters])) emit("search", detail, event);
         if (before.paging.pageLength !== paging.pageLength) emit("length", detail, event);
         if (before.paging.pageIndex !== paging.pageIndex) emit("page", detail, event);
       }

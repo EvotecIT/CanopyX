@@ -2,6 +2,43 @@
 
 Flat-grid definitions can declare optional `board` or `plan` settings. A [board](board.md) names the lane, title and optional swimlane columns, ordered typed lane values with WIP limits, card fields and whether moves are offered. Its `boardMove` event carries an ordinary `gridCommit` proposal. A [plan](plan.md) extends `calendar` resource timelines with finish-to-start `dependencies` (`predecessor`, `successor`, optional nonnegative `lagMinutes`), paired baseline date columns, a milestone column and proposal settings. `planChangeProposal` carries previous and proposed dates/resources plus conflict descriptions; it never changes actual records. These additive settings stay in `canopyx/2` and are declared in the [schema](schema/canopyx-2.schema.json).
 
+Aggregate descriptors may declare `showAs`: `value`, `percentGrandTotal`, `percentParent`, `percentColumn`, `percentRow`,
+`runningTotal`, `rank`, `difference` or `percentChange`. Saved grid state may carry up to 32 `aggregateShowAs` entries
+mapping aggregate identities to those modes. Raw `gridSummary.aggregates` and group aggregates do not change. Display
+results pair finite numeric values (or null) with number formats; percentages remain fractions using `0.00%`, while rank
+uses `0`. These are post-aggregation transformations, independent of filtering, paging and grouping order.
+
+Grouping levels, facet definitions/requests/responses and column predicates may carry an optional `bucket`.
+Calendar buckets declare `kind` (`day`, `week`, `month`, `quarter`, `year`, `hour`, `weekday`), `timeZone`
+(UTC by default) and `firstWeekday` (0 Sunday through 6 Saturday; Monday by default). Numeric buckets use
+`{ "kind": "width", "width": 10, "origin": 0 }` or `{ "kind": "edges", "edges": [0, 10, 100] }`.
+Edges are strictly ascending, with at most 200 boundaries. Intervals include the lower edge and exclude the upper edge;
+explicit edges include underflow and overflow groups. Null inputs remain null. Numeric bucket indices must remain safe integers.
+
+Bucket group/facet values and bucket-predicate operands are numeric keys, while record cells retain their original raw values.
+Calendar keys use the Gregorian day ordinal (0001-01-01 is zero), the week index anchored to that ordinal and first weekday,
+the zero-based month or quarter since year 1, the calendar year, hour 0–23, or weekday index from the first weekday.
+Weeks use the first-four-day week-year rule (ISO with Monday first). Repeated daylight-saving hours share an hour category;
+calendar days use local dates, independently of their elapsed duration. Display labels never determine ordering or identity.
+Facet responses echo the normalized partition, and bucket selections remain ordinary numeric predicates carrying that partition.
+
+The `buckets` part loads when a partition is used. `CanopyBucket`, `CanopyGridGroupLevel.Bucket`, `CanopyFacet.Bucket`
+and `CanopyGridFilter.Bucket` author the same shapes in C#. `CanopyStaticHtml.RenderGridSummary` renders accepted summaries
+with calendar/range labels and inline styles. `CanopyX.Data` translates UTC keys through date parts and arithmetic in
+`IQueryable`; providers group in the database. Named-zone SQL conversion is explicit host wiring through
+`CanopyColumnMapping.BucketTimeZone`, since database time-zone functions differ. The host's mapping must use the same
+time-zone rules as the descriptor. Hosts with different native and browser zone identifiers can supply a `TimeZoneInfo`
+and the corresponding browser identifier to `CanopyBucket.Calendar`.
+Dataset comparison adds optional `compare` metadata to grid documents: the declared `statusColumn`, complete
+`counts` (`added`, `removed`, `changed`, `unchanged`), `columns` mapping column IDs to changed matched-cell counts,
+and the initial `onlyChanges` boolean. Cells use the existing `changes` payload with a
+`{ "kind": "change", "beforeAfter": true }` presenter. The numeric-delta change presenter retains its existing shape.
+See [dataset comparison](dataset-compare.md).
+
+The optional grid flag `viewIntents: true` includes the view-proposal preview part. View proposals have their own
+[versioned JSON Schema](schema/canopyx-view-state-1.schema.json), separate from transport queries and saved-view
+storage. They contain no write actions or model endpoint; see [view intents](view-intents.md).
+
 Grid columns optionally declare `wrap` and `maxLines` (integer 1–12, default 2).
 Wrapped columns enable measured rows, as do `autoRowHeight: true` and
 `rowHeight: "auto"`. Explicit JavaScript `autoRowHeight: false` keeps a fixed
@@ -89,6 +126,8 @@ Version 2 introduces packed child pages and the word/posting search index with s
 | `grid` | `CanopyDataGridView.ToJson()` | A flat-grid definition supplies columns and inline rows or a host source |
 | `gridPage` | `CanopyGridPage.ToJson()` | A host supplies a revisioned page of ordered matching rows |
 | `gridQuery` | `CanopyGridQuery.ToJson(view)` | A host receives a typed query and requested result window |
+| `gridPivotQuery` | The browser | An offset reporting grid requests a pivot over its full accepted query ([Pivot analysis](#pivot-analysis)) |
+| `gridPivot` | `CanopyPivotResult.ToJson()`; `CanopyRemoteHandler.PivotAsync` adds query/revision ownership | A computed or hosted pivot supplies bounded axes, prefix intersections and exact totals |
 | `gridRangeQuery` | The browser; `CanopyGridRangeQuery.ToJson(view)` | A calendar or timeline asks a host for the records that overlap a period ([Date ranges](#date-ranges)) |
 | `gridRangePage` | `CanopyGridRangePage.ToJson(view)` | A host answers a range request with the overlapping records in start order |
 | `gridCommit` | The editing part | A grid asks its writer to save changed rows ([Editing and commit](#editing-and-commit)) |
@@ -290,13 +329,20 @@ respectively. They use the lazy layouts part; see [layout modes](layout-modes.md
 
 The optional grid definition field `searchDelayMs` sets the search-input debounce from 0 to 5,000 milliseconds; browser options of the same name override it. Without a setting, inline sources apply input immediately and host sources wait 300 ms. Enter applies immediately except during input-method composition, whose partial input is never submitted. Sorting, filter edits and chip actions include queued search text in the same immediate request; they never include unfinished composition. Explicit `setQuery`, view restoration and reset replace queued text. Accepted-result counts and removable search, flat-predicate and grouped-filter chips update only after a query succeeds; pending or failed queries retain the previous summary. Clear search and filters removes both predicate forms, resets the offset and cancels any queued text.
 
+Optional `tupleFilters` adds up to eight atomic exact correlated predicates, AND-combined with the other criteria.
+Each is `{ columns: [{ column, bucket? }], values: [[...]], exclude?: boolean }`, with one to six fields and one to
+200 equally wide operand tuples. Values include explicit null. Strings compare exactly without case folding;
+dates compare normalized instants, and bucketed fields use numeric keys. Exclusion complements complete-tuple
+membership, including nulls. Empty optional tuple criteria are omitted. A tuple cannot be split into independent
+per-column membership predicates; the single-column editor locks its referenced fields. See [pivot drill-through](pivot.md#drill-through-and-atomic-tuples).
+
 All flat `filters` combine with AND. An optional `filterGroup` adds a nested expression, also combined with search and flat predicates using AND. A group is `{ "operator": "and" | "or", "filters": [...], "groups": [...] }`: `and` requires every predicate and child group to match; `or` requires at least one. Both arrays are required and their combined length cannot be zero. Queries allow eight group levels, 64 groups and 64 total predicates including flat predicates. The .NET writer and browser enforce these semantic bounds in addition to schema shape validation. Operands and column rules are identical at every depth. Invalid or incompatible grouped state is rejected rather than restored with silently broadened filters.
 
 The Filters sentence editor presents that expression with All/Any switches, typed conditions and indented groups. Flat predicates retain their outer AND semantics. The reporting editor folds adjacent lower/upper bounds into a range only inside an AND group, and emits an inner AND group when a range is used within OR. Independent bounds originally authored in OR remain independent. The UI offers two nesting levels; deeper saved expressions remain read-only until Edit as text enables their JSON representation. Empty draft groups are omitted until they have a condition, while saved and submitted expressions retain the engine's nonempty-group validation. Edits apply after 200 ms; Done flushes the latest valid draft, and Clear all filters clears both forms. These controls add no query operator or protocol version.
 
 `reporting.facetColumns` opts declared column IDs into full-query value/count facets. Inline sources count their complete dataset through the existing search/predicate evaluator, ignoring the result window and sort. A hosted source supplies an explicit `facet(request, { signal })` capability; the runtime never estimates counts from cached pages. The column popover shows presenter-rendered values and counts with the current column's predicates excluded. It adds value search above twelve values, applies choices after 200 ms, and cancels superseded or closed requests. Other accepted criteria changes close an outdated list. Hosted columns without a facet capability retain typed conditions.
 
-`api.getFacets(column, { search, limit, includeCurrentFilter, signal })` sends a `gridFacetQuery`: `{ protocol: "canopyx/2", type: "gridFacetQuery", query, column, search, limit, includeCurrentFilter }`. The query includes its accepted revision. Defaults are empty value search, 100 returned buckets, and `includeCurrentFilter: true`; the bound is 1..200 buckets and 16,384 search code units. False replaces every predicate targeting that column with true, including inside nested groups. In particular, an OR containing such a predicate becomes true; removing just that term would incorrectly narrow the expression. Search and all other predicates remain in force. The host keeps its independent authorization constraints when applying this projection.
+`api.getFacets(column, { search, limit, includeCurrentFilter, signal })` sends a `gridFacetQuery`: `{ protocol: "canopyx/2", type: "gridFacetQuery", query, column, search, limit, includeCurrentFilter }`. The query includes its accepted revision. Defaults are empty value search, 100 returned buckets, and `includeCurrentFilter: true`; the bound is 1..200 buckets and 16,384 search code units. False replaces every predicate targeting that column with true, including inside nested groups. In particular, an OR containing such a predicate becomes true; removing just that term would incorrectly narrow the expression. If an atomic tuple references that column, the whole tuple is replaced by true; its remaining fields are not projected into a narrower tuple. Search and independent predicates remain in force. The host keeps its independent authorization constraints when applying this projection.
 
 A grid's optional `facets` field declares a facet panel: `{ columns, position, open, collapsible, width, label }`, where each column is an id or `{ column, kind, label, limit, bins, sort, collapsed }` (`gridFacetPanel` in the schema). Its choices are ordinary column conditions (`in`, `isNull`, `ge`, `le`) of the query. A hosted grid's facets must be declared `reporting.facetColumns`; each sends a `gridFacetQuery` with `includeCurrentFilter: false` and a limit of 200. The grid state keeps the panel's open state as `facets: { open }`. See [facet panel](facets.md).
 
@@ -318,7 +364,7 @@ Include the reporting runtime for these definitions: `CanopyRuntime.ReportingGri
 
 Numeric cells use JavaScript binary64 arithmetic. Native writers and browser grid readers reject magnitudes outside ±9,007,199,254,740,991; the boundary does not make fractional decimals exact. Use text cells for larger exact integers, exact decimal representations and identifiers, or keep exact arithmetic/order in the host with an explicitly defined result contract. Display text is separate from the raw query value. Date comparison uses UTC instants at millisecond precision, independent of display time zone. Native date cells serialize that precision; externally supplied ISO strings may retain finer text in raw export, but submillisecond differences tie during inline sorting and filtering. Hosts normalize to the same precision for equivalent query behavior.
 
-A filter is `{ "column": "amount", "operator": "ge", "values": [10] }`. Operators are `eq`, `ne`, `contains`, `startsWith`, `in`, `gt`, `ge`, `lt`, `le`, `isNull`, and `isNotNull`. Equality and text matching are case-insensitive for text values. Numeric and date operands use their raw numeric and ISO 8601 UTC values; localized display strings do not enter the query. Text matching is for text columns; range comparisons are for number and date columns. A null or missing cell fails value predicates, including `ne`; use `isNull` to include it explicitly. An empty string is a value, not a null. Null predicates take no operands, `in` takes 1 to 1,000, and other predicates take one. A query has at most 64 predicates. The C# filter API accepts `CanopyCell` operands but serializes only their raw values, without display text or decorations.
+A filter is `{ "column": "amount", "operator": "ge", "values": [10] }`. Operators are `eq`, `ne`, `contains`, `startsWith`, `in`, `gt`, `ge`, `lt`, `le`, `isNull`, and `isNotNull`. Equality and text matching are case-insensitive for text values. Numeric and date operands use their raw numeric and ISO 8601 UTC values; localized display strings do not enter the query. Text matching is for text columns; range comparisons are for number and date columns. A null or missing cell fails value predicates, including `ne`; use `isNull` to include it explicitly. An empty string is a value, not a null. Null predicates take no operands, `in` takes 1 to 1,000, and other predicates take one. A query has at most 64 ordinary predicates across flat and nested expressions; tuple predicates have their separate bound below. The C# filter API accepts `CanopyCell` operands but serializes only their raw values, without display text or decorations.
 
 Flat-grid view snapshots are browser presentation state, separate from the wire query and tree snapshots. `getState()` returns `{ version: 1, view, columns, query, timeZone, selection, scrollTop }`. Columns appear in display order and carry `id`, `width` and `hidden`, plus optional `pin`, `sized` (the width is a user choice; without it the column keeps automatic sizing and the saved width is informational) and `priority`; selection contains stable row IDs independently of cached pages. The query omits a dataset revision and starts at offset zero, so restoration obtains a fresh accepted snapshot before applying presentation. Invalid state leaves the current query and layout intact. A newer query or restoration supersedes an older restore. Removed column/filter/sort references are skipped, while at least one known column must remain visible.
 
@@ -455,6 +501,58 @@ grouping, an adapter such as `CanopyX.Data` (which serves single-level `gridSumm
    only when a registered provider computes them; reject unknown ones as unsupported.
 5. **Echo and checks.** Echo the normalized query including `groupBy`; validate sibling order, contiguity and
    `sum(count) == matched` at every level before writing, as `CanopyGridSummary.ToJson` does for native responses.
+
+### Calculated columns
+
+A grid column may add `calculation`, a nonblank expression string of 1..2048 UTF-16 code units. Calculated columns
+are read-only (`editable: true` is invalid) and are not supported by tree columns. A view may add
+`calculatedColumnsEditable: true` to enable the definition editor; this requires inline data. Authored calculations
+do not require that editor opt-in. Grids allow at most 32 calculated columns.
+
+The scalar grammar includes JSON scalar literals, `[columnId]` references, arithmetic, same-kind comparisons, and
+`IF`, `COALESCE`, `ROUND`, `CONCAT`, `DATEPART` and `DATEDIFF`. Function names are case-insensitive. Program limits are
+32 AST levels, 256 nodes, 32 arguments and 64 distinct references; text is bounded to 4096 UTF-16 code units and
+numbers use finite binary64. Definition validation rejects unknown references and cycles. Result kinds are strict:
+number columns take numbers, text columns take strings or booleans, and datetime columns take valid dates. A
+row-level error becomes a null raw value with `#ERROR` text and a localized `gridCalculationError` tooltip containing
+a stable code. Independent columns continue; evaluated dependency errors propagate.
+
+Editor-enabled state may carry `calculatedColumns: [{ id, title, kind, expression }]`, at most 32 definitions.
+Restoration validates the prospective column set, retains authored calculation IDs and can remove reader-added
+columns. `getCalculatedColumns()` returns read-only definitions; `setCalculatedColumns(defs)` resolves with accepted
+definitions; `openCalculatedColumn(anchor?)` opens the optional inline editor.
+
+These fields are additive within `canopyx/2`. Programs stay in column definitions and permitted inline state, not in
+query documents. Hosted calculated values come from the server: in-memory providers materialize before querying,
+while queryable providers use an authorized translatable host mapping without client-page calculation. See
+[Calculated columns](calculated-columns.md) for the precise null, lazy-branch, date, rounding and error contracts.
+
+### Pivot analysis
+
+`reporting.pivot` declares `{ rows, columns, values, maxColumns?, topNColumns?, sortByTotal? }`;
+`reporting.pivotable: true` also lets readers configure it. Axes contain `{ column, direction, bucket? }` levels:
+at most four row levels and two column levels. Values name one to 32 unique declared aggregate IDs. `maxColumns`
+is 1..200, defaults to 200 and includes Other; `topNColumns` is optional 1..200. `sortByTotal` is
+`{ aggregate, direction }`, naming a selected value. These capabilities require offset navigation, reporting
+aggregates, and sortable/filterable axis fields.
+
+A `gridPivotQuery` is `{ protocol: "canopyx/2", type: "gridPivotQuery", query, definition }`; `query` is the complete
+accepted `gridQuery` with its revision. A `gridPivot` result carries `view`, `definition`, `matched`, `distinctColumns`,
+`columnsLimited`, `rows`, `columns`, `retainedColumns` and `cells`. Nodes are `{ key, parent?, path, other }`, total
+first; cells are `{ row, column, count, aggregates }`. Path operands are raw scalars, including explicit null and
+ISO datetime strings, or numeric bucket keys. Results allow at most 10,001 row prefixes, 402 column prefixes and
+100,000 populated intersections. Readers also enforce row-prefix count × column-prefix count × selected-value count
+<= 100,000 display cells, including totals and all prefixes, even when populated intersections are sparse. Opaque keys are bounded to 65,536 UTF-16 code units, and the complete result to
+4,194,304 code units. Direct computed results omit both `query` and `revision`; hosted results include both.
+The browser requires their exact accepted-page ownership and validates the semantic prefix/aggregate invariants.
+Hosted query providers retain native store grouping/tuple collation; exact inline text parity requires ordinal/binary
+mapped inputs. Datetime/millisecond and binary64 normalization of grouped contributions does not override that
+precondition. See [store semantics and provider proof](pivot.md#store-semantics-and-provider-proof).
+
+Other contains omitted complete column paths. Retained parent prefixes keep exact totals over their full raw scope,
+including descendants in Other, so a collapsed full-prefix subtotal can overlap Other. Expanded leaf columns partition
+the records; prefix subtotals must not be added as if they were disjoint leaves. See [Pivot analysis](pivot.md) for
+TopN examples, exact drill-through, hosted source hooks, saved state and numeric/outlined export snapshots.
 
 ### Grid detail rows
 

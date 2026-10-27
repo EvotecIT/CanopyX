@@ -35,7 +35,7 @@
       const chosen = new Set(state.chosen.map(value => facetKey(value, facet.def))), focused = list.contains(document.activeElement) ? document.activeElement : null;
       const focusKey = focused?.getAttribute("data-cx-key"), focusPosition = focused ? [...list.querySelectorAll("input")].indexOf(focused) : 0;
       const needle = facet.hosted ? "" : foldText(state.search), locked = !!selection.locked;
-      let items = counts.items.filter(item => !needle || item.value !== null && foldText(cellText(item.value, facet.def, grid.fmt)).includes(needle));
+      let items = counts.items.filter(item => !needle || item.value !== null && foldText(facet.bucket ? GRID_BUCKETS.label(facet.bucket, item.value, grid.lang) : cellText(item.value, facet.def, grid.fmt)).includes(needle));
       // A chosen value the other facets exclude stays listed (count 0) so it can be unchosen; not while a hosted search hides it.
       if (!(facet.hosted && state.search)) for (const value of state.chosen) if (!items.some(item => facetKey(item.value, facet.def) === facetKey(value, facet.def))) items.push({ value, count: 0 });
       items.sort(facet.sort === "count" ? (a, b) => b.count - a.count || facetValueOrder(a.value, b.value, facet) : (a, b) => facetValueOrder(a.value, b.value, facet));
@@ -90,6 +90,7 @@
 
   /** Draws a value as its column's cells show it (a presenter's pill, for example) and returns the plain text. */
   function facetValueText(grid, facet, value, element) {
+    if (facet.bucket) { const text = GRID_BUCKETS.label(facet.bucket, value, grid.lang); setText(element, text); return text; }
     const column = facet.def, options = column.presenter, text = cellText(value, column, grid.fmt) || String(value);
     if (options && !["statusStrip", "sparklineBars", "sparklineLine", "change", "identifier", "longText", "list", "tags", "structured"].includes(options.kind)) {
       try { gridCellRenderer(grid, column, options)({ id: "facet", cells: { [column.id]: value } }, element); return text; } catch (_) { element.replaceChildren(); }

@@ -1,6 +1,9 @@
 namespace CanopyX.Rendering;
 
 internal sealed partial class CanopyStaticStyles {
+    /// <summary>A comparison heading outside the table carries its own theme text as well as its surface.</summary>
+    internal string ComparisonHeading => Caption + Declare("color", _text);
+
     /// <summary>Code: a monospace stack every mail client has.</summary>
     internal const string Mono = "font-family:Consolas,'Cascadia Mono','Courier New',monospace;";
 

@@ -880,11 +880,12 @@ export function grid<R=any>(element:HTMLElement|string,options:GridInitOptions<R
 
 // ---- JavaScript/facets.d.ts ----
 import type{
-  GridRow,GridColumnId
+  GridRow,GridColumnId,GridBucket
 }
 from "./grid.js";
 export type GridFacet<Row extends GridRow=GridRow>=GridColumnId<Row>|{
   column:GridColumnId<Row>;
+  bucket?:GridBucket;
   kind?:"list"|"range";
   label?:string;
   limit?:number;
@@ -1387,6 +1388,11 @@ from "./calendar.js";
 export * from "./facets.js";
 export * from "./calendar.js";
 export * from "./live.js";
+import type{
+  GridPivotApi,GridPivotDefinition,GridPivotState,GridPivotQuery,GridPivotAcceptedResult,GridPivotExportAxisPresentation,GridPivotExportDescriptor
+}
+from "./pivot.js";
+export * from "./pivot.js";
 export interface GridRow{
   id:string;
   cells:Record<string,Cell>;
@@ -1426,12 +1432,14 @@ export type GridHighlightRule=GridBuiltinFilter&{
 export interface GridExportCell{
   readonly value:CellValue;
   readonly text:string;
+  readonly mode?:GridShowAs;
+  readonly numberFormat?:string;
   readonly tone?:string;
   readonly link?:{readonly target:string;readonly tooltip?:string};
   readonly format?:GridExportFormat;
   readonly diagnostics?:readonly string[];
 }
-export interface GridExportRow{
+export interface GridExportRow extends Partial<GridPivotExportAxisPresentation>{
   readonly id:string;
   readonly cells:Readonly<Record<string,GridExportCell>>;
   readonly tone?:string;
@@ -1439,10 +1447,11 @@ export interface GridExportRow{
   readonly format?:GridExportFormat;
   readonly detail?:Extract<GridRowDetail,{type:"table"|"properties"|"html"}>;
 }
-export interface GridExportColumn{
+export interface GridExportColumn extends Partial<GridPivotExportAxisPresentation>{
   readonly id:string;
   readonly title:string;
   readonly kind:"text"|"number"|"datetime";
+  readonly aggregate?:string;
   readonly width?:{readonly unit:"css-px";readonly preferred:number;readonly minimum:number;readonly maximum?:number};
   readonly wrap?:boolean;
   readonly alignment?:"left"|"right";
@@ -1489,7 +1498,13 @@ export type GridColumn<Row extends GridRow=GridRow>=Omit<CanopyColumn,"id"|"edit
   alwaysVisible?:boolean;
   tooltip?:string;
 }
-;
+&(|{readonly calculation?:never}|{readonly calculation:string;editable?:false});
+export interface GridCalculatedColumnDefinition{
+  readonly id:string;
+  readonly title:string;
+  readonly kind:"text"|"number"|"datetime";
+  readonly expression:string;
+}
 export type GridColumnPriority="essential"|"normal"|"optional"|number;
 export interface GridSort{
   readonly column:string;
@@ -1538,6 +1553,10 @@ export type GridPresenter=|{
   readonly higherIsGood?:boolean
 }
 |{
+  readonly kind:"change";
+  readonly beforeAfter:true
+}
+|{
   readonly kind:"statusStrip"|"missing"
 }
 |({readonly kind:"sparklineBars"|"sparklineLine"}&GridHistoryPresentation)|{
@@ -1582,6 +1601,8 @@ export interface GridPager{
   readonly info?:"range"|"sentence"|"none";
 }
 export interface GridReporting{
+  readonly pivot?:GridPivotDefinition;
+  readonly pivotable?:boolean;
   readonly grouping?:GridSort&{readonly headerTemplate?:string};
   readonly groupBy?:readonly GridGroupLevel[];
   readonly groupable?:boolean;
@@ -1644,27 +1665,30 @@ export type GridAction<Q extends AcceptedGridQuery=GridQuery>=|{
   run?:never
 }
 ;
-export type GridBuiltinFilter={
-  readonly column:string;
-  readonly operator:"eq"|"ne"|"contains"|"startsWith"|"in"|"gt"|"ge"|"lt"|"le";
-  readonly values:readonly Exclude<CellValue,null>[];
-}
-|{
-  readonly column:string;
-  readonly operator:"isNull"|"isNotNull";
-  readonly values:readonly[];
+export type GridBuiltinFilter=({readonly column:string;readonly operator:"eq"|"ne"|"contains"|"startsWith"|"in"|"gt"|"ge"|"lt"|"le";readonly values:readonly Exclude<CellValue,null>[];}|{readonly column:string;readonly operator:"isNull"|"isNotNull";readonly values:readonly[];})&{
+  readonly bucket?:GridBucket
 }
 ;
 export type GridFilter=GridBuiltinFilter|{
   readonly column:string;
   readonly operator:string&{};
-  readonly values:readonly Exclude<CellValue,null>[]
+  readonly values:readonly Exclude<CellValue,null>[];
+  readonly bucket?:never
 }
 ;
 export interface GridFilterGroup{
   readonly operator:"and"|"or";
   readonly filters:readonly GridFilter[];
   readonly groups:readonly GridFilterGroup[];
+}
+export interface GridTupleColumn{
+  readonly column:string;
+  readonly bucket?:GridBucket;
+}
+export interface GridTupleFilter{
+  readonly columns:readonly GridTupleColumn[];
+  readonly values:readonly(readonly CellValue[])[];
+  readonly exclude?:boolean;
 }
 export interface GridQuery{
   readonly protocol:"canopyx/2";
@@ -1678,6 +1702,7 @@ export interface GridQuery{
   readonly sort:readonly GridSort[];
   readonly filters:readonly GridFilter[];
   readonly filterGroup?:GridFilterGroup;
+  readonly tupleFilters?:readonly GridTupleFilter[];
   readonly groupBy?:readonly GridGroupLevel[];
 }
 export interface GridCursorQuery extends Omit<GridQuery,"type"|"offset">{
@@ -1687,7 +1712,16 @@ export interface GridCursorQuery extends Omit<GridQuery,"type"|"offset">{
 export type AcceptedGridQuery=GridQuery|GridCursorQuery;
 export type GridQueryInput<Q extends AcceptedGridQuery=GridQuery>=Partial<Q>;
 type GridCount<Q extends AcceptedGridQuery>=Q extends GridCursorQuery?number|null:number;
+export interface DatasetCompare{
+  readonly statusColumn:string;
+  readonly counts:Readonly<{added:number;removed:number;changed:number;unchanged:number}>;
+  readonly columns:Readonly<Record<string,number>>;
+  readonly onlyChanges:boolean;
+}
 interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>{
+  calculatedColumnsEditable?:boolean;
+  compare?:DatasetCompare;
+  viewIntents?:boolean;
   protocol:"canopyx/2";
   type:"grid";
   id:string;
@@ -1768,10 +1802,12 @@ export interface CompactGridView<Row extends GridRow=GridRow>extends GridDefinit
   rows?:never;
 }
 export interface HostGridView<Row extends GridRow=GridRow>extends GridDefinition<GridQuery,Row>{
+  calculatedColumnsEditable?:false;
   source:{kind:"host";navigation?:"offset"};
   rows?:never;
 }
 export interface CursorGridView<Row extends GridRow=GridRow>extends GridDefinition<GridCursorQuery,Row>{
+  calculatedColumnsEditable?:false;
   source:{kind:"host";navigation:"cursor"};
   presentation:"paged";
   rows?:never;
@@ -1793,8 +1829,10 @@ export interface GridFacetOptions{
   readonly limit?:number;
   readonly includeCurrentFilter?:boolean;
   readonly signal?:AbortSignal;
+  readonly bucket?:GridBucket;
 }
 export interface GridFacetQuery<Q extends AcceptedGridQuery=AcceptedGridQuery>{
+  readonly bucket?:GridBucket;
   readonly protocol:"canopyx/2";
   readonly type:"gridFacetQuery";
   readonly query:Q&{readonly revision:string};
@@ -1804,6 +1842,7 @@ export interface GridFacetQuery<Q extends AcceptedGridQuery=AcceptedGridQuery>{
   readonly includeCurrentFilter:boolean;
 }
 export interface GridFacetPage{
+  readonly bucket?:GridBucket;
   readonly protocol:"canopyx/2";
   readonly type:"gridFacetPage";
   readonly view:string;
@@ -1823,6 +1862,7 @@ export interface GridSource<Row extends GridRow=GridRow>extends GridFacetSource<
   readonly navigation?:"offset";
   query(query:GridQuery,options:{signal:AbortSignal}):GridPage<Row>|PromiseLike<GridPage<Row>>;
   summary?(query:GridQuery&{readonly revision:string},options:{signal:AbortSignal}):GridSummary|PromiseLike<GridSummary>;
+  pivot?(request:GridPivotQuery,options:{signal:AbortSignal}):GridPivotAcceptedResult|PromiseLike<GridPivotAcceptedResult>;
   commit?(batch:GridCommit,options:{signal:AbortSignal}):GridCommitResult|PromiseLike<GridCommitResult>;
   record?:RecordLoader;
   position?(query:GridQuery,id:string,options:{signal:AbortSignal}):number|PromiseLike<number>;
@@ -1839,13 +1879,30 @@ export interface GridFooter{
   readonly aggregates:readonly GridAggregate[];
 }
 export interface GridAggregate{
+  readonly showAs?:GridShowAs;
   readonly id:string;
   readonly column:string;
   readonly label:string;
   readonly operation:GridAggregateOperation;
   readonly format?:GridNumberFormat;
 }
+export type GridBucket=|{
+  readonly kind:"day"|"week"|"month"|"quarter"|"year"|"hour"|"weekday";
+  readonly timeZone?:string;
+  readonly firstWeekday?:0|1|2|3|4|5|6
+}
+|{
+  readonly kind:"width";
+  readonly width:number;
+  readonly origin?:number
+}
+|{
+  readonly kind:"edges";
+  readonly edges:readonly number[]
+}
+;
 export interface GridGroupLevel{
+  readonly bucket?:GridBucket;
   readonly column:string;
   readonly direction:"asc"|"desc";
   readonly aggregate?:string;
@@ -1896,6 +1953,16 @@ export interface GridSummary{
   readonly matched:number;
   readonly groups:readonly GridGroup[];
   readonly aggregates:Readonly<Record<string,number|null>>;
+}
+export type GridShowAs="value"|"percentGrandTotal"|"percentParent"|"percentColumn"|"percentRow"|"runningTotal"|"rank"|"difference"|"percentChange";
+export interface GridAggregateDisplayValue{
+  readonly value:number|null;
+  readonly mode:GridShowAs;
+  readonly numberFormat:string;
+}
+export interface GridSummaryDisplay{
+  readonly totals:Readonly<Record<string,GridAggregateDisplayValue>>;
+  readonly groups:Readonly<Record<string,Readonly<Record<string,GridAggregateDisplayValue>>>>;
 }
 export interface GridCursorPage<Row extends GridRow=GridRow>extends Omit<GridPage<Row>,"type"|"total"|"matched">{
   type:"gridCursorPage";
@@ -1959,6 +2026,7 @@ export interface GridExportRequest<Q extends AcceptedGridQuery=GridQuery>{
   readonly fileName?:string;
   readonly grouping?:{readonly levels:readonly(GridGroupLevel&{readonly title:string})[];readonly aggregates:readonly GridAggregate[];readonly totals:Readonly<Record<string,number|null>>;readonly groups:readonly(GridGroup&{readonly text:string})[]};
   readonly details?:true;
+  readonly pivot?:GridPivotExportDescriptor;
 }
 export interface GridExportProgress{
   readonly phase:"reading"|"generating"|"ready";
@@ -2011,6 +2079,7 @@ export interface GridState<Q extends AcceptedGridQuery=GridQuery>{
   selection:string[];
   scrollTop:number;
   collapsedGroups?:string[];
+  aggregateShowAs?:Record<string,GridShowAs>;
   paging?:{pageLength:number;offset:number;allRows?:boolean};
   formatRules?:GridFormatRule[];
   layout?:LayoutState;
@@ -2109,12 +2178,17 @@ export type CursorGridOptions<Row extends GridRow=GridRow>=GridHostOptions<GridC
   source:GridCursorSource<Row>
 }
 ;
-export interface DataGrid<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>extends GridEditingApi,LinkedView,ViewModeMethods,GridColumnGroupApi,GridCellRangeApi,GridLiveApi<Row,Q>,GridFacetPanelApi,GridCalendarApi{
+export interface DataGrid<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>extends GridPivotApi,GridEditingApi,LinkedView,ViewModeMethods,GridColumnGroupApi,GridCellRangeApi,GridLiveApi<Row,Q>,GridFacetPanelApi,GridCalendarApi,GridViewIntentApi<Q>{
   readonly element:HTMLElement;
   readonly view:GridView<Row>;
   readonly ready:Promise<Q>;
   getQuery():Q|null;
+  getOnlyChanges():boolean;
+  setOnlyChanges(enabled:boolean):Promise<Q>;
   setQuery(query:GridQueryInput<Q>):Promise<Q>;
+  getCalculatedColumns():readonly GridCalculatedColumnDefinition[];
+  setCalculatedColumns(definitions:readonly GridCalculatedColumnDefinition[]):Promise<readonly GridCalculatedColumnDefinition[]>;
+  openCalculatedColumn(anchor?:HTMLElement):Promise<void>;
   sort(sorts:readonly GridSort[]):Promise<Q>;
   getPaging():GridPaging<Q>;
   goToPage(index:number):Promise<Q>;
@@ -2149,6 +2223,8 @@ export interface DataGrid<Q extends AcceptedGridQuery=GridQuery,Row extends Grid
   flushViewSettings?():Promise<void>;
   getSelectionDescriptor?():GridSelection<Q>;
   getSummary?():GridSummary|null;
+  setAggregateShowAs?(aggregate:string,mode:GridShowAs):Promise<void>;
+  getDisplaySummary?():Promise<GridSummaryDisplay|null>;
   setGroupCollapsed?(key:string,collapsed:boolean):void;
   getCollapsedGroups?():string[];
   setGroupBy?(groupBy:readonly GridGroupLevel[]):Promise<Q>;
@@ -3743,6 +3819,37 @@ export interface UiApi{
   popover:typeof popover;
   tooltip:typeof tooltip;
   menu:typeof menu;
+}
+
+// ---- JavaScript/view-intents.d.ts ----
+import type{
+  AcceptedGridQuery,GridFilter,GridFilterGroup,GridGroupLevel,GridSort,GridTupleFilter
+}
+from "./grid.js";
+import type{
+  GridPivotDefinition
+}
+from "./pivot.js";
+export interface GridViewIntent{
+  readonly protocol:"canopyx/2";
+  readonly type:"viewIntent";
+  readonly version:1;
+  readonly view:string;
+  readonly query?:{readonly search?:string;readonly searchMode?:"substring"|"words";readonly sort?:readonly GridSort[];readonly filters?:readonly GridFilter[];readonly filterGroup?:GridFilterGroup|null;readonly tupleFilters?:readonly GridTupleFilter[];readonly groupBy?:readonly GridGroupLevel[];};
+  readonly columns?:readonly string[];
+  readonly pivot?:GridPivotDefinition|false;
+}
+export interface GridViewIntentPreview<Q extends AcceptedGridQuery=AcceptedGridQuery>{
+  readonly element:HTMLElement;
+  readonly intent:GridViewIntent;
+  apply():Promise<Q>;
+  cancel():void;
+}
+export interface GridViewIntentApi<Q extends AcceptedGridQuery=AcceptedGridQuery>{
+  getViewIntent():Promise<GridViewIntent>;
+  validateViewIntent(input:unknown):Promise<GridViewIntent>;
+  previewViewIntent(input:GridViewIntent,container?:HTMLElement):Promise<GridViewIntentPreview<Q>>;
+  applyViewIntent(input:GridViewIntent):Promise<GridViewIntentPreview<Q>>;
 }
 
 // ---- JavaScript/locales/de.d.ts ----

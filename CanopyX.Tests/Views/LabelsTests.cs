@@ -125,6 +125,11 @@ public sealed class LabelsTests {
         foreach (var (name, text) in PartLabels("plan", "PLAN_LABELS")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("path", "PATH_TEXT")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("stack", "STACK_TEXT")) runtime.Add(name, text);
+        foreach (var part in new[] { ("compare", "COMPARE_LABELS"), ("view-intents", "VIEW_INTENT_LABELS") }) {
+            var dataView = PartLabels(part.Item1, part.Item2);
+            Assert.NotEmpty(dataView);
+            foreach (var (name, text) in dataView) runtime.Add(name, text);
+        }
         foreach (var (name, text) in FormattingPartLabels()) runtime.Add(name, text);
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();
@@ -215,7 +220,7 @@ public sealed class LabelsTests {
 
     // The labels a part brings with its English texts: its constant (EDIT_LABELS, CALENDAR_LABELS) of name: "text" pairs.
     private static Dictionary<string, string?> PartLabels(string part, string constant) {
-        var block = System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part).Script, "const " + constant + @"=\{(?<body>.*?)\};", System.Text.RegularExpressions.RegexOptions.Singleline);
+        var block = System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part).Script, "const " + constant + "=\\{(?<body>(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\"}])*)\\}");
         return System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value, "(\\w+):(\"(?:[^\"\\\\]|\\\\.)*\")")
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
     }

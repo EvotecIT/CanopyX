@@ -4,11 +4,25 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "runtimes": ["tree", "grid"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
       "views": [],
       "key": "UI_IMPL",
-      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.ui-overlays.source"],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-overlays.source"
+      ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.ui-overlays.source/geometry.css",
         "CanopyX.Html/Assets/canopyx.ui-overlays.source/overlays.css"
@@ -17,69 +31,210 @@
     {
       "name": "ui-menu",
       "label": "UI menu",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree", "grid"],
-      "features": ["contextActions", "columnMenus"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "contextActions",
+        "columnMenus"
+      ],
       "key": "UI_IMPL",
-      "requires": ["ui-overlays"],
-      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.ui-menu.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.ui-menu.source/menu.css"]
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-menu.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-menu.source/menu.css"
+      ]
     },
     {
       "name": "ui-picker",
       "label": "UI picker",
-      "runtimes": ["tree", "grid"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
       "views": [],
       "key": "UI_IMPL",
-      "requires": ["ui-menu"],
-      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.ui-picker.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.ui-picker.source/picker.css"]
+      "requires": [
+        "ui-menu"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-picker.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-picker.source/picker.css"
+      ]
     },
     {
       "name": "ui-navigation",
       "label": "UI navigation",
-      "runtimes": ["tree", "grid"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
       "views": [],
       "key": "UI_IMPL",
-      "requires": ["ui-picker"],
-      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.ui-navigation.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.ui-navigation.source/navigation.css"]
+      "requires": [
+        "ui-picker"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-navigation.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-navigation.source/navigation.css"
+      ]
     },
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "runtimes": ["tree", "grid"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
       "views": [],
       "key": "UI_IMPL",
-      "requires": ["ui-navigation"],
-      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.ui-tabs.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.ui-tabs.source/tabs.css"]
+      "requires": [
+        "ui-navigation"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-tabs.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-tabs.source/tabs.css"
+      ]
     },
     {
       "name": "ui-stepper",
       "label": "UI stepper",
-      "runtimes": ["tree", "grid"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
       "views": [],
       "key": "UI_IMPL",
-      "requires": ["ui-navigation"],
-      "context": ["UI_IMPL", "UI_TOOLS", "h", "setText", "fill", "watchTheme", "overlayTheme", "hostHtml"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.ui-stepper.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.ui-stepper.source/stepper.css"]
+      "requires": [
+        "ui-navigation"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-stepper.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-stepper.source/stepper.css"
+      ]
     },
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree"
+      ],
       "key": "TreeGrid.prototype",
-      "requires": ["ui-overlays"],
-      "context": ["UI_IMPL", "UI_TOOLS", "TreeGrid", "h", "setText", "fill", "numberFormat", "watchFlyout", "columnWidth", "prepareWidth", "cellText", "cellValue", "isCellObject", "foldText", "formatting",
-        "sortKey", "compareKeys", "EXPORT_FORMATS", "exportFormat", "exportTimeout", "exportFormatsOf", "INDENT", "MAX_PROTOCOL_INTEGER", "hostControl", "detailCell", "HostCellContext", "disposeHostSlot", "loadPart", "definePart", "pluginItems",
-        "applyTone", "toneOf", "badgeElement", "RECORD_IMPL", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone", "overlayTheme"],
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "TreeGrid",
+        "h",
+        "setText",
+        "fill",
+        "numberFormat",
+        "watchFlyout",
+        "columnWidth",
+        "prepareWidth",
+        "cellText",
+        "cellValue",
+        "isCellObject",
+        "foldText",
+        "formatting",
+        "sortKey",
+        "compareKeys",
+        "EXPORT_FORMATS",
+        "exportFormat",
+        "exportTimeout",
+        "exportFormatsOf",
+        "INDENT",
+        "MAX_PROTOCOL_INTEGER",
+        "hostControl",
+        "detailCell",
+        "HostCellContext",
+        "disposeHostSlot",
+        "loadPart",
+        "definePart",
+        "pluginItems",
+        "applyTone",
+        "toneOf",
+        "badgeElement",
+        "RECORD_IMPL",
+        "svgIcon",
+        "gridExportField",
+        "columnNumericTone",
+        "columnValueTone",
+        "overlayTheme"
+      ],
       "start": "const EXPORT_IMPL = { formatsOf: exportFormatsOf };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
@@ -103,31 +258,109 @@
         "CanopyX.Html/Assets/canopyx.filter-editor.source/overlay.css",
         "CanopyX.Html/Assets/canopyx.tree-tools.source/canopyx.css"
       ],
-      "styleScope": [".cx-chrome", ".cx-tree-tools"]
+      "styleScope": [
+        ".cx-chrome",
+        ".cx-tree-tools"
+      ]
     },
     {
       "name": "presenters",
       "label": "cell presenters",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["presenters"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "presenters"
+      ],
       "key": "GRID_PRESENTER_IMPL",
-      "context": ["GRID_PRESENTER_IMPL", "h", "setText", "fill", "cellValue", "cellText", "isCellObject", "columnNumericTone", "columnValueTone",
-        "gridPresenterTone", "gridPresenterLink", "numberFormat", "toneColors", "toneOf", "applyTone", "gridIcon", "badgeElement", "GRID_HISTORY_KINDS", "GRID_HISTORY_IMPL", "RECORD_IMPL"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.grid.source/36-grid-presenter-cells.js"],
+      "context": [
+        "GRID_PRESENTER_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "cellValue",
+        "cellText",
+        "changeCellText",
+        "isCellObject",
+        "columnNumericTone",
+        "columnValueTone",
+        "gridPresenterTone",
+        "gridPresenterLink",
+        "numberFormat",
+        "toneColors",
+        "toneOf",
+        "applyTone",
+        "gridIcon",
+        "badgeElement",
+        "GRID_HISTORY_KINDS",
+        "GRID_HISTORY_IMPL",
+        "RECORD_IMPL"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/36-grid-presenter-cells.js"
+      ],
       "end": "GRID_PRESENTER_IMPL.create = gridRenderPresenter;"
     },
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "runtimes": ["grid"],
-      "views": ["grid"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
       "key": "DataGrid.prototype",
-      "requires": ["ui-overlays", "presenters"],
-      "context": ["UI_IMPL", "UI_TOOLS", "DataGrid", "h", "setText", "gridButton", "gridVariant", "gridInputLabel", "gridOption", "gridScalar", "gridDateInputMoment", "gridQuery", "gridQueryStart",
-        "GRID_FILTER_LABELS", "gridResultShape", "gridQueryRows", "gridOrder", "gridKeyCompare", "gridFacetKey", "columnNumericTone", "columnValueTone", "gridColumnProjection", "gridCellRenderer", "cellValue", "cellText", "foldText",
-        "reachable", "gridMatchesGroup", "gridDecorateButton", "gridIcon", "numberFormat", "numberText", "fill", "announceMenu", "reportingRangeRows",
-        "applyTone", "toneOf", "badgeElement", "isCellObject", "RECORD_IMPL", "overlayTheme"],
+      "requires": [
+        "ui-overlays",
+        "presenters"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "DataGrid",
+        "h",
+        "setText",
+        "gridButton",
+        "gridVariant",
+        "gridInputLabel",
+        "gridOption",
+        "gridScalar",
+        "gridDateInputMoment",
+        "gridQuery",
+        "gridQueryStart",
+        "GRID_FILTER_LABELS",
+        "gridResultShape",
+        "gridQueryRows",
+        "gridOrder",
+        "gridKeyCompare",
+        "gridFacetKey",
+        "columnNumericTone",
+        "columnValueTone",
+        "gridColumnProjection",
+        "gridCellRenderer",
+        "cellValue",
+        "cellText",
+        "foldText",
+        "reachable",
+        "gridMatchesGroup",
+        "gridDecorateButton",
+        "gridIcon",
+        "numberFormat",
+        "numberText",
+        "fill",
+        "announceMenu",
+        "reportingRangeRows",
+        "applyTone",
+        "toneOf",
+        "badgeElement",
+        "isCellObject",
+        "RECORD_IMPL",
+        "overlayTheme"
+      ],
       "start": "const buildFilters = DataGrid.prototype.buildGridFilters;",
       "end": "Object.assign(DataGrid.prototype, COLUMNS_MENU, {buildGridFilters:buildFilters});\ncontext.GRID_REPORTING?.installFilters?.({gridDateInput});",
       "scripts": [
@@ -153,12 +386,42 @@
     {
       "name": "export",
       "label": "export part",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree", "grid"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
       "key": "EXPORT_IMPL",
-      "requires": ["ui-overlays"],
-      "context": ["DataGrid", "EXPORT_IMPL", "h", "setText", "gridButton", "gridOption", "fill", "numberFormat", "gridOperationActive", "formatting", "gridQuery",
-        "validateGridCursorPage", "validateGridPage", "GRID_REPORTING", "gridFreeze", "cellValue", "cellText", "isCellObject", "exportTimeout", "exportFormat", "EXPORT_FORMATS", "gridExportField"],
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "DataGrid",
+        "EXPORT_IMPL",
+        "h",
+        "setText",
+        "gridButton",
+        "gridOption",
+        "fill",
+        "numberFormat",
+        "gridOperationActive",
+        "formatting",
+        "gridQuery",
+        "validateGridCursorPage",
+        "validateGridPage",
+        "GRID_REPORTING",
+        "gridFreeze",
+        "cellValue",
+        "cellText",
+        "isCellObject",
+        "exportTimeout",
+        "exportFormat",
+        "EXPORT_FORMATS",
+        "gridExportField"
+      ],
       "end": "DataGrid.prototype.renderGridExport = exportMenu;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/85-export-print-context.js",
@@ -172,21 +435,52 @@
       "name": "office-export",
       "notice": "ThirdParty/OfficeIMO/LICENSE",
       "label": "Office export writers",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree", "grid"],
-      "features": ["officeExport"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "officeExport"
+      ],
       "key": "EXPORT_IMPL",
-      "context": ["EXPORT_IMPL"],
-      "scripts": ["ThirdParty/OfficeIMO/officeimo-canopyx.js", "CanopyX.Html/Assets/canopyx.office-export.source"]
+      "context": [
+        "EXPORT_IMPL"
+      ],
+      "scripts": [
+        "ThirdParty/OfficeIMO/officeimo-canopyx.js",
+        "CanopyX.Html/Assets/canopyx.office-export.source"
+      ]
     },
     {
       "name": "history",
       "label": "history presenters",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "presenters": ["statusStrip", "sparklineBars", "sparklineLine"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "presenters": [
+        "statusStrip",
+        "sparklineBars",
+        "sparklineLine"
+      ],
       "key": "GRID_HISTORY_IMPL",
-      "context": ["GRID_HISTORY_IMPL", "h", "setText", "fill", "gridSeries", "gridPresenterTone", "toneColors", "toneOf", "GRID_TONE_RANK"],
+      "context": [
+        "GRID_HISTORY_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "gridSeries",
+        "gridPresenterTone",
+        "toneColors",
+        "toneOf",
+        "GRID_TONE_RANK"
+      ],
       "end": "GRID_HISTORY_IMPL.render = gridRenderHistory;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/37-grid-history.js"
@@ -195,11 +489,27 @@
     {
       "name": "pager",
       "label": "pager controls",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["pager"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "pager"
+      ],
       "key": "GRID_PAGER_IMPL",
-      "context": ["DataGrid", "GRID_PAGER_IMPL", "h", "setText", "fill", "gridButton", "gridOption", "numberFormat", "gridCountLabel"],
+      "context": [
+        "DataGrid",
+        "GRID_PAGER_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridOption",
+        "numberFormat",
+        "gridCountLabel"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.pager.source/10-pager.js"
       ],
@@ -210,11 +520,26 @@
     {
       "name": "enhance",
       "label": "table enhancement",
-      "runtimes": ["grid"],
+      "runtimes": [
+        "grid"
+      ],
       "views": [],
       "key": "GRID_ENHANCE_IMPL",
-      "context": ["DataGrid", "GRID_ENHANCE_IMPL", "PROTOCOL", "createDataGrid", "h", "setText", "gridQueryRows", "gridCompare", "gridResultShape", "isIdentifier", "GRID_REPORTING",
-        "loadPart", "GRID_PAGER"],
+      "context": [
+        "DataGrid",
+        "GRID_ENHANCE_IMPL",
+        "PROTOCOL",
+        "createDataGrid",
+        "h",
+        "setText",
+        "gridQueryRows",
+        "gridCompare",
+        "gridResultShape",
+        "isIdentifier",
+        "GRID_REPORTING",
+        "loadPart",
+        "GRID_PAGER"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.enhance.source"
       ]
@@ -222,11 +547,24 @@
     {
       "name": "data",
       "label": "row data",
-      "runtimes": ["grid"],
+      "runtimes": [
+        "grid"
+      ],
       "views": [],
-      "features": ["rowData"],
+      "features": [
+        "rowData"
+      ],
       "key": "GRID_DATA_IMPL",
-      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "repairGridCell", "inlineGridSource", "loadSidecar", "gridIdOrder"],
+      "context": [
+        "GRID_DATA_IMPL",
+        "PROTOCOL",
+        "validateGridRows",
+        "repairGridCell",
+        "inlineGridSource",
+        "loadSidecar",
+        "gridIdOrder",
+        "gridInlineRevision"
+      ],
       "end": "GRID_DATA_IMPL.source = rowDataSource;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.data.source/10-row-data.js"
@@ -235,11 +573,28 @@
     {
       "name": "forms",
       "label": "forms",
-      "runtimes": ["grid", "flow"],
-      "views": ["grid", "flow"],
-      "features": ["editable"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "grid",
+        "flow"
+      ],
+      "features": [
+        "editable"
+      ],
       "key": "FORMS_IMPL",
-      "context": ["FORMS_IMPL", "h", "setText", "fill", "gridFreeze", "gridMomentFromParts", "boundedPattern", "foldText"],
+      "context": [
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "gridFreeze",
+        "gridMomentFromParts",
+        "boundedPattern",
+        "foldText"
+      ],
       "end": "Object.assign(FORMS_IMPL, { editPad, editInput, editParseNumber, editMoment, editFromParts, editDateEditor, editNumberPlaces, EDIT_EDITORS, editLookupEditor, editOptions, formRuleSpec, formCheck, FORM_LABELS });",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.forms.source"
@@ -251,11 +606,29 @@
     {
       "name": "flow",
       "label": "flow view",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["forms"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "foldText", "boundedPattern", "numberFormat", "gridFreeze"],
+      "requires": [
+        "forms"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "foldText",
+        "boundedPattern",
+        "numberFormat",
+        "gridFreeze"
+      ],
       "start": "const { editParseNumber, EDIT_EDITORS, formRuleSpec, formCheck, FORM_LABELS } = FORMS_IMPL;",
       "end": "Object.assign(FLOW_IMPL, { create: flowCreate, core: { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } });",
       "scripts": [
@@ -268,12 +641,29 @@
     {
       "name": "flow-host",
       "label": "flow host hooks",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowHost"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowHost"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-host.source"
@@ -285,12 +675,30 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowChecks"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowChecks"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-checks.source"
@@ -302,12 +710,30 @@
     {
       "name": "flow-options",
       "label": "flow host options",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowHostOptions"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowHostOptions"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-options.source"
@@ -316,12 +742,31 @@
     {
       "name": "flow-pick",
       "label": "flow pick steps",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowPick"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowPick"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat", "FLOW_VIEWS"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat",
+        "FLOW_VIEWS"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-pick.source"
@@ -333,12 +778,29 @@
     {
       "name": "flow-records",
       "label": "flow records",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowRecords"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowRecords"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-records.source"
@@ -350,12 +812,30 @@
     {
       "name": "flow-drafts",
       "label": "flow drafts and presets",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowDrafts"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowDrafts"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-drafts.source"
@@ -367,12 +847,30 @@
     {
       "name": "flow-preview",
       "label": "flow preview",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowPreview"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowPreview"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-preview.source"
@@ -384,12 +882,29 @@
     {
       "name": "flow-command",
       "label": "flow command",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowCommand"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowCommand"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-command.source"
@@ -401,12 +916,30 @@
     {
       "name": "flow-tasks",
       "label": "flow task lists",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowTasks"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowTasks"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-tasks.source"
@@ -418,12 +951,30 @@
     {
       "name": "flow-dialog",
       "label": "flow dialogs",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowDialog"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowDialog"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-dialog.source"
@@ -435,12 +986,30 @@
     {
       "name": "flow-links",
       "label": "flow deep links",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowLinks"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowLinks"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-links.source"
@@ -449,12 +1018,30 @@
     {
       "name": "flow-endpoint",
       "label": "flow endpoint",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowEndpoint"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowEndpoint"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow", "flow-host"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow",
+        "flow-host"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-endpoint.source"
@@ -491,12 +1078,29 @@
     {
       "name": "flow-consent",
       "label": "flow consent",
-      "runtimes": ["grid", "flow"],
-      "views": ["flow"],
-      "features": ["flowConsent"],
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowConsent"
+      ],
       "key": "FLOW_IMPL",
-      "requires": ["flow"],
-      "context": ["FLOW_IMPL", "FORMS_IMPL", "h", "setText", "fill", "plural", "numberFormat"],
+      "requires": [
+        "flow"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.flow-consent.source"
@@ -541,10 +1145,26 @@
     {
       "name": "changes",
       "label": "change views",
-      "runtimes": ["grid"],
-      "views": ["changes"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "changes"
+      ],
       "key": "CHANGES_IMPL",
-      "context": ["CHANGES_IMPL", "h", "setText", "fill", "plural", "numberFormat", "gridFreeze", "toneOf", "applyTone", "svgIcon", "PROTOCOL"],
+      "context": [
+        "CHANGES_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat",
+        "gridFreeze",
+        "toneOf",
+        "applyTone",
+        "svgIcon",
+        "PROTOCOL"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.shared.source/10-time-format.js",
         "CanopyX.Html/Assets/canopyx.changes.source"
@@ -556,13 +1176,46 @@
     {
       "name": "editing",
       "label": "editing",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["editable"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "editable"
+      ],
       "key": "DataGrid.prototype",
-      "requires": ["filter-editor", "forms"],
-      "context": ["DataGrid", "FORMS_IMPL", "h", "setText", "fill", "gridButton", "gridDecorateButton", "GRID_ICONS", "cellValue", "cellText", "isCellObject",
-        "gridFreeze", "gridMomentFromParts", "numberFormat", "gridQuery", "foldText", "requireIdentifier", "checkDocument", "validateGridRows", "inlineGridSource", "PROTOCOL", "boundedPattern", "validateGridFacetPage", "RECORD_IMPL"],
+      "requires": [
+        "filter-editor",
+        "forms"
+      ],
+      "context": [
+        "DataGrid",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridDecorateButton",
+        "GRID_ICONS",
+        "cellValue",
+        "cellText",
+        "isCellObject",
+        "gridFreeze",
+        "gridMomentFromParts",
+        "numberFormat",
+        "gridQuery",
+        "foldText",
+        "requireIdentifier",
+        "checkDocument",
+        "validateGridRows",
+        "inlineGridSource",
+        "PROTOCOL",
+        "boundedPattern",
+        "validateGridFacetPage",
+        "RECORD_IMPL"
+      ],
       "start": "const { EDIT_EDITORS, editOptions, formRuleSpec, formCheck, FORM_LABELS } = FORMS_IMPL;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.editing.source"
@@ -574,12 +1227,36 @@
     {
       "name": "column-groups",
       "label": "column groups",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["columnGroups"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "columnGroups"
+      ],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
-        "numberFormat", "gridFreeze", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable"],
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "columnWidth",
+        "foldText",
+        "gridButton",
+        "gridIcon",
+        "gridDecorateButton",
+        "cellText",
+        "cellValue",
+        "isCellObject",
+        "numberFormat",
+        "gridFreeze",
+        "requireIdentifier",
+        "loadGridFilterEditor",
+        "CELL_CONTROLS",
+        "reachable"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.column-groups.source"
       ],
@@ -590,13 +1267,43 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["rangeSelection"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "rangeSelection"
+      ],
       "key": "DataGrid.prototype",
-      "requires": ["ui-menu"],
-      "context": ["toneVariable", "bindContextMenu", "DataGrid", "h", "setText", "fill", "columnWidth", "foldText", "gridButton", "gridIcon", "gridDecorateButton", "cellText", "cellValue", "isCellObject",
-        "numberFormat", "gridFreeze", "gridMomentFromParts", "requireIdentifier", "loadGridFilterEditor", "CELL_CONTROLS", "reachable", "gridExportField"],
+      "requires": [
+        "ui-menu"
+      ],
+      "context": [
+        "toneVariable",
+        "bindContextMenu",
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "columnWidth",
+        "foldText",
+        "gridButton",
+        "gridIcon",
+        "gridDecorateButton",
+        "cellText",
+        "cellValue",
+        "isCellObject",
+        "numberFormat",
+        "gridFreeze",
+        "gridMomentFromParts",
+        "requireIdentifier",
+        "loadGridFilterEditor",
+        "CELL_CONTROLS",
+        "reachable",
+        "gridExportField"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.cell-range.source"
       ],
@@ -607,11 +1314,19 @@
     {
       "name": "links",
       "label": "deep links",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree"
+      ],
       "deepLink": true,
       "key": "TreeGrid.prototype",
-      "context": ["TreeGrid", "navigationScope"],
+      "context": [
+        "TreeGrid",
+        "navigationScope"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.links.source/10-links.js"
       ]
@@ -619,12 +1334,37 @@
     {
       "name": "search",
       "label": "sidecar search",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree"],
-      "sources": ["sidecar"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree"
+      ],
+      "sources": [
+        "sidecar"
+      ],
       "key": "SEARCH_IMPL",
-      "context": ["SEARCH_IMPL", "checkDocument", "badIndex", "isCount", "isIdentifier", "recentCache", "packBytes", "shardKey", "foldText", "trimSeparators",
-        "rankHits", "validateSearchHit", "PACK_CACHE", "PACK_CACHE_BYTES", "SHARD_CACHE", "ENTRY_CACHE", "ENTRY_BATCH", "SEARCH_CANDIDATES"],
+      "context": [
+        "SEARCH_IMPL",
+        "checkDocument",
+        "badIndex",
+        "isCount",
+        "isIdentifier",
+        "recentCache",
+        "packBytes",
+        "shardKey",
+        "foldText",
+        "trimSeparators",
+        "rankHits",
+        "validateSearchHit",
+        "PACK_CACHE",
+        "PACK_CACHE_BYTES",
+        "SHARD_CACHE",
+        "ENTRY_CACHE",
+        "ENTRY_BATCH",
+        "SEARCH_CANDIDATES"
+      ],
       "end": "SEARCH_IMPL.create = sidecarSearch;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.search.source/10-search-index.js"
@@ -633,35 +1373,118 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["formatting"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "formatting"
+      ],
       "key": "DataGrid.prototype",
-      "context": ["toneVariable", "DataGrid", "h", "setText", "setClass", "fill", "gridFreeze", "gridDateInputMoment", "cellValue", "cellText", "foldText", "toneOf", "numberFormat",
-        "gridButton", "gridVariant", "gridOption", "gridInputLabel", "gridIcon", "gridDecorateButton", "GRID_REPORTING", "loadPart", "definePart", "announceMenu", "boundedPattern", "wildcardMatch", "svgIcon", "overlayTheme"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.formatting.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.formatting.source/formatting.css"]
+      "context": [
+        "toneVariable",
+        "DataGrid",
+        "h",
+        "setText",
+        "setClass",
+        "fill",
+        "gridFreeze",
+        "gridDateInputMoment",
+        "cellValue",
+        "cellText",
+        "foldText",
+        "toneOf",
+        "numberFormat",
+        "gridButton",
+        "gridVariant",
+        "gridOption",
+        "gridInputLabel",
+        "gridIcon",
+        "gridDecorateButton",
+        "GRID_REPORTING",
+        "loadPart",
+        "definePart",
+        "announceMenu",
+        "boundedPattern",
+        "wildcardMatch",
+        "svgIcon",
+        "overlayTheme"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.formatting.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.formatting.source/formatting.css"
+      ]
     },
     {
       "name": "format-editor",
       "label": "formatting rule editor",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["formatEditor"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "formatEditor"
+      ],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridVariant", "gridOption", "gridDateInputMoment", "gridInputLabel", "gridIcon", "gridDecorateButton", "announceMenu",
-        "formatCompile", "formatToneVar", "formatError", "FORMAT_ICONS", "FORMAT_TONE_ICONS", "FORMAT_OPERATORS", "svgIcon", "overlayTheme"],
-      "requires": ["filter-editor", "formatting"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.format-editor.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.format-editor.source/format-editor.css"]
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridVariant",
+        "gridOption",
+        "gridDateInputMoment",
+        "gridInputLabel",
+        "gridIcon",
+        "gridDecorateButton",
+        "announceMenu",
+        "formatCompile",
+        "formatToneVar",
+        "formatError",
+        "FORMAT_ICONS",
+        "FORMAT_TONE_ICONS",
+        "FORMAT_OPERATORS",
+        "svgIcon",
+        "overlayTheme"
+      ],
+      "requires": [
+        "filter-editor",
+        "formatting"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.format-editor.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.format-editor.source/format-editor.css"
+      ]
     },
     {
       "name": "link",
       "label": "linked views",
-      "runtimes": ["tree", "grid"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
       "views": [],
       "key": "LINK_IMPL",
-      "context": ["LINK_IMPL", "h", "setText", "filterChipContent", "fill", "numberFormat", "cellValue", "setAttr", "cellMatches"],
+      "context": [
+        "LINK_IMPL",
+        "h",
+        "setText",
+        "filterChipContent",
+        "fill",
+        "numberFormat",
+        "cellValue",
+        "setAttr",
+        "cellMatches"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.link.source"
       ],
@@ -672,12 +1495,38 @@
     {
       "name": "detail-rows",
       "label": "detail rows",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["grouping", "detail"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "grouping",
+        "detail"
+      ],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "h", "setText", "fill", "gridButton", "gridFreeze", "cellText", "formatting", "labelsFor", "requireIdentifier", "GridRowOffsets",
-        "TreeGrid", "createDataGrid", "createTreeGrid", "disposeRowHostCells", "OWN_ARROWS", "hostHtml"],
+      "context": [
+        "DataGrid",
+        "GRID_ROWS",
+        "GRID_REPORTING",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridFreeze",
+        "cellText",
+        "formatting",
+        "labelsFor",
+        "requireIdentifier",
+        "GridRowOffsets",
+        "TreeGrid",
+        "createDataGrid",
+        "createTreeGrid",
+        "disposeRowHostCells",
+        "OWN_ARROWS",
+        "hostHtml"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.detail-rows.source"
       ],
@@ -686,17 +1535,210 @@
       ]
     },
     {
+      "name": "calculations",
+      "label": "calculated columns",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calculations"
+      ],
+      "key": "GRID_CALCULATIONS",
+      "context": [
+        "DataGrid",
+        "GRID_CALCULATIONS",
+        "requireIdentifier",
+        "cellValue",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridQuery",
+        "gridQueryStart",
+        "inlineGridSource",
+        "rowDataSource",
+        "loadGridFilterEditor",
+        "gridFreeze",
+        "gridFitPrepare"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.calculations.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.calculations.source/calculations.css"
+      ]
+    },
+    {
+      "name": "pivot",
+      "label": "pivot analysis",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "pivot"
+      ],
+      "requires": [
+        "grouping",
+        "values",
+        "buckets"
+      ],
+      "key": "GRID_PIVOT",
+      "context": [
+        "DataGrid",
+        "GRID_PIVOT",
+        "GRID_ROWS",
+        "GRID_SHOW_AS",
+        "GRID_SHOW_AS_MODES",
+        "GRID_BUCKETS",
+        "GRID_CALCULATIONS",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridFreeze",
+        "gridQuery",
+        "gridQueryStart",
+        "gridQueryRows",
+        "gridScalar",
+        "cellValue",
+        "cellText",
+        "gridKeyCompare",
+        "gridOrder",
+        "numberFormat",
+        "formatting",
+        "gridExportSignal",
+        "validateGridPage",
+        "checkDocument",
+        "validStructuralCount",
+        "gridOperationActive",
+        "pivotDefinition",
+        "pivotIntent",
+        "pivotRequestOf",
+        "showAsMode",
+        "showAsCaption"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.pivot.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.pivot.source/pivot.css"
+      ]
+    },
+    {
+      "name": "values",
+      "label": "aggregate display modes",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "aggregateValues"
+      ],
+      "key": "GRID_SHOW_AS",
+      "context": [
+        "DataGrid",
+        "GRID_SHOW_AS",
+        "GRID_SHOW_AS_MODES",
+        "h",
+        "setText",
+        "gridFreeze",
+        "reportingAggregateParts"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.values.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.values.source/values.css"
+      ]
+    },
+    {
+      "name": "buckets",
+      "label": "date and range buckets",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "buckets"
+      ],
+      "key": "GRID_BUCKETS",
+      "context": [
+        "GRID_BUCKETS"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.buckets.source"
+      ]
+    },
+    {
       "name": "grouping",
       "label": "row grouping",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["grouping"],
-      "requires": ["detail-rows"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "grouping"
+      ],
+      "requires": [
+        "detail-rows"
+      ],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "GRID_ROWS", "GRID_REPORTING", "GRID_OPTIONS", "GRID_OPTION_GRIDS", "h", "setText", "fill", "numberFormat", "formatValue", "cellValue", "cellText", "isCellObject",
-        "gridScalar", "gridQuery", "gridFreeze", "gridOrder", "gridIdOrder", "gridQueryRows", "gridButton", "gridDecorateButton", "gridCellRenderer", "gridPresenterTone",
-        "GRID_TONE_RANK", "validateGridRows", "validateGridPage", "checkDocument", "requireIdentifier", "validStructuralCount", "PROTOCOL", "gridOperationActive",
-        "reportingGroupKey", "reportingGroupCompare", "reportingSummaryEnabled", "reportingDynamicGroups", "GROUP_OPERATIONS", "reportingAggregateParts", "disposeRowHostCells", "quietControls", "TreeGrid"],
+      "context": [
+        "DataGrid",
+        "GRID_ROWS",
+        "GRID_REPORTING",
+        "GRID_OPTIONS",
+        "GRID_OPTION_GRIDS",
+        "h",
+        "setText",
+        "fill",
+        "numberFormat",
+        "formatValue",
+        "cellValue",
+        "cellText",
+        "isCellObject",
+        "gridScalar",
+        "gridQuery",
+        "gridFreeze",
+        "gridOrder",
+        "gridIdOrder",
+        "gridQueryRows",
+        "gridButton",
+        "gridDecorateButton",
+        "gridCellRenderer",
+        "gridPresenterTone",
+        "GRID_TONE_RANK",
+        "validateGridRows",
+        "validateGridPage",
+        "checkDocument",
+        "requireIdentifier",
+        "validStructuralCount",
+        "PROTOCOL",
+        "gridOperationActive",
+        "reportingGroupKey",
+        "reportingGroupCompare",
+        "reportingSummaryEnabled",
+        "reportingDynamicGroups",
+        "GROUP_OPERATIONS",
+        "reportingAggregateParts",
+        "disposeRowHostCells",
+        "quietControls",
+        "TreeGrid",
+        "GRID_BUCKETS",
+        "gridBucketDefinition"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.aggregates.source",
         "CanopyX.Html/Assets/canopyx.grouping.source"
@@ -708,34 +1750,131 @@
     {
       "name": "highlight",
       "label": "search highlighting",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree", "grid"],
-      "features": ["searchHighlight"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "searchHighlight"
+      ],
       "key": "VIEW_MODES",
-      "context": ["toneVariable", "VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "layoutAnchor", "layoutRows", "layoutApplyTree", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.highlight.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.highlight.source/highlight.css"]
+      "context": [
+        "toneVariable",
+        "VIEW_MODES",
+        "TreeGrid",
+        "h",
+        "setText",
+        "fill",
+        "numberFormat",
+        "foldText",
+        "cellText",
+        "cellValue",
+        "isCellObject",
+        "setAttr",
+        "toneOf",
+        "watchFlyout",
+        "densityRowHeight",
+        "layoutAnchor",
+        "layoutRows",
+        "layoutApplyTree",
+        "MAX_PROTOCOL_INTEGER",
+        "LAYOUT_DENSITIES",
+        "plural",
+        "svgIcon"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.highlight.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.highlight.source/highlight.css"
+      ]
     },
     {
       "name": "layouts",
       "label": "layout modes",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree", "grid"],
-      "features": ["layout"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "layout"
+      ],
       "key": "VIEW_MODES",
-      "context": ["VIEW_MODES", "TreeGrid", "h", "setText", "fill", "numberFormat", "foldText", "cellText", "cellValue", "isCellObject", "setAttr", "toneOf", "watchFlyout", "densityRowHeight", "layoutAnchor", "layoutRows", "layoutApplyTree", "MAX_PROTOCOL_INTEGER", "LAYOUT_DENSITIES", "plural", "svgIcon"],
-      "scripts": ["CanopyX.Html/Assets/canopyx.layouts.source"],
-      "styles": ["CanopyX.Html/Assets/canopyx.layouts.source/layouts.css"]
+      "context": [
+        "VIEW_MODES",
+        "TreeGrid",
+        "h",
+        "setText",
+        "fill",
+        "numberFormat",
+        "foldText",
+        "cellText",
+        "cellValue",
+        "isCellObject",
+        "setAttr",
+        "toneOf",
+        "watchFlyout",
+        "densityRowHeight",
+        "layoutAnchor",
+        "layoutRows",
+        "layoutApplyTree",
+        "MAX_PROTOCOL_INTEGER",
+        "LAYOUT_DENSITIES",
+        "plural",
+        "svgIcon"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.layouts.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.layouts.source/layouts.css"
+      ]
     },
     {
       "name": "facets",
       "label": "facet panel",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["facets"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "facets"
+      ],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQueryStart", "gridQueryRows", "gridColumnProjection", "gridScalar",
-        "gridOrder", "gridKeyCompare", "gridFacetKey", "cellText", "foldText", "numberFormat", "gridCellRenderer", "gridFreeze", "overlayTheme", "watchOverlayTheme"],
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridIcon",
+        "gridQueryStart",
+        "gridQueryRows",
+        "gridColumnProjection",
+        "gridScalar",
+        "gridOrder",
+        "gridKeyCompare",
+        "gridFacetKey",
+        "cellText",
+        "foldText",
+        "numberFormat",
+        "gridCellRenderer",
+        "gridFreeze",
+        "overlayTheme",
+        "watchOverlayTheme",
+        "GRID_BUCKETS",
+        "gridBucketDefinition"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",
         "CanopyX.Html/Assets/canopyx.facets.source"
@@ -747,13 +1886,42 @@
     {
       "name": "live",
       "label": "live data",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["live"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "live"
+      ],
       "key": "DataGrid.prototype",
-      "context": ["DataGrid", "h", "setText", "fill", "gridButton", "gridIcon", "gridQuery", "gridResultShape", "gridQueryRows", "gridCompare", "gridOrder", "gridIdOrder",
-        "validateGridRows", "validateGridPage", "validateGridCursorPage", "gridFreeze", "requireIdentifier", "checkDocument", "cellValue", "PROTOCOL",
-        "GRID_REPORTING", "VIEW_MODES", "inlineGridSource"],
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridIcon",
+        "gridQuery",
+        "gridResultShape",
+        "gridQueryRows",
+        "gridCompare",
+        "gridOrder",
+        "gridIdOrder",
+        "validateGridRows",
+        "validateGridPage",
+        "validateGridCursorPage",
+        "gridFreeze",
+        "requireIdentifier",
+        "checkDocument",
+        "cellValue",
+        "PROTOCOL",
+        "GRID_REPORTING",
+        "GRID_CALCULATIONS",
+        "VIEW_MODES",
+        "inlineGridSource"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.live.source"
       ],
@@ -764,13 +1932,49 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "runtimes": ["tree", "grid"],
-      "views": ["tree", "grid"],
-      "features": ["record"],
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "record"
+      ],
       "key": "RECORD_IMPL",
-      "requires": ["ui-menu"],
-      "context": ["RECORD_IMPL", "UI_IMPL", "TreeGrid", "h", "setText", "fill", "cellText", "cellValue", "isCellObject", "formatValue", "toneOf", "applyTone", "toneColors", "validateGridRows",
-        "badgeElement", "loadSidecar", "requireIdentifier", "PROTOCOL", "foldText", "createTreeGrid", "svgIcon", "gridExportField", "columnNumericTone", "columnValueTone", "validateColumnValues"],
+      "requires": [
+        "ui-menu"
+      ],
+      "context": [
+        "RECORD_IMPL",
+        "UI_IMPL",
+        "TreeGrid",
+        "h",
+        "setText",
+        "fill",
+        "cellText",
+        "changeCellText",
+        "cellValue",
+        "isCellObject",
+        "formatValue",
+        "toneOf",
+        "applyTone",
+        "toneColors",
+        "validateGridRows",
+        "badgeElement",
+        "loadSidecar",
+        "requireIdentifier",
+        "PROTOCOL",
+        "foldText",
+        "createTreeGrid",
+        "svgIcon",
+        "gridExportField",
+        "columnNumericTone",
+        "columnValueTone",
+        "validateColumnValues"
+      ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.record-panel.source"
       ],
@@ -781,14 +1985,49 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["calendar"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendar"
+      ],
       "key": "DataGrid.prototype",
-      "requires": ["ui-menu"],
-      "context": ["toneVariable", "bindContextMenu", "DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
-        "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "repairGridCell", "validateGridPage", "validateGridCursorPage", "validStructuralCount", "checkDocument", "numberFormat",
-        "HostCellContext", "disposeHostSlot", "loadPart", "PROTOCOL"],
+      "requires": [
+        "ui-menu"
+      ],
+      "context": [
+        "toneVariable",
+        "bindContextMenu",
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "gridButton",
+        "gridIcon",
+        "gridFreeze",
+        "cellText",
+        "cellValue",
+        "isCellObject",
+        "gridQuery",
+        "gridQueryRows",
+        "gridResultShape",
+        "gridPresenterTone",
+        "validateGridRows",
+        "repairGridCell",
+        "validateGridPage",
+        "validateGridCursorPage",
+        "validStructuralCount",
+        "checkDocument",
+        "numberFormat",
+        "HostCellContext",
+        "disposeHostSlot",
+        "loadPart",
+        "PROTOCOL"
+      ],
       "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar.source"
@@ -800,12 +2039,22 @@
     {
       "name": "calendar-recurrence",
       "label": "calendar recurrence",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["calendarRecurrence"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarRecurrence"
+      ],
       "key": "DataGrid.prototype",
-      "requires": ["calendar"],
-      "context": ["DataGrid"],
+      "requires": [
+        "calendar"
+      ],
+      "context": [
+        "DataGrid"
+      ],
       "start": "const { CAL_DAY, CAL_MINUTE, calDayNumber, calDayParts, calDow, calMonthDays, calParseDay } = DataGrid.prototype.calKit;",
       "end": "Object.assign(DataGrid.prototype.calKit, { calRule, calExpand, calSeriesEnd, calExceptions, CAL_WEEKDAYS });",
       "scripts": [
@@ -815,12 +2064,27 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["calendarEditing"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarEditing"
+      ],
       "key": "DataGrid.prototype",
-      "requires": ["calendar"],
-      "context": ["DataGrid", "h", "setText", "fill", "cellValue", "GRID_DRAG"],
+      "requires": [
+        "calendar"
+      ],
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "cellValue",
+        "GRID_DRAG"
+      ],
       "start": "const { CAL_DAY, CAL_GUTTER, CAL_MINUTE, CAL_SLOT_PX, calDayText, calDow, calInAllDayRow, calIso, calOverlaps, calZone, calDayGrid } = DataGrid.prototype.calKit;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar-edit.source"
@@ -829,12 +2093,26 @@
     {
       "name": "calendar-ics",
       "label": "iCalendar",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["calendarIcs"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarIcs"
+      ],
       "key": "DataGrid.prototype",
-      "requires": ["calendar", "calendar-recurrence"],
-      "context": ["DataGrid", "h", "fill", "cellText"],
+      "requires": [
+        "calendar",
+        "calendar-recurrence"
+      ],
+      "context": [
+        "DataGrid",
+        "h",
+        "fill",
+        "cellText"
+      ],
       "start": "const { CAL_DAY, CAL_MINUTE, calBase, calDayNumber, calDayText, calMonthDays, CAL_WEEKDAYS, calZone, calIso, calParseDay, calRule, calExpand } = DataGrid.prototype.calKit;",
       "end": "Object.assign(DataGrid.prototype.calKit, { calIcsText, calIcsFold, calIcsParse });",
       "scripts": [
@@ -844,12 +2122,28 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "runtimes": ["grid"],
-      "views": ["grid"],
-      "features": ["calendarResources"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarResources"
+      ],
       "key": "DataGrid.prototype",
-      "requires": ["calendar"],
-      "context": ["toneVariable", "DataGrid", "TreeGrid", "h", "setText", "fill", "numberFormat"],
+      "requires": [
+        "calendar"
+      ],
+      "context": [
+        "toneVariable",
+        "DataGrid",
+        "TreeGrid",
+        "h",
+        "setText",
+        "fill",
+        "numberFormat"
+      ],
       "start": "const { CAL_DAY, CAL_HOUR, CAL_MINUTE, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthStart, calWeekStart } = DataGrid.prototype.calKit;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.timeline.source"
@@ -1064,6 +2358,74 @@
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.time-slider.source/time-slider.css"
+      ]
+    },
+    {
+      "name": "view-intents",
+      "label": "view intents",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "viewIntents"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridVariant",
+        "gridQuery",
+        "gridQueryStart",
+        "gridFreeze",
+        "GRID_FILTER_LABELS",
+        "GRID_REPORTING",
+        "watchOverlayTheme"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.view-intents.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.view-intents.source/view-intents.css"
+      ]
+    },
+    {
+      "name": "compare",
+      "label": "dataset comparison",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "compare"
+      ],
+      "requires": [
+        "presenters"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "cellValue",
+        "numberFormat",
+        "gridQueryStart",
+        "gridQuery"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.compare.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.compare.source/compare.css"
       ]
     }
   ]

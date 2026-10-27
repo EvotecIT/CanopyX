@@ -19,6 +19,8 @@
     { "$ref": "#/$defs/gridRangeQuery" },
     { "$ref": "#/$defs/gridRangePage" },
     { "$ref": "#/$defs/gridSummary" },
+    { "$ref": "#/$defs/gridPivotQuery" },
+    { "$ref": "#/$defs/gridPivot" },
     { "$ref": "#/$defs/gridCommit" },
     { "$ref": "#/$defs/gridCommitResult" }, { "$ref": "#/$defs/gridTransaction" },
     { "$ref": "#/$defs/gridRecordQuery" },
@@ -33,6 +35,64 @@
     { "$ref": "#/$defs/searchEntries" }
   ],
   "$defs": {
+    "datasetCompare": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "statusColumn",
+        "counts",
+        "columns",
+        "onlyChanges"
+      ],
+      "properties": {
+        "statusColumn": {
+          "$ref": "#/$defs/identifier"
+        },
+        "onlyChanges": {
+          "type": "boolean"
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "added",
+            "removed",
+            "changed",
+            "unchanged"
+          ],
+          "properties": {
+            "added": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "removed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "changed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "unchanged": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          }
+        },
+        "columns": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      }
+    },
     "protocol": { "const": "canopyx/2" },
     "matrixId": { "$ref": "#/$defs/identifier", "maxLength": 256 },
     "matrixText": { "type": "string", "pattern": "\\S", "maxLength": 200 },
@@ -351,7 +411,7 @@
       "properties": {
         "columns": { "type": "array", "minItems": 1, "maxItems": 24, "items": { "anyOf": [{ "$ref": "#/$defs/identifier" }, {
           "type": "object", "required": ["column"], "additionalProperties": false, "properties": {
-            "column": { "$ref": "#/$defs/identifier" }, "kind": { "enum": ["list", "range"] }, "label": { "$ref": "#/$defs/nonEmptyString" },
+            "column": { "$ref": "#/$defs/identifier" }, "kind": { "enum": ["list", "range"] }, "label": { "$ref": "#/$defs/nonEmptyString" }, "bucket": { "$ref": "#/$defs/gridBucket" },
             "limit": { "type": "integer", "minimum": 1, "maximum": 200 }, "bins": { "type": "integer", "minimum": 2, "maximum": 60 },
             "sort": { "enum": ["count", "value"] }, "collapsed": { "type": "boolean" } } }] } },
         "position": { "enum": ["side", "top"] },
@@ -494,7 +554,21 @@
     "gridGroupLevel": {
       "type": "object", "required": ["column", "direction"], "additionalProperties": false,
       "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] },
-        "aggregate": { "$ref": "#/$defs/identifier", "description": "A declared aggregate whose value orders this level's groups (missing values last, ties by value)." } }
+        "aggregate": { "$ref": "#/$defs/identifier", "description": "A declared aggregate whose value orders this level's groups (missing values last, ties by value)." }, "bucket": { "$ref": "#/$defs/gridBucket" } }
+    },
+    "gridBucket": {
+      "oneOf": [
+        { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": {
+          "kind": { "enum": ["day", "week", "month", "quarter", "year", "hour", "weekday"] },
+          "timeZone": { "type": "string", "minLength": 1, "maxLength": 128 }, "firstWeekday": { "type": "integer", "minimum": 0, "maximum": 6 }
+        } },
+        { "type": "object", "required": ["kind", "width"], "additionalProperties": false, "properties": {
+          "kind": { "const": "width" }, "width": { "type": "number", "exclusiveMinimum": 0 }, "origin": { "type": "number" }
+        } },
+        { "type": "object", "required": ["kind", "edges"], "additionalProperties": false, "properties": {
+          "kind": { "const": "edges" }, "edges": { "type": "array", "minItems": 1, "maxItems": 200, "items": { "type": "number" } }
+        } }
+      ]
     },
     "gridRowData": {
       "description": "Compact rows of an inline grid in place of rows: each row an array of its id (or { id, tone, className }) and its cells in the order of columns, without trailing empty cells, in chunks the runtime decodes one at a time. chunks is the number of application/x-canopyx-rows scripts inside the host element (or of sidecar files rows/<n>.js under base), or the chunks themselves: arrays of rows, or with encoding gzip base64 text of the gzip-compressed JSON of each chunk. ordered declares ordinal string order, preserving version-1 reader compatibility. The current runtime answers early windows only when this order also matches display identity order.",
@@ -752,6 +826,9 @@
         "footers": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/gridFooter" } },
         "preSort": { "type": "array", "maxItems": 32, "items": { "type": "object", "required": ["column", "direction"], "additionalProperties": false, "properties": { "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] } } } },
         "columnDefaults": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridColumnDefaults" } },
+        "calculatedColumnsEditable": { "type": "boolean", "description": "Allows inline readers to edit calculation definitions and persist them in saved state." },
+        "compare": { "$ref": "#/$defs/datasetCompare" },
+        "viewIntents": { "type": "boolean" },
         "protocol": { "$ref": "#/$defs/protocol" },
         "type": { "const": "grid" },
         "rowIdentity": { "enum": ["stableKey", "ordinal"], "description": "Default stableKey. Ordinal IDs are source positions in one dataset snapshot; saved selections and keyed live updates are unavailable." },
@@ -816,7 +893,8 @@
         "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } },
         "rowData": { "$ref": "#/$defs/gridRowData" }
       },
-      "if": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } },
+      "if": { "properties": {
+ "source": { "properties": { "kind": { "const": "inline" } } } } },
       "then": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] },
       "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
       "allOf": [{
@@ -834,11 +912,15 @@
         "if": { "properties": { "source": { "required": ["navigation"], "properties": { "navigation": { "const": "cursor" } } } } },
         "then": { "required": ["presentation"], "properties": { "presentation": { "const": "paged" }, "source": { "properties": { "kind": { "const": "host" } } }, "query": { "$ref": "#/$defs/gridCursorQuery" } } },
         "else": { "properties": { "query": { "$ref": "#/$defs/gridQuery" } } }
-      }]
+      },
+        { "properties": { "columns": { "contains": { "required": ["calculation"] }, "minContains": 0, "maxContains": 32 } } },
+        { "if": { "required": ["calculatedColumnsEditable"], "properties": { "calculatedColumnsEditable": { "const": true } } }, "then": { "properties": { "source": { "properties": { "kind": { "const": "inline" } } } } } }
+      ]
     },
     "gridFacetQuery": {
       "type": "object", "required": ["protocol", "type", "query", "column", "search", "limit", "includeCurrentFilter"], "additionalProperties": false,
       "properties": {
+        "bucket": { "$ref": "#/$defs/gridBucket" },
         "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridFacetQuery" },
         "column": { "$ref": "#/$defs/identifier" }, "search": { "type": "string", "maxLength": 16384 },
         "limit": { "type": "integer", "minimum": 1, "maximum": 200 }, "includeCurrentFilter": { "type": "boolean" },
@@ -849,6 +931,7 @@
     "gridFacetPage": {
       "type": "object", "required": ["protocol", "type", "view", "revision", "column", "search", "includeCurrentFilter", "matched", "totalValues", "truncated", "items"], "additionalProperties": false,
       "properties": {
+        "bucket": { "$ref": "#/$defs/gridBucket" },
         "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "gridFacetPage" },
         "view": { "$ref": "#/$defs/identifier" }, "revision": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
         "search": { "type": "string", "maxLength": 16384 }, "includeCurrentFilter": { "type": "boolean" },
@@ -912,6 +995,7 @@
       "description": "Canonical browser preference snapshot. Runtime binds columns, queries and selection policy to the current definition.",
       "type": "object", "required": ["version", "view", "columns", "query", "timeZone", "selection", "scrollTop"], "additionalProperties": false,
       "properties": {
+        "calculatedColumns": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridCalculatedColumnDefinition" }, "$comment": "Accepted only when the current view enables its inline calculation editor. Readers bind unique IDs and dependencies, retain every authored calculation ID, and reject invalid programs." },
         "version": { "const": 1 }, "view": { "$ref": "#/$defs/identifier" },
         "columns": { "type": "array", "minItems": 1, "items": {
           "type": "object", "required": ["id", "width", "hidden"], "additionalProperties": false,
@@ -931,6 +1015,8 @@
         "highlight": { "type": "boolean", "description": "The reader's Highlight matches switch." },
         "facets": { "type": "object", "required": ["open"], "additionalProperties": false, "properties": { "open": { "type": "boolean" } }, "description": "Whether the reader left the facet panel open." },
         "collapsedGroups": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 4096 } },
+        "aggregateShowAs": { "type": "object", "maxProperties": 32, "additionalProperties": { "$ref": "#/$defs/gridShowAs" } },
+        "pivot": { "$ref": "#/$defs/gridPivotState" },
         "formatRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatRule" }, "description": "Formatting rules edited at run time, when they differ from the view's." },
         "paging": { "type": "object", "required": ["pageLength", "offset"], "additionalProperties": false,
           "properties": { "pageLength": { "type": "integer", "minimum": 1, "maximum": 10000 },
@@ -957,6 +1043,8 @@
         "grouping": { "$ref": "#/$defs/gridGrouping" },
         "groupBy": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/gridGroupLevel" }, "description": "Initial runtime grouping levels, outermost first. Not combined with grouping." },
         "groupable": { "type": "boolean", "description": "Readers can group by sortable columns. Not combined with grouping." },
+        "pivot": { "$ref": "#/$defs/gridPivotDefinition" },
+        "pivotable": { "type": "boolean" },
         "detail": { "$ref": "#/$defs/gridDetail" },
         "aggregates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } },
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
@@ -990,6 +1078,386 @@
         "sortComparator": { "$ref": "#/$defs/gridColumn/properties/sortComparator" }
       }
     },
+    "gridPivotLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "column",
+        "direction"
+      ],
+      "properties": {
+        "column": {
+          "$ref": "#/$defs/identifier"
+        },
+        "direction": {
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        },
+        "bucket": {
+          "$ref": "#/$defs/gridBucket"
+        }
+      }
+    },
+    "gridPivotDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rows",
+        "columns",
+        "values"
+      ],
+      "properties": {
+        "rows": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/gridPivotLevel"
+          }
+        },
+        "columns": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/gridPivotLevel"
+          }
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "maxColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 200
+        },
+        "topNColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "sortByTotal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "aggregate",
+            "direction"
+          ],
+          "properties": {
+            "aggregate": {
+              "$ref": "#/$defs/identifier"
+            },
+            "direction": {
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "gridPivotState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rows",
+        "columns",
+        "values",
+        "active"
+      ],
+      "properties": {
+        "rows": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/gridPivotLevel"
+          }
+        },
+        "columns": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "$ref": "#/$defs/gridPivotLevel"
+          }
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "maxColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 200
+        },
+        "topNColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "sortByTotal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "aggregate",
+            "direction"
+          ],
+          "properties": {
+            "aggregate": {
+              "$ref": "#/$defs/identifier"
+            },
+            "direction": {
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "collapsedRows": {
+          "type": "array",
+          "maxItems": 10000,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/gridPivotKey"
+          }
+        },
+        "collapsedColumns": {
+          "type": "array",
+          "maxItems": 10000,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/gridPivotKey"
+          }
+        },
+        "columnKey": {
+          "type": "string",
+          "maxLength": 65536
+        }
+      }
+    },
+    "gridPivotKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536
+    },
+    "gridPivotAxisNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "path",
+        "other"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/gridPivotKey"
+        },
+        "parent": {
+          "$ref": "#/$defs/gridPivotKey"
+        },
+        "path": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/cellValue"
+          }
+        },
+        "other": {
+          "type": "boolean"
+        }
+      }
+    },
+    "gridPivotCell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "row",
+        "column",
+        "count",
+        "aggregates"
+      ],
+      "properties": {
+        "row": {
+          "$ref": "#/$defs/gridPivotKey"
+        },
+        "column": {
+          "$ref": "#/$defs/gridPivotKey"
+        },
+        "count": {
+          "$ref": "#/$defs/count"
+        },
+        "aggregates": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/gridAggregateValues"
+            },
+            {
+              "minProperties": 1
+            }
+          ]
+        }
+      }
+    },
+    "gridPivotQuery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "type",
+        "query",
+        "definition"
+      ],
+      "properties": {
+        "protocol": {
+          "$ref": "#/$defs/protocol"
+        },
+        "type": {
+          "const": "gridPivotQuery"
+        },
+        "query": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/gridQuery"
+            },
+            {
+              "required": [
+                "revision"
+              ]
+            }
+          ]
+        },
+        "definition": {
+          "$ref": "#/$defs/gridPivotDefinition"
+        }
+      }
+    },
+    "gridPivot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocol",
+        "type",
+        "view",
+        "definition",
+        "matched",
+        "distinctColumns",
+        "columnsLimited",
+        "rows",
+        "columns",
+        "retainedColumns",
+        "cells"
+      ],
+      "properties": {
+        "protocol": {
+          "$ref": "#/$defs/protocol"
+        },
+        "type": {
+          "const": "gridPivot"
+        },
+        "view": {
+          "$ref": "#/$defs/identifier"
+        },
+        "revision": {
+          "$ref": "#/$defs/identifier"
+        },
+        "query": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/gridQuery"
+            },
+            {
+              "required": [
+                "revision"
+              ]
+            }
+          ]
+        },
+        "definition": {
+          "$ref": "#/$defs/gridPivotDefinition"
+        },
+        "matched": {
+          "$ref": "#/$defs/count"
+        },
+        "distinctColumns": {
+          "$ref": "#/$defs/count"
+        },
+        "columnsLimited": {
+          "type": "boolean"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10001,
+          "items": {
+            "$ref": "#/$defs/gridPivotAxisNode"
+          }
+        },
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 402,
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/gridPivotAxisNode"
+              },
+              {
+                "properties": {
+                  "path": {
+                    "maxItems": 2
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "retainedColumns": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "type": "array",
+            "maxItems": 2,
+            "items": {
+              "$ref": "#/$defs/cellValue"
+            }
+          }
+        },
+        "cells": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/gridPivotCell"
+          }
+        }
+      },
+      "dependentRequired": {
+        "query": [
+          "revision"
+        ],
+        "revision": [
+          "query"
+        ]
+      },
+      "$comment": "Direct CanopyPivot results omit both query and revision. Hosted results include both. Readers require exact accepted-query/revision/view/definition ownership, typed axis paths, unique parent-first prefix keys and intersections, declared aggregates and exact grand totals. The document is bounded to 4194304 UTF-16 code units. Readers also reject rows.length * columns.length * definition.values.length above 100000 display cells, including totals and prefixes. Top-N Other contains omitted complete paths; retained raw-prefix subtotals include every descendant and may overlap Other."
+    },
     "gridGrouping": {
       "type": "object", "required": ["column", "direction"], "additionalProperties": false,
       "properties": {
@@ -1000,8 +1468,10 @@
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
         "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
         "label": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "showAs": { "$ref": "#/$defs/gridShowAs" },
         "format": { "$ref": "#/$defs/gridNumberFormat", "description": "Explicit value format; otherwise the column format applies, except that counts default to whole numbers." } }
     },
+    "gridShowAs": { "enum": ["value", "percentGrandTotal", "percentParent", "percentColumn", "percentRow", "runningTotal", "rank", "difference", "percentChange"] },
     "gridNumberFormat": {
       "type": "object", "additionalProperties": false,
       "description": "Display format of binary64 numbers. Defaults are minimum 0 and maximum 3. Minimum must not exceed maximum, so a minimum above 3 requires an explicit maximum. Halfway values round away from zero; literal prefixes follow the sign.",
@@ -1060,6 +1530,7 @@
     },
     "gridPresenter": {
       "oneOf": [
+        { "type": "object", "required": ["kind", "beforeAfter"], "additionalProperties": false, "properties": { "kind": { "const": "change" }, "beforeAfter": { "const": true } } },
         {
           "type": "object",
           "required": [
@@ -1478,6 +1949,7 @@
         "search": { "type": "string" },
         "searchMode": { "enum": ["substring", "words", "regex"], "default": "substring", "description": "Regex requires allowRegexSearch on the owning view; it uses the bounded condition grammar and case-insensitive matching without accent folding." },
         "filterGroup": { "$ref": "#/$defs/gridFilterGroup" },
+        "tupleFilters": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/gridTupleFilter" } },
         "groupBy": { "type": "array", "maxItems": 4, "items": { "$ref": "#/$defs/gridGroupLevel" }, "description": "Runtime grouping levels of a definition with groupBy or groupable, always present for such definitions; their columns lead sort." },
         "sort": {
           "type": "array",
@@ -1517,8 +1989,31 @@
         "searchMode": { "$ref": "#/$defs/gridQuery/properties/searchMode" },
         "sort": { "$ref": "#/$defs/gridQuery/properties/sort" },
         "filters": { "$ref": "#/$defs/gridQuery/properties/filters" },
-        "filterGroup": { "$ref": "#/$defs/gridQuery/properties/filterGroup" }
+        "filterGroup": { "$ref": "#/$defs/gridQuery/properties/filterGroup" },
+        "tupleFilters": { "$ref": "#/$defs/gridQuery/properties/tupleFilters" }
       }
+    },
+    "gridTupleColumn": {
+      "description": "One raw or bucketed column of an exact correlated tuple.",
+      "type": "object", "required": ["column"], "additionalProperties": false,
+      "properties": { "column": { "$ref": "#/$defs/identifier" }, "bucket": { "$ref": "#/$defs/gridBucket" } }
+    },
+    "gridTupleFilter": {
+      "description": "Atomic exact membership of correlated column values; exclusion complements membership including null. Readers validate operand kinds against declared columns. Strings are exact and dates compare by instant.",
+      "type": "object", "required": ["columns", "values"], "additionalProperties": false,
+      "properties": {
+        "columns": { "type": "array", "minItems": 1, "maxItems": 6, "items": { "$ref": "#/$defs/gridTupleColumn" } },
+        "values": { "type": "array", "minItems": 1, "maxItems": 200, "items": { "type": "array", "minItems": 1, "maxItems": 6, "items": { "$ref": "#/$defs/cellValue" } } },
+        "exclude": { "type": "boolean", "default": false }
+      },
+      "allOf": [
+        { "if": { "properties": { "columns": { "minItems": 1, "maxItems": 1 } } }, "then": { "properties": { "values": { "items": { "minItems": 1, "maxItems": 1 } } } } },
+        { "if": { "properties": { "columns": { "minItems": 2, "maxItems": 2 } } }, "then": { "properties": { "values": { "items": { "minItems": 2, "maxItems": 2 } } } } },
+        { "if": { "properties": { "columns": { "minItems": 3, "maxItems": 3 } } }, "then": { "properties": { "values": { "items": { "minItems": 3, "maxItems": 3 } } } } },
+        { "if": { "properties": { "columns": { "minItems": 4, "maxItems": 4 } } }, "then": { "properties": { "values": { "items": { "minItems": 4, "maxItems": 4 } } } } },
+        { "if": { "properties": { "columns": { "minItems": 5, "maxItems": 5 } } }, "then": { "properties": { "values": { "items": { "minItems": 5, "maxItems": 5 } } } } },
+        { "if": { "properties": { "columns": { "minItems": 6, "maxItems": 6 } } }, "then": { "properties": { "values": { "items": { "minItems": 6, "maxItems": 6 } } } } }
+      ]
     },
     "gridFilterGroup": {
       "description": "A nonempty AND/OR group. Readers enforce eight levels, 64 groups and 64 predicates total, including flat query predicates.",
@@ -1537,6 +2032,7 @@
       "required": ["column", "operator", "values"],
       "additionalProperties": false,
       "properties": {
+        "bucket": { "$ref": "#/$defs/gridBucket" },
         "column": { "$ref": "#/$defs/identifier" },
         "operator": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$" },
         "values": { "type": "array", "items": { "allOf": [{ "$ref": "#/$defs/cellValue" }, { "not": { "type": "null" } }] } }
@@ -1799,6 +2295,19 @@
         "pinned": { "enum": ["left", "right", null], "description": "Initial pin of every column of a top-level group; null scrolls. Nested groups take none." }
       }
     },
+    "gridCalculationExpression": {
+      "type": "string", "minLength": 1, "maxLength": 2048, "pattern": "\\S",
+      "$comment": "Readers enforce the 2048 UTF-16-code-unit limit and parse the bounded scalar grammar: depth 32, 256 AST nodes, 32 function arguments and 64 references. JSON Schema maxLength counts Unicode characters, so it is not a replacement for the code-unit check."
+    },
+    "gridCalculatedColumnDefinition": {
+      "type": "object", "required": ["id", "title", "kind", "expression"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" },
+        "kind": { "enum": ["text", "number", "datetime"] },
+        "expression": { "$ref": "#/$defs/gridCalculationExpression" }
+      }
+    },
     "gridColumn": {
       "type": "object",
       "required": [
@@ -1814,6 +2323,7 @@
         "orderData": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
         "orderSequence": { "type": "array", "maxItems": 3, "uniqueItems": true, "items": { "enum": ["asc", "desc", "none"] } },
         "sortComparator": { "type": ["string", "null"], "pattern": "^[a-z][a-zA-Z0-9]{0,31}$" },
+        "calculation": { "$ref": "#/$defs/gridCalculationExpression" },
         "id": {
           "$ref": "#/$defs/column/properties/id"
         },
@@ -1880,7 +2390,8 @@
           "description": "How the column gives way when narrow. Integers follow responsivePriority: 0-1 essential, 10000+ optional." },
         "pinned": { "enum": ["left", "right", null], "description": "Requested edge; null unpins. The identity column pins left by default." },
         "rowHeader": { "type": "boolean", "description": "The identity column; defaults to the first column. At most one." }
-      }
+      },
+      "allOf": [{ "if": { "required": ["calculation"] }, "then": { "properties": { "editable": { "const": false } } } }]
     },
     "quietTones": { "type": "array", "maxItems": 16, "items": { "$ref": "#/$defs/tone" },
       "description": "Tones an enum or state presenter shows as plain muted text." },
@@ -2032,6 +2543,41 @@
             "stateLoading": { "type": "string" },
             "stateRetry": { "type": "string" },
             "stateDetails": { "type": "string" },
+            "compareSummary": { "type": "string" },
+            "compareAdded": { "type": "string" },
+            "compareRemoved": { "type": "string" },
+            "compareChanged": { "type": "string" },
+            "compareUnchanged": { "type": "string" },
+            "compareOnlyChanges": { "type": "string" },
+            "compareColumnChanges": { "type": "string" },
+            "compareChanges": { "type": "string" },
+            "viewIntentClearSearch": { "type": "string" },
+            "viewIntentRemoveGrouping": { "type": "string" },
+            "viewIntentFlat": { "type": "string" },
+            "viewIntentAscending": { "type": "string" },
+            "viewIntentDescending": { "type": "string" },
+            "viewIntentNotEqual": { "type": "string" },
+            "viewIntentGreater": { "type": "string" },
+            "viewIntentAtLeast": { "type": "string" },
+            "viewIntentLess": { "type": "string" },
+            "viewIntentAtMost": { "type": "string" },
+            "viewIntentFilter": { "type": "string" },
+            "viewIntentOnly": { "type": "string" },
+            "viewIntentPivot": { "type": "string" },
+            "viewIntentAllRows": { "type": "string" },
+            "viewIntentTotals": { "type": "string" },
+            "viewIntentTuples": { "type": "string" },
+            "viewIntentExcludeTuples": { "type": "string" },
+            "viewIntentNoChanges": { "type": "string" },
+            "viewIntentPreview": { "type": "string" },
+            "viewIntentApplied": { "type": "string" },
+            "viewIntentSuperseded": { "type": "string" },
+            "viewIntentSearch": { "type": "string" },
+            "viewIntentSort": { "type": "string" },
+            "viewIntentGroup": { "type": "string" },
+            "viewIntentColumns": { "type": "string" },
+            "viewIntentWords": { "type": "string" },
+            "viewIntentSubstring": { "type": "string" },
             "gridEditCell": { "type": "string" }, "gridEditSave": { "type": "string" }, "gridEditCancel": { "type": "string" }, "gridEditDiscard": { "type": "string" },
             "gridEditUndo": { "type": "string" }, "gridEditRedo": { "type": "string" }, "gridEditEdited": { "type": "string" }, "gridEditChanges": { "type": "string" },
             "gridEditErrors": { "type": "string" }, "gridEditSaving": { "type": "string" }, "gridEditSaved": { "type": "string" }, "gridEditFailed": { "type": "string" },
@@ -2040,6 +2586,29 @@
             "gridEditPattern": { "type": "string" }, "gridEditChoice": { "type": "string" }, "gridEditConflict": { "type": "string" }, "gridEditRejected": { "type": "string" },
             "gridEditNotSaved": { "type": "string" }, "gridEditNoMatches": { "type": "string" }, "gridEditSearching": { "type": "string" }, "gridEditUndone": { "type": "string" },
             "gridEditRedone": { "type": "string" }, "gridEditNone": { "type": "string" },
+            "gridShowAs": { "type": "string" },
+            "gridShowAsValue": { "type": "string" },
+            "gridShowAsPercentGrandTotal": { "type": "string" },
+            "gridShowAsPercentParent": { "type": "string" },
+            "gridShowAsPercentColumn": { "type": "string" },
+            "gridShowAsPercentRow": { "type": "string" },
+            "gridShowAsRunningTotal": { "type": "string" },
+            "gridShowAsRank": { "type": "string" },
+            "gridShowAsDifference": { "type": "string" },
+            "gridShowAsPercentChange": { "type": "string" },
+            "gridBucket": { "type": "string" },
+            "gridBucketNone": { "type": "string" },
+            "gridBucketDay": { "type": "string" },
+            "gridBucketWeek": { "type": "string" },
+            "gridBucketMonth": { "type": "string" },
+            "gridBucketQuarter": { "type": "string" },
+            "gridBucketYear": { "type": "string" },
+            "gridBucketHour": { "type": "string" },
+            "gridBucketWeekday": { "type": "string" },
+            "gridBucketWidth": { "type": "string" },
+            "gridBucketEdges": { "type": "string" },
+            "gridBucketOrigin": { "type": "string" },
+            "gridBucketInvalid": { "type": "string" },
             "gridFacetBin": { "type": "string" },
             "gridFacetClear": { "type": "string" },
             "gridFacetCollapse": { "type": "string" },
@@ -2322,6 +2891,29 @@
             "gridGroupHeading": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupMissing": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupExpand": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationAdd": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationTitle": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationId": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationExpression": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationError": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationInvalid": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationHelp": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationNumber": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCalculationDate": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivot": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotRows": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotColumns": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotValues": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotFlat": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotConfigure": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotOther": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotLimited": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotTopN": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotSort": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotDrill": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotReturn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridPivotInvalid": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupCollapse": { "$ref": "#/$defs/accessibleLabel" },
             "gridSummary": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupOrder": { "$ref": "#/$defs/accessibleLabel" },

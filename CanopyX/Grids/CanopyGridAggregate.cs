@@ -55,10 +55,21 @@ public sealed partial class CanopyGridAggregate {
     public string Label { get; }
     /// <summary>Gets the explicit value format, or null to follow the column format (whole numbers for counts).</summary>
     public CanopyGridNumberFormat? Format { get; }
+    /// <summary>Gets the initial display transformation. Raw summary aggregates remain unchanged.</summary>
+    public CanopyShowAs ShowAs { get; private set; }
+
+    /// <summary>Creates an aggregate descriptor with a display transformation applied after aggregation.</summary>
+    /// <param name="mode">The display mode; pivot row and column percentages need the corresponding pivot totals.</param>
+    /// <returns>A copy of this immutable descriptor.</returns>
+    public CanopyGridAggregate ShowValuesAs(CanopyShowAs mode) {
+        if (!Enum.IsDefined(typeof(CanopyShowAs), mode)) throw new ArgumentOutOfRangeException(nameof(mode));
+        var copy = (CanopyGridAggregate)MemberwiseClone(); copy.ShowAs = mode; return copy;
+    }
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("column", Column)
             .Property("operation", CustomOperation ?? OperationName(Operation)).Property("label", Label);
         if (Format != null) { writer.Name("format"); Format.WriteJson(writer); }
+        if (ShowAs != CanopyShowAs.Value) writer.Property("showAs", CanopyAggregateDisplay.Name(ShowAs));
         writer.EndObject();
     }
     internal static string OperationName(CanopyGridAggregateOperation operation) => operation == CanopyGridAggregateOperation.Count ? "count" :

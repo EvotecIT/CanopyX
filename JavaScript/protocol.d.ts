@@ -202,6 +202,8 @@ export type InlineNode = LeafNode | DetailNode | InlineBranch<InlineNode>;
 
 /** Names accepted by the interactive runtime; omitted translations use English. */
 export type LabelName =
+  | "gridShowAs" | "gridShowAsValue" | "gridShowAsPercentGrandTotal" | "gridShowAsPercentParent" | "gridShowAsPercentColumn" | "gridShowAsPercentRow" | "gridShowAsRunningTotal" | "gridShowAsRank" | "gridShowAsDifference" | "gridShowAsPercentChange"
+  | "gridBucket" | "gridBucketNone" | "gridBucketDay" | "gridBucketWeek" | "gridBucketMonth" | "gridBucketQuarter" | "gridBucketYear" | "gridBucketHour" | "gridBucketWeekday" | "gridBucketWidth" | "gridBucketEdges" | "gridBucketOrigin" | "gridBucketInvalid"
   | "gridPaging" | "gridPageRange" | "gridPageNumber" | "gridPageLength" | "gridFirstPage" | "gridPreviousPage" | "gridNextPage" | "gridLastPage" | "gridPageInfo" | "gridPageInfoFiltered" | "gridPageButton"
   | "gridUnknownCount" | "gridMatchedCount" | "gridCursorRange"
   | "gridResultCount" | "gridRegexSearch" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"
@@ -278,7 +280,10 @@ export type LabelName =
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
   | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails"
   | "boardLane" | "boardUnassigned" | "boardEmpty" | "boardWip" | "boardWipFull" | "boardMove" | "boardMoved" | "boardRejected" | "boardPending" | "boardPartial" | "boardKeys" | "planMilestone" | "planCritical" | "planBaseline" | "planDependency" | "planDependencyConflict" | "planOverlapConflict" | "planIncomplete" | "planInvalidRange" | "planInvalidResource" | "planProposal" | "planMoveHint" | "planActual" | "planPending" | "planBaselineLabel" | "planDependencies" | "planConflict"
-  | "pathEmpty" | "pathSource" | "pathTarget" | "pathStep" | "pathCycle" | "pathForeign" | "pathDisabled" | "pathKeys" | "pathPartial" | "stackWinner" | "stackEnforced" | "stackFiltered" | "stackEmpty" | "stackOrder" | "stackTruncated" | "timePlay" | "timePause" | "timePrevious" | "timeNext" | "timePosition" | "timeFrame" | "timeReducedMotion";
+  | "pathEmpty" | "pathSource" | "pathTarget" | "pathStep" | "pathCycle" | "pathForeign" | "pathDisabled" | "pathKeys" | "pathPartial" | "stackWinner" | "stackEnforced" | "stackFiltered" | "stackEmpty" | "stackOrder" | "stackTruncated" | "timePlay" | "timePause" | "timePrevious" | "timeNext" | "timePosition" | "timeFrame" | "timeReducedMotion"
+  /** Calculated-column editor and stable per-cell errors (flat grids only). */
+  | "gridCalculationAdd" | "gridCalculationTitle" | "gridCalculationId" | "gridCalculationExpression" | "gridCalculationError" | "gridCalculationInvalid" | "gridCalculationHelp" | "gridCalculationNumber" | "gridCalculationDate"
+  | "compareChanges" | "viewIntentClearSearch" | "viewIntentRemoveGrouping" | "viewIntentFlat" | "viewIntentAscending" | "viewIntentDescending" | "viewIntentNotEqual" | "viewIntentGreater" | "viewIntentAtLeast" | "viewIntentLess" | "viewIntentAtMost" | "viewIntentFilter" | "viewIntentOnly" | "viewIntentPivot" | "viewIntentAllRows" | "viewIntentTotals" | "viewIntentTuples" | "viewIntentExcludeTuples" | "viewIntentNoChanges" | "viewIntentPreview" | "viewIntentApplied" | "viewIntentSuperseded" | "viewIntentSearch" | "viewIntentSort" | "viewIntentGroup" | "viewIntentColumns" | "compareSummary" | "compareAdded" | "compareRemoved" | "compareChanged" | "compareUnchanged" | "compareOnlyChanges" | "compareColumnChanges" | "viewIntentWords" | "viewIntentSubstring";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

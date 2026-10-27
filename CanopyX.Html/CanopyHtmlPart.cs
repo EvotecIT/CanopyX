@@ -34,7 +34,7 @@ public sealed class CanopyHtmlPart {
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "officeExport",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider"
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -188,6 +188,8 @@ public sealed class CanopyHtmlPart {
             "gridOptions" => view.Footers.Count > 0 || view.PreSort.Count > 0 || view.ColumnDefaults.Count > 0 || view.Columns.Any(column => column.OrderData.Count > 0 || column.OrderSequence.Count > 0 || column.SortComparator != null) || view.Query?.Filters.Any(filter => filter.CustomOperator != null) == true || HasNamedFilter(view.Query?.FilterGroup),
             "presenters" => view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column.Presenter != null || column.Wrap),
             "columnMenus" => view.Toolbar.ColumnMenus,
+            "compare" => view.Compare != null,
+            "viewIntents" => view.ViewIntents,
             "pager" => view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault,
             "editable" => view.Columns.Any(column => column.Editable) || view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "formatting" => view.FormatRules.Count > 0 || view.Formatting != null,
@@ -202,6 +204,10 @@ public sealed class CanopyHtmlPart {
             "record" => UsesRecordPanel(view),
             "live" => view.Live != null,
             "facets" => view.FacetPanel != null,
+            "aggregateValues" => reporting?.Aggregates.Count > 0,
+            "pivot" => reporting?.Pivot != null || reporting?.Pivotable == true,
+            "calculations" => view.CalculatedColumnsEditable || view.Columns.Any(column => column.Calculation != null),
+            "buckets" => reporting?.Groupable == true && view.Columns.Any(column => column.Kind == CanopyColumnKind.DateTime || column.Kind == CanopyColumnKind.Number) || reporting?.GroupBy.Any(level => level.Bucket != null) == true || view.Query?.GroupBy?.Any(level => level.Bucket != null) == true || view.FacetPanel?.Facets.Any(facet => facet.Bucket != null) == true || UsesBucketFilters(view.Query),
             "calendar" => view.Calendar != null,
             "path" => view.Path != null,
             "stack" => view.Stack != null,
@@ -256,6 +262,13 @@ public sealed class CanopyHtmlPart {
 
     private static bool HasNamedFilter(CanopyGridFilterGroup? group) => group != null &&
         (group.Filters.Any(filter => filter.CustomOperator != null) || group.Groups.Any(HasNamedFilter));
+
+    private static bool UsesBucketFilters(CanopyGridQuery? query) => query != null &&
+        (query.Filters.Any(filter => filter?.Bucket != null) || UsesBucketGroup(query.FilterGroup, 1) ||
+         query.TupleFilters.Any(tuple => tuple != null && tuple.Columns.Any(column => column.Bucket != null)));
+
+    private static bool UsesBucketGroup(CanopyGridFilterGroup? group, int depth) => group != null && depth <= 8 &&
+        (group.Filters.Any(filter => filter?.Bucket != null) || group.Groups.Any(child => UsesBucketGroup(child, depth + 1)));
 
     private static bool Structured(IEnumerable<CanopyCell> cells) => cells.Any(cell => cell != null && (cell.IsStructured || cell.Ref != null));
 

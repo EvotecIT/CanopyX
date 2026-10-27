@@ -67,6 +67,6 @@ public sealed partial class CanopyLabels {
     public string RecordAdded { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the accessible mark of an item a change removed. Default "Removed".</summary>
     public string RecordRemoved { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the caption of a change table, <c>{count}</c> changed fields. Default "{count} changed fields".</summary>
+    /// <summary>Gets or sets the caption of a change table. Default "Changed fields: {count}".</summary>
     public string RecordChanged { get => Get(); set => Set(value); }
 }

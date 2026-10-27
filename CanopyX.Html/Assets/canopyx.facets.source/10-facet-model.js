@@ -4,7 +4,7 @@
   // filtering) while a facet still shows every value it can switch to. Inline data counts every row; a hosted grid asks its
   // source's value lists (gridFacetQuery, the reporting runtime's getFacets) for the declared facet columns.
   const FACET_KEYS = new Set(["columns", "position", "open", "collapsible", "width", "label", "target"]);
-  const FACET_COLUMN_KEYS = new Set(["column", "kind", "label", "limit", "bins", "sort", "collapsed"]);
+  const FACET_COLUMN_KEYS = new Set(["column", "kind", "label", "limit", "bins", "sort", "collapsed", "bucket"]);
   const FACET_VALUES = 200;
 
   /** The panel's options: the view's facets, then the host's facets option, checked against the declared columns. */
@@ -27,11 +27,13 @@
           facet.collapsed !== undefined && typeof facet.collapsed !== "boolean")
         throw new Error("CanopyX: invalid or duplicate facet column " + (facet && facet.column));
       seen.add(facet.column);
-      const column = columns.get(facet.column), kind = facet.kind || (column.kind === "text" ? "list" : "range");
+      const sourceDef = columns.get(facet.column), bucket = facet.bucket === undefined ? null : gridBucketDefinition(facet.bucket, sourceDef);
+      const column = bucket ? { ...sourceDef, kind: "number", presenter: undefined, valueOrder: undefined, valueLabels: undefined } : sourceDef, kind = facet.kind || (bucket || column.kind === "text" ? "list" : "range");
+      if (bucket && kind !== "list") throw new Error("CanopyX: a bucket facet uses a value list.");
       if (kind === "range" && column.kind === "text") throw new Error("CanopyX: range facets need number or date columns.");
       const order = kind === "list" ? facetDeclaredOrder(grid, column) : null;
-      return { column: facet.column, def: column, kind, label: facet.label || column.title, limit: facet.limit || 8, bins: facet.bins || 16,
-        sort: facet.sort || (kind === "list" && !order ? "count" : "value"), order, collapsed: !!facet.collapsed };
+      return { column: facet.column, def: column, sourceDef, bucket, kind, label: facet.label || column.title, limit: facet.limit || 8, bins: facet.bins || 16,
+        sort: bucket ? "value" : facet.sort || (kind === "list" && !order ? "count" : "value"), order, collapsed: !!facet.collapsed };
     });
     if (merged.position !== undefined && !["side", "top"].includes(merged.position) || ["open", "collapsible"].some(key => merged[key] !== undefined && typeof merged[key] !== "boolean") ||
         merged.width !== undefined && (!Number.isInteger(merged.width) || merged.width < 180 || merged.width > 480) ||
@@ -67,7 +69,7 @@
     try { ({ clauses } = gridColumnClauses(query, facet.column)); } catch (_) { return { custom: true, locked: true }; }
     if (!clauses.length) return { none: true };
     if (facet.kind === "list") {
-      const listed = clause => ["in", "eq", "isNull"].includes(clause.operator) && !clause.groups;
+      const listed = clause => ["in", "eq", "isNull"].includes(clause.operator) && !clause.groups && JSON.stringify(clause.bucket || null) === JSON.stringify(facet.bucket || null);
       const items = clauses.length !== 1 ? null : clauses[0].groups ? clauses[0].operator === "or" && !clauses[0].groups.length && clauses[0].filters.every(listed) ? clauses[0].filters : null : listed(clauses[0]) ? clauses : null;
       return items ? { values: items.flatMap(clause => clause.operator === "isNull" ? [null] : clause.values) } : { custom: true };
     }
@@ -86,7 +88,7 @@
    * open bound is exclusive). A locked column (see facetSelection) keeps the query as it is.
    */
   function facetQuery(query, facet, choice) {
-    const predicate = (operator, values = []) => ({ column: facet.column, operator, values });
+    const predicate = (operator, values = []) => ({ column: facet.column, operator, values, ...(facet.bucket ? { bucket: facet.bucket } : {}) });
     try {
       if (facet.kind === "range") {
         const base = gridColumnClauses(query, facet.column).query;
@@ -99,7 +101,7 @@
     } catch (_) { return query; }
   }
   /** Whether two queries count the same rows: facets ignore sort, paging and the window. */
-  const facetShape = query => query ? JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.revision]) : "";
+  const facetShape = query => query ? JSON.stringify([query.search, query.searchMode, query.filters, query.filterGroup, query.tupleFilters, query.revision]) : "";
   /** The same typed identity used by facet pages and the column filter picker. */
   const facetKey = gridFacetKey;
 
@@ -114,7 +116,7 @@
     }
     const buckets = new Map();
     for (const row of rows) {
-      const raw = gridScalar(row.cells[column.id], column), value = column.kind === "datetime" && raw !== null ? new Date(raw).toISOString() : raw, key = facetKey(value, column);
+      const raw = gridScalar(row.cells[column.id], facet.sourceDef), value = facet.bucket ? GRID_BUCKETS.key(facet.bucket, raw) : column.kind === "datetime" && raw !== null ? new Date(raw).toISOString() : raw, key = facetKey(value, column);
       const bucket = buckets.get(key);
       if (bucket) {
         bucket.count++;
@@ -127,7 +129,7 @@
 
   /** Counts of one facet from a hosted grid's value lists (gridFacetQuery), bounded to 200 buckets. */
   async function facetHostedCounts(grid, facet, search, signal) {
-    const page = await grid.getFacets(facet.column, { search: search || "", includeCurrentFilter: false, limit: FACET_VALUES, signal });
+    const page = await grid.getFacets(facet.column, { search: search || "", includeCurrentFilter: false, limit: FACET_VALUES, signal, ...(facet.bucket ? { bucket: facet.bucket } : {}) });
     const column = facet.def;
     if (facet.kind === "range")
       return { matched: page.matched, buckets: page.items.filter(item => item.value !== null).map(item => ({ value: gridScalar(item.value, column), count: item.count })), complete: !page.truncated };

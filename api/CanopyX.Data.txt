@@ -8,6 +8,7 @@ CanopyX.Data.CanopyColumnMap<T>.CanopyX.Data.CanopyColumnMap<T> Key<TKey>(System
 CanopyX.Data.CanopyColumnMap<T>.CanopyX.Data.CanopyDataSchema Schema { get; }
 CanopyX.Data.CanopyColumnMap<T>.System.Linq.Expressions.LambdaExpression? KeyExpression { get; }
 CanopyX.Data.CanopyColumnMapping<T, TValue> : sealed class
+CanopyX.Data.CanopyColumnMapping<T, TValue>.CanopyX.Data.CanopyColumnMapping<T, TValue> BucketTimeZone(System.String timeZone, System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTime>>> localTime)
 CanopyX.Data.CanopyColumnMapping<T, TValue>.CanopyX.Data.CanopyColumnMapping<T, TValue> Cell(System.Func<TValue, CanopyX.CanopyCell?> format)
 CanopyX.Data.CanopyColumnMapping<T, TValue>.CanopyX.Data.CanopyColumnMapping<T, TValue> Filterable(System.Boolean filterable = True)
 CanopyX.Data.CanopyColumnMapping<T, TValue>.CanopyX.Data.CanopyColumnMapping<T, TValue> NotNull()
@@ -93,7 +94,7 @@ CanopyX.Data.CanopyDataColumn.System.Int32 Ordinal { get; }
 CanopyX.Data.CanopyDataColumn.System.String Id { get; }
 CanopyX.Data.CanopyDataColumn.System.String Title { get; }
 CanopyX.Data.CanopyDataRequest : sealed class
-CanopyX.Data.CanopyDataRequest..ctor(CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyFilterNode? filter = null, System.Collections.Generic.IEnumerable<CanopyX.Data.CanopySortKey>? sort = null, System.String? search = null, CanopyX.CanopyGridSearchMode searchMode = Substring, System.Int32 offset = 0, System.Int32 limit = 100, System.String? revision = null, System.Collections.Generic.IEnumerable<CanopyX.Data.CanopySummaryLevel>? levels = null)
+CanopyX.Data.CanopyDataRequest..ctor(CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyFilterNode? filter = null, System.Collections.Generic.IEnumerable<CanopyX.Data.CanopySortKey>? sort = null, System.String? search = null, CanopyX.CanopyGridSearchMode searchMode = Substring, System.Int32 offset = 0, System.Int32 limit = 100, System.String? revision = null, System.Collections.Generic.IEnumerable<CanopyX.Data.CanopySummaryLevel>? levels = null, System.Collections.Generic.IEnumerable<CanopyX.Data.CanopyTupleFilter>? tupleFilters = null)
 CanopyX.Data.CanopyDataRequest.CanopyX.CanopyGridSearchMode SearchMode { get; }
 CanopyX.Data.CanopyDataRequest.CanopyX.Data.CanopyDataRequest WithIdentities(System.Collections.Generic.IEnumerable<System.String>? ids, System.Collections.Generic.IEnumerable<System.String>? excludedIds)
 CanopyX.Data.CanopyDataRequest.CanopyX.Data.CanopyDataRequest WithWindow(System.Int32 offset, System.Int32 limit)
@@ -104,6 +105,7 @@ CanopyX.Data.CanopyDataRequest.System.Collections.Generic.IReadOnlyCollection<Sy
 CanopyX.Data.CanopyDataRequest.System.Collections.Generic.IReadOnlyCollection<System.String>? Ids { get; }
 CanopyX.Data.CanopyDataRequest.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopySortKey> Sort { get; }
 CanopyX.Data.CanopyDataRequest.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopySummaryLevel> Levels { get; }
+CanopyX.Data.CanopyDataRequest.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyTupleFilter> TupleFilters { get; }
 CanopyX.Data.CanopyDataRequest.System.Collections.Generic.IReadOnlyList<System.String> SearchTerms { get; }
 CanopyX.Data.CanopyDataRequest.System.Int32 Limit { get; }
 CanopyX.Data.CanopyDataRequest.System.Int32 Offset { get; }
@@ -119,6 +121,7 @@ CanopyX.Data.CanopyDataSchema.CanopyX.Data.CanopySummaryAggregate GetAggregate(S
 CanopyX.Data.CanopyDataSchema.System.Boolean AllowRegexSearch { get; }
 CanopyX.Data.CanopyDataSchema.System.Boolean DynamicGrouping { get; }
 CanopyX.Data.CanopyDataSchema.System.Boolean Groupable { get; }
+CanopyX.Data.CanopyDataSchema.System.Boolean HasPivot { get; }
 CanopyX.Data.CanopyDataSchema.System.Boolean HasSummary { get; }
 CanopyX.Data.CanopyDataSchema.System.Boolean TryGetColumn(System.String id, out CanopyX.Data.CanopyDataColumn column)
 CanopyX.Data.CanopyDataSchema.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyGridAggregate> Aggregates { get; }
@@ -171,7 +174,8 @@ CanopyX.Data.CanopyFacetBucket..ctor(System.Object? value, System.Int32 count)
 CanopyX.Data.CanopyFacetBucket.System.Int32 Count { get; }
 CanopyX.Data.CanopyFacetBucket.System.Object? Value { get; }
 CanopyX.Data.CanopyFacetRequest : sealed class
-CanopyX.Data.CanopyFacetRequest..ctor(CanopyX.Data.CanopyDataRequest query, CanopyX.Data.CanopyDataColumn column, System.String? search, System.Int32 limit, System.Boolean includeCurrentFilter)
+CanopyX.Data.CanopyFacetRequest..ctor(CanopyX.Data.CanopyDataRequest query, CanopyX.Data.CanopyDataColumn column, System.String? search, System.Int32 limit, System.Boolean includeCurrentFilter, CanopyX.CanopyBucket? bucket = null)
+CanopyX.Data.CanopyFacetRequest.CanopyX.CanopyBucket? Bucket { get; }
 CanopyX.Data.CanopyFacetRequest.CanopyX.Data.CanopyDataColumn Column { get; }
 CanopyX.Data.CanopyFacetRequest.CanopyX.Data.CanopyDataRequest Query { get; }
 CanopyX.Data.CanopyFacetRequest.System.Boolean IncludeCurrentFilter { get; }
@@ -183,8 +187,9 @@ CanopyX.Data.CanopyFacetResult.System.Collections.Generic.IReadOnlyList<CanopyX.
 CanopyX.Data.CanopyFacetResult.System.Int32 Matched { get; }
 CanopyX.Data.CanopyFacetResult.System.Int32 TotalValues { get; }
 CanopyX.Data.CanopyFilterCondition : sealed class (CanopyX.Data.CanopyFilterNode)
-CanopyX.Data.CanopyFilterCondition..ctor(CanopyX.Data.CanopyDataColumn column, CanopyX.CanopyGridFilterOperator op, System.Collections.Generic.IEnumerable<System.Object> values)
+CanopyX.Data.CanopyFilterCondition..ctor(CanopyX.Data.CanopyDataColumn column, CanopyX.CanopyGridFilterOperator op, System.Collections.Generic.IEnumerable<System.Object> values, CanopyX.CanopyBucket? bucket = null)
 CanopyX.Data.CanopyFilterCondition..ctor(CanopyX.Data.CanopyDataColumn column, System.String op, System.Collections.Generic.IEnumerable<System.Object> values)
+CanopyX.Data.CanopyFilterCondition.CanopyX.CanopyBucket? Bucket { get; }
 CanopyX.Data.CanopyFilterCondition.CanopyX.CanopyGridFilterOperator Operator { get; }
 CanopyX.Data.CanopyFilterCondition.CanopyX.Data.CanopyDataColumn Column { get; }
 CanopyX.Data.CanopyFilterCondition.CanopyX.Data.CanopyFilterNodeKind Kind { get; }
@@ -361,10 +366,11 @@ CanopyX.Data.CanopyFlowValidationResult.System.Collections.Generic.IDictionary<S
 CanopyX.Data.CanopyFlowValidationResult.System.Collections.Generic.IList<System.String> Errors { get; }
 CanopyX.Data.CanopyFlowValidationResult.System.Collections.Generic.IList<System.String> Warnings { get; }
 CanopyX.Data.CanopyFlowValidationResult.System.String ToJson()
-CanopyX.Data.CanopyInMemoryProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider, CanopyX.Data.ICanopyRangeProvider)
+CanopyX.Data.CanopyInMemoryProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider, CanopyX.Data.ICanopyPivotProvider, CanopyX.Data.ICanopyRangeProvider)
 CanopyX.Data.CanopyInMemoryProvider<T>..ctor(CanopyX.Data.CanopyDataSchema schema, System.Func<System.Collections.Generic.IEnumerable<T>> records, System.Func<T, System.String> id, System.Collections.Generic.IReadOnlyDictionary<System.String, System.Func<T, System.Object?>> values, System.Func<System.String>? revision = null)
 CanopyX.Data.CanopyInMemoryProvider<T>.CanopyX.Data.CanopyDataSchema Schema { get; }
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Collections.Generic.IAsyncEnumerable<CanopyX.CanopyGridRow> ReadAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
+CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.CanopyPivotResult> PivotAsync(CanopyX.Data.CanopyPivotRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyFacetResult> FacetAsync(CanopyX.Data.CanopyFacetRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyPageResult> QueryAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyInMemoryProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyRangeResult> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken)
@@ -382,6 +388,11 @@ CanopyX.Data.CanopyPageResult.System.Collections.Generic.IDictionary<System.Stri
 CanopyX.Data.CanopyPageResult.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyGridRow> Rows { get; }
 CanopyX.Data.CanopyPageResult.System.Int32 Matched { get; }
 CanopyX.Data.CanopyPageResult.System.Int32 Total { get; }
+CanopyX.Data.CanopyPivotRequest : sealed class
+CanopyX.Data.CanopyPivotRequest..ctor(CanopyX.Data.CanopyDataRequest query, CanopyX.CanopyGridPivot definition)
+CanopyX.Data.CanopyPivotRequest.CanopyX.CanopyGridPivot Definition { get; }
+CanopyX.Data.CanopyPivotRequest.CanopyX.Data.CanopyDataRequest Query { get; }
+CanopyX.Data.CanopyPivotRequest.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopySummaryAggregate> Aggregates { get; }
 CanopyX.Data.CanopyQueryExecutor : class
 CanopyX.Data.CanopyQueryExecutor..ctor()
 CanopyX.Data.CanopyQueryExecutor.static CanopyX.Data.CanopyQueryExecutor Default { get; }
@@ -393,12 +404,15 @@ CanopyX.Data.CanopyQueryOptions..ctor()
 CanopyX.Data.CanopyQueryOptions.CanopyX.Data.CanopyQueryExecutor Executor { get; set; }
 CanopyX.Data.CanopyQueryOptions.CanopyX.Data.CanopyTextComparison TextComparison { get; set; }
 CanopyX.Data.CanopyQueryOptions.System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.String>>? Revision { get; set; }
-CanopyX.Data.CanopyQueryableProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider, CanopyX.Data.ICanopyRangeProvider)
+CanopyX.Data.CanopyQueryableComparison : static class
+CanopyX.Data.CanopyQueryableComparison.static System.Threading.Tasks.Task<CanopyX.CanopyDatasetComparison> CompareAsync<TBefore, TAfter>(System.Linq.IQueryable<TBefore> before, System.Linq.IQueryable<TAfter> after, System.Func<TBefore, CanopyX.CanopyGridRow> mapBefore, System.Func<TAfter, CanopyX.CanopyGridRow> mapAfter, System.Int32 rowLimit = 100000, System.Collections.Generic.IEnumerable<System.String>? columns = null, CanopyX.Data.CanopyQueryExecutor? executor = null, System.Threading.CancellationToken cancellationToken = null)
+CanopyX.Data.CanopyQueryableProvider<T> : sealed class (CanopyX.Data.ICanopyDataProvider, CanopyX.Data.ICanopyPivotProvider, CanopyX.Data.ICanopyRangeProvider)
 CanopyX.Data.CanopyQueryableProvider<T>..ctor(System.Func<System.Linq.IQueryable<T>> source, CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.CanopyQueryOptions? options = null)
 CanopyX.Data.CanopyQueryableProvider<T>..ctor(System.Linq.IQueryable<T> source, CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.CanopyQueryOptions? options = null)
 CanopyX.Data.CanopyQueryableProvider<T>.CanopyX.Data.CanopyColumnMap<T> Map { get; }
 CanopyX.Data.CanopyQueryableProvider<T>.CanopyX.Data.CanopyDataSchema Schema { get; }
 CanopyX.Data.CanopyQueryableProvider<T>.System.Collections.Generic.IAsyncEnumerable<CanopyX.CanopyGridRow> ReadAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
+CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.CanopyPivotResult> PivotAsync(CanopyX.Data.CanopyPivotRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyFacetResult> FacetAsync(CanopyX.Data.CanopyFacetRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyPageResult> QueryAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyRangeResult> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken)
@@ -523,6 +537,8 @@ CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> Comm
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> CommitAsync(System.String json, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> FacetAsync(CanopyX.Data.CanopyFacetRequest request, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> FacetAsync(System.String json, System.Threading.CancellationToken cancellationToken = null)
+CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> PivotAsync(CanopyX.Data.CanopyPivotRequest request, System.Threading.CancellationToken cancellationToken = null)
+CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> PivotAsync(System.String json, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> QueryAsync(CanopyX.Data.CanopyDataRequest request, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> QueryAsync(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String, System.String?>> parameters, System.Threading.CancellationToken cancellationToken = null)
 CanopyX.Data.CanopyRemoteHandler.System.Threading.Tasks.Task<System.String> QueryAsync(System.String json, System.Threading.CancellationToken cancellationToken = null)
@@ -595,6 +611,7 @@ CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyDataRequest ParseQuer
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyDataRequest ParseQuery(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyExportRequest ParseExport(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyFacetRequest ParseFacet(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
+CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyPivotRequest ParsePivot(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyRangeRequest FromRangeQuery(CanopyX.CanopyGridRangeQuery query, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyRangeRequest ParseRange(System.String json, CanopyX.Data.CanopyDataSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null)
 CanopyX.Data.CanopyRequestParser.static CanopyX.Data.CanopyRecordRequest FromRecordQuery(CanopyX.CanopyGridRecordQuery query, CanopyX.Data.CanopyRecordSchema schema, CanopyX.Data.CanopyRemoteLimits? limits = null, System.Func<System.String, System.Boolean>? canRead = null)
@@ -618,7 +635,8 @@ CanopyX.Data.CanopySummaryGroup.System.Collections.Generic.IReadOnlyList<CanopyX
 CanopyX.Data.CanopySummaryGroup.System.Int32 Count { get; }
 CanopyX.Data.CanopySummaryGroup.System.Object? Value { get; }
 CanopyX.Data.CanopySummaryLevel : sealed class
-CanopyX.Data.CanopySummaryLevel..ctor(CanopyX.Data.CanopyDataColumn column, System.Boolean descending, CanopyX.Data.CanopySummaryAggregate? aggregate = null)
+CanopyX.Data.CanopySummaryLevel..ctor(CanopyX.Data.CanopyDataColumn column, System.Boolean descending, CanopyX.Data.CanopySummaryAggregate? aggregate = null, CanopyX.CanopyBucket? bucket = null)
+CanopyX.Data.CanopySummaryLevel.CanopyX.CanopyBucket? Bucket { get; }
 CanopyX.Data.CanopySummaryLevel.CanopyX.Data.CanopyDataColumn Column { get; }
 CanopyX.Data.CanopySummaryLevel.CanopyX.Data.CanopySummaryAggregate? Aggregate { get; }
 CanopyX.Data.CanopySummaryLevel.System.Boolean Descending { get; }
@@ -637,6 +655,12 @@ CanopyX.Data.CanopyTextComparison.const CanopyX.Data.CanopyTextComparison Auto =
 CanopyX.Data.CanopyTextComparison.const CanopyX.Data.CanopyTextComparison Canonical = 3
 CanopyX.Data.CanopyTextComparison.const CanopyX.Data.CanopyTextComparison Collation = 2
 CanopyX.Data.CanopyTextComparison.const CanopyX.Data.CanopyTextComparison Lowercase = 1
+CanopyX.Data.CanopyTupleFilter : sealed class
+CanopyX.Data.CanopyTupleFilter..ctor(CanopyX.Data.CanopyDataSchema schema, CanopyX.CanopyGridTupleFilter definition)
+CanopyX.Data.CanopyTupleFilter.CanopyX.CanopyGridTupleFilter Definition { get; }
+CanopyX.Data.CanopyTupleFilter.CanopyX.Data.CanopyDataSchema Schema { get; }
+CanopyX.Data.CanopyTupleFilter.System.Collections.Generic.IReadOnlyList<CanopyX.Data.CanopyDataColumn> Columns { get; }
+CanopyX.Data.CanopyTupleFilter.System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object?>> Values { get; }
 CanopyX.Data.CanopyWriteContext<T> : sealed class where T : class
 CanopyX.Data.CanopyWriteContext<T>.CanopyX.Data.CanopyCommitBatch Batch { get; }
 CanopyX.Data.CanopyWriteContext<T>.CanopyX.Data.CanopyCommitRow Row { get; }
@@ -660,6 +684,8 @@ CanopyX.Data.ICanopyInsertStore<T> : interface (CanopyX.Data.ICanopyWriteStore<T
 CanopyX.Data.ICanopyInsertStore<T>.abstract System.Void Add(T record)
 CanopyX.Data.ICanopyInsertWriter : interface (CanopyX.Data.ICanopyDataWriter)
 CanopyX.Data.ICanopyInsertWriter.System.Boolean AcceptsInserts { get; }
+CanopyX.Data.ICanopyPivotProvider : interface
+CanopyX.Data.ICanopyPivotProvider.abstract System.Threading.Tasks.ValueTask<CanopyX.CanopyPivotResult> PivotAsync(CanopyX.Data.CanopyPivotRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.ICanopyRangeProvider : interface
 CanopyX.Data.ICanopyRangeProvider.abstract System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyRangeResult> RangeAsync(CanopyX.Data.CanopyRangeRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.ICanopyRecordProvider : interface

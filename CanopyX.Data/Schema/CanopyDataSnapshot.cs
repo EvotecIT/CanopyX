@@ -6,7 +6,7 @@ namespace CanopyX.Data;
 internal static class CanopyDataSnapshot {
     internal static CanopyColumn Column(CanopyColumn source) {
         var copy = new CanopyColumn(source.Id, source.Title) {
-        Kind = source.Kind, Sortable = source.Sortable, Ordering = source.Ordering, Hidden = source.Hidden,
+        Kind = source.Kind, Calculation = source.Calculation, Sortable = source.Sortable, Ordering = source.Ordering, Hidden = source.Hidden,
         Filterable = source.Filterable, Exportable = source.Exportable,
         Editable = source.Editable, Editor = Editor(source.Editor), Validation = Validation(source.Validation),
         Sizing = source.Sizing, Wrap = source.Wrap, Presenter = source.Presenter, Aggregatable = source.Aggregatable, Format = source.Format,
@@ -53,7 +53,8 @@ internal static class CanopyDataSnapshot {
         var copy = new CanopyDataGridView(source.Id, source.Label) {
             Source = source.Source, PageSize = source.PageSize, Presentation = source.Presentation,
             Selection = source.Selection, RowIdentity = source.RowIdentity, StateKey = source.StateKey, Record = Record(source.Record),
-            Reporting = Reporting(source.Reporting), AllowRegexSearch = source.AllowRegexSearch
+            Reporting = Reporting(source.Reporting),
+            Labels = new CanopyLabels { GridCalculationError = source.Labels.GridCalculationError }, AllowRegexSearch = source.AllowRegexSearch
         };
         foreach (var column in source.Columns) copy.Columns.Add(Column(column));
         foreach (var id in source.SearchColumns) copy.SearchColumns.Add(id);
@@ -68,7 +69,10 @@ internal static class CanopyDataSnapshot {
 
     private static CanopyGridReporting? Reporting(CanopyGridReporting? source) {
         if (source == null) return null;
-        var copy = new CanopyGridReporting { Grouping = source.Grouping == null ? null : new CanopyGridGrouping(source.Grouping.Column, source.Grouping.Descending) { HeaderTemplate = source.Grouping.HeaderTemplate }, Groupable = source.Groupable };
+        var copy = new CanopyGridReporting {
+            Grouping = source.Grouping == null ? null : new CanopyGridGrouping(source.Grouping.Column, source.Grouping.Descending) { HeaderTemplate = source.Grouping.HeaderTemplate },
+            Groupable = source.Groupable, Pivot = source.Pivot?.Copy(), Pivotable = source.Pivotable
+        };
         foreach (var level in source.GroupBy) copy.GroupBy.Add(level);
         foreach (var aggregate in source.Aggregates) copy.Aggregates.Add(aggregate);
         foreach (var id in source.FacetColumns) copy.FacetColumns.Add(id);

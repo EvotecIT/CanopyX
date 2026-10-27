@@ -16,9 +16,11 @@ public sealed class CanopyFilterCondition : CanopyFilterNode {
     /// <param name="column">The allowed column.</param>
     /// <param name="op">The operator.</param>
     /// <param name="values">The typed operands.</param>
-    public CanopyFilterCondition(CanopyDataColumn column, CanopyGridFilterOperator op, IEnumerable<object> values) {
+    /// <param name="bucket">Optional partition; operands then are numeric bucket keys.</param>
+    public CanopyFilterCondition(CanopyDataColumn column, CanopyGridFilterOperator op, IEnumerable<object> values, CanopyBucket? bucket = null) {
         Column = column ?? throw new ArgumentNullException(nameof(column));
         Operator = op;
+        bucket?.Validate(column.Definition); Bucket = bucket;
         var list = new List<object>();
         foreach (var value in values ?? throw new ArgumentNullException(nameof(values))) list.Add(value ?? throw new ArgumentException("Operands cannot be null.", nameof(values)));
         Values = new ReadOnlyCollection<object>(list);
@@ -47,6 +49,9 @@ public sealed class CanopyFilterCondition : CanopyFilterNode {
 
     /// <summary>Gets the operator.</summary>
     public CanopyGridFilterOperator Operator { get; }
+
+    /// <summary>Gets the optional partition applied before testing numeric bucket operands.</summary>
+    public CanopyBucket? Bucket { get; }
 
     /// <summary>Gets the typed operands: none for null tests, one to 1,000 for membership, one otherwise.</summary>
     public IReadOnlyList<object> Values { get; }

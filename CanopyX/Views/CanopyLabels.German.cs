@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete German labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels German() => WithGermanUi(WithGermanForest(WithGermanBoardPlan(new CanopyLabels {
+    public static CanopyLabels German() => WithGermanUi(WithGermanForest(WithGermanDataViews(WithGermanBoardPlan(WithGermanAnalysis(new CanopyLabels {
         GridNoExportColumns = "Keine sichtbare Spalte unterstützt den Export.",
         GridDownloadXlsx = "Excel-Arbeitsmappe (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -317,7 +317,7 @@ public sealed partial class CanopyLabels {
         RecordAfter = "Nachher",
         RecordAdded = "Hinzugefügt",
         RecordRemoved = "Entfernt",
-        RecordChanged = "{count} geänderte Felder",
+        RecordChanged = "Geänderte Felder: {count}",
         Yes = "Ja",
         No = "Nein",
         UtcTime = "{time} UTC",
@@ -789,5 +789,5 @@ public sealed partial class CanopyLabels {
         CalendarOccurrenceScope = "Nur {date} ändert sich; andere Termine von {title} bleiben unverändert.",
         CalendarSharedResources = "{count} {resources}",
         CalendarResourceWindow = "{resources} {start}–{end} von {total}",
-    })));
+    })))));
 }

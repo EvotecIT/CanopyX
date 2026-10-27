@@ -25,7 +25,7 @@
       for (let i = 0; i < page.items.length; i++) {
         const path = groupPath(result, page.offset + i);
         if (path.length !== levels.length || columns.some((column, depth) =>
-            reportingGroupKey(gridScalar(page.items[i].cells[column.id], column)) !== reportingGroupKey(gridScalar(path[depth].value, column))))
+            reportingGroupKey(groupBucketValue(levels[depth], column, page.items[i].cells[column.id])) !== reportingGroupKey(path[depth].value)))
           throw new Error("CanopyX: a page record differs from its complete-query group.");
       }
     }

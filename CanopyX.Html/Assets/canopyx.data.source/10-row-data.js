@@ -116,11 +116,11 @@
       async query(query, options) {
         // Without search, filters or sort the order is the identity order, which ordered rows already have: the first windows
         // need only the chunks that hold them. Reporting grids also total and group the complete rows, so they wait for all.
-        if (ordered && !view.reporting && !view.footers?.length && !query.search && !query.filters.length && !query.filterGroup && !query.sort.length) {
+        if (ordered && !view.reporting && !view.footers?.length && !view.columns.some(column => column.calculation !== undefined) && !query.search && !query.filters.length && !query.filterGroup && !query.tupleFilters?.length && !query.sort.length) {
           const end = Math.min(data.count, query.offset + query.limit);
           while (rows.length < end && !finished) await Promise.race([progress, done]);
           if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
-          if (!finished && ordered) return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
+          if (!finished && ordered) return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: gridInlineRevision(view), offset: query.offset,
             total: data.count, matched: data.count, items: rows.slice(query.offset, end) };
         }
         return (await all()).query(query, options);

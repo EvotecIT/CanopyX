@@ -1,5 +1,6 @@
   // ---------- inline full-dataset queries ----------
   function gridOrder(left, right) { return left === right ? 0 : left < right ? -1 : 1; }
+  function gridInlineRevision(view) { return GRID_CALCULATIONS.revision?.(view) || "inline"; }
   // Row identities order by UTF-16 code unit, except canonical integers ("0", "42": no sign, no leading zero), which order as
   // numbers and before every other identity, so numeric keys keep their natural order (2 before 10) without padding.
   function gridIntegerId(id) {
@@ -39,15 +40,17 @@
 
   function gridMatches(row, predicate, column) {
     if (!Object.hasOwn(GRID_FILTER_LABELS, predicate.operator)) throw new Error("CanopyX: no plugin provides filter operator '" + predicate.operator + "'.");
+    if (predicate.bucket) return cellMatches(GRID_BUCKETS.key(predicate.bucket, gridScalar(row.cells[column.id], column)), predicate, { ...column, kind: "number" });
     return cellMatches(row.cells[column.id], predicate, column);
   }
 
   function gridQueryRows(view, query, columns, compare = gridCompare, matches = gridMatches, extended = false) {
+    GRID_CALCULATIONS.apply?.(view);
     if (!extended && GRID_OPTIONS.queryRows && GRID_OPTION_GRIDS.has(view)) return GRID_OPTIONS.queryRows(view, query, columns, compare);
     const terms = gridSearchTerms(query.search, query.searchMode),
       searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
     const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
-      query.filters.every(predicate => matches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns, matches));
+      query.filters.every(predicate => matches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns, matches) && gridMatchesTuples(row, query.tupleFilters, columns));
     if (compare !== gridCompare || !query.sort.length) return compare ? rows.sort((a, b) => {
       for (const sort of query.sort) {
         const compared = compare(a, b, columns.get(sort.column), sort.direction);
@@ -79,7 +82,7 @@
           ordered = gridQueryRows(view, query, columns, compare);
           lastShape = shape;
         }
-        return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: "inline", offset: query.offset,
+        return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: gridInlineRevision(view), offset: query.offset,
           total: view.rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
       },
       // A record's position in a query's result (-1 outside it) and a record by id, for record deep links and related records.

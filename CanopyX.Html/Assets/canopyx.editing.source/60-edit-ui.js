@@ -202,7 +202,7 @@
         return matching([...values.values()].sort((left, right) => left.label.localeCompare(right.label, this.lang)));
       }
       if (typeof this.source.facet !== "function" || !this.acceptedQuery) return [];
-      const query = gridQuery(this.view, { ...this.acceptedQuery, search: "", filters: [], filterGroup: undefined });
+      const query = gridQuery(this.view, { ...this.acceptedQuery, search: "", filters: [], filterGroup: undefined, tupleFilters: undefined });
       const request = editCopy({ protocol: PROTOCOL, type: "gridFacetQuery", query, column: column.id, search, limit, includeCurrentFilter: false });
       const response = await this.runGridHook(hook => this.source.facet(request, { signal: hook }), signal);
       const page = validateGridFacetPage(response, this.view, request, { total: this.snapshot.total, matched: this.snapshot.total });

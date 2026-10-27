@@ -20,6 +20,8 @@ public sealed class CanopyGridFacetQuery {
     public CanopyGridQuery Query { get; }
     /// <summary>Gets the declared facet column identity.</summary>
     public string Column { get; }
+    /// <summary>Gets or sets an optional calendar or numeric partition of the facet values.</summary>
+    public CanopyBucket? Bucket { get; set; }
     /// <summary>Gets or sets folded substring search over raw facet values, independently of row search.</summary>
     public string? Search { get; set; }
     /// <summary>Gets or sets whether counts include existing predicates on this facet column. Default true.</summary>
@@ -40,7 +42,7 @@ public sealed class CanopyGridFacetQuery {
     public string ToJson(CanopyDataGridView view) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
-        CanopyGridFacets.Column(view, Column);
+        var column = CanopyGridFacets.Column(view, Column); Bucket?.Validate(column);
         Query.Validate(view);
         if (Query.Revision == null) throw new InvalidOperationException("Facets require an accepted dataset revision.");
         if ((Search?.Length ?? 0) > 16384) throw new InvalidOperationException("Facet search cannot exceed 16,384 code units.");
@@ -48,6 +50,7 @@ public sealed class CanopyGridFacetQuery {
         writer.BeginObject().Envelope("gridFacetQuery").Property("column", Column).Property("search", Search ?? string.Empty)
             .Property("limit", Limit).Property("includeCurrentFilter", IncludeCurrentFilter).Name("query");
         Query.WriteJson(writer, view);
+        if (Bucket != null) { writer.Name("bucket"); Bucket.WriteJson(writer); }
         return writer.EndObject().ToString();
     }
 }

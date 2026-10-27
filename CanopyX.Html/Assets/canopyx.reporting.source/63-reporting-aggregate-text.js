@@ -45,16 +45,20 @@
   // A custom aggregate shows the {value} template its plugin registers (the grouping part keeps them in groupAggregates).
   function reportingAggregateParts(grid, column, aggregates, values) {
     const precision = aggregates.some(item => !item.format && !column.format && !reportingCounting(item.operation)) ? reportingColumnPrecision(grid, column) : 0;
-    const text = [], titles = [];
+    const text = [], titles = [], captions = new Set();
     for (const aggregate of aggregates) {
-      const value = values[aggregate.id];
-      if (value === null || value === undefined) continue;
+      const mode = showAsMode(grid, aggregate), display = mode === "value" ? null : GRID_SHOW_AS.entry?.(grid, values, aggregate);
+      const value = display ? display.value : values[aggregate.id];
+      const missing = value === null || value === undefined;
+      if (missing && mode === "value") continue;
       const known = precision !== null, digits = reportingCounting(aggregate.operation) ? 0 : !known ? 3 : aggregate.operation === "average" ? Math.min(3, precision + 1) : precision;
       const explicit = aggregate.format || (!reportingCounting(aggregate.operation) && column.format);
-      const shown = explicit ? numberText(value, grid.lang, explicit) : reportingAggregateFormat(grid.lang, digits, Math.abs(value) >= 1e6, known || reportingCounting(aggregate.operation)).format(value);
+      const shown = missing ? "—" : display && GRID_SHOW_AS.percent(mode) ? new Intl.NumberFormat(grid.lang, { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) :
+        mode === "rank" ? reportingAggregateFormat(grid.lang, 0, false).format(value) : explicit ? numberText(value, grid.lang, explicit) : reportingAggregateFormat(grid.lang, digits, Math.abs(value) >= 1e6, known || reportingCounting(aggregate.operation)).format(value);
+      const caption = showAsCaption(grid, mode); if (caption) captions.add(caption);
       const label = AGGREGATE_LABELS[aggregate.operation];
       text.push(fill(label ? grid.labels[label] : grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation + " {value}", { value: shown }));
-      titles.push(aggregate.label + ": " + (explicit ? shown : reportingAggregateFormat(grid.lang, 3, false, false).format(value)));
+      titles.push(aggregate.label + ": " + (display || explicit ? shown : reportingAggregateFormat(grid.lang, 3, false, false).format(value)) + (caption ? " (" + caption + ")" : ""));
     }
-    return { text: text.join(" · "), title: titles.join(" · ") };
+    return { text: text.join(" · "), title: titles.join(" · "), caption: [...captions].join(" · ") };
   }

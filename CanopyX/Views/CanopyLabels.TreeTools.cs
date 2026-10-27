@@ -25,5 +25,5 @@ public sealed partial class CanopyLabels {
     private static bool ReadByTrees(string name) =>
         !name.StartsWith("Grid", StringComparison.Ordinal) && !name.StartsWith("Format", StringComparison.Ordinal) && !name.StartsWith("Calendar", StringComparison.Ordinal) &&
         !name.StartsWith("Path", StringComparison.Ordinal) && !name.StartsWith("Stack", StringComparison.Ordinal) && !name.StartsWith("Time", StringComparison.Ordinal) &&
-        !name.StartsWith("Board", StringComparison.Ordinal) && !name.StartsWith("Plan", StringComparison.Ordinal) || TreeToolNames.Contains(name);
+        !name.StartsWith("Board", StringComparison.Ordinal) && !name.StartsWith("Plan", StringComparison.Ordinal) && !name.StartsWith("Compare", StringComparison.Ordinal) && !name.StartsWith("ViewIntent", StringComparison.Ordinal) || TreeToolNames.Contains(name);
 }

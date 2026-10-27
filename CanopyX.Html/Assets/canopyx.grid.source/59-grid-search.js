@@ -77,7 +77,7 @@
       });
       query.filters.forEach((filter, index) => {
         const column = this.columns.find(item => item.id === filter.column), name = GRID_FILTER_LABELS[filter.operator] || filter.operator;
-        const condition = column.title + " " + (this.labels[name] || name) + (filter.values.length ? " " + filter.values.join(", ") : "");
+        const condition = this.filterCaption?.(filter) || column.title + " " + (this.labels[name] || name) + (filter.values.length ? " " + filter.values.join(", ") : "");
         chip(condition, fill(this.labels.gridRemoveCondition, { condition }), "filter-" + index, () => {
           const filters = this.queryForChange().filters.slice(), at = filters.findIndex(item => JSON.stringify(item) === JSON.stringify(filter));
           if (at >= 0) { filters.splice(at, 1); apply({ filters }); }
@@ -89,10 +89,18 @@
           if (JSON.stringify(this.queryForChange().filterGroup) === JSON.stringify(query.filterGroup)) apply({ filterGroup: undefined });
         });
       }
-      if (query.search || query.filters.length || query.filterGroup) {
+      (query.tupleFilters || []).forEach((tuple, index) => {
+        const condition = tuple.columns.map(field => this.columns.find(column => column.id === field.column).title).join(", ") +
+          (tuple.exclude ? " ∉ " : " ∈ ") + JSON.stringify(tuple.values);
+        chip(condition, fill(this.labels.gridRemoveCondition, { condition }), "tuple-" + index, () => {
+          const tuples = (this.queryForChange().tupleFilters || []).slice(), at = tuples.findIndex(item => JSON.stringify(item) === JSON.stringify(tuple));
+          if (at >= 0) { tuples.splice(at, 1); apply({ tupleFilters: tuples }); }
+        });
+      });
+      if (query.search || query.filters.length || query.filterGroup || query.tupleFilters?.length) {
         const clear = gridButton(this.labels.gridClearAll, () => {
           clear.focus({ preventScroll: true });
-          if (this.searchInput) this.searchInput.value = ""; apply({ search: "", filters: [], filterGroup: undefined });
+          if (this.searchInput) this.searchInput.value = ""; apply({ search: "", filters: [], filterGroup: undefined, tupleFilters: undefined });
         });
         clear.classList.add("cx-link"); clear.setAttribute("aria-label", this.labels.gridClearQuery);
         clear.setAttribute("data-cx-condition", "clear"); this.queryChips.appendChild(clear);

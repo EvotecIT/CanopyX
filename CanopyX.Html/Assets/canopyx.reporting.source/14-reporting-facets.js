@@ -9,19 +9,19 @@
     const columns = new Map(view.columns.map(column => [column.id, column]));
     source.facet = (request, options) => {
       if (options.signal.aborted) throw new DOMException("Facet request cancelled.", "AbortError");
-      const column = view.columns.find(item => item.id === request.column), query = request.includeCurrentFilter ? request.query :
+      const declared = view.columns.find(item => item.id === request.column), column = request.bucket ? { ...declared, kind: "number" } : declared, query = request.includeCurrentFilter ? request.query :
         reportingFacetProjection(request.query, column.id);
       // Facet counts need the complete filtered projection, without sorting that projection.
       const rows = gridQueryRows(view, query, columns, false), buckets = new Map(), needle = foldText(request.search);
       for (const row of rows) {
-        const scalar = gridScalar(row.cells[column.id], column), value = column.kind === "datetime" && scalar !== null ? new Date(scalar).toISOString() : scalar;
+        const scalar = gridScalar(row.cells[column.id], declared), value = request.bucket ? GRID_BUCKETS.key(request.bucket, scalar) : column.kind === "datetime" && scalar !== null ? new Date(scalar).toISOString() : scalar;
         const key = reportingFacetKey(value, column), existing = buckets.get(key);
         if (existing) {
           existing.count++;
           if (typeof value === "string" && value < existing.value) existing.value = value;
         } else buckets.set(key, { value, count: 1 });
       }
-      const items = [...buckets.values()].filter(item => foldText(cellText(item.value,column,formatting(undefined,false,DEFAULT_LABELS))).includes(needle));
+      const items = [...buckets.values()].filter(item => !needle || foldText(request.bucket && item.value !== null ? GRID_BUCKETS.label(request.bucket, item.value, "en") : cellText(item.value,column,formatting(undefined,false,DEFAULT_LABELS))).includes(needle));
       items.sort((a, b) => {
         if (a.value === null || b.value === null) return a.value === b.value ? 0 : a.value === null ? 1 : -1;
         if (column.kind !== "text") return gridOrder(gridScalar(a.value, column), gridScalar(b.value, column));
@@ -29,9 +29,9 @@
         if (typeof a.value !== typeof b.value) return typeof a.value === "boolean" ? -1 : 1;
         return gridOrder(typeof a.value === "string" ? foldText(a.value) : a.value, typeof b.value === "string" ? foldText(b.value) : b.value);
       });
-      return { protocol: PROTOCOL, type: "gridFacetPage", view: view.id, revision: "inline", column: column.id,
+      return { protocol: PROTOCOL, type: "gridFacetPage", view: view.id, revision: gridInlineRevision(view), column: column.id,
         search: request.search, includeCurrentFilter: request.includeCurrentFilter, matched: rows.length,
-        totalValues: items.length, truncated: items.length > request.limit, items: items.slice(0, request.limit) };
+        totalValues: items.length, truncated: items.length > request.limit, items: items.slice(0, request.limit), ...(request.bucket ? { bucket: request.bucket } : {}) };
     };
     return source;
   };

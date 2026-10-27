@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Polish labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Polish() => WithPolishUi(WithPolishForest(WithPolishBoardPlan(new CanopyLabels {
+    public static CanopyLabels Polish() => WithPolishUi(WithPolishForest(WithPolishDataViews(WithPolishBoardPlan(WithPolishAnalysis(new CanopyLabels {
         GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
         GridDownloadXlsx = "Skoroszyt Excel (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -789,5 +789,5 @@ public sealed partial class CanopyLabels {
         CalendarOccurrenceScope = "Zmienia się tylko {date}; pozostałe daty wydarzenia {title} pozostają bez zmian.",
         CalendarSharedResources = "{count} {resources}",
         CalendarResourceWindow = "{resources} {start}–{end} z {total}",
-    })));
+    })))));
 }

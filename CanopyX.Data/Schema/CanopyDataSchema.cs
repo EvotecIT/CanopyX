@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace CanopyX.Data;
 
@@ -91,6 +92,11 @@ public sealed class CanopyDataSchema {
         if (levels.Count > 4) throw new ArgumentException("At most four grouping levels are supported.", nameof(view));
         GroupBy = new ReadOnlyCollection<CanopyGridGroupLevel>(levels);
         Groupable = view.Reporting?.Groupable == true;
+        HasPivot = ProtocolView.Reporting?.Pivot != null || ProtocolView.Reporting?.Pivotable == true;
+        if (ProtocolView.Reporting?.Pivot is CanopyGridPivot pivot) foreach (var level in pivot.Rows.Concat(pivot.Columns)) {
+            if (!_byId.TryGetValue(level.Column, out var column) || !column.Sortable || !column.Filterable)
+                throw new ArgumentException("Initial pivot axes must be allowed sortable and filterable columns.", nameof(view));
+        }
         if (Grouping != null && DynamicGrouping) throw new ArgumentException("A fixed grouping cannot be combined with runtime grouping.", nameof(view));
         var editable = new List<CanopyDataColumn>();
         foreach (var column in list) {
@@ -159,6 +165,9 @@ public sealed class CanopyDataSchema {
 
     /// <summary>Gets whether the view requests complete-query summaries (grouping or aggregates).</summary>
     public bool HasSummary => Grouping != null || DynamicGrouping || Aggregates.Count > 0;
+
+    /// <summary>Gets whether the captured reporting definition enables pivot requests.</summary>
+    public bool HasPivot { get; }
 
     /// <summary>Gets the allowed columns the view declares editable. Only these can be written through a commit.</summary>
     public IReadOnlyList<CanopyDataColumn> EditableColumns { get; }

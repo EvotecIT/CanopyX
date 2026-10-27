@@ -14,10 +14,12 @@ public sealed class CanopySummaryLevel {
     /// <param name="column">The allowed sortable grouping column.</param>
     /// <param name="descending">Whether groups follow descending order.</param>
     /// <param name="aggregate">The declared aggregate whose value orders the groups, or null to order them by value.</param>
-    public CanopySummaryLevel(CanopyDataColumn column, bool descending, CanopySummaryAggregate? aggregate = null) {
+    /// <param name="bucket">Optional calendar or numeric partition.</param>
+    public CanopySummaryLevel(CanopyDataColumn column, bool descending, CanopySummaryAggregate? aggregate = null, CanopyBucket? bucket = null) {
         Column = column ?? throw new ArgumentNullException(nameof(column));
         Descending = descending;
         Aggregate = aggregate;
+        Bucket = bucket;
     }
 
     /// <summary>Gets the grouping column.</summary>
@@ -28,4 +30,9 @@ public sealed class CanopySummaryLevel {
 
     /// <summary>Gets the declared aggregate whose value orders this level's groups, or null when groups order by value.</summary>
     public CanopySummaryAggregate? Aggregate { get; }
+
+    /// <summary>Gets the optional partition applied before grouping.</summary>
+    public CanopyBucket? Bucket { get; }
+
+    internal object? Key(object? value) => Bucket == null ? value : Bucket.Key(value);
 }

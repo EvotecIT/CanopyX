@@ -9,27 +9,27 @@
     const compact = this.columns.filter(column => !column.hidden && !column.responsiveHidden && !column.fitHidden).length <= 2;
     return hidden.filter(column => gridLevel(column) === 0 || compact).slice(0, 2);
   };
-  DataGrid.prototype.phoneRemainingColumns = function () {
-    const shown = this.phoneLineColumns();
+  DataGrid.prototype.phoneRemainingColumns = function (row) {
+    const shown = this.phoneLineColumns(row);
     return this.hiddenViewColumns().filter(column => !shown.includes(column));
   };
-  DataGrid.prototype.hiddenFieldCount = function () { return this.phoneRemainingColumns().length; };
-  DataGrid.prototype.hiddenFieldLabel = function () {
-    const count = this.hiddenFieldCount();
+  DataGrid.prototype.hiddenFieldCount = function (row) { return this.phoneRemainingColumns(row).length; };
+  DataGrid.prototype.hiddenFieldLabel = function (row) {
+    const count = this.hiddenFieldCount(row);
     return fill(plural(this.labels.hiddenColumns, count, this.lang), { count: numberFormat(this.lang).format(count) });
   };
   DataGrid.prototype.paintHiddenFields = function (slot, row, column) {
     if (this.phone && column.identity) slot.cell.title = cellText(row.cells[column.id], column, this.fmt) || "";
-    const first = this.phone && column === this.cols[0], fields = first ? this.phoneLineColumns() : [];
+    const first = this.phone && column === this.cols[0], fields = first ? this.phoneLineColumns(row) : [];
     let button = slot.hiddenFields;
-    const count = first && this.hiddenFieldCount();
+    const count = first && this.hiddenFieldCount(row);
     if (!count) { button?.remove(); slot.hiddenFields = null; }
     else {
       if (!button) {
         button = gridButton("", () => Promise.resolve().then(() => this.openDetails(button.dataset.cxRecord)).catch(error => this.emit("error", { error })));
         button.classList.add("cx-hidden-fields"); button.tabIndex = -1;
       }
-      const label = this.hiddenFieldLabel(), titles = this.phoneRemainingColumns().map(item => item.title).join(", ");
+      const label = this.hiddenFieldLabel(row), titles = this.phoneRemainingColumns(row).map(item => item.title).join(", ");
       button.dataset.cxRecord = row.id; button.setAttribute("aria-label", label + ": " + titles); button.title = titles; setText(button, label);
       slot.hiddenFields = button;
     }
