@@ -11,9 +11,11 @@ public sealed class TimeSliderStaticTests {
     public void SnapshotCaptions_ShowHumanTimeInTheRequestedCultureAndKeepMachineTimeInTheAttribute() {
         var settings = new CanopyStaticHtmlOptions { Culture = CultureInfo.GetCultureInfo("de-DE") };
         foreach (var html in new[] { CanopyStaticHtml.RenderMatrix(MatrixSlider(), settings), CanopyStaticHtml.RenderPropagation(PropagationSlider(), settings) }) {
-            Assert.Contains(">25 Okt. 2026, 10:01 UTC</time>", html);
+            Assert.Contains(">25 Okt. 2026, 10:01&#160;UTC</time>", html);
             Assert.Contains("datetime=\"2026-10-25T10:01:00.0000000Z\"", html);
         }
+        var propagation = CanopyStaticHtml.RenderPropagation(PropagationSlider(), settings);
+        Assert.Contains("25 Okt. 2026, 10:00&#160;UTC", propagation.Substring(propagation.IndexOf("</caption>", StringComparison.Ordinal)));
     }
 
     [Theory]

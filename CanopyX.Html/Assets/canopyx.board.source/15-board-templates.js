@@ -34,7 +34,7 @@
   function boardCardTemplate(row, text, fields) {
       const card = h("article", "cx-board-card"), title = h("button", "cx-btn cx-board-title");
       card.dataset.cxBoardRecord = row.id; card.tabIndex = 0;
-      card.setAttribute("aria-label", text); card.setAttribute("aria-describedby", this.id + "-board-help"); title.type = "button"; setText(title, text); title.title = text;
+      card.setAttribute("aria-label", text); card.setAttribute("aria-describedby", this.id + "-board-help"); title.type = "button"; const caption=h("span");setText(caption,text);title.appendChild(caption);title.title = text;
       card.appendChild(title);
       const details = h("dl", "cx-board-fields");
       for (const field of fields) { const key = h("dt"), value = h("dd"), text = field.text; setText(key, field.title); key.title = field.title; setText(value, text); value.title = text; details.append(key, value); }

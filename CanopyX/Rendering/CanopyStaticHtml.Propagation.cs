@@ -38,7 +38,7 @@ public static partial class CanopyStaticHtml {
                 if (caption.Length != 0) html.Append("<br>");
                 html.Append("<span style=\"").Append(styles.MutedText).Append("font-weight:400;\">");
                 if (snapshot.Label != null) html.Append(Encode(snapshot.Label)).Append(" · ");
-                html.Append("<time datetime=\"").Append(Encode(at)).Append("\">").Append(Encode(snapshot.At.UtcDateTime.ToString("dd MMM yyyy, HH:mm", settings.Culture) + " UTC")).Append("</time></span>");
+                html.Append("<time datetime=\"").Append(Encode(at)).Append("\">").Append(Encode(CanopyChangeFormat.HumanTime(snapshot.At, labels, settings.Culture))).Append("</time></span>");
             }
 
             html.Append("</caption>");
@@ -78,14 +78,14 @@ public static partial class CanopyStaticHtml {
                 if (witness.Note != null) html.Append("<br><span style=\"").Append(styles.MutedText).Append("\">").Append(Encode(witness.Note)).Append("</span>");
                 html.Append("</td><td style=\"").Append(styles.Cell).Append("white-space:nowrap;\">");
                 if (witness.FirstSeen.HasValue) {
-                    html.Append(Encode(CanopyChangeFormat.Time(witness.FirstSeen.Value, labels)));
+                    html.Append(Encode(CanopyChangeFormat.HumanTime(witness.FirstSeen.Value, labels, settings.Culture)));
                     if (start != default && !witness.Source) html.Append(" <span style=\"").Append(styles.MutedText).Append("\">")
                         .Append(Encode(labels.ChangeDelay.Replace("{duration}", CanopyChangeFormat.Duration(witness.FirstSeen.Value - start, labels, settings.Culture)))).Append("</span>");
                 } else {
                     html.Append("<span style=\"").Append(styles.MutedText).Append("\">").Append(Encode(labels.ChangeNotSeen)).Append("</span>");
                 }
 
-                html.Append("</td><td style=\"").Append(styles.Cell).Append("white-space:nowrap;\">").Append(witness.LastSeen.HasValue ? Encode(CanopyChangeFormat.Time(witness.LastSeen.Value, labels)) : string.Empty).Append("</td></tr>");
+                html.Append("</td><td style=\"").Append(styles.Cell).Append("white-space:nowrap;\">").Append(witness.LastSeen.HasValue ? Encode(CanopyChangeFormat.HumanTime(witness.LastSeen.Value, labels, settings.Culture)) : string.Empty).Append("</td></tr>");
             }
 
             html.Append("</tbody>");

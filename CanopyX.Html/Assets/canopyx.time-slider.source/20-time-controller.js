@@ -1,7 +1,7 @@
   function timeCreate(host, source, hostLabels, kind, validate, update) {
     const model = timeModel(source, kind, validate), labels = timeLabels(source.labels, hostLabels);
     const lifetime = new AbortController(), signal = lifetime.signal, media = matchMedia("(prefers-reduced-motion: reduce)");
-    const elements = timeControlsTemplate(model, labels, source);
+    const elements = timeControlsTemplate(model, labels, source, hostLabels, host.closest("[lang]")?.getAttribute("lang"));
     const { root, range, previous, play, next } = elements;
     const hadFrame = host.classList.contains("cx-time-host");
     host.classList.add("cx-time-host");

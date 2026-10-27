@@ -54,7 +54,12 @@
           const rect = element.getBoundingClientRect(), start = axis.x(task.tlStart), end = axis.x(planMilestone(this, task) ? task.tlStart : task.tlEnd);
           if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, bottom: rect.bottom - canvasBox.top });
           const title = element.querySelector(".cx-cal-ev-title");
-          if (title) { title.title = task.title; element.classList.toggle("cx-plan-label-outside", title.scrollWidth > element.clientWidth - 12 || planMilestone(this, task)); }
+          if (title) {
+            title.title = task.title; element.classList.remove("cx-plan-label-before");
+            const outside=title.scrollWidth>element.clientWidth-12||planMilestone(this,task);element.classList.toggle("cx-plan-label-outside",outside);
+            const box=title.getBoundingClientRect(),x=axis.x(Date.now()),today=canvasBox.left+(this.calRtl?axis.total-x:x);
+            element.classList.toggle("cx-plan-label-before",outside&&this.cal.now&&today>=box.left-4&&today<=box.right+4);
+          }
           if (!spec.baselineStart || !spec.baselineEnd) continue;
           const from = planInstant(task.row.cells[spec.baselineStart]), to = planInstant(task.row.cells[spec.baselineEnd]);
           if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || from >= axis.to || to < axis.from) continue;

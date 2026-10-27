@@ -29,6 +29,7 @@
     }
     render() {
       const doc = this.doc, labels = this.labels, witnesses = doc.witnesses;
+      this.timeFormat = humanTimeFormat(this.lang, doc.local, labels.changeUtcTime);
       const seen = witnesses.map(witness => witness.firstSeen).filter(time => time !== null), reports = witnesses.flatMap(witness => [witness.firstSeen, witness.lastSeen]).filter(time => time !== null);
       const start = doc.start ?? (seen.length ? Math.min(...seen) : null), end = doc.asOf ?? (reports.length ? Math.max(...reports) : null), span = start !== null && end !== null ? Math.max(1, end - start) : 0;
       const overall = doc.state || witnesses.reduce((worst, witness) => PROPAGATION_RANK[witness.state] > PROPAGATION_RANK[worst] ? witness.state : worst, "converged");
@@ -72,10 +73,10 @@
       if (witness.note) { const note = h("span", "cx-prop-sub"); setText(note, witness.note); state.appendChild(note); }
       let delay = null;
       if (witness.firstSeen !== null) {
-        const time = h("span"); setText(time, changeTimeText(witness.firstSeen, this.doc.local, labels)); first.appendChild(time);
+        const time = h("span"); setText(time, this.timeFormat.format(witness.firstSeen)); first.appendChild(time);
         if (start !== null && !witness.source) { delay = fill(labels.changeDelay, { duration: changeDuration(witness.firstSeen - start, labels, this.format) }); const sub = h("span", "cx-prop-delay"); setText(sub, delay); first.appendChild(sub); }
       } else { const none = h("span", "cx-prop-none"); setText(none, labels.changeNotSeen); first.appendChild(none); }
-      setText(last, witness.lastSeen !== null ? changeTimeText(witness.lastSeen, this.doc.local, labels) : "");
+      setText(last, witness.lastSeen !== null ? this.timeFormat.format(witness.lastSeen) : "");
       // The lane: from the change to the evidence time; the fill ends where the change was first seen, or runs on while it is not.
       const track = h("div", "cx-prop-lane"), fillBar = h("div", "cx-prop-fill");
       track.setAttribute("aria-hidden", "true");

@@ -67,7 +67,7 @@ public static partial class CanopyStaticHtml {
                 if (caption.Length != 0) html.Append("<br>");
                 html.Append("<span style=\"").Append(styles.MutedText).Append("font-weight:400;\">");
                 if (snapshot.Label != null) html.Append(Encode(snapshot.Label)).Append(" · ");
-                html.Append("<time datetime=\"").Append(Encode(at)).Append("\">").Append(Encode(snapshot.At.UtcDateTime.ToString("dd MMM yyyy, HH:mm", settings.Culture) + " UTC")).Append("</time></span>");
+                html.Append("<time datetime=\"").Append(Encode(at)).Append("\">").Append(Encode(CanopyChangeFormat.HumanTime(snapshot.At, labels, settings.Culture))).Append("</time></span>");
             }
 
             html.Append("</caption>");

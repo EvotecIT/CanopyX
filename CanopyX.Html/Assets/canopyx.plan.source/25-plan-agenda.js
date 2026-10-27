@@ -16,10 +16,11 @@
       for(const task of this.calEvents) {
         if(task.background) continue;
         const node=network.nodes.get(task.key),critical=this.view.plan.criticalPath!==false&&network.complete&&node?.critical,milestone=planMilestone(this,task);
-        const start=this.calFmt.longDay(this.calZone.day(task.start)),dates=milestone?start:start+" – "+this.calFmt.longDay(this.calZone.day(task.end));
+        const first=this.calZone.day(task.start),last=this.calZone.day(task.end),start=this.calFmt.longDay(first),fullDates=milestone?start:start+" – "+this.calFmt.longDay(last);
+        const dates=milestone?this.calFmt.date(first):this.calFmt.dayRange(first,last);
         const meta=[this.planText("planDependencies")+": "+(node?.before.length||0),critical?this.planText("planCritical"):null,
           node&&[...node.before,...node.after].some(edge=>edge.conflict)?this.planText("planConflict"):null,milestone?this.planText("planMilestone"):null].filter(Boolean).join(" · ");
-        for(const id of this.calEventResources(task)) {const group=index.get(id);if(group) group.items.push({kind:"task",group,task,dates,meta,critical});}
+        for(const id of this.calEventResources(task)) {const group=index.get(id);if(group) group.items.push({kind:"task",group,task,dates,fullDates,meta,critical});}
       }
       const items=groups.flatMap(group=>[{kind:"resource",group},...group.items]);
       this.planAgendaModel={events:this.calEvents,rows:this.tlTree.rows,network,items,index};

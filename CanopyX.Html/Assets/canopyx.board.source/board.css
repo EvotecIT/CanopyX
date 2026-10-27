@@ -16,7 +16,8 @@
 .cx-board-card:hover { border-color: var(--hfx-color-accent); }
 .cx-board-card:focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring); outline-offset:var(--hfx-focus-offset); }
 .cx-board-card[draggable=true] { cursor: grab; }
-.cx-board .cx-board-title { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; text-align:start; width:100%; min-width:0; overflow:hidden; white-space:normal; min-block-size:calc(2 * var(--hfx-type-body-size) * var(--hfx-type-body-line)); }
+.cx-board .cx-board-title { display:flex;align-items:flex-start;text-align:start;width:100%;min-width:0;overflow:hidden;white-space:normal;min-block-size:calc(2 * var(--hfx-type-body-size) * var(--hfx-type-body-line)); }
+.cx-board-title > span { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden; }
 .cx-board-fields { display: grid; grid-template-columns: minmax(calc(var(--hfx-space-1)*12), auto) minmax(0, 1fr); gap: var(--hfx-space-1) var(--hfx-space-3); margin: 0; font-size:var(--hfx-type-caption-size); }
 .cx-board-fields dt { color:var(--hfx-color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .cx-board-fields dd { margin: 0; text-align: end; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

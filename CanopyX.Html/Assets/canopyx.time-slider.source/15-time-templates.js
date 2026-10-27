@@ -5,11 +5,11 @@
     path.setAttribute("d", direction === -1 ? "M7 5V19M18 5L9 12L18 19Z" : direction === 1 ? "M17 5V19M6 5L15 12L6 19Z" : playing ? "M8 5V19M16 5V19" : "M7 4L20 12L7 20Z");
     svg.appendChild(path); button.replaceChildren(svg);
   }
-  function timeControlsTemplate(model, labels, source) {
+  function timeControlsTemplate(model, labels, source, hostLabels, hostLang) {
     const root = h("section", "cx-time"), controls = h("div", "cx-time-controls"), range = h("input", "cx-time-range");
     const stamp = h("div", "cx-time-stamp"), position = h("span", "cx-time-position"), reduced = h("p", "cx-time-reduced");
     const scrubber = h("div", "cx-time-scrubber"), ticks = h("div", "cx-time-ticks"); ticks.setAttribute("aria-hidden", "true");
-    const formatter = new Intl.DateTimeFormat(source.lang || document.documentElement.lang || undefined, { year:"numeric", month:"short", day:"numeric", hour:"2-digit", minute:"2-digit", hourCycle:"h23", timeZone:source.timeZone === "local" ? undefined : "UTC", timeZoneName:"short" });
+    const formatter = humanTimeFormat(source.lang || hostLang || document.documentElement.lang, source.timeZone === "local", hostLabels?.changeUtcTime ?? source.labels?.changeUtcTime);
     const button = text => { const result = h("button", "cx-btn icon cx-time-button"); result.type = "button"; result.setAttribute("aria-label", text); result.title = text; return result; };
     const previous = button(labels.timePrevious), play = button(labels.timePlay), next = button(labels.timeNext);
     timeIcon(previous, false, -1); timeIcon(next, false, 1);

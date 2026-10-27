@@ -185,7 +185,7 @@ public sealed class ChangeViewTests {
         Assert.Contains("+1 min", html);
         Assert.Contains("+1 h", html);
         Assert.Contains("Not seen yet", html);
-        Assert.Contains("2026-10-21 10:42 UTC", html);
+        Assert.Contains("21 Oct 2026, 10:42&#160;UTC", html);
         Assert.DoesNotContain("<script", html);
     }
 
