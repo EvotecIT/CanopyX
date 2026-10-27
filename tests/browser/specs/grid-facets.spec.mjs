@@ -195,6 +195,7 @@ for(const retire of ['Escape','destroy'])test('retiring a held facet popover can
 test('phone missing-value filter keeps raw null semantics and accessible typed choices',async({page})=>{
  await page.setViewportSize({width:390,height:700});await open(page);await page.locator('[data-canopyx-host]').evaluate(host=>host.setAttribute('data-cx-theme','dark'));const pop=await editor(page);
  await pop.getByRole('checkbox',{name:'Select all values',exact:true}).check();await pop.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();await pop.locator('.cx-val').filter({hasText:'—'}).locator('input').check();
+ await pop.evaluate(element=>Promise.all(element.getAnimations({subtree:true}).map(animation=>animation.finished)));
  expect(await page.evaluate(()=>document.body.scrollWidth<=innerWidth)).toBe(true);expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).disableRules(['region']).analyze()).violations).toEqual([]);await pop.getByRole('button',{name:'Done',exact:true}).click();await expect(page.locator('.cx-grid-result-count')).toHaveText('2 of 10 rows');
 });
 test('facet search aborts superseded work and closing the popover retires its outstanding request',async({page})=>{

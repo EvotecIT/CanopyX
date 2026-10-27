@@ -287,8 +287,10 @@ test('translated editor and action controls have no axe violations',async({page}
   await mount(page,`{onEdit:()=>true,onAction:()=>true,onDrop:()=>true}`,definition);
   await row(page,'a').focus(); await page.keyboard.press('Alt+Enter');
   await expect(page.getByRole('dialog',{name:'Edytuj Name'})).toBeVisible();
-  const analyze=async()=>expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa','best-practice']).analyze()).violations
-    .map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)}))).toEqual([]);
+  // Contrast is measured once the dialog or menu has finished its entrance fade.
+  const settle=()=>page.evaluate(()=>Promise.all(document.getAnimations().filter(animation=>animation.effect?.getComputedTiming().endTime!==Infinity).map(animation=>animation.finished)));
+  const analyze=async()=>{await settle();expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa','best-practice']).analyze()).violations
+    .map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)}))).toEqual([]);};
   await analyze(); await page.getByRole('button',{name:'Anuluj'}).click(); await page.keyboard.press('Shift+F10');
   const menu=page.getByRole('menu',{name:'Akcje'});
   await expect(menu).toBeVisible();
