@@ -13,7 +13,7 @@
       }
   }
   function pathHopTemplate(hop, row, labels, text, badges, index, chainIndex, total) {
-      const item = h("li", "cx-path-hop"), step = h("div", "cx-path-step"), title = h("button", "cx-path-title"), notes = h("div", "cx-path-notes");
+      const item = h("li", "cx-path-hop"), step = h("div", "cx-path-step"), title = h("button", "cx-btn ghost cx-path-title"), notes = h("div", "cx-path-notes");
       const prefix = this.id + "-path-" + chainIndex + "-" + index, ordinal = h("span");
       step.id = prefix + "-step"; notes.id = prefix + "-notes";
       setText(ordinal, fill(labels.pathStep, { number: index + 1, total })); step.appendChild(ordinal);

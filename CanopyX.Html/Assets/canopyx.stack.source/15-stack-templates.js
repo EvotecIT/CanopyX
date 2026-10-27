@@ -1,6 +1,6 @@
   // Templates return named controls; event and record ownership stays outside.
   function stackRecordTemplate(text) {
-    const button = h("button", "cx-stack-title"); button.type = "button"; setText(button, text);
+    const button = h("button", "cx-btn ghost cx-stack-title"); button.type = "button"; setText(button, text);
     return button;
   }
   function stackBadgesTemplate(layer, labels) {

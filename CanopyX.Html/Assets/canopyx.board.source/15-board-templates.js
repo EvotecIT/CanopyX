@@ -1,7 +1,15 @@
   // Visual dimensions are consumed by the virtual layout; event wiring stays in render.
-  const BOARD_METRICS = Object.freeze({ cardHeight: 152, groupHeight: 36 });
+  function boardMeasureTemplate(frame) {
+    const card = h("article", "cx-board-card"), group = h("h4", "cx-board-swimlane");
+    for (const probe of [card, group]) { probe.style.visibility = "hidden"; probe.setAttribute("aria-hidden", "true"); }
+    frame.append(card, group);
+    const cardHeight = card.getBoundingClientRect().height + Number.parseFloat(getComputedStyle(card).marginBottom);
+    const groupHeight = group.getBoundingClientRect().height;
+    card.remove(); group.remove();
+    return { cardHeight, groupHeight };
+  }
   function boardToolsTemplate(board) {
-      const toolbar = h("div", "cx-board-tools"), label = h("label"), picker = h("select", "cx-board-picker");
+      const toolbar = h("div", "cx-board-tools"), label = h("label"), picker = h("select", "cx-select cx-board-picker");
       label.htmlFor = this.id + "-board-lane"; picker.id = label.htmlFor; setText(label, board.labels.boardLane);
       for (const lane of board.lanes) { const option = h("option"); option.value = lane.key; setText(option, lane.label + " (" + lane.rows.length + ")"); picker.appendChild(option); }
       picker.value = board.lane || "";
@@ -21,7 +29,7 @@
         return { section, scroll, canvas };
   }
   function boardCardTemplate(row, text, fields) {
-      const card = h("article", "cx-board-card"), title = h("button", "cx-board-title");
+      const card = h("article", "cx-board-card"), title = h("button", "cx-btn ghost cx-board-title");
       card.dataset.cxBoardRecord = row.id; card.tabIndex = 0;
       card.setAttribute("aria-label", text); card.setAttribute("aria-describedby", this.id + "-board-help"); title.type = "button"; setText(title, text); title.title = text;
       card.appendChild(title);
@@ -31,7 +39,7 @@
       return { card, title };
   }
   function boardMoveTemplate(label, options, value, disabled, card) {
-        const move = h("select", "cx-board-move"); move.setAttribute("aria-label", label);
+        const move = h("select", "cx-select cx-board-move"); move.setAttribute("aria-label", label);
         for (const target of options) { const option = h("option"); option.value = target.key; option.disabled = target.disabled; setText(option, target.label); move.appendChild(option); }
         move.value = value; move.disabled = disabled; card.appendChild(move);
         return move;

@@ -2,7 +2,7 @@
   function timeControlsTemplate(model, labels) {
     const root = h("section", "cx-time"), controls = h("div", "cx-time-controls"), range = h("input", "cx-time-range");
     const stamp = h("div", "cx-time-stamp"), position = h("span", "cx-time-position"), reduced = h("p", "cx-time-reduced");
-    const button = text => { const result = h("button", "cx-time-button"); result.type = "button"; setText(result, text); return result; };
+    const button = text => { const result = h("button", "cx-btn cx-time-button"); result.type = "button"; setText(result, text); return result; };
     const previous = button(labels.timePrevious), play = button(labels.timePlay), next = button(labels.timeNext);
     range.type = "range"; range.min = "0"; range.max = String(model.snapshots.length - 1); range.step = "1";
     range.setAttribute("aria-label", labels.timePosition.replace("{index}", "").replace("{count}", String(model.snapshots.length)).trim());

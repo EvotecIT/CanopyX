@@ -1,14 +1,13 @@
-  const BOARD_CARD_H = BOARD_METRICS.cardHeight, BOARD_GROUP_H = BOARD_METRICS.groupHeight;
   function boardItems(board, lane) {
     const group = board.settings.swimlaneColumn;
-    if (!group) return lane.rows.map(row => ({ row, height: BOARD_CARD_H }));
+    if (!group) return lane.rows.map(row => ({ row, height: board.cardHeight }));
     const groups = new Map();
     for (const row of lane.rows) {
       const value = cellValue(row.cells[group]), key = boardKey(value, board.grid.columns.find(column => column.id === group));
       if (!groups.has(key)) groups.set(key, { label: value == null ? board.labels.boardUnassigned : boardText(board.grid, row, group), rows: [] });
       groups.get(key).rows.push(row);
     }
-    return [...groups.values()].flatMap(item => [{ label: item.label, count: item.rows.length, height: BOARD_GROUP_H }, ...item.rows.map(row => ({ row, height: BOARD_CARD_H }))]);
+    return [...groups.values()].flatMap(item => [{ label: item.label, count: item.rows.length, height: board.groupHeight }, ...item.rows.map(row => ({ row, height: board.cardHeight }))]);
   }
   Object.assign(DataGrid.prototype, {
     boardPaint() {
@@ -16,6 +15,7 @@
       board.grid = this;
       const positions = new Map([...this.boardFrame.querySelectorAll(".cx-board-scroll")].map(node => [node.dataset.lane, node.scrollTop]));
       this.boardFrame.replaceChildren();
+      Object.assign(board, boardMeasureTemplate(this.boardFrame));
       if (!board.lanes.some(lane => lane.key === board.lane)) board.lane = board.lanes[0]?.key;
       const picker = boardToolsTemplate.call(this, board);
       picker.addEventListener("change", () => { board.lane = picker.value; this.boardSyncLane(); this.stateChanged(); });
@@ -27,7 +27,7 @@
         canvas.style.height = top + "px";
         const paint = () => {
           const focus = document.activeElement?.closest("[data-cx-board-record]"), preserve = focus && canvas.contains(focus) ? focus.dataset.cxBoardRecord : null;
-          const from = board.printing ? 0 : Math.max(0, scroll.scrollTop - BOARD_CARD_H), to = board.printing ? Infinity : scroll.scrollTop + (scroll.clientHeight || 440) + BOARD_CARD_H;
+          const from = board.printing ? 0 : Math.max(0, scroll.scrollTop - board.cardHeight), to = board.printing ? Infinity : scroll.scrollTop + (scroll.clientHeight || 440) + board.cardHeight;
           let low = 0, high = items.length;
           while (low < high) { const at = (low + high) >>> 1; if (items[at].top + items[at].height < from) low = at + 1; else high = at; }
           const fragment = document.createDocumentFragment();

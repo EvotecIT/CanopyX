@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "042f3cb3d690a086",
+      "version": "a0ef250fc86a15de",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -539,7 +539,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "d579489f471f12e8",
+      "version": "4073fdbbbac08339",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -552,7 +552,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "3b2551152989cc25",
+      "version": "fb7c108a77444af8",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [
@@ -802,7 +802,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "cecae4ac674b8d8d",
+      "version": "7969262821b7fce0",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -927,6 +927,90 @@
       ],
       "features": [
         "gridOptions"
+      ]
+    },
+    {
+      "name": "board",
+      "label": "board view",
+      "version": "0e89523ebd38755e",
+      "script": "canopyx-board.js",
+      "style": "canopyx-board.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "board"
+      ]
+    },
+    {
+      "name": "plan",
+      "label": "plan view",
+      "version": "da506ee0e3553e57",
+      "script": "canopyx-plan.js",
+      "style": "canopyx-plan.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "plan"
+      ],
+      "requires": [
+        "timeline"
+      ]
+    },
+    {
+      "name": "path",
+      "label": "path view",
+      "version": "03ba7fae00d45fab",
+      "script": "canopyx-path.js",
+      "style": "canopyx-path.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "path"
+      ]
+    },
+    {
+      "name": "stack",
+      "label": "stack view",
+      "version": "0ccae3331c5e4b43",
+      "script": "canopyx-stack.js",
+      "style": "canopyx-stack.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "stack"
+      ]
+    },
+    {
+      "name": "time-slider",
+      "label": "snapshot playback",
+      "version": "8a8dbc066bb16346",
+      "script": "canopyx-time-slider.js",
+      "style": "canopyx-time-slider.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "matrix",
+        "propagation"
+      ],
+      "features": [
+        "timeSlider"
       ]
     }
   ]

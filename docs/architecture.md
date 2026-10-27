@@ -99,7 +99,7 @@ File names keep that rule when files are cached or shared:
 
 Board, plan, path, stack and snapshot playback keep visual construction in `15-*-templates.js` and their styles in the same optional part's `.css` file. Templates construct DOM/SVG and return named controls; the render/controller files attach events, preserve focus, run virtual layout and apply host-governed proposals. Model files retain validation and data transformations. The part loader assembles these files in filename order, so the templates remain lazy and add no runtime dependency.
 
-Visual dimensions consumed by layout live in the templates: board card and group heights are `BOARD_METRICS`, and plan baseline dimensions are `PLAN_METRICS`. A template change must keep the returned control handles, stable record attributes, accessible names and controller selectors coherent. A changed visual rule that affects measurement or keyboard navigation also needs a corresponding plumbing change and interaction proof. Static C# rendering and browser print output follow the same visual rules within their script-free and inline-style constraints.
+Visual dimensions consumed by layout live in the templates: `boardMeasureTemplate` measures card and group heights from their shared spacing roles, and plan baseline dimensions are `PLAN_METRICS`. A template change must keep the returned control handles, stable record attributes, accessible names and controller selectors coherent. A changed visual rule that affects measurement or keyboard navigation also needs a corresponding plumbing change and interaction proof. Static C# rendering and browser print output follow the same visual rules within their script-free and inline-style constraints.
 
 ## Static Fallback
 
