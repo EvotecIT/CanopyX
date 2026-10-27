@@ -3958,7 +3958,7 @@ export interface GridViewIntent{
   readonly type:"viewIntent";
   readonly version:1;
   readonly view:string;
-  readonly query?:{readonly search?:string;readonly searchMode?:"substring"|"words";readonly sort?:readonly GridSort[];readonly filters?:readonly GridFilter[];readonly filterGroup?:GridFilterGroup|null;readonly tupleFilters?:readonly GridTupleFilter[];readonly groupBy?:readonly GridGroupLevel[];};
+  readonly query?:{readonly search?:string;readonly searchMode?:"substring"|"words"|"regex";readonly sort?:readonly GridSort[];readonly filters?:readonly GridFilter[];readonly filterGroup?:GridFilterGroup|null;readonly tupleFilters?:readonly GridTupleFilter[];readonly groupBy?:readonly GridGroupLevel[];};
   readonly columns?:readonly string[];
   readonly pivot?:GridPivotDefinition|false;
 }

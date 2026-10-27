@@ -9,7 +9,8 @@ export interface GridViewIntent {
   readonly view: string;
   readonly query?: {
     readonly search?: string;
-    readonly searchMode?: "substring" | "words";
+    /** Regex requires the target grid to enable allowRegexSearch and uses its bounded pattern grammar. */
+    readonly searchMode?: "substring" | "words" | "regex";
     readonly sort?: readonly GridSort[];
     readonly filters?: readonly GridFilter[];
     readonly filterGroup?: GridFilterGroup | null;

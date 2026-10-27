@@ -10,7 +10,7 @@ internal static class CanopyViewIntentQuery {
         var query = new CanopyGridQuery(view.Id) { Search = CanopyFlowContract.Text(map, "search", "Intent query") };
         if (query.Search != null && query.Search.Length > 16384) throw new InvalidOperationException("An intent search holds at most 16,384 characters.");
         if (map.ContainsKey("searchMode")) query.SearchMode = CanopyFlowContract.Choose(CanopyFlowContract.Text(map, "searchMode", "Intent query"), "Intent query", "searchMode",
-            ("substring", CanopyGridSearchMode.Substring), ("words", CanopyGridSearchMode.Words));
+            ("substring", CanopyGridSearchMode.Substring), ("words", CanopyGridSearchMode.Words), ("regex", CanopyGridSearchMode.Regex));
         foreach (var item in CanopyFlowContract.Items(map, "sort", "Intent query", 64)) {
             var sort = CanopyFlowContract.Object(item, "Intent sort", "column", "direction");
             query.Sort.Add(new CanopyGridSort(CanopyFlowContract.RequiredText(sort, "column", "Intent sort"), Descending(sort, "Intent sort")));

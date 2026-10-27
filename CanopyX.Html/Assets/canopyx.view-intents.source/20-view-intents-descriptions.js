@@ -19,7 +19,7 @@ function intentChips(grid, intent, current) {
     .join(" " + (item.operator === "and" ? labels.gridAnd : labels.gridOr) + " ");
   if (!same(before.search, after.search)) chips.push(after.search ? fill(labels.viewIntentSearch, { search: after.search }) : labels.viewIntentClearSearch);
   if (!same(before.searchMode || "substring", after.searchMode || "substring"))
-    chips.push(after.searchMode === "words" ? labels.viewIntentWords : labels.viewIntentSubstring);
+    chips.push(after.searchMode === "regex" ? labels.gridRegexSearch : after.searchMode === "words" ? labels.viewIntentWords : labels.viewIntentSubstring);
   const recordSort = query => query.sort.filter(value => !query.groupBy?.some(level => level.column === value.column));
   if (!same(before.sort, after.sort)) {
     const sorts = recordSort(after);

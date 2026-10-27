@@ -39,7 +39,7 @@ const VIEW_INTENT_LABELS = {viewIntentPreview: "Proposed changes", viewIntentApp
   function viewIntentQuery(grid, patch) {
     viewIntentObject(patch, ["search", "searchMode", "sort", "filters", "filterGroup", "groupBy", "tupleFilters"], "view intent query");
     if (patch.search !== undefined && (typeof patch.search !== "string" || patch.search.length > 16384)) throw new Error("CanopyX: invalid intent search.");
-    if (patch.searchMode !== undefined && !["substring", "words"].includes(patch.searchMode)) throw new Error("CanopyX: invalid intent search mode.");
+    if (patch.searchMode !== undefined && !["substring", "words", "regex"].includes(patch.searchMode)) throw new Error("CanopyX: invalid intent search mode.");
     if (patch.sort !== undefined) viewIntentArray(patch.sort, 64, "intent sorts").forEach(sort => viewIntentObject(sort, ["column", "direction"], "intent sort"));
     let predicates = 0, groups = 0;
     const filter = item => {

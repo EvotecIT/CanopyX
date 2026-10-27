@@ -45,6 +45,7 @@ The independently versioned [view-state schema](schema/canopyx-view-state-1.sche
 It describes the search query, typed filters, sort, bucketed grouping, visible column order and pivot axes/values. Structural schema validation is
 followed by target-aware validation: column IDs must exist and permit the requested operation, operators and operand
 types must match their columns, and the ordinary grid predicate and grouping limits apply to the merged query too.
+Search mode can be `substring`, `words` or `regex`. Regex intents retain the owning grid's `allowRegexSearch` opt-in and bounded-pattern validation; importing one into a grid without that opt-in fails before preview.
 Version 1 accepts the built-in filter operators listed in its schema; host-defined query operators are outside this intent version.
 Unknown fields, executable content, endpoints, unknown operators and empty proposals fail before preview. Proposals
 are bounded to 65,536 UTF-16 code units and retain the grid's nesting and predicate limits.

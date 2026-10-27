@@ -20,7 +20,7 @@ function view(host = false) {
 async function open(page, options = {}) {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   await page.route("http://canopyx.test/intent", route => {
-    const definition = view(options.host); if (options.enabled === false) definition.viewIntents = false;
+    const definition = view(options.host); if (options.regex) definition.allowRegexSearch = true; if (options.enabled === false) definition.viewIntents = false;
     if (options.reporting === false) delete definition.reporting;
     if (options.modes) { definition.searchHighlight = true; definition.layout = { modes: ["fit", "scroll", "cards"] }; }
     const script = fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-view-intents.js"), "utf8");
@@ -364,4 +364,36 @@ test("proposal descriptions contain only changed aspects in plain words and keep
   await expect(region(page).getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
   const cancel = region(page).getByRole("button", { name: "Cancel", exact: true });
   await expect(cancel).toBeEnabled(); await cancel.click(); await expect(region(page)).toHaveCount(0);
+});
+
+
+test("accepted regex search exports and replays as a bounded opt-in view intent", async ({ page }) => {
+  const errors = await open(page, { regex: true });
+  const saved = await page.evaluate(async () => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    await grid.setQuery({ search: '^Record [13]$', searchMode: 'regex' });
+    return grid.getViewIntent();
+  });
+  expect(saved.query.searchMode).toBe('regex');
+  expect(saved.query.search).toBe('^Record [13]$');
+  await page.evaluate(async saved => {
+    const grid = document.querySelector('[data-canopyx-host]').canopyx;
+    await grid.setQuery({ search: '', searchMode: 'substring' });
+    window.regexPreview = await grid.applyViewIntent(saved, document.querySelector('#preview'));
+  }, saved);
+  await expect(region(page)).toContainText('Search pattern');
+  await region(page).getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect.poll(async () => (await query(page)).searchMode).toBe('regex');
+  expect(await page.locator('.cx-row[data-cx-id]').evaluateAll(rows => rows.map(row => row.getAttribute('data-cx-id')))).toEqual(['r1', 'r3']);
+  expect(await page.evaluate(async saved => {
+    try { await document.querySelector('[data-canopyx-host]').canopyx.validateViewIntent({ ...saved, query: { ...saved.query, search: '[' } }); return false; }
+    catch { return true; }
+  }, saved)).toBe(true);
+  expect(errors).toEqual([]);
+  await page.evaluate(() => sessionStorage.clear());
+  await open(page);
+  expect(await page.evaluate(async saved => {
+    try { await document.querySelector('[data-canopyx-host]').canopyx.validateViewIntent(saved); return false; }
+    catch { return true; }
+  }, saved)).toBe(true);
 });

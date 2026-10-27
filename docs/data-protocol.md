@@ -37,7 +37,7 @@ See [dataset comparison](dataset-compare.md).
 
 The optional grid flag `viewIntents: true` includes the view-proposal preview part. View proposals have their own
 [versioned JSON Schema](schema/canopyx-view-state-1.schema.json), separate from transport queries and saved-view
-storage. They contain no write actions or model endpoint; see [view intents](view-intents.md).
+storage. They contain no write actions or model endpoint; see [view intents](view-intents.md). Their query retains `substring`, `words` or opt-in bounded `regex` search, validated against the target grid.
 
 Grid columns optionally declare `wrap` and `maxLines` (integer 1–12, default 2).
 Wrapped columns enable measured rows, as do `autoRowHeight: true` and

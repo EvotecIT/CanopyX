@@ -1101,7 +1101,7 @@
     {
       "name": "view-intents",
       "label": "view intents",
-      "version": "ef467c5d43e1c083",
+      "version": "26b4233395638945",
       "script": "canopyx-view-intents.js",
       "style": "canopyx-view-intents.css",
       "runtimes": [

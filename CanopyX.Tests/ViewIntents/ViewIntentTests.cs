@@ -181,6 +181,23 @@ public sealed class ViewIntentTests {
         Assert.False(Evaluate(root.ToJsonString()));
     }
 
+    [Fact]
+    public void RegexSearchIntentRetainsItsModeSchemaAndTargetOptIn() {
+        var view = View();
+        view.AllowRegexSearch = true;
+        var proposal = Intent(new JsonObject { ["search"] = "^Record [13]$", ["searchMode"] = "regex" });
+        var accepted = CanopyViewIntentValidator.Validate(proposal.ToJsonString(), view);
+        Assert.True(Evaluate(accepted.ToJson()));
+        var query = JsonNode.Parse(accepted.ToJson())!["query"]!;
+        Assert.Equal("regex", query["searchMode"]!.GetValue<string>());
+        Assert.Equal("^Record [13]$", query["search"]!.GetValue<string>());
+        view.AllowRegexSearch = false;
+        Assert.Throws<InvalidOperationException>(() => CanopyViewIntentValidator.Validate(accepted.ToJson(), view));
+        view.AllowRegexSearch = true;
+        proposal["query"]!["search"] = "[";
+        Assert.ThrowsAny<Exception>(() => CanopyViewIntentValidator.Validate(proposal.ToJsonString(), view));
+    }
+
     private static void Check(JsonObject intent, bool accepted) {
         if (accepted) Assert.True(Evaluate(CanopyViewIntentValidator.Validate(intent.ToJsonString(), View()).ToJson()));
         else Assert.ThrowsAny<Exception>(() => CanopyViewIntentValidator.Validate(intent.ToJsonString(), View()));
