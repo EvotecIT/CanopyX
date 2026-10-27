@@ -21,6 +21,10 @@ internal static class CanopyChangeFormat {
     internal static string Time(DateTimeOffset time, CanopyLabels labels) =>
         labels.ChangeUtcTime.Replace("{time}", time.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
 
+    /// <summary>A readable snapshot or propagation time with the UTC mark kept with its clock.</summary>
+    internal static string HumanTime(DateTimeOffset time, CanopyLabels labels, CultureInfo culture) =>
+        labels.ChangeUtcTime.Replace("{time}", time.UtcDateTime.ToString("dd MMM yyyy, HH:mm", culture)).Replace(" UTC", "\u00a0UTC");
+
     /// <summary>A duration in the largest two units that matter: seconds, minutes, hours and minutes, or days and hours.</summary>
     internal static string Duration(TimeSpan span, CanopyLabels labels, CultureInfo culture) {
         var seconds = (long)Math.Max(0, Math.Floor(span.TotalSeconds));

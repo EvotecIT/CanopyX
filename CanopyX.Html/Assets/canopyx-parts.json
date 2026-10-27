@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "047691981aaf13c2",
+      "version": "7f8223a6e22f5cea",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -552,7 +552,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "fb7c108a77444af8",
+      "version": "419bb03b4580fd5c",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [
@@ -802,7 +802,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "7ba6547b4a6942b8",
+      "version": "c732b610f20453e2",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -932,7 +932,7 @@
     {
       "name": "board",
       "label": "board view",
-      "version": "b544ad720bf191e5",
+      "version": "31d8984cbdc39866",
       "script": "canopyx-board.js",
       "style": "canopyx-board.css",
       "runtimes": [
@@ -948,7 +948,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "07402059163ca7ff",
+      "version": "2cc660aae69d03c9",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [
@@ -967,7 +967,7 @@
     {
       "name": "path",
       "label": "path view",
-      "version": "9db8e187eeef2082",
+      "version": "28b4b60b1851bf2e",
       "script": "canopyx-path.js",
       "style": "canopyx-path.css",
       "runtimes": [
@@ -999,7 +999,7 @@
     {
       "name": "time-slider",
       "label": "snapshot playback",
-      "version": "8b4f2119f07a5b7d",
+      "version": "44b750861a921bd5",
       "script": "canopyx-time-slider.js",
       "style": "canopyx-time-slider.css",
       "runtimes": [

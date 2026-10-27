@@ -47,6 +47,7 @@
 .cx-cal-phone .cx-plan-calendar .cx-plan-legend{display:none;}
 @media print{.cx-plan-agenda{display:none;}}
 .cx-plan .cx-tl-lane .cx-plan-label-outside > .cx-cal-ev-title{display:block!important;visibility:visible!important;}
+.cx-plan .cx-tl-lane .cx-plan-label-before > .cx-cal-ev-title{inset-inline-start:auto;inset-inline-end:calc(100% + var(--hfx-space-2,0.5rem));}
 .cx-plan-agenda-pager{display:flex;flex:none;align-items:center;justify-content:space-between;gap:var(--hfx-space-2,0.5rem);border-block-start:var(--hfx-border-width,1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));padding-block-start:var(--hfx-space-2,0.5rem);}
 .cx-plan-agenda [hidden]{display:none;}
 .cx-plan-agenda .cx-plan-resource-toggle{padding:0;border:0;min-height:0;height:auto;background:transparent;font:inherit;color:inherit;}

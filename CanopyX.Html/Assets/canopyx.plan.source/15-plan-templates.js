@@ -38,8 +38,11 @@
         const exit = x1 + 10 * sign, entry = x2 - 10 * sign;
         const corridor = from.bottom + (to.y >= from.y ? 1 : -1) * 4;
         const path = document.createElementNS(svg.namespaceURI, "path");
-        const lead = x2 - 5 * sign;
-        path.setAttribute("d", "M" + x1 + "," + from.y + " H" + exit + " V" + corridor + " H" + entry + " V" + to.y + " H" + x2 + " M" + lead + "," + (to.y - 4) + " L" + x2 + "," + to.y + " L" + lead + "," + (to.y + 4));
+        const vertical = Math.abs(x1-x2)<1 && Math.abs(from.y-to.y)>=1, flat = Math.abs(from.y-to.y)<1 && (x2-x1)*sign>=-1;
+        const route = vertical ? "M"+x1+","+from.y+" V"+to.y : flat ? "M"+(Math.abs(x1-x2)<1?x1-5*sign:x1)+","+from.y+" H"+x2 : "M"+x1+","+from.y+" H"+exit+" V"+corridor+" H"+entry+" V"+to.y+" H"+x2;
+        const lead = x2 - 5 * sign, tipY=to.y-5*Math.sign(to.y-from.y);
+        const arrow = vertical ? " M"+(x2-4)+","+tipY+" L"+x2+","+to.y+" L"+(x2+4)+","+tipY : " M"+lead+","+(to.y-4)+" L"+x2+","+to.y+" L"+lead+","+(to.y+4);
+        path.setAttribute("d", route+arrow);
         path.classList.toggle("cx-plan-link-conflict", edge.conflict);
         path.classList.toggle("cx-plan-link-critical", critical);
         const title = document.createElementNS(svg.namespaceURI, "title");
@@ -71,7 +74,7 @@
       const row=h("li"),button=h("button","cx-btn cx-cal-ev cx-plan-agenda-title"),dates=h("p"),meta=h("p","cx-plan-agenda-meta");
       button.type="button";setText(button,item.task.title);button.title=item.task.title;
       button.dataset.cxPlanRecord=item.task.key;button.dataset.cxPlanResource=item.group.id;button.dataset.cxEvent=item.task.id;button.dataset.cxRecord=item.task.key;
-      button._calEvent={...item.task,resource:item.group.id};button.setAttribute("aria-label",[item.task.title,item.dates,item.meta].join(", "));
+      button._calEvent={...item.task,resource:item.group.id};button.setAttribute("aria-label",[item.task.title,item.fullDates,item.meta].join(", "));
       if(moves) button.setAttribute("aria-keyshortcuts","Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown");
       setText(dates,item.dates);setText(meta,item.meta);row.classList.toggle("cx-plan-agenda-critical",item.critical);row.append(button,dates,meta);list.appendChild(row);
     }

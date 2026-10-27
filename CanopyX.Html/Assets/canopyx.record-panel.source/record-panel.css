@@ -131,7 +131,7 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
 .cx-record-drawer .cx-dl dd { font-size:var(--hfx-type-body-size); }
 /* A long record title wraps inside the drawer head instead of running under the navigation and close buttons. */
 .cx-drawer.cx-record-drawer .cx-drawer-h h4 { width:auto; max-width:100%; overflow-wrap:anywhere; }
-.cx-drawer.cx-record-drawer .cx-drawer-h > :not(:first-child) { flex:none; }
+.cx-drawer.cx-record-drawer .cx-drawer-h > :not(:first-child) { flex:none;margin-inline:0; }
 
 .cx-drawer[data-phone="true"] .cx-record-toggle { justify-content:flex-start;padding-inline:0;position:relative; }
 .cx-drawer[data-phone="true"] .cx-record-toggle > svg { position:absolute;inset-inline-start:calc(-1 * var(--hfx-space-4));margin:0; }

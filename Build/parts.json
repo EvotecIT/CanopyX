@@ -533,6 +533,7 @@
       "key": "CHANGES_IMPL",
       "context": ["CHANGES_IMPL", "h", "setText", "fill", "plural", "numberFormat", "gridFreeze", "toneOf", "applyTone", "svgIcon", "PROTOCOL"],
       "scripts": [
+        "CanopyX.Html/Assets/canopyx.shared.source/10-time-format.js",
         "CanopyX.Html/Assets/canopyx.changes.source"
       ],
       "styles": [
@@ -1045,6 +1046,7 @@
         "PROTOCOL"
       ],
       "scripts": [
+        "CanopyX.Html/Assets/canopyx.shared.source/10-time-format.js",
         "CanopyX.Html/Assets/canopyx.time-slider.source"
       ],
       "styles": [
