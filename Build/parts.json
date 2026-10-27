@@ -214,7 +214,6 @@
         "compareKeys",
         "EXPORT_FORMATS",
         "exportFormat",
-        "exportTimeout",
         "INDENT",
         "MAX_PROTOCOL_INTEGER",
         "hostControl",

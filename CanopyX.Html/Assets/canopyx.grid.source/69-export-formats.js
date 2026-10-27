@@ -1,4 +1,10 @@
   // Built-in descriptors and capture format selection are needed only by export-capable views.
+  // Writers and host export hooks run under this safety timeout, separately from each source request's deadline.
+  function exportTimeout(grid, options) {
+    const timeout = options?.timeoutMs ?? grid.opts.exportTimeoutMs ?? 600000;
+    if (!Number.isInteger(timeout) || timeout < 1 || timeout > 2147483647) throw new Error("CanopyX: invalid export timeout.");
+    return timeout;
+  }
   const OFFICE_EXPORT_PART = { name: "office-export", label: "Office export writers", parts: {}, context: () => ({ EXPORT_IMPL }) };
   const officeExportWrite = (capture, context) => loadPart(OFFICE_EXPORT_PART).then(() => EXPORT_IMPL.office(capture, context));
   function officeExportFormats(grid) {

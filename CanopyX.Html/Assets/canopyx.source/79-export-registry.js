@@ -21,9 +21,3 @@
     format = exportFormat(format); EXPORT_FORMATS.set(format.id, format);
     return () => EXPORT_FORMATS.get(format.id) === format && EXPORT_FORMATS.delete(format.id);
   }
-  // Writers and host export hooks run under this safety timeout, separately from each source request's deadline.
-  function exportTimeout(grid, options) {
-    const timeout = options?.timeoutMs ?? grid.opts.exportTimeoutMs ?? 600000;
-    if (!Number.isInteger(timeout) || timeout < 1 || timeout > 2147483647) throw new Error("CanopyX: invalid export timeout.");
-    return timeout;
-  }
