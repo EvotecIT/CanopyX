@@ -26,14 +26,20 @@ function captions(grid) {
   });
 }
 
-for (const width of [1024, 390]) test(`a hidden grid fits its captions before the first visible paint at ${width}px`, async ({ page }) => {
+for (const width of [1024, 390]) for (const reveal of ['direct', 'ancestor-frame'])
+test(`a hidden grid fits its captions before the first visible paint at ${width}px${reveal === 'ancestor-frame' ? ' from an ancestor resize' : ''}`, async ({ page }) => {
   await pinTestFont(page); await page.setViewportSize({ width, height: 900 });
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   // Inspect visible rendering opportunities, not intermediate state between unrelated resize callbacks.
-  await page.addInitScript(({ check }) => {
+  await page.addInitScript(({ check, reveal }) => {
     window.visibleFits = [];
     // Embedded hosts may observe an ancestor before the hidden grid becomes visible.
-    document.addEventListener('DOMContentLoaded', () => new ResizeObserver(() => {}).observe(document.body));
+    document.addEventListener('DOMContentLoaded', () => new ResizeObserver(() => {
+      if (reveal === 'ancestor-frame') requestAnimationFrame(() => {
+        const panel = document.querySelector('#panel');
+        if (panel) panel.hidden = false;
+      });
+    }).observe(document.body));
     const inspect = new Function('grid', 'return (' + check + ')(grid)');
     const sample = () => {
       const grid = document.querySelector('.cx-grid');
@@ -42,7 +48,7 @@ for (const width of [1024, 390]) test(`a hidden grid fits its captions before th
       requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
-  }, { check: captions.toString() });
+  }, { check: captions.toString(), reveal });
   const view = probes(); view.columns.forEach(column => column.width = 40);
   const html = viewPage(view).replace('<div class="cx-host"', '<section id="panel" hidden><div class="cx-host"').replace('</body>', '</section></body>');
   await page.route('http://canopyx.test/fit-priority', route => route.fulfill({ contentType: 'text/html', body: html }));
