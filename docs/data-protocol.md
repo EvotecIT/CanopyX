@@ -942,6 +942,8 @@ A node declares lazy children with `hasChildren: true` and no `children` array. 
 
 Numeric cells use JavaScript binary floating-point semantics and must be within -9,007,199,254,740,991 to 9,007,199,254,740,991. Fractional decimals may round in the browser. Use a text cell for larger integers or values requiring exact decimal precision; writers reject numbers outside that range.
 
+A cell whose raw value does not match its column's kind does not fail the view. When the browser loads inline rows, row data, grid pages or calendar range pages, it repairs the cell. A number in a text column becomes its string, and a numeric string in a number column becomes its number. Any other value gets an empty raw value, so it sorts and filters as a missing value; text keeps showing, while a number outside the safe range shows nothing rather than a value the browser may have rounded. An invalid numeric sort key is dropped. A record collection's first rows render as a grid and are repaired the same way; the further pages it loads stay strict, and a malformed page is rejected as a whole, so a retry asks for the same offset. The same applies to a malformed cell object (its decorations are kept when they are valid), an invalid row tone or className, and a cell for an undeclared column, which is dropped. Each repaired column is reported once on the console with the first affected row. Rows themselves (ids, duplicates, the cells object) are still checked strictly. Host API calls that add or change rows (`addRows`, `updateRows`, edits and inserts) keep the strict contract and throw to their caller.
+
 A cell is either a bare value (string, number, boolean, or null) or an object:
 
 ```json

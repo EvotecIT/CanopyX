@@ -151,19 +151,19 @@ test("compact descriptors keep encoding version one and reject missing or unknow
   expect(results).toEqual(["CanopyX: invalid grid rowData.", "CanopyX: invalid grid rowData."]);
 });
 
-test("compact host chunks preserve invalid numeric values until validation rejects them", async ({ page }) => {
+test("compact host chunks preserve invalid numeric values until validation repairs them", async ({ page }) => {
   await servePage(page, "<div id='compact'></div>");
   const results = await page.evaluate(async view => {
     const errors = [];
     for (const value of [NaN, Infinity, undefined]) {
       const api = CanopyX.createDataGrid(document.querySelector("#compact"), { view: { ...view,
         rowData: { version: 1, columns: ["name", "size"], count: 1, chunks: [[["bad", "Bad", value]]] } } });
-      errors.push(await api.ready.then(() => "accepted", error => error.message)); api.destroy();
+      errors.push(await api.ready.then(() => api.view.rows[0].cells.size, error => error.message)); api.destroy();
     }
     return errors;
   }, compactView({}));
-  expect(results).toEqual(["CanopyX: numeric grid cells need finite values within the safe integer magnitude.",
-    "CanopyX: numeric grid cells need finite values within the safe integer magnitude.", "CanopyX: compact grid cells cannot be undefined; use null for an empty cell."]);
+  // A nonfinite number loads as an empty cell; undefined is not a value the compact encoding can carry at all.
+  expect(results).toEqual([null, null, "CanopyX: compact grid cells cannot be undefined; use null for an empty cell."]);
 });
 
 for (const encoding of ["json", "gzip"]) {

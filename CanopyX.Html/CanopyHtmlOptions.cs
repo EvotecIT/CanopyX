@@ -11,6 +11,7 @@ public sealed class CanopyHtmlOptions {
     private string _language = "en";
     private string? _nonce;
     private CanopyTextDirection _direction;
+    private CanopyChrome _chrome;
 
     /// <summary>
     /// Gets or sets how a full page includes the runtime assets. Fragments never include the runtime itself; with
@@ -125,6 +126,17 @@ public sealed class CanopyHtmlOptions {
     /// a height use the stylesheet default (480px); full pages fill the window.
     /// </summary>
     public string? Height { get; set; }
+
+    /// <summary>
+    /// Gets or sets how a fragment frames itself. Defaults to <see cref="CanopyChrome.Standalone"/>; use
+    /// <see cref="CanopyChrome.Embedded"/> when the fragment is the content of a card or panel that draws its own frame, so the
+    /// page shows one frame per surface. Full pages fill the window and ignore it.
+    /// </summary>
+    /// <exception cref="System.ArgumentOutOfRangeException">The value is not a known chrome.</exception>
+    public CanopyChrome Chrome {
+        get => _chrome;
+        set => _chrome = value < CanopyChrome.Standalone || value > CanopyChrome.Embedded ? throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown chrome.") : value;
+    }
 
     /// <summary>Gets or sets the page title. Defaults to the view label.</summary>
     public string? Title { get; set; }

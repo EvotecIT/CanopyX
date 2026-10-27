@@ -61,6 +61,7 @@ internal static partial class CanopyHtmlWriter {
         builder.Append("<div class=\"").Append(hostClass).Append("\" data-canopyx-host");
         if (options.Theme != CanopyTheme.Auto) builder.Append(" data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
         builder.Append(DirectionAttribute(options.Direction));
+        if (options.Chrome == CanopyChrome.Embedded) builder.Append(" data-cx-chrome=\"embedded\"");
         if (!options.AutoMount) {
             builder.Append(" data-cx-mount=\"manual\"");
         } else if (options.MountWhenVisible) {

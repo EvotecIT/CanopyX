@@ -5,6 +5,9 @@ CanopyX.Html.CanopyAssetMode.const CanopyX.Html.CanopyAssetMode Inline = 0
 CanopyX.Html.CanopyAssetNaming : enum System.Int32
 CanopyX.Html.CanopyAssetNaming.const CanopyX.Html.CanopyAssetNaming ContentHash = 0
 CanopyX.Html.CanopyAssetNaming.const CanopyX.Html.CanopyAssetNaming Plain = 1
+CanopyX.Html.CanopyChrome : enum System.Int32
+CanopyX.Html.CanopyChrome.const CanopyX.Html.CanopyChrome Embedded = 1
+CanopyX.Html.CanopyChrome.const CanopyX.Html.CanopyChrome Standalone = 0
 CanopyX.Html.CanopyHtmlAssets : static class
 CanopyX.Html.CanopyHtmlAssets.const System.String ExportScriptFileName = "canopyx-export.js"
 CanopyX.Html.CanopyHtmlAssets.const System.String FilterEditorScriptFileName = "canopyx-filter-editor.js"
@@ -114,6 +117,7 @@ CanopyX.Html.CanopyHtmlOptions..ctor()
 CanopyX.Html.CanopyHtmlOptions.CanopyX.CanopyRowDataOptions? RowData { get; set; }
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyAssetMode AssetMode { get; set; }
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyAssetNaming AssetNaming { get; set; }
+CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyChrome Chrome { get; set; }
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyHtmlDocument? Document { get; set; }
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyRuntime Runtime { get; set; }
 CanopyX.Html.CanopyHtmlOptions.CanopyX.Html.CanopyTextDirection Direction { get; set; }

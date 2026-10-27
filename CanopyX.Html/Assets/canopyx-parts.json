@@ -206,7 +206,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "d74a01c46f1c40cc",
+      "version": "4a658f07a0e1ab04",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -539,7 +539,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "d579489f471f12e8",
+      "version": "502dd12c24c6ca03",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -823,7 +823,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "cec16b6240faaff8",
+      "version": "cceaa51540180a4b",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [

@@ -4,7 +4,7 @@
   // unfiltered query as soon as their chunks are decoded when the rows are in identity order, and every other query once
   // all rows are decoded. A failed load or decoding fails the query, and its retry starts over with a new decoding.
   const GRID_DATA_IMPL = {}, GRID_DATA = definePart(DataGrid, "data", "row data",
-    () => ({ GRID_DATA_IMPL, PROTOCOL, validateGridRows, inlineGridSource, loadSidecar, gridIdOrder }));
+    () => ({ GRID_DATA_IMPL, PROTOCOL, validateGridRows, repairGridCell, inlineGridSource, loadSidecar, gridIdOrder }));
   function rowDataSource(grid) {
     let inner = null;
     const source = { reset: () => { inner = null; }, query: (query, options) =>

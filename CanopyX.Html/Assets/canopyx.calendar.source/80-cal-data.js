@@ -71,8 +71,7 @@
             typeof page.truncated !== "boolean" || page.truncated !== page.items.length < page.matched)
           throw new Error("CanopyX: the range page does not answer its query.");
         if (query.revision !== undefined && page.revision !== query.revision) throw new Error("CanopyX: grid page snapshot changed.");
-        validateGridRows(page.items, this.view.columns);
-        return { rows: page.items, truncated: page.truncated, matched: page.matched, revision: page.revision };
+        return { rows: validateGridRows(page.items, this.view.columns, undefined, repairGridCell), truncated: page.truncated, matched: page.matched, revision: page.revision };
       });
     },
 

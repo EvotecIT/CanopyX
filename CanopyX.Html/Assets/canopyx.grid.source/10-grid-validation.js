@@ -72,10 +72,11 @@
     // rowData replaces an inline grid's rows; the data part (52-grid-row-data.js) decodes and validates it with the first query.
     if (view.rowData !== undefined) {
       if (view.source.kind !== "inline" || view.rows !== undefined || !validStructuralCount(view.rowData?.count)) throw new Error("CanopyX: invalid grid rowData.");
-    } else if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
-    else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
+    }
+    const rows = view.rowData === undefined && view.source.kind === "inline" ? validateGridRows(view.rows, view.columns, undefined, repairGridCell) : view.rows;
+    if (view.source.kind !== "inline" && view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
-    return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 32 : 40) };
+    return { ...view, ...(rows === undefined ? {} : { rows }), rowHeight: view.rowHeight ?? (view.density === "compact" ? 32 : 40) };
   }
 
   function gridQuery(view, input, strict) {
@@ -135,6 +136,30 @@
     if (query.revision !== undefined && page.revision !== query.revision || accepted &&
         (page.revision !== accepted.revision || accepted.total !== undefined && page.total !== accepted.total ||
           accepted.matched !== undefined && page.matched !== accepted.matched)) throw new Error("CanopyX: grid page snapshot changed.");
-    validateGridRows(page.items, view.columns);
-    return { ...page, items: JSON.parse(JSON.stringify(page.items)) };
+    // Repair runs before the detaching copy, which would turn NaN and infinities into null without a warning.
+    const items = JSON.parse(JSON.stringify(validateGridRows(page.items, view.columns, undefined, repairGridCell)));
+    return { ...page, items };
+  }
+
+  // A number or bigint in a text column becomes its string, a numeric string in a number column its number; anything else
+  // gets an empty raw value, so it sorts and filters as a missing value. Text keeps showing; a number outside the safe range
+  // does not, because the browser may already have rounded it and would show a wrong value.
+  function repairGridCell(cell, column) {
+    const raw = cellValue(cell), shown = typeof raw === "string" || typeof raw === "boolean" ? String(raw) : undefined;
+    let value = raw;
+    try { gridScalar(value, column); } catch {
+      value = null;
+      if (column.kind === "number" && typeof raw === "string" && raw.trim()) value = Number(raw);
+      else if (column.kind !== "number" && column.kind !== "datetime" && (typeof raw === "bigint" || safeGridNumber(raw))) value = String(raw);
+      try { gridScalar(value, column); } catch { value = null; }
+    }
+    const text = isCellObject(cell) && !Array.isArray(cell) && typeof cell.text === "string" ? cell.text : value === null ? shown : undefined;
+    if (isCellObject(cell) && !Array.isArray(cell)) {
+      // Keep the tone, badges and other decorations when they are valid; an invalid sort key is dropped.
+      const kept = { ...cell, value, ...(text === undefined ? {} : { text }) };
+      try { validateGridCell(kept, column); return kept; } catch { }
+      delete kept.sort;
+      try { validateGridCell(kept, column); return kept; } catch { }
+    }
+    return text === undefined ? value : { value, text };
   }

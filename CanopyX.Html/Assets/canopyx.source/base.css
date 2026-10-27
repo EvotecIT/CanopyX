@@ -87,6 +87,18 @@
   font-size:var(--hfx-control-font-size);
   line-height:var(--hfx-type-small-line);
 }
+/* Embedded (CanopyChrome.Embedded): the view fills a card body the host already frames (without body padding), so it draws
+   no frame of its own, lets the card's surface show through, runs its rows to the card's edges and insets its toolbar by the
+   card's padding so it lines up with the card header. */
+.cx-host[data-cx-chrome="embedded"] { background:transparent;border:0;border-radius:0; }
+.cx-host[data-cx-chrome="embedded"] > .cx-grid { border-inline:0;border-bottom:0;border-radius:0;background:transparent; }
+/* The empty, loading and error states and the status strip sit on the card too, not on a panel of their own. */
+.cx-host[data-cx-chrome="embedded"] > :is(.cx-grid-notice,.cx-grid-status,.cx-grid-pager) { background:transparent; }
+.cx-host[data-cx-chrome="embedded"] :is(.cx-toolbar,.cx-grid-query-summary,.cx-grid-status,.cx-grid-pager) { padding-inline:var(--hfx-card-padding-x); }
+/* The outer columns of a grid or tree start at the same inset, so the column text lines up under the toolbar and the card
+   title. A tree's levels indent from there. */
+.cx-host[data-cx-chrome="embedded"] :is(.cx-hrow,.cx-row) > :first-child { padding-inline-start:var(--hfx-card-padding-x); }
+.cx-host[data-cx-chrome="embedded"] :is(.cx-hrow,.cx-row) > :last-child { padding-inline-end:var(--hfx-card-padding-x); }
 
 .cx-host *,.cx-host *::before,.cx-host *::after { box-sizing:border-box;}
 .cx-host .cx-button.cx-filter-chip { display:inline-flex;align-items:center;justify-content:flex-start;gap:var(--hfx-space-1-5);min-width:0; }
