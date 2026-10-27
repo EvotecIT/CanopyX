@@ -72,6 +72,9 @@
         const resize = () => {
           if (this.destroyed) return;
           if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
+          // An earlier frame may reveal a hidden host before its positive width is observed.
+          // Keep it transparent until fitting can use that measurement instead of the cached zero.
+          if (this.fitContentWidth === 0) return;
           style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
             height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
           this.fitHeight();
