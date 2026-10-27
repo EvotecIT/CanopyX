@@ -193,6 +193,7 @@
       this.tlEnsure();
       if (this.tlRoot.parentNode !== this.calBody) this.calBody.replaceChildren(this.tlRoot);
       const span = this.calRange, axis = this.tlAxis = tlAxis(this.calZoom, span, this.calZone, this.cal.firstDay, this.view.plan ? this.tlMain.clientWidth : 0);
+      if(this.view.plan)this.planFitWidth=this.tlMain.clientWidth;
       this.tlIndex = this.tlIndexEvents();
       this.tl.heat.clear();
       if (this.tlRoot.parentNode !== this.calBody) this.calBody.replaceChildren(this.tlRoot);

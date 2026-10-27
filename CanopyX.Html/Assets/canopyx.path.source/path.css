@@ -48,3 +48,6 @@
   .cx-path-hop + .cx-path-hop::before { inset-inline-start:var(--hfx-space-5);top:calc(-1 * var(--hfx-space-6));inline-size:0;block-size:var(--hfx-space-5);border-block-start:0;border-inline-start:calc(2 * var(--hfx-border-width)) solid var(--hfx-color-accent); }
   .cx-path-hop + .cx-path-hop::after { inset-inline-start:calc(var(--hfx-space-5) - var(--hfx-space-1));top:calc(-1 * var(--hfx-space-3));transform:rotate(135deg); }
 }
+
+.cx-phone .cx-path-hop + .cx-path-hop::before { inset-inline-start:var(--hfx-space-5);top:calc(-1 * var(--hfx-space-6));inline-size:0;block-size:var(--hfx-space-5);border-block-start:0;border-inline-start:calc(2 * var(--hfx-border-width)) solid var(--hfx-color-accent); }
+.cx-phone .cx-path-hop + .cx-path-hop::after { inset-inline-start:calc(var(--hfx-space-5) - var(--hfx-space-1));top:calc(-1 * var(--hfx-space-3));transform:rotate(135deg); }

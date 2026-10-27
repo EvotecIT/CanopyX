@@ -71,7 +71,10 @@
         if (size && !size.contentRect.width) grid.style.opacity = "0";
         const resize = () => {
           if (this.destroyed) return;
-          if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
+          if (!grid.clientWidth || !grid.checkVisibility()) {
+            if (host.clientWidth && host.checkVisibility()) this.updateGridPhone();
+            this.sized = false; return;
+          }
           style.setProperty("--cx-min-h", (this.toolbar.hidden ? 0 : [...host.children].reduce((height, child) =>
             height + (child === grid ? 0 : child.offsetHeight), this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2)) + "px");
           this.fitHeight();
@@ -91,6 +94,7 @@
       });
       this.resizeObserver.observe(grid);
       this.resizeObserver.observe(this.head);
+      this.resizeObserver.observe(host);
     },
 
     setLogicalTop(top) {

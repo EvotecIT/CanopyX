@@ -45,18 +45,35 @@
         const title = document.createElementNS(svg.namespaceURI, "title");
         title.textContent = text; path.appendChild(title); svg.appendChild(path);
   }
-  function planAgendaTemplate(groups, labels) {
-    const root = h("div", "cx-plan-agenda");
-    for (const group of groups) {
-      const section = h("section"), title = h("h3"), list = h("ul"); setText(title, group.label); section.append(title, list);
-      for (const item of group.items) {
-        const row = h("li"), button = h("button", "cx-btn cx-plan-agenda-title"), dates = h("p"), meta = h("p", "cx-plan-agenda-meta");
-        button.type = "button"; setText(button, item.task.title); button.dataset.cxPlanRecord = item.task.key; button.dataset.cxPlanResource = group.id;
-        setText(dates, item.dates); setText(meta, item.meta); row.classList.toggle("cx-plan-agenda-critical", item.critical);
-        row.append(button, dates, meta); list.appendChild(row);
-      }
-      if (!group.items.length) { const empty = h("p"); setText(empty, labels.calendarNoEvents); section.appendChild(empty); }
-      root.appendChild(section);
+  function planAgendaTemplate(labels) {
+    const root=h("div","cx-plan-agenda"), scroll=h("div","cx-plan-agenda-scroll"), list=h("div","cx-plan-agenda-list");
+    const pager=h("nav","cx-plan-agenda-pager"), previous=h("button","cx-btn cx-plan-agenda-previous"), next=h("button","cx-btn cx-plan-agenda-next"), position=h("span","cx-plan-agenda-position");
+    previous.type=next.type="button"; previous.setAttribute("aria-label",labels.gridPreviousPage);next.setAttribute("aria-label",labels.gridNextPage);
+    setText(previous,"\u2039");setText(next,"\u203a");pager.setAttribute("aria-label",labels.gridPaging);
+    pager.append(previous,position,next);scroll.appendChild(list);root.append(scroll,pager);
+    return {root,scroll,list,pager,previous,next,position,page:0};
+  }
+  function planAgendaPageTemplate(items, moves) {
+    const fragment=document.createDocumentFragment();let current=null,list=null;
+    const heading=group=>{
+      const section=h("section"), title=h("h3"), count=h("span","cx-plan-agenda-count");
+      if(group.expandable) {
+        const button=h("button","cx-btn cx-plan-resource-toggle"), mark=h("span");button.type="button";
+        mark.setAttribute("aria-hidden","true");setText(mark,group.row._open?"\u25be":"\u25b8");button.append(mark,document.createTextNode(group.label));
+        button.dataset.cxPlanToggle=group.id;button.setAttribute("aria-expanded",String(!!group.row._open));title.appendChild(button);
+      } else setText(title,group.label);
+      setText(count,String(group.items.length));title.appendChild(count);list=h("ul");list.setAttribute("aria-label",group.label);
+      section.append(title,list);fragment.appendChild(section);current=group;
+    };
+    for(const item of items) {
+      if(item.kind==="resource") {heading(item.group);continue;}
+      if(current!==item.group) heading(item.group);
+      const row=h("li"),button=h("button","cx-btn cx-cal-ev cx-plan-agenda-title"),dates=h("p"),meta=h("p","cx-plan-agenda-meta");
+      button.type="button";setText(button,item.task.title);button.title=item.task.title;
+      button.dataset.cxPlanRecord=item.task.key;button.dataset.cxPlanResource=item.group.id;button.dataset.cxEvent=item.task.id;button.dataset.cxRecord=item.task.key;
+      button._calEvent={...item.task,resource:item.group.id};button.setAttribute("aria-label",[item.task.title,item.dates,item.meta].join(", "));
+      if(moves) button.setAttribute("aria-keyshortcuts","Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown");
+      setText(dates,item.dates);setText(meta,item.meta);row.classList.toggle("cx-plan-agenda-critical",item.critical);row.append(button,dates,meta);list.appendChild(row);
     }
-    return root;
+    return fragment;
   }

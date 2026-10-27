@@ -27,7 +27,7 @@ Plans use ordinary task records. Recurrence and calendar feeds are not supported
 
 On wide screens the time columns stretch to fill the available range, and the frame fits its resource rows. The current day has a labelled accent line when it falls within the range. Routed dependency connectors show arrowheads and highlight on hover; the legend names both critical paths and conflicts. Short bars keep their full task name in a tooltip and display a label beside the bar.
 
-Phones show an agenda grouped by visible resource lanes. Each task lists its dates, predecessor count, criticality, milestone and conflict state. Its title opens the same calendar record details as the desktop task. Keyboard date and resource proposals retain the same Alt+Arrow shortcuts. The optional plan part has a 10 KiB combined script/style gzip budget, including both presentations.
+Narrow hosts show an agenda grouped by resource lanes. Each task lists its dates, predecessor count, criticality, milestone and conflict state. Its title opens the same calendar record details as the desktop task. Resource headings retain expand/collapse controls, including for lazily loaded groups. The agenda indexes accepted tasks once and mounts at most 50 entries per page, keeping large plans bounded. Keyboard date and resource proposals retain the same Alt+Arrow shortcuts. The optional plan part has a 12 KiB combined script/style gzip budget, including both presentations. Content fitting preserves the host's authored height and maximum height; `AutoHeight = false` keeps the full host viewport.
 
 ## Dependencies and critical path
 

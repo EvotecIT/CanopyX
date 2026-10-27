@@ -33,7 +33,11 @@
       if (!this.planLegend) {
         const legend = this.planLegend = planLegendTemplate.call(this);
         this.calBody.before(legend);
-        this.lifetime.signal.addEventListener("abort", () => { legend.remove(); this.host.classList.remove("cx-plan-host"); }, { once: true });
+        this.lifetime.signal.addEventListener("abort", () => {
+          legend.remove();this.host.classList.remove("cx-plan-host");
+          if(this.planFit&&this.host.style.maxHeight===this.planFit.written)this.host.style.maxHeight=this.planFit.inline;
+          this.planAgendaModel=this.planAgendaState=null;
+        }, { once: true });
       }
       const network = this.planAnalyze(), axis = this.tlAxis, positions = new Map(), canvasBox = this.tlCanvas.getBoundingClientRect();
       for (const lane of this.tlLanes.values()) {
@@ -70,7 +74,7 @@
       }
       this.planLinks?.remove(); this.planLinks = svg; this.tlCanvas.appendChild(svg);
       this.tlRoot.dataset.cxPlanComplete = String(network.complete);
-      this.tlRoot.style.height = ((this.tlTree.tops[this.tlTree.rows.length] || 0) + this.tlHead.offsetHeight + 2) + "px";
+      if(!this.calPhone)this.planFitHeight((this.tlTree.tops[this.tlTree.rows.length]||0)+this.tlHead.offsetHeight+2);
       this.tlHead.querySelector(".cx-plan-today")?.remove();
       const now = Date.now();
       if (this.cal.now && now >= axis.from && now < axis.to) {

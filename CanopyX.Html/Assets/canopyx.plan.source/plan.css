@@ -25,9 +25,6 @@
 @media print { .cx-plan-links, .cx-plan-proposal { display: none!important; } .cx-plan-print { display: block!important; } }
 
 .cx-plan-critical.cx-plan-milestone::before { background:var(--hfx-color-status-bad-fg); }
-.cx-plan-host { height:auto!important;min-height:0; }
-.cx-plan-host .cx-plan-calendar { flex:none; }
-.cx-plan-calendar .cx-cal-body { flex:none; }
 .cx-plan .cx-tl-main { overflow:auto; }
 .cx-plan .cx-tl-now { background:var(--hfx-color-accent); }
 .cx-plan-today { position:absolute;inset-block-start:0;transform:translateX(-50%);padding:var(--hfx-space-1) var(--hfx-space-2);border-radius:var(--hfx-radius-control);background:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast);font-size:var(--hfx-type-caption-size);font-weight:var(--hfx-weight-semibold); }
@@ -36,7 +33,9 @@
 .cx-plan .cx-tl-lane .cx-plan-label-outside > .cx-cal-ev-title { display:block;position:absolute;inset-inline-start:calc(100% + var(--hfx-space-2));max-inline-size:calc(var(--hfx-space-1) * 40);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--hfx-color-text-muted);font-weight:var(--hfx-weight-semibold);visibility:visible; }
 .cx-plan-links path { pointer-events:stroke;stroke:var(--hfx-color-text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round; }
 .cx-plan-links path:hover { stroke:var(--hfx-color-accent);stroke-width:3; }
-.cx-plan-agenda { display:none;padding:var(--hfx-space-3); }
+.cx-plan-agenda { display:none;box-sizing:border-box;height:100%;min-height:0;padding:var(--hfx-space-3);flex-direction:column; }
+.cx-plan-agenda-scroll { flex:1 1 auto;min-height:0;overflow:auto; }
+.cx-plan-agenda-list { display:flow-root; }
 .cx-plan-agenda h3 { font-size:var(--hfx-type-body-size);margin:var(--hfx-space-3) 0;font-weight:var(--hfx-weight-semibold); }
 .cx-plan-agenda ul { list-style:none;margin:0;padding:0; }
 .cx-plan-agenda li { padding:var(--hfx-space-3);margin-block-end:var(--hfx-space-2);border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control); }
@@ -44,8 +43,15 @@
 .cx-plan-agenda p { margin:var(--hfx-space-2) 0 0;font-size:var(--hfx-type-caption-size);line-height:var(--hfx-type-body-line); }
 .cx-plan-agenda-meta { color:var(--hfx-color-text-muted); }
 .cx-plan-agenda-critical { border-inline-start-color:var(--hfx-color-status-bad-fg)!important; }
-@media(max-width:640px) { .cx-plan-calendar .cx-plan { display:none; }.cx-plan-agenda { display:block; }.cx-plan-calendar .cx-plan-legend { display:none; } }
+.cx-cal-phone .cx-plan-calendar .cx-plan { display:none; }
+.cx-cal-phone .cx-plan-agenda { display:flex; }
+.cx-cal-phone .cx-plan-calendar .cx-plan-legend { display:none; }
 @media print { .cx-plan-agenda { display:none; } }
 
 
 .cx-plan .cx-tl-lane .cx-plan-label-outside > .cx-cal-ev-title { display:block!important;visibility:visible!important; }
+
+.cx-plan-agenda-pager { display:flex;flex:none;align-items:center;justify-content:space-between;gap:var(--hfx-space-2);border-block-start:var(--hfx-border-width) solid var(--hfx-color-border);padding-block-start:var(--hfx-space-2); }
+.cx-plan-agenda [hidden] { display:none; }
+.cx-plan-agenda .cx-plan-resource-toggle { padding:0;border:0;min-height:0;height:auto;background:transparent;font:inherit;color:inherit; }
+.cx-plan-agenda-count { margin-inline-start:var(--hfx-space-2);color:var(--hfx-color-text-muted);font-size:var(--hfx-type-caption-size); }

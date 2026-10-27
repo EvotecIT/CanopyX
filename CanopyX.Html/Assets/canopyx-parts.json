@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "77abc594c2fbdd92",
+      "version": "047691981aaf13c2",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -823,7 +823,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "cec16b6240faaff8",
+      "version": "a512e3584b8da576",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -897,7 +897,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "8bc026c6caa80a64",
+      "version": "44d1c5f9bef8a06d",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
@@ -948,7 +948,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "f43dab9abc79dad0",
+      "version": "07402059163ca7ff",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [
@@ -967,7 +967,7 @@
     {
       "name": "path",
       "label": "path view",
-      "version": "7af8fbfca1b1fc48",
+      "version": "9db8e187eeef2082",
       "script": "canopyx-path.js",
       "style": "canopyx-path.css",
       "runtimes": [
@@ -999,7 +999,7 @@
     {
       "name": "time-slider",
       "label": "snapshot playback",
-      "version": "f49ddb196203f782",
+      "version": "8b4f2119f07a5b7d",
       "script": "canopyx-time-slider.js",
       "style": "canopyx-time-slider.css",
       "runtimes": [
