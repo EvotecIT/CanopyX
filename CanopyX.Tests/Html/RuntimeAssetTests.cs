@@ -131,7 +131,8 @@ public sealed class RuntimeAssetTests {
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         // Combined roadmap integration: its size plus about 15%.
         // Includes the shared controls (canopyx.source/controls.css) every view now uses instead of its own copies.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 150 * 1024);
+        // The optional flow-facts part adds one lazy index entry (version and script fingerprint): 64 bytes.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 150 * 1024 + 64);
     }
 
     [Fact]

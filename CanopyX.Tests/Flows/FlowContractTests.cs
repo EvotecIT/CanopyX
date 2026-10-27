@@ -6,6 +6,32 @@ namespace CanopyX.Tests.Flows;
 
 /// <summary>The flow document: its shape, the round trip through <see cref="CanopyFlow.FromContract"/>, the schema and the strict reader.</summary>
 public sealed class FlowContractTests {
+    [Theory]
+    [InlineData(null)]
+    [InlineData("form")]
+    [InlineData("review")]
+    public void FromContractRejectsDefinedFactsOnNonInformationStepsEvenWhenEmpty(string? kind) {
+        var step = new JsonObject { ["id"] = "step", ["title"] = "Step", ["facts"] = new JsonArray() };
+        if (kind != null) step["type"] = kind;
+        var document = new JsonObject { ["kind"] = "flow", ["version"] = 1, ["id"] = "probe", ["title"] = "Probe", ["steps"] = new JsonArray(step) };
+        Assert.False(FlowSamples.Evaluate(document.ToJsonString()).IsValid);
+        var error = Assert.Throws<InvalidOperationException>(() => CanopyFlow.FromContract(document.ToJsonString()));
+        Assert.Contains("information", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void InformationFactsRoundTripWithoutTruncatingEvidenceAndNeverBecomeAnswerFields() {
+        string evidence = new string('x', 2000) + "<not-html>";
+        var flow = new CanopyFlow("review", "Review evidence").Info("evidence", "Evidence");
+        flow.Steps[0].Facts.Add(new("Reason", evidence));
+        string json = flow.ToContract(); FlowSamples.AssertValid(json, "Read-only evidence facts");
+        var roundTrip = CanopyFlow.FromContract(json);
+        Assert.Equal(evidence, Assert.Single(roundTrip.Steps[0].Facts).Value);
+        Assert.Empty(roundTrip.Steps[0].Fields);
+        Assert.DoesNotContain("<not-html>", json);
+        roundTrip.Steps[0].Kind = CanopyFlowStepKind.Form;
+        Assert.Throws<InvalidOperationException>(() => roundTrip.Validate());
+    }
     [Fact]
     public void FromContract_EmptyInitial_PreservesEditModeBaseline() {
         const string json = "{\"kind\":\"flow\",\"version\":1,\"id\":\"edit\",\"title\":\"Edit settings\",\"steps\":[{\"id\":\"settings\",\"title\":\"Settings\"}],\"initial\":{}}";

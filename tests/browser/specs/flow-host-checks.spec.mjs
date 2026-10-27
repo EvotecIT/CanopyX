@@ -39,6 +39,12 @@ test("a failed check shows the host's field messages and keeps the reader on the
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "fail");
   await expect(field(page, "host").locator(".cx-flow-error")).toHaveText("Not reachable from the service.");
   await expect(stepTitle(page)).toHaveText("Which server sends the mail?");
+  const retry = check(page, "connection").getByRole("button", { name: "Run “Test the connection” again" });
+  await expect(retry).toHaveText("Run again");
+  await expect(retry).toHaveClass(/cx-primary/);
+  await retry.click();
+  await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "running");
+  await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "fail");
 });
 
 test("a pass-required check reads the typed secret once and blocks Next until it passes", async ({ page }) => {

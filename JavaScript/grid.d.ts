@@ -5,7 +5,7 @@ import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult
 import type { CanopyPlugin } from "./plugins.js";
 import type { GridEditorDefinition, GridValidation, GridEditingSettings, GridEditingOptions, GridEditingApi, GridCellValueChange,
   GridRowCommit, GridCommitRowResult, GridCommitOutcome, GridCommit, GridCommitResult } from "./editing.js";
-import type { RecordPanelDefinition, RecordLoader, RecordSectionRenderer, RecordAction, RecordOpenAll, OpenRecordOptions } from "./records.js";
+import type { RecordPanelDefinition, RecordPanelOptions, RecordLoader, RecordSectionRenderer, RecordAction, RecordOpenAll, OpenRecordOptions } from "./records.js";
 export * from "./records.js";
 export * from "./index.js";
 export * from "./ui.js";
@@ -762,6 +762,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   recordSections?: Readonly<Record<string, RecordSectionRenderer>>;
   /** Actions of the record actions menu, after the built-in ones. */
   recordActions?: readonly RecordAction[];
+  /** Projects a bounded plain-text record title and optional subtitle, without changing record identity. */
+  recordHeading?: RecordPanelOptions["recordHeading"];
   /** Open all in grid of a collection; return false (or cancel canopyx:openAll) to filter the target yourself. */
   onOpenAll?: (event: RecordOpenAll) => boolean | void;
   /** Print one record; return false (or cancel canopyx:recordPrint) to print the sheet yourself. */

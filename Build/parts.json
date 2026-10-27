@@ -448,6 +448,34 @@
       ]
     },
     {
+      "name": "flow-facts",
+      "label": "flow facts",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowFacts"
+      ],
+      "key": "FLOW_IMPL",
+      "requires": [
+        "flow"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "h",
+        "setText"
+      ],
+      "start": "const { FlowView, FLOW_HOST, flowFail, flowKeys, flowString } = FLOW_IMPL.core;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-facts.source"
+      ],
+      "styles": []
+    },
+    {
       "name": "flow-consent",
       "label": "flow consent",
       "runtimes": ["grid", "flow"],

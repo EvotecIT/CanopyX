@@ -26,6 +26,8 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
 
     /// <summary>Gets or sets a line under the title. Plain text of at most 1,000 characters.</summary>
     public string? Description { get; set; }
+    /// <summary>Gets the read-only facts of an information step, at most 32. These do not enter the answer or dirty state.</summary>
+    public IList<CanopyFlowFact> Facts { get; } = new List<CanopyFlowFact>();
 
     /// <summary>Gets or sets what the step holds.</summary>
     public CanopyFlowStepKind Kind { get; set; }
@@ -160,6 +162,11 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
         writer.BeginObject().Property("id", Id);
         if (Kind != CanopyFlowStepKind.Form) writer.Property("type", Kind == CanopyFlowStepKind.Info ? "info" : Kind == CanopyFlowStepKind.Pick ? "pick" : "review");
         writer.OptionalProperty("title", Title).OptionalProperty("description", Description).OptionalProperty("group", GroupLabel);
+        if (Facts.Count > 0) {
+            writer.Name("facts").BeginArray();
+            foreach (var fact in Facts) writer.BeginObject().Property("label", fact.Label).Property("value", fact.Value).EndObject();
+            writer.EndArray();
+        }
         if (IsOptional) writer.Property("optional", true);
         if (Picker != null) {
             writer.Name("pick");
@@ -206,7 +213,7 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
 
     internal static CanopyFlowStep Read(object? node) {
         var map = CanopyFlowContract.Object(node, "A step", "id", "type", "title", "description", "optional", "when", "fields", "sections", "declaration", "changesOnly",
-            "checks", "group", "pick", "confirm", "acknowledge", "preview");
+            "checks", "group", "pick", "confirm", "acknowledge", "preview", "facts");
         var id = CanopyFlowContract.RequiredText(map, "id", "A step");
         if (!CanopyFlowValues.IsIdentifier(id)) throw new InvalidOperationException("A step has an invalid id.");
         var what = "Step " + id;
@@ -220,6 +227,11 @@ public sealed class CanopyFlowStep : CanopyFlowFieldContainer<CanopyFlowStep> {
         };
         var type = CanopyFlowContract.Text(map, "type", what);
         if (type != null) step.Kind = CanopyFlowContract.Choose(type, what, "type", ("form", CanopyFlowStepKind.Form), ("info", CanopyFlowStepKind.Info), ("review", CanopyFlowStepKind.Review), ("pick", CanopyFlowStepKind.Pick));
+        if (map.ContainsKey("facts") && step.Kind != CanopyFlowStepKind.Info) throw new InvalidOperationException("Only information steps hold facts.");
+        foreach (var item in CanopyFlowContract.Items(map, "facts", what, 32)) {
+            var fact = CanopyFlowContract.Object(item, "A flow fact", "label", "value");
+            step.Facts.Add(new CanopyFlowFact(CanopyFlowContract.RequiredText(fact, "label", "A flow fact"), CanopyFlowContract.RequiredText(fact, "value", "A flow fact")));
+        }
         if (map.TryGetValue("pick", out var pick)) step.Picker = CanopyFlowPicker.Read(pick, what);
         foreach (var item in CanopyFlowContract.Items(map, "checks", what, 8)) step.Checks.Add(CanopyFlowCheck.Read(item, what));
         if (map.TryGetValue("confirm", out var confirm)) step.Confirmation = CanopyFlowConfirmation.Read(confirm);

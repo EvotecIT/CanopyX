@@ -990,6 +990,7 @@ export interface FlowStep{
   title?:string;
   description?:string;
   type?:"form"|"info"|"pick"|"review";
+  facts?:readonly{readonly label:string;readonly value:string}[];
   fields?:readonly FlowField[];
   sections?:readonly FlowSection[];
   when?:FlowCondition;
@@ -1077,6 +1078,7 @@ export interface FlowHookContext{
   signal:AbortSignal
 }
 export interface FlowSubmitDetail extends Readonly<FlowSubmission>{
+  readonly signal:AbortSignal;
   respondWith(answer:FlowAnswer|Promise<FlowAnswer>):void;
   secret(fieldId:string):string|null;
 }
@@ -1158,6 +1160,7 @@ export interface FlowApi{
   setProgress(progress:{done?:number;total?:number;message?:string}):boolean;
   complete(answer:FlowAnswer):boolean;
   runCheck(checkId:string):Promise<{status:FlowCheckStatus;message:string|null;details:{label:string;value:string}[];at:string}|null>;
+  invalidateChecks(checkIds?:readonly string[]):void;
   refreshOptions(fieldId:string):Promise<void>;
   setStepState(stepId:string,state:FlowStepState|null):void;
   saveDraft():Promise<boolean>;
@@ -1287,7 +1290,7 @@ import type{
 }
 from "./editing.js";
 import type{
-  RecordPanelDefinition,RecordLoader,RecordSectionRenderer,RecordAction,RecordOpenAll,OpenRecordOptions
+  RecordPanelDefinition,RecordPanelOptions,RecordLoader,RecordSectionRenderer,RecordAction,RecordOpenAll,OpenRecordOptions
 }
 from "./records.js";
 export * from "./records.js";
@@ -1999,6 +2002,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends Gri
   loadRecord?:RecordLoader;
   recordSections?:Readonly<Record<string,RecordSectionRenderer>>;
   recordActions?:readonly RecordAction[];
+  recordHeading?:RecordPanelOptions["recordHeading"];
   onOpenAll?:(event:RecordOpenAll) => boolean|void;
   onRecordPrint?:(event:{readonly id:string;readonly element:HTMLElement;readonly dispose:() => void}) => boolean|void;
   onRowActivate?:(event:GridRowActivation<Row>) => boolean|void;
@@ -2614,6 +2618,7 @@ export interface GridLiveState{
   readonly revision:string|null;
 }
 export interface GridPollOptions<Row extends GridRow=GridRow,Q extends AcceptedGridQuery=GridQuery>{
+  onRefresh?:(result:GridLiveResult) => void;
   intervalMs?:number;
   immediate?:boolean;
   pauseWhenHidden?:boolean;
@@ -3310,10 +3315,19 @@ export interface RecordSectionContext{
   onDispose(cleanup:() => void):void;
 }
 export type RecordSectionRenderer=(record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>;label?:string}>,element:HTMLElement,context:RecordSectionContext) => void|PromiseLike<void>;
+export interface RecordActionContext{
+  readonly record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>;
+  readonly view:string;
+  readonly api:unknown;
+  readonly payload:GridRecord|null;
+  readonly signal:AbortSignal;
+}
 export interface RecordAction{
   readonly disabled?:boolean;
+  readonly visible?:boolean|((context:RecordActionContext) => boolean);
+  readonly prominent?:boolean|((context:RecordActionContext) => boolean);
   readonly label:string;
-  run(context:{readonly record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>;readonly view:string;readonly api:unknown;readonly payload:GridRecord|null;readonly signal:AbortSignal}):void|PromiseLike<void>;
+  run(context:RecordActionContext):void|PromiseLike<void>;
 }
 export interface RecordOpenAll{
   readonly view:string;
@@ -3327,8 +3341,10 @@ export interface OpenRecordOptions{
   readonly returnFocus?:Element|null;
   readonly path?:readonly string[];
   readonly tab?:string;
+  readonly reload?:boolean;
 }
 export interface RecordPanelOptions{
+  recordHeading?:(record:Readonly<{id:string;cells?:Readonly<Record<string,Cell>>;fields?:Readonly<Record<string,Cell>>}>) => {title:string;subtitle?:string};
   loadRecord?:RecordLoader;
   recordSections?:Readonly<Record<string,RecordSectionRenderer>>;
   recordActions?:readonly RecordAction[];

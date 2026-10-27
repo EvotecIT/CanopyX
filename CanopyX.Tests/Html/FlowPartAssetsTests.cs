@@ -8,6 +8,14 @@ namespace CanopyX.Tests.Html;
 /// <summary>The forms part, the flow part and the flow entry point: their size guards and what each one carries.</summary>
 public sealed class FlowPartAssetsTests {
     [Fact]
+    public void InformationFactsLoadTheirOptionalPartOnlyWhenPresent() {
+        var flow = new CanopyFlow("evidence", "Evidence").Info("record", "Record");
+        Assert.DoesNotContain("application/x-canopyx-flow-facts", flow.ToHtmlPage());
+        flow.Steps[0].Facts.Add(new("SHA-256", new string('a', 64)));
+        Assert.Contains("application/x-canopyx-flow-facts", flow.ToHtmlPage());
+    }
+
+    [Fact]
     public void FormsPart_IsVersionedInlineSafeAndBounded() {
         var part = CanopyHtmlAssets.GetPart("forms");
         Assert.Matches("^[a-f0-9]{16}$", part.Version);
@@ -50,6 +58,7 @@ public sealed class FlowPartAssetsTests {
     [InlineData("flow-links", 2, "flow,flow-host")]
     [InlineData("flow-endpoint", 2, "flow,flow-host")]
     [InlineData("flow-consent", 3, "flow")]
+    [InlineData("flow-facts", 2, "flow")]
     public void FlowFeaturePart_IsVersionedInlineSafeAndBounded(string name, int guardKiB, string requires) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Matches("^[a-f0-9]{16}$", part.Version);

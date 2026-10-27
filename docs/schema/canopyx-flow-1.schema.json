@@ -263,6 +263,8 @@
       "properties": {
         "id": { "$ref": "#/$defs/identifier" },
         "type": { "enum": ["form", "info", "pick", "review"], "description": "Default form." },
+        "facts": { "type": "array", "maxItems": 32, "items": { "type": "object", "required": ["label", "value"], "additionalProperties": false, "properties": {
+          "label": { "$ref": "#/$defs/shortText" }, "value": { "type": "string", "minLength": 1, "maxLength": 32768, "pattern": "\\S" } } } },
         "title": { "$ref": "#/$defs/shortText" },
         "description": { "$ref": "#/$defs/longText" },
         "optional": { "type": "boolean" },
@@ -282,6 +284,7 @@
           "label": { "type": "string", "minLength": 1, "maxLength": 400, "pattern": "\\S" }, "when": { "$ref": "#/$defs/condition" } } }
       },
       "allOf": [
+        { "if": { "required": ["facts"] }, "then": { "required": ["type"], "properties": { "type": { "const": "info" } } } },
         {
           "if": { "required": ["type"], "properties": { "type": { "const": "review" } } },
           "then": { "not": { "anyOf": [{ "required": ["fields"] }, { "required": ["sections"] }, { "required": ["when"] }, { "required": ["optional"] }, { "required": ["group"] }] } },

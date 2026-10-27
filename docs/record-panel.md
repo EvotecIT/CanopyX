@@ -184,6 +184,12 @@ sheet its own way (a single-record PDF, for example).
 Host actions join the menu: the `recordActions` option and a plugin's `recordActions`, each `{ label, run({ record, view,
 api, payload, signal }) }`. An Excel export of one record belongs in an export plugin's action.
 
+An action's optional `visible` predicate follows the selected record and loaded payload on each paint. `prominent` accepts
+the same predicate when the host chooses a primary action per record. Both receive the action context; hidden actions
+are checked again before execution. These presentation choices do not replace the host's permission check.
+After a host action changes details without changing the grid row, call `openRecord(id, { reload: true })` to reload that
+record's details. Other records keep their cached payloads.
+
 ## Charts in the drawer
 
 A section's `Renderer` names a drawer section renderer: a plugin's `drawerSections` entry or the host's `recordSections`
@@ -285,3 +291,5 @@ Record-only fields use `Wrap` and `MaxLines` just like visible grid columns. A n
 
 The panel's texts are labels of every runtime (`recordBack`, `recordShowEmpty`, `recordOpenAll`, … in `CanopyLabels`), with
 Polish, German, Spanish, French and Italian translations; see [labels.md](labels.md).
+
+Host actions may set `prominent: true` to expose the same action in the drawer footer as well as the menu. The footer disables that button while its task is running. The two entry points share one task; repeat activations are ignored until it settles. `recordHeading(record)` optionally returns a plain-text `{ title, subtitle }` projection (up to 512 and 2,000 characters respectively); it receives a detached record snapshot. These presentation options do not change record identity or action authorization.

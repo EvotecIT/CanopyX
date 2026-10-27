@@ -34,7 +34,7 @@ public sealed class CanopyHtmlPart {
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "contextActions", "columnMenus"
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -151,6 +151,7 @@ public sealed class CanopyHtmlPart {
         var fields = steps.SelectMany(step => step.Fields.Concat(step.Sections.Where(section => section != null).SelectMany(section => section.Fields))).Where(field => field != null);
         var review = steps.LastOrDefault(step => step.Kind == CanopyFlowStepKind.Review);
         return feature switch {
+            "flowFacts" => steps.Any(step => step.Facts.Count > 0),
             "flowChecks" => steps.Any(step => step.Checks.Count > 0),
             "flowHostOptions" => fields.Any(field => field.OptionsSource == CanopyFlowOptionsSource.Host || field.DependsOnIds.Count > 0) || steps.Any(step => step.Sections.Any(section => section != null && section.IsFromHost)),
             "flowPick" => steps.Any(step => step.Picker != null),

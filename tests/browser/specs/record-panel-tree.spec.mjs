@@ -40,6 +40,26 @@ const plain = {
   roots: [{ id: "a", label: "Alpha", cells: { state: { value: "Failing", tone: "danger", badges: [{ text: "new", tone: "info" }] }, owner: "Team A", internal: "x" } }]
 };
 
+test("tree record headings create a plain subtitle and clear it when the next record omits it", async ({ page }) => {
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  const view = { ...plain, record: { fields: [{ id: "detail", title: "Detail" }] },
+    roots: [...plain.roots, { id: "b", label: "Beta", cells: { owner: "Team B" } }] };
+  const script = `<script>window.headingErrors=[];document.addEventListener("canopyx:error",event=>window.headingErrors.push(String(event.detail.error)),true);
+CanopyX.configure("plain-tree", { recordHeading: record => ({title:"Change " + record.id, ...(record.id === "a" ? {subtitle:"Recorded <12:00>"} : {})}) });</script>`;
+  await page.route("http://canopyx.test/tree-heading.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace('<body class="cx-page">', '<body class="cx-page">' + script) }));
+  await page.goto("http://canopyx.test/tree-heading.html");
+  await page.waitForSelector("[data-cx-ready]"); await page.evaluate(api + ".ready");
+  await page.evaluate(api + ".openDetails('a')");
+  await expect(drawer(page).getByRole("heading", { name: "Change a", exact: true })).toBeVisible();
+  await expect(drawer(page).locator(".cx-record-subtitle")).toBeVisible();
+  await expect(drawer(page).locator(".cx-record-subtitle")).toHaveText("Recorded <12:00>");
+  await page.evaluate(api + ".openDetails('b')");
+  await expect(drawer(page).getByRole("heading", { name: "Change b", exact: true })).toBeVisible();
+  await expect(drawer(page).locator(".cx-record-subtitle")).toBeHidden();
+  expect(await page.evaluate(() => window.headingErrors)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
 test("the plain tree drawer keeps tones, badges and sections, and an onDetails hook replaces it", async ({ page }) => {
   await page.route("http://canopyx.test/tree.html", route => route.fulfill({ contentType: "text/html", body: viewPage(plain) }));
   await page.goto("http://canopyx.test/tree.html");
