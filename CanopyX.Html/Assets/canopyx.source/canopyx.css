@@ -71,6 +71,9 @@
   position:absolute;left:0;top:0;display:flex;height:var(--cx-row-h);min-width:100%;
   background:var(--hfx-color-surface);border-bottom:var(--hfx-border-width) solid var(--hfx-color-border);cursor:default;contain:strict;
 }
+/* Embedded rows show the card's surface; :where keeps the plain row's specificity, so alternate, hover, selected and
+   toned rows keep their colour. */
+:where(.cx-host[data-cx-chrome="embedded"]) .cx-row { background:transparent;}
 .cx-row.cx-alt { background:var(--hfx-color-row-alt);}
 .cx-row:hover { background:var(--hfx-color-hover);}
 .cx-row[aria-selected="true"] { background:var(--hfx-color-accent-subtle);}

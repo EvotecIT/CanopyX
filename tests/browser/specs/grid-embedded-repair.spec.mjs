@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
-import { viewPage } from "./support.mjs";
+import fs from "node:fs";
+import path from "node:path";
+import { viewPage, repo } from "./support.mjs";
 
 const columns = [{ id: "name", title: "Name", kind: "text", width: 180 }, { id: "size", title: "Size", kind: "number", width: 100 },
   { id: "seen", title: "Seen", kind: "datetime", width: 200 }];
@@ -40,6 +42,41 @@ test("a mistyped cell is repaired and reported once per column instead of blanki
     "CanopyX: 3 cell(s) in column name did not fit the column and were coerced, emptied or dropped (first row a)."]);
 });
 
+test("repair leaves frozen inline rows untouched and keeps unsafe numbers out of text cells", async ({ page }) => {
+  const warnings = [];
+  page.on("console", message => { if (message.type() === "warning") warnings.push(message.text()); });
+  const view = grid([]); delete view.rows;
+  // The host keeps its own frozen rows; repair must not write into them, and the grid still opens with the repaired copies.
+  const setup = "<script>window.source = Object.freeze([Object.freeze({ id: 'a', cells: Object.freeze({ name: 42, size: '17' }) })," +
+    " Object.freeze({ id: 'b', cells: Object.freeze({ name: 2 ** 60, size: 5 }) })]);</script>";
+  await page.route("http://canopyx.test/frozen", route => route.fulfill({ contentType: "text/html", body: viewPage(grid([]))
+    .replace(/<div class="cx-host"[\s\S]*<\/div><\/body>/, "<div id=\"frozen\"></div></body>").replace("</head>", setup + "</head>") }));
+  await page.goto("http://canopyx.test/frozen");
+  const result = await page.evaluate(view => {
+    const api = CanopyX.createDataGrid(document.getElementById("frozen"), { view: { ...view, rows: window.source } });
+    return { rows: api.view.rows.map(row => row.cells), source: window.source.map(row => row.cells) };
+  }, view);
+  expect(result.source).toEqual([{ name: 42, size: "17" }, { name: 2 ** 60, size: 5 }]);
+  expect(result.rows[0]).toEqual({ name: "42", size: 17 });
+  expect(result.rows[1].name).toBeNull();
+  expect(warnings.filter(text => text.startsWith("CanopyX:")).sort()).toEqual([
+    "CanopyX: 1 cell(s) in column size did not fit the column and were coerced, emptied or dropped (first row a).",
+    "CanopyX: 2 cell(s) in column name did not fit the column and were coerced, emptied or dropped (first row a)."]);
+});
+
+test("a host page with a non-finite number reports its repair", async ({ page }) => {
+  const view = { ...grid(undefined), source: { kind: "host" } }; delete view.rows;
+  const setup = "<script>CanopyX.configure('repair', { source: { query(query) { const items = [{ id: 'a', cells: { name: 'A', size: NaN } }, { id: 'b', cells: { name: 'B', size: Infinity } }];" +
+    " return { protocol: 'canopyx/2', type: 'gridPage', view: 'repair', revision: 'r1', offset: query.offset, total: 2, matched: 2, items }; } } });</script>";
+  const warnings = [];
+  page.on("console", message => { if (message.type() === "warning") warnings.push(message.text()); });
+  await page.route("http://canopyx.test/hosted", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("</head>", setup + "</head>") }));
+  await page.goto("http://canopyx.test/hosted"); await page.waitForSelector("[data-cx-ready]");
+  await expect(page.locator(".cx-canvas .cx-row")).toHaveCount(2);
+  expect(warnings.filter(text => text.startsWith("CanopyX:"))).toEqual([
+    "CanopyX: 2 cell(s) in column size did not fit the column and were coerced, emptied or dropped (first row a)."]);
+});
+
 test("embedded chrome draws no frame of its own and insets the toolbar by the card padding", async ({ page }) => {
   await open(page, grid([{ id: "a", cells: { name: "Plain", size: 5 } }]), " data-cx-chrome=\"embedded\" style=\"--hfx-card-padding-x:24px\"");
   const embedded = await page.evaluate(() => {
@@ -63,6 +100,34 @@ test("an empty embedded grid shows its empty state on the card surface", async (
   });
   expect(layers.found).toBe(true);
   expect(new Set(layers.colours)).toEqual(new Set(["rgba(0, 0, 0, 0)"]));
+});
+
+test("embedded rows show the card surface and keep their selected colour", async ({ page }) => {
+  await open(page, grid([{ id: "a", cells: { name: "One", size: 1 } }, { id: "b", cells: { name: "Two", size: 2 } }]), " data-cx-chrome=\"embedded\"");
+  const row = page.locator(".cx-canvas .cx-row").first();
+  expect(await row.evaluate(element => getComputedStyle(element).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
+  // The transparent rule must not outrank the row states that paint their own colour.
+  expect(await row.evaluate(element => { element.setAttribute("aria-selected", "true"); return getComputedStyle(element).backgroundColor; })).not.toBe("rgba(0, 0, 0, 0)");
+});
+
+test("an embedded tree insets its header and rows by the card padding", async ({ page }) => {
+  const tree = { protocol: "canopyx/2", type: "view", id: "tree", label: "Tree", rowHeight: 28, columns: [{ id: "name", title: "Name", width: 200 }],
+    source: { kind: "inline" }, roots: [{ id: "a", label: "Alpha" }] };
+  await open(page, tree, " data-cx-chrome=\"embedded\" style=\"--hfx-card-padding-x:24px\"");
+  const insets = await page.evaluate(() => [".cx-hrow > :first-child", ".cx-canvas .cx-row > :first-child"]
+    .map(selector => getComputedStyle(document.querySelector(selector)).paddingInlineStart));
+  expect(insets).toEqual(["24px", "24px"]);
+});
+
+test("an embedded matrix scroller draws no frame or surface of its own", async ({ page }) => {
+  const css = fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-matrix.css"), "utf8");
+  await page.setContent("<style>:root{--cx-size-1px:1px}" + css + "</style><div class=\"cx-host\" data-cx-chrome=\"embedded\"><div class=\"cx-matrix\"><div class=\"cx-mx-scroll\">x</div></div></div>" +
+    "<div class=\"cx-host\"><div class=\"cx-matrix\"><div class=\"cx-mx-scroll\" id=\"standalone\">x</div></div></div>");
+  const frames = await page.evaluate(() => [...document.querySelectorAll(".cx-mx-scroll")].map(element => {
+    const style = getComputedStyle(element); return { border: style.borderTopWidth, background: style.backgroundColor };
+  }));
+  expect(frames[0]).toEqual({ border: "0px", background: "rgba(0, 0, 0, 0)" });
+  expect(frames[1].border).not.toBe("0px");
 });
 
 test("a standalone grid keeps its own frame", async ({ page }) => {

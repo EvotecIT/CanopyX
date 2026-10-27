@@ -213,7 +213,7 @@
       "views": [],
       "features": ["rowData"],
       "key": "GRID_DATA_IMPL",
-      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "inlineGridSource", "loadSidecar", "gridIdOrder"],
+      "context": ["GRID_DATA_IMPL", "PROTOCOL", "validateGridRows", "repairGridCell", "inlineGridSource", "loadSidecar", "gridIdOrder"],
       "end": "GRID_DATA_IMPL.source = rowDataSource;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.data.source/10-row-data.js"
@@ -755,7 +755,7 @@
       "key": "DataGrid.prototype",
       "requires": ["ui-menu"],
       "context": ["toneVariable", "bindContextMenu", "DataGrid", "h", "setText", "fill", "plural", "gridButton", "gridIcon", "gridFreeze", "cellText", "cellValue", "isCellObject", "gridQuery",
-        "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "validateGridPage", "validateGridCursorPage", "validStructuralCount", "checkDocument", "numberFormat",
+        "gridQueryRows", "gridResultShape", "gridPresenterTone", "validateGridRows", "repairGridCell", "validateGridPage", "validateGridCursorPage", "validStructuralCount", "checkDocument", "numberFormat",
         "HostCellContext", "disposeHostSlot", "loadPart", "PROTOCOL"],
       "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid };",
       "scripts": [

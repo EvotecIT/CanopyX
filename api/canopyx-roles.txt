@@ -67,6 +67,8 @@
 --hfx-radius-badge
 --hfx-radius-container
 --hfx-radius-control
+--hfx-radius-lg
+--hfx-radius-md
 --hfx-radius-none
 --hfx-radius-overlay
 --hfx-radius-pill
@@ -92,6 +94,7 @@
 --hfx-type-body-line
 --hfx-type-body-size
 --hfx-type-caption-line
+--hfx-type-caption-line-height
 --hfx-type-caption-size
 --hfx-type-heading-line
 --hfx-type-heading-size

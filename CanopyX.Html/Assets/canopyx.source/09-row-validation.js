@@ -1,36 +1,35 @@
   // ---------- row contracts shared by grids and record collections ----------
   // ids carries the identities of the earlier chunks of the same rows (the data part validates rowData chunk by chunk).
-  // Loaders pass repair: one mistyped or malformed cell must not fail the whole view, so it is coerced or emptied in place
-  // and reported once per column on the console. Host API calls keep the strict contract and throw to their caller.
-  function validateGridRows(rows, columns, ids = new Set(), repair = false) {
+  // Grid loaders pass repair (repairGridCell, in the grid runtime): one mistyped or malformed cell must not fail the whole
+  // view, so it is coerced or emptied and reported once per column on the console. Repair leaves the caller's rows untouched
+  // (they may be cached or frozen): a repaired row is a copy, and the returned array holds it, so callers that repair use
+  // the result. Host API calls keep the strict contract and throw to their caller.
+  function validateGridRows(rows, columns, ids = new Set(), repair = null) {
     if (!Array.isArray(rows)) throw new Error("CanopyX: grid rows must be an array.");
     const declared = new Map(columns.map(column => [column.id, column])), repaired = new Map();
-    for (const row of rows) {
+    let result = rows;
+    rows.forEach((row, index) => {
       requireIdentifier(row && row.id, "grid row ID");
       if (ids.has(row.id)) throw new Error("CanopyX: duplicate grid row ID " + row.id);
       ids.add(row.id);
       if (!row.cells || typeof row.cells !== "object" || Array.isArray(row.cells))
         throw new Error("CanopyX: invalid flat row fields.");
-      if (repair) try { gridDecoration(row.tone, row.className); } catch { delete row.tone; delete row.className; }
-      else gridDecoration(row.tone, row.className);
+      let copy = null;
+      const own = () => copy || (result === rows && (result = rows.slice()), result[index] = copy = { ...row, cells: { ...row.cells } });
+      try { gridDecoration(row.tone, row.className); } catch (error) { if (!repair) throw error; delete own().tone; delete copy.className; }
       for (const id of Object.keys(row.cells)) {
-        if (!declared.has(id)) {
-          if (!repair) throw new Error("CanopyX: undeclared grid column " + id);
-          delete row.cells[id];
-          const seen = repaired.get(id); if (seen) seen.count++; else repaired.set(id, { row: row.id, count: 1 });
-          continue;
-        }
-        if (!repair) { validateGridCell(row.cells[id], declared.get(id)); continue; }
-        try { validateGridCell(row.cells[id], declared.get(id)); }
-        catch {
-          row.cells[id] = repairGridCell(row.cells[id], declared.get(id));
+        const column = declared.get(id);
+        try { if (!column) throw new Error("CanopyX: undeclared grid column " + id); validateGridCell(row.cells[id], column); }
+        catch (error) {
+          if (!repair) throw error;
+          const cells = own().cells; if (column) cells[id] = repair(cells[id], column); else delete cells[id];
           const seen = repaired.get(id); if (seen) seen.count++; else repaired.set(id, { row: row.id, count: 1 });
         }
       }
-    }
+    });
     for (const [id, seen] of repaired)
       console.warn("CanopyX: " + seen.count + " cell(s) in column " + id + " did not fit the column and were coerced, emptied or dropped (first row " + seen.row + ").");
-    return rows;
+    return result;
   }
 
   function validateGridCell(cell, column) {
@@ -44,29 +43,6 @@
       if (typeof cell.sort === "number") gridScalar(cell.sort, { kind: "number" });
     }
     gridScalar(cell, column);
-  }
-
-  // A number or bigint in a text column becomes its string, a numeric string in a number column its number; anything else
-  // gets an empty raw value, so it sorts and filters as a missing value. Text keeps showing; a number outside the safe range
-  // does not, because the browser may already have rounded it and would show a wrong value.
-  function repairGridCell(cell, column) {
-    const raw = cellValue(cell), shown = typeof raw === "string" || typeof raw === "boolean" ? String(raw) : undefined;
-    let value = raw;
-    try { gridScalar(value, column); } catch {
-      value = null;
-      if (column.kind === "number" && typeof raw === "string" && raw.trim()) value = Number(raw);
-      else if (column.kind !== "number" && column.kind !== "datetime" && (typeof raw === "bigint" || Number.isFinite(raw))) value = String(raw);
-      try { gridScalar(value, column); } catch { value = null; }
-    }
-    const text = isCellObject(cell) && !Array.isArray(cell) && typeof cell.text === "string" ? cell.text : value === null ? shown : undefined;
-    if (isCellObject(cell) && !Array.isArray(cell)) {
-      // Keep the tone, badges and other decorations when they are valid; an invalid sort key is dropped.
-      const kept = { ...cell, value, ...(text === undefined ? {} : { text }) };
-      try { validateGridCell(kept, column); return kept; } catch { }
-      delete kept.sort;
-      try { validateGridCell(kept, column); return kept; } catch { }
-    }
-    return text === undefined ? value : { value, text };
   }
 
   function gridDecoration(tone, className) {

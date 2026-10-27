@@ -144,14 +144,11 @@ if(typeof value!=="string"&&typeof value!=="boolean")throw new Error("CanopyX: t
 function gridExactTokens(column){return column.kind==="text"&&(column.valueOrder?.length||Object.keys(column.valueLabels||{}).length)}
 function cellMatches(cell,predicate,column){const scalar=gridScalar(cell,column),op=predicate.operator;if(op==="isNull")return scalar===null;if(op==="isNotNull")return scalar!==null;if(scalar===null)return false;const normalize=value=>column.kind==="text"&&!gridExactTokens(column)&&typeof value==="string"?foldText(value):value;const value=normalize(scalar),values=predicate.values.map(operand=>normalize(gridScalar(operand,column))),operand=values[0];switch(op){case "eq":return value===operand;case "ne":return value!==operand;case "in":return values.includes(value);case "contains":return String(value).includes(String(operand));case "startsWith":return String(value).startsWith(String(operand));case "gt":return value>operand;case "ge":return value>=operand;case "lt":return value<operand;case "le":return value<=operand}
 return false}
-function validateGridRows(rows,columns,ids=new Set(),repair=false){if(!Array.isArray(rows))throw new Error("CanopyX: grid rows must be an array.");const declared=new Map(columns.map(column=>[column.id,column])),repaired=new Map();for(const row of rows){requireIdentifier(row&&row.id,"grid row ID");if(ids.has(row.id))throw new Error("CanopyX: duplicate grid row ID "+row.id);ids.add(row.id);if(!row.cells||typeof row.cells!=="object"||Array.isArray(row.cells))
-throw new Error("CanopyX: invalid flat row fields.");if(repair)try{gridDecoration(row.tone,row.className)}catch{delete row.tone;delete row.className}
-else gridDecoration(row.tone,row.className);for(const id of Object.keys(row.cells)){if(!declared.has(id)){if(!repair)throw new Error("CanopyX: undeclared grid column "+id);delete row.cells[id];const seen=repaired.get(id);if(seen)seen.count++;else repaired.set(id,{row:row.id,count:1});continue}
-if(!repair){validateGridCell(row.cells[id],declared.get(id));continue}
-try{validateGridCell(row.cells[id],declared.get(id))}
-catch{row.cells[id]=repairGridCell(row.cells[id],declared.get(id));const seen=repaired.get(id);if(seen)seen.count++;else repaired.set(id,{row:row.id,count:1})}}}
-for(const[id,seen]of repaired)
-console.warn("CanopyX: "+seen.count+" cell(s) in column "+id+" did not fit the column and were coerced, emptied or dropped (first row "+seen.row+").");return rows}
+function validateGridRows(rows,columns,ids=new Set(),repair=null){if(!Array.isArray(rows))throw new Error("CanopyX: grid rows must be an array.");const declared=new Map(columns.map(column=>[column.id,column])),repaired=new Map();let result=rows;rows.forEach((row,index)=>{requireIdentifier(row&&row.id,"grid row ID");if(ids.has(row.id))throw new Error("CanopyX: duplicate grid row ID "+row.id);ids.add(row.id);if(!row.cells||typeof row.cells!=="object"||Array.isArray(row.cells))
+throw new Error("CanopyX: invalid flat row fields.");let copy=null;const own=()=>copy||(result===rows&&(result=rows.slice()),result[index]=copy={...row,cells:{...row.cells}});try{gridDecoration(row.tone,row.className)}catch(error){if(!repair)throw error;delete own().tone;delete copy.className}
+for(const id of Object.keys(row.cells)){const column=declared.get(id);try{if(!column)throw new Error("CanopyX: undeclared grid column "+id);validateGridCell(row.cells[id],column)}
+catch(error){if(!repair)throw error;const cells=own().cells;if(column)cells[id]=repair(cells[id],column);else delete cells[id];const seen=repaired.get(id);if(seen)seen.count++;else repaired.set(id,{row:row.id,count:1})}}});for(const[id,seen]of repaired)
+console.warn("CanopyX: "+seen.count+" cell(s) in column "+id+" did not fit the column and were coerced, emptied or dropped (first row "+seen.row+").");return result}
 function validateGridCell(cell,column){if(isCellObject(cell)){if(Array.isArray(cell)||
 ["text","searchText","title","tone","secondary"].some(name=>cell[name]!==undefined&&typeof cell[name]!=="string")||
 cell.secondary!==undefined&&cell.secondary.length>4096||cell.sort!==undefined&&!(typeof cell.sort==="string"?cell.sort.length<=4096:Number.isFinite(cell.sort))||cell.series!==undefined&&!gridSeriesValid(cell.series)||
@@ -159,10 +156,6 @@ cell.badges!==undefined&&(!Array.isArray(cell.badges)||cell.badges.some(badge=>!
 ["tone","title"].some(name=>badge[name]!==undefined&&typeof badge[name]!=="string"))))
 throw new Error("CanopyX: malformed grid cell.");if(typeof cell.sort==="number")gridScalar(cell.sort,{kind:"number"})}
 gridScalar(cell,column)}
-function repairGridCell(cell,column){const raw=cellValue(cell),shown=typeof raw==="string"||typeof raw==="boolean"?String(raw):undefined;let value=raw;try{gridScalar(value,column)}catch{value=null;if(column.kind==="number"&&typeof raw==="string"&&raw.trim())value=Number(raw);else if(column.kind!=="number"&&column.kind!=="datetime"&&(typeof raw==="bigint"||Number.isFinite(raw)))value=String(raw);try{gridScalar(value,column)}catch{value=null}}
-const text=isCellObject(cell)&&!Array.isArray(cell)&&typeof cell.text==="string"?cell.text:value===null?shown:undefined;if(isCellObject(cell)&&!Array.isArray(cell)){const kept={...cell,value,...(text===undefined?{}:{text})};try{validateGridCell(kept,column);return kept}catch{}
-delete kept.sort;try{validateGridCell(kept,column);return kept}catch{}}
-return text===undefined?value:{value,text}}
 function gridDecoration(tone,className){if(tone!==undefined&&(typeof tone!=="string"||!/^[a-z][a-z0-9-]{0,31}$/.test(tone) || tone.endsWith("-bg")) ||
 className!==undefined&&(typeof className!=="string"||!className.trim()||className.length>1024||/[\u0000-\u001f\u007f-\u009f]/.test(className)))
 throw new Error("CanopyX: invalid highlight tone or className.")}

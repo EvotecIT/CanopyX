@@ -90,8 +90,8 @@ line-height:var(--hfx-type-small-line,1.4);
 .cx-host[data-cx-chrome="embedded"] > .cx-grid{border-inline:0;border-bottom:0;border-radius:0;background:transparent;}
 .cx-host[data-cx-chrome="embedded"] > :is(.cx-grid-notice,.cx-grid-status,.cx-grid-pager){background:transparent;}
 .cx-host[data-cx-chrome="embedded"] :is(.cx-toolbar,.cx-grid-query-summary,.cx-grid-status,.cx-grid-pager){padding-inline:var(--hfx-card-padding-x,calc(20px - var(--cx-compact,0) * 4px));}
-.cx-host.cx-data-grid[data-cx-chrome="embedded"] :is(.cx-hrow,.cx-row) > :first-child{padding-inline-start:var(--hfx-card-padding-x,calc(20px - var(--cx-compact,0) * 4px));}
-.cx-host.cx-data-grid[data-cx-chrome="embedded"] :is(.cx-hrow,.cx-row) > :last-child{padding-inline-end:var(--hfx-card-padding-x,calc(20px - var(--cx-compact,0) * 4px));}
+.cx-host[data-cx-chrome="embedded"] :is(.cx-hrow,.cx-row) > :first-child{padding-inline-start:var(--hfx-card-padding-x,calc(20px - var(--cx-compact,0) * 4px));}
+.cx-host[data-cx-chrome="embedded"] :is(.cx-hrow,.cx-row) > :last-child{padding-inline-end:var(--hfx-card-padding-x,calc(20px - var(--cx-compact,0) * 4px));}
 .cx-host *,.cx-host *::before,.cx-host *::after{box-sizing:border-box;}
 .cx-host .cx-button.cx-filter-chip{display:inline-flex;align-items:center;justify-content:flex-start;gap:var(--hfx-space-1-5,6px);min-width:0;}
 .cx-filter-chip > .cx-chip-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -301,6 +301,7 @@ font-weight:var(--hfx-table-header-weight,var(--hfx-weight-semibold,600));font-s
 position:absolute;left:0;top:0;display:flex;height:var(--cx-row-h);min-width:100%;
 background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));border-bottom:var(--hfx-border-width,1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));cursor:default;contain:strict;
 }
+:where(.cx-host[data-cx-chrome="embedded"]) .cx-row{background:transparent;}
 .cx-row.cx-alt{background:var(--hfx-color-row-alt,light-dark(#fafafa,#1d1f23));}
 .cx-row:hover{background:var(--hfx-color-hover,light-dark(#f5f5f5,#232529));}
 .cx-row[aria-selected="true"]{background:var(--hfx-color-accent-subtle,light-dark(#e7f1f1,#1b3435));}

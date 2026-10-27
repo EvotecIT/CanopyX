@@ -47,6 +47,10 @@ export function violations(css) {
         const withoutVars = value.replace(/var\((?:[^()]|\([^()]*\))*\)/g, "TOKEN");
         if (colours.test(withoutVars) || !forced && system.test(withoutVars)) add("colour");
         colours.lastIndex = system.lastIndex = 0;
+        // Vendor framework variables (Tabler, Bootstrap, DataTables, ApexCharts) never reach CanopyX, not even through an
+        // alias; hosts map them to roles.
+        if (vendor.test(value)) add("vendor");
+        vendor.lastIndex = 0;
         if (property.startsWith("--")) {
           // A custom property holding a bare length is a fixed size wearing a variable's name; roles come from --hfx-*.
           if (!layout && !/var\(/.test(value) && length.test(value)) add("alias");
@@ -66,9 +70,6 @@ export function violations(css) {
         if (property === "z-index" && /^-?\d+$/.test(value)) add("z-index");
         if (!layout && properties.size.test(property) && hasLength && !/^(?:min|max|clamp)\(.*(?:ch|%|fr)/.test(withoutVars)) add("size");
         if (/var\(\s*--[^,()]+,\s*(?:#[0-9a-f]|[\d.]+(?:px|rem|em)|(?:rgb|hsl)\()/i.test(value)) add("fallback");
-        // Vendor framework variables (Tabler, Bootstrap, DataTables, ApexCharts) never reach CanopyX; hosts map them to roles.
-        if (vendor.test(value)) add("vendor");
-        vendor.lastIndex = 0;
       }
       start = index + 1;
     }
@@ -96,9 +97,12 @@ export function scan() {
 
 /** The shared design roles the runtime reads: the contract a host defines to theme CanopyX. */
 export function roles() {
-  const found = new Set();
+  const found = new Set(), read = text => [...text.matchAll(/var\(\s*(--hfx-[a-z0-9-]+)/gi)].map(match => match[1]);
   for (const file of sourceFiles(path.join(root, "CanopyX.Html/Assets")))
-    for (const match of fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/var\(\s*(--hfx-[a-z0-9-]+)/gi)) found.add(match[1]);
+    for (const role of read(fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, ""))) found.add(role);
+  // Build/Sync-Assets.ps1 gives each role its shared fallback, and a fallback can read further roles the shipped CSS then reads too.
+  const fallbacks = JSON.parse(fs.readFileSync(path.join(root, "CanopyX.Html/Assets/Shared/canopyx-fallbacks.json"), "utf8"));
+  for (const role of found) for (const nested of read(fallbacks[role] ?? "")) found.add(nested);
   return [...found].sort();
 }
 
