@@ -276,7 +276,9 @@ export type LabelName =
   | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
-  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails";
+  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails"
+  | "boardLane" | "boardUnassigned" | "boardEmpty" | "boardWip" | "boardWipFull" | "boardMove" | "boardMoved" | "boardRejected" | "boardPending" | "boardPartial" | "boardKeys" | "planMilestone" | "planCritical" | "planBaseline" | "planDependency" | "planDependencyConflict" | "planOverlapConflict" | "planIncomplete" | "planInvalidRange" | "planInvalidResource" | "planProposal" | "planMoveHint" | "planActual" | "planPending" | "planBaselineLabel" | "planDependencies" | "planConflict"
+  | "pathEmpty" | "pathSource" | "pathTarget" | "pathStep" | "pathCycle" | "pathForeign" | "pathDisabled" | "pathKeys" | "pathPartial" | "stackWinner" | "stackEnforced" | "stackFiltered" | "stackEmpty" | "stackOrder" | "stackTruncated" | "timePlay" | "timePause" | "timePrevious" | "timeNext" | "timePosition" | "timeFrame" | "timeReducedMotion";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

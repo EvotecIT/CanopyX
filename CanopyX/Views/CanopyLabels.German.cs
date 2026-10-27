@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete German labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels German() => WithGermanUi(new CanopyLabels {
+    public static CanopyLabels German() => WithGermanUi(WithGermanForest(WithGermanBoardPlan(new CanopyLabels {
         GridNoExportColumns = "Keine sichtbare Spalte unterstützt den Export.",
         GridDownloadXlsx = "Excel-Arbeitsmappe (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -521,11 +521,6 @@ public sealed partial class CanopyLabels {
         CalendarOccurrenceTitle = "Wiederkehrenden Termin ändern",
         CalendarOccurrenceReadOnly = "Dieser Teil der Serie kann nicht gespeichert werden, weil einige Werte schreibgeschützt sind.",
         CalendarThisEvent = "Nur dieser Termin",
-        CalendarEditOccurrence = "Dieses Vorkommen bearbeiten",
-        CalendarRemoveOccurrence = "Dieses Vorkommen entfernen",
-        CalendarOccurrenceScope = "Nur {date} ändert sich; andere Termine von {title} bleiben unverändert.",
-        CalendarSharedResources = "{count} {resources}",
-        CalendarResourceWindow = "{resources} {start}–{end} von {total}",
         CalendarThisAndFollowing = "Dieser und alle folgenden Termine",
         CalendarAllEvents = "Alle Termine",
         CalendarSources = "Kalender",
@@ -789,5 +784,10 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Anfrage kopieren",
         ChangeFiltered = "Gefiltert: {filters}",
         ChangePrintLimit = "{count} weitere Zeilen werden nicht gedruckt.",
-    });
+        CalendarEditOccurrence = "Dieses Vorkommen bearbeiten",
+        CalendarRemoveOccurrence = "Dieses Vorkommen entfernen",
+        CalendarOccurrenceScope = "Nur {date} ändert sich; andere Termine von {title} bleiben unverändert.",
+        CalendarSharedResources = "{count} {resources}",
+        CalendarResourceWindow = "{resources} {start}–{end} von {total}",
+    })));
 }

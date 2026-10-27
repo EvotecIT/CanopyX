@@ -84,7 +84,7 @@ public sealed class LabelsTests {
         // Flow labels are read only by flows: grids and trees never write them (a flow document carries them, below).
         bool IsFlowLabel(string name) => name.StartsWith("Flow", StringComparison.Ordinal);
         // Matrix and change view labels likewise: their documents carry them (MatrixTests, TextDiffTests).
-        bool IsMatrixLabel(string name) => name.StartsWith("Matrix", StringComparison.Ordinal) || name.StartsWith("Change", StringComparison.Ordinal);
+        bool IsMatrixLabel(string name) => name.StartsWith("Matrix", StringComparison.Ordinal) || name.StartsWith("Change", StringComparison.Ordinal) || name.StartsWith("Time", StringComparison.Ordinal);
         bool IsUiLabel(string name) => name.StartsWith("Tabs", StringComparison.Ordinal) || name.StartsWith("Stepper", StringComparison.Ordinal) ||
             name.StartsWith("Dialog", StringComparison.Ordinal) || name.StartsWith("Drawer", StringComparison.Ordinal) || name.StartsWith("State", StringComparison.Ordinal);
         var browser = properties.Where(property => !outlineOnly.Contains(property.Name) && !IsFlowLabel(property.Name) && !IsMatrixLabel(property.Name) && !IsUiLabel(property.Name)).ToList();
@@ -121,6 +121,10 @@ public sealed class LabelsTests {
         Assert.All(calendar.Keys, name => Assert.StartsWith("calendar", name));
         Assert.All(calendar.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
         foreach (var (name, text) in calendar) runtime.Add(name, text);
+        foreach (var (name, text) in PartLabels("board", "BOARD_TEXT")) runtime.Add(name, text);
+        foreach (var (name, text) in PartLabels("plan", "PLAN_LABELS")) runtime.Add(name, text);
+        foreach (var (name, text) in PartLabels("path", "PATH_TEXT")) runtime.Add(name, text);
+        foreach (var (name, text) in PartLabels("stack", "STACK_TEXT")) runtime.Add(name, text);
         foreach (var (name, text) in FormattingPartLabels()) runtime.Add(name, text);
         Assert.Equal(written, runtime.Keys.OrderBy(name => name, StringComparer.Ordinal));
         var english = new CanopyLabels();

@@ -74,7 +74,7 @@
       hashLength: changeInteger(doc.hashLength, "hashLength", 4, 64, 8), pageSize: changeInteger(doc.pageSize, "pageSize", 10, 1000, 200), local: changeEnum(doc.timeZone, ["utc", "local"], "timeZone", "utc") === "local", labels: doc.labels });
   }
   function propagationDocument(input) {
-    const doc = changeEnvelope(input, "propagation", ["id", "label", "start", "asOf", "state", "summary", "title", "groupCount", "witnesses", "timeZone", "labels"]);
+    const doc = changeEnvelope(input, "propagation", ["id", "label", "start", "asOf", "state", "summary", "title", "groupCount", "witnesses", "timeZone", "labels", "timeSlider"]);
     const start = changeTime(doc.start, "start"), asOf = changeTime(doc.asOf, "asOf");
     if (start !== null && asOf !== null && start > asOf) changeFail("a propagation view starts before its evidence time");
     const groupCount = changeText(doc.groupCount, "the group count", 200, true);

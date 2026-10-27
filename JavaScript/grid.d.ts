@@ -1,4 +1,13 @@
+import type { GridPathDefinition } from "./path.js";
+export * from "./path.js";
+import type { GridStackDefinition } from "./stack.js";
+export * from "./stack.js";
+export * from "./time-slider.js";
 import CanopyX from "./index.js";
+import type { GridBoardDefinition, GridBoardMove, GridBoardState } from "./board.js";
+export * from "./board.js";
+import type { GridPlanDefinition, GridPlanOptions, GridPlanChangeProposal } from "./plan.js";
+export * from "./plan.js";
 import type { TreeGrid } from "./index.js";
 import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone, SearchHighlightOptions, LayoutOptions, LayoutState, ViewModeMethods } from "./protocol.js";
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult, ExportMenuOptions, LinkedView } from "./hosts.js";
@@ -400,6 +409,12 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   facets?: GridFacetPanelDefinition<Row>;
   /** Shows the records as a calendar: month, week, day, N days, agenda, year and the resource timeline (calendar.d.ts). */
   calendar?: GridCalendarDefinition<Row>;
+  /** Lane cards with the grid's search, facets, saved views and record panel; loaded as an optional part. */
+  path?: GridPathDefinition;
+  stack?: GridStackDefinition;
+  board?: GridBoardDefinition;
+  /** Dependencies, baseline and governed proposals on the calendar's resource timeline. */
+  plan?: GridPlanDefinition;
   /** Rows can be dragged out (or picked up with F2) onto a calendar that accepts drops. */
   dragRows?: boolean;
   stateKey?: string;
@@ -706,6 +721,8 @@ export interface GridState<Q extends AcceptedGridQuery = GridQuery> {
   facets?: { open: boolean };
   /** The calendar's view, date, zoom and collapsed resources, in a grid with a calendar. */
   calendar?: GridCalendarSavedState;
+  /** Selected phone lane of an optional board. */
+  board?: GridBoardState;
 }
 /** Versioned, bounded preference envelope. Revisions/cursors belong to data, never durable settings. */
 export type GridPreferenceQuery<Q extends AcceptedGridQuery = GridQuery> = Readonly<Omit<Q, "revision" | "cursor">> & {
@@ -803,6 +820,11 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   editing?: GridEditingOptions<Q>;
   /** Before a value changes; returning false (or cancelling canopyx:cellValueChanging) keeps the old value. */
   onCellValueChanging?: (event: GridCellValueChange) => boolean | void;
+  /** Accept a board lane proposal with true, reject with false, or let the configured editing writer decide. */
+  onBoardMove?: (event: GridBoardMove) => boolean | void | PromiseLike<boolean>;
+  plan?: GridPlanOptions;
+  /** Cancel a plan proposal before the host callback runs; event return values never change actual dates. */
+  onPlanChangeProposal?: (event: GridPlanChangeProposal) => boolean | void;
   /** After a value changed. */
   onCellValueChanged?: (event: GridCellValueChange) => void;
   /** A row whose edits are complete and valid. Return a result (or true, or a promise) to save it, false to keep editing, nothing to leave it in the batch. */

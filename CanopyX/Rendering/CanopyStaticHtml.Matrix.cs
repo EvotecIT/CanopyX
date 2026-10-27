@@ -41,9 +41,12 @@ public static partial class CanopyStaticHtml {
     public static string RenderMatrix(CanopyMatrix matrix, CanopyStaticHtmlOptions? options = null) {
         if (matrix == null) throw new ArgumentNullException(nameof(matrix));
         matrix.Validate();
+        var parentLabels = matrix.Labels;
+        var snapshot = matrix.TimeSlider?.SelectedSnapshot;
+        if (snapshot != null) matrix = snapshot.View;
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
-        var labels = matrix.Labels ?? new CanopyLabels();
+        var labels = matrix.Labels ?? parentLabels ?? new CanopyLabels();
         var rows = matrix.Rows.Items;
         var columnAxis = matrix.Square ? matrix.Rows : matrix.Columns;
         var columns = columnAxis.Items;
@@ -57,7 +60,18 @@ public static partial class CanopyStaticHtml {
         var html = new StringBuilder(512 + Math.Min(cells.Count, MaxStaticMatrixCells) * 64);
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append(CanopyStaticStyles.PrintColors).Append("\">");
         var caption = settings.Caption ?? matrix.Label;
-        if (caption.Length != 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
+        if (caption.Length != 0 || snapshot != null) {
+            html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption));
+            if (snapshot != null) {
+                var at = snapshot.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+                if (caption.Length != 0) html.Append("<br>");
+                html.Append("<span style=\"").Append(styles.MutedText).Append("font-weight:400;\">");
+                if (snapshot.Label != null) html.Append(Encode(snapshot.Label)).Append(" · ");
+                html.Append("<time datetime=\"").Append(Encode(at)).Append("\">").Append(Encode(snapshot.At.UtcDateTime.ToString("dd MMM yyyy, HH:mm", settings.Culture) + " UTC")).Append("</time></span>");
+            }
+
+            html.Append("</caption>");
+        }
         var table = (long)rows.Count * columns.Count <= MaxStaticMatrixCells;
         var span = table ? columns.Count + 1 + (matrix.RowTotals ? 1 : 0) : 4;
         if (table) {

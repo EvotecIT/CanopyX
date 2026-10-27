@@ -66,6 +66,7 @@
         if (!hadClass && !host.classList.length) host.removeAttribute("class");
       };
       ready.catch(showError);
+      if (kind === "propagation") bindTimeSlider(api, options, kind, value => CHANGES_IMPL.validatePropagation(value), showError);
       Object.freeze(api);
       activeChangeViews.set(host, api);
       host.classList.add("cx-host", "cx-change-host"); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api;

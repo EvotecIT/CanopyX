@@ -105,16 +105,41 @@
     "./ui-tabs.css": "./CanopyX.Html/Assets/canopyx-ui-tabs.css",
     "./ui-stepper.js": "./CanopyX.Html/Assets/canopyx-ui-stepper.js",
     "./ui-stepper.css": "./CanopyX.Html/Assets/canopyx-ui-stepper.css",
-    "./locales/pl": { "types": "./JavaScript/locales/pl.d.ts", "import": "./JavaScript/locales/pl.mjs" },
-    "./locales/de": { "types": "./JavaScript/locales/de.d.ts", "import": "./JavaScript/locales/de.mjs" },
-    "./locales/es": { "types": "./JavaScript/locales/es.d.ts", "import": "./JavaScript/locales/es.mjs" },
-    "./locales/fr": { "types": "./JavaScript/locales/fr.d.ts", "import": "./JavaScript/locales/fr.mjs" },
-    "./locales/it": { "types": "./JavaScript/locales/it.d.ts", "import": "./JavaScript/locales/it.mjs" },
+    "./locales/pl": {
+      "types": "./JavaScript/locales/pl.d.ts",
+      "import": "./JavaScript/locales/pl.mjs"
+    },
+    "./locales/de": {
+      "types": "./JavaScript/locales/de.d.ts",
+      "import": "./JavaScript/locales/de.mjs"
+    },
+    "./locales/es": {
+      "types": "./JavaScript/locales/es.d.ts",
+      "import": "./JavaScript/locales/es.mjs"
+    },
+    "./locales/fr": {
+      "types": "./JavaScript/locales/fr.d.ts",
+      "import": "./JavaScript/locales/fr.mjs"
+    },
+    "./locales/it": {
+      "types": "./JavaScript/locales/it.d.ts",
+      "import": "./JavaScript/locales/it.mjs"
+    },
     "./locales/pl.js": "./CanopyX.Html/Assets/canopyx-labels-pl.js",
     "./locales/de.js": "./CanopyX.Html/Assets/canopyx-labels-de.js",
     "./locales/es.js": "./CanopyX.Html/Assets/canopyx-labels-es.js",
     "./locales/fr.js": "./CanopyX.Html/Assets/canopyx-labels-fr.js",
-    "./locales/it.js": "./CanopyX.Html/Assets/canopyx-labels-it.js"
+    "./locales/it.js": "./CanopyX.Html/Assets/canopyx-labels-it.js",
+    "./board.js": "./CanopyX.Html/Assets/canopyx-board.js",
+    "./plan.js": "./CanopyX.Html/Assets/canopyx-plan.js",
+    "./board.css": "./CanopyX.Html/Assets/canopyx-board.css",
+    "./plan.css": "./CanopyX.Html/Assets/canopyx-plan.css",
+    "./path.js": "./CanopyX.Html/Assets/canopyx-path.js",
+    "./path.css": "./CanopyX.Html/Assets/canopyx-path.css",
+    "./stack.js": "./CanopyX.Html/Assets/canopyx-stack.js",
+    "./stack.css": "./CanopyX.Html/Assets/canopyx-stack.css",
+    "./time-slider.js": "./CanopyX.Html/Assets/canopyx-time-slider.js",
+    "./time-slider.css": "./CanopyX.Html/Assets/canopyx-time-slider.css"
   },
   "files": [
     "CanopyX.Html/Assets/canopyx-office-export.js",
@@ -208,7 +233,20 @@
     "CanopyX.Html/Assets/canopyx-ui-tabs.js",
     "CanopyX.Html/Assets/canopyx-ui-tabs.css",
     "CanopyX.Html/Assets/canopyx-ui-stepper.js",
-    "CanopyX.Html/Assets/canopyx-ui-stepper.css"
+    "CanopyX.Html/Assets/canopyx-ui-stepper.css",
+    "CanopyX.Html/Assets/canopyx-board.js",
+    "CanopyX.Html/Assets/canopyx-board.css",
+    "CanopyX.Html/Assets/canopyx-plan.js",
+    "CanopyX.Html/Assets/canopyx-plan.css",
+    "CanopyX.Html/Assets/canopyx-path.js",
+    "CanopyX.Html/Assets/canopyx-path.css",
+    "JavaScript/path.d.ts",
+    "CanopyX.Html/Assets/canopyx-stack.js",
+    "CanopyX.Html/Assets/canopyx-stack.css",
+    "JavaScript/stack.d.ts",
+    "CanopyX.Html/Assets/canopyx-time-slider.js",
+    "CanopyX.Html/Assets/canopyx-time-slider.css",
+    "JavaScript/time-slider.d.ts"
   ],
   "keywords": ["forms", "wizard", "treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }

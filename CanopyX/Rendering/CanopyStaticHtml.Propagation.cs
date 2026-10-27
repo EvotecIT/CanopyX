@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -20,14 +21,28 @@ public static partial class CanopyStaticHtml {
     public static string RenderPropagation(CanopyPropagation view, CanopyStaticHtmlOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
         view.Validate();
+        var parentLabels = view.Labels;
+        var snapshot = view.TimeSlider?.SelectedSnapshot;
+        if (snapshot != null) view = snapshot.View;
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
-        var labels = view.Labels ?? new CanopyLabels();
+        var labels = view.Labels ?? parentLabels ?? new CanopyLabels();
         var start = view.Start ?? view.Witnesses.Where(witness => witness.FirstSeen.HasValue).Select(witness => witness.FirstSeen!.Value).DefaultIfEmpty().Min();
         var html = new StringBuilder(512 + view.Witnesses.Count * 300);
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append(CanopyStaticStyles.PrintColors).Append("\">");
         var caption = settings.Caption ?? view.Label;
-        if (caption.Length != 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
+        if (caption.Length != 0 || snapshot != null) {
+            html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption));
+            if (snapshot != null) {
+                var at = snapshot.At.UtcDateTime.ToString("O", CultureInfo.InvariantCulture);
+                if (caption.Length != 0) html.Append("<br>");
+                html.Append("<span style=\"").Append(styles.MutedText).Append("font-weight:400;\">");
+                if (snapshot.Label != null) html.Append(Encode(snapshot.Label)).Append(" · ");
+                html.Append("<time datetime=\"").Append(Encode(at)).Append("\">").Append(Encode(snapshot.At.UtcDateTime.ToString("dd MMM yyyy, HH:mm", settings.Culture) + " UTC")).Append("</time></span>");
+            }
+
+            html.Append("</caption>");
+        }
         var overall = CanopyChangeFormat.State(view.OverallState, labels);
         var converged = view.Witnesses.Count(witness => witness.State == CanopyPropagationState.Converged);
         var summary = view.Summary ?? labels.ChangeProgress.Replace("{converged}", converged.ToString("N0", settings.Culture)).Replace("{total}", view.Witnesses.Count.ToString("N0", settings.Culture));

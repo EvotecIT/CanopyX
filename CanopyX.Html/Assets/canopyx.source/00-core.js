@@ -70,6 +70,8 @@
     if (doc.type !== type) {
       throw new Error("CanopyX: expected a " + type + " document, got '" + doc.type + "'");
     }
+    if (type === "grid" && [doc.board, doc.path, doc.stack, doc.calendar].filter(value => value != null).length > 1)
+      throw new Error("CanopyX: choose one grid presentation: board, path, stack or calendar (with optional plan).");
     if (Object.hasOwn(doc, "revision")) requireIdentifier(doc.revision, "dataset revision");
     if (type === "search") {
       validateSearchResult(doc);

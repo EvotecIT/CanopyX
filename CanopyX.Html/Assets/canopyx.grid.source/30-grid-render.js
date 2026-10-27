@@ -72,7 +72,10 @@
         if (size && !size.contentRect.width) grid.style.opacity = "0";
         const resize = () => {
           if (this.destroyed) return;
-          if (!grid.clientWidth || !grid.checkVisibility()) { this.sized = false; return; }
+          if (!grid.clientWidth || !grid.checkVisibility()) {
+            if (host.clientWidth && host.checkVisibility()) this.updateGridPhone();
+            this.sized = false; return;
+          }
           // An earlier frame may reveal a hidden host before its positive width is observed.
           // Keep it transparent until fitting can use that measurement instead of the cached zero.
           if (this.fitContentWidth === 0) return;
@@ -95,6 +98,7 @@
       });
       this.resizeObserver.observe(grid);
       this.resizeObserver.observe(this.head);
+      this.resizeObserver.observe(host);
     },
 
     setLogicalTop(top) {

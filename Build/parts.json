@@ -508,11 +508,29 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "runtimes": ["grid"],
-      "views": ["matrix"],
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "matrix"
+      ],
       "key": "MATRIX_IMPL",
-      "context": ["MATRIX_IMPL", "h", "setText", "fill", "plural", "foldText", "numberFormat", "gridFreeze", "toneOf", "applyTone", "toneColors", "AxisWindow", "PROTOCOL"],
-      "end": "MATRIX_IMPL.create = matrixCreate;",
+      "context": [
+        "MATRIX_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "foldText",
+        "numberFormat",
+        "gridFreeze",
+        "toneOf",
+        "applyTone",
+        "toneColors",
+        "AxisWindow",
+        "PROTOCOL"
+      ],
+      "end": "Object.assign(MATRIX_IMPL, { create: matrixCreate, validate: matrixDocument });",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.matrix.source"
       ],
@@ -885,6 +903,165 @@
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.grid-options.source/footer.css"
+      ]
+    },
+    {
+      "name": "board",
+      "label": "board view",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "board"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "cellValue",
+        "cellText",
+        "gridScalar",
+        "gridQueryRows",
+        "gridQuery",
+        "validateGridPage",
+        "validateGridCursorPage",
+        "numberFormat",
+        "PROTOCOL"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.board.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.board.source/board.css"
+      ]
+    },
+    {
+      "name": "plan",
+      "label": "plan view",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "plan"
+      ],
+      "key": "DataGrid.prototype",
+      "requires": [
+        "timeline"
+      ],
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "cellValue",
+        "cellText",
+        "gridFreeze"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.plan.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.plan.source/plan.css"
+      ]
+    },
+    {
+      "name": "path",
+      "label": "path view",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "path"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "cellValue",
+        "cellText",
+        "badgeElement",
+        "applyTone",
+        "toneOf",
+        "PROTOCOL"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.path.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.path.source/path.css"
+      ]
+    },
+    {
+      "name": "stack",
+      "label": "stack view",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "stack"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "cellValue",
+        "cellText",
+        "badgeElement",
+        "applyTone",
+        "toneOf",
+        "PROTOCOL"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.stack.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.stack.source/stack.css"
+      ]
+    },
+    {
+      "name": "time-slider",
+      "label": "snapshot playback",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "matrix",
+        "propagation"
+      ],
+      "features": [
+        "timeSlider"
+      ],
+      "key": "TIME_SLIDER_IMPL",
+      "context": [
+        "TIME_SLIDER_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "PROTOCOL"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.time-slider.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.time-slider.source/time-slider.css"
       ]
     }
   ]

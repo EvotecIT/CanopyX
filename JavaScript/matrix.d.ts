@@ -1,3 +1,4 @@
+import type { TimePlaybackApi } from "./time-slider.js";
 // Type declarations for the matrix view (docs/matrix.md): the matrix document, its state and the API of createMatrix.
 import type { CellValue } from "./protocol.js";
 
@@ -139,6 +140,8 @@ export interface MatrixOptions {
 
 /** The API of a matrix. Call it once `ready` has settled; a call made before the matrix part is in waits for it and returns a promise instead. */
 export interface MatrixApi {
+  /** Snapshot controls; available after ready when the document supplies timeSlider. */
+  readonly playback: TimePlaybackApi;
   readonly element: HTMLElement;
   readonly view: MatrixDocument;
   readonly ready: Promise<MatrixApi>;
@@ -154,7 +157,7 @@ export interface MatrixApi {
   /** Moves focus to a cell; false when the row or column is not shown. */
   focusCell(row: string, column: string): boolean;
   /** Replaces the document, keeping the query that still applies (live refresh). */
-  update(view: MatrixDocument): void;
+  update(view: MatrixDocument): void | Promise<void>;
   destroy(): void;
 }
 

@@ -177,6 +177,8 @@
         content += height;
       }
       const chrome = ["paddingTop", "paddingBottom", "borderTopWidth", "borderBottomWidth"].reduce((sum, name) => sum + (parseFloat(hostStyle[name]) || 0), 0);
+      // Optional host chrome (for example snapshot playback) participates in the same frame.
+      for (const sibling of host.children) if (sibling !== this.root && !sibling.hidden) content += sibling.getBoundingClientRect().height;
       const value = Math.min(this.fitMax, Math.ceil(chrome + content)) + "px";
       if (style.maxHeight !== value) style.maxHeight = value;
     }

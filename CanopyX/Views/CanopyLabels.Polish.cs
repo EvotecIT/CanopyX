@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Polish labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Polish() => WithPolishUi(new CanopyLabels {
+    public static CanopyLabels Polish() => WithPolishUi(WithPolishForest(WithPolishBoardPlan(new CanopyLabels {
         GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
         GridDownloadXlsx = "Skoroszyt Excel (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -521,11 +521,6 @@ public sealed partial class CanopyLabels {
         CalendarOccurrenceTitle = "Zmień wydarzenie cykliczne",
         CalendarOccurrenceReadOnly = "Nie można zapisać tej części serii, ponieważ niektóre wartości są tylko do odczytu.",
         CalendarThisEvent = "To wydarzenie",
-        CalendarEditOccurrence = "Edytuj to wystąpienie",
-        CalendarRemoveOccurrence = "Usuń to wystąpienie",
-        CalendarOccurrenceScope = "Zmienia się tylko {date}; pozostałe daty wydarzenia {title} pozostają bez zmian.",
-        CalendarSharedResources = "{count} {resources}",
-        CalendarResourceWindow = "{resources} {start}–{end} z {total}",
         CalendarThisAndFollowing = "To i następne wydarzenia",
         CalendarAllEvents = "Wszystkie wydarzenia",
         CalendarSources = "Kalendarze",
@@ -789,5 +784,10 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Kopiuj żądanie",
         ChangeFiltered = "Filtry: {filters}",
         ChangePrintLimit = "Pominięte w wydruku wiersze: {count}.",
-    });
+        CalendarEditOccurrence = "Edytuj to wystąpienie",
+        CalendarRemoveOccurrence = "Usuń to wystąpienie",
+        CalendarOccurrenceScope = "Zmienia się tylko {date}; pozostałe daty wydarzenia {title} pozostają bez zmian.",
+        CalendarSharedResources = "{count} {resources}",
+        CalendarResourceWindow = "{resources} {start}–{end} z {total}",
+    })));
 }

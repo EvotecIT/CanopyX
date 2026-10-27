@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "3485ad357ae86b5b",
+      "version": "b0cfcd03076ce32a",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "042f3cb3d690a086",
+      "version": "a0ef250fc86a15de",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -556,7 +556,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "502dd12c24c6ca03",
+      "version": "e5fa5cb0660b953a",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -569,7 +569,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "3b2551152989cc25",
+      "version": "fb7c108a77444af8",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [
@@ -819,7 +819,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "cecae4ac674b8d8d",
+      "version": "7ba6547b4a6942b8",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -840,7 +840,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "bfdf00a1fa5fc6f2",
+      "version": "f9e8c6b86dd454ca",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -914,7 +914,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "22c9e15c108aeaa1",
+      "version": "44d1c5f9bef8a06d",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
@@ -944,6 +944,90 @@
       ],
       "features": [
         "gridOptions"
+      ]
+    },
+    {
+      "name": "board",
+      "label": "board view",
+      "version": "b544ad720bf191e5",
+      "script": "canopyx-board.js",
+      "style": "canopyx-board.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "board"
+      ]
+    },
+    {
+      "name": "plan",
+      "label": "plan view",
+      "version": "07402059163ca7ff",
+      "script": "canopyx-plan.js",
+      "style": "canopyx-plan.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "plan"
+      ],
+      "requires": [
+        "timeline"
+      ]
+    },
+    {
+      "name": "path",
+      "label": "path view",
+      "version": "9db8e187eeef2082",
+      "script": "canopyx-path.js",
+      "style": "canopyx-path.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "path"
+      ]
+    },
+    {
+      "name": "stack",
+      "label": "stack view",
+      "version": "9ebd0cfb3f4f074b",
+      "script": "canopyx-stack.js",
+      "style": "canopyx-stack.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "stack"
+      ]
+    },
+    {
+      "name": "time-slider",
+      "label": "snapshot playback",
+      "version": "8b4f2119f07a5b7d",
+      "script": "canopyx-time-slider.js",
+      "style": "canopyx-time-slider.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "matrix",
+        "propagation"
+      ],
+      "features": [
+        "timeSlider"
       ]
     }
   ]

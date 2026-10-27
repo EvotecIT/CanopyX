@@ -26,6 +26,7 @@ public sealed partial class CanopyPropagation {
         writer.EndArray();
         CanopyChangeJson.TimeZone(writer, TimeZone);
         if (Labels != null && Labels.HasChangeLabels) { writer.Name("labels"); Labels.WriteChangeJson(writer); }
+        if (TimeSlider != null) { writer.Name("timeSlider"); TimeSlider.WriteJson(writer, frame => frame.ToJson()); }
         return writer.EndObject().ToString();
     }
 
@@ -35,10 +36,13 @@ public sealed partial class CanopyPropagation {
     /// <exception cref="ArgumentNullException"><paramref name="json"/> is null.</exception>
     /// <exception cref="FormatException">The text is not valid JSON, nests deeper than 64 levels or is longer than 4 MiB.</exception>
     /// <exception cref="InvalidOperationException">The document is not a valid propagation view: another type, an unknown property, or any rule <see cref="Validate"/> checks.</exception>
-    public static CanopyPropagation FromJson(string json) {
+    public static CanopyPropagation FromJson(string json) => ReadJson(CanopyJsonReader.Parse(json));
+
+    /// <summary>Reads a full parsed propagation document, including when it is carried by a snapshot.</summary>
+    internal static CanopyPropagation ReadJson(object? node) {
         const string what = "The propagation document";
-        var map = CanopyChangeJson.Envelope(CanopyJsonReader.Parse(json), what, "propagation",
-            new[] { "id", "label", "start", "asOf", "state", "summary", "title", "groupCount", "witnesses", "timeZone", "labels" });
+        var map = CanopyChangeJson.Envelope(node, what, "propagation",
+            new[] { "id", "label", "start", "asOf", "state", "summary", "title", "groupCount", "witnesses", "timeZone", "labels", "timeSlider" });
         CanopyPropagation view;
         try { view = new CanopyPropagation(CanopyFlowContract.RequiredText(map, "id", what), CanopyFlowContract.RequiredText(map, "label", what)); } catch (ArgumentException error) { throw new InvalidOperationException(error.Message, error); }
         view.Start = CanopyChangeJson.Time(map, "start", what);
@@ -48,8 +52,8 @@ public sealed partial class CanopyPropagation {
         view.Summary = CanopyFlowContract.Text(map, "summary", what);
         view.Title = CanopyFlowContract.Text(map, "title", what);
         view.GroupCount = CanopyFlowContract.Text(map, "groupCount", what);
-        foreach (var node in CanopyFlowContract.Items(map, "witnesses", what, MaxWitnesses)) {
-            var entry = CanopyFlowContract.Object(node, what + " (witness)", "id", "label", "secondary", "state", "firstSeen", "lastSeen", "note", "source", "group");
+        foreach (var witnessNode in CanopyFlowContract.Items(map, "witnesses", what, MaxWitnesses)) {
+            var entry = CanopyFlowContract.Object(witnessNode, what + " (witness)", "id", "label", "secondary", "state", "firstSeen", "lastSeen", "note", "source", "group");
             CanopyPropagationWitness witness;
             try {
                 witness = view.Witness(CanopyFlowContract.RequiredText(entry, "id", what), CanopyFlowContract.RequiredText(entry, "label", what), ReadState(CanopyFlowContract.RequiredText(entry, "state", what), what));
@@ -64,6 +68,7 @@ public sealed partial class CanopyPropagation {
 
         view.TimeZone = CanopyChangeJson.ReadTimeZone(map, what);
         if (map.TryGetValue("labels", out var labels)) view.Labels = CanopyLabels.ReadChangeLabels(labels, what);
+        if (map.TryGetValue("timeSlider", out var timeSlider)) view.TimeSlider = CanopyTimeSlider<CanopyPropagation>.ReadFrom(timeSlider, ReadJson);
         view.Validate();
         return view;
     }

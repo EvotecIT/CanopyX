@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CanopyX;
 
-// The English default of every label. Build/Sync-Labels.ps1 reads the entries of this file in this order and
+// The English default of every label, one entry per line. Build/Sync-Labels.ps1 reads this file, then the Defaults.*.cs partials, and
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
     private static readonly Dictionary<string, string> Defaults = CreateDefaults();
@@ -527,11 +527,6 @@ public sealed partial class CanopyLabels {
         [nameof(CalendarOccurrenceTitle)] = "Change a repeating event",
         [nameof(CalendarOccurrenceReadOnly)] = "This part of the series cannot be saved because some values are read-only.",
         [nameof(CalendarThisEvent)] = "This event",
-        [nameof(CalendarEditOccurrence)] = "Edit this occurrence",
-        [nameof(CalendarRemoveOccurrence)] = "Remove this occurrence",
-        [nameof(CalendarOccurrenceScope)] = "Only {date} changes; other dates of {title} stay as they are.",
-        [nameof(CalendarSharedResources)] = "{count} {resources}",
-        [nameof(CalendarResourceWindow)] = "{resources} {start}–{end} of {total}",
         [nameof(CalendarThisAndFollowing)] = "This and following events",
         [nameof(CalendarAllEvents)] = "All events",
         [nameof(CalendarSources)] = "Calendars",
@@ -773,13 +768,17 @@ public sealed partial class CanopyLabels {
         [nameof(ChangeUnknown)] = "Unknown",
         [nameof(ChangeReplica)] = "Replica",
         [nameof(ChangeState)] = "State",
-        [nameof(ChangeFirstSeen)] = "First seen", [nameof(ChangeLastSeen)] = "Last seen",
+        [nameof(ChangeFirstSeen)] = "First seen",
+        [nameof(ChangeLastSeen)] = "Last seen",
         [nameof(ChangeTimeline)] = "Delay",
-        [nameof(ChangeNotSeen)] = "Not seen yet", [nameof(ChangeDelay)] = "+{duration}",
+        [nameof(ChangeNotSeen)] = "Not seen yet",
+        [nameof(ChangeDelay)] = "+{duration}",
         [nameof(ChangeSource)] = "Source",
         [nameof(ChangeProgress)] = "{converged} of {total} have the change",
-        [nameof(ChangeSeconds)] = "{count} s", [nameof(ChangeMinutes)] = "{count} min",
-        [nameof(ChangeHours)] = "{count} h", [nameof(ChangeDays)] = "{count} d",
+        [nameof(ChangeSeconds)] = "{count} s",
+        [nameof(ChangeMinutes)] = "{count} min",
+        [nameof(ChangeHours)] = "{count} h",
+        [nameof(ChangeDays)] = "{count} d",
         [nameof(ChangeUtcTime)] = "{time} UTC",
         [nameof(ChangeExportCsv)] = "Export CSV", [nameof(ChangeExportJson)] = "Export JSON",
         [nameof(ChangeReason)] = "Reason", [nameof(ChangeReasonHint)] = "{action}: say why. The reason is kept with the action.",
@@ -788,8 +787,13 @@ public sealed partial class CanopyLabels {
         [nameof(ChangeCopyRequest)] = "Copy request",
         [nameof(ChangeFiltered)] = "Filtered: {filters}",
         [nameof(ChangePrintLimit)] = "[one]{count} more line is not printed.[other]{count} more lines are not printed.",
+            [nameof(CalendarEditOccurrence)] = "Edit this occurrence",
+            [nameof(CalendarRemoveOccurrence)] = "Remove this occurrence",
+            [nameof(CalendarOccurrenceScope)] = "Only {date} changes; other dates of {title} stay as they are.",
+            [nameof(CalendarSharedResources)] = "{count} {resources}",
+            [nameof(CalendarResourceWindow)] = "{resources} {start}–{end} of {total}",
         };
         AddUiDefaults(defaults);
-        return defaults;
+        return WithForestDefaults(WithBoardPlanDefaults(defaults));
     }
 }

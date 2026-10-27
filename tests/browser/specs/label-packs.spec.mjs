@@ -56,10 +56,15 @@ for (const [language,labels,staticLabels] of packs) {
     const calendar = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-calendar.js'),'utf8');
     const matrix = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-matrix.js'),'utf8');
     const changes = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-changes.js'),'utf8');
+    const board = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-board.js'),'utf8');
+    const plan = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-plan.js'),'utf8');
+    const pathView = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-path.js'),'utf8');
+    const stack = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-stack.js'),'utf8');
+    const time = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-time-slider.js'),'utf8');
     expect(partNames.length).toBeGreaterThan(0);
     for (const name of partNames) {
-      if (!uiNames.has(name)) expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change)[A-Z]/);
-      const definitions = uiNames.has(name)?overlays:/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:editing;
+      if (!uiNames.has(name)) expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change|board|plan|path|stack|time)[A-Z]/);
+      const definitions = uiNames.has(name)?overlays:/^path/.test(name)?pathView:/^stack/.test(name)?stack:/^time/.test(name)?time:/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:/^board/.test(name)?board:/^plan/.test(name)?plan:editing;
       expect(new RegExp('\\b'+name+':\\s?"').test(definitions), `${language}: lazy part defines ${name}`).toBe(true);
     }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});

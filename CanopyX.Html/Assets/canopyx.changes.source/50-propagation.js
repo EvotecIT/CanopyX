@@ -105,4 +105,4 @@
     };
     return impl;
   }
-  Object.assign(CHANGES_IMPL, { diff: diffCreate, changes: changeListCreate, propagation: propagationCreate });
+  Object.assign(CHANGES_IMPL, { diff: diffCreate, changes: changeListCreate, propagation: propagationCreate, validatePropagation: propagationDocument });
