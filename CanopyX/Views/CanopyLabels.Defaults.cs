@@ -784,22 +784,9 @@ public sealed partial class CanopyLabels {
         [nameof(ChangeCopyRequest)] = "Copy request",
         [nameof(ChangeFiltered)] = "Filtered: {filters}",
         [nameof(ChangePrintLimit)] = "[one]{count} more line is not printed.[other]{count} more lines are not printed.",
-        [nameof(TabsMore)] = "More", [nameof(TabsMoreSelected)] = "More: {label}",
-        [nameof(TabsScrollPrevious)] = "Previous tabs", [nameof(TabsScrollNext)] = "Next tabs",
-        [nameof(TabsSection)] = "Section", [nameof(TabsPosition)] = "{current} of {total}",
-        [nameof(TabsPause)] = "Pause", [nameof(TabsPlay)] = "Play",
-        [nameof(TabsMotionDisabled)] = "Automatic tabs are disabled by reduced motion",
-        [nameof(StepperStepOf)] = "Step {current} of {total}", [nameof(StepperBack)] = "Back",
-        [nameof(StepperNext)] = "Next", [nameof(StepperFinish)] = "Finish",
-        [nameof(StepperSkip)] = "Skip", [nameof(StepperSaveDraft)] = "Save draft",
-        [nameof(StepperAllSteps)] = "All steps", [nameof(StepperOptional)] = "Optional",
-        [nameof(StepperCompleted)] = "Completed", [nameof(StepperSkipped)] = "Skipped",
-        [nameof(StepperIssues)] = "{count} issues to fix", [nameof(StepperIssue)] = "1 issue to fix",
-        [nameof(DialogClose)] = "Close", [nameof(DrawerClose)] = "Close",
-        [nameof(DrawerPrevious)] = "Previous record", [nameof(DrawerNext)] = "Next record",
-        [nameof(StateLoading)] = "Loading…", [nameof(StateRetry)] = "Retry",
-        [nameof(StateDetails)] = "Details"
+
         };
+        AddUiDefaults(defaults);
         AddAnalysisDefaults(defaults);
         AddDataViewsDefaults(defaults);
         return defaults;

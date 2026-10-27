@@ -116,9 +116,9 @@
       element.setAttribute("aria-label", this.labels.viewIntentPreview); setText(heading, this.labels.viewIntentPreview);
       status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
       for (const text of intentChips(this, intent)) { const chip = h("span", "cx-grid-chip"); setText(chip, text); chip.title = text; chips.appendChild(chip); }
-      const actions = h("div", "cx-view-intent-actions"), apply = gridButton(this.labels.gridApply, () => {
+      const actions = h("div", "cx-view-intent-actions"), apply = gridVariant(gridButton(this.labels.gridApply, () => {
         confirmViewIntent(this, handle).catch(error => { if (!this.destroyed) setText(status, error.name === "AbortError" ? this.labels.viewIntentSuperseded : error.message); });
-      }), cancel = gridButton(this.labels.gridEditCancel || "Cancel", () => handle.cancel());
+      }), "primary"), cancel = gridVariant(gridButton(this.labels.gridEditCancel || "Cancel", () => handle.cancel()), "secondary");
       actions.append(apply, cancel); element.append(heading, chips, actions, status);
       const preview = { intent, key: JSON.stringify(state), epoch: this.queryEpoch, active: true, apply, cancel, status, element,
         destroy: () => { preview.disposeTheme?.(); retireViewIntent(this); element.remove(); } };

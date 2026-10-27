@@ -16,7 +16,7 @@
     setText(text, this.labels.gridShowAs); select.setAttribute("aria-label", this.labels.gridShowAs);
     for (const mode of GRID_SHOW_AS_MODES) { const option = h("option"); option.value = mode; setText(option, this.labels["gridShowAs" + mode[0].toUpperCase() + mode.slice(1)]); select.append(option); }
     select.value = showAsMode(this, aggregate);
-    select.addEventListener("change", () => this.setAggregateShowAs(aggregate.id, select.value).then(() => this.reportingText?.close()).catch(error => this.emit("error", { error })));
+    select.addEventListener("change", () => this.setAggregateShowAs(aggregate.id, select.value).then(() => this.reportingText?._cxOverlay.close()).catch(error => this.emit("error", { error })));
     label.append(text, select); controls.append(label); this.showReportingText({ ...pivotColumn(this, aggregate.column), title: aggregate.label }, "", button, undefined, false, controls);
   };
   DataGrid.prototype.configurePivot = async function (button) {
@@ -58,7 +58,7 @@
     }
     const group = h("fieldset"), legend = h("legend"); setText(legend, this.labels.gridPivotValues); group.append(legend);
     for (const aggregate of this.view.reporting.aggregates) {
-      const label = h("label"), check = h("input"), text = h("span"); check.type = "checkbox"; check.checked = initial.values.includes(aggregate.id); setText(text, aggregate.label);
+      const label = h("label"), check = h("input"), text = h("span"); check.type = "checkbox"; check.className = "cx-check"; check.checked = initial.values.includes(aggregate.id); setText(text, aggregate.label);
       label.append(check, text); group.append(label); values.push(() => check.checked ? aggregate.id : null);
     }
     const topLabel = h("label", "cx-pivot-setting"), topText = h("span"), top = h("input", "cx-input"); top.type = "number"; top.min = "1"; top.max = "200"; top.value = initial.topNColumns === undefined ? "" : String(initial.topNColumns);
@@ -70,7 +70,7 @@
     option(descending, "desc", this.labels.gridSortDescending); option(descending, "asc", this.labels.gridSortAscending); descending.value = initial.sortByTotal?.direction || "desc";
     sortLabel.append(sortText, sort, descending);
     const error = h("p", "cx-pivot-note"); error.setAttribute("role", "alert"); error.hidden = true;
-    const apply = gridButton(this.labels.gridApply, () => {}); apply.type = "submit";
+    const apply = gridButton(this.labels.gridApply, () => {}); apply.type = "submit"; apply.dataset.variant = "primary";
     form.append(group, topLabel, sortLabel, error, apply);
     for (const select of form.querySelectorAll("select")) {
       const title = () => { select.title = select.selectedOptions[0]?.textContent || ""; }; title(); select.addEventListener("change", title);
@@ -80,7 +80,7 @@
       try {
         const definition = pivotDefinition(this.view, { rows: axes.rows.map(read => read()).filter(Boolean), columns: axes.columns.map(read => read()).filter(Boolean), values: values.map(read => read()).filter(Boolean), maxColumns: initial.maxColumns,
           ...(top.value.trim() ? { topNColumns: Number(top.value) } : {}), ...(sort.value ? { sortByTotal: { aggregate: sort.value, direction: descending.value } } : {}) });
-        this.reportingText?.close(); this.setPivot(definition).catch(error => this.emit("error", { error }));
+        this.reportingText?._cxOverlay.close(); this.setPivot(definition).catch(error => this.emit("error", { error }));
       } catch (_) { error.hidden = false; setText(error, this.labels.gridPivotInvalid); }
     });
     this.showReportingText({ ...this.view.columns[0], title: this.labels.gridPivotConfigure }, "", button, undefined, false, form);

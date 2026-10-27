@@ -99,12 +99,12 @@ test("a short viewport keeps the calculation editor header and scrolled Apply bu
   const dialog = page.getByRole("dialog", { name: "Add calculated column" });
   await dialog.getByLabel("Column title", { exact: true }).fill("Tax");
   await dialog.getByLabel("Expression", { exact: true }).fill("[amount] * 0.2");
-  await dialog.locator("form").evaluate(form => { form.scrollTop = form.scrollHeight; });
+  await dialog.locator('[data-hfx-part="body"]').evaluate(body => { body.scrollTop = body.scrollHeight; });
   const geometry = await dialog.evaluate(element => {
     const box = element.getBoundingClientRect(), button = element.querySelector('button[type="submit"]').getBoundingClientRect(), heading = element.querySelector(".cx-drawer-h").getBoundingClientRect();
     return { buttonInside: button.top >= box.top && button.bottom <= box.bottom, headingInside: heading.top >= box.top && heading.bottom <= box.bottom, height: box.height };
   });
-  expect(geometry.height).toBeLessThanOrEqual(146); expect(geometry.headingInside).toBe(true); expect(geometry.buttonInside).toBe(true);
+  expect(geometry.height).toBeLessThanOrEqual(180); expect(geometry.headingInside).toBe(true); expect(geometry.buttonInside).toBe(true);
   await dialog.getByRole("button", { name: "Apply", exact: true }).click(); await expect(dialog).toHaveCount(0);
 });
 

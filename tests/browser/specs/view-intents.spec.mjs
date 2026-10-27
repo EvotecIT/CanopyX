@@ -58,7 +58,19 @@ test("applyViewIntent previews safely, snapshots caller input and applies exactl
   expect(await query(page)).toEqual(before);
   expect(await page.evaluate("queryCalls.length")).toBe(1);
   expect(await page.evaluate("Object.isFrozen(preview.intent.query.filters[0].values)")).toBe(true);
-  const apply = region(page).getByRole("button", { name: "Apply", exact: true }); await apply.focus(); await apply.press("Enter");
+  const apply = region(page).getByRole("button", { name: "Apply", exact: true });
+  await expect(apply).toHaveAttribute("data-variant", "primary");
+  await expect(region(page).getByRole("button", { name: "Cancel", exact: true })).toHaveAttribute("data-variant", "secondary");
+  const surface = await region(page).evaluate(element => {
+    const style = getComputedStyle(element);
+    return { border: style.borderTopWidth, expectedBorder: style.getPropertyValue("--hfx-border-width").trim(),
+      background: style.backgroundColor, framedChildren: [...element.children].filter(child =>
+        parseFloat(getComputedStyle(child).borderTopWidth) > 0).length };
+  });
+  expect(surface.border).toBe(surface.expectedBorder);
+  expect(surface.background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(surface.framedChildren).toBe(0);
+  await apply.focus(); await apply.press("Enter");
   await expect(region(page).getByRole("status")).toHaveText("View changes applied.");
   expect((await query(page)).filters).toEqual([predicate("amount", "ge", 3)]);
   expect(await page.evaluate(`${api}.getState().columns.filter(column=>!column.hidden).map(column=>column.id)`)).toEqual(["amount", "name"]);

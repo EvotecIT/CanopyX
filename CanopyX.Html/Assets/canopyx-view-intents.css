@@ -1,8 +1,8 @@
-body .cx-host.cx-view-intent-preview{height:auto;min-width:0;margin-top:var(--cx-size-12px);padding:var(--cx-size-12px);border:var(--cx-size-1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));}
-.cx-view-intent-preview h3{margin:0 0 var(--cx-size-8px);font-size:inherit;font-weight:var(--hfx-weight-semibold,600);}
-.cx-view-intent-preview .cx-grid-query-chips{display:flex;flex-wrap:wrap;gap:var(--cx-size-6px);margin-bottom:var(--cx-size-12px);}
-.cx-view-intent-preview .cx-grid-chip{display:inline-block;max-width:100%;height:auto;padding:var(--cx-size-4px) var(--cx-size-8px);border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));background:var(--hfx-color-accent-subtle,light-dark(#e7f1f1,#1b3435));white-space:normal;overflow-wrap:anywhere;}
-.cx-view-intent-actions{display:flex;flex-wrap:wrap;gap:var(--cx-size-8px);}
-.cx-view-intent-preview [role=status]{margin:var(--cx-size-8px) 0 0;overflow-wrap:anywhere;}
+body .cx-host.cx-view-intent-preview{height:auto;min-width:0;margin-top:var(--hfx-space-3,0.75rem);padding:var(--hfx-space-3,0.75rem);border:var(--hfx-border-width,1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));}
+.cx-view-intent-preview h3{margin:0 0 var(--hfx-space-2,0.5rem);font-size:inherit;font-weight:var(--hfx-weight-semibold,600);}
+.cx-view-intent-preview .cx-grid-query-chips{display:flex;flex-wrap:wrap;gap:var(--hfx-space-1-5,6px);margin-bottom:var(--hfx-space-3,0.75rem);}
+.cx-view-intent-preview .cx-grid-chip{display:inline-block;max-width:100%;height:auto;padding:var(--hfx-space-1,0.25rem) var(--hfx-space-2,0.5rem);border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));background:var(--hfx-color-accent-subtle,light-dark(#e7f1f1,#1b3435));white-space:normal;overflow-wrap:anywhere;}
+.cx-view-intent-actions{display:flex;flex-wrap:wrap;gap:var(--hfx-space-2,0.5rem);}
+.cx-view-intent-preview [role=status]{margin:var(--hfx-space-2,0.5rem) 0 0;overflow-wrap:anywhere;}
 .cx-view-intent-preview [role=status]:empty{display:none;}
 @media print{.cx-view-intent-preview{display:none !important;}}

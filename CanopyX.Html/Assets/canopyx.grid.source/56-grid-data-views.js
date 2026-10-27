@@ -1,6 +1,6 @@
 // Optional dataset comparison and view intents share the existing part loader.
 const GRID_COMPARE = definePart(DataGrid, "compare", "dataset comparison", () => ({ DataGrid, h, setText, fill, cellValue, numberFormat, gridQueryStart, gridQuery }));
-const GRID_VIEW_INTENTS = definePart(DataGrid, "view-intents", "view intents", () => ({ DataGrid, h, setText, fill, gridButton, gridQuery, gridQueryStart, gridFreeze, GRID_FILTER_LABELS, GRID_REPORTING, watchOverlayTheme }));
+const GRID_VIEW_INTENTS = definePart(DataGrid, "view-intents", "view intents", () => ({ DataGrid, h, setText, fill, gridButton, gridVariant, gridQuery, gridQueryStart, gridFreeze, GRID_FILTER_LABELS, GRID_REPORTING, watchOverlayTheme }));
 for (const name of ["getViewIntent", "validateViewIntent", "previewViewIntent", "applyViewIntent"]) {
   const stub = DataGrid.prototype[name] = function (...args) {
     return loadPart(GRID_VIEW_INTENTS).then(() => {

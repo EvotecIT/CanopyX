@@ -937,6 +937,7 @@
         "setText",
         "fill",
         "gridButton",
+        "gridVariant",
         "gridQuery",
         "gridQueryStart",
         "gridFreeze",
