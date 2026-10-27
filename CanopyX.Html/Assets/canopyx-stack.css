@@ -30,3 +30,6 @@
 .cx-stack-title{color:inherit;text-decoration:none;}
 .cx-stack-winner,.cx-stack-layer{break-inside:avoid;}
 }
+.cx-stack .cx-stack-title{color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));font-weight:var(--hfx-weight-semibold,600);font-size:var(--hfx-type-body-size,0.875rem);line-height:var(--hfx-type-body-line,1.5);padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;justify-content:flex-start;min-height:0;}
+.cx-stack .cx-stack-title:hover{color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));background:transparent;text-decoration:underline;}
+.cx-stack .cx-stack-title:focus-visible{outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));outline-offset:var(--hfx-focus-offset,2px);}

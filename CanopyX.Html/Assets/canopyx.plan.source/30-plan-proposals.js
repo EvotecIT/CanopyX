@@ -49,7 +49,7 @@
       body.addEventListener("click", event => { if (this.planSuppressClick) { event.preventDefault(); event.stopImmediatePropagation(); this.planSuppressClick = false; } }, { capture: true, signal });
       body.addEventListener("keydown", event => {
         if (event.key === "Escape" && (this.planPreview || this.planDrag)) { event.stopImmediatePropagation(); this.planDrag = null; this.planClearProposal(); return; }
-        const task = event.target.closest(".cx-plan-task")?._calEvent;
+        const task = event.target.closest(".cx-plan-task,.cx-plan-agenda-title")?._calEvent;
         if (!task || !event.altKey || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
         event.preventDefault(); event.stopImmediatePropagation();
         const horizontal = ["ArrowLeft", "ArrowRight"].includes(event.key), sign = (event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1) * (horizontal && this.calRtl ? -1 : 1);

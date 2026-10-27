@@ -28,6 +28,8 @@ var email = view.ToBoardStaticHtml();
 
 Lanes retain the declared order. Other values in records add lanes after them. Values keep their scalar types: `true` and `"true"` identify different lanes, as do null and an empty string. Missing values join the null lane. Up to 200 lane definitions and eight card fields can be authored. Compact cards display the first two fields; the record panel carries the full record. A missing title column uses the row header, then the first visible column.
 
+Titles wrap to two lines and card slots measure the rendered title, fields and move control through the shared spacing roles. Keyboard help is available as the cards' accessible description. For text workflows, set the lane column's `ValueLabels` and `ValueOrder` to the lane labels and raw values in the same order. The existing facet and cell formatters then show human labels consistently; raw values remain stable for filtering and proposals. `BoardExample` demonstrates this mapping.
+
 Boards use continuous offset navigation. Paged and cursor grids and a calendar on the same definition are rejected. Hosted boards read ordinary `gridQuery` pages at the accepted revision, up to 100,000 matching records, and disclose a partial result when that bound is reached. They work with the existing `CanopyX.Data` offset query source; no separate database or board query engine is needed.
 
 ## Governed moves

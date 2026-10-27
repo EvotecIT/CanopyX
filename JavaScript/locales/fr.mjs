@@ -800,6 +800,7 @@ const labels = Object.freeze({
   planPending: "Proposition en attente de l’hôte",
   planBaselineLabel: "Référence",
   planDependencies: "Dépendances",
+  planConflict: "Conflit",
   pathEmpty: "Aucun chemin à afficher",
   pathSource: "Source",
   pathTarget: "Cible",

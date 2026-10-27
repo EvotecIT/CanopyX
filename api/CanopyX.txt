@@ -2510,6 +2510,7 @@ CanopyX.CanopyLabels.System.String PathTarget { get; set; }
 CanopyX.CanopyLabels.System.String PlanActual { get; set; }
 CanopyX.CanopyLabels.System.String PlanBaseline { get; set; }
 CanopyX.CanopyLabels.System.String PlanBaselineLabel { get; set; }
+CanopyX.CanopyLabels.System.String PlanConflict { get; set; }
 CanopyX.CanopyLabels.System.String PlanCritical { get; set; }
 CanopyX.CanopyLabels.System.String PlanDependencies { get; set; }
 CanopyX.CanopyLabels.System.String PlanDependency { get; set; }

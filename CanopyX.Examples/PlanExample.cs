@@ -15,7 +15,7 @@ internal static class PlanExample {
     }
 
     internal static CanopyDataGridView Create() {
-        var view = new CanopyDataGridView("migration-plan", "Migration plan") { Noun = "tasks", Selection = CanopySelectionMode.Single };
+        var view = new CanopyDataGridView("migration-plan", "Migration plan") { Noun = "tasks", Selection = CanopySelectionMode.Single, Record = new CanopyRecordPanel() };
         view.Columns.Add(new CanopyColumn("title", "Task") { RowHeader = true, Sortable = true });
         view.Columns.Add(new CanopyColumn("starts", "Actual start") { Kind = CanopyColumnKind.DateTime });
         view.Columns.Add(new CanopyColumn("ends", "Actual finish") { Kind = CanopyColumnKind.DateTime });
@@ -28,7 +28,7 @@ internal static class PlanExample {
         foreach (var (id, label) in new[] { ("platform", "Platform"), ("validation", "Validation"), ("operations", "Operations") }) resources.Roots.Add(new CanopyNode(id, label));
         view.Calendar = new CanopyCalendar("starts") {
             End = "ends", Title = "title", Resource = "owner", Resources = new CanopyCalendarResources(resources),
-            View = CanopyCalendarView.Timeline, PhoneView = CanopyCalendarView.Timeline, Date = new DateTime(2026, 10, 11), TimeZone = "UTC", NowIndicator = false,
+            View = CanopyCalendarView.Timeline, PhoneView = CanopyCalendarView.Timeline, Date = DateTime.UtcNow.Date.AddDays(-7), TimeZone = "UTC", NowIndicator = true,
             Span = new CanopyCalendarSpan(14, CanopyCalendarSpanUnit.Day)
         };
         view.Calendar.Views.Add(CanopyCalendarView.Timeline);
@@ -42,10 +42,10 @@ internal static class PlanExample {
         }) {
             var row = new CanopyGridRow(id);
             row.Cells["title"] = title; row.Cells["owner"] = owner;
-            row.Cells["starts"] = new DateTime(2026, 10, start, 0, 0, 0, DateTimeKind.Utc);
-            row.Cells["ends"] = new DateTime(2026, 10, end, 0, 0, 0, DateTimeKind.Utc);
-            row.Cells["baselineStart"] = new DateTime(2026, 10, start - 1, 0, 0, 0, DateTimeKind.Utc);
-            row.Cells["baselineEnd"] = new DateTime(2026, 10, end - 1, 0, 0, 0, DateTimeKind.Utc);
+            row.Cells["starts"] = DateTime.UtcNow.Date.AddDays(start - 19);
+            row.Cells["ends"] = DateTime.UtcNow.Date.AddDays(end - 19);
+            row.Cells["baselineStart"] = DateTime.UtcNow.Date.AddDays(start - 20);
+            row.Cells["baselineEnd"] = DateTime.UtcNow.Date.AddDays(end - 20);
             row.Cells["milestone"] = milestone;
             view.Rows.Add(row);
         }

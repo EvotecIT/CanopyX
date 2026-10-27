@@ -4,7 +4,7 @@
     planOverlapConflict: "Overlaps {task}", planIncomplete: "The complete task network is unavailable; the host must check this proposal.",
     planInvalidRange: "The task must finish at or after its start.", planInvalidResource: "Choose a task resource.",
     planProposal: "Proposed {task}: {start} – {end}", planMoveHint: "Alt+Left or Alt+Right proposes a new date; Alt+Up or Alt+Down proposes a resource.",
-    planActual: "Actual", planPending: "Proposal awaiting the host", planBaselineLabel: "Baseline", planDependencies: "Dependencies"
+    planConflict: "Conflict", planActual: "Actual", planPending: "Proposal awaiting the host", planBaselineLabel: "Baseline", planDependencies: "Dependencies"
   };
   const PLAN_EVENT = DataGrid.prototype.calEventElement;
   DataGrid.prototype.calEventElement = function (event, kind) {
@@ -29,10 +29,11 @@
     },
     planPaint() {
       this.tlRoot.classList.add("cx-plan");
+      this.host.classList.add("cx-plan-host"); this.calRoot.classList.add("cx-plan-calendar");
       if (!this.planLegend) {
         const legend = this.planLegend = planLegendTemplate.call(this);
         this.calBody.before(legend);
-        this.lifetime.signal.addEventListener("abort", () => legend.remove(), { once: true });
+        this.lifetime.signal.addEventListener("abort", () => { legend.remove(); this.host.classList.remove("cx-plan-host"); }, { once: true });
       }
       const network = this.planAnalyze(), axis = this.tlAxis, positions = new Map(), canvasBox = this.tlCanvas.getBoundingClientRect();
       for (const lane of this.tlLanes.values()) {
@@ -47,10 +48,12 @@
             if (!planMilestone(this, task)) element.style.height = Math.max(PLAN_METRICS.actualMinHeight, element._planHeight - PLAN_METRICS.actualBaselineGap) + "px";
           }
           const rect = element.getBoundingClientRect(), start = axis.x(task.tlStart), end = axis.x(planMilestone(this, task) ? task.tlStart : task.tlEnd);
-          if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2 });
+          if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, bottom: rect.bottom - canvasBox.top });
+          const title = element.querySelector(".cx-cal-ev-title");
+          if (title) { title.title = task.title; element.classList.toggle("cx-plan-label-outside", title.scrollWidth > element.clientWidth - 12 || planMilestone(this, task)); }
           if (!spec.baselineStart || !spec.baselineEnd) continue;
           const from = planInstant(task.row.cells[spec.baselineStart]), to = planInstant(task.row.cells[spec.baselineEnd]);
-          if (!Number.isFinite(from) || !Number.isFinite(to) || to < from || from >= axis.to || to < axis.from) continue;
+          if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || from >= axis.to || to < axis.from) continue;
           const text = this.planText("planBaseline", { start: this.calFmt.longDay(this.calZone.day(from)), end: this.calFmt.longDay(this.calZone.day(to)) });
           planBaselineTemplate(element, lane, axis, from, to, text);
           // Baselines are also spoken on the actual task button rather than adding a non-cell to the ARIA grid.
@@ -67,6 +70,14 @@
       }
       this.planLinks?.remove(); this.planLinks = svg; this.tlCanvas.appendChild(svg);
       this.tlRoot.dataset.cxPlanComplete = String(network.complete);
+      this.tlRoot.style.height = ((this.tlTree.tops[this.tlTree.rows.length] || 0) + this.tlHead.offsetHeight + 2) + "px";
+      this.tlHead.querySelector(".cx-plan-today")?.remove();
+      const now = Date.now();
+      if (this.cal.now && now >= axis.from && now < axis.to) {
+        const label = h("span", "cx-plan-today"); setText(label, this.calLabels.calendarToday);
+        label.style.insetInlineStart = axis.x(now) + "px"; this.tlHead.appendChild(label);
+      }
+      this.planPaintAgenda(network);
       this.planPaintProposal();
     }
   });

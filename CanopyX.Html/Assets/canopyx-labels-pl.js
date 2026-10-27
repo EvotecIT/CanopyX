@@ -801,6 +801,7 @@ const labels = Object.freeze({
   planPending: "Propozycja oczekuje na hosta",
   planBaselineLabel: "Plan bazowy",
   planDependencies: "Zależności",
+  planConflict: "Konflikt",
   pathEmpty: "Brak ścieżek do wyświetlenia",
   pathSource: "Źródło",
   pathTarget: "Cel",

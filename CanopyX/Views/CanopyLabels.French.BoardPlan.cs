@@ -29,6 +29,7 @@ public sealed partial class CanopyLabels {
         labels.PlanPending = "Proposition en attente de l’hôte";
         labels.PlanBaselineLabel = "Référence";
         labels.PlanDependencies = "Dépendances";
+        labels.PlanConflict = "Conflit";
         return labels;
     }
 }

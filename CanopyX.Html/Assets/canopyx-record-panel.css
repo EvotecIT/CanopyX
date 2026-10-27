@@ -117,3 +117,5 @@ html.cx-record-printing .cx-record-print{display:block;padding:0;font:var(--cx-s
 .cx-record-drawer .cx-dl dd{font-size:var(--hfx-type-body-size,0.875rem);}
 .cx-drawer.cx-record-drawer .cx-drawer-h h4{width:auto;max-width:100%;overflow-wrap:anywhere;}
 .cx-drawer.cx-record-drawer .cx-drawer-h > :not(:first-child){flex:none;}
+.cx-drawer[data-phone="true"] .cx-record-toggle{justify-content:flex-start;padding-inline:0;position:relative;}
+.cx-drawer[data-phone="true"] .cx-record-toggle > svg{position:absolute;inset-inline-start:calc(-1 * var(--hfx-space-4,1rem));margin:0;}

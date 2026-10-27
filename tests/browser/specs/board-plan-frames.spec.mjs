@@ -11,7 +11,7 @@ for (const name of ["board", "plan"]) for (const sample of [{ width: 1440, dark:
     await page.goto(process.env.CANOPYX_FRAME_BASE_URL ? process.env.CANOPYX_FRAME_BASE_URL + "/" + file : exampleUrl(file));
     await page.waitForFunction(() => document.querySelector("[data-canopyx-host]")?.canopyx);
     await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.ready);
-    await expect(page.locator(name === "board" ? ".cx-board-card" : ".cx-plan-task").first()).toBeVisible();
+    await expect(page.locator(name === "board" ? ".cx-board-card" : sample.width < 640 ? ".cx-plan-agenda-title" : ".cx-plan-task").first()).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     const results = await new AxeBuilder({ page }).include(name === "board" ? ".cx-board" : ".cx-cal").analyze();

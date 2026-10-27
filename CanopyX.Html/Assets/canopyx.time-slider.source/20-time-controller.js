@@ -1,8 +1,10 @@
   function timeCreate(host, source, hostLabels, kind, validate, update) {
     const model = timeModel(source, kind, validate), labels = timeLabels(source.labels, hostLabels);
     const lifetime = new AbortController(), signal = lifetime.signal, media = matchMedia("(prefers-reduced-motion: reduce)");
-    const elements = timeControlsTemplate(model, labels);
+    const elements = timeControlsTemplate(model, labels, source);
     const { root, range, previous, play, next } = elements;
+    const hadFrame = host.classList.contains("cx-time-host");
+    host.classList.add("cx-time-host");
     let index = model.initial, playing = false, timer = null, disposed = false;
     const state = () => Object.freeze({ index, count: model.snapshots.length, at: model.snapshots[index].at, playing, reducedMotion: media.matches });
     const paint = () => timeStateTemplate(elements, model, labels, index, playing, media.matches);
@@ -26,10 +28,10 @@
     range.addEventListener("input", () => seek(Number(range.value)), { signal });
     media.addEventListener("change", pause, { signal }); window.addEventListener("beforeprint", pause, { signal });
     try { update(model.snapshots[index].view); paint(); host.prepend(root); }
-    catch (error) { lifetime.abort(); root.remove(); throw error; }
+    catch (error) { lifetime.abort(); root.remove(); if (!hadFrame) host.classList.remove("cx-time-host"); throw error; }
     return { play: start, pause, seek, step: (delta = 1) => {
       if (!Number.isInteger(delta)) throw new RangeError("Snapshot step must be an integer.");
       return seek(Math.max(0, Math.min(model.snapshots.length - 1, index + delta)));
-    }, getState: state, destroy: () => { if (disposed) return; pause(); disposed = true; lifetime.abort(); root.remove(); } };
+    }, getState: state, destroy: () => { if (disposed) return; pause(); disposed = true; lifetime.abort(); root.remove(); if (!hadFrame) host.classList.remove("cx-time-host"); } };
   }
   TIME_SLIDER_IMPL.create = timeCreate;

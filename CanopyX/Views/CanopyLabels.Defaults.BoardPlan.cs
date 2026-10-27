@@ -31,6 +31,7 @@ public sealed partial class CanopyLabels {
         defaults[nameof(PlanPending)] = "Proposal awaiting the host";
         defaults[nameof(PlanBaselineLabel)] = "Baseline";
         defaults[nameof(PlanDependencies)] = "Dependencies";
+        defaults[nameof(PlanConflict)] = "Conflict";
         return defaults;
     }
 }

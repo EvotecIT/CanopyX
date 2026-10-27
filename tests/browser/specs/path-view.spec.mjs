@@ -99,8 +99,12 @@ for (const sample of [{ width: 1440, height: 1000, dark: false }, { width: 390, 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     const hops = page.locator(".cx-path-hops").first();
     expect(await hops.evaluate(node => getComputedStyle(node).flexDirection)).toBe(sample.width < 640 ? "column" : "row");
-    const arrow = await page.locator(".cx-path-hop + .cx-path-hop").first().evaluate(node => getComputedStyle(node, "::before").content);
-    expect(arrow).toContain(sample.width < 640 ? "\u2193" : "\u2192");
+    const arrow = await page.locator(".cx-path-hop + .cx-path-hop").first().evaluate(node => {
+      const shaft = getComputedStyle(node, "::before"), head = getComputedStyle(node, "::after");
+      return { width:parseFloat(shaft.width), height:parseFloat(shaft.height), head:head.borderInlineEndStyle };
+    });
+    expect(sample.width < 640 ? arrow.height > arrow.width : arrow.width > arrow.height).toBe(true);
+    expect(arrow.head).toBe("solid");
     const long = page.getByRole("button", { name: "Review the implementation and the proposed recovery procedure", exact: true }).first();
     expect(await long.evaluate(node => node.scrollWidth <= node.clientWidth + 1 && getComputedStyle(node).whiteSpace === "normal")).toBe(true);
     await long.focus(); await page.keyboard.press("Enter");

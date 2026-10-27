@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "3880165ccfb53427",
+      "version": "77abc594c2fbdd92",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -539,7 +539,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "4073fdbbbac08339",
+      "version": "da04d646d9dc1f82",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -802,7 +802,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "7969262821b7fce0",
+      "version": "7ba6547b4a6942b8",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -897,7 +897,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "22c9e15c108aeaa1",
+      "version": "8bc026c6caa80a64",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
@@ -932,7 +932,7 @@
     {
       "name": "board",
       "label": "board view",
-      "version": "0e89523ebd38755e",
+      "version": "b544ad720bf191e5",
       "script": "canopyx-board.js",
       "style": "canopyx-board.css",
       "runtimes": [
@@ -948,7 +948,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "da506ee0e3553e57",
+      "version": "f43dab9abc79dad0",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [
@@ -967,7 +967,7 @@
     {
       "name": "path",
       "label": "path view",
-      "version": "03ba7fae00d45fab",
+      "version": "7af8fbfca1b1fc48",
       "script": "canopyx-path.js",
       "style": "canopyx-path.css",
       "runtimes": [
@@ -983,7 +983,7 @@
     {
       "name": "stack",
       "label": "stack view",
-      "version": "0ccae3331c5e4b43",
+      "version": "9ebd0cfb3f4f074b",
       "script": "canopyx-stack.js",
       "style": "canopyx-stack.css",
       "runtimes": [
@@ -999,7 +999,7 @@
     {
       "name": "time-slider",
       "label": "snapshot playback",
-      "version": "8a8dbc066bb16346",
+      "version": "f49ddb196203f782",
       "script": "canopyx-time-slider.js",
       "style": "canopyx-time-slider.css",
       "runtimes": [

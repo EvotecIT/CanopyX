@@ -37,6 +37,8 @@ internal static class BoardExample {
         view.Board.Lanes.Add(new CanopyBoardLane("ready", "Ready"));
         view.Board.Lanes.Add(new CanopyBoardLane("active", "In progress") { WipLimit = 4 });
         view.Board.Lanes.Add(new CanopyBoardLane("done", "Done"));
+        var status = view.Columns.Single(column => column.Id == "status");
+        foreach (var lane in view.Board.Lanes) { status.ValueLabels.Add((string)lane.Value!.Value!, lane.Label); status.ValueOrder.Add((string)lane.Value.Value!); }
         view.Board.Fields.Add("assignee");
         view.Board.Fields.Add("priority");
         view.Board.Fields.Add("due");

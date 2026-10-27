@@ -47,7 +47,7 @@ async function openPlan(page, { dark = false, width = 1440, rtl = false, handler
   await page.goto("http://127.0.0.1/plan-test.html");
   expect(pageErrors, "the plan fixture must mount without script errors").toEqual([]);
   await page.evaluate(() => window.planApi.ready);
-  await page.waitForSelector(".cx-plan-task");
+  await page.waitForSelector(width < 640 ? ".cx-plan-agenda-title" : ".cx-plan-task");
   await nextFrames(page);
 }
 
@@ -94,7 +94,8 @@ test("plan renders task bars, milestones, dependency arrows, full-network critic
   await expect(page.locator(".cx-plan-links path")).toHaveCount(6);
   // The redundant direct edge joins two critical tasks, but has slack and is not itself on the critical path.
   await expect(page.locator(".cx-plan-link-critical")).toHaveCount(3);
-  await expect(page.locator(".cx-plan-baseline")).toHaveCount(5);
+  // Zero-duration milestone baselines add no elapsed-duration bar.
+  await expect(page.locator(".cx-plan-baseline")).toHaveCount(4);
   await expect(task(page, "release")).toHaveClass(/cx-plan-milestone/);
   for (const id of ["prepare", "migrate", "verify", "release"]) await expect(task(page, id)).toHaveClass(/cx-plan-critical/);
   await expect(task(page, "notes")).not.toHaveClass(/cx-plan-critical/);
@@ -183,7 +184,8 @@ test("print includes milestone baseline criticality and conflict text with local
 for (const sample of [{ width: 1440, dark: false }, { width: 390, dark: true }, { width: 900, dark: false, rtl: true }]) {
   test("plan remains contained and keyboard reachable at " + sample.width + (sample.dark ? " dark" : " light") + (sample.rtl ? " RTL" : ""), async ({ page }) => {
     await openPlan(page, sample);
-    await task(page, "migrate").focus();
+    const target = sample.width < 640 ? page.locator('[data-cx-plan-record="migrate"]') : task(page, "migrate");
+    await target.focus();
     await page.keyboard.press("Alt+ArrowRight");
     const expected = sample.rtl ? iso(13) : iso(15);
     expect(await page.evaluate(() => window.proposals[0].proposed.start)).toBe(expected);

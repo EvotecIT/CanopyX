@@ -25,6 +25,10 @@ Declare the mapped grid columns first. Actual and baseline date columns use `Can
 
 Plans use ordinary task records. Recurrence and calendar feeds are not supported. Resource groups, lane virtualization, zoom levels and the keyboard grid come from the [resource timeline](resource-timeline.md). The optional `plan` browser part loads only for plan definitions and depends on the timeline part.
 
+On wide screens the time columns stretch to fill the available range, and the frame fits its resource rows. The current day has a labelled accent line when it falls within the range. Routed dependency connectors show arrowheads and highlight on hover; the legend names both critical paths and conflicts. Short bars keep their full task name in a tooltip and display a label beside the bar.
+
+Phones show an agenda grouped by visible resource lanes. Each task lists its dates, predecessor count, criticality, milestone and conflict state. Its title opens the same calendar record details as the desktop task. Keyboard date and resource proposals retain the same Alt+Arrow shortcuts. The optional plan part has a 10 KiB combined script/style gzip budget, including both presentations.
+
 ## Dependencies and critical path
 
 An arrow runs from a predecessor's actual finish to its successor's actual start. Dashed emphasis marks a successor that starts before its predecessor finishes plus any lag. The task buttons retain their accessible names; milestones, criticality and baseline dates are included in those names.
@@ -33,7 +37,7 @@ Critical-path analysis computes the longest elapsed-duration path through the de
 
 For an inline source, analysis uses every task in the definition, including tasks outside the visible date range or current filters. Navigation and filtering do not redefine the critical path. A hosted calendar range cannot prove that all tasks and edges were loaded, so it omits authoritative critical-path marking and reports an incomplete-network warning with proposals. The host checks the complete graph before applying any proposed change.
 
-A thin baseline line below each actual bar shows the mapped baseline interval. Missing or invalid baseline cells omit that task's baseline; actual dates remain visible. The baseline is comparison data and never changes when a proposal is made.
+A thin baseline line in its own inset below each actual bar shows the mapped baseline interval. Missing, invalid or zero-duration baseline intervals omit that task's line; actual dates remain visible. The baseline is comparison data and never changes when a proposal is made.
 
 ## Proposals belong to the host
 

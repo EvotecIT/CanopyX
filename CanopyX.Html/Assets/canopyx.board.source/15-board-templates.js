@@ -1,6 +1,9 @@
   // Visual dimensions are consumed by the virtual layout; event wiring stays in render.
-  function boardMeasureTemplate(frame) {
-    const card = h("article", "cx-board-card"), group = h("h4", "cx-board-swimlane");
+  function boardMeasureTemplate(frame, board) {
+    const fields = board.settings.fields || board.grid.columns.filter(column => !column.hidden && ![board.settings.column, board.settings.titleColumn, board.settings.swimlaneColumn].includes(column.id)).slice(0, 2).map(column => column.id);
+    const { card } = boardCardTemplate.call(board.grid, { id: "measure" }, "Measure", fields.slice(0, 2).map(() => ({ title: "M", text: "M" })));
+    const group = h("h4", "cx-board-swimlane");
+    if (board.settings.editable) boardMoveTemplate("", [{ key: "", label: "M" }], "", true, card);
     for (const probe of [card, group]) { probe.style.visibility = "hidden"; probe.setAttribute("aria-hidden", "true"); }
     frame.append(card, group);
     const cardHeight = card.getBoundingClientRect().height + Number.parseFloat(getComputedStyle(card).marginBottom);
@@ -29,12 +32,12 @@
         return { section, scroll, canvas };
   }
   function boardCardTemplate(row, text, fields) {
-      const card = h("article", "cx-board-card"), title = h("button", "cx-btn ghost cx-board-title");
+      const card = h("article", "cx-board-card"), title = h("button", "cx-btn cx-board-title");
       card.dataset.cxBoardRecord = row.id; card.tabIndex = 0;
       card.setAttribute("aria-label", text); card.setAttribute("aria-describedby", this.id + "-board-help"); title.type = "button"; setText(title, text); title.title = text;
       card.appendChild(title);
       const details = h("dl", "cx-board-fields");
-      for (const field of fields) { const key = h("dt"), value = h("dd"), text = field.text; setText(key, field.title); setText(value, text); value.title = text; details.append(key, value); }
+      for (const field of fields) { const key = h("dt"), value = h("dd"), text = field.text; setText(key, field.title); key.title = field.title; setText(value, text); value.title = text; details.append(key, value); }
       card.appendChild(details);
       return { card, title };
   }

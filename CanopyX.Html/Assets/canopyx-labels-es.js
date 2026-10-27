@@ -801,6 +801,7 @@ const labels = Object.freeze({
   planPending: "Propuesta pendiente del host",
   planBaselineLabel: "Línea base",
   planDependencies: "Dependencias",
+  planConflict: "Conflicto",
   pathEmpty: "No hay rutas para mostrar",
   pathSource: "Origen",
   pathTarget: "Destino",

@@ -2507,7 +2507,8 @@
             "planActual": { "type": "string" },
             "planPending": { "type": "string" },
             "planBaselineLabel": { "type": "string" },
-            "planDependencies": { "type": "string" }
+            "planDependencies": { "type": "string" },
+            "planConflict": { "type": "string" }
           }
         },
         "source": { "$ref": "#/$defs/source" },

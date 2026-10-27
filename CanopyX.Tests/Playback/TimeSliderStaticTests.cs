@@ -7,6 +7,15 @@ using static CanopyX.Tests.Playback.TimeSliderFixtures;
 namespace CanopyX.Tests.Playback;
 
 public sealed class TimeSliderStaticTests {
+    [Fact]
+    public void SnapshotCaptions_ShowHumanTimeInTheRequestedCultureAndKeepMachineTimeInTheAttribute() {
+        var settings = new CanopyStaticHtmlOptions { Culture = CultureInfo.GetCultureInfo("de-DE") };
+        foreach (var html in new[] { CanopyStaticHtml.RenderMatrix(MatrixSlider(), settings), CanopyStaticHtml.RenderPropagation(PropagationSlider(), settings) }) {
+            Assert.Contains(">25 Okt. 2026, 10:01 UTC</time>", html);
+            Assert.Contains("datetime=\"2026-10-25T10:01:00.0000000Z\"", html);
+        }
+    }
+
     [Theory]
     [InlineData(null, "Latest matrix", 1)]
     [InlineData(0, "Earlier matrix", 0)]

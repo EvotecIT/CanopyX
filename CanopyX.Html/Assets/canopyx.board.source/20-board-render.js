@@ -15,7 +15,7 @@
       board.grid = this;
       const positions = new Map([...this.boardFrame.querySelectorAll(".cx-board-scroll")].map(node => [node.dataset.lane, node.scrollTop]));
       this.boardFrame.replaceChildren();
-      Object.assign(board, boardMeasureTemplate(this.boardFrame));
+      Object.assign(board, boardMeasureTemplate(this.boardFrame, board));
       if (!board.lanes.some(lane => lane.key === board.lane)) board.lane = board.lanes[0]?.key;
       const picker = boardToolsTemplate.call(this, board);
       picker.addEventListener("change", () => { board.lane = picker.value; this.boardSyncLane(); this.stateChanged(); });

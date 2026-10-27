@@ -1,6 +1,9 @@
 namespace CanopyX;
 
 public sealed partial class CanopyLabels {
+    /// <summary>Gets or sets the label identifying conflicting task dependencies.</summary>
+    public string PlanConflict { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the plan text: Milestone</summary>
     public string PlanMilestone { get => Get(); set => Set(value); }
 

@@ -125,7 +125,7 @@
       main.append(head, canvas); side.appendChild(host); root.append(side, main);
       const aggregates = resources.aggregates, renderers = {};
       for (const [column, kind] of Object.entries(aggregates)) renderers[column] = (node, element) => { setText(element, this.tlAggregateText(node.id, kind)); element.classList.add("cx-tl-agg"); return true; };
-      const view = { ...resources.view, rowHeight: resources.view.rowHeight || this.rowH, labels: { ...this.view.labels, ...resources.view.labels } };
+      const view = { ...resources.view, rowHeight: this.view.plan ? Math.max(64, resources.view.rowHeight || this.rowH) : resources.view.rowHeight || this.rowH, labels: { ...this.view.labels, ...resources.view.labels } };
       const tree = this.tlTree = new TreeGrid(host, { view, toolbar: false, renderers, labels: this.opts.labels });
       // The resource tree's events stay inside the calendar: the grid host has its own events of the same names.
       tree.emit = (name, detail) => { if (!tree.destroyed) host.dispatchEvent(new CustomEvent("canopyx:" + name, { detail })); };
@@ -191,7 +191,8 @@
 
     calPaintTimeline() {
       this.tlEnsure();
-      const span = this.calRange, axis = this.tlAxis = tlAxis(this.calZoom, span, this.calZone, this.cal.firstDay);
+      if (this.tlRoot.parentNode !== this.calBody) this.calBody.replaceChildren(this.tlRoot);
+      const span = this.calRange, axis = this.tlAxis = tlAxis(this.calZoom, span, this.calZone, this.cal.firstDay, this.view.plan ? this.tlMain.clientWidth : 0);
       this.tlIndex = this.tlIndexEvents();
       this.tl.heat.clear();
       if (this.tlRoot.parentNode !== this.calBody) this.calBody.replaceChildren(this.tlRoot);

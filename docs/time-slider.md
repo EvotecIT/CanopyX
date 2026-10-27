@@ -5,6 +5,8 @@ by its host. The reader can select a frame, step backward or forward, and start
 or pause timed playback. CanopyX replays the supplied evidence; the host captures
 the snapshots and decides what each state means. Replay makes no network requests.
 
+Playback uses named previous, play/pause and next icon buttons plus a scrubber with one tick per supplied snapshot. The selected label and time stay beside the controls; the page language formats the timestamp and UTC is explicit unless the view uses local time. Playback and its hosted view share one frame and surface background, including on phones. Static output keeps the machine-readable ISO time in the `datetime` attribute and displays a human date/time using `CanopyStaticHtmlOptions.Culture`.
+
 ## C# model
 
 Set `TimeSlider` on a `CanopyMatrix` or `CanopyPropagation`. Its generic argument

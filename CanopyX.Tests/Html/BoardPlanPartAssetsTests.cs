@@ -7,7 +7,8 @@ namespace CanopyX.Tests.Html;
 public sealed class BoardPlanPartAssetsTests {
     [Theory]
     [InlineData("board", 8192)]
-    [InlineData("plan", 8192)]
+    // The optional plan includes its lane agenda, dependency routing and desktop legend.
+    [InlineData("plan", 10240)]
     public void LayoutPart_StaysOptionalVersionedAndWithinItsGzipBudget(string name, int budget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Matches("^[a-f0-9]{16}$", part.Version);

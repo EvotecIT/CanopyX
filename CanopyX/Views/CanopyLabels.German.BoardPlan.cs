@@ -29,6 +29,7 @@ public sealed partial class CanopyLabels {
         labels.PlanPending = "Vorschlag wartet auf den Host";
         labels.PlanBaselineLabel = "Basisplan";
         labels.PlanDependencies = "Abhängigkeiten";
+        labels.PlanConflict = "Konflikt";
         return labels;
     }
 }

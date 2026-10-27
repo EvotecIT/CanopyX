@@ -68,7 +68,7 @@
       const rows = tree.rows, tops = tree.tops, total = tops[rows.length] || 0, main = this.tlMain;
       canvas.style.height = total + "px"; canvas.setAttribute("aria-rowcount", String(rows.length));
       const visible = this.tlVisibleRows(3), bucket = Math.floor(this.tlScrollX() / TL_MARGIN), left = (bucket - 1) * TL_MARGIN, right = (bucket + 2) * TL_MARGIN + main.clientWidth;
-      const lanes = this.tlLanes ||= new Map(), keep = new Set(), signature = [this.calEpoch, this.calVersion, this.calSourceVersion || 0, axis.zoom, axis.from, bucket, this.linkHighlight?.size || 0, this.calSelection?.resource ?? ""].join("|");
+      const lanes = this.tlLanes ||= new Map(), keep = new Set(), signature = [this.calEpoch, this.calVersion, this.calSourceVersion || 0, axis.zoom, axis.from, axis.width, bucket, this.linkHighlight?.size || 0, this.calSelection?.resource ?? ""].join("|");
       for (let i = visible.first; i <= visible.last; i++) {
         const row = rows[i], key = row.status ? "status:" + i : row.key;
         keep.add(key);
