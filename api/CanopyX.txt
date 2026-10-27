@@ -62,6 +62,44 @@ CanopyX.CanopyBoardLane.CanopyX.CanopyCell? Value { get; }
 CanopyX.CanopyBoardLane.System.Boolean Matches(CanopyX.CanopyCell? value)
 CanopyX.CanopyBoardLane.System.Nullable<System.Int32> WipLimit { get; set; }
 CanopyX.CanopyBoardLane.System.String Label { get; set; }
+CanopyX.CanopyBucket : sealed class
+CanopyX.CanopyBucket.CanopyX.CanopyBucketKind Kind { get; }
+CanopyX.CanopyBucket.System.Collections.Generic.IReadOnlyList<System.Double> Edges { get; }
+CanopyX.CanopyBucket.System.DayOfWeek FirstWeekday { get; }
+CanopyX.CanopyBucket.System.Double Origin { get; }
+CanopyX.CanopyBucket.System.Double Width { get; }
+CanopyX.CanopyBucket.System.Nullable<System.Double> Key(System.Object? value)
+CanopyX.CanopyBucket.System.String Label(System.Double key, System.Globalization.CultureInfo? culture = null)
+CanopyX.CanopyBucket.System.String TimeZone { get; }
+CanopyX.CanopyBucket.static CanopyX.CanopyBucket Calendar(CanopyX.CanopyBucketKind kind, System.String timeZone = "UTC", System.DayOfWeek firstWeekday = Monday)
+CanopyX.CanopyBucket.static CanopyX.CanopyBucket Calendar(CanopyX.CanopyBucketKind kind, System.TimeZoneInfo zone, System.String timeZone, System.DayOfWeek firstWeekday = Monday)
+CanopyX.CanopyBucket.static CanopyX.CanopyBucket ExplicitEdges(params System.Double[] edges)
+CanopyX.CanopyBucket.static CanopyX.CanopyBucket FixedWidth(System.Double width, System.Double origin = 0)
+CanopyX.CanopyBucketKind : enum System.Int32
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Day = 0
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Edges = 8
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Hour = 5
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Month = 2
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Quarter = 3
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Week = 1
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Weekday = 6
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Width = 7
+CanopyX.CanopyBucketKind.const CanopyX.CanopyBucketKind Year = 4
+CanopyX.CanopyCalculatedValue : sealed class
+CanopyX.CanopyCalculatedValue..ctor(System.Object? value)
+CanopyX.CanopyCalculatedValue.System.Boolean IsError { get; }
+CanopyX.CanopyCalculatedValue.System.Object? Value { get; }
+CanopyX.CanopyCalculatedValue.System.String? Error { get; }
+CanopyX.CanopyCalculatedValue.static CanopyX.CanopyCalculatedValue FromError(System.String error)
+CanopyX.CanopyCalculation : sealed class
+CanopyX.CanopyCalculation.CanopyX.CanopyCalculatedValue Evaluate(System.Func<System.String, System.Object?> resolver)
+CanopyX.CanopyCalculation.System.Collections.Generic.IReadOnlyList<System.String> Dependencies { get; }
+CanopyX.CanopyCalculation.System.String Expression { get; }
+CanopyX.CanopyCalculation.static CanopyX.CanopyCalculation Parse(System.String expression)
+CanopyX.CanopyCalculationSet : sealed class
+CanopyX.CanopyCalculationSet..ctor(System.Collections.Generic.IEnumerable<CanopyX.CanopyColumn> columns)
+CanopyX.CanopyCalculationSet.CanopyX.CanopyGridRow Apply(CanopyX.CanopyGridRow row, CanopyX.CanopyLabels? labels = null)
+CanopyX.CanopyCalculationSet.System.Collections.Generic.IEnumerable<CanopyX.CanopyGridRow> Apply(System.Collections.Generic.IEnumerable<CanopyX.CanopyGridRow> rows, CanopyX.CanopyLabels? labels = null)
 CanopyX.CanopyCalendar : sealed class
 CanopyX.CanopyCalendar..ctor(System.Collections.Generic.IEnumerable<CanopyX.CanopyCalendarEvent> events, CanopyX.CanopyCalendarPreset preset = Basic)
 CanopyX.CanopyCalendar..ctor(System.String id, System.String label, System.Collections.Generic.IEnumerable<CanopyX.CanopyCalendarEvent> events, CanopyX.CanopyCalendarPreset preset = Basic)
@@ -634,6 +672,7 @@ CanopyX.CanopyDataGridView.System.Boolean RowAccents { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean Search { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean StatusBar { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean StickyHeader { get; set; }
+CanopyX.CanopyDataGridView.System.Boolean ViewIntents { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean Zebra { get; set; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyColumn> Columns { get; }
 CanopyX.CanopyDataGridView.System.Collections.Generic.IList<CanopyX.CanopyColumnGroup> ColumnGroups { get; }
@@ -2967,6 +3006,33 @@ CanopyX.CanopyPathHop.System.Collections.Generic.IList<CanopyX.CanopyBadge> Badg
 CanopyX.CanopyPathHop.System.Collections.Generic.IList<CanopyX.CanopyPathFlag> Flags { get; }
 CanopyX.CanopyPathHop.System.String Record { get; }
 CanopyX.CanopyPathHop.System.String? Label { get; set; }
+CanopyX.CanopyPivot : static class
+CanopyX.CanopyPivot.static CanopyX.CanopyPivotResult Compute(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridPivot definition, System.Collections.Generic.IEnumerable<CanopyX.CanopyGridRow> rows, System.Func<CanopyX.CanopyGridAggregate, System.Collections.Generic.IReadOnlyList<CanopyX.CanopyCell?>, System.Nullable<System.Double>>? customAggregate = null)
+CanopyX.CanopyPivotAxisNode : sealed class
+CanopyX.CanopyPivotAxisNode.System.Boolean Other { get; }
+CanopyX.CanopyPivotAxisNode.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyCell?> Path { get; }
+CanopyX.CanopyPivotAxisNode.System.Int32 Depth { get; }
+CanopyX.CanopyPivotAxisNode.System.String Key { get; }
+CanopyX.CanopyPivotAxisNode.System.String? Parent { get; }
+CanopyX.CanopyPivotCell : sealed class
+CanopyX.CanopyPivotCell.System.Collections.Generic.IReadOnlyDictionary<System.String, System.Nullable<System.Double>> Aggregates { get; }
+CanopyX.CanopyPivotCell.System.Int32 Count { get; }
+CanopyX.CanopyPivotCell.System.String Column { get; }
+CanopyX.CanopyPivotCell.System.String Row { get; }
+CanopyX.CanopyPivotResult : sealed class
+CanopyX.CanopyPivotResult.CanopyX.CanopyAggregateDisplayValue Display(System.String row, System.String column, System.String aggregate, System.Nullable<CanopyX.CanopyShowAs> mode = null)
+CanopyX.CanopyPivotResult.CanopyX.CanopyGridPivot Definition { get; }
+CanopyX.CanopyPivotResult.CanopyX.CanopyPivotCell GetCell(System.String row, System.String column)
+CanopyX.CanopyPivotResult.System.Boolean ColumnsLimited { get; }
+CanopyX.CanopyPivotResult.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyGridTupleFilter> DrillThrough(System.String row, System.String column)
+CanopyX.CanopyPivotResult.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyPivotAxisNode> Columns { get; }
+CanopyX.CanopyPivotResult.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyPivotAxisNode> Rows { get; }
+CanopyX.CanopyPivotResult.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyPivotCell> Cells { get; }
+CanopyX.CanopyPivotResult.System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<CanopyX.CanopyCell?>> RetainedColumns { get; }
+CanopyX.CanopyPivotResult.System.Int32 DistinctColumns { get; }
+CanopyX.CanopyPivotResult.System.Int32 Matched { get; }
+CanopyX.CanopyPivotResult.System.String ToJson()
+CanopyX.CanopyPivotResult.System.String View { get; }
 CanopyX.CanopyPlan : sealed class
 CanopyX.CanopyPlan..ctor()
 CanopyX.CanopyPlan.System.Boolean AvoidOverlap { get; set; }

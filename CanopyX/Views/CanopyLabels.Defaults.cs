@@ -787,12 +787,8 @@ public sealed partial class CanopyLabels {
         [nameof(ChangeCopyRequest)] = "Copy request",
         [nameof(ChangeFiltered)] = "Filtered: {filters}",
         [nameof(ChangePrintLimit)] = "[one]{count} more line is not printed.[other]{count} more lines are not printed.",
-            [nameof(CalendarEditOccurrence)] = "Edit this occurrence",
-            [nameof(CalendarRemoveOccurrence)] = "Remove this occurrence",
-            [nameof(CalendarOccurrenceScope)] = "Only {date} changes; other dates of {title} stay as they are.",
-            [nameof(CalendarSharedResources)] = "{count} {resources}",
-            [nameof(CalendarResourceWindow)] = "{resources} {start}–{end} of {total}",
         };
+        AddCalendarDefaults(defaults);
         AddUiDefaults(defaults);
         AddAnalysisDefaults(defaults);
         AddDataViewsDefaults(defaults);

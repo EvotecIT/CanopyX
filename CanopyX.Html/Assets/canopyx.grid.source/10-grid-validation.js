@@ -9,6 +9,8 @@
 
   function validateGridView(view) {
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
+    if ([view.board, view.path, view.stack, view.calendar].filter(value => value != null).length > 1)
+      throw new Error("CanopyX: choose one grid presentation: board, path, stack or calendar (with optional plan).");
     view = gridColumnDefaults(view);
     if (view.allowRegexSearch !== undefined && typeof view.allowRegexSearch !== "boolean") throw new Error("CanopyX: allowRegexSearch is a boolean.");
     if (view.rowIdentity !== undefined && !["stableKey", "ordinal"].includes(view.rowIdentity))

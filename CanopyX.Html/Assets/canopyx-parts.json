@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "25401896c0dbc17e",
+      "version": "8aa194a2a74a68c9",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -887,7 +887,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "12f415f52dfcc667",
+      "version": "84a0ea40fd5e7392",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

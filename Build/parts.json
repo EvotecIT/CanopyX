@@ -215,7 +215,6 @@
         "EXPORT_FORMATS",
         "exportFormat",
         "exportTimeout",
-        "exportFormatsOf",
         "INDENT",
         "MAX_PROTOCOL_INTEGER",
         "hostControl",
@@ -235,8 +234,9 @@
         "columnValueTone",
         "overlayTheme"
       ],
-      "start": "const EXPORT_IMPL = { formatsOf: exportFormatsOf };",
+      "start": "const EXPORT_IMPL = {};",
       "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/69-export-formats.js",
         "CanopyX.Html/Assets/canopyx.grid.source/03-grid-icons.js",
         "CanopyX.Html/Assets/canopyx.grid.source/33-column-fit-core.js",
         "CanopyX.Html/Assets/canopyx.grid.source/57-toolbar-panels.js",
@@ -249,7 +249,8 @@
         "CanopyX.Html/Assets/canopyx.grid.source/33-column-fit-core.js",
         "CanopyX.Html/Assets/canopyx.grid.source/57-toolbar-panels.js",
         "CanopyX.Html/Assets/canopyx.grid.source/60-grid-columns-menu.js",
-        "CanopyX.Html/Assets/canopyx.grid.source/69-export-run.js"
+        "CanopyX.Html/Assets/canopyx.grid.source/69-export-run.js",
+        "CanopyX.Html/Assets/canopyx.grid.source/69-export-formats.js"
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.grid.source/chrome.css",
@@ -1955,7 +1956,6 @@
         "setText",
         "fill",
         "cellText",
-        "changeCellText",
         "cellValue",
         "isCellObject",
         "formatValue",
@@ -1976,10 +1976,14 @@
         "validateColumnValues"
       ],
       "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/00-change-cell-text.js",
         "CanopyX.Html/Assets/canopyx.record-panel.source"
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.record-panel.source/record-panel.css"
+      ],
+      "shared": [
+        "CanopyX.Html/Assets/canopyx.grid.source/00-change-cell-text.js"
       ]
     },
     {

@@ -1326,6 +1326,14 @@ import type{
 from "./plan.js";
 export * from "./plan.js";
 import type{
+  GridViewIntentApi
+}
+from "./view-intents.js";
+export type{
+  GridViewIntent,GridViewIntentPreview,GridViewIntentApi
+}
+from "./view-intents.js";
+import type{
   TreeGrid
 }
 from "./index.js";
@@ -2047,6 +2055,7 @@ export interface GridRowActivation<Row extends GridRow=GridRow>{
 export interface GridExportOptions{
   scope:GridExportRequest["scope"];
   includeDetails?:boolean;
+  pivot?:boolean;
   columns?:string[];
   values?:GridExportRequest["values"];
   signal?:AbortSignal;
@@ -2087,6 +2096,8 @@ export interface GridState<Q extends AcceptedGridQuery=GridQuery>{
   facets?:{open:boolean};
   calendar?:GridCalendarSavedState;
   board?:GridBoardState;
+  pivot?:GridPivotState;
+  calculatedColumns?:readonly GridCalculatedColumnDefinition[];
 }
 export type GridPreferenceQuery<Q extends AcceptedGridQuery=GridQuery>=Readonly<Omit<Q,"revision"|"cursor">>&{
   readonly revision?:never;
@@ -2951,6 +2962,118 @@ export interface GridPathDefinition{
   chains:GridPathChain[];
 }
 
+// ---- JavaScript/pivot.d.ts ----
+import type{
+  CellValue
+}
+from "./protocol.js";
+import type{
+  GridAggregateDisplayValue,GridGroupLevel,GridQuery
+}
+from "./grid.js";
+export type GridPivotLevel=Omit<GridGroupLevel,"aggregate">;
+export interface GridPivotDefinition{
+  readonly rows:readonly GridPivotLevel[];
+  readonly columns:readonly GridPivotLevel[];
+  readonly values:readonly string[];
+  readonly maxColumns?:number;
+  readonly topNColumns?:number;
+  readonly sortByTotal?:{readonly aggregate:string;readonly direction:"asc"|"desc"};
+}
+export interface GridPivotState extends GridPivotDefinition{
+  readonly active:boolean;
+  readonly collapsedRows:readonly string[];
+  readonly collapsedColumns:readonly string[];
+  readonly columnKey?:string;
+}
+export interface GridPivotQuery{
+  readonly protocol:"canopyx/2";
+  readonly type:"gridPivotQuery";
+  readonly query:GridQuery&{readonly revision:string};
+  readonly definition:GridPivotDefinition;
+}
+export interface GridPivotAxisNode{
+  readonly key:string;
+  readonly parent?:string;
+  readonly path:readonly CellValue[];
+  readonly other:boolean;
+}
+export interface GridPivotCell{
+  readonly row:string;
+  readonly column:string;
+  readonly count:number;
+  readonly aggregates:Readonly<Record<string,number|null>>;
+}
+export interface GridPivotResult{
+  readonly protocol:"canopyx/2";
+  readonly type:"gridPivot";
+  readonly view:string;
+  readonly definition:GridPivotDefinition;
+  readonly matched:number;
+  readonly distinctColumns:number;
+  readonly columnsLimited:boolean;
+  readonly rows:readonly GridPivotAxisNode[];
+  readonly columns:readonly GridPivotAxisNode[];
+  readonly retainedColumns:readonly(readonly CellValue[])[];
+  readonly cells:readonly GridPivotCell[];
+}
+export interface GridPivotAcceptedResult extends GridPivotResult{
+  readonly query:GridQuery&{readonly revision:string};
+  readonly revision:string;
+}
+export interface GridPivotExportValue extends GridAggregateDisplayValue{
+  readonly text:string;
+}
+export interface GridPivotExportAxisPresentation{
+  readonly axisKey:string;
+  readonly outlineLevel:number;
+  readonly summary:boolean;
+  readonly grandTotal:boolean;
+  readonly collapsed:boolean;
+  readonly hidden:boolean;
+}
+export interface GridPivotExportRow extends GridPivotExportAxisPresentation{
+  readonly id:string;
+  readonly cells:Readonly<Record<string,GridPivotExportValue|{readonly value:string;readonly text:string}>>;
+}
+export interface GridPivotExportColumn extends GridPivotExportAxisPresentation{
+  readonly id:string;
+  readonly title:string;
+  readonly kind:"number";
+  readonly aggregate:string;
+}
+export interface GridPivotExportColumnGroup{
+  readonly key:string;
+  readonly parent?:string;
+  readonly firstColumn:number;
+  readonly columnCount:number;
+  readonly depth:number;
+  readonly collapsed:boolean;
+  readonly hidden:boolean;
+}
+export interface GridPivotExportSnapshot{
+  readonly view:string;
+  readonly query:GridQuery;
+  readonly definition:GridPivotDefinition;
+  readonly columns:readonly({readonly id:string;readonly title:string;readonly kind:"text"}|GridPivotExportColumn)[];
+  readonly rows:readonly GridPivotExportRow[];
+  readonly columnGroups:readonly GridPivotExportColumnGroup[];
+  readonly rowAxis:readonly GridPivotAxisNode[];
+  readonly columnAxis:readonly GridPivotAxisNode[];
+  readonly matched:number;
+  readonly distinctColumns:number;
+  readonly retainedColumns:readonly(readonly CellValue[])[];
+  readonly columnsLimited:boolean;
+}
+export type GridPivotExportDescriptor=Pick<GridPivotExportSnapshot,"definition"|"rowAxis"|"columnAxis"|"columnGroups"|"distinctColumns"|"retainedColumns"|"columnsLimited">;
+export interface GridPivotApi{
+  getPivot?():GridPivotState|null;
+  setPivot?(definition:GridPivotDefinition|false):Promise<void>;
+  getPivotResult?():GridPivotAcceptedResult|null;
+  getPivotExport?():Promise<GridPivotExportSnapshot>;
+  setPivotCollapsed?(axis:"rows"|"columns",key:string,collapsed:boolean):Promise<void>;
+}
+
 // ---- JavaScript/plan.d.ts ----
 export interface GridPlanDefinition{
   baselineStart?:string;
@@ -3261,7 +3384,7 @@ export type LazyNode=NodeDefinition&{
 ;
 export type CanopyNode=LeafNode|DetailNode|InlineBranch|LazyNode;
 export type InlineNode=LeafNode|DetailNode|InlineBranch<InlineNode>;
-export type LabelName=|"gridPaging"|"gridPageRange"|"gridPageNumber"|"gridPageLength"|"gridFirstPage"|"gridPreviousPage"|"gridNextPage"|"gridLastPage"|"gridPageInfo"|"gridPageInfoFiltered"|"gridPageButton"|"gridUnknownCount"|"gridMatchedCount"|"gridCursorRange"|"gridResultCount"|"gridRegexSearch"|"gridClearQuery"|"gridRemoveSearch"|"gridGroupedFilters"|"gridRemoveGroup"|"gridRemoveCondition"|"gridExport"|"gridFilteredResults"|"gridSelectedRows"|"gridAllResults"|"gridVisibleRows"|"gridAllRows"|"gridDownloadCsv"|"gridDownloadXlsx"|"gridDownloadPdf"|"gridCopy"|"gridDetails"|"searchPlaceholder"|"searchResults"|"searchResultCount"|"searchResultCountOfTotal"|"searchResultCountOfMany"|"searchNoResults"|"searchTooShort"|"searchWordTooShort"|"searchFailed"|"columns"|"hiddenColumns"|"visibleColumns"|"resizeColumn"|"columnWidth"|"loading"|"loadError"|"queryFailed"|"showMore"|"showMoreUnknownTotal"|"pageLoaded"|"itemsLoaded"|"yes"|"no"|"utcTime"|"localTime"|"mountError"|"actions"|"editValue"|"saveEdit"|"cancelEdit"|"invalidEdit"|"interactionPending"|"interactionRejected"|"interactionFailed"|"markMove"|"moveHere"|"moveBefore"|"moveAfter"|"cancelMove"|"gridFilters"|"gridColumn"|"gridOperator"|"gridValue"|"gridValueType"|"gridText"|"gridBoolean"|"gridAddFilter"|"gridRemoveFilter"|"gridApply"|"gridClearFilters"|"gridMoveEarlier"|"gridMoveLater"|"gridViews"|"gridViewName"|"gridSaveView"|"gridRemoveView"|"gridResetView"|"gridChooseView"|"gridInvalidFilter"|"gridContains"|"gridStartsWith"|"gridIn"|"gridIsNull"|"gridIsNotNull"|"gridBetween"|"gridRangeEnd"|"gridInvalidRange"|"gridSuggestedCategory"|"gridChooseCategory"|"gridBooleanValue"|"gridTrue"|"gridFalse"|"gridHeaderFilter"|"gridExpandCell"|"gridCloseCell"|"gridCloseRecord"|"gridMoveColumn"|"gridResizeHelp"|"gridColumnMoved"|"gridFitColumn"|"gridFitAllColumns"|"gridPinColumn"|"gridPinNone"|"gridPinLeft"|"gridPinRight"|"gridResponsiveHidden"|"gridFindColumn"|"gridShowAllColumns"|"gridResetColumns"|"gridReorderColumn"|"gridPinnedLeft"|"gridPinnedRight"|"gridFilterGroupTitle"|"gridFilterMatch"|"gridFilterAll"|"gridFilterAny"|"gridAddFilterGroup"|"gridDeleteFilterGroup"|"gridFacetValues"|"gridFacetSearch"|"gridFacetIncludeCurrent"|"gridFacetLoad"|"gridFacetChoose"|"gridFacetCounts"|"gridFacetReload"|"gridRenameView"|"gridDefaultView"|"gridClearDefaultView"|"gridDefaultViewName"|"gridNoDefaultView"|"gridDefaultViewOption"|"gridSelection"|"gridSelectPage"|"gridSelectMatching"|"gridClearSelection"|"gridSelectionCount"|"gridSelectionQueryCount"|"gridSelectionQueryUnknown"|"gridSelectRecord"|"gridGroupHeading"|"gridGroupMissing"|"gridGroupExpand"|"gridGroupCollapse"|"gridSummary"|"gridGroupOrder"|"gridAggregateCount"|"gridAggregateSum"|"gridAggregateAverage"|"gridAggregateMinimum"|"gridAggregateMaximum"|"gridGroupBy"|"gridUngroup"|"gridGroupDrop"|"gridExpandAll"|"gridCollapseAll"|"gridExpandLevel"|"gridCollapseLevel"|"gridGroupMove"|"gridGroupSortBy"|"gridGroupSortValue"|"gridGroupSortAggregate"|"gridSelectGroup"|"gridAggregateDistinct"|"gridShowDetail"|"gridHideDetail"|"gridDetailOf"|"gridDetailFailed"|"gridExportProgress"|"gridExportReading"|"gridExportCancelled"|"gridCancelExport"|"gridNoExportColumns"|"gridPrint"|"gridExportWorkbookHint"|"gridExportPdfHint"|"gridExportCsvHint"|"gridExportCopy"|"matchesHighlight"|"matchesCount"|"matchesPosition"|"matchesNone"|"matchesLoaded"|"matchesPrevious"|"matchesNext"|"matchesAnnounce"|"layoutMenu"|"layoutFit"|"layoutScroll"|"layoutCards"|"layoutDensity"|"layoutCompact"|"layoutNormal"|"layoutComfortable"|"layoutChanged"|"layoutSort"|"gridFitContent"|"gridUnpin"|"gridWhere"|"gridComplexFilter"|"gridClearColumnFilter"|"gridSelectionAggregate"|"gridConditionValue"|"gridConditionUpperValue"|"gridDeleteCondition"|"gridShowRowsWhere"|"gridOfTheseAreTrue"|"gridOfThese"|"gridGroupCount"|"gridEditCell"|"gridEditSave"|"gridEditCancel"|"gridEditDiscard"|"gridEditUndo"|"gridEditRedo"|"gridEditEdited"|"gridEditChanges"|"gridEditErrors"|"gridEditSaving"|"gridEditSaved"|"gridEditFailed"|"gridEditRequired"|"gridEditNumber"|"gridEditDate"|"gridEditMin"|"gridEditMax"|"gridEditStep"|"gridEditMinLength"|"gridEditMaxLength"|"gridEditPattern"|"gridEditChoice"|"gridEditConflict"|"gridEditRejected"|"gridEditNotSaved"|"gridEditNoMatches"|"gridEditSearching"|"gridEditUndone"|"gridEditRedone"|"gridEditNone"|"gridMore"|"gridDone"|"gridClearAll"|"gridRows"|"gridResultNoun"|"gridSearchNoun"|"gridChart"|"gridColumnMenu"|"gridSortAscending"|"gridSortDescending"|"gridClearSort"|"gridFilterColumn"|"gridHideColumn"|"gridGroupedBy"|"gridRemoveGrouping"|"gridSelectAllValues"|"gridFilterValues"|"gridAddCondition"|"gridAddGroup"|"gridAnd"|"gridOr"|"gridEditAsText"|"gridFilterText"|"gridDeepFilters"|"gridToday"|"gridYesterday"|"gridLastSevenDays"|"gridLastThirtyDays"|"gridThisMonth"|"gridDateRange"|"gridEmpty"|"gridEmptyReason"|"gridNoMatches"|"gridNoMatchesReason"|"gridRetry"|"gridLoadFailed"|"gridAll"|"gridPageOf"|"gridStatusCount"|"gridDetailsSection"|"gridPreviousRecord"|"gridNextRecord"|"gridShowMore"|"gridNoData"|"gridPeriodRange"|"gridHealthy"|"formatRules"|"formatLegend"|"formatUpTo"|"formatAbove"|"formatHiddenFlagged"|"formatRule"|"formatAddRule"|"formatEditRule"|"formatDeleteRule"|"formatMoveUp"|"formatMoveDown"|"formatEnableRule"|"formatNoRules"|"formatName"|"formatDescription"|"formatOnlyRowsWhere"|"formatEveryRow"|"formatNone"|"formatApplyTo"|"formatTargetCell"|"formatTargetRow"|"formatTargetColumns"|"formatStyle"|"formatHighlight"|"formatDataBar"|"formatColorScale"|"formatBands"|"formatTone"|"formatEmphasis"|"formatFill"|"formatTextOnly"|"formatStrong"|"formatIcon"|"formatNoIcon"|"formatAutomatic"|"formatBadge"|"formatCue"|"formatLowest"|"formatMidpoint"|"formatHighest"|"formatAddBand"|"formatRemoveBand"|"formatSave"|"formatCancel"|"formatShowLegend"|"formatInvalid"|"formatMatchCase"|"formatToneDanger"|"formatToneWarning"|"formatToneSuccess"|"formatToneInfo"|"formatToneNeutral"|"formatToneMuted"|"formatNotContains"|"formatEndsWith"|"formatNotIn"|"formatBetween"|"formatLike"|"formatMatches"|"formatOlderThan"|"formatWithinLast"|"formatNotLike"|"formatNotMatches"|"formatBetweenExclusive"|"gridCellRangeSelected"|"gridCellRangesSelected"|"gridCellRangeCleared"|"gridCopyCells"|"gridCopyCellsWithHeaders"|"gridPasteCells"|"gridSelectAllCells"|"gridCellsCopied"|"gridCellsPasted"|"gridPasteRefused"|"gridPasteReadOnly"|"gridPasteType"|"gridPasteReport"|"gridPasteCell"|"gridFillHandle"|"gridCellsFilled"|"gridCellMenu"|"gridClearCellRanges"|"linkFilteredBy"|"linkRemoveFilter"|"linkFiltered"|"linkHighlighted"|"linkHighlightedRows"|"linkCleared"|"recordBack"|"recordBackTo"|"recordTrail"|"recordShowing"|"recordTabs"|"recordSections"|"recordOtherFields"|"recordShowEmpty"|"recordHideEmpty"|"recordActions"|"recordCopyValues"|"recordCopyJson"|"recordCopyLink"|"recordCopied"|"recordPrint"|"recordExportCsv"|"recordExportJson"|"recordOpenAll"|"recordLoadMore"|"recordCount"|"recordItems"|"recordMore"|"recordShowAll"|"recordRetry"|"recordLoadFailed"|"recordUnavailable"|"recordField"|"recordValue"|"recordSection"|"recordBefore"|"recordAfter"|"recordAdded"|"recordRemoved"|"recordChanged"|"calendarEditOccurrence"|"calendarRemoveOccurrence"|"calendarOccurrenceScope"|"calendarSharedResources"|"calendarResourceWindow"|"calendarToday"|"calendarPrevious"|"calendarNext"|"calendarViews"|"calendarMonth"|"calendarWeek"|"calendarDay"|"calendarDays"|"calendarAgenda"|"calendarYear"|"calendarTimeline"|"calendarGoTo"|"calendarAllDay"|"calendarMore"|"calendarMoreLabel"|"calendarDayEvents"|"calendarNoEvents"|"calendarEvents"|"calendarShowing"|"calendarRepeats"|"calendarTruncated"|"calendarLoading"|"calendarLoadError"|"calendarNow"|"calendarZoom"|"calendarZoomHour"|"calendarZoomDay"|"calendarZoomWeek"|"calendarZoomMonth"|"calendarZoomQuarter"|"calendarResources"|"calendarCapacity"|"calendarCapacityAt"|"calendarBusy"|"calendarOverlaps"|"calendarUnavailable"|"calendarOutsideHours"|"calendarConflict"|"calendarNotAllowed"|"calendarMoved"|"calendarResized"|"calendarSeriesMoved"|"calendarSeriesTime"|"calendarMoveHelp"|"calendarEdit"|"calendarSaveFailed"|"calendarExport"|"calendarTimeRange"|"calendarSelected"|"calendarLane"|"calendarHighlighted"|"tabsMore"|"tabsMoreSelected"|"tabsScrollPrevious"|"tabsScrollNext"|"tabsSection"|"tabsPosition"|"tabsPause"|"tabsPlay"|"tabsMotionDisabled"|"stepperStepOf"|"stepperBack"|"stepperNext"|"stepperFinish"|"stepperSkip"|"stepperSaveDraft"|"stepperAllSteps"|"stepperOptional"|"stepperCompleted"|"stepperSkipped"|"stepperIssues"|"stepperIssue"|"dialogClose"|"drawerClose"|"drawerPrevious"|"drawerNext"|"stateLoading"|"stateRetry"|"stateDetails";
+export type LabelName=|"gridShowAs"|"gridShowAsValue"|"gridShowAsPercentGrandTotal"|"gridShowAsPercentParent"|"gridShowAsPercentColumn"|"gridShowAsPercentRow"|"gridShowAsRunningTotal"|"gridShowAsRank"|"gridShowAsDifference"|"gridShowAsPercentChange"|"gridBucket"|"gridBucketNone"|"gridBucketDay"|"gridBucketWeek"|"gridBucketMonth"|"gridBucketQuarter"|"gridBucketYear"|"gridBucketHour"|"gridBucketWeekday"|"gridBucketWidth"|"gridBucketEdges"|"gridBucketOrigin"|"gridBucketInvalid"|"gridPaging"|"gridPageRange"|"gridPageNumber"|"gridPageLength"|"gridFirstPage"|"gridPreviousPage"|"gridNextPage"|"gridLastPage"|"gridPageInfo"|"gridPageInfoFiltered"|"gridPageButton"|"gridUnknownCount"|"gridMatchedCount"|"gridCursorRange"|"gridResultCount"|"gridRegexSearch"|"gridClearQuery"|"gridRemoveSearch"|"gridGroupedFilters"|"gridRemoveGroup"|"gridRemoveCondition"|"gridExport"|"gridFilteredResults"|"gridSelectedRows"|"gridAllResults"|"gridVisibleRows"|"gridAllRows"|"gridDownloadCsv"|"gridDownloadXlsx"|"gridDownloadPdf"|"gridCopy"|"gridDetails"|"searchPlaceholder"|"searchResults"|"searchResultCount"|"searchResultCountOfTotal"|"searchResultCountOfMany"|"searchNoResults"|"searchTooShort"|"searchWordTooShort"|"searchFailed"|"columns"|"hiddenColumns"|"visibleColumns"|"resizeColumn"|"columnWidth"|"loading"|"loadError"|"queryFailed"|"showMore"|"showMoreUnknownTotal"|"pageLoaded"|"itemsLoaded"|"yes"|"no"|"utcTime"|"localTime"|"mountError"|"actions"|"editValue"|"saveEdit"|"cancelEdit"|"invalidEdit"|"interactionPending"|"interactionRejected"|"interactionFailed"|"markMove"|"moveHere"|"moveBefore"|"moveAfter"|"cancelMove"|"gridFilters"|"gridColumn"|"gridOperator"|"gridValue"|"gridValueType"|"gridText"|"gridBoolean"|"gridAddFilter"|"gridRemoveFilter"|"gridApply"|"gridClearFilters"|"gridMoveEarlier"|"gridMoveLater"|"gridViews"|"gridViewName"|"gridSaveView"|"gridRemoveView"|"gridResetView"|"gridChooseView"|"gridInvalidFilter"|"gridContains"|"gridStartsWith"|"gridIn"|"gridIsNull"|"gridIsNotNull"|"gridBetween"|"gridRangeEnd"|"gridInvalidRange"|"gridSuggestedCategory"|"gridChooseCategory"|"gridBooleanValue"|"gridTrue"|"gridFalse"|"gridHeaderFilter"|"gridExpandCell"|"gridCloseCell"|"gridCloseRecord"|"gridMoveColumn"|"gridResizeHelp"|"gridColumnMoved"|"gridFitColumn"|"gridFitAllColumns"|"gridPinColumn"|"gridPinNone"|"gridPinLeft"|"gridPinRight"|"gridResponsiveHidden"|"gridFindColumn"|"gridShowAllColumns"|"gridResetColumns"|"gridReorderColumn"|"gridPinnedLeft"|"gridPinnedRight"|"gridFilterGroupTitle"|"gridFilterMatch"|"gridFilterAll"|"gridFilterAny"|"gridAddFilterGroup"|"gridDeleteFilterGroup"|"gridFacetValues"|"gridFacetSearch"|"gridFacetIncludeCurrent"|"gridFacetLoad"|"gridFacetChoose"|"gridFacetCounts"|"gridFacetReload"|"gridRenameView"|"gridDefaultView"|"gridClearDefaultView"|"gridDefaultViewName"|"gridNoDefaultView"|"gridDefaultViewOption"|"gridSelection"|"gridSelectPage"|"gridSelectMatching"|"gridClearSelection"|"gridSelectionCount"|"gridSelectionQueryCount"|"gridSelectionQueryUnknown"|"gridSelectRecord"|"gridGroupHeading"|"gridGroupMissing"|"gridGroupExpand"|"gridGroupCollapse"|"gridSummary"|"gridGroupOrder"|"gridAggregateCount"|"gridAggregateSum"|"gridAggregateAverage"|"gridAggregateMinimum"|"gridAggregateMaximum"|"gridGroupBy"|"gridUngroup"|"gridGroupDrop"|"gridExpandAll"|"gridCollapseAll"|"gridExpandLevel"|"gridCollapseLevel"|"gridGroupMove"|"gridGroupSortBy"|"gridGroupSortValue"|"gridGroupSortAggregate"|"gridSelectGroup"|"gridAggregateDistinct"|"gridShowDetail"|"gridHideDetail"|"gridDetailOf"|"gridDetailFailed"|"gridExportProgress"|"gridExportReading"|"gridExportCancelled"|"gridCancelExport"|"gridNoExportColumns"|"gridPrint"|"gridExportWorkbookHint"|"gridExportPdfHint"|"gridExportCsvHint"|"gridExportCopy"|"matchesHighlight"|"matchesCount"|"matchesPosition"|"matchesNone"|"matchesLoaded"|"matchesPrevious"|"matchesNext"|"matchesAnnounce"|"layoutMenu"|"layoutFit"|"layoutScroll"|"layoutCards"|"layoutDensity"|"layoutCompact"|"layoutNormal"|"layoutComfortable"|"layoutChanged"|"layoutSort"|"gridFitContent"|"gridUnpin"|"gridWhere"|"gridComplexFilter"|"gridClearColumnFilter"|"gridSelectionAggregate"|"gridConditionValue"|"gridConditionUpperValue"|"gridDeleteCondition"|"gridShowRowsWhere"|"gridOfTheseAreTrue"|"gridOfThese"|"gridGroupCount"|"gridEditCell"|"gridEditSave"|"gridEditCancel"|"gridEditDiscard"|"gridEditUndo"|"gridEditRedo"|"gridEditEdited"|"gridEditChanges"|"gridEditErrors"|"gridEditSaving"|"gridEditSaved"|"gridEditFailed"|"gridEditRequired"|"gridEditNumber"|"gridEditDate"|"gridEditMin"|"gridEditMax"|"gridEditStep"|"gridEditMinLength"|"gridEditMaxLength"|"gridEditPattern"|"gridEditChoice"|"gridEditConflict"|"gridEditRejected"|"gridEditNotSaved"|"gridEditNoMatches"|"gridEditSearching"|"gridEditUndone"|"gridEditRedone"|"gridEditNone"|"gridMore"|"gridDone"|"gridClearAll"|"gridRows"|"gridResultNoun"|"gridSearchNoun"|"gridChart"|"gridColumnMenu"|"gridSortAscending"|"gridSortDescending"|"gridClearSort"|"gridFilterColumn"|"gridHideColumn"|"gridGroupedBy"|"gridRemoveGrouping"|"gridSelectAllValues"|"gridFilterValues"|"gridAddCondition"|"gridAddGroup"|"gridAnd"|"gridOr"|"gridEditAsText"|"gridFilterText"|"gridDeepFilters"|"gridToday"|"gridYesterday"|"gridLastSevenDays"|"gridLastThirtyDays"|"gridThisMonth"|"gridDateRange"|"gridEmpty"|"gridEmptyReason"|"gridNoMatches"|"gridNoMatchesReason"|"gridRetry"|"gridLoadFailed"|"gridAll"|"gridPageOf"|"gridStatusCount"|"gridDetailsSection"|"gridPreviousRecord"|"gridNextRecord"|"gridShowMore"|"gridNoData"|"gridPeriodRange"|"gridHealthy"|"formatRules"|"formatLegend"|"formatUpTo"|"formatAbove"|"formatHiddenFlagged"|"formatRule"|"formatAddRule"|"formatEditRule"|"formatDeleteRule"|"formatMoveUp"|"formatMoveDown"|"formatEnableRule"|"formatNoRules"|"formatName"|"formatDescription"|"formatOnlyRowsWhere"|"formatEveryRow"|"formatNone"|"formatApplyTo"|"formatTargetCell"|"formatTargetRow"|"formatTargetColumns"|"formatStyle"|"formatHighlight"|"formatDataBar"|"formatColorScale"|"formatBands"|"formatTone"|"formatEmphasis"|"formatFill"|"formatTextOnly"|"formatStrong"|"formatIcon"|"formatNoIcon"|"formatAutomatic"|"formatBadge"|"formatCue"|"formatLowest"|"formatMidpoint"|"formatHighest"|"formatAddBand"|"formatRemoveBand"|"formatSave"|"formatCancel"|"formatShowLegend"|"formatInvalid"|"formatMatchCase"|"formatToneDanger"|"formatToneWarning"|"formatToneSuccess"|"formatToneInfo"|"formatToneNeutral"|"formatToneMuted"|"formatNotContains"|"formatEndsWith"|"formatNotIn"|"formatBetween"|"formatLike"|"formatMatches"|"formatOlderThan"|"formatWithinLast"|"formatNotLike"|"formatNotMatches"|"formatBetweenExclusive"|"gridCellRangeSelected"|"gridCellRangesSelected"|"gridCellRangeCleared"|"gridCopyCells"|"gridCopyCellsWithHeaders"|"gridPasteCells"|"gridSelectAllCells"|"gridCellsCopied"|"gridCellsPasted"|"gridPasteRefused"|"gridPasteReadOnly"|"gridPasteType"|"gridPasteReport"|"gridPasteCell"|"gridFillHandle"|"gridCellsFilled"|"gridCellMenu"|"gridClearCellRanges"|"linkFilteredBy"|"linkRemoveFilter"|"linkFiltered"|"linkHighlighted"|"linkHighlightedRows"|"linkCleared"|"recordBack"|"recordBackTo"|"recordTrail"|"recordShowing"|"recordTabs"|"recordSections"|"recordOtherFields"|"recordShowEmpty"|"recordHideEmpty"|"recordActions"|"recordCopyValues"|"recordCopyJson"|"recordCopyLink"|"recordCopied"|"recordPrint"|"recordExportCsv"|"recordExportJson"|"recordOpenAll"|"recordLoadMore"|"recordCount"|"recordItems"|"recordMore"|"recordShowAll"|"recordRetry"|"recordLoadFailed"|"recordUnavailable"|"recordField"|"recordValue"|"recordSection"|"recordBefore"|"recordAfter"|"recordAdded"|"recordRemoved"|"recordChanged"|"calendarEditOccurrence"|"calendarRemoveOccurrence"|"calendarOccurrenceScope"|"calendarSharedResources"|"calendarResourceWindow"|"calendarToday"|"calendarPrevious"|"calendarNext"|"calendarViews"|"calendarMonth"|"calendarWeek"|"calendarDay"|"calendarDays"|"calendarAgenda"|"calendarYear"|"calendarTimeline"|"calendarGoTo"|"calendarAllDay"|"calendarMore"|"calendarMoreLabel"|"calendarDayEvents"|"calendarNoEvents"|"calendarEvents"|"calendarShowing"|"calendarRepeats"|"calendarTruncated"|"calendarLoading"|"calendarLoadError"|"calendarNow"|"calendarZoom"|"calendarZoomHour"|"calendarZoomDay"|"calendarZoomWeek"|"calendarZoomMonth"|"calendarZoomQuarter"|"calendarResources"|"calendarCapacity"|"calendarCapacityAt"|"calendarBusy"|"calendarOverlaps"|"calendarUnavailable"|"calendarOutsideHours"|"calendarConflict"|"calendarNotAllowed"|"calendarMoved"|"calendarResized"|"calendarSeriesMoved"|"calendarSeriesTime"|"calendarMoveHelp"|"calendarEdit"|"calendarSaveFailed"|"calendarExport"|"calendarTimeRange"|"calendarSelected"|"calendarLane"|"calendarHighlighted"|"tabsMore"|"tabsMoreSelected"|"tabsScrollPrevious"|"tabsScrollNext"|"tabsSection"|"tabsPosition"|"tabsPause"|"tabsPlay"|"tabsMotionDisabled"|"stepperStepOf"|"stepperBack"|"stepperNext"|"stepperFinish"|"stepperSkip"|"stepperSaveDraft"|"stepperAllSteps"|"stepperOptional"|"stepperCompleted"|"stepperSkipped"|"stepperIssues"|"stepperIssue"|"dialogClose"|"drawerClose"|"drawerPrevious"|"drawerNext"|"stateLoading"|"stateRetry"|"stateDetails"|"boardLane"|"boardUnassigned"|"boardEmpty"|"boardWip"|"boardWipFull"|"boardMove"|"boardMoved"|"boardRejected"|"boardPending"|"boardPartial"|"boardKeys"|"planMilestone"|"planCritical"|"planBaseline"|"planDependency"|"planDependencyConflict"|"planOverlapConflict"|"planIncomplete"|"planInvalidRange"|"planInvalidResource"|"planProposal"|"planMoveHint"|"planActual"|"planPending"|"planBaselineLabel"|"planDependencies"|"planConflict"|"pathEmpty"|"pathSource"|"pathTarget"|"pathStep"|"pathCycle"|"pathForeign"|"pathDisabled"|"pathKeys"|"pathPartial"|"stackWinner"|"stackEnforced"|"stackFiltered"|"stackEmpty"|"stackOrder"|"stackTruncated"|"timePlay"|"timePause"|"timePrevious"|"timeNext"|"timePosition"|"timeFrame"|"timeReducedMotion"|"gridCalculationAdd"|"gridCalculationTitle"|"gridCalculationId"|"gridCalculationExpression"|"gridCalculationError"|"gridCalculationInvalid"|"gridCalculationHelp"|"gridCalculationNumber"|"gridCalculationDate"|"compareChanges"|"viewIntentClearSearch"|"viewIntentRemoveGrouping"|"viewIntentFlat"|"viewIntentAscending"|"viewIntentDescending"|"viewIntentNotEqual"|"viewIntentGreater"|"viewIntentAtLeast"|"viewIntentLess"|"viewIntentAtMost"|"viewIntentFilter"|"viewIntentOnly"|"viewIntentPivot"|"viewIntentAllRows"|"viewIntentTotals"|"viewIntentTuples"|"viewIntentExcludeTuples"|"viewIntentNoChanges"|"viewIntentPreview"|"viewIntentApplied"|"viewIntentSuperseded"|"viewIntentSearch"|"viewIntentSort"|"viewIntentGroup"|"viewIntentColumns"|"compareSummary"|"compareAdded"|"compareRemoved"|"compareChanged"|"compareUnchanged"|"compareOnlyChanges"|"compareColumnChanges"|"viewIntentWords"|"viewIntentSubstring";
 export type CanopyLabels=Partial<Record<LabelName,string>>;
 export interface InlineSourceDefinition{
   kind:"inline";

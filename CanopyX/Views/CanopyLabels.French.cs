@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete French labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels French() => WithFrenchUi(WithFrenchForest(WithFrenchDataViews(WithFrenchBoardPlan(WithFrenchAnalysis(new CanopyLabels {
+    public static CanopyLabels French() => WithFrenchUi(WithFrenchForest(WithFrenchDataViews(WithFrenchCalendar(WithFrenchBoardPlan(WithFrenchAnalysis(new CanopyLabels {
         GridNoExportColumns = "Aucune colonne visible ne permet l’exportation.",
         GridDownloadXlsx = "Classeur Excel (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -784,10 +784,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Copier la demande",
         ChangeFiltered = "Filtré : {filters}",
         ChangePrintLimit = "{count} lignes de plus ne sont pas imprimées.",
-        CalendarEditOccurrence = "Modifier cette occurrence",
-        CalendarRemoveOccurrence = "Supprimer cette occurrence",
-        CalendarOccurrenceScope = "Seul le {date} change ; les autres dates de {title} restent inchangées.",
-        CalendarSharedResources = "{count} {resources}",
-        CalendarResourceWindow = "{resources} {start}–{end} sur {total}",
-    })))));
+    }))))));
 }

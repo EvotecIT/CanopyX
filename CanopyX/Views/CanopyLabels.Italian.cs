@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Italian labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Italian() => WithItalianUi(WithItalianForest(WithItalianDataViews(WithItalianBoardPlan(WithItalianAnalysis(new CanopyLabels {
+    public static CanopyLabels Italian() => WithItalianUi(WithItalianForest(WithItalianDataViews(WithItalianCalendar(WithItalianBoardPlan(WithItalianAnalysis(new CanopyLabels {
         GridNoExportColumns = "Nessuna colonna visibile consente l’esportazione.",
         GridDownloadXlsx = "Cartella Excel (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -784,10 +784,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Copia richiesta",
         ChangeFiltered = "Filtrato: {filters}",
         ChangePrintLimit = "Altre {count} righe non vengono stampate.",
-        CalendarEditOccurrence = "Modifica questa occorrenza",
-        CalendarRemoveOccurrence = "Rimuovi questa occorrenza",
-        CalendarOccurrenceScope = "Cambia solo {date}; le altre date di {title} restano invariate.",
-        CalendarSharedResources = "{count} {resources}",
-        CalendarResourceWindow = "{resources} {start}–{end} di {total}",
-    })))));
+    }))))));
 }

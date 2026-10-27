@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Spanish labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Spanish() => WithSpanishUi(WithSpanishForest(WithSpanishDataViews(WithSpanishBoardPlan(WithSpanishAnalysis(new CanopyLabels {
+    public static CanopyLabels Spanish() => WithSpanishUi(WithSpanishForest(WithSpanishDataViews(WithSpanishCalendar(WithSpanishBoardPlan(WithSpanishAnalysis(new CanopyLabels {
         GridNoExportColumns = "Ninguna columna visible permite exportar.",
         GridDownloadXlsx = "Libro de Excel (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -784,10 +784,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Copiar solicitud",
         ChangeFiltered = "Filtrado: {filters}",
         ChangePrintLimit = "{count} líneas más no se imprimen.",
-        CalendarEditOccurrence = "Editar esta ocurrencia",
-        CalendarRemoveOccurrence = "Eliminar esta ocurrencia",
-        CalendarOccurrenceScope = "Solo cambia {date}; las otras fechas de {title} se mantienen.",
-        CalendarSharedResources = "{count} {resources}",
-        CalendarResourceWindow = "{resources} {start}–{end} de {total}",
-    })))));
+    }))))));
 }

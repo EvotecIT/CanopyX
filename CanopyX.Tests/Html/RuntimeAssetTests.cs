@@ -122,18 +122,14 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // Analyst bucket/tuple queries and lazy calculations add 2 KiB above the merged shared-control shell.
-        // Measured component size after integration: 130608 bytes; engines remain in optional parts.
-        // The comparison and intent lazy loaders add 256 bytes of combined integration headroom.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 128 * 1024 + 256);
+        // The integrated Office export and analyst contracts measure 135,525 bytes together; keep a 133 KiB component ceiling.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
-        // Pivot state, typed projections and translated analyst actions add 5 KiB above the shared-control shell.
-        // Measured component size: 158341 bytes. Preserve the separate 64-byte flow-facts index allowance.
-        // The same optional data-view registration adds 256 bytes above the analyst/shared-controls ceiling.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 155 * 1024 + 320);
+        // Office capture plus analyst state and data-view registration measure 163,063 bytes together; ceiling 160 KiB.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024);
     }
 
     [Fact]
