@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "4cef682cd28fb74b",
+      "version": "29ebfb35890d62ef",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [

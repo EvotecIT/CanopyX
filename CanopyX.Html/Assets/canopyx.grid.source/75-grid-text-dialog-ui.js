@@ -1,7 +1,7 @@
   DataGrid.prototype.showReportingText=function(column,text,returnFocus,rowId,mono=false,extra){
     if(this.destroyed||this.pendingQuery||!this.acceptedQuery)return;
     this.reportingText?._cxOverlay.close("replace",false,true);
-    const dialog=h("dialog","cx-host cx-grid-overlay cx-dialog cx-text-dialog cx-reporting-text"),head=h("div","cx-drawer-h"),title=h("h4"),body=h("div"),content=h("pre",mono?"p-mono":"");
+    const dialog=h("dialog","cx-grid-overlay cx-dialog cx-text-dialog cx-reporting-text"),head=h("div","cx-drawer-h"),title=h("h4"),body=h("div"),content=h("pre",mono?"p-mono":"");
     for(const name of (this.opts.overlayClass||"").split(/\s+/).filter(Boolean))dialog.classList.add(name);
     dialog.dataset.hfxPart="dialog";head.dataset.hfxPart="header";title.dataset.hfxPart="title";body.dataset.hfxPart="body";
     title.id=this.id+"-text-title";title.setAttribute("aria-level","2");setText(title,column.title);dialog.setAttribute("aria-labelledby",title.id);
