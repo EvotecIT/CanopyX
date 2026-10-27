@@ -274,7 +274,7 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "version": "318849d97560c594",
+      "version": "1710216916cb32a5",
       "script": "canopyx-flow-checks.js",
       "style": "canopyx-flow-checks.css",
       "runtimes": [
@@ -439,7 +439,7 @@
     {
       "name": "flow-dialog",
       "label": "flow dialogs",
-      "version": "217410758cdb73da",
+      "version": "c3b57a7478b94a93",
       "script": "canopyx-flow-dialog.js",
       "style": "canopyx-flow-dialog.css",
       "runtimes": [
@@ -802,7 +802,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "7acca759b42f7209",
+      "version": "cecae4ac674b8d8d",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
