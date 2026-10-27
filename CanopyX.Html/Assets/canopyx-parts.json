@@ -136,7 +136,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "e7dea789e4893860",
+      "version": "93f8d2eb57cc1770",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -173,7 +173,7 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "version": "3ca22040c60d5689",
+      "version": "318849d97560c594",
       "script": "canopyx-flow-checks.js",
       "style": "canopyx-flow-checks.css",
       "runtimes": [
@@ -338,7 +338,7 @@
     {
       "name": "flow-dialog",
       "label": "flow dialogs",
-      "version": "a9b5bce11baa2499",
+      "version": "217410758cdb73da",
       "script": "canopyx-flow-dialog.js",
       "style": "canopyx-flow-dialog.css",
       "runtimes": [
@@ -394,6 +394,25 @@
       "requires": [
         "flow",
         "flow-host"
+      ]
+    },
+    {
+      "name": "flow-facts",
+      "label": "flow facts",
+      "version": "385b5e61ed487e16",
+      "script": "canopyx-flow-facts.js",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowFacts"
+      ],
+      "requires": [
+        "flow"
       ]
     },
     {
@@ -663,7 +682,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "42ad4b814f47bd00",
+      "version": "3b3c9833ff68a72b",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -679,7 +698,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "94adeb844689e329",
+      "version": "82aa828bc880087b",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

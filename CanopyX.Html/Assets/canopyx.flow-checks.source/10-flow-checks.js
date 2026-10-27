@@ -86,6 +86,9 @@
       const parts = item._cx, state = this.checkState.get(check.id), labels = this.labels, result = state?.result;
       const phase = state?.running ? "running" : !result ? "none" : state.stale ? "stale" : result.status;
       item.dataset.cxState = phase;
+      setText(parts.run, result ? labels.flowRunAgain : check.label);
+      parts.run.setAttribute("aria-label", result ? fill(labels.flowRunCheckAgain, { check: check.label }) : check.label);
+      parts.run.classList.toggle("cx-primary", phase === "fail");
       setText(parts.mark, FLOW_CHECK_MARKS[phase] || "");
       setText(parts.text, phase === "running" ? labels.flowCheckRunning : phase === "none" ? labels.flowCheckNotRun : phase === "stale" ? labels.flowCheckStale :
         fill(phase === "pass" ? labels.flowCheckPassed : phase === "warning" ? labels.flowCheckWarning : labels.flowCheckFailed, { time: this.checkTime(state.at) }));
@@ -102,19 +105,31 @@
 
     /** A field or its visibility controller changed: checks must test the effective answers again. */
     checksChanged(field) {
+      if (!this.model.checks.size) return;
       // Conditions form an acyclic graph, including the containing step and section. Memoize its traversal per change.
       const affected = new Map([[field.id, true]]);
       const changed = id => {
         if (!affected.has(id)) affected.set(id, [...this.model.fields.get(id).refs].some(changed));
         return affected.get(id);
       };
+      this.invalidateChecks([...this.model.checks.values()].filter(check => check.fields.some(changed)).map(check => check.id));
+    },
+
+    /** The host changed a dependency outside this flow. Completed evidence stays visible but cannot be reused. */
+    invalidateChecks(ids) {
+      if (!this.model.checks.size) flowFail("this flow has no checks to invalidate");
+      const names = ids === undefined ? [...this.model.checks.keys()] : ids;
+      if (!Array.isArray(names) || names.length > 512 || names.some(id => typeof id !== "string" || !this.model.checks.has(id)))
+        flowFail("invalidateChecks needs existing check ids, or no argument for every check");
       let invalidated = false;
-      for (const check of this.model.checks.values()) {
-        if (!check.fields.some(changed)) continue;
-        const state = this.checkState.get(check.id);
-        if (state) { state.stale = true; state.acknowledged = false; state.controller?.abort(); this.paintCheck(check); invalidated = true; }
+      for (const id of new Set(names)) {
+        const check = this.model.checks.get(id), state = this.checkState.get(id);
+        if (!state) continue;
+        state.controller?.abort();
+        Object.assign(state, { stale: true, acknowledged: false, running: false, controller: null, ticket: {} });
+        this.paintCheck(check); invalidated = true;
       }
-      if (invalidated) this.paintReview();
+      if (invalidated) { this.answersChanged(); this.renderRail(); this.reviewStale = true; this.paintReview(true); }
     },
 
     /** Runs a check (api.runCheck): resolves with its result, or null when it was cancelled. */

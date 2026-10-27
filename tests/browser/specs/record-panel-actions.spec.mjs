@@ -4,7 +4,7 @@ import { api, definition, drawer } from "./record-panel-fixtures.mjs";
 import { viewPage } from "./support.mjs";
 
 // The page registers a plugin with a drawer section and a record action, and stubs the clipboard and print.
-async function openWithPlugin(page, view = definition()) {
+async function openWithPlugin(page, view = definition(), prominent = false, run = ({ record }) => { window.renewal = record.id; }) {
   view.record.sections[5].renderer = "trend-chart";
   const script = `<script>
 window.copied = []; window.printed = [];
@@ -18,7 +18,7 @@ CanopyX.use({ name: "trend-chart",
     box.textContent = "Chart of " + record.id + " at " + context.width + " px, " + context.values.days.value + " days"; element.appendChild(box);
     context.onDispose(() => { window.disposed = (window.disposed || 0) + 1; }); } },
   recordActions: [{ label: "Open in the issuing portal", run: ({ record, view }) => { window.portal = view + "/" + record.id; } }] });
-CanopyX.configure("certificates", { recordActions: [{ label: "Request renewal", run: ({ record }) => { window.renewal = record.id; } }] });
+CanopyX.configure("certificates", { recordHeading: ${prominent} ? record => ({title:"Change by " + record.id, subtitle:"Recorded at <12:00>"}) : undefined, recordActions: [{ label: "Request renewal", prominent: ${prominent}, run: ${run.toString()} }] });
 </script>`;
   await page.route("http://canopyx.test/records.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("<body class=\"cx-page\">", "<body class=\"cx-page\">" + script) }));
   await page.goto("http://canopyx.test/records.html");
@@ -119,4 +119,87 @@ test("a plugin's drawer section draws content (a chart) with the record's values
   await page.keyboard.press("ArrowDown");
   await expect(drawer(page).locator(".cx-record-custom .trend-chart")).toHaveText(/Chart of c002/);
   expect(await page.evaluate("window.disposed")).toBeGreaterThan(0);
+});
+
+
+test("prominent record action stays visible and projected headings are plain text", async ({ page }) => {
+  await openWithPlugin(page, definition(), true);
+  await expect(drawer(page).getByRole("heading", {name:"Change by c001", exact:true})).toBeVisible();
+  await expect(drawer(page).locator(".cx-record-subtitle")).toHaveText("Recorded at <12:00>");
+  await expect(drawer(page).locator(".cx-record-subtitle")).toBeVisible();
+  await drawer(page).getByRole("button", {name:"Request renewal",exact:true}).click();
+  await expect.poll(() => page.evaluate(() => window.renewal)).toBe("c001");
+  await action(page, "Request renewal");
+  await expect.poll(() => page.evaluate(() => window.renewal)).toBe("c001");
+});
+
+test("a pending record action cannot run twice through the menu and footer", async ({ page }) => {
+  await openWithPlugin(page, definition(), true, async () => {
+    window.actionCalls = (window.actionCalls || 0) + 1;
+    await new Promise(resolve => { window.finishAction = resolve; });
+  });
+  const footer = drawer(page).getByRole("button", { name: "Request renewal", exact: true });
+  const readyBackground = await footer.evaluate(button => getComputedStyle(button).backgroundColor);
+  await action(page, "Request renewal");
+  await expect(footer).toBeDisabled();
+  expect(await footer.evaluate(button => getComputedStyle(button).backgroundColor)).not.toBe(readyBackground);
+  await action(page, "Request renewal");
+  expect(await page.evaluate(() => window.actionCalls)).toBe(1);
+  await page.evaluate(() => window.finishAction());
+  await expect(footer).toBeEnabled();
+  await footer.click();
+  await expect(footer).toBeDisabled();
+  await action(page, "Request renewal");
+  expect(await page.evaluate(() => window.actionCalls)).toBe(2);
+  await page.evaluate(() => window.finishAction());
+  await expect(footer).toBeEnabled();
+});
+
+test("record action failures announce null primitive and Error rejections from either entry", async ({ page }) => {
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await openWithPlugin(page, definition(), true, () => Promise.reject(window.actionFailure));
+  const footer = drawer(page).getByRole("button", { name: "Request renewal", exact: true });
+  for (const kind of ["null", "primitive", "error"]) {
+    await page.evaluate(kind => { window.actionFailure = kind === "null" ? null : kind === "primitive" ? "Host declined" : new Error("Action rejected"); }, kind);
+    const message = kind === "null" ? "null" : kind === "primitive" ? "Host declined" : "Action rejected";
+    await footer.click();
+    await expect(drawer(page).locator(".cx-record-live")).toHaveText(message);
+    await expect(footer).toBeEnabled();
+    await action(page, "Request renewal");
+    await expect(drawer(page).locator(".cx-record-live")).toHaveText(message);
+  }
+  expect(errors).toEqual([]);
+});
+
+test("host action availability follows loaded evidence and record navigation, and stale controls cannot execute", async ({ page }) => {
+  const view = definition();
+  const script = `<script>
+window.actionAllowed = true; window.actionCalls = [];
+CanopyX.configure("certificates", {
+  loadRecord: request => new Promise(resolve => { window.finishRecord = () => resolve({fields:{allowed:request.id === "c001"}}); }),
+  recordActions: [{label:"Review current request", visible: context => window.actionAllowed && context.payload?.fields?.allowed === true,
+    prominent: context => context.record.id === "c001", run: context => { window.actionCalls.push(context.record.id); }}]
+});
+</script>`;
+  await page.route("http://canopyx.test/records.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace('<body class="cx-page">', '<body class="cx-page">' + script) }));
+  await page.goto("http://canopyx.test/records.html");
+  await page.evaluate(api + ".ready");
+  await page.evaluate(api + ".openDetails('c001')");
+  const review = drawer(page).getByRole("button", {name:"Review current request",exact:true});
+  await expect(review).toBeHidden();
+  await expect.poll(() => page.evaluate(() => typeof window.finishRecord)).toBe("function");
+  await page.evaluate(() => window.finishRecord());
+  await expect(review).toBeVisible();
+  await review.click();
+  expect(await page.evaluate(() => window.actionCalls)).toEqual(["c001"]);
+  // Permission changed since the last paint: even a retained DOM control is rechecked before execution.
+  await page.evaluate(() => { window.actionAllowed = false; document.querySelector('.cx-record-primary').click(); });
+  expect(await page.evaluate(() => window.actionCalls)).toEqual(["c001"]);
+  await drawer(page).locator("h4").focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(review).toBeHidden();
+  await page.evaluate(() => { window.actionAllowed = true; window.finishRecord(); });
+  await expect(review).toBeHidden();
+  await drawer(page).getByRole("button", {name:"Record actions"}).click();
+  await expect(drawer(page).getByRole("menuitem",{name:"Review current request"})).toBeHidden();
 });

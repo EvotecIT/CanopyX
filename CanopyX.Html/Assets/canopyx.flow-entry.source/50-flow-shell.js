@@ -13,7 +13,7 @@
   const FLOW_PART = definePart(FlowHost, "flow", "flow view", () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, foldText, boundedPattern, numberFormat, gridFreeze }));
   // The host-connected features ship in parts of their own, each loaded only for a flow that uses it (Build/parts.json).
   const FLOW_FEATURES = {};
-  for (const name of ["host", "checks", "options", "pick", "records", "drafts", "preview", "command", "tasks", "dialog", "links", "endpoint", "consent"])
+  for (const name of ["host", "checks", "options", "pick", "records", "drafts", "preview", "command", "tasks", "dialog", "links", "endpoint", "consent", "facts"])
     FLOW_FEATURES[name] = definePart(FlowHost, "flow-" + name, "flow " + name, () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, numberFormat, FLOW_VIEWS }));
   // Grid editing requires the same forms part: one definition, one load, one install.
   if (typeof DataGrid === "function") DataGrid.prototype.parts.forms = FORMS_PART;
@@ -32,7 +32,7 @@
     for (const [key, name] of Object.entries(FLOW_DOC_PARTS)) add(name, doc[key] !== undefined && doc[key] !== FLOW_DOC_PLAIN[key]);
     add("tasks", doc.mode === "tasks"); add("dialog", has(doc.layout, "launch") || has(doc.layout, "container") && doc.layout.container !== "inline"); add("preview", list(doc.endpoint?.routes).includes("preview"));
     for (const step of list(doc.steps).filter(object)) {
-      add("checks", step.checks !== undefined); add("pick", step.type === "pick"); add("preview", step.preview === true); add("consent", has(step, "confirm", "acknowledge"));
+      add("facts", step.facts !== undefined); add("checks", step.checks !== undefined); add("pick", step.type === "pick"); add("preview", step.preview === true); add("consent", has(step, "confirm", "acknowledge"));
       for (const block of [step, ...list(step.sections)]) {
         if (block !== step) add("options", has(block, "source", "dependsOn"));
         for (const field of object(block) ? list(block.fields) : []) { add("options", has(field, "dependsOn") || has(field, "source") && field.source !== "document"); add("records", object(field) && field.type === "records"); }
@@ -42,7 +42,7 @@
     return { required: [...names], optional: [typeof hooks.preview === "function" && "preview", object(hooks.presetStore) && "drafts"].filter(name => name && !names.has(name)) };
   }
   const FLOW_ASYNC_METHODS = ["next", "back", "goTo", "setState", "validate", "submit", "runCheck", "refreshOptions", "saveDraft", "setPreset"];
-  const FLOW_SYNC_METHODS = ["getStep", "getValues", "setValues", "getState", "isDirty", "reset", "setFieldError", "setProgress", "complete", "setStepState", "open", "close"];
+  const FLOW_SYNC_METHODS = ["getStep", "getValues", "setValues", "getState", "isDirty", "reset", "setFieldError", "setProgress", "complete", "setStepState", "invalidateChecks", "open", "close"];
 
   /**
    * Creates a flow in a host element from a flow document (docs/flow.md).

@@ -3,16 +3,43 @@
   // record alone, then the host's recordActions option and plugins' recordActions ({ label, run({ record, view, api, payload,
   // signal }) }). record.actions switches the built-in ones off. Exports carry every field with its section, empty ones too.
   function recordActionsMenu(view, dialog, identity) {
+    dialog.querySelector(".cx-record-footer")?.remove();
     const spec = recordSpec(view), switches = spec.actions || {}, labels = view.labels, items = [];
-    const add = (label, task) => items.push({ label, task });
+    const failed = error => { recordAnnounce(dialog, error?.message ?? String(error)); view.emit("error", { error }); };
+    const add = (label, task, prominent = false, visible = () => true) => {
+      let running = false, button;
+      const run = async () => {
+        if (running || !visible()) return;
+        running = true; if (button) button.disabled = true;
+        try { return await task(); }
+        finally { running = false; if (button) button.disabled = false; }
+      };
+      const item = { label, task: run, visible, primary: typeof prominent === "function" ? prominent : () => prominent === true };
+      items.push(item);
+      if (prominent) {
+        let footer = dialog.querySelector(".cx-record-footer");
+        if (!footer) { footer = h("footer", "cx-record-footer"); dialog.appendChild(footer); }
+        button = recordButton(label, () => { Promise.resolve().then(run).catch(failed); }, "cx-record-btn cx-record-primary");
+        item.footer = button;
+        footer.appendChild(button);
+      }
+    };
     if (switches.link !== false && spec.deepLink) add(labels.recordCopyLink, () => recordCopy(view, dialog, recordAddress(view, dialog._cxRecord)));
     if (switches.copy !== false) { add(labels.recordCopyValues, () => recordCopy(view, dialog, recordExport(view, dialog, "text"))); add(labels.recordCopyJson, () => recordCopy(view, dialog, recordExport(view, dialog, "json"))); }
     if (switches.export !== false) { add(labels.recordExportCsv, () => recordDownload(view, dialog, "csv")); add(labels.recordExportJson, () => recordDownload(view, dialog, "json")); }
     if (switches.print !== false) add(labels.recordPrint, () => recordPrint(view, dialog));
     for (const action of [...(Array.isArray(view.opts.recordActions) ? view.opts.recordActions : []), ...view.plugins.flatMap(item => item.recordActions || [])]) {
       if (!action || typeof action.label !== "string" || typeof action.run !== "function") continue;
-      add(action.label, () => { const record = dialog._cxRecord, entry = recordEntry(view, record.id);
-        return action.run(Object.freeze({ record: JSON.parse(JSON.stringify(record)), view: view.view.id, api: view.host.canopyx, payload: entry?.payload || null, signal: view.lifetime.signal })); });
+      const context = () => {
+        const record = dialog._cxRecord, entry = record && recordEntry(view, record.id);
+        return Object.freeze({ record: record ? JSON.parse(JSON.stringify(record)) : { id: "" }, view: view.view.id, api: view.host.canopyx,
+          payload: entry?.state === "ready" ? JSON.parse(JSON.stringify(entry.payload)) : null, signal: view.lifetime.signal });
+      };
+      const condition = (value, fallback) => {
+        if (typeof value !== "function") return value === undefined ? fallback : value === true;
+        try { return value(context()) === true; } catch (error) { failed(error); return false; }
+      };
+      add(action.label, () => action.run(context()), () => condition(action.prominent, false), () => condition(action.visible, true));
     }
     if (!items.length) return;
     // A menu button: Enter, Space or a click opens the menu on its first item; arrows move, Escape or Tab closes it.
@@ -22,14 +49,15 @@
     toggle.setAttribute("aria-haspopup", "menu"); toggle.setAttribute("aria-expanded", "false"); toggle.setAttribute("aria-controls", list.id);
     const show = open => {
       list.hidden = !open; toggle.setAttribute("aria-expanded", String(open));
-      if (open) buttons[0].focus();
+      if (open) buttons.find(button => !button.hidden)?.focus();
     };
     const buttons = items.map(item => {
       const button = recordButton(item.label, () => {
         show(false); toggle.focus();
-        Promise.resolve().then(item.task).catch(error => { recordAnnounce(dialog, error.message); view.emit("error", { error }); });
+        Promise.resolve().then(item.task).catch(failed);
       }, "cx-record-menu-item");
       button.setAttribute("role", "menuitem"); button.tabIndex = -1;
+      item.button = button;
       return button;
     });
     list.append(...buttons); menu.append(toggle, list); identity.after(menu);
@@ -37,13 +65,24 @@
       if (list.hidden) return;
       if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); show(false); toggle.focus(); return; }
       if (event.key === "Tab") { show(false); return; }
-      const at = buttons.indexOf(document.activeElement);
+      const visible = buttons.filter(button => !button.hidden), at = visible.indexOf(document.activeElement);
       if (at < 0 || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
       event.preventDefault(); event.stopPropagation();
-      buttons[{ ArrowDown: (at + 1) % buttons.length, ArrowUp: (at - 1 + buttons.length) % buttons.length, Home: 0, End: buttons.length - 1 }[event.key]].focus();
+      visible[{ ArrowDown: (at + 1) % visible.length, ArrowUp: (at - 1 + visible.length) % visible.length, Home: 0, End: visible.length - 1 }[event.key]].focus();
     });
     menu.addEventListener("focusout", event => { if (!menu.contains(event.relatedTarget) && event.relatedTarget) show(false); });
     dialog.addEventListener("pointerdown", event => { if (!menu.contains(event.target)) show(false); });
+    const paint = () => {
+      for (const item of items) {
+        const visible = item.visible(); item.button.hidden = !visible;
+        if (item.footer) item.footer.hidden = !visible || !item.primary();
+      }
+      menu.hidden = !items.some(item => !item.button.hidden);
+      const footer = dialog.querySelector(".cx-record-footer");
+      if (footer) footer.hidden = !items.some(item => item.footer && !item.footer.hidden);
+      if (menu.hidden) show(false);
+    };
+    dialog.addEventListener("cx-drawer-paint", paint); paint();
   }
   async function recordCopy(view, dialog, text) {
     if (!global.navigator.clipboard?.writeText) recordFail("the clipboard is not available.");

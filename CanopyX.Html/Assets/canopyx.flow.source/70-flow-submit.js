@@ -61,7 +61,7 @@
           },
           secret: id => { if (!open || read.has(id) || !secrets.has(id)) return null; read.add(id); return secrets.get(id); }
         });
-        Object.freeze(detail);
+        Object.freeze(Object.defineProperty(detail, "signal", { value: ticket.signal }));
         const go = this.emit("flowSubmit", detail, null, true);
         if (!go || !current()) { close(); return null; }
         if (!answered && typeof this.options.onSubmit === "function") {

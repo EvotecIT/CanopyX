@@ -5,6 +5,13 @@ proposal to the host when the reader submits. It is the CanopyX view for setup, 
 CanopyX never writes: the flow collects the answers and raises `canopyx:flowSubmit`, and the host applies the change and
 answers with what happened.
 
+Information steps can carry up to 32 read-only `facts`, each with a plain `label` and `value`. In C#, add
+`new CanopyFlowFact(label, value)` to an information step's `Facts`. The existing answer-list layout wraps the complete
+value, up to 32,768 characters; facts do not become editable answers, dirty state or submission values.
+The submit callback also receives `detail.signal`, cancelled when its operation retires through changed answers, reset,
+destruction or settlement. Pass it to host transport where useful. It is not serialized with the submission, and cancelling
+a browser operation cannot undo a write the server has already committed.
+
 A flow is a document, like a grid view. C# writes it with `CanopyFlow`; the browser reads it with `CanopyX.createFlow`.
 The document shape on this page is the flow contract. CanopyX owns it, and any host can map its own model onto it
 (`docs/schema/canopyx-flow-1.schema.json` describes it as a JSON Schema).
@@ -356,6 +363,14 @@ The proposal's `checks` carries
 `{ status, at }` for the results that are still current. Those are what the browser saw: a host that relies on a check runs
 it again on the submitted answers. `api.runCheck(id)` runs one from script; `canopyx:flowCheck` reports each result.
 
+A host whose tested settings also change outside the flow calls `api.invalidateChecks(["sign-in-test"])`, or
+`api.invalidateChecks()` for every check. Completed results and details stay visible as stale evidence. Matching running
+checks are cancelled, their secrets are revoked, and late answers cannot replace a newer result. Pending validation or
+submission that relied on the invalidated evidence is retired too, including its submission secret reader. Field values and the
+form's dirty state stay unchanged. Required checks need a current result at the next validation or submission. An empty
+array does nothing; unknown ids are rejected before any check changes. Await `api.ready` first, as for other synchronous
+members. Flows with no checks do not load the checks part and reject this operation.
+
 ### Host options and dependent fields
 
 ```csharp
@@ -610,6 +625,7 @@ destroying a flow also releases its host so `CanopyX.mount(host)` can mount it a
 | `submit()` | Validates and raises `flowSubmit`; resolves with the host's answer. |
 | `setProgress({ done, total, message })`, `complete(answer)` | Drive an `accepted` answer to its end. |
 | `runCheck(checkId)` | Runs a check; resolves with its result, or null when it was cancelled. |
+| `invalidateChecks(checkIds?)` | Marks selected checks stale (all when omitted), cancels their runs and ignores late answers after an external dependency changes. |
 | `refreshOptions(fieldId)` | Loads a host-option field's options again. |
 | `setStepState(stepId, state)` | Sets a task's state as the host sees it; null returns it to what the answers say. |
 | `saveDraft()`, `setPreset(presetId)` | Saves the draft now; starts from a preset (null for the plain start). |
@@ -699,3 +715,5 @@ A page with only flows includes the flow entry point; the parts load on first us
 payloads a single-file page carries. The data-grid and reporting entry points know the same parts, so a grid page creates
 flows with `CanopyX.createFlow` and mounts flow fragments without a second entry point. A single-file grid page that creates flows from script carries the parts too: add `"flow"` to `CanopyHtmlOptions.Parts` (it brings `forms`), and the feature parts its flows use (`"flow-checks"`, which brings `flow-host`, …), since there are no files beside the page to load them from. Include one entry point per page.
 `CanopyX.Html` writes flow pages with the flow entry point (`CanopyRuntime.Flow`), or with the reporting entry point when a pick step embeds a grid or tree (`CanopyHtmlAssets.GetRuntime(CanopyFlow)`); `CanopyHtmlAssets.GetRequiredParts(CanopyFlow)` adds the parts the embedded views need.
+
+Information-step facts load the `flow-facts` runtime part only when present. They reuse the flow answer-list styles and do not increase the base flow budget.

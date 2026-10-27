@@ -168,10 +168,12 @@ createDataGrid(element, { view, live: { pollMs: 10000, load: async ({ signal }) 
 
 `load({ signal, query, rows })` answers complete rows (a full replacement, as `setRows`), a transaction, or nothing. A poll
 is skipped while the previous one runs and while the page is hidden; when the page shows again, a poll that came due runs
-at once (`pauseWhenHidden: false` keeps polling). `refresh()` polls now, also while paused or hidden. Errors are reported through the grid's `error` event and polling goes on.
+at once (`pauseWhenHidden: false` keeps polling). Pausing, stopping or hiding a page cancels an in-flight poll, including hosted and cursor source requests; a late answer cannot replace accepted data. `refresh()` polls now, also while paused or hidden. Errors are reported through the grid's `error` event and polling goes on.
 Manual refreshes and polls load and apply their answers in request order. An API update requested while a load is pending
 applies after that answer.
 Destroying the grid stops it; `getLiveState().polling` tells whether a poller runs.
+
+Use `poll({ onRefresh(result) { ... } })` to update provenance or other snapshot metadata after native application finishes. It runs after every successful refresh, including an unchanged result, and does not run for cancelled or failed loads. `onRowsChanged` continues to report actual row changes only. Callback errors go through the grid's `error` event.
 
 ## Events
 

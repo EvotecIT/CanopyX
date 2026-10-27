@@ -138,11 +138,12 @@
         this.stateChanged(); return this.getQuery();
       } catch (error) {
         if (epoch === this.queryEpoch && !this.destroyed) {
-          this.pendingQuery = null; this.pendingPaging = null; this.lastFailedQuery = initial; this.lastFailedPaging = { ...paging, pageLength: length };
+          const cancelled = lifetime.signal.aborted && error?.name === "AbortError";
+          this.pendingQuery = null; this.pendingPaging = null; this.lastFailedQuery = cancelled ? null : initial; this.lastFailedPaging = cancelled ? null : { ...paging, pageLength: length };
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
-          this.grid.setAttribute("aria-busy", "false"); this.setNotice(fill(this.labels.queryFailed, { error: error.message }), true);
+          this.grid.setAttribute("aria-busy", "false"); this.setNotice(cancelled ? "" : fill(this.labels.queryFailed, { error: error.message }), !cancelled);
           this.syncPager();
-          this.emit("error", { error });
+          if (!cancelled) this.emit("error", { error });
         }
         throw error;
       }

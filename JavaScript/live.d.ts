@@ -75,6 +75,8 @@ export interface GridLiveState {
 }
 
 export interface GridPollOptions<Row extends GridRow = GridRow, Q extends AcceptedGridQuery = GridQuery> {
+  /** After a successful native refresh, including unchanged rows. Not called for cancelled or failed loads; useful for snapshot provenance beside the grid. */
+  onRefresh?: (result: GridLiveResult) => void;
   /** 250..86400000; defaults to the live pollMs. */
   intervalMs?: number;
   /** Poll at once instead of after the first interval. */

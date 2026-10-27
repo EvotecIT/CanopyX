@@ -22,3 +22,5 @@
 .cx-flow-answer[data-cx-state="warning"] .cx-flow-answer-value{color:var(--hfx-color-status-warn-fg,light-dark(#8c5c05,#eeb640));}
 @media (forced-colors:active){.cx-flow-check-mark{forced-color-adjust:none;border:var(--cx-size-1px) solid CanvasText;}}
 @media print{.cx-flow-check-head button,.cx-flow-check-again{display:none;}}
+.cx-flow-check-item[data-cx-state="fail"]{padding:var(--cx-size-12px);border:var(--cx-size-1px) solid var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));border-radius:var(--hfx-radius-sm,4px);background:var(--hfx-color-status-bad-bg,light-dark(#f9e4e4,#3c272a));color:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));}
+.cx-flow-step:has(.cx-flow-checks) input.cx-flow-input[readonly]{padding-inline:0;border-color:transparent;background:transparent;box-shadow:none;color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));}
