@@ -1,4 +1,4 @@
-.cx-show-as-fields { display:grid;gap:var(--cx-size-12px);padding:var(--cx-size-12px); }
-.cx-show-as-field { display:grid;gap:var(--cx-size-6px);min-width:0; }
+.cx-show-as-fields { display:grid;gap:var(--hfx-space-3);padding:0; }
+.cx-show-as-field { display:grid;gap:var(--hfx-space-1-5);min-width:0; }
 .cx-show-as-field select { width:100%;min-width:0;max-width:100%; }
-.cx-aggregate-caption { display:block;font-size:var(--cx-size-11px);line-height:var(--hfx-type-caption-line-height);color:var(--hfx-color-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.cx-aggregate-caption { display:block;font-size:calc(var(--hfx-type-caption-size)*.9167);line-height:var(--hfx-type-caption-line-height);color:var(--hfx-color-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }

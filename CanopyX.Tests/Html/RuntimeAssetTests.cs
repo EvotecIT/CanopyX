@@ -122,17 +122,16 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // The optional footer/hook declaration shell retains its 124 KiB component ceiling.
-        // Includes the shared controls (canopyx.source/controls.css) every view now uses instead of its own copies.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 126 * 1024);
+        // Analyst bucket/tuple queries and lazy calculations add 2 KiB above the merged shared-control shell.
+        // Measured component size after integration: 130608 bytes; engines remain in optional parts.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 128 * 1024);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
-        // Combined roadmap integration: its size plus about 15%.
-        // Includes the shared controls (canopyx.source/controls.css) every view now uses instead of its own copies.
-        // The optional flow-facts part adds one lazy index entry (version and script fingerprint): 64 bytes.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 150 * 1024 + 64);
+        // Pivot state, typed projections and translated analyst actions add 5 KiB above the shared-control shell.
+        // Measured component size: 158341 bytes. Preserve the separate 64-byte flow-facts index allowance.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 155 * 1024 + 64);
     }
 
     [Fact]

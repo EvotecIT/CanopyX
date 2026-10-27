@@ -91,7 +91,12 @@ test("phone column picker and display menu keep numeric export values", async ({
 
 test("pivot configuration validates axes and values without a script expression", async ({ page }) => {
   const view = pivotView(); delete view.reporting.pivot; await open(page, view, parts());
-  await page.getByRole("button", { name: "Pivot", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "Pivot", exact: true });
+  await trigger.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.locator('[data-hfx-part="body"]')).toHaveCount(1);
+  await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(trigger).toBeFocused();
+  await trigger.click();
   await page.getByRole("combobox", { name: "Row groups 1", exact: true }).selectOption("region");
   await page.getByRole("combobox", { name: "Column groups 1", exact: true }).selectOption("status");
   await page.getByRole("button", { name: "Apply", exact: true }).click();
