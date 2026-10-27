@@ -92,7 +92,7 @@ test('cancellation stops independent snapshot windows and toolbar reports cancel
   const cancel=page.getByRole('button',{name:'Cancel export',exact:true});
   await cancel.focus();await expect(cancel).toBeFocused();await cancel.press('Enter');
   await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled');
-  await expect(page.getByRole('combobox',{name:'Export',exact:true})).toBeFocused();
+  await expect(page.getByRole('combobox',{name:'Export: rows',exact:true})).toBeFocused();
   expect(await page.evaluate('calls.at(-1).signal.aborted')).toBe(true);expect(await page.evaluate('window.printed')).toBe(undefined);
   await page.locator('.cx-grid-overflow > summary').click();
   await expect(page.getByRole('button',{name:'Print',exact:true})).toBeEnabled();expect(errors).toEqual([]);
