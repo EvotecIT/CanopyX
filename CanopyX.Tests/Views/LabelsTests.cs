@@ -216,7 +216,7 @@ public sealed class LabelsTests {
 
     // The labels a part brings with its English texts: its constant (EDIT_LABELS, CALENDAR_LABELS) of name: "text" pairs.
     private static Dictionary<string, string?> PartLabels(string part, string constant) {
-        var block = System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part).Script, "const " + constant + @"=\{(?<body>.*?)\};", System.Text.RegularExpressions.RegexOptions.Singleline);
+        var block = System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part).Script, "const " + constant + "=\\{(?<body>(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\"}])*)\\}");
         return System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value, "(\\w+):(\"(?:[^\"\\\\]|\\\\.)*\")")
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
     }

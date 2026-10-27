@@ -32,7 +32,7 @@ public sealed partial class CanopyLabels {
         labels.ViewIntentAtMost = "co najwyżej";
         labels.ViewIntentFilter = "Pokaż wiersze, gdzie {column} {operator} {values}";
         labels.ViewIntentOnly = "Pokaż tylko {column}: {values}";
-        labels.ViewIntentPivot = "Przełącz na tabelę przestawną: {rows} według {columns}, wartości {values}";
+        labels.ViewIntentPivot = "Wiersze: {rows}; kolumny: {columns}; wartości: {values}";
         labels.ViewIntentAllRows = "wszystkie rekordy";
         labels.ViewIntentTotals = "sumy";
         labels.ViewIntentTuples = "Pokaż pasujące kombinacje {columns}: {values}";

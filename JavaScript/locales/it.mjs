@@ -849,7 +849,7 @@ const labels = Object.freeze({
   viewIntentAtMost: "al massimo",
   viewIntentFilter: "Mostra righe dove {column} {operator} {values}",
   viewIntentOnly: "Mostra solo {column}: {values}",
-  viewIntentPivot: "Passa alla tabella pivot: {rows} per {columns}, valori {values}",
+  viewIntentPivot: "Righe: {rows}; colonne: {columns}; valori: {values}",
   viewIntentAllRows: "tutti i record",
   viewIntentTotals: "totali",
   viewIntentTuples: "Mostra combinazioni corrispondenti di {columns}: {values}",

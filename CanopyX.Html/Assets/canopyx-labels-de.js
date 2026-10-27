@@ -850,7 +850,7 @@ const labels = Object.freeze({
   viewIntentAtMost: "höchstens",
   viewIntentFilter: "Zeilen anzeigen, in denen {column} {operator} {values}",
   viewIntentOnly: "Nur {column} anzeigen: {values}",
-  viewIntentPivot: "Zur Pivotansicht wechseln: {rows} nach {columns}, Werte {values}",
+  viewIntentPivot: "Zeilen: {rows}; Spalten: {columns}; Werte: {values}",
   viewIntentAllRows: "alle Datensätze",
   viewIntentTotals: "Summen",
   viewIntentTuples: "Passende Kombinationen anzeigen von {columns}: {values}",

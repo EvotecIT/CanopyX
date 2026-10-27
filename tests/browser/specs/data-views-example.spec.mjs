@@ -8,6 +8,7 @@ for (const [width, theme] of [[1440, "light"], [390, "dark"]]) {
     await expect(page.locator("script")).toHaveCount(0);
     await expect(page.getByRole("table")).toContainText("24 → 32");
     await expect(page.getByRole("columnheader", { name: "Units", exact: true })).toBeVisible();
+    await expect(page.getByRole("columnheader")).toHaveText(["Item", "Change", "Location", "Stage", "Units"]);
     const table = page.getByRole("table"), summary = page.getByRole("group", { name: "Dataset comparison", exact: true });
     await expect(summary).toContainText("1 Added");
     await expect(page.locator("body")).toContainText("Units: 1 changed cell");

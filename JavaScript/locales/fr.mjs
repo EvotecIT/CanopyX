@@ -849,7 +849,7 @@ const labels = Object.freeze({
   viewIntentAtMost: "au plus",
   viewIntentFilter: "Afficher les lignes où {column} {operator} {values}",
   viewIntentOnly: "Afficher uniquement {column} : {values}",
-  viewIntentPivot: "Passer au tableau croisé : {rows} par {columns}, valeurs {values}",
+  viewIntentPivot: "Lignes : {rows} ; colonnes : {columns} ; valeurs : {values}",
   viewIntentAllRows: "tous les enregistrements",
   viewIntentTotals: "totaux",
   viewIntentTuples: "Afficher les combinaisons correspondantes de {columns} : {values}",

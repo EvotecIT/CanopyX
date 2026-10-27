@@ -32,7 +32,7 @@ public sealed partial class CanopyLabels {
         labels.ViewIntentAtMost = "al massimo";
         labels.ViewIntentFilter = "Mostra righe dove {column} {operator} {values}";
         labels.ViewIntentOnly = "Mostra solo {column}: {values}";
-        labels.ViewIntentPivot = "Passa alla tabella pivot: {rows} per {columns}, valori {values}";
+        labels.ViewIntentPivot = "Righe: {rows}; colonne: {columns}; valori: {values}";
         labels.ViewIntentAllRows = "tutti i record";
         labels.ViewIntentTotals = "totali";
         labels.ViewIntentTuples = "Mostra combinazioni corrispondenti di {columns}: {values}";

@@ -850,7 +850,7 @@ const labels = Object.freeze({
   viewIntentAtMost: "co najwyżej",
   viewIntentFilter: "Pokaż wiersze, gdzie {column} {operator} {values}",
   viewIntentOnly: "Pokaż tylko {column}: {values}",
-  viewIntentPivot: "Przełącz na tabelę przestawną: {rows} według {columns}, wartości {values}",
+  viewIntentPivot: "Wiersze: {rows}; kolumny: {columns}; wartości: {values}",
   viewIntentAllRows: "wszystkie rekordy",
   viewIntentTotals: "sumy",
   viewIntentTuples: "Pokaż pasujące kombinacje {columns}: {values}",

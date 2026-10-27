@@ -36,7 +36,7 @@ public sealed partial class CanopyLabels {
             [nameof(ViewIntentAtMost)] = "at most",
             [nameof(ViewIntentFilter)] = "Show rows where {column} {operator} {values}",
             [nameof(ViewIntentOnly)] = "Show only {column}: {values}",
-            [nameof(ViewIntentPivot)] = "Switch to pivot: {rows} by {columns}, values {values}",
+            [nameof(ViewIntentPivot)] = "Rows: {rows}; columns: {columns}; values: {values}",
             [nameof(ViewIntentAllRows)] = "all records",
             [nameof(ViewIntentTotals)] = "totals",
             [nameof(ViewIntentTuples)] = "Show matching combinations of {columns}: {values}",

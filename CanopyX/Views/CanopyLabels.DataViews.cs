@@ -59,7 +59,7 @@ public sealed partial class CanopyLabels {
     public string ViewIntentFilter { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the Show only {column}: {values} label.</summary>
     public string ViewIntentOnly { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the Switch to pivot: {rows} by {columns}, values {values} label.</summary>
+    /// <summary>Gets or sets the pivot proposal with {rows}, {columns} and aggregate {values}.</summary>
     public string ViewIntentPivot { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the all records label.</summary>
     public string ViewIntentAllRows { get => Get(); set => Set(value); }

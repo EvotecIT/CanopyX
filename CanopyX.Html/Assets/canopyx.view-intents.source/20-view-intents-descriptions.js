@@ -44,9 +44,10 @@ function intentChips(grid, intent, current) {
     chips.push(...fresh.filter(text => !old.includes(text)), ...old.filter(text => !fresh.includes(text)).map(condition => fill(labels.gridRemoveCondition, { condition })));
   }
   const oldPivot = current.pivot, pivot = next.pivot;
+  const pivotLevel = value => title(value.column) + (value.direction === "desc" ? " (" + direction(value.direction) + ")" : "") + viewIntentBucketCaption(grid, value.bucket);
   if (pivot?.active && (!oldPivot?.active || !same([oldPivot.rows, oldPivot.columns, oldPivot.values], [pivot.rows, pivot.columns, pivot.values])))
-    chips.push(fill(labels.viewIntentPivot, { rows: pivot.rows.map(level).join(", ") || labels.viewIntentAllRows,
-      columns: pivot.columns.map(level).join(", ") || labels.viewIntentTotals, values: pivot.values.map(aggregate).join(", ") }));
+    chips.push(fill(labels.viewIntentPivot, { rows: pivot.rows.map(pivotLevel).join(", ") || labels.viewIntentAllRows,
+      columns: pivot.columns.map(pivotLevel).join(", ") || labels.viewIntentTotals, values: pivot.values.map(aggregate).join(", ") }));
   else if (!pivot?.active && oldPivot?.active) chips.push(labels.viewIntentFlat);
   if (pivot?.active && !same(oldPivot?.sortByTotal, pivot.sortByTotal) && pivot.sortByTotal)
     chips.push(fill(labels.viewIntentSort, { columns: aggregate(pivot.sortByTotal.aggregate) + " " + direction(pivot.sortByTotal.direction) }));

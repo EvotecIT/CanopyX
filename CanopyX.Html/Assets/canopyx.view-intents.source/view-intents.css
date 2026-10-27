@@ -6,3 +6,8 @@ body .cx-host.cx-view-intent-preview { height:auto;min-width:0;margin-top:var(--
 .cx-view-intent-preview [role=status] { margin:var(--hfx-space-2) 0 0;overflow-wrap:anywhere; }
 .cx-view-intent-preview [role=status]:empty { display:none; }
 @media print { .cx-view-intent-preview { display:none !important; } }
+
+@media (forced-colors:active) {
+  .cx-view-intent-preview .cx-grid-chip { border:var(--hfx-border-width) solid CanvasText; }
+  .cx-view-intent-actions [data-variant="primary"] { background:Highlight;color:HighlightText;border:var(--hfx-border-width) solid Highlight;forced-color-adjust:none; }
+}

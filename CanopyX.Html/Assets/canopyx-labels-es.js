@@ -850,7 +850,7 @@ const labels = Object.freeze({
   viewIntentAtMost: "como máximo",
   viewIntentFilter: "Mostrar filas donde {column} {operator} {values}",
   viewIntentOnly: "Mostrar solo {column}: {values}",
-  viewIntentPivot: "Cambiar a tabla dinámica: {rows} por {columns}, valores {values}",
+  viewIntentPivot: "Filas: {rows}; columnas: {columns}; valores: {values}",
   viewIntentAllRows: "todos los registros",
   viewIntentTotals: "totales",
   viewIntentTuples: "Mostrar combinaciones coincidentes de {columns}: {values}",

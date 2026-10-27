@@ -69,6 +69,7 @@ public static partial class CanopyStaticHtml {
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
         var columns = view.Columns.Where(column => !column.Hidden).ToArray();
+        if (view.Compare != null) columns = columns.OrderByDescending(column => column.RowHeader).ToArray();
         var capacity = Math.Min(supplied.Count, settings.MaxRows);
         var html = new StringBuilder(256 + capacity * 160);
         var printedRows = new List<IReadOnlyList<string>>(capacity);

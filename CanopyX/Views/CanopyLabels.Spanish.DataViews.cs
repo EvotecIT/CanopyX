@@ -32,7 +32,7 @@ public sealed partial class CanopyLabels {
         labels.ViewIntentAtMost = "como máximo";
         labels.ViewIntentFilter = "Mostrar filas donde {column} {operator} {values}";
         labels.ViewIntentOnly = "Mostrar solo {column}: {values}";
-        labels.ViewIntentPivot = "Cambiar a tabla dinámica: {rows} por {columns}, valores {values}";
+        labels.ViewIntentPivot = "Filas: {rows}; columnas: {columns}; valores: {values}";
         labels.ViewIntentAllRows = "todos los registros";
         labels.ViewIntentTotals = "totales";
         labels.ViewIntentTuples = "Mostrar combinaciones coincidentes de {columns}: {values}";

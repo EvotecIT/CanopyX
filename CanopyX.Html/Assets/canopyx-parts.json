@@ -1000,7 +1000,7 @@
     {
       "name": "view-intents",
       "label": "view intents",
-      "version": "ea2f7d35d7e8c02d",
+      "version": "ef467c5d43e1c083",
       "script": "canopyx-view-intents.js",
       "style": "canopyx-view-intents.css",
       "runtimes": [
@@ -1016,7 +1016,7 @@
     {
       "name": "compare",
       "label": "dataset comparison",
-      "version": "ab1ecc10f7fae54d",
+      "version": "7e41ba49b1e93add",
       "script": "canopyx-compare.js",
       "style": "canopyx-compare.css",
       "runtimes": [

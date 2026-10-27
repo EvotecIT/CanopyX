@@ -303,7 +303,7 @@ test("the static comparison example includes every status and before-after value
     await expect(rows.filter({ hasText: item })).toContainText(status);
   await expect(rows.filter({ hasText: "Atlas" })).toContainText(/24.*→.*32/);
   await expect(rows.filter({ hasText: "Birch" })).toContainText(/Paused.*→.*Active/);
-  await expect(rows.filter({ hasText: "Delta" }).getByRole("cell")).toHaveText(["Removed", "Delta", "West", "Active", "40"]);
+  await expect(rows.filter({ hasText: "Delta" }).getByRole("cell")).toHaveText(["Delta", "Removed", "West", "Active", "40"]);
 });
 
 test("the optional compare part stays off ordinary grids and comparisons make only runtime asset requests", async ({ page }) => {

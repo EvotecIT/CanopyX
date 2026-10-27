@@ -30,7 +30,7 @@ test("pivot intent previews without a query then activates, changes axes and val
   const initial = await page.evaluate(api + ".getQuery()");
   await preview(page, proposal({ pivot: pivot() }));
   expect(await state(page)).toBeNull(); expect(await page.evaluate(api + ".getQuery()")).toEqual(initial);
-  await expect(page.locator(".cx-view-intent-preview")).toContainText("Switch to pivot: Region");
+  await expect(page.locator(".cx-view-intent-preview")).toContainText("Rows: Region; columns: Status; values: Total amount");
   await page.evaluate("preview.apply()");
   await expect(page.locator(".cx-pivot-table")).toBeVisible();
   expect((await state(page)).rows[0].column).toBe("region");
@@ -124,7 +124,7 @@ for (const locale of ["pl", "de", "es", "fr", "it"]) test(`pivot preview uses ${
   const source = JSON.parse(fs.readFileSync(path.join(repo, "CanopyX/Views/Locales/labels.json"), "utf8"));
   await preview(page, proposal({ pivot: pivot() }));
   await expect(page.locator(".cx-view-intent-preview")).toContainText(source.ViewIntentPivot[["pl", "de", "es", "fr", "it"].indexOf(locale)].split("{rows}")[0]);
-  await expect(page.locator(".cx-view-intent-preview")).toContainText(source.ViewIntentAscending[["pl", "de", "es", "fr", "it"].indexOf(locale)]);
+  await expect(page.locator(".cx-view-intent-preview")).not.toContainText(source.ViewIntentAscending[["pl", "de", "es", "fr", "it"].indexOf(locale)]);
   await page.evaluate("preview.cancel()");
   expect(await page.evaluate("intentQueries.length")).toBe(count); expect(requests).toEqual([]); expect(errors).toEqual([]);
 });

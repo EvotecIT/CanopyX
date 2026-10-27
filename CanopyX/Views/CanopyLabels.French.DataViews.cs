@@ -32,7 +32,7 @@ public sealed partial class CanopyLabels {
         labels.ViewIntentAtMost = "au plus";
         labels.ViewIntentFilter = "Afficher les lignes où {column} {operator} {values}";
         labels.ViewIntentOnly = "Afficher uniquement {column} : {values}";
-        labels.ViewIntentPivot = "Passer au tableau croisé : {rows} par {columns}, valeurs {values}";
+        labels.ViewIntentPivot = "Lignes : {rows} ; colonnes : {columns} ; valeurs : {values}";
         labels.ViewIntentAllRows = "tous les enregistrements";
         labels.ViewIntentTotals = "totaux";
         labels.ViewIntentTuples = "Afficher les combinaisons correspondantes de {columns} : {values}";

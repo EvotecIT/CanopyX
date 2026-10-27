@@ -25,8 +25,7 @@ view.SaveHtmlPage("inventory-changes.html");
 var emailTable = CanopyStaticHtml.RenderComparison(view);
 ```
 
-The browser shows `24 → 32` in the units cell. Its summary reports one changed row, and the summary reports one
-changed Units cell. Column and field titles stay unchanged. The **Changed only** switch excludes unchanged rows through an ordinary filter on the generated status
+The browser shows `24 → 32` in the units cell. Its summary reports one changed row and one changed Units cell. Column and field titles stay unchanged. The **Changed only** switch excludes unchanged rows through an ordinary filter on the generated status
 column. Searches, saved views, result counts and exports therefore use the same query scope. `getOnlyChanges()` reads
 the accepted scope; `await setOnlyChanges(true)` changes it. The summary always describes the complete comparison.
 Phone rows show changed fields first and disclose the remaining fields in the record drawer. The drawer opens with
