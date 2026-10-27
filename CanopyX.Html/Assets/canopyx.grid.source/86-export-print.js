@@ -14,7 +14,7 @@
     gridOperationActive(grid, signal); progress("generating", rows.length);
     return gridFreeze({ request: capture.request, rows });
   };
-  EXPORT_IMPL.printSnapshot = async function (grid, snapshot, signal, layout, templates, projection) {
+  EXPORT_IMPL.printSnapshot = async function (grid, snapshot, signal, layout, templates, projection, cardRoles) {
     gridOperationActive(grid, signal);
     for (const row of snapshot.rows) if (row.detail != null) {
       const detail = row.detail;
@@ -42,10 +42,21 @@
         if (css) element.style.cssText = css;
         parent.appendChild(element); return element;
       };
-      add("style", doc.head, "@page{size:A4 " + (columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans);color:var(--hfx-color-text-muted)}}' +
+      add("style", doc.head, "@page{size:A4 " + (layout !== "stacked" && columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans);color:var(--hfx-color-text-muted)}}' +
         "thead{display:table-header-group}tfoot{display:table-row-group}tr{break-inside:avoid}a{color:inherit;text-decoration:none}" +
         "@media screen{body{padding:40px}main{max-width:1100px;margin:auto}}@media screen and (max-width:600px){body{padding:20px}}" +
         "@media (max-width:600px){body{font-size:10px!important}td,th{padding:6px 4px!important;white-space:normal!important}td.cx-print-number{white-space:nowrap!important}col.cx-print-date{width:80px!important}}" +
+        ".cx-print-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}" +
+        ".cx-print-card{break-inside:avoid;min-width:0;border:1px solid var(--hfx-color-border);border-radius:var(--hfx-radius-container);padding:16px}" +
+        ".cx-print-card-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin:0 0 14px}" +
+        ".cx-print-card h2{flex:1;margin:0;font-size:16px;line-height:1.3;overflow-wrap:anywhere}" +
+        ".cx-print-card-status{border:1px solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-pill);padding:2px 7px;font-size:10px}" +
+        ".cx-print-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;margin:0}" +
+        ".cx-print-card dt{color:var(--hfx-color-text-muted);font-size:10px;margin:0 0 3px}.cx-print-card dd{margin:0;overflow-wrap:anywhere}" +
+        ".cx-print-card footer{border-top:1px solid var(--hfx-color-border);padding-top:10px;margin-top:14px;color:var(--hfx-color-text-muted)}" +
+        ".cx-print-card footer span+span{margin-inline-start:6px}.cx-print-card-wide,.cx-print-cards>h2,.cx-print-cards>[data-cx-print-subtotal],.cx-print-cards>[data-cx-print-total]{grid-column:1/-1}" +
+        "@media screen and (min-width:1200px){.cx-print-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}" +
+        "@media screen and (max-width:600px){.cx-print-cards{grid-template-columns:minmax(0,1fr)}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
       doc.body.style.cssText = 'margin:0;background:var(--hfx-color-surface);color:var(--hfx-color-text);font:11px/1.4 var(--hfx-font-sans)';
       const main = add("main", doc.body), reportHeader = add("header", main, undefined, "margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid var(--hfx-color-border-strong)");
@@ -103,9 +114,10 @@
       };
       if (grouping) collect(grouping.groups, 0);
       if (layout === "stacked") {
+        const cards = add("div", main); cards.className = "cx-print-cards";
         const summary = (values, label, subtotal) => {
           if (!values || !grouping?.aggregates.length) return;
-          const section = add("div", main, undefined, "break-inside:avoid;padding:8px 10px;margin:0 0 12px;background:var(--hfx-color-surface-sunken);border-top:1px solid var(--hfx-color-border);font-weight:var(--hfx-weight-semibold)");
+          const section = add("div", cards, undefined, "break-inside:avoid;padding:8px 10px;margin:0 0 12px;background:var(--hfx-color-surface-sunken);border-top:1px solid var(--hfx-color-border);font-weight:var(--hfx-weight-semibold)");
           section.setAttribute(subtotal ? "data-cx-print-subtotal" : "data-cx-print-total", "");
           add("div", section, label);
           for (const aggregate of grouping.aggregates) {
@@ -114,12 +126,24 @@
           }
         };
         for (const [index, row] of snapshot.rows.entries()) {
-          for (const heading of starts.get(index) || []) add("h2", main, heading.text, "font-size:15px;margin:12px 0 6px");
-          const section = add("section", main, undefined, "break-inside:avoid;border:1px solid var(--hfx-color-border);margin:0 0 12px;padding:10px"), list = add("dl", section);
-          for (const column of columns) {
-            add("dt", list, column.title, "font-weight:var(--hfx-weight-semibold);margin:4px 0 0");
-            value(add("dd", list, undefined, "margin:0;overflow-wrap:anywhere"), cell(row, column));
+          for (const heading of starts.get(index) || []) add("h2", cards, heading.text, "font-size:15px;margin:12px 0 6px");
+          const section = add("section", cards); section.className = "cx-print-card"; section.setAttribute("data-cx-print-record", "");
+          const heading = add("div", section); heading.className = "cx-print-card-heading";
+          const list = add("dl", section);
+          for (const [index, column] of columns.entries()) {
+            const role = cardRoles?.[index] || (index ? "field" : "title");
+            if (role === "title") value(add("h2", heading), cell(row, column));
+            else if (role === "pill") {
+              const status = add("span", heading); status.className = "cx-print-card-status";
+              status.setAttribute("aria-label", column.title); value(status, cell(row, column));
+            } else if (role === "footer") {
+              const footer = add("footer", section); add("span", footer, column.title); value(add("span", footer), cell(row, column));
+            } else {
+              const field = add("div", list); if (role === "wide") field.className = "cx-print-card-wide";
+              add("dt", field, column.title); value(add("dd", field), cell(row, column));
+            }
           }
+          if (!list.childNodes.length) list.remove();
           if (row.detail) detail(add("div", section, undefined, "margin-top:8px"), row.detail);
           for (const group of ends.get(index + 1) || []) summary(group.values, group.text, true);
         }

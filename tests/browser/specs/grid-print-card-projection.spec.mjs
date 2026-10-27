@@ -19,10 +19,10 @@ for (const reporting of [false, true]) for (const mode of ["hidden", "explicit",
       await grid.print({ scope: "all", ...(mode === "explicit" ? { columns: ["name"] } : {}) });
       const doc = new DOMParser().parseFromString(window.printedCards, "text/html");
       return { exportColumns: grid.prepareExport({ scope: "all" }).request.columns.map(column => column.id),
-        headings: [...doc.querySelectorAll("dt")].map(item => item.textContent), first: doc.querySelector("dd").textContent,
+        headings: [...doc.querySelectorAll("dt")].map(item => item.textContent), first: doc.querySelector(".cx-print-card h2").textContent,
         text: doc.body.textContent, frames: document.querySelectorAll("iframe").length };
     }, mode);
-    expect(printed.headings).toEqual(mode === "explicit" ? ["Name"] : ["Name", "Due"]);
+    expect(printed.headings).toEqual(mode === "explicit" ? [] : ["Due"]);
     expect(printed.exportColumns).toEqual(["name", "due"]);
     expect(printed.first).toBe(mode === "private" ? "First" : "First — Needs review");
     expect(printed.text).not.toContain("PRIVATE"); expect(printed.frames).toBe(0);
@@ -53,9 +53,9 @@ for (const target of ["name", "status", "blocked", "visible"]) {
     const printed = await page.evaluate(async () => {
       await document.querySelector("[data-canopyx-host]").canopyx.print({ scope: "all" });
       const doc = new DOMParser().parseFromString(window.printedCards, "text/html");
-      return { first: doc.querySelector("dd").textContent, values: [...doc.querySelectorAll("dd")].map(item => item.textContent), text: doc.body.textContent };
+      return { first: doc.querySelector(".cx-print-card h2").textContent, values: [...doc.querySelectorAll("dd")].map(item => item.textContent), text: doc.body.textContent };
     });
     expect(printed.first).toBe(target === "blocked" ? "First" : "First — Needs review"); expect(printed.text).not.toContain("PRIVATE");
-    if (target === "visible") expect(printed.values[1]).toBe("Needs review\nCONTEXT");
+    if (target === "visible") expect(printed.values[0]).toBe("Needs review\nCONTEXT");
   });
 }

@@ -22,7 +22,7 @@
         ["csv", "copy", "print"].some(key => menu[key] !== undefined && typeof menu[key] !== "boolean") ||
         menu.values !== undefined && !["raw", "display"].includes(menu.values))
       throw new Error("CanopyX: exportMenu supports csv/copy/print booleans and raw/display values.");
-    scope.setAttribute("aria-label", labels.gridExport);
+    scope.setAttribute("aria-label", labels.gridExport + ": " + labels.gridRows);
     for (const [value, label] of this.exportScopes || [["filtered", "gridFilteredResults"], ["selected", "gridSelectedRows"], ["all", "gridAllResults"]])
       scope.appendChild(gridOption(value, labels[label]));
     panel.classList.add("cx-export-panel");
@@ -31,8 +31,8 @@
     const updateCount = () => {
       try {
         const request = this.prepareExport({ scope: scope.value }).request;
-        setText(count, scope.selectedOptions[0].textContent + " · " + (request.recordCount === null ? labels.gridUnknownCount :
-          numberFormat(this.lang).format(request.recordCount) + " " + labels.gridRows));
+        setText(count, request.recordCount === null ? labels.gridUnknownCount :
+          numberFormat(this.lang).format(request.recordCount) + " " + labels.gridRows);
       } catch { setText(count, scope.selectedOptions[0].textContent); }
     };
     scope.addEventListener("change", updateCount);

@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "cb0356d1f53f539f",
+      "version": "cdada3cfc5cedfc2",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -146,7 +146,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "d80efc8e11ff9b2b",
+      "version": "4edd9b7cf37dd911",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -769,7 +769,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "9fcc77adf9b8f717",
+      "version": "077268d4fb78c464",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [

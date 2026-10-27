@@ -14,6 +14,8 @@
     if (index === columns.length - 1 && column.kind === "datetime") return "footer";
     return cardWide(column) ? "wide" : "field";
   }
+  // The static printer captures the same anatomy before asynchronous export enumeration.
+  VIEW_MODES.cardRole = cardRole;
   function cardGeometry(view) {
     const metrics = { ...CARD_METRICS[view.density] }, available = Math.max(0, (view.grid.clientWidth || view.host.clientWidth) - 2 * CARD_GUTTER);
     // Synthetic group/detail rows keep their own projection, measured offsets and keyboard semantics.

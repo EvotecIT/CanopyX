@@ -37,15 +37,16 @@ test("export menu is one vertical format list and announces the chosen scope cou
   });
   await openGridControl(page, "export");
   const panel = page.locator(".cx-export-panel");
-  await expect(panel.locator(".cx-export-count")).toHaveText("Filtered results · 30 rows");
+  await expect(panel.getByRole("combobox", { name: "Export: rows", exact: true })).toBeVisible();
+  await expect(panel.locator(".cx-export-count")).toHaveText("30 rows");
   await expect(panel.locator(".cx-export-choice-title")).toHaveText(["Excel workbook (.xlsx)", "PDF", "CSV", "Copy to clipboard", "Print"]);
   await expect(panel.locator(".cx-export-hint")).toHaveText(["Formatted, with groups and totals", "Paged report with repeating headings", "Plain text values (.csv)"]);
   const boxes = await panel.locator(".cx-export-choice").evaluateAll(elements => elements.map(element => {
     const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, bottom: box.bottom, width: box.width };
   }));
   for (let index = 1; index < boxes.length; index++) { expect(boxes[index].x).toBe(boxes[0].x); expect(boxes[index].y).toBeGreaterThanOrEqual(boxes[index - 1].bottom); }
-  await panel.getByRole("combobox").selectOption("selected"); await expect(panel.locator(".cx-export-count")).toHaveText("Selected rows · 2 rows");
-  await panel.getByRole("combobox").selectOption("all"); await expect(panel.locator(".cx-export-count")).toHaveText("All results · 60 rows");
+  await panel.getByRole("combobox").selectOption("selected"); await expect(panel.locator(".cx-export-count")).toHaveText("2 rows");
+  await panel.getByRole("combobox").selectOption("all"); await expect(panel.locator(".cx-export-count")).toHaveText("60 rows");
 });
 
 test("phone warning cue stays in the resource identity line", async ({ page }) => {

@@ -33,17 +33,24 @@ for (const { width, theme } of [{ width: 1440, theme: "light" }, { width: 390, t
         await info.attach('script-free-print', { path: file, contentType: 'text/html' });
         await page.route(server.url + '__print-review.html', route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: html }));
         await page.goto(server.url + '__print-review.html'); await page.emulateMedia({ media: 'screen' });
-        if (state === "print" && width === 1440 && info.project.name === "chromium") {
-          const pdf = info.outputPath("print-pages.pdf");
+        if (width === 1440 && info.project.name === "chromium") {
+          const pdf = info.outputPath(state === "card-print" ? "card-print-pages.pdf" : "print-pages.pdf");
           await page.emulateMedia({ media: "print" });
+          if (state === "card-print") expect(await page.locator('.cx-print-cards').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
           await page.pdf({ path: pdf, preferCSSPageSize: true, printBackground: true });
           await info.attach("browser-print-pages", { path: pdf, contentType: "application/pdf" });
           await page.emulateMedia({ media: "screen" });
         }
         if (state === "card-print") {
-          await expect(page.locator('main > section')).toHaveCount(40);
-          await expect(page.locator('main > section').first().locator('dt')).toHaveText(['Name', 'Status', 'Owner', 'Team', 'Priority', 'Due']);
-          await expect(page.locator('dd').first()).toHaveText('Item 1');
+          const cards = page.locator('.cx-print-card'), first = cards.first();
+          await expect(cards).toHaveCount(40);
+          await expect(first.getByRole('heading')).toHaveText('Item 1');
+          await expect(first.locator('.cx-print-card-status')).toHaveText('Needs review');
+          await expect(first.locator('dt')).toHaveText(['Owner', 'Team', 'Priority']);
+          await expect(first.locator('footer')).toContainText('Due');
+          await expect(first).toHaveCSS('break-inside', 'avoid');
+          expect(await page.locator('.cx-print-cards').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(width === 390 ? 1 : 3);
+          expect(await first.locator('dl').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
         } else {
           await expect(page.locator('tbody tr[data-cx-print-record]')).toHaveCount(60);
           await expect(page.locator('thead th')).toHaveCount(5);

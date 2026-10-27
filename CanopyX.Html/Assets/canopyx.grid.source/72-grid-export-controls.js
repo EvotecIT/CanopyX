@@ -48,13 +48,15 @@
         }
       }
       const exported = this.prepareExport(capturedOptions);
+      const cardColumns = layout === "stacked" ? (projection || exported.request.columns.map(column => column.id)).map(id => this.columns.find(column => column.id === id)) : [];
+      const cardRoles = cardColumns.map((column, index) => VIEW_MODES.cardRole(column, index, cardColumns));
       if (projection) GRID_REPORTING.captureCardText?.(exported.request, tokenColumns);
       return this.runGridHook(async signal => {
         await loadExportPart();
         const progress = (phase, completed) => onProgress?.(Object.freeze({ phase, completed, total: exported.request.recordCount }));
         const snapshot = await EXPORT_IMPL.snapshot(this, exported, maxRows, signal, progress);
         if (typeof this.opts.onPrint === "function") await this.opts.onPrint({ snapshot, signal, layout });
-        else await EXPORT_IMPL.printSnapshot(this, snapshot, signal, layout, template, projection);
+        else await EXPORT_IMPL.printSnapshot(this, snapshot, signal, layout, template, projection, cardRoles);
         gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
       }, capture.signal, exportTimeout(this, { timeoutMs }));
     },

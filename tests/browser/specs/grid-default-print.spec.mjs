@@ -20,17 +20,17 @@ for (const [reporting, cards] of [[false, false], [true, false], [false, true]])
       const grid = document.querySelector("[data-canopyx-host]").canopyx, progress = [];
       await grid.print({ scope: "all", onProgress: value => progress.push(value) });
       const doc = new DOMParser().parseFromString(window.__printedDocument, "text/html");
-      return { count: doc.querySelectorAll(cards ? "main > section" : "tbody tr").length,
-        headers: [...doc.querySelectorAll(cards ? "main > section:first-of-type dt" : "thead th")].map(cell => cell.textContent),
-        first: doc.querySelector(cards ? "dd" : "tbody td").textContent, executable: doc.querySelectorAll("script,img").length,
+      return { count: doc.querySelectorAll(cards ? ".cx-print-card" : "tbody tr").length,
+        headers: [...doc.querySelectorAll(cards ? ".cx-print-card:first-of-type dt" : "thead th")].map(cell => cell.textContent),
+        first: doc.querySelector(cards ? ".cx-print-card h2" : "tbody td").textContent, executable: doc.querySelectorAll("script,img").length,
         remainingFrames: document.querySelectorAll("iframe").length, progress };
     }, cards);
-    expect(result).toMatchObject({ count: 40, headers: ["Resource", "Cost"], first: "<img src=x onerror=alert(1)>" + (cards ? " — 1" : ""), executable: 0, remainingFrames: 0 });
+    expect(result).toMatchObject({ count: 40, headers: cards ? ["Cost"] : ["Resource", "Cost"], first: "<img src=x onerror=alert(1)>" + (cards ? " — 1" : ""), executable: 0, remainingFrames: 0 });
     expect(result.progress.at(-1)).toEqual({ phase: "ready", completed: 40, total: 40 });
     await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.setSelection(["r1", "r3"]));
     expect(await page.evaluate(async cards => {
       await document.querySelector("[data-canopyx-host]").canopyx.print({ scope: "selected" });
-      return new DOMParser().parseFromString(window.__printedDocument, "text/html").querySelectorAll(cards ? "main > section" : "tbody tr").length;
+      return new DOMParser().parseFromString(window.__printedDocument, "text/html").querySelectorAll(cards ? ".cx-print-card" : "tbody tr").length;
     }, cards)).toBe(2);
   });
 }

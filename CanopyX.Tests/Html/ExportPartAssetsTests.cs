@@ -15,7 +15,8 @@ public sealed class ExportPartAssetsTests {
         Assert.DoesNotContain('\r', CanopyHtmlAssets.ExportScript);
         // Bounded complete print snapshots add about 1.7 KiB gzip; document engines remain a separate opt-in part.
         // The report header, subtotals and vertical format list remain in this optional part.
-        Assert.True(Gzip(CanopyHtmlAssets.ExportScript) <= 9216, "The export part is " + Gzip(CanopyHtmlAssets.ExportScript) + " bytes gzip; the budget is 9 KiB.");
+        // The lazy print renderer includes title/status/field/footer card composition and A4 pagination styles.
+        Assert.True(Gzip(CanopyHtmlAssets.ExportScript) <= 10240, "The export part is " + Gzip(CanopyHtmlAssets.ExportScript) + " bytes gzip; the budget is 10 KiB.");
         var view = new CanopyDataGridView("grid", "Grid"); view.Columns.Add(new CanopyColumn("name", "Name"));
         var fragment = view.ToHtmlFragment();
         Assert.Contains("<script type=\"application/x-canopyx-export\" data-cx-version=\"" + CanopyHtmlAssets.ExportVersion + "\">", fragment);

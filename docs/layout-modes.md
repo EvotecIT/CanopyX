@@ -109,7 +109,10 @@ layout already gives the tree column the width while "+N" opens a node's other f
 ## Print
 
 Print never scrolls. Without an `onPrint` hook, a flat grid prints its bounded captured records as stacked cards or a
-table. Card templates keep their formatted token values, including inputs from hidden exportable columns, without adding
+table. Printed cards use the same column roles as screen cards: the first column is the title, enum/state presenters
+sit beside it as outlined status pills, ordinary fields form two columns, and a final date is a muted footer.
+A4 paper uses two card columns with intact cards at page breaks; a narrow screen preview uses one card column.
+Card templates keep their formatted token values, including inputs from hidden exportable columns, without adding
 those inputs as separate printed fields. Tokens use the same formatted cell text as the card, without adding secondary
 presenter text. If a template references a non-exportable column, that slot prints its own formatted cell text instead.
 CSV and other exports retain their own column projection.
