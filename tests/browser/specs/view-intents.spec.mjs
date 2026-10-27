@@ -63,11 +63,14 @@ test("applyViewIntent previews safely, snapshots caller input and applies exactl
   await expect(region(page).getByRole("button", { name: "Cancel", exact: true })).toHaveAttribute("data-variant", "secondary");
   const surface = await region(page).evaluate(element => {
     const style = getComputedStyle(element);
-    return { border: style.borderTopWidth, expectedBorder: style.getPropertyValue("--hfx-border-width").trim(),
+    return { border: style.borderTopWidth,
       background: style.backgroundColor, framedChildren: [...element.children].filter(child =>
         parseFloat(getComputedStyle(child).borderTopWidth) > 0).length };
   });
-  expect(surface.border).toBe(surface.expectedBorder);
+  expect(parseFloat(surface.border)).toBeGreaterThan(0);
+  await region(page).evaluate(element => element.style.setProperty("--hfx-border-width", "3px"));
+  await expect(region(page)).toHaveCSS("border-top-width", "3px");
+  await region(page).evaluate(element => element.style.removeProperty("--hfx-border-width"));
   expect(surface.background).not.toBe("rgba(0, 0, 0, 0)");
   expect(surface.framedChildren).toBe(0);
   await apply.focus(); await apply.press("Enter");
