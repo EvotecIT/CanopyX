@@ -15,7 +15,6 @@
     const filters = [...(query?.filters || []).map(filter), ...(query?.filterGroup ? [group(query.filterGroup)] : [])].filter(Boolean);
     if (filters.length) parts.push(labels.gridFilters + ": " + filters.join(" · "));
     const time = new Date(request.generatedAt || Date.now());
-    parts.push(new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", ...(request.timeZone === "utc" ? { timeZone: "UTC" } : {}) }).format(time) +
-      (request.timeZone === "utc" ? " UTC" : ""));
+    parts.push(cellText(time.toISOString(), { kind: "datetime" }, formatting(locale, request.timeZone === "local", labels)));
     return parts.join(" · ");
   }
