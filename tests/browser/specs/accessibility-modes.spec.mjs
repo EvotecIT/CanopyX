@@ -95,7 +95,7 @@ test("reduced motion stops transitions and animations in views, menus and drawer
   const duration = () => page.locator(".cx-exp:not(.cx-leaf)").first().evaluate(element => getComputedStyle(element, "::before").transitionDuration);
   expect(await duration()).not.toBe("0s");
   await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(await duration()).toBe("0s");
+  await expect.poll(duration).toBe("0s");
   await page.getByText("Columns", { exact: true }).click();
   for (const name of ["inline.html", "rich-grid.html", "reporting-grid.html"]) {
     if (name !== "inline.html") await openExample(page, name);
