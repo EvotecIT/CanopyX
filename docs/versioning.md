@@ -28,14 +28,17 @@ under `api/`:
   `dotnet test`.
 - `api/canopyx.d.ts.txt`: the TypeScript API, every declaration file the npm package ships without its comments, checked by
   `tests/browser/tools/api-report.mjs` (`npm run test:api`).
+- `api/canopyx-roles.txt`: the shared `--hfx-*` design roles the runtime stylesheets read, which is the contract a host defines
+  to theme CanopyX ([Theming](architecture.md#theming)). It is checked by `Build/Lint-DesignTokens.mjs`. A new role is additive;
+  a removed role, or one read with a different meaning, follows the same rules as a removed or changed member.
 
-`Build.ps1` runs both, so the quality workflow fails on an unacknowledged change.
+`Build.ps1` runs all of them, so the quality workflow fails on an unacknowledged change.
 
 A change to the public surface fails the build until its baseline is updated in the same pull request, so every API change is
 visible in review:
 
 ```powershell
-$env:CANOPYX_API_UPDATE = "1"; dotnet test CanopyX.sln -c Release; $env:CANOPYX_API_UPDATE = $null
+$env:CANOPYX_API_UPDATE = "1"; dotnet test CanopyX.sln -c Release; node Build/Lint-DesignTokens.mjs; $env:CANOPYX_API_UPDATE = $null
 npm run test:api:update --prefix tests/browser
 ```
 

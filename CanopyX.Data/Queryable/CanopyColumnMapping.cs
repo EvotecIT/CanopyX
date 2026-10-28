@@ -11,6 +11,17 @@ public sealed class CanopyColumnMapping<T, TValue> {
 
     internal CanopyColumnMapping(MappedColumn column) { _column = column; }
 
+    /// <summary>Maps an explicit provider-translatable local calendar value for buckets in a named time zone.</summary>
+    /// <param name="timeZone">The bucket's exact time-zone identifier.</param>
+    /// <param name="localTime">A local calendar expression supplied by the host, including its daylight-saving conversion.</param>
+    /// <returns>This mapping.</returns>
+    /// <remarks>UTC buckets need no mapping. Relational providers have different time-zone functions; the host supplies its native conversion.</remarks>
+    public CanopyColumnMapping<T, TValue> BucketTimeZone(string timeZone, Expression<Func<T, DateTime?>> localTime) {
+        if (string.IsNullOrWhiteSpace(timeZone) || timeZone.Length > 128) throw new ArgumentException("A bounded time-zone identifier is required.", nameof(timeZone));
+        _column.BucketTimes[timeZone] = localTime ?? throw new ArgumentNullException(nameof(localTime));
+        return this;
+    }
+
     /// <summary>Sorts the column by another expression, for example a sortable key beside a display name.</summary>
     /// <typeparam name="TKey">The sort key type.</typeparam>
     /// <param name="key">The sort key expression.</param>

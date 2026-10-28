@@ -29,6 +29,14 @@
       } else if (options.kind==="structured") {
         // Lists, objects and collections summarise through the record panel part (52-grid-record-part.js).
         if(RECORD_IMPL.summary)RECORD_IMPL.summary(grid,column,options,row,element,text);else{add(text);grid.loadRecordPanel();}
+      } else if (options.kind==="change" && options.beforeAfter && object && cell.changes?.length) {
+        const change=cell.changes[0], wrap=h("span","cx-before-after"), before=h("del"), arrow=h("span"), after=h("ins");
+        const kind={...column,kind:change.kind||column.kind};
+        setText(before,changeCellText(change.before,kind,grid.fmt));setText(arrow,"→");arrow.setAttribute("aria-hidden","true");
+        setText(after,changeCellText(change.after,kind,grid.fmt));
+        if(grid.view.compare && cellValue(row.cells[grid.view.compare.statusColumn])==="removed")wrap.append(before);
+        else wrap.append(before,arrow,after);
+        element.append(wrap);
       } else if (raw==null&&object&&cell.text==="") add("");
       else if (raw==null&&(!object||cell.text===undefined)||text==="") add("—","p-missing");
       else if (options.kind==="link") {

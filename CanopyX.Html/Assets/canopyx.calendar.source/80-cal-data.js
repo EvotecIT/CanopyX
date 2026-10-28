@@ -21,7 +21,7 @@
         // New and removed rows change the array in place, and saved values give the grid a new source or invalidate its compact
         // decoder: any of these reads the rows again.
         if (this.calRowsCache?.rows !== rows || this.calRowsCache.key !== key || this.calRowsCache.source !== this.source || this.calRowsCache.shape !== rows.length + ":" + this.calVersion) {
-          const plain = !query.search && !query.filters.length && !query.filterGroup;
+          const plain = !query.search && !query.filters.length && !query.filterGroup && !query.tupleFilters?.length;
           this.calRowsCache = { rows, key, source: this.source, shape: rows.length + ":" + this.calVersion, matched: plain ? rows : gridQueryRows(this.view, query, new Map(this.view.columns.map(column => [column.id, column])), null) };
         }
         const matched = this.calEdited(this.calRowsCache.matched);
@@ -71,8 +71,7 @@
             typeof page.truncated !== "boolean" || page.truncated !== page.items.length < page.matched)
           throw new Error("CanopyX: the range page does not answer its query.");
         if (query.revision !== undefined && page.revision !== query.revision) throw new Error("CanopyX: grid page snapshot changed.");
-        validateGridRows(page.items, this.view.columns);
-        return { rows: page.items, truncated: page.truncated, matched: page.matched, revision: page.revision };
+        return { rows: validateGridRows(page.items, this.view.columns, undefined, repairGridCell), truncated: page.truncated, matched: page.matched, revision: page.revision };
       });
     },
 

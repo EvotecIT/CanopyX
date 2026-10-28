@@ -34,6 +34,10 @@ public static partial class CanopyStaticHtml {
         view.Validate();
         if (page != null) _ = page.ToJson(view);
         else if (view.Source.Kind == CanopyGridSourceKind.Host) throw new InvalidOperationException("A host grid fallback requires an explicit result page.");
+        if (view.Path != null) return RenderPathRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
+        if (view.Stack != null) return RenderStackRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
+        if (view.Board != null) return RenderBoardRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
+        if (view.Plan != null) return RenderPlanRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options);
         return RenderGridRows(view, page?.Rows ?? view.Rows, page?.Matched ?? view.Rows.Count, page?.Offset ?? 0, options, page?.FooterValues);
     }
 
@@ -60,25 +64,29 @@ public static partial class CanopyStaticHtml {
         if (page == null) throw new ArgumentNullException(nameof(page));
         view.Validate();
         _ = page.ToJson(view);
+        if (view.Plan != null) return RenderPlanRows(view, page.Rows, page.Matched, page.Offset, options);
         return RenderGridRows(view, page.Rows, page.Matched, page.Offset, options);
     }
 
-    private static CanopyStaticHtmlResult RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, int offset, CanopyStaticHtmlOptions? options, IDictionary<string, IDictionary<string, double?>>? footerValues = null) {
+    private static CanopyStaticHtmlResult RenderGridRows(CanopyDataGridView view, IList<CanopyGridRow> supplied, int? matching, int offset, CanopyStaticHtmlOptions? options, IDictionary<string, IDictionary<string, double?>>? footerValues = null, bool includeCaption = true) {
+        var allRows = view.Source.Kind == CanopyGridSourceKind.Inline ? view.CalculateRows(view.Rows).ToList() : supplied;
+        supplied = ReferenceEquals(supplied, view.Rows) ? allRows : view.CalculateRows(supplied).ToList();
         var settings = options ?? new CanopyStaticHtmlOptions();
         var styles = new CanopyStaticStyles(settings);
         var columns = view.Columns.Where(column => !column.Hidden).ToArray();
+        if (view.Compare != null) columns = columns.OrderByDescending(column => column.RowHeader).ToArray();
         var capacity = Math.Min(supplied.Count, settings.MaxRows);
         var html = new StringBuilder(256 + capacity * 160);
         var printedRows = new List<IReadOnlyList<string>>(capacity);
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append("\">");
-        var caption = settings.Caption ?? view.Label;
+        var caption = includeCaption ? settings.Caption ?? view.Label : string.Empty;
         if (caption.Length != 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
         html.Append("<thead>");
         AppendGridHeader(html, view, columns, styles);
         html.Append("</thead><tbody>");
         var remaining = settings.MaxRows;
         var shown = AppendGridRecords(html, view, supplied, columns, settings, styles, ref remaining, printedRows, null, out var complete,
-            view.Source.Kind == CanopyGridSourceKind.Inline ? view.Rows : supplied);
+            allRows);
         html.Append("</tbody>");
         if (!matching.HasValue || shown < matching.Value) {
             html.Append("<tbody>");
@@ -118,7 +126,8 @@ public static partial class CanopyStaticHtml {
                     if (depth > level) html.Append(" rowspan=\"").Append(depth - level + 1).Append('"');
                     var className = columns[index].ClassName;
                     if (className != null) html.Append(" class=\"").Append(Encode(className)).Append('"');
-                    html.Append(" style=\"").Append(text == null ? styles.Header : styles.InnerHeader).Append(Align(columns[index])).Append("\">");
+                    html.Append(" style=\"").Append(text == null ? styles.Header : styles.InnerHeader)
+                        .Append(view.Compare != null ? "white-space:normal;" : string.Empty).Append(Align(columns[index])).Append("\">");
                     AppendVisibleText(html, columns[index].Title, text, true); html.Append("</th>");
                 }
                 index++;

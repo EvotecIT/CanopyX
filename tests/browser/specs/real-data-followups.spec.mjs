@@ -316,7 +316,7 @@ test("a tree loads the export part on first use and offers its Export menu", asy
   expect(await page.evaluate(() => window.__canopyxParts.slice().sort())).toEqual(initialParts.slice().sort());
   expect(await page.evaluate(() => window.__canopyxParts)).not.toContain("export");
   await page.locator(".cx-grid-export > summary").click();
-  await expect(page.locator(".cx-grid-export").getByRole("button", { name: "Download CSV" })).toBeVisible();
+  await expect(page.locator(".cx-grid-export").getByRole("button", { name: "CSV" })).toBeVisible();
   const exportParts = requiredParts("tree-tools", "export").map(part => part.name);
   expect(await page.evaluate(() => window.__canopyxParts.slice().sort())).toEqual(exportParts.slice().sort());
   expect(page.errors).toEqual([]);

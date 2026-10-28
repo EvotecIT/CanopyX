@@ -142,9 +142,13 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Gets how the grid edits when columns are <see cref="CanopyColumn.Editable"/>: read-only, cell or full-row mode, the phone edit form and the edit bar.</summary>
     public CanopyGridEditing Editing { get; } = new CanopyGridEditing();
 
-    /// <summary>Gets the identities of the export formats the Export menu offers, in this order, after the built-in CSV.</summary>
-    /// <remarks>Each identity names a format the page registers in the browser with <c>CanopyX.registerExportFormat</c>; an identity no page registers is skipped. Empty writes nothing, which offers every registered format; a browser host that offers none passes an empty <c>exportFormats</c> option, which takes precedence over this list. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
-    public IList<string> ExportFormats { get; } = new List<string>();
+    /// <summary>Gets or sets the identities of the export formats the Export menu offers, in this order, after the built-in CSV.</summary>
+    /// <remarks><c>xlsx</c> and <c>pdf</c> select the optional offline writers. Other identities name formats registered with <c>CanopyX.registerExportFormat</c>; unknown identities are skipped. Empty writes nothing, which offers every registered format; a browser host that offers none passes an empty <c>exportFormats</c> option, which takes precedence over this list. Identities are 1 to 32 lowercase letters, digits and hyphens, starting with a letter; <c>csv</c> is built in.</remarks>
+    public IList<string> ExportFormats {
+        get => _exportFormats;
+        set => _exportFormats = value ?? throw new ArgumentNullException(nameof(value));
+    }
+    private IList<string> _exportFormats = new List<string>();
 
     /// <summary>Gets or sets whether the grid exposes its search control. Defaults to true.</summary>
     public bool Search { get; set; } = true;
@@ -193,6 +197,7 @@ public sealed partial class CanopyDataGridView {
         if (Zebra) writer.Property("zebra", true);
         writer.OptionalProperty("noun", Noun).OptionalProperty("emptyReason", EmptyReason);
         if (StatusBar) writer.Property("statusBar", true);
+        if (CalculatedColumnsEditable) writer.Property("calculatedColumnsEditable", true);
         if (!Toolbar.IsDefault) { writer.Name("toolbar"); Toolbar.WriteJson(writer); }
         if (!Editing.IsDefault) { writer.Name("editing"); Editing.WriteJson(writer); }
         if (ExportFormats.Count > 0) {
@@ -222,6 +227,12 @@ public sealed partial class CanopyDataGridView {
         WriteLiveJson(writer);
         WriteFacetPanelJson(writer);
         WriteCalendarJson(writer);
+        WritePathJson(writer);
+        WriteStackJson(writer);
+        WriteBoardJson(writer);
+        WritePlanJson(writer);
+        if (Compare != null) { writer.Name("compare"); Compare.WriteJson(writer); }
+        if (ViewIntents) writer.Property("viewIntents", true);
         if (Reporting != null) { writer.Name("reporting"); Reporting.WriteJson(writer, Columns); }
         if (Record != null) { writer.Name("record"); Record.WriteJson(writer, grid: true); }
         if (Presentation == CanopyGridPresentation.Paged) writer.Property("presentation", "paged").Property("pageLength", PageLength);
@@ -248,7 +259,7 @@ public sealed partial class CanopyDataGridView {
             rowData.WriteDescriptor(writer, rowDataBase);
         } else if (Source.Kind == CanopyGridSourceKind.Inline) {
             writer.Name("rows").BeginArray();
-            foreach (var row in Rows) row.WriteJson(writer);
+            foreach (var row in CalculateRows(Rows)) row.WriteJson(writer);
             writer.EndArray();
         }
         return writer.EndObject().ToString();
@@ -300,6 +311,7 @@ public sealed partial class CanopyDataGridView {
             if (!column.Hidden) visible++;
         }
         if (visible == 0) throw new InvalidOperationException("A grid needs at least one visible column.");
+        ValidateCalculations();
         ValidateGridOptions();
         ValidateColumnGroups();
         ValidateCellRanges();
@@ -312,8 +324,16 @@ public sealed partial class CanopyDataGridView {
         }
         ValidateFormatting();
         Reporting?.Validate(Columns);
+        Reporting?.Pivot?.Validate(this);
         ValidateFacetPanel();
         ValidateCalendar();
+        if ((Board != null ? 1 : 0) + (Path != null ? 1 : 0) + (Stack != null ? 1 : 0) + (Calendar != null ? 1 : 0) > 1)
+            throw new InvalidOperationException("Choose one grid presentation: board, path, stack or calendar (with optional plan). ");
+        ValidatePath();
+        ValidateStack();
+        ValidateBoard();
+        ValidatePlan();
+        Compare?.Validate(this);
         if ((Reporting?.Grouping != null || Reporting?.DynamicGrouping == true || Reporting?.Aggregates.Count > 0) && Navigation == CanopyGridNavigation.Cursor)
             throw new InvalidOperationException("Flat grouping and summaries require known-count offset navigation.");
         if (Reporting?.ViewStorage == CanopyGridViewStorage.Local && (string.IsNullOrWhiteSpace(StateKey) || StateKey!.Length > 512))

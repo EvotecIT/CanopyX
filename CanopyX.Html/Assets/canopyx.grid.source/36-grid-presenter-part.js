@@ -1,6 +1,6 @@
   // The painter loads with declarative columns. Plain grids keep query and ordinary cell painting in the core.
   const GRID_PRESENTER_IMPL = {}, GRID_PRESENTERS = definePart(DataGrid, "presenters", "cell presenters", () => ({
-    GRID_PRESENTER_IMPL, h, setText, fill, cellValue, cellText, isCellObject, columnNumericTone, columnValueTone,
+    GRID_PRESENTER_IMPL, h, setText, fill, cellValue, cellText, changeCellText, isCellObject, columnNumericTone, columnValueTone,
     gridPresenterTone, gridPresenterLink, numberFormat, toneColors, toneOf, applyTone, gridIcon, badgeElement,
     GRID_HISTORY_KINDS, GRID_HISTORY_IMPL, RECORD_IMPL
   }));

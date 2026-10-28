@@ -97,6 +97,7 @@
       const column = this.columns.find(item => item.id === level.column), chip = h("span", "cx-gchip"), name = h("span", "cx-gchip-name");
       const change = next => this.setGroupBy(next).catch(error => this.emit("error", { error }));
       chip.dataset.cxLevel = String(index + 1); chip.title = this.labels.gridGroupMove; setText(name, column.title); chip.appendChild(name);
+      this.groupBucketControls(chip, levels, level, column);
       const descending = level.direction === "desc", direction = gridDecorateButton(gridButton("", () =>
         change(levels.map(item => item === level ? { ...item, direction: descending ? "asc" : "desc" } : item))), descending ? "down" : "up", true);
       direction.classList.add("cx-gchip-direction"); direction.setAttribute("aria-label", column.title + ": " + (descending ? this.labels.gridSortAscending : this.labels.gridSortDescending));

@@ -1,5 +1,8 @@
 # CanopyX features
 
+Keyed [dataset comparison](dataset-compare.md) combines two versions in one grid with change counts and a script-free
+email fallback. [View intents](view-intents.md) validate host-supplied JSON and preview view changes before applying them.
+
 CanopyX has two interactive views: a **data grid** for flat records and a **tree grid** for hierarchies. Both can be written
 from typed C# or mounted from JavaScript, and both can render as a script-free table for email and print. A **flow** is a guided
 form for setup and edit tasks that raises one proposal to the host (see [Flows](#flows)). This page lists
@@ -141,6 +144,10 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Aggregates (count, sum, average, minimum, maximum) in group rows and a pinned summary row | Reporting | `reporting.aggregates`; hosted sources add `source.summary` | [Flat groups](data-protocol.md#flat-groups-and-complete-query-totals) |
 | Hierarchies of any depth | Tree | `CanopyTreeView`, inline or lazy children | [Tree grid features](authoring.md#tree-grid-features) |
 | Grouping by up to four columns, from the column menus or a group-by bar, with labelled aggregates | Reporting | `reporting.groupBy`, `reporting.groupable`, `setGroupBy()` | [grouping.md](grouping.md) |
+| Calendar and numeric range buckets for grouping and facets | Reporting | `bucket`; C# `CanopyBucket`, hosted `IQueryable` translation | [grouping.md](grouping.md#grouping) |
+| Percent shares, running totals, rank, difference and percent change | Reporting | Aggregate `showAs`, `setAggregateShowAs()`, numeric `getDisplaySummary()`; C# `CanopyAggregateDisplay` | [grouping.md](grouping.md#show-values-as) |
+| Pivot rows and columns, totals, both-axis collapse, top-N/Other and exact drill-through | Reporting | `reporting.pivot`, `pivotable`, `setPivot()`, `source.pivot`; C# `CanopyGridPivot`, `CanopyPivot` | [pivot.md](pivot.md) |
+| Calculated columns with bounded arithmetic, comparisons, text/date functions and saved definitions | Grid | Column `calculation`, `calculatedColumnsEditable`, `setCalculatedColumns()`; C# `CanopyCalculation`, `CanopyCalculationSet` | [calculated-columns.md](calculated-columns.md) |
 | Expandable detail rows: a template, HTML, or a nested grid or tree | Reporting | `reporting.detail` | [grouping.md](grouping.md#detail-rows) |
 
 ## Calendar and resource timeline
@@ -164,6 +171,18 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Week numbers, day links, a valid range, six fixed weeks, right to left | Grid | `weekNumbers`, `navLinks`, `validRange`, `fixedWeeks`, `dir="rtl"` | [The calendar definition](calendar.md#the-calendar-definition) |
 | Several sources with a legend; iCalendar import (browser and .NET) | Grid | `sources`, `source`; `CanopyICalendar.Parse` | [Sources and iCalendar](calendar.md#sources-and-icalendar), [icalendar.md](icalendar.md) |
 | Shading outside ranges; context menus and hover cards | Grid | `ranges[].inverse`, `menu`, `hover`, `calendar.menu` hook | [Context menus](calendar.md#context-menus-and-hover-cards) |
+
+## Boards and task plans
+
+| Feature | Entry point | How | Reference |
+|---|---|---|---|
+| Lanes from raw column values, WIP limits and optional swimlanes | Grid | `board`; C# `CanopyBoard` | [board.md](board.md) |
+| Drag, keyboard and phone lane proposals through the grid edit contract | Grid | `board.editable`, `onBoardMove`, `editing.commit` | [Governed moves](board.md#governed-moves) |
+| Independent virtual lanes, shared search, facets, saved views and record panel | Grid | Existing grid query and state APIs | [Phones, keyboard and print](board.md#phones-keyboard-and-print) |
+| Script-free board output for email, Word and print | .NET | `ToBoardStaticHtml`, `CanopyStaticHtml.RenderGrid` | [board.md](board.md) |
+| Finish-to-start arrows, milestones, elapsed-duration critical path and baseline comparison | Grid | `plan`; C# `CanopyPlan`, `CanopyPlanDependency` | [plan.md](plan.md) |
+| Date/resource proposals with dependency and overlap conflict marks | Grid | `plan.proposeMoves`, `plan.propose`, `planChangeProposal` | [plan.md](plan.md) |
+| Print and script-free plan snapshots | Grid, .NET | Timeline print; `CanopyStaticHtml.RenderGrid` | [plan.md](plan.md) |
 
 ## Flows
 
@@ -268,6 +287,10 @@ Spoken screen-reader output has not been recorded for a release yet. Calendar an
 | Polish, German, Spanish, French and Italian packs, with plural forms where a label counts | Grid, Tree, Flow | `@evotecit/canopyx/locales/pl`, `/de`, `/es`, `/fr`, `/it`; `CanopyLabels.Polish()`, `German()`, `Spanish()`, `French()`, `Italian()` | [Label packs](labels.md) |
 | Locale-aware number and date formatting | Grid, Tree | Browser `Intl` | [Default formatting and sorting](data-protocol.md#default-formatting-and-sorting) |
 
+| Explicit source-to-target chains, per-hop labels, annotations and record-panel navigation | Grid | `path`; C# `CanopyPath` | [Path view](path.md) |
+| Ordered layers with a host-supplied winner, reasons, badges and record-panel navigation | Grid | `stack`; C# `CanopyStack` | [Stack view](stack.md) |
+| Host snapshot replay with play, pause, stepping, reduced motion and selected-frame print | Matrix, Propagation | `timeSlider`; C# `CanopyTimeSlider<T>` | [Snapshot playback](time-slider.md) |
+
 ## Extension points
 
 | Feature | Views | How | Reference |
@@ -287,5 +310,5 @@ Spoken screen-reader output has not been recorded for a release yet. Calendar an
 | npm package with ES modules, classic scripts, styles and TypeScript types | `@evotecit/canopyx` | [JavaScript hosts](authoring.md#javascript-hosts) |
 | Public API baselines for C# and TypeScript, checked on every build, and a versioning and deprecation policy | `api/`, `ApiSurfaceTests`, `npm run test:api` | [versioning.md](versioning.md) |
 | Single-file pages, fragments and content-hashed asset files | `SaveHtmlPage`, `ToHtmlFragment`, `CanopyHtmlAssets.WriteTo` | [Assets and caching](architecture.md#assets-and-caching) |
-| Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 119.5 KiB, reporting 147.5 KiB, flow 10 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
+| Size guards per entry point (gzip, each its size plus about 15%): tree 59.5 KiB, interactive tree 69.5 KiB, grid 123 KiB, reporting 147.5 KiB, flow 10 KiB | Optional parts load on first use | [Assets and caching](architecture.md#assets-and-caching) |
 | A strict Content Security Policy with a nonce, and Trusted Types | Grid, Tree | `CanopyHtmlOptions.Nonce`, `CanopyX.setNonce` | [security.md](security.md) |

@@ -76,6 +76,7 @@ public sealed class CanopyFormatPredicate {
     /// <returns>A predicate with the same column, operator and operands.</returns>
     public static CanopyFormatPredicate FromFilter(CanopyGridFilter filter) {
         if (filter == null) throw new ArgumentNullException(nameof(filter));
+        if (filter.Bucket != null) throw new InvalidOperationException("A bucket filter cannot be used as a raw-value formatting condition.");
         var values = new CanopyCell[filter.Values.Count];
         for (var i = 0; i < values.Length; i++) values[i] = filter.Values[i];
         return new CanopyFormatPredicate(filter.Column, CanopyFormatNames.FromWire(filter.WireOperator), values);

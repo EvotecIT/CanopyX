@@ -49,7 +49,7 @@ test("Print follows exportable columns after visibility changes and restored sta
   await openGridControl(page, "columns"); await page.getByRole("checkbox", { name: "Amount", exact: true }).uncheck();
   await page.evaluate(() => window.hiddenState = document.querySelector('[data-canopyx-host]').canopyx.getState());
   await page.locator(".cx-grid-columns > summary").click(); await openGridControl(page, "export");
-  await expect(page.getByRole("button", { name: "Download CSV", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "CSV", exact: true })).toBeDisabled();
   await page.locator(".cx-grid-export > summary").click();
   await openGridControl(page, "columns"); await page.getByRole("checkbox", { name: "Amount", exact: true }).check();
   await page.locator(".cx-grid-columns > summary").click(); await page.locator(".cx-grid-overflow > summary").click();
@@ -77,9 +77,9 @@ test("an ordinary definition on the reporting runtime shares its export projecti
   const csv = await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.toCsv({ scope: "all" }));
   expect(csv).toBe("Amount\r\n12\r\n");
   await openGridControl(page, "export");
-  await expect(page.getByRole("button", { name: "Download CSV", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "CSV", exact: true })).toBeEnabled();
   await expect(page.locator(".cx-grid-delivery-status")).toBeEmpty();
-  await page.getByRole("button", { name: "Copy", exact: true }).click();
+  await page.getByRole("button", { name: "Copy to clipboard", exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.copies)).toEqual(["Amount\r\n12\r\n"]);
 });
 
@@ -87,8 +87,8 @@ test("a grid with no allowed columns disables export actions and keeps a clear A
   const view = definition(false); for (const column of view.columns) { column.filterable = false; column.exportable = false; }
   await open(page, view); await expect(page.locator(".cx-grid-filters")).toHaveCount(0);
   await openGridControl(page, "export");
-  await expect(page.getByRole("button", { name: "Download CSV", exact: true })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Copy", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "CSV", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Copy to clipboard", exact: true })).toBeDisabled();
   await expect(page.locator(".cx-grid-delivery-status")).toHaveText("No visible columns allow export.");
   expect(await page.evaluate(() => { try { document.querySelector('[data-canopyx-host]').canopyx.prepareExport({ scope: "all" }); return null; } catch (error) { return error.message; } })).toContain("No visible columns allow export");
 });

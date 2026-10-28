@@ -57,9 +57,11 @@ Use the faster loop for C#-only changes:
 dotnet test .\CanopyX.sln -c Release --filter "Category!=Benchmark"
 ```
 
-After editing runtime source parts, reassemble the runtime, then rebuild so the embedded runtime and the example pages are fresh. The quality loop runs the browser tests against the regenerated examples (run `npm ci` and `node node_modules/@playwright/test/cli.js install chromium` in `tests/browser` once first):
+After editing runtime source parts, reassemble the runtime, then rebuild so the embedded runtime and the example pages are fresh. The quality loop runs the browser tests against the regenerated examples (run `npm ci` and `dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium` in `tests/browser` once first, adding `firefox webkit` for the other engines). HtmlTinkerX owns browser installation and repair; don't run Playwright's own `install` command, because a failed download can remove browsers from the shared cache:
 
 ```powershell
 ./Build/Sync-Assets.ps1
 ./Build.ps1 -Configuration Release -SkipPack
 ```
+
+`CANOPYX_TEST_OUTPUT_DIR` can place browser artifacts outside the checkout; the quality loop uses the same directory for independent Office artifact validation. `CANOPYX_TEST_WORKERS` overrides the local worker count when the machine has room for it.

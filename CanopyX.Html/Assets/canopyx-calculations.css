@@ -1,0 +1,8 @@
+.cx-calculation-editor{display:grid;gap:var(--hfx-space-3,0.75rem);padding:0;}
+.cx-calculation-editor label{display:grid;gap:var(--hfx-space-1,0.25rem);min-width:0;}
+.cx-calculation-editor :is(.cx-input,.cx-textarea){width:100%;min-width:0;box-sizing:border-box;}
+.cx-calculation-editor textarea{resize:vertical;font-family:var(--hfx-font-mono,"Cascadia Mono","Cascadia Code",Consolas,"SFMono-Regular",Menlo,monospace);}
+.cx-calculation-editor p{margin:0;line-height:var(--hfx-type-caption-line-height,1.35);}
+.cx-calculation-editor button{justify-self:start;}
+.cx-calculation-error{color:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));}
+@media print{.cx-calculation-editor{display:none;}}

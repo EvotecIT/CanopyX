@@ -27,14 +27,20 @@ public sealed partial class CanopyDataRequest {
     /// <param name="revision">The dataset revision the client expects, or null for the current one.</param>
     /// <param name="levels">The grouping levels, outermost first (at most four, distinct allowed columns). Null uses the schema's
     /// fixed grouping or declared <c>groupBy</c> levels; an empty sequence is ungrouped.</param>
+    /// <param name="tupleFilters">Up to eight exact tuple predicates bound to this schema.</param>
     public CanopyDataRequest(CanopyDataSchema schema, CanopyFilterNode? filter = null, IEnumerable<CanopySortKey>? sort = null, string? search = null,
         CanopyGridSearchMode searchMode = CanopyGridSearchMode.Substring, int offset = 0, int limit = 100, string? revision = null,
-        IEnumerable<CanopySummaryLevel>? levels = null) {
+        IEnumerable<CanopySummaryLevel>? levels = null, IEnumerable<CanopyTupleFilter>? tupleFilters = null) {
         Schema = schema ?? throw new ArgumentNullException(nameof(schema));
         Levels = levels == null ? DefaultLevels(schema) : CheckLevels(schema, levels);
+        TupleFilters = CheckTuples(schema, tupleFilters);
         if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
         if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit));
-        if (searchMode != CanopyGridSearchMode.Substring && searchMode != CanopyGridSearchMode.Words) throw new ArgumentOutOfRangeException(nameof(searchMode));
+        if (!Enum.IsDefined(typeof(CanopyGridSearchMode), searchMode)) throw new ArgumentOutOfRangeException(nameof(searchMode));
+        if (searchMode == CanopyGridSearchMode.Regex) {
+            if (!schema.AllowRegexSearch) throw new ArgumentException("This grid does not allow regex search.", nameof(searchMode));
+            if (!string.IsNullOrEmpty(search)) _ = new CanopyGridRegexSearch(search!);
+        }
         Filter = filter;
         var keys = new List<CanopySortKey>();
         if (sort != null) foreach (var key in sort) keys.Add(key ?? throw new ArgumentException("Sort keys cannot be null.", nameof(sort)));
@@ -56,6 +62,7 @@ public sealed partial class CanopyDataRequest {
         Schema = source.Schema; Filter = source.Filter; Sort = source.Sort; Search = source.Search; SearchMode = source.SearchMode;
         SearchTerms = source.SearchTerms; Offset = source.Offset; Limit = source.Limit; Revision = source.Revision;
         Ids = source.Ids; ExcludedIds = source.ExcludedIds; RawQuery = source.RawQuery; Levels = source.Levels;
+        TupleFilters = source.TupleFilters;
     }
 
     /// <summary>Gets the column allow-list.</summary>
@@ -99,6 +106,9 @@ public sealed partial class CanopyDataRequest {
     /// <summary>Gets the filter expression, or null when every record matches.</summary>
     public CanopyFilterNode? Filter { get; private set; }
 
+    /// <summary>Gets the AND-combined exact tuple predicates.</summary>
+    public IReadOnlyList<CanopyTupleFilter> TupleFilters { get; private set; }
+
     /// <summary>Gets accepted column aliases, including fixed pre-sort keys. Their definitions retain OrderData and SortComparator intent for host providers.</summary>
     /// <remarks>Built-in providers expand OrderData once, after grouping and fixed keys, and append stable record identity as the final key.</remarks>
     public IReadOnlyList<CanopySortKey> Sort { get; private set; }
@@ -140,10 +150,21 @@ public sealed partial class CanopyDataRequest {
     /// <summary>Returns a copy without search and filters, keeping the sort keys and window.</summary>
     /// <returns>The copy.</returns>
     public CanopyDataRequest WithoutCriteria() => new CanopyDataRequest(this) {
-        Filter = null, Search = string.Empty, SearchTerms = Array.Empty<string>(), RawQuery = null
+        Filter = null, TupleFilters = Array.Empty<CanopyTupleFilter>(), Search = string.Empty, SearchTerms = Array.Empty<string>(), RawQuery = null
     };
 
     internal CanopyDataRequest WithFilter(CanopyFilterNode? filter) => new CanopyDataRequest(this) { Filter = filter, RawQuery = null };
+    internal CanopyDataRequest WithTupleFilters(IEnumerable<CanopyTupleFilter> tuples) => new CanopyDataRequest(this) { TupleFilters = CheckTuples(Schema, tuples), RawQuery = null };
+
+    private static IReadOnlyList<CanopyTupleFilter> CheckTuples(CanopyDataSchema schema, IEnumerable<CanopyTupleFilter>? tuples) {
+        var result = new List<CanopyTupleFilter>();
+        foreach (var tuple in tuples ?? Array.Empty<CanopyTupleFilter>()) {
+            if (tuple == null || !ReferenceEquals(tuple.Schema, schema)) throw new ArgumentException("Tuple predicates must belong to this schema.", nameof(tuples));
+            if (result.Count == 8) throw new ArgumentException("At most eight tuple predicates are supported.", nameof(tuples));
+            result.Add(tuple);
+        }
+        return new ReadOnlyCollection<CanopyTupleFilter>(result);
+    }
 
     internal CanopyDataRequest WithRaw(string raw) => new CanopyDataRequest(this) { RawQuery = raw };
 
@@ -153,7 +174,7 @@ public sealed partial class CanopyDataRequest {
         if (schema.Grouping != null) return new[] { new CanopySummaryLevel(schema.GetColumn(schema.Grouping.Column), schema.Grouping.Descending) };
         var levels = new List<CanopySummaryLevel>();
         foreach (var level in schema.GroupBy)
-            levels.Add(new CanopySummaryLevel(schema.GetColumn(level.Column), level.Descending, level.Aggregate == null ? null : schema.FindAggregate(level.Aggregate)));
+            levels.Add(new CanopySummaryLevel(schema.GetColumn(level.Column), level.Descending, level.Aggregate == null ? null : schema.FindAggregate(level.Aggregate), level.Bucket));
         return new ReadOnlyCollection<CanopySummaryLevel>(levels);
     }
 
@@ -165,6 +186,7 @@ public sealed partial class CanopyDataRequest {
                 throw new ArgumentException("Grouping levels need distinct columns of this schema.", nameof(levels));
             if (level.Aggregate != null && !ReferenceEquals(schema.FindAggregate(level.Aggregate.Id), level.Aggregate))
                 throw new ArgumentException("A grouping level orders by a declared aggregate of this schema.", nameof(levels));
+            level.Bucket?.Validate(column.Definition);
             list.Add(level);
         }
         if (list.Count > 4) throw new ArgumentException("At most four grouping levels are supported.", nameof(levels));

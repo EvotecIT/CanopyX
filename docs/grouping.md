@@ -18,7 +18,35 @@ such a page, or serve the files.
 The example `orders-by-region.html` (CanopyX.Examples) groups orders by region and status with sum, average, count and
 distinct-count aggregates and expands each order into a nested grid of its order lines.
 
+For two-axis analysis, reporting grids also offer [pivots](pivot.md): bounded row and column fields, exact prefix
+totals, TopN/Other columns and correlated record drill-through. Ordinary grouping and pivot analysis share the
+declared aggregate and bucket contracts.
+
 ## Grouping
+
+Date and number columns offer a bucket choice in their grouping chip. Calendar choices are day, week, month, quarter,
+year, hour of day and weekday. Weeks start on Monday by default and use ISO week years; definitions can select another
+first weekday or time zone. Numeric ranges accept a positive width and origin or explicit ascending edges. Bounds are
+half-open, with separate underflow and overflow buckets for explicit edges. Choices travel with `groupBy` in queries,
+saved views and shared views. The underlying record values keep their original types.
+
+Bucket predicates use the built-in numeric comparisons against bucket keys. Named custom filters receive raw cell
+values, so a predicate cannot combine a custom operator with a bucket.
+
+```csharp
+view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("observed",
+    bucket: CanopyBucket.Calendar(CanopyBucketKind.Month)));
+view.FacetPanel = new CanopyFacetPanel();
+view.FacetPanel.Facets.Add(new CanopyFacet("amount") {
+    Bucket = CanopyBucket.ExplicitEdges(0, 100, 1000)
+});
+```
+
+The optional `buckets` part evaluates the same numeric keys in the browser that `CanopyBucket.Key` produces in C#.
+`CanopyX.Data` groups UTC calendar parts in the store. A host maps its provider's named-zone conversion through
+`BucketTimeZone`; it must preserve daylight-saving rules. `CanopyStaticHtml.RenderGridSummary(view, summary)` writes
+the accepted group labels and totals as a script-free inline-styled table. The gallery includes `analysis-buckets.html`
+and `analysis-summary.html`.
 
 ### Declaring it
 
@@ -220,6 +248,29 @@ keeping HTML payloads as text.
 | `expandDetail(id)`, `collapseDetail(id)`, `toggleDetail(id)` | A loaded record of the accepted result; resolves when the content is drawn. |
 | `getExpandedDetails()` | The expanded record IDs. |
 | `canopyx:detail` | `{ id, expanded }`. |
+
+## Show values as
+
+An aggregate's menu chooses its display mode: value, percent of grand total or parent, running total, rank, difference
+from the preceding sibling, or percent change. Pivot views also supply row and column percentages. A muted caption names
+the active mode. Changing it preserves the accepted query and the raw aggregates used by grouping order and later calculations.
+Modes are saved as `aggregateShowAs`, keyed by aggregate identity. `setAggregateShowAs(id, mode)` changes the presentation;
+`getDisplaySummary()` returns numeric values and spreadsheet number formats for totals and groups.
+
+```csharp
+var total = new CanopyGridAggregate("total", "amount", CanopyGridAggregateOperation.Sum, "Total")
+    .ShowValuesAs(CanopyShowAs.PercentGrandTotal);
+var display = CanopyAggregateDisplay.FromSummary(view, acceptedSummary);
+// display.Groups[groupKey]["total"].Value stays a numeric fraction.
+// Its NumberFormat is "0.00%", suitable for a numeric spreadsheet cell.
+```
+
+Ranks use descending competition order (`1, 1, 3`). Running totals follow accepted sibling order and leave missing values
+empty without advancing the total. Differences and percent changes use the immediately preceding sibling; a missing
+predecessor leaves the result empty. A zero or missing denominator leaves a percentage empty. Percent change divides
+the difference by the preceding value, including its sign. Empty groups stay empty. The optional `values` part owns
+browser mathematics and the menu; C# and JavaScript share the conformance vectors in `tests/fixtures/aggregate-display.json`.
+`CanopyStaticHtml.RenderGridSummary` applies declared modes and captions to the script-free output.
 
 ## Labels
 

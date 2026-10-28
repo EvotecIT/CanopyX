@@ -12,9 +12,12 @@
     gridFacetCollapse: "Collapse {column}", gridFacetExpand: "Expand {column}", gridFacetInvalid: "Enter a valid value.", gridFacetReversed: "From must not be after To."
   }));
   const GRID_FACETS = definePart(DataGrid, "facets", "facet panel", () => ({ DataGrid, h, setText, fill, gridButton, gridIcon, gridQueryStart,
-    gridQueryRows, gridColumnProjection, gridScalar, gridOrder, gridKeyCompare, gridFacetKey, cellText, foldText, numberFormat, gridCellRenderer, gridFreeze, overlayTheme, watchOverlayTheme }));
+    gridQueryRows, gridColumnProjection, gridScalar, gridOrder, gridKeyCompare, gridFacetKey, cellText, foldText, numberFormat, gridCellRenderer, gridFreeze, overlayTheme, watchOverlayTheme, GRID_BUCKETS, gridBucketDefinition }));
   Object.assign(DataGrid.prototype, {
-    loadFacets() { return this.facetLoad ||= loadPart(GRID_FACETS).then(() => this.destroyed || this.startFacets()).catch(error => { this.facetLoad = null; throw error; }); },
+    loadFacets() { return this.facetLoad ||= Promise.resolve().then(async () => {
+      if ((this.opts.facets?.columns || this.view.facets?.columns)?.some(facet => facet?.bucket)) await loadPart(BUCKETS_PART);
+      await loadPart(GRID_FACETS); if (!this.destroyed) this.startFacets();
+    }).catch(error => { this.facetLoad = null; throw error; }); },
     setFacetPanelOpen(open) { return this.loadFacets().then(() => this.setFacetPanelOpen(open)); },
     getFacetPanel() { return gridFreeze({ open: this.facetOpen ?? null, columns: (this.facetColumns || []).map(facet => facet.column) }); }
   });

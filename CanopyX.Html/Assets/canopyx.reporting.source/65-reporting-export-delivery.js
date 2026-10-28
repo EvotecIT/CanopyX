@@ -1,6 +1,6 @@
   // ---------- captured delivery metadata and bounded read-only host snapshots ----------
   const DELIVERY_PREPARE = DataGrid.prototype.prepareExport, DELIVERY_TEXT = DataGrid.prototype.exportText,
-    DELIVERY_API = GRID_REPORTING.api, DELIVERY_CALLBACKS = new WeakMap();
+    DELIVERY_API = GRID_REPORTING.api, DELIVERY_CALLBACKS = new WeakMap(), DELIVERY_PRINT = DataGrid.prototype.print;
   function reportingExportTotal(request) {
     return request.recordCount;
   }
@@ -23,19 +23,8 @@
     };
   }
   async function reportingExportSnapshot(grid, exported, maxRows, signal, progress) {
-    if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 10000) throw new Error("CanopyX: print snapshots support 1 to 10000 records.");
-    const total = reportingExportTotal(exported.request);
-    if (total !== null && total > maxRows) throw new Error("CanopyX: snapshot exceeds its row bound; use a host export hook.");
-    const rows = []; let size = JSON.stringify({ request: exported.request, rows: [] }).length;
-    if (size > 4194304) throw new Error("CanopyX: snapshot exceeds its text bound; use a host export hook.");
-    progress("reading", 0);
-    for await (const row of grid.exportRows(exported.request, signal)) {
-      if (rows.length >= maxRows || (size += JSON.stringify(row).length + 1) > 4194304)
-        throw new Error("CanopyX: snapshot exceeds its row or text bound; use a host export hook.");
-      rows.push(row); if (rows.length % 100 === 0) progress("reading", rows.length);
-    }
-    gridOperationActive(grid, signal); progress("generating", rows.length);
-    return gridFreeze({ request: exported.request, rows });
+    await loadExportPart();
+    return EXPORT_IMPL.snapshot(grid, exported, maxRows, signal, progress);
   }
   GRID_REPORTING.api = (api, grid) => {
     DELIVERY_API?.(api, grid);
@@ -45,7 +34,7 @@
   Object.assign(DataGrid.prototype, {
     prepareExport(options) {
       if (options?.onProgress !== undefined && typeof options.onProgress !== "function") throw new Error("CanopyX: export progress needs a callback.");
-      const exported = DELIVERY_PREPARE.call(this, options);
+      const ordinary = options?.pivot === true ? null : DELIVERY_PREPARE.call(this, options);
       let locale = this.lang;
       if (options.locale !== undefined) {
         if (typeof options.locale !== "string" || options.locale.length > 128)
@@ -56,11 +45,17 @@
         } catch { throw new Error("CanopyX: export locale must be supported by this browser."); }
       }
       if (options.timeZone !== undefined && !["utc", "local"].includes(options.timeZone)) throw new Error("CanopyX: export time zone is utc or local.");
+      const pivot = options.pivot === true ? GRID_REPORTING.preparePivotExport?.(this, {
+        ...options, locale, timeZone: options.timeZone || (this.local ? "local" : "utc")
+      }) : null;
+      if (options.pivot === true && !pivot) throw new Error("CanopyX: pivot table capture requires an active pivot producer.");
+      const exported = pivot || ordinary;
       const fileName = reportingFileName(options.fileName ?? ("canopyx-" + this.view.id.replace(/[^a-z0-9_-]/gi, "_")).slice(0, 100));
       const request = gridFreeze({ ...exported.request, locale, fileName, timeZone: options.timeZone || exported.request.timeZone,
-        columns: exported.request.columns.map(column => GRID_REPORTING.exportColumn(this, this.columns.find(item => item.id === column.id))) }), grid = this,
+        formatRules: pivot ? exported.request.formatRules || [] : this.getFormatRules(), generatedAt: new Date().toISOString(),
+        columns: pivot ? exported.request.columns : exported.request.columns.map(column => GRID_REPORTING.exportColumn(this, this.columns.find(item => item.id === column.id))) }), grid = this,
         signal = options.signal, callback = options.onProgress;
-      GRID_REPORTING.captureExport(this, request);
+      if (!pivot) GRID_REPORTING.captureExport(this, request);
       const result = Object.freeze({ request, rows: async function* (options) {
         const enumerationSignal = gridExportSignal(signal, options);
         const progress = reportingExportProgress(grid, request, callback, enumerationSignal); let count = 0;
@@ -85,13 +80,14 @@
       }, options.signal);
     },
     print(options) {
-      const exported = this.prepareExport(options), maxRows = options.maxRows ?? 1000, callback = DELIVERY_CALLBACKS.get(exported);
-      if (typeof this.opts.onPrint !== "function") throw new Error("CanopyX: printing needs an onPrint host hook.");
+      if (typeof this.opts.onPrint !== "function") return DELIVERY_PRINT.call(this, options);
+      const exported = this.prepareExport(options), maxRows = options.maxRows ?? 1000, callback = DELIVERY_CALLBACKS.get(exported),
+        layout = this.layoutMode === "cards" ? "stacked" : "table";
       return this.runGridHook(async signal => {
         const progress = reportingExportProgress(this, exported.request, callback, signal);
         const snapshot = await reportingExportSnapshot(this, exported, maxRows, signal, progress);
         // Print never scrolls: a grid in the card layout asks for stacked records, every other layout for a table.
-        await this.opts.onPrint({ snapshot, signal, layout: this.layoutMode === "cards" ? "stacked" : "table" }); gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
+        await this.opts.onPrint({ snapshot, signal, layout }); gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
       }, options.signal);
     },
     exportToHost(format, options) {

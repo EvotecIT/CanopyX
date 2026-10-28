@@ -8,8 +8,8 @@
   }
   function validateGridFacetPage(input, view, request, snapshot) {
     checkDocument(input, "gridFacetPage");
-    const column = view.columns.find(item => item.id === request.column);
-    if (input.view !== view.id || input.revision !== request.query.revision || input.column !== request.column ||
+    const declared = view.columns.find(item => item.id === request.column), column = request.bucket ? { ...declared, kind: "number" } : declared;
+    if (JSON.stringify(input.bucket) !== JSON.stringify(request.bucket) || input.view !== view.id || input.revision !== request.query.revision || input.column !== request.column ||
         input.search !== request.search || input.includeCurrentFilter !== request.includeCurrentFilter ||
         !Number.isInteger(input.matched) || input.matched < 0 || input.matched > MAX_PROTOCOL_INTEGER ||
         !Number.isInteger(input.totalValues) || input.totalValues < 0 || input.totalValues > input.matched ||
@@ -34,5 +34,5 @@
       throw new Error("CanopyX: facet buckets contradict the matching row count.");
     return gridFreeze({ protocol: PROTOCOL, type: "gridFacetPage", view: input.view, revision: input.revision,
       column: input.column, search: input.search, includeCurrentFilter: input.includeCurrentFilter,
-      matched: input.matched, totalValues: input.totalValues, truncated: input.truncated, items });
+      matched: input.matched, totalValues: input.totalValues, truncated: input.truncated, items, ...(request.bucket ? { bucket: request.bucket } : {}) });
   }

@@ -89,7 +89,7 @@ test("the Export menu exports visible, selected and all rows as CSV and through 
   await panel.getByRole("combobox").waitFor();
   expect(await panel.getByRole("combobox").locator("option").evaluateAll(options => options.map(option => [option.value, option.textContent])))
     .toEqual([["visible", "Visible rows"], ["selected", "Selected rows"], ["all", "All rows"]]);
-  await expect(panel.locator("button:not([hidden])")).toHaveText(["Download CSV", "Download Excel"]);
+  await expect(panel.locator("button:not([hidden]) .cx-export-choice-title")).toHaveText(["Download Excel", "CSV"]);
 
   const visible = await host.evaluate(element => element.canopyx.visibleRows().length);
   await exportWith("visible", "Download Excel");
@@ -110,7 +110,7 @@ test("the Export menu exports visible, selected and all rows as CSV and through 
   expect(written.rows.map(row => [row.id, row.level, row.path])).toEqual([["vp1", 2, ["ceo", "vp1"]]]);
 
   // CSV indents the tree column by level.
-  const csv = await exportWith("visible", "Download CSV");
+  const csv = await exportWith("visible", "CSV");
   const lines = fs.readFileSync(await (await csv).path(), "utf8").split("\r\n");
   expect(lines[0]).toBe("Name,Title,Department,Location,Email,Reports,Started");
   expect(lines[1]).toMatch(/^Morgan Avery,Chief Executive Officer,/);
@@ -122,7 +122,7 @@ test("the Export menu exports visible, selected and all rows as CSV and through 
   await page.keyboard.press("Escape"); await host.locator(".cx-grid-export > summary").click();
   await panel.getByRole("button", { name: "Download broken", exact: true }).click();
   await expect(panel.locator(".cx-grid-delivery-status")).toHaveText("Writer failed");
-  await expect(panel.getByRole("button", { name: "Download CSV", exact: true })).toBeEnabled();
+  await expect(panel.getByRole("button", { name: "CSV", exact: true })).toBeEnabled();
 });
 
 test("export progress, Cancel and the status line run through the shared menu", async ({ page }) => {

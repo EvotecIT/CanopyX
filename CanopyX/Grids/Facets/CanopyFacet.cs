@@ -21,6 +21,9 @@ public sealed class CanopyFacet {
     /// <summary>Gets the column id.</summary>
     public string Column { get; }
 
+    /// <summary>Gets or sets the optional calendar or numeric partition shown as a chronological value list.</summary>
+    public CanopyBucket? Bucket { get; set; }
+
     /// <summary>Gets or sets the kind; <see cref="CanopyFacetKind.Auto"/> (the default) shows text as a value list and numbers and dates as a range.</summary>
     public CanopyFacetKind Kind { get; set; }
 
@@ -56,14 +59,17 @@ public sealed class CanopyFacet {
     public bool Collapsed { get; set; }
 
     internal void Validate(CanopyColumn column) {
+        Bucket?.Validate(column);
+        if (Bucket != null && Kind == CanopyFacetKind.Range) throw new InvalidOperationException("A bucket facet uses a value list.");
         if (!Enum.IsDefined(typeof(CanopyFacetKind), Kind)) throw new ArgumentOutOfRangeException(nameof(Kind), Kind, "Unknown facet kind.");
         if (!Enum.IsDefined(typeof(CanopyFacetSort), Sort)) throw new ArgumentOutOfRangeException(nameof(Sort), Sort, "Unknown facet order.");
         if (Kind == CanopyFacetKind.Range && column.Kind == CanopyColumnKind.Text) throw new InvalidOperationException("Range facet '" + Column + "' needs a number or date column.");
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {
-        if (Kind == CanopyFacetKind.Auto && _label == null && !_limit.HasValue && !_bins.HasValue && !_sort.HasValue && !Collapsed) { writer.String(Column); return; }
+        if (Bucket == null && Kind == CanopyFacetKind.Auto && _label == null && !_limit.HasValue && !_bins.HasValue && !_sort.HasValue && !Collapsed) { writer.String(Column); return; }
         writer.BeginObject().Property("column", Column);
+        if (Bucket != null) { writer.Name("bucket"); Bucket.WriteJson(writer); }
         if (Kind != CanopyFacetKind.Auto) writer.Property("kind", Kind == CanopyFacetKind.List ? "list" : "range");
         writer.OptionalProperty("label", _label);
         if (_limit.HasValue) writer.Property("limit", _limit.Value);

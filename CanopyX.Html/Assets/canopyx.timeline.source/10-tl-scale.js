@@ -55,8 +55,9 @@
   }
 
   /** The axis of the current timeline: units, width and the mapping between instants and pixels. */
-  function tlAxis(zoom, span, zone, firstDay) {
-    const units = tlUnits(zoom, span, zone, firstDay), width = TL_ZOOMS[zoom].width, total = units.length * width;
+  function tlAxis(zoom, span, zone, firstDay, minWidth = 0) {
+    const units = tlUnits(zoom, span, zone, firstDay), width = Math.max(TL_ZOOMS[zoom].width, minWidth / units.length), total = units.length * width;
+    units.forEach((unit, index) => { unit.x = index * width; });
     const unitOf = time => {
       let low = 0, high = units.length - 1;
       while (low < high) { const mid = (low + high + 1) >> 1; if (units[mid].start <= time) low = mid; else high = mid - 1; }

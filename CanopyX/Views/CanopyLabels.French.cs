@@ -3,9 +3,16 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete French labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels French() => WithFrenchUi(new CanopyLabels {
+    public static CanopyLabels French() => WithFrenchUi(WithFrenchForest(WithFrenchDataViews(WithFrenchCalendar(WithFrenchBoardPlan(WithFrenchAnalysis(new CanopyLabels {
         GridNoExportColumns = "Aucune colonne visible ne permet l’exportation.",
+        GridDownloadXlsx = "Classeur Excel (.xlsx)",
+        GridDownloadPdf = "PDF",
+        GridExportWorkbookHint = "Mise en forme, groupes et totaux",
+        GridExportPdfHint = "Rapport paginé avec en-têtes répétés",
+        GridExportCsvHint = "Valeurs en texte brut (.csv)",
+        GridExportCopy = "Copier dans le presse-papiers",
         SearchPlaceholder = "Rechercher",
+        GridRegexSearch = "Motif de recherche",
         SearchResults = "Résultats de la recherche",
         SearchResultCount = "Résultats : {count}",
         SearchResultCountOfTotal = "Résultats : {count} sur {total}",
@@ -120,7 +127,7 @@ public sealed partial class CanopyLabels {
         GridAllResults = "Tous les résultats",
         GridVisibleRows = "Lignes visibles",
         GridAllRows = "Toutes les lignes",
-        GridDownloadCsv = "Télécharger le CSV",
+        GridDownloadCsv = "CSV",
         GridCopy = "Copier",
         GridDetails = "Détails de l'enregistrement",
         GridCellRangeSelected = "{rows} lignes × {columns} colonnes sélectionnées",
@@ -514,11 +521,6 @@ public sealed partial class CanopyLabels {
         CalendarOccurrenceTitle = "Modifier un événement récurrent",
         CalendarOccurrenceReadOnly = "Cette partie de la série ne peut pas être enregistrée, car certaines valeurs sont en lecture seule.",
         CalendarThisEvent = "Cet événement",
-        CalendarEditOccurrence = "Modifier cette occurrence",
-        CalendarRemoveOccurrence = "Supprimer cette occurrence",
-        CalendarOccurrenceScope = "Seul le {date} change ; les autres dates de {title} restent inchangées.",
-        CalendarSharedResources = "{count} {resources}",
-        CalendarResourceWindow = "{resources} {start}–{end} sur {total}",
         CalendarThisAndFollowing = "Cet événement et les suivants",
         CalendarAllEvents = "Tous les événements",
         CalendarSources = "Calendriers",
@@ -782,5 +784,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Copier la demande",
         ChangeFiltered = "Filtré : {filters}",
         ChangePrintLimit = "{count} lignes de plus ne sont pas imprimées.",
-    });
+    }))))));
 }

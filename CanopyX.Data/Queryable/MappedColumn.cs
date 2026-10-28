@@ -1,5 +1,6 @@
 using System;
 using System.Linq.Expressions;
+using System.Collections.Generic;
 
 namespace CanopyX.Data;
 
@@ -19,4 +20,5 @@ internal sealed class MappedColumn {
     internal Func<object?, CanopyCell?>? Format { get; set; }
     internal bool Filterable { get; set; } = true;
     internal bool NeverNull { get; set; }
+    internal Dictionary<string, LambdaExpression> BucketTimes { get; } = new Dictionary<string, LambdaExpression>(StringComparer.Ordinal);
 }

@@ -66,6 +66,7 @@
       const sort = Array.isArray(shared.s) ? shared.s.filter(Array.isArray).map(([column, direction]) => ({ column, direction })) : [];
       const query = { ...base.query, sort, search: typeof shared.q === "string" ? shared.q : "", filters: Array.isArray(shared.f) ? shared.f : [] };
       if (shared.g && typeof shared.g === "object") query.filterGroup = shared.g; else delete query.filterGroup;
+      if (Array.isArray(shared.t) && shared.t.length) query.tupleFilters = shared.t; else delete query.tupleFilters;
       const paging = { pageLength: Number.isInteger(shared.l) ? shared.l : base.paging?.pageLength || settings.pageLength || 50, offset: Number.isInteger(shared.o) ? shared.o : 0 };
       if (shared.a === true) paging.allRows = true;
       envelope = { ...envelope, current: { ...base, query, paging, scrollTop: 0 } };
@@ -86,6 +87,7 @@
     if (query.search) shared.q = query.search;
     if (query.filters.length) shared.f = query.filters;
     if (query.filterGroup) shared.g = query.filterGroup;
+    if (query.tupleFilters?.length) shared.t = query.tupleFilters;
     if (paging.offset) shared.o = paging.offset;
     if (paging.pageLength && paging.pageLength !== settings.pageLength) shared.l = paging.pageLength;
     if (paging.allRows) shared.a = true;

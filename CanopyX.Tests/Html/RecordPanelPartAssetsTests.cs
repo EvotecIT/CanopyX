@@ -12,8 +12,8 @@ public sealed class RecordPanelPartAssetsTests {
         var part = CanopyHtmlAssets.GetPart("record-panel");
         var size = Gzip(part.Script) + Gzip(part.Style!);
         // Guard: the part's size plus about 15% headroom (docs/plugins.md, size budgets).
-        // Combined roadmap integration: its size plus about 15%.
-        Assert.True(size <= 22016, "The record panel part is " + size + " bytes gzip; the guard is 21.5 KiB.");
+        // Combined comparison endpoint formatting and board/path/stack navigation remain in this lazy part.
+        Assert.True(size <= 22400, "The record panel part is " + size + " bytes gzip; the guard is 22,400 bytes.");
         Assert.Equal(new[] { "ui-menu" }, part.Requires);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid })
             Assert.True(part.IsShippedWith(runtime), "The record panel part ships with " + runtime + ".");

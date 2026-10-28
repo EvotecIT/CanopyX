@@ -115,6 +115,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         var filtered = translator.Apply(source, request.Query);
         var matched = await Executor.CountAsync(filtered, cancellationToken).ConfigureAwait(false);
         var shape = Map.Get(request.Column.Id).Shape;
+        if (request.Bucket != null) return await BucketFacetAsync(translator, filtered, request, matched, cancellationToken).ConfigureAwait(false);
         if (shape == ValueShape.Text)
             return await TextFacetAsync(translator, filtered, request, matched, cancellationToken).ConfigureAwait(false);
         // Numeric quick search may use store text, but value lists own the protocol's exact number spelling.
@@ -274,7 +275,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         var rootLoose = new Dictionary<string, GroupNode?>(StringComparer.Ordinal);
         var total = 0;
         for (var depth = 0; depth < levels.Count; depth++) {
-            var rows = await translator.GroupsAsync(filtered, columns.Take(depth + 1).ToList(), aggregates(depth), 10001, Executor, cancellationToken).ConfigureAwait(false);
+            var rows = await translator.GroupsAsync(filtered, columns.Take(depth + 1).ToList(), aggregates(depth), 10001, Executor, cancellationToken, levels).ConfigureAwait(false);
             total += rows.Count;
             if (rows.Count > 10000 || total > 10000) throw CanopyRequestException.Limit("The result has more groups than the protocol allows.");
             foreach (var row in rows) {
@@ -342,7 +343,7 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyDataProvider, IC
         // Each run of groups is a query: a page may span at most 1,000 groups (16 queries), an export every group.
         if (overlapping.Count > maxGroups) throw CanopyRequestException.Limit("The page spans too many groups; request a smaller page.");
         var rest = request.ProviderSort(insideGroups: true);
-        var values = request.Levels.Select(level => translator.GroupValue(level.Column.Id)).ToArray();
+        var values = request.Levels.Select(level => translator.GroupValue(level)).ToArray();
         Expression Match(QueryTranslator<T>.StoreGroup group) {
             Expression? test = null;
             for (var i = 0; i < values.Length; i++)

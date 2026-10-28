@@ -38,6 +38,7 @@
       this.viewQueryPromise = pending; return pending;
     },
     async initializeState() {
+      if (gridUsesCalculations(this.view) && !this.calculationPrepared) await this.prepareCalculations();
       if (!this.opts.viewStore) return VIEW_STORE_INITIALIZE.call(this);
       this.loadingViewSettings = true; this.setViewPreferenceError(this.labels.loading);
       const epoch = this.queryEpoch, intent = this.viewSettingsIntent, preference = this.viewPreferenceIntent;

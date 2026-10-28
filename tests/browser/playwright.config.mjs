@@ -23,6 +23,12 @@ if (new Set(browserNames).size !== browserNames.length || browserNames.some(name
   throw new Error("CANOPYX_TEST_BROWSERS must be \"all\" or name unique chromium, firefox, or webkit engines.");
 }
 
+// Local integration proof can use more file workers without changing the hosted CI defaults.
+const localWorkers = process.env.CANOPYX_TEST_WORKERS;
+if (localWorkers && (!/^[1-9]\d*$/.test(localWorkers) || !Number.isSafeInteger(Number(localWorkers)))) {
+  throw new Error("CANOPYX_TEST_WORKERS must be a positive safe integer.");
+}
+
 const customChromium = !!(process.env.CANOPYX_BROWSER_CHANNEL || process.env.CANOPYX_BROWSER_EXECUTABLE);
 const visual = !benchmarks && (process.env.CANOPYX_VISUAL === "1" ||
   (process.env.CANOPYX_VISUAL !== "0" && browserNames.includes("chromium") && process.platform === "win32" && !customChromium));
@@ -30,6 +36,8 @@ const visualSpec = /visual-baselines\.spec\.mjs$/;
 // Explicit benchmark runs include the calendar measurements on Chromium after the other selected projects finish.
 // Ordinary correctness CI does not create this project.
 const calendarPerformanceSpec = /calendar-performance\.spec\.mjs$/;
+// Computed-layout quality rules run once per platform, on Chromium. Interaction contracts still use every engine.
+const galleryFinishSpec = /gallery-finish-quality\.spec\.mjs$/;
 const calendarPerformance = benchmarks && browserNames.includes("chromium") && !customChromium;
 
 export default defineConfig({
@@ -47,12 +55,12 @@ export default defineConfig({
   fullyParallel: false,
   shard,
   forbidOnly: !!process.env.CI,
-  workers: process.env.CI ? 1 : 2,
+  workers: localWorkers ? Number(localWorkers) : process.env.CI ? 1 : 2,
   retries: 0,
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
-  outputDir: "test-results",
+  outputDir: process.env.CANOPYX_TEST_OUTPUT_DIR || "test-results",
   projects: [
-    ...browserNames.map(browserName => ({ name: browserName, testIgnore: [visualSpec, calendarPerformanceSpec], use: {
+    ...browserNames.map(browserName => ({ name: browserName, testIgnore: [visualSpec, calendarPerformanceSpec, ...(browserName === "chromium" ? [] : [galleryFinishSpec])], use: {
       browserName,
       ...(browserName === "chromium" ? {
         channel: process.env.CANOPYX_BROWSER_CHANNEL || undefined,

@@ -153,6 +153,7 @@ internal static class CanopyChangeValidator {
     }
 
     internal static void Validate(CanopyPropagation view) {
+        view.TimeSlider?.Validate(view.Id, frame => frame.Id, frame => frame.TimeSlider != null, frame => frame.Validate());
         Id(view.Id, "The propagation view");
         Text(view.Label, "The propagation label", 200, false);
         Text(view.Summary, "The propagation summary", 500, true);

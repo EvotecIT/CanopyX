@@ -16,10 +16,13 @@ Turn application data into searchable trees, sortable tables and standalone HTML
 
 - **File and folder explorers** with expandable branches, lazy loading, search and multi-selection.
 - **Inventory and results tables** with typed sorting, filters, column resizing and saved views.
+- **Analytical reports** with calendar and numeric buckets, aggregate display modes and optional [pivot tables](docs/pivot.md), backed by inline records or one grouped hosted query. [Calculated columns](docs/calculated-columns.md) use the same bounded expression grammar in C# and the browser.
 - **HTML reports** that include their own runtime and data and can be opened from disk or a file share.
 - **Application views** backed by paged or cursor-based data sources, with selection and detail callbacks.
 - **Email and print tables** rendered from the same .NET view without JavaScript.
 - **Calendars and resource timelines** of the same records: month, week, day, agenda and year views, resources grouped as a tree with capacity per group, recurring events, drag to reschedule through the grid's editing, and iCalendar export.
+- **Boards** with lanes from a column, swimlanes, WIP limits, virtual cards and host-governed moves, sharing the grid's search, facets, views and record panel ([docs/board.md](docs/board.md)).
+- **Task plans** on the resource timeline, with dependencies, milestones, critical paths, baseline comparisons and conflict-marked proposals ([docs/plan.md](docs/plan.md)).
 - **Status matrices**: a state for each pair of two sets of entities, with totals, sorting, filtering and grouping on both axes, sticky headers and both axes windowed ([docs/matrix.md](docs/matrix.md)).
 - **Change views**: a text diff (inline or side by side, word marks, folded regions, windowed rows), a change list with kind badges, folders, hashes and risk flags, and how a change reached its replicas ([docs/changes.md](docs/changes.md)).
 - **Guided flows** for setup and edit tasks: steps with typed fields, conditions as data, validation, a review page with change links, secrets that never echo, and one proposal to the host ([docs/flow.md](docs/flow.md)).
@@ -31,6 +34,8 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | Dark theme | Static outline |
 | --- | --- |
 | ![File explorer in the dark theme](docs/images/tree-grid-dark.png) | ![Static outline table](docs/images/static-outline.png) |
+
+Path and stack views explain explicit host-supplied chains and ordered layers over existing records. Matrix and propagation views replay supplied snapshots with manual stepping, play/pause, and reduced-motion support. Each ships as an optional part with typed C# authoring and script-free static output. See [paths](docs/path.md), [stacks](docs/stack.md), and [snapshot playback](docs/time-slider.md).
 
 ## Features
 
@@ -44,7 +49,7 @@ The same explorer in the dark theme, alongside its script-free output for email 
 | Grouping and details | Nested branches and detail rows | Multi-level row groups with labelled aggregates, and expandable detail rows holding a template, HTML or a nested grid or tree |
 | Delivery | Single HTML file, sidecar bundle or hosted data | Single HTML file, row-chunk sidecar bundle or hosted data |
 
-Both views use virtual rows and support keyboard navigation. Both can mark search and filter matches with a match count and next/previous navigation ([search highlighting](docs/search-highlight.md)), and let readers switch between fitting the width, scrolling sideways and (on grids) cards, in three densities ([layout modes](docs/layout-modes.md)). Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). Grids and trees can open each record in a record panel: record-only fields in tabs and sections, lists, objects and nested collections, links between records, timelines, record deep links, and copy, print and export of one record, with details loaded on demand for large reports (see [docs/record-panel.md](docs/record-panel.md)). English labels are built in; Polish, German, Spanish, French and Italian packs are included.
+Both views use virtual rows and support keyboard navigation. Both can mark search and filter matches with a match count and next/previous navigation ([search highlighting](docs/search-highlight.md)), and let readers switch between fitting the width, scrolling sideways and (on grids) cards, in three densities ([layout modes](docs/layout-modes.md)). Reporting grids also provide multi-level grouping with aggregates, detail rows, saved views, CSV export and row copying (see [docs/grouping.md](docs/grouping.md)). Optional offline Excel/PDF formats and default script-free printing use the same captured scope ([export formats](docs/authoring.md#export-formats)). Grids and trees can open each record in a record panel: record-only fields in tabs and sections, lists, objects and nested collections, links between records, timelines, record deep links, and copy, print and export of one record, with details loaded on demand for large reports (see [docs/record-panel.md](docs/record-panel.md)). English labels are built in; Polish, German, Spanish, French and Italian packs are included.
 
 CanopyX reads the shared `--hfx-*` design roles for colours, fonts, radii and density, and includes standalone defaults. Use `data-hfx-style` and `data-hfx-mode` on a containing element to theme a page; `data-hfx-density="compact"` selects 32px rows and `"comfortable"` selects 40px rows. See [theming](docs/architecture.md#theming) for custom roles and the migration from `--cx-*` colour variables.
 
@@ -218,6 +223,15 @@ A page that already has an HTML table needs one call. The table's headers, rows,
 ### Build navigation and overlays
 
 Use standalone tabs, steppers, dialogs, drawers, popovers, tooltips and menus with the same runtime. They load through its optional-parts API and work without a data view or jQuery. `CanopyX.contextMenu(elementOrSelector, items)` also adds actions to an ordinary page element. The `CanopyX.Html.Ui` builders write the accessible markup from .NET. See [UI primitives](docs/ui-primitives.md) for assets, callbacks, keyboard behavior and examples.
+### Compare datasets and preview view changes
+
+`CanopyDatasetComparer.Compare` joins two complete keyed snapshots into one grid, with added/removed/changed rows,
+before → after cells, column counts and an Only changes switch. `CanopyX.Data` can read the two host queries;
+`CanopyStaticHtml.RenderComparison` writes the email fallback. See [dataset comparison](docs/dataset-compare.md).
+
+With `viewIntents: true`, `await grid.applyViewIntent(state)` validates a versioned JSON proposal and previews it as
+chips before the reader applies it. The host supplies the proposal and governs access; CanopyX makes no model calls.
+See [view intents](docs/view-intents.md).
 
 ### Edit data in a grid
 
@@ -258,6 +272,7 @@ CSV export and copying distinguish filtered results, selected records and all re
 - [Features](docs/features.md): everything the tree and data grids do, grouped by capability.
 - [Recipes](docs/recipes.md): short how-tos for server data, cell values, export, phones, grouping, saved views and translations.
 - [Authoring reference](docs/authoring.md), [column layout](docs/column-layout.md), [label packs](docs/labels.md) and the [data protocol](docs/data-protocol.md).
+- [Dataset comparison](docs/dataset-compare.md) and [validated view intents](docs/view-intents.md).
 - [Planned work](TODO.md): remaining capabilities, consumers and acceptance gates.
 - [Testing and benchmarks](docs/testing.md): the required correctness loop and explicit performance measurements.
 

@@ -7,7 +7,7 @@ namespace CanopyX;
 // The labels a matrix document carries: the matrix labels that differ from English.
 public sealed partial class CanopyLabels {
     /// <summary>Whether a label belongs in a matrix document (named <c>Matrix…</c>).</summary>
-    private static bool IsMatrixLabel(string name) => name.StartsWith("Matrix", StringComparison.Ordinal) && name.Length > 6 && char.IsUpper(name[6]);
+    private static bool IsMatrixLabel(string name) => IsTimeLabel(name) || name.StartsWith("Matrix", StringComparison.Ordinal) && name.Length > 6 && char.IsUpper(name[6]);
 
     /// <summary>Whether any matrix label differs from English.</summary>
     internal bool HasMatrixLabels {

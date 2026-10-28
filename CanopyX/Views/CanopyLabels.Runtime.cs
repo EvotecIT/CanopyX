@@ -6,6 +6,20 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     /// <summary>The labels the browser runtime reads from the view document, in document order.</summary>
     private static readonly string[] RuntimeNames = {
+        nameof(GridDownloadXlsx), nameof(GridDownloadPdf),
+        nameof(GridExportWorkbookHint), nameof(GridExportPdfHint), nameof(GridExportCsvHint), nameof(GridExportCopy),
+        nameof(GridRegexSearch),
+        nameof(PathEmpty), nameof(PathSource), nameof(PathTarget), nameof(PathStep), nameof(PathCycle), nameof(PathForeign), nameof(PathDisabled), nameof(PathKeys), nameof(PathPartial), nameof(StackWinner), nameof(StackEnforced), nameof(StackFiltered), nameof(StackEmpty), nameof(StackOrder), nameof(StackTruncated),
+        nameof(BoardLane), nameof(BoardUnassigned), nameof(BoardEmpty), nameof(BoardWip), nameof(BoardWipFull), nameof(BoardMove), nameof(BoardMoved), nameof(BoardRejected), nameof(BoardPending), nameof(BoardPartial), nameof(BoardKeys),
+        nameof(PlanMilestone), nameof(PlanCritical), nameof(PlanBaseline), nameof(PlanDependency), nameof(PlanDependencyConflict), nameof(PlanOverlapConflict), nameof(PlanIncomplete), nameof(PlanInvalidRange), nameof(PlanInvalidResource), nameof(PlanProposal), nameof(PlanMoveHint), nameof(PlanActual), nameof(PlanPending), nameof(PlanBaselineLabel), nameof(PlanDependencies), nameof(PlanConflict),
+        nameof(GridCalculationAdd), nameof(GridCalculationTitle), nameof(GridCalculationId), nameof(GridCalculationExpression), nameof(GridCalculationError), nameof(GridCalculationInvalid), nameof(GridCalculationHelp), nameof(GridCalculationNumber), nameof(GridCalculationDate),
+        nameof(GridPivot), nameof(GridPivotRows), nameof(GridPivotColumns), nameof(GridPivotValues), nameof(GridPivotFlat), nameof(GridPivotConfigure), nameof(GridPivotOther), nameof(GridPivotLimited), nameof(GridPivotColumn), nameof(GridPivotTopN), nameof(GridPivotSort), nameof(GridPivotDrill), nameof(GridPivotReturn), nameof(GridPivotInvalid),
+        nameof(GridShowAs), nameof(GridShowAsValue), nameof(GridShowAsPercentGrandTotal), nameof(GridShowAsPercentParent), nameof(GridShowAsPercentColumn), nameof(GridShowAsPercentRow), nameof(GridShowAsRunningTotal), nameof(GridShowAsRank), nameof(GridShowAsDifference), nameof(GridShowAsPercentChange),
+        nameof(GridBucket), nameof(GridBucketNone), nameof(GridBucketDay), nameof(GridBucketWeek), nameof(GridBucketMonth), nameof(GridBucketQuarter), nameof(GridBucketYear), nameof(GridBucketHour), nameof(GridBucketWeekday), nameof(GridBucketWidth), nameof(GridBucketEdges), nameof(GridBucketOrigin), nameof(GridBucketInvalid),
+        nameof(CompareChanges), nameof(ViewIntentClearSearch), nameof(ViewIntentRemoveGrouping), nameof(ViewIntentFlat), nameof(ViewIntentAscending), nameof(ViewIntentDescending), nameof(ViewIntentNotEqual), nameof(ViewIntentGreater), nameof(ViewIntentAtLeast), nameof(ViewIntentLess), nameof(ViewIntentAtMost), nameof(ViewIntentFilter), nameof(ViewIntentOnly), nameof(ViewIntentPivot), nameof(ViewIntentAllRows), nameof(ViewIntentTotals), nameof(ViewIntentTuples), nameof(ViewIntentExcludeTuples), nameof(ViewIntentNoChanges),
+        nameof(ViewIntentWords), nameof(ViewIntentSubstring),
+        nameof(ViewIntentPreview), nameof(ViewIntentApplied), nameof(ViewIntentSuperseded), nameof(ViewIntentSearch), nameof(ViewIntentSort), nameof(ViewIntentGroup), nameof(ViewIntentColumns),
+        nameof(CompareSummary), nameof(CompareAdded), nameof(CompareRemoved), nameof(CompareChanged), nameof(CompareUnchanged), nameof(CompareOnlyChanges), nameof(CompareColumnChanges),
         nameof(GridEditCell), nameof(GridEditSave), nameof(GridEditCancel), nameof(GridEditDiscard), nameof(GridEditUndo), nameof(GridEditRedo),
         nameof(GridEditEdited), nameof(GridEditChanges), nameof(GridEditErrors), nameof(GridEditSaving), nameof(GridEditSaved), nameof(GridEditFailed),
         nameof(GridEditRequired), nameof(GridEditNumber), nameof(GridEditDate), nameof(GridEditMin), nameof(GridEditMax), nameof(GridEditStep),

@@ -49,9 +49,9 @@ test('snapshot bounds reject full scopes without truncation and ordinary grids r
   const errors=await page.evaluate(async()=>{
     const grid=document.querySelector('[data-canopyx-host]').canopyx;
     return [await grid.materializeExport({scope:'all',maxRows:10}).catch(e=>e.message),
-      await Promise.resolve().then(()=>grid.print({scope:'all'})).catch(e=>e.message)];
+      await Promise.resolve().then(()=>grid.print({scope:'all',maxRows:10})).catch(e=>e.message)];
   });
-  expect(errors[0]).toContain('row bound');expect(errors[1]).toContain('onPrint');
+  expect(errors[0]).toContain('row bound');expect(errors[1]).toContain('row bound');
   await page.unroute('http://canopyx.test/delivery');const plain=definition();delete plain.reporting;await open(page,plain);
   expect(await page.evaluate(`Promise.resolve().then(()=>${api}.toCsv({scope:'all',locale:'pl-PL'})).catch(e=>e.message)`)).toContain('export metadata requires reporting');
 });
@@ -92,7 +92,7 @@ test('cancellation stops independent snapshot windows and toolbar reports cancel
   const cancel=page.getByRole('button',{name:'Cancel export',exact:true});
   await cancel.focus();await expect(cancel).toBeFocused();await cancel.press('Enter');
   await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled');
-  await expect(page.getByRole('combobox',{name:'Export',exact:true})).toBeFocused();
+  await expect(page.getByRole('combobox',{name:'Export: rows',exact:true})).toBeFocused();
   expect(await page.evaluate('calls.at(-1).signal.aborted')).toBe(true);expect(await page.evaluate('window.printed')).toBe(undefined);
   await page.locator('.cx-grid-overflow > summary').click();
   await expect(page.getByRole('button',{name:'Print',exact:true})).toBeEnabled();expect(errors).toEqual([]);
@@ -135,21 +135,21 @@ test('ordinary grid CSV and Copy retain their controls on a reporting runtime pa
   const plain=definition();delete plain.reporting;
   await open(page,plain,"window.copied=[];Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>copied.push(text)}});",'reporting');
   await page.locator('.cx-grid-export > summary').click();
-  await page.getByRole('button',{name:'Copy',exact:true}).click();
+  await page.getByRole('button',{name:'Copy to clipboard',exact:true}).click();
   await expect.poll(()=>page.evaluate('copied.length')).toBe(1);
   expect(await page.evaluate('copied[0]')).toContain('136.5');
-  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download CSV',exact:true}).click();
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'CSV',exact:true}).click();
   const download=await pending;expect(fs.readFileSync(await download.path(),'utf8')).toContain('136.5');
 });
 
 const deferredClipboard="window.clipboardStarted=false;Object.defineProperty(navigator,'clipboard',{value:{writeText(){clipboardStarted=true;return new Promise(resolve=>window.finishClipboard=resolve);}}});";
 test('Cancel settles a pending clipboard permission and ignores its late completion',async({page})=>{
   await open(page,definition(),deferredClipboard);
-  await page.locator('.cx-grid-export > summary').click();await page.getByRole('button',{name:'Copy',exact:true}).click();
+  await page.locator('.cx-grid-export > summary').click();await page.getByRole('button',{name:'Copy to clipboard',exact:true}).click();
   await expect.poll(()=>page.evaluate('clipboardStarted')).toBe(true);
   await page.getByRole('button',{name:'Cancel export',exact:true}).click();
   await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled',{timeout:1500});
-  await expect(page.getByRole('button',{name:'Copy',exact:true})).toBeEnabled();
+  await expect(page.getByRole('button',{name:'Copy to clipboard',exact:true})).toBeEnabled();
   await page.evaluate('finishClipboard()');await nextFrames(page);
   await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled');
 });

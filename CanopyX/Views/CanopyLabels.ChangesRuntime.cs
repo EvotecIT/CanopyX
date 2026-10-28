@@ -7,7 +7,7 @@ namespace CanopyX;
 // The labels a change view's document carries (a diff, a change list or a propagation view): the change labels that differ from English.
 public sealed partial class CanopyLabels {
     /// <summary>Whether a label belongs in a change view's document (named <c>Change…</c>).</summary>
-    private static bool IsChangeLabel(string name) => name.StartsWith("Change", StringComparison.Ordinal) && name.Length > 6 && char.IsUpper(name[6]);
+    private static bool IsChangeLabel(string name) => IsTimeLabel(name) || name.StartsWith("Change", StringComparison.Ordinal) && name.Length > 6 && char.IsUpper(name[6]);
 
     /// <summary>Whether any change label differs from English.</summary>
     internal bool HasChangeLabels {

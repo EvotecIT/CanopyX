@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { test, expect } from "@playwright/test";
-import { examples, nextFrames } from "./support.mjs";
+import { examples, nextFrames, settleGrid } from "./support.mjs";
 
 const ORIGIN = "http://canopyx.test";
 const PLACEHOLDER = "CANOPYXNONCE";
@@ -78,6 +78,8 @@ async function exerciseTree(page) {
 /** The grid page's parts: history presenters on load, the column menu and Filters (filter editor), the Export menu and CSV. */
 async function exerciseGrid(page, root = page.locator(".cx-data-grid").first()) {
   await expect(root.locator(".cx-row[data-cx-id] svg").first()).toBeAttached();
+  await root.scrollIntoViewIfNeeded();
+  await settleGrid(page);
   await root.locator(".cx-grid-column-menu").first().click();
   await expect(page.locator(".cx-column-menu [role=menuitem]").first()).toBeVisible();
   await page.keyboard.press("Escape");
@@ -171,8 +173,9 @@ for (const [label, policy] of Object.entries(POLICIES)) {
       const heights = await page.locator("[data-canopyx-host]").evaluateAll(hosts => hosts.map(host => Math.round(host.getBoundingClientRect().height)));
       expect(heights[0]).toBeLessThanOrEqual(450);
       expect(heights[1]).toBe(540);
-      expect(await page.evaluate(() => [...document.styleSheets].flatMap(sheet => [...sheet.cssRules]).map(rule => rule.selectorText)
-        .filter(selector => selector?.startsWith("[data-cx-height")))).toEqual(['[data-cx-height="50vh"]', '[data-cx-height="60vh"]']);
+      // The same explicit height wins inside full-page chrome, including its nested main host default.
+      await page.evaluate(() => { document.body.classList.add("cx-page"); document.querySelector("main").classList.add("cx-main"); });
+      await expect.poll(() => page.locator("[data-canopyx-host]").nth(1).evaluate(host => Math.round(host.getBoundingClientRect().height))).toBe(540);
       await exerciseGrid(page);
       await expectClean(page, report);
     });

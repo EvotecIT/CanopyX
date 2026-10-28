@@ -21,6 +21,11 @@ test("system colours are scoped to forced-colours media and generated fallback b
   assert.ok(violations(".x{color:CanvasText;}").length);
 });
 
+test("vendor framework variables fail in declarations and in custom-property aliases", () => {
+  for (const declaration of ["color:var(--tblr-body-color)", "--cx-row-h:var(--bs-height)", "--cx-tone:var(--dt-row-selected)"])
+    assert.ok(violations(`.x{${declaration};}`).some(item => item.kind === "vendor"), declaration);
+});
+
 test("a documented layout exception permits dimensions without exempting colours", () => {
   assert.deepEqual(violations(".x{width:320px;/* lint-allow layout: bounded inspector width */}"), []);
   assert.ok(violations(".x{color:#fff;/* lint-allow layout: bounded inspector width */}").some(item => item.kind === "colour"));

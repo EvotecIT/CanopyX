@@ -32,9 +32,9 @@ public sealed class CanopyHtmlPart {
 
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
-        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
+        "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "officeExport",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus"
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -170,7 +170,9 @@ public sealed class CanopyHtmlPart {
     }
 
     /// <summary>Whether a matrix loads this part: a part for matrices (<c>"views": ["matrix"]</c>).</summary>
-    internal bool IsNeededBy(CanopyMatrix matrix) => matrix != null && Array.IndexOf(_views, "matrix") >= 0;
+    internal bool IsNeededBy(CanopyMatrix matrix) => matrix != null && Array.IndexOf(_views, "matrix") >= 0 && (_features.Length == 0 || _features.Contains("timeSlider") && matrix.TimeSlider != null);
+
+    internal bool IsNeededBy(CanopyPropagation view) => view != null && (IsNeededByChangeView || Array.IndexOf(_views, "propagation") >= 0 && (_features.Length == 0 || _features.Contains("timeSlider") && view.TimeSlider != null));
 
     /// <summary>Whether a change view (a diff, a change list or a propagation view) loads this part: the changes part.</summary>
     internal bool IsNeededByChangeView => Array.IndexOf(_views, "changes") >= 0;
@@ -186,20 +188,31 @@ public sealed class CanopyHtmlPart {
             "gridOptions" => view.Footers.Count > 0 || view.PreSort.Count > 0 || view.ColumnDefaults.Count > 0 || view.Columns.Any(column => column.OrderData.Count > 0 || column.OrderSequence.Count > 0 || column.SortComparator != null) || view.Query?.Filters.Any(filter => filter.CustomOperator != null) == true || HasNamedFilter(view.Query?.FilterGroup),
             "presenters" => view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column.Presenter != null || column.Wrap),
             "columnMenus" => view.Toolbar.ColumnMenus,
+            "compare" => view.Compare != null,
+            "viewIntents" => view.ViewIntents,
             "pager" => view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault,
             "editable" => view.Columns.Any(column => column.Editable) || view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "formatting" => view.FormatRules.Count > 0 || view.Formatting != null,
             "formatEditor" => view.Formatting?.Editor == true,
             "columnGroups" => view.ColumnGroups.Count > 0,
             "rangeSelection" => view.RangeSelection != null,
+            "officeExport" => view.ExportFormats.Contains("xlsx") || view.ExportFormats.Contains("pdf"),
             "grouping" => reporting != null && (reporting.Grouping != null || reporting.GroupBy.Count != 0 || reporting.Groupable || reporting.Aggregates.Count != 0),
             "detail" => reporting?.Detail != null,
             "searchHighlight" => view.SearchHighlight != null,
-            "layout" => view.Layout != null,
+            "layout" => view.Layout != null || view.StickyHeader,
             "record" => UsesRecordPanel(view),
             "live" => view.Live != null,
             "facets" => view.FacetPanel != null,
+            "aggregateValues" => reporting?.Aggregates.Count > 0,
+            "pivot" => reporting?.Pivot != null || reporting?.Pivotable == true,
+            "calculations" => view.CalculatedColumnsEditable || view.Columns.Any(column => column.Calculation != null),
+            "buckets" => reporting?.Groupable == true && view.Columns.Any(column => column.Kind == CanopyColumnKind.DateTime || column.Kind == CanopyColumnKind.Number) || reporting?.GroupBy.Any(level => level.Bucket != null) == true || view.Query?.GroupBy?.Any(level => level.Bucket != null) == true || view.FacetPanel?.Facets.Any(facet => facet.Bucket != null) == true || UsesBucketFilters(view.Query),
             "calendar" => view.Calendar != null,
+            "path" => view.Path != null,
+            "stack" => view.Stack != null,
+            "board" => view.Board != null,
+            "plan" => view.Plan != null,
             "calendarResources" => view.Calendar != null && (view.Calendar.Resources != null || view.Calendar.View == CanopyCalendarView.Timeline || view.Calendar.Views.Contains(CanopyCalendarView.Timeline)),
             "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null || source.Url != null)),
             "calendarEditing" => view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
@@ -221,13 +234,14 @@ public sealed class CanopyHtmlPart {
         "contextActions" => view.ContextActions.Count > 0 || view.DragDrop || view.Columns.Any(column => column.Editable),
         "searchHighlight" => view.SearchHighlight != null,
         "layout" => view.Layout != null,
+        "officeExport" => view.ExportFormats.Contains("xlsx") || view.ExportFormats.Contains("pdf"),
         "record" => UsesRecordPanel(view),
         _ => false
     };
 
     /// <summary>Whether a grid uses the record panel part: a record panel, a structured summary column, or structured cells or record links.</summary>
     private static bool UsesRecordPanel(CanopyDataGridView view) {
-        if (view.Record != null || view.Source.Kind == CanopyGridSourceKind.Host) return true;
+        if (view.Record != null || view.Path != null || view.Stack != null || view.Source.Kind == CanopyGridSourceKind.Host) return true;
         foreach (var column in view.Columns) if (column?.Presenter?.Kind == CanopyGridPresenterKind.Structured) return true;
         foreach (var row in view.Rows) if (row != null && (row.HasFields || Structured(row.Cells.Values))) return true;
         return false;
@@ -248,6 +262,13 @@ public sealed class CanopyHtmlPart {
 
     private static bool HasNamedFilter(CanopyGridFilterGroup? group) => group != null &&
         (group.Filters.Any(filter => filter.CustomOperator != null) || group.Groups.Any(HasNamedFilter));
+
+    private static bool UsesBucketFilters(CanopyGridQuery? query) => query != null &&
+        (query.Filters.Any(filter => filter?.Bucket != null) || UsesBucketGroup(query.FilterGroup, 1) ||
+         query.TupleFilters.Any(tuple => tuple != null && tuple.Columns.Any(column => column.Bucket != null)));
+
+    private static bool UsesBucketGroup(CanopyGridFilterGroup? group, int depth) => group != null && depth <= 8 &&
+        (group.Filters.Any(filter => filter?.Bucket != null) || group.Groups.Any(child => UsesBucketGroup(child, depth + 1)));
 
     private static bool Structured(IEnumerable<CanopyCell> cells) => cells.Any(cell => cell != null && (cell.IsStructured || cell.Ref != null));
 

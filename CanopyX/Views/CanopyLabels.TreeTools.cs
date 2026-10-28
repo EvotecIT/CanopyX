@@ -12,7 +12,8 @@ public sealed partial class CanopyLabels {
         nameof(GridViews), nameof(GridViewName), nameof(GridSaveView), nameof(GridRemoveView), nameof(GridResetView), nameof(GridChooseView),
         nameof(GridApply), nameof(GridFindColumn), nameof(GridShowAllColumns), nameof(GridResetColumns), nameof(GridReorderColumn),
         nameof(GridPinnedLeft), nameof(GridPinnedRight), nameof(GridResponsiveHidden), nameof(GridExport), nameof(GridVisibleRows),
-        nameof(GridSelectedRows), nameof(GridAllRows), nameof(GridDownloadCsv), nameof(GridCopy), nameof(GridExportProgress),
+        nameof(GridSelectedRows), nameof(GridAllRows), nameof(GridDownloadCsv), nameof(GridDownloadXlsx), nameof(GridDownloadPdf), nameof(GridCopy), nameof(GridExportProgress),
+        nameof(GridExportWorkbookHint), nameof(GridExportPdfHint), nameof(GridExportCsvHint), nameof(GridExportCopy), nameof(GridRows), nameof(GridUnknownCount),
         nameof(GridExportReading), nameof(GridExportCancelled), nameof(GridCancelExport), nameof(GridMore), nameof(GridPrint),
         nameof(GridDetails), nameof(GridDetailsSection), nameof(GridPreviousRecord), nameof(GridNextRecord), nameof(GridCloseRecord)
     };
@@ -22,5 +23,7 @@ public sealed partial class CanopyLabels {
     /// flat-grid labels, the calendar's among them, reach only flat grids, so a tree view leaves them out of its document.
     /// </summary>
     private static bool ReadByTrees(string name) =>
-        !name.StartsWith("Grid", StringComparison.Ordinal) && !name.StartsWith("Format", StringComparison.Ordinal) && !name.StartsWith("Calendar", StringComparison.Ordinal) || TreeToolNames.Contains(name);
+        !name.StartsWith("Grid", StringComparison.Ordinal) && !name.StartsWith("Format", StringComparison.Ordinal) && !name.StartsWith("Calendar", StringComparison.Ordinal) &&
+        !name.StartsWith("Path", StringComparison.Ordinal) && !name.StartsWith("Stack", StringComparison.Ordinal) && !name.StartsWith("Time", StringComparison.Ordinal) &&
+        !name.StartsWith("Board", StringComparison.Ordinal) && !name.StartsWith("Plan", StringComparison.Ordinal) && !name.StartsWith("Compare", StringComparison.Ordinal) && !name.StartsWith("ViewIntent", StringComparison.Ordinal) || TreeToolNames.Contains(name);
 }
