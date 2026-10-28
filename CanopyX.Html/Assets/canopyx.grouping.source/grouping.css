@@ -13,7 +13,7 @@
 .cx-data-grid .cx-grid-summary { position:sticky;bottom:0;z-index:4;background:var(--hfx-color-surface-sunken);border-top:var(--hfx-border-width) solid var(--hfx-color-border-strong);font:inherit; }
 .cx-summary-row { display:flex;height:var(--hfx-table-header-height);font-weight:700; }
 .cx-data-grid .cx-summary-row .cx-cell[data-cx-pin] { background:var(--hfx-color-surface-sunken); }
-.cx-summary-row .cx-summary-caption { font-size:calc(var(--hfx-type-caption-size)*.9583);letter-spacing:.04em;text-transform:uppercase;color:var(--hfx-color-text-muted); }
+.cx-summary-row .cx-summary-caption { font-size:calc(var(--hfx-type-caption-size)*.9583);letter-spacing:.04em;text-transform:none;color:var(--hfx-color-text-muted); }
 /* Levels, chips and labelled aggregates of runtime grouping. */
 .cx-groupbar-label { flex:none; }
 .cx-groupbar-hint { font-style:italic; }
@@ -44,3 +44,7 @@
 .cx-phone .cx-gchip-bucket { display:inline-block;max-width:calc(var(--hfx-space-4)*6); }
 .cx-phone .cx-gchip-bucket-value { width:calc(var(--hfx-space-4)*3.5);min-width:calc(var(--hfx-space-4)*2); }
 .cx-phone .cx-gchip:has(.cx-gchip-bucket) .cx-gchip-name { max-width:calc(var(--hfx-space-4)*3.5); }
+
+.cx-groupbar .cx-gchip { height:calc(var(--hfx-control-height-sm) + var(--hfx-border-width)*2); }
+.cx-groupbar .cx-gchip-order,.cx-data-grid .cx-groupbar .cx-gchip .cx-button,.cx-data-grid .cx-groupbar .cx-groupbar-all { height:var(--hfx-control-height-sm);min-height:var(--hfx-control-height-sm); }
+.cx-data-grid .cx-groupbar .cx-gchip .cx-button { width:var(--hfx-control-height-sm); }

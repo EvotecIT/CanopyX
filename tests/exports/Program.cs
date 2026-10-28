@@ -135,9 +135,15 @@ foreach (var sidecar in Directory.EnumerateFiles(args[0], "*.json", SearchOption
                 throw new InvalidDataException("A PDF page lost a repeating header.");
         }
         string Normalize(string value) => Regex.Replace(value, @"\s+", " ").Trim();
-        // The fixture is a left-to-right table. Use page geometry, since late page-count spans may be emitted last.
-        string content = Normalize(string.Join(" ", pdf.Pages.SelectMany(page => page.GetTextSpans()
-            .OrderByDescending(span => Math.Round(span.Y, 1)).ThenBy(span => span.X)).Select(span => span.Text)));
+        // Keep each cell's emitted lines together. Sorting the whole page by Y would interleave a wrapped date with
+        // the numeric cells beside it. Only move the footer band, whose final page count is emitted after the table.
+        string content = Normalize(string.Join(" ", pdf.Pages.SelectMany(page => {
+            var spans = page.GetTextSpans().ToArray();
+            var footerY = spans.Where(span => Regex.IsMatch(span.Text, @"^Page \d+ of$", RegexOptions.CultureInvariant,
+                TimeSpan.FromMilliseconds(100))).Select(span => Math.Round(span.Y, 1)).ToHashSet();
+            return spans.Where(span => !footerY.Contains(Math.Round(span.Y, 1)))
+                .Concat(spans.Where(span => footerY.Contains(Math.Round(span.Y, 1))).OrderByDescending(span => span.Y).ThenBy(span => span.X));
+        }).Select(span => span.Text)));
         var pattern = new Regex(identityPattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
         var records = pattern.Matches(content).Cast<Match>().ToArray();
         var expectedRows = contract.GetProperty("rows").EnumerateArray().ToArray();
@@ -161,7 +167,11 @@ foreach (var sidecar in Directory.EnumerateFiles(args[0], "*.json", SearchOption
         }
         void StructureOnly(string text) {
             string remainder = Regex.Replace(text, @"\bPage \d+ of(?: \d+)?\b", "");
-            remainder = remainder.Replace(string.Join(" ", columns.Select(column => column.GetProperty("title").GetString())), "", StringComparison.Ordinal);
+            // Fitted PDF headers can wrap inside a word. Remove the complete ordered header sequence while retaining
+            // every character check; individual page headers are also checked against their text spans above.
+            string header = string.Join(@"\s+", columns.Select(column => string.Join(@"\s*", column.GetProperty("title").GetString()!
+                .Where(character => !char.IsWhiteSpace(character)).Select(character => Regex.Escape(character.ToString())))));
+            remainder = Regex.Replace(remainder, header, "", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
             foreach (var item in groupText.OrderByDescending(item => item.Length))
                 remainder = Regex.Replace(remainder, @"(?<![\p{L}\p{N}])" + Regex.Escape(item) + @"(?![\p{L}\p{N}])", "",
                     RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));

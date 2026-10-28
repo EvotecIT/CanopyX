@@ -29,7 +29,7 @@ test("aggregate percentages display a caption and expose numeric values with exp
   expect(display.groups[first.key].total.value).toBeCloseTo(first.aggregates.total / raw.aggregates.total, 12);
   expect(display.groups[first.key].total.numberFormat).toBe("0.00%");
   expect(display.totals.total.value).toBe(1);
-  await expect(page.locator(".cx-grid-group .cx-aggregate-caption").first()).toHaveText("as % of total");
+  await expect(page.locator(".cx-grid-group .cx-aggregate-button").first()).toContainText("of grand total");
   expect((await page.evaluate(api + ".getSummary()")).aggregates.total).toBe(raw.aggregates.total);
 });
 
@@ -43,9 +43,14 @@ test("the aggregate menu changes display mode and saves intent without changing 
   const query = await page.evaluate(api + ".getQuery()"), raw = await page.evaluate(api + ".getSummary()");
   await page.locator(".cx-grid-group .cx-aggregate-button").first().click();
   await page.getByLabel("Total amount: Show values as", { exact: true }).selectOption("rank");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect((await page.evaluate(api + ".getState()")).aggregateShowAs?.total).toBeUndefined();
+  await page.locator(".cx-grid-group .cx-aggregate-button").first().click();
+  await page.getByLabel("Total amount: Show values as", { exact: true }).selectOption("rank");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
   expect(await page.evaluate("window.__aggregateErrors")).toEqual([]);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.locator(".cx-grid-group .cx-aggregate-caption").first()).toHaveText("as rank");
+  await expect(page.locator(".cx-grid-group .cx-aggregate-button").first()).toContainText("Rank");
   const state = await page.evaluate(api + ".getState()");
   expect(state.aggregateShowAs.total).toBe("rank");
   expect(await page.evaluate(api + ".getQuery()")).toEqual(query);
@@ -54,7 +59,7 @@ test("the aggregate menu changes display mode and saves intent without changing 
   await page.evaluate(api + ".setAggregateShowAs('total','value')");
   await page.evaluate(state => document.querySelector("[data-canopyx-host]").canopyx.setState(state), state);
   expect((await page.evaluate(api + ".getState()")).aggregateShowAs.total).toBe("rank");
-  await expect(page.locator(".cx-grid-group .cx-aggregate-caption").first()).toHaveText("as rank");
+  await expect(page.locator(".cx-grid-group .cx-aggregate-button").first()).toContainText("Rank");
 });
 
 test("an undefined difference keeps its caption and menu available", async ({ page }) => {
@@ -62,9 +67,10 @@ test("an undefined difference keeps its caption and menu available", async ({ pa
   view.rows = view.rows.slice(0, 1); view.reporting.groupBy = [{ column: "region", direction: "asc" }];
   view.reporting.aggregates = [{ ...view.reporting.aggregates[0], showAs: "difference" }];
   await open(page, view, valuesPart());
-  await expect(page.locator(".cx-grid-group .cx-aggregate-caption")).toHaveText("as difference from previous");
+  await expect(page.locator(".cx-grid-group .cx-aggregate-button")).toContainText("Difference from previous");
   await page.locator(".cx-grid-group .cx-aggregate-button").click();
   await page.getByLabel("Total amount: Show values as", { exact: true }).selectOption("value");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.locator(".cx-grid-group .cx-aggregate-button")).not.toContainText("—");
 });
@@ -76,8 +82,9 @@ test("phone aggregates retain their display-mode menu when the source columns ar
   await page.locator(".cx-grid-group .cx-hidden-aggregates").first().click();
   expect(await page.getByRole("dialog").evaluate(dialog => dialog.getBoundingClientRect().height)).toBeLessThan(450);
   await page.getByLabel("Total amount: Show values as", { exact: true }).selectOption("rank");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
   expect((await page.evaluate(api + ".getState()")).aggregateShowAs.total).toBe("rank");
-  await expect(page.locator(".cx-grid-group .cx-hidden-aggregates").first()).toContainText("rank");
+  await expect(page.locator(".cx-grid-group .cx-hidden-aggregates").first()).toContainText("Rank");
   const geometry = await page.evaluate(() => {
     const button = document.querySelector(".cx-grid-group .cx-hidden-aggregates"); return { hasTitle: !!button.title, overflow: document.documentElement.scrollWidth > innerWidth };
   });

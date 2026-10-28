@@ -15,6 +15,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CanopyX.Data\CanopyX.Data.csproj" />
+    <ProjectReference Include="..\tests\ReleasedCompatibility\ReleasedCompatibility.csproj" />
     <!-- The public API baseline check, shared with CanopyX.Tests (docs/versioning.md). -->
     <Compile Include="..\CanopyX.Tests\Api\ApiSurface.cs" Link="Api\ApiSurface.cs" />
   </ItemGroup>

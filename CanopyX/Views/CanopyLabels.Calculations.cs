@@ -1,6 +1,10 @@
 namespace CanopyX;
 
 public sealed partial class CanopyLabels {
+    /// <summary>Gets or sets the division by zero label.</summary>
+    public string GridCalculationDivideZero { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the result type label.</summary>
+    public string GridCalculationResultType { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the action for adding a calculated column.</summary>
     public string GridCalculationAdd { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the calculated-column title field label.</summary>

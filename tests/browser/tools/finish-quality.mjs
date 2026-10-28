@@ -111,6 +111,11 @@ export function inspectFinishQuality(root = document) {
     report("text-clipped", element, "Text is clipped without ellipsis or a tooltip.");
   }
 
+  for (const element of all('.cx-chip-label,.cx-plan-task > .cx-cal-ev-title')) {
+    if (["hidden", "clip"].includes(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + tolerance)
+      report("text-clipped", element, "The label's clip box cuts off its line height and descenders.");
+  }
+
   // A control can have an ordinary layout box while a fixed-height host cuts it off entirely. Scrollports make their
   // descendants reachable; compare that port with outer clips instead of treating offscreen scroll content as lost.
   for (const element of all('button,[role="button"],[role="status"],[data-cx-finish-text]')) {

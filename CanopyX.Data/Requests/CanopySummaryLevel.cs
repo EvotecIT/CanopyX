@@ -10,6 +10,13 @@ namespace CanopyX.Data;
 /// values by raw value ascending. Records of a group stay contiguous, so a page reads level by level.
 /// </remarks>
 public sealed class CanopySummaryLevel {
+    /// <summary>Creates an unbucketed summary level, preserving the released constructor signature.</summary>
+    /// <param name="column">The allowed sortable grouping column.</param>
+    /// <param name="descending">Whether groups follow descending order.</param>
+    /// <param name="aggregate">The aggregate whose value orders the groups, or null for their raw value.</param>
+    public CanopySummaryLevel(CanopyDataColumn column, bool descending, CanopySummaryAggregate? aggregate)
+        : this(column, descending, aggregate, null) { }
+
     /// <summary>Creates a level.</summary>
     /// <param name="column">The allowed sortable grouping column.</param>
     /// <param name="descending">Whether groups follow descending order.</param>

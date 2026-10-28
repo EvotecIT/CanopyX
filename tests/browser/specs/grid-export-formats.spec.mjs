@@ -392,7 +392,7 @@ for (const theme of ["light", "dark"]) for (const width of [1440, 390]) test("th
 test("the export formats example lists its page writers in the menu and exports its tree", async ({ page }) => {
   await openExample(page, "export-formats.html");
   await openGridControl(page, "export");
-  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download JSON", "Download Markdown", "CSV", "Copy to clipboard"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download JSON", "Download Markdown", "CSV", "Copy to clipboard", "Print"]);
   const download = page.waitForEvent("download"); await page.getByRole("button", { name: "Download JSON", exact: true }).click();
   const file = await download; expect(file.suggestedFilename()).toBe("canopyx-export-formats.json");
   const records = JSON.parse(fs.readFileSync(await file.path(), "utf8"));

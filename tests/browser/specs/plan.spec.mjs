@@ -54,6 +54,37 @@ async function openPlan(page, { dark = false, width = 1440, rtl = false, handler
 const task = (page, id) => page.locator('.cx-plan-task[data-cx-record="' + id + '"]');
 const actuals = page => page.evaluate(() => ({ changed: JSON.stringify(window.planApi.view.rows) !== window.initialRows, writes: window.writerCalls }));
 
+for (const width of [768, 1024, 1440]) for (const dark of [false, true]) {
+  test(`plan connectors enter horizontally and labels remain legible without collisions at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {
+    await openPlan(page, { width, dark });
+    const result = await page.evaluate(() => {
+      const rect = element => { const box = element.getBoundingClientRect(); return { left: box.left, right: box.right, top: box.top, bottom: box.bottom }; };
+      const overlap = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+      const collisions = [], clipped = [];
+      for (const lane of document.querySelectorAll(".cx-tl-lane")) {
+        const tasks = [...lane.querySelectorAll(".cx-plan-task")];
+        for (const element of tasks) {
+          const title = element.querySelector(".cx-cal-ev-title"); if (!title) continue;
+          if (title.scrollHeight > title.clientHeight + 1) clipped.push(title.textContent);
+          if (element.classList.contains("cx-plan-label-outside") && tasks.some(other => other !== element &&
+              (overlap(rect(title), rect(other)) || overlap(rect(title), rect(other.querySelector(".cx-cal-ev-title")))))) collisions.push(title.textContent);
+        }
+      }
+      return { collisions, clipped, routes: [...document.querySelectorAll(".cx-plan-links path")].map(path => path.getAttribute("d").split(" M")[0]) };
+    });
+    expect(result.collisions).toEqual([]); expect(result.clipped).toEqual([]);
+    expect(result.routes.length).toBeGreaterThan(0);
+    for (const route of result.routes) {
+      expect(route).toMatch(/ H-?[\d.]+$/);
+      if (route.includes(" V")) {
+        const horizontal = [...route.matchAll(/ H(-?[\d.]+)/g)].map(match => Number(match[1]));
+        expect(Math.abs(horizontal.at(-1) - horizontal.at(-2))).toBeGreaterThanOrEqual(8);
+      }
+    }
+    expect(await actuals(page)).toEqual({ changed: false, writes: 0 });
+  });
+}
+
 test("plan blocks calendar keyboard writes with proposals enabled or disabled", async ({ page }) => {
   for (const proposeMoves of [true, false]) {
     await openPlan(page, { change: view => {

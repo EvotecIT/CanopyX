@@ -12,6 +12,13 @@ namespace CanopyX.Data;
 /// <see cref="CanopyGridFilterOperator.IsNull"/>, including <see cref="CanopyGridFilterOperator.NotEqual"/>.
 /// </remarks>
 public sealed class CanopyFilterCondition : CanopyFilterNode {
+    /// <summary>Creates an unbucketed condition, preserving the released constructor signature.</summary>
+    /// <param name="column">The allowed column.</param>
+    /// <param name="op">The filter operator.</param>
+    /// <param name="values">The typed operands.</param>
+    public CanopyFilterCondition(CanopyDataColumn column, CanopyGridFilterOperator op, IEnumerable<object> values)
+        : this(column, op, values, null) { }
+
     /// <summary>Creates a condition. Values must already have the column's typed shape.</summary>
     /// <param name="column">The allowed column.</param>
     /// <param name="op">The operator.</param>

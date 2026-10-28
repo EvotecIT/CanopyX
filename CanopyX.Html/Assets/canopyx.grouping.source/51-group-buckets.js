@@ -1,7 +1,7 @@
   // Bucket controls share the grouping chip's lifetime and saved query. They never replace a column's raw data.
   DataGrid.prototype.groupBucketControls = function (chip, levels, level, column) {
     if (!["number", "datetime"].includes(column.kind)) return;
-    const select = h("select", "cx-gchip-order cx-gchip-bucket"), labels = this.labels;
+    const select = h("select", "cx-select cx-gchip-order cx-gchip-bucket"), labels = this.labels;
     select.setAttribute("aria-label", column.title + ": " + labels.gridBucket);
     const choices = column.kind === "datetime" ? ["day", "week", "month", "quarter", "year", "hour", "weekday"] : ["width", "edges"];
     for (const kind of ["", ...choices]) {

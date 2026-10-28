@@ -69,6 +69,26 @@
           element._planName ||= element.getAttribute("aria-label"); element.setAttribute("aria-label", element._planName + "; " + text);
         }
       }
+      // Outside labels share the painted lane with other tasks. Keep a colliding short-bar label inside its own bar;
+      // the existing title/accessible name retains the complete text. Milestone labels remain obstacles, not casualties.
+      for (const lane of this.tlLanes.values()) {
+        const rows = new Map();
+        for (const element of lane.querySelectorAll(".cx-plan-task")) {
+          const key = element.style.top;
+          if (!rows.has(key)) rows.set(key, []);
+          rows.get(key).push({ element, title: element.querySelector(".cx-cal-ev-title"), box: element.getBoundingClientRect() });
+        }
+        const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        for (const items of rows.values()) {
+          items.sort((a, b) => a.box.left - b.box.left);
+          for (const [index, item] of items.entries()) {
+            if (!item.title || !item.element.classList.contains("cx-plan-label-outside") || item.element.classList.contains("cx-plan-milestone")) continue;
+            const box = item.title.getBoundingClientRect();
+            if ([items[index - 1], items[index + 1]].some(other => other && (overlaps(box, other.box) || other.title && overlaps(box, other.title.getBoundingClientRect()))))
+              item.element.classList.remove("cx-plan-label-outside", "cx-plan-label-before");
+          }
+        }
+      }
       const svg = planLinksTemplate(axis, this.tlCanvas.style.height);
       for (const edge of network.edges) {
         const from = positions.get(edge.from.task.key), to = positions.get(edge.to.task.key);

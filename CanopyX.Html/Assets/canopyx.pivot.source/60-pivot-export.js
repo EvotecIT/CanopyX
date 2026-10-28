@@ -19,7 +19,7 @@
     const aggregates = state.values.map(id => this.view.reporting.aggregates.find(value => value.id === id)), columns = [{ id: "axis", title: this.labels.gridPivotRows, kind: "text" }];
     const selected = pivotExportAxis(result.columns, state.collapsedColumns), rowAxis = pivotExportAxis(result.rows, state.collapsedRows), rows = [], columnGroups = [];
     selected.forEach(({ node, ...presentation }, ci) => aggregates.forEach((aggregate, ai) => columns.push({ id: "v" + ci + "_" + ai,
-      title: pivotLabel(this, state, "columns", node) + ": " + aggregate.label, kind: "number", aggregate: aggregate.id, ...presentation })));
+      title: pivotLabel(this, state, "columns", node) + ": " + reportingAggregateName(this, aggregate), kind: "number", aggregate: aggregate.id, ...presentation })));
     selected.forEach(({ node, collapsed, hidden }, index) => {
       if (!node.parent || !selected.some(item => item.node.parent === node.key)) return;
       let end = index + 1;
@@ -30,8 +30,7 @@
     for (const { node, ...presentation } of rowAxis) {
       const cells = { axis: { value: pivotLabel(this, state, "rows", node, false), text: pivotLabel(this, state, "rows", node, false) } };
       selected.forEach(({ node: column }, ci) => aggregates.forEach((aggregate, ai) => {
-        const display = pivotDisplay(this, result, node.key, column.key, aggregate); cells["v" + ci + "_" + ai] = { ...display, text: display.value === null ? "" :
-          GRID_SHOW_AS.percent(display.mode) ? new Intl.NumberFormat(this.lang, { style: "percent", maximumFractionDigits: 2 }).format(display.value) : numberFormat(this.lang).format(display.value) };
+        const display = pivotDisplay(this, result, node.key, column.key, aggregate); cells["v" + ci + "_" + ai] = { ...display, text: display.value === null ? "" : reportingValueText(this, aggregate, display.value, display.mode) };
       }));
       rows.push({ id: "p" + rows.length, ...presentation, cells });
     }

@@ -150,7 +150,7 @@ for (const profile of ["contrast", "custom", "standalone"]) {
       host: profile === "standalone" ? 'data-cx-theme="dark"' : profile === "custom"
         ? 'style="--hfx-color-surface:rgb(18,27,36);--hfx-color-text:rgb(240,245,250);--hfx-color-accent:rgb(155,77,202);--hfx-radius-control:13px;color-scheme:dark"' : ""
     });
-    const host = page.locator("#host"), panel = page.getByRole("complementary", { name: "Filter by" });
+    const host = page.locator("#host"), panel = page.getByRole("complementary", { name: "Refine" });
     await expect(panel.getByRole("checkbox")).toHaveCount(2);
     await expect(panel).toBeVisible();
     expect(await panel.evaluate(element => element.parentNode === document.getElementById("host").parentNode && !document.getElementById("host").contains(element))).toBe(true);
@@ -165,7 +165,7 @@ for (const profile of ["contrast", "custom", "standalone"]) {
     const open = page.locator(".cx-facets-open");
     await expect(open).toBeVisible();
     await open.click();
-    const sheet = page.getByRole("dialog", { name: "Filter by" });
+    const sheet = page.getByRole("dialog", { name: "Refine" });
     await expect(sheet).toBeVisible();
     expect(await sheet.evaluate(element => element.parentNode === document.body)).toBe(true);
     await palette(sheet, expected);

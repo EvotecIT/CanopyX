@@ -21,7 +21,9 @@
       const summary = overflow.details.firstChild; summary.replaceChildren(gridIcon("more"));
       summary.classList.add("icon"); summary.setAttribute("aria-label", this.labels.gridMore);
       for (const action of [...this.opts.actions || [], ...pluginItems(this, "menuItems")]) overflow.panel.appendChild(this.gridAction(action, act));
-      overflow.panel.append(this.toolbar.querySelector(".cx-grid-details"), this.toolbar.querySelector(".cx-grid-print"));
+      const recordDetails = this.toolbar.querySelector(".cx-grid-details");
+      if (recordDetails) { recordDetails.prepend(gridIcon("columns")); recordDetails.classList.add("cx-btn", "ghost"); }
+      overflow.panel.append(recordDetails, this.toolbar.querySelector(".cx-grid-print"));
       overflow.details.addEventListener("toggle", () => { if (overflow.details.open) this.syncPrintAvailability(); }, { signal });
       (this.toolbar.querySelector(".cx-grid-export") || overflow.details).before(this.spacer, this.selectionBar, this.toolbarSeparator);
       // Plugin toolbar items ({ label, run }, run as host actions run) follow Columns; Views (built later, and moved by the

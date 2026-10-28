@@ -1,10 +1,10 @@
   // Aggregate mode metadata and saved intent stay small; display math and its menu load on first use.
   const GRID_SHOW_AS = {}, GRID_SHOW_AS_MODES = ["value", "percentGrandTotal", "percentParent", "percentColumn", "percentRow", "runningTotal", "rank", "difference", "percentChange"];
-  const VALUES_PART = definePart(DataGrid, "values", "aggregate display modes", () => ({ DataGrid, GRID_SHOW_AS, GRID_SHOW_AS_MODES, h, setText, gridFreeze, reportingAggregateParts }));
+  const VALUES_PART = definePart(DataGrid, "values", "aggregate display modes", () => ({ DataGrid, GRID_SHOW_AS, GRID_SHOW_AS_MODES, h, setText, gridFreeze, reportingAggregateParts, reportingAggregateName, gridButton }));
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridShowAs: "Show values as", gridShowAsValue: "Value", gridShowAsPercentGrandTotal: "as % of total", gridShowAsPercentParent: "as % of parent",
-    gridShowAsPercentColumn: "as % of column", gridShowAsPercentRow: "as % of row", gridShowAsRunningTotal: "as running total", gridShowAsRank: "as rank",
-    gridShowAsDifference: "as difference from previous", gridShowAsPercentChange: "as % change from previous"
+    gridShowAs: "Show values as", gridShowAsValue: "Value", gridShowAsPercentGrandTotal: "% of grand total", gridShowAsPercentParent: "% of parent total",
+    gridShowAsPercentColumn: "% of column total", gridShowAsPercentRow: "% of row total", gridShowAsRunningTotal: "Running total", gridShowAsRank: "Rank",
+    gridShowAsDifference: "Difference from previous", gridShowAsPercentChange: "% change from previous"
   }));
   const showAsMode = (grid, aggregate) => grid.aggregateShowAs?.[aggregate.id] ?? aggregate.showAs ?? "value";
   const showAsCaption = (grid, mode) => mode === "value" ? "" : grid.labels["gridShowAs" + mode[0].toUpperCase() + mode.slice(1)];

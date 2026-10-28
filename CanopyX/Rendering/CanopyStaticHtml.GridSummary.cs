@@ -27,17 +27,16 @@ public static partial class CanopyStaticHtml {
         if (caption.Length > 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
         html.Append("<thead><tr><th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(view.Label)).Append("</th>");
         foreach (var aggregate in aggregates) {
-            html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(aggregate.Label));
+            html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(AggregateName(view, aggregate)));
             if (aggregate.ShowAs != CanopyShowAs.Value) html.Append("<br><span style=\"").Append(styles.Hidden).Append("\">").Append(Encode(CanopyAggregateDisplay.Caption(aggregate.ShowAs, view.Labels))).Append("</span>");
             html.Append("</th>");
         }
         html.Append("</tr></thead><tbody>");
-        void Values(IReadOnlyDictionary<string, CanopyAggregateDisplayValue> values) {
+        void Values(IReadOnlyDictionary<string, CanopyAggregateDisplayValue> values, bool total = false) {
             foreach (var aggregate in aggregates) {
                 var shownValue = values[aggregate.Id]; var value = shownValue.Value;
-                var format = aggregate.Format ?? (aggregate.Counting ? CanopyGridNumberFormat.Fixed(0) : view.GetColumn(aggregate.Column).Format);
-                var text = !value.HasValue ? string.Empty : CanopyAggregateDisplay.IsPercentage(shownValue.Mode) ? value.Value.ToString("P2", settings.Culture) : shownValue.Mode == CanopyShowAs.Rank ? value.Value.ToString("0", settings.Culture) : format?.Format(value.Value, settings.Culture) ?? value.Value.ToString("G", settings.Culture);
-                html.Append("<td style=\"").Append(styles.Cell).Append("text-align:right;\">").Append(Encode(text)).Append("</td>");
+                var text = AggregateText(view, aggregate, value, shownValue.Mode, settings.Culture);
+                html.Append("<td style=\"").Append(total ? styles.Header + "font-weight:700;" : styles.Cell).Append("text-align:right;\">").Append(Encode(text)).Append("</td>");
             }
         }
         var shown = 0;
@@ -57,8 +56,8 @@ public static partial class CanopyStaticHtml {
         int Count(IList<CanopyGridGroup> groups) => groups.Sum(group => 1 + Count(group.Groups));
         var totalGroups = Count(summary.Groups);
         if (shown < totalGroups) AppendOverflow(html, shown, totalGroups, aggregates.Count + 1, settings, styles, view.Labels);
-        html.Append("</tbody><tfoot><tr><th scope=\"row\" style=\"").Append(styles.Header).Append("\">").Append(Encode(view.Labels.GridSummary)).Append("</th>");
-        Values(display.Totals);
+        html.Append("</tbody><tfoot><tr><th scope=\"row\" style=\"").Append(styles.Header).Append("font-weight:700;\">").Append(Encode(view.Labels.GridSummary)).Append("</th>");
+        Values(display.Totals, true);
         return html.Append("</tr></tfoot></table>").ToString();
     }
 }

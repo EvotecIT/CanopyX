@@ -75,7 +75,7 @@ test("phone group totals open a readable detail dialog", async ({ page }) => {
   await totals.click();
   await expect(page.locator("dialog.cx-reporting-text")).toBeVisible();
   await expect(page.locator("dialog.cx-reporting-text h4")).toContainText("Region:");
-  await expect(page.locator("dialog.cx-reporting-text pre")).toHaveText("Order\nOrders: 12\nAmount\nTotal amount: 6,568 · Average amount: 547.333");
+  await expect(page.locator("dialog.cx-reporting-text pre")).toHaveText("Order\nOrders · Count: 12\nAmount\nTotal amount · Sum: 6,568.00 · Average amount · Avg: 547.33");
 });
 
 test("tree columns accept explicit unpinned null from the schema", async ({ page }) => {

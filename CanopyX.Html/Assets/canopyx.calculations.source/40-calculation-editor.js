@@ -9,7 +9,7 @@
     for (const [value, label] of [["number", this.labels.gridCalculationNumber], ["text", this.labels.gridText], ["datetime", this.labels.gridCalculationDate]]) {
       const option = h("option"); option.value = value; setText(option, label || value); kind.append(option);
     }
-    field(this.labels.gridValueType, kind); field(this.labels.gridCalculationExpression, expression);
+    field(this.labels.gridCalculationResultType, kind); field(this.labels.gridCalculationExpression, expression);
     setText(help, this.labels.gridCalculationHelp); error.setAttribute("role", "alert"); error.hidden = true;
     const apply = gridButton(this.labels.gridApply, () => {}); apply.type = "submit"; apply.dataset.variant = "primary"; form.append(help, error, apply);
     form.addEventListener("submit", event => {

@@ -2,7 +2,7 @@
   // The panel sits beside the grid (position "side") or above it ("top") in a frame that takes the grid element's place, or
   // in an element the host names (target). It has a heading, Clear all, a collapse switch and one section per facet, each
   // with its own collapse switch and Clear. When the frame is too narrow (a phone, a narrow column) the panel leaves the page
-  // and a "Filter by" button in the grid's toolbar opens it as a full-screen sheet. Counts refresh after every accepted query
+  // and a "Refine" button in the grid's toolbar opens it as a full-screen sheet. Counts refresh after every accepted query
   // and live change, facet by facet with a pause between them so a large inline dataset does not block the page; a newer
   // refresh cancels an older one. Choices apply as the reader's own conditions after a short pause, and the result count is
   // announced politely.

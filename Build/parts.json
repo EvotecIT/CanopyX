@@ -1621,7 +1621,11 @@
         "pivotIntent",
         "pivotRequestOf",
         "showAsMode",
-        "showAsCaption"
+        "showAsCaption",
+        "reportingAggregateName",
+        "reportingValueText",
+        "UI_IMPL",
+        "UI_TOOLS"
       ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.pivot.source"
@@ -1650,7 +1654,9 @@
         "h",
         "setText",
         "gridFreeze",
-        "reportingAggregateParts"
+        "reportingAggregateParts",
+        "reportingAggregateName",
+        "gridButton"
       ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.values.source"

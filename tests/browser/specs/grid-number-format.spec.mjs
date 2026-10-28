@@ -136,7 +136,7 @@ test("aggregate overrides and count defaults use the current shared heading and 
   await expect(first).toContainText("sum 30%"); await expect(first).toContainText("avg $15.00");
   await expect(first).toContainText("count 2"); await expect(first).toContainText("distinct 2");
   await expect(first).toContainText("med 15 ms");
-  await expect(first).toHaveAttribute("title", /Total amount: 30%.*Average amount: \$15.00.*Amounts present: 2.*Distinct amounts: 2.*Median amount: 15 ms/);
+  await expect(first).toHaveAttribute("title", /Total amount · Sum: 30%.*Average amount · Avg: \$15.00.*Amounts present · Count: 2.*Distinct amounts · Distinct: 2.*Median amount · Med: 15 ms/);
   await page.evaluate(api + ".setSelection(['r0','r1'])");
   await expect(page.locator(".cx-grid-status .agg")).toHaveText("Amount: 30%");
   await expect(page.locator(".cx-grid-status .agg span")).toHaveAttribute("title", /Average: 15%/);
@@ -167,29 +167,30 @@ test("aggregate overrides and count defaults use the current shared heading and 
   expect(await held.evaluate(element => element.isConnected)).toBe(true);
   await page.mouse.up();
   const dialog = page.locator(".cx-reporting-text");
-  await expect(dialog).toContainText("Average amount: $15.00");
-  await expect(dialog).toContainText("Median amount: 15 ms");
+  await expect(dialog.getByRole("button", { name: "Apply", exact: true })).toBeInViewport();
+  await expect(dialog).toContainText("Average amount · Avg: $15.00");
+  await expect(dialog).toContainText("Median amount · Med: 15 ms");
   if (process.env.CANOPYX_EVIDENCE && testInfo.project.name === "chromium") for (const theme of ["light", "dark"]) {
     await page.keyboard.press("Escape");
     await page.locator("[data-canopyx-host]").evaluate((element, theme) => element.dataset.cxTheme = theme, theme);
-    await phone.click(); await expect(dialog).toContainText("Median amount: 15 ms");
+    await phone.click(); await expect(dialog).toContainText("Median amount · Med: 15 ms");
     await nextFrames(page);
     await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, "number-formats-dialog-390-" + theme + ".png"), fullPage: true });
   }
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(phone).toBeFocused();
   await heading.focus(); await page.keyboard.press("F2"); await page.keyboard.press("End"); await expect(phone).toBeFocused();
-  await page.keyboard.press("Enter"); await expect(dialog).toContainText("Distinct amounts: 2");
+  await page.keyboard.press("Enter"); await expect(dialog).toContainText("Distinct amounts · Distinct: 2");
   await page.keyboard.press("Escape"); await expect(phone).toBeFocused();
   expect(await page.evaluate(api + ".getCollapsedGroups()")).toEqual(collapsed);
   // Phone fitting can move Amount into the existing hidden-column summary after the query narrows.
   const totals = page.locator('.cx-summary-row button[aria-haspopup="dialog"]');
-  await totals.click(); await expect(dialog).toContainText("Total amount: 36%"); await page.keyboard.press("Escape");
+  await totals.click(); await expect(dialog).toContainText("Total amount · Sum: 36%"); await page.keyboard.press("Escape");
   await page.evaluate(api + ".setQuery({filters:[{column:'amount',operator:'ge',values:[10]}]})");
-  await expect(totals).toHaveAttribute("aria-label", /Total amount: 30%.*Amounts present: 2/);
+  await expect(totals).toHaveAttribute("aria-label", /Total amount · Sum: 30%.*Amounts present · Count: 2/);
   await page.evaluate(api + ".setColumnVisible('amount',false)"); await nextFrames(page);
   const hidden = page.locator(".cx-grid-group").first().locator(".cx-hidden-aggregates");
   await expect(hidden).toContainText("avg $15.00"); await hidden.click();
-  await expect(dialog).toContainText("Average amount: $15.00");
+  await expect(dialog).toContainText("Average amount · Avg: $15.00");
   await page.keyboard.press("Escape"); await expect(hidden).toBeFocused();
   expect(errors).toEqual([]);
 });
@@ -208,12 +209,13 @@ test.describe("touch access to complete formatted aggregates", () => {
     await open(page, view);
     await page.locator(".cx-grid-group :is(.cx-aggregate-button,.cx-hidden-aggregates)").tap();
     const dialog = page.locator(".cx-reporting-text");
-    await expect(dialog).toContainText("Total amount: 30%"); await expect(dialog).toContainText("Average amount: $15.00");
-    await expect(dialog).toContainText("Distinct amounts: 2");
+    await expect(dialog.locator("pre")).toBeInViewport();
+    await expect(dialog).toContainText("Total amount · Sum: 30%"); await expect(dialog).toContainText("Average amount · Avg: $15.00");
+    await expect(dialog).toContainText("Distinct amounts · Distinct: 2");
     await dialog.getByRole("button", { name: "Close complete text", exact: true }).tap();
     expect(await page.evaluate(api + ".getCollapsedGroups()")).toEqual([]);
     await page.locator(".cx-summary-row :is(.cx-aggregate-button,.cx-hidden-aggregates)").tap();
-    await expect(dialog).toContainText("Total amount: 30%");
+    await expect(dialog).toContainText("Total amount · Sum: 30%");
     await dialog.getByRole("button", { name: "Close complete text", exact: true }).tap();
   });
 });

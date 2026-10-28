@@ -32,7 +32,7 @@ body .cx-host.cx-compare-drawer { height:var(--cx-ui-viewport-block);min-height:
 .cx-compare-drawer .cx-dl dd { margin:0; }
 .cx-compare-record-changes { margin:0;padding:0 0 var(--hfx-space-3);border-bottom:var(--hfx-border-width) solid var(--hfx-color-border); }
 .cx-compare-record-changes h3, .cx-compare-drawer .cx-drawer-body .cx-record-toggle { margin:0;font-size:var(--hfx-type-small-size);font-weight:var(--hfx-weight-semibold);letter-spacing:normal;text-transform:none;color:var(--hfx-color-text-secondary); }
-.cx-compare-drawer .cx-drawer-body .cx-record-toggle { padding:var(--hfx-space-3) 0 var(--hfx-space-1);flex-direction:row-reverse;justify-content:space-between; }
+.cx-compare-drawer .cx-drawer-body .cx-record-toggle { padding:var(--hfx-space-3) 0 var(--hfx-space-1);justify-content:space-between; }
 .cx-compare-drawer[data-phone="true"] .cx-dl { grid-template-columns:minmax(0,1fr);gap:var(--hfx-space-1); }
 .cx-compare-drawer[data-phone="true"] .cx-dl dd { margin-block-end:var(--hfx-space-2); }
 @media (forced-colors:active) { .cx-before-after del { color:CanvasText; } .cx-before-after ins { color:CanvasText; } }

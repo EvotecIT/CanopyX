@@ -1050,11 +1050,11 @@
     "Comprimi gruppo"
   ],
   "GridSummary": [
-    "Podsumowanie wyników",
-    "Ergebnissummen",
-    "Totales de resultados",
-    "Totaux de la requête",
-    "Totali della query"
+    "Suma całkowita",
+    "Gesamtsumme",
+    "Total general",
+    "Total général",
+    "Totale generale"
   ],
   "GridGroupOrder": [
     "Kolejność grup jest ustalona w raporcie",
@@ -3052,11 +3052,11 @@
     "Questo record è stato rimosso."
   ],
   "GridFacetPanel": [
-    "Filtruj według",
-    "Filtern nach",
-    "Filtrar por",
-    "Filtrer par",
-    "Filtra per"
+    "Doprecyzuj",
+    "Eingrenzen",
+    "Acotar",
+    "Affiner",
+    "Affina"
   ],
   "GridFacetPanelHide": [
     "Ukryj panel filtrów",
@@ -6132,11 +6132,11 @@
     "Mostra record"
   ],
   "GridPivotConfigure": [
-    "Konfiguruj tabelę przestawną",
-    "Kreuztabelle konfigurieren",
-    "Configurar tabla dinámica",
-    "Configurer le tableau croisé",
-    "Configura tabella pivot"
+    "Ustawienia tabeli przestawnej",
+    "Pivot-Einstellungen",
+    "Ajustes de tabla dinámica",
+    "Paramètres du tableau croisé",
+    "Impostazioni tabella pivot"
   ],
   "GridPivotOther": [
     "Pozostałe",
@@ -6167,11 +6167,11 @@
     "Prime colonne"
   ],
   "GridPivotSort": [
-    "Sortuj wiersze według sumy",
-    "Zeilen nach Gesamtwert sortieren",
-    "Ordenar filas por total",
-    "Trier les lignes par total",
-    "Ordina righe per totale"
+    "Kolejność wierszy",
+    "Zeilenreihenfolge",
+    "Orden de filas",
+    "Ordre des lignes",
+    "Ordine delle righe"
   ],
   "GridPivotDrill": [
     "Pokaż rekordy dla: {row}, {column}",
@@ -6209,60 +6209,60 @@
     "Valore"
   ],
   "GridShowAsPercentGrandTotal": [
-    "jako % całości",
-    "als % der Gesamtsumme",
-    "como % del total",
-    "en % du total",
-    "come % del totale"
+    "% sumy całkowitej",
+    "% der Gesamtsumme",
+    "% del total general",
+    "% du total général",
+    "% del totale generale"
   ],
   "GridShowAsPercentParent": [
-    "jako % grupy nadrzędnej",
-    "als % der übergeordneten Gruppe",
-    "como % del grupo superior",
-    "en % du groupe parent",
-    "come % del gruppo superiore"
+    "% sumy grupy nadrzędnej",
+    "% der übergeordneten Summe",
+    "% del total del grupo superior",
+    "% du total parent",
+    "% del totale padre"
   ],
   "GridShowAsPercentColumn": [
-    "jako % kolumny",
-    "als % der Spalte",
-    "como % de la columna",
-    "en % de la colonne",
-    "come % della colonna"
+    "% sumy kolumny",
+    "% der Spaltensumme",
+    "% del total de columna",
+    "% du total de la colonne",
+    "% del totale colonna"
   ],
   "GridShowAsPercentRow": [
-    "jako % wiersza",
-    "als % der Zeile",
-    "como % de la fila",
-    "en % de la ligne",
-    "come % della riga"
+    "% sumy wiersza",
+    "% der Zeilensumme",
+    "% del total de fila",
+    "% du total de la ligne",
+    "% del totale riga"
   ],
   "GridShowAsRunningTotal": [
-    "jako suma narastająca",
-    "als laufende Summe",
-    "como total acumulado",
-    "en cumul",
-    "come totale cumulativo"
+    "Suma narastająca",
+    "Laufende Summe",
+    "Total acumulado",
+    "Total cumulé",
+    "Totale progressivo"
   ],
   "GridShowAsRank": [
-    "jako pozycja",
-    "als Rang",
-    "como posición",
-    "en rang",
-    "come posizione"
+    "Pozycja",
+    "Rang",
+    "Clasificación",
+    "Rang",
+    "Posizione"
   ],
   "GridShowAsDifference": [
-    "jako różnica od poprzedniej",
-    "als Differenz zum vorherigen Wert",
-    "como diferencia respecto al anterior",
-    "en différence avec la valeur précédente",
-    "come differenza dal precedente"
+    "Różnica względem poprzedniej wartości",
+    "Differenz zum vorherigen Wert",
+    "Diferencia respecto al anterior",
+    "Écart avec la valeur précédente",
+    "Differenza dal precedente"
   ],
   "GridShowAsPercentChange": [
-    "jako zmiana % od poprzedniej",
-    "als prozentuale Änderung zum vorherigen Wert",
-    "como cambio porcentual respecto al anterior",
-    "en variation en % de la valeur précédente",
-    "come variazione % dal precedente"
+    "% zmiany względem poprzedniej wartości",
+    "% Änderung zum vorherigen Wert",
+    "% de cambio respecto al anterior",
+    "% de variation depuis la valeur précédente",
+    "% di variazione dal precedente"
   ],
   "GridBucket": [
     "Przedział",
@@ -6599,5 +6599,26 @@
     "Esta vista ya está seleccionada.",
     "Cette vue est déjà sélectionnée.",
     "Questa vista è già selezionata."
+  ],
+  "GridCalculationDivideZero": [
+    "Dzielenie przez zero",
+    "Division durch null",
+    "División por cero",
+    "Division par zéro",
+    "Divisione per zero"
+  ],
+  "GridCalculationResultType": [
+    "Typ wyniku",
+    "Ergebnistyp",
+    "Tipo de resultado",
+    "Type du résultat",
+    "Tipo di risultato"
+  ],
+  "GridPivotFieldOptions": [
+    "Opcje pola",
+    "Feldoptionen",
+    "Opciones de campo",
+    "Options du champ",
+    "Opzioni campo"
   ]
 }

@@ -4,7 +4,7 @@
   // the part with its first query and is ready once both are. The panel's selections are the reader's own filters, so the
   // query, chips, saved views and exports carry them; the grid state also keeps whether the panel is open.
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridFacetPanel: "Filter by", gridFacetPanelHide: "Hide the filter panel", gridFacetPanelShow: "Show the filter panel",
+    gridFacetPanel: "Refine", gridFacetPanelHide: "Hide the filter panel", gridFacetPanelShow: "Show the filter panel",
     gridFacetShowMore: "Show {count} more", gridFacetShowFewer: "Show fewer", gridFacetEmptyValue: "(Empty)",
     gridFacetFrom: "From", gridFacetTo: "To", gridFacetHistogram: "Distribution of {column}", gridFacetBin: "{from} to {to}: {count} rows",
     gridFacetNoChart: "Too many values to chart", gridFacetClear: "Clear {column}", gridFacetCustom: "Another condition filters this column.",

@@ -42,8 +42,9 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
 .cx-record-section:last-child { border-bottom:0; }
 .cx-record-section .cx-record-section { border-bottom:0; margin:0 var(--cx-size-16px) var(--cx-size-4px); border-inline-start:var(--cx-size-2px) solid var(--hfx-color-border); }
 .cx-record-section-h { margin:0; font:inherit; }
-.cx-drawer .cx-record-toggle { width:100%; padding:var(--cx-size-10px) var(--cx-size-16px) var(--cx-size-4px); border-radius:var(--hfx-radius-none); font-size:var(--cx-size-11d5px); font-weight:700; letter-spacing:var(--cx-size-d06em); text-transform:uppercase; color:var(--hfx-color-text-muted); }
-.cx-record-toggle .cx-ico { width:var(--cx-size-14px); height:var(--cx-size-14px); transform:rotate(90deg); transition:transform .12s; }
+.cx-drawer .cx-record-toggle { width:100%; padding:calc(var(--hfx-space-1)*2.5) 0 var(--hfx-space-1);border:0;border-radius:var(--hfx-radius-none); font-size:var(--hfx-type-small-size); font-weight:var(--hfx-weight-semibold); letter-spacing:0; text-transform:none; color:var(--hfx-color-text); }
+.cx-record-toggle > .cx-record-btn-label { flex:1;min-width:0;text-align:start;order:0; }
+.cx-record-toggle .cx-ico { width:var(--cx-size-14px); height:var(--cx-size-14px);order:1;margin-inline-start:auto;transform:rotate(90deg); transition:transform .12s; }
 .cx-record-toggle[aria-expanded="false"] .cx-ico { transform:none; }
 .cx-drawer .cx-record-section .cx-record-section .cx-record-toggle { padding:var(--cx-size-6px) var(--cx-size-10px) var(--cx-size-2px); font-size:var(--cx-size-13px); letter-spacing:0; text-transform:none; color:var(--hfx-color-text); }
 .cx-record-section .cx-record-section .cx-dl { padding:var(--cx-size-4px) var(--cx-size-10px) var(--cx-size-6px); }
@@ -132,6 +133,3 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
 /* A long record title wraps inside the drawer head instead of running under the navigation and close buttons. */
 .cx-drawer.cx-record-drawer .cx-drawer-h h4 { width:auto; max-width:100%; overflow-wrap:anywhere; }
 .cx-drawer.cx-record-drawer .cx-drawer-h > :not(:first-child) { flex:none;margin-inline:0; }
-
-.cx-drawer[data-phone="true"] .cx-record-toggle { justify-content:flex-start;padding-inline:0;position:relative; }
-.cx-drawer[data-phone="true"] .cx-record-toggle > svg { position:absolute;inset-inline-start:calc(-1 * var(--hfx-space-4));margin:0; }

@@ -90,6 +90,26 @@ test("embedded chrome draws no frame of its own and insets the toolbar by the ca
     gridBackground: "rgba(0, 0, 0, 0)" });
 });
 
+test("embedded pinned cells and headers follow a distinct live card surface", async ({ page }) => {
+  const view = grid([{ id: "a", cells: { name: "Plain", size: 5 } }]);
+  view.reporting = { layout: { name: { minimum: 100, maximum: 300, pin: "left" } } };
+  await open(page, view, ' data-cx-chrome="embedded"');
+  await page.evaluate(() => {
+    const host = document.querySelector("[data-canopyx-host]"), card = document.createElement("article");
+    card.id = "card"; card.style.cssText = "--hfx-color-surface:#080c10;--hfx-color-surface-raised:#243848;background:var(--hfx-color-surface-raised)";
+    host.before(card); card.append(host);
+  });
+  const pinned = page.locator('.cx-canvas .cx-cell[data-cx-pin="left"]').first();
+  for (const surface of ["rgb(36, 56, 72)", "rgb(58, 45, 75)"]) {
+    if (surface === "rgb(58, 45, 75)") await page.locator("#card").evaluate(card => card.style.setProperty("--hfx-color-surface-raised", "#3a2d4b"));
+    await expect(pinned).toHaveCSS("background-color", surface);
+    const header = await page.locator(".cx-hrow").evaluate(element => getComputedStyle(element).backgroundColor);
+    await expect(page.locator('.cx-hcell[data-cx-pin="left"]')).toHaveCSS("background-color", header);
+    expect(header).not.toBe("rgb(8, 12, 16)");
+  }
+  expect(await page.locator("[data-canopyx-host]").evaluate(host => [...host.style].some(name => name.startsWith("--hfx-")))).toBe(false);
+});
+
 test("an empty embedded grid shows its empty state on the card surface", async ({ page }) => {
   await open(page, grid([]), " data-cx-chrome=\"embedded\"");
   // Every layer between the empty state and the card is see-through, so no panel of another colour shows behind it.

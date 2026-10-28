@@ -30,57 +30,60 @@
     const hadFocus = this.pivotPanel.contains(active), focus = hadFocus ? active.dataset.pivotFocus : null;
     const columns = pivotVisible(result.columns, state.collapsedColumns, true), rows = pivotVisible(result.rows, state.collapsedRows, false), totalColumn = result.columns[0];
     const aggregates = state.values.map(id => this.view.reporting.aggregates.find(value => value.id === id));
-    const zones = this.pivotZones(), mobile = h("label", "cx-pivot-picker"), picker = h("select", "cx-input"), pickerName = h("span");
-    picker.setAttribute("aria-label", this.labels.gridPivotColumn); picker.dataset.pivotFocus = "column-picker";
-    for (const column of [...columns, totalColumn]) { const option = h("option"); option.value = column.key; setText(option, pivotLabel(this, state, "columns", column)); picker.append(option); }
-    if (!picker.querySelector("option") || ![...picker.options].some(option => option.value === state.columnKey)) state.columnKey = columns[0]?.key || "c";
-    picker.value = state.columnKey;
-    picker.addEventListener("change", () => { state.columnKey = picker.value; this.renderPivot(); this.noteViewPreferenceIntent?.(); this.stateChanged(); });
-    setText(pickerName, this.labels.gridPivotColumn); mobile.append(pickerName, picker); mobile.hidden = !phone;
-    const displayedColumns = phone ? [...columns, totalColumn].filter(column => column.key === state.columnKey) : [...columns, totalColumn];
-    const scroll = h("div", "cx-pivot-scroll"), table = h("table", "cx-pivot-table"), caption = h("caption", "cx-sr-only");
-    setText(caption, this.view.label + ": " + this.labels.gridPivot); table.append(caption); scroll.tabIndex = 0; scroll.setAttribute("aria-label", this.labels.gridPivot);
-    const head = h("thead"), first = h("tr"), leading = h("th"); leading.scope = "col"; setText(leading, this.labels.gridPivotRows);
-    const hierarchical = !phone && state.columns.length === 2, headerRows = hierarchical ? 2 : 1;
-    leading.rowSpan = headerRows; first.append(leading); head.append(first);
-    const second = hierarchical ? h("tr") : null;
-    const leafHeader = (row, column, rowspan = 1) => {
-      for (const aggregate of aggregates) {
-        const th = h("th"), name = h("span"), value = h("button", "cx-pivot-value-menu"); th.scope = "col"; th.rowSpan = rowspan;
-        setText(name, pivotLabel(this, state, "columns", column, !hierarchical || column.other || !column.parent)); name.title = name.textContent;
-        setText(value, aggregate.label); value.type = "button"; value.title = this.labels.gridShowAs;
-        value.dataset.pivotFocus = "value:" + column.key + ":" + aggregate.id;
-        value.addEventListener("click", () => this.pivotValueMenu(aggregate, value));
-        th.append(name, value); const mode = showAsMode(this, aggregate);
-        if (mode !== "value") { const modeLabel = h("span", "cx-pivot-caption"); setText(modeLabel, showAsCaption(this, mode)); th.append(modeLabel); }
-        if (column.parent && result.columns.some(child => child.parent === column.key)) th.prepend(pivotToggle(this, column, "columns"));
-        row.append(th);
-      }
+    const zones = this.pivotZones(), displayedColumns = [...columns, totalColumn];
+    this.pivotPanel.dataset.phone = String(phone);
+    if (this.pivotButton) setText(this.pivotButton, phone ? this.labels.gridPivotConfigure : this.labels.gridPivot);
+    const scroll = h("div", "cx-pivot-scroll"), table = h("table", "cx-pivot-table"), caption = h("caption", "cx-pivot-description");
+    const describe = axis => state[axis].map(level => pivotColumn(this, level.column).title).join(" / ");
+    setText(caption, this.view.label + " · " + describe("rows") + (state.columns.length ? " × " + describe("columns") : "") + " · " + aggregates.map(value => reportingAggregateName(this, value)).join(", "));
+    table.append(caption); scroll.tabIndex = 0; scroll.setAttribute("aria-label", this.labels.gridPivot);
+    const head = h("thead"), axisDepth = Math.max(1, state.columns.length), leading = h("th");
+    leading.scope = "col"; leading.rowSpan = axisDepth + 1; setText(leading, describe("rows") || this.view.label);
+    const jump = gridButton("", () => this.openPivotColumnMenu(jump).catch(error => this.emit("error", { error })));
+    jump.classList.add("cx-pivot-column-jump"); jump.dataset.size = "sm"; jump.dataset.pivotFocus = "column-picker";
+    jump.setAttribute("aria-label", this.labels.gridPivotColumn); jump.setAttribute("aria-haspopup", "menu"); jump.title = this.labels.gridPivotColumn; leading.append(jump);
+    const ancestor = (node, depth) => {
+      while (node.path.length > depth) node = result.columns.find(parent => parent.key === node.parent);
+      return node;
     };
-    if (hierarchical) {
-      const roots = result.columns.filter(column => column.parent === "c");
-      for (const root of roots) {
-        const children = displayedColumns.filter(column => column.parent === root.key);
-        if (!children.length) { if (displayedColumns.includes(root)) leafHeader(first, root, 2); continue; }
-        const th = h("th"), label = h("span"); th.scope = "colgroup"; th.colSpan = children.length * aggregates.length;
-        setText(label, pivotLabel(this, state, "columns", root)); th.append(pivotToggle(this, root, "columns"), label); first.append(th);
-        for (const child of children) leafHeader(second, child);
+    for (let depth = 0; depth < axisDepth; depth++) {
+      const row = h("tr"); if (!depth) row.append(leading);
+      for (let index = 0; index < displayedColumns.length;) {
+        const column = displayedColumns[index];
+        if (depth && column.path.length <= depth) { index++; continue; }
+        const group = ancestor(column, depth + 1); let end = index + 1;
+        while (end < displayedColumns.length && ancestor(displayedColumns[end], depth + 1).key === group.key) end++;
+        const th = h("th"), label = h("span"); th.scope = "colgroup"; th.colSpan = (end - index) * aggregates.length;
+        th.rowSpan = group.path.length < axisDepth ? axisDepth - depth : 1;
+        setText(label, pivotLabel(this, state, "columns", group, false)); label.title = pivotLabel(this, state, "columns", group);
+        if (group.parent && result.columns.some(child => child.parent === group.key)) th.append(pivotToggle(this, group, "columns"));
+        th.append(label); row.append(th); index = end;
       }
-      leafHeader(first, totalColumn, 2); head.append(second);
-    } else for (const column of displayedColumns) leafHeader(first, column);
+      head.append(row);
+    }
+    const measures = h("tr");
+    for (const column of displayedColumns) for (const aggregate of aggregates) {
+      const th = h("th"), value = h("button", "cx-pivot-value-menu"); th.scope = "col"; th.dataset.pivotColumn = column.key;
+      setText(value, reportingAggregateName(this, aggregate)); value.type = "button"; value.title = this.labels.gridShowAs;
+      value.dataset.pivotFocus = "value:" + column.key + ":" + aggregate.id;
+      value.addEventListener("click", () => this.pivotValueMenu(aggregate, value)); th.append(value);
+      const mode = showAsMode(this, aggregate);
+      if (mode !== "value") { const label = h("span", "cx-pivot-caption"); setText(label, showAsCaption(this, mode)); th.append(label); }
+      measures.append(th);
+    }
+    head.append(measures);
     table.append(head); const body = h("tbody");
     const appendRow = (node, parent) => {
       const row = h("tr"), title = h("th"), text = h("span"), hasChildren = result.rows.some(child => child.parent === node.key);
       title.scope = "row"; title.style.setProperty("--cx-pivot-depth", String(Math.max(0, node.path.length - 1)));
       setText(text, pivotLabel(this, state, "rows", node, false)); text.title = pivotLabel(this, state, "rows", node);
-      if (hasChildren && node.parent) title.append(pivotToggle(this, node, "rows")); title.append(text); row.append(title);
+      if (hasChildren && node.parent) title.append(pivotToggle(this, node, "rows")); title.append(text); title.classList.toggle("cx-pivot-leaf", !hasChildren); row.append(title);
       if (hasChildren || !node.parent) row.classList.add("cx-pivot-subtotal");
       for (const column of displayedColumns) for (const aggregate of aggregates) {
         const cell = h("td"), button = h("button", "cx-pivot-cell"), display = pivotDisplay(this, result, node.key, column.key, aggregate);
-        const format = display.mode === "rank" ? numberFormat(this.lang, 0, 0) : GRID_SHOW_AS.percent(display.mode) ? new Intl.NumberFormat(this.lang, { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 }) : numberFormat(this.lang);
-        setText(button, display.value === null ? "—" : format.format(display.value)); button.type = "button";
+        setText(button, reportingValueText(this, aggregate, display.value, display.mode)); button.type = "button";
         button.title = fill(this.labels.gridPivotDrill, { row: pivotLabel(this, state, "rows", node), column: pivotLabel(this, state, "columns", column) });
-        button.setAttribute("aria-label", button.title + ": " + aggregate.label + ", " + button.textContent); button.dataset.pivotFocus = "cell:" + node.key + ":" + column.key + ":" + aggregate.id;
+        button.setAttribute("aria-label", button.title + ": " + reportingAggregateName(this, aggregate) + ", " + button.textContent); button.dataset.pivotFocus = "cell:" + node.key + ":" + column.key + ":" + aggregate.id;
         button.addEventListener("click", () => this.drillPivot(node.key, column.key).catch(error => this.emit("error", { error }))); cell.append(button); row.append(cell);
       }
       parent.append(row);
@@ -88,14 +91,8 @@
     rows.forEach(row => appendRow(row, body)); const foot = h("tfoot"); appendRow(result.rows[0], foot); table.append(body, foot); scroll.append(table);
     const note = h("p", "cx-pivot-note"); note.hidden = !result.columnsLimited;
     if (result.columnsLimited) setText(note, fill(this.labels.gridPivotLimited, { shown: String(result.retainedColumns.length), total: String(result.distinctColumns) }));
-    this.pivotPanel.replaceChildren(zones, mobile, note, scroll);
-    // A short embedded host scrolls its controls instead of squeezing data beneath the sticky header and total.
-    const firstRow = body.firstElementChild;
-    const minimum = Math.ceil(head.getBoundingClientRect().height + (firstRow?.getBoundingClientRect().height || 0) + foot.getBoundingClientRect().height + 2);
-    scroll.style.minHeight = minimum + "px";
-    if ((this.pivotRevealData || !hadFocus) && firstRow && this.pivotPanel.clientHeight) {
-      this.pivotPanel.scrollTop += Math.max(0, scroll.getBoundingClientRect().bottom - this.pivotPanel.getBoundingClientRect().bottom);
-      this.pivotRevealData = false;
-    }
+    this.pivotPanel.replaceChildren(zones, note, scroll);
+    let offset = 0;
+    for (const row of head.rows) { for (const cell of row.cells) cell.style.top = offset + "px"; offset += row.getBoundingClientRect().height; }
     if (focus) [...this.pivotPanel.querySelectorAll("[data-pivot-focus]")].find(control => control.dataset.pivotFocus === focus)?.focus({ preventScroll: true });
   };

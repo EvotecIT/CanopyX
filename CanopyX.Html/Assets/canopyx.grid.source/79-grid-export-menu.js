@@ -88,14 +88,15 @@
     const print = typeof this.print === "function" ? gridButton(labels.gridPrint, () => panel.cxRun((options, onProgress) =>
       this.print({ ...options, onProgress }))) : h("span");
     decorate(print, labels.gridPrint, null, "▤"); print.hidden = true;
+    this.exportPrintButton = print;
     csv.hidden = menu.csv === false; copy.hidden = !this.copy || menu.copy === false;
     panel.cxFormats = () => {
       if (operation) return;
       formats.forEach(button => button.remove());
       try {
         const available = EXPORT_IMPL.formatsOf(this);
-        print.hidden = !(typeof this.print === "function" && (menu.print ?? available.some(format => format.id === "xlsx" || format.id === "pdf")));
-        formats = available.filter(format => format.showInMenu).map(format => Object.assign(decorate(gridButton(format.label, () =>
+        print.hidden = !(typeof this.print === "function" && (menu.print ?? true));
+        formats = available.filter(format => format.showInMenu && (!this.pivotState?.active || !["xlsx", "pdf"].includes(format.id))).map(format => Object.assign(decorate(gridButton(format.label, () =>
           panel.cxRun((options, onProgress) => this.exportAs(format.id, { ...options, onProgress }))), format.label,
           format.id === "xlsx" ? labels.gridExportWorkbookHint : format.id === "pdf" ? labels.gridExportPdfHint : null,
           format.extension.toUpperCase()), { value: format.id }));

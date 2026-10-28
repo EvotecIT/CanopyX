@@ -22,7 +22,7 @@ test("print retains frozen query context, group subtotals and query totals with 
   expect(result.header).toContain("Filtered results · 30 rows · Grouped by Region");
   expect(result.header).toContain("Filters: Region = North");
   expect(result.header).toContain("UTC");
-  expect(result.subtotal).toContain("$ 7,072.50"); expect(result.total).toContain("Query totals"); expect(result.total).toContain("$ 7,072.50");
+  expect(result.subtotal).toContain("$ 7,072.50"); expect(result.total).toContain("Grand total"); expect(result.total).toContain("$ 7,072.50");
   expect(result.rows).toBe(30); expect(result.printStyle).toContain("@page"); expect(result.printStyle).toContain("table-header-group");
   expect(result.columns).toEqual(["", "", "1%", "144px", "1%"]);
   expect(result.links).toHaveLength(30); expect(result.links.every(css => css.includes("color: inherit") && css.includes("text-decoration: none"))).toBe(true);

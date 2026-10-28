@@ -3,6 +3,9 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     private static CanopyLabels WithItalianAnalysis(CanopyLabels labels) {
+        labels.GridPivotFieldOptions = "Opzioni campo";
+        labels.GridCalculationResultType = "Tipo di risultato";
+        labels.GridCalculationDivideZero = "Divisione per zero";
         labels.GridCalculationAdd = "Aggiungi colonna calcolata";
         labels.GridCalculationTitle = "Titolo della colonna";
         labels.GridCalculationId = "ID della colonna";
@@ -17,25 +20,25 @@ public sealed partial class CanopyLabels {
         labels.GridPivotColumns = "Gruppi di colonne";
         labels.GridPivotValues = "Valori";
         labels.GridPivotFlat = "Mostra record";
-        labels.GridPivotConfigure = "Configura tabella pivot";
+        labels.GridPivotConfigure = "Impostazioni tabella pivot";
         labels.GridPivotOther = "Altri";
         labels.GridPivotLimited = "Mostrati {shown} di {total} percorsi di colonne; gli altri sono raggruppati in Altri. I subtotali includono tutti i valori discendenti corrispondenti.";
         labels.GridPivotColumn = "Scegli colonna";
         labels.GridPivotTopN = "Prime colonne";
-        labels.GridPivotSort = "Ordina righe per totale";
+        labels.GridPivotSort = "Ordine delle righe";
         labels.GridPivotDrill = "Mostra record per {row}, {column}";
         labels.GridPivotReturn = "Torna alla tabella pivot";
         labels.GridPivotInvalid = "Scegli assi validi e almeno un valore.";
         labels.GridShowAs = "Mostra valori come";
         labels.GridShowAsValue = "Valore";
-        labels.GridShowAsPercentGrandTotal = "come % del totale";
-        labels.GridShowAsPercentParent = "come % del gruppo superiore";
-        labels.GridShowAsPercentColumn = "come % della colonna";
-        labels.GridShowAsPercentRow = "come % della riga";
-        labels.GridShowAsRunningTotal = "come totale cumulativo";
-        labels.GridShowAsRank = "come posizione";
-        labels.GridShowAsDifference = "come differenza dal precedente";
-        labels.GridShowAsPercentChange = "come variazione % dal precedente";
+        labels.GridShowAsPercentGrandTotal = "% del totale generale";
+        labels.GridShowAsPercentParent = "% del totale padre";
+        labels.GridShowAsPercentColumn = "% del totale colonna";
+        labels.GridShowAsPercentRow = "% del totale riga";
+        labels.GridShowAsRunningTotal = "Totale progressivo";
+        labels.GridShowAsRank = "Posizione";
+        labels.GridShowAsDifference = "Differenza dal precedente";
+        labels.GridShowAsPercentChange = "% di variazione dal precedente";
         labels.GridBucket = "Intervallo";
         labels.GridBucketNone = "Valori esatti";
         labels.GridBucketDay = "Giorno";

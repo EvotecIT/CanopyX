@@ -14,7 +14,7 @@
   function recordButton(text, run, className, icon) {
     const button = h("button", "cx-record-btn" + (className ? " " + className : "")); button.type = "button";
     if (icon) button.appendChild(recordIcon(icon));
-    if (text) button.appendChild(document.createTextNode(text));
+    if (text) { const label = h("span", "cx-record-btn-label"); setText(label, text); button.appendChild(label); }
     button.addEventListener("click", event => { event.stopPropagation(); run(event); });
     return button;
   }

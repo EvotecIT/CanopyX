@@ -1,6 +1,6 @@
   // The reporting delivery owner decorates requests; the frozen descriptor retains the private table ownership.
   const PIVOT_EXPORT_ROWS = new WeakMap(), PIVOT_EXPORT_OWNERS = new WeakMap(), PIVOT_EXPORT_BASE = DataGrid.prototype.exportRows;
-  GRID_PIVOT.prepareExport = (grid, options) => {
+  GRID_PIVOT.prepareExport = (grid, options, presentColumn) => {
     if (options.pivot !== true || options.scope !== "filtered" || options.columns !== undefined)
       throw new Error("CanopyX: pivot table capture needs filtered scope and the complete pivot columns.");
     if (options.values !== undefined && !["raw", "display"].includes(options.values)) throw new Error("CanopyX: export values must be raw/display.");
@@ -10,12 +10,13 @@
     presentation.fmt = formatting(presentation.lang, presentation.local, grid.labels);
     const snapshot = grid.pivotExport.call(presentation);
     const { definition, rowAxis, columnAxis, columnGroups, distinctColumns, retainedColumns, columnsLimited } = snapshot;
+    const columns = snapshot.columns.map(presentColumn);
     const pivot = gridFreeze({ definition, rowAxis, columnAxis, columnGroups, distinctColumns, retainedColumns, columnsLimited });
     const request = gridFreeze({ scope: "filtered", query: snapshot.query, revision: snapshot.query.revision,
-      total: grid.snapshot.total, matched: snapshot.matched, recordCount: snapshot.rows.length, selection: [], columns: snapshot.columns,
+      total: grid.snapshot.total, matched: snapshot.matched, recordCount: snapshot.rows.length, selection: [], columns,
       presentation: "semantic", values: options.values || "display", timeZone: presentation.local ? "local" : "utc", formatRules: [], pivot });
     if (!PIVOT_EXPORT_OWNERS.has(grid)) PIVOT_EXPORT_OWNERS.set(grid, Symbol());
-    PIVOT_EXPORT_ROWS.set(pivot, { owner: PIVOT_EXPORT_OWNERS.get(grid), rows: snapshot.rows, query: request.query, revision: request.revision, columns: request.columns,
+    PIVOT_EXPORT_ROWS.set(pivot, { owner: PIVOT_EXPORT_OWNERS.get(grid), rows: snapshot.rows, query: request.query, revision: request.revision, columns,
       projection: GRID_CALCULATIONS.revision?.(grid.view) });
     return Object.freeze({ request, rows: extra => grid.exportRows(request, gridExportSignal(options.signal, extra)) });
   };

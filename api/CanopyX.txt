@@ -1504,6 +1504,7 @@ CanopyX.CanopyGridGroup.System.Int32 Offset { get; }
 CanopyX.CanopyGridGroup.System.String Key { get; }
 CanopyX.CanopyGridGroupLevel : sealed class
 CanopyX.CanopyGridGroupLevel..ctor(System.String column, System.Boolean descending = False, System.String? aggregate = null, CanopyX.CanopyBucket? bucket = null)
+CanopyX.CanopyGridGroupLevel..ctor(System.String column, System.Boolean descending, System.String? aggregate)
 CanopyX.CanopyGridGroupLevel.CanopyX.CanopyBucket? Bucket { get; }
 CanopyX.CanopyGridGroupLevel.System.Boolean Descending { get; }
 CanopyX.CanopyGridGroupLevel.System.String Column { get; }
@@ -2315,12 +2316,14 @@ CanopyX.CanopyLabels.System.String GridBucketWidth { get; set; }
 CanopyX.CanopyLabels.System.String GridBucketYear { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationAdd { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationDate { get; set; }
+CanopyX.CanopyLabels.System.String GridCalculationDivideZero { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationError { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationExpression { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationHelp { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationId { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationInvalid { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationNumber { get; set; }
+CanopyX.CanopyLabels.System.String GridCalculationResultType { get; set; }
 CanopyX.CanopyLabels.System.String GridCalculationTitle { get; set; }
 CanopyX.CanopyLabels.System.String GridCancelExport { get; set; }
 CanopyX.CanopyLabels.System.String GridCellMenu { get; set; }
@@ -2535,6 +2538,7 @@ CanopyX.CanopyLabels.System.String GridPivotColumn { get; set; }
 CanopyX.CanopyLabels.System.String GridPivotColumns { get; set; }
 CanopyX.CanopyLabels.System.String GridPivotConfigure { get; set; }
 CanopyX.CanopyLabels.System.String GridPivotDrill { get; set; }
+CanopyX.CanopyLabels.System.String GridPivotFieldOptions { get; set; }
 CanopyX.CanopyLabels.System.String GridPivotFlat { get; set; }
 CanopyX.CanopyLabels.System.String GridPivotInvalid { get; set; }
 CanopyX.CanopyLabels.System.String GridPivotLimited { get; set; }

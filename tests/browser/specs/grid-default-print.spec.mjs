@@ -78,14 +78,15 @@ test("default print keeps captured grouping, totals and safe links legible under
 });
 
 for (const width of [1440, 390]) for (const reporting of [false, true]) for (const exportMenu of [false, true]) {
-  test(`More Print uses the complete static renderer (${reporting ? "reporting" : "grid"}, Export ${exportMenu}, ${width})`, async ({ page }) => {
+  test(`Print uses the complete static renderer (${reporting ? "reporting" : "grid"}, Export ${exportMenu}, ${width})`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript(() => { window.print = () => { window.parent.__printedDocument = document.documentElement.outerHTML; }; });
     const html = viewPage({ ...definition(reporting), toolbar: { export: exportMenu } });
     await page.route('http://canopyx.test/more-print', route => route.fulfill({ contentType: 'text/html', body: html }));
     await page.goto('http://canopyx.test/more-print'); await page.waitForSelector('[data-cx-ready]');
-    await page.locator('.cx-grid-overflow > summary').click();
-    await page.locator('.cx-grid-overflow').getByRole('button', { name: 'Print', exact: true }).click();
+    if (exportMenu) await openGridControl(page, "export");
+    else await page.locator('.cx-grid-overflow > summary').click();
+    await page.getByRole('button', { name: 'Print', exact: true }).click();
     await expect.poll(() => page.evaluate(() => {
       const doc = new DOMParser().parseFromString(window.__printedDocument || '', 'text/html');
       return doc.querySelectorAll('main > table > tbody > tr').length;

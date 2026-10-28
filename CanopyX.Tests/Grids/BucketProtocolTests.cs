@@ -39,7 +39,7 @@ public sealed class BucketProtocolTests {
         summary.Groups.Add(january); summary.Groups.Add(february); summary.Aggregates["sum"] = 50;
         ProtocolSchema.AssertValid(summary.ToJson(view), "bucket summary");
         var html = CanopyStaticHtml.RenderGridSummary(view, summary);
-        Assert.Contains("2026-01", html); Assert.Contains("2026-02", html); Assert.Contains("Query totals", html); Assert.DoesNotContain("<script", html);
+        Assert.Contains("2026-01", html); Assert.Contains("2026-02", html); Assert.Contains("Grand total", html); Assert.DoesNotContain("<script", html);
         var bounded = CanopyStaticHtml.RenderGridSummary(view, summary, new CanopyStaticHtmlOptions { MaxRows = 1 });
         Assert.DoesNotContain("2026-02", bounded);
     }

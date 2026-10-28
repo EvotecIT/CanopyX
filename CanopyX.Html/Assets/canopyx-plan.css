@@ -14,6 +14,7 @@
 .cx-plan-milestone:focus-visible::before{outline:var(--hfx-border-width,1px) solid var(--hfx-color-text,light-dark(#16181c,#f2f3f5));outline-offset:calc(var(--hfx-space-1,0.25rem)*0.75);}
 .cx-plan-baseline{position:absolute;height:calc(var(--hfx-space-1,0.25rem)*0.75);background:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));pointer-events:none;}
 .cx-plan-links{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.cx-plan-task > .cx-cal-ev-title{line-height:var(--hfx-type-small-line,1.4);}
 .cx-plan-links path{stroke:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));stroke-width:1.5;fill:none;}
 .cx-plan-links .cx-plan-link-critical{stroke:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));stroke-width:2;}
 .cx-plan-links .cx-plan-link-conflict{stroke:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));stroke-dasharray:4 3;}
@@ -52,3 +53,4 @@
 .cx-plan-agenda [hidden]{display:none;}
 .cx-plan-agenda .cx-plan-resource-toggle{padding:0;border:0;min-height:0;height:auto;background:transparent;font:inherit;color:inherit;}
 .cx-plan-agenda-count{margin-inline-start:var(--hfx-space-2,0.5rem);color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));font-size:var(--hfx-type-caption-size,0.75rem);}
+.cx-plan .cx-tl-lane .cx-plan-task{z-index:auto;}
