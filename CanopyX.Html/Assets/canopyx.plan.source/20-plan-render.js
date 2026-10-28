@@ -52,7 +52,7 @@
             if (!planMilestone(this, task)) element.style.height = Math.max(PLAN_METRICS.actualMinHeight, element._planHeight - PLAN_METRICS.actualBaselineGap) + "px";
           }
           const rect = element.getBoundingClientRect(), start = axis.x(task.tlStart), end = axis.x(planMilestone(this, task) ? task.tlStart : task.tlEnd);
-          if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, bottom: rect.bottom - canvasBox.top });
+          if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, top: rect.top - canvasBox.top, bottom: rect.bottom - canvasBox.top });
           const title = element.querySelector(".cx-cal-ev-title");
           if (title) {
             title.title = task.title; element.classList.remove("cx-plan-label-before");

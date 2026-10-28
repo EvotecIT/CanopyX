@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "587666a7b2a12f26",
+      "version": "ab6490d0ae0e0aff",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -1033,7 +1033,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "094acff2a89cbaa1",
+      "version": "640ca4be173c3310",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [

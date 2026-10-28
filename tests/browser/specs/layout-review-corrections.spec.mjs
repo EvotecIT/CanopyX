@@ -10,6 +10,70 @@ async function open(page, name, width = 1440) {
   await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.ready);
 }
 
+for (const theme of ["", "-dark"]) test("disclosed desktop columns fit the narrow example " + (theme || "light"), async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(exampleUrl("column-layout" + theme + ".html"));
+  const host = page.locator(".cx-data-grid").filter({ has: page.locator('[data-cx-column="check"]') }).first();
+  await expect(host.locator(".cx-hidden-fields").first()).toBeVisible();
+  const grid = host.locator(".cx-grid");
+  await expect.poll(() => grid.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(0);
+  const right = await grid.evaluate(node => node.getBoundingClientRect().right);
+  for (const text of ["Last inspection", "Complete"]) {
+    const box = await host.getByText(text, { exact: true }).first().boundingBox();
+    expect(box.x + box.width).toBeLessThanOrEqual(right + 1);
+  }
+  await host.locator(".cx-hidden-fields").first().click();
+  await expect(page.getByRole("dialog")).toContainText("Additional notes");
+});
+
+test("phone More sheet keeps the shared narrow grab handle", async ({ page }) => {
+  await open(page, "office-export", 390);
+  await page.locator(".cx-grid-overflow > summary").first().click();
+  const handle = await page.locator(".cx-grid-overflow > .cx-grid-panel").first().evaluate(node => {
+    const style = getComputedStyle(node, "::before"); return { width: parseFloat(style.width), height: parseFloat(style.height) };
+  });
+  expect(handle.width).toBe(32); expect(handle.height).toBe(4);
+});
+
+test("desktop disclosure fits with longer values in a wider container", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(exampleUrl("column-layout.html"));
+  const host = page.locator(".cx-data-grid").filter({ has: page.locator('[data-cx-column="check"]') }).first();
+  await host.evaluate(async element => {
+    await element.canopyx.ready;
+    const view = structuredClone(element.canopyx.view);
+    element.canopyx.destroy(); element.replaceChildren(); element.parentElement.style.width = "750px";
+    view.rows = [{ id: "test", cells: { name: "Device 001", owner: "Platformxxxxxxxxxxxxxxxxxxxx", region: "North", status: "Online",
+      team: "Operations", site: "Warsaw", check: "Complete", notes: "Ready for review" } }];
+    element.canopyx = CanopyX.createDataGrid(element, { view }); await element.canopyx.ready;
+  });
+  await expect(host.locator(".cx-hidden-fields").first()).toBeVisible();
+  await expect.poll(() => host.locator(".cx-grid").evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(0);
+});
+
+for (const width of [768, 1024, 1440]) test("plan dependency avoids unrelated bars at " + width, async ({ page }) => {
+  await open(page, "plan", width);
+  await expect(page.locator(".cx-plan-links path").filter({ has: page.locator("title", { hasText: /Prepare.*Update/ }) })).toHaveCount(1);
+  const overlaps = await page.locator(".cx-plan-links path").evaluateAll(paths => {
+    const tasks = [...document.querySelectorAll(".cx-plan-task")];
+    return paths.flatMap(path => {
+      const description = path.querySelector("title").textContent;
+      if (!description.includes("Prepare") || !description.includes("Update")) return [];
+      const matrix = path.getScreenCTM(), collisions = new Set();
+      for (let distance = 1; distance < path.getTotalLength() - 1; distance += 2) {
+        const p = path.getPointAtLength(distance).matrixTransform(matrix);
+        for (const task of tasks) {
+          if (/Prepare|Update/.test(task.getAttribute("aria-label"))) continue;
+          const r = task.getBoundingClientRect();
+          if (p.x > r.left + 1 && p.x < r.right - 1 && p.y > r.top + 1 && p.y < r.bottom - 1) collisions.add(task.getAttribute("aria-label"));
+        }
+      }
+      return [...collisions];
+    });
+  });
+  expect(overlaps).toEqual([]);
+});
+
 for (const name of ["board", "path", "stack"]) test(name + " record titles are strong, flush and free of resting button chrome", async ({ page }) => {
   await open(page, name);
   const title = page.locator(".cx-" + name + "-title").first();

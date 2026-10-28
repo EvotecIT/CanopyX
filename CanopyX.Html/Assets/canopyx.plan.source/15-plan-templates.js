@@ -35,11 +35,11 @@
   }
   function planLinkTemplate(svg, axis, from, to, edge, critical, text) {
         const mirror = x => this.calRtl ? axis.total - x : x, x1 = mirror(from.end), x2 = mirror(to.start), sign = this.calRtl ? -1 : 1;
-        const exit = x1 + 10 * sign, entry = x2 - 10 * sign;
-        const corridor = from.bottom + (to.y >= from.y ? 1 : -1) * 4;
+        const exit = x1 - 5 * sign, entry = x2 - 10 * sign;
+        const edgeY = to.y >= from.y ? from.bottom : from.top, corridor = edgeY + (to.y >= from.y ? 4 : -4);
         const path = document.createElementNS(svg.namespaceURI, "path");
         const flat = Math.abs(from.y-to.y)<1 && (x2-x1)*sign>=-1;
-        const route = flat ? "M"+(Math.abs(x1-x2)<1?x1-5*sign:x1)+","+from.y+" H"+x2 : "M"+x1+","+from.y+" H"+exit+" V"+corridor+" H"+entry+" V"+to.y+" H"+x2;
+        const route = flat ? "M"+(Math.abs(x1-x2)<1?x1-5*sign:x1)+","+from.y+" H"+x2 : "M"+exit+","+edgeY+" V"+corridor+" H"+entry+" V"+to.y+" H"+x2;
         const lead = x2 - 5 * sign;
         const arrow = " M"+lead+","+(to.y-4)+" L"+x2+","+to.y+" L"+lead+","+(to.y+4);
         path.setAttribute("d", route+arrow);

@@ -183,6 +183,7 @@
 .cx-phone .cx-grid-page-range { flex:none; }
 .cx-data-grid .cx-hidden-fields { color:var(--hfx-color-text-muted);font:var(--cx-size-12d5px) var(--hfx-font-sans);border:0;background:transparent;padding:0;flex:none;min-width:var(--cx-size-24px);min-height:var(--cx-size-24px);position:relative; }
 .cx-data-grid:not(.cx-phone) .cx-cell:has(> .cx-hidden-fields) { gap:var(--hfx-space-2); }
+.cx-narrow :is(.cx-hcell,.cx-cell) { padding-inline:var(--hfx-space-1-5); }
 
 .cx-data-grid.cx-grid-awaiting.cx-phone .cx-grid { height:var(--cx-empty-head-height,var(--hfx-control-height-lg)); }
 .cx-phone .cx-hcell :is(.cx-grid-column-menu,.cx-grid-header-filter) { min-width:var(--cx-size-44px);min-height:var(--cx-size-44px); }

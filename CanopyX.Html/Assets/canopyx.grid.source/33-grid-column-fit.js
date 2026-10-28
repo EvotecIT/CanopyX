@@ -107,14 +107,16 @@
     fitLayout() {
       const width = this.fitAvailableWidth(), phone = this.host.clientWidth <= 640, shown = FIT.visibleColumns.call(this).filter(column => !column.responsiveHidden);
       if (!width) return;
-      const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone;
+      const compact = !phone && shown.some(c => gridLevel(c) > 1);
+      this.host.classList.toggle("cx-narrow", compact);
+      const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone + compact;
       if (key !== this.fitKey || !this.fitCh) {
         this.fitKey = key; this.fitFont = null;
         for (const column of this.columns) column.need = this.measureGridColumn(column).width;
       }
+      this.desktopDisclosureColumn = null;
       // Base widths depend on content, not on the available width, so responsive policies read stable values.
       for (const column of this.columns) { if (!column.fixed && !column.sized) column.width = this.fitSize(column); }
-      this.desktopDisclosureColumn = null;
       this.fitHide(shown, width, phone);
       const hidden = this.columns.filter(column => !column.hidden && (column.fitHidden || column.responsiveHidden));
       this.desktopHiddenFields = !phone && hidden.length > 0;
