@@ -1,9 +1,9 @@
 {
   "families": [
     { "id": "explore", "name": "Explore", "tone": "explore", "body": "Records with parents, and flat lists of any size." },
-    { "id": "plan", "name": "Plan", "tone": "plan", "body": "The same records on a calendar or a timeline." },
-    { "id": "compare", "name": "Compare", "tone": "compare", "body": "State across two sets of things, and what changed." },
-    { "id": "guide", "name": "Guide", "tone": "guide", "body": "Steps, checks and a review before the host acts." },
+    { "id": "plan", "name": "Plan", "tone": "plan", "body": "The same records as cards on a board, on a calendar, a plan or a timeline." },
+    { "id": "compare", "name": "Compare", "tone": "compare", "body": "State across two sets, what changed between snapshots, and how it moved over time." },
+    { "id": "guide", "name": "Guide", "tone": "guide", "body": "Steps, routes and layers the host explains before it acts." },
     { "id": "deliver", "name": "Deliver", "tone": "deliver", "body": "The same view as plain HTML for mail and print." }
   ],
   "views": [
@@ -28,6 +28,27 @@
       "docs": "/docs/reporting/"
     },
     {
+      "id": "pivot",
+      "family": "explore",
+      "name": "Pivot",
+      "example": "Regions by month",
+      "api": "CanopyGridPivot",
+      "body": "Nested row and column axes with totals, collapse, top N with Other, and drill-through to the matching records.",
+      "src": "/live/pivot.html",
+      "srcDark": "/live/pivot-dark.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/pivot.md"
+    },
+    {
+      "id": "board",
+      "family": "plan",
+      "name": "Board",
+      "example": "Migration board",
+      "api": "CanopyBoard",
+      "body": "Records as cards in status lanes, with swimlanes, WIP limits and moves the host approves like any edit.",
+      "src": "/live/board.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/board.md"
+    },
+    {
       "id": "calendar",
       "family": "plan",
       "name": "Calendar",
@@ -36,6 +57,16 @@
       "body": "Month, week, day, agenda and year views of grid records, with recurrence, time zones and iCalendar export.",
       "src": "/live/calendar.html",
       "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/calendar.md"
+    },
+    {
+      "id": "plan",
+      "family": "plan",
+      "name": "Plan",
+      "example": "Migration plan",
+      "api": "CanopyPlan",
+      "body": "Tasks on a timeline per team, with a baseline, milestones, dependencies and the conflicts between them.",
+      "src": "/live/plan.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/plan.md"
     },
     {
       "id": "timeline",
@@ -68,6 +99,28 @@
       "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/changes.md"
     },
     {
+      "id": "compare",
+      "family": "compare",
+      "name": "Dataset compare",
+      "example": "Inventory changes",
+      "api": "CanopyDatasetComparer",
+      "body": "Two snapshots matched by key: what was added, removed and changed, with before and after in each cell.",
+      "src": "/live/compare.html",
+      "srcDark": "/live/compare-dark.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/dataset-compare.md"
+    },
+    {
+      "id": "time",
+      "family": "compare",
+      "name": "Time slider",
+      "example": "Rollout over time",
+      "api": "CanopyTimeSlider",
+      "body": "Snapshots the host supplies, replayed on a matrix or a propagation view with play, step and a timeline.",
+      "src": "/live/time.html",
+      "srcDark": "/live/time-dark.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/time-slider.md"
+    },
+    {
       "id": "flow",
       "family": "guide",
       "name": "Guided flow",
@@ -77,6 +130,26 @@
       "src": "/live/flow-setup-tasks.html",
       "srcDark": "/live/flow-setup-tasks-dark.html",
       "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/flow.md"
+    },
+    {
+      "id": "path",
+      "family": "guide",
+      "name": "Approval path",
+      "example": "Approval routes",
+      "api": "CanopyPath",
+      "body": "The route a request takes as hops over records, with returns, team handovers and retired steps marked.",
+      "src": "/live/path.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/path.md"
+    },
+    {
+      "id": "stack",
+      "family": "guide",
+      "name": "Layer stack",
+      "example": "Configuration layers",
+      "api": "CanopyStack",
+      "body": "Layers in processing order with the one that wins, and which were enforced or filtered out, and why.",
+      "src": "/live/stack.html",
+      "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/stack.md"
     },
     {
       "id": "email",
@@ -91,16 +164,20 @@
   "shared": [
     { "name": "Record panel", "body": "Open any record in tabs and sections, with links, timelines and deep links." },
     { "name": "Linked views", "body": "A chart, list or grid filters or highlights another view." },
+    { "name": "Calculated columns", "body": "Formulas over other columns, without eval, that sort, filter, group and export." },
+    { "name": "Buckets and display modes", "body": "Group dates by month or numbers by range, and show totals as a share, a change or a rank." },
+    { "name": "View proposals", "body": "The host suggests a grouping, filter or pivot; the reader previews it before applying." },
     { "name": "Search highlighting", "body": "Matches marked in place, with a count and next and previous." },
     { "name": "Saved views", "body": "Named layouts keep columns, filters, sorting and grouping." },
-    { "name": "Export", "body": "CSV built in; register Excel or PDF writers with the same scope choice." },
+    { "name": "Export", "body": "CSV built in; Excel and PDF writers that work offline, with the same scope choice." },
     { "name": "Editing", "body": "Typed editors, validation, undo, and commits your host saves." },
     { "name": "Conditional formatting", "body": "Data bars, colour scales and badges from filter conditions." },
     { "name": "Layout modes", "body": "Fit, scroll sideways or switch to cards, in three densities." },
     { "name": "Six languages", "body": "English, Polish, German, Spanish, French and Italian label packs." },
     { "name": "Strict security", "body": "Runs under CSP without unsafe-inline and with Trusted Types." },
     { "name": "Accessibility", "body": "ARIA grid and tree roles, a full keyboard model, forced colours." },
-    { "name": "Virtual rows", "body": "Only visible rows are in the page, so 100,000 nodes stay quick." }
+    { "name": "Virtual rows", "body": "Only visible rows are in the page, so 100,000 nodes stay quick." },
+    { "name": "Embedded chrome", "body": "Drop the frame so a view sits inside a card or a dashboard tile." }
   ],
   "packages": [
     { "name": "CanopyX.Html", "where": "NuGet", "body": "Views, browser runtime and the HTML writers. Start here.", "install": "dotnet add package CanopyX.Html", "url": "https://www.nuget.org/packages/CanopyX.Html" },

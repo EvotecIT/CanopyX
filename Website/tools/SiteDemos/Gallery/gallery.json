@@ -21,7 +21,14 @@
     { "page": "export-formats", "title": "Export formats", "body": "The page's own writers join the Export menu after CSV, with the scope picker, progress and cancellation." },
     { "page": "service-status", "title": "Status board", "body": "Enum pills in every tone, plain values beside them, and link rows a host can route itself." },
     { "page": "typed-grid", "title": "Typed C# grid", "body": "Columns from member expressions, so renaming a member changes the grid or fails the build, and rows straight from the records." },
-    { "page": "localized-grid-fr", "title": "French labels", "body": "The French label pack on a reporting grid; Polish, German, Spanish and Italian packs are included too." }
+    { "page": "localized-grid-fr", "title": "French labels", "body": "The French label pack on a reporting grid; Polish, German, Spanish and Italian packs are included too." },
+    { "page": "analysis-buckets", "title": "Date and range buckets", "body": "Records grouped by month, with facets that count by month and by amount range, including the empty values." },
+    { "page": "analysis-calculations", "title": "Calculated columns", "body": "Amount, tax and a per-unit price computed from other columns; a division by zero shows an error marker instead of a number." },
+    { "page": "office-export", "title": "Excel and PDF export", "body": "A grouped, formatted cost report that exports to Excel and PDF in the browser, without a server." },
+    { "page": "template-cards", "title": "Record cards", "body": "Work items as cards built from the grid definition, with the same search, filters, sorting and export as rows." }
+  ],
+  "pivot": [
+    { "page": "analysis-values", "title": "Shares of the total", "body": "The same records grouped by month, with each total shown as its share of the grand total." }
   ],
   "calendar": [
     { "page": "calendar-basic", "title": "Basic calendar", "body": "A list of events and nothing else: month, week, day and agenda, read-only, with a details popover." },
@@ -42,6 +49,9 @@
   "changes": [
     { "page": "changes-diff-large", "title": "A 20,000-line diff", "body": "One large file's diff with windowed rows, folded regions and word marks, still quick to scroll." }
   ],
+  "time": [
+    { "page": "time-propagation", "title": "Rollout propagation", "body": "The same three snapshots as a propagation view: which services have the update, since when, and how long the rest have waited." }
+  ],
   "flow": [
     { "page": "flow-mail-server", "title": "Stepper with choice cards", "body": "A four-step flow with choice cards, a password that never echoes, options that appear only when they apply, and a review page." },
     { "page": "flow-schedule-report", "title": "Vertical stepper", "body": "Report cards, grouped multiple choice, weekdays that appear only for a weekly schedule, durations and recipients." },
@@ -54,6 +64,9 @@
     { "page": "conditional-formatting-static", "title": "Formatted table", "body": "The conditional formatting rules of the server grid, as a script-free table." },
     { "page": "matrix-static", "title": "Matrix for email", "body": "A services matrix with tone cells and grouped servers, then the same data as a list." },
     { "page": "grid-footers-static", "title": "Table with totals", "body": "Page totals and all-matching totals in footer rows, without script." },
-    { "page": "changes-static", "title": "Change list for email", "body": "The change list and its flags as a table a mail client keeps." }
+    { "page": "changes-static", "title": "Change list for email", "body": "The change list and its flags as a table a mail client keeps." },
+    { "page": "board-static", "title": "Board for email", "body": "The migration board as a script-free table, one section per lane." },
+    { "page": "analysis-pivot-static", "title": "Pivot for email", "body": "Regions by month with totals, as a table a mail client keeps." },
+    { "page": "dataset-compare-static", "title": "Comparison for email", "body": "Added, removed and changed records with before and after values, without script." }
   ]
 }

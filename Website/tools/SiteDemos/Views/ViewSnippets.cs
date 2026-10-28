@@ -9,7 +9,7 @@ using CanopyX.Rendering;
 namespace SiteDemos.Views;
 
 /// <summary>Snippets shown beside each view, each the exact code that builds the page its Run link opens.</summary>
-internal static class ViewSnippets {
+internal static partial class ViewSnippets {
     /// <summary>File explorer: a small file-share tree.</summary>
     internal static void Files() {
         // view:begin files-cs

@@ -46,7 +46,8 @@ File.WriteAllText(Path.Combine(demos, "changes.html"),
     ChangeViewsExample.List().ToHtmlFragment(ChangeOptions()) + "<h2>Propagation</h2>" + ChangeViewsExample.Propagation().ToHtmlFragment(ChangeOptions()) +
     "<h2>map-drives.ps1</h2>" + ChangeViewsExample.ScriptDiff().ToHtmlFragment(ChangeOptions()) + "</body></html>", utf8);
 
-// Calendar, resource timeline, matrix and guided flow, from the repository's examples.
+// The other views (board, calendar, plan, timeline, pivot, matrix, comparison, snapshots, flow, paths and layers),
+// from the repository's examples.
 var viewStats = SiteDemos.ViewDemos.Write(demos);
 Console.WriteLine(SiteDemos.Views.ViewCode.Write(website, utf8));
 
@@ -73,11 +74,18 @@ var manifest = new {
         rows = inventory.Rows.Count.ToString("N0", CultureInfo.InvariantCulture),
         stat = inventory.Rows.Count.ToString("N0", CultureInfo.InvariantCulture) + " devices in one HTML page"
     },
+    board = new { stat = viewStats["board"] },
     calendar = new { stat = viewStats["calendar"] },
+    plan = new { stat = viewStats["plan"] },
     timeline = new { stat = viewStats["timeline"] },
+    pivot = new { stat = viewStats["pivot"] },
     matrix = new { stat = viewStats["matrix"] },
     changes = new { stat = "Change list, propagation and a script diff" },
+    compare = new { stat = viewStats["compare"] },
+    time = new { stat = viewStats["time"] },
     flow = new { stat = viewStats["flow"] },
+    path = new { stat = viewStats["path"] },
+    stack = new { stat = viewStats["stack"] },
     email = new { stat = "Script-free HTML for mail, print and Word" }
 };
 File.WriteAllText(Path.Combine(website, "data", "demos.json"),

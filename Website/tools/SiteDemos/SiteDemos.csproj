@@ -19,5 +19,16 @@
     <Compile Include="..\..\..\CanopyX.Examples\MatrixExamples.cs" Link="Examples\MatrixExamples.cs" />
     <Compile Include="..\..\..\CanopyX.Examples\FlowExamplePage.cs" Link="Examples\FlowExamplePage.cs" />
     <Compile Include="..\..\..\CanopyX.Examples\FlowSetupTasksExample.cs" Link="Examples\FlowSetupTasksExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\BoardExample.cs" Link="Examples\BoardExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\PlanExample.cs" Link="Examples\PlanExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\PathExample.cs" Link="Examples\PathExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\StackExample.cs" Link="Examples\StackExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\TimeSliderExample.cs" Link="Examples\TimeSliderExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\AnalystExample.cs" Link="Examples\AnalystExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\CalculatedColumnExample.cs" Link="Examples\CalculatedColumnExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\BucketFilterExample.cs" Link="Examples\BucketFilterExample.cs" />
+    <Compile Include="..\..\..\CanopyX.Examples\DataViewsExample.cs" Link="Examples\DataViewsExample.cs" />
+    <!-- DataViewsExample reads its page template by the examples assembly's resource name. -->
+    <EmbeddedResource Include="..\..\..\CanopyX.Examples\Templates\data-views.html" LogicalName="CanopyX.Examples.Templates.data-views.html" Link="Examples\Templates\data-views.html" />
   </ItemGroup>
 </Project>

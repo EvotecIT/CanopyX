@@ -33,6 +33,10 @@
   scrollbar-width: none;
 }
 .cnx-bench__tabs::-webkit-scrollbar { display: none; }
+/* With a view per tab, a wide screen shows them all on two rows; phones keep the single scrolling row. */
+@media (min-width: 900px) {
+  .cnx-bench__tabs { flex-wrap: wrap; overflow-x: visible; }
+}
 .cnx-bench__tab {
   display: inline-flex;
   flex: none;

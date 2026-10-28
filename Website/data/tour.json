@@ -174,5 +174,124 @@
       "try": "Print this page or save it as PDF.",
       "watch": "The table is plain HTML with inline styles, so it prints and pastes into Word as it looks here."
     }
+  ],
+  "pivot": [
+    {
+      "feature": "Totals",
+      "try": "Read the Query totals row.",
+      "watch": "Each month's total amount and record count add up across the three regions."
+    },
+    {
+      "feature": "Drill-through",
+      "try": "Select North's total for 2026-01, then Show records.",
+      "watch": "The records behind that one number open as rows, filtered to North and January."
+    },
+    {
+      "feature": "Back to the pivot",
+      "try": "Press Return to pivot.",
+      "watch": "The pivot comes back with the same axes and values."
+    }
+  ],
+  "board": [
+    {
+      "feature": "Records",
+      "try": "Select a card and press Enter.",
+      "watch": "Its record opens beside the board with every field, and the arrows step to the next card."
+    },
+    {
+      "feature": "WIP limits",
+      "try": "Look at the In progress lane heading.",
+      "watch": "It reads 4 / 4: the lane holds as many cards as its limit allows."
+    },
+    {
+      "feature": "Facets",
+      "try": "Tick Security under Team in the filter panel.",
+      "watch": "Every lane stays in place and shows only that team's cards, with its own count."
+    }
+  ],
+  "plan": [
+    {
+      "feature": "Baseline",
+      "try": "Compare a task bar with the grey line under it.",
+      "watch": "The line is the baseline, so a task that slipped shows how far it moved."
+    },
+    {
+      "feature": "Dependencies",
+      "try": "Follow the arrows from Prepare migration.",
+      "watch": "Each arrow joins a task to the one that waits for it; a link whose dates clash is marked as a conflict."
+    },
+    {
+      "feature": "Zoom",
+      "try": "Switch Days to Weeks in the toolbar.",
+      "watch": "The same tasks fit a longer span, with today still marked."
+    }
+  ],
+  "compare": [
+    {
+      "feature": "Changes only",
+      "try": "Turn on Changed only.",
+      "watch": "Unchanged items leave the list; added, removed and changed counts stay at the top."
+    },
+    {
+      "feature": "Before and after",
+      "try": "Look at the Units of Atlas.",
+      "watch": "The old value is struck through beside the new one, so a cell explains its own change."
+    },
+    {
+      "feature": "Proposals",
+      "try": "Under Ask the grid, preview one of the proposed views.",
+      "watch": "The grouping or pivot shows as chips first; nothing changes until you apply it."
+    }
+  ],
+  "time": [
+    {
+      "feature": "Play",
+      "try": "Press Play.",
+      "watch": "The matrix steps through the three snapshots the host supplied; states change in place."
+    },
+    {
+      "feature": "Step",
+      "try": "Drag the timeline back to the first snapshot.",
+      "watch": "Each snapshot keeps its own label and time, and counts update with it."
+    },
+    {
+      "feature": "Only problems",
+      "try": "Turn on Only problems.",
+      "watch": "Rows and columns without a waiting service drop out of the matrix."
+    }
+  ],
+  "path": [
+    {
+      "feature": "Hops",
+      "try": "Read the Standard approval route from left to right.",
+      "watch": "Each hop is a record from the grid with its own note and badges from the host."
+    },
+    {
+      "feature": "Returns",
+      "try": "Follow the last hop of Return for another review.",
+      "watch": "A cycle marker links back to the request it returns to, instead of drawing a loop."
+    },
+    {
+      "feature": "Keyboard",
+      "try": "Press Tab to reach a hop, then Enter.",
+      "watch": "The record behind the hop opens in the record panel."
+    }
+  ],
+  "stack": [
+    {
+      "feature": "Winner",
+      "try": "Look at the panel at the top.",
+      "watch": "The layer the host selected is named first, with the value it supplies."
+    },
+    {
+      "feature": "Order",
+      "try": "Read the layers from 1 down.",
+      "watch": "Each one says what it contributes; enforced and filtered layers are marked and explained."
+    },
+    {
+      "feature": "Records",
+      "try": "Press Tab to reach a layer, then Enter.",
+      "watch": "The record behind the layer opens in the record panel."
+    }
   ]
 }

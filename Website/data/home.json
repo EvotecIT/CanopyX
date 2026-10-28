@@ -1,7 +1,7 @@
 {
   "hero": {
     "title": "Your records, as views people explore.",
-    "lede": "CanopyX draws tree grids, data grids, calendars, timelines, status matrices, change reviews and guided flows from your application's data. Write the view in C# and save a report that opens from disk, or mount the same runtime in your web app.",
+    "lede": "CanopyX draws tree grids, data grids, pivots, boards, plans, calendars, status matrices, change reviews and guided flows from your application's data. Write the view in C# and save a report that opens from disk, or mount the same runtime in your web app.",
     "primary": {
       "label": "Get started",
       "url": "/docs/getting-started/"

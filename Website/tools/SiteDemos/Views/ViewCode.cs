@@ -1,4 +1,4 @@
-// Writes the "build it yourself" code of each view: runs the C# snippets in ViewSnippets, writes a runnable page for each
+// Writes the "build it yourself" code of each view: runs the C# snippets in ViewSnippets*.cs, writes a runnable page for each
 // JavaScript snippet in Views/js, and lists every tab with its code and its page in data/viewcode.json.
 using System.Text;
 using System.Text.Encodings.Web;
@@ -24,11 +24,18 @@ internal static class ViewCode {
     private static readonly (string View, string Title, Dictionary<string, Action> CSharp, CanopyRuntime? Js)[] Views = {
         ("files", "File explorer", new() { ["cs"] = ViewSnippets.Files }, CanopyRuntime.TreeGrid),
         ("inventory", "Device inventory", new() { ["cs"] = ViewSnippets.Inventory, ["fluent"] = ViewSnippets.InventoryFluent }, CanopyRuntime.ReportingGrid),
+        ("pivot", "Sales by region", new() { ["cs"] = ViewSnippets.Pivot }, null),
+        ("board", "Migration board", new() { ["cs"] = ViewSnippets.Board }, null),
         ("calendar", "Operations calendar", new() { ["cs"] = ViewSnippets.Calendar, ["fluent"] = ViewSnippets.CalendarFluent }, CanopyRuntime.DataGrid),
+        ("plan", "Rollout plan", new() { ["cs"] = ViewSnippets.Plan }, null),
         ("timeline", "Incidents by host", new() { ["cs"] = ViewSnippets.Timeline, ["fluent"] = ViewSnippets.TimelineFluent }, CanopyRuntime.DataGrid),
         ("matrix", "Services by server", new() { ["cs"] = ViewSnippets.Matrix }, CanopyRuntime.DataGrid),
         ("changes", "Change review", new() { ["cs"] = ViewSnippets.Changes }, CanopyRuntime.DataGrid),
+        ("compare", "Inventory changes", new() { ["cs"] = ViewSnippets.Compare }, null),
+        ("time", "Service health over time", new() { ["cs"] = ViewSnippets.Time }, null),
         ("flow", "Service setup", new() { ["cs"] = ViewSnippets.Flow }, CanopyRuntime.Flow),
+        ("path", "Approval route", new() { ["cs"] = ViewSnippets.Route }, null),
+        ("stack", "Configuration layers", new() { ["cs"] = ViewSnippets.Stack }, null),
         // A static table has no browser renderer, so the email view has no JavaScript tab.
         ("email", "Email and print", new() { ["cs"] = () => ViewSnippets.Email() }, null)
     };
@@ -41,7 +48,10 @@ internal static class ViewCode {
         var output = Path.Combine(live, "snippets");
         var assets = Path.Combine(live, "assets");
         Directory.CreateDirectory(output);
-        var snippets = Read(Path.Combine(tools, "ViewSnippets.cs"));
+        var snippets = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var file in Directory.GetFiles(tools, "ViewSnippets*.cs").OrderBy(file => file, StringComparer.Ordinal)) {
+            foreach (var (id, text) in Read(file)) snippets.Add(id, text);
+        }
         var manifest = new Dictionary<string, object>(StringComparer.Ordinal);
         var pages = 0;
 
