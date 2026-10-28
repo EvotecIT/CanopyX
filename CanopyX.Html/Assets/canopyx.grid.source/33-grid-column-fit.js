@@ -42,8 +42,9 @@
       if (column.fixed || column.sized) return columnWidth(column, column.width);
       const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
       const header = column.headWrapNeed || 0;
-      const floor = Math.max(level === undefined ? need : content, header);
-      let width = Math.max(floor, level === undefined ? column.pref || 0 : 0);
+      // Disclosed text can give up a modest share before the grid resorts to sideways scrolling.
+      let width = Math.max(level === undefined ? need : content, header, level === undefined ? column.pref || 0 : 0);
+      if (level === 0 && this.desktopHiddenFields && gridLevel(column) && gridTextual(column)) width = Math.max(column.minW, width * .8);
       if (column === this.desktopDisclosureColumn) width += this.desktopDisclosureWidth;
       if (column.identity && this.host.clientWidth <= 640 && (this.layoutMode || "fit") === "fit") {
         // The identity keeps forty percent before peers move to the context line; small values need no empty allocation.
@@ -52,9 +53,9 @@
       }
       return Math.ceil(columnWidth(column, width));
     },
-    fitShrink(cols, excess) {
-      // Preferred whitespace yields before content; a caption never yields below two complete lines.
-      const slack = cols.map(column => Math.max(0, column.renderWidth - this.fitSize(column, 1)));
+    fitShrink(cols, excess, level) {
+      // Preferred whitespace yields before content; disclosed layouts may then truncate text before scrolling.
+      const slack = cols.map(column => Math.max(0, column.renderWidth - this.fitSize(column, level)));
       const total = slack.reduce((sum, width) => sum + width, 0), ratio = total ? Math.min(1, excess / total) : 0;
       cols.forEach((column, index) => column.renderWidth -= slack[index] * ratio);
       return Math.max(0, excess - total);
