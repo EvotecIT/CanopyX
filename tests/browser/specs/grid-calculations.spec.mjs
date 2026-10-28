@@ -107,13 +107,16 @@ test("a short viewport keeps the calculation editor header and scrolled Apply bu
   const dialog = page.getByRole("dialog", { name: "Add calculated column" });
   await dialog.getByLabel("Column title", { exact: true }).fill("Tax");
   await dialog.getByLabel("Expression", { exact: true }).fill("[amount] * 0.2");
-  await dialog.locator('[data-hfx-part="body"]').evaluate(body => { body.scrollTop = body.scrollHeight; });
-  const geometry = await dialog.evaluate(element => {
+  // Firefox on macOS can finish scrolling the focused textarea after fill returns.
+  await dialog.getByLabel("Expression", { exact: true }).blur();
+  await expect.poll(() => dialog.evaluate(element => {
+    const body = element.querySelector('[data-hfx-part="body"]'); body.scrollTop = body.scrollHeight;
     const box = element.getBoundingClientRect(), button = element.querySelector('button[type="submit"]').getBoundingClientRect(), heading = element.querySelector(".cx-drawer-h").getBoundingClientRect();
-    return { buttonInside: button.top >= box.top && button.bottom <= box.bottom, headingInside: heading.top >= box.top && heading.bottom <= box.bottom, height: box.height };
-  });
-  expect(geometry.height).toBeLessThanOrEqual(180); expect(geometry.headingInside).toBe(true); expect(geometry.buttonInside).toBe(true);
+    return { buttonInside: button.top >= box.top && button.bottom <= box.bottom, headingInside: heading.top >= box.top && heading.bottom <= box.bottom,
+      dialogInside: box.top >= 0 && box.bottom <= innerHeight };
+  })).toEqual({ buttonInside: true, headingInside: true, dialogInside: true });
   await dialog.getByRole("button", { name: "Apply", exact: true }).click(); await expect(dialog).toHaveCount(0);
+  await expect.poll(() => page.evaluate(api + ".getCalculatedColumns().length")).toBe(4);
 });
 
 test("compact row data evaluates formulas before its initial unsorted page", async ({ page }) => {
