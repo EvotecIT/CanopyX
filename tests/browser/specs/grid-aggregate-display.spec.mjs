@@ -80,7 +80,9 @@ test("phone aggregates retain their display-mode menu when the source columns ar
   const view = definition(); delete view.reporting.detail; view.reporting.aggregates[0].showAs = "percentGrandTotal";
   await open(page, view, valuesPart(), "dark");
   await page.locator(".cx-grid-group .cx-hidden-aggregates").first().click();
-  expect(await page.getByRole("dialog").evaluate(dialog => dialog.getBoundingClientRect().height)).toBeLessThan(450);
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.locator("pre")).toContainText("Total amount");
+  await expect.poll(() => dialog.evaluate(element => { const box = element.getBoundingClientRect(); return box.top >= -1 && box.bottom <= innerHeight + 1; })).toBe(true);
   await page.getByLabel("Total amount: Show values as", { exact: true }).selectOption("rank");
   await page.getByRole("button", { name: "Apply", exact: true }).click();
   expect((await page.evaluate(api + ".getState()")).aggregateShowAs.total).toBe("rank");

@@ -349,13 +349,14 @@ test("getColumnLayout reports why each column is out of view", async ({ page }) 
   for (const id of normal) expect(phone[id], id).toBe("phone");
   await page.evaluate(`${api}.setColumnVisible("name", false)`);
   expect((await reasons()).name).toBe("user");
-  // A responsive reporting policy hides by its own priority: columns without one give way before notes (priority 9).
+  // On desktop normal priorities remain visible and the grid scrolls after optional fields give way.
   await page.unrouteAll();
-  await openGrid(page, reporting({ search: false, columns: columns.map(column => ({ ...column, priority: undefined, width: 260 })), rows: view.rows,
+  await openGrid(page, reporting({ search: false, columns: columns.map(column => ({ ...column, priority: undefined, width: 260, minWidth: 200 })), rows: view.rows,
     reporting: { responsive: true, layout: { notes: { minimum: 40, maximum: 2000, priority: 9 } } } }), { size: { width: 2400, height: 800 } });
   expect(Object.values(await reasons()).filter(reason => reason === "priority")).toEqual([]);
   await page.setViewportSize({ width: 1500, height: 800 }); await nextFrames(page); await consistent();
   const responsive = await page.evaluate(`${api}.getColumnLayout().filter(column => column.responsiveHidden).map(column => column.hiddenReason)`);
-  expect(responsive.length).toBeGreaterThan(0); expect(new Set(responsive)).toEqual(new Set(["priority"]));
+  expect(responsive).toEqual([]);
+  expect(await page.locator(".cx-grid").evaluate(grid => grid.scrollWidth > grid.clientWidth)).toBe(true);
   expect((await reasons()).notes).toBeNull();
 });

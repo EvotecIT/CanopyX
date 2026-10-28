@@ -22,7 +22,7 @@
     if (this.phone && column.identity) slot.cell.title = cellText(row.cells[column.id], column, this.fmt) || "";
     const first = column === this.cols[0], fields = first && this.phone ? this.phoneLineColumns(row) : [];
     let button = slot.hiddenFields;
-    const count = first && this.hiddenFieldCount(row);
+    const count = first && (this.phone || this.desktopHiddenFields) && this.hiddenFieldCount(row);
     if (!count) { button?.remove(); slot.hiddenFields = null; }
     else {
       if (!button) {

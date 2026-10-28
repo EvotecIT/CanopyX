@@ -41,7 +41,8 @@ test('print snapshots include accepted selected-query exclusions and full record
   expect(snapshot.rows).toHaveLength(67);expect(snapshot.rows.some(r=>r.id==='r1')).toBe(false);expect(snapshot.rows.at(-1).id).toBe('r135');
   expect(snapshot.request.querySelection).toMatchObject({matched:68,excludedIds:['r1']});
   await page.locator('.cx-grid-export > summary').click();
-  await page.locator('.cx-grid-overflow > summary').click();await expect(page.getByRole('button',{name:'Print',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Print',exact:true})).toHaveCount(1);
+  await page.locator('.cx-grid-overflow > summary').click();await expect(page.getByRole('button',{name:'Print',exact:true})).toHaveCount(0);
 });
 
 test('snapshot bounds reject full scopes without truncation and ordinary grids reject reporting metadata',async({page})=>{
