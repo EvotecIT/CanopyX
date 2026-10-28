@@ -28,6 +28,7 @@ public sealed partial class CanopyCalendar {
         Require(columns, _subtitle, "subtitle", null);
         Require(columns, _allDay, "allDay", CanopyColumnKind.Text);
         Require(columns, _resource, "resource", CanopyColumnKind.Text);
+        Require(columns, ResourceIds, "resourceIds", CanopyColumnKind.Text);
         Require(columns, _status, "status", null);
         Require(columns, _recurrence, "recurrence", CanopyColumnKind.Text);
         Require(columns, _exceptions, "exceptions", CanopyColumnKind.Text);
@@ -81,7 +82,8 @@ public sealed partial class CanopyCalendar {
         var everyIcs = true;
         foreach (var source in Sources) {
             if (source == null || !sourceIds.Add(source.Id)) throw new InvalidOperationException("Calendar sources have unique ids and cannot be null.");
-            if (source.Ics == null) everyIcs = false;
+            source.Validate();
+            if (source.Ics == null && source.Url == null) everyIcs = false;
         }
         if (Sources.Count > 0 && !everyIcs && _source == null) throw new InvalidOperationException("Calendar sources without an iCalendar file need the calendar's source column.");
 

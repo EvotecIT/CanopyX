@@ -90,7 +90,8 @@ public sealed class RuntimeAssetTests {
         // Every entry point starts from component geometry (base.css); the flow entry point adds only its host rules, which the
         // grid entry points carry too so they can host a flow.
         var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
-        var names = new List<string> { "canopyx.source/base.css" };
+        // The shared controls (buttons, fields, chips, badges) follow the geometry in every entry point.
+        var names = new List<string> { "canopyx.source/base.css", "canopyx.source/controls.css" };
         if (runtime != CanopyRuntime.Flow) names.Add("canopyx.source/canopyx.css");
         if (runtime != CanopyRuntime.TreeGrid && runtime != CanopyRuntime.Flow) names.Add("canopyx.interactive.source/canopyx.css");
         if (grid) names.AddRange(new[] { "canopyx.grid.source/chrome.css", "canopyx.grid.source/canopyx.css" });
@@ -122,13 +123,16 @@ public sealed class RuntimeAssetTests {
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
         // The optional footer/hook declaration shell retains its 124 KiB component ceiling.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 126976);
+        // Includes the shared controls (canopyx.source/controls.css) every view now uses instead of its own copies.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 126 * 1024);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         // Combined roadmap integration: its size plus about 15%.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 151040);
+        // Includes the shared controls (canopyx.source/controls.css) every view now uses instead of its own copies.
+        // The optional flow-facts part adds one lazy index entry (version and script fingerprint): 64 bytes.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 150 * 1024 + 64);
     }
 
     [Fact]
@@ -241,8 +245,9 @@ public sealed class RuntimeAssetTests {
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
             // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, links and search parts,
-            // the link, highlight, layout mode and record panel parts, each with its stylesheet.
-            Assert.Equal(15, Directory.GetFiles(directory).Length);
+            // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the six lazy UI parts
+            // (one script and one stylesheet each).
+            Assert.Equal(27, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

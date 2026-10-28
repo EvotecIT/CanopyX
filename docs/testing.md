@@ -47,4 +47,14 @@ The existing scripts under `tests/browser/bench` provide raw samples and broader
 
 Compare equivalent inputs and work on the same host, record browser/runtime versions and host load, and retain every sample, failure and slower result. Validate that expected rows, hits and paths were produced before interpreting timing. The load benchmark records failed rows in its JSON report, so inspect those failures even when its process exits successfully. Keep performance reports outside required correctness aggregators.
 
+The focused resource-column comparison uses the same calendar fixture and browser runner. In `tests/browser`, set
+`CANOPYX_BENCH_OUTPUT` to a task-owned output folder, then run
+`node tools/browsers.mjs chromium --benchmarks calendar-c1-benchmark.spec.mjs --workers=1`.
+It retains three samples for 24, 48 and 1,000 resources, day and week views, at normal speed and 4x CPU slowdown, against the
+pre-window baseline. It records mounted columns, slots, nodes and asset hashes alongside mount-to-paint time. The fixture's
+events are on Friday; week view starts on Monday. Both its initial paint and the current window after scrolling to Friday
+are recorded, with visible and logical event counts. Above 24
+resources the baseline omits resource columns; those timings describe different rendered work and are not an equivalent-view
+speed comparison. The 24-resource day case preserves the same view on both candidates.
+
 PSPublishModule/PowerForge owns reusable benchmark policy, normalized artifacts and comparison tooling. Browser-specific fixtures and assertions remain here; reusable runner additions belong in that shared owner.

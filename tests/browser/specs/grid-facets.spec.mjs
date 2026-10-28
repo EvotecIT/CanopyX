@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { viewPage, nextFrames } from "./support.mjs";
+import { waitForEntryMotion } from "./part-fixture-support.mjs";
 import AxeBuilder from "@axe-core/playwright";
 
 const filter = (column, operator, ...values) => ({ column, operator, values });
@@ -143,6 +144,7 @@ test('accepted facet queries keep a held checkbox target until its native click 
  const target=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^true$/})}).locator('input');
  const bounds=()=>target.boundingBox();
  await target.focus();
+ await waitForEntryMotion(pop);
  const before=await bounds();await page.mouse.move(before.x+before.width/2,before.y+before.height/2);await page.mouse.down();
  // WebKit gives focus back to the grid on native checkbox pointerdown. Preserve that native focus just as other engines
  // preserve the checkbox's focus; accepted queries and deferred positioning must not move it again.
@@ -158,7 +160,8 @@ test('accepted facet queries keep a held checkbox target until its native click 
  await expect(target).toBeChecked();
  await expect.poll(()=>pop.evaluate(panel=>{
   const header=document.querySelector('[data-cx-column="category"]'),bottom=header.getBoundingClientRect().bottom;
-  return Math.abs(panel.getBoundingClientRect().top-Math.max(8,Math.min(bottom,innerHeight-panel.offsetHeight-8)));
+  // Shared popovers restore the space-1-5 anchor gap after the native click.
+  return Math.abs(panel.getBoundingClientRect().top-(bottom+6));
  })).toBeLessThan(1);
  expect(await page.evaluate(()=>document.activeElement===window.facetPressFocus)).toBe(true);await page.screenshot({path:testInfo.outputPath('held-facet-query.png')});
  await pop.getByRole('button',{name:'Done',exact:true}).click();
@@ -192,6 +195,7 @@ for(const retire of ['Escape','destroy'])test('retiring a held facet popover can
 test('phone missing-value filter keeps raw null semantics and accessible typed choices',async({page})=>{
  await page.setViewportSize({width:390,height:700});await open(page);await page.locator('[data-canopyx-host]').evaluate(host=>host.setAttribute('data-cx-theme','dark'));const pop=await editor(page);
  await pop.getByRole('checkbox',{name:'Select all values',exact:true}).check();await pop.getByRole('checkbox',{name:'Select all values',exact:true}).uncheck();await pop.locator('.cx-val').filter({hasText:'—'}).locator('input').check();
+ await pop.evaluate(element=>Promise.all(element.getAnimations({subtree:true}).map(animation=>animation.finished)));
  expect(await page.evaluate(()=>document.body.scrollWidth<=innerWidth)).toBe(true);expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).disableRules(['region']).analyze()).violations).toEqual([]);await pop.getByRole('button',{name:'Done',exact:true}).click();await expect(page.locator('.cx-grid-result-count')).toHaveText('2 of 10 rows');
 });
 test('facet search aborts superseded work and closing the popover retires its outstanding request',async({page})=>{

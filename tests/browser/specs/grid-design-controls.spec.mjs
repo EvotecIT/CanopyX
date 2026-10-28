@@ -13,6 +13,8 @@ const menu=(page,column)=>page.getByRole('button',{name:'Menu for '+column,exact
 test('column menus have roving focus and generic sorting, pinning and hiding',async({page})=>{
   await open(page);await menu(page,'Amount').press('ArrowDown');const panel=page.getByRole('menu',{name:'Menu for Amount'});
   await expect(panel.getByRole('menuitem',{name:'Sort ascending',exact:true})).toBeFocused();await page.keyboard.press('ArrowDown');await expect(panel.getByRole('menuitem',{name:'Sort descending',exact:true})).toBeFocused();
+  // Contrast is measured on the settled menu, not mid-way through its entrance fade.
+  await panel.evaluate(element=>Promise.all(element.getAnimations({subtree:true}).map(animation=>animation.finished)));
   expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
   if(process.env.CANOPYX_EVIDENCE)await page.screenshot({path:path.join(process.env.CANOPYX_EVIDENCE,'column-menu-light.png')});
   await page.keyboard.press('Home');await page.keyboard.press('Enter');await expect(page.locator('.cx-hcell[data-cx-column="amount"]')).toHaveAttribute('aria-sort','ascending');
@@ -25,6 +27,7 @@ test('header value filtering is scoped, live and counts the complete query',asyn
   await expect(panel.locator('.cx-val').filter({hasText:'Failing'}).locator('.cx-val-n')).toHaveText('5');
   await panel.locator('.cx-val').filter({hasText:'Failing'}).locator('input').uncheck();await expect(page.locator('.cx-grid-result-count')).toContainText('15');
   await expect(page.locator('.cx-grid-filters')).not.toHaveAttribute('open','');await expect(panel).toBeVisible();
+  await panel.evaluate(element=>Promise.all(element.getAnimations({subtree:true}).map(animation=>animation.finished)));
   expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
   if(process.env.CANOPYX_EVIDENCE)await page.screenshot({path:path.join(process.env.CANOPYX_EVIDENCE,'column-filter-values-light.png')});
   await panel.getByRole('button',{name:'Done',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);

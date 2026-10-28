@@ -4,24 +4,24 @@
   Object.assign(MatrixView.prototype, {
     buildBar() {
       const labels = this.labels, signal = this.lifetime.signal, bar = this.bar;
-      const search = this.searchInput = h("input", "cx-mx-input cx-mx-search");
+      const search = this.searchInput = h("input", "cx-input cx-mx-input cx-mx-search");
       search.type = "search"; search.placeholder = labels.matrixSearch; search.setAttribute("aria-label", labels.matrixSearch); search.autocomplete = "off";
       search.addEventListener("input", () => { clearTimeout(this.searchTimer); this.searchTimer = setTimeout(() => this.setQuery({ search: search.value }), 150); }, { signal });
       this.axisButtons = {};
       for (const axis of MATRIX_AXES) {
-        const button = h("button", "cx-mx-button"); button.type = "button"; button.setAttribute("aria-haspopup", "dialog"); button.setAttribute("aria-expanded", "false");
+        const button = h("button", "cx-btn cx-mx-button"); button.type = "button"; button.setAttribute("aria-haspopup", "dialog"); button.setAttribute("aria-expanded", "false");
         button.addEventListener("click", () => this.togglePanel(axis), { signal });
         this.axisButtons[axis] = button;
       }
-      const toggle = this.attentionToggle = h("input", "cx-mx-check"), switchLabel = h("label", "cx-mx-switch"), switchText = h("span");
+      const toggle = this.attentionToggle = h("input", "cx-check cx-mx-check"), switchLabel = h("label", "cx-mx-switch"), switchText = h("span");
       toggle.type = "checkbox"; setText(switchText, labels.matrixOnlyProblems); switchLabel.append(toggle, switchText);
       toggle.addEventListener("change", () => this.setQuery({ attentionOnly: toggle.checked }), { signal });
       this.attentionSwitch = switchLabel; this.attentionText = switchText;
       // Hide empty shows on sparse matrices only: it drops the rows and columns without data, or keeps the partners of a search.
-      const empty = this.emptyToggle = h("input", "cx-mx-check"), emptyLabel = this.emptySwitch = h("label", "cx-mx-switch"), emptyText = this.emptyText = h("span");
+      const empty = this.emptyToggle = h("input", "cx-check cx-mx-check"), emptyLabel = this.emptySwitch = h("label", "cx-mx-switch"), emptyText = this.emptyText = h("span");
       empty.type = "checkbox"; setText(emptyText, labels.matrixHideEmpty); emptyLabel.append(empty, emptyText);
       empty.addEventListener("change", () => this.setQuery({ hideEmpty: empty.checked }), { signal });
-      const clear = this.clearButton = h("button", "cx-mx-button cx-mx-clear"); clear.type = "button"; setText(clear, labels.matrixClearFilters);
+      const clear = this.clearButton = h("button", "cx-btn cx-mx-button cx-mx-clear"); clear.type = "button"; setText(clear, labels.matrixClearFilters);
       clear.addEventListener("click", () => { search.value = ""; this.setQuery({ search: "", filters: { rows: {}, columns: {} }, attentionOnly: false }); search.focus(); }, { signal });
       this.summary = h("span", "cx-mx-summary"); this.summary.setAttribute("aria-live", "off");
       this.panel = h("div", "cx-mx-panel"); this.panel.setAttribute("role", "dialog"); this.panel.hidden = true;
@@ -45,7 +45,7 @@
       for (const axis of MATRIX_AXES) {
         const count = this.activeFilters(axis), button = this.axisButtons[axis];
         setText(button, this.axisTitle(axis) + (count ? " (" + count + ")" : ""));
-        button.classList.toggle("cx-mx-active", !!count || !!query.group[axis]);
+        button.classList.toggle("active", !!count || !!query.group[axis]);
       }
       this.attentionToggle.checked = query.attentionOnly; this.emptyToggle.checked = query.hideEmpty;
       if (this.searchInput.value !== query.search && document.activeElement !== this.searchInput) this.searchInput.value = query.search;
@@ -99,7 +99,7 @@
       const focused = panel.contains(document.activeElement) ? document.activeElement.dataset.cxControl : null;
       const field = (text, control) => { const label = h("label", "cx-mx-field"), name = h("span"); setText(name, text); label.append(name, control); return label; };
       const select = (options, value, change, key) => {
-        const element = h("select", "cx-mx-input"); element.dataset.cxControl = key;
+        const element = h("select", "cx-select cx-mx-input"); element.dataset.cxControl = key;
         for (const [optionValue, text] of options) { const option = h("option"); option.value = optionValue; setText(option, text); element.appendChild(option); }
         element.value = value; element.addEventListener("change", () => change(element.value), { signal }); return element;
       };
@@ -113,7 +113,7 @@
       const children = [field(labels.matrixSortBy, sortBy), descendingLabel];
       if (data.attributes.length) children.push(field(labels.matrixGroupBy, groupBy));
       for (const attribute of data.attributes.filter(item => item.facet)) children.push(this.facetList(axis, data, attribute));
-      const close = h("button", "cx-mx-button"); close.type = "button"; setText(close, labels.matrixClose); close.dataset.cxControl = "close";
+      const close = h("button", "cx-btn cx-mx-button"); close.type = "button"; setText(close, labels.matrixClose); close.dataset.cxControl = "close";
       close.addEventListener("click", () => this.closePanel(true), { signal });
       children.push(close);
       panel.replaceChildren(...children);
@@ -128,7 +128,7 @@
         counts.get(key).count++;
       }
       for (const value of [...counts.values()].sort((a, b) => matrixNatural(a.text, b.text)).slice(0, 200)) {
-        const label = h("label", "cx-mx-switch"), box = h("input", "cx-mx-check"), text = h("span"), count = h("span", "cx-mx-keycount");
+        const label = h("label", "cx-mx-switch"), box = h("input", "cx-check cx-mx-check"), text = h("span"), count = h("span", "cx-mx-keycount");
         box.type = "checkbox"; box.checked = chosen.has(value.key); box.dataset.cxControl = "facet:" + attribute.id + ":" + value.key;
         box.addEventListener("change", () => {
           const next = new Set(this.query.filters[axis][attribute.id] || []);

@@ -19,10 +19,24 @@
         cell.classList.toggle("cx-menu-room",cell.matches(":dir(rtl)")?caption.left>=box.right+1:caption.right<=box.left-1);
       }
     },
+    resolveColumnAnchor(id,anchor,position=false){
+      const visible=element=>element?.isConnected&&element.getClientRects().length>0&&getComputedStyle(element).visibility==="visible";
+      const key=CSS.escape(id||""),headerOrigin=!anchor||this.headRow.contains(anchor)||anchor.hasAttribute("data-cx-column-menu")||anchor.hasAttribute("data-cx-filter-column");
+      if(position&&headerOrigin){const header=this.headCells.find(cell=>cell.dataset.cxColumn===id);if(visible(header))return header;}
+      const card=this.toolbar.querySelector('[data-cx-sort-column-menu="'+key+'"]');
+      const filter=anchor?.hasAttribute("data-cx-filter-column")?this.headRow.querySelector('[data-cx-filter-column="'+key+'"]'):null;
+      const menu=this.headRow.querySelector('[data-cx-column-menu="'+key+'"]');
+      return [anchor,card,filter,menu].find(visible)||null;
+    },
+    adoptColumnAnchor(id,attribute,anchor){
+      const open=this.gridPopover;
+      if(open?.columnId!==id||!open.anchor?.hasAttribute(attribute))return;
+      open.anchor.setAttribute("aria-expanded","false");open.anchor=anchor;
+      anchor.setAttribute("aria-controls",open.panel.id);anchor.setAttribute("aria-expanded","true");
+    },
     closeGridPopover(focus=true){
       const open=this.gridPopover;if(!open)return;this.gridPopover=null;open.controller.abort();open.panel.remove();open.anchor?.setAttribute("aria-expanded","false");
-      if(focus){const anchor=open.anchor?.isConnected&&open.anchor.checkVisibility()?open.anchor:this.headRow.querySelector('[data-cx-column-menu="'+CSS.escape(open.columnId||"")+'"]');
-        (anchor||this.grid).focus({preventScroll:true});}
+      if(focus)(this.resolveColumnAnchor(open.columnId,open.anchor)||this.grid).focus({preventScroll:true});
     },
     buildColumnMenus(){
       this.headerMenusLifetime?.abort();this.headerMenusLifetime=new AbortController();const signal=this.headerMenusLifetime.signal;
@@ -33,10 +47,11 @@
         const id=cell.dataset.cxColumn,column=this.columns.find(item=>item.id===id);
         const filter=gridDecorateButton(gridButton("",()=>this.openColumnFilter(id,filter)),"filter",true),menu=gridDecorateButton(gridButton("",()=>this.openColumnMenu(id,menu)),"more",true);
         filter.classList.add("cx-grid-header-filter","icon");menu.classList.add("cx-grid-column-menu","icon");
-        filter.dataset.cxFilterColumn=id;menu.dataset.cxColumnMenu=id;filter.setAttribute("aria-label",this.labels.gridHeaderFilter?fill(this.labels.gridHeaderFilter,{column:column.title}):column.title+": "+this.labels.gridFilterColumn);
-        menu.setAttribute("aria-label",fill(this.labels.gridColumnMenu,{column:column.title}));menu.setAttribute("aria-haspopup","menu");menu.setAttribute("aria-expanded","false");
-        filter.hidden=!gridColumnFiltered(this.acceptedQuery,id);
-        filter.dataset.cxFiltered=String(!filter.hidden);
+        filter.dataset.cxFilterColumn=id;menu.dataset.cxColumnMenu=id;
+        filter.setAttribute("aria-expanded","false");menu.setAttribute("aria-expanded","false");
+        this.adoptColumnAnchor(id,"data-cx-filter-column",filter);this.adoptColumnAnchor(id,"data-cx-column-menu",menu);filter.setAttribute("aria-label",this.labels.gridHeaderFilter?fill(this.labels.gridHeaderFilter,{column:column.title}):column.title+": "+this.labels.gridFilterColumn);
+        menu.setAttribute("aria-label",fill(this.labels.gridColumnMenu,{column:column.title}));menu.setAttribute("aria-haspopup","menu");
+        filter.dataset.cxFiltered=String(gridColumnFiltered(this.acceptedQuery,id));filter.hidden=filter.dataset.cxFiltered!=="true";
         menu.addEventListener("keydown",event=>{if(event.key==="ArrowDown"){event.preventDefault();this.openColumnMenu(id,menu);}},{signal});
         cell.insertBefore(filter,cell.querySelector(".cx-resize"));if(this.tools.columnMenus!==false)cell.insertBefore(menu,cell.querySelector(".cx-resize"));
         if(this.tools.columnMenus!==false){

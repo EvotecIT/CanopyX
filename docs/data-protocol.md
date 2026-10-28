@@ -512,6 +512,10 @@ not change.
 
 ### Calendar
 
+The optional `calendar.resourceIds` names a text column containing a JSON array of resource ids, added to `resource`.
+Sources may declare `url`, `fetchParams` (string query parameters), `color` (`#RRGGBB`) and `hidden`; JSON feeds use the
+visible start/end/timeZone and return basic calendar events. Feeds are read-only and same-origin. See [calendar sources](calendar.md#sources-and-icalendar).
+
 A grid's optional `calendar` object presents its records as events ([calendar.md](calendar.md)): month, week, day, N-day
 (`days`), agenda, year, mini month (`mini`), week and day lists (`weekList`, `dayList`) and stacked months (`months`) views, and a timeline. Only `start` is required; every other key is written only when it
 differs from its default. Column references are ids of the same grid: `start`, `end`, `recurrenceId` and `seriesEnd` name
@@ -540,8 +544,8 @@ occurrences one range shows.
 
 The chrome and interaction keys are `toolbar` (`true`, `false` for the calendar's own bar only, or the grid toolbar controls
 to show: `search`, `filters`, `columns`, `views`, `export`, `more`), `details` (`drawer` or `popover`), `print` (a Print
-button), `sources` (1 to 50 `{ id, label, tone?, ics?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
-iCalendar file read within the limits of [icalendar.md](icalendar.md); without `ics` on every source, `source` is required),
+button), `sources` (1 to 50 `{ id, label, tone?, color?, ics?, url?, fetchParams?, hidden? }` with a legend; `ics` is a relative or same-origin URL of an
+iCalendar file read within the limits of [icalendar.md](icalendar.md); without `ics` or `url` on every source, `source` is required),
 `create` (`true` or `{ minutes, allDay }`, minutes 5 to 1,440, default 60) and `drop` (external drops), both needing editable
 start and title columns and saved as inserts ([Editing and commit](#editing-and-commit)), `occurrence` (`ask`, `this`,
 `following` or `all`; default `ask` with `series` and `recurrenceId`, else `all`; `this` and `following` need them),
@@ -868,6 +872,8 @@ The interactive tree entry point reads these fields. C# HTML writers select it a
 Checkbox state is a presentation intent. The library does not enumerate an unloaded branch, authorize its members, or perform a write. A host interprets rules against its own data and governs the resulting operation.
 
 ### Labels
+
+Optional UI components also accept the shared label packs. Tabs use `tabsPause` and `tabsPlay` for the automatic-progression control, and `tabsMotionDisabled` for its explanation when reduced motion disables progression. These optional names are accepted by the view label schema; they load with the UI overlay part and stay outside the ordinary grid and tree runtimes.
 
 The runtime writes some text of its own: the search box's hints and announcements, the "show more", loading, and error rows, the toolbar menus, the names of the column resize handles, the announcements after a page of children, `true` and `false` without display text, the UTC mark on dates and the local-time tooltip, and the notice of a view that failed to mount. `labels` translates them. Every name is optional and English applies where it is missing; a value is a string with visible text. `{name}` placeholders are replaced, numbers formatted in the page language. A runtime accepts only the names it carries. The tree toolbar menus (from the tree tools part) use the flat grid's names for the same controls, and every tree runtime carries them with the same English texts: `gridViews`, `gridViewName`, `gridSaveView`, `gridRemoveView`, `gridResetView`, `gridChooseView`, `gridApply`, `gridFindColumn`, `gridShowAllColumns`, `gridResetColumns`, `gridReorderColumn`, `gridPinnedLeft`, `gridPinnedRight`, `gridResponsiveHidden`, `gridExport`, `gridVisibleRows`, `gridSelectedRows`, `gridAllRows`, `gridDownloadCsv`, `gridCopy`, `gridExportProgress`, `gridExportReading`, `gridExportCancelled`, `gridCancelExport`, `gridMore` and `gridPrint`. A tree translates them in its own `labels` on the core and interactive runtimes too. The other `grid*` names belong to flat grids and stay errors on the tree runtimes; a C# tree view writes only the names the tree runtimes read, so a complete label pack keeps a tree on a tree runtime (the interactive one when it translates interaction texts).
 

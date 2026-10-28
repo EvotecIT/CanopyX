@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { viewPage } from "./support.mjs";
+import { viewPage, settleOverlayMotion } from "./support.mjs";
 
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const drawer = page => page.locator("dialog.cx-drawer");
@@ -108,6 +108,7 @@ test("record depth: collection paging rejects an over-deep response and preserve
 });
 
 async function readableValue(page) {
+  await settleOverlayMotion(drawer(page));
   const text = drawer(page).getByText(leaf, { exact: true });
   await expect(text).toBeVisible();
   const geometry = await text.evaluate(element => {
@@ -128,8 +129,16 @@ for (const theme of ["light", "dark"]) test("record value layout: nested propert
   await openPayload(page, { fields: { data: objects(2) } });
   await page.locator("[data-canopyx-host]").evaluate((host, theme) => host.setAttribute("data-cx-theme", theme), theme);
   await accepted(page);
+  // Exercise two-column properties with an explicitly wide value container, not the default narrow drawer.
+  await drawer(page).evaluate(dialog => { dialog.style.width = "640px"; dialog.style.maxWidth = "640px"; });
+  await settleOverlayMotion(drawer(page));
   const first = drawer(page).locator(".cx-record-object").first();
-  const term = await first.locator(":scope > dt").boundingBox(), value = await first.locator(":scope > dd").boundingBox();
+  const { term, value, width } = await first.evaluate(object => ({
+    term: object.querySelector(":scope > dt").getBoundingClientRect().toJSON(),
+    value: object.querySelector(":scope > dd").getBoundingClientRect().toJSON(),
+    width: object.closest(".cx-record-object-value").getBoundingClientRect().width
+  }));
+  expect(width).toBeGreaterThan(400);
   expect(value.x).toBeGreaterThan(term.x + 90); expect(Math.abs(term.y - value.y)).toBeLessThan(3);
   await readableValue(page);
   await openPayload(page, { fields: { data: objects(8) } });

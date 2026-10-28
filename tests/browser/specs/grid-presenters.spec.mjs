@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { viewPage, nextFrames } from "./support.mjs";
+import { viewPage, nextFrames, settleOverlayMotion } from "./support.mjs";
 
 const columns = [
   { id: "name", title: "Record", width: 180, kind: "text", sortable: true },
@@ -60,6 +60,8 @@ test("text and list dialogs escape markup, return focus and leave fixed row heig
   const dialog = page.getByRole("dialog", { name: "Notes", exact: true });
   await expect(dialog).toBeVisible(); await expect(dialog.locator("img")).toHaveCount(0);
   await expect(dialog.locator("pre")).toHaveText(view.rows[0].cells.notes);
+  // Contrast is measured on the settled dialog: while it fades in, every colour is blended with the page behind it.
+  await dialog.evaluate(element => Promise.all(element.getAnimations({ subtree: true }).map(animation => animation.finished)));
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(await row(page, "a").evaluate(item => item.getBoundingClientRect().height)).toBe(28);
   await dialog.locator("pre").press("Escape"); await expect(dialog).toHaveCount(0); await expect(button).toBeFocused();
@@ -143,22 +145,25 @@ test("large notes and lists retain complete exports with bounded mounted preview
   expect(csv).toContain(notes); expect(csv).toContain(owners);
 });
 
-test("compact dark complete-text dialogs retain visible gutters and keyboard close controls", async ({ page }) => {
+test("compact dark complete-text sheets stay within the phone and retain keyboard close controls", async ({ page, browserName }) => {
+  const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
   await page.setViewportSize({ width: 390, height: 700 }); await open(page);
   await page.evaluate(() => document.querySelector('[data-canopyx-host]').setAttribute('data-cx-theme', 'dark'));
   await row(page, "a").getByRole("button", { name: "Notes: show complete text" }).click();
-  const dialog = page.getByRole("dialog"), bounds = await dialog.boundingBox();
-  expect(bounds.x).toBeGreaterThanOrEqual(12); expect(bounds.x + bounds.width).toBeLessThanOrEqual(378);
-  await dialog.locator("pre").press("Tab");
+  const dialog = page.getByRole("dialog"); await expect(dialog).toBeVisible(); await settleOverlayMotion(dialog);
+  const bounds = await dialog.boundingBox();
+  expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  expect(bounds.y).toBeGreaterThanOrEqual(0); expect(bounds.y + bounds.height).toBeLessThanOrEqual(700);
+  await dialog.locator("pre").press(tab);
   const copy = dialog.getByRole("button", {name:"Copy",exact:true}); await expect(copy).toBeFocused();
   const close = page.getByRole("button", { name: "Close complete text" });
-  await copy.press("Tab"); await expect(close).toBeFocused();
-  await close.press("Shift+Tab"); await expect(copy).toBeFocused();
-  await copy.press("Shift+Tab"); await expect(dialog.locator("pre")).toBeFocused();
-  await dialog.locator("pre").press("Shift+Tab"); await expect(close).toBeFocused();
-  await close.press("Tab"); await expect(dialog.locator("pre")).toBeFocused();
-  await dialog.locator("pre").press("Tab"); await expect(copy).toBeFocused();
-  await copy.press("Tab"); await expect(close).toBeFocused();
+  await copy.press(tab); await expect(close).toBeFocused();
+  await close.press("Shift+" + tab); await expect(copy).toBeFocused();
+  await copy.press("Shift+" + tab); await expect(dialog.locator("pre")).toBeFocused();
+  await dialog.locator("pre").press("Shift+" + tab); await expect(close).toBeFocused();
+  await close.press(tab); await expect(dialog.locator("pre")).toBeFocused();
+  await dialog.locator("pre").press(tab); await expect(copy).toBeFocused();
+  await copy.press(tab); await expect(close).toBeFocused();
   await close.press("Enter"); await expect(dialog).toHaveCount(0);
 });
 

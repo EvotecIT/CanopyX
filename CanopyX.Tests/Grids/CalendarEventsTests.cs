@@ -55,7 +55,7 @@ public sealed class CalendarEventsTests {
         var grid = calendar.Grid!;
         Assert.Equal("team", grid.Id);
         Assert.Equal("Team calendar", grid.Label);
-        Assert.Equal(new[] { "title", "start", "end", "allDay", "description", "tone", "resource", "recurrence", "exceptions", "source" }, grid.Columns.Select(column => column.Id));
+        Assert.Equal(new[] { "title", "start", "end", "allDay", "description", "tone", "resource", "recurrence", "exceptions", "series", "recurrenceId", "source" }, grid.Columns.Select(column => column.Id));
         foreach (var id in new[] { "allDay", "tone", "resource", "recurrence", "exceptions", "source" }) {
             Assert.True(grid.GetColumn(id).Hidden, id);
             Assert.Equal(CanopyColumnKind.Text, grid.GetColumn(id).Kind);
@@ -73,7 +73,7 @@ public sealed class CalendarEventsTests {
         Assert.Equal("work", grid.Rows[2].Cells["source"].Value);
         Assert.Equal("room-1", grid.Rows[2].Cells["resource"].Value);
         var json = grid.ToJson();
-        Assert.Contains("\"allDay\":\"allDay\",\"resource\":\"resource\",\"recurrence\":\"recurrence\",\"exceptions\":\"exceptions\",\"description\":\"description\",\"tone\":\"tone\",\"source\":\"source\"", json);
+        Assert.Contains("\"allDay\":\"allDay\",\"resource\":\"resource\",\"recurrence\":\"recurrence\",\"exceptions\":\"exceptions\",\"series\":\"series\",\"recurrenceId\":\"recurrenceId\",\"description\":\"description\",\"tone\":\"tone\",\"source\":\"source\"", json);
     }
 
     [Fact]
@@ -213,7 +213,9 @@ public sealed class CalendarEventsTests {
         Assert.Contains("<html lang=\"ar\" dir=\"rtl\">", page);
         Assert.DoesNotContain("{{dir}}", page);
         Assert.Contains("<div class=\"cx-host\" data-canopyx-host dir=\"ltr\"", grid.ToHtmlFragment(new CanopyHtmlOptions { Direction = CanopyTextDirection.Ltr }));
-        Assert.DoesNotContain(" dir=", grid.ToHtmlFragment());
+        var defaultHost = System.Text.RegularExpressions.Regex.Match(grid.ToHtmlFragment(), @"<div\b[^>]*\bdata-canopyx-host\b[^>]*>").Value;
+        Assert.NotEmpty(defaultHost);
+        Assert.DoesNotContain(" dir=", defaultHost);
         Assert.DoesNotContain(" dir=", grid.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }).Substring(0, 200));
         var tree = new CanopyTreeView("tree", "Tree");
         tree.Columns.Add(new CanopyColumn("name", "Name"));

@@ -150,6 +150,8 @@ export interface FlowStep {
   title?: string;
   description?: string;
   type?: "form" | "info" | "pick" | "review";
+  /** Information steps: at most 32 read-only facts, with full wrapped plain-text values up to 32768 characters. Never submitted as answers. */
+  facts?: readonly { readonly label: string; readonly value: string }[];
   fields?: readonly FlowField[];
   sections?: readonly FlowSection[];
   when?: FlowCondition;
@@ -261,6 +263,8 @@ export interface FlowHookContext { signal: AbortSignal }
 
 /** The submit event's detail: the proposal, how to answer it, and each secret once. */
 export interface FlowSubmitDetail extends Readonly<FlowSubmission> {
+  /** Retired when answers change, the flow resets/destroys, or the submission settles. Cancellation cannot undo a server write already committed. */
+  readonly signal: AbortSignal;
   respondWith(answer: FlowAnswer | Promise<FlowAnswer>): void;
   /** A secret's value, once per field, until the answer settles; null afterwards. */
   secret(fieldId: string): string | null;
@@ -371,6 +375,8 @@ export interface FlowApi {
   /** Runs a check now; resolves with its result as the flow keeps it (field messages show in place), or null when it was cancelled.
    *  Rejects for a check the flow does not have. */
   runCheck(checkId: string): Promise<{ status: FlowCheckStatus; message: string | null; details: { label: string; value: string }[]; at: string } | null>;
+  /** Marks selected checks (all when omitted) stale after an external dependency changes. Cancels runs and ignores late answers without changing field values or dirty state. */
+  invalidateChecks(checkIds?: readonly string[]): void;
   /** Loads a host-option field's options again. Rejects for any other field. */
   refreshOptions(fieldId: string): Promise<void>;
   /** Sets a task's state as the host sees it; null returns it to what the answers say. Throws for a flow that is no task list. */

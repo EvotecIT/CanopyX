@@ -37,7 +37,7 @@
     form.addEventListener("keydown",event=>{const box=event.target.closest(".cx-ms[open]");if(event.key==="Escape"&&box){box.open=false;box.firstChild.focus();event.stopPropagation();}});
     panel.parentElement.addEventListener("toggle",()=>{if(!panel.parentElement.open)controller.abort();},{signal:controller.signal});
     const close=()=>{clearTimeout(timer);panel.parentElement.open=false;panel.parentElement.querySelector("summary").focus();};
-    footer.append(gridButton(this.labels.gridClearFilters,()=>{clearTimeout(timer);this.setQuery(gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:undefined})).catch(failure=>setText(error,failure.message));this.renderGridFilters(panel);}),gridButton(this.labels.gridDone,()=>{draft=gridQueryStart(draft||this.queryForChange(),{search:this.queryForChange(true).search});flush();close();}));
+    footer.append(gridVariant(gridButton(this.labels.gridClearFilters,()=>{clearTimeout(timer);this.setQuery(gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:undefined})).catch(failure=>setText(error,failure.message));this.renderGridFilters(panel);}),"ghost"),gridVariant(gridButton(this.labels.gridDone,()=>{draft=gridQueryStart(draft||this.queryForChange(),{search:this.queryForChange(true).search});flush();close();}),"primary"));
     if(gridFilterDepth(this.queryForChange().filterGroup)>2){
       const notice=h("p");setText(notice,this.labels.gridDeepFilters);text=h("textarea","cx-filter-text");text.setAttribute("aria-label",this.labels.gridFilterText);text.readOnly=true;
       text.value=JSON.stringify({filters:this.queryForChange().filters||[],filterGroup:this.queryForChange().filterGroup},null,2);

@@ -101,7 +101,23 @@ test("right-clicking a link in a cell keeps the browser's menu", async ({ page }
   const prevented = await page.locator(".cx-canvas .cx-row").first().locator("a").evaluate(link => !link.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true })));
   expect(prevented).toBe(false);
   await page.waitForTimeout(200);
-  expect(await page.locator(".cx-cell-menu").count()).toBe(0);
+  expect(await page.getByRole("menu", { name: "Cell actions" }).count()).toBe(0);
+});
+
+test("native context gestures leave the current cell selection unchanged", async ({ page }) => {
+  await serveGrid(page, budgetView({ rangeSelection: true }));
+  await page.evaluate(() => api.setCellRanges([{ startRow: 0, endRow: 1, startColumn: "jan" }]));
+  const before = await ranges(page);
+  const prevented = await bodyCell(page, 5, 2).evaluate(cell => {
+    const fire = (target, shiftKey = false) => !target.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, shiftKey }));
+    const input = document.createElement("input"); cell.append(input);
+    const results = [fire(input), fire(cell, true)]; input.remove();
+    const selection = getSelection(), range = document.createRange(); range.selectNodeContents(cell);
+    selection.removeAllRanges(); selection.addRange(range); results.push(fire(cell)); selection.removeAllRanges(); return results;
+  });
+  expect(prevented).toEqual([false, false, false]);
+  expect(await ranges(page)).toEqual(before);
+  await expect(page.getByRole("menu", { name: "Cell actions" })).toHaveCount(0);
 });
 
 test("collapsing or expanding a group of a grouped report clears the ranges", async ({ page }) => {
@@ -139,8 +155,8 @@ test("the cell menu has its own name and clear command, and its cell keeps no po
   await serveGrid(page, budgetView({ rangeSelection: true }));
   await page.evaluate(() => api.setCellRanges([{ startRow: 0, endRow: 1, startColumn: "jan" }]));
   await bodyCell(page, 0, 2).click({ button: "right" });
-  await expect(page.locator(".cx-cell-menu")).toHaveAttribute("aria-label", "Cell actions");
-  await expect(page.locator(".cx-cell-menu [role=menuitem]").last()).toHaveText("Clear cell selection");
+  await expect(page.getByRole("menu", { name: "Cell actions" })).toHaveAttribute("aria-label", "Cell actions");
+  await expect(page.getByRole("menu", { name: "Cell actions" }).getByRole("menuitem").last()).toHaveText("Clear cell selection");
   await page.keyboard.press("Escape");
   await page.waitForTimeout(100);
   const attributes = await page.evaluate(() => [...document.querySelectorAll(".cx-canvas .cx-cell")].filter(cell => cell.hasAttribute("aria-expanded") || cell.hasAttribute("aria-controls")).length);

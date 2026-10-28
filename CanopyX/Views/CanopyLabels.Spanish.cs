@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Spanish labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Spanish() => new CanopyLabels {
+    public static CanopyLabels Spanish() => WithSpanishUi(new CanopyLabels {
         GridNoExportColumns = "Ninguna columna visible permite exportar.",
         SearchPlaceholder = "Buscar",
         SearchResults = "Resultados de búsqueda",
@@ -514,6 +514,11 @@ public sealed partial class CanopyLabels {
         CalendarOccurrenceTitle = "Cambiar un evento periódico",
         CalendarOccurrenceReadOnly = "No se puede guardar esta parte de la serie porque algunos valores son de solo lectura.",
         CalendarThisEvent = "Este evento",
+        CalendarEditOccurrence = "Editar esta ocurrencia",
+        CalendarRemoveOccurrence = "Eliminar esta ocurrencia",
+        CalendarOccurrenceScope = "Solo cambia {date}; las otras fechas de {title} se mantienen.",
+        CalendarSharedResources = "{count} {resources}",
+        CalendarResourceWindow = "{resources} {start}–{end} de {total}",
         CalendarThisAndFollowing = "Este evento y los siguientes",
         CalendarAllEvents = "Todos los eventos",
         CalendarSources = "Calendarios",
@@ -777,5 +782,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Copiar solicitud",
         ChangeFiltered = "Filtrado: {filters}",
         ChangePrintLimit = "{count} líneas más no se imprimen.",
-    };
+    });
 }

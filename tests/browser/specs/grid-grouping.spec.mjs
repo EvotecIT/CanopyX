@@ -38,7 +38,9 @@ test("readers regroup from the API, the column menu and the chips; levels travel
   expect((await page.evaluate(api + ".getSummary()")).groups.map(group => group.value)).toEqual(["Shipped", "Open", "Closed"]);
   await expect(page.locator(".cx-grid")).toHaveAttribute("role", "grid");
   await page.locator('[data-cx-column-menu="region"]').click();
-  await page.getByRole("menuitem", { name: "Group by this column" }).click();
+  const groupAction = page.getByRole("menuitem", { name: "Group by this column" });
+  await expect(groupAction).toBeVisible(); await page.keyboard.press("End");
+  await expect(groupAction).toBeFocused(); await page.keyboard.press("Enter");
   await expect.poll(() => page.evaluate(api + ".getGroupBy().map(level => level.column)")).toEqual(["status", "region"]);
   // Sorting a grouped column turns its groups around; the chip's direction button does the same.
   await page.locator('.cx-gchip[data-cx-level="2"] .cx-gchip-direction').click();
@@ -62,6 +64,61 @@ test("readers regroup from the API, the column menu and the chips; levels travel
   await page.evaluate(api + ".setGroupBy([])");
   await expect(headings(page)).toHaveCount(0); await expect(page.locator(".cx-groupbar-hint")).toBeVisible();
   expect(await page.evaluate(api + ".getState().query.groupBy")).toEqual([]);
+});
+
+for (const method of ["setGroupBy", "setQuery"]) {
+  test(`${method} retires stale grouping menus and reopened actions preserve host levels and the four-level cap`, async ({ page }) => {
+    await open(page);
+    const change = async columns => expect(await page.evaluate(async ({ method, columns }) => {
+      const grid = document.querySelector("[data-canopyx-host]").canopyx;
+      const groupBy = columns.map(column => ({ column, direction: "asc" }));
+      const stale = document.querySelector(".cx-column-menu") && JSON.stringify(grid.getGroupBy()) !== JSON.stringify(groupBy);
+      const pending = method === "setGroupBy" ? grid.setGroupBy(groupBy) : grid.setQuery({ ...grid.getQuery(), groupBy });
+      const retiredAtIntent = !stale || !document.querySelector(".cx-column-menu");
+      await pending;
+      return retiredAtIntent;
+    }, { method, columns })).toBe(true);
+    await change(["region"]);
+    const menu = page.locator(".cx-column-menu"), add = page.getByRole("menuitem", { name: "Group by this column", exact: true });
+    await page.locator('[data-cx-column-menu="customer"]').click();
+    await expect(add).toBeVisible();
+    // A query with unchanged grouping must leave the column menu alone.
+    await change(["region"]);
+    await expect(add).toBeVisible();
+    await change(["region", "status"]);
+    await expect(menu).toHaveCount(0);
+    await page.locator('[data-cx-column-menu="customer"]').click();
+    await add.click();
+    await expect.poll(() => page.evaluate(api + ".getGroupBy().map(level => level.column)")).toEqual(["region", "status", "customer"]);
+    await page.locator('[data-cx-column-menu="customer"]').click();
+    await expect(page.getByRole("menuitem", { name: "Stop grouping by this column", exact: true })).toBeVisible();
+    await change(["region", "status", "order", "items"]);
+    await expect(menu).toHaveCount(0);
+    await page.locator('[data-cx-column-menu="customer"]').click();
+    await expect(add).toHaveAttribute("aria-disabled", "true");
+    await page.keyboard.press("Escape");
+    expect(await page.evaluate(api + ".getGroupBy().map(level => level.column)")).toEqual(["region", "status", "order", "items"]);
+  });
+}
+
+test("a queued column grouping action resolves the latest host intent and rechecks the level cap", async ({ page }) => {
+  await open(page);
+  await page.evaluate(api + ".setGroupBy([{ column: 'region', direction: 'asc' }])");
+  const add = page.getByRole("menuitem", { name: "Group by this column", exact: true });
+  for (const columns of [["region", "status"], ["region", "status", "order", "items"]]) {
+    await page.locator('[data-cx-column-menu="customer"]').click();
+    await expect(add).toBeVisible();
+    // The shared menu queues its action. Change host intent in the same turn before that action runs.
+    await add.evaluate((item, columns) => {
+      item.click();
+      return document.querySelector("[data-canopyx-host]").canopyx
+        .setGroupBy(columns.map(column => ({ column, direction: "asc" })))
+        .catch(error => { if (error.name !== "AbortError") throw error; });
+    }, columns);
+    const expected = columns.length === 4 ? columns : [...columns, "customer"];
+    await expect.poll(() => page.evaluate(api + ".getGroupBy().map(level => level.column)")).toEqual(expected);
+    if (columns.length < 4) await page.evaluate(api + ".setGroupBy([{ column: 'region', direction: 'asc' }])");
+  }
 });
 
 test("expand and collapse all, by level, by heading keys; a focused record hidden by a collapse hands focus to its heading", async ({ page }) => {

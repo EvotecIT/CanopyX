@@ -33,10 +33,10 @@ public sealed class GroupingPartAssetsTests {
         grid.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number, Sortable = true });
         Assert.DoesNotContain("detail-rows", Names(grid));
         grid.Reporting.Detail = new CanopyGridDetail();
-        Assert.Equal(new[] { "presenters", "filter-editor", "export", "detail-rows" }, Names(grid));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "detail-rows" }, Names(grid));
         grid.Reporting.Detail = null;
         grid.Reporting.GroupBy.Add(new CanopyGridGroupLevel("region"));
-        Assert.Equal(new[] { "presenters", "filter-editor", "export", "detail-rows", "grouping" }, Names(grid));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "detail-rows", "grouping" }, Names(grid));
         grid.Reporting.GroupBy.Clear();
         grid.Reporting.Aggregates.Add(new CanopyGridAggregate("total", "amount", CanopyGridAggregateOperation.Sum, "Total"));
         Assert.Contains("grouping", Names(grid));

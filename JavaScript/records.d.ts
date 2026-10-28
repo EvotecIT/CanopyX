@@ -110,11 +110,21 @@ export interface RecordSectionContext {
 /** Draws a drawer section's content (a chart, for example) into element. */
 export type RecordSectionRenderer = (record: Readonly<{ id: string; cells?: Readonly<Record<string, Cell>>; fields?: Readonly<Record<string, Cell>>; label?: string }>,
   element: HTMLElement, context: RecordSectionContext) => void | PromiseLike<void>;
-/** An action of the record panel's actions menu. */
+/** A detached snapshot of the selected record and its loaded details. */
+export interface RecordActionContext {
+  readonly record: Readonly<{ id: string; cells?: Readonly<Record<string, Cell>>; fields?: Readonly<Record<string, Cell>> }>;
+  readonly view: string; readonly api: unknown; readonly payload: GridRecord | null; readonly signal: AbortSignal;
+}
+/** An action of the record panel's actions menu. Hosts must enforce authorization again when executing it. */
 export interface RecordAction {
+  /** Keeps the action focusable in its menu while preventing activation. */
+  readonly disabled?: boolean;
+  /** Evaluated after each record paint, including loaded details. Hidden actions cannot run through a stale control. */
+  readonly visible?: boolean | ((context: RecordActionContext) => boolean);
+  /** Also renders this action as a visible footer button. Menu access is retained. */
+  readonly prominent?: boolean | ((context: RecordActionContext) => boolean);
   readonly label: string;
-  run(context: { readonly record: Readonly<{ id: string; cells?: Readonly<Record<string, Cell>>; fields?: Readonly<Record<string, Cell>> }>; readonly view: string; readonly api: unknown;
-    readonly payload: GridRecord | null; readonly signal: AbortSignal }): void | PromiseLike<void>;
+  run(context: RecordActionContext): void | PromiseLike<void>;
 }
 /** The canopyx:openAll event's detail (and onOpenAll's argument): cancel it to filter the target grid yourself. */
 export interface RecordOpenAll {
@@ -122,9 +132,15 @@ export interface RecordOpenAll {
   readonly filters: readonly { readonly column: string; readonly operator: string; readonly values: readonly CellValue[] }[] | null;
 }
 /** Options that open a record (openRecord). */
-export interface OpenRecordOptions { readonly returnFocus?: Element | null; readonly path?: readonly string[]; readonly tab?: string; }
+export interface OpenRecordOptions {
+  readonly returnFocus?: Element | null; readonly path?: readonly string[]; readonly tab?: string;
+  /** Read this record's details again after a host mutation, even when the grid's row/revision has not changed. */
+  readonly reload?: boolean;
+}
 /** Host options of the record panel, on grids and trees. */
 export interface RecordPanelOptions {
+  /** Plain-text heading projection. The record is a detached read-only snapshot; title and subtitle are bounded. */
+  recordHeading?: (record: Readonly<{id:string; cells?:Readonly<Record<string,Cell>>; fields?:Readonly<Record<string,Cell>>}>) => {title:string;subtitle?:string};
   /** Loads a record's details when its drawer opens; used whatever the declared source. */
   loadRecord?: RecordLoader;
   /** Section renderers by name, beside the plugins' drawerSections. */

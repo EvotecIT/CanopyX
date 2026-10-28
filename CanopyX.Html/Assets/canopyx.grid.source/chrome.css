@@ -1,4 +1,5 @@
-/* Graphite chrome shared by flat grids and trees: the card, toolbar, search, buttons, menus, header and cells. */
+/* Graphite chrome shared by flat grids and trees: the card, toolbar, search, menus, header and cells. Buttons, fields, chips
+   and badges are the shared controls (canopyx.source/controls.css). */
 /* Flat-grid hosts and trees with their tree tools part carry .cx-chrome; the tree tools part ships this file for trees on
  * the tree runtimes, the grid stylesheets include it ahead of the grid's own rules. */
 .cx-chrome { border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-container);overflow:hidden;font:var(--hfx-control-font-size)/1.4 var(--hfx-font-sans); }
@@ -13,14 +14,7 @@ body .cx-host.cx-chrome { padding:0; }
 .cx-chrome .cx-search:focus-within { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
 .cx-chrome .cx-search .cx-search-input:focus-visible { outline:0; }
 .cx-chrome .cx-search kbd { font:var(--cx-size-11px) var(--hfx-font-mono);border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);padding:0 var(--cx-size-5px); }
-.cx-chrome .cx-button,.cx-chrome .cx-btn { height:var(--hfx-control-height-md);min-height:var(--hfx-control-height-md);display:inline-flex;align-items:center;justify-content:center;gap:var(--cx-size-6px);padding:0 var(--cx-size-11px);border:var(--cx-size-1px) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:var(--hfx-weight-medium) var(--hfx-control-font-size) var(--hfx-font-sans);cursor:pointer;white-space:nowrap; }
 .cx-chrome .cx-columns > summary::after { display:none; }
-.cx-chrome .cx-button:hover,.cx-chrome .cx-btn:hover { background:var(--hfx-color-hover); }
-.cx-chrome .ghost { border-color:transparent;color:var(--hfx-color-text-secondary); }
-.cx-chrome .icon { width:var(--hfx-control-height-md);padding:0; }
-.cx-chrome .active { border-color:var(--hfx-color-accent);color:var(--hfx-color-accent-text);background:var(--hfx-color-accent-subtle); }
-.cx-chrome .badge { min-width:var(--cx-size-18px);height:var(--cx-size-18px);padding:0 var(--cx-size-5px);border-radius:var(--hfx-radius-badge);background:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast);font-size:var(--cx-size-11d5px);font-weight:700;display:inline-grid;place-items:center; }
-.cx-chrome .cx-button:disabled { opacity:.4;cursor:default; }
 .cx-spacer { flex:1; }
 .cx-sep { width:var(--cx-size-1px);height:var(--cx-size-20px);background:var(--hfx-color-border); }
 .cx-chrome .cx-hrow { height:var(--hfx-table-header-height); }

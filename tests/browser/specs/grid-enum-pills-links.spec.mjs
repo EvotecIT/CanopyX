@@ -30,7 +30,7 @@ async function capture(page, name) { if (process.env.CANOPYX_EVIDENCE) await pag
 const cells = page => page.evaluate(() => [...document.querySelectorAll('.cx-row[data-cx-id] .cx-cell:nth-child(2)')].map(cell => {
   const item = cell.querySelector(".p-pill, .p-muted, .p-inset, .p-state"), style = getComputedStyle(item), range = document.createRange();
   range.selectNodeContents(item.lastChild.nodeType === 3 ? item.lastChild : item); const surface = getComputedStyle(cell.closest(".cx-row")).backgroundColor;
-  return { text: item.textContent, pill: item.classList.contains("p-pill"), fill: style.backgroundColor, surface, border: style.boxShadow,
+  return { text: item.textContent, pill: item.classList.contains("p-pill"), fill: style.backgroundColor, surface, border: style.outlineStyle + " " + style.outlineOffset,
     start: Math.round(range.getBoundingClientRect().left), color: style.color, rowColor: getComputedStyle(cell).color };
 }));
 const opaque = color => !/rgba\(.*, 0\)$|transparent/.test(color);
@@ -44,7 +44,7 @@ for (const theme of ["light", "dark"]) {
     for (const pill of pills) {
       expect(opaque(pill.fill), pill.text + " fill").toBe(true);
       expect(pill.fill, pill.text + " fill differs from the row").not.toBe(pill.surface);
-      expect(pill.border, pill.text + " border").toContain("inset");
+      expect(pill.border, pill.text + " border drawn inside").toMatch(/^solid -/);
     }
     // The host tone with a theme fill uses it.
     expect(pills.find(item => item.text === "up").fill).toBe(theme === "light" ? "rgb(217, 242, 225)" : "rgb(23, 58, 38)");

@@ -261,11 +261,27 @@ test.describe("changing one occurrence", () => {
 });
 
 test.describe("context menus and hover cards", () => {
+  test("calendar context actions preserve native links, inputs, text selection and Shift right-click", async ({ page: p }) => {
+    await openBuilt(p, "native-menu.html", page("{ events: " + EVENTS + ", date: '2026-10-16', view: 'week', firstDay: 1 }"));
+    const prevented = await p.locator('.cx-cal-ev[data-cx-record="a"]').evaluate(element => {
+      const fire = (target, shiftKey = false) => !target.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, shiftKey }));
+      const link = document.createElement("a"); link.href = "#event"; link.textContent = "Event link"; element.append(link);
+      const input = document.createElement("input"); element.append(input);
+      const results = [fire(link), fire(input), fire(element, true)];
+      const selection = getSelection(), range = document.createRange(); range.selectNodeContents(link);
+      selection.removeAllRanges(); selection.addRange(range); results.push(fire(element)); selection.removeAllRanges();
+      link.remove(); input.remove(); return results;
+    });
+    expect(prevented).toEqual([false, false, false, false]);
+    await expect(p.getByRole("menu")).toHaveCount(0);
+  });
+
   test("right-click on an event offers Open and Move; Shift+F10 on a slot offers New event here; the host adds its own", async ({ page: p }) => {
     await openBuilt(p, "menu.html", page("{ preset: 'scheduler', events: " + EVENTS + ", date: '2026-10-16', view: 'week', firstDay: 1 }"));
     await p.locator('.cx-cal-ev[data-cx-record="a"]').click({ button: "right" });
     const menu = p.getByRole("menu", { name: "Actions for Planning" });
     await expect(menu).toBeVisible();
+    await expect(menu).toHaveAttribute("data-hfx-part", "menu");
     await expect(menu.getByRole("menuitem")).toHaveText(["Open", "Move"]);
     await expect(menu.getByRole("menuitem").first()).toBeFocused();
     await capture(p, "calendar-context-menu");
@@ -305,6 +321,10 @@ test.describe("context menus and hover cards", () => {
     await event.dispatchEvent("pointerdown", { pointerType: "touch", pointerId: 7, clientX: box.x + 10, clientY: box.y + 10, isPrimary: true });
     await p.waitForTimeout(800);
     await expect(p.getByRole("menuitem")).toHaveText(["Open"]);
+    await expect(p.getByRole("dialog", { name: "Actions for Planning" })).toHaveAttribute("data-side", "bottom");
+    await p.keyboard.press("Escape");
+    await expect(p.getByRole("menu")).toHaveCount(0);
+    await expect(event).toBeFocused();
   });
 });
 

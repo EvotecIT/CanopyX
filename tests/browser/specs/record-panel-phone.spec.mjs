@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openExample } from "./support.mjs";
+import { openExample, settleOverlayMotion } from "./support.mjs";
 
 const drawer = page => page.locator("dialog.cx-drawer");
 
@@ -10,12 +10,15 @@ test("phones: the record panel is a full-screen sheet with a scrolling tab bar, 
   await page.locator('.cx-row[data-cx-id="cert-0004"]').tap();
   const dialog = drawer(page);
   await expect(dialog).toHaveClass(/cx-phone/);
+  await settleOverlayMotion(dialog);
   const box = await dialog.boundingBox();
-  expect(box.width).toBe(390); expect(box.height).toBe(844);
+  expect(box.width).toBeCloseTo(390, 1); expect(box.height).toBeCloseTo(844, 1);
+  expect(box.x).toBeCloseTo(0, 1); expect(box.y).toBeCloseTo(0, 1);
   const tabs = dialog.getByRole("tablist");
   expect(await tabs.evaluate(list => list.scrollWidth > list.clientWidth && getComputedStyle(list).overflowX)).toBe("auto");
+  // Firefox may report a CSS44px target a few millionths below44 in viewport coordinates.
   for (const target of await dialog.locator(".cx-record-tab, .cx-record-menu-btn, .cx-record-toggle").all())
-    expect((await target.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    expect((await target.boundingBox()).height).toBeGreaterThanOrEqual(44 - 0.01);
   // Collections are cards: one per contact, the role as its title.
   await expect(dialog.locator('.cx-record-block-b[data-cx-field="contacts"] .cx-record-card')).toHaveCount(4);
   await expect(dialog.locator('.cx-record-block-b[data-cx-field="contacts"] .cx-record-card-title').first()).toHaveText("Owner");

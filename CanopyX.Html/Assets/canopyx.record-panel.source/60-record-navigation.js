@@ -33,13 +33,16 @@
   // A record opened in a drawer of another kind (a grid's from a tree's, or one of another runtime on the page) does not replace
   // the drawer it came from: that one closes once the new one is open, without restoring focus.
   function recordRetire(dialog) {
-    if (dialog.isConnected && dialog.open && document.querySelectorAll("dialog.cx-drawer[open]").length > 1) { dialog._replaced = true; dialog.close(); dialog.remove(); }
+    if (dialog.isConnected && dialog.open && document.querySelectorAll("dialog.cx-drawer[open]").length > 1) {
+      dialog._replaced = true; dialog._cxOverlay.close("replace", false, true); dialog.remove();
+    }
   }
 
   RECORD_IMPL.open = async (view, id, options = {}) => {
     requireIdentifier(id, "record ID");
     if (view.destroyed) recordFail("the view was destroyed.");
     await view.ready;
+    if (options.reload === true) RECORD_IMPL.invalidate(view, id);
     const dialog = view.kind === "tree" ? await recordOpenNode(view, id, options) : await recordOpenRow(view, id, options);
     if (!dialog) return;
     const origin = options.origin && dialog.querySelector('[data-cx-origin="' + CSS.escape(options.origin) + '"]');
@@ -169,6 +172,20 @@
       trail.append(back, crumbs); identity.prepend(trail);
     }
     const summary = h("div", "cx-record-summary"); summary.hidden = true; head.after(summary);
+    let projectedSubtitle;
+    if (typeof view.opts.recordHeading === "function") dialog.addEventListener("cx-drawer-paint", () => {
+      // A tree has no native subtitle to repaint when the next projection omits it.
+      if (projectedSubtitle) { setText(projectedSubtitle, ""); projectedSubtitle.hidden = true; }
+      try {
+        const heading = view.opts.recordHeading(Object.freeze(JSON.parse(JSON.stringify(dialog._cxRecord))));
+        if (heading && typeof heading.title === "string" && heading.title.length <= 512) setText(identity.querySelector("h4"), heading.title);
+        if (heading && typeof heading.subtitle === "string" && heading.subtitle.length <= 2000) {
+          let subtitle = identity.querySelector("p");
+          if (!subtitle) { subtitle = projectedSubtitle = h("p"); identity.appendChild(subtitle); }
+          subtitle.classList.add("cx-record-subtitle"); setText(subtitle, heading.subtitle); subtitle.hidden = !heading.subtitle;
+        }
+      } catch (error) { view.emit("error", { error }); }
+    });
     recordActionsMenu(view, dialog, identity);
     dialog.addEventListener("keydown", event => {
       if (event.altKey && event.key === "ArrowLeft" && state.stack.length) { event.preventDefault(); recordBack(view, dialog); }

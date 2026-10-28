@@ -7,6 +7,7 @@ namespace CanopyX.Tests.Html;
 public sealed class ExportPartAssetsTests {
     [Fact]
     public void ExportPart_IsVersionedInlineSafeAndBounded() {
+        Assert.Equal(new[] { "ui-overlays" }, CanopyHtmlAssets.GetPart("export").Requires);
         Assert.Matches("^[a-f0-9]{16}$", CanopyHtmlAssets.ExportVersion);
         Assert.Contains(CanopyHtmlAssets.ExportVersion, CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid));
         Assert.Contains(CanopyHtmlAssets.HashedExportScriptFileName, CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid));

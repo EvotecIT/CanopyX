@@ -26,13 +26,13 @@
       this.calNextButton = button(labels.calendarNext, "next", () => this.calendarStep(1), "next");
       nav.append(this.calTodayButton, this.calPrev, this.calNextButton);
       this.calTitle = h("h2", "cx-cal-title"); this.calTitle.id = this.id + "-cal-title";
-      const jump = this.calJump = h("input", "cx-cal-jump"); jump.type = "date"; jump.setAttribute("aria-label", labels.calendarGoTo); jump.title = labels.calendarGoTo;
+      const jump = this.calJump = h("input", "cx-input cx-cal-jump"); jump.type = "date"; jump.setAttribute("aria-label", labels.calendarGoTo); jump.title = labels.calendarGoTo;
       jump.addEventListener("change", () => { const day = calParseDay(jump.value); if (Number.isFinite(day)) this.setCalendarDate(jump.value); });
       // The native picker writes the date in the browser's format; where the browser can open it from a script, a button in
       // the calendar's language shows the date and opens the picker kept behind it.
       const jumpBox = h("span", "cx-cal-jumpbox");
       if (typeof HTMLInputElement === "function" && "showPicker" in HTMLInputElement.prototype) {
-        const open = this.calJumpButton = h("button", "cx-cal-jumpbtn"); open.type = "button";
+        const open = this.calJumpButton = h("button", "cx-btn cx-cal-jumpbtn"); open.type = "button";
         jump.tabIndex = -1; jump.setAttribute("aria-hidden", "true"); jump.classList.add("cx-cal-jump-behind");
         open.addEventListener("click", () => {
           try { jump.showPicker(); }
@@ -44,17 +44,18 @@
         });
         jumpBox.append(jump, open);
       } else jumpBox.append(jump);
-      const views = this.calViewGroup = h("div", "cx-cal-views"); views.setAttribute("role", "group"); views.setAttribute("aria-label", labels.calendarViews);
+      const views = this.calViewGroup = h("div", "cx-segmented cx-cal-views"); views.setAttribute("role", "group"); views.setAttribute("aria-label", labels.calendarViews);
       this.calViewButtons = new Map();
       for (const view of this.cal.views) {
         const item = button(this.calViewName(view), null, () => this.setCalendarView(view), "view");
-        item.setAttribute("aria-pressed", "false"); item.dataset.cxCalView = view;
+        // A segment of the shared segmented control (canopyx.source/controls.css), not a free-standing button.
+        item.classList.remove("cx-btn", "cx-button"); item.setAttribute("aria-pressed", "false"); item.dataset.cxCalView = view;
         this.calViewButtons.set(view, item); views.appendChild(item);
       }
-      const select = this.calViewSelect = h("select", "cx-cal-view-select"); select.setAttribute("aria-label", labels.calendarViews);
+      const select = this.calViewSelect = h("select", "cx-select cx-cal-view-select"); select.setAttribute("aria-label", labels.calendarViews);
       for (const view of this.cal.views) { const option = h("option"); option.value = view; setText(option, this.calViewName(view)); select.appendChild(option); }
       select.addEventListener("change", () => this.setCalendarView(select.value));
-      const zoom = this.calZoomSelect = h("select", "cx-cal-zoom"); zoom.setAttribute("aria-label", labels.calendarZoom); zoom.title = labels.calendarZoom;
+      const zoom = this.calZoomSelect = h("select", "cx-select cx-cal-zoom"); zoom.setAttribute("aria-label", labels.calendarZoom); zoom.title = labels.calendarZoom;
       for (const level of this.cal.zooms) { const option = h("option"); option.value = level; setText(option, labels["calendarZoom" + level[0].toUpperCase() + level.slice(1)]); zoom.appendChild(option); }
       zoom.addEventListener("change", () => this.setCalendarZoom(zoom.value));
       if (this.cal.views.length < 2) { views.hidden = true; select.hidden = true; }

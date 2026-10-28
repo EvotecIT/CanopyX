@@ -38,7 +38,7 @@
       }
       const children = [list];
       if (rows.length > limit) {
-        const more = h("button", "cx-mx-button"); more.type = "button"; setText(more, labels.matrixShowMore);
+        const more = h("button", "cx-btn cx-mx-button"); more.type = "button"; setText(more, labels.matrixShowMore);
         more.addEventListener("click", () => { this.cardLimit += 100; this.renderCards(); }, { signal: this.lifetime.signal });
         children.push(more);
       }

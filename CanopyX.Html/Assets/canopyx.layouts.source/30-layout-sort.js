@@ -24,7 +24,8 @@
       }
       if (view.tools.columnMenus !== false && typeof view.openColumnMenu === "function") {
         const menu = h("button", "cx-button icon cx-sort-menu");
-        menu.type = "button"; menu.setAttribute("aria-label", fill(view.labels.gridColumnMenu, { column: column.title })); menu.setAttribute("aria-haspopup", "menu");
+        menu.type = "button"; menu.dataset.cxSortColumnMenu = column.id; menu.setAttribute("aria-expanded", "false");
+        view.adoptColumnAnchor(column.id, "data-cx-sort-column-menu", menu); menu.setAttribute("aria-label", fill(view.labels.gridColumnMenu, { column: column.title })); menu.setAttribute("aria-haspopup", "menu");
         menu.appendChild(document.createTextNode("\u22ef"));
         menu.addEventListener("click", () => view.openColumnMenu(column.id, menu));
         row.appendChild(menu);

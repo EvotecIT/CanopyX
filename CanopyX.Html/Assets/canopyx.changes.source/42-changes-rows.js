@@ -11,7 +11,7 @@
       toggle.type = "button"; toggle.setAttribute("aria-expanded", String(open)); toggle.setAttribute("aria-label", fill(labels.changeDetails, { name: doc.groupByFolder ? name : item.path }));
       toggle.appendChild(changeIcon("chevron"));
       const badge = h("span");
-      applyTone(badge, "cx-chg-badge", toneOf(CHANGE_TONES[item.kind])); setText(badge, item.kindLabel || labels["change" + item.kind[0].toUpperCase() + item.kind.slice(1)]);
+      applyTone(badge, "cx-pill cx-chg-badge", toneOf(CHANGE_TONES[item.kind])); setText(badge, item.kindLabel || labels["change" + item.kind[0].toUpperCase() + item.kind.slice(1)]);
       const main = h("div", "cx-chg-main"), title = h("div", "cx-chg-title"), nameText = h("span", "cx-chg-name");
       setText(nameText, doc.groupByFolder ? name : item.path); nameText.title = item.path; title.appendChild(nameText);
       if (item.previousPath) { const from = h("span", "cx-chg-from"); setText(from, fill(labels.changeFrom, { path: item.previousPath })); title.appendChild(from); }

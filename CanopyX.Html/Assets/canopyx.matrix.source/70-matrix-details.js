@@ -77,7 +77,7 @@
     },
     buildDialog() {
       const dialog = h("dialog", "cx-mx-dialog"), head = h("div", "cx-mx-dialoghead"), title = h("h2", "cx-mx-dialogtitle"), state = h("span", "cx-mx-swatch"), list = h("dl", "cx-mx-details");
-      const close = h("button", "cx-mx-button"), signal = this.lifetime.signal;
+      const close = h("button", "cx-btn cx-mx-button"), signal = this.lifetime.signal;
       title.id = (this.host.id || "cx-matrix") + "-" + Math.random().toString(36).slice(2) + "-title";
       dialog.setAttribute("aria-labelledby", title.id); close.type = "button";
       close.addEventListener("click", () => dialog.close ? dialog.close() : dialog.removeAttribute("open"), { signal });

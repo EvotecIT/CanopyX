@@ -5,14 +5,14 @@
   // before the first query, so the first paint is the calendar; until it is in, the calendar methods load it first.
   const GRID_CALENDAR = definePart(DataGrid, "calendar", "calendar", () => ({ DataGrid, h, setText, fill, plural, gridButton, gridIcon, gridFreeze, cellText,
     cellValue, isCellObject, gridQuery, gridQueryRows, gridResultShape, gridPresenterTone, validateGridRows, validateGridPage, validateGridCursorPage, validStructuralCount, checkDocument,
-    numberFormat, loadPart, HostCellContext, disposeHostSlot, PROTOCOL, toneVariable }));
+    numberFormat, loadPart, HostCellContext, disposeHostSlot, PROTOCOL, toneVariable, bindContextMenu }));
   definePart(DataGrid, "timeline", "resource timeline", () => ({ DataGrid, TreeGrid, h, setText, fill, numberFormat, toneVariable }));
   // What a basic calendar does not use loads only for definitions that need it: recurrence, editing and iCalendar.
   definePart(DataGrid, "calendar-recurrence", "calendar recurrence", () => ({ DataGrid }));
   definePart(DataGrid, "calendar-edit", "calendar editing", () => ({ DataGrid, h, setText, fill, cellValue, GRID_DRAG }));
   definePart(DataGrid, "calendar-ics", "iCalendar", () => ({ DataGrid, h, fill, cellText }));
   const GRID_CALENDAR_API = ["getCalendar", "setCalendarView", "setCalendarDate", "setCalendarZoom", "calendarStep", "calendarToday", "getCalendarEvents",
-    "exportCalendar", "openCalendarEvent", "clearCalendarSelection", "setCalendarSource"];
+    "exportCalendar", "openCalendarEvent", "editCalendarOccurrence", "clearCalendarSelection", "setCalendarSource"];
   for (const name of GRID_CALENDAR_API) DataGrid.prototype[name] = function (...args) { return this.loadCalendar().then(() => this[name](...args)); };
   DataGrid.prototype.loadCalendar = function () {
     return this.calLoad ||= loadPart(GRID_CALENDAR).then(() => this.destroyed || this.calParts()).then(() => this.destroyed || this.startCalendar()).catch(error => { this.calLoad = null; this.emit("error", { error }); throw error; });
@@ -32,8 +32,8 @@
     standard: { toolbar: ["search", "filters", "export"], details: "popover", print: true, views: ["month", "week", "day", "days", "agenda", "year"] },
     scheduler: { toolbar: ["search", "filters", "views", "export"], details: "drawer", print: true, editable: true, create: true, views: ["month", "week", "day", "agenda"] }
   };
-  const CAL_FIELDS = ["allDay", "description", "tone", "resource", "recurrence", "exceptions", "source"];
-  const CAL_TITLES = { allDay: "All day", description: "Description", tone: "Tone", resource: "Resource", recurrence: "Repeats", exceptions: "Exceptions", source: "Source" };
+  const CAL_FIELDS = ["allDay", "description", "tone", "resource", "resourceIds", "recurrence", "exceptions", "series", "recurrenceId", "source"];
+  const CAL_TITLES = { allDay: "All day", description: "Description", tone: "Tone", resource: "Resource", resourceIds: "Resources", series: "Series", recurrenceId: "Original start", recurrence: "Repeats", exceptions: "Exceptions", source: "Source" };
   const CAL_OWN = new Set(["events", "preset", "id", "label", "views", "view", "date", "timeZone", "firstDay", "toolbar", "details", "editable", "create", "drop",
     "resources", "timeline", "live", "facets", "drawer", "export", "print", "sources", "calendar", "links"]);
   const calPad = (value, size = 2) => String(value).padStart(size, "0");
@@ -67,18 +67,19 @@
       const cells = { title: event.title, start: calInstantText(event.start, "start", allDay) };
       if (event.end != null) cells.end = calInstantText(event.end, "end", allDay);
       if (allDay) { cells.allDay = true; used.add("allDay"); }
-      for (const field of CAL_FIELDS) if (field !== "allDay" && event[field] != null) { cells[field] = String(event[field]); used.add(field); }
+      for (const field of CAL_FIELDS) if (field !== "allDay" && event[field] != null) { cells[field] = field === "resourceIds" ? JSON.stringify(event[field]) : field === "recurrenceId" ? calInstantText(event[field], field, false) : String(event[field]); used.add(field); }
       return { id, cells };
     });
     if (options.resources) used.add("resource");
+    if (used.has("recurrence")) for (const field of ["series", "recurrenceId", "exceptions"]) used.add(field);
     if (pick("sources")) used.add("source");
     // Creating or dropping all-day events needs the all-day column, though no event uses it yet.
     if (drop || create && !(typeof create === "object" && create.allDay === false)) used.add("allDay");
     const writable = editable || !!create || drop;
     const columns = [{ id: "title", title: "Title", kind: "text", rowHeader: true, sortable: true, editable: writable },
       { id: "start", title: "Start", kind: "datetime", sortable: true, editable: writable }, { id: "end", title: "End", kind: "datetime", sortable: true, editable: writable },
-      ...CAL_FIELDS.filter(field => used.has(field)).map(field => ({ id: field, title: CAL_TITLES[field], kind: "text", hidden: field !== "description",
-        editable: writable && (field === "resource" || field === "allDay" || field === "recurrence" || field === "exceptions") }))];
+      ...CAL_FIELDS.filter(field => used.has(field)).map(field => ({ id: field, title: CAL_TITLES[field], kind: field === "recurrenceId" ? "datetime" : "text", hidden: field !== "description",
+        editable: writable && (field === "resource" || field === "resourceIds" || field === "series" || field === "recurrenceId" || field === "allDay" || field === "recurrence" || field === "exceptions") }))];
     // export: true adds the Export control, false takes it away, whatever the preset's toolbar.
     let toolbar = pick("toolbar");
     if (options.export === true && toolbar !== true) toolbar = toolbar === false ? ["export"] : toolbar.includes("export") ? toolbar : [...toolbar, "export"];

@@ -34,7 +34,7 @@ public sealed class CanopyHtmlPart {
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent"
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -151,6 +151,7 @@ public sealed class CanopyHtmlPart {
         var fields = steps.SelectMany(step => step.Fields.Concat(step.Sections.Where(section => section != null).SelectMany(section => section.Fields))).Where(field => field != null);
         var review = steps.LastOrDefault(step => step.Kind == CanopyFlowStepKind.Review);
         return feature switch {
+            "flowFacts" => steps.Any(step => step.Facts.Count > 0),
             "flowChecks" => steps.Any(step => step.Checks.Count > 0),
             "flowHostOptions" => fields.Any(field => field.OptionsSource == CanopyFlowOptionsSource.Host || field.DependsOnIds.Count > 0) || steps.Any(step => step.Sections.Any(section => section != null && section.IsFromHost)),
             "flowPick" => steps.Any(step => step.Picker != null),
@@ -184,6 +185,7 @@ public sealed class CanopyHtmlPart {
         return feature switch {
             "gridOptions" => view.Footers.Count > 0 || view.PreSort.Count > 0 || view.ColumnDefaults.Count > 0 || view.Columns.Any(column => column.OrderData.Count > 0 || column.OrderSequence.Count > 0 || column.SortComparator != null) || view.Query?.Filters.Any(filter => filter.CustomOperator != null) == true || HasNamedFilter(view.Query?.FilterGroup),
             "presenters" => view.Columns.Concat(view.Record?.Fields ?? Enumerable.Empty<CanopyColumn>()).Any(column => column.Presenter != null || column.Wrap),
+            "columnMenus" => view.Toolbar.ColumnMenus,
             "pager" => view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault,
             "editable" => view.Columns.Any(column => column.Editable) || view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "formatting" => view.FormatRules.Count > 0 || view.Formatting != null,
@@ -199,7 +201,7 @@ public sealed class CanopyHtmlPart {
             "facets" => view.FacetPanel != null,
             "calendar" => view.Calendar != null,
             "calendarResources" => view.Calendar != null && (view.Calendar.Resources != null || view.Calendar.View == CanopyCalendarView.Timeline || view.Calendar.Views.Contains(CanopyCalendarView.Timeline)),
-            "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null)),
+            "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null || source.Url != null)),
             "calendarEditing" => view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "calendarIcs" => view.Calendar != null && UsesCalendarIcs(view.Calendar),
             _ => false
@@ -216,6 +218,7 @@ public sealed class CanopyHtmlPart {
 
     /// <summary>Whether a tree uses a view feature: search highlighting, layout modes or the record panel.</summary>
     private static bool Uses(CanopyTreeView view, string feature) => feature switch {
+        "contextActions" => view.ContextActions.Count > 0 || view.DragDrop || view.Columns.Any(column => column.Editable),
         "searchHighlight" => view.SearchHighlight != null,
         "layout" => view.Layout != null,
         "record" => UsesRecordPanel(view),

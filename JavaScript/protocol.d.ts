@@ -264,13 +264,18 @@ export type LabelName =
   /** The record panel (docs/record-panel.md). */
   | "recordBack" | "recordBackTo" | "recordTrail" | "recordShowing" | "recordTabs" | "recordSections" | "recordOtherFields" | "recordShowEmpty" | "recordHideEmpty" | "recordActions" | "recordCopyValues" | "recordCopyJson" | "recordCopyLink" | "recordCopied" | "recordPrint" | "recordExportCsv" | "recordExportJson" | "recordOpenAll" | "recordLoadMore" | "recordCount" | "recordItems" | "recordMore" | "recordShowAll" | "recordRetry" | "recordLoadFailed" | "recordUnavailable" | "recordField" | "recordValue" | "recordSection" | "recordBefore" | "recordAfter" | "recordAdded" | "recordRemoved" | "recordChanged"
   /** The calendar and resource timeline (the calendar and timeline parts of flat grids). */
-  | "calendarToday" | "calendarPrevious" | "calendarNext" | "calendarViews" | "calendarMonth" | "calendarWeek" | "calendarDay" | "calendarDays"
+  | "calendarEditOccurrence" | "calendarRemoveOccurrence" | "calendarOccurrenceScope" | "calendarSharedResources" | "calendarResourceWindow" | "calendarToday" | "calendarPrevious" | "calendarNext" | "calendarViews" | "calendarMonth" | "calendarWeek" | "calendarDay" | "calendarDays"
   | "calendarAgenda" | "calendarYear" | "calendarTimeline" | "calendarGoTo" | "calendarAllDay" | "calendarMore" | "calendarMoreLabel" | "calendarDayEvents"
   | "calendarNoEvents" | "calendarEvents" | "calendarShowing" | "calendarRepeats" | "calendarTruncated" | "calendarLoading" | "calendarLoadError" | "calendarNow"
   | "calendarZoom" | "calendarZoomHour" | "calendarZoomDay" | "calendarZoomWeek" | "calendarZoomMonth" | "calendarZoomQuarter" | "calendarResources" | "calendarCapacity"
   | "calendarCapacityAt" | "calendarBusy" | "calendarOverlaps" | "calendarUnavailable" | "calendarOutsideHours" | "calendarConflict" | "calendarNotAllowed" | "calendarMoved"
   | "calendarResized" | "calendarSeriesMoved" | "calendarSeriesTime" | "calendarMoveHelp" | "calendarEdit" | "calendarSaveFailed" | "calendarExport" | "calendarTimeRange" | "calendarSelected"
-  | "calendarLane" | "calendarHighlighted";
+  | "calendarLane" | "calendarHighlighted"
+  /** Standalone UI primitives; their English defaults load with the optional UI parts. */
+  | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
+  | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
+  | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
+  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

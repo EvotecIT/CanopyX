@@ -18,6 +18,8 @@
       const labels = this.calLabels, items = [];
       if (context.kind === "event") {
         items.push({ id: "open", label: labels.calendarOpen, run: () => this.calOpenEvent(context.raw, true, context.target) });
+        if (context.raw.recurring && this.cal.editable && this.cal.series?.editable && this.cal.recurrenceId?.editable && this.calCanEdit?.(context.raw, false))
+          items.push({ id: "occurrence", label: labels.calendarEditOccurrence, run: () => this.editCalendarOccurrence(context.raw.id) });
         if (this.calStartMove && this.cal.editable && (this.calCanEdit(context.raw, false) || this.calCanEdit(context.raw, true))) items.push({ id: "move", label: labels.calendarMove, run: () => this.calStartMove(context.target) });
       } else if (this.cal.create && this.calCreateFromClick) {
         items.push({ id: "new", label: labels.calendarNewHere, run: () => this.calCreateFromClick(context.target) });
@@ -36,84 +38,32 @@
         return item && typeof item.label === "string" && item.label.trim() && typeof item.run === "function" ? { id: item.id ?? null, label: item.label.slice(0, 200), run: () => item.run(Object.freeze(own)), disabled: item.disabled === true } : null;
       }).filter(Boolean);
     },
-    /** Opens the menu for a target at a point (a pointer) or beside it (the keyboard). True when a menu opened. */
-    calOpenMenu(target, x, y) {
-      if (!this.cal.menu) return false;
-      const context = this.calMenuContext(target, x);
-      if (context?.target.classList.contains("cx-cal-invalid")) return false;
-      if (!context) return false;
-      const items = this.calMenuItems(context);
-      if (!items.length) return false;
-      this.calCloseMenu(false); this.calHideHover();
-      const menu = this.calMenu = h("div", "cx-cal-menu"), name = context.kind === "event" ? context.raw.title : context.kind === "resource" ? this.calResourceName?.(context.resource) ?? "" : this.calFmt.longDay(calParseDay(context.day));
-      menu.setAttribute("role", "menu"); menu.setAttribute("aria-label", fill(this.calLabels.calendarActions, { title: name }));
-      const buttons = items.map(item => {
-        const button = h("button", "cx-cal-menu-item"); button.type = "button"; button.setAttribute("role", "menuitem"); button.tabIndex = -1; setText(button, item.label);
-        if (item.disabled) button.setAttribute("aria-disabled", "true");
-        // Focus goes back to where the menu opened first; an item that moves focus (Move, a host's dialog) takes it from there.
-        button.addEventListener("click", () => { if (item.disabled) return; this.calCloseMenu(true); Promise.resolve().then(() => item.run()).catch(error => this.emit("error", { error })); });
-        menu.appendChild(button); return button;
-      });
-      menu._calReturn = target;
-      // The context-menu key raises contextmenu where focus went: on the menu, which keeps the browser's own menu away.
-      menu.addEventListener("contextmenu", event => event.preventDefault());
-      this.calRoot.appendChild(menu);
-      const frame = this.calRoot.getBoundingClientRect(), box = target.getBoundingClientRect(), width = menu.offsetWidth, height = menu.offsetHeight;
-      const left = x != null ? x - frame.left : box.left - frame.left + Math.min(box.width, 24), top = y != null ? y - frame.top : box.top - frame.top + Math.min(box.height, 24);
-      menu.style.left = Math.max(4, Math.min(left, frame.width - width - 4)) + "px"; menu.style.top = Math.max(4, Math.min(top, frame.height - height - 4)) + "px";
-      menu.addEventListener("keydown", key => {
-        const at = buttons.indexOf(document.activeElement);
-        if (key.key === "Escape" || key.key === "Tab") { key.preventDefault(); key.stopPropagation(); this.calCloseMenu(true); }
-        else if (key.key === "ArrowDown") { key.preventDefault(); buttons[(at + 1) % buttons.length].focus(); }
-        else if (key.key === "ArrowUp") { key.preventDefault(); buttons[(at + buttons.length - 1) % buttons.length].focus(); }
-        else if (key.key === "Home") { key.preventDefault(); buttons[0].focus(); }
-        else if (key.key === "End") { key.preventDefault(); buttons[buttons.length - 1].focus(); }
-      });
-      this.calMenuOutside = press => { if (!menu.contains(press.target)) this.calCloseMenu(false); };
-      document.addEventListener("pointerdown", this.calMenuOutside, true);
-      buttons[0].focus({ preventScroll: true });
-      return true;
-    },
-    calCloseMenu(restore) {
-      const menu = this.calMenu;
-      if (!menu) return;
-      this.calMenu = null; document.removeEventListener("pointerdown", this.calMenuOutside, true);
-      menu.remove();
-      if (restore && menu._calReturn?.isConnected) menu._calReturn.focus({ preventScroll: true });
-    },
-    /** Pointer and keyboard ways into the menu (core start). A touch long press opens it where the browser does not. */
+    /** Register one shared context binding for events, days, slots and timeline lanes. */
     calMenuStart() {
       if (!this.cal.menu) return;
-      const body = this.calBody, signal = this.lifetime.signal;
-      let press = null;
-      const cancel = () => { if (press) { clearTimeout(press.timer); press = null; this.calPressTimer = 0; } };
-      body.addEventListener("contextmenu", event => {
-        cancel();
-        // The context-menu key raises this event after its keydown opened the menu.
-        if (this.calMenu && Date.now() - (this.calMenuOpenedAt || 0) < 800) { event.preventDefault(); return; }
-        if (event.shiftKey || this.calDrag?.started || this.calMoving) return;
-        const keyboard = event.button !== 2 && event.clientX === 0 && event.clientY === 0;
-        if (this.calOpenMenu(event.target, keyboard ? null : event.clientX, keyboard ? null : event.clientY)) { event.preventDefault(); this.calMenuOpenedAt = Date.now(); }
-      }, { signal });
-      body.addEventListener("pointerdown", event => {
-        cancel();
-        // A long press swallows the click it ends with; the next press starts afresh.
-        if (this.calPressSuppress) { this.calPressSuppress = false; this.calSuppressClick = false; }
-        if (event.pointerType !== "touch") return;
-        press = { x: event.clientX, y: event.clientY, target: event.target, timer: setTimeout(() => {
-          const at = press; press = null;
-          if (at && !this.calDrag?.started && Date.now() - (this.calMenuOpenedAt || 0) > 800 && this.calOpenMenu(at.target, at.x, at.y)) { this.calMenuOpenedAt = Date.now(); this.calSuppressClick = true; this.calPressSuppress = true; }
-        }, 600) };
-        this.calPressTimer = press.timer;
-      }, { signal, passive: true });
-      body.addEventListener("pointermove", event => { if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 8) cancel(); }, { signal, passive: true });
-      for (const type of ["pointerup", "pointercancel", "scroll"]) body.addEventListener(type, cancel, { signal, passive: true, capture: type === "scroll" });
-    },
-    /** Shift+F10 or the context-menu key on an event, slot, day or timeline cell (from calKey). */
-    calMenuKey(event) {
-      if (!this.cal.menu || !(event.key === "ContextMenu" || event.key === "F10" && event.shiftKey)) return false;
-      if (!this.calOpenMenu(event.target)) return false;
-      event.preventDefault(); this.calMenuOpenedAt = Date.now();
-      return true;
+      this.calMenuBinding = bindContextMenu(this.calBody, (event, element) => {
+        const context = this.calMenuContext(element, event?.clientX);
+        return context ? this.calMenuItems(context) : [];
+      }, {
+        host: this.host, closeOnFocusOutside: true,
+        match: event => this.calMenuContext(event.target, event.type === "keydown" ? null : event.clientX)?.target,
+        beforeOpen: (_event, element) => {
+          if (this.destroyed || !this.cal.menu || this.calDrag?.started || this.calMoving || element.classList.contains("cx-cal-invalid")) return false;
+          this.calHideHover();
+        },
+        label: (event, element) => {
+          const context = this.calMenuContext(element, event?.clientX);
+          const name = context.kind === "event" ? context.raw.title : context.kind === "resource" ?
+            this.calResourceName?.(context.resource) ?? "" : this.calFmt.longDay(calParseDay(context.day));
+          return fill(this.calLabels.calendarActions, { title: name });
+        },
+        onOpen: ({ menu }) => {
+          this.calMenu = menu;
+          document.dispatchEvent(new CustomEvent("canopyx:closemenus", { detail: { source: menu } }));
+        },
+        onClose: ({ menu }) => { if (this.calMenu === menu) this.calMenu = null; },
+        onSelect: item => { Promise.resolve().then(() => item.run()).catch(error => this.emit("error", { error })); }
+      });
+      this.calMenuBinding.ready.catch(error => { if (!this.destroyed) this.emit("error", { error }); });
     }
   });

@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import path from 'node:path';
-import {viewPage} from './support.mjs';
+import {viewPage,settleOverlayMotion} from './support.mjs';
 const definition={protocol:'canopyx/2',type:'grid',id:'states',label:'Services',noun:'services',emptyReason:'The inventory has not been connected.',pageSize:10,selection:'multiple',search:true,statusBar:true,source:{kind:'inline'},columns:[
  {id:'name',title:'Service',kind:'text',width:240,sortable:true,presenter:{kind:'identifier',mono:true},section:'Identity'},
  {id:'state',title:'State',kind:'text',width:140,presenter:{kind:'state',tones:{Healthy:'success',Failed:'danger'}},section:'Health'},
@@ -43,7 +43,7 @@ test('paged footer offers inline All and selected aggregates describe full recor
 for(const theme of ['light','dark'])test('record drawer uses all presenters, navigation, focus return and '+theme+' contrast',async({page})=>{
  await open(page);await api(page,api=>api.ready);await page.locator('[data-canopyx-host]').evaluate((host,theme)=>host.setAttribute('data-cx-theme',theme),theme);
  const row=page.locator('.cx-row[data-cx-id="r0"]');await row.focus();await row.press('Enter');const drawer=page.locator('.cx-drawer');await expect(drawer).toBeVisible();await expect(drawer.getByRole('button',{name:'Close',exact:true})).toBeVisible();await expect(drawer.getByText('Complete record 0')).toBeVisible();await expect(drawer.locator('.p-state')).toHaveText('Failed');
- await page.keyboard.press('ArrowDown');await expect(drawer.getByRole('heading',{name:'Service 1',exact:true})).toBeVisible();expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);await capture(page,'drawer-'+theme);
+ await page.keyboard.press('ArrowDown');await expect(drawer.getByRole('heading',{name:'Service 1',exact:true})).toBeVisible();await settleOverlayMotion(drawer);expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);await capture(page,'drawer-'+theme);
  await api(page,api=>api.openDetails('r0'));await expect(drawer).toHaveCount(1);await expect(drawer.getByRole('heading',{name:'Service 0',exact:true})).toBeFocused();
  await page.keyboard.press('Escape');await expect(drawer).toHaveCount(0);await expect(row).toBeFocused();
 });

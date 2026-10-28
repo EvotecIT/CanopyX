@@ -9,15 +9,16 @@
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (this.liveOpts) return;
       this.liveOpts = liveOptions(this.view, this.opts);
-      this.liveQueue = new Map(); this.liveWaiters = []; this.liveScheduled = new Set();
+      this.liveQueue = new Map(); this.liveWaiters = []; this.liveScheduled = new Set(); this.liveProjection = null;
       if (this.liveOpts.flashMs) this.host.style.setProperty("--cx-live-flash-ms", this.liveOpts.flashMs + "ms");
       // A new accepted query (another sort, search or filters, a reload) starts from a freshly sorted order.
       this.host.addEventListener("canopyx:query", () => {
         if (this.liveOrder && this.liveOrder.shape !== gridResultShape(this.acceptedQuery)) this.liveOrder = null;
-        this.livePending = null; this.liveMoved = false; this.liveSyncPrompt();
+        this.livePending = null; this.liveMoved = false; this.liveProjection = null; this.liveSyncPrompt();
       }, { signal: this.lifetime.signal });
       this.lifetime.signal.addEventListener("abort", () => {
         clearTimeout(this.liveTimer); clearTimeout(this.liveFlashTimer); clearTimeout(this.liveAnnounceTimer);
+        this.liveProjection = null;
         this.host.style.removeProperty("--cx-live-flash-ms");
         for (const waiter of this.liveWaiters.splice(0)) waiter.reject(new DOMException("Grid was destroyed.", "AbortError"));
       }, { once: true });
@@ -25,6 +26,7 @@
     },
     liveStatus() {
       const queued = new Set(this.liveQueue?.keys());
+      for (const id of this.liveProjection?.ids || []) queued.add(id);
       for (const { change } of this.liveScheduled || []) if (change) {
         for (const row of [...change.add, ...change.update]) queued.add(row.id);
         change.remove.forEach(id => queued.add(id));
@@ -84,10 +86,10 @@
     async liveFlush() {
       clearTimeout(this.liveTimer); this.liveTimer = 0;
       // The queue is taken once the result is settled, so changes made meanwhile join this batch.
-      const queue = this.liveQueue, waiters = this.liveWaiters.splice(0), source = this.liveSource || "api";
+      const queue = this.liveQueue, waiters = this.liveWaiters.splice(0), source = this.liveSource || this.liveProjection?.source || "api";
       this.liveQueue = new Map(); this.liveSource = null;
       try {
-        const result = queue.size ? await this.liveApply(queue, source) : liveResult();
+        const result = queue.size || this.liveProjection ? await this.liveApply(queue, source) : liveResult();
         waiters.forEach(waiter => waiter.resolve(result));
         return result;
       } catch (error) { waiters.forEach(waiter => waiter.reject(error)); throw error; }
@@ -118,15 +120,31 @@
       const order = this.liveOrder;
       this.liveSwap({ revision: this.snapshot.revision, total: this.liveRows().size, matched: order.ids.length }, this.liveInlinePages(order), id => order.at.get(id) ?? -1, changed, removed, shifted);
     },
-    async liveApply(queue, source) {
+    async liveApply(queue, source, ownerSignal) {
       let outcome;
       if (this.liveInline()) {
-        const projected = this.liveProjected(), { result, changed } = this.liveApplyRows(queue, !projected);
+        const projected = this.liveProjected(), before = this.view.rows;
+        let { result, changed } = this.liveApplyRows(queue, !projected);
         if (changed.size || result.removed.length) {
           if (!this.opts.source) this.source = inlineGridSource(this.view);
           this.liveOrderSource = this.source;
-          if (projected) await this.liveRequery(changed, result.removed);
+          if (projected) {
+            this.liveProjection ||= { rows: new Map(before.map(row => [row.id, row])), source };
+            if (this.liveProjection.source !== source) this.liveProjection.source = "api";
+          }
           else this.liveSwapInline(changed, result.removed, result.added.length > 0 || result.removed.length > 0 || !this.liveOpts.stableOrder);
+        }
+        if (projected && this.liveProjection) {
+          // Keep one accepted baseline until a query consumes the new owned rows. Never rewind an in-flight successor.
+          // Even an identical next load must retry projection, including its record repaint and change notification.
+          const pending = this.liveProjection, delta = liveDiff(this.view.rows, pending.rows);
+          source = pending.source;
+          changed = new Map(delta.add.map(row => [row.id, "*"]));
+          result = { ...result, added: delta.add.filter(row => !pending.rows.has(row.id)).map(row => row.id),
+            updated: delta.add.filter(row => pending.rows.has(row.id)).map(row => row.id), removed: delta.remove };
+          pending.ids = new Set([...result.added, ...result.updated, ...result.removed]);
+          await this.liveRequery(changed, result.removed, ownerSignal);
+          if (this.liveProjection === pending) this.liveProjection = null;
         }
         outcome = { ...result, orderChanged: !!this.liveOrder?.dirty };
       } else {
@@ -150,25 +168,37 @@
     },
     /** Asks the source again: a hosted grid's revision-aware refresh, or the live load function of an inline grid. */
     refreshRows() { return this.liveRefresh("refresh"); },
-    liveRefresh(source) {
+    liveRefresh(source, pollSignal) {
       return this.liveRun(async () => {
         if (this.liveInline()) {
-          if (!this.liveOpts.load) return liveResult();
+          if (!this.liveOpts.load) return this.liveProjection ? this.liveFlush() : liveResult();
           await this.liveFlush().catch(() => {});
-          let answer = await this.runGridHook(signal => this.liveOpts.load({ signal, query: this.acceptedQuery, rows: this.view.rows.length }), this.dataLifetime.signal);
-          if (answer == null) return liveResult();
-          if (Array.isArray(answer)) { validateGridRows(answer, this.view.columns); answer = liveCopy(answer); }
-          const change = liveTransaction(this, Array.isArray(answer) ? liveDiff(answer, this.liveRows()) : answer), queue = new Map();
-          // Updates asked for while loading stay in the next batch, after this answer.
-          liveEnqueue(queue, change);
-          return this.liveApply(queue, source);
         }
-        if (this.view.source.kind === "inline") return liveResult();
-        const outcome = await this.liveRefreshHost(false);
-        if (!outcome) return liveResult();
-        const changed = [...outcome.changed].filter(([, columns]) => columns !== "*").map(([id]) => id);
-        this.liveSpeak();
-        return this.liveReport({ updated: changed, orderChanged: outcome.orderChanged, newData: outcome.newData, revision: outcome.revision, refreshed: true }, source);
+        const dataSignal = this.dataLifetime.signal, controller = new AbortController();
+        const signals = [dataSignal, pollSignal].filter(Boolean), abort = () => controller.abort();
+        for (const signal of signals) { signal.addEventListener("abort", abort, { once: true }); if (signal.aborted) abort(); }
+        try {
+          if (this.liveInline()) {
+            let answer = await this.runGridHook(signal => this.liveOpts.load({ signal, query: this.acceptedQuery, rows: this.view.rows.length }), controller.signal);
+            if (controller.signal.aborted) throw new DOMException("Grid poll cancelled.", "AbortError");
+            if (answer == null) return liveResult();
+            if (Array.isArray(answer)) { validateGridRows(answer, this.view.columns); answer = liveCopy(answer); }
+            const change = liveTransaction(this, Array.isArray(answer) ? liveDiff(answer, this.liveRows()) : answer), queue = new Map();
+            // Updates asked for while loading stay in the next batch, after this answer.
+            liveEnqueue(queue, change);
+            return await this.liveApply(queue, source, controller.signal);
+          }
+          if (this.view.source.kind === "inline") return liveResult();
+          const outcome = await this.liveRefreshHost(false, controller.signal);
+          if (!outcome) return liveResult();
+          const changed = [...outcome.changed].filter(([, columns]) => columns !== "*").map(([id]) => id);
+          this.liveSpeak();
+          return this.liveReport({ updated: changed, orderChanged: outcome.orderChanged, newData: outcome.newData, revision: outcome.revision, refreshed: true }, source);
+        } catch (error) {
+          // A host may use AbortError for its own timeout. A still-active poll must report that failure.
+          if (source === "poll" && error?.name === "AbortError" && !controller.signal.aborted) throw new Error(error.message, { cause: error });
+          throw error;
+        } finally { for (const signal of signals) signal.removeEventListener("abort", abort); }
       });
     },
     /** Shows the sorted order: kept rows move to their places, a hosted grid shows its newest result, a cursor grid its first page. */
@@ -203,26 +233,37 @@
       const interval = options.intervalMs ?? this.liveOpts.pollMs, hidden = options.pauseWhenHidden ?? this.liveOpts.pauseWhenHidden;
       if (!Number.isInteger(interval) || interval < 250 || interval > 86400000 || typeof hidden !== "boolean" || options.load !== undefined && typeof options.load !== "function")
         throw new Error("CanopyX: poll needs intervalMs from 250 to 86400000.");
+      if (options.onRefresh !== undefined && typeof options.onRefresh !== "function") throw new Error("CanopyX: poll onRefresh must be a function.");
       if (options.load) this.liveOpts.load = options.load;
       if (this.liveInline() && !this.liveOpts.load) throw new Error("CanopyX: an inline grid polls a load function (live.load or poll({ load })).");
       this.livePoller?.stop();
       const lifetime = new AbortController();
-      let timer = 0, running = null, paused = false, due = false;
-      const schedule = () => { clearTimeout(timer); timer = paused || lifetime.signal.aborted ? 0 : setTimeout(tick, interval); };
+      let timer = 0, running = null, cycle = null, paused = false, due = false;
+      const schedule = () => { clearTimeout(timer); timer = paused || lifetime.signal.aborted || hidden && document.hidden ? 0 : setTimeout(tick, interval); };
       const tick = now => {
         clearTimeout(timer); timer = 0;
         if (lifetime.signal.aborted || paused && !now) return Promise.resolve();
         if (hidden && document.hidden && !now) { due = true; return Promise.resolve(); }
         if (running) return running;
-        return running = this.liveRefresh("poll").then(() => undefined, error => { if (error?.name !== "AbortError") this.emit("error", { error }); })
-          .finally(() => { running = null; schedule(); });
+        due = false; cycle = new AbortController();
+        return running = this.liveRefresh("poll", cycle.signal).then(result => {
+          if (!lifetime.signal.aborted && !cycle.signal.aborted && options.onRefresh) {
+            try { options.onRefresh(result); } catch (error) { this.emit("error", { error }); }
+          }
+        }, error => { if (error?.name !== "AbortError") this.emit("error", { error }); })
+          .finally(() => { running = null; cycle = null; if (due && !paused && !lifetime.signal.aborted && !(hidden && document.hidden)) tick(); else schedule(); });
       };
-      const stop = () => { lifetime.abort(); clearTimeout(timer); if (this.livePoller === poller) this.livePoller = null; };
-      document.addEventListener("visibilitychange", () => { if (!document.hidden && due && !paused) { due = false; tick(); } }, { signal: lifetime.signal });
+      const stop = () => { lifetime.abort(); cycle?.abort(); clearTimeout(timer); if (this.livePoller === poller) this.livePoller = null; };
+      document.addEventListener("visibilitychange", () => {
+        if (!hidden) return;
+        due = true;
+        if (document.hidden) { clearTimeout(timer); cycle?.abort(); }
+        else if (!paused) tick();
+      }, { signal: lifetime.signal });
       this.lifetime.signal.addEventListener("abort", stop, { once: true, signal: lifetime.signal });
       const poller = Object.freeze({
-        pause() { paused = true; clearTimeout(timer); timer = 0; },
-        resume() { if (!paused || lifetime.signal.aborted) return; paused = false; due = false; tick(); },
+        pause() { paused = true; cycle?.abort(); clearTimeout(timer); timer = 0; },
+        resume() { if (!paused || lifetime.signal.aborted) return; paused = false; due = true; tick(); },
         stop, refresh: () => tick(true),
         get paused() { return paused; }, get active() { return !lifetime.signal.aborted && !paused; }
       });

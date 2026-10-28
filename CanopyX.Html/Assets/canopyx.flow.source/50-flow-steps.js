@@ -110,8 +110,8 @@
         }
         const summary = this.sections.get(step.id)?._cxSummary;
         if (summary) summary.hidden = true;
-        this.completed.add(step.id);
-      } else this.completed.add(step.id);
+      }
+      this.completed.add(step.id);
       const review = this.reviewStep();
       // A task returns to the hub of its task list, unless it was opened from the review page.
       const target = this.returnToReview && review && this.stepVisible(review) ? review : this.hub || steps[steps.indexOf(step) + 1];

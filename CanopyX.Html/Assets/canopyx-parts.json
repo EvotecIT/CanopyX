@@ -1,9 +1,103 @@
 {
   "parts": [
     {
+      "name": "ui-overlays",
+      "label": "UI overlays",
+      "version": "3880165ccfb53427",
+      "script": "canopyx-ui-overlays.js",
+      "style": "canopyx-ui-overlays.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": []
+    },
+    {
+      "name": "ui-menu",
+      "label": "UI menu",
+      "version": "c86ee2a16b5a5a46",
+      "script": "canopyx-ui-menu.js",
+      "style": "canopyx-ui-menu.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "features": [
+        "contextActions",
+        "columnMenus"
+      ],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
+      "name": "ui-picker",
+      "label": "UI picker",
+      "version": "02ff3779dd1c1ef4",
+      "script": "canopyx-ui-picker.js",
+      "style": "canopyx-ui-picker.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [],
+      "requires": [
+        "ui-menu"
+      ]
+    },
+    {
+      "name": "ui-navigation",
+      "label": "UI navigation",
+      "version": "e7815ee277df3a57",
+      "script": "canopyx-ui-navigation.js",
+      "style": "canopyx-ui-navigation.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [],
+      "requires": [
+        "ui-picker"
+      ]
+    },
+    {
+      "name": "ui-tabs",
+      "label": "UI tabs",
+      "version": "96f562187c7e0732",
+      "script": "canopyx-ui-tabs.js",
+      "style": "canopyx-ui-tabs.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [],
+      "requires": [
+        "ui-navigation"
+      ]
+    },
+    {
+      "name": "ui-stepper",
+      "label": "UI stepper",
+      "version": "89aeb7d73c4b8160",
+      "script": "canopyx-ui-stepper.js",
+      "style": "canopyx-ui-stepper.css",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [],
+      "requires": [
+        "ui-navigation"
+      ]
+    },
+    {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "ee95c5cc39223ef4",
+      "version": "08c894338ee197ea",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -12,6 +106,9 @@
       ],
       "views": [
         "tree"
+      ],
+      "requires": [
+        "ui-overlays"
       ]
     },
     {
@@ -32,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "e0db9c3f94866fa2",
+      "version": "042f3cb3d690a086",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -42,13 +139,14 @@
         "grid"
       ],
       "requires": [
+        "ui-overlays",
         "presenters"
       ]
     },
     {
       "name": "export",
       "label": "export part",
-      "version": "9203882f58fa0155",
+      "version": "1d967e8c2f01a01b",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -57,6 +155,9 @@
       "views": [
         "tree",
         "grid"
+      ],
+      "requires": [
+        "ui-overlays"
       ]
     },
     {
@@ -136,7 +237,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "e7dea789e4893860",
+      "version": "93f8d2eb57cc1770",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -173,7 +274,7 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "version": "3ca22040c60d5689",
+      "version": "1710216916cb32a5",
       "script": "canopyx-flow-checks.js",
       "style": "canopyx-flow-checks.css",
       "runtimes": [
@@ -338,7 +439,7 @@
     {
       "name": "flow-dialog",
       "label": "flow dialogs",
-      "version": "a9b5bce11baa2499",
+      "version": "c3b57a7478b94a93",
       "script": "canopyx-flow-dialog.js",
       "style": "canopyx-flow-dialog.css",
       "runtimes": [
@@ -397,6 +498,25 @@
       ]
     },
     {
+      "name": "flow-facts",
+      "label": "flow facts",
+      "version": "385b5e61ed487e16",
+      "script": "canopyx-flow-facts.js",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowFacts"
+      ],
+      "requires": [
+        "flow"
+      ]
+    },
+    {
       "name": "flow-consent",
       "label": "flow consent",
       "version": "22121778bc0d07c5",
@@ -419,7 +539,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "da5c61ff2cb9ebda",
+      "version": "d579489f471f12e8",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -432,7 +552,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "2810fb06a78b85e3",
+      "version": "3b2551152989cc25",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [
@@ -445,7 +565,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "579a74b205923fd5",
+      "version": "23c058b9f6307983",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -481,7 +601,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "91e39c68baaf1d09",
+      "version": "42086775ae0af70b",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -492,6 +612,9 @@
       ],
       "features": [
         "rangeSelection"
+      ],
+      "requires": [
+        "ui-menu"
       ]
     },
     {
@@ -527,7 +650,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "d3795e4b933d83a8",
+      "version": "32121fa6878954a2",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [
@@ -543,7 +666,7 @@
     {
       "name": "format-editor",
       "label": "formatting rule editor",
-      "version": "b8c229ddfc1f218b",
+      "version": "5398e457a885ef0d",
       "script": "canopyx-format-editor.js",
       "style": "canopyx-format-editor.css",
       "runtimes": [
@@ -592,7 +715,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "eedafc8438ac1b2b",
+      "version": "d96c2721c6968666",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -629,7 +752,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "606fcf6dcd00d420",
+      "version": "5a115e486067eada",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [
@@ -647,7 +770,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "2ffa91f40c9b9b21",
+      "version": "5be91a5b89c84b73",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -663,7 +786,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "42ad4b814f47bd00",
+      "version": "2f2b2434da0bae6a",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -679,7 +802,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "94adeb844689e329",
+      "version": "cecae4ac674b8d8d",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -692,12 +815,15 @@
       ],
       "features": [
         "record"
+      ],
+      "requires": [
+        "ui-menu"
       ]
     },
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "74644d2e5d76f594",
+      "version": "cec16b6240faaff8",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -708,6 +834,9 @@
       ],
       "features": [
         "calendar"
+      ],
+      "requires": [
+        "ui-menu"
       ]
     },
     {
@@ -731,7 +860,7 @@
     {
       "name": "calendar-edit",
       "label": "calendar editing",
-      "version": "bdde26d4b7de2096",
+      "version": "09747e191820d94c",
       "script": "canopyx-calendar-edit.js",
       "runtimes": [
         "grid"
@@ -749,7 +878,7 @@
     {
       "name": "calendar-ics",
       "label": "iCalendar",
-      "version": "feb3ed2cd67d057f",
+      "version": "ac8b2950fccbfb0f",
       "script": "canopyx-calendar-ics.js",
       "runtimes": [
         "grid"
@@ -768,7 +897,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "11d7ecf140c93c25",
+      "version": "22c9e15c108aeaa1",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [

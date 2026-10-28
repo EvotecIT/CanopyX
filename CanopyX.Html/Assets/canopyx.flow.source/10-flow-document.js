@@ -146,17 +146,17 @@
   function flowRead(doc) {
     flowKeys(doc, ["kind", "version", "id", "title", "description", "mode", "layout", "density", "timeZone", "steps", "initial", "storedSecrets", "baseline", "submit", "labels",
       "command", "presets", "draft", "deepLinks", "endpoint"], "A flow document");
-    if (doc.kind !== "flow" || doc.version !== 1) flowFail("a flow document needs kind \"flow\" and version 1");
+    if (doc.kind !== "flow" || doc.version !== 1) flowFail("expected flow document version 1");
     const model = { id: flowName(doc.id, "The flow id"), title: flowString(doc.title, 200, "The flow title", true), description: flowString(doc.description, 1000, "The flow description"),
       mode: doc.mode ?? "linear", density: doc.density ?? "normal", local: doc.timeZone === "local", fields: new Map(), steps: [], sections: new Set(), checks: new Map() };
-    if (!["linear", "free", "tasks"].includes(model.mode) || !["compact", "normal", "comfortable"].includes(model.density) || doc.timeZone !== undefined && !["utc", "local"].includes(doc.timeZone)) flowFail("the flow's mode, density or time zone is unknown");
+    if (!["linear", "free", "tasks"].includes(model.mode) || !["compact", "normal", "comfortable"].includes(model.density) || doc.timeZone !== undefined && !["utc", "local"].includes(doc.timeZone)) flowFail("unknown flow mode, density or time zone");
     // The layout: a stepper's orientation; a dialog or drawer container and its launch button come with the flow-dialog part.
     if (doc.layout !== undefined) flowKeys(doc.layout, ["orientation", "container", "launch"], "The flow layout");
     model.orientation = doc.layout?.orientation ?? "auto";
     if (!["auto", "horizontal", "vertical"].includes(model.orientation)) flowFail("the flow layout has an unknown orientation");
     if (!Array.isArray(doc.steps) || !doc.steps.length || doc.steps.length > 64) flowFail("a flow needs 1 to 64 steps");
     for (const [index, raw] of doc.steps.entries()) {
-      flowKeys(raw, ["id", "title", "description", "type", "fields", "sections", "when", "optional", "declaration", "changesOnly", "checks", "group", "pick", "confirm", "acknowledge", "preview"], "A flow step");
+      flowKeys(raw, ["id", "title", "description", "type", "fields", "sections", "when", "optional", "declaration", "changesOnly", "checks", "group", "pick", "confirm", "acknowledge", "preview", "facts"], "A flow step");
       const step = { id: flowName(raw.id, "A step id"), title: flowString(raw.title, 200, "A step title", raw.type !== "review"), description: flowString(raw.description, 1000, "A step description"),
         type: raw.type ?? "form", optional: flowFlag(raw.optional, "optional"), declaration: flowString(raw.declaration, 1000, "The declaration"), changesOnly: raw.changesOnly !== false,
         group: flowString(raw.group, 200, "A step group"), blocks: [], checks: [], raw };
@@ -170,8 +170,8 @@
       if (step.type !== "review" && reviewKey) flowFail("only a review step has " + reviewKey);
       if (raw.changesOnly !== undefined && typeof raw.changesOnly !== "boolean") flowFail("changesOnly must be true or false");
       if (step.type !== "form" && (raw.fields !== undefined || raw.sections !== undefined)) flowFail("only a form step has fields and sections");
-      if ((raw.pick !== undefined) !== (step.type === "pick")) flowFail("step " + step.id + " has a pick only as a pick step, and a pick step needs one");
-      if (raw.fields !== undefined && !Array.isArray(raw.fields) || raw.sections !== undefined && !Array.isArray(raw.sections)) flowFail("step " + step.id + " needs arrays of fields and sections");
+      if ((raw.pick !== undefined) !== (step.type === "pick")) flowFail("only pick steps require a pick");
+      if (raw.fields !== undefined && !Array.isArray(raw.fields) || raw.sections !== undefined && !Array.isArray(raw.sections)) flowFail("fields and sections must be arrays");
       if (raw.fields?.length) step.blocks.push({ section: null, fields: raw.fields.map(field => flowField(field, step, null, model)) });
       if ((raw.sections || []).length > 64) flowFail("step " + step.id + " holds at most 64 sections");
       for (const rawSection of raw.sections || []) {
@@ -215,7 +215,7 @@
       if (!flowIs(doc.initial)) flowFail("initial must be an object of field values");
       for (const [id, value] of Object.entries(doc.initial)) {
         const field = model.fields.get(id);
-        if (!field || field.type === "secret" || !flowFits(field, value)) flowFail("initial has no value for '" + id + "' that fits a field");
+        if (!field || field.type === "secret" || !flowFits(field, value)) flowFail("initial value does not fit field " + id);
       }
     }
     model.initial = doc.initial ? { ...doc.initial } : null;

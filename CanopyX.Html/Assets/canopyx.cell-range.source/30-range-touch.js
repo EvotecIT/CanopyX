@@ -7,7 +7,7 @@
   function crTouchStart(grid, event) {
     const hit = crHit(grid, event.target);
     if (!hit || event.target.closest(CR_CONTROLS)) return;
-    const pointer = event.pointerId, x0 = event.clientX, y0 = event.clientY;
+    const pointer = event.pointerId, x0 = event.clientX, y0 = event.clientY, record = hit.element._w;
     crGuard(grid, true);
     const quit = pressed => {
       clearTimeout(timer); grid.lifetime.signal.removeEventListener("abort", quit);
@@ -22,10 +22,11 @@
     };
     const timer = setTimeout(() => {
       quit(true);
-      if (grid.destroyed) return;
+      const live = crHit(grid, hit.cell);
+      if (grid.destroyed || !live || live.row !== hit.row || live.column !== hit.column || live.element._w !== record) { crGuard(grid, false); return; }
       const inside = crRects(grid).some(rect => hit.row >= rect.top && hit.row <= rect.bottom && crIndex(grid, hit.column) >= rect.left && crIndex(grid, hit.column) <= rect.right);
       crSwallowClick(grid);
-      if (inside) { crGuard(grid, false); crMenu(grid, hit.cell); return; }
+      if (inside) { crGuard(grid, false); crMenu(grid, hit.cell, event); return; }
       const at = { row: hit.row, column: hit.column }, range = { anchor: at, end: at };
       grid.cellAnchor = at; grid.cellRanges = [range]; grid.cellHandles = true; crTouching(grid, true);
       crChanged(grid, false);

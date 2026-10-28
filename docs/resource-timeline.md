@@ -82,11 +82,18 @@ them.
 
 ## Resource columns in day and week views
 
-When the resources have at most 24 leaves, day and week views show one column per leaf resource (per day, in the week view), under
+With an inline resource tree, day and week views show one column per leaf resource (per day, in the week view), under
 a header of their group (a team, a site). Events sit in the column of their resource, each column is shaded by its resource's
 business hours, and dragging an event to another column changes its resource. Events without a resource, or with one the tree does
 not have, are not shown in these views or in the timeline (which has no row for them); the month, agenda and year views still
 show them.
+
+Large schedules mount a window of columns instead of every resource/slot combination. The horizontal scrollbar beneath
+the time grid reveals successive columns, and Left/Right keyboard navigation mounts the neighbouring column as needed.
+Headers follow the window, including a window that crosses a day boundary; ARIA column indices name the full schedule.
+Phones keep the resource picker (two resources in day view, one per day in week view). Events with `resourceIds` appear in
+every assigned column or lane. Moving an assignment preserves the other assigned resources. Month and agenda still list each
+event once. `calendar-resource-window.html` demonstrates 48 rooms and a shared recurring event.
 
 ## Keyboard and screen readers
 

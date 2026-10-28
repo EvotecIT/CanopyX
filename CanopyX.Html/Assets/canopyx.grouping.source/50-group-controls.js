@@ -17,10 +17,6 @@
         this.summaryControls = h("div", "cx-grid-summary"); this.summaryControls.setAttribute("role", "rowgroup");
         this.summaryControls.setAttribute("aria-label", this.labels.gridSummary); this.summaryControls.hidden = true;
       }
-      if (this.groupingDynamic) document.addEventListener("canopyx:closemenus", event => {
-        const panel = event.detail?.source;
-        if (panel?.classList?.contains("cx-column-menu")) queueMicrotask(() => this.groupMenuItems(panel));
-      }, { signal: this.lifetime.signal });
       this.syncGroupBar(); this.buildHeader();
     },
     buildHeader() {
@@ -36,18 +32,18 @@
       if (!levels || !levels.some(level => level.column === id)) return GROUP_CONTROL_BASE.querySortHeader.call(this, id, event);
       this.setGroupBy(levels.map(level => level.column === id ? { ...level, direction: level.direction === "asc" ? "desc" : "asc" } : level)).catch(() => {});
     },
-    // The column menu (filter-editor part) announces itself as it opens; once its entries are built, Group by joins them.
-    groupMenuItems(panel) {
-      const id = this.gridPopover?.columnId, column = this.columns.find(item => item.id === id), menu = panel.querySelector('[role="menu"]');
-      if (!menu || !column?.sortable || this.gridPopover.panel !== panel) return;
-      const levels = this.groupLevelsNow(), grouped = levels.some(level => level.column === id);
+    // Contribute actions before the shared menu initializes its keyboard model.
+    appendColumnGroupActions(column, add, separator) {
+      if (!this.groupingDynamic || !column.sortable) return;
+      const id = column.id, levels = this.groupLevelsNow(), grouped = levels.some(level => level.column === id);
       if (!grouped && !this.view.reporting?.groupable) return;
-      const item = gridButton(grouped ? this.labels.gridUngroup : this.labels.gridGroupBy, () => {
-        this.closeGridPopover(false);
-        this.setGroupBy(grouped ? levels.filter(level => level.column !== id) : [...levels, { column: id, direction: "asc" }]).catch(error => this.emit("error", { error }));
-      });
-      item.classList.add("cx-mi", "cx-mi-group"); item.setAttribute("role", "menuitem"); item.tabIndex = -1; item.disabled = !grouped && levels.length >= 4;
-      item.prepend(h("span", "ico")); menu.append(h("hr", "cx-menu-rule"), item);
+      separator();
+      add(grouped ? this.labels.gridUngroup : this.labels.gridGroupBy, () => {
+        const latest = this.groupLevelsNow(), present = latest.some(level => level.column === id);
+        if (this.destroyed || !this.groupingDynamic || !this.columns.some(item => item.id === id && item.sortable) ||
+            grouped !== present || !grouped && (!this.view.reporting?.groupable || latest.length >= 4)) return;
+        return this.setGroupBy(grouped ? latest.filter(level => level.column !== id) : [...latest, { column: id, direction: "asc" }]);
+      }, !grouped && levels.length >= 4);
     },
     // A column dragged onto the bar becomes the innermost level.
     groupDrop(column) {
@@ -59,7 +55,11 @@
     syncGroupBar() {
       const bar = this.groupBar;
       if (!bar) return;
-      const levels = this.groupLevelsNow(), key = JSON.stringify([levels, this.groupCollapseVersion || 0]);
+      const levels = this.groupLevelsNow(), levelsKey = JSON.stringify(levels), key = JSON.stringify([levels, this.groupCollapseVersion || 0]);
+      // Query intent, acceptance and failure settlement all sync here. Only grouping changes retire a column menu.
+      if (bar._levelsKey !== undefined && bar._levelsKey !== levelsKey && this.gridPopover?.panel.classList.contains("cx-column-menu"))
+        this.closeGridPopover(false);
+      bar._levelsKey = levelsKey;
       if (bar._key === key && bar._summary === this.summary) return;
       // Rebuilding keeps keyboard focus on the same control of the same chip (or the chip a level moved to).
       const active = bar.contains(document.activeElement) ? document.activeElement : null, chip = active?.closest(".cx-gchip");
