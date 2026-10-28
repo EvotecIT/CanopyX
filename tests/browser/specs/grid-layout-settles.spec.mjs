@@ -83,11 +83,13 @@ for (const filtered of [false, true]) for (const height of [220, 520]) {
       selection: "multiple", search: true, source: { kind: "inline" },
       emptyReason: "This data view has no records to display. Import or connect records before using the table. The explanation remains fully readable in a narrow panel.",
       labels: { gridNoMatchesReason: "Search: {search}. Active filters: {count}. The current filters do not match any records in this data view. Clear the filters to restore every available record." },
-      columns: [{ id: "name", title: "Name", kind: "text", width: 200 }, { id: "site", title: "Site", kind: "text", width: 160 }],
+      columns: [{ id: "name", title: "Last delivery status", kind: "text", width: 100, fixed: true }, { id: "site", title: "Email preview", kind: "text", width: 100, fixed: true }],
       rows: filtered ? [{ id: "one", cells: { name: "Alpha", site: "Berlin" } }] : [] };
     await serveGrid(page, { view, height });
     if (filtered) await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setExternalFilter("sites", { field: "site", values: ["Missing"] }));
     await expect(page.locator(".cx-grid-notice h4")).toBeVisible();
+    await expect.poll(() => page.locator(".cx-grid").evaluate(grid => grid.clientHeight - grid.querySelector(".cx-head").getBoundingClientRect().height),
+      { message: "the empty grid viewport must contain its complete header" }).toBeGreaterThanOrEqual(0);
     const sample = await page.locator(".cx-host").evaluate(async host => {
       await document.fonts.ready;
       const heights = [];

@@ -9,6 +9,7 @@ results pair finite numeric values (or null) with number formats; percentages re
 uses `0`. These are post-aggregation transformations, independent of filtering, paging and grouping order.
 
 Grouping levels, facet definitions/requests/responses and column predicates may carry an optional `bucket`.
+Facet panels may set `position` to `side`, `top`, or `toolbar`; the last presents one compact menu per facet in the grid toolbar.
 Calendar buckets declare `kind` (`day`, `week`, `month`, `quarter`, `year`, `hour`, `weekday`), `timeZone`
 (UTC by default) and `firstWeekday` (0 Sunday through 6 Saturday; Monday by default). Numeric buckets use
 `{ "kind": "width", "width": 10, "origin": 0 }` or `{ "kind": "edges", "edges": [0, 10, 100] }`.

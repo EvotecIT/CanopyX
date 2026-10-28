@@ -163,7 +163,7 @@
 
 
 .cx-data-grid .cx-grid-notice.cx-state { flex:1; align-content:center; }
-.cx-data-grid.cx-grid-awaiting .cx-grid { flex:0 0 auto; height:var(--hfx-table-header-height); }
+.cx-data-grid.cx-grid-awaiting .cx-grid { flex:0 0 auto; height:var(--cx-empty-head-height,var(--hfx-table-header-height)); }
 .cx-initial-skeleton .cx-skel,.cx-cell > .cx-skel { display:flex; width:100%; min-width:0; }
 .cx-skel > span { padding:0 var(--hfx-cell-padding-x);min-width:0;display:flex;align-items:center;height:var(--cx-row-h); }
 .cx-skel > span:nth-child(3n) i { width:40%; margin-left:auto; }
@@ -182,8 +182,9 @@
 .cx-phone .cx-grid-pager .cx-button { min-height:var(--cx-size-44px);width:var(--cx-size-44px); }
 .cx-phone .cx-grid-page-range { flex:none; }
 .cx-data-grid .cx-hidden-fields { color:var(--hfx-color-text-muted);font:var(--cx-size-12d5px) var(--hfx-font-sans);border:0;background:transparent;padding:0;flex:none;min-width:var(--cx-size-24px);min-height:var(--cx-size-24px);position:relative; }
+.cx-data-grid:not(.cx-phone) .cx-cell:has(> .cx-hidden-fields) { gap:var(--hfx-space-2); }
 
-.cx-data-grid.cx-grid-awaiting.cx-phone .cx-grid { height:var(--cx-size-44px); }
+.cx-data-grid.cx-grid-awaiting.cx-phone .cx-grid { height:var(--cx-empty-head-height,var(--hfx-control-height-lg)); }
 .cx-phone .cx-hcell :is(.cx-grid-column-menu,.cx-grid-header-filter) { min-width:var(--cx-size-44px);min-height:var(--cx-size-44px); }
 /* Overlays (column popovers, the record drawer, the text dialog) come with the editor part; their focus ring is here, ahead of its stylesheet. */
 .cx-grid-overlay :focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }

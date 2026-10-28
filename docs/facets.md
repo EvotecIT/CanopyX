@@ -35,7 +35,7 @@ The same panel in a view document:
 { "facets": { "columns": ["category", "priority", "opened", { "column": "age", "bins": 12 }], "position": "side" } }
 ```
 
-`FacetPanelExample` in `CanopyX.Examples` writes `facets.html` (the panel beside the grid) and `facets-top.html` (above it),
+`FacetPanelExample` in `CanopyX.Examples` writes `facets.html` (the panel beside the grid), `facets-top.html` (above it), and `facets-toolbar.html` (toolbar menus),
 each also in a dark palette.
 
 ## Facets
@@ -95,7 +95,7 @@ changing those columns too, so its controls are disabled until that group change
 | Field (`facets`) | C# (`CanopyFacetPanel`) | Default | Meaning |
 | --- | --- | --- | --- |
 | `columns` | `Facets` | | The facets, in order. |
-| `position` | `Position` | `side` | `side` (beside the grid) or `top` (above it, its facets side by side). |
+| `position` | `Position` | `side` | `side` (beside the grid), `top` (above it), or `toolbar` (one compact menu per facet). |
 | `open` | `Open` | true | Whether the panel starts open; the reader's choice is part of the grid state. |
 | `collapsible` | `Collapsible` | true | Whether the reader can collapse it. |
 | `width` | `Width` | 260 | A side panel's width in pixels (180 to 480). |
@@ -104,6 +104,7 @@ changing those columns too, so its controls are disabled until that group change
 
 The panel and the grid's element share a frame (`cx-facet-frame`) that takes the grid element's place; destroying the grid
 puts the element back. With `target`, the panel renders into that element and the grid's element stays where it is.
+Toolbar facets use the same value lists and conditions in compact toolbar menus; the active condition chips and Clear all remain available. A grid with its toolbar disabled offers the facet sheet instead.
 
 A side panel needs room for itself and 480 pixels of grid; a top panel needs more than 640 pixels. Where it does not fit, the
 panel leaves the page and a **Filter by** button (with the number of active facets) in the toolbar opens it as a full-screen

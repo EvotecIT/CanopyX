@@ -804,6 +804,7 @@ CanopyX.CanopyFacetPanel.System.Nullable<System.Int32> Width { get; set; }
 CanopyX.CanopyFacetPanel.System.String? Label { get; set; }
 CanopyX.CanopyFacetPosition : enum System.Int32
 CanopyX.CanopyFacetPosition.const CanopyX.CanopyFacetPosition Side = 0
+CanopyX.CanopyFacetPosition.const CanopyX.CanopyFacetPosition Toolbar = 2
 CanopyX.CanopyFacetPosition.const CanopyX.CanopyFacetPosition Top = 1
 CanopyX.CanopyFacetSort : enum System.Int32
 CanopyX.CanopyFacetSort.const CanopyX.CanopyFacetSort Count = 0

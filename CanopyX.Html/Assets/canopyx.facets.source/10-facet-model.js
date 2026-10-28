@@ -35,7 +35,7 @@
       return { column: facet.column, def: column, sourceDef, bucket, kind, label: facet.label || column.title, limit: facet.limit || 8, bins: facet.bins || 16,
         sort: bucket ? "value" : facet.sort || (kind === "list" && !order ? "count" : "value"), order, collapsed: !!facet.collapsed };
     });
-    if (merged.position !== undefined && !["side", "top"].includes(merged.position) || ["open", "collapsible"].some(key => merged[key] !== undefined && typeof merged[key] !== "boolean") ||
+    if (merged.position !== undefined && !["side", "top", "toolbar"].includes(merged.position) || ["open", "collapsible"].some(key => merged[key] !== undefined && typeof merged[key] !== "boolean") ||
         merged.width !== undefined && (!Number.isInteger(merged.width) || merged.width < 180 || merged.width > 480) ||
         merged.label !== undefined && (typeof merged.label !== "string" || !merged.label.trim() || merged.label.length > 256) ||
         merged.target !== undefined && !(merged.target instanceof HTMLElement))

@@ -217,6 +217,31 @@ test.describe("facet panel", () => {
     await page.waitForSelector(".cx-facet .cx-facet-val, .cx-facet .cx-facet-bar");
   };
 
+  test("toolbar facets filter through compact menus and expose active conditions", async ({ page }) => {
+    await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: inlinePage({ columns: ["city", "team"], position: "toolbar" }) }));
+    await page.goto("https://canopyx.test/");
+    await page.waitForSelector("[data-cx-ready]");
+    const team = page.locator(".cx-grid-facet").filter({ hasText: "Team" });
+    await team.locator("summary").click();
+    await team.getByRole("checkbox", { name: /^Red,/ }).check();
+    await expect.poll(() => api(page, "api => api.getQuery().filters")).toEqual([{ column: "team", operator: "in", values: ["Red"] }]);
+    await expect(team.locator("summary")).toContainText("Red");
+    await expect(page.locator(".cx-grid-query-summary")).toContainText("Red");
+    await team.getByRole("button", { name: "Clear Team" }).click();
+    await expect.poll(() => api(page, "api => api.getQuery().filters")).toEqual([]);
+  });
+
+  test("toolbar facets remain usable on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: inlinePage({ columns: ["city", "team"], position: "toolbar" }) }));
+    await page.goto("https://canopyx.test/"); await page.waitForSelector("[data-cx-ready]");
+    const team = page.locator(".cx-grid-facet").filter({ hasText: "Team" });
+    await team.locator("summary").click(); await team.getByRole("checkbox", { name: /^Red,/ }).check();
+    await expect.poll(() => api(page, "api => api.getPaging().matched")).toBe(20);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await page.keyboard.press("Escape"); await expect(team.locator("summary")).toBeFocused();
+  });
+
   test("an inline list's search filters as it draws, and clearing it brings every value back", async ({ page }) => {
     await openInline(page, { columns: ["city", "team"] });
     const city = facet(page, "city"), search = city.getByRole("searchbox");

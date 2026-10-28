@@ -896,7 +896,7 @@ export type GridFacet<Row extends GridRow=GridRow>=GridColumnId<Row>|{
 ;
 export interface GridFacetPanelDefinition<Row extends GridRow=GridRow>{
   columns:readonly GridFacet<Row>[];
-  position?:"side"|"top";
+  position?:"side"|"top"|"toolbar";
   open?:boolean;
   collapsible?:boolean;
   width?:number;

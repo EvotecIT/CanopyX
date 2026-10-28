@@ -75,6 +75,7 @@ public sealed class CanopyFacetPanel {
         foreach (var facet in Facets) facet.WriteJson(writer);
         writer.EndArray();
         if (Position == CanopyFacetPosition.Top) writer.Property("position", "top");
+        if (Position == CanopyFacetPosition.Toolbar) writer.Property("position", "toolbar");
         if (!Open) writer.Property("open", false);
         if (!Collapsible) writer.Property("collapsible", false);
         if (_width.HasValue) writer.Property("width", _width.Value);

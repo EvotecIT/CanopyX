@@ -28,7 +28,8 @@
       panel.setAttribute("data-cx-position", options.position); panel.style.setProperty("--cx-facets-w", options.width + "px");
       this.facetSections = this.facetColumns.map(facet => this.facetSection(facet, list));
       // The frame: the panel and the grid element side by side or stacked, in the grid element's place.
-      if (options.target) options.target.appendChild(panel);
+      if (options.position === "toolbar" && !options.target) this.host.appendChild(panel);
+      else if (options.target) options.target.appendChild(panel);
       else {
         const frame = this.facetFrame = h("div", "cx-facet-frame");
         frame.setAttribute("data-cx-position", options.position);
@@ -42,6 +43,19 @@
       const anchor = this.toolbar.querySelector(".cx-grid-filters") || this.toolbar.querySelector(".cx-grid-columns") || this.spacer;
       if (this.opts.toolbar === false) this.host.prepend(sheetButton);
       else if (anchor?.parentNode === this.toolbar) anchor.before(sheetButton); else this.toolbar.prepend(sheetButton);
+      if (options.position === "toolbar" && !options.target && this.opts.toolbar !== false) {
+        this.facetToolbarControls = this.facetSections.map(section => {
+          const control = this.controlPanel(section.facet.label, "cx-grid-facet");
+          control.panel.classList.add("cx-facets"); control.panel.appendChild(section.section);
+          section.facet.collapsed = false; section.section.querySelector(".cx-facet-b").hidden = false;
+          section.section.querySelector(".cx-facet-toggle").setAttribute("aria-expanded", "true");
+          const summary = control.details.querySelector("summary");
+          summary.classList.remove("ghost");
+          summary.querySelector(".cx-ico")?.remove();
+          if (anchor?.parentNode === this.toolbar) anchor.before(control.details);
+          return { ...control, summary, section };
+        });
+      }
       this.facetResize = new ResizeObserver(() => requestAnimationFrame(() => this.destroyed || this.facetFit()));
       this.facetResize.observe(this.facetFrame || this.host);
       if (this.facetFrame) this.facetResize.observe(this.host);
@@ -144,6 +158,12 @@
       }
       this.facetClear.hidden = !active;
       this.facetActive = active;
+      for (const control of this.facetToolbarControls || []) {
+        const selection = facetSelection(query, control.section.facet), count = selection.values?.length || 0;
+        const value = count === 1 ? cellText(selection.values[0], control.section.facet.def, this.fmt) : count ? numbers.format(count) : "";
+        setText(control.summary, control.section.facet.label + (value ? ": " + value : ""));
+        control.summary.classList.toggle("cx-facet-active", !!count || !!selection.custom || selection.low != null || selection.high != null);
+      }
       if (this.facetSheetButton) {
         this.facetSheetButton.querySelector(".badge")?.remove();
         if (active) { const badge = h("span", "badge"); setText(badge, numbers.format(active)); this.facetSheetButton.appendChild(badge); }
@@ -153,6 +173,9 @@
     facetFit() {
       const panel = this.facetPanel, options = this.facetOptions;
       if (!panel || this.facetSheet) return;
+      if (options.position === "toolbar" && !options.target) {
+        panel.hidden = true; this.facetSheetButton.hidden = this.opts.toolbar !== false; return;
+      }
       const width = (this.facetFrame || this.host).clientWidth, fits = options.target ? true : options.position === "side" ? width >= options.width + 480 : width > 640;
       this.facetFits = fits;
       panel.hidden = !fits; this.facetSheetButton.hidden = fits;
@@ -200,6 +223,7 @@
       for (const section of this.facetSections || []) section.controller?.abort();
       const sheet = this.facetSheet; this.facetSheet = null;
       this.facetPanel?.remove(); this.facetSheetButton?.remove(); this.facetPanel = null;
+      for (const control of this.facetToolbarControls || []) control.details.remove(); this.facetToolbarControls = null;
       if (sheet) { sheet.close(); sheet.remove(); }
       if (this.facetFrame) { this.facetFrame.replaceWith(this.host); this.facetFrame = null; }
     }

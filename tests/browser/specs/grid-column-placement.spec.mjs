@@ -23,6 +23,32 @@ const header = (page, id) => page.locator('.cx-hcell[data-cx-column="' + id + '"
 const layout = page => api(page, () => document.querySelector('[data-canopyx-host]').canopyx.getColumnLayout());
 const headerOrder = page => page.locator(".cx-hcell").evaluateAll(cells => cells.map(cell => cell.dataset.cxColumn));
 
+test("desktop hides optional columns before scrolling normal columns", async ({ page }) => {
+  await page.setViewportSize({ width: 760, height: 700 });
+  const wideColumns = ["name", "first", "second", "third", "extra"].map(id => ({
+    id, title: "Detailed " + id + " column heading", kind: "text", ...(id === "extra" ? { priority: "optional" } : {})
+  }));
+  const cells = Object.fromEntries(wideColumns.map(column => [column.id, "A long value for " + column.id + " that needs space"]));
+  await open(page, { selection: "single", columns: wideColumns, reporting: { responsive: true }, rows: [{ id: "one", cells }] });
+  await expect(header(page, "extra")).toHaveCount(0);
+  expect((await layout(page)).filter(column => column.visible).map(column => column.id)).toEqual(["name", "first", "second", "third"]);
+  const grid = page.locator(".cx-grid");
+  expect(await grid.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true);
+  const more = page.locator('.cx-row[data-cx-id="one"] .cx-hidden-fields');
+  await expect(more).toHaveText("+1 column");
+  const room = await more.evaluate(button => {
+    const cell = button.closest(".cx-cell"), content = button.previousElementSibling, range = document.createRange();
+    range.selectNodeContents(content);
+    return { cell: cell.getBoundingClientRect().toJSON(), button: button.getBoundingClientRect().toJSON(),
+      content: content.getBoundingClientRect().toJSON(), text: range.getBoundingClientRect().toJSON() };
+  });
+  expect(room.button.right).toBeLessThanOrEqual(room.cell.right + 1);
+  expect(room.text.width).toBeLessThanOrEqual(room.content.width + 1);
+  await more.click();
+  await expect(page.locator("dialog.cx-drawer")).toContainText("A long value for extra");
+  await page.keyboard.press("Escape");
+});
+
 test("native Tab reveals every scrolling-center header control between pinned edges", async ({ page }) => {
   await page.setViewportSize({ width: 650, height: 700 }); await open(page, { reporting: { ...view.reporting, headerFilters: true } });
   await header(page, "name").locator(".cx-column-move").focus();

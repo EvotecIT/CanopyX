@@ -20,7 +20,7 @@
   };
   DataGrid.prototype.paintHiddenFields = function (slot, row, column) {
     if (this.phone && column.identity) slot.cell.title = cellText(row.cells[column.id], column, this.fmt) || "";
-    const first = this.phone && column === this.cols[0], fields = first ? this.phoneLineColumns(row) : [];
+    const first = column === this.cols[0], fields = first && this.phone ? this.phoneLineColumns(row) : [];
     let button = slot.hiddenFields;
     const count = first && this.hiddenFieldCount(row);
     if (!count) { button?.remove(); slot.hiddenFields = null; }
@@ -33,10 +33,11 @@
       button.dataset.cxRecord = row.id; button.setAttribute("aria-label", label + ": " + titles); button.title = titles; setText(button, label);
       slot.hiddenFields = button;
     }
-    if (!first) {
+    if (!first || !this.phone) {
       slot.childSlots?.forEach(disposeHostSlot); slot.childSlots = null;
       slot.phoneLine?.remove(); slot.phoneLine = null;
       if (slot.phonePrimary) { slot.phonePrimary.replaceWith(...slot.phonePrimary.childNodes); slot.phonePrimary = null; }
+      if (first && count) slot.cell.appendChild(button);
       return;
     }
     let primary = slot.phonePrimary;

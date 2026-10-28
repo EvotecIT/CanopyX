@@ -24,8 +24,8 @@ export type GridFacet<Row extends GridRow = GridRow> = GridColumnId<Row> | {
 export interface GridFacetPanelDefinition<Row extends GridRow = GridRow> {
   /** 1 to 24 distinct columns; a hosted grid's must be reporting facet columns. */
   columns: readonly GridFacet<Row>[];
-  /** Beside the grid (default) or above it. */
-  position?: "side" | "top";
+  /** Beside the grid (default), above it, or as compact toolbar menus. */
+  position?: "side" | "top" | "toolbar";
   /** Starts open (default true); the grid state keeps the reader's choice. */
   open?: boolean;
   /** The reader can collapse the panel (default true). */
