@@ -280,7 +280,7 @@ public sealed partial class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICa
             excluded.Add(id);
         }
         var pattern = request.SearchMode == CanopyGridSearchMode.Regex && request.Search.Length != 0 ? new CanopyGridRegexSearch(request.Search) : null;
-        var clock = pattern == null ? null : Stopwatch.StartNew();
+        long regexTicks = 0;
         var terms = (pattern == null ? request.SearchTerms : Array.Empty<string>()).Select(term => {
             cancellationToken.ThrowIfCancellationRequested();
             return CanopyTextFolding.Fold(term)!;
@@ -290,8 +290,12 @@ public sealed partial class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICa
             return (ids == null || ids.Contains(record.Id)) && !excluded.Contains(record.Id) &&
                 (pattern == null || Schema.SearchColumns.Any(column => {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (clock!.ElapsedMilliseconds > 100) throw new TimeoutException("Regex search exceeded its 100 ms evaluation budget.");
-                    return pattern.IsMatch(CanopyDataValues.ToSearchText(SearchValue(record, column)) ?? string.Empty);
+                    var text = CanopyDataValues.ToSearchText(SearchValue(record, column)) ?? string.Empty;
+                    var started = Stopwatch.GetTimestamp();
+                    var matched = pattern.IsMatch(text);
+                    regexTicks += Stopwatch.GetTimestamp() - started;
+                    if (regexTicks > Stopwatch.Frequency / 10) throw new TimeoutException("Regex search exceeded its 100 ms evaluation budget.");
+                    return matched;
                 })) &&
                 terms.All(term => Schema.SearchColumns.Any(column => {
                     cancellationToken.ThrowIfCancellationRequested();

@@ -3,6 +3,21 @@ using Xunit;
 namespace CanopyX.Data.Tests;
 
 public sealed class RegexQuickSearchTests {
+    [Fact]
+    public async Task RegexBudget_ExcludesTimeSpentEvaluatingOtherFilters() {
+        var view = View(); view.Columns[0].Filterable = true;
+        var schema = new CanopyDataSchema(view);
+        var value = new string('x', 4096);
+        var rows = new[] { value, new string('x', 4095) + "y" };
+        var provider = new CanopyInMemoryProvider<string>(schema, () => rows, item => Array.IndexOf(rows, item).ToString(),
+            new Dictionary<string, Func<string, object?>> { ["name"] = item => item });
+        var condition = new CanopyFilterCondition(schema.GetColumn("name"), CanopyGridFilterOperator.Equal, new object[] { value });
+        var filter = new CanopyFilterGroup(CanopyGridFilterJunction.All, Enumerable.Repeat(condition, 10000));
+        var request = new CanopyDataRequest(schema, filter, search: "^x", searchMode: CanopyGridSearchMode.Regex);
+
+        Assert.Equal("0", Assert.Single((await provider.QueryAsync(request, CancellationToken.None)).Rows).Id);
+    }
+
     [Theory]
     [InlineData("regex", "^Acme Corporation$")]
     [InlineData("substring", "Acme Corporation")]

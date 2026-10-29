@@ -322,7 +322,7 @@ Patterns are limited to 256 UTF-16 code units, cell inputs to 4,096; oversized i
 search still matches all rows. The browser allows 50 ms of regex evaluation per query and retains the previous accepted query
 when validation or execution fails. The input reports an invalid pattern and uses the translated `gridRegexSearch` label.
 C# uses `AllowRegexSearch`, `CanopyGridSearchMode.Regex` and `CanopyGridRegexSearch`; the in-memory provider implements the same
-grammar with a 100 ms query budget and native match timeout. The portable IQueryable provider rejects regex execution explicitly;
+grammar with a 100 ms cumulative regex evaluation budget and native match timeout. Time spent evaluating other filters is not charged to that budget. The portable IQueryable provider rejects regex execution explicitly;
 it never downloads a database result to simulate matching. Other hosts implement or reject regex queries themselves.
 
 The optional grid properties `stickyHeader` and `cardTemplate` configure page-scroll headers and literal card token slots
