@@ -122,8 +122,8 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // The integrated Office export and analyst contracts measure 135,525 bytes together; keep a 133 KiB component ceiling.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024);
+        // Field-specific grid document errors add 138 gzip bytes to the core; allow only 160 bytes beyond 133 KiB.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 160);
     }
 
     [Fact]
