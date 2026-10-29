@@ -259,6 +259,14 @@
     };
     wireTabs(stageTabs, show);
 
+    // A demo with a separate dark page swaps its frame on a theme change; the full-screen link follows it.
+    themeListeners.push(function () {
+      if (!open) return;
+      var panel = document.getElementById(current().getAttribute('aria-controls'));
+      var frame = panel ? panel.querySelector('[data-cnx-frame]') : null;
+      if (frame) open.href = frameSource(frame);
+    });
+
     // Load the selected demo once the stage is near the viewport.
     var current = function () {
       return stageTabs.filter(function (tab) { return tab.getAttribute('aria-selected') === 'true'; })[0] || stageTabs[0];

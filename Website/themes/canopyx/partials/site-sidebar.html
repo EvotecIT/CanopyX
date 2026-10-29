@@ -1,5 +1,5 @@
 {{~ ## The site sidebar, on every page: the views tree (families from data/views.json are group rows, each view links to
-     its own page), then the documentation tree. Packages are linked from the header and the home page. The current page
+     its own page), the documentation tree, then the packages from data/views.json. The current page
      carries the selected-row treatment of a CanopyX tree. On narrow screens the header's menu button opens it as a sheet. ## ~}}
 {{~ views = data.views ~}}
 <aside class="cnx-side" id="cnx-side" aria-label="Site">
@@ -16,4 +16,12 @@
     {{~ end ~}}
   </nav>
   {{ include "docs-sidebar" }}
+  <nav class="cnx-side__section" aria-labelledby="cnx-side-packages">
+    <h2 class="cnx-side__title" id="cnx-side-packages">Packages</h2>
+    <ul class="cnx-side__list cnx-side__list--flat">
+      {{~ for p in views.packages ~}}
+      <li><a href="{{ p.url }}">{{ p.name }}<span class="cnx-sr"> on {{ p.where }}</span></a></li>
+      {{~ end ~}}
+    </ul>
+  </nav>
 </aside>

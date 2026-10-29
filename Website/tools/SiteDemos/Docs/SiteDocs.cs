@@ -315,6 +315,15 @@ internal sealed class SiteDocs {
             ("calendar", "Operations calendar", "calendar"), ("timeline", "Incidents by host", "timeline"), ("matrix", "Services by server", "matrix") }) {
             LiveBar.Apply(Path.Combine(live, page + ".html"), title, demos, "/views/" + id + "/", _utf8);
         }
+        // The pages ViewDemos writes from the repository examples, light and dark. Pages with their own chrome keep it.
+        foreach (var (page, title, id) in new[] {
+            ("pivot", "Sales by region", "pivot"), ("pivot-dark", "Sales by region", "pivot"),
+            ("board", "Migration board", "board"), ("plan", "Rollout plan", "plan"),
+            ("time", "Service health over time", "time"), ("time-dark", "Service health over time", "time"),
+            ("flow-setup-tasks", "Service setup", "flow"), ("flow-setup-tasks-dark", "Service setup", "flow"),
+            ("path", "Approval route", "path"), ("stack", "Configuration layers", "stack") }) {
+            LiveBar.Apply(Path.Combine(live, page + ".html"), title, demos, "/views/" + id + "/", _utf8);
+        }
         LiveBar.Apply(Path.Combine(_liveDocs, "explorer-layout.html"), "The explorer's files", demos, "/views/files/", _utf8);
         foreach (var (page, title, url, name) in new[] {
             ("tree", "Project files", "/docs/getting-started/", "Getting started"),
