@@ -324,6 +324,11 @@ internal sealed class SiteDocs {
             ("path", "Approval route", "path"), ("stack", "Configuration layers", "stack") }) {
             LiveBar.Apply(Path.Combine(live, page + ".html"), title, demos, "/views/" + id + "/", _utf8);
         }
+        // The flow example fixes its page colours per file; the bar's theme switch needs them to follow the active theme.
+        foreach (var page in new[] { "flow-setup-tasks", "flow-setup-tasks-dark" }) {
+            var path = Path.Combine(live, page + ".html");
+            File.WriteAllText(path, File.ReadAllText(path).Replace("</head>", FlowTheme + "</head>"), _utf8);
+        }
         LiveBar.Apply(Path.Combine(_liveDocs, "explorer-layout.html"), "The explorer's files", demos, "/views/files/", _utf8);
         foreach (var (page, title, url, name) in new[] {
             ("tree", "Project files", "/docs/getting-started/", "Getting started"),
@@ -337,6 +342,14 @@ internal sealed class SiteDocs {
             LiveBar.Apply(Path.Combine(_liveDocs, page + ".html"), title, (url, name), url, _utf8);
         }
     }
+
+    // The flow example's light and dark page colours, keyed on the theme the slim bar sets.
+    private const string FlowTheme = "<style>\n"
+        + ":root[data-theme=light] body.cx-page{background:#f3f4f6;color:#16181c}"
+        + ":root[data-theme=light] .flow-received pre,:root[data-theme=light] .flow-mock{border-color:#e2e4e7;background:#fff}\n"
+        + ":root[data-theme=dark] body.cx-page{background:#0e1013;color:#f2f3f5}"
+        + ":root[data-theme=dark] .flow-received pre,:root[data-theme=dark] .flow-mock{border-color:#272a30;background:#16181c}\n"
+        + "</style>\n";
 
     private static CanopyStaticHtmlOptions Themed(int rows) => new() { MaxRows = rows, UseThemeVariables = true, Caption = string.Empty };
 
