@@ -1,8 +1,8 @@
 ---
-title: CanopyX - Interactive trees and data grids for .NET and JavaScript
-description: CanopyX turns application data into searchable tree grids and sortable data tables, from C# or JavaScript, as reports that open from disk or a file share.
+title: CanopyX - Interactive data views for .NET and JavaScript
+description: Tree grids, data grids, pivots, boards, plans, calendars, matrices and guided flows from your data, in C# or JavaScript.
 slug: index
-meta.seo_title: CanopyX - Trees and data grids for .NET and JavaScript
+meta.seo_title: CanopyX - Interactive data views for .NET and JavaScript
 layout: home
 meta.prism: true
 ---

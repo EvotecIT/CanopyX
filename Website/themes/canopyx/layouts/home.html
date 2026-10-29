@@ -13,11 +13,16 @@
 </head>
 <body class="cnx-body cnx-body--home{{ if body_class != "" }} {{ body_class }}{{ end }}">
 {{ include "site-header" }}
+<div class="cnx-shell">
+{{ include "site-sidebar" }}
+<div class="cnx-shell__content">
 <main id="main" class="cnx-main">
 {{ include "sections/hero" }}
 {{ include "sections/body" }}
 </main>
 {{ include "site-footer" }}
+</div>
+</div>
 {{ assets.js_html }}
 {{ extra_scripts_html }}
 </body>

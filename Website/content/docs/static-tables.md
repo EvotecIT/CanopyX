@@ -9,7 +9,7 @@ layout: docs
 
 ## Cut an outline to fit a message
 
-A message has room for the top of a tree. `MaxRows` and `MaxDepth` cut the outline, every cut branch shows how many rows it hides, and the overflow note links to the interactive report. `shares` below is the file shares view the [demos](/demos/) use.
+A message has room for the top of a tree. `MaxRows` and `MaxDepth` cut the outline, every cut branch shows how many rows it hides, and the overflow note links to the interactive report. `shares` below is the file shares view the [demos](/views/) use.
 
 {{< cnx-example id="static-outline" caption="The returned HTML on white, as a mail client shows it. The note under the table counts the rows left out and links to the full report." >}}
 

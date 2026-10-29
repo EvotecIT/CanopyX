@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{ include "head" }}
+  {{ assets.preloads_html }}
+  {{ assets.critical_css_html }}
+  {{ include "theme-tokens" }}
+  {{ extra_css_html }}
+  {{ assets.css_html }}
+  {{ opengraph_html }}
+  {{ structured_data_html }}
+  {{ head_html }}
+</head>
+<body class="cnx-body cnx-body--view{{ if body_class != "" }} {{ body_class }}{{ end }}">
+{{ include "site-header" }}
+<div class="cnx-shell">
+{{ include "site-sidebar" }}
+<div class="cnx-shell__content">
+{{~ ## One view: the live demo at full width, then the code to build one like it beside the steps to try in the demo.
+     The page's "meta.view" names the view in data/views.json; steps come from data/tour.json and code from
+     data/viewcode.json. The previous and next views close the page. ## ~}}
+{{~ views = data.views; v = null; index = 0
+    for x in views.views; if x.id == page.meta.view; v = x; index = for.index; end; end
+    family = null; for f in views.families; if f.id == v.family; family = f; end; end
+    d = data.demos[v.id]; tour = data.tour[v.id]
+    prev = index > 0 ? views.views[index - 1] : null
+    next = index < views.views.size - 1 ? views.views[index + 1] : null ~}}
+<main id="main" class="cnx-main cnx-view cnx-tone--{{ family.tone }}">
+  <header class="cnx-view__head">
+    <nav class="cnx-crumbs" aria-label="Breadcrumb"><ol><li><a href="/views/">Views</a></li><li><span class="cnx-tone cnx-tone--{{ family.tone }}" aria-hidden="true"></span>{{ family.name }}</li><li><span aria-current="page">{{ v.name }}</span></li></ol></nav>
+    <h1>{{ v.name }}</h1>
+    <p class="cnx-lede">{{ v.body }}</p>
+    <p class="cnx-view__meta"><code>{{ v.api }}</code>{{ if d }}<span>{{ d.stat }}</span>{{ end }}<a class="cnx-link" href="{{ v.docs }}">Documentation<span class="cnx-sr"> for the {{ v.name | string.downcase }}</span></a></p>
+  </header>
+
+  {{~ ## The demos: the view's featured demo, then its gallery from data/gallery.json (examples from the repository),
+       as tabs over one frame. Each tab loads its page the first time it opens. ## ~}}
+  {{~ gallery = data.gallery ? data.gallery[v.id] : null
+      demos = [{ id: "main", title: v.example, body: v.body, src: v.src, srcDark: v.srcDark }]
+      if gallery; for g in gallery; demos = demos | array.add g; end; end ~}}
+  <section class="cnx-view__demos" data-cnx-stage aria-labelledby="cnx-view-demos-title">
+    <div class="cnx-view__demohead">
+      <h2 id="cnx-view-demos-title">{{ demos.size }} {{ if demos.size == 1 }}demo{{ else }}demos{{ end }}</h2>
+      <div class="cnx-demotabs" role="tablist" aria-label="Demos of the {{ v.name | string.downcase }}">
+        {{~ for d in demos ~}}
+        <button type="button" role="tab" class="cnx-demotab" id="cnx-demo-tab-{{ d.id }}" aria-controls="cnx-demo-{{ d.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" data-cnx-demo="{{ d.id }}">{{ d.title }}</button>
+        {{~ end ~}}
+      </div>
+    </div>
+    <figure class="cnx-frame cnx-view__demo">
+      <div class="cnx-frame__bar">
+        {{~ for d in demos ~}}
+        <span class="cnx-frame__title" data-cnx-caption="{{ d.id }}"{{ if !for.first }} hidden{{ end }}>{{ d.title }}</span>
+        {{~ end ~}}
+        <a class="cnx-frame__open" href="{{ if v.src }}{{ v.src }}{{ else }}/views/{{ v.id }}/{{ end }}" data-cnx-demo-open><span>Open<span class="cnx-sr"> this demo</span> full screen</span></a>
+      </div>
+      <div class="cnx-frame__screen">
+        {{~ for d in demos ~}}
+        <div class="cnx-demo{{ if !d.src }} cnx-demo--email{{ end }}" role="tabpanel" id="cnx-demo-{{ d.id }}" aria-labelledby="cnx-demo-tab-{{ d.id }}"{{ if !for.first }} hidden{{ end }}>
+          {{~ if d.src ~}}
+          <iframe title="CanopyX {{ v.name | string.downcase }}: {{ d.title | string.downcase }}" data-cnx-frame data-src="{{ d.src }}"{{ if d.srcDark }} data-src-dark="{{ d.srcDark }}"{{ end }}></iframe>
+          {{~ else ~}}
+          <div class="cnx-mail">
+            <dl class="cnx-mail__head">
+              <div><dt>From</dt><dd>File share report</dd></div>
+              <div><dt>Subject</dt><dd>Weekly changes on three shares</dd></div>
+            </dl>
+            <div class="cnx-mail__body">
+              <p>Here is this week's outline. The interactive report is attached.</p>
+              {{ include "generated/outline" }}
+            </div>
+          </div>
+          {{~ end ~}}
+        </div>
+        {{~ end ~}}
+      </div>
+      <figcaption class="cnx-frame__caption">
+        {{~ for d in demos ~}}
+        <p data-cnx-caption="{{ d.id }}"{{ if !for.first }} hidden{{ end }}>{{ d.body }}</p>
+        {{~ end ~}}
+      </figcaption>
+    </figure>
+  </section>
+
+  <div class="cnx-view__build">
+    <section class="cnx-view__code" aria-labelledby="cnx-view-code-title">
+      <h2 id="cnx-view-code-title">Build one like it</h2>
+      <p>The smallest complete version, in each language CanopyX supports for this view. The demo above is the same API with more data.</p>
+      {{~ codeid = "cnx-code"; include "view-code" ~}}
+    </section>
+    {{~ if tour ~}}
+    <section class="cnx-view__try" aria-labelledby="cnx-view-try-title">
+      <h2 id="cnx-view-try-title">Try this in the demo</h2>
+      {{ include "tour-steps" }}
+    </section>
+    {{~ end ~}}
+  </div>
+
+  {{~ if v.id == "files" ~}}
+  <figure class="cnx-example cnx-view__disk">
+    <div class="cnx-example__out">
+      <div class="cnx-example__bar"><span class="cnx-example__tag">On disk</span><code class="cnx-example__label">/live/files/</code><span class="cnx-example__meta">The explorer's own {{ data.demos.files.dataFiles }} files, {{ data.demos.files.size }}, explored with CanopyX</span><a class="cnx-frame__open" href="/live/docs/explorer-layout.html">Open<span class="cnx-sr"> the file layout</span></a></div>
+      <div class="cnx-example__screen" style="height: 380px"><iframe title="The files of the explorer bundle, as a CanopyX tree" data-cnx-frame data-src="/live/docs/explorer-layout.html"></iframe></div>
+    </div>
+    <figcaption class="cnx-example__caption">Every file the bundle writer produced for the demo above, with its size and role. Open data/ and its packs to see why one branch costs a single small file.</figcaption>
+  </figure>
+  {{~ end ~}}
+
+  {{~ if content != "" ~}}
+  <div class="cnx-prose cnx-view__notes">
+{{ content }}
+  </div>
+  {{~ end ~}}
+
+  <nav class="cnx-view__pager" aria-label="Other views">
+    {{~ if prev ~}}<a class="cnx-view__prev" href="/views/{{ prev.id }}/"><span>Previous view</span><strong>{{ prev.name }}</strong></a>{{~ else ~}}<span></span>{{~ end ~}}
+    {{~ if next ~}}<a class="cnx-view__next" href="/views/{{ next.id }}/"><span>Next view</span><strong>{{ next.name }}</strong></a>{{~ end ~}}
+  </nav>
+</main>
+{{ include "site-footer" }}
+</div>
+</div>
+{{ assets.js_html }}
+{{ extra_scripts_html }}
+</body>
+</html>

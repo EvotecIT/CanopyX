@@ -8,13 +8,13 @@ namespace SiteDemos.Docs;
 /// script themes the grid, so the embedded demos keep all their space.
 /// </summary>
 internal static class LiveBar {
-    private const string Logo = "<svg viewBox=\"0 0 32 32\" width=\"24\" height=\"24\" aria-hidden=\"true\" focusable=\"false\"><rect width=\"32\" height=\"32\" rx=\"8\" fill=\"#0f3d27\"/><path d=\"M6.5 8.2 9 10.4l2.5-2.2\" fill=\"none\" stroke=\"#74c69a\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><rect x=\"13\" y=\"8\" width=\"13\" height=\"3\" rx=\"1.5\" fill=\"#74c69a\"/><path d=\"M9 13v10.5M9 17h4M9 23.5h4\" fill=\"none\" stroke=\"#74c69a\" stroke-width=\"1.4\" stroke-linecap=\"round\" opacity=\".7\"/><rect x=\"15\" y=\"15.5\" width=\"11\" height=\"3\" rx=\"1.5\" fill=\"#c3ecd2\"/><rect x=\"15\" y=\"22\" width=\"8\" height=\"3\" rx=\"1.5\" fill=\"#c3ecd2\" opacity=\".75\"/></svg>";
+    private const string Logo = "<svg viewBox=\"0 0 32 32\" width=\"24\" height=\"24\" aria-hidden=\"true\" focusable=\"false\"><rect width=\"32\" height=\"32\" rx=\"8\" fill=\"#4b3cc9\"/><path d=\"M6.5 8.2 9 10.4l2.5-2.2\" fill=\"none\" stroke=\"#ffffff\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><rect x=\"13\" y=\"8\" width=\"13\" height=\"3\" rx=\"1.5\" fill=\"#ffffff\"/><path d=\"M9 13v10.5M9 17h4M9 23.5h4\" fill=\"none\" stroke=\"#ffffff\" stroke-width=\"1.4\" stroke-linecap=\"round\" opacity=\".7\"/><rect x=\"15\" y=\"15.5\" width=\"11\" height=\"3\" rx=\"1.5\" fill=\"#c9c3ff\"/><rect x=\"15\" y=\"22\" width=\"8\" height=\"3\" rx=\"1.5\" fill=\"#c9c3ff\" opacity=\".75\"/></svg>";
 
     private const string Style = "<style>\n"
         + "@font-face{font-family:\"Schibsted Grotesk\";font-weight:400 900;font-display:swap;src:url(/fonts/schibsted-grotesk-latin.woff2) format(\"woff2\")}\n"
-        + ":root{--bar-bg:#f3f6f2;--bar-line:#dce4dd;--bar-ink:#12201a;--bar-ink-2:#45564c;--bar-accent:#1b7548;--bar-select:#e2f1e7;--bar-focus:#b9770e}\n"
-        + ":root[data-theme=dark]{--bar-bg:#0a110d;--bar-line:#21302a;--bar-ink:#e5eee8;--bar-ink-2:#a7b7ad;--bar-accent:#5cc68e;--bar-select:#133323;--bar-focus:#e8b45a}\n"
-        + ":root[data-theme=dark] body.cx-page{background:#0a110d}\n"
+        + ":root{--bar-bg:#f6f6f9;--bar-line:#e4e4ec;--bar-ink:#16151f;--bar-ink-2:#4b4a5e;--bar-accent:#5b4bdb;--bar-select:#efeefd;--bar-focus:#5b4bdb}\n"
+        + ":root[data-theme=dark]{--bar-bg:#111118;--bar-line:#262632;--bar-ink:#ececf3;--bar-ink-2:#b0afc2;--bar-accent:#8b7dff;--bar-select:#221d45;--bar-focus:#a99dff}\n"
+        + ":root[data-theme=dark] body.cx-page{background:#111118}\n"
         + ".cnx-livebar{box-sizing:border-box;display:flex;align-items:center;gap:14px;height:48px;padding:0 16px;border-bottom:1px solid var(--bar-line);background:var(--bar-bg);color:var(--bar-ink);font:600 14px/1.2 \"Schibsted Grotesk\",system-ui,sans-serif}\n"
         + ".cnx-livebar a{color:inherit;text-decoration:none}.cnx-livebar a:hover{color:var(--bar-accent)}\n"
         + ".cnx-livebar :focus-visible{outline:2px solid var(--bar-focus);outline-offset:2px;border-radius:4px}\n"

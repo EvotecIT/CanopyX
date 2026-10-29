@@ -1,20 +1,6 @@
-<nav class="cnx-docs__nav" aria-label="Documentation">
-<details class="cnx-docs__menu" open data-cnx-docs-menu>
-  <summary><span class="cnx-chev" aria-hidden="true"></span>Documentation contents</summary>
-  <div class="cnx-docs__group">
-    <h2 class="cnx-tree__root"><span class="cnx-chev" aria-hidden="true"></span>Guides</h2>
-    <div class="cnx-tree cnx-tree--nav">
-      <ul><li><a href="/docs/"{{ if current_path == "/docs/" }} aria-current="page"{{ end }}>Overview</a></li></ul>
-      {{ pf.menu_tree "docs" 2 }}
-    </div>
+<nav class="cnx-side__section cnx-docs__nav" aria-labelledby="cnx-side-docs">
+  <h2 class="cnx-side__title" id="cnx-side-docs"><a href="/docs/"{{ if current_path == "/docs/" }} aria-current="page"{{ end }}>Documentation</a></h2>
+  <div class="cnx-tree cnx-tree--nav">
+    {{ pf.menu_tree "docs" 2 }}
   </div>
-  <div class="cnx-docs__group">
-    <h2 class="cnx-tree__root"><span class="cnx-chev" aria-hidden="true"></span>Reference</h2>
-    <ul class="cnx-tree cnx-tree--nav">
-      <li><a href="/demos/">Live demos</a></li>
-      <li><a href="https://www.nuget.org/packages?q=CanopyX">NuGet packages</a></li>
-      <li><a href="https://www.npmjs.com/package/@evotecit/canopyx">npm package</a></li>
-    </ul>
-  </div>
-</details>
 </nav>

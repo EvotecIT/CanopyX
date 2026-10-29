@@ -19,14 +19,16 @@ dotnet run --project Website/tools/SiteDemos -c Release -- Website
 
 It writes `static/live/`, `data/demos.json` and `themes/canopyx/partials/generated/`. These outputs are ignored by git; never edit them by hand. The file explorer bundle is more than 100,000 nodes (about 40 MB across a few hundred files), so keep it out of commits.
 
-Enabled features: `docs`, `notFound`. Fonts (Schibsted Grotesk, Fraunces, JetBrains Mono) and Prism are self-hosted with their licences; the site makes no third-party requests.
+Enabled features: `docs`, `notFound`. Fonts (Schibsted Grotesk, JetBrains Mono) and Prism are self-hosted with their licences; the site makes no third-party requests.
 
 ## Sources of truth
 
 - `content/pages/`: home, demos and 404 pages.
 - `content/docs/`: getting started, JavaScript and delivery guides. Keep them aligned with the repository README and `docs/`.
+- `data/views.json`: the view catalogue. Families (with their tone), views (name, example, API, demo page, docs link), the capabilities every view shares and the packages. It drives the sidebar, the home workbench and catalogue, and the view pages. A new view is one entry here, a page in `content/views/`, steps in `data/tour.json`, its demo in `tools/SiteDemos/ViewDemos.cs` and its snippets in `tools/SiteDemos/Views/`.
+- `tools/SiteDemos/Gallery/gallery.json`: the curated demo gallery of each view page, by example page name with a title and a one-line description taken from the example's own summary. SiteDemos runs the `CanopyX.Examples` program into a temporary folder, copies the listed pages (and their `-dark` variants) to `static/live/gallery/` and writes `data/gallery.json`. Keep the gallery to pages that are self-contained single files.
 - `data/home.json`: home page copy. Claims must match the README, `docs/` and the generated demos.
-- `tools/SiteDemos/`: demo generator. It links `CanopyX.Examples/SyntheticFileTree.cs` and `ExampleViews.cs` instead of copying them.
+- `tools/SiteDemos/`: demo generator. It links the examples it shows from `CanopyX.Examples` (the file tree, change views, calendars, matrices and flows) instead of copying them.
 - `themes/canopyx/`: layouts, partials and CSS. `partials/theme-tokens.html` also sets the `--cx-*` variables that theme the embedded static tables.
 
 Demo iframes are same-origin; `assets/site.js` sets `data-cx-theme` on their grid hosts so they follow the site theme.
@@ -41,10 +43,13 @@ Run the CI-mode pipeline and check the home, demos and docs pages at desktop and
 
 ## Design system
 
-- **One header and footer.** `partials/header.html` and `partials/footer.html` are the only chrome; every layout includes them and their styles are global (`base.css`, `nav.css`). Top-level items of the `main` menu in `site.json` with a URL are plain links; an item with children (Docs) opens a panel of separate pages. Never put same-page anchors in the header; the demos page has its own in-page index. Every nav item is the same 40 px box in every state; the current page changes colours only (tint and a 2 px accent bar), so nothing shifts.
+- **The workbench shell.** Every layout includes `partials/header.html`, `partials/site-sidebar.html` and `partials/footer.html` inside `.cnx-shell`; their styles are global (`base.css`, `nav.css`). The header holds the brand, the top-level items of the `main` menu in `site.json` as plain links (no panels, no same-page anchors) and the actions, with icons for GitHub and Discord rather than words. The sidebar is the site's navigation on every page: the views tree from `data/views.json`, the documentation tree (`partials/docs-sidebar.html`) and the packages; on narrow screens the header's menu button opens it as a sheet. The current page gets the selected-row treatment (tint and a 2 px accent bar).
+- **Views.** Every view has a page at `/views/<id>/` (`content/views/<id>.md` with `layout: view` and `meta.view: <id>`): the live demo at full width, then "Build one like it" (`partials/view-code.html`, tabs from `data/viewcode.json`) beside the steps from `data/tour.json`. `/views/` (`content/views/_index.md`, `layout: viewsindex`) is the catalogue; `/demos/` redirects to it.
 - **Docs topics** come from the Docs group of the `main` menu: `Meta.thumb` names a render in `data/docs.json`, `Meta.group` places the topic on the docs map, `Meta.api` lists what the reader writes.
 - **Output next to code.** Docs snippets live in `tools/SiteDemos/Docs/DocsSnippets.cs` between `// docs:begin <id>` and `// docs:end`; SiteDocs runs them and writes `data/docs.json`, live pages under `static/live/docs/` (sharing `static/live/assets/`) and static renders under `partials/generated/docs/`. Pages show them with `{{< cnx-example id="..." caption="..." >}}`, `{{< cnx-render id="..." >}}` and `{{< cnx-modes >}}`. Captions are plain text without `>`.
 - **Tabs** use `.cnx-tabs` / `.cnx-tab` (with `.cnx-tabs--code` on dark code surfaces): grid column headers with a sort indicator on the selected tab.
 - **Full-screen pages** under `/live/` get the site's slim bar from `LiveBar.cs`; inside a frame the bar hides and `site.js` themes the grid.
-- **Type.** Headings use Schibsted Grotesk at a heavy weight. Fraunces (`.cnx-display`) is for display moments only: the home hero and section heads, and the docs map hero.
+- **Type.** One family: Schibsted Grotesk, heavy and tightly tracked for headings; `.cnx-display` only goes larger and heavier (the home hero and the closing call to action). JetBrains Mono is for code and API names.
+- **Colour.** Graphite surfaces and one indigo accent (`--cnx-accent`); indigo is none of the status colours the views draw, so chrome never reads as a state. One tone per view family (`--cnx-tone-explore`, `-plan`, `-compare`, `-guide`, `-deliver`, shown with `.cnx-tone`). Tones say which family a view belongs to and nothing else.
+- **The workbench** on the home page is the one bold element: view tabs over the live view and the code that builds it. Keep the rest of the page quiet.
 - **Motif.** Chevrons, guide lines and elbows from an expanded tree; the selected-row treatment marks the current item. Avoid all-caps eyebrows, gradient washes, entrance animations and arrows appended to link text.

@@ -1,16 +1,21 @@
 {
   "hero": {
-    "title_line_1": "Trees and grids",
-    "title_line_2": "your readers can explore.",
-    "lede": "CanopyX turns application data into searchable tree grids and sortable data tables. Write the view in C# and save a report that opens from disk or a file share, or mount the same runtime in your web app with npm.",
+    "title": "Your records, as views people explore.",
+    "lede": "CanopyX draws tree grids, data grids, pivots, boards, plans, calendars, status matrices, change reviews and guided flows from your application's data. Write the view in C# and save a report that opens from disk, or mount the same runtime in your web app.",
     "primary": {
-      "label": "Read the docs",
-      "url": "/docs/"
+      "label": "Get started",
+      "url": "/docs/getting-started/"
     },
     "secondary": {
-      "label": "See every demo",
-      "url": "/demos/"
-    }
+      "label": "Browse the views",
+      "url": "/views/"
+    },
+    "facts": [
+      ".NET Framework 4.7.2 to .NET 10",
+      "npm with TypeScript types",
+      "No third-party dependencies in CanopyX.Html",
+      "MIT licence"
+    ]
   },
   "install": [
     {
@@ -24,42 +29,26 @@
       "command": "npm install @evotecit/canopyx"
     }
   ],
-  "facts": [
-    {
-      "title": "Virtual rows",
-      "body": "Only the rows on screen are in the page, so trees with more than 100,000 nodes stay responsive."
-    },
-    {
-      "title": "Keyboard navigation",
-      "body": "Both views move with the arrow keys, Home and End, and expose tree and grid roles to assistive technology."
-    },
-    {
-      "title": "No runtime dependencies",
-      "body": "Neither the NuGet packages nor the npm package add third-party runtime dependencies."
-    },
-    {
-      "title": "Six languages included",
-      "body": "English labels, plus Polish, German, Spanish, French and Italian packs for every control."
-    }
-  ],
   "delivery": [
     {
-      "title": "Single HTML file",
-      "body": "Data and runtime in one page. Attach it to a ticket, archive it with a report, or open it straight from disk.",
-      "code": "files.SaveHtmlPage(\"files.html\");"
+      "title": "One HTML file",
+      "body": "Data and runtime in a single page. Attach it to a ticket, archive it with a run, or open it from disk.",
+      "code": "view.SaveHtmlPage(\"report.html\");"
     },
     {
-      "title": "Sidecar bundle",
-      "body": "The page loads branches and search shards from files next to it, so very large trees open from a file share with no server.",
-      "code": "files.SaveHtmlBundle(\"file-report\");"
+      "title": "A folder on a file share",
+      "body": "Branches, rows and search shards load from files beside the page, so 100,000 nodes open with no server.",
+      "code": "view.SaveHtmlBundle(\"report\");"
     },
     {
-      "title": "Hosted data",
-      "body": "Your application serves pages, search results and counts. Paged and cursor-based sources keep large record sets on the server.",
-      "link": {
-        "label": "Read the data protocol",
-        "url": "/docs/data-protocol/"
-      }
+      "title": "Your own server",
+      "body": "CanopyX.Data answers paging, filters, summaries and edits over IQueryable; CanopyX.AspNetCore serves the endpoints.",
+      "code": "app.MapCanopyRemote(\"/api/devices\", http => db.Devices, map);"
+    },
+    {
+      "title": "Mail, print and Word",
+      "body": "The same view as a script-free table with inline styles that survive mail clients and paste into documents.",
+      "code": "string html = CanopyStaticHtml.Render(view);"
     }
   ],
   "family": [
@@ -79,57 +68,9 @@
       "body": "Export the same records to Excel, Word or PDF from your host application."
     },
     {
-      "name": "CodeGlyphX",
-      "url": "https://codeglyphx.com/",
-      "body": "QR codes and barcodes in pure .NET for asset labels and inventory tags."
-    }
-  ],
-  "surfaces": [
-    {
-      "name": ".NET",
-      "body": "Build views from your objects with CanopyX.Html on NuGet, net472 to net10.",
-      "action": "Get started",
-      "url": "/docs/getting-started/"
-    },
-    {
-      "name": "JavaScript",
-      "body": "Mount the same runtime from @evotecit/canopyx, with TypeScript types.",
-      "action": "Use it from npm",
-      "url": "/docs/javascript/"
-    },
-    {
-      "name": "Single file",
-      "body": "Data and runtime in one HTML page you can attach, archive or open from disk.",
-      "action": "See delivery modes",
-      "url": "/docs/delivery/"
-    },
-    {
-      "name": "File share",
-      "body": "Sidecar bundles load branches on demand, with no server behind them.",
-      "action": "Open the explorer",
-      "url": "/demos/"
-    },
-    {
-      "name": "Email and print",
-      "body": "Script-free tables from the same view for mail, print and Word.",
-      "action": "See the outline",
-      "url": "/demos/"
-    }
-  ],
-  "showcases": [
-    {
-      "title": "File explorer",
-      "body": "A share audit with sizes, owners, states, change badges and version history.",
-      "light": "/img/showcase-files-light.png",
-      "dark": "/img/showcase-files-dark.png",
-      "url": "/live/files/index.html"
-    },
-    {
-      "title": "Device inventory",
-      "body": "Grouping, facets, status strips, progress and sparklines in one reporting grid.",
-      "light": "/img/showcase-inventory-light.png",
-      "dark": "/img/showcase-inventory-dark.png",
-      "url": "/live/inventory.html"
+      "name": "ConsoleMonster",
+      "url": "https://consolemonster.dev/",
+      "body": "Tables, trees and live dashboards in the console, for the same data at a prompt."
     }
   ]
 }

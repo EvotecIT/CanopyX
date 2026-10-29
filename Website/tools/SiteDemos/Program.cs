@@ -40,10 +40,16 @@ var changeDocument = new CanopyHtmlDocument();
 CanopyHtmlOptions ChangeOptions() => new CanopyHtmlOptions { Theme = CanopyTheme.Auto, Document = changeDocument };
 File.WriteAllText(Path.Combine(demos, "changes.html"),
     "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>CanopyX change review</title><style>" +
-    CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid) + "body{margin:0;padding:16px;font:14px/1.5 system-ui,sans-serif;background:#fff;color:#16181c}@media (prefers-color-scheme:dark){body{background:#16181c;color:#f2f3f5}}" +
+    // Canvas follows the root's color-scheme, which the site sets on the frame along with the grids' theme.
+    CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid) + ":root{color-scheme:light dark}body{margin:0;padding:16px;font:14px/1.5 system-ui,sans-serif;background:Canvas;color:CanvasText}" +
     "h2{font-size:15px;margin:20px 0 8px}</style><script>" + CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid) + "</script></head><body><h2>Changed files</h2>" +
     ChangeViewsExample.List().ToHtmlFragment(ChangeOptions()) + "<h2>Propagation</h2>" + ChangeViewsExample.Propagation().ToHtmlFragment(ChangeOptions()) +
     "<h2>map-drives.ps1</h2>" + ChangeViewsExample.ScriptDiff().ToHtmlFragment(ChangeOptions()) + "</body></html>", utf8);
+
+// The other views (board, calendar, plan, timeline, pivot, matrix, comparison, snapshots, flow, paths and layers),
+// from the repository's examples.
+var viewStats = SiteDemos.ViewDemos.Write(demos);
+Console.WriteLine(SiteDemos.Views.ViewCode.Write(website, utf8));
 
 // Email and print: the script-free outline of a smaller tree, following the page's theme variables.
 var outlineTree = new SyntheticFileTree();
@@ -61,9 +67,26 @@ var manifest = new {
         nodes = bundle.NodeCount.ToString("N0", CultureInfo.InvariantCulture),
         dataFiles = bundle.FileCount.ToString("N0", CultureInfo.InvariantCulture),
         size = (bundle.TotalBytes / 1048576.0).ToString("0.0", CultureInfo.InvariantCulture) + " MB",
-        largestFile = Math.Ceiling(bundle.LargestFileBytes / 1024.0).ToString("0", CultureInfo.InvariantCulture) + " KB"
+        largestFile = Math.Ceiling(bundle.LargestFileBytes / 1024.0).ToString("0", CultureInfo.InvariantCulture) + " KB",
+        stat = bundle.NodeCount.ToString("N0", CultureInfo.InvariantCulture) + " nodes in " + bundle.FileCount.ToString("N0", CultureInfo.InvariantCulture) + " static files"
     },
-    inventory = new { rows = inventory.Rows.Count.ToString("N0", CultureInfo.InvariantCulture) }
+    inventory = new {
+        rows = inventory.Rows.Count.ToString("N0", CultureInfo.InvariantCulture),
+        stat = inventory.Rows.Count.ToString("N0", CultureInfo.InvariantCulture) + " devices in one HTML page"
+    },
+    board = new { stat = viewStats["board"] },
+    calendar = new { stat = viewStats["calendar"] },
+    plan = new { stat = viewStats["plan"] },
+    timeline = new { stat = viewStats["timeline"] },
+    pivot = new { stat = viewStats["pivot"] },
+    matrix = new { stat = viewStats["matrix"] },
+    changes = new { stat = "Change list, propagation and a script diff" },
+    compare = new { stat = viewStats["compare"] },
+    time = new { stat = viewStats["time"] },
+    flow = new { stat = viewStats["flow"] },
+    path = new { stat = viewStats["path"] },
+    stack = new { stat = viewStats["stack"] },
+    email = new { stat = "Script-free HTML for mail, print and Word" }
 };
 File.WriteAllText(Path.Combine(website, "data", "demos.json"),
     JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }) + "\n", utf8);
@@ -73,6 +96,9 @@ Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
 
 // The documentation's visuals: output under each snippet, file layouts, protocol messages and navigation thumbnails.
 Console.WriteLine(SiteDemos.Docs.SiteDocs.Write(website, utf8));
+
+// The demo galleries of the view pages, copied from the examples program's output.
+Console.WriteLine(SiteDemos.Gallery.GalleryDemos.Write(website, utf8));
 
 /// <summary>A deterministic device inventory with the kind of data an endpoint report carries.</summary>
 internal static class DeviceInventory {

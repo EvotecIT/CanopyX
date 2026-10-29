@@ -2,6 +2,13 @@
 (function () {
   'use strict';
 
+  // /demos/ redirects to /views/ and keeps its hash; the old demo anchors open the view that replaced them.
+  var legacyDemos = { files: 'files', inventory: 'inventory', outline: 'email', changes: 'changes' };
+  if (/^\/views\/?(index\.html)?$/.test(location.pathname) && legacyDemos[location.hash.slice(1)]) {
+    location.replace('/views/' + legacyDemos[location.hash.slice(1)] + '/');
+    return;
+  }
+
   var root = document.documentElement;
   var theme = function () { return root.dataset.theme === 'dark' ? 'dark' : 'light'; };
   var themeListeners = [];
@@ -15,13 +22,10 @@
     });
   });
 
-  // Header navigation. Each group button discloses its panel: one panel at a time on wide screens, closed by Escape,
-  // a click outside or tabbing out of the group. The phone sheet lists every group open. A panel's thumbnails are
-  // CanopyX renders fetched the first time the group is hovered, focused or opened.
-  var header = document.querySelector('[data-cnx-header]');
-  var compactNav = window.matchMedia('(max-width: 900px)');
+  // The menu button opens the sidebar as a sheet on narrow screens; Escape closes it.
   var navToggle = document.getElementById('cnx-nav-toggle');
 
+  // Thumbnails are CanopyX renders fetched when their slot is shown.
   function loadThumbs(scope) {
     scope.querySelectorAll('[data-cnx-thumb]').forEach(function (slot) {
       var src = slot.getAttribute('data-cnx-thumb');
@@ -33,75 +37,12 @@
     });
   }
 
-  if (header) {
-    var groups = Array.prototype.slice.call(header.querySelectorAll('[data-cnx-navgroup]'));
-    var triggerOf = function (group) { return group.querySelector('.cnx-navgroup__trigger'); };
-    var setOpen = function (group, open) {
-      triggerOf(group).setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open && !compactNav.matches) loadThumbs(group);
-    };
-    var closeAll = function (except) { groups.forEach(function (group) { if (group !== except) setOpen(group, false); }); };
-
-    groups.forEach(function (group) {
-      var trigger = triggerOf(group);
-      var links = Array.prototype.slice.call(group.querySelectorAll('.cnx-navitem__link'));
-      var warm = function () { if (!compactNav.matches) loadThumbs(group); };
-      trigger.addEventListener('pointerenter', warm);
-      trigger.addEventListener('focus', warm);
-      trigger.addEventListener('click', function () {
-        var open = trigger.getAttribute('aria-expanded') !== 'true';
-        if (!compactNav.matches) closeAll(group);
-        setOpen(group, open);
-      });
-      trigger.addEventListener('keydown', function (event) {
-        if (event.key !== 'ArrowDown' || compactNav.matches || !links.length) return;
-        event.preventDefault();
-        event.stopPropagation();
-        closeAll(group);
-        setOpen(group, true);
-        links[0].focus();
-      });
-      group.addEventListener('keydown', function (event) {
-        var index = links.indexOf(document.activeElement);
-        if (event.key === 'Escape' && !compactNav.matches && trigger.getAttribute('aria-expanded') === 'true') {
-          setOpen(group, false);
-          trigger.focus();
-        } else if (index >= 0 && !compactNav.matches && /^Arrow(Left|Right|Up|Down)$/.test(event.key)) {
-          event.preventDefault();
-          var step = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
-          links[(index + step + links.length) % links.length].focus();
-        }
-      });
-      group.addEventListener('focusout', function (event) {
-        if (!compactNav.matches && event.relatedTarget && !group.contains(event.relatedTarget)) setOpen(group, false);
-      });
-    });
-
-    document.addEventListener('click', function (event) {
-      if (!compactNav.matches && !header.contains(event.target)) closeAll(null);
-    });
-    var reset = function () {
-      if (compactNav.matches) groups.forEach(function (group) { setOpen(group, true); });
-      else { closeAll(null); if (navToggle) navToggle.checked = false; }
-    };
-    if (compactNav.addEventListener) compactNav.addEventListener('change', reset);
-    reset();
-  }
-
   if (navToggle) {
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && navToggle.checked && compactNav.matches) { navToggle.checked = false; navToggle.focus(); }
+      if (event.key === 'Escape' && navToggle.checked) { navToggle.checked = false; navToggle.focus(); }
     });
   }
 
-  // The docs contents start folded on phones and open on wider screens.
-  var docsMenu = document.querySelector('[data-cnx-docs-menu]');
-  if (docsMenu) {
-    var phone = window.matchMedia('(max-width: 760px)');
-    var fold = function () { docsMenu.open = !phone.matches; };
-    fold();
-    if (phone.addEventListener) phone.addEventListener('change', fold);
-  }
   // Docs map and other inline thumbnails that were not rendered into the page.
   document.querySelectorAll('main [data-cnx-thumb]').forEach(function (slot) { loadThumbs(slot.parentNode); });
 
@@ -173,7 +114,7 @@
     button.setAttribute('aria-label', 'Copy code');
     bar.appendChild(button);
     wireCopy(button, function () {
-      var visible = figure.querySelector('pre:not([hidden]) code') || figure.querySelector('pre code');
+      var visible = figure.querySelector('[role="tabpanel"]:not([hidden]) code') || figure.querySelector('pre:not([hidden]) code') || figure.querySelector('pre code');
       return visible ? visible.textContent.replace(/\n$/, '') : '';
     });
   });
@@ -216,8 +157,9 @@
       tab.addEventListener('click', function () { onSelect(tab); });
       tab.addEventListener('keydown', function (event) {
         var next = null;
-        if (event.key === 'ArrowRight') next = tabs[(index + 1) % tabs.length];
-        if (event.key === 'ArrowLeft') next = tabs[(index - 1 + tabs.length) % tabs.length];
+        var vertical = tab.closest('[aria-orientation="vertical"]');
+        if (event.key === (vertical ? 'ArrowDown' : 'ArrowRight')) next = tabs[(index + 1) % tabs.length];
+        if (event.key === (vertical ? 'ArrowUp' : 'ArrowLeft')) next = tabs[(index - 1 + tabs.length) % tabs.length];
         if (event.key === 'Home') next = tabs[0];
         if (event.key === 'End') next = tabs[tabs.length - 1];
         if (next) { event.preventDefault(); next.focus(); onSelect(next); }
@@ -258,13 +200,32 @@
     });
   }
 
+  // A demo written as separate light and dark pages (data-src-dark) loads the one that matches the site theme.
+  function frameSource(frame) {
+    var dark = frame.getAttribute('data-src-dark');
+    return dark && theme() === 'dark' ? dark : frame.getAttribute('data-src');
+  }
+
   function loadFrame(frame) {
     if (!frame || frame.getAttribute('src')) return;
     watchFrame(frame);
-    frame.setAttribute('src', frame.getAttribute('data-src'));
+    frame.setAttribute('src', frameSource(frame));
   }
 
-  document.querySelectorAll('[data-cnx-frame][data-eager]').forEach(loadFrame);
+  // Frames load when they come near the viewport, so a page of demos does not open every one at once.
+  var lazyFrames = document.querySelectorAll('[data-cnx-frame][data-src]:not([data-cnx-stage] [data-cnx-frame])');
+  if ('IntersectionObserver' in window) {
+    var frameObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        frameObserver.unobserve(entry.target);
+        loadFrame(entry.target);
+      });
+    }, { rootMargin: '400px' });
+    lazyFrames.forEach(function (frame) { frameObserver.observe(frame); });
+  } else {
+    lazyFrames.forEach(loadFrame);
+  }
   // Frames that load lazily by themselves (documentation output) only need the theme.
   document.querySelectorAll('iframe[data-cnx-frame][src]').forEach(function (frame) {
     watchFrame(frame);
@@ -272,7 +233,10 @@
   });
 
   themeListeners.push(function () {
-    document.querySelectorAll('[data-cnx-frame][src]').forEach(syncFrameTheme);
+    document.querySelectorAll('[data-cnx-frame][src]').forEach(function (frame) {
+      if (frame.hasAttribute('data-src-dark')) frame.setAttribute('src', frameSource(frame));
+      else syncFrameTheme(frame);
+    });
   });
 
   var stage = document.querySelector('[data-cnx-stage]');
@@ -290,10 +254,18 @@
       loadFrame(frame);
       if (open) {
         open.hidden = !frame;
-        if (frame) open.href = frame.getAttribute('data-src');
+        if (frame) open.href = frameSource(frame);
       }
     };
     wireTabs(stageTabs, show);
+
+    // A demo with a separate dark page swaps its frame on a theme change; the full-screen link follows it.
+    themeListeners.push(function () {
+      if (!open) return;
+      var panel = document.getElementById(current().getAttribute('aria-controls'));
+      var frame = panel ? panel.querySelector('[data-cnx-frame]') : null;
+      if (frame) open.href = frameSource(frame);
+    });
 
     // Load the selected demo once the stage is near the viewport.
     var current = function () {

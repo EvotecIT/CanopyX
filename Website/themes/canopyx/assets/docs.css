@@ -1,47 +1,15 @@
-/* Documentation: a tree sidebar, the article column and an "on this page" guide. */
+/* Documentation: the article column and an "on this page" guide. The documentation tree itself is in the site sidebar
+   (partials/docs-sidebar.html, styled with the sidebar in nav.css). */
 
 .cnx-docs {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr) 208px;
+  grid-template-columns: minmax(0, 1fr) 208px;
   gap: clamp(28px, 3.5vw, 56px);
-  width: min(100% - 2 * clamp(16px, 4vw, 40px), var(--cnx-max));
+  width: min(100% - 2 * clamp(16px, 3.5vw, 48px), var(--cnx-max));
   margin-inline: auto;
   padding-block: clamp(32px, 5vw, 56px);
 }
-
-/* Sidebar: the documentation drawn as an expanded tree. */
-.cnx-docs__nav {
-  position: sticky;
-  top: 88px;
-  align-self: start;
-  max-height: calc(100vh - 110px);
-  overflow-y: auto;
-  padding: 2px 4px 8px 0;
-  font-size: .9063rem;
-}
-.cnx-docs__nav h2 {
-  margin: 26px 0 4px;
-  font-family: var(--cnx-font);
-  font-size: .9375rem;
-  font-weight: 680;
-  letter-spacing: 0;
-  font-variation-settings: normal;
-}
-.cnx-docs__group:first-child h2 { margin-top: 0; }
-.cnx-tree--nav ul { margin: 0; padding: 0; list-style: none; }
-.cnx-tree--nav > ul:not(:last-child) > li:last-child::before { bottom: 0; height: auto; }
-.cnx-tree--nav li > a { padding: 6px 10px; }
-.cnx-tree--nav li.is-active > a,
-.cnx-tree--nav a[aria-current="page"] {
-  background: var(--cnx-select);
-  color: var(--cnx-ink);
-  font-weight: 640;
-  box-shadow: inset 2px 0 0 var(--cnx-accent);
-  border-radius: 0 var(--cnx-radius-sm) var(--cnx-radius-sm) 0;
-}
-.cnx-tree--nav li.is-active::after,
-.cnx-tree--nav li:has(> a[aria-current="page"])::after { border-top-color: var(--cnx-accent); }
-
+.cnx-docs__nav { min-width: 0; }
 .cnx-docs__article { min-width: 0; }
 .cnx-docs__article > .cnx-prose { max-width: 70ch; }
 .cnx-docs__article .cnx-pagehead h1 { font-size: clamp(1.875rem, 1.3rem + 1.8vw, 2.625rem); }
@@ -98,31 +66,13 @@
 .cnx-docs__toc a:hover { color: var(--cnx-ink); }
 .cnx-docs__toc a[aria-current] { border-left-color: var(--cnx-accent); color: var(--cnx-ink); font-weight: 600; }
 
+
 @media (max-width: 1100px) {
-  .cnx-docs { grid-template-columns: 220px minmax(0, 1fr); }
+  .cnx-docs { grid-template-columns: minmax(0, 1fr); }
   .cnx-docs__toc { display: none; }
 }
-
-@media (max-width: 760px) {
-  .cnx-docs { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .cnx-docs__nav {
-    position: static;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-    max-height: none;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--cnx-line);
-    font-size: .875rem;
-  }
-  .cnx-docs__nav h2 { margin-top: 0; }
-}
-
-@media (max-width: 460px) {
-  .cnx-docs__nav { grid-template-columns: minmax(0, 1fr); }
-}
 /* Pages that need the full width for side-by-side output leave out the "on this page" column. */
-@media (min-width: 761px) { .cnx-docs--wide { grid-template-columns: 248px minmax(0, 1fr); } }
+.cnx-docs--wide { grid-template-columns: minmax(0, 1fr); }
 .cnx-docs--wide .cnx-docs__article > .cnx-prose { max-width: none; }
 .cnx-docs--wide :is(.cnx-prose, .markdown-body) > :is(p, ul, ol, h2, h3, blockquote) { max-width: 72ch; }
 
@@ -244,9 +194,9 @@
 .cnx-maphero .cnx-crumbs [aria-current] { color: #f1f8f3; }
 .cnx-maphero .cnx-crumbs li + li::before { background: var(--cnx-forest-muted); }
 .cnx-maphero h1 { color: #f1f8f3; font-size: clamp(2.5rem, 1.4rem + 3vw, 4rem); line-height: 1.02; }
-.cnx-maphero__lede { max-width: 54ch; color: #c9dccf; font-size: clamp(1.0625rem, 1rem + .3vw, 1.1875rem); }
+.cnx-maphero__lede { max-width: 54ch; color: var(--cnx-forest-muted); font-size: clamp(1.0625rem, 1rem + .3vw, 1.1875rem); }
 .cnx-maphero .cnx-install { max-width: 520px; }
-.cnx-maphero__render { border-color: rgba(167, 196, 178, .3); box-shadow: 0 40px 80px -36px rgba(0, 0, 0, .55); }
+.cnx-maphero__render { border-color: rgba(165, 180, 255, .3); box-shadow: 0 40px 80px -36px rgba(0, 0, 0, .55); }
 .cnx-maphero__render .cnx-frame__body { padding: 10px 12px; }
 .cnx-maphero__render .cnx-thumb__render { zoom: 1; padding: 0; }
 

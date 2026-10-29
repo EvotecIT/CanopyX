@@ -1,0 +1,25 @@
+{{~ ## How to build a view yourself: one tab per language the library supports for it (C#, C# fluent, JavaScript), from
+     data/viewcode.json, which tools/SiteDemos writes from snippets it compiles and runs. Set "v" (a view from
+     data/views.json) and "codeid" (unique on the page) before including. Each tab links to the page its snippet produced. ## ~}}
+{{~ code = data.viewcode ? data.viewcode[v.id] : null ~}}
+{{~ if code && code.tabs.size > 0 ~}}
+<figure class="cnx-codeblock cnx-viewcode" data-cnx-tabs>
+  <figcaption class="cnx-codeblock__bar">
+    <span class="cnx-tabs cnx-tabs--code" role="tablist" aria-label="Build the {{ v.name | string.downcase }} in">
+      {{~ for t in code.tabs ~}}
+      <button type="button" role="tab" id="{{ codeid }}-tab-{{ t.id }}" aria-controls="{{ codeid }}-{{ t.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" class="cnx-tab">{{ t.label }}<span class="cnx-tab__sort" aria-hidden="true"></span></button>
+      {{~ end ~}}
+    </span>
+  </figcaption>
+  {{~ for t in code.tabs ~}}
+  <div class="cnx-viewcode__panel" role="tabpanel" id="{{ codeid }}-{{ t.id }}" aria-labelledby="{{ codeid }}-tab-{{ t.id }}"{{ if !for.first }} hidden{{ end }}>
+<pre><code class="language-{{ t.lang }}">{{ t.code | html.escape }}</code></pre>
+    {{~ if t.run ~}}
+    <p class="cnx-viewcode__run"><a href="{{ t.run }}">Run this snippet<span class="cnx-sr"> ({{ v.name | string.downcase }}, {{ t.label }})</span></a><span>Its output, generated with the site.</span></p>
+    {{~ end ~}}
+  </div>
+  {{~ end ~}}
+</figure>
+{{~ else ~}}
+<p class="cnx-viewcode__missing">The snippets for this view are written when the site builds.</p>
+{{~ end ~}}

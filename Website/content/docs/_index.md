@@ -1,9 +1,9 @@
 ---
 title: CanopyX documentation
 order: 0
-description: Build tree grids and data grids in C# or JavaScript, then ship them as a single file, a folder on a file share, a hosted view or a script-free table.
+description: Build CanopyX views in C# or JavaScript and ship them as one file, a folder on a file share, a hosted view or a script-free table.
 layout: docsmap
-meta.seo_title: CanopyX documentation - tree grids and data grids
+meta.seo_title: CanopyX documentation - interactive data views
 ---
 
 ## Where to begin
