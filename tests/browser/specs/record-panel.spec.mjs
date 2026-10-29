@@ -103,7 +103,7 @@ test("structured values: grid summaries, chips, objects, collections, timelines 
   await expect(timeline.locator(".cx-record-diff tbody th")).toHaveText("Owner");
   // A list change marks what it removed and added in text, not by colour alone.
   const changes = dialog.locator('.cx-record-block-b[data-cx-field="changes"] .cx-record-diff');
-  await expect(changes.locator("caption")).toHaveText("2 changed fields");
+  await expect(changes.locator("caption")).toHaveText("Changed fields: 2");
   await expect(changes.locator(".cx-diff-removed")).toHaveText("Removed: old@example.test");
   await expect(changes.locator(".cx-diff-added")).toHaveText("Added: sam@example.test");
   // The record field's sparkline comes with the history part, as it does in a column.

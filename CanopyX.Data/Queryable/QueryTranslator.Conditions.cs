@@ -11,6 +11,12 @@ internal sealed partial class QueryTranslator<T> {
         if (condition.Operator == CanopyGridFilterOperator.Custom) throw new CanopyRequestException(CanopyRequestError.Unsupported, "A named filter requires a host provider that implements it.");
         var mapped = Map.Get(condition.Column.Id);
         var value = _values[condition.Column.Id];
+        if (condition.Bucket != null) {
+            var key = GroupValue(new CanopySummaryLevel(condition.Column, false, bucket: condition.Bucket));
+            if (condition.Operator == CanopyGridFilterOperator.IsNull) return ExpressionTools.IsNull(key);
+            if (condition.Operator == CanopyGridFilterOperator.IsNotNull) return ExpressionTools.NotNull(key);
+            return Expression.AndAlso(ExpressionTools.NotNull(key), Compare(key, condition.Operator, condition.Values));
+        }
         var nullable = ExpressionTools.IsNullable(value.Type);
         var op = condition.Operator;
         if (op == CanopyGridFilterOperator.IsNull) return nullable ? ExpressionTools.IsNull(value) : Expression.Constant(false);

@@ -132,9 +132,12 @@ refused cell with its row, column and reason until it is dismissed (`gridPasteRe
 ## The fill handle
 
 With `fillHandle: true`, a single range shows a small square on its bottom-right corner. Dragging it down fills the cells
-below; the cells it will fill show a dashed outline while it moves. Each column continues its values: two or more numbers,
-or dates, with the same step go on with that step (100, 150 → 200, 250); anything else repeats in turn. Ctrl/Cmd+D fills the
-range from its first row. Filled values go the way pasted values go, with `source: "fill"`.
+below; the cells it will fill show a dashed outline while it moves. Each column continues a regular numeric, ISO date or
+numbered-label series (100, 150 → 200, 250; Item 1, Item 2 → Item 3, Item 4). One numeric or numbered-label seed increments
+by one; one date seed increments by one day. Date-only strings stay date-only, and padded labels keep their padding
+(Batch 009 → Batch 010). Irregular seeds repeat in turn. Hold Ctrl or Cmd when releasing the drag to copy the seed values
+instead of continuing the series. Ctrl/Cmd+D copies the range's first row. Filled values go the way pasted values go,
+with `source: "fill"`; the host still decides what to accept.
 
 ## API
 

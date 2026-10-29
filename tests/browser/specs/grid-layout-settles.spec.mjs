@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { viewPage } from "./support.mjs";
+import { serveGrid } from "./editing-support.mjs";
 
 for (const overflow of [false, true]) for (const width of [1440, 1280, 1024, 390]) {
   test(`grid layout settles at ${width}px with ${overflow ? "overflowing" : "fitted"} columns`, async ({ page }) => {
@@ -71,5 +72,45 @@ for (const overflow of [false, true]) for (const width of [1440, 1280, 1024, 390
       expect(sample.horizontalGutter, "fitting must not introduce a classic horizontal scrollbar").toBeLessThanOrEqual(1);
     }
     expect(errors).toEqual([]);
+  });
+}
+
+// Empty-state chrome must have a stable minimum independent of the flexible space it fills.
+for (const filtered of [false, true]) for (const height of [220, 520]) {
+  test(`empty grid settles at ${height}px after ${filtered ? "filtering" : "initial load"}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: height === 220 ? 390 : 1440, height: 900 });
+    const view = { protocol: "canopyx/2", type: "grid", id: "empty-settles", label: "Records", pageSize: 50,
+      selection: "multiple", search: true, source: { kind: "inline" },
+      emptyReason: "This data view has no records to display. Import or connect records before using the table. The explanation remains fully readable in a narrow panel.",
+      labels: { gridNoMatchesReason: "Search: {search}. Active filters: {count}. The current filters do not match any records in this data view. Clear the filters to restore every available record." },
+      columns: [{ id: "name", title: "Last delivery status", kind: "text", width: 100, fixed: true }, { id: "site", title: "Email preview", kind: "text", width: 100, fixed: true }],
+      rows: filtered ? [{ id: "one", cells: { name: "Alpha", site: "Berlin" } }] : [] };
+    await serveGrid(page, { view, height });
+    if (filtered) await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setExternalFilter("sites", { field: "site", values: ["Missing"] }));
+    await expect(page.locator(".cx-grid-notice h4")).toBeVisible();
+    await expect.poll(() => page.locator(".cx-grid").evaluate(grid => grid.clientHeight - grid.querySelector(".cx-head").getBoundingClientRect().height),
+      { message: "the empty grid viewport must contain its complete header" }).toBeGreaterThanOrEqual(0);
+    const sample = await page.locator(".cx-host").evaluate(async host => {
+      await document.fonts.ready;
+      const heights = [];
+      for (let frame = 0; frame < 60; frame++) {
+        await new Promise(requestAnimationFrame);
+        if (frame >= 20) heights.push(host.getBoundingClientRect().height);
+      }
+      const notice = host.querySelector(".cx-grid-notice"), first = notice.firstElementChild.getBoundingClientRect(), last = notice.lastElementChild.getBoundingClientRect(), bounds = host.getBoundingClientRect();
+      return { changes: new Set(heights).size, first: first.top, last: last.bottom, top: bounds.top, bottom: bounds.bottom };
+    });
+    expect(sample.changes, "empty-state sizing must stop changing across consecutive frames").toBe(1);
+    expect(sample.first).toBeGreaterThanOrEqual(sample.top);
+    expect(sample.last, "the complete empty-state action must remain inside the host").toBeLessThanOrEqual(sample.bottom);
+    await page.screenshot({ path: testInfo.outputPath("empty-state.png") });
+    if (filtered) {
+      await page.locator(".cx-grid-notice .acts button").click();
+      expect(await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getExternalFilters())).toEqual([]);
+      await expect.poll(async () => (await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.getPaging())).matched).toBe(1);
+      await expect(page.locator('.cx-row[data-cx-id="one"]')).toBeVisible();
+      await expect(page.locator('.cx-row[data-cx-id="one"]')).toContainText("Alpha");
+      await expect.poll(() => page.locator(".cx-host").evaluate(host => host.getBoundingClientRect().height), { message: "clearing the filter must release the empty-state minimum" }).toBeLessThanOrEqual(height);
+    }
   });
 }

@@ -68,7 +68,7 @@
       formatError("a formatting rule needs a style.");
   }
   // Compiles a list of rules for a grid: identities are unique, columns are declared, conditions compile within their bounds.
-  function formatCompile(rules, grid) {
+  function formatCompile(rules, grid, now = Date.now) {
     if (!Array.isArray(rules) || rules.length > 64) formatError("a grid has at most 64 formatting rules.");
     const columns = new Map(grid.columns.map(column => [column.id, column])), ids = new Set();
     return rules.map((rule, index) => {
@@ -83,7 +83,7 @@
       if (target === "columns" ? !Array.isArray(targets) || !targets.length || targets.length > 64 || new Set(targets).size !== targets.length || targets.some(id => !columns.has(id)) : rule.columns !== undefined)
         formatError("formatting rule '" + rule.id + "' names its columns once each.");
       formatStyle(rule.style, { target, column: rule.column });
-      const budget = { predicates: 0, groups: 0 }, test = rule.when === undefined ? null : formatGroup(rule.when, columns, budget, 1);
+      const budget = { predicates: 0, groups: 0, now }, test = rule.when === undefined ? null : formatGroup(rule.when, columns, budget, 1);
       return { id: rule.id, index, label: rule.label, description: rule.description || rule.label || rule.id, enabled: rule.enabled !== false, test, target,
         column: rule.column, columns: targets, details: rule.details !== false, stop: !!rule.stopIfTrue, style: rule.style, relative: !!budget.relative };
     });

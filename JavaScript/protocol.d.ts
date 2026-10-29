@@ -202,10 +202,12 @@ export type InlineNode = LeafNode | DetailNode | InlineBranch<InlineNode>;
 
 /** Names accepted by the interactive runtime; omitted translations use English. */
 export type LabelName =
+  | "gridShowAs" | "gridShowAsValue" | "gridShowAsPercentGrandTotal" | "gridShowAsPercentParent" | "gridShowAsPercentColumn" | "gridShowAsPercentRow" | "gridShowAsRunningTotal" | "gridShowAsRank" | "gridShowAsDifference" | "gridShowAsPercentChange"
+  | "gridBucket" | "gridBucketNone" | "gridBucketDay" | "gridBucketWeek" | "gridBucketMonth" | "gridBucketQuarter" | "gridBucketYear" | "gridBucketHour" | "gridBucketWeekday" | "gridBucketWidth" | "gridBucketEdges" | "gridBucketOrigin" | "gridBucketInvalid"
   | "gridPaging" | "gridPageRange" | "gridPageNumber" | "gridPageLength" | "gridFirstPage" | "gridPreviousPage" | "gridNextPage" | "gridLastPage" | "gridPageInfo" | "gridPageInfoFiltered" | "gridPageButton"
   | "gridUnknownCount" | "gridMatchedCount" | "gridCursorRange"
-  | "gridResultCount" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"
-  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridVisibleRows" | "gridAllRows" | "gridDownloadCsv" | "gridCopy" | "gridDetails"
+  | "gridResultCount" | "gridRegexSearch" | "gridClearQuery" | "gridRemoveSearch" | "gridGroupedFilters" | "gridRemoveGroup" | "gridRemoveCondition"
+  | "gridExport" | "gridFilteredResults" | "gridSelectedRows" | "gridAllResults" | "gridVisibleRows" | "gridAllRows" | "gridDownloadCsv" | "gridDownloadXlsx" | "gridDownloadPdf" | "gridCopy" | "gridDetails"
   | "searchPlaceholder" | "searchResults" | "searchResultCount" | "searchResultCountOfTotal"
   | "searchResultCountOfMany" | "searchNoResults" | "searchTooShort" | "searchWordTooShort" | "searchFailed"
   | "columns" | "hiddenColumns" | "visibleColumns" | "resizeColumn" | "columnWidth" | "loading" | "loadError" | "queryFailed"
@@ -225,6 +227,7 @@ export type LabelName =
   | "gridSelectionQueryCount" | "gridSelectionQueryUnknown" | "gridSelectRecord"
   | "gridGroupHeading" | "gridGroupMissing" | "gridGroupExpand" | "gridGroupCollapse" | "gridSummary" | "gridGroupOrder" | "gridAggregateCount" | "gridAggregateSum" | "gridAggregateAverage" | "gridAggregateMinimum" | "gridAggregateMaximum" | "gridGroupBy" | "gridUngroup" | "gridGroupDrop" | "gridExpandAll" | "gridCollapseAll" | "gridExpandLevel" | "gridCollapseLevel" | "gridGroupMove" | "gridGroupSortBy" | "gridGroupSortValue" | "gridGroupSortAggregate" | "gridSelectGroup" | "gridAggregateDistinct" | "gridShowDetail" | "gridHideDetail" | "gridDetailOf" | "gridDetailFailed"
   | "gridExportProgress" | "gridExportReading" | "gridExportCancelled" | "gridCancelExport" | "gridNoExportColumns" | "gridPrint"
+  | "gridExportWorkbookHint" | "gridExportPdfHint" | "gridExportCsvHint" | "gridExportCopy"
   | "matchesHighlight" | "matchesCount" | "matchesPosition" | "matchesNone" | "matchesLoaded" | "matchesPrevious" | "matchesNext" | "matchesAnnounce"
   | "layoutMenu" | "layoutFit" | "layoutScroll" | "layoutCards" | "layoutDensity" | "layoutCompact" | "layoutNormal" | "layoutComfortable" | "layoutChanged" | "layoutSort"
   | "gridFitContent"
@@ -275,7 +278,12 @@ export type LabelName =
   | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"
-  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails";
+  | "dialogClose" | "drawerClose" | "drawerPrevious" | "drawerNext" | "stateLoading" | "stateRetry" | "stateDetails"
+  | "boardLane" | "boardUnassigned" | "boardEmpty" | "boardWip" | "boardWipFull" | "boardMove" | "boardMoved" | "boardRejected" | "boardPending" | "boardPartial" | "boardKeys" | "planMilestone" | "planCritical" | "planBaseline" | "planDependency" | "planDependencyConflict" | "planOverlapConflict" | "planIncomplete" | "planInvalidRange" | "planInvalidResource" | "planProposal" | "planMoveHint" | "planActual" | "planPending" | "planBaselineLabel" | "planDependencies" | "planConflict"
+  | "pathEmpty" | "pathSource" | "pathTarget" | "pathStep" | "pathCycle" | "pathForeign" | "pathDisabled" | "pathKeys" | "pathPartial" | "stackWinner" | "stackEnforced" | "stackFiltered" | "stackEmpty" | "stackOrder" | "stackTruncated" | "timePlay" | "timePause" | "timePrevious" | "timeNext" | "timePosition" | "timeFrame" | "timeReducedMotion"
+  /** Calculated-column editor and stable per-cell errors (flat grids only). */
+  | "gridCalculationAdd" | "gridCalculationTitle" | "gridCalculationId" | "gridCalculationExpression" | "gridCalculationError" | "gridCalculationInvalid" | "gridCalculationHelp" | "gridCalculationNumber" | "gridCalculationDate" | "gridCalculationResultType" | "gridCalculationDivideZero" | "gridPivotFieldOptions"
+  | "compareChanges" | "viewIntentClearSearch" | "viewIntentRemoveGrouping" | "viewIntentFlat" | "viewIntentAscending" | "viewIntentDescending" | "viewIntentNotEqual" | "viewIntentGreater" | "viewIntentAtLeast" | "viewIntentLess" | "viewIntentAtMost" | "viewIntentFilter" | "viewIntentOnly" | "viewIntentPivot" | "viewIntentAllRows" | "viewIntentTotals" | "viewIntentTuples" | "viewIntentExcludeTuples" | "viewIntentNoChanges" | "viewIntentPreview" | "viewIntentApplied" | "viewIntentSuperseded" | "viewIntentSearch" | "viewIntentSort" | "viewIntentGroup" | "viewIntentColumns" | "compareSummary" | "compareAdded" | "compareRemoved" | "compareChanged" | "compareUnchanged" | "compareOnlyChanges" | "compareColumnChanges" | "viewIntentWords" | "viewIntentSubstring";
 export type CanopyLabels = Partial<Record<LabelName, string>>;
 
 export interface InlineSourceDefinition { kind: "inline"; }

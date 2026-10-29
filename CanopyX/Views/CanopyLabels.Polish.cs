@@ -3,9 +3,16 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Polish labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Polish() => WithPolishUi(new CanopyLabels {
+    public static CanopyLabels Polish() => WithPolishUi(WithPolishForest(WithPolishDataViews(WithPolishCalendar(WithPolishBoardPlan(WithPolishAnalysis(new CanopyLabels {
         GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
+        GridDownloadXlsx = "Skoroszyt Excel (.xlsx)",
+        GridDownloadPdf = "PDF",
+        GridExportWorkbookHint = "Formatowanie, grupy i sumy",
+        GridExportPdfHint = "Raport stronicowany z powtarzanymi nagłówkami",
+        GridExportCsvHint = "Wartości tekstowe (.csv)",
+        GridExportCopy = "Kopiuj do schowka",
         SearchPlaceholder = "Szukaj",
+        GridRegexSearch = "Szukaj według wzorca",
         SearchResults = "Wyniki wyszukiwania",
         SearchResultCount = "Wyniki: {count}",
         SearchResultCountOfTotal = "Wyniki: {count} z {total}",
@@ -120,7 +127,7 @@ public sealed partial class CanopyLabels {
         GridAllResults = "Wszystkie wyniki",
         GridVisibleRows = "Widoczne wiersze",
         GridAllRows = "Wszystkie wiersze",
-        GridDownloadCsv = "Pobierz plik CSV",
+        GridDownloadCsv = "CSV",
         GridCopy = "Kopiuj",
         GridDetails = "Szczegóły rekordu",
         GridCellRangeSelected = "Zaznaczono wiersze: {rows} × kolumny: {columns}",
@@ -219,7 +226,7 @@ public sealed partial class CanopyLabels {
         GridGroupMissing = "Brak wartości",
         GridGroupExpand = "Rozwiń grupę",
         GridGroupCollapse = "Zwiń grupę",
-        GridSummary = "Podsumowanie wyników",
+        GridSummary = "Suma całkowita",
         GridGroupOrder = "Kolejność grup jest ustalona w raporcie",
         GridAggregateCount = "liczba {value}",
         GridAggregateSum = "suma {value}",
@@ -354,7 +361,7 @@ public sealed partial class CanopyLabels {
         GridLiveChanged = "Zmienione wiersze: dodane {added}, zaktualizowane {updated}, usunięte {removed}",
         GridLiveSorted = "Wiersze przeniesiono na miejsca zgodne z sortowaniem.",
         GridLiveRecordRemoved = "Ten rekord został usunięty.",
-        GridFacetPanel = "Filtruj według",
+        GridFacetPanel = "Doprecyzuj",
         GridFacetPanelHide = "Ukryj panel filtrów",
         GridFacetPanelShow = "Pokaż panel filtrów",
         GridFacetShowMore = "Pokaż więcej: {count}",
@@ -514,11 +521,6 @@ public sealed partial class CanopyLabels {
         CalendarOccurrenceTitle = "Zmień wydarzenie cykliczne",
         CalendarOccurrenceReadOnly = "Nie można zapisać tej części serii, ponieważ niektóre wartości są tylko do odczytu.",
         CalendarThisEvent = "To wydarzenie",
-        CalendarEditOccurrence = "Edytuj to wystąpienie",
-        CalendarRemoveOccurrence = "Usuń to wystąpienie",
-        CalendarOccurrenceScope = "Zmienia się tylko {date}; pozostałe daty wydarzenia {title} pozostają bez zmian.",
-        CalendarSharedResources = "{count} {resources}",
-        CalendarResourceWindow = "{resources} {start}–{end} z {total}",
         CalendarThisAndFollowing = "To i następne wydarzenia",
         CalendarAllEvents = "Wszystkie wydarzenia",
         CalendarSources = "Kalendarze",
@@ -782,5 +784,5 @@ public sealed partial class CanopyLabels {
         ChangeCopyRequest = "Kopiuj żądanie",
         ChangeFiltered = "Filtry: {filters}",
         ChangePrintLimit = "Pominięte w wydruku wiersze: {count}.",
-    });
+    }))))));
 }

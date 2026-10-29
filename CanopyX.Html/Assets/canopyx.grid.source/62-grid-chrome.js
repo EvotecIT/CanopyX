@@ -21,8 +21,10 @@
       const summary = overflow.details.firstChild; summary.replaceChildren(gridIcon("more"));
       summary.classList.add("icon"); summary.setAttribute("aria-label", this.labels.gridMore);
       for (const action of [...this.opts.actions || [], ...pluginItems(this, "menuItems")]) overflow.panel.appendChild(this.gridAction(action, act));
-      overflow.panel.append(this.toolbar.querySelector(".cx-grid-details"), this.toolbar.querySelector(".cx-grid-print") ||
-        Object.assign(gridButton(this.labels.gridPrint, () => global.print()), { className: "cx-button cx-grid-print" }));
+      const recordDetails = this.toolbar.querySelector(".cx-grid-details");
+      if (recordDetails) { recordDetails.prepend(gridIcon("columns")); recordDetails.classList.add("cx-btn", "ghost"); }
+      overflow.panel.append(recordDetails, this.toolbar.querySelector(".cx-grid-print"));
+      overflow.details.addEventListener("toggle", () => { if (overflow.details.open) this.syncPrintAvailability(); }, { signal });
       (this.toolbar.querySelector(".cx-grid-export") || overflow.details).before(this.spacer, this.selectionBar, this.toolbarSeparator);
       // Plugin toolbar items ({ label, run }, run as host actions run) follow Columns; Views (built later, and moved by the
       // phone layout) goes after them.
@@ -33,6 +35,7 @@
       signal.addEventListener("abort",()=>{this.headerSelectionFlyout?.dispose();this.headerMenusLifetime?.abort();this.closeGridPopover(false);},{once:true});
     },
     syncGridChrome() {
+      this.syncPrintAvailability();
       if (!this.selectionBar) return;
       const count = this.querySelection ? this.querySelection.matched === null ? null : Math.max(0,this.querySelection.matched - this.selectionExcluded.size) : this.selected.size;
       const selected = count === null || count > 0;

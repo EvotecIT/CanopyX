@@ -12,6 +12,7 @@
   //    DataGrid.drawerHook(order, hook), which runs for every drawer before its first paint, in order.
   let activeRecordDrawer;
   DataGrid.prototype.openGridDrawer=function(record,index,returnFocus,options){
+    const openedFrom=document.activeElement;
     if(activeRecordDrawer?.contains(returnFocus))returnFocus=activeRecordDrawer._returnFocus;
     // A drawer opened in place of another takes its focus: the one it replaces does not restore focus on closing.
     // It leaves the page at once, so the page never holds two drawers (or two titles with one id); its close event still runs.
@@ -61,7 +62,7 @@
     const refreshHooks=()=>DataGrid.refreshDrawerHooks(this,dialog);
     this.host.addEventListener("canopyx:format",refreshHooks);
     dialog.addEventListener("close",()=>{lifetime.abort();owner.signal.removeEventListener("abort",abort);this.host.removeEventListener("canopyx:format",refreshHooks);DataGrid.activeDrawers.delete(dialog);cancelAnimationFrame(dialog._cxHooksFrame);paints?.abort();dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
-      if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary);},{once:true});
+      if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary,openedFrom);},{once:true});
     RECORD_IMPL.decorate?.(this,dialog,{head,identity,title,subtitle,body,options:options||{}});
     DataGrid.applyDrawerHooks(this,dialog);
     paint(record,index);overlay.open();this.focusRing(title);

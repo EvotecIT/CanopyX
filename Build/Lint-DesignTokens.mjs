@@ -11,6 +11,8 @@ const compile = pattern => new RegExp(pattern.replace("(?i)", ""), "ig");
 const length = compile(shared.length);
 const allowed = /^(?:0|auto|none|normal|inherit|initial|unset|revert|revert-layer|transparent|currentcolor|solid|dashed|dotted|double|hidden|inset|outset|thin|medium|thick)$/i;
 const system = new RegExp("\\b(?:" + shared.systemColors.join("|") + ")\\b", "gi");
+const vendor = /--(?:tblr|bs|dt|apex)[a-z]*-/gi;
+const rolesPath = path.join(root, "api/canopyx-roles.txt");
 const colours = new RegExp(shared.hexColor.replace("(?i)", "") + "|" + shared.colorFunctions.replace("(?i)", "") + "|\\b(?:" + shared.namedColors.join("|") + ")\\b", "gi");
 
 /** Returns literal violations with stable declaration identities, independent of line numbers. */
@@ -45,6 +47,10 @@ export function violations(css) {
         const withoutVars = value.replace(/var\((?:[^()]|\([^()]*\))*\)/g, "TOKEN");
         if (colours.test(withoutVars) || !forced && system.test(withoutVars)) add("colour");
         colours.lastIndex = system.lastIndex = 0;
+        // Vendor framework variables (Tabler, Bootstrap, DataTables, ApexCharts) never reach CanopyX, not even through an
+        // alias; hosts map them to roles.
+        if (vendor.test(value)) add("vendor");
+        vendor.lastIndex = 0;
         if (property.startsWith("--")) {
           // A custom property holding a bare length is a fixed size wearing a variable's name; roles come from --hfx-*.
           if (!layout && !/var\(/.test(value) && length.test(value)) add("alias");
@@ -89,6 +95,27 @@ export function scan() {
   return entries;
 }
 
+/** The shared design roles the runtime reads: the contract a host defines to theme CanopyX. */
+export function roles() {
+  const found = new Set(), read = text => [...text.matchAll(/var\(\s*(--hfx-[a-z0-9-]+)/gi)].map(match => match[1]);
+  for (const file of sourceFiles(path.join(root, "CanopyX.Html/Assets")))
+    for (const role of read(fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, ""))) found.add(role);
+  // Build/Sync-Assets.ps1 gives each role its shared fallback, and a fallback can read further roles the shipped CSS then reads too.
+  const fallbacks = JSON.parse(fs.readFileSync(path.join(root, "CanopyX.Html/Assets/Shared/canopyx-fallbacks.json"), "utf8"));
+  for (const role of found) for (const nested of read(fallbacks[role] ?? "")) found.add(nested);
+  return [...found].sort();
+}
+
+/** Runtime scripts that read vendor framework variables, which CanopyX never does. */
+function vendorScripts() {
+  const scripts = directory => fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const full = path.join(directory, entry.name);
+    return entry.isDirectory() ? scripts(full) : entry.name.endsWith(".js") && path.basename(directory).endsWith(".source") ? [full] : [];
+  });
+  return scripts(path.join(root, "CanopyX.Html/Assets")).filter(file => { vendor.lastIndex = 0; return vendor.test(fs.readFileSync(file, "utf8")); })
+    .map(file => path.relative(root, file).replaceAll("\\", "/") + " | vendor | script reads a vendor variable");
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const current = scan();
   if (process.argv.includes("--baseline")) {
@@ -96,7 +123,16 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     fs.writeFileSync(baselinePath, JSON.stringify(current, null, 2) + "\n");
   } else {
     const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
-    const failures = Object.keys(current).filter(key => current[key] > (baseline[key] || 0));
+    const failures = Object.keys(current).filter(key => current[key] > (baseline[key] || 0)).concat(vendorScripts());
+    // The role list is versioned with the API (docs/versioning.md): CANOPYX_API_UPDATE=1 accepts an intended change.
+    const listed = roles().join("\n") + "\n";
+    if (process.env.CANOPYX_API_UPDATE === "1") fs.writeFileSync(rolesPath, listed);
+    else if (!fs.existsSync(rolesPath) || fs.readFileSync(rolesPath, "utf8").replace(/\r\n/g, "\n") !== listed) {
+      const known = new Set(fs.existsSync(rolesPath) ? fs.readFileSync(rolesPath, "utf8").split(/\r?\n/).filter(Boolean) : []), now = new Set(roles());
+      for (const role of now) if (!known.has(role)) failures.push("api/canopyx-roles.txt | + " + role);
+      for (const role of known) if (!now.has(role)) failures.push("api/canopyx-roles.txt | - " + role);
+      failures.push("The design roles the runtime reads changed without an updated api/canopyx-roles.txt; set CANOPYX_API_UPDATE=1 if intended (docs/versioning.md).");
+    }
     for (const key of failures) console.error(key);
     if (failures.length) process.exitCode = 1;
     else console.log(`Design-token lint passed (${Object.values(current).reduce((a, b) => a + b, 0)} existing declarations).`);

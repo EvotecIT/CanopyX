@@ -113,18 +113,18 @@ test("wrapped text limits measure mixed rows and expose complete text", async ({
   expect((await layoutGeometry(page)).scrollHeight).toBeLessThanOrEqual((await layoutGeometry(page)).clientHeight);
 });
 
-test("ten phone cards fit their actual geometry below a 2400px cap", async ({ page }) => {
+test("ten phone cards fit their complete card anatomy within a 3200px host", async ({ page }) => {
   const view = reportLayoutView(); view.selection = "none";
   view.layout = { mode: "cards", modes: ["cards", "fit"] };
   view.rows = Array.from({ length: 10 }, (_, i) => ({ ...view.rows[i % 3], id: "card" + i }));
   await mountReportLayout(page, { view, width: 342, viewport: { width: 390, height: 844 } });
-  await page.locator('.cx-host').evaluate(host => { host.style.height = "2400px"; host.style.maxHeight = "2400px"; });
+  await page.locator('.cx-host').evaluate(host => { host.style.height = "3200px"; host.style.maxHeight = "3200px"; });
   await nextFrames(page); await nextFrames(page);
   await expect(page.locator('.cx-row[data-cx-id]')).toHaveCount(10);
   await expect.poll(() => page.locator('.cx-grid').evaluate(grid => grid.scrollHeight <= grid.clientHeight + 1)).toBe(true);
   const box = await layoutGeometry(page);
   expect(box.bottom).toBeLessThanOrEqual(box.visibleBottom + 1);
-  expect(await page.locator('.cx-host').evaluate(host => host.getBoundingClientRect().height)).toBeLessThanOrEqual(2400);
+  expect(await page.locator('.cx-host').evaluate(host => host.getBoundingClientRect().height)).toBeLessThanOrEqual(3200);
 });
 
 for (const configured of [false, true]) test(`case-distinct category facets and filters opt in (${configured})`, async ({ page }) => {

@@ -30,8 +30,11 @@
 
     // A grid with conditional formatting is ready once its formatting part is too (52-grid-formatting.js).
     initializeState() {
-      const ready = this.initialState ? this.setState(this.initialState) : this.setQuery(this.view.query || {});
-      return this.view.formatRules || this.view.formatting ? Promise.all([ready, this.loadFormatting().catch(error => this.emit("error", { error }))]).then(([result]) => result) : ready;
+      const start = () => {
+        const ready = this.initialState ? this.setState(this.initialState) : this.setQuery(this.view.query || {});
+        return this.view.formatRules || this.view.formatting ? Promise.all([ready, this.loadFormatting().catch(error => this.emit("error", { error }))]).then(([result]) => result) : ready;
+      };
+      return gridUsesCalculations(this.view) && !this.calculationPrepared ? this.prepareCalculations().then(start) : start();
     },
     getState() {
       const query = this.getQuery() || this.defaultState.query;
@@ -83,6 +86,9 @@
       if (this.destroyed || before !== this.queryEpoch) throw new DOMException("Grid state was superseded.", "AbortError");
       state.formatRules = rules;
       clearTimeout(this.searchTimer); this.searchTimer = null;
+      // Optional projections read this intent while fetching; presentation still belongs to the accepted view.
+      const restore = { state, epoch: this.queryEpoch + 1 };
+      this.stateQueryRestore = restore;
       const pending = this.setQuery({ ...state.query, offset: state.paging ? state.paging.offset : 0 }, state.paging), epoch = this.queryEpoch;
       this.restoringEpoch = epoch;
       try {
@@ -91,6 +97,7 @@
         await this.applyStatePresentation(state);
         return this.getQuery();
       } finally {
+        if (this.stateQueryRestore === restore) this.stateQueryRestore = null;
         if (this.restoringEpoch === epoch) { this.restoringEpoch = null; this.stateChanged(); }
       }
     },

@@ -7,6 +7,15 @@ namespace CanopyX.Tests.Grids;
 /// <summary>Explicit display formats round the binary64 wire value consistently with browser fixed-point formatting.</summary>
 public sealed class GridNumberRoundingTests {
     [Theory]
+    [InlineData("ROUND(150000, -5)", 199999.99999999997)]
+    [InlineData("ROUND(-150000, -5)", -199999.99999999997)]
+    public void CalculationRound_UsesTheSameDecimalScaleOnTheLegacyClr(string expression, double expected) {
+        var result = CanopyCalculation.Parse(expression).Evaluate(_ => null);
+        Assert.Null(result.Error);
+        Assert.Equal(expected, result.Value);
+    }
+
+    [Theory]
     [InlineData(2.675, "2.67")]
     [InlineData(-2.675, "-2.67")]
     [InlineData(0.125, "0.13")]

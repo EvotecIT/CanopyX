@@ -66,7 +66,7 @@
         const summary = this.linkAcceptedExt && this.acceptedQuery && this.toolbar.querySelector(".cx-grid-filters > summary");
         if (!summary) return;
         const group = item => item ? item.filters.length + item.groups.reduce((sum, child) => sum + group(child), 0) : 0;
-        const count = strip(this.acceptedQuery.filters, this.linkAcceptedExt).length + group(this.acceptedQuery.filterGroup);
+        const count = strip(this.acceptedQuery.filters, this.linkAcceptedExt).length + group(this.acceptedQuery.filterGroup) + (this.acceptedQuery.tupleFilters?.length || 0);
         summary.classList.toggle("active", !!count); summary.querySelector(".badge")?.remove();
         if (count) { const badge = h("span", "badge"); setText(badge, String(count)); summary.appendChild(badge); }
       },

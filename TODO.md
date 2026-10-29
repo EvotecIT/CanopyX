@@ -288,8 +288,11 @@ Consumers: the HtmlForgeX DataExplorer's wide datasets and live inventories; the
 - [ ] Map formatting rules into the styled spreadsheet export format once the OfficeIMO-based writer lands: native conditional formatting for conditions, data bars, colour scales and bands, with theme tones resolved to the export palette.
 - [x] Search-hit highlighting: marks for search and column-filter hits in cells, the record drawer and tree nodes, a live match count and next/previous navigation that reaches virtual rows, case and accent options, a saved switch (docs/search-highlight.md).
 - [x] Layout modes: fit, scroll sideways and cards, with compact, normal and comfortable densities, switched from a Layout menu or the API and kept in saved views; trees offer fit and scroll (docs/layout-modes.md).
-- [ ] Evaluate pivot presentation only after a real inventory needs it and grouping/aggregate semantics are stable. Hosted pivot data is computed through the host/data owner; full charts remain ChartForgeX integrations. A 2D categorical matrix remains its own view rather than an overloaded table option.
+- [x] Add calendar/date/time and numeric range buckets to grouping and facets, with matching typed filters, static summaries and hosted translation.
+- [x] Add aggregate display modes, numeric values with spreadsheet formats, saved presentation intent and a lazy menu that remains available on phones.
+- [ ] Complete pivot delivery for inventory and monitoring analysis: the typed inline/hosted pivot, bounded axes, totals, collapse, top-N/Other, exact drill-through, static output and numeric outlined capture are implemented ([pivot](docs/pivot.md)); spreadsheet outline/print integration and combined release qualification remain. Full charts stay in ChartForgeX; the categorical matrix remains its own view.
 - [ ] Compose ChartForgeX charts for a selected range or group and richer chart cells through host renderers. Preserve the existing bar/line/period-strip presenters for small host-supplied histories.
+- [x] Add calculated columns with a bounded scalar grammar, matching C# and browser evaluation, shared conformance vectors, inline editing, query/export participation and script-free output ([calculated columns](docs/calculated-columns.md)).
 - [ ] Qualify sticky headers during page scrolling for grids that grow with their rows.
 
 Gate: produce a measured wide/live inventory demonstration. Record DOM/cache bounds, browser memory, query/render/input latency, sustained scroll and update behavior at normal and 4x slowdown. Keyboard navigation, cell identity and frozen headers remain correct when columns/rows leave the mounted window. Ship only the extensions that improve the demonstrated consumer.
@@ -378,6 +381,11 @@ Gate: a 150 × 25 status matrix and a representative relationship matrix meet th
 
 Consumers: file-change drawers and email cards through the HtmlForgeX bridge ([changes.md](docs/changes.md)).
 
+- [x] Keyed dataset comparison for baseline and inventory review, with row status, per-column counts, before/after
+  cells, a changes-only query scope, hosted two-query mapping and script-free email output ([dataset-compare.md](docs/dataset-compare.md)).
+- [ ] Finish pivot state bindings for host-supplied view intents with a versioned schema, target validator and explicit chip preview/apply flow
+  ([view-intents.md](docs/view-intents.md)). Model access and tool governance stay in the host.
+
 - [ ] Wrapped lines in the diff for short diffs (today long lines scroll sideways).
 - [ ] Syntax colouring of diff lines through a host renderer, if a consumer asks for it.
 
@@ -421,6 +429,14 @@ Consumers: certificate expiries and renewals, monitoring incidents, outages and 
 - [ ] Backlog by owner decision, not a release blocker: screen-reader speech checks of the calendar views with NVDA and Narrator.
 
 Gate: the calendar examples pass the browser suites on Chromium, Firefox and WebKit at desktop and phone widths in both palettes, the month paints 5,000 events and the timeline 5,000 resources and 100,000 events within the performance gates, and the parts stay under their gzip guards.
+
+## Board and plan views
+
+- [x] Board lanes from column values, WIP limits, optional swimlanes, virtual cards and a phone lane picker, sharing search, facets, views and record details. Drag and keyboard moves raise host-governed edits.
+- [x] Task plans on the resource timeline: finish-to-start dependencies, milestones, elapsed-duration critical paths, baseline comparisons and date/resource proposals with conflict marks.
+- [x] Explicit path explanations and ordered stack explanations over inline records, with record-panel navigation, semantic annotations and static output. Consumers supply relationship paths and configuration precedence.
+- [x] Matrix and propagation snapshot replay with manual stepping, play/pause, reduced motion and selected-frame static output. Consumers supply monitoring history.
+- [x] Typed C# definitions, optional browser parts, translated labels and script-free board/plan snapshots for email and print.
 
 ## 1.0 Public-Grade
 

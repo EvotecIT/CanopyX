@@ -10,5 +10,5 @@
     recordLoadMore: "Load more", recordCount: "{shown} of {total}", recordItems: "{count} items", recordMore: "+{count}",
     recordShowAll: "Show all {count}", recordRetry: "Retry", recordLoadFailed: "Could not load the record details: {error}", recordUnavailable: "Record {id} is not available here.",
     recordField: "Field", recordValue: "Value", recordSection: "Section", recordBefore: "Before", recordAfter: "After",
-    recordAdded: "Added", recordRemoved: "Removed", recordChanged: "{count} changed fields"
+    recordAdded: "Added", recordRemoved: "Removed", recordChanged: "Changed fields: {count}"
   }));

@@ -7,14 +7,14 @@
     const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "identifier", "tags", "missing", "structured"];
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
     if (!options || typeof options !== "object" || Array.isArray(options) || !kinds.includes(options.kind)) invalid();
-    if (["progress","change"].includes(options.kind) && column.kind!=="number" ||
+    if ((options.kind==="progress" || options.kind==="change" && !options.beforeAfter) && column.kind!=="number" ||
         ["boolean","list","tags","link"].includes(options.kind) && column.kind!=="text") invalid();
-    for (const name of ["newWindow","inverted","mono","higherIsGood"]) if (options[name]!==undefined && typeof options[name]!=="boolean") invalid();
+    for (const name of ["newWindow","inverted","mono","higherIsGood","beforeAfter"]) if (options[name]!==undefined && typeof options[name]!=="boolean") invalid();
     for (const name of ["hrefColumn","deltaColumn","secondaryColumn"]) if (options[name]!==undefined) {
       const target=columns.find(item=>item.id===options[name]);
       if (!target || name==="hrefColumn"&&target.kind!=="text" || name==="deltaColumn"&&target.kind!=="number") invalid();
     }
-    if (options.kind==="change"&&!options.deltaColumn || options.kind==="icon"&&(typeof options.glyph!=="string"||!options.glyph.trim()||options.glyph.length>32)) invalid();
+    if (options.kind==="change"&&!options.beforeAfter&&!options.deltaColumn || options.beforeAfter && (options.kind!=="change" || options.deltaColumn!==undefined) || options.kind==="icon"&&(typeof options.glyph!=="string"||!options.glyph.trim()||options.glyph.length>32)) invalid();
     if (options.maximum!==undefined&&(!Number.isFinite(options.maximum)||options.maximum<=0||options.maximum>Number.MAX_SAFE_INTEGER)) invalid();
     if (["list","tags"].includes(options.kind) && (typeof options.separator!=="string"||!options.separator.length||options.separator.length>16||
         options.limit!==undefined&&(!Number.isInteger(options.limit)||options.limit<1||options.limit>16))) invalid();

@@ -1,3 +1,4 @@
+import type { TimePlaybackApi } from "./time-slider.js";
 // Type declarations for the change views (docs/changes.md): a text diff, a change list and a propagation view.
 
 /** A note about a change that the lines cannot show, such as changed line endings. */
@@ -237,10 +238,12 @@ export interface PropagationOptions {
 
 /** The API of a propagation view. */
 export interface PropagationApi {
+  /** Snapshot controls; available after ready when the document supplies timeSlider. */
+  readonly playback: TimePlaybackApi;
   readonly element: HTMLElement;
   readonly view: PropagationDocument;
   readonly ready: Promise<PropagationApi>;
-  update(view: PropagationDocument): void;
+  update(view: PropagationDocument): void | Promise<void>;
   destroy(): void;
 }
 

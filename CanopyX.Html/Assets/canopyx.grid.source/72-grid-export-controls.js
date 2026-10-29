@@ -1,7 +1,10 @@
   // ---------- explicit client export scope ----------
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridExport: "Export", gridFilteredResults: "Filtered results", gridSelectedRows: "Selected rows",
-    gridAllResults: "All results", gridVisibleRows: "Visible rows", gridAllRows: "All rows", gridDownloadCsv: "Download CSV", gridCopy: "Copy", gridDetails: "Record details",
+    gridAllResults: "All results", gridVisibleRows: "Visible rows", gridAllRows: "All rows", gridDownloadCsv: "CSV", gridCopy: "Copy", gridDetails: "Record details",
+    gridDownloadXlsx: "Excel workbook (.xlsx)", gridDownloadPdf: "PDF",
+    gridExportWorkbookHint: "Formatted, with groups and totals", gridExportPdfHint: "Paged report with repeating headings",
+    gridExportCsvHint: "Plain text values (.csv)", gridExportCopy: "Copy to clipboard",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records",
     gridExportCancelled: "Export cancelled", gridCancelExport: "Cancel export", gridNoExportColumns: "No visible columns allow export."
   }));
@@ -16,6 +19,48 @@
   Object.assign(DataGrid.prototype, {
     async *exportRows(...args){await loadExportPart();yield*EXPORT_IMPL.exportRows.apply(this,args);},
     exportAs(format,options){return exportAs(this,format,options);},
+    exportFromMenu(action) { return loadExportPart().then(() => EXPORT_IMPL.exportFromMenu.call(this, action)); },
+    syncPrintAvailability() {
+      for (const button of [this.printButton, this.exportPrintButton]) if (button)
+        button.disabled = !!this.exportControl?.panel?.cxExportBusy?.() || !this.defaultExportColumns().length;
+    },
+    print(options) {
+      const { onProgress, maxRows = 1000, timeoutMs, ...capture } = options || {};
+      if (onProgress !== undefined && typeof onProgress !== "function") throw new Error("CanopyX: print progress needs a callback.");
+      const layout = this.layoutMode === "cards" ? "stacked" : "table";
+      const tokenColumns = new Set();
+      let template = layout === "stacked" && this.view.cardTemplate ? JSON.parse(JSON.stringify(this.view.cardTemplate)) : null,
+        projection = null, capturedOptions = capture;
+      if (template && typeof this.opts.onPrint !== "function") {
+        projection = capture.columns === undefined ? this.defaultExportColumns().map(column => column.id) :
+          Array.isArray(capture.columns) ? capture.columns.slice() : null;
+        if (projection?.length) {
+          const columns = projection.slice();
+          for (const [slot, text] of Object.entries(template)) {
+            if (!projection.includes(slot)) { delete template[slot]; continue; }
+            tokenColumns.add(slot);
+            const inputs = [...text.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
+            if (inputs.some(id => !this.columns.some(column => column.id === id && column.exportable !== false))) {
+              template[slot] = null; continue;
+            }
+            for (const id of inputs) { tokenColumns.add(id); if (!columns.includes(id)) columns.push(id); }
+          }
+          capturedOptions = { ...capture, columns };
+        }
+      }
+      const exported = this.prepareExport(capturedOptions);
+      const cardColumns = layout === "stacked" ? (projection || exported.request.columns.map(column => column.id)).map(id => this.columns.find(column => column.id === id)) : [];
+      const cardRoles = cardColumns.map((column, index) => VIEW_MODES.cardRole(column, index, cardColumns));
+      if (projection) GRID_REPORTING.captureCardText?.(exported.request, tokenColumns);
+      return this.runGridHook(async signal => {
+        await loadExportPart();
+        const progress = (phase, completed) => onProgress?.(Object.freeze({ phase, completed, total: exported.request.recordCount }));
+        const snapshot = await EXPORT_IMPL.snapshot(this, exported, maxRows, signal, progress);
+        if (typeof this.opts.onPrint === "function") await this.opts.onPrint({ snapshot, signal, layout });
+        else await EXPORT_IMPL.printSnapshot(this, snapshot, signal, layout, template, projection, cardRoles);
+        gridOperationActive(this, signal); progress("ready", snapshot.rows.length);
+      }, capture.signal, exportTimeout(this, { timeoutMs }));
+    },
     // Record details is a more-menu entry, kept when the Export menu is switched off.
     buildExportControls() {
       this.toolbar.appendChild(Object.assign(gridButton(this.labels.gridDetails, () => {
@@ -25,6 +70,10 @@
           this.openDetails(row.key).catch(error => this.emit("error", { error }));
         } catch (error) { this.emit("error", { error }); }
       }), { className: "cx-button cx-grid-details" }));
+      const print = this.printButton = gridButton(this.labels.gridPrint, () => Promise.resolve().then(() => this.exportControl ?
+        this.exportFromMenu((options, onProgress) => this.print({ ...options, onProgress })) : this.print({ scope: "filtered" }))
+        .catch(error => this.emit("error", { error })));
+      print.classList.add("cx-grid-print"); print.hidden = this.tools.export !== false; this.toolbar.appendChild(print);
       if (this.tools.export !== false) this.exportControl = this.controlPanel(this.labels.gridExport, "cx-grid-export", panel => this.renderGridExport(panel));
     },
     // Replaced by the export part's menu once it is installed.

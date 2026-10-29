@@ -2,7 +2,7 @@
   const FILTER_SUMMARY = DataGrid.prototype.syncQuerySummary;
   DataGrid.prototype.syncQuerySummary = function () {
     FILTER_SUMMARY.call(this);
-    const controls = this.reportingFilters, query = this.getQuery(), shape = JSON.stringify([query?.filters || [], query?.filterGroup || null]);
+    const controls = this.reportingFilters, query = this.getQuery(), shape = JSON.stringify([query?.filters || [], query?.filterGroup || null, query?.tupleFilters || null]);
     if (!controls?.details.open || shape === this.reportingFilterDraftBase) return;
     if (this.reportingFilterSubmitEpoch === this.queryEpoch) this.reportingFilterDraftBase = shape;
     else {
@@ -19,7 +19,7 @@
     sync();return segment;
   }
   DataGrid.prototype.renderGridFilters=function(panel){
-    panel.replaceChildren();panel.classList.add("cx-fb");this.reportingFilterDraftBase=JSON.stringify([this.queryForChange().filters||[],this.queryForChange().filterGroup||null]);
+    panel.replaceChildren();panel.classList.add("cx-fb");this.reportingFilterDraftBase=JSON.stringify([this.queryForChange().filters||[],this.queryForChange().filterGroup||null,this.queryForChange().tupleFilters||null]);
     const form=h("form","cx-grid-filter-form cx-fb"),head=h("div","cx-pop-h"),body=h("div","cx-pop-b"),footer=h("div","cx-pop-f"),error=h("p","cx-grid-control-error");
     setText(head,this.labels.gridFilters);error.setAttribute("role","status");panel.append(head,form);form.append(body,error,footer);
     panel._filterLifetime?.abort();const controller=panel._filterLifetime=new AbortController();
@@ -37,7 +37,8 @@
     form.addEventListener("keydown",event=>{const box=event.target.closest(".cx-ms[open]");if(event.key==="Escape"&&box){box.open=false;box.firstChild.focus();event.stopPropagation();}});
     panel.parentElement.addEventListener("toggle",()=>{if(!panel.parentElement.open)controller.abort();},{signal:controller.signal});
     const close=()=>{clearTimeout(timer);panel.parentElement.open=false;panel.parentElement.querySelector("summary").focus();};
-    footer.append(gridVariant(gridButton(this.labels.gridClearFilters,()=>{clearTimeout(timer);this.setQuery(gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:undefined})).catch(failure=>setText(error,failure.message));this.renderGridFilters(panel);}),"ghost"),gridVariant(gridButton(this.labels.gridDone,()=>{draft=gridQueryStart(draft||this.queryForChange(),{search:this.queryForChange(true).search});flush();close();}),"primary"));
+    footer.append(gridVariant(gridButton(this.labels.gridClearFilters,()=>{clearTimeout(timer);this.setQuery(gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:undefined,tupleFilters:undefined})).catch(failure=>setText(error,failure.message));this.renderGridFilters(panel);}),"ghost"),gridVariant(gridButton(this.labels.gridDone,()=>{draft=gridQueryStart(draft||this.queryForChange(),{search:this.queryForChange(true).search});flush();close();}),"primary"));
+    if(this.queryForChange().tupleFilters?.length){const notice=h("p");setText(notice,this.labels.gridComplexFilter);body.appendChild(notice);}
     if(gridFilterDepth(this.queryForChange().filterGroup)>2){
       const notice=h("p");setText(notice,this.labels.gridDeepFilters);text=h("textarea","cx-filter-text");text.setAttribute("aria-label",this.labels.gridFilterText);text.readOnly=true;
       text.value=JSON.stringify({filters:this.queryForChange().filters||[],filterGroup:this.queryForChange().filterGroup},null,2);
@@ -77,7 +78,7 @@
       return filters.length||groups.length?{operator:segment._operator,filters,groups}:null;};
     const readQuery=()=>{
       if(editingText){const value=JSON.parse(text.value);return gridQueryStart(this.queryForChange(true),{filters:value.filters||[],filterGroup:value.filterGroup});}
-      const value=readBlock(root);if(!value)return gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:undefined});
+      const value=readBlock(root);if(!value)return gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:undefined,tupleFilters:undefined});
       if(value.operator==="or")return gridQueryStart(this.queryForChange(true),{filters:[],filterGroup:value});
       return gridQueryStart(this.queryForChange(true),{filters:value.filters,filterGroup:value.groups.length===1?value.groups[0]:value.groups.length?{operator:"and",filters:[],groups:value.groups}:undefined});
     };

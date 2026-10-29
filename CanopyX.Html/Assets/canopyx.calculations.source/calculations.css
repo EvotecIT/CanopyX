@@ -1,0 +1,8 @@
+.cx-calculation-editor { display: grid; gap: var(--hfx-space-3); padding: 0; }
+.cx-calculation-editor label { display: grid; gap: var(--hfx-space-1); min-width: 0; }
+.cx-calculation-editor :is(.cx-input,.cx-textarea) { width: 100%; min-width: 0; box-sizing: border-box; }
+.cx-calculation-editor textarea { resize: vertical; font-family: var(--hfx-font-mono); }
+.cx-calculation-editor p { margin: 0; line-height:var(--hfx-type-caption-line-height); }
+
+.cx-calculation-error { color: var(--hfx-color-status-bad-fg); }
+@media print { .cx-calculation-editor { display: none; } }

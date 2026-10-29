@@ -118,7 +118,7 @@ public sealed partial class CanopyRemoteHandler {
         var result = await Provider.FacetAsync(request, cancellationToken).ConfigureAwait(false);
         await RevisionAsync(revision, cancellationToken).ConfigureAwait(false);
         var page = new CanopyGridFacetPage(Schema.ViewId, revision, request.Column.Id, result.Matched, result.TotalValues) {
-            Search = request.Search, IncludeCurrentFilter = request.IncludeCurrentFilter
+            Search = request.Search, IncludeCurrentFilter = request.IncludeCurrentFilter, Bucket = request.Bucket
         };
         foreach (var item in result.Items.Take(request.Limit)) page.Items.Add(new CanopyGridFacetValue(CanopyDataValues.ToCell(item.Value), item.Count));
         return page.ToJson(Schema.ProtocolView);

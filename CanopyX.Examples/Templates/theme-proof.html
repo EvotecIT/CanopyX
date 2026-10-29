@@ -31,6 +31,9 @@ html:not([data-proof-host]) #proof-style { display:none; }
 .proof-option { display:inline-flex;align-items:center;gap:var(--hfx-space-2); }
 .proof-views { display:grid;gap:var(--hfx-space-5); }
 .proof-views .cx-host { border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-md); }
+/* A card that frames a grid itself: the grid is embedded (CanopyChrome.Embedded) and the body drops its padding for it. */
+.proof-embedded { padding:0;overflow:hidden;background:var(--hfx-color-surface-raised); }
+.proof-embedded > h2 { margin:0;padding:var(--hfx-card-padding-y) var(--hfx-card-padding-x);border-bottom:var(--hfx-border-width) solid var(--hfx-color-border); }
 @media (max-width:640px) { body.proof { padding:var(--hfx-space-4); } }
 </style>
 <script>{{script}}</script>
@@ -121,7 +124,11 @@ html:not([data-proof-host]) #proof-style { display:none; }
       </div>
     </div>
   </section>
-  <section class="proof-card" aria-labelledby="views-title">
+  <section class="proof-card proof-embedded" aria-labelledby="embedded-title" id="embedded">
+    <h2 id="embedded-title">Grid in a card</h2>
+    {{embedded}}
+  </section>
+  <section aria-labelledby="views-title">
     <h2 id="views-title">Views</h2>
     <div class="proof-views">
       <div>{{grid}}</div>

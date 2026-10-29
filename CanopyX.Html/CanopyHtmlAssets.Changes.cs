@@ -39,7 +39,7 @@ public static partial class CanopyHtmlAssets {
     /// <param name="view">The view.</param>
     /// <returns>The parts, in manifest order.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
-    public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyPropagation view) => view == null ? throw new ArgumentNullException(nameof(view)) : GetChangeViewParts();
+    public static IReadOnlyList<CanopyHtmlPart> GetRequiredParts(CanopyPropagation view) => view == null ? throw new ArgumentNullException(nameof(view)) : WithRequired(Parts.Where(part => part.IsNeededBy(view)));
 
     internal static IReadOnlyList<CanopyHtmlPart> GetChangeViewParts() => WithRequired(Parts.Where(part => part.IsNeededByChangeView));
 }

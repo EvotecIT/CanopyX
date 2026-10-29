@@ -102,7 +102,7 @@
     },
     // Loads the parts of the declared features and starts them; a part that cannot load is reported, the view keeps working.
     startViewModes() {
-      const parts = [this.highlightOptions && "highlight", this.layoutOptions && "layouts"].filter(Boolean);
+      const parts = [this.highlightOptions && "highlight", (this.layoutOptions || this.view.stickyHeader) && "layouts"].filter(Boolean);
       return Promise.all(parts.map(name => this.requirePart(name).then(() => this.destroyed || VIEW_MODES[name + "Start"](this))
         .catch(error => this.emit("error", { error }))));
     },

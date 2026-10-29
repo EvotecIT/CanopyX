@@ -4,7 +4,7 @@
   // the part with its first query and is ready once both are. The panel's selections are the reader's own filters, so the
   // query, chips, saved views and exports carry them; the grid state also keeps whether the panel is open.
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
-    gridFacetPanel: "Filter by", gridFacetPanelHide: "Hide the filter panel", gridFacetPanelShow: "Show the filter panel",
+    gridFacetPanel: "Refine", gridFacetPanelHide: "Hide the filter panel", gridFacetPanelShow: "Show the filter panel",
     gridFacetShowMore: "Show {count} more", gridFacetShowFewer: "Show fewer", gridFacetEmptyValue: "(Empty)",
     gridFacetFrom: "From", gridFacetTo: "To", gridFacetHistogram: "Distribution of {column}", gridFacetBin: "{from} to {to}: {count} rows",
     gridFacetNoChart: "Too many values to chart", gridFacetClear: "Clear {column}", gridFacetCustom: "Another condition filters this column.",
@@ -12,9 +12,12 @@
     gridFacetCollapse: "Collapse {column}", gridFacetExpand: "Expand {column}", gridFacetInvalid: "Enter a valid value.", gridFacetReversed: "From must not be after To."
   }));
   const GRID_FACETS = definePart(DataGrid, "facets", "facet panel", () => ({ DataGrid, h, setText, fill, gridButton, gridIcon, gridQueryStart,
-    gridQueryRows, gridColumnProjection, gridScalar, gridOrder, gridKeyCompare, gridFacetKey, cellText, foldText, numberFormat, gridCellRenderer, gridFreeze, overlayTheme, watchOverlayTheme }));
+    gridQueryRows, gridColumnProjection, gridScalar, gridOrder, gridKeyCompare, gridFacetKey, cellText, foldText, numberFormat, gridCellRenderer, gridFreeze, overlayTheme, watchOverlayTheme, GRID_BUCKETS, gridBucketDefinition }));
   Object.assign(DataGrid.prototype, {
-    loadFacets() { return this.facetLoad ||= loadPart(GRID_FACETS).then(() => this.destroyed || this.startFacets()).catch(error => { this.facetLoad = null; throw error; }); },
+    loadFacets() { return this.facetLoad ||= Promise.resolve().then(async () => {
+      if ((this.opts.facets?.columns || this.view.facets?.columns)?.some(facet => facet?.bucket)) await loadPart(BUCKETS_PART);
+      await loadPart(GRID_FACETS); if (!this.destroyed) this.startFacets();
+    }).catch(error => { this.facetLoad = null; throw error; }); },
     setFacetPanelOpen(open) { return this.loadFacets().then(() => this.setFacetPanelOpen(open)); },
     getFacetPanel() { return gridFreeze({ open: this.facetOpen ?? null, columns: (this.facetColumns || []).map(facet => facet.column) }); }
   });

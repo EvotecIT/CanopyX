@@ -3,12 +3,22 @@ using System.Collections.Generic;
 
 namespace CanopyX;
 
-// The English default of every label. Build/Sync-Labels.ps1 reads the entries of this file in this order and
+// The English default of every label, one entry per line. Build/Sync-Labels.ps1 reads this file, then the Defaults.*.cs partials, and
 // generates the shipped language packs from CanopyX/Views/Locales/labels.json in the same order.
 public sealed partial class CanopyLabels {
-    private static readonly Dictionary<string, string> Defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
+    private static readonly Dictionary<string, string> Defaults = CreateDefaults();
+
+    private static Dictionary<string, string> CreateDefaults() {
+        var defaults = new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(GridNoExportColumns)] = "No visible columns allow export.",
+        [nameof(GridDownloadXlsx)] = "Excel workbook (.xlsx)",
+        [nameof(GridDownloadPdf)] = "PDF",
+        [nameof(GridExportWorkbookHint)] = "Formatted, with groups and totals",
+        [nameof(GridExportPdfHint)] = "Paged report with repeating headings",
+        [nameof(GridExportCsvHint)] = "Plain text values (.csv)",
+        [nameof(GridExportCopy)] = "Copy to clipboard",
         [nameof(SearchPlaceholder)] = "Search",
+        [nameof(GridRegexSearch)] = "Search pattern",
         [nameof(SearchResults)] = "Search results",
         [nameof(SearchResultCount)] = "{count} results",
         [nameof(SearchResultCountOfTotal)] = "{count} of {total} results",
@@ -123,7 +133,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridAllResults)] = "All results",
         [nameof(GridVisibleRows)] = "Visible rows",
         [nameof(GridAllRows)] = "All rows",
-        [nameof(GridDownloadCsv)] = "Download CSV",
+        [nameof(GridDownloadCsv)] = "CSV",
         [nameof(GridCopy)] = "Copy",
         [nameof(GridDetails)] = "Record details",
         [nameof(GridCellRangeSelected)] = "{rows} rows × {columns} columns selected",
@@ -222,7 +232,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridGroupMissing)] = "Missing value",
         [nameof(GridGroupExpand)] = "Expand group",
         [nameof(GridGroupCollapse)] = "Collapse group",
-        [nameof(GridSummary)] = "Query totals",
+        [nameof(GridSummary)] = "Grand total",
         [nameof(GridGroupOrder)] = "Group order is fixed by this report",
         [nameof(GridAggregateCount)] = "count {value}",
         [nameof(GridAggregateSum)] = "sum {value}",
@@ -313,7 +323,7 @@ public sealed partial class CanopyLabels {
         [nameof(RecordAfter)] = "After",
         [nameof(RecordAdded)] = "Added",
         [nameof(RecordRemoved)] = "Removed",
-        [nameof(RecordChanged)] = "{count} changed fields",
+        [nameof(RecordChanged)] = "Changed fields: {count}",
         [nameof(Yes)] = "Yes",
         [nameof(No)] = "No",
         [nameof(UtcTime)] = "{time} UTC",
@@ -357,7 +367,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridLiveChanged)] = "Rows changed: {added} added, {updated} updated, {removed} removed",
         [nameof(GridLiveSorted)] = "Rows moved to their sorted places.",
         [nameof(GridLiveRecordRemoved)] = "This record was removed.",
-        [nameof(GridFacetPanel)] = "Filter by",
+        [nameof(GridFacetPanel)] = "Refine",
         [nameof(GridFacetPanelHide)] = "Hide the filter panel",
         [nameof(GridFacetPanelShow)] = "Show the filter panel",
         [nameof(GridFacetShowMore)] = "Show {count} more",
@@ -517,11 +527,6 @@ public sealed partial class CanopyLabels {
         [nameof(CalendarOccurrenceTitle)] = "Change a repeating event",
         [nameof(CalendarOccurrenceReadOnly)] = "This part of the series cannot be saved because some values are read-only.",
         [nameof(CalendarThisEvent)] = "This event",
-        [nameof(CalendarEditOccurrence)] = "Edit this occurrence",
-        [nameof(CalendarRemoveOccurrence)] = "Remove this occurrence",
-        [nameof(CalendarOccurrenceScope)] = "Only {date} changes; other dates of {title} stay as they are.",
-        [nameof(CalendarSharedResources)] = "{count} {resources}",
-        [nameof(CalendarResourceWindow)] = "{resources} {start}–{end} of {total}",
         [nameof(CalendarThisAndFollowing)] = "This and following events",
         [nameof(CalendarAllEvents)] = "All events",
         [nameof(CalendarSources)] = "Calendars",
@@ -763,13 +768,17 @@ public sealed partial class CanopyLabels {
         [nameof(ChangeUnknown)] = "Unknown",
         [nameof(ChangeReplica)] = "Replica",
         [nameof(ChangeState)] = "State",
-        [nameof(ChangeFirstSeen)] = "First seen", [nameof(ChangeLastSeen)] = "Last seen",
+        [nameof(ChangeFirstSeen)] = "First seen",
+        [nameof(ChangeLastSeen)] = "Last seen",
         [nameof(ChangeTimeline)] = "Delay",
-        [nameof(ChangeNotSeen)] = "Not seen yet", [nameof(ChangeDelay)] = "+{duration}",
+        [nameof(ChangeNotSeen)] = "Not seen yet",
+        [nameof(ChangeDelay)] = "+{duration}",
         [nameof(ChangeSource)] = "Source",
         [nameof(ChangeProgress)] = "{converged} of {total} have the change",
-        [nameof(ChangeSeconds)] = "{count} s", [nameof(ChangeMinutes)] = "{count} min",
-        [nameof(ChangeHours)] = "{count} h", [nameof(ChangeDays)] = "{count} d",
+        [nameof(ChangeSeconds)] = "{count} s",
+        [nameof(ChangeMinutes)] = "{count} min",
+        [nameof(ChangeHours)] = "{count} h",
+        [nameof(ChangeDays)] = "{count} d",
         [nameof(ChangeUtcTime)] = "{time} UTC",
         [nameof(ChangeExportCsv)] = "Export CSV", [nameof(ChangeExportJson)] = "Export JSON",
         [nameof(ChangeReason)] = "Reason", [nameof(ChangeReasonHint)] = "{action}: say why. The reason is kept with the action.",
@@ -778,20 +787,11 @@ public sealed partial class CanopyLabels {
         [nameof(ChangeCopyRequest)] = "Copy request",
         [nameof(ChangeFiltered)] = "Filtered: {filters}",
         [nameof(ChangePrintLimit)] = "[one]{count} more line is not printed.[other]{count} more lines are not printed.",
-        [nameof(TabsMore)] = "More", [nameof(TabsMoreSelected)] = "More: {label}",
-        [nameof(TabsScrollPrevious)] = "Previous tabs", [nameof(TabsScrollNext)] = "Next tabs",
-        [nameof(TabsSection)] = "Section", [nameof(TabsPosition)] = "{current} of {total}",
-        [nameof(TabsPause)] = "Pause", [nameof(TabsPlay)] = "Play",
-        [nameof(TabsMotionDisabled)] = "Automatic tabs are disabled by reduced motion",
-        [nameof(StepperStepOf)] = "Step {current} of {total}", [nameof(StepperBack)] = "Back",
-        [nameof(StepperNext)] = "Next", [nameof(StepperFinish)] = "Finish",
-        [nameof(StepperSkip)] = "Skip", [nameof(StepperSaveDraft)] = "Save draft",
-        [nameof(StepperAllSteps)] = "All steps", [nameof(StepperOptional)] = "Optional",
-        [nameof(StepperCompleted)] = "Completed", [nameof(StepperSkipped)] = "Skipped",
-        [nameof(StepperIssues)] = "{count} issues to fix", [nameof(StepperIssue)] = "1 issue to fix",
-        [nameof(DialogClose)] = "Close", [nameof(DrawerClose)] = "Close",
-        [nameof(DrawerPrevious)] = "Previous record", [nameof(DrawerNext)] = "Next record",
-        [nameof(StateLoading)] = "Loading…", [nameof(StateRetry)] = "Retry",
-        [nameof(StateDetails)] = "Details"
-    };
+        };
+        AddCalendarDefaults(defaults);
+        AddUiDefaults(defaults);
+        AddAnalysisDefaults(defaults);
+        AddDataViewsDefaults(defaults);
+        return WithForestDefaults(WithBoardPlanDefaults(defaults));
+    }
 }

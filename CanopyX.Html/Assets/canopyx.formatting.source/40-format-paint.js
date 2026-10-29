@@ -30,7 +30,8 @@
     if (target.glyph) {
       const icon = node("span", "cx-fmt-icon", target.glyph); icon.setAttribute("aria-hidden", "true");
       if (target.tone) prop(icon, "--cx-fmt", formatToneVar(target.tone));
-      element.insertBefore(icon, before && before.parentNode === element ? before : element.firstChild);
+      const line = element.querySelector(":scope > .cx-phone-primary") || element;
+      line.insertBefore(icon, before && before.parentNode === line ? before : line.firstChild);
     }
     if (target.bar) {
       add("cx-fmt-barred"); if (!target.bar.show) add("cx-fmt-novalue");

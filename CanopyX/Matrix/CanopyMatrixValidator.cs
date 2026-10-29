@@ -6,6 +6,7 @@ namespace CanopyX;
 /// <summary>The checks a matrix passes before it is written: the browser's matrix part applies the same rules to its document.</summary>
 internal static class CanopyMatrixValidator {
     internal static void Validate(CanopyMatrix matrix) {
+        matrix.TimeSlider?.Validate(matrix.Id, frame => frame.Id, frame => frame.TimeSlider != null, frame => frame.Validate());
         Text(matrix.Label, "The matrix label", 200, false);
         if (matrix.States.Count == 0 || matrix.States.Count > CanopyMatrix.MaxStates) throw new InvalidOperationException("A matrix declares 1 to " + CanopyMatrix.MaxStates + " states.");
         var states = new HashSet<string>(StringComparer.Ordinal);

@@ -44,7 +44,7 @@ public sealed class CanopyGridRowData {
         var settings = options ?? new CanopyRowDataOptions();
         if (settings.Format == CanopyRowFormat.Objects) throw new ArgumentException("Row data is compact; CanopyRowFormat.Objects writes row objects instead.", nameof(options));
         _chunkSize = settings.ChunkSize;
-        var rows = view.Rows.ToArray();
+        var rows = view.CalculateRows(view.Rows).ToArray();
         // A compact row is its key and its cells: detail payloads and record fields would be lost, so such rows stay row objects.
         var carried = rows.FirstOrDefault(row => row.Detail != null || row.HasFields);
         if (carried != null) throw new InvalidOperationException("Row data cannot carry the detail payload or record fields of row '" + carried.Id + "'; write these rows as row objects.");

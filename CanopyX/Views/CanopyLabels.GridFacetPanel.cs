@@ -1,7 +1,7 @@
 namespace CanopyX;
 
 public sealed partial class CanopyLabels {
-    /// <summary>Gets or sets the facet panel's heading and the toolbar button that opens it as a sheet. Default "Filter by".</summary>
+    /// <summary>Gets or sets the facet panel's heading and the toolbar button that opens it as a sheet. Default "Refine".</summary>
     public string GridFacetPanel { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the accessible name of the switch that collapses the facet panel. Default "Hide the filter panel".</summary>

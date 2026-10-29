@@ -7,10 +7,11 @@
   const exportPartReady = () => typeof loadExportPart === "function" ? loadExportPart() : Promise.resolve();
   // The writer options are checked when the export part runs the capture.
   function exportAs(grid, format, options = {}) {
-    const { onProgress, timeoutMs, download, ...capture } = options;
+    const { onProgress, onDiagnostic, includeMetadata, timeoutMs, download, ...capture } = options;
     let provider, resolutionError;
     try { provider = EXPORT_IMPL.formatsOf(grid).find(item => item.id === format); }
     catch (error) { resolutionError = error; }
+    if (capture.values === undefined && provider?.values !== undefined) capture.values = provider.values;
     const prepared = grid.calIcsFormatWriter && provider?.write === grid.calIcsFormatWriter ? grid.calPrepareIcsExport(capture) : grid.prepareExport(capture);
     return exportPartReady().then(() => {
       if (resolutionError) throw resolutionError;

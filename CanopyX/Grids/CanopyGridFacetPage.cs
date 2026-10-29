@@ -26,6 +26,8 @@ public sealed class CanopyGridFacetPage {
     public string Revision { get; }
     /// <summary>Gets the declared facet column identity.</summary>
     public string Column { get; }
+    /// <summary>Gets or sets the exact partition from the request; values then are numeric bucket keys.</summary>
+    public CanopyBucket? Bucket { get; set; }
     /// <summary>Gets the row count after query projection and before value search.</summary>
     public int Matched { get; }
     /// <summary>Gets the distinct value count after value search and before truncation.</summary>
@@ -45,6 +47,8 @@ public sealed class CanopyGridFacetPage {
         view.Validate();
         if (view.Id != View) throw new InvalidOperationException("A facet response must target its owning grid.");
         var column = CanopyGridFacets.Column(view, Column);
+        Bucket?.Validate(column);
+        if (Bucket != null) column = new CanopyColumn(column.Id, column.Title) { Kind = CanopyColumnKind.Number };
         if ((Search?.Length ?? 0) > 16384 || Items.Count > 200 || Items.Count > TotalValues || Items.Count == 0 && TotalValues > 0)
             throw new InvalidOperationException("A facet page must contain a bounded nonempty prefix when values exist.");
         var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -63,6 +67,8 @@ public sealed class CanopyGridFacetPage {
             .Property("search", Search ?? string.Empty).Property("includeCurrentFilter", IncludeCurrentFilter)
             .Property("matched", Matched).Property("totalValues", TotalValues).Property("truncated", Items.Count < TotalValues).Name("items").BeginArray();
         foreach (var item in Items) item.WriteJson(writer);
-        return writer.EndArray().EndObject().ToString();
+        writer.EndArray();
+        if (Bucket != null) { writer.Name("bucket"); Bucket.WriteJson(writer); }
+        return writer.EndObject().ToString();
     }
 }

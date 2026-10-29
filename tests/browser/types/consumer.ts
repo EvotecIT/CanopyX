@@ -6,6 +6,38 @@ import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView
   GridColumnGroup, GridCellRange, GridPasteEvent, GridPasteResult, GridColumnGroupState } from "@evotecit/canopyx/grid";
 import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, type GridPager } from "@evotecit/canopyx/grid";
 import ReportingRuntime from "@evotecit/canopyx/reporting";
+import type { GridTupleColumn, GridTupleFilter } from "@evotecit/canopyx/grid";
+import type { GridPivotDefinition, GridPivotLevel, GridPivotResult, GridPivotAcceptedResult, GridPivotExportSnapshot } from "@evotecit/canopyx/grid";
+import type { GridCalculatedColumnDefinition, GridColumn } from "@evotecit/canopyx/grid";
+const calculationDefinitions: readonly GridCalculatedColumnDefinition[] = [
+  { id: "total", title: "Total", kind: "number", expression: "[quantity] * [price]" }
+];
+const calculationView: InlineGridView = { protocol: "canopyx/2", type: "grid", id: "calculated", label: "Calculated records",
+  source: { kind: "inline" }, rows: [{ id: "r1", cells: { quantity: 3, price: 12.5 } }], pageSize: 100, selection: "none", search: true,
+  calculatedColumnsEditable: true, labels: { gridCalculationError: "Calculation failed: {error}" },
+  columns: [{ id: "quantity", title: "Quantity", kind: "number" }, { id: "price", title: "Price", kind: "number" },
+    { id: "total", title: "Total", kind: "number", calculation: "[quantity] * [price]", editable: false }] };
+const calculationApi = createDataGrid(document.createElement("div"), { view: calculationView });
+const readCalculations: readonly GridCalculatedColumnDefinition[] = calculationApi.getCalculatedColumns();
+const updatedCalculations: Promise<readonly GridCalculatedColumnDefinition[]> = calculationApi.setCalculatedColumns(calculationDefinitions);
+const openedCalculation: Promise<void> = calculationApi.openCalculatedColumn(document.createElement("button"));
+const calculationState = calculationApi.getState(); calculationState.calculatedColumns = calculationDefinitions;
+// @ts-expect-error Accepted calculation definitions are read-only snapshots.
+readCalculations[0].expression = "1";
+// @ts-expect-error Calculated cells cannot be directly editable.
+const editableCalculation: GridColumn = { id: "bad", title: "Bad", kind: "number", calculation: "1", editable: true };
+const hostedCalculationView: HostGridView = { ...calculationView, rows: undefined, source: { kind: "host" },
+  // @ts-expect-error Hosted calculations use server values; the client editor requires inline data.
+  calculatedColumnsEditable: true };
+// @ts-expect-error Query documents carry declared column references, not calculation definitions.
+calculationApi.setQuery({ calculatedColumns: calculationDefinitions });
+void updatedCalculations; void openedCalculation; void calculationState; void editableCalculation; void hostedCalculationView;
+const tupleField: GridTupleColumn = { column: "days", bucket: { kind: "width", width: 10 } };
+const tupleFilter: GridTupleFilter = { columns: [{ column: "name" }, tupleField], values: [["review", 1], [null, null]], exclude: true };
+const invalidTuple: GridTupleFilter = { columns: [tupleField], values: [[1]],
+  // @ts-expect-error Exclusion is a boolean; operands retain their scalar types.
+  exclude: "true" };
+void invalidTuple;
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
 import spanish from "@evotecit/canopyx/locales/es";
@@ -42,6 +74,49 @@ const reportingApi = ReportingRuntime.createDataGrid(reportingHost, { view: { pr
     presenters: { name: { kind: "link", newWindow: true } } } } });
 reportingApi.autoFitColumn?.("name");
 reportingApi.autoFitColumns();
+reportingApi.setQuery({ tupleFilters: [tupleFilter] });
+const pivotDefinition: GridPivotDefinition = {
+  rows: [{ column: "name", direction: "asc" }], columns: [{ column: "days", direction: "asc", bucket: { kind: "width", width: 10 } }],
+  values: ["total"], maxColumns: 200, topNColumns: 12, sortByTotal: { aggregate: "total", direction: "desc" }
+};
+const pivotReporting: InlineGridView["reporting"] = { pivot: pivotDefinition, pivotable: true,
+  aggregates: [{ id: "total", column: "days", operation: "sum", label: "Total" }] };
+const pivotSource: Pick<GridSource, "pivot"> = {
+  pivot(request, { signal }) {
+    const accepted: GridPivotAcceptedResult = { protocol: "canopyx/2", type: "gridPivot", view: request.query.view,
+      query: request.query, revision: request.query.revision, definition: request.definition, matched: 0, distinctColumns: 0,
+      columnsLimited: false, rows: [{ key: "r", path: [], other: false }], columns: [{ key: "c", path: [], other: false }],
+      retainedColumns: [], cells: [{ row: "r", column: "c", count: 0, aggregates: { total: null } }] };
+    void signal; return Promise.resolve(accepted);
+  }
+};
+declare const computedPivot: GridPivotResult;
+const unrevisionedPivotSource: Pick<GridSource, "pivot"> = {
+  // @ts-expect-error A direct computed result needs accepted query/revision ownership before a host can return it.
+  pivot: () => computedPivot
+};
+const invalidPivotLevel: GridPivotLevel = { column: "name", direction: "asc",
+  // @ts-expect-error Pivot axis levels use sortByTotal instead of an aggregate field.
+  aggregate: "total" };
+reportingApi.setPivot?.(pivotDefinition);
+reportingApi.setPivot?.(false);
+reportingApi.setPivotCollapsed?.("rows", "opaque-prefix", true);
+const pivotState = reportingApi.getPivot?.();
+const pivotResult: GridPivotAcceptedResult | null | undefined = reportingApi.getPivotResult?.();
+const pivotExport: Promise<GridPivotExportSnapshot> | undefined = reportingApi.getPivotExport?.();
+void pivotExport?.then(snapshot => {
+  const typedPath = snapshot.columnAxis.find(node => node.other)?.path;
+  const range = snapshot.columnGroups[0];
+  const rangeColumns = range ? snapshot.columns.slice(range.firstColumn, range.firstColumn + range.columnCount) : [];
+  for (const column of rangeColumns) if (column.kind === "number") {
+    const rawValue = snapshot.rows[0]?.cells[column.id].value;
+    const identity: string = column.axisKey, aggregate: string = column.aggregate;
+    const summary: boolean = column.summary, hidden: boolean = column.hidden;
+    void rawValue; void identity; void aggregate; void summary; void hidden;
+  }
+  void typedPath; void snapshot.distinctColumns; void snapshot.retainedColumns;
+});
+void pivotReporting; void pivotSource; void unrevisionedPivotSource; void invalidPivotLevel; void pivotState; void pivotResult; void pivotExport;
 // Compact row data in place of rows: chunks inline in the document, as host scripts (a count) or as sidecar files.
 const compactRows: GridCompactRow[] = [["r1", "Item 1", 10], [{ id: "r2", tone: "warning" }, "Item 2", null, { value: 3, text: "three" }]];
 const compactView: CompactGridView = { protocol: "canopyx/2", type: "grid", id: "compact", label: "Compact rows",
@@ -220,8 +295,10 @@ await dataGrid.setQuery({ search: 'ready "north office"', searchMode: "words", f
   operator: "or", filters: [{ column: "name", operator: "eq", values: ["Alpha"] }],
   groups: [{ operator: "and", filters: [{ column: "name", operator: "isNotNull", values: [] }], groups: [] }]
 } });
+gridView.allowRegexSearch = true;
+await dataGrid.setQuery({ searchMode: "regex", search: "^Ready" });
 // @ts-expect-error Query modes name a supported matching contract.
-await dataGrid.setQuery({ searchMode: "regex" });
+await dataGrid.setQuery({ searchMode: "fuzzy" });
 const alternateSearchCell = { value: "Alpha", text: "Visible", searchText: "north office" };
 const searchRow: import("@evotecit/canopyx/grid").GridRow = { id: "alternate", cells: { name: alternateSearchCell } };
 GridRuntime.configure(gridView.id, { source: gridSource });
@@ -238,7 +315,8 @@ await dataGrid.toCsv({ scope: "filtered", maxRows: 1000 });
 await dataGrid.exportToHost("xlsx", { scope: "all" });
 await reportingApi.materializeExport?.({ scope: "filtered", maxRows: 500, fileName: "October inventory", locale: "pl-PL", timeZone: "utc",
   onProgress(progress) { const total: number | null = progress.total; const count: number = progress.completed; void total; void count; } });
-await reportingApi.print?.({ scope: "selected", columns: ["name"], values: "raw" });
+await reportingApi.print({ scope: "selected", columns: ["name"], values: "raw" });
+await dataGrid.print({ scope: "all", maxRows: 1000, onProgress(progress) { progress.completed.toFixed(); } });
 // @ts-expect-error Delivery phases have a fixed read/generate/ready vocabulary.
 const invalidDeliveryPhase: import("@evotecit/canopyx/grid").GridExportProgress["phase"] = "downloaded";
 createDataGrid(document.createElement("div"), { view: gridView, source: gridSource, toolbar: { search: false, export: false, count: false },
@@ -929,3 +1007,22 @@ const disposeMenu = contextMenu(".record", (_event, element) => [{ id: element.i
 void disposeMenu.ready.then(() => disposeMenu());
 void GridRuntime.drawer("#details").ready;
 void ReportingRuntime.dialog("#confirm").ready;
+
+// View proposals carry the same analysis contracts while retaining an explicit preview/apply boundary.
+import type { GridViewIntent } from "@evotecit/canopyx/grid";
+const proposedView: GridViewIntent = {
+  protocol: "canopyx/2", type: "viewIntent", version: 1, view: "orders",
+  query: {
+    groupBy: [{ column: "placed", direction: "asc", bucket: { kind: "month", timeZone: "UTC" } }],
+    tupleFilters: [{ columns: [{ column: "region" }, { column: "stage" }], values: [["North", "Active"], [null, "Paused"]] }]
+  },
+  pivot: { rows: [{ column: "region", direction: "asc" }], columns: [{ column: "stage", direction: "asc" }], values: ["total"], maxColumns: 24 }
+};
+const exportedViewIntent: Promise<GridViewIntent> = dataGrid.getViewIntent();
+const proposedPreview = dataGrid.applyViewIntent(proposedView);
+void proposedPreview.then(preview => preview.cancel());
+void dataGrid.validateViewIntent({ ...proposedView, pivot: false });
+void exportedViewIntent;
+// @ts-expect-error View intent pivot definitions exclude saved-state presentation flags.
+const runtimePivotIntent: GridViewIntent = { ...proposedView, pivot: { rows: [], columns: [], values: ["total"], active: true } };
+void runtimePivotIntent;

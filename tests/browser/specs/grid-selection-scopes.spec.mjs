@@ -16,6 +16,13 @@ async function open(page,view=definition(),setup='') {
   await page.goto('http://canopyx.test/selections');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
 }
 
+test('the header select-all checkbox matches the row checkboxes in size',async({page})=>{
+  await page.setViewportSize({width:900,height:500});await open(page);
+  const box=selector=>page.locator(selector).first().evaluate(element=>{const rect=element.getBoundingClientRect();return {width:rect.width,height:rect.height};});
+  const header=await box('.cx-header-check'),row=await box('.cx-grid-row-select');
+  expect(Math.abs(header.width-row.width)).toBeLessThanOrEqual(1);expect(Math.abs(header.height-row.height)).toBeLessThanOrEqual(1);
+});
+
 test('page selection reads every record on the page and retains explicit identities across pages',async({page})=>{
   await page.setViewportSize({width:900,height:500});await open(page);
   expect(await page.locator('.cx-row[data-cx-id]').count()).toBeLessThan(50);

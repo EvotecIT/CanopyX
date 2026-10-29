@@ -9,6 +9,22 @@ import { readAsset as read, assetHash as hash, partFixture } from "./part-fixtur
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const rows = Array.from({ length: 80 }, (_, i) => ({ id: String(i).padStart(3, "0"),
   cells: { name: i % 2 ? "Archive" : "Source", size: { value: i, text: i + " KiB" }, kind: i % 3 ? "file" : "folder" } }));
+
+test("format metadata and diagnostics stay with one export and retire when it finishes", async ({ page }) => {
+  await open(page, definition(), `CanopyX.registerExportFormat({id:'proof',label:'Proof',extension:'bin',async write(capture,context){
+    window.metadata=context.includeMetadata;window.captureMetadata=Object.hasOwn(capture.request,'includeMetadata');
+    window.lateDiagnostic=context.diagnostic;const item={code:'VALUE_ONLY',columnId:'size'};
+    context.diagnostic(item);context.diagnostic(item);item.code='mutated';return new Blob(['done']);}});`);
+  const result = await page.evaluate(async code => {
+    const grid = eval(code), received = [];
+    const output = await grid.exportAs('proof', { scope: 'filtered', includeMetadata: true, download: false, onDiagnostic: item => received.push(item) });
+    window.lateDiagnostic({ code: 'RETIRED' });
+    return { received, diagnostics: output.diagnostics, metadata: window.metadata, captureMetadata: window.captureMetadata,
+      frozen: Object.isFrozen(output.diagnostics) && Object.isFrozen(output.diagnostics[0]) };
+  }, api);
+  expect(result).toEqual({ received: [{ code: 'VALUE_ONLY', columnId: 'size' }], diagnostics: [{ code: 'VALUE_ONLY', columnId: 'size' }],
+    metadata: true, captureMetadata: false, frozen: true });
+});
 const definition = (extra = {}) => ({ protocol: "canopyx/2", type: "grid", id: "records", label: "Records", source: { kind: "inline" },
   rowHeight: 28, pageSize: 20, selection: "multiple", search: true,
   columns: [{ id: "name", title: "Name", kind: "text", width: 180, sortable: true }, { id: "size", title: "Size", kind: "number", width: 100, sortable: true },
@@ -31,15 +47,48 @@ async function open(page, view = definition(), setup = "", runtime) {
 }
 const menuButtons = page => page.locator(".cx-grid-export .cx-grid-panel button:not([hidden])");
 
+for (const width of [1440, 390]) test(`export panel closes through the shared overlay and restores focus at ${width}`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await open(page, definition(), fakeFormats);
+  await openGridControl(page, "export");
+  const control = page.locator(".cx-grid-export"), panel = control.locator(":scope > .cx-grid-panel");
+  await expect(panel).toHaveAttribute("role", "dialog");
+  await expect(panel).toBeVisible();
+  if (width === 1440) expect(await panel.evaluate(element => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+  await panel.getByRole("combobox").focus();
+  await page.keyboard.press("Escape");
+  await expect(control).not.toHaveAttribute("open");
+  await expect(control.locator(":scope > summary")).toBeFocused();
+  await control.locator(":scope > summary").click();
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Download Excel", exact: true })).toBeVisible();
+});
+
+test("a streaming writer keeps the reading phase until its input is consumed", async ({ page }) => {
+  await open(page, definition(), `window.streamEvents=[];CanopyX.registerExportFormat({id:'stream',label:'Stream',extension:'txt',async write(capture,{progress}){
+    let count=0;for await(const row of capture.rows()) { progress(++count); if(count===5) await new Promise(resolve=>{window.resumeStream=resolve;}); }
+    return new Blob(['complete']);}});`);
+  await page.evaluate(() => {
+    window.streamResult = document.querySelector('[data-canopyx-host]').canopyx.exportAs('stream', {
+      scope: 'all', download: false, onProgress: event => window.streamEvents.push(event)
+    });
+  });
+  await expect.poll(() => page.evaluate(() => typeof window.resumeStream)).toBe('function');
+  expect(await page.evaluate(() => window.streamEvents.at(-1))).toEqual({ phase: 'reading', completed: 5, total: 80 });
+  const events = await page.evaluate(async () => { window.resumeStream(); await window.streamResult; return window.streamEvents; });
+  expect(events.find(event => event.phase === 'generating')).toEqual({ phase: 'generating', completed: 80, total: 80 });
+  expect(events.at(-1)).toEqual({ phase: 'ready', completed: 80, total: 80 });
+});
+
 for (const reporting of [false, true]) test("native exportMenu chooses raw values and only provider actions for " + (reporting ? "reporting" : "ordinary") + " grids", async ({ page }) => {
   await open(page, definition(reporting ? { reporting: {} } : {}), fakeFormats +
-    "CanopyX.configure('records',{exportFormats:['xlsx'],exportMenu:{csv:false,copy:false,values:'raw'}});");
+    "CanopyX.configure('records',{exportFormats:['xlsx'],exportMenu:{csv:false,copy:false,print:false,values:'raw'}});");
   await page.evaluate(async () => {
     const grid = document.querySelector('[data-canopyx-host]').canopyx;
     await grid.setQuery({search:'Archive',sort:[{column:'size',direction:'desc'}]});
   });
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download Excel"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download Excel"]);
   const download = page.waitForEvent("download");
   await page.getByRole("button", {name:"Download Excel",exact:true}).click(); await download;
   const capture = await page.evaluate(() => window.writes.at(-1));
@@ -56,7 +105,7 @@ for (const reporting of [false, true]) test("format providers join the " + (repo
     grid.setColumnOrder(["size", "name", "kind"]); grid.setColumnVisible("kind", false);
     await grid.setQuery({ search: "Archive", sort: [{ column: "size", direction: "desc" }] }); grid.setSelection(["003", "010", "079"]); }, api);
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Copy"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download Excel", "Download PDF", "CSV", "Copy to clipboard", "Print"]);
   const expected = {
     filtered: Array.from({ length: 40 }, (_, i) => String(79 - 2 * i).padStart(3, "0")),
     selected: ["079", "010", "003"],
@@ -102,7 +151,7 @@ test("a slow provider shows progress, can be cancelled from the menu, and is not
   await expect(panel.locator("progress")).toBeVisible();
   expect(await panel.locator("progress").evaluate(meter => [meter.value, meter.max])).toEqual([80, 80]);
   await expect(panel.getByRole("combobox")).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Download CSV", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "CSV", exact: true })).toBeDisabled();
   // Longer than the 50 ms request deadline: the writer has its own safety timeout.
   await page.waitForTimeout(250);
   await expect(panel.locator(".cx-grid-delivery-status")).toHaveText("80 of 80 records");
@@ -160,19 +209,20 @@ test("a provider failure surfaces in the menu status and the error event without
   expect(odd.seen).toEqual(["reading:0/80", "generating:80/80", "ready:80/80"]);
   expect(odd.text).toBe("ok"); expect(odd.type).toBe("application/octet-stream");
   // CSV keeps working after a failed provider.
-  const download = page.waitForEvent("download"); await page.getByRole("button", { name: "Download CSV", exact: true }).click();
+  const download = page.waitForEvent("download"); await page.getByRole("button", { name: "CSV", exact: true }).click();
   expect((await download).suggestedFilename()).toBe("canopyx-records.csv"); await expect(status).toHaveText("");
 });
 
 test("formats register globally, per grid and as declared view IDs, and invalid formats are rejected", async ({ page }) => {
   await open(page, definition({ exportFormats: ["pdf", "missing"] }), fakeFormats);
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download PDF", "Copy"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download PDF", "CSV", "Copy to clipboard", "Print"]);
   const result = await page.evaluate(async api => {
     const grid = eval(api), errors = [];
     for (const format of [null, { id: "csv", label: "CSV", extension: "csv", write() {} }, { id: "Bad", label: "X", extension: "x", write() {} },
       { id: "ok", label: " ", extension: "x", write() {} }, { id: "ok", label: "X", extension: "x.y", write() {} }, { id: "ok", label: "X", extension: "x" },
-      { id: "ok", label: "X", extension: "x", showInMenu: "false", write() {} }])
+      { id: "ok", label: "X", extension: "x", showInMenu: "false", write() {} },
+      { id: "ok", label: "X", extension: "x", values: "invalid", write() {} }])
       try { CanopyX.registerExportFormat(format); errors.push(null); } catch (error) { errors.push(error.message); }
     const dispose = CanopyX.registerExportFormat(fakeFormat("later", "Download later", "txt", "text/plain"));
     const missing = await grid.exportAs("xlsx", { scope: "all" }).then(() => null, error => error.message);
@@ -181,14 +231,14 @@ test("formats register globally, per grid and as declared view IDs, and invalid 
     dispose();
     return { errors, missing, scope, type: result.blob.type, name: result.fileName, format: result.format, modules: typeof CanopyX.registerExportFormat };
   }, api);
-  expect(result.errors).toEqual(Array(7).fill("CanopyX: invalid export format."));
+  expect(result.errors).toEqual(Array(8).fill("CanopyX: invalid export format."));
   expect(result.missing).toBe("CanopyX: export format 'xlsx' is not available.");
   expect(result.scope).toBe("CanopyX: explicit export scope required.");
   expect(result).toMatchObject({ type: "application/pdf", name: "records.pdf", format: "pdf", modules: "function" });
   // A host option wins over the view's declared IDs and can carry its own provider objects.
   await open(page, definition({ exportFormats: ["pdf"] }), fakeFormats + "CanopyX.configure('records',{exportFormats:['xlsx',fakeFormat('own','Download own','own','text/plain'),{...fakeFormat('private','Host export','txt','text/plain'),showInMenu:false}]});");
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download own", "Copy"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download Excel", "Download own", "CSV", "Copy to clipboard", "Print"]);
   const download = page.waitForEvent("download"); await page.getByRole("button", { name: "Download own", exact: true }).click();
   expect((await download).suggestedFilename()).toBe("records.own");
   const privateExport = await page.evaluate(async api => {
@@ -203,11 +253,11 @@ test("formats register globally, per grid and as declared view IDs, and invalid 
   // Formats registered after the menu was first drawn appear when it opens again.
   await page.evaluate(() => CanopyX.registerExportFormat(fakeFormat("pdf2", "Download late", "pdf", "application/pdf")));
   await page.locator(".cx-grid-export > summary").click(); await page.locator(".cx-grid-export > summary").click();
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download own", "Copy"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download Excel", "Download own", "CSV", "Copy to clipboard", "Print"]);
   await open(page, definition(), fakeFormats + "CanopyX.registerExportFormat(fakeFormat('late','Download late','txt','text/plain'));");
   await openGridControl(page, "export"); await page.evaluate(() => CanopyX.registerExportFormat(fakeFormat("later", "Download later", "txt", "text/plain")));
   await page.locator(".cx-grid-export > summary").click(); await page.locator(".cx-grid-export > summary").click();
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Download late", "Download later", "Copy"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download Excel", "Download PDF", "Download late", "Download later", "CSV", "Copy to clipboard", "Print"]);
   // Declared IDs are validated with the view.
   await page.route("http://canopyx.test/invalid", route => route.fulfill({ contentType: "text/html", body: viewPage(definition({ exportFormats: ["pdf", "pdf"] })) }));
   await page.goto("http://canopyx.test/invalid");
@@ -229,7 +279,7 @@ test("hidden providers remain callable while default and visible providers stay 
     CanopyX.registerExportFormat({...fakeFormat('hidden','Host-only export','txt','text/plain'),showInMenu:false});
     CanopyX.registerExportFormat({...fakeFormat('visible','Visible export','txt','text/plain'),showInMenu:true});`, runtime);
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Visible export", ...(view.type === "grid" ? ["Copy"] : [])]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download Excel", "Download PDF", "Visible export", "CSV", ...(view.type === "grid" ? ["Copy to clipboard", "Print"] : [])]);
   await expect(page.getByRole("button", { name: "Host-only export", exact: true })).toHaveCount(0);
   const result = await page.evaluate(async api => {
     const grid = eval(api), hidden = await grid.exportAs("hidden", { scope: "all", values: "raw", download: false });
@@ -322,7 +372,7 @@ for (const theme of ["light", "dark"]) for (const width of [1440, 390]) test("th
   await openGridControl(page, "export");
   const panel = page.locator(".cx-grid-export .cx-grid-panel");
   await expect(panel.getByRole("combobox")).toBeVisible();
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download Excel", "Download PDF", "Copy"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download Excel", "Download PDF", "CSV", "Copy to clipboard", "Print"]);
   const box = await panel.boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(width);
   for (const button of await menuButtons(page).all()) {
@@ -342,7 +392,7 @@ for (const theme of ["light", "dark"]) for (const width of [1440, 390]) test("th
 test("the export formats example lists its page writers in the menu and exports its tree", async ({ page }) => {
   await openExample(page, "export-formats.html");
   await openGridControl(page, "export");
-  await expect(menuButtons(page)).toHaveText(["Download CSV", "Download JSON", "Download Markdown", "Copy"]);
+  await expect(menuButtons(page).locator(".cx-export-choice-title")).toHaveText(["Download JSON", "Download Markdown", "CSV", "Copy to clipboard", "Print"]);
   const download = page.waitForEvent("download"); await page.getByRole("button", { name: "Download JSON", exact: true }).click();
   const file = await download; expect(file.suggestedFilename()).toBe("canopyx-export-formats.json");
   const records = JSON.parse(fs.readFileSync(await file.path(), "utf8"));

@@ -72,6 +72,7 @@ public sealed partial class CanopyMatrix {
         if (!Legend) writer.Property("legend", false);
         if (!AutoHeight) writer.Property("autoHeight", false);
         if (Labels != null && Labels.HasMatrixLabels) { writer.Name("labels"); Labels.WriteMatrixJson(writer); }
+        if (TimeSlider != null) { writer.Name("timeSlider"); TimeSlider.WriteJson(writer, frame => frame.ToJson()); }
         return writer.EndObject().ToString();
     }
 
@@ -132,10 +133,13 @@ public sealed partial class CanopyMatrix {
     /// <exception cref="ArgumentNullException"><paramref name="json"/> is null.</exception>
     /// <exception cref="FormatException">The text is not valid JSON, nests deeper than 64 levels or is longer than 4 MiB.</exception>
     /// <exception cref="InvalidOperationException">The document is not a valid matrix: another type, an unknown property, or any rule <see cref="Validate"/> checks.</exception>
-    public static CanopyMatrix FromJson(string json) {
+    public static CanopyMatrix FromJson(string json) => ReadJson(CanopyJsonReader.Parse(json));
+
+    /// <summary>Reads a full parsed matrix document, including when it is carried by a snapshot.</summary>
+    internal static CanopyMatrix ReadJson(object? node) {
         const string what = "The matrix document";
-        var map = CanopyFlowContract.Object(CanopyJsonReader.Parse(json), what, "protocol", "type", "id", "label", "rows", "columns", "square", "columnTitle", "diagonal", "states",
-            "cells", "notes", "totals", "attentionOnly", "hideEmpty", "cellWidth", "density", "details", "phone", "legend", "autoHeight", "labels");
+        var map = CanopyFlowContract.Object(node, what, "protocol", "type", "id", "label", "rows", "columns", "square", "columnTitle", "diagonal", "states",
+            "cells", "notes", "totals", "attentionOnly", "hideEmpty", "cellWidth", "density", "details", "phone", "legend", "autoHeight", "labels", "timeSlider");
         if (CanopyFlowContract.Text(map, "protocol", what) != CanopyProtocol.Version || CanopyFlowContract.Text(map, "type", what) != "matrix")
             throw new InvalidOperationException(what + " must have protocol " + CanopyProtocol.Version + " and type \"matrix\".");
         var id = CanopyFlowContract.RequiredText(map, "id", what);
@@ -153,8 +157,8 @@ public sealed partial class CanopyMatrix {
         var diagonal = CanopyFlowContract.Text(map, "diagonal", what);
         if (diagonal != null && !matrix.Square) throw new InvalidOperationException("Only a square matrix document has a diagonal.");
         if (diagonal != null) matrix.Diagonal = CanopyFlowContract.Choose(diagonal, what, "diagonal", ("self", CanopyMatrixDiagonal.Self), ("data", CanopyMatrixDiagonal.Data));
-        foreach (var node in CanopyFlowContract.Items(map, "states", what, MaxStates)) {
-            var state = CanopyFlowContract.Object(node, what + " (state)", "id", "label", "tone", "symbol", "attention");
+        foreach (var stateNode in CanopyFlowContract.Items(map, "states", what, MaxStates)) {
+            var state = CanopyFlowContract.Object(stateNode, what + " (state)", "id", "label", "tone", "symbol", "attention");
             var symbol = CanopyFlowContract.Text(state, "symbol", what);
             CanopyMatrixState item;
             try {
@@ -190,6 +194,7 @@ public sealed partial class CanopyMatrix {
         matrix.Legend = CanopyFlowContract.Boolean(map, "legend", what) ?? true;
         matrix.AutoHeight = CanopyFlowContract.Boolean(map, "autoHeight", what) ?? true;
         if (map.TryGetValue("labels", out var labels)) matrix.Labels = CanopyLabels.ReadMatrixLabels(labels);
+        if (map.TryGetValue("timeSlider", out var timeSlider)) matrix.TimeSlider = CanopyTimeSlider<CanopyMatrix>.ReadFrom(timeSlider, ReadJson);
         matrix.Validate();
         return matrix;
     }

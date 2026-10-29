@@ -9,7 +9,10 @@
 
   function validateGridView(view) {
     checkDocument(view, "grid"); requireIdentifier(view.id, "grid ID");
+    if ([view.board, view.path, view.stack, view.calendar].filter(value => value != null).length > 1)
+      throw new Error("CanopyX: choose one grid presentation: board, path, stack or calendar (with optional plan).");
     view = gridColumnDefaults(view);
+    if (view.allowRegexSearch !== undefined && typeof view.allowRegexSearch !== "boolean") throw new Error("CanopyX: allowRegexSearch is a boolean.");
     if (view.rowIdentity !== undefined && !["stableKey", "ordinal"].includes(view.rowIdentity))
       throw new Error("CanopyX: rowIdentity must be stableKey or ordinal.");
     if (view.rowIdentity === "ordinal" && view.live)
@@ -35,6 +38,8 @@
         throw new Error("CanopyX: invalid or duplicate grid column.");
       gridColumnOptions(column, view.columns);
       ids.add(column.id);
+      if (column.calculation !== undefined && (typeof column.calculation !== "string" || !column.calculation.trim() || column.calculation.length > 2048 || column.editable))
+        throw new Error("CanopyX: calculated columns need a bounded expression and cannot be editable.");
       validateColumnValues(column);
       if (column.presenter !== undefined) gridPresenter(column.presenter, column, view.columns);
       if (column.format !== undefined) { if (column.kind !== "number") throw new Error("CanopyX: number formats need number columns."); gridNumberFormat(column.format); }
@@ -62,6 +67,8 @@
         !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
         !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
     if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
+    if (view.calculatedColumnsEditable !== undefined && (typeof view.calculatedColumnsEditable !== "boolean" || view.calculatedColumnsEditable && view.source.kind !== "inline"))
+      throw new Error("CanopyX: the calculated-column editor requires an inline grid.");
     if (view.source.navigation !== undefined && !["offset", "cursor"].includes(view.source.navigation))
       throw new Error("CanopyX: invalid grid source navigation.");
     if (view.source.navigation === "cursor" && (view.source.kind !== "host" || view.presentation !== "paged"))
@@ -72,14 +79,17 @@
     // rowData replaces an inline grid's rows; the data part (52-grid-row-data.js) decodes and validates it with the first query.
     if (view.rowData !== undefined) {
       if (view.source.kind !== "inline" || view.rows !== undefined || !validStructuralCount(view.rowData?.count)) throw new Error("CanopyX: invalid grid rowData.");
-    } else if (view.source.kind === "inline") validateGridRows(view.rows, view.columns);
-    else if (view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
+    }
+    const rows = view.rowData === undefined && view.source.kind === "inline" ? validateGridRows(view.rows, view.columns, undefined, repairGridCell) : view.rows;
+    if (view.source.kind !== "inline" && view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
-    return { ...view, rowHeight: view.rowHeight ?? (view.density === "compact" ? 32 : 40) };
+    return { ...view, ...(rows === undefined ? {} : { rows }), rowHeight: view.rowHeight ?? (view.density === "compact" ? 32 : 40) };
   }
 
   function gridQuery(view, input, strict) {
     input = input || {};
+    // Empty optional tuple criteria retain the original query shape, including strict saved-state reads.
+    if (Array.isArray(input.tupleFilters) && !input.tupleFilters.length) { input = { ...input }; delete input.tupleFilters; }
     const cursor = view.source.navigation === "cursor", type = cursor ? "gridCursorQuery" : "gridQuery";
     if (typeof input !== "object" || Array.isArray(input) ||
         input.protocol !== undefined && input.protocol !== PROTOCOL || input.type !== undefined && input.type !== type ||
@@ -96,7 +106,11 @@
     if (input.cursor !== undefined) {
       gridCursor(input.cursor); if (!query.revision) throw new Error("CanopyX: a cursor requires its dataset revision.");
     }
-    if (input.searchMode !== undefined && !["substring", "words"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
+    if (input.searchMode !== undefined && !["substring", "words", "regex"].includes(input.searchMode)) throw new Error("CanopyX: invalid grid search mode.");
+    if (query.searchMode === "regex") {
+      if (!view.allowRegexSearch) throw new Error("CanopyX: this grid does not allow regex search.");
+      if (query.search) boundedPattern(query.search, false);
+    }
     const columns = new Map(view.columns.map(column => [column.id, column])), sorts = new Set();
     if (input.sort !== undefined && !Array.isArray(input.sort) || input.filters !== undefined && !Array.isArray(input.filters))
       throw new Error("CanopyX: grid sort and filters must be arrays.");
@@ -118,6 +132,7 @@
     const budget = { predicates: 0, groups: 0, strict, filterable: true };
     query.filters = (input.filters || []).map(filter => gridPredicate(filter, columns, budget));
     if (input.filterGroup !== undefined) query.filterGroup = gridFilterGroup(input.filterGroup, columns, budget, 1);
+    if (input.tupleFilters !== undefined) query.tupleFilters = gridTupleFilters(input.tupleFilters, columns, strict);
     // Sorting and paging normalize reader queries; preserve their internal origin without adding wire fields.
     if (input[LINK_IMPL.queryOwn]) query[LINK_IMPL.queryOwn] = true;
     return gridQueryRecord(input, query, strict, cursor);
@@ -135,6 +150,30 @@
     if (query.revision !== undefined && page.revision !== query.revision || accepted &&
         (page.revision !== accepted.revision || accepted.total !== undefined && page.total !== accepted.total ||
           accepted.matched !== undefined && page.matched !== accepted.matched)) throw new Error("CanopyX: grid page snapshot changed.");
-    validateGridRows(page.items, view.columns);
-    return { ...page, items: JSON.parse(JSON.stringify(page.items)) };
+    // Repair runs before the detaching copy, which would turn NaN and infinities into null without a warning.
+    const items = JSON.parse(JSON.stringify(validateGridRows(page.items, view.columns, undefined, repairGridCell)));
+    return { ...page, items };
+  }
+
+  // A number or bigint in a text column becomes its string, a numeric string in a number column its number; anything else
+  // gets an empty raw value, so it sorts and filters as a missing value. Text keeps showing; a number outside the safe range
+  // does not, because the browser may already have rounded it and would show a wrong value.
+  function repairGridCell(cell, column) {
+    const raw = cellValue(cell), shown = typeof raw === "string" || typeof raw === "boolean" ? String(raw) : undefined;
+    let value = raw;
+    try { gridScalar(value, column); } catch {
+      value = null;
+      if (column.kind === "number" && typeof raw === "string" && raw.trim()) value = Number(raw);
+      else if (column.kind !== "number" && column.kind !== "datetime" && (typeof raw === "bigint" || safeGridNumber(raw))) value = String(raw);
+      try { gridScalar(value, column); } catch { value = null; }
+    }
+    const text = isCellObject(cell) && !Array.isArray(cell) && typeof cell.text === "string" ? cell.text : value === null ? shown : undefined;
+    if (isCellObject(cell) && !Array.isArray(cell)) {
+      // Keep the tone, badges and other decorations when they are valid; an invalid sort key is dropped.
+      const kept = { ...cell, value, ...(text === undefined ? {} : { text }) };
+      try { validateGridCell(kept, column); return kept; } catch { }
+      delete kept.sort;
+      try { validateGridCell(kept, column); return kept; } catch { }
+    }
+    return text === undefined ? value : { value, text };
   }

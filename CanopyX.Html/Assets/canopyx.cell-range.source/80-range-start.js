@@ -34,7 +34,7 @@
       };
       // A reload of the same query at the same data revision (same search, filters, sorting and page) keeps the ranges: its
       // rows keep their places. A new revision, another query, or a reporting group that collapses or expands clears them.
-      const shape = (query, revision) => query && JSON.stringify([query.search, query.searchMode, query.sort, query.filters, query.filterGroup, query.groupBy, this.paged ? query.offset : 0, revision]);
+      const shape = (query, revision) => query && JSON.stringify([query.search, query.searchMode, query.sort, query.filters, query.filterGroup, query.tupleFilters, query.groupBy, this.paged ? query.offset : 0, revision]);
       const clear = () => { this.cellMenuBinding?.close("query", false, true); if (this.cellRanges.length) { this.cellRanges = []; this.cellAnchor = null; this.cellHandles = false; crChanged(this); } };
       let accepted = shape(this.getQuery(), this.snapshot?.revision);
       this.host.addEventListener("canopyx:query", event => {

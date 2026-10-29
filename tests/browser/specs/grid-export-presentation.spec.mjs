@@ -4,7 +4,7 @@ import { viewPage, runtimeAssets } from "./support.mjs";
 test("capture resolves text, links and highlight precedence without losing raw precision or CSS diagnostics", async ({ page }) => {
   const view = { protocol: "canopyx/2", type: "grid", id: "capture", label: "Capture", source: { kind: "inline" }, rowHeight: 28, pageSize: 10, selection: "single",
     reporting: {}, columns: [
-      { id: "name", title: "Record", kind: "text", width: 180, wrap: true, presenter: { kind: "link", hrefColumn: "url" } },
+      { id: "name", title: "Record", kind: "text", width: 180, wrap: true, pinned: "left", presenter: { kind: "link", hrefColumn: "url" } },
       { id: "url", title: "Address", kind: "text", width: 180, hidden: true },
       { id: "size", title: "Size", kind: "number", width: 100, presenter: { kind: "progress", maximum: 100 } },
       { id: "when", title: "When", kind: "datetime", width: 180 }, { id: "host", title: "Host", kind: "text", width: 100 } ],
@@ -18,12 +18,16 @@ test("capture resolves text, links and highlight precedence without losing raw p
   await page.route("http://canopyx.test/capture", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("</head>", setup + "</head>") }));
   await page.goto("http://canopyx.test/capture"); await page.waitForSelector("[data-cx-ready]");
   const result = await page.evaluate(async () => {
-    const api = document.querySelector("[data-canopyx-host]").canopyx, exportView = api.prepareExport({ scope: "all", locale: "en-US", timeZone: "utc" });
+    const api = document.querySelector("[data-canopyx-host]").canopyx,
+      fitted = document.querySelector('.cx-hcell[data-cx-column="name"]').getBoundingClientRect().width,
+      exportView = api.prepareExport({ scope: "all", locale: "en-US", timeZone: "utc" });
     const collect = async () => { const rows = []; for await (const row of exportView.rows()) rows.push(row); return rows; };
     const rows = await collect(); api.setTimeZone("local"); api.setColumnWidth("name", 300);
-    return { request: exportView.request, rows, repeated: await collect(), frozen: Object.isFrozen(rows[0].cells.name.link) };
+    return { request: exportView.request, fitted, rows, repeated: await collect(), frozen: Object.isFrozen(rows[0].cells.name.link) };
   });
-  expect(result.request.recordCount).toBe(2); expect(result.request.columns[0].width).toEqual({ unit: "css-px", preferred: 180, minimum: 40 });
+  expect(result.request.recordCount).toBe(2); expect(result.request.columns[0].width).toMatchObject({ unit: "css-px", minimum: 40 });
+  expect(result.request.columns[0].width.preferred).toBeCloseTo(result.fitted, 2);
+  expect(result.request.columns[0].pinned).toBe("left");
   expect(result.request.columns[0].wrap).toBe(true); expect(result.rows[0].tone).toBe("warning");
   expect(result.rows[0].cells.name).toMatchObject({ value: "a", text: "Open A", link: { target: "https://example.com/a", tooltip: "Record details" } });
   expect(result.rows[0].cells.size).toMatchObject({ value: 12, text: "12 KiB", tone: "info" });

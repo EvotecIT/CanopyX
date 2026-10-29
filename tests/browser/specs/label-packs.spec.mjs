@@ -37,7 +37,7 @@ for (const [language,labels,staticLabels] of packs) {
     const classic = fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-labels-${language}.js`),'utf8');
     const html = viewPage(view).replace('<body class="cx-page">','<body class="cx-page"><main><h1>Host inventory</h1>')
       .replace('</body>','</main></body>').replace('lang="en"',`lang="${language}"`).replace('</head>',
-      `<script>${classic}\nCanopyX.configure('translated',{labels:{...CanopyXLocales.${language}.labels,gridCopy:'Host copy'}});</script></head>`);
+      `<script>${classic}\nCanopyX.configure('translated',{labels:{...CanopyXLocales.${language}.labels,gridExportCopy:'Host copy'}});</script></head>`);
     await page.route('http://canopyx.test/translated',route=>route.fulfill({contentType:'text/html',body:html}));
     await page.goto('http://canopyx.test/translated');await page.waitForSelector('[data-cx-ready]');await nextFrames(page);
     // Lazy parts bring their own labels; flow features use the same manifest as the runtime and C# embedding.
@@ -56,10 +56,17 @@ for (const [language,labels,staticLabels] of packs) {
     const calendar = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-calendar.js'),'utf8');
     const matrix = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-matrix.js'),'utf8');
     const changes = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-changes.js'),'utf8');
+    const board = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-board.js'),'utf8');
+    const plan = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-plan.js'),'utf8');
+    const pathView = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-path.js'),'utf8');
+    const stack = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-stack.js'),'utf8');
+    const time = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-time-slider.js'),'utf8');
+    const compare = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-compare.js'),'utf8');
+    const viewIntents = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-view-intents.js'),'utf8');
     expect(partNames.length).toBeGreaterThan(0);
     for (const name of partNames) {
-      if (!uiNames.has(name)) expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change)[A-Z]/);
-      const definitions = uiNames.has(name)?overlays:/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:editing;
+      if (!uiNames.has(name)) expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change|compare|viewIntent|board|plan|path|stack|time)[A-Z]/);
+      const definitions = uiNames.has(name)?overlays:/^compare/.test(name)?compare:/^viewIntent/.test(name)?viewIntents:/^path/.test(name)?pathView:/^stack/.test(name)?stack:/^time/.test(name)?time:/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:/^board/.test(name)?board:/^plan/.test(name)?plan:editing;
       expect(new RegExp('\\b'+name+':\\s?"').test(definitions), `${language}: lazy part defines ${name}`).toBe(true);
     }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});

@@ -43,11 +43,11 @@ for (const [position, width] of [["side", 390], ["side", 700], ["top", 390]]) {
   test(`facets without a toolbar remain reachable and restore opener focus (${position}, ${width})`, async ({ page }) => {
     await page.setViewportSize({ width: 1400, height: 900 });
     const errors = await open(page, { toolbar: false, position });
-    const panel = page.getByRole("complementary", { name: "Filter by" }), opener = page.locator(".cx-facets-open");
+    const panel = page.getByRole("complementary", { name: "Refine" }), opener = page.locator(".cx-facets-open");
     await expect(panel).toBeVisible(); await expect(opener).toBeHidden(); await expect(page.locator(".cx-toolbar")).toBeHidden();
     await page.setViewportSize({ width, height: 900 }); await expect(opener).toBeVisible(); await expect(panel).toBeHidden();
     await opener.focus(); await page.keyboard.press("Enter");
-    const sheet = page.getByRole("dialog", { name: "Filter by" }); await expect(sheet).toBeVisible();
+    const sheet = page.getByRole("dialog", { name: "Refine" }); await expect(sheet).toBeVisible();
     await sheet.getByRole("checkbox", { name: /^A,/ }).check();
     await expect.poll(() => page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().filters)).toEqual([{ column: "team", operator: "in", values: ["A"] }]);
     await sheet.getByRole("button", { name: "Done", exact: true }).click();
