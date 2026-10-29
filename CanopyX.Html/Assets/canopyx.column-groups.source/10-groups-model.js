@@ -15,7 +15,7 @@
       const columns = input.columns ?? [], groups = input.groups ?? [];
       if (byId.has(input.id) || typeof input.title !== "string" || !input.title.trim() || input.title.length > 256 || depth > CG_DEPTH ||
           !Array.isArray(columns) || !Array.isArray(groups) || !columns.length && !groups.length ||
-          input.pinned !== undefined && (parent || ![null, "left", "right"].includes(input.pinned)))
+          input.pinned !== undefined && (view.columnGroupMode === "presentation" || parent || ![null, "left", "right"].includes(input.pinned)))
         cgBad("need unique IDs, titles, members, at most " + CG_DEPTH + " levels, and a pin only on a top-level group");
       const node = { id: input.id, title: input.title, pinned: input.pinned, parent, depth, columns: [], groups: [], leaves: [] };
       byId.set(node.id, node);

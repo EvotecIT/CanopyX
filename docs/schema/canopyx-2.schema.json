@@ -876,7 +876,8 @@
         "searchDelayMs": { "type": "integer", "minimum": 0, "maximum": 5000, "description": "Search-input debounce; absent uses zero for inline sources and 300 for hosted sources. Enter applies immediately." },
         "searchColumns": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" }, "$comment": "Every identity must bind to a declared grid column; absent searches every declared column." },
         "reporting": { "$ref": "#/$defs/gridReporting" },
-        "columnGroups": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/gridColumnGroup" }, "description": "Header rows above the columns, up to three levels. Each column belongs to one group at most; the grid keeps a group's columns together in its column order. Loads the column-groups part." },
+        "columnGroups": { "type": "array", "maxItems": 1000, "items": { "$ref": "#/$defs/gridColumnGroup" }, "description": "Header definitions, up to three levels. Each column belongs to one group at most. Semantic groups govern column layout; presentation bands follow displayed contiguous members. Loads the column-groups part." },
+        "columnGroupMode": { "enum": ["semantic", "presentation"], "description": "Semantic by default. Presentation bands preserve column order, pins, chooser and saved state; group pins are not supported." },
         "rangeSelection": { "oneOf": [{ "type": "boolean" }, { "type": "object", "additionalProperties": false, "properties": { "enabled": { "type": "boolean", "description": "False keeps the API without pointer, keyboard and touch input. Default true." }, "multiple": { "type": "boolean", "description": "Ctrl or Cmd adds ranges. Default true." }, "fillHandle": { "type": "boolean", "description": "Show the fill handle on a single range. Default false." } } }], "description": "Cell ranges by mouse, keyboard and touch, the cell menu and the clipboard keys. Loads the cell-range part. Absent or false leaves them off." },
         "clipboard": { "type": "object", "additionalProperties": false, "properties": { "copyHeaders": { "type": "boolean", "description": "Copies start with the column titles and group rows. Default false." }, "copyValues": { "enum": ["display", "raw"], "description": "Copy the shown text or raw values. Default display." }, "paste": { "type": "boolean", "description": "Paste into the cells. Default true." } }, "description": "How cell ranges copy and paste." },
         "record": { "$ref": "#/$defs/recordPanel" },
@@ -902,6 +903,9 @@
       }, {"if": {"anyOf": [{"required": ["path"]}, {"required": ["stack"]}]}, "then": {"properties": {"source": {"properties": {"kind": {"const": "inline"}}}, "rowIdentity": {"const": "stableKey"}}}}, {
         "if": { "required": ["plan"] },
         "then": { "required": ["calendar"], "properties": { "calendar": { "not": { "required": ["create"] }, "properties": { "drop": { "const": false } } } } }
+      }, {
+        "if": { "required": ["columnGroupMode"], "properties": { "columnGroupMode": { "const": "presentation" } } },
+        "then": { "properties": { "columnGroups": { "items": { "$ref": "#/$defs/gridPresentationColumnGroup" } } } }
       }, {
         "if": { "required": ["selection"], "properties": { "selection": { "const": "none" } } },
         "then": { "properties": { "reporting": { "properties": { "selectionControls": { "const": false } } } } }
@@ -2280,6 +2284,12 @@
       "items": { "type": "object", "additionalProperties": false, "required": ["operator", "value", "tone", "label"],
         "properties": { "operator": { "enum": ["atMost", "atLeast", "below", "above"] }, "value": { "type": "number" },
           "tone": { "$ref": "#/$defs/tone" }, "label": { "type": "string", "minLength": 1, "maxLength": 4096, "pattern": "\\S" } } }
+    },
+    "gridPresentationColumnGroup": {
+      "allOf": [{ "$ref": "#/$defs/gridColumnGroup" }, {
+        "not": { "required": ["pinned"] },
+        "properties": { "groups": { "items": { "$ref": "#/$defs/gridPresentationColumnGroup" } } }
+      }]
     },
     "gridColumnGroup": {
       "description": "A named group of columns drawn as a header above them. It lists the columns directly below it and its nested groups.",
