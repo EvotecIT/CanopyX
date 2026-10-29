@@ -23,9 +23,9 @@ test("two levels nest complete groups, label their aggregates and make the grid 
   await expect(headings(page).nth(1)).toHaveAttribute("aria-level", "2");
   await expect(page.locator(".cx-row[data-cx-id]").first()).toHaveAttribute("aria-level", "3");
   const amount = first.locator('[role="gridcell"]').last();
-  await expect(amount).toHaveText(/^sum [\d,.]+ · avg [\d,.]+$/);
+  await expect(amount).toHaveText(/^Sum [\d,.]+ · Avg [\d,.]+$/);
   await expect(amount).toHaveAttribute("title", /^Total amount · Sum: [\d,.]+ · Average amount · Avg: [\d,.]+$/);
-  await expect(page.locator(".cx-summary-row [role='gridcell']").first()).toHaveText(/^count 48/);
+  await expect(page.locator(".cx-summary-row [role='gridcell']").first()).toHaveText(/^Count 48/);
   await expect(page.locator(".cx-gchip")).toHaveCount(2);
   const order = await page.locator(".cx-canvas > .cx-row").evaluateAll(list => list.map(row => Number(row.getAttribute("aria-rowindex"))));
   expect(order).toEqual([...order].sort((a, b) => a - b));
@@ -173,8 +173,8 @@ test("distinct counts and plugin aggregates are computed for inline data and lab
   expect(summary.aggregates.customers).toBe(new Set(orders().map(row => row.cells.customer)).size);
   const amounts = orders().map(row => row.cells.amount).sort((a, b) => a - b);
   expect(summary.aggregates.median).toBe((amounts[23] + amounts[24]) / 2);
-  await expect(page.locator(".cx-summary-row [role='gridcell']").last()).toHaveText(/^med [\d,.]+$/);
-  await expect(page.locator(".cx-summary-row [role='gridcell']").nth(1)).toHaveText(/^distinct \d+$/);
+  await expect(page.locator(".cx-summary-row [role='gridcell']").last()).toHaveText(/^Med [\d,.]+$/);
+  await expect(page.locator(".cx-summary-row [role='gridcell']").nth(1)).toHaveText(/^Distinct \d+$/);
   const failure = await page.evaluate(async view => {
     const host = document.createElement("div"); document.body.appendChild(host);
     const grid = CanopyX.createDataGrid(host, { view: { ...view, id: "no-plugin", reporting: { ...view.reporting, aggregates: [{ id: "x", column: "amount", operation: "spread", label: "Spread" }] } } });
@@ -191,7 +191,7 @@ test("every aggregate of one function in a column keeps the same decimals, trail
   await open(page, view);
   // Undeclared aggregate formats use two decimals consistently in headings and totals, independent of the loaded sample.
   const texts = await page.locator(".cx-grid-group [role='gridcell']:last-child, .cx-summary-row [role='gridcell']:last-child").allTextContents();
-  expect(texts).toEqual(["sum 6.00 · avg 3.00", "sum 3.00 · avg 1.50", "sum 5.75 · avg 2.88", "sum 14.75 · avg 2.46"]);
+  expect(texts).toEqual(["Sum 6.00 · Avg 3.00", "Sum 3.00 · Avg 1.50", "Sum 5.75 · Avg 2.88", "Sum 14.75 · Avg 2.46"]);
 });
 
 test("runtime grouping keeps the inline source's facet counts", async ({ page }) => {
@@ -225,7 +225,7 @@ test(`grouped orders read well at ${width} in ${theme} with no accessibility vio
       return { scroll: bar.scrollWidth - bar.clientWidth, right: box.right - host.right, inside, chips: bar.querySelectorAll(".cx-gchip").length };
     });
     expect(fit).toEqual({ scroll: 0, right: expect.any(Number), inside: true, chips: 2 }); expect(fit.right).toBeLessThanOrEqual(0.5);
-    await expect(headings(page).first().locator(".cx-grid-group-aggregates")).toContainText("Amount sum");
+    await expect(headings(page).first().locator(".cx-grid-group-aggregates")).toContainText("Amount Sum");
   }
   await page.locator(".cx-grid-group").first().focus();
   expect((await new AxeBuilder({ page }).include("[data-canopyx-host]").analyze()).violations).toEqual([]);

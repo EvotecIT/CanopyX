@@ -70,6 +70,6 @@ body.cx-page > .cx-host.cx-pivot-active,body.cx-page > .cx-main > .cx-host.cx-pi
 .cx-pivot-table th[scope=row]{position:static;}
 }
 .cx-pivot-column-jump{margin-inline-start:var(--hfx-space-1,0.25rem);}
-.cx-pivot-column-jump::before{content:"▾" / "";}
+.cx-pivot-column-jump::before{content:"⇥" / "";}
 .cx-pivot-table thead th:first-child[rowspan]{white-space:nowrap;}
 @media print{.cx-pivot-column-jump{display:none !important;}}

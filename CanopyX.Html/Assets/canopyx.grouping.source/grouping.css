@@ -13,7 +13,7 @@
 .cx-data-grid .cx-grid-summary { position:sticky;bottom:0;z-index:4;background:var(--hfx-color-surface-sunken);border-top:var(--hfx-border-width) solid var(--hfx-color-border-strong);font:inherit; }
 .cx-summary-row { display:flex;height:var(--hfx-table-header-height);font-weight:700; }
 .cx-data-grid .cx-summary-row .cx-cell[data-cx-pin] { background:var(--hfx-color-surface-sunken); }
-.cx-summary-row .cx-summary-caption { font-size:calc(var(--hfx-type-caption-size)*.9583);letter-spacing:.04em;text-transform:none;color:var(--hfx-color-text-muted); }
+.cx-summary-row .cx-summary-caption { font:inherit;letter-spacing:normal;text-transform:none;color:inherit; }
 /* Levels, chips and labelled aggregates of runtime grouping. */
 .cx-groupbar-label { flex:none; }
 .cx-groupbar-hint { font-style:italic; }
