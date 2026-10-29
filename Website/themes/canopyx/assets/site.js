@@ -43,6 +43,48 @@
     });
   }
 
+  // The header's Views and Docs panels: a click toggles, hovering opens after a moment, Escape or a click outside closes.
+  var menus = Array.prototype.slice.call(document.querySelectorAll('[data-cnx-menu]'));
+  function setMenu(item, open) {
+    var button = item.querySelector('button[aria-expanded]');
+    if (open) item.setAttribute('data-open', ''); else item.removeAttribute('data-open');
+    if (button) button.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function closeMenus(except) { menus.forEach(function (item) { if (item !== except) setMenu(item, false); }); }
+  menus.forEach(function (item) {
+    var button = item.querySelector('button[aria-expanded]');
+    var timer = 0;
+    button.addEventListener('click', function () {
+      var open = !item.hasAttribute('data-open');
+      closeMenus(item);
+      setMenu(item, open);
+    });
+    item.addEventListener('mouseenter', function () {
+      if (!matchMedia('(hover: hover)').matches) return;
+      clearTimeout(timer);
+      timer = setTimeout(function () { closeMenus(item); setMenu(item, true); }, 80);
+    });
+    item.addEventListener('mouseleave', function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () { setMenu(item, false); }, 160);
+    });
+    item.addEventListener('focusout', function (event) {
+      if (!item.contains(event.relatedTarget)) setMenu(item, false);
+    });
+  });
+  if (menus.length) {
+    document.addEventListener('click', function (event) {
+      if (!event.target.closest('[data-cnx-menu]')) closeMenus(null);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      var open = menus.filter(function (item) { return item.hasAttribute('data-open'); })[0];
+      if (!open) return;
+      setMenu(open, false);
+      open.querySelector('button').focus();
+    });
+  }
+
   // Docs map and other inline thumbnails that were not rendered into the page.
   document.querySelectorAll('main [data-cnx-thumb]').forEach(function (slot) { loadThumbs(slot.parentNode); });
 
@@ -239,18 +281,86 @@
     });
   });
 
+  // The bottom of the lowest visible piece of content in a frame: text, controls and drawings, not the containers that
+  // stretch to the frame's height.
+  function contentBottom(doc) {
+    var win = doc.defaultView, bottom = 0, seen = 0;
+    var all = doc.body ? doc.body.getElementsByTagName('*') : [];
+    for (var i = 0; i < all.length && seen < 6000; i++) {
+      var el = all[i];
+      var drawn = /^(svg|canvas|img|input|select|textarea|button|video)$/i.test(el.tagName);
+      if (el.childElementCount && !drawn) continue;
+      if (!drawn && !el.textContent.trim()) continue;
+      seen++;
+      var rect = el.getBoundingClientRect();
+      if (!rect.height || !rect.width) continue;
+      if (win.getComputedStyle(el).visibility === 'hidden') continue;
+      bottom = Math.max(bottom, rect.bottom + win.scrollY);
+    }
+    return bottom;
+  }
+
+  // A demo frame takes the height of its page: a page that scrolls grows the frame, a short page shrinks it, and a view
+  // that fills whatever height it gets keeps the default.
+  function fitFrame(frame, screen) {
+    try {
+      var doc = frame.contentDocument;
+      if (!doc || !doc.body || !screen) return;
+      var height = frame.getBoundingClientRect().height, want = height;
+      var page = doc.documentElement.scrollHeight;
+      // A scroll area inside the view that is only a little short (not a virtual list of thousands of rows) means
+      // the frame clips the page's own layout; grow by the difference.
+      var short = 0, all = doc.body.getElementsByTagName('*');
+      for (var i = 0; i < all.length && i < 8000; i++) {
+        var el = all[i], over = el.scrollHeight - el.clientHeight;
+        if (over > 2 && over < 260 && el.clientHeight > 40 && /auto|scroll/.test(doc.defaultView.getComputedStyle(el).overflowY)) short = Math.max(short, over);
+      }
+      if (short) want = height + short + 4;
+      else if (page > height + 2) want = page;
+      else {
+        var bottom = contentBottom(doc);
+        if (bottom && bottom < height - 48) want = bottom + 20;
+      }
+      want = Math.round(Math.min(Math.max(want, 240), Math.max(560, window.innerHeight - 120), 980));
+      if (Math.abs(want - height) > 12) screen.style.setProperty('--cnx-fit', want + 'px');
+    } catch (e) { /* frame not ready */ }
+  }
+
+  function watchFit(frame, screen) {
+    if (!screen || frame.hasAttribute('data-cnx-fit')) return;
+    frame.setAttribute('data-cnx-fit', '');
+    var timer = 0;
+    var fit = function () { clearTimeout(timer); timer = setTimeout(function () { if (!frame.closest('[hidden]')) fitFrame(frame, screen); }, 120); };
+    frame.addEventListener('load', function () {
+      fit();
+      setTimeout(fit, 600);
+      setTimeout(fit, 1500);
+      try {
+        if (window.ResizeObserver) new frame.contentWindow.ResizeObserver(fit).observe(frame.contentDocument.body);
+        frame.contentDocument.addEventListener('click', function () { setTimeout(fit, 250); });
+      } catch (e) { /* frame not ready */ }
+    });
+    frame.cnxFit = fit;
+  }
+
   var stage = document.querySelector('[data-cnx-stage]');
   if (stage) {
     var stageTabs = Array.prototype.slice.call(stage.querySelectorAll('[role="tab"]'));
     var open = stage.querySelector('[data-cnx-demo-open]');
+    var screen = stage.querySelector('.cnx-frame__screen');
     var show = function (tab) {
       selectTab(stageTabs, tab);
       var id = tab.getAttribute('data-cnx-demo');
       stage.querySelectorAll('[data-cnx-caption]').forEach(function (caption) {
-        caption.hidden = caption.getAttribute('data-cnx-caption') !== id;
+        caption.hidden = caption.getAttribute('data-cnx-caption') !== id || !caption.textContent.trim();
       });
       var panel = document.getElementById(tab.getAttribute('aria-controls'));
       var frame = panel ? panel.querySelector('[data-cnx-frame]') : null;
+      if (screen) screen.style.removeProperty('--cnx-fit');
+      if (frame) {
+        watchFit(frame, screen);
+        if (frame.getAttribute('src')) setTimeout(frame.cnxFit, 50);
+      }
       loadFrame(frame);
       if (open) {
         open.hidden = !frame;
@@ -258,6 +368,10 @@
       }
     };
     wireTabs(stageTabs, show);
+    window.addEventListener('resize', function () {
+      var frame = stage.querySelector('[role="tabpanel"]:not([hidden]) [data-cnx-frame][data-cnx-fit]');
+      if (frame && frame.cnxFit) frame.cnxFit();
+    });
 
     // A demo with a separate dark page swaps its frame on a theme change; the full-screen link follows it.
     themeListeners.push(function () {

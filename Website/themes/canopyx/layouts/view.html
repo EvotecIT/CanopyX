@@ -33,15 +33,16 @@
     <p class="cnx-view__meta"><code>{{ v.api }}</code>{{ if d }}<span>{{ d.stat }}</span>{{ end }}<a class="cnx-link" href="{{ v.docs }}">Documentation<span class="cnx-sr"> for the {{ v.name | string.downcase }}</span></a></p>
   </header>
 
-  {{~ ## The demos: the view's featured demo, then its gallery from data/gallery.json (examples from the repository),
-       as tabs over one frame. Each tab loads its page the first time it opens. ## ~}}
+  {{~ ## The demos: the view's featured demo, then its gallery from data/gallery.json (examples from the repository).
+       More than one demo puts a list of them beside the frame; each loads its page the first time it opens, and the
+       frame fits the height of the page it shows. The featured demo's description is the lede, so it has no caption. ## ~}}
   {{~ gallery = data.gallery ? data.gallery[v.id] : null
-      demos = [{ id: "main", title: v.example, body: v.body, src: v.src, srcDark: v.srcDark }]
+      demos = [{ id: "main", title: v.example, body: "", src: v.src, srcDark: v.srcDark }]
       if gallery; for g in gallery; demos = demos | array.add g; end; end ~}}
-  <section class="cnx-view__demos" data-cnx-stage aria-labelledby="cnx-view-demos-title">
+  <section class="cnx-view__demos{{ if demos.size > 1 }} cnx-view__demos--list{{ end }}" data-cnx-stage aria-labelledby="cnx-view-demos-title">
     <div class="cnx-view__demohead">
       <h2 id="cnx-view-demos-title">{{ demos.size }} {{ if demos.size == 1 }}demo{{ else }}demos{{ end }}</h2>
-      <div class="cnx-demotabs" role="tablist" aria-label="Demos of the {{ v.name | string.downcase }}">
+      <div class="cnx-demotabs" role="tablist" aria-orientation="{{ if demos.size > 1 }}vertical{{ else }}horizontal{{ end }}" aria-label="Demos of the {{ v.name | string.downcase }}">
         {{~ for d in demos ~}}
         <button type="button" role="tab" class="cnx-demotab" id="cnx-demo-tab-{{ d.id }}" aria-controls="cnx-demo-{{ d.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" data-cnx-demo="{{ d.id }}">{{ d.title }}</button>
         {{~ end ~}}
@@ -74,9 +75,9 @@
         </div>
         {{~ end ~}}
       </div>
-      <figcaption class="cnx-frame__caption">
+      <figcaption class="cnx-frame__caption"{{ if demos.size == 1 }} hidden{{ end }}>
         {{~ for d in demos ~}}
-        <p data-cnx-caption="{{ d.id }}"{{ if !for.first }} hidden{{ end }}>{{ d.body }}</p>
+        <p data-cnx-caption="{{ d.id }}"{{ if !for.first || d.body == "" }} hidden{{ end }}>{{ d.body }}</p>
         {{~ end ~}}
       </figcaption>
     </figure>

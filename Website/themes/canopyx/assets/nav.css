@@ -1,6 +1,7 @@
-/* The workbench shell: a slim header across the top, the site sidebar down the left on every page (the views tree, the
-   documentation tree and the packages), and the page beside it. The sidebar is drawn as an expanded CanopyX tree: group
-   rows for families, child rows on a guide line, and the selected-row treatment for the current page. */
+/* The shell: a slim header across the top whose Views and Docs items open a panel, and the page at full width below it.
+   Documentation pages keep the documentation tree down the left. On narrow screens the menu button opens the whole
+   sidebar (views, documentation, packages) as a sheet. The sidebar is drawn as an expanded CanopyX tree: group rows for
+   families, child rows on a guide line, and the selected-row treatment for the current page. */
 
 .cnx-header {
   position: sticky;
@@ -12,32 +13,75 @@
   -webkit-backdrop-filter: saturate(1.4) blur(14px);
   border-bottom: 1px solid var(--cnx-line);
 }
-.cnx-header__inner { display: flex; align-items: center; gap: 28px; height: 100%; padding: 0 16px 0 20px; }
-.cnx-brand { width: calc(var(--cnx-side) - 20px - 28px); }
+.cnx-header__inner { position: relative; display: flex; align-items: center; gap: 28px; width: min(100%, var(--cnx-wide)); height: 100%; margin-inline: auto; padding: 0 clamp(16px, 3.5vw, 48px); }
 
 .cnx-nav { flex: 1; min-width: 0; }
 .cnx-nav__links { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .cnx-nav__link {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   height: 36px;
-  padding: 0 12px;
+  padding: 0 10px 0 12px;
+  border: 0;
   border-radius: 8px;
+  background: none;
   color: var(--cnx-ink-2);
+  font: inherit;
   font-size: .9375rem;
   font-weight: 600;
   text-decoration: none;
+  cursor: pointer;
 }
-.cnx-nav__link:hover { color: var(--cnx-ink); background: color-mix(in srgb, var(--cnx-ink) 5%, transparent); }
-.cnx-nav__link.is-current { color: var(--cnx-ink); background: var(--cnx-select); box-shadow: inset 0 -2px 0 var(--cnx-accent); }
+.cnx-nav__chevron { opacity: .6; transition: transform .15s ease; }
+.cnx-nav__link:hover, .cnx-nav__link[aria-expanded="true"] { color: var(--cnx-ink); background: color-mix(in srgb, var(--cnx-ink) 6%, transparent); }
+.cnx-nav__link[aria-expanded="true"] .cnx-nav__chevron { transform: rotate(180deg); }
+.cnx-nav__link.is-current { color: var(--cnx-ink); }
+.cnx-nav__link.is-current::after { content: ""; position: absolute; left: 12px; right: 10px; bottom: -11px; height: 2px; border-radius: 2px; background: var(--cnx-accent); }
+.cnx-nav__item { position: relative; }
+
+/* The panels under Views and Docs: open on click, hover or keyboard focus; Escape and a click outside close them. */
+.cnx-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 10px);
+  left: -12px;
+  display: none;
+  padding: 18px;
+  border: 1px solid var(--cnx-line);
+  border-radius: var(--cnx-radius);
+  background: var(--cnx-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 28px 60px -24px rgba(0, 0, 0, .45);
+}
+.cnx-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; height: 12px; }
+.cnx-nav__item[data-open] .cnx-menu, html:not(.cnx-js) .cnx-nav__item:focus-within .cnx-menu { display: block; }
+.cnx-menu--views { width: min(1040px, calc(100vw - 32px)); }
+.cnx-menu--docs { display: none; width: min(760px, calc(100vw - 32px)); }
+.cnx-nav__item[data-open] .cnx-menu--docs, html:not(.cnx-js) .cnx-nav__item:focus-within .cnx-menu--docs { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; }
+.cnx-menu__cols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.cnx-menu__family { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 0 10px; color: var(--cnx-ink-3); font-size: .8125rem; font-weight: 680; letter-spacing: 0; }
+.cnx-menu__family .cnx-tone { width: 9px; height: 9px; border-radius: 2px; }
+.cnx-menu ul { margin: 0; padding: 0; list-style: none; }
+.cnx-menu li a { display: grid; gap: 1px; padding: 7px 10px; border-radius: 8px; color: var(--cnx-ink); text-decoration: none; }
+.cnx-menu li a strong { font-size: .9063rem; font-weight: 650; }
+.cnx-menu li a span { color: var(--cnx-ink-3); font-size: .8125rem; line-height: 1.4; }
+.cnx-menu li a:hover { background: color-mix(in srgb, var(--cnx-ink) 5%, transparent); }
+.cnx-menu li a:hover strong { color: var(--cnx-accent); }
+.cnx-menu li a[aria-current] { background: var(--cnx-select); box-shadow: inset 2px 0 0 var(--cnx-accent); }
+.cnx-menu__foot { margin: 14px 0 0; padding: 12px 10px 0; border-top: 1px solid var(--cnx-line); font-size: .875rem; }
+.cnx-menu__foot a { color: var(--cnx-accent); font-weight: 650; text-decoration: none; }
+.cnx-menu__foot a:hover { text-decoration: underline; }
+.cnx-menu__packages { padding-left: 18px; border-left: 1px solid var(--cnx-line); }
+.cnx-menu__packages li a strong { font-family: var(--cnx-mono); font-size: .8125rem; font-weight: 600; }
 .cnx-nav__actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .cnx-nav__actions .cnx-btn { margin-left: 8px; }
 
 .cnx-nav-toggle { position: absolute; opacity: 0; pointer-events: none; }
 .cnx-nav-toggle__label { display: none; }
 
-/* Shell */
-.cnx-shell { display: grid; grid-template-columns: var(--cnx-side) minmax(0, 1fr); }
+/* Shell: the page at full width; documentation pages keep the documentation tree beside them. */
+.cnx-shell { display: grid; grid-template-columns: minmax(0, 1fr); }
+.cnx-body--docs .cnx-shell, .cnx-body--docsmap .cnx-shell { grid-template-columns: var(--cnx-side) minmax(0, 1fr); }
 .cnx-shell__content { display: flex; flex-direction: column; min-width: 0; min-height: calc(100vh - var(--cnx-header)); }
 .cnx-shell__content > .cnx-main { flex: 1; }
 
@@ -52,6 +96,12 @@
   border-right: 1px solid var(--cnx-line);
   background: var(--cnx-card);
   font-size: .9063rem;
+}
+@media (min-width: 1001px) {
+  .cnx-side { display: none; }
+  .cnx-body--docs .cnx-side, .cnx-body--docsmap .cnx-side { display: block; }
+  .cnx-side .cnx-side__section:not(.cnx-docs__nav) { display: none; }
+  .cnx-side .cnx-docs__nav { margin: 0; padding: 0; border: 0; }
 }
 .cnx-side__section + .cnx-side__section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--cnx-line); }
 .cnx-side__title { margin: 0 0 6px; padding: 0 20px; font-size: .8125rem; font-weight: 700; letter-spacing: 0; }
@@ -97,7 +147,8 @@
 /* Narrow screens: the sidebar becomes a sheet under the header, opened by the menu button. */
 @media (max-width: 1000px) {
   .cnx-header__inner { gap: 10px; padding-left: 8px; }
-  .cnx-brand { width: auto; }
+  .cnx-nav { display: none; }
+  .cnx-body--docs .cnx-shell, .cnx-body--docsmap .cnx-shell { grid-template-columns: minmax(0, 1fr); }
   .cnx-nav-toggle__label { display: grid; gap: 5px; padding: 12px 10px; border-radius: 8px; cursor: pointer; }
   .cnx-nav-toggle__label span[aria-hidden] { display: block; width: 20px; height: 2px; border-radius: 2px; background: var(--cnx-ink); transition: transform .18s ease; }
   .cnx-nav-toggle:checked ~ .cnx-header .cnx-nav-toggle__label span:nth-child(2),
@@ -119,6 +170,5 @@
   .cnx-nav-toggle:checked ~ .cnx-shell .cnx-side { transform: none; visibility: visible; }
 }
 @media (max-width: 560px) {
-  .cnx-nav { display: none; }
   .cnx-nav__actions .cnx-icon-link { display: none; }
 }
