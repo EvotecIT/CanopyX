@@ -106,18 +106,17 @@
       if (rows && this.toolbar.hidden) return 0;
       const host = getComputedStyle(this.host);
       let count = 0;
-      const height = [...this.host.children].reduce((height, child) => {
+      const height = [...this.host.children].reduce((sum, child) => {
         const css = getComputedStyle(child);
-        if (css.display === "none" || css.position === "absolute" || css.position === "fixed") return height;
+        if (css.display === "none" || css.position === "absolute" || css.position === "fixed") return sum;
         count++;
         let block = child === this.grid ? 0 : child.offsetHeight;
         if (child === this.notice && child.classList.contains("cx-state")) {
-          const items = child.children;
-          block = (items.length ? items[items.length - 1].getBoundingClientRect().bottom - items[0].getBoundingClientRect().top : 0) +
-            parseFloat(css.paddingTop) + parseFloat(css.paddingBottom) + parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
+          block = (child.lastElementChild ? child.lastElementChild.getBoundingClientRect().bottom - child.firstElementChild.getBoundingClientRect().top : 0) +
+            parseFloat(css.paddingTop) + parseFloat(css.paddingBottom) + child.offsetHeight - child.clientHeight;
           block = Math.max(block, parseFloat(css.minHeight) || 0);
         }
-        return height + block + parseFloat(css.marginTop) + parseFloat(css.marginBottom);
+        return sum + block + parseFloat(css.marginTop) + parseFloat(css.marginBottom);
       }, rows ? Math.max(this.head.offsetHeight, this.rowH * Math.min(4, Math.max(1, this.rowCount()))) + 2 : 0);
       return height + this.host.offsetHeight - this.host.clientHeight + parseFloat(host.paddingTop) + parseFloat(host.paddingBottom)
         + Math.max(0, count - 1) * (parseFloat(host.rowGap) || 0);

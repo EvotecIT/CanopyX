@@ -9,8 +9,7 @@
     return measured;
   };
   DataGrid.prototype.fitHeight = function () {
-    // Boards own their viewport even before their lazy renderer has hidden the flat grid.
-    if (this.view.autoHeight === false || this.view.board || this.pendingQuery || !this.grid.clientWidth || !this.host.checkVisibility()) return;
+    if (this.view.autoHeight === false || this.pendingQuery || !this.grid.clientWidth || !this.host.checkVisibility()) return;
     // The host's own max-height, read before the first change, stays a bound for empty and populated results.
     // Pixels bound the fit as a number; a relative bound (a percentage, calc()) stays CSS, so the browser keeps resolving it.
     const grid = this.grid, style = this.host.style;
@@ -20,17 +19,18 @@
       const position = getComputedStyle(child).position;
       return position === "absolute" || position === "fixed" ? sum : sum + child.getBoundingClientRect().height;
     }, grid.offsetHeight - grid.clientHeight);
-    if (this.fitMax === undefined) {
+    if (this.fitInline === undefined) {
       // Alternate views restore the authored bound when they take ownership of the host.
       this.fitInline = style.maxHeight;
       const own = getComputedStyle(this.host).maxHeight;
       this.fitMax = own === "none" ? Infinity : own.endsWith("px") ? parseFloat(own) : own;
     }
     // Reuse the minimum's flow measurement without reserving rows in the empty state.
-    const empty = !this.notice.hidden && this.notice.classList.contains("cx-state");
-    const height = Math.ceil(this.minimumGridHeight(false) + content), bound = this.fitMax;
-    const value = typeof bound === "number" ? Math.min(bound, height) + "px" : "min(" + height + "px, " + bound + ")";
-    const minimum = empty ? value : this.minimumGridHeight() + "px";
-    if (style.getPropertyValue("--cx-min-h") !== minimum) style.setProperty("--cx-min-h", minimum);
+    const empty = !this.toolbar.hidden && this.host.classList.contains("cx-grid-awaiting");
+    const height = Math.ceil(Math.max(empty ? 0 : this.host.getBoundingClientRect().height - grid.getBoundingClientRect().height, this.minimumGridHeight(false)) + content), bound = this.fitMax;
+    const value = this.rowCount() || empty ? typeof bound === "number" ? Math.min(bound, height) + "px" : "min(" + height + "px, " + bound + ")" : this.fitInline;
+    // Only release a minimum that empty fitting owned; populated alternate views keep their own sizing.
+    if (empty || this.fitEmpty) style.setProperty("--cx-min-h", empty ? value : this.minimumGridHeight() + "px");
+    this.fitEmpty = empty;
     if (style.maxHeight !== value) style.maxHeight = value;
   };
