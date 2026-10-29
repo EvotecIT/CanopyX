@@ -51,7 +51,7 @@
         if (this.cal.weekNumbers && day === days[0]) { const wk = h("span", "cx-cal-wknum"); setText(wk, fill(this.calLabels.calendarWeekShort, { number: this.calWeekNumber(day) })); head.appendChild(wk); }
         cell.appendChild(head);
         if (!events.length) { const empty = h("p", "cx-cal-empty"); setText(empty, this.calLabels.calendarNoEvents); empty.setAttribute("aria-hidden", "true"); cell.appendChild(empty); }
-        for (const event of events) cell.appendChild(this.calEventElement(event, "item"));
+        for (const event of events) cell.appendChild(this.calEventElement(event, "item", day));
         const backgrounds = this.calBackgroundsOn(day);
         if (backgrounds.length) { cell.classList.add("cx-cal-bgday"); cell.style.setProperty("--cx-bg-tone", toneVariable(backgrounds[0].tone, false, "var(--hfx-color-status-info-fg)")); }
         this.calCells.set(day, cell); row.appendChild(cell);

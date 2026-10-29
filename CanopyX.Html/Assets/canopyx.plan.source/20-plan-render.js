@@ -7,8 +7,8 @@
     planConflict: "Conflict", planActual: "Actual", planPending: "Proposal awaiting the host", planBaselineLabel: "Baseline", planDependencies: "Dependencies"
   };
   const PLAN_EVENT = DataGrid.prototype.calEventElement;
-  DataGrid.prototype.calEventElement = function (event, kind) {
-    const element = PLAN_EVENT.call(this, event, kind);
+  DataGrid.prototype.calEventElement = function (event, kind, day) {
+    const element = PLAN_EVENT.call(this, event, kind, day);
     if (this.view.plan && kind === "lane") {
       this.planDecorate(element, event);
       this.planStart();

@@ -160,13 +160,13 @@ The JSON schema is `gridCalendar` in [schema/canopyx-2.schema.json](schema/canop
   time slots. Overlapping events share their column side by side and widen over free columns; an event over midnight shows in
   each day. Working hours, unavailable time and background ranges shade the columns; a line marks now. With an inline resource tree, day and week views get [resource columns](resource-timeline.md#resource-columns-in-day-and-week-views).
 - **Agenda**: the period's events grouped by day, with their time (or All day), title, subtitle and status. Phones start here.
-- **Year**: twelve small months; each day is shaded by its number of events, which its accessible name and tooltip give.
+- **Year**: twelve small months; days with events have a tint and dot, with stronger tint for busier days. Each day's accessible name and tooltip give its count, and today has an accent ring.
 - **Timeline**: resources as rows, time across; see [resource-timeline.md](resource-timeline.md). Without resources its rows
   are the events themselves, packed by overlap (`calendar-solo.html`); `span` sets its period.
-- **Mini month** (`mini`): a small month like a date picker, at most 360 pixels wide, with a dot per event on each day (in its
+- **Mini month** (`mini`): a month that grows with its host up to 840 pixels wide, with a dot per event on each day (in its
   tone). Selecting a day reports it like any day selection ([Linked views](#linked-views)), so a page can filter a grid or move
   another calendar to it: listen for `canopyx:linkchange` and call `setCalendarDate` on the other calendar.
-- **Week list and day list** (`weekList`, `dayList`): each day's events as a list, all-day events first, without a time axis.
+- **Week list and day list** (`weekList`, `dayList`): each day's events as a list, all-day events first, without a time axis. A timed event crossing days shows its start or end time on the boundary day and "All day" between them; its accessible name retains the full range.
 - **Stacked months** (`months`): `months` months one under another in a scrolling column; each day appears once.
 - **Year with events**: with `yearEvents`, each month of the year lists its events under its days.
 

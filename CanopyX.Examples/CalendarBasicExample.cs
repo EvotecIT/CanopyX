@@ -9,7 +9,7 @@ namespace CanopyX.Examples;
 /// details popover. The other pages turn on one option at a time: the simple layouts (mini month, week and day lists, stacked
 /// months, a year with its events), a scheduler (creating events, dropping work from a grid, sources with a legend, office
 /// hours shaded outside, context menus), a right-to-left calendar and a timeline without resources. Writes calendar-basic.html
-/// (and -dark), calendar-layouts.html, calendar-scheduler.html (and -dark), calendar-rtl.html and calendar-solo.html.
+/// (and -dark), calendar-layouts.html (and -dark), calendar-scheduler.html (and -dark), calendar-rtl.html and calendar-solo.html.
 /// </summary>
 internal static class CalendarBasicExample {
     private static DateTime Today => CalendarExample.Today;
@@ -18,9 +18,9 @@ internal static class CalendarBasicExample {
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
             Basic().SaveHtmlPage(Path.Combine(output, "calendar-basic" + suffix + ".html"), new CanopyHtmlOptions { Title = "Team calendar", Theme = theme, Height = "720px" });
+            Layouts().SaveHtmlPage(Path.Combine(output, "calendar-layouts" + suffix + ".html"), new CanopyHtmlOptions { Title = "Calendar layouts", Theme = theme, Height = "720px" });
             WriteScheduler(output, theme, suffix);
         }
-        Layouts().SaveHtmlPage(Path.Combine(output, "calendar-layouts.html"), new CanopyHtmlOptions { Title = "Calendar layouts", Height = "720px" });
         var rtl = Basic();
         rtl.WeekNumbers = CanopyCalendarWeekNumbers.Iso;
         rtl.SaveHtmlPage(Path.Combine(output, "calendar-rtl.html"), new CanopyHtmlOptions { Title = "Team calendar, right to left", Height = "720px", Language = "he", Direction = CanopyTextDirection.Rtl });
@@ -35,6 +35,9 @@ internal static class CalendarBasicExample {
         CanopyCalendarEvent Day(string id, string title, DateTime start, DateTime end, CanopyTone tone, string? description = null, string? source = null) =>
             new(title, start, end) { Id = id, AllDay = true, Tone = tone, Description = description, Source = source };
         return new List<CanopyCalendarEvent> {
+            Day("winter-checkpoint", "Winter checkpoint", new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 1, 16, 0, 0, 0, DateTimeKind.Utc), CanopyTone.Info),
+            Day("spring-checkpoint", "Spring checkpoint", new DateTime(2026, 4, 16, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 4, 17, 0, 0, 0, DateTimeKind.Utc), CanopyTone.Success),
+            Day("summer-checkpoint", "Summer checkpoint", new DateTime(2026, 7, 16, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 7, 17, 0, 0, 0, DateTimeKind.Utc), CanopyTone.Warning),
             new("Stand-up", At(1, 9), At(1, 9, 15)) { Id = "standup", Tone = CanopyTone.Neutral, Source = "team", Recurrence = CanopyRecurrence.Weekly(DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday), Description = "Fifteen minutes, cameras optional." },
             Timed("planning", "Sprint planning", At(5, 10), At(5, 12), CanopyTone.Info, "Pick the work for the next two weeks.", "team"),
             Timed("review", "Design review: settings page", At(8, 14), At(8, 15, 30), CanopyTone.Info, "Bring the latest mock-ups.", "team"),
@@ -119,7 +122,7 @@ internal static class CalendarBasicExample {
         Add("Documentation", At(10, 19), At(11, 6), CanopyTone.Neutral);
         Add("Translations", At(11, 2), At(11, 9), CanopyTone.Neutral);
         Add("Release", At(11, 11), At(11, 12), CanopyTone.Danger);
-        var calendar = new CanopyCalendar("release-timeline", "Release timeline", events, CanopyCalendarPreset.Standard) { Date = At(10, 5), FirstDay = DayOfWeek.Monday, View = CanopyCalendarView.Timeline, Span = new CanopyCalendarSpan(6, CanopyCalendarSpanUnit.Week) };
+        var calendar = new CanopyCalendar("release-timeline", "Release timeline", events, CanopyCalendarPreset.Standard) { Date = At(10, 1), FirstDay = DayOfWeek.Monday, View = CanopyCalendarView.Timeline, Span = new CanopyCalendarSpan(7, CanopyCalendarSpanUnit.Week) };
         calendar.Views.Clear();
         calendar.Views.Add(CanopyCalendarView.Timeline); calendar.Views.Add(CanopyCalendarView.Month); calendar.Views.Add(CanopyCalendarView.Agenda);
         return calendar;

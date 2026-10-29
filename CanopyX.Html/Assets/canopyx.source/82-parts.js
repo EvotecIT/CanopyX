@@ -24,7 +24,7 @@
     return part.ready ||= Promise.resolve().then(async () => {
       const [version, scriptFile, styleFile] = Object.hasOwn(PARTS, part.name) ? PARTS[part.name] : [];
       part.version = version;
-      if (!version) throw new Error("CanopyX: this runtime has no " + part.label + ".");
+      if (!version) throw new Error("CanopyX: no " + part.label + ".");
       if (PART_CODE.get(part.name)?.version !== part.version || part.styleReady === null) {
         // An embedded part runs with its payload's own nonce. When the page nonce is known (CanopyX.setNonce, or the runtime
         // script's own nonce), only a payload that carries it counts, so markup injected into the page cannot run as a part,

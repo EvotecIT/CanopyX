@@ -73,7 +73,7 @@ test.describe("simple layouts", () => {
     await openCalendar(page, "calendar-layouts.html", { width: 1200, height: 760 });
     const mini = page.locator(".cx-cal-mini");
     await expect(mini).toBeVisible();
-    expect((await mini.boundingBox()).width).toBeLessThanOrEqual(361);
+    expect((await mini.boundingBox()).width).toBeGreaterThan(700);
     await expect(mini.locator(".cx-cal-day")).toHaveCount(42);
     await expect(mini.locator('.cx-cal-day[data-cx-day] .cx-cal-dots > i').first()).toBeVisible();
     await capture(page, "calendar-mini-month");
@@ -118,10 +118,48 @@ test.describe("simple layouts", () => {
   });
 
   test("the year view lists each month's events when yearEvents is on", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-16T10:30:00Z"));
     await openCalendar(page, "calendar-layouts.html", { width: 1440, height: 1000 });
     await api(page, "api => api.setCalendarView('year')");
     await expect(page.locator(".cx-cal-ylist .cx-cal-ev").first()).toBeVisible();
+    await expect(page.locator('.cx-cal-yday[data-cx-heat]').first()).toBeVisible();
+    await expect(page.locator('.cx-cal-yday[aria-current="date"]')).toHaveCount(1);
     await capture(page, "calendar-year-events");
+  });
+
+  for (const width of [1100, 1440]) for (const dark of [false, true]) {
+    test(`the toolbar stays in place across layouts at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {
+      await openCalendar(page, "calendar-layouts.html", { width, dark });
+      const positions = [];
+      for (const view of ["mini", "weekList", "dayList", "months", "year", "month"]) {
+        await api(page, "api => api.setCalendarView(arg)", view);
+        await nextFrames(page);
+        positions.push(await page.evaluate(() => Object.fromEntries([".cx-cal-nav", ".cx-cal-title", ".cx-cal-jumpbox", ".cx-cal-views"].map(selector => {
+          const rect = document.querySelector(selector).getBoundingClientRect();
+          return [selector, { x: Math.round(rect.x), y: Math.round(rect.y) }];
+        }))));
+      }
+      expect(positions.every(position => JSON.stringify(position) === JSON.stringify(positions[0]))).toBe(true);
+    });
+  }
+
+  test("week list shows a multi-day event without repeating its range and keeps short times together", async ({ page }) => {
+    await openCalendar(page, "calendar-layouts.html", { width: 1100 });
+    await api(page, "api => api.setCalendarView('weekList')");
+    const onCall = page.locator('.cx-cal-lday .cx-cal-ev[aria-label^="On call: Ana"]');
+    await expect(onCall).toHaveCount(7);
+    await expect(onCall.first().locator('.cx-cal-ev-time')).toHaveText('8:00 AM');
+    for (let index = 1; index < 7; index++) await expect(onCall.nth(index).locator('.cx-cal-ev-time')).toHaveText('All day');
+    await expect(onCall.first()).toHaveAttribute('aria-label', /Oct 12.*Oct 19/);
+    const standup = page.locator('.cx-cal-lday .cx-cal-ev[aria-label^="Stand-up"]').first();
+    const geometry = await standup.evaluate(element => {
+      const time = element.querySelector('.cx-cal-ev-time').getBoundingClientRect();
+      const icon = element.querySelector('.cx-cal-ico').getBoundingClientRect();
+      return { timeHeight: time.height, lineHeight: parseFloat(getComputedStyle(element).lineHeight), gap: icon.left - time.right, sameRow: Math.abs(icon.top - time.top) < 5 };
+    });
+    expect(geometry.timeHeight).toBeLessThan(geometry.lineHeight + 2);
+    expect(geometry.gap).toBeLessThan(12);
+    expect(geometry.sameRow).toBe(true);
   });
 
   test("week numbers, day links and fixed six weeks", async ({ page }) => {
@@ -193,7 +231,10 @@ test.describe("timeline without resources", () => {
   test("events pack into rows by overlap over a custom span", async ({ page }) => {
     await openCalendar(page, "calendar-solo.html", { width: 1440, height: 700 });
     await expect(page.locator(".cx-tl-solo")).toBeVisible();
-    expect(await api(page, "api => api.getCalendar()")).toMatchObject({ view: "timeline", from: "2026-10-05", to: "2026-11-15" });
+    expect(await api(page, "api => api.getCalendar()")).toMatchObject({ view: "timeline", from: "2026-09-28", to: "2026-11-15" });
+    const bounds = await page.evaluate(() => ({ left: document.querySelector('.cx-tl-main').getBoundingClientRect().left,
+      bar: document.querySelector('.cx-tl-lane .cx-cal-ev-lane[aria-label^="Design"]').getBoundingClientRect().left }));
+    expect(bounds.bar).toBeGreaterThan(bounds.left + 2);
     const tops = await page.locator(".cx-tl-lanes .cx-cal-ev, .cx-tl-canvas .cx-cal-ev").evaluateAll(bars => bars.map(bar => Math.round(bar.getBoundingClientRect().top)));
     expect(new Set(tops).size).toBeGreaterThan(1);
     expect(new Set(tops).size).toBeLessThanOrEqual(4);

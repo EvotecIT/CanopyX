@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { repo, runtimeAssets, nextFrames } from "./support.mjs";
+import { repo, runtimeAssets, nextFrames, exampleUrl } from "./support.mjs";
 
 const iso = day => "2026-10-" + String(day).padStart(2, "0") + "T00:00:00.000Z";
 function definition() {
@@ -53,6 +53,27 @@ async function openPlan(page, { dark = false, width = 1440, rtl = false, handler
 
 const task = (page, id) => page.locator('.cx-plan-task[data-cx-record="' + id + '"]');
 const actuals = page => page.evaluate(() => ({ changed: JSON.stringify(window.planApi.view.rows) !== window.initialRows, writes: window.writerCalls }));
+
+for (const width of [1100, 1440]) for (const dark of [false, true]) {
+  test(`migration example opens with its first task and labels visible at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(exampleUrl(dark ? "plan-dark.html" : "plan.html"));
+    await page.locator('.cx-plan-task[data-cx-record="prepare"]').waitFor();
+    await nextFrames(page);
+    const bounds = await page.evaluate(() => {
+      const rect = element => element.getBoundingClientRect();
+      const main = rect(document.querySelector('.cx-tl-main'));
+      const prepare = rect(document.querySelector('.cx-plan-task[data-cx-record="prepare"]'));
+      const verify = document.querySelector('.cx-plan-task[data-cx-record="verify"]');
+      const bar = rect(verify), label = rect(verify.querySelector('.cx-cal-ev-title'));
+      return { side: rect(document.querySelector('.cx-tl-side')).width, firstInset: prepare.left - main.left,
+        verifyLabelWithinBar: label.left >= bar.left && label.right <= bar.right + 1 };
+    });
+    expect(bounds.side).toBeLessThanOrEqual(220);
+    expect(bounds.firstInset).toBeGreaterThan(20);
+    expect(bounds.verifyLabelWithinBar).toBe(true);
+  });
+}
 
 for (const width of [768, 1024, 1440]) for (const dark of [false, true]) {
   test(`plan connectors enter horizontally and labels remain legible without collisions at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {
