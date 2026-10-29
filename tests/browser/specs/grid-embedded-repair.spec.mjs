@@ -159,3 +159,35 @@ test("a standalone grid keeps its own frame", async ({ page }) => {
   expect(standalone.border).toBe("1px");
   expect(standalone.radius).toBeGreaterThan(0);
 });
+
+for (const width of [1440, 390]) for (const autoHeight of [true, false]) for (const initiallyEmpty of [true, false]) {
+  test(`embedded empty results fit and recover at ${width}px with autoHeight ${autoHeight} and initiallyEmpty ${initiallyEmpty}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await open(page, { ...grid(initiallyEmpty ? [] : [{ id: "a", cells: { name: "Alpha", size: 5 } }, { id: "b", cells: { name: "Bravo", size: 6 } }]), search: true, autoHeight },
+      ` data-cx-chrome="embedded" style="height:${autoHeight ? 280 : 520}px;max-height:520px;--hfx-card-padding-x:24px"`);
+    const host = page.locator("[data-canopyx-host]"), search = host.locator(".cx-search-input");
+    if (initiallyEmpty && autoHeight) await expect.poll(() => host.evaluate(element => {
+      const style = getComputedStyle(element);
+      return element.getBoundingClientRect().height <= parseFloat(style.maxHeight) + 1;
+    })).toBe(true);
+    if (initiallyEmpty) await expect.poll(() => host.evaluate(element =>
+      element.querySelector(".cx-state").getBoundingClientRect().bottom <= element.getBoundingClientRect().bottom + 1)).toBe(true);
+    await search.fill("no matching fixture with a longer query to wrap on the phone");
+    await expect(host.locator(".cx-state")).toContainText("no matching fixture");
+    const height = () => host.evaluate(element => element.getBoundingClientRect().height);
+    if (autoHeight) await expect.poll(height).toBeLessThan(520);
+    else await expect.poll(height).toBe(520);
+    await expect.poll(() => host.evaluate(element => {
+      const end = element.getBoundingClientRect().bottom;
+      return [...element.querySelectorAll(".cx-state h4,.cx-state p,.cx-state .acts")].every(item => item.getBoundingClientRect().bottom <= end + 1);
+    })).toBe(true);
+    await search.fill("");
+    await expect(host.locator(".cx-canvas .cx-row")).toHaveCount(initiallyEmpty ? 0 : 2);
+    await expect.poll(() => host.evaluate(element => {
+      const bounds = element.querySelector(".cx-grid").getBoundingClientRect();
+      return [...element.querySelectorAll(".cx-canvas .cx-row")].every(row => row.getBoundingClientRect().bottom <= bounds.bottom + 1);
+    })).toBe(true);
+    if (autoHeight) await expect.poll(height).toBeLessThan(520);
+    else await expect.poll(height).toBe(520);
+  });
+}

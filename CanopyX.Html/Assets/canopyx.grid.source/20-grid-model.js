@@ -141,6 +141,8 @@
         }
         this.syncQuerySummary();
         this.syncPager();
+        // Fit the final empty notice and query controls even when row count stays zero.
+        this.fitHeight();
         this.emit("query", { query: this.acceptedQuery, revision: page.revision, total: page.total, matched: page.matched });
         this.stateChanged(); return this.getQuery();
       } catch (error) {
@@ -150,6 +152,7 @@
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
           this.grid.setAttribute("aria-busy", "false"); this.setNotice(cancelled ? "" : fill(this.labels.queryFailed, { error: error.message }), !cancelled);
           this.syncPager();
+          this.fitHeight();
           if (!cancelled) this.emit("error", { error });
         }
         throw error;
