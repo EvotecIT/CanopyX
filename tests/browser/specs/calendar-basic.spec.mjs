@@ -69,6 +69,73 @@ test.describe("basic calendars", () => {
 });
 
 test.describe("simple layouts", () => {
+  test("stacked months never move a multi-day bar's start to a later column", async ({ page }) => {
+    await openCalendar(page, "calendar-layouts.html");
+    await api(page, "api => api.setCalendarView('months')");
+    const monday = Date.UTC(2026, 9, 19) / 86400000;
+    const cell = page.locator(`.cx-cal-months .cx-cal-day[data-cx-day="${monday}"]`);
+    const week = cell.locator("..");
+    const bars = week.locator('.cx-cal-ev-bar').filter({ hasText: "On call: Tom" });
+    const columns = await bars.evaluateAll(elements => elements.map(element => Number(element.style.getPropertyValue("--c"))));
+    // A crowded week may fold the whole segment into More, but it must never invent a later start.
+    expect(columns.every(column => column === 0)).toBe(true);
+    const friday = week.locator(`.cx-cal-day[data-cx-day="${monday + 4}"] .cx-cal-ev-chip`).first();
+    if (columns.length && await friday.count()) {
+      const bar = await bars.first().boundingBox(), timed = await friday.boundingBox();
+      expect(bar.y + bar.height).toBeLessThanOrEqual(timed.y);
+    }
+    if (!columns.length) {
+      await cell.locator(".cx-cal-more-btn").click();
+      await expect(page.locator(".cx-cal-more .cx-cal-ev").filter({ hasText: "On call: Tom" })).toBeVisible();
+    }
+  });
+
+  test("stacked months fill a free event line before showing more", async ({ page }) => {
+    await openCalendar(page, "calendar-layouts.html");
+    await api(page, "api => api.setCalendarView('months')");
+    const tuesday = page.locator(`.cx-cal-months .cx-cal-day[data-cx-day="${Date.UTC(2026, 9, 13) / 86400000}"]`);
+    await expect(tuesday.locator(".cx-cal-ev-chip")).toHaveCount(2);
+    await expect(tuesday.locator(".cx-cal-more-btn")).toHaveCount(0);
+    const cell = page.locator(`.cx-cal-months .cx-cal-day[data-cx-day="${Date.UTC(2026, 9, 16) / 86400000}"]`);
+    await expect(cell.locator(".cx-cal-more-btn")).toBeVisible();
+    const events = cell.locator(".cx-cal-ev");
+    expect(await events.count()).toBeGreaterThan(0);
+    const event = await events.first().boundingBox(), more = await cell.locator(".cx-cal-more-btn").boundingBox();
+    expect(event.y + event.height).toBeLessThanOrEqual(more.y + 1);
+  });
+
+  test("mini month marks its displayed date separately from today", async ({ page }) => {
+    await openCalendar(page, "calendar-layouts.html");
+    await api(page, "api => api.setCalendarDate('2026-10-20')");
+    const selected = page.locator('.cx-cal-mini .cx-cal-day[data-cx-listed]');
+    await expect(selected).toHaveAttribute("data-cx-day", String(Date.UTC(2026, 9, 20) / 86400000));
+    expect(await selected.locator(".cx-cal-num").evaluate(element => getComputedStyle(element).outlineStyle)).toBe("solid");
+    await expect(page.locator(".cx-cal-mini .cx-cal-today")).toHaveAttribute("data-cx-day", String(Date.UTC(2026, 9, 16) / 86400000));
+  });
+
+  for (const view of ["month", "months"]) {
+    test(`${view} fills free lanes around overlapping bars and prints its final lanes in full`, async ({ page }) => {
+      const bars = [
+        { id: "a", title: "Monday to Tuesday", start: "2026-10-12", end: "2026-10-14", allDay: true },
+        { id: "b", title: "Tuesday to Wednesday", start: "2026-10-13", end: "2026-10-15", allDay: true }
+      ];
+      const timed = Array.from({ length: 3 }, (_, index) => ({ id: "t" + index, title: "Timed " + index,
+        start: `2026-10-14T${10 + index}:00:00Z`, end: `2026-10-14T${10 + index}:30:00Z` }));
+      const options = { events: [...bars, ...timed.slice(0, 2)], date: "2026-10-16", view, views: [view], firstDay: 1,
+        calendar: { eventLimit: 3, hiddenDays: [0, 6] } };
+      await openBuilt(page, "free-lanes.html", calendarPage(options));
+      const day = `.cx-cal-day[data-cx-day="${Date.UTC(2026, 9, 14) / 86400000}"]`;
+      await expect(page.locator(day + " .cx-cal-ev-chip")).toHaveCount(2);
+      await expect(page.locator(day + " .cx-cal-more-btn")).toHaveCount(0);
+      await openBuilt(page, "print-lanes.html", calendarPage({ ...options, events: [...bars, ...timed] }));
+      await page.emulateMedia({ media: "print" });
+      await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+      await expect(page.locator(day + " .cx-cal-ev-chip")).toHaveCount(3);
+      await expect(page.locator(".cx-cal-more-btn")).toHaveCount(0);
+      expect(await page.locator(".cx-cal-week").evaluateAll(rows => rows.some(row => row.scrollHeight > row.clientHeight + 1))).toBe(false);
+    });
+  }
+
   test("the mini month marks days with events and selecting a day reports it", async ({ page }) => {
     await openCalendar(page, "calendar-layouts.html", { width: 1200, height: 760 });
     const mini = page.locator(".cx-cal-mini");

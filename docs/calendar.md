@@ -154,7 +154,8 @@ The JSON schema is `gridCalendar` in [schema/canopyx-2.schema.json](schema/canop
 
 - **Month**: weeks of days. All-day and multi-day events are bars that continue across weeks (cut ends show where a bar
   continues); timed events are one line with their time. A day with more events than fit shows "+N more", which opens the
-  day's list. Background ranges tint their days and name themselves on the first one. On phones each day shows dots and the
+  day's list. A weekly bar keeps its start column and lane across its full segment; if it cannot fit, the whole segment goes
+  into the day's list. Background ranges tint their days and name themselves on the first one. On phones each day shows dots and the
   list of the focused day sits under the month.
 - **Week, day and N days**: a header of days, an all-day row (all-day events and events of a day or longer), then a column of
   time slots. Overlapping events share their column side by side and widen over free columns; an event over midnight shows in
@@ -164,7 +165,7 @@ The JSON schema is `gridCalendar` in [schema/canopyx-2.schema.json](schema/canop
 - **Timeline**: resources as rows, time across; see [resource-timeline.md](resource-timeline.md). Without resources its rows
   are the events themselves, packed by overlap (`calendar-solo.html`); `span` sets its period.
 - **Mini month** (`mini`): a month that grows with its host up to 840 pixels wide, with a dot per event on each day (in its
-  tone). Selecting a day reports it like any day selection ([Linked views](#linked-views)), so a page can filter a grid or move
+  tone). The displayed date has an outline, separate from today's filled marker. Selecting a day reports it like any day selection ([Linked views](#linked-views)), so a page can filter a grid or move
   another calendar to it: listen for `canopyx:linkchange` and call `setCalendarDate` on the other calendar.
 - **Week list and day list** (`weekList`, `dayList`): each day's events as a list, all-day events first, without a time axis. A timed event crossing days shows its start or end time on the boundary day and "All day" between them; its accessible name retains the full range.
 - **Stacked months** (`months`): `months` months one under another in a scrolling column; each day appears once.

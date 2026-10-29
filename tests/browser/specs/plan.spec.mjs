@@ -54,6 +54,38 @@ async function openPlan(page, { dark = false, width = 1440, rtl = false, handler
 const task = (page, id) => page.locator('.cx-plan-task[data-cx-record="' + id + '"]');
 const actuals = page => page.evaluate(() => ({ changed: JSON.stringify(window.planApi.view.rows) !== window.initialRows, writes: window.writerCalls }));
 
+for (const nextStart of [15, 16, 21]) for (const rtl of [false, true]) test(`a stacked milestone label clears neighboring bars and its connector with successor on ${nextStart} ${rtl ? "RTL" : "LTR"}`, async ({ page }) => {
+  await openPlan(page, { rtl, change: view => {
+    view.rows = [["long", "Long task", 12, 22], ["point", "Stacked milestone", 15, 15], ["next", "Next task", nextStart, Math.max(18, nextStart + 2)]].map(([id, title, start, end]) =>
+      ({ id, cells: { title, owner: "platform", starts: iso(start), ends: iso(end), baselineStart: iso(start), baselineEnd: iso(end), milestone: id === "point" } }));
+    view.plan.dependencies = [{ predecessor: "point", successor: "next" }, { predecessor: "long", successor: "point" }];
+  } });
+  const point = task(page, "point");
+  await expect(point.locator(".cx-cal-ev-title")).toBeVisible();
+  expect((await point.locator(".cx-cal-ev-title").boundingBox()).width).toBeGreaterThan(40);
+  const intersections = await point.evaluate(element => {
+    const title = element.querySelector(".cx-cal-ev-title").getBoundingClientRect();
+    const bars = [...element.closest(".cx-tl-lane").querySelectorAll(".cx-plan-task")].filter(other => other !== element);
+    const hitsBar = bars.some(other => {
+      const box = other.getBoundingClientRect();
+      return title.left < box.right && title.right > box.left && title.top < box.bottom && title.bottom > box.top;
+    });
+    const path = [...document.querySelectorAll(".cx-plan-links path")].find(path => path.textContent === "Stacked milestone finishes before Next task starts");
+    let hitsLink = false;
+    for (let at = 0; at <= path.getTotalLength(); at++) {
+      const point = path.getPointAtLength(at), screen = new DOMPoint(point.x, point.y).matrixTransform(path.getScreenCTM());
+      if (screen.x > title.left - 1 && screen.x < title.right + 1 && screen.y > title.top - 1 && screen.y < title.bottom + 1) { hitsLink = true; break; }
+    }
+    return { hitsBar, hitsLink };
+  });
+  expect(intersections).toEqual({ hitsBar: false, hitsLink: false });
+  await expect(point).toHaveClass(/cx-plan-conflict/);
+  await point.focus(); await page.keyboard.press("Tab"); await page.keyboard.press("Shift+Tab");
+  await expect(point).toBeFocused();
+  const focus = await point.evaluate(element => ({ visible: element.matches(":focus-visible"), style: getComputedStyle(element).outlineStyle, width: parseFloat(getComputedStyle(element).outlineWidth) }));
+  expect(focus.visible).toBe(true); expect(focus.style).toBe("solid"); expect(focus.width).toBeGreaterThan(0);
+});
+
 for (const width of [1100, 1440]) for (const dark of [false, true]) {
   test(`migration example opens with its first task and labels visible at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -66,12 +98,22 @@ for (const width of [1100, 1440]) for (const dark of [false, true]) {
       const prepare = rect(document.querySelector('.cx-plan-task[data-cx-record="prepare"]'));
       const verify = document.querySelector('.cx-plan-task[data-cx-record="verify"]');
       const bar = rect(verify), label = rect(verify.querySelector('.cx-cal-ev-title'));
+      const pane = document.querySelector('.cx-tl-main'), tree = document.querySelector('.cx-tl-tree .cx-grid');
+      const baseline = [...document.querySelectorAll('.cx-plan-baseline')].at(-1);
+      const release = document.querySelector('.cx-plan-task[data-cx-record="release"]'), releaseBox = rect(release), releaseLabel = rect(release.querySelector('.cx-cal-ev-title'));
       return { side: rect(document.querySelector('.cx-tl-side')).width, firstInset: prepare.left - main.left,
-        verifyLabelWithinBar: label.left >= bar.left && label.right <= bar.right + 1 };
+        verifyLabelWithinBar: label.left >= bar.left && label.right <= bar.right + 1,
+        treeOverflow: getComputedStyle(tree).overflowX, verticalOverflow: pane.scrollHeight - pane.clientHeight,
+        baselineClearance: main.top + pane.clientHeight - rect(baseline).bottom,
+        milestoneLabelClearance: releaseBox.top + releaseBox.height / 2 - releaseLabel.bottom };
     });
     expect(bounds.side).toBeLessThanOrEqual(220);
     expect(bounds.firstInset).toBeGreaterThan(20);
     expect(bounds.verifyLabelWithinBar).toBe(true);
+    expect(bounds.treeOverflow).toBe("auto");
+    expect(bounds.verticalOverflow).toBeLessThanOrEqual(1);
+    expect(bounds.baselineClearance).toBeGreaterThanOrEqual(12);
+    expect(bounds.milestoneLabelClearance).toBeGreaterThanOrEqual(3);
   });
 }
 

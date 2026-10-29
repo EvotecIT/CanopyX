@@ -190,6 +190,7 @@
 .cx-cal-mini .cx-cal-dots { margin-top:var(--cx-size-1px); }
 .cx-cal-mini .cx-cal-dots > i { width:var(--hfx-space-1-5);height:var(--hfx-space-1-5); }
 .cx-cal-mini .cx-cal-day[aria-selected="true"] > .cx-cal-num { display:inline-grid;place-items:center;min-width:var(--cx-size-22px);height:var(--cx-size-22px);border-radius:var(--cx-size-11px);background:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast); }
+.cx-cal-mini .cx-cal-day[data-cx-listed] > .cx-cal-num { outline:var(--hfx-focus-width) solid var(--hfx-color-accent);outline-offset:calc(-1 * var(--hfx-focus-width)); }
 .cx-cal-mini .cx-cal-dowc { text-align:center;padding:var(--cx-size-4px) 0;font-size:var(--cx-size-11px); }
 /* Stacked months. */
 .cx-cal-months { display:flex;flex-direction:column;gap:var(--cx-size-16px);padding:var(--cx-size-8px) 0 var(--cx-size-16px); }

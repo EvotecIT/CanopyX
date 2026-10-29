@@ -908,7 +908,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "7b962e84d22009b7",
+      "version": "e564e802c2c5217c",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1033,7 +1033,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "ac440ee3d7c602b1",
+      "version": "1967ac851acc07e4",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [

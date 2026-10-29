@@ -15,6 +15,7 @@
       grid.setAttribute("data-cx-finish-allow", "empty-band");
       this.calBody.replaceChildren(grid);
       this.calGrid = grid;
+      this.calMarkListedDay(this.calDate);
     },
     calPaintMonths() {
       const range = this.calRange, stack = h("div", "cx-cal-months");
