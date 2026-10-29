@@ -3,9 +3,15 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
+// NuGet package READMEs and the npm archive's Markdown inputs remain part of packaging validation.
+const packageReadmes = new Set([
+  "README.md", "README.nuget.md", "CanopyX.Data/README.md", "CanopyX.AspNetCore/README.md",
+  "ThirdParty/OfficeIMO/README.md"
+]);
+
 export function requiresBuild(event, paths) {
   if (event !== "pull_request" || paths.length === 0) return true;
-  return paths.some(file => file.startsWith("docs/schema/") ||
+  return paths.some(file => packageReadmes.has(file) || file.startsWith("docs/images/") || file.startsWith("docs/schema/") ||
     !(file.startsWith("Website/") || file.startsWith("docs/") || file.endsWith(".md")));
 }
 

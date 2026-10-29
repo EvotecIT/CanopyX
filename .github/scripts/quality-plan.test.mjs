@@ -7,13 +7,21 @@ import test from "node:test";
 import { changedPaths, qualityMatrix, requiresBuild } from "./quality-plan.mjs";
 
 test("only documentation and Website PRs skip builds; schemas and mixed changes require coverage", () => {
-  assert.equal(requiresBuild("pull_request", ["Website/src/index.html", "docs/testing.md", "README.md", "nested/NOTES.md"]), false);
+  assert.equal(requiresBuild("pull_request", ["Website/src/index.html", "docs/testing.md", "CONTRIBUTING.md", "nested/NOTES.md"]), false);
   for (const file of ["docs/schema/canopyx-2.schema.json", "docs/schema/README.md", "CanopyX/Node.cs", ".github/workflows/quality.yml", "tests/browser/specs/grid.spec.mjs"]) {
     assert.equal(requiresBuild("pull_request", ["README.md", file]), true, file);
   }
   assert.equal(requiresBuild("pull_request", []), true);
   for (const event of ["push", "workflow_dispatch"]) {
     assert.equal(requiresBuild(event, ["README.md"]), true, event);
+  }
+});
+
+test("shipped package READMEs and images require pack and archive validation", () => {
+  for (const file of ["README.md", "README.nuget.md", "CanopyX.Data/README.md", "CanopyX.AspNetCore/README.md",
+    "ThirdParty/OfficeIMO/README.md", "docs/images/tree-grid-light.png", "docs/images/new-example.png"]) {
+    assert.equal(requiresBuild("pull_request", [file]), true, file);
+    assert.equal(requiresBuild("pull_request", ["docs/testing.md", file]), true, file);
   }
 });
 
@@ -48,17 +56,23 @@ test("the complete PR diff includes earlier commits, code moved into docs, delet
     git("init", "-q");
     writeFileSync(path.join(cwd, "runtime.js"), "runtime");
     writeFileSync(path.join(cwd, "deleted.js"), "obsolete");
+    writeFileSync(path.join(cwd, "README.nuget.md"), "package readme");
     commit();
     const base = git("rev-parse", "HEAD");
     mkdirSync(path.join(cwd, "docs"));
     git("mv", "runtime.js", "docs/runtime.md");
     git("rm", "deleted.js");
     commit();
+    git("mv", "README.nuget.md", "docs/package-guide.md");
+    commit();
     writeFileSync(path.join(cwd, "docs", "space ü.md"), "docs");
     commit();
     const files = changedPaths(base, "HEAD", cwd);
-    assert.deepEqual(files.sort(), ["deleted.js", "docs/runtime.md", "docs/space ü.md", "runtime.js"].sort());
+    assert.deepEqual(files.sort(), ["deleted.js", "docs/runtime.md", "docs/space ü.md", "runtime.js", "README.nuget.md", "docs/package-guide.md"].sort());
     assert.equal(requiresBuild("pull_request", files), true);
+    const movedReadme = changedPaths("HEAD~2", "HEAD~1", cwd);
+    assert.deepEqual(movedReadme.sort(), ["README.nuget.md", "docs/package-guide.md"]);
+    assert.equal(requiresBuild("pull_request", movedReadme), true);
     assert.equal(requiresBuild("pull_request", changedPaths("HEAD~1", "HEAD", cwd)), false);
   } finally { rmSync(cwd, { recursive: true, force: true }); }
 });
