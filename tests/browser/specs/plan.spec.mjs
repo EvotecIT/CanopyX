@@ -4,6 +4,7 @@ import path from "node:path";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { repo, runtimeAssets, nextFrames, exampleUrl } from "./support.mjs";
+import { capture } from "./calendar-support.mjs";
 
 const iso = day => "2026-10-" + String(day).padStart(2, "0") + "T00:00:00.000Z";
 function definition() {
@@ -54,15 +55,23 @@ async function openPlan(page, { dark = false, width = 1440, rtl = false, handler
 const task = (page, id) => page.locator('.cx-plan-task[data-cx-record="' + id + '"]');
 const actuals = page => page.evaluate(() => ({ changed: JSON.stringify(window.planApi.view.rows) !== window.initialRows, writes: window.writerCalls }));
 
-for (const nextStart of [15, 16, 21]) for (const rtl of [false, true]) test(`a stacked milestone label clears neighboring bars and its connector with successor on ${nextStart} ${rtl ? "RTL" : "LTR"}`, async ({ page }) => {
+for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, true]]) for (const rtl of [false, true]) test(`a stacked milestone label clears neighboring bars and its connector with successor on ${nextStart} ${rtl ? "RTL" : "LTR"}${capped ? " capped" : ""}`, async ({ page }) => {
   await openPlan(page, { rtl, change: view => {
     view.rows = [["long", "Long task", 12, 22], ["point", "Stacked milestone", 15, 15], ["next", "Next task", nextStart, Math.max(18, nextStart + 2)]].map(([id, title, start, end]) =>
       ({ id, cells: { title, owner: "platform", starts: iso(start), ends: iso(end), baselineStart: iso(start), baselineEnd: iso(end), milestone: id === "point" } }));
     view.plan.dependencies = [{ predecessor: "point", successor: "next" }, { predecessor: "long", successor: "point" }];
+    if (capped) {
+      view.calendar.date = "2026-10-14"; view.calendar.span = { count: 14, unit: "day" };
+      view.rows.push({ id: "previous", cells: { title: "Earlier task", owner: "platform", starts: iso(14), ends: iso(15), baselineStart: iso(14), baselineEnd: iso(15), milestone: false } });
+    }
   } });
   const point = task(page, "point");
   await expect(point.locator(".cx-cal-ev-title")).toBeVisible();
-  expect((await point.locator(".cx-cal-ev-title").boundingBox()).width).toBeGreaterThan(40);
+  expect((await point.locator(".cx-cal-ev-title").boundingBox()).width).toBeGreaterThan(capped ? 8 : 40);
+  if (capped) {
+    expect(await point.locator(".cx-cal-ev-title").evaluate(title => title.scrollWidth > title.clientWidth)).toBe(true);
+    await expect(point).not.toHaveClass(/cx-plan-label-before/);
+  }
   const intersections = await point.evaluate(element => {
     const title = element.querySelector(".cx-cal-ev-title").getBoundingClientRect();
     const bars = [...element.closest(".cx-tl-lane").querySelectorAll(".cx-plan-task")].filter(other => other !== element);
@@ -79,6 +88,7 @@ for (const nextStart of [15, 16, 21]) for (const rtl of [false, true]) test(`a s
     return { hitsBar, hitsLink };
   });
   expect(intersections).toEqual({ hitsBar: false, hitsLink: false });
+  if (capped) await capture(page, `plan-capped-label-${rtl ? "rtl" : "ltr"}`);
   await expect(point).toHaveClass(/cx-plan-conflict/);
   await point.focus(); await page.keyboard.press("Tab"); await page.keyboard.press("Shift+Tab");
   await expect(point).toBeFocused();

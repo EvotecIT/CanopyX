@@ -69,6 +69,34 @@ test.describe("basic calendars", () => {
 });
 
 test.describe("simple layouts", () => {
+  for (const dark of [false, true]) {
+    test(`the year fits a narrow host in ${dark ? "dark" : "light"}`, async ({ page }) => {
+      await page.setViewportSize({ width: 300, height: 760 });
+      await openBuilt(page, "narrow-year.html", calendarPage({ events: EVENTS, date: "2026-10-16", view: "year", views: ["year"], calendar: { phone: "year" } }));
+      await page.locator("#cal").evaluate((host, dark) => host.dataset.cxTheme = dark ? "dark" : "light", dark);
+      await expect(page.locator(".cx-cal-year")).toBeVisible();
+      const bounds = await page.locator(".cx-cal-body").evaluate(body => ({ width: body.clientWidth, scroll: body.scrollWidth,
+        right: body.getBoundingClientRect().right, lastDay: body.querySelector(".cx-cal-yweek").lastElementChild.getBoundingClientRect().right }));
+      expect(bounds.scroll).toBeLessThanOrEqual(bounds.width + 1);
+      expect(bounds.lastDay).toBeLessThanOrEqual(bounds.right);
+      await capture(page, `year-narrow-${dark ? "dark" : "light"}`);
+    });
+
+    test(`the busiest year days keep a contrasting event dot in ${dark ? "dark" : "light"}`, async ({ page }) => {
+      await openBuilt(page, "year-dot.html", calendarPage({ events: EVENTS, date: "2026-10-16", view: "year", views: ["year"] }));
+      await page.locator("#cal").evaluate((host, dark) => host.dataset.cxTheme = dark ? "dark" : "light", dark);
+      const colors = await page.locator('.cx-cal-yday[data-cx-heat="4"]').first().evaluate(day => ({
+        dot: getComputedStyle(day, "::after").backgroundColor, fill: getComputedStyle(day).backgroundColor
+      }));
+      const luminance = color => color.match(/[\d.]+/g).slice(0, 3).map(value => Number(value) / 255)
+        .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+        .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+      const levels = [luminance(colors.dot), luminance(colors.fill)].sort((a, b) => a - b);
+      expect((levels[1] + 0.05) / (levels[0] + 0.05)).toBeGreaterThanOrEqual(3);
+      await capture(page, `year-dot-${dark ? "dark" : "light"}`);
+    });
+  }
+
   test("stacked months never move a multi-day bar's start to a later column", async ({ page }) => {
     await openCalendar(page, "calendar-layouts.html");
     await api(page, "api => api.setCalendarView('months')");

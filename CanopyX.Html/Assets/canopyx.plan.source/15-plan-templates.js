@@ -1,5 +1,5 @@
   // Visual marks and edge routing; timeline/network coordinates are supplied by plumbing.
-  const PLAN_METRICS = Object.freeze({ actualMinHeight: 20, actualBaselineGap: 16, baselineMinWidth: 3, baselineBottom: 7 });
+  const PLAN_METRICS = Object.freeze({ actualMinHeight: 20, actualBaselineGap: 16, baselineMinWidth: 3, baselineBottom: 7, dependencyLead: 10 });
   function planTaskTemplate(element, event, node, labels, milestone, critical, proposeMoves) {
       element.classList.add("cx-plan-task");
       element.classList.toggle("cx-plan-milestone", milestone); element.classList.toggle("cx-plan-critical", !!critical);
@@ -35,7 +35,7 @@
   }
   function planLinkTemplate(svg, axis, from, to, edge, critical, text) {
         const mirror = x => this.calRtl ? axis.total - x : x, x1 = mirror(from.end), x2 = mirror(to.start), sign = this.calRtl ? -1 : 1;
-        const exit = x1 - 5 * sign, entry = x2 - 10 * sign;
+        const exit = x1 - 5 * sign, entry = x2 - PLAN_METRICS.dependencyLead * sign;
         const edgeY = to.y >= from.y ? from.bottom : from.top, corridor = edgeY + (to.y >= from.y ? 4 : -4);
         const path = document.createElementNS(svg.namespaceURI, "path");
         const flat = Math.abs(from.y-to.y)<1 && (x2-x1)*sign>=-1;

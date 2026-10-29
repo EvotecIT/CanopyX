@@ -138,7 +138,7 @@ top:calc(var(--t) * var(--cx-cal-ppm) + var(--cx-size-1px));height:calc(var(--h)
 .cx-cal-ev-item > .cx-cal-ico{margin-inline-start:0;}
 .cx-cal-ev-item > .cx-cal-ev-status.cx-cal-status-tone .p-dot{display:none;}
 .cx-cal-ev-item > .cx-cal-ev-status .p-state{padding:0 var(--cx-size-8px);border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));background:var(--cx-ev-bg);color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));font-size:var(--cx-size-12px);line-height:var(--cx-size-20px);}
-.cx-cal-year{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cx-size-280px),1fr));gap:var(--cx-size-16px) var(--cx-size-20px);padding:var(--cx-size-16px);}
+.cx-cal-year{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--cx-size-280px)),1fr));gap:var(--cx-size-16px) var(--cx-size-20px);padding:var(--cx-size-16px);}
 .cx-cal-ymonth-h{margin:0 0 var(--cx-size-6px);font-size:var(--cx-size-14px);font-weight:600;}
 .cx-cal-ygrid{display:flex;flex-direction:column;gap:var(--cx-size-2px);}
 .cx-cal-ydow,.cx-cal-yweek{display:grid;grid-template-columns:repeat(var(--cx-cal-cols),minmax(0,1fr));gap:var(--cx-size-2px);}
@@ -146,6 +146,7 @@ top:calc(var(--t) * var(--cx-cal-ppm) + var(--cx-size-1px));height:calc(var(--h)
 .cx-cal-yday{height:var(--cx-size-26px);display:grid;place-items:center;border-radius:var(--hfx-radius-sm,4px);font-size:var(--cx-size-12px);font-variant-numeric:tabular-nums;cursor:pointer;outline:none;}
 .cx-cal-yday[data-cx-heat]{position:relative;font-weight:var(--hfx-weight-semibold,600);}
 .cx-cal-yday[data-cx-heat]::after{content:"";position:absolute;inset-block-end:var(--hfx-space-0-5,2px);inset-inline-start:calc(50% - var(--hfx-space-0-5,2px));width:var(--hfx-space-1,0.25rem);height:var(--hfx-space-1,0.25rem);border-radius:50%;background:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));}
+.cx-cal-yday[data-cx-heat="4"]::after{background:currentColor;}
 .cx-cal-yday:hover{box-shadow:inset 0 0 0 var(--cx-size-1px) var(--hfx-color-border-strong,light-dark(#cdd0d5,#363a42));}
 :is(.cx-cal-yday,.cx-cal-yswatch)[data-cx-heat="1"]{background:color-mix(in srgb,var(--hfx-color-accent,light-dark(#11776f,#37c9b8)) 14%,var(--hfx-color-surface,light-dark(#ffffff,#16181c)));}
 :is(.cx-cal-yday,.cx-cal-yswatch)[data-cx-heat="2"]{background:color-mix(in srgb,var(--hfx-color-accent,light-dark(#11776f,#37c9b8)) 30%,var(--hfx-color-surface,light-dark(#ffffff,#16181c)));}

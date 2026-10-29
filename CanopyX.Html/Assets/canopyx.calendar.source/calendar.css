@@ -154,7 +154,7 @@
 .cx-cal-ev-item > .cx-cal-ev-status .p-state { padding:0 var(--cx-size-8px);border-radius:var(--hfx-radius-control);background:var(--cx-ev-bg);color:var(--hfx-color-text);font-size:var(--cx-size-12px);line-height:var(--cx-size-20px); }
 
 /* Year: twelve small months, each day shaded by its number of events. */
-.cx-cal-year { display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cx-size-280px),1fr));gap:var(--cx-size-16px) var(--cx-size-20px);padding:var(--cx-size-16px); }
+.cx-cal-year { display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--cx-size-280px)),1fr));gap:var(--cx-size-16px) var(--cx-size-20px);padding:var(--cx-size-16px); }
 .cx-cal-ymonth-h { margin:0 0 var(--cx-size-6px);font-size:var(--cx-size-14px);font-weight:600; }
 .cx-cal-ygrid { display:flex;flex-direction:column;gap:var(--cx-size-2px); }
 .cx-cal-ydow,.cx-cal-yweek { display:grid;grid-template-columns:repeat(var(--cx-cal-cols),minmax(0,1fr));gap:var(--cx-size-2px); }
@@ -162,6 +162,7 @@
 .cx-cal-yday { height:var(--cx-size-26px);display:grid;place-items:center;border-radius:var(--hfx-radius-sm);font-size:var(--cx-size-12px);font-variant-numeric:tabular-nums;cursor:pointer;outline:none; }
 .cx-cal-yday[data-cx-heat] { position:relative;font-weight:var(--hfx-weight-semibold); }
 .cx-cal-yday[data-cx-heat]::after { content:"";position:absolute;inset-block-end:var(--hfx-space-0-5);inset-inline-start:calc(50% - var(--hfx-space-0-5));width:var(--hfx-space-1);height:var(--hfx-space-1);border-radius:50%;background:var(--hfx-color-accent); }
+.cx-cal-yday[data-cx-heat="4"]::after { background:currentColor; }
 .cx-cal-yday:hover { box-shadow:inset 0 0 0 var(--cx-size-1px) var(--hfx-color-border-strong); }
 :is(.cx-cal-yday,.cx-cal-yswatch)[data-cx-heat="1"] { background:color-mix(in srgb,var(--hfx-color-accent) 14%,var(--hfx-color-surface)); }
 :is(.cx-cal-yday,.cx-cal-yswatch)[data-cx-heat="2"] { background:color-mix(in srgb,var(--hfx-color-accent) 30%,var(--hfx-color-surface)); }
