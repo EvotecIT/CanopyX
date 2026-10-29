@@ -9,7 +9,8 @@
     return measured;
   };
   DataGrid.prototype.fitHeight = function () {
-    if (this.view.autoHeight === false || this.pendingQuery || !this.grid.clientWidth || !this.host.checkVisibility()) return;
+    // Boards own their viewport even before their lazy renderer has hidden the flat grid.
+    if (this.view.autoHeight === false || this.view.board || this.pendingQuery || !this.grid.clientWidth || !this.host.checkVisibility()) return;
     // The host's own max-height, read before the first change, stays a bound for empty and populated results.
     // Pixels bound the fit as a number; a relative bound (a percentage, calc()) stays CSS, so the browser keeps resolving it.
     const grid = this.grid, style = this.host.style;
@@ -20,8 +21,10 @@
       return position === "absolute" || position === "fixed" ? sum : sum + child.getBoundingClientRect().height;
     }, grid.offsetHeight - grid.clientHeight);
     if (this.fitMax === undefined) {
+      // Alternate views restore the authored bound when they take ownership of the host.
+      this.fitInline = style.maxHeight;
       const own = getComputedStyle(this.host).maxHeight;
-      this.fitMax = own === "none" ? Infinity : /^-?[\d.]+px$/.test(own) ? parseFloat(own) : own;
+      this.fitMax = own === "none" ? Infinity : own.endsWith("px") ? parseFloat(own) : own;
     }
     // Reuse the minimum's flow measurement without reserving rows in the empty state.
     const empty = !this.notice.hidden && this.notice.classList.contains("cx-state");

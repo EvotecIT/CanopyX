@@ -112,8 +112,8 @@
         count++;
         let block = child === this.grid ? 0 : child.offsetHeight;
         if (child === this.notice && child.classList.contains("cx-state")) {
-          const items = [...child.children];
-          block = (items.length ? items.at(-1).getBoundingClientRect().bottom - items[0].getBoundingClientRect().top : 0) +
+          const items = child.children;
+          block = (items.length ? items[items.length - 1].getBoundingClientRect().bottom - items[0].getBoundingClientRect().top : 0) +
             parseFloat(css.paddingTop) + parseFloat(css.paddingBottom) + parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
           block = Math.max(block, parseFloat(css.minHeight) || 0);
         }
