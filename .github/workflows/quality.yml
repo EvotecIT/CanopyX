@@ -6,9 +6,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-  schedule:
-    # Full coverage on the default branch, away from the top-of-hour rush.
-    - cron: '23 2 * * *'
 
 # A unique group for every non-PR run also protects queued main pushes from replacement.
 concurrency:
@@ -65,7 +62,7 @@ jobs:
           if ($env:MATRIX_RESULT -ne 'success') { throw "The browser/platform matrix did not pass: $env:MATRIX_RESULT" }
 
   build-test-pack:
-    # PRs cover all Linux engines, Windows Chromium and macOS WebKit; main/manual/nightly keep the full matrix.
+    # PRs cover all Linux engines, Windows Chromium and macOS WebKit; main pushes and manual runs keep the full matrix.
     # The Chromium job of each selected platform
     # also packs; the Windows Chromium job also checks the visual baselines (tests/browser/playwright.config.mjs).
     name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }}${{ matrix.shard && format(', shard {0}/2', matrix.shard) || '' }})

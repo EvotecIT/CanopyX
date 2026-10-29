@@ -12,7 +12,7 @@ test("only documentation and Website PRs skip builds; schemas and mixed changes 
     assert.equal(requiresBuild("pull_request", ["README.md", file]), true, file);
   }
   assert.equal(requiresBuild("pull_request", []), true);
-  for (const event of ["push", "schedule", "workflow_dispatch"]) {
+  for (const event of ["push", "workflow_dispatch"]) {
     assert.equal(requiresBuild(event, ["README.md"]), true, event);
   }
 });
@@ -26,8 +26,8 @@ test("PR coverage keeps every Linux engine, Windows visuals and packing, and one
   assert.deepEqual(jobs.map(job => job.platform.runner), ["ubuntu-24.04", "ubuntu-24.04", "ubuntu-24.04", "windows-2025", "macos-15"]);
 });
 
-test("main, nightly and manual coverage keep every OS and engine and the existing two shard pairs", () => {
-  for (const event of ["push", "schedule", "workflow_dispatch"]) {
+test("main pushes and manual coverage keep every OS and engine and the existing two shard pairs", () => {
+  for (const event of ["push", "workflow_dispatch"]) {
     const jobs = qualityMatrix(event).include;
     assert.equal(jobs.length, 11, event);
     for (const platform of ["Linux", "Windows", "macOS"]) {
