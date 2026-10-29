@@ -191,3 +191,33 @@ for (const width of [1440, 390]) for (const autoHeight of [true, false]) for (co
     else await expect.poll(height).toBe(520);
   });
 }
+
+for (const width of [1440, 390]) {
+  test(`empty fitting includes host gaps and child margins at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await open(page, { ...grid([]), search: true, autoHeight: true },
+      ' data-cx-chrome="embedded" style="height:520px;max-height:720px;gap:16px"');
+    await page.addStyleTag({ content: '[data-canopyx-host] > * { margin-block: 8px; }' });
+    await page.locator('.cx-search-input').fill('a longer empty query that wraps on the phone');
+    await expect(page.locator('.cx-state')).toBeVisible();
+    await expect.poll(() => page.locator('[data-canopyx-host]').evaluate(host => {
+      const end = host.getBoundingClientRect().bottom;
+      return [...host.children].filter(child => getComputedStyle(child).display !== 'none')
+        .every(child => child.getBoundingClientRect().bottom + parseFloat(getComputedStyle(child).marginBottom) <= end + 1);
+    })).toBe(true);
+  });
+
+  test(`returning rows replace the taller empty-state minimum at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await open(page, { ...grid([{ id: 'a', cells: { name: 'Alpha', size: 5 } }]), search: true, autoHeight: true },
+      ' data-cx-chrome="embedded" style="height:520px;max-height:520px"');
+    const host = page.locator('[data-canopyx-host]'), search = host.locator('.cx-search-input');
+    await search.fill('no match with a longer query that wraps on the phone');
+    await expect(host.locator('.cx-state')).toBeVisible();
+    const empty = await host.evaluate(node => node.getBoundingClientRect().height);
+    await search.fill('');
+    await expect(host.locator('.cx-canvas .cx-row')).toHaveCount(1);
+    await expect.poll(() => host.evaluate(node => node.getBoundingClientRect().height)).toBeLessThan(empty);
+    await expect(host.locator('.cx-canvas .cx-row')).toBeInViewport();
+  });
+}

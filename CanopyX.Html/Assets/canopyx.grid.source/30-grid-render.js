@@ -102,20 +102,25 @@
     },
 
     // Flexible empty states fill the remaining host space. Their assigned height cannot feed the host's minimum.
-    minimumGridHeight() {
-      if (this.toolbar.hidden) return 0;
-      return [...this.host.children].reduce((height, child) => {
-        if (child === this.grid) return height;
+    minimumGridHeight(rows = true) {
+      if (rows && this.toolbar.hidden) return 0;
+      const host = getComputedStyle(this.host);
+      let count = 0;
+      const height = [...this.host.children].reduce((height, child) => {
         const css = getComputedStyle(child);
-        if (css.position === "absolute" || css.position === "fixed") return height;
-        let block = child.offsetHeight;
+        if (css.display === "none" || css.position === "absolute" || css.position === "fixed") return height;
+        count++;
+        let block = child === this.grid ? 0 : child.offsetHeight;
         if (child === this.notice && child.classList.contains("cx-state")) {
           const items = [...child.children];
           block = (items.length ? items.at(-1).getBoundingClientRect().bottom - items[0].getBoundingClientRect().top : 0) +
-            parseFloat(css.paddingTop) + parseFloat(css.paddingBottom);
+            parseFloat(css.paddingTop) + parseFloat(css.paddingBottom) + parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
+          block = Math.max(block, parseFloat(css.minHeight) || 0);
         }
-        return height + block;
-      }, Math.max(this.head.offsetHeight, this.rowH * Math.min(4, Math.max(1, this.rowCount()))) + 2);
+        return height + block + parseFloat(css.marginTop) + parseFloat(css.marginBottom);
+      }, rows ? Math.max(this.head.offsetHeight, this.rowH * Math.min(4, Math.max(1, this.rowCount()))) + 2 : 0);
+      return height + this.host.offsetHeight - this.host.clientHeight + parseFloat(host.paddingTop) + parseFloat(host.paddingBottom)
+        + Math.max(0, count - 1) * (parseFloat(host.rowGap) || 0);
     },
 
     setLogicalTop(top) {
