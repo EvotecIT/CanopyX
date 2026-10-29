@@ -16,7 +16,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX.Html</PackageId>
-    <Version>0.3.2</Version>
+    <Version>0.3.3</Version>
     <Authors>Evotec</Authors>
     <Description>Self-contained tree and flat-grid browser runtimes with virtual rows, typed query controls, saved views, scoped exports, host data sources, and theme CSS, plus page, fragment, tree bundle, and asset writers.</Description>
     <PackageReleaseNotes>Virtual tree and flat grids, typed query controls, saved views, scoped CSV and clipboard exports, host-governed Office exports and details, and page, fragment, bundle, and asset writers.</PackageReleaseNotes>
