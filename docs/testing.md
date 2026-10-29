@@ -12,6 +12,12 @@ Browser files run on three workers in Quality CI, with tests inside each file ke
 
 A PR whose complete diff changes only `Website/**`, `docs/**` or Markdown files skips the build matrix. Changes under `docs/schema/**` always require it, including Markdown there. The three required platform checks still run and succeed after a confirmed documentation-only skip; failed coverage selection, failed tests and cancelled builds fail those checks. Website validation runs in its own workflow. Only superseded runs for the same PR are cancelled; each main, manual and nightly run has its own concurrency group.
 
+Check coverage selection locally without building or installing browser packages:
+
+```powershell
+node --test .github/scripts/quality-plan.test.mjs
+```
+
 The suite checks returned data, ordering, cancellation, lifecycle cleanup, bounded requests and DOM, generated artifacts and visible behavior. Ordinary test and process timeouts still catch hangs. Elapsed time, relative speed, long tasks, observed heap growth and allocation measurements run only when explicitly requested; shared-runner measurements do not decide PR correctness.
 
 For a C# correctness change, the shorter command is:
