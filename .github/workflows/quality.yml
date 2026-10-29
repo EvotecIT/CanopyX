@@ -29,8 +29,8 @@ jobs:
           if ($env:MATRIX_RESULT -ne 'success') { throw "The browser/platform matrix did not pass: $env:MATRIX_RESULT" }
 
   build-test-pack:
-    # Every platform runs the full browser suite in all three engines. Windows Firefox uses two isolated shards;
-    # its serial suite outgrew the process deadline. Every shard keeps one worker and the same test/time limits.
+    # Every platform runs the full browser suite in all three engines. Windows Firefox and macOS WebKit use two
+    # isolated shards after their serial suites outgrew the process deadline. Shards keep the same test/time limits.
     # The Chromium job of each platform
     # also packs; the Windows Chromium job also checks the visual baselines (tests/browser/playwright.config.mjs).
     name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }}${{ matrix.shard && format(', shard {0}/2', matrix.shard) || '' }})
@@ -52,6 +52,10 @@ jobs:
               name: Windows
               runner: windows-2025
             engine: firefox
+          - platform:
+              name: macOS
+              runner: macos-15
+            engine: webkit
         include:
           - platform:
               name: Windows
@@ -62,6 +66,16 @@ jobs:
               name: Windows
               runner: windows-2025
             engine: firefox
+            shard: 2
+          - platform:
+              name: macOS
+              runner: macos-15
+            engine: webkit
+            shard: 1
+          - platform:
+              name: macOS
+              runner: macos-15
+            engine: webkit
             shard: 2
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"

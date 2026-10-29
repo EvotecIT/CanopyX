@@ -1,6 +1,7 @@
   // ---------- captured delivery metadata and bounded read-only host snapshots ----------
   const DELIVERY_PREPARE = DataGrid.prototype.prepareExport, DELIVERY_TEXT = DataGrid.prototype.exportText,
-    DELIVERY_API = GRID_REPORTING.api, DELIVERY_CALLBACKS = new WeakMap(), DELIVERY_PRINT = DataGrid.prototype.print;
+    DELIVERY_API = GRID_REPORTING.api, DELIVERY_CALLBACKS = new WeakMap(), DELIVERY_PRINT = DataGrid.prototype.print,
+    DELIVERY_EXPORT_AS = DataGrid.prototype.exportAs;
   function reportingExportTotal(request) {
     return request.recordCount;
   }
@@ -32,6 +33,11 @@
     api.print = grid.print.bind(grid);
   };
   Object.assign(DataGrid.prototype, {
+    exportAs(format, options) {
+      if (options?.pivot === true && (format === "xlsx" || format === "pdf"))
+        return Promise.reject(new Error("CanopyX: pivot XLSX/PDF export is not supported yet."));
+      return DELIVERY_EXPORT_AS.call(this, format, options);
+    },
     prepareExport(options) {
       if (options?.onProgress !== undefined && typeof options.onProgress !== "function") throw new Error("CanopyX: export progress needs a callback.");
       const ordinary = options?.pivot === true ? null : DELIVERY_PREPARE.call(this, options);

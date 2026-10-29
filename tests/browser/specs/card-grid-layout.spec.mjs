@@ -160,6 +160,7 @@ test("group headings and collapse retain the existing single-column projection",
   await page.setViewportSize({ width: 1440, height: 900 });
   await openCards(page, cards(40, { reporting: { groupBy: [{ column: "team", direction: "asc" }] } }));
   const heading = page.locator('.cx-grid-group').first();
+  await expect(heading.locator(".cx-grid-group-count")).toHaveText("20");
   await expect(heading.locator(".cx-grid-group-toggle")).toHaveAttribute("aria-expanded", "true");
   await heading.focus(); await page.keyboard.press("ArrowLeft");
   await expect(heading.locator(".cx-grid-group-toggle")).toHaveAttribute("aria-expanded", "false");

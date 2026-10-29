@@ -112,7 +112,8 @@ test("responsive priority hiding shrinks the groups of the columns that give way
     const visible = (id === "q1" ? ["jan", "feb", "mar"] : ["apr", "may", "jun"]).filter(column => shown.includes(column)).length;
     expect(Number(spans[id] || 0), id).toBe(visible);
   }
-  expect(shown).not.toContain("feb");
+  expect(shown).not.toContain("may");
+  expect(shown).not.toContain("jun");
 });
 
 test("a group's edge resizes its columns together, by keyboard and by pointer", async ({ page }) => {

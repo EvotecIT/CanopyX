@@ -54,7 +54,7 @@ public sealed class AggregateDisplayTests {
         Assert.Equal("0.00%", shown.Groups["north-a"]["total"].NumberFormat);
         Assert.Equal(30, north.Aggregates["total"]); Assert.Equal(50, summary.Aggregates["total"]);
         var html = CanopyStaticHtml.RenderGridSummary(view, summary);
-        Assert.Contains("as % of parent", html); Assert.Contains("33.33", html); Assert.DoesNotContain("<script", html);
+        Assert.Contains("% of parent total", html); Assert.Contains("33.33", html); Assert.DoesNotContain("<script", html);
         var rank = CanopyAggregateDisplay.FromSummary(view, summary, new Dictionary<string, CanopyShowAs> { ["total"] = CanopyShowAs.Rank });
         Assert.Equal(1, rank.Groups["north"]["total"].Value); Assert.Equal(2, rank.Groups["south"]["total"].Value);
     }

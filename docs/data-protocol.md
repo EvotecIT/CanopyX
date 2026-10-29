@@ -9,6 +9,7 @@ results pair finite numeric values (or null) with number formats; percentages re
 uses `0`. These are post-aggregation transformations, independent of filtering, paging and grouping order.
 
 Grouping levels, facet definitions/requests/responses and column predicates may carry an optional `bucket`.
+Facet panels may set `position` to `side`, `top`, or `toolbar`; the last presents one compact menu per facet in the grid toolbar.
 Calendar buckets declare `kind` (`day`, `week`, `month`, `quarter`, `year`, `hour`, `weekday`), `timeZone`
 (UTC by default) and `firstWeekday` (0 Sunday through 6 Saturday; Monday by default). Numeric buckets use
 `{ "kind": "width", "width": 10, "origin": 0 }` or `{ "kind": "edges", "edges": [0, 10, 100] }`.
@@ -321,7 +322,7 @@ Patterns are limited to 256 UTF-16 code units, cell inputs to 4,096; oversized i
 search still matches all rows. The browser allows 50 ms of regex evaluation per query and retains the previous accepted query
 when validation or execution fails. The input reports an invalid pattern and uses the translated `gridRegexSearch` label.
 C# uses `AllowRegexSearch`, `CanopyGridSearchMode.Regex` and `CanopyGridRegexSearch`; the in-memory provider implements the same
-grammar with a 100 ms query budget and native match timeout. The portable IQueryable provider rejects regex execution explicitly;
+grammar with a 100 ms cumulative regex evaluation budget and native match timeout. Time spent evaluating other filters is not charged to that budget. The portable IQueryable provider rejects regex execution explicitly;
 it never downloads a database result to simulate matching. Other hosts implement or reject regex queries themselves.
 
 The optional grid properties `stickyHeader` and `cardTemplate` configure page-scroll headers and literal card token slots

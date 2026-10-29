@@ -19,6 +19,7 @@ internal static class ColumnLayoutExample {
                 .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light")
                 .Replace("{{products}}", Products("products").ToHtmlFragment(options))
                 .Replace("{{rules}}", Rules().ToHtmlFragment(options))
+                .Replace("{{disclosure}}", Disclosure().ToHtmlFragment(options))
                 .Replace("{{wide}}", Wide().ToHtmlFragment(options))
                 .Replace("{{log}}", Log().ToHtmlFragment(options))
                 .Replace("{{phone}}", Products("phone-products").ToHtmlFragment(options));
@@ -40,6 +41,21 @@ internal static class ColumnLayoutExample {
             row.Cells["stock"] = 20 + i * 13; row.Cells["price"] = 19.5 + i * 7;
             view.Rows.Add(row);
         }
+        return view;
+    }
+
+    private static CanopyDataGridView Disclosure() {
+        var view = new CanopyDataGridView("disclosure", "Inventory") { RowAction = CanopyGridRowAction.Details };
+        foreach (var (id, title, optional) in new[] {
+            ("name", "Inventory item", false), ("owner", "Responsible team", false),
+            ("region", "Operating region", false), ("status", "Current status", false),
+            ("team", "Support team", false), ("site", "Service location", false), ("check", "Last inspection", false),
+            ("notes", "Additional notes", true)
+        }) view.Columns.Add(new CanopyColumn(id, title) { ResponsivePriority = optional ? 10000 : 5000 });
+        var row = new CanopyGridRow("item-1");
+        row.Cells["name"] = "Device 001"; row.Cells["owner"] = "Platform"; row.Cells["region"] = "North";
+        row.Cells["status"] = "Online"; row.Cells["team"] = "Operations"; row.Cells["site"] = "Warsaw";
+        row.Cells["check"] = "Complete"; row.Cells["notes"] = "Ready for review"; view.Rows.Add(row);
         return view;
     }
 

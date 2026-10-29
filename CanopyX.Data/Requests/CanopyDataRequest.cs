@@ -16,6 +16,20 @@ namespace CanopyX.Data;
 public sealed partial class CanopyDataRequest {
     private static readonly Regex Words = new Regex("\"([^\"]*)(?:\"|$)|([^\\s\"]+)", RegexOptions.CultureInvariant);
 
+    /// <summary>Creates a request without tuple predicates, preserving the released constructor signature.</summary>
+    /// <param name="schema">The column allow-list.</param>
+    /// <param name="filter">The filter expression, or null for none.</param>
+    /// <param name="sort">The ordered sort keys.</param>
+    /// <param name="search">Quick-search text; null or empty for none.</param>
+    /// <param name="searchMode">The search matching mode.</param>
+    /// <param name="offset">The nonnegative result offset.</param>
+    /// <param name="limit">The nonnegative result limit.</param>
+    /// <param name="revision">The expected dataset revision, or null for the current one.</param>
+    /// <param name="levels">The grouping levels, or null for the schema defaults.</param>
+    public CanopyDataRequest(CanopyDataSchema schema, CanopyFilterNode? filter, IEnumerable<CanopySortKey>? sort, string? search,
+        CanopyGridSearchMode searchMode, int offset, int limit, string? revision, IEnumerable<CanopySummaryLevel>? levels)
+        : this(schema, filter, sort, search, searchMode, offset, limit, revision, levels, null) { }
+
     /// <summary>Creates a request.</summary>
     /// <param name="schema">The column allow-list.</param>
     /// <param name="filter">The filter expression, or null for none.</param>

@@ -41,7 +41,7 @@
         }
         const error = result.error;
         results.set(column.id, error ? { calculationError: error } : result.value);
-        Object.defineProperty(row.cells, column.id, { value: error ? { value: null, text: "#ERROR", title: fill(view.labels?.gridCalculationError || DEFAULT_CALCULATION_ERROR, { error }) } : result.value,
+        Object.defineProperty(row.cells, column.id, { value: error ? { value: null, text: error === "divide-by-zero" ? "#DIV/0" : "#ERROR", tone: "danger", title: column.title + " (" + column.calculation + "): " + fill(view.labels?.gridCalculationError || DEFAULT_CALCULATION_ERROR, { error: error === "divide-by-zero" ? view.labels?.gridCalculationDivideZero || "Division by zero" : error }) } : result.value,
           enumerable: true, configurable: true, writable: true });
       }
       plan.cache.set(row, inputs);

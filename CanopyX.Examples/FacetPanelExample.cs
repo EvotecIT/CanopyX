@@ -6,7 +6,7 @@ namespace CanopyX.Examples;
 /// <summary>
 /// The facet panel (docs/facets.md): a request queue whose category, priority, team and region facets list their values with
 /// counts, and whose opened date and age facets draw histograms; the facets filter each other and the grid. facets.html puts
-/// the panel beside the grid, facets-top.html above it; on phones a "Filter by" button opens it as a sheet.
+/// the panel beside the grid, facets-top.html above it and facets-toolbar.html in compact toolbar menus.
 /// </summary>
 internal static class FacetPanelExample {
     private static readonly string[] Categories = { "Access", "Hardware", "Network", "Software", "Billing", "Accounts" };
@@ -23,11 +23,13 @@ internal static class FacetPanelExample {
                 new CanopyHtmlOptions { Title = "Requests with a facet panel", Theme = theme, Height = "640px" });
             Create(CanopyFacetPosition.Top).SaveHtmlPage(Path.Combine(output, "facets-top" + suffix + ".html"),
                 new CanopyHtmlOptions { Title = "Requests with facets above", Theme = theme, Height = "560px" });
+            Create(CanopyFacetPosition.Toolbar).SaveHtmlPage(Path.Combine(output, "facets-toolbar" + suffix + ".html"),
+                new CanopyHtmlOptions { Title = "Requests with toolbar facets", Theme = theme, Height = "640px" });
         }
     }
 
     internal static CanopyDataGridView Create(CanopyFacetPosition position) {
-        var view = new CanopyDataGridView(position == CanopyFacetPosition.Top ? "requests-top" : "requests", "Requests") {
+        var view = new CanopyDataGridView(position == CanopyFacetPosition.Top ? "requests-top" : position == CanopyFacetPosition.Toolbar ? "requests-toolbar" : "requests", "Requests") {
             Selection = CanopySelectionMode.Multiple, PageSize = 200, Noun = "requests", RowAction = CanopyGridRowAction.Details, StateKey = "facet-example"
         };
         view.Columns.Add(new CanopyColumn("number", "Request") { Sortable = true, RowHeader = true, Sizing = CanopyColumnSizing.Content() });

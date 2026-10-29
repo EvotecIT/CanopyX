@@ -41,7 +41,8 @@ test('print snapshots include accepted selected-query exclusions and full record
   expect(snapshot.rows).toHaveLength(67);expect(snapshot.rows.some(r=>r.id==='r1')).toBe(false);expect(snapshot.rows.at(-1).id).toBe('r135');
   expect(snapshot.request.querySelection).toMatchObject({matched:68,excludedIds:['r1']});
   await page.locator('.cx-grid-export > summary').click();
-  await page.locator('.cx-grid-overflow > summary').click();await expect(page.getByRole('button',{name:'Print',exact:true})).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Print',exact:true})).toHaveCount(1);
+  await page.locator('.cx-grid-overflow > summary').click();await expect(page.getByRole('button',{name:'Print',exact:true})).toHaveCount(0);
 });
 
 test('snapshot bounds reject full scopes without truncation and ordinary grids reject reporting metadata',async({page})=>{
@@ -86,7 +87,7 @@ test('cancellation stops independent snapshot windows and toolbar reports cancel
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await open(page,definition({source:{kind:'host'},rows:undefined}),hostedSetup);
   await page.evaluate('held=true');await page.locator('.cx-grid-export > summary').click();
-  await page.locator('.cx-grid-overflow > summary').click();await page.getByRole('button',{name:'Print',exact:true}).click();
+  await page.getByRole('button',{name:'Print',exact:true}).click();
   await expect(page.getByRole('button',{name:'Cancel export',exact:true})).toBeVisible();
   await expect.poll(()=>page.evaluate('calls.filter(c=>c.offset===10).length')).toBeGreaterThan(0);
   const cancel=page.getByRole('button',{name:'Cancel export',exact:true});
@@ -94,7 +95,6 @@ test('cancellation stops independent snapshot windows and toolbar reports cancel
   await expect(page.locator('.cx-grid-delivery-status')).toHaveText('Export cancelled');
   await expect(page.getByRole('combobox',{name:'Export: rows',exact:true})).toBeFocused();
   expect(await page.evaluate('calls.at(-1).signal.aborted')).toBe(true);expect(await page.evaluate('window.printed')).toBe(undefined);
-  await page.locator('.cx-grid-overflow > summary').click();
   await expect(page.getByRole('button',{name:'Print',exact:true})).toBeEnabled();expect(errors).toEqual([]);
 });
 

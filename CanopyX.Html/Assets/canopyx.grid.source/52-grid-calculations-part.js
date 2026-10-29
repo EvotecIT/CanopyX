@@ -1,7 +1,7 @@
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridCalculationAdd: "Add calculated column", gridCalculationTitle: "Column title", gridCalculationId: "Column ID", gridCalculationExpression: "Expression",
     gridCalculationError: "Calculation error: {error}", gridCalculationInvalid: "Check the expression, column references and result kind.", gridCalculationHelp: "Use [columnId], arithmetic, IF, COALESCE, ROUND, CONCAT, DATEPART or DATEDIFF.",
-    gridCalculationNumber: "Number", gridCalculationDate: "Date and time"
+    gridCalculationResultType: "Result type", gridCalculationDivideZero: "Division by zero", gridCalculationNumber: "Number", gridCalculationDate: "Date and time"
   }));
   const GRID_CALCULATIONS = {}, CALCULATIONS_PART = definePart(DataGrid, "calculations", "calculated columns",
     () => ({ DataGrid, GRID_CALCULATIONS, requireIdentifier, cellValue, h, setText, fill, gridButton, gridQuery, gridQueryStart, inlineGridSource, rowDataSource, loadGridFilterEditor, gridFreeze, gridFitPrepare }));

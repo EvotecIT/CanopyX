@@ -101,6 +101,7 @@
 --hfx-type-small-line
 --hfx-type-small-size
 --hfx-type-title-size
+--hfx-weight-display
 --hfx-weight-medium
 --hfx-weight-regular
 --hfx-weight-semibold

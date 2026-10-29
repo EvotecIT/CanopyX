@@ -21,13 +21,14 @@
       controls.setAttribute("role", "group"); controls.setAttribute("aria-label", this.labels.gridSelection); status.setAttribute("role", "status");
       const page = this.multi && this.paged ? gridButton(this.labels.gridSelectPage, () => this.runReportingSelection(() => this.selectPage())) : null;
       const all = this.multi ? gridButton(this.labels.gridSelectMatching, () => this.runReportingSelection(() => this.selectAllMatching())) : null;
-      const clear = gridButton(this.labels.gridClearSelection, () => this.setSelection([]));
+      const clear = this.selectionClear = gridButton(this.labels.gridClearSelection, () => this.setSelection([]));
       this.selectionButtons = [page, all, clear].filter(Boolean);
       controls.append(...this.selectionButtons, status); this.selectionControls = controls; this.syncSelectionControls();
     },
     syncSelectionControls() {
       if (!this.selectionStatus) return;
       for (const button of this.selectionButtons) button.disabled = !!this.selectionControlBusy || !this.acceptedQuery || !!this.pendingQuery;
+      this.selectionClear.disabled ||= this.querySelection ? this.querySelection.matched === this.selectionExcluded.size : !this.selected.size;
       for (const [row, element] of this.rendered) if (!row.status) {
         const check = element.querySelector(".cx-grid-row-select");
         if (check) { check.checked = this.reportingRowSelected(row); check.disabled = !!this.pendingQuery; }
@@ -45,7 +46,7 @@
       if (!this.selectionControls || !this.headCells[0]) return;
       const menu = h("details", "cx-columns cx-header-selection"), summary = h("summary"), panel = h("div", "cx-columns-list cx-grid-panel");
       summary.setAttribute("aria-label", this.labels.gridSelection); summary.classList.add("cx-header-check");
-      summary.setAttribute("aria-haspopup", "menu"); summary.appendChild(gridIcon("check")); panel.appendChild(this.selectionControls); menu.append(summary, panel);
+      summary.setAttribute("aria-haspopup", "menu"); panel.appendChild(this.selectionControls); menu.append(summary, panel);
       this.headCells[0].prepend(menu);
       const flyout = this.headerSelectionFlyout = watchFlyout(menu, panel, () => menu.open);
       panel.popover = "manual";

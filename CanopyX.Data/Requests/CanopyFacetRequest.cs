@@ -9,6 +9,15 @@ namespace CanopyX.Data;
 /// including inside OR groups. Text buckets are case-insensitive; null values form one bucket that sorts last.
 /// </remarks>
 public sealed class CanopyFacetRequest {
+    /// <summary>Creates an unbucketed facet request, preserving the released constructor signature.</summary>
+    /// <param name="query">The complete query with the effective filter.</param>
+    /// <param name="column">The facet column.</param>
+    /// <param name="search">The value search text, or null for none.</param>
+    /// <param name="limit">The maximum number of buckets, at least one.</param>
+    /// <param name="includeCurrentFilter">Whether predicates on this column still apply.</param>
+    public CanopyFacetRequest(CanopyDataRequest query, CanopyDataColumn column, string? search, int limit, bool includeCurrentFilter)
+        : this(query, column, search, limit, includeCurrentFilter, null) { }
+
     /// <summary>Creates a value-list request.</summary>
     /// <param name="query">The complete query with the effective filter.</param>
     /// <param name="column">The facet column.</param>

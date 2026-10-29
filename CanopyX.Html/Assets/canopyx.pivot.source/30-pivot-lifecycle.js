@@ -15,6 +15,7 @@
     },
     render() {
       if (!pivotEnabledLocal(this) || !pivotIntent(this)?.active) {
+        if (this.pivotButton) setText(this.pivotButton, this.labels.gridPivot);
         this.host.classList.remove("cx-pivot-active"); if (this.pivotPanel) this.pivotPanel.hidden = true;
         if (this.pivotOwnHeight) { this.host.style.maxHeight = this.pivotFlatMaxHeight; this.pivotOwnHeight = false; }
         return PIVOT_RENDER_BASE.call(this);

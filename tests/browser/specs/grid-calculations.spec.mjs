@@ -50,8 +50,8 @@ test("calculated cells drive sorting, filters, facets, aggregates and numeric ex
 test("cell errors have a tooltip and leave independent calculations usable", async ({ page }) => {
   await open(page, calculationView(), parts());
   const row = page.locator('[data-cx-id="c"]');
-  await expect(row.getByText("#ERROR", { exact: true })).toBeVisible();
-  await expect(row.locator('[title="Calculation error: divide-by-zero"]')).toBeVisible();
+  await expect(row.getByText("#DIV/0", { exact: true })).toBeVisible();
+  await expect(row.locator('[title*="Division by zero"]')).toBeVisible();
   const loaded = await page.evaluate(api + ".getLoadedRows(['c'])"); expect(loaded[0].cells.amount).toBe(0); expect(loaded[0].cells.caption).toBe("Lamp: 0");
 });
 
@@ -111,7 +111,7 @@ test("a short viewport keeps the calculation editor header and scrolled Apply bu
   await dialog.getByLabel("Expression", { exact: true }).blur();
   await expect.poll(() => dialog.evaluate(element => {
     const body = element.querySelector('[data-hfx-part="body"]'); body.scrollTop = body.scrollHeight;
-    const box = element.getBoundingClientRect(), button = element.querySelector('button[type="submit"]').getBoundingClientRect(), heading = element.querySelector(".cx-drawer-h").getBoundingClientRect();
+    const box = element.getBoundingClientRect(), button = element.querySelector('button[form]').getBoundingClientRect(), heading = element.querySelector(".cx-drawer-h").getBoundingClientRect();
     return { buttonInside: button.top >= box.top && button.bottom <= box.bottom, headingInside: heading.top >= box.top && heading.bottom <= box.bottom,
       dialogInside: box.top >= 0 && box.bottom <= innerHeight };
   })).toEqual({ buttonInside: true, headingInside: true, dialogInside: true });

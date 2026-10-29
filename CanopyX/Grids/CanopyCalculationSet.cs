@@ -24,7 +24,7 @@ public sealed class CanopyCalculationSet {
             if (column.Calculation == null) continue;
             if (column.Editable) throw new InvalidOperationException("Calculated column '" + column.Id + "' cannot be editable.");
             if (!Enum.IsDefined(typeof(CanopyColumnKind), column.Kind)) throw new InvalidOperationException("Unknown calculated column kind.");
-            calculated.Add(column.Id, new Program(column.Id, column.Kind, column.Calculation));
+            calculated.Add(column.Id, new Program(column.Id, column.Title, column.Kind, column.Calculation));
             if (calculated.Count > 32) throw new InvalidOperationException("A grid supports at most 32 calculated columns.");
         }
         var states = new Dictionary<string, bool>(StringComparer.Ordinal);
@@ -61,7 +61,7 @@ public sealed class CanopyCalculationSet {
             var value = EnforceKind(program.Calculation.Evaluate(Resolve), program.Kind);
             results.Add(program.Id, value);
             copy.Cells[program.Id] = value.IsError
-                ? new CanopyCell { Text = "#ERROR", Title = (labels ?? new CanopyLabels()).GridCalculationError.Replace("{error}", value.Error!) }
+                ? new CanopyCell { Text = value.Error == "divide-by-zero" ? "#DIV/0" : "#ERROR", Tone = CanopyTone.Danger, Title = program.Title + " (" + program.Calculation.Expression + "): " + (labels ?? new CanopyLabels()).GridCalculationError.Replace("{error}", value.Error == "divide-by-zero" ? (labels ?? new CanopyLabels()).GridCalculationDivideZero : value.Error!) }
                 : Cell(value.Value);
         }
         return copy;
@@ -114,7 +114,8 @@ public sealed class CanopyCalculationSet {
     };
 
     private sealed class Program {
-        internal Program(string id, CanopyColumnKind kind, CanopyCalculation calculation) { Id = id; Kind = kind; Calculation = calculation; }
+        internal Program(string id, string title, CanopyColumnKind kind, CanopyCalculation calculation) { Id = id; Title = title; Kind = kind; Calculation = calculation; }
+        internal string Title { get; }
         internal string Id { get; }
         internal CanopyColumnKind Kind { get; }
         internal CanopyCalculation Calculation { get; }

@@ -31,8 +31,8 @@ public sealed class CalculationPartAssetsTests {
         var captured = data.GetChunk(0);
         using var chunk = JsonDocument.Parse(captured);
         Assert.Equal(12, chunk.RootElement[0][2].GetDouble());
-        Assert.Equal("#ERROR", chunk.RootElement[0][3].GetProperty("text").GetString());
-        Assert.Contains("divide-by-zero", chunk.RootElement[0][3].GetProperty("title").GetString());
+        Assert.Equal("#DIV/0", chunk.RootElement[0][3].GetProperty("text").GetString());
+        Assert.Contains("Division by zero", chunk.RootElement[0][3].GetProperty("title").GetString());
         Assert.Single(row.Cells);
         row.Cells["quantity"] = 9;
         Assert.Equal(captured, data.GetChunk(0));

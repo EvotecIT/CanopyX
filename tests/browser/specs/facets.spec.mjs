@@ -23,7 +23,7 @@ async function open(page, { name = "facets.html", dark = false, width = 1440 } =
 test.describe("facet panel", () => {
   test("value lists count the result without their own column and filter each other", async ({ page }) => {
     await open(page);
-    const panel = page.getByRole("complementary", { name: "Filter by" });
+    const panel = page.getByRole("complementary", { name: "Refine" });
     await expect(panel).toBeVisible();
     const before = await counts(page, "category");
     expect(before.reduce((sum, [, count]) => sum + count, 0)).toBe(240);
@@ -78,7 +78,7 @@ test.describe("facet panel", () => {
 
   test("the panel collapses, keeps its state in saved views, and Clear works per facet", async ({ page }) => {
     await open(page);
-    const panel = page.getByRole("complementary", { name: "Filter by" });
+    const panel = page.getByRole("complementary", { name: "Refine" });
     await facet(page, "category").getByRole("checkbox").first().check();
     await expect(facet(page, "category").getByRole("button", { name: "Clear Category" })).toBeVisible();
     await panel.getByRole("button", { name: "Hide the filter panel" }).click();
@@ -157,12 +157,12 @@ test.describe("facet panel", () => {
 
   test("on a phone the panel is a sheet opened from the toolbar", async ({ page }) => {
     await open(page, { width: 390 });
-    await expect(page.getByRole("complementary", { name: "Filter by" })).toBeHidden();
+    await expect(page.getByRole("complementary", { name: "Refine" })).toBeHidden();
     const button = page.locator(".cx-facets-open");
     await expect(button).toBeVisible();
     expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
     await button.click();
-    const sheet = page.getByRole("dialog", { name: "Filter by" });
+    const sheet = page.getByRole("dialog", { name: "Refine" });
     await expect(sheet).toBeVisible();
     await sheet.locator('.cx-facet[data-cx-facet="priority"]').getByRole("checkbox").first().check();
     await expect.poll(() => api(page, "api => api.getQuery().filters.length")).toBe(1);
@@ -217,6 +217,31 @@ test.describe("facet panel", () => {
     await page.waitForSelector(".cx-facet .cx-facet-val, .cx-facet .cx-facet-bar");
   };
 
+  test("toolbar facets filter through compact menus and expose active conditions", async ({ page }) => {
+    await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: inlinePage({ columns: ["city", "team"], position: "toolbar" }) }));
+    await page.goto("https://canopyx.test/");
+    await page.waitForSelector("[data-cx-ready]");
+    const team = page.locator(".cx-grid-facet").filter({ hasText: "Team" });
+    await team.locator("summary").click();
+    await team.getByRole("checkbox", { name: /^Red,/ }).check();
+    await expect.poll(() => api(page, "api => api.getQuery().filters")).toEqual([{ column: "team", operator: "in", values: ["Red"] }]);
+    await expect(team.locator("summary")).toContainText("Red");
+    await expect(page.locator(".cx-grid-query-summary")).toContainText("Red");
+    await team.getByRole("button", { name: "Clear Team" }).click();
+    await expect.poll(() => api(page, "api => api.getQuery().filters")).toEqual([]);
+  });
+
+  test("toolbar facets remain usable on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: inlinePage({ columns: ["city", "team"], position: "toolbar" }) }));
+    await page.goto("https://canopyx.test/"); await page.waitForSelector("[data-cx-ready]");
+    const team = page.locator(".cx-grid-facet").filter({ hasText: "Team" });
+    await team.locator("summary").click(); await team.getByRole("checkbox", { name: /^Red,/ }).check();
+    await expect.poll(() => api(page, "api => api.getPaging().matched")).toBe(20);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await page.keyboard.press("Escape"); await expect(team.locator("summary")).toBeFocused();
+  });
+
   test("an inline list's search filters as it draws, and clearing it brings every value back", async ({ page }) => {
     await openInline(page, { columns: ["city", "team"] });
     const city = facet(page, "city"), search = city.getByRole("searchbox");
@@ -250,7 +275,7 @@ test.describe("facet panel", () => {
     await expect(city.locator(".cx-facet-custom")).toBeVisible();
     await expect(city.getByRole("checkbox").first()).toBeDisabled();
     await expect(city.locator(".cx-facet-clear")).toBeHidden();
-    await page.getByRole("complementary", { name: "Filter by" }).locator(".cx-facets-clear").click();
+    await page.getByRole("complementary", { name: "Refine" }).locator(".cx-facets-clear").click();
     await expect.poll(() => api(page, "api => [api.getQuery().filters.length, api.getQuery().filterGroup?.operator]")).toEqual([0, "or"]);
     expect(errors).toEqual([]);
   });
@@ -275,7 +300,7 @@ test.describe("facet panel appearance and accessibility", () => {
         await expect.poll(() => api(page, "api => api.getQuery().filters.length")).toBe(2);
       } else {
         await page.locator(".cx-facets-open").click();
-        await expect(page.getByRole("dialog", { name: "Filter by" })).toBeVisible();
+        await expect(page.getByRole("dialog", { name: "Refine" })).toBeVisible();
       }
       const results = await new AxeBuilder({ page }).analyze();
       expect(results.violations.filter(violation => ["serious", "critical"].includes(violation.impact))).toEqual([]);

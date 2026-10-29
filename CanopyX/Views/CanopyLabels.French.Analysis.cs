@@ -3,6 +3,9 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     private static CanopyLabels WithFrenchAnalysis(CanopyLabels labels) {
+        labels.GridPivotFieldOptions = "Options du champ";
+        labels.GridCalculationResultType = "Type du résultat";
+        labels.GridCalculationDivideZero = "Division par zéro";
         labels.GridCalculationAdd = "Ajouter une colonne calculée";
         labels.GridCalculationTitle = "Titre de colonne";
         labels.GridCalculationId = "ID de colonne";
@@ -17,25 +20,25 @@ public sealed partial class CanopyLabels {
         labels.GridPivotColumns = "Groupes de colonnes";
         labels.GridPivotValues = "Valeurs";
         labels.GridPivotFlat = "Afficher les enregistrements";
-        labels.GridPivotConfigure = "Configurer le tableau croisé";
+        labels.GridPivotConfigure = "Paramètres du tableau croisé";
         labels.GridPivotOther = "Autres";
         labels.GridPivotLimited = "{shown} chemins de colonnes sur {total} affichés ; les autres sont regroupés dans Autres. Les sous-totaux incluent toutes les valeurs descendantes correspondantes.";
         labels.GridPivotColumn = "Choisir une colonne";
         labels.GridPivotTopN = "Premières colonnes";
-        labels.GridPivotSort = "Trier les lignes par total";
+        labels.GridPivotSort = "Ordre des lignes";
         labels.GridPivotDrill = "Afficher les enregistrements pour {row}, {column}";
         labels.GridPivotReturn = "Revenir au tableau croisé";
         labels.GridPivotInvalid = "Choisissez des axes valides et au moins une valeur.";
         labels.GridShowAs = "Afficher les valeurs en";
         labels.GridShowAsValue = "Valeur";
-        labels.GridShowAsPercentGrandTotal = "en % du total";
-        labels.GridShowAsPercentParent = "en % du groupe parent";
-        labels.GridShowAsPercentColumn = "en % de la colonne";
-        labels.GridShowAsPercentRow = "en % de la ligne";
-        labels.GridShowAsRunningTotal = "en cumul";
-        labels.GridShowAsRank = "en rang";
-        labels.GridShowAsDifference = "en différence avec la valeur précédente";
-        labels.GridShowAsPercentChange = "en variation en % de la valeur précédente";
+        labels.GridShowAsPercentGrandTotal = "% du total général";
+        labels.GridShowAsPercentParent = "% du total parent";
+        labels.GridShowAsPercentColumn = "% du total de la colonne";
+        labels.GridShowAsPercentRow = "% du total de la ligne";
+        labels.GridShowAsRunningTotal = "Total cumulé";
+        labels.GridShowAsRank = "Rang";
+        labels.GridShowAsDifference = "Écart avec la valeur précédente";
+        labels.GridShowAsPercentChange = "% de variation depuis la valeur précédente";
         labels.GridBucket = "Intervalle";
         labels.GridBucketNone = "Valeurs exactes";
         labels.GridBucketDay = "Jour";

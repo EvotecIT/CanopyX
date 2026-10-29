@@ -40,7 +40,12 @@ test("explicit pivot capture reaches bounded materialization, print hooks and ho
   const { capture, expected } = result;
   expect(capture.request.recordCount).toBe(expected.rows.length); expect(capture.request.recordCount).toBeLessThan(view.rows.length);
   expect(capture.request.matched).toBe(view.rows.length); expect(capture.request.query).toEqual(result.accepted.query);
-  expect(capture.rows).toEqual(expected.rows); expect(capture.request.columns).toEqual(expected.columns);
+  expect(capture.rows).toEqual(expected.rows); expect(capture.request.columns).toMatchObject(expected.columns);
+  for (const column of capture.request.columns) {
+    expect(column.width.unit).toBe("css-px"); expect(column.width.preferred).toBeGreaterThan(0);
+    expect(column.width.minimum).toBeGreaterThanOrEqual(0); expect(column.width.minimum).toBeLessThanOrEqual(column.width.preferred);
+    expect(column.wrap).toBe(column.kind !== "number"); expect(column.alignment).toBe(column.kind === "number" ? "right" : "left");
+  }
   expect(capture.request.pivot).toMatchObject({ definition: expected.definition, rowAxis: expected.rowAxis, columnAxis: expected.columnAxis,
     columnGroups: expected.columnGroups, distinctColumns: expected.distinctColumns, retainedColumns: expected.retainedColumns, columnsLimited: true });
   expect(capture.request.pivot.rows).toBeUndefined(); expect(capture.request.grouping).toBeUndefined(); expect(capture.request.formatRules).toEqual([]);
@@ -66,7 +71,7 @@ test("pivot captures retain the complete frozen table across presentation change
   expect(result.first).toEqual(result.second); expect(result.first).toHaveLength(result.request.recordCount);
   expect(result.request.locale).toBe("de-DE"); expect(result.request.timeZone).toBe("utc"); expect(result.cancellation).toBe("AbortError"); expect(result.frozen).toBe(true);
   const total = result.request.columns.find(column => column.grandTotal && column.aggregate === "total"), grand = result.first.find(row => row.grandTotal);
-  expect(grand.cells[total.id].text).toBe(new Intl.NumberFormat("de-DE").format(grand.cells[total.id].value));
+  expect(grand.cells[total.id].text).toBe(new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(grand.cells[total.id].value));
   await page.evaluate(api + ".setPivot({rows:[{column:'region',direction:'asc'},{column:'status',direction:'asc'}],columns:[{column:'items',direction:'asc'}],values:['total']})");
   const bounded = await page.evaluate(api + ".materializeExport({scope:'filtered',pivot:true,maxRows:1}).then(()=>null,error=>error.message)");
   expect(bounded).toMatch(/row bound/);

@@ -24,7 +24,7 @@
     },
     // Optional visibility uses the same content floors as fitting, before remaining columns scroll.
     fitHide(shown, width, phone) {
-      COLUMN_FIT.fitHide.call(this, shown, width, phone, undefined, 0);
+      COLUMN_FIT.fitHide.call(this, shown, width, phone);
       if (!phone || (this.layoutMode || "fit") !== "fit") return;
       const identity = shown.find(column => column.identity);
       // If the reader hid the declared identity, preserve the shared fitter's last visible column and its scrolling floor.
@@ -42,8 +42,10 @@
       if (column.fixed || column.sized) return columnWidth(column, column.width);
       const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
       const header = column.headWrapNeed || 0;
-      const floor = Math.max(level === undefined ? need : content, header);
-      let width = Math.max(floor, level === undefined ? column.pref || 0 : 0);
+      // Disclosed text can give up a modest share before the grid resorts to sideways scrolling.
+      let width = Math.max(level === undefined ? need : content, header, level === undefined ? column.pref || 0 : 0);
+      if (level === 0 && this.desktopHiddenFields && gridLevel(column) && gridTextual(column)) width = Math.max(column.minW, width * .8);
+      if (column === this.desktopDisclosureColumn) width += this.desktopDisclosureWidth;
       if (column.identity && this.host.clientWidth <= 640 && (this.layoutMode || "fit") === "fit") {
         // The identity keeps forty percent before peers move to the context line; small values need no empty allocation.
         const available = this.fitAvailableWidth(), minimum = Math.min(content, available * .4);
@@ -51,9 +53,9 @@
       }
       return Math.ceil(columnWidth(column, width));
     },
-    fitShrink(cols, excess) {
-      // Preferred whitespace yields before content; a caption never yields below two complete lines.
-      const slack = cols.map(column => Math.max(0, column.renderWidth - this.fitSize(column, 1)));
+    fitShrink(cols, excess, level) {
+      // Preferred whitespace yields before content; disclosed layouts may then truncate text before scrolling.
+      const slack = cols.map(column => Math.max(0, column.renderWidth - this.fitSize(column, level)));
       const total = slack.reduce((sum, width) => sum + width, 0), ratio = total ? Math.min(1, excess / total) : 0;
       cols.forEach((column, index) => column.renderWidth -= slack[index] * ratio);
       return Math.max(0, excess - total);
@@ -106,14 +108,25 @@
     fitLayout() {
       const width = this.fitAvailableWidth(), phone = this.host.clientWidth <= 640, shown = FIT.visibleColumns.call(this).filter(column => !column.responsiveHidden);
       if (!width) return;
-      const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone;
+      const compact = !phone && shown.some(c => gridLevel(c) > 1);
+      this.host.classList.toggle("cx-narrow", compact);
+      const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone + compact;
       if (key !== this.fitKey || !this.fitCh) {
         this.fitKey = key; this.fitFont = null;
         for (const column of this.columns) column.need = this.measureGridColumn(column).width;
       }
+      this.desktopDisclosureColumn = null;
       // Base widths depend on content, not on the available width, so responsive policies read stable values.
       for (const column of this.columns) { if (!column.fixed && !column.sized) column.width = this.fitSize(column); }
       this.fitHide(shown, width, phone);
+      const hidden = this.columns.filter(column => !column.hidden && (column.fitHidden || column.responsiveHidden));
+      this.desktopHiddenFields = !phone && hidden.length > 0;
+      if (this.desktopHiddenFields) {
+        this.desktopDisclosureColumn = shown.find(column => !column.fitHidden);
+        this.fitContext.font = this.fitFont[0];
+        const label = fill(plural(this.labels.hiddenColumns, hidden.length, this.lang), { count: numberFormat(this.lang).format(hidden.length) });
+        this.desktopDisclosureWidth = Math.ceil(this.fitContext.measureText(label).width) + 12;
+      }
       // Residual disclosure belongs to the context line and takes no width from the identity.
     },
     measureGridColumn(column) {

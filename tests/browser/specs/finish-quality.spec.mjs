@@ -21,6 +21,13 @@ for (const [rule, html] of Object.entries(fixtures)) {
   });
 }
 
+test("clipped descenders remain a defect even when a label has a tooltip", async ({ page }) => {
+  await page.setContent('<span class="cx-chip-label" title="Category" style="display:block;font:20px/20px sans-serif;height:8px;overflow:hidden">Category</span>');
+  expect((await page.evaluate(inspectFinishQuality)).filter(finding => finding.rule === "text-clipped")).toHaveLength(1);
+  await page.locator(".cx-chip-label").evaluate(element => { element.style.height = "auto"; element.style.lineHeight = "1.4"; });
+  expect(await page.evaluate(inspectFinishQuality)).toEqual([]);
+});
+
 test("finished content, explicit sub-minute precision, ellipsis and internal scroll do not fail", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.setContent(`<style>body{margin:0}</style><main>

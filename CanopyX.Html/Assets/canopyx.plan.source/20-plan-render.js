@@ -52,7 +52,7 @@
             if (!planMilestone(this, task)) element.style.height = Math.max(PLAN_METRICS.actualMinHeight, element._planHeight - PLAN_METRICS.actualBaselineGap) + "px";
           }
           const rect = element.getBoundingClientRect(), start = axis.x(task.tlStart), end = axis.x(planMilestone(this, task) ? task.tlStart : task.tlEnd);
-          if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, bottom: rect.bottom - canvasBox.top });
+          if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, top: rect.top - canvasBox.top, bottom: rect.bottom - canvasBox.top });
           const title = element.querySelector(".cx-cal-ev-title");
           if (title) {
             title.title = task.title; element.classList.remove("cx-plan-label-before");
@@ -67,6 +67,26 @@
           planBaselineTemplate(element, lane, axis, from, to, text);
           // Baselines are also spoken on the actual task button rather than adding a non-cell to the ARIA grid.
           element._planName ||= element.getAttribute("aria-label"); element.setAttribute("aria-label", element._planName + "; " + text);
+        }
+      }
+      // Outside labels share the painted lane with other tasks. Keep a colliding short-bar label inside its own bar;
+      // the existing title/accessible name retains the complete text. Milestone labels remain obstacles, not casualties.
+      for (const lane of this.tlLanes.values()) {
+        const rows = new Map();
+        for (const element of lane.querySelectorAll(".cx-plan-task")) {
+          const key = element.style.top;
+          if (!rows.has(key)) rows.set(key, []);
+          rows.get(key).push({ element, title: element.querySelector(".cx-cal-ev-title"), box: element.getBoundingClientRect() });
+        }
+        const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        for (const items of rows.values()) {
+          items.sort((a, b) => a.box.left - b.box.left);
+          for (const [index, item] of items.entries()) {
+            if (!item.title || !item.element.classList.contains("cx-plan-label-outside") || item.element.classList.contains("cx-plan-milestone")) continue;
+            const box = item.title.getBoundingClientRect();
+            if ([items[index - 1], items[index + 1]].some(other => other && (overlaps(box, other.box) || other.title && overlaps(box, other.title.getBoundingClientRect()))))
+              item.element.classList.remove("cx-plan-label-outside", "cx-plan-label-before");
+          }
         }
       }
       const svg = planLinksTemplate(axis, this.tlCanvas.style.height);

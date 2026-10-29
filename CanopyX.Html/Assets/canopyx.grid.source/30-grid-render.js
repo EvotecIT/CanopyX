@@ -79,6 +79,7 @@
           // An earlier frame may reveal a hidden host before its positive width is observed.
           // Keep it transparent until fitting can use that measurement instead of the cached zero.
           if (this.fitContentWidth === 0) return;
+          if (host.classList.contains("cx-grid-awaiting")) grid.style.setProperty("--cx-empty-head-height", Math.max(this.phone ? 44 : 0, this.head.offsetHeight + grid.offsetHeight - grid.clientHeight) + "px");
           style.setProperty("--cx-min-h", this.minimumGridHeight() + "px");
           this.fitHeight();
           if (!(this.sized = this.hasGridSize())) return;
@@ -114,7 +115,7 @@
             parseFloat(css.paddingTop) + parseFloat(css.paddingBottom);
         }
         return height + block;
-      }, this.rowH * Math.min(4, Math.max(1, this.rowCount())) + 2);
+      }, Math.max(this.head.offsetHeight, this.rowH * Math.min(4, Math.max(1, this.rowCount()))) + 2);
     },
 
     setLogicalTop(top) {
@@ -198,7 +199,7 @@
         this.paintSlot(slot, row.h, column, this.columnIndex[i], row);
         if(!column.render&&!slot.text.data&&!(isCellObject(cell)&&cellValue(cell)==null&&cell.text==="")){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
         else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
-        if(this.phone||slot.hiddenFields||slot.phonePrimary)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
+        if(this.phone||this.desktopHiddenFields||slot.hiddenFields||slot.phonePrimary)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
       }
       this.paintGridHighlights(element, row);
       if(row.status)this.paintGridSkeleton(element,row);

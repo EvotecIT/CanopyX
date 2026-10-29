@@ -156,7 +156,7 @@ test("board uses the existing facet panel to update its accepted query", async (
   await page.goto(exampleUrl("board.html"));
   await page.waitForFunction(() => document.querySelector("[data-canopyx-host]")?.canopyx?.ready);
   await page.evaluate(async () => { const api = document.querySelector("[data-canopyx-host]").canopyx; await api.ready; });
-  const facet = page.getByRole("complementary", { name: "Filter by" });
+  const facet = page.getByRole("complementary", { name: "Refine" });
   await facet.getByRole("checkbox", { name: /Platform/ }).check();
   await expect.poll(() => page.locator(".cx-board-card").count()).toBeGreaterThan(0);
   await expect.poll(() => page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().filters))

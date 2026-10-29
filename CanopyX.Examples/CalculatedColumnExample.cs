@@ -9,14 +9,14 @@ internal static class CalculatedColumnExample {
             CalculatedColumnsEditable = true, Reporting = new CanopyGridReporting { HeaderFilters = true },
             Presentation = CanopyGridPresentation.Paged, PageLength = 20
         };
-        view.Columns.Add(new CanopyColumn("item", "Item") { Sortable = true, AlwaysVisible = true });
-        view.Columns.Add(new CanopyColumn("quantity", "Quantity") { Kind = CanopyColumnKind.Number, Sortable = true });
-        view.Columns.Add(new CanopyColumn("price", "Unit price") { Kind = CanopyColumnKind.Number, Sortable = true, Format = CanopyGridNumberFormat.Fixed(2) });
-        view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number, Sortable = true, AlwaysVisible = true,
+        view.Columns.Add(new CanopyColumn("item", "Item") { Sortable = true, AlwaysVisible = true, Sizing = CanopyColumnSizing.Flex(minimum: 140) });
+        view.Columns.Add(new CanopyColumn("quantity", "Quantity") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Content(minimum: 140), Sortable = true });
+        view.Columns.Add(new CanopyColumn("price", "Unit price") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Content(minimum: 140), Sortable = true, Format = CanopyGridNumberFormat.Fixed(2) });
+        view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Content(minimum: 140), Sortable = true, AlwaysVisible = true,
             Calculation = CanopyCalculation.Parse("[quantity] * [price]"), Format = CanopyGridNumberFormat.Fixed(2) });
-        view.Columns.Add(new CanopyColumn("tax", "Tax (20%)") { Kind = CanopyColumnKind.Number, Sortable = true,
+        view.Columns.Add(new CanopyColumn("tax", "Tax (20%)") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Content(minimum: 140), Sortable = true,
             Calculation = CanopyCalculation.Parse("ROUND([amount] * 0.2, 2)"), Format = CanopyGridNumberFormat.Fixed(2) });
-        view.Columns.Add(new CanopyColumn("perUnit", "Amount per unit") { Kind = CanopyColumnKind.Number, Sortable = true,
+        view.Columns.Add(new CanopyColumn("perUnit", "Amount per unit") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Content(minimum: 140), Sortable = true,
             Calculation = CanopyCalculation.Parse("[amount] / [quantity]"), Format = CanopyGridNumberFormat.Fixed(2) });
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("revenue", "amount", CanopyGridAggregateOperation.Sum, "Revenue"));
         var names = new[] { "Desk", "Chair", "Lamp", "Shelf", "Monitor", "Cable" };

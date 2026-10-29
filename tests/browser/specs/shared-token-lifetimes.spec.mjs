@@ -46,7 +46,7 @@ test('persistent facets follow live host mode, accent and density on desktop and
   await page.setViewportSize({ width: 1280, height: 900 });
   const view = grid(); view.facets = { columns: ['state'] };
   await mount(page, 'createDataGrid', view, { hfx: true, scope: 'data-hfx-style="evotec" data-hfx-mode="dark" data-hfx-density="compact"' });
-  const panel = page.getByRole('complementary', { name: 'Filter by' });
+  const panel = page.getByRole('complementary', { name: 'Refine' });
   await expect(panel).toHaveCSS('background-color', DARK.surface);
   await page.locator('#scope').evaluate(el => { el.dataset.hfxMode = 'light'; el.dataset.hfxDensity = 'comfortable'; });
   await expect(panel).toHaveCSS('background-color', LIGHT.surface); await expect(panel).toHaveCSS('color', LIGHT.text);
@@ -59,14 +59,14 @@ test('persistent facets follow live host mode, accent and density on desktop and
   await page.locator('#scope').evaluate(el => { el.dataset.hfxStyle = 'contrast'; el.dataset.hfxMode = 'dark'; el.dataset.hfxDensity = 'compact'; });
   await expect(panel).toHaveCSS('background-color', 'rgb(10, 10, 10)');
   await page.setViewportSize({ width: 390, height: 844 }); await expect(panel).toBeHidden();
-  await page.locator('.cx-facets-open').click(); const sheet = page.getByRole('dialog', { name: 'Filter by' });
+  await page.locator('.cx-facets-open').click(); const sheet = page.getByRole('dialog', { name: 'Refine' });
   await expect(sheet).toBeVisible(); await expect(panel).toHaveCSS('background-color', 'rgb(10, 10, 10)');
   await page.locator('#scope').evaluate(el => { el.dataset.hfxStyle = 'evotec'; el.dataset.hfxMode = 'light'; el.dataset.hfxDensity = 'comfortable'; });
   await expect(sheet).toHaveCSS('background-color', LIGHT.surface); await expect(panel).toHaveCSS('background-color', LIGHT.surface);
   await expect(sheet).toHaveAttribute('data-hfx-density', 'comfortable');
   await page.keyboard.press('Escape'); await expect(sheet).toHaveCount(0);
   expect(await page.locator('.cx-facets').evaluate(el => el.style.getPropertyValue('--hfx-color-surface'))).toBe('');
-  await page.locator('.cx-facets-open').click(); await expect(page.getByRole('dialog', { name: 'Filter by' })).toHaveCSS('background-color', LIGHT.surface);
+  await page.locator('.cx-facets-open').click(); await expect(page.getByRole('dialog', { name: 'Refine' })).toHaveCSS('background-color', LIGHT.surface);
 });
 
 test('density changes remeasure fitting like a freshly mounted grid at the same width and query', async ({ page }) => {
@@ -123,7 +123,7 @@ for (const trigger of ['data-theme', 'data-cx-theme', 'data-hfx-mode', 'data-bs-
     await page.locator('#scope').evaluate((el, trigger) => el.setAttribute(trigger, 'light'), trigger);
     await expect(host).toHaveCSS('color-scheme', 'light'); await expect(panel).toHaveCSS('background-color', LIGHT.surface);
     await page.setViewportSize({ width: 390, height: 844 }); await expect(panel).toBeHidden(); await page.locator('.cx-facets-open').click();
-    const sheet = page.getByRole('dialog', { name: 'Filter by' }); await expect(sheet).toHaveCSS('background-color', LIGHT.surface);
+    const sheet = page.getByRole('dialog', { name: 'Refine' }); await expect(sheet).toHaveCSS('background-color', LIGHT.surface);
     await page.locator('#scope').evaluate((el, trigger) => el.setAttribute(trigger, 'dark'), trigger);
     await expect(host).toHaveCSS('color-scheme', 'dark'); await expect(panel).toHaveCSS('background-color', DARK.surface); await expect(sheet).toHaveCSS('background-color', DARK.surface);
     expect(await host.evaluate(el => el.style.getPropertyValue('--hfx-color-surface'))).toBe('');

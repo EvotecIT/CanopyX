@@ -742,7 +742,8 @@ export interface GridExportOptions {
   scope: GridExportRequest["scope"];
   /** Include declared detail payloads; false omits them. Defaults to the detail definition's print policy. */
   includeDetails?: boolean;
-  /** Reporting bridge only: capture the active complete pivot table. Requires filtered scope; defaults to record capture. */
+  /** Reporting bridge only: capture the active complete pivot table. Requires filtered scope; defaults to record capture.
+   * Available for capture, print and host delivery; pivot XLSX/PDF exportAs is not supported yet. */
   pivot?: boolean;
   /** Defaults to visible exportable columns in their current order. Explicit non-exportable columns are rejected. */
   columns?: string[];

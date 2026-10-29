@@ -95,3 +95,11 @@
 
 .cx-data-grid .cx-grid-filter-form,.cx-data-grid .cx-grid-filter-form > div,.cx-data-grid .cx-grid-filter { display:flex;flex-direction:column;gap:var(--hfx-space-2);width:100%;min-width:0; }
 .cx-data-grid .cx-grid-filter { border:var(--hfx-border-width) solid var(--hfx-color-border);padding:var(--hfx-space-2); }
+
+.cx-reporting-text [data-hfx-part="footer"] > button { min-inline-size:calc(var(--hfx-space-6)*3); }
+.cx-reporting-text[data-phone="true"] [data-hfx-part="footer"] > button { flex:1; }
+
+@media (max-height:360px) {
+  .cx-reporting-text [data-hfx-part="header"] { min-block-size:0;padding-block:var(--hfx-space-2); }
+  .cx-reporting-text [data-hfx-part="body"],.cx-reporting-text [data-hfx-part="footer"] { padding-block:var(--hfx-space-2); }
+}

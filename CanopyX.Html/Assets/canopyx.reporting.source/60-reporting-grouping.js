@@ -4,7 +4,7 @@
   // with a grid's first page; a page request waits for them, so the first rows already show headings and expanders.
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
     gridGroupHeading: "{column}: {value} ({count} records)", gridGroupMissing: "Missing value",
-    gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Query totals",
+    gridGroupExpand: "Expand group", gridGroupCollapse: "Collapse group", gridSummary: "Grand total",
     gridGroupOrder: "Group order is fixed by this report", gridGroupBy: "Group by this column", gridUngroup: "Stop grouping by this column",
     gridGroupDrop: "Drag a column header here to group rows", gridExpandAll: "Expand all", gridCollapseAll: "Collapse all",
     gridExpandLevel: "Expand level {level}", gridCollapseLevel: "Collapse level {level}", gridGroupMove: "Alt+Left and Alt+Right move this level",

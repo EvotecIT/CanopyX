@@ -190,8 +190,17 @@ Optional reporting parts in the same runtime reuse `GRID_REPORTING.pivotDefiniti
 definition validation and normalization. It returns the frozen definition. Intent envelopes handle omission and
 `false` before calling this hook; saved-state readers continue to validate the complete state through `readGridState`.
 
-Embedded pivots honor their host's height. When controls would squeeze out the table, the pivot region scrolls and
-keeps space for its header, a data row and its total; activation reveals that first row without expanding the host.
+Embedded pivots honor their host's height. On phones, the toolbar's **Pivot settings** action opens the shared editor;
+the configuration chips are hidden so data rows retain the remaining height. **Show records** in the editor returns to the flat view. All column groups stay in a horizontal
+scroll area, with frozen row labels. The shared **Choose column** menu in the row-field corner jumps to a column
+group without hiding the other groups. The corner names the row fields, column-group headings span their measures,
+and each measure names its aggregation. Static tables and print use the same grouped header structure. Print adds
+the view caption and axis/value configuration, and repeats table headers across pages.
+
+Pivot, display-mode and calculated-column forms use the shared Cancel / Apply footer. Cancel leaves the accepted
+view unchanged. Aggregate display text uses the declared aggregate or source-column format, with two decimals by
+default and integer counts; percent modes use two decimals without a space before `%`. Dialogs, grid totals, pivot
+cells, static tables and exported display text use that precision consistently.
 
 `await grid.setState(savedState)` requests the saved pivot or flat mode in the same query restore. Axis and value
 changes are validated before requesting their result; switching back to records fetches the flat page and its summary.

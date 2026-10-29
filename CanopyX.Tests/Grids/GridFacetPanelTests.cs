@@ -20,6 +20,9 @@ public sealed class GridFacetPanelTests {
         Assert.Equal("{\"columns\":[{\"column\":\"site\",\"kind\":\"list\",\"label\":\"Where\",\"limit\":5,\"sort\":\"value\",\"collapsed\":true},{\"column\":\"load\",\"bins\":10}]," +
             "\"position\":\"top\",\"open\":false,\"collapsible\":false,\"width\":300,\"label\":\"Refine\"}", JsonNode.Parse(view.ToJson())!["facets"]!.ToJsonString());
         ProtocolSchema.AssertValid(view.ToJson(), "a grid with a facet panel");
+        view.FacetPanel.Position = CanopyFacetPosition.Toolbar;
+        Assert.Equal("toolbar", JsonNode.Parse(view.ToJson())!["facets"]!["position"]!.GetValue<string>());
+        ProtocolSchema.AssertValid(view.ToJson(), "a grid with toolbar facets");
     }
 
     [Fact]

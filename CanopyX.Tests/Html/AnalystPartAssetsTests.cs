@@ -8,8 +8,8 @@ public sealed class AnalystPartAssetsTests {
     [Theory]
     [InlineData("buckets", 2048)]
     [InlineData("values", 2560)]
-    // Shared role expressions and overlay lifecycle add 74 compressed bytes; allow one 128-byte increment.
-    [InlineData("pivot", 12416)]
+    // Grouped headers, the lazy shared column menu, frozen phone labels and print context stay in the optional pivot part.
+    [InlineData("pivot", 13184)]
     [InlineData("calculations", 7168)]
     public void AnalystEngine_HasAnIndependentCompressedBudget(string name, int budget) {
         var part = CanopyHtmlAssets.GetPart(name);

@@ -3,6 +3,9 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     private static CanopyLabels WithPolishAnalysis(CanopyLabels labels) {
+        labels.GridPivotFieldOptions = "Opcje pola";
+        labels.GridCalculationResultType = "Typ wyniku";
+        labels.GridCalculationDivideZero = "Dzielenie przez zero";
         labels.GridCalculationAdd = "Dodaj kolumnę obliczeniową";
         labels.GridCalculationTitle = "Nazwa kolumny";
         labels.GridCalculationId = "Identyfikator kolumny";
@@ -17,25 +20,25 @@ public sealed partial class CanopyLabels {
         labels.GridPivotColumns = "Grupy kolumn";
         labels.GridPivotValues = "Wartości";
         labels.GridPivotFlat = "Pokaż rekordy";
-        labels.GridPivotConfigure = "Konfiguruj tabelę przestawną";
+        labels.GridPivotConfigure = "Ustawienia tabeli przestawnej";
         labels.GridPivotOther = "Pozostałe";
         labels.GridPivotLimited = "Widoczne ścieżki kolumn: {shown} z {total}; reszta w grupie Pozostałe. Sumy częściowe obejmują wszystkie pasujące elementy podrzędne.";
         labels.GridPivotColumn = "Wybierz kolumnę";
         labels.GridPivotTopN = "Najwyższe kolumny";
-        labels.GridPivotSort = "Sortuj wiersze według sumy";
+        labels.GridPivotSort = "Kolejność wierszy";
         labels.GridPivotDrill = "Pokaż rekordy dla: {row}, {column}";
         labels.GridPivotReturn = "Wróć do tabeli przestawnej";
         labels.GridPivotInvalid = "Wybierz poprawne osie i co najmniej jedną wartość.";
         labels.GridShowAs = "Pokaż wartości jako";
         labels.GridShowAsValue = "Wartość";
-        labels.GridShowAsPercentGrandTotal = "jako % całości";
-        labels.GridShowAsPercentParent = "jako % grupy nadrzędnej";
-        labels.GridShowAsPercentColumn = "jako % kolumny";
-        labels.GridShowAsPercentRow = "jako % wiersza";
-        labels.GridShowAsRunningTotal = "jako suma narastająca";
-        labels.GridShowAsRank = "jako pozycja";
-        labels.GridShowAsDifference = "jako różnica od poprzedniej";
-        labels.GridShowAsPercentChange = "jako zmiana % od poprzedniej";
+        labels.GridShowAsPercentGrandTotal = "% sumy całkowitej";
+        labels.GridShowAsPercentParent = "% sumy grupy nadrzędnej";
+        labels.GridShowAsPercentColumn = "% sumy kolumny";
+        labels.GridShowAsPercentRow = "% sumy wiersza";
+        labels.GridShowAsRunningTotal = "Suma narastająca";
+        labels.GridShowAsRank = "Pozycja";
+        labels.GridShowAsDifference = "Różnica względem poprzedniej wartości";
+        labels.GridShowAsPercentChange = "% zmiany względem poprzedniej wartości";
         labels.GridBucket = "Przedział";
         labels.GridBucketNone = "Dokładne wartości";
         labels.GridBucketDay = "Dzień";

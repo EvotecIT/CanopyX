@@ -213,7 +213,7 @@ for (const depth of [1, 2]) test(`phone group totals use cell navigation and pre
   await page.keyboard.press("Enter");
   const dialog = page.locator("dialog.cx-reporting-text");
   await expect(dialog).toBeVisible(); await expect(dialog.locator("h4")).toContainText("Region:");
-  await expect(dialog.locator("pre")).toHaveText("Order\nOrders: 12\nAmount\nTotal amount: 6,568 · Average amount: 547.333");
+  await expect(dialog.locator("pre")).toHaveText("Order\nOrders · Count: 12\nAmount\nTotal amount · Sum: 6,568.00 · Average amount · Avg: 547.33");
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(totals).toBeFocused();
   await page.keyboard.press("ArrowRight");
   const plain = heading.getByRole("gridcell").nth(1); await expect(plain).toBeFocused();
@@ -233,12 +233,12 @@ for (const depth of [1, 2]) test(`phone group totals use cell navigation and pre
   const visibleSummary = page.locator(".cx-summary-row .cx-aggregate-button");
   await expect(visibleSummary).toBeFocused();
   await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Order");
-  await expect(dialog.locator("pre")).toHaveText("Orders: 48");
+  await expect(dialog.locator("pre")).toHaveText("Orders · Count: 48");
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(visibleSummary).toBeFocused();
   await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
   const summary = page.locator(".cx-summary-row .cx-hidden-aggregates");
   await expect(summary).toBeFocused();
-  await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Query totals");
+  await page.keyboard.press("Enter"); await expect(dialog.locator("h4")).toHaveText("Grand total");
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(summary).toBeFocused();
 });
 

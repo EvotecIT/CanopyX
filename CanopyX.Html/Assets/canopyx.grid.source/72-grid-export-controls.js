@@ -21,7 +21,8 @@
     exportAs(format,options){return exportAs(this,format,options);},
     exportFromMenu(action) { return loadExportPart().then(() => EXPORT_IMPL.exportFromMenu.call(this, action)); },
     syncPrintAvailability() {
-      if (this.printButton) this.printButton.disabled = !!this.exportControl?.panel?.cxExportBusy?.() || !this.defaultExportColumns().length;
+      for (const button of [this.printButton, this.exportPrintButton]) if (button)
+        button.disabled = !!this.exportControl?.panel?.cxExportBusy?.() || !this.defaultExportColumns().length;
     },
     print(options) {
       const { onProgress, maxRows = 1000, timeoutMs, ...capture } = options || {};
@@ -72,7 +73,7 @@
       const print = this.printButton = gridButton(this.labels.gridPrint, () => Promise.resolve().then(() => this.exportControl ?
         this.exportFromMenu((options, onProgress) => this.print({ ...options, onProgress })) : this.print({ scope: "filtered" }))
         .catch(error => this.emit("error", { error })));
-      print.classList.add("cx-grid-print"); this.toolbar.appendChild(print);
+      print.classList.add("cx-grid-print"); print.hidden = this.tools.export !== false; this.toolbar.appendChild(print);
       if (this.tools.export !== false) this.exportControl = this.controlPanel(this.labels.gridExport, "cx-grid-export", panel => this.renderGridExport(panel));
     },
     // Replaced by the export part's menu once it is installed.

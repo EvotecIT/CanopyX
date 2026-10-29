@@ -79,9 +79,11 @@ as one cell ("Overall ⋮"), and so does an active header filter.
       reads wrong;
    2. optional columns hide (on phones, at 640 pixels and below, normal columns hide too); hidden columns stay in the
       record drawer, exports and the phone "+N" button, and the Columns menu marks them "Hidden at this width";
-   3. only then the grid scrolls horizontally inside itself, with pinned columns in place.
+   3. when fields are disclosed, normal text columns can narrow by up to one fifth, with clipped text available in its tooltip;
+      essential, fixed and reader-sized columns keep their widths;
+   4. only then the grid scrolls horizontally inside itself, with pinned columns in place.
 
-   On phones the first shown column also holds the "+N" button that opens the hidden fields, so fitting reserves the
+   The first shown column holds a "+N columns" button that opens the record's hidden fields. On phones, fitting reserves the
    button's width beside that column's content (hiding another column when that is what makes room): with no width to
    spare, the identity column still shows its values in full next to the button.
 
