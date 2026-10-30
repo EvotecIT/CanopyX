@@ -48,6 +48,8 @@
   }
   function cardMinHeight(view) {
     const count = view.rowProjection ? view.rowProjection.rowCount() : Math.max(0, view.rowBounds().last - view.pageOffset + 1);
+    // Intrinsic empty fitting owns this minimum until there are cards to size again.
+    if (!count && view.fitEmpty) return;
     const bands = Math.ceil(count / view.cardGeometry.lanes), chrome = [...view.host.children].reduce((height, child) => height + (child === view.grid ? 0 : child.offsetHeight), 2);
     view.host.style.setProperty("--cx-min-h", chrome + Math.min(2, Math.max(1, bands)) * view.cardGeometry.pitch + CARD_GUTTER + "px");
   }

@@ -27,6 +27,8 @@
     if (!this.pivotPanel || this.pivotPanel.hidden || !pivotIntent(this)?.active || !this.pivotResult || this.destroyed) return;
     this.updateGridPhone();
     const state = pivotIntent(this), result = this.pivotResult, phone = this.host.clientWidth <= 640, active = document.activeElement;
+    const editorExit = this.reportingText?.querySelector(".cx-pivot-editor-flat");
+    if (editorExit) editorExit.hidden = !state.active || !phone;
     const hadFocus = this.pivotPanel.contains(active), focus = hadFocus ? active.dataset.pivotFocus : null;
     const columns = pivotVisible(result.columns, state.collapsedColumns, true), rows = pivotVisible(result.rows, state.collapsedRows, false), totalColumn = result.columns[0];
     const aggregates = state.values.map(id => this.view.reporting.aggregates.find(value => value.id === id));

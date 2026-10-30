@@ -39,8 +39,9 @@
   Object.assign(DataGrid.prototype, {
     startColumnGroups() {
       if (this.columnGroupModel || this.destroyed) return;
-      if (!this.view.columnGroups?.length) { this.columnGroupModel = { roots: [], byId: new Map(), owner: new Map(), depth: 0 }; return; }
+      if (!(this.view.columnBands ?? this.view.columnGroups)?.length) { this.columnGroupModel = { roots: [], byId: new Map(), owner: new Map(), depth: 0 }; return; }
       const model = this.columnGroupModel = cgRead(this.view), byId = new Map(this.columns.map(column => [column.id, column]));
+      if (this.view.columnBands !== undefined) { cgInstallPresentation(this); return; }
       // A restored view keeps the reader's pins; a fresh one starts with the groups' declared pins.
       if (!this.initialState) for (const root of model.roots) if (root.pinned !== undefined) for (const id of root.leaves) byId.get(id).pin = root.pinned || "none";
       // A grouped column's drawer section is its group's title, or the titles down to it when a title repeats.
@@ -73,15 +74,27 @@
       const shown = new Set((this.cols || []).map(column => column.id)), order = this.columns.map(column => column.id);
       const describe = node => {
         const columns = order.filter(id => node.leaves.includes(id));
+        const pins = new Set(this.columns.filter(column => columns.includes(column.id)).map(column => column.pin || "none"));
         return Object.freeze({ id: node.id, title: node.title, columns: Object.freeze(columns), visibleColumns: Object.freeze(columns.filter(id => shown.has(id))),
-          pin: this.columns.find(column => column.id === columns[0]).pin || "none",
+          pin: pins.size > 1 ? "mixed" : [...pins][0],
           groups: Object.freeze(cgSiblings(this, node).filter(id => model.byId.has(id)).map(id => describe(model.byId.get(id)))) });
       };
       return Object.freeze(cgSiblings(this, null).filter(id => model.byId.has(id)).map(id => describe(model.byId.get(id))));
     },
 
-    /** Shows or hides every column of a group; at least one column of the grid stays visible. */
+    /** The actual displayed header spans, ordered by level then visible column position. */
+    getColumnBands() {
+      return Object.freeze((this.groupCells || []).filter(cell => cell.dataset.cxGroup).map(cell => {
+        const { first, last } = cell._cxSpan;
+        return Object.freeze({ id: cell.dataset.cxGroup, title: cell.getAttribute("aria-label"), level: Number(cell.dataset.cxLevel),
+          columnIndex: first + 1, columnSpan: last - first + 1, pin: cell.dataset.cxPin || "none",
+          columns: Object.freeze(this.cols.slice(first, last + 1).map(column => column.id)) });
+      }));
+    },
+
+    /** Shows or hides every column of a semantic group; presentation bands have no collective action. */
     setColumnGroupVisible(id, visible) {
+      if (this.view.columnBands !== undefined) throw new Error("CanopyX: presentation bands do not change column visibility; use setColumnVisible.");
       const node = this.columnGroupModel?.byId.get(id);
       if (!node || typeof visible !== "boolean" || this.destroyed) throw new Error("CanopyX: visibility needs a declared column group and a boolean.");
       const members = this.columns.filter(column => node.leaves.includes(column.id));

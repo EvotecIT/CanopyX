@@ -13,13 +13,15 @@ public static partial class CanopyStaticHtml {
         ref int remaining, out bool complete) {
         complete = true;
         if (detail is CanopyGridRowsDetail rows && definition.View is CanopyDataGridView grid) {
+            var calculated = grid.CalculateRows(rows.Rows).ToList();
             var columns = grid.Columns.Where(column => !column.Hidden).ToArray();
             var text = new StringBuilder();
             BeginDetail(html, 1, columnCount, styles);
             BeginDetailTable(html, definition.Label, styles, text);
             html.Append("<thead>"); AppendGridHeader(html, grid, columns, styles, text); html.Append("</thead><tbody>");
-            var shown = AppendGridRecords(html, grid, rows.Rows, columns, settings, styles, ref remaining, null, text, out complete);
+            var shown = AppendGridRecords(html, grid, calculated, columns, settings, styles, ref remaining, null, text, out complete);
             html.Append("</tbody>");
+            AppendCalculationErrors(html, columns, calculated.Take(shown), styles);
             AppendFormatLegend(html, grid, columns.Length, styles, settings.Culture);
             html.Append("</table></td></tr>");
             if (shown < rows.Rows.Count) AppendOverflow(html, shown, rows.Rows.Count, columnCount, settings, styles, labels);

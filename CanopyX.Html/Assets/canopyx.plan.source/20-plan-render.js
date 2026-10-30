@@ -7,8 +7,8 @@
     planConflict: "Conflict", planActual: "Actual", planPending: "Proposal awaiting the host", planBaselineLabel: "Baseline", planDependencies: "Dependencies"
   };
   const PLAN_EVENT = DataGrid.prototype.calEventElement;
-  DataGrid.prototype.calEventElement = function (event, kind) {
-    const element = PLAN_EVENT.call(this, event, kind);
+  DataGrid.prototype.calEventElement = function (event, kind, day) {
+    const element = PLAN_EVENT.call(this, event, kind, day);
     if (this.view.plan && kind === "lane") {
       this.planDecorate(element, event);
       this.planStart();
@@ -49,12 +49,13 @@
           const spec = this.view.plan;
           if (spec.baselineStart) {
             element._planHeight ??= Number.parseFloat(element.style.height);
-            if (!planMilestone(this, task)) element.style.height = Math.max(PLAN_METRICS.actualMinHeight, element._planHeight - PLAN_METRICS.actualBaselineGap) + "px";
+            element.style.height = Math.max(PLAN_METRICS.actualMinHeight, element._planHeight - PLAN_METRICS.actualBaselineGap) + "px";
           }
           const rect = element.getBoundingClientRect(), start = axis.x(task.tlStart), end = axis.x(planMilestone(this, task) ? task.tlStart : task.tlEnd);
-          if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, top: rect.top - canvasBox.top, bottom: rect.bottom - canvasBox.top });
+          if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, top: rect.top - canvasBox.top, bottom: rect.bottom - canvasBox.top, element });
           const title = element.querySelector(".cx-cal-ev-title");
           if (title) {
+            title.style.maxInlineSize = "";
             title.title = task.title; element.classList.remove("cx-plan-label-before");
             const outside=title.scrollWidth>element.clientWidth-12||planMilestone(this,task);element.classList.toggle("cx-plan-label-outside",outside);
             const box=title.getBoundingClientRect(),x=axis.x(Date.now()),today=canvasBox.left+(this.calRtl?axis.total-x:x);
@@ -88,6 +89,36 @@
               item.element.classList.remove("cx-plan-label-outside", "cx-plan-label-before");
           }
         }
+        // A milestone has no bar to hold a clipped title. Use the clearer side and cap its label at the next obstacle.
+        const tasks = [...lane.querySelectorAll(".cx-plan-task")];
+        for (const element of tasks.filter(task => task.classList.contains("cx-plan-milestone"))) {
+          const title = element.querySelector(".cx-cal-ev-title"); if (!title) continue;
+          const box = element.getBoundingClientRect(), label = title.getBoundingClientRect();
+          const obstacles = tasks.filter(task => task !== element).flatMap(task => [task, task.querySelector(".cx-cal-ev-title")]).filter(Boolean)
+            .map(task => task.getBoundingClientRect()).filter(other => other.top < label.bottom && other.bottom > label.top);
+          const rtl = this.calRtl, currentBefore = element.classList.contains("cx-plan-label-before");
+          const gap = Math.max(0, currentBefore !== rtl ? box.left - label.right : label.left - box.right);
+          // Leave the return stem and arrowhead outside the final label, including a width-capped label.
+          const successors = network.nodes.get(element._calEvent.key)?.after || [];
+          const needsClearance = side => successors.some(edge => {
+            const target = positions.get(edge.to.task.key);
+            if (!target) return false;
+            const x = canvasBox.left + (this.calRtl ? axis.total - target.start : target.start);
+            return side === "after" ? x > box.right : x < box.left;
+          });
+          const after = Math.max(0, Math.min(canvasBox.right, ...obstacles.filter(other => other.right > box.right + gap).map(other => other.left)) - box.right - gap - (needsClearance("after") ? PLAN_METRICS.dependencyLead + 2 : 0));
+          const before = Math.max(0, box.left - gap - Math.max(canvasBox.left, ...obstacles.filter(other => other.left < box.left - gap).map(other => other.right)) - (needsClearance("before") ? PLAN_METRICS.dependencyLead + 2 : 0));
+          const currentRoom = currentBefore !== rtl ? before : after;
+          const alternateRoom = currentBefore !== rtl ? after : before;
+          const flip = currentRoom < label.width && alternateRoom > currentRoom;
+          if (flip) element.classList.toggle("cx-plan-label-before");
+          title.style.maxInlineSize = Math.min(parseFloat(getComputedStyle(title).maxInlineSize) || 160, flip ? alternateRoom : currentRoom) + "px";
+        }
+      }
+      // The links use final label bounds: a short stacked milestone may have text across its centerline.
+      for (const position of positions.values()) {
+        const title = position.element.querySelector(".cx-cal-ev-title"), rect = title?.getBoundingClientRect();
+        if (rect?.width) position.label = { left: rect.left - canvasBox.left, right: rect.right - canvasBox.left, top: rect.top - canvasBox.top, bottom: rect.bottom - canvasBox.top };
       }
       const svg = planLinksTemplate(axis, this.tlCanvas.style.height);
       for (const edge of network.edges) {
@@ -99,7 +130,11 @@
       }
       this.planLinks?.remove(); this.planLinks = svg; this.tlCanvas.appendChild(svg);
       this.tlRoot.dataset.cxPlanComplete = String(network.complete);
-      if(!this.calPhone)this.planFitHeight((this.tlTree.tops[this.tlTree.rows.length]||0)+this.tlHead.offsetHeight+2);
+      if(!this.calPhone) {
+        const padding = parseFloat(getComputedStyle(this.tlCanvas).paddingBottom) || 0;
+        const scrollbar = this.tlMain.offsetHeight - this.tlMain.clientHeight;
+        this.planFitHeight((this.tlTree.tops[this.tlTree.rows.length]||0)+this.tlHead.offsetHeight+padding+scrollbar+2);
+      }
       this.tlHead.querySelector(".cx-plan-today")?.remove();
       const now = Date.now();
       if (this.cal.now && now >= axis.from && now < axis.to) {

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { repo } from "./support.mjs";
 import { definition, open, api } from "./grid-grouping-fixtures.mjs";
+import { capture } from "./calendar-support.mjs";
 
 const assets = path.join(repo, "CanopyX.Html/Assets");
 const parts = () => ["buckets", "values", "pivot"].map(name => fs.readFileSync(path.join(assets, "canopyx-" + name + ".js"), "utf8")).join("\n") +
@@ -13,6 +14,48 @@ function pivotView() {
   view.reporting.pivot = { rows: [{ column: "region", direction: "asc" }], columns: [{ column: "status", direction: "asc" }], values: ["total", "average", "orders"] };
   return view;
 }
+
+for (const hostWidth of [500, 1100]) test(`pivot settings keep one exit action for a ${hostWidth}px host on a wide page`, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, pivotView(), parts());
+  await page.locator("[data-canopyx-host]").evaluate((host, width) => host.style.width = width + "px", hostWidth);
+  await expect(page.locator(".cx-pivot")).toHaveAttribute("data-phone", String(hostWidth <= 640));
+  if (hostWidth <= 640) await page.getByRole("button", { name: "Pivot settings", exact: true }).click();
+  else await page.locator(".cx-pivot-toggle").click();
+  const editorExit = page.getByRole("dialog").getByRole("button", { name: "Show records", exact: true });
+  if (hostWidth <= 640) await expect(editorExit).toBeVisible();
+  else await expect(editorExit).toBeHidden();
+  if (process.env.CANOPYX_EVIDENCE) {
+    await page.evaluate(() => document.getAnimations().forEach(animation => animation.finish()));
+    if (hostWidth <= 640) await editorExit.scrollIntoViewIfNeeded();
+    await capture(page, `pivot-settings-host-${hostWidth}`);
+  }
+  if (hostWidth > 640) await page.keyboard.press("Escape");
+  const exit = hostWidth <= 640 ? editorExit : page.locator(".cx-pivot-zones").getByRole("button", { name: "Show records", exact: true });
+  await exit.click();
+  await expect(page.locator(".cx-pivot-table")).toBeHidden();
+  await expect(page.locator(".cx-grid")).toBeVisible();
+});
+
+test("an open pivot editor follows host width across both responsive boundaries", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, pivotView(), parts());
+  const host = page.locator("[data-canopyx-host]");
+  await host.evaluate(host => host.style.width = "500px");
+  await expect(page.locator(".cx-pivot")).toHaveAttribute("data-phone", "true");
+  await page.getByRole("button", { name: "Pivot settings", exact: true }).click();
+  const editorExit = page.getByRole("dialog").getByRole("button", { name: "Show records", exact: true });
+  await expect(editorExit).toBeVisible();
+  await host.evaluate(host => host.style.width = "1100px");
+  await expect(page.locator(".cx-pivot")).toHaveAttribute("data-phone", "false");
+  await expect(editorExit).toBeHidden();
+  await host.evaluate(host => host.style.width = "500px");
+  await expect(page.locator(".cx-pivot")).toHaveAttribute("data-phone", "true");
+  await expect(editorExit).toBeVisible();
+  await editorExit.click();
+  await expect(page.locator(".cx-grid")).toBeVisible();
+  await expect(page.locator(".cx-pivot-table")).toBeHidden();
+});
 
 test("pivot computes complete-query totals and drills a cell to its exact records", async ({ page }) => {
   const view = pivotView(), errors = []; page.on("pageerror", error => errors.push(error.message));

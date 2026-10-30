@@ -45,6 +45,12 @@ CanopyX is a generic, dependency-free engine for large interactive data views. T
 
 ## Validation
 
+Resolve shared procedure links against `CODEX_HOME` (default `~/.codex`). Before new or changed tests, use the
+[test-audit authoring gate](skills/test-audit/SKILL.md#authoring-gate) and
+[contract-focused proof guidance](skills/contract-focused-tests/SKILL.md). Deliberate pruning uses
+[campaign mode](skills/test-audit/CAMPAIGN.md); campaign coverage stays local and is never a CI or merge gate.
+Apply the [anti-baggage rules](skills/maintainable-code-structure/SKILL.md#anti-baggage) to the final diff.
+
 Run the repository quality loop before trusting packaging, asset, or visual changes:
 
 ```powershell

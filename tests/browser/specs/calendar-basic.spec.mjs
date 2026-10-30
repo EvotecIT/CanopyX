@@ -58,6 +58,18 @@ test.describe("basic calendars", () => {
     expect(error).toContain("presets are basic, standard and scheduler");
   });
 
+  test("opening on the timeline adds it to the preset's views, with or without resources", async ({ page }) => {
+    const resources = [{ id: "web", label: "Web" }, { id: "db", label: "Database" }];
+    const events = EVENTS.map((event, index) => ({ ...event, resource: index % 2 ? "db" : "web" }));
+    await openBuilt(page, "timeline-view.html", calendarPage({ events, resources, view: "timeline", date: "2026-10-16" }));
+    await expect(page.locator(".cx-cal-views button")).toHaveText(["Month", "Week", "Day", "Agenda", "Timeline"]);
+    expect(await calApi(page, "api => api.getCalendar()")).toMatchObject({ view: "timeline" });
+    await openBuilt(page, "timeline-solo.html", calendarPage({ events: EVENTS, view: "timeline", date: "2026-10-16" }));
+    expect(await calApi(page, "api => api.getCalendar()")).toMatchObject({ view: "timeline" });
+    const error = await page.evaluate(() => { try { CanopyX.createCalendar(document.createElement("div"), { view: "timeline", timeline: false }); return null; } catch (error) { return error.message; } });
+    expect(error).toContain("opens on the timeline cannot set timeline: false");
+  });
+
   test("a basic page carries only the core calendar part; the scheduler page carries editing and iCalendar too", () => {
     const basic = fs.readFileSync(path.join(examples, "calendar-basic.html"), "utf8"), scheduler = fs.readFileSync(path.join(examples, "calendar-scheduler.html"), "utf8");
     expect(basic).toContain("calPaintMonth");
@@ -69,11 +81,106 @@ test.describe("basic calendars", () => {
 });
 
 test.describe("simple layouts", () => {
+  for (const dark of [false, true]) {
+    test(`the year fits a narrow host in ${dark ? "dark" : "light"}`, async ({ page }) => {
+      await page.setViewportSize({ width: 300, height: 760 });
+      await openBuilt(page, "narrow-year.html", calendarPage({ events: EVENTS, date: "2026-10-16", view: "year", views: ["year"], calendar: { phone: "year" } }));
+      await page.locator("#cal").evaluate((host, dark) => host.dataset.cxTheme = dark ? "dark" : "light", dark);
+      await expect(page.locator(".cx-cal-year")).toBeVisible();
+      const bounds = await page.locator(".cx-cal-body").evaluate(body => ({ width: body.clientWidth, scroll: body.scrollWidth,
+        right: body.getBoundingClientRect().right, lastDay: body.querySelector(".cx-cal-yweek").lastElementChild.getBoundingClientRect().right }));
+      expect(bounds.scroll).toBeLessThanOrEqual(bounds.width + 1);
+      expect(bounds.lastDay).toBeLessThanOrEqual(bounds.right);
+      await capture(page, `year-narrow-${dark ? "dark" : "light"}`);
+    });
+
+    test(`the busiest year days keep a contrasting event dot in ${dark ? "dark" : "light"}`, async ({ page }) => {
+      await openBuilt(page, "year-dot.html", calendarPage({ events: EVENTS, date: "2026-10-16", view: "year", views: ["year"] }));
+      await page.locator("#cal").evaluate((host, dark) => host.dataset.cxTheme = dark ? "dark" : "light", dark);
+      const colors = await page.locator('.cx-cal-yday[data-cx-heat="4"]').first().evaluate(day => ({
+        dot: getComputedStyle(day, "::after").backgroundColor, fill: getComputedStyle(day).backgroundColor
+      }));
+      const luminance = color => color.match(/[\d.]+/g).slice(0, 3).map(value => Number(value) / 255)
+        .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+        .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+      const levels = [luminance(colors.dot), luminance(colors.fill)].sort((a, b) => a - b);
+      expect((levels[1] + 0.05) / (levels[0] + 0.05)).toBeGreaterThanOrEqual(3);
+      await capture(page, `year-dot-${dark ? "dark" : "light"}`);
+    });
+  }
+
+  test("stacked months never move a multi-day bar's start to a later column", async ({ page }) => {
+    await openCalendar(page, "calendar-layouts.html");
+    await api(page, "api => api.setCalendarView('months')");
+    const monday = Date.UTC(2026, 9, 19) / 86400000;
+    const cell = page.locator(`.cx-cal-months .cx-cal-day[data-cx-day="${monday}"]`);
+    const week = cell.locator("..");
+    const bars = week.locator('.cx-cal-ev-bar').filter({ hasText: "On call: Tom" });
+    const columns = await bars.evaluateAll(elements => elements.map(element => Number(element.style.getPropertyValue("--c"))));
+    // A crowded week may fold the whole segment into More, but it must never invent a later start.
+    expect(columns.every(column => column === 0)).toBe(true);
+    const friday = week.locator(`.cx-cal-day[data-cx-day="${monday + 4}"] .cx-cal-ev-chip`).first();
+    if (columns.length && await friday.count()) {
+      const bar = await bars.first().boundingBox(), timed = await friday.boundingBox();
+      expect(bar.y + bar.height).toBeLessThanOrEqual(timed.y);
+    }
+    if (!columns.length) {
+      await cell.locator(".cx-cal-more-btn").click();
+      await expect(page.locator(".cx-cal-more .cx-cal-ev").filter({ hasText: "On call: Tom" })).toBeVisible();
+    }
+  });
+
+  test("stacked months fill a free event line before showing more", async ({ page }) => {
+    await openCalendar(page, "calendar-layouts.html");
+    await api(page, "api => api.setCalendarView('months')");
+    const tuesday = page.locator(`.cx-cal-months .cx-cal-day[data-cx-day="${Date.UTC(2026, 9, 13) / 86400000}"]`);
+    await expect(tuesday.locator(".cx-cal-ev-chip")).toHaveCount(2);
+    await expect(tuesday.locator(".cx-cal-more-btn")).toHaveCount(0);
+    const cell = page.locator(`.cx-cal-months .cx-cal-day[data-cx-day="${Date.UTC(2026, 9, 16) / 86400000}"]`);
+    await expect(cell.locator(".cx-cal-more-btn")).toBeVisible();
+    const events = cell.locator(".cx-cal-ev");
+    expect(await events.count()).toBeGreaterThan(0);
+    const event = await events.first().boundingBox(), more = await cell.locator(".cx-cal-more-btn").boundingBox();
+    expect(event.y + event.height).toBeLessThanOrEqual(more.y + 1);
+  });
+
+  test("mini month marks its displayed date separately from today", async ({ page }) => {
+    await openCalendar(page, "calendar-layouts.html");
+    await api(page, "api => api.setCalendarDate('2026-10-20')");
+    const selected = page.locator('.cx-cal-mini .cx-cal-day[data-cx-listed]');
+    await expect(selected).toHaveAttribute("data-cx-day", String(Date.UTC(2026, 9, 20) / 86400000));
+    expect(await selected.locator(".cx-cal-num").evaluate(element => getComputedStyle(element).outlineStyle)).toBe("solid");
+    await expect(page.locator(".cx-cal-mini .cx-cal-today")).toHaveAttribute("data-cx-day", String(Date.UTC(2026, 9, 16) / 86400000));
+  });
+
+  for (const view of ["month", "months"]) {
+    test(`${view} fills free lanes around overlapping bars and prints its final lanes in full`, async ({ page }) => {
+      const bars = [
+        { id: "a", title: "Monday to Tuesday", start: "2026-10-12", end: "2026-10-14", allDay: true },
+        { id: "b", title: "Tuesday to Wednesday", start: "2026-10-13", end: "2026-10-15", allDay: true }
+      ];
+      const timed = Array.from({ length: 3 }, (_, index) => ({ id: "t" + index, title: "Timed " + index,
+        start: `2026-10-14T${10 + index}:00:00Z`, end: `2026-10-14T${10 + index}:30:00Z` }));
+      const options = { events: [...bars, ...timed.slice(0, 2)], date: "2026-10-16", view, views: [view], firstDay: 1,
+        calendar: { eventLimit: 3, hiddenDays: [0, 6] } };
+      await openBuilt(page, "free-lanes.html", calendarPage(options));
+      const day = `.cx-cal-day[data-cx-day="${Date.UTC(2026, 9, 14) / 86400000}"]`;
+      await expect(page.locator(day + " .cx-cal-ev-chip")).toHaveCount(2);
+      await expect(page.locator(day + " .cx-cal-more-btn")).toHaveCount(0);
+      await openBuilt(page, "print-lanes.html", calendarPage({ ...options, events: [...bars, ...timed] }));
+      await page.emulateMedia({ media: "print" });
+      await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+      await expect(page.locator(day + " .cx-cal-ev-chip")).toHaveCount(3);
+      await expect(page.locator(".cx-cal-more-btn")).toHaveCount(0);
+      expect(await page.locator(".cx-cal-week").evaluateAll(rows => rows.some(row => row.scrollHeight > row.clientHeight + 1))).toBe(false);
+    });
+  }
+
   test("the mini month marks days with events and selecting a day reports it", async ({ page }) => {
     await openCalendar(page, "calendar-layouts.html", { width: 1200, height: 760 });
     const mini = page.locator(".cx-cal-mini");
     await expect(mini).toBeVisible();
-    expect((await mini.boundingBox()).width).toBeLessThanOrEqual(361);
+    expect((await mini.boundingBox()).width).toBeGreaterThan(700);
     await expect(mini.locator(".cx-cal-day")).toHaveCount(42);
     await expect(mini.locator('.cx-cal-day[data-cx-day] .cx-cal-dots > i').first()).toBeVisible();
     await capture(page, "calendar-mini-month");
@@ -118,10 +225,48 @@ test.describe("simple layouts", () => {
   });
 
   test("the year view lists each month's events when yearEvents is on", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-16T10:30:00Z"));
     await openCalendar(page, "calendar-layouts.html", { width: 1440, height: 1000 });
     await api(page, "api => api.setCalendarView('year')");
     await expect(page.locator(".cx-cal-ylist .cx-cal-ev").first()).toBeVisible();
+    await expect(page.locator('.cx-cal-yday[data-cx-heat]').first()).toBeVisible();
+    await expect(page.locator('.cx-cal-yday[aria-current="date"]')).toHaveCount(1);
     await capture(page, "calendar-year-events");
+  });
+
+  for (const width of [1100, 1440]) for (const dark of [false, true]) {
+    test(`the toolbar stays in place across layouts at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {
+      await openCalendar(page, "calendar-layouts.html", { width, dark });
+      const positions = [];
+      for (const view of ["mini", "weekList", "dayList", "months", "year", "month"]) {
+        await api(page, "api => api.setCalendarView(arg)", view);
+        await nextFrames(page);
+        positions.push(await page.evaluate(() => Object.fromEntries([".cx-cal-nav", ".cx-cal-title", ".cx-cal-jumpbox", ".cx-cal-views"].map(selector => {
+          const rect = document.querySelector(selector).getBoundingClientRect();
+          return [selector, { x: Math.round(rect.x), y: Math.round(rect.y) }];
+        }))));
+      }
+      expect(positions.every(position => JSON.stringify(position) === JSON.stringify(positions[0]))).toBe(true);
+    });
+  }
+
+  test("week list shows a multi-day event without repeating its range and keeps short times together", async ({ page }) => {
+    await openCalendar(page, "calendar-layouts.html", { width: 1100 });
+    await api(page, "api => api.setCalendarView('weekList')");
+    const onCall = page.locator('.cx-cal-lday .cx-cal-ev[aria-label^="On call: Ana"]');
+    await expect(onCall).toHaveCount(7);
+    await expect(onCall.first().locator('.cx-cal-ev-time')).toHaveText('8:00 AM');
+    for (let index = 1; index < 7; index++) await expect(onCall.nth(index).locator('.cx-cal-ev-time')).toHaveText('All day');
+    await expect(onCall.first()).toHaveAttribute('aria-label', /Oct 12.*Oct 19/);
+    const standup = page.locator('.cx-cal-lday .cx-cal-ev[aria-label^="Stand-up"]').first();
+    const geometry = await standup.evaluate(element => {
+      const time = element.querySelector('.cx-cal-ev-time').getBoundingClientRect();
+      const icon = element.querySelector('.cx-cal-ico').getBoundingClientRect();
+      return { timeHeight: time.height, lineHeight: parseFloat(getComputedStyle(element).lineHeight), gap: icon.left - time.right, sameRow: Math.abs(icon.top - time.top) < 5 };
+    });
+    expect(geometry.timeHeight).toBeLessThan(geometry.lineHeight + 2);
+    expect(geometry.gap).toBeLessThan(12);
+    expect(geometry.sameRow).toBe(true);
   });
 
   test("week numbers, day links and fixed six weeks", async ({ page }) => {
@@ -193,7 +338,10 @@ test.describe("timeline without resources", () => {
   test("events pack into rows by overlap over a custom span", async ({ page }) => {
     await openCalendar(page, "calendar-solo.html", { width: 1440, height: 700 });
     await expect(page.locator(".cx-tl-solo")).toBeVisible();
-    expect(await api(page, "api => api.getCalendar()")).toMatchObject({ view: "timeline", from: "2026-10-05", to: "2026-11-15" });
+    expect(await api(page, "api => api.getCalendar()")).toMatchObject({ view: "timeline", from: "2026-09-28", to: "2026-11-15" });
+    const bounds = await page.evaluate(() => ({ left: document.querySelector('.cx-tl-main').getBoundingClientRect().left,
+      bar: document.querySelector('.cx-tl-lane .cx-cal-ev-lane[aria-label^="Design"]').getBoundingClientRect().left }));
+    expect(bounds.bar).toBeGreaterThan(bounds.left + 2);
     const tops = await page.locator(".cx-tl-lanes .cx-cal-ev, .cx-tl-canvas .cx-cal-ev").evaluateAll(bars => bars.map(bar => Math.round(bar.getBoundingClientRect().top)));
     expect(new Set(tops).size).toBeGreaterThan(1);
     expect(new Set(tops).size).toBeLessThanOrEqual(4);

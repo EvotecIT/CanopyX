@@ -30,9 +30,10 @@ internal static class PlanExample {
         foreach (var (id, label) in new[] { ("platform", "Platform"), ("validation", "Validation"), ("operations", "Operations") }) resources.Roots.Add(new CanopyNode(id, label));
         view.Calendar = new CanopyCalendar("starts") {
             End = "ends", Title = "title", Resource = "owner", Resources = new CanopyCalendarResources(resources),
-            View = CanopyCalendarView.Timeline, PhoneView = CanopyCalendarView.Timeline, Date = DateTime.UtcNow.Date.AddDays(-7), TimeZone = "UTC", NowIndicator = true,
+            View = CanopyCalendarView.Timeline, PhoneView = CanopyCalendarView.Timeline, Date = DateTime.UtcNow.Date.AddDays(-9), TimeZone = "UTC", NowIndicator = true,
             Span = new CanopyCalendarSpan(14, CanopyCalendarSpanUnit.Day)
         };
+        view.Calendar.Resources!.Width = 180;
         view.Calendar.Views.Add(CanopyCalendarView.Timeline);
         view.Plan = new CanopyPlan { BaselineStart = "baselineStart", BaselineEnd = "baselineEnd", Milestone = "milestone", ProposeMoves = true };
         foreach (var (id, title, owner, start, end, milestone) in new[] {

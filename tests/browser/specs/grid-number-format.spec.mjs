@@ -133,9 +133,9 @@ test("aggregate overrides and count defaults use the current shared heading and 
   view.rows = [10, 20, null, 2, 4, null].map((amount, i) => ({ id: "r" + i, cells: { name: "Item " + i, category: i < 3 ? "A" : "B", amount } }));
   await open(page, view, `CanopyX.use({name:'format-median',aggregates:{median:{label:'med {value}',compute(values){values=[...values].sort((a,b)=>a-b);const middle=values.length>>1;return !values.length?null:values.length%2?values[middle]:(values[middle-1]+values[middle])/2;}}}});`);
   const first = page.locator(".cx-grid-group").first().locator(".cx-aggregate");
-  await expect(first).toContainText("sum 30%"); await expect(first).toContainText("avg $15.00");
-  await expect(first).toContainText("count 2"); await expect(first).toContainText("distinct 2");
-  await expect(first).toContainText("med 15 ms");
+  await expect(first).toContainText("Sum 30%"); await expect(first).toContainText("Avg $15.00");
+  await expect(first).toContainText("Count 2"); await expect(first).toContainText("Distinct 2");
+  await expect(first).toContainText("Med 15 ms");
   await expect(first).toHaveAttribute("title", /Total amount · Sum: 30%.*Average amount · Avg: \$15.00.*Amounts present · Count: 2.*Distinct amounts · Distinct: 2.*Median amount · Med: 15 ms/);
   await page.evaluate(api + ".setSelection(['r0','r1'])");
   await expect(page.locator(".cx-grid-status .agg")).toHaveText("Amount: 30%");
@@ -156,7 +156,7 @@ test("aggregate overrides and count defaults use the current shared heading and 
   await expect(page.locator('.cx-phone-field-title', { hasText: /^Amount:$/ }).first()).toBeVisible();
   await nextFrames(page);
   const heading = page.locator(".cx-grid-group").first(), phone = heading.locator(".cx-aggregate-button,.cx-hidden-aggregates");
-  await expect(phone).toContainText("avg $15.00");
+  await expect(phone).toContainText("Avg $15.00");
   expect(await page.locator(".cx-aggregate-button,.cx-hidden-aggregates").evaluateAll(buttons => buttons.every(button => {
     const box = button.getBoundingClientRect(), cell = button.parentElement.getBoundingClientRect();
     return box.left >= cell.left - 1 && box.right <= cell.right + 1;
@@ -189,7 +189,7 @@ test("aggregate overrides and count defaults use the current shared heading and 
   await expect(totals).toHaveAttribute("aria-label", /Total amount · Sum: 30%.*Amounts present · Count: 2/);
   await page.evaluate(api + ".setColumnVisible('amount',false)"); await nextFrames(page);
   const hidden = page.locator(".cx-grid-group").first().locator(".cx-hidden-aggregates");
-  await expect(hidden).toContainText("avg $15.00"); await hidden.click();
+  await expect(hidden).toContainText("Avg $15.00"); await hidden.click();
   await expect(dialog).toContainText("Average amount · Avg: $15.00");
   await page.keyboard.press("Escape"); await expect(hidden).toBeFocused();
   expect(errors).toEqual([]);

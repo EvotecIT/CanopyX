@@ -2,13 +2,53 @@
 
 Column groups draw named header rows above a flat grid's columns: months under quarters under half years, measurements
 under their instrument, a person's contact fields under "Contact". Up to three levels of groups sit above the column
-headers, inside the sticky header, and every grid feature that changes columns keeps the groups whole.
+headers, inside the sticky header. Semantic grouping is the default: every grid feature that changes columns keeps the groups whole.
 
 Groups ship as the `column-groups` part (`canopyx-column-groups.js` and `.css`, see [Plugins and Parts](plugins.md)). A
 grid whose view declares `columnGroups` loads it with its first query; grids without groups never load it, and the .NET
 writers carry its payload only in pages whose grids declare groups.
 
 ## Declaring groups
+
+For labels that should follow the displayed columns without governing them, use **presentation bands**:
+
+```csharp
+grid.ColumnGroupMode = CanopyColumnGroupMode.Presentation;
+grid.ColumnGroups.Add(new CanopyColumnGroup("identity", "Identity", "host", "rootDomain"));
+grid.ColumnGroups.Add(new CanopyColumnGroup("live", "Live", "liveBefore", "liveAfter"));
+```
+
+The writer emits these definitions as `columnBands`, separately from semantic `columnGroups`. A wire document declares
+one field or the other. Older `canopyx/2` readers ignore `columnBands` and keep the authored column order and pins.
+JavaScript hosts place the same group definitions in `view.columnBands`.
+Start with contiguous members: `host, rootDomain, liveBefore, liveAfter` draws one Identity span and one Live span.
+Presentation members may become nonadjacent when the reader reorders individual columns. With order
+`host, liveBefore, rootDomain, liveAfter`, four bands appear. A later span of the same logical band has a leading
+continuation arrow (`↳`) and a dotted underline; columns stay where the reader placed them. Band labels use a tinted
+header row and full-height separators above the ordinary column headers.
+If responsive fitting or the ordinary Columns chooser hides `rootDomain`, the two visible Live members become one span;
+showing it again splits that span. Reordering columns recomputes bands in the new visible order. Effective pin boundaries
+split a span, without changing requested pins or the grid's pin budget. Distinct group IDs remain distinct even if their
+titles match. Nested definitions retain their levels.
+
+Presentation bands have text headers with accessible column indices and spans, without group-wide resize, move or hide
+controls. The ordinary per-column controls, query, saved views, export capture and record-drawer sections retain their
+existing behavior. Group `pinned` settings are refused in this mode; set pins on individual columns. No adapter-side
+observer, group rebuilding or private grid access is needed. The same optional `column-groups` part handles both modes.
+
+`getColumnGroups()` describes the logical definitions, with `pin: "mixed"` when presentation members have different
+requested pins. `getColumnBands()` reads the actual displayed spans, in level/column order:
+
+```javascript
+// Each frozen entry has id, title, columns, level, columnIndex, columnSpan and effective pin.
+const bands = grid.getColumnBands();
+```
+
+Indices and levels are one-based. A logical ID can occur in several spans. Both reads answer empty before the part loads.
+The script-free fallback draws contiguous spans over its visible columns in authored order, splitting at declared pins;
+it has no viewport and does not run responsive fitting. Export capture retains the ordinary column projection and values.
+
+The remaining examples describe the default semantic grouping mode.
 
 A group lists the columns directly below it and its nested groups. A column belongs to one group at most; columns
 outside every group keep their header in the bottom row.

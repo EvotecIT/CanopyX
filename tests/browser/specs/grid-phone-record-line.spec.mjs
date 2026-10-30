@@ -47,6 +47,19 @@ for (const count of [1, 2]) test(`phone disclosure counts only ${count} fields b
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(`+${count} column${count === 1 ? "" : "s"}`);
 });
 
+test("phone disclosure stays with its context when the last field wraps", async ({ page }) => {
+  await open(page, { extra: 4, signal: "A long inspection outcome with retained evidence" });
+  const row = page.locator('.cx-row[data-cx-id="r0"]');
+  await expect(row.locator('.cx-hidden-fields')).toHaveText("+4 columns");
+  const geometry = await row.evaluate(element => {
+    const disclosure = element.querySelector('.cx-hidden-fields').getBoundingClientRect();
+    const context = element.querySelectorAll('.cx-phone-field');
+    const last = context[context.length - 1].querySelector('.cx-phone-value').getBoundingClientRect();
+    return { disclosure: (disclosure.top + disclosure.bottom) / 2, context: (last.top + last.bottom) / 2 };
+  });
+  expect(Math.abs(geometry.disclosure - geometry.context)).toBeLessThanOrEqual(2);
+});
+
 test("same-named phone records expose their next priority context without author-hidden fields", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const columns = [{ id: "check", title: "Check", kind: "text", rowHeader: true, width: 180 },
@@ -94,6 +107,8 @@ test("a short scalar gives second-line room to a longer essential status pill", 
   await open(page, { signal: "Needs investigation" });
   const signal = page.locator('.cx-row[data-cx-id="r0"] .cx-phone-value').nth(1);
   await expect(signal).toHaveText("Needs investigation");
+  await expect(signal).not.toHaveAttribute("tabindex");
+  await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-phone-value').first()).not.toHaveAttribute("tabindex");
   expect(await signal.evaluate(element => [...element.querySelectorAll('*')].every(child => child.scrollWidth <= child.clientWidth + 1))).toBe(true);
 });
 
@@ -104,4 +119,10 @@ test("an essential pill wider than the phone scrolls within its record line with
   expect(geometry.pillContent).toBeLessThanOrEqual(geometry.pillWidth + 1);
   expect(geometry.content).toBeGreaterThan(geometry.viewport);
   expect(geometry.page).toBeLessThanOrEqual(390);
+  await expect(value).toHaveAttribute("tabindex", "-1");
+  await page.locator('.cx-row[data-cx-id="r0"]').focus();
+  await page.keyboard.press("F2");
+  await expect(value).toBeFocused();
+  await value.press("ArrowRight");
+  await expect.poll(() => value.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
 });

@@ -38,6 +38,38 @@ const examples = [
 ];
 const sizes = [{ width: 1440, height: 900, crop: 420 }, { width: 390, height: 844, crop: 600 }];
 
+// The reviewed layouts need their own frames: the default calendar does not exercise stacked months or the plan.
+for (const [width, theme] of [[1440, "light"], [1100, "dark"]]) {
+  for (const view of ["months", "mini", "plan"]) {
+    test(`${view} review layout matches its baseline (${width}, ${theme})`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await pinTestFont(page);
+      await page.clock.setFixedTime(new Date(view === "plan" ? "2026-10-19T10:30:00Z" : "2026-10-29T10:30:00Z"));
+      await page.emulateMedia({ reducedMotion: "reduce", colorScheme: theme });
+      await page.goto(exampleUrl((view === "plan" ? "plan" : "calendar-layouts") + (theme === "dark" ? "-dark" : "") + ".html"));
+      await page.waitForSelector("[data-cx-calendar-ready]");
+      await page.evaluate(async view => {
+        const host = document.querySelector("[data-canopyx-host]"), api = host.canopyx;
+        if (view === "plan") {
+          // Plan example dates are relative to generation day; retain their spacing around one fixed baseline date.
+          const offset = Date.parse("2026-10-12T00:00:00Z") - Date.parse(api.view.rows.find(row => row.id === "prepare").cells.starts);
+          const definition = JSON.parse(JSON.stringify(api.view));
+          for (const row of definition.rows) for (const key of ["starts", "ends", "baselineStart", "baselineEnd"])
+            row.cells[key] = new Date(Date.parse(row.cells[key]) + offset).toISOString();
+          definition.calendar.date = "2026-10-10";
+          api.destroy();
+          await CanopyX.createDataGrid(host, { view: definition }).ready;
+        } else await api.setCalendarView(view);
+      }, view);
+      await nextFrames(page); await settledBox(page);
+      await page.evaluate(() => { scrollTo(0, 0); document.activeElement?.blur?.(); });
+      await expect(page).toHaveScreenshot(`${view}-review-${width}-${theme}.png`, {
+        clip: { x: 0, y: 0, width, height: view === "months" ? 740 : 450 }, animations: "disabled", caret: "hide"
+      });
+    });
+  }
+}
+
 // Regions whose content may legitimately differ between runs. The examples are generated from fixed data, so this is
 // a guard for future pages rather than a list of known noise: anything a page marks volatile, and the example host's
 // own status lines (not the views' status regions, which stay compared).

@@ -20,7 +20,8 @@
   // Before that the reads (the first of each list) answer empty and the actions load the part and run. Actions run at once
   // when the part is in, and always answer with a promise that rejects when they fail; they never raise the error event,
   // which reports failures of the grid's own work (a part loading for the view, input, menus).
-  const GRID_PART_API = [["column-groups", "getColumnGroups", "setColumnGroupVisible"],
+  // Each entry declares one synchronous read followed by its asynchronous actions; a part may have several reads.
+  const GRID_PART_API = [["column-groups", "getColumnGroups", "setColumnGroupVisible"], ["column-groups", "getColumnBands"],
     ["cell-range", "getCellRanges", "setCellRanges", "clearCellRanges", "selectAllCells", "copyCellRanges", "getCellRangeText", "pasteCells"]];
   const gridPartLoader = (part, start) => function () {
     return (this.partLoads ||= {})[start] ||= loadPart(part).then(() => this.destroyed || this["start" + start]()).catch(error => { this.partLoads[start] = null; throw error; });
@@ -39,6 +40,6 @@
   const GRID_PARTS_INIT = DataGrid.prototype.initializeState;
   DataGrid.prototype.initializeState = function () {
     const ready = GRID_PARTS_INIT.call(this), range = this.opts.rangeSelection ?? this.view.rangeSelection;
-    const parts = [this.view.columnGroups?.length && this.loadColumnGroups(), range && range.enabled !== false && this.loadCellRanges()].filter(Boolean);
+    const parts = [(this.view.columnBands ?? this.view.columnGroups)?.length && this.loadColumnGroups(), range && range.enabled !== false && this.loadCellRanges()].filter(Boolean);
     return parts.length ? Promise.all([ready, ...parts.map(part => part.catch(error => this.emit("error", { error })))]).then(([result]) => result) : ready;
   };

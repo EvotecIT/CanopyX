@@ -7,11 +7,13 @@
   const CAL_ROW_COPIES = new WeakMap();
   Object.assign(DataGrid.prototype, {
     /** The time of an occurrence in words: "09:00 â€“ 10:30", one time for a marker, nothing for an all-day event. */
-    calTimeText(event) {
+    calTimeText(event, day) {
       if (event.allDay) return this.calLabels.calendarAllDay;
       const fmt = this.calFmt, labels = this.calLabels;
       if (event.marker) return fmt.time(event.start);
+      if (day !== undefined && event.ed > event.sd) return day === event.sd ? fmt.time(event.start) : day === event.ed ? fmt.time(event.end) : labels.calendarAllDay;
       if (event.ed > event.sd) return fill(labels.calendarTimeRange, { start: fmt.shortDay(event.sd) + " " + fmt.time(event.start), end: fmt.shortDay(event.ed) + " " + fmt.time(event.end) });
+      if (day !== undefined) return fmt.timeRange(event.start, event.end);
       return fill(labels.calendarTimeRange, { start: fmt.time(event.start), end: fmt.time(event.end) });
     },
     calStatusText(event) {
@@ -36,7 +38,7 @@
     },
 
     /** A drawn event: kind is "bar" (a day row), "chip" (a month line), "block" (a time column), "item" (agenda) or "lane" (timeline). */
-    calEventElement(event, kind) {
+    calEventElement(event, kind, day) {
       const element = h("button", "cx-cal-ev cx-cal-ev-" + kind + (event.marker ? " cx-cal-marker" : "") + (event.allDay ? " cx-cal-allday" : ""));
       element.type = "button"; element.tabIndex = -1;
       element.dataset.cxEvent = event.id; element.dataset.cxRecord = event.key;
@@ -63,7 +65,7 @@
         catch (error) { this.emit("error", { error }); element.textContent = ""; }
       }
       const time = h("span", "cx-cal-ev-time"), title = h("span", "cx-cal-ev-title");
-      if (!event.allDay && kind !== "bar" && kind !== "lane") { setText(time, kind === "item" ? this.calTimeText(event) : this.calFmt.time(event.start)); element.appendChild(time); }
+      if (!event.allDay && kind !== "bar" && kind !== "lane") { setText(time, kind === "item" ? this.calTimeText(event, day) : this.calFmt.time(event.start)); element.appendChild(time); }
       setText(title, event.title); element.appendChild(title);
       if (assignments.length > 1) { const shared = h("span", "cx-cal-shared"); setText(shared, calCount(this, this.calLabels.calendarSharedResources, assignments.length, { resources: this.calLabels.calendarResources.toLocaleLowerCase(this.lang) })); shared.setAttribute("aria-hidden", "true"); element.appendChild(shared); }
       if (kind === "block" || kind === "item" || kind === "lane") {

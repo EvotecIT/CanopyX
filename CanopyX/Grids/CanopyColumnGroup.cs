@@ -9,6 +9,8 @@ namespace CanopyX;
 /// A group lists the columns directly below it and its nested groups. Each column belongs to one group at most, and the
 /// columns of a group are adjacent in <see cref="CanopyDataGridView.Columns"/>. The grid keeps a group's columns together
 /// when readers move columns, pin a group as a whole and shows each group's title as a record-drawer section on phones.
+/// With <see cref="CanopyColumnGroupMode.Presentation"/>, members may be separated: the grid draws contiguous displayed
+/// bands without changing column order, pins, chooser actions or record-drawer sections.
 /// </remarks>
 public sealed class CanopyColumnGroup {
     /// <summary>Creates a group.</summary>
