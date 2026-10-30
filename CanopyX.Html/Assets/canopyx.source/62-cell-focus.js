@@ -11,7 +11,7 @@
   const CELL_CONTROLS = "a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])," +
     "[role=button],[role=checkbox],[role=radio],[role=link],[role=switch],[role=tab],[role=menuitem],[role=textbox],[role=combobox]";
   // Controls that use the arrow keys themselves, and a scrolling detail body, whose arrow keys scroll it.
-  const OWN_ARROWS = ".cx-detail-body,textarea,select,[contenteditable]:not([contenteditable=false]),[aria-activedescendant]," +
+  const OWN_ARROWS = ".cx-detail-body,.cx-phone-value,textarea,select,[contenteditable]:not([contenteditable=false]),[aria-activedescendant]," +
     "[role=textbox],[role=combobox],[role=spinbutton],[role=slider],[role=radio],[role=tab],[role=menuitem],[role=listbox],[role=tree],[role=grid]," +
     "input:not([type=button]):not([type=checkbox]):not([type=submit]):not([type=reset]):not([type=image]):not([type=file]):not([type=color])";
 
