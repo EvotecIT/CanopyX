@@ -410,6 +410,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   rowAction?: "none" | "details" | "link";
   /** Draw a row tone as a bar at the row start (default false). */
   rowAccents?: boolean;
+  /** The record drawer opens as a full-height sheet over a scrim (default true); false keeps the side panel beside a live view. */
+  recordDrawerModal?: boolean;
   /** How editable columns edit; the host's editing option overrides these. */
   editing?: GridEditingSettings;
   /** Marks search and column-filter matches in cells and the drawer, with a match count and next/previous (docs/search-highlight.md). */
@@ -475,6 +477,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   timeZone?: TimeZone;
   /** Space-separated host styling classes copied onto body-appended record, text and column overlays when opened. */
   overlayClass?: string;
+  /** The record drawer opens as a full-height sheet over a scrim that closes it (default true). False keeps the side panel beside a live, clickable view. */
+  recordDrawerModal?: boolean;
   labels?: Partial<CanopyLabels>;
   /** Sanitizes trusted host HTML details before insertion; shares the tree host's sanitizer contract. */
   sanitizeHtml?: HostOptions["sanitizeHtml"];
@@ -842,6 +846,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   source?: Q extends GridCursorQuery ? GridCursorSource<Row> : GridSource<Row>;
   /** Space-separated host styling classes copied onto body-appended record, text and column overlays when opened. */
   overlayClass?: string;
+  /** The record drawer opens as a full-height sheet over a scrim that closes it (default true). False keeps the side panel beside a live, clickable view. */
+  recordDrawerModal?: boolean;
   labels?: Partial<CanopyLabels>;
   renderers?: Record<string, (row: Row, element: HTMLElement, context: GridCellContext) => boolean | void>;
   cachePageLimit?: number;

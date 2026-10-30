@@ -855,6 +855,7 @@
         "allowRegexSearch": { "type": "boolean", "default": false, "description": "Allow query searchMode regex using the bounded condition grammar (256 pattern characters, 4096 cell input characters, 50 ms browser evaluation budget)." },
         "cardTemplate": { "type": "object", "minProperties": 1, "maxProperties": 64, "propertyNames": { "$ref": "#/$defs/identifier" }, "additionalProperties": { "type": "string", "maxLength": 2048 }, "description": "Literal text for column slots of a layout offering cards. {columnId} inserts formatted cell text. Slot and token identities must name declared columns; unmatched braces are rejected. No markup is parsed." },
         "rowAccents": { "type": "boolean", "description": "Draw a row tone as a bar at the row start. Default false." },
+        "recordDrawerModal": { "type": "boolean", "description": "Open the record drawer as a full-height sheet over a scrim that closes it. Default true; false keeps the side panel beside a live view." },
         "searchHighlight": { "$ref": "#/$defs/searchHighlight" },
         "layout": { "$ref": "#/$defs/layoutOptions" },
         "live": { "$ref": "#/$defs/gridLive" },

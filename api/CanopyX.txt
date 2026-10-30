@@ -672,6 +672,7 @@ CanopyX.CanopyDataGridView.System.Boolean AutoHeight { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean AutoRowHeight { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean CalculatedColumnsEditable { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean DragRows { get; set; }
+CanopyX.CanopyDataGridView.System.Boolean RecordDrawerModal { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean RowAccents { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean Search { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean StatusBar { get; set; }
