@@ -107,6 +107,8 @@ test("a short scalar gives second-line room to a longer essential status pill", 
   await open(page, { signal: "Needs investigation" });
   const signal = page.locator('.cx-row[data-cx-id="r0"] .cx-phone-value').nth(1);
   await expect(signal).toHaveText("Needs investigation");
+  await expect(signal).not.toHaveAttribute("tabindex");
+  await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-phone-value').first()).not.toHaveAttribute("tabindex");
   expect(await signal.evaluate(element => [...element.querySelectorAll('*')].every(child => child.scrollWidth <= child.clientWidth + 1))).toBe(true);
 });
 
@@ -117,8 +119,9 @@ test("an essential pill wider than the phone scrolls within its record line with
   expect(geometry.pillContent).toBeLessThanOrEqual(geometry.pillWidth + 1);
   expect(geometry.content).toBeGreaterThan(geometry.viewport);
   expect(geometry.page).toBeLessThanOrEqual(390);
-  await expect(value).toHaveAttribute("tabindex", "0");
-  await value.focus();
+  await expect(value).toHaveAttribute("tabindex", "-1");
+  await page.locator('.cx-row[data-cx-id="r0"]').focus();
+  await page.keyboard.press("F2");
   await expect(value).toBeFocused();
   await value.press("ArrowRight");
   await expect.poll(() => value.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);

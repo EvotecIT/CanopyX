@@ -26,7 +26,8 @@
     }
     const fitted = style.maxHeight;
     style.maxHeight = this.fitInline;
-    this.fitMax = this.fitInline || getComputedStyle(this.host).maxHeight;
+    const resolved = getComputedStyle(this.host).maxHeight;
+    this.fitMax = resolved === "none" || /^(initial|inherit|unset|revert(-layer)?)$/.test(this.fitInline) ? resolved : this.fitInline || resolved;
     style.maxHeight = fitted;
     // Reuse the minimum's flow measurement without reserving rows in the empty state.
     const empty = !this.toolbar.hidden && this.host.classList.contains("cx-grid-awaiting");

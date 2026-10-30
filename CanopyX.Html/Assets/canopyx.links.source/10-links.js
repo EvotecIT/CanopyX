@@ -49,6 +49,9 @@
     /** Opens the row of one fragment; never rejects, a failure is announced. */
     async openLink(link, current) {
       const navigation = navigationScope(this, current.signal, true);
+      const cancelled = navigation.cancelled;
+      // The URL changes before its hashchange task runs; stale async lookups must already stop selecting.
+      navigation.cancelled = () => cancelled() || this.currentLink() !== link;
       try {
         const ids = this.opts.parseLink ? await navigation.wait(this.opts.parseLink(link)) : link.split("/").filter(Boolean).map(decodeURIComponent);
         // A host's parseLink returns null for a fragment that does not name a row of this view.

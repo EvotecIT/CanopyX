@@ -637,7 +637,7 @@
     {
       "name": "links",
       "label": "deep links",
-      "version": "f1ab7e32b501ce37",
+      "version": "c6579c9401f0971d",
       "script": "canopyx-links.js",
       "runtimes": [
         "tree",
