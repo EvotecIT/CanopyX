@@ -11,6 +11,13 @@
     const dispose = () => { try { cleanup(); } catch (error) { console.error(error); } };
     if (signal.aborted) dispose(); else signal.addEventListener("abort", dispose, { once: true });
   };
+  // A section link scrolls only the drawer body, so the page behind never moves, and lands the section just below the
+  // pinned bar instead of under it. The motion follows the reader's reduced-motion preference.
+  const recordJump = (body, tools, section) => {
+    const top = section.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - (tools.isConnected ? tools.offsetHeight : 0);
+    const reduce = global.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    body.scrollTo({ top: Math.max(0, Math.round(top)), behavior: reduce ? "auto" : "smooth" });
+  };
 
   function recordContext(view, record, dialog, context, payload) {
     const ctx = { view, record, payload, dialog, labels: view.labels, fmt: view.fmt, signal: context.signal, index: context.index, origins: 0, pending: [],
@@ -171,7 +178,7 @@
         const jump = h("nav", "cx-record-jump"); jump.setAttribute("aria-label", ctx.labels.recordSections);
         for (const element of sections) {
           const target = element.querySelector(".cx-record-toggle");
-          jump.appendChild(recordButton(target.textContent, () => { element.scrollIntoView({ block: "start" }); target.focus({ preventScroll: true }); }, "cx-record-jump-link"));
+          jump.appendChild(recordButton(target.textContent, () => { recordJump(body, tools, element); target.focus({ preventScroll: true }); }, "cx-record-jump-link"));
         }
         sub.appendChild(jump);
       }
@@ -199,6 +206,9 @@
     tools.appendChild(sub);
     paintTab();
     body.append(tools, panel);
+    // The bar pins to the top edge of the body. Top padding above it would leave a strip where scrolled rows show above the
+    // pinned bar, so the body starts at the bar. Set inline because host design systems can pad the body from a later layer.
+    body.style.paddingBlockStart = "0px";
     tools.hidden = tabs.length < 2 && sub.hidden;
     if (entry?.state === "loading") {
       const note = h("p", "cx-record-note"); setText(note, ctx.labels.loading); panel.prepend(note);

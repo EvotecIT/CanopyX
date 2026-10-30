@@ -15,6 +15,10 @@ public sealed partial class CanopyDataGridView {
     /// coloured bar to the selected row and leaves colour to the cells that carry their own tone.</summary>
     public bool RowAccents { get; set; }
 
+    /// <summary>Gets or sets whether the record drawer opens as a full-height sheet over a scrim that closes it. Defaults to true.
+    /// Set false to keep the side panel beside a live, clickable view, for example to step through rows with the pointer.</summary>
+    public bool RecordDrawerModal { get; set; } = true;
+
     private void ValidateRowPresentation() {
         if (!Enum.IsDefined(typeof(CanopyGridRowAction), RowAction)) throw new ArgumentOutOfRangeException(nameof(RowAction), RowAction, "Unknown row action.");
         ValidateViewModes();
@@ -24,6 +28,7 @@ public sealed partial class CanopyDataGridView {
         if (RowAction != CanopyGridRowAction.None) writer.Property("rowAction", RowAction == CanopyGridRowAction.Details ? "details" : "link");
         if (!AutoHeight) writer.Property("autoHeight", false);
         if (RowAccents) writer.Property("rowAccents", true);
+        if (!RecordDrawerModal) writer.Property("recordDrawerModal", false);
         WriteViewModesJson(writer);
     }
 }

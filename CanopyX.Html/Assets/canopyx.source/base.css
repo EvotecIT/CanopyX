@@ -79,14 +79,19 @@
   box-sizing:border-box;
   display:flex;
   flex-direction:column;
-  /* lint-allow layout: viewport or panel dimension */
-  height:480px;
   min-height:0;
   color:var(--hfx-color-text);
   background:var(--hfx-color-surface);
   font-family:var(--hfx-font-sans);
   font-size:var(--hfx-control-font-size);
   line-height:var(--hfx-type-small-line);
+}
+/* The default view height. Dialogs (record drawers, editors, sheets) copy the host class for its tokens, but their overlay
+   owns their size, so they stay out of it. :where keeps this rule at the host class's specificity, so every rule that sizes
+   a host (change hosts, flows, pivots, calendars) still wins exactly as before. */
+.cx-host:where(:not(dialog)) {
+  /* lint-allow layout: viewport or panel dimension */
+  height:480px;
 }
 /* Embedded (CanopyChrome.Embedded): the view fills a card body the host already frames (without body padding), so it draws
    no frame of its own, lets the card's surface show through, runs its rows to the card's edges and insets its toolbar by the
