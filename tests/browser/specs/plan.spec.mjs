@@ -90,10 +90,27 @@ for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, t
   expect(intersections).toEqual({ hitsBar: false, hitsLink: false });
   if (capped) await capture(page, `plan-capped-label-${rtl ? "rtl" : "ltr"}`);
   await expect(point).toHaveClass(/cx-plan-conflict/);
-  await point.focus(); await page.keyboard.press("Tab"); await page.keyboard.press("Shift+Tab");
+  // Keep the round trip inside the document when this milestone is its final tab stop.
+  // Firefox moves focus into browser chrome after the final control otherwise.
+  await page.evaluate(() => document.body.appendChild(Object.assign(document.createElement("button"), { id: "after-plan", textContent: "After plan" })));
+  await point.focus(); await page.keyboard.press("Tab");
+  await expect(page.locator("#after-plan")).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
   await expect(point).toBeFocused();
   const focus = await point.evaluate(element => ({ visible: element.matches(":focus-visible"), style: getComputedStyle(element).outlineStyle, width: parseFloat(getComputedStyle(element).outlineWidth) }));
   expect(focus.visible).toBe(true); expect(focus.style).toBe("solid"); expect(focus.width).toBeGreaterThan(0);
+});
+
+for (const rtl of [false, true]) test(`a milestone without dependencies uses its full available label room ${rtl ? "RTL" : "LTR"}`, async ({ page }) => {
+  await openPlan(page, { rtl, change: view => {
+    view.plan.dependencies = [];
+    view.rows = [["previous", "Previous task", 12, 14], ["point", "Go", 15, 15], ["following", "Following task", 16, 18]].map(([id, title, start, end]) =>
+      ({ id, cells: { title, owner: "platform", starts: iso(start), ends: iso(end), baselineStart: iso(start), baselineEnd: iso(end), milestone: id === "point" } }));
+  } });
+  const title = task(page, "point").locator(".cx-cal-ev-title");
+  await expect(title).toBeVisible();
+  expect(await title.evaluate(title => title.scrollWidth <= title.clientWidth)).toBe(true);
+  expect(await page.locator(".cx-plan-links path").count()).toBe(0);
 });
 
 for (const width of [1100, 1440]) for (const dark of [false, true]) {

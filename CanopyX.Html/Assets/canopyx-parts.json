@@ -748,7 +748,7 @@
     {
       "name": "pivot",
       "label": "pivot analysis",
-      "version": "6fbd82cbf9b5fb1b",
+      "version": "52311878382d98bf",
       "script": "canopyx-pivot.js",
       "style": "canopyx-pivot.css",
       "runtimes": [
@@ -1033,7 +1033,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "42d43322c5f4ce9b",
+      "version": "8ac4de991d941b0f",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [

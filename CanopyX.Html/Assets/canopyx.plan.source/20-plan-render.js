@@ -99,9 +99,15 @@
           const rtl = this.calRtl, currentBefore = element.classList.contains("cx-plan-label-before");
           const gap = Math.max(0, currentBefore !== rtl ? box.left - label.right : label.left - box.right);
           // Leave the return stem and arrowhead outside the final label, including a width-capped label.
-          const clearance = PLAN_METRICS.dependencyLead + 2;
-          const after = Math.max(0, Math.min(canvasBox.right, ...obstacles.filter(other => other.right > box.right + gap).map(other => other.left)) - box.right - gap - clearance);
-          const before = Math.max(0, box.left - gap - Math.max(canvasBox.left, ...obstacles.filter(other => other.left < box.left - gap).map(other => other.right)) - clearance);
+          const successors = network.nodes.get(element._calEvent.key)?.after || [];
+          const needsClearance = side => successors.some(edge => {
+            const target = positions.get(edge.to.task.key);
+            if (!target) return false;
+            const x = canvasBox.left + (this.calRtl ? axis.total - target.start : target.start);
+            return side === "after" ? x > box.right : x < box.left;
+          });
+          const after = Math.max(0, Math.min(canvasBox.right, ...obstacles.filter(other => other.right > box.right + gap).map(other => other.left)) - box.right - gap - (needsClearance("after") ? PLAN_METRICS.dependencyLead + 2 : 0));
+          const before = Math.max(0, box.left - gap - Math.max(canvasBox.left, ...obstacles.filter(other => other.left < box.left - gap).map(other => other.right)) - (needsClearance("before") ? PLAN_METRICS.dependencyLead + 2 : 0));
           const currentRoom = currentBefore !== rtl ? before : after;
           const alternateRoom = currentBefore !== rtl ? after : before;
           const flip = currentRoom < label.width && alternateRoom > currentRoom;

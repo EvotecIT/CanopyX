@@ -37,6 +37,26 @@ for (const hostWidth of [500, 1100]) test(`pivot settings keep one exit action f
   await expect(page.locator(".cx-grid")).toBeVisible();
 });
 
+test("an open pivot editor follows host width across both responsive boundaries", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, pivotView(), parts());
+  const host = page.locator("[data-canopyx-host]");
+  await host.evaluate(host => host.style.width = "500px");
+  await expect(page.locator(".cx-pivot")).toHaveAttribute("data-phone", "true");
+  await page.getByRole("button", { name: "Pivot settings", exact: true }).click();
+  const editorExit = page.getByRole("dialog").getByRole("button", { name: "Show records", exact: true });
+  await expect(editorExit).toBeVisible();
+  await host.evaluate(host => host.style.width = "1100px");
+  await expect(page.locator(".cx-pivot")).toHaveAttribute("data-phone", "false");
+  await expect(editorExit).toBeHidden();
+  await host.evaluate(host => host.style.width = "500px");
+  await expect(page.locator(".cx-pivot")).toHaveAttribute("data-phone", "true");
+  await expect(editorExit).toBeVisible();
+  await editorExit.click();
+  await expect(page.locator(".cx-grid")).toBeVisible();
+  await expect(page.locator(".cx-pivot-table")).toBeHidden();
+});
+
 test("pivot computes complete-query totals and drills a cell to its exact records", async ({ page }) => {
   const view = pivotView(), errors = []; page.on("pageerror", error => errors.push(error.message));
   await open(page, view, parts());
