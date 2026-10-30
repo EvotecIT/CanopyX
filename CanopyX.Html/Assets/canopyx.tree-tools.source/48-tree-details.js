@@ -86,7 +86,7 @@
         if (this.recordDrawer !== dialog || this.destroyed) return;
         this.recordDrawer = null;
         // Another drawer opened in its place keeps the focus.
-        if (TREE_DETAILS.active || dialog._replaced) return;
+        if (TREE_DETAILS.active || dialog._replaced || dialog._cxHidden) return;
         // Focus returns where it was while it still shows the same node, else to the node's row, else to the tree.
         const key = shown.id, row = this.rows.find(w => w.key === key);
         if (returnFocus?.isConnected && (!returnFocus.dataset.cxRecord || returnFocus.dataset.cxRecord === id)) returnFocus.focus({ preventScroll: true });
@@ -94,7 +94,10 @@
       }, { once: true });
       RECORD_IMPL.decorate?.(this, dialog, { head, identity: head.firstChild, title, body, options });
       document.body.appendChild(dialog);
-      const overlay = dialog._cxOverlay = UI_IMPL.drawer(dialog, { host: this.host, container: this.host, focus: false, dismissible: false }, lifetime.signal);
+      // The same drawer as the grid's record drawer (see 74-grid-record-drawer.js): a side panel on wide screens, a sheet on narrow ones or
+      // with the recordDrawerModal opt-in, closing when the tree stops rendering.
+      const modal = (this.opts.recordDrawerModal ?? this.view?.recordDrawerModal) === true;
+      const overlay = dialog._cxOverlay = UI_IMPL.drawer(dialog, { host: this.host, container: this.host, focus: false, dismissible: modal, modal, closeWhenHidden: true }, lifetime.signal);
       lifetime.signal.addEventListener("abort", restoreTheme, { once: true });
       paint(index); overlay.open(); focusDrawerTitle(title);
       return dialog;

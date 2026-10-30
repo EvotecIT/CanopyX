@@ -47,6 +47,19 @@ for (const count of [1, 2]) test(`phone disclosure counts only ${count} fields b
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(`+${count} column${count === 1 ? "" : "s"}`);
 });
 
+test("the phone disclosure stays on the line of the last field instead of sitting alone, and stays visible", async ({ page }) => {
+  await open(page, { extra: 4, signal: "Expires within the next seven days after renewal failed twice" });
+  const placed = await page.locator('.cx-row[data-cx-id="r0"]').evaluate(row => {
+    const button = row.querySelector('.cx-hidden-fields'), fields = [...row.querySelectorAll('.cx-phone-field')], last = fields.at(-1);
+    const box = button.getBoundingClientRect(), field = last.getBoundingClientRect(), line = row.querySelector('.cx-phone-fields').getBoundingClientRect();
+    return { inLast: last.contains(button), sharesLine: Math.abs((box.top + box.bottom) / 2 - (field.top + field.bottom) / 2) <= field.height / 2,
+      visible: box.width > 0 && box.right <= line.right + 1 && box.left >= line.left - 1 };
+  });
+  expect(placed.inLast).toBe(true);
+  expect(placed.sharesLine).toBe(true);
+  expect(placed.visible).toBe(true);
+});
+
 test("same-named phone records expose their next priority context without author-hidden fields", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const columns = [{ id: "check", title: "Check", kind: "text", rowHeader: true, width: 180 },

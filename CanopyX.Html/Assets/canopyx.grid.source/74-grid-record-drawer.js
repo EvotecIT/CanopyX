@@ -29,7 +29,11 @@
     for(const button of [previous,next,close])button.classList.add("icon");identity.append(title,subtitle);head.append(identity,previous,next,close);dialog.append(head,body);
     document.body.appendChild(dialog);activeRecordDrawer=dialog;this.recordDrawer=dialog;DataGrid.activeDrawers.set(dialog,this);
     const primary=this.visibleColumns()[0],shape=gridResultShape(this.acceptedQuery),owner=this.dataLifetime;let retiredForNavigation=false,paints=null;
-    const lifetime=new AbortController(),overlay=dialog._cxOverlay=UI_IMPL.drawer(dialog,{host:this.host,container:this.host,focus:false,dismissible:false},lifetime.signal);
+    // The drawer is a full-height side panel beside the live view on wide screens and a full-screen sheet on narrow ones.
+    // recordDrawerModal: true (on the view or as a mount option) makes it a sheet over a scrim at every width, which keeps the
+    // view's columns and counters out from under it. The drawer belongs to its view, so it closes when the view stops rendering.
+    const modal=(this.opts.recordDrawerModal??this.view.recordDrawerModal)===true;
+    const lifetime=new AbortController(),overlay=dialog._cxOverlay=UI_IMPL.drawer(dialog,{host:this.host,container:this.host,focus:false,dismissible:modal,modal,closeWhenHidden:true},lifetime.signal);
     lifetime.signal.addEventListener("abort",restoreTheme,{once:true});
     // A record outside the accepted result (a deep link or a related record) has no position: previous and next stay off.
     const placed=()=>Number.isInteger(index);
@@ -62,7 +66,7 @@
     const refreshHooks=()=>DataGrid.refreshDrawerHooks(this,dialog);
     this.host.addEventListener("canopyx:format",refreshHooks);
     dialog.addEventListener("close",()=>{lifetime.abort();owner.signal.removeEventListener("abort",abort);this.host.removeEventListener("canopyx:format",refreshHooks);DataGrid.activeDrawers.delete(dialog);cancelAnimationFrame(dialog._cxHooksFrame);paints?.abort();dialog.remove();if(activeRecordDrawer===dialog)activeRecordDrawer=null;if(this.recordDrawer===dialog)this.recordDrawer=null;
-      if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary,openedFrom);},{once:true});
+      if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!dialog._cxHidden&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary,openedFrom);},{once:true});
     RECORD_IMPL.decorate?.(this,dialog,{head,identity,title,subtitle,body,options:options||{}});
     DataGrid.applyDrawerHooks(this,dialog);
     paint(record,index);overlay.open();this.focusRing(title);

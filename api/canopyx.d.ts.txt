@@ -1749,6 +1749,7 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   autoHeight?:boolean;
   rowAction?:"none"|"details"|"link";
   rowAccents?:boolean;
+  recordDrawerModal?:boolean;
   editing?:GridEditingSettings;
   searchHighlight?:boolean|SearchHighlightOptions;
   layout?:LayoutOptions;
@@ -1785,6 +1786,7 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   stateKey?:string;
   timeZone?:TimeZone;
   overlayClass?:string;
+  recordDrawerModal?:boolean;
   labels?:Partial<CanopyLabels>;
   sanitizeHtml?:HostOptions["sanitizeHtml"];
   query?:Q;
@@ -2127,6 +2129,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends Gri
   searchDelayMs?:number;
   source?:Q extends GridCursorQuery?GridCursorSource<Row>:GridSource<Row>;
   overlayClass?:string;
+  recordDrawerModal?:boolean;
   labels?:Partial<CanopyLabels>;
   renderers?:Record<string,(row:Row,element:HTMLElement,context:GridCellContext) => boolean|void>;
   cachePageLimit?:number;
@@ -3669,6 +3672,7 @@ export interface OpenRecordOptions{
   readonly returnFocus?:Element|null;
   readonly path?:readonly string[];
   readonly tab?:string;
+  readonly section?:string;
   readonly reload?:boolean;
 }
 export interface RecordPanelOptions{

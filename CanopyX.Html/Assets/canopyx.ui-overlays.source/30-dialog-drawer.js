@@ -7,6 +7,13 @@
         alert ? element.querySelector('[data-cx-cancel],button:not([data-danger]):not([type="submit"])') : element.querySelector("input:not([type=hidden]),select,textarea")) }, signal);
     const open = () => overlay.open({ modal: !drawer || phone || options.modal === true || root.dataset.modal === "true" });
     UI_TOOLS.observe(container, width => {
+      // A hidden container measures 0: that says nothing about the room the overlay has, so the layout stays as it was.
+      // With closeWhenHidden the overlay closes instead, because the view it belongs to is no longer shown (its page or tab
+      // was hidden, or it left the document). Print media hides views on purpose and does not count.
+      if (!width && !container.getClientRects().length) {
+        if (options.closeWhenHidden && overlay.opened && !matchMedia("print").matches) { root._cxHidden = true; overlay.close("hidden", false, true); }
+        return;
+      }
       phone = width < 640; root.dataset.phone = String(phone); root.classList.toggle("cx-phone", phone);
       if (drawer && overlay.opened) overlay.setModal(phone || options.modal === true || root.dataset.modal === "true");
     }, signal);

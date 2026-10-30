@@ -64,7 +64,9 @@
         slot.childSlots.push({ cell: value, content, base: "cx-phone-value", cls: null, title: null, badges: [], mode: "default", textSpan, text: textSpan.appendChild(document.createTextNode("")) });
       }
     }
-    if (count && button.parentNode !== line) line.appendChild(button);
+    // The disclosure stays with the final context field, so when that field wraps it wraps with it instead of sitting alone.
+    const disclosure = fields.length ? line.querySelectorAll(".cx-phone-field")[fields.length - 1] : line;
+    if (count && button.parentNode !== disclosure) disclosure.appendChild(button);
     fields.forEach((field, index) => {
       this.paintSlot(slot.childSlots[index], row, field, this.columns.indexOf(field), { level: 0, expanded: false });
       slot.childSlots[index].cell.title = cellText(row.cells[field.id], field, this.fmt) || "";

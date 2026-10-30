@@ -78,13 +78,15 @@
 box-sizing:border-box;
 display:flex;
 flex-direction:column;
-height:480px;
 min-height:0;
 color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));
 background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));
 font-family:var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);
 font-size:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem));
 line-height:var(--hfx-type-small-line,1.4);
+}
+.cx-host:where(:not(dialog)){
+height:480px;
 }
 .cx-host[data-cx-chrome="embedded"]{background:transparent;border:0;border-radius:0;}
 .cx-host[data-cx-chrome="embedded"] > .cx-grid{border-inline:0;border-bottom:0;border-radius:0;background:transparent;}
