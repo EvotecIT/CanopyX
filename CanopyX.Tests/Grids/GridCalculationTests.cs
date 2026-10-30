@@ -110,22 +110,23 @@ public sealed class GridCalculationTests {
     public void NestedStaticErrorsDescribeOnlyPrintedRowsAndStayOutsideCapturedCellText(int maxRows, bool hasError) {
         var child = new CanopyDataGridView("child", "Nested calculations");
         child.Columns.Add(new CanopyColumn("quantity", "Quantity") { Kind = CanopyColumnKind.Number });
-        child.Columns.Add(Number("ratio", "1 / [quantity]"));
-        var calculations = new CanopyCalculationSet(child.Columns);
+        child.Columns.Add(Number("ratio", "8 / [quantity]"));
         var payload = new CanopyGridRowsDetail();
-        foreach (var (id, quantity) in new[] { ("healthy", 1d), ("first-error", 0d), ("second-error", 0d) }) {
+        foreach (var (id, quantity) in new[] { ("healthy", 2d), ("first-error", 0d), ("second-error", 0d) }) {
             var row = new CanopyGridRow(id); row.Cells["quantity"] = new CanopyCell(quantity);
-            payload.Rows.Add(calculations.Apply(row));
+            payload.Rows.Add(row);
         }
         var view = new CanopyDataGridView("outer", "Outer records");
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Reporting = new CanopyGridReporting { Detail = new CanopyGridDetail { View = child, Print = true } };
         view.Rows.Add(new CanopyGridRow("outer-row") { Cells = { ["name"] = "Outer" }, Detail = payload });
         var result = CanopyStaticHtml.RenderGridWithResult(view, options: new CanopyStaticHtmlOptions { MaxRows = maxRows });
-        const string reason = "<li>#DIV/0: ratio (1 / [quantity]): Calculation error: Division by zero</li>";
+        const string reason = "<li>#DIV/0: ratio (8 / [quantity]): Calculation error: Division by zero</li>";
         Assert.Equal(hasError, result.Html.Contains(reason));
         if (hasError) Assert.Equal(result.Html.IndexOf(reason, StringComparison.Ordinal), result.Html.LastIndexOf(reason, StringComparison.Ordinal));
         Assert.Equal(2, result.Rows.Count);
+        Assert.Contains("4", Assert.Single(result.Rows[1]));
+        Assert.All(payload.Rows, row => Assert.False(row.Cells.ContainsKey("ratio")));
         Assert.DoesNotContain("Calculation error:", Assert.Single(result.Rows[1]));
         Assert.DoesNotContain("<script", result.Html);
     }
