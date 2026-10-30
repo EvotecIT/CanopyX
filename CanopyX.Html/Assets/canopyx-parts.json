@@ -837,7 +837,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "077268d4fb78c464",
+      "version": "5618e0883d23c38e",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [
