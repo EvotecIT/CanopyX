@@ -42,7 +42,7 @@ for (const theme of ["light", "dark"]) {
     await expectNoViolations(page);
     // Transient states: the column chooser, the search results, and a filtered tree with a "show more" row.
     await page.getByText("Columns", { exact: true }).click();
-    await expect(page.locator(".cx-grid-columns .cx-grid-panel")).toHaveAttribute("role", "group");
+    await expect(page.locator(".cx-grid-columns .cx-grid-panel")).toHaveAttribute("role", "dialog");
     await expectNoViolations(page);
     await page.getByText("Columns", { exact: true }).click();
     await page.getByRole("combobox").fill("budget");

@@ -17,6 +17,30 @@ async function open(page, view, host = "") {
   return warnings;
 }
 
+for (const stylesheet of [false, true]) {
+  test(`viewport max-height follows resizing from ${stylesheet ? "stylesheet" : "inline"} CSS`, async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 1000 });
+    const view = { ...grid(Array.from({ length: 60 }, (_, index) => ({ id: "r" + index, cells: { name: "Row " + index, size: index } }))), search: true };
+    const attribute = stylesheet ? ' data-viewport-bound' : ' style="height:900px;max-height:60vh"';
+    await page.route("http://canopyx.test/relative-height", route => route.fulfill({ contentType: "text/html",
+      body: viewPage(view).replace("data-canopyx-host data-cx-theme", "data-canopyx-host" + attribute + " data-cx-theme")
+        .replace("</head>", "<style>[data-viewport-bound]{height:900px;max-height:60vh}</style></head>") }));
+    await page.goto("http://canopyx.test/relative-height");
+    await page.waitForSelector("[data-cx-ready]");
+    const host = page.locator("[data-canopyx-host]");
+    for (const height of [1000, 700, 1000]) {
+      await page.setViewportSize({ width: 1024, height });
+      await expect.poll(() => host.evaluate(node => Math.round(node.getBoundingClientRect().height))).toBe(Math.round(height * .6));
+    }
+    await page.locator(".cx-search-input").fill("no matching records");
+    await expect(host).toHaveClass(/cx-grid-awaiting/);
+    await page.setViewportSize({ width: 1024, height: 700 });
+    await expect.poll(() => host.evaluate(node => node.getBoundingClientRect().height)).toBeLessThanOrEqual(420);
+    await page.locator(".cx-search-input").fill("");
+    await expect.poll(() => host.evaluate(node => Math.round(node.getBoundingClientRect().height))).toBe(420);
+  });
+}
+
 test("a mistyped cell is repaired and reported once per column instead of blanking the grid", async ({ page }) => {
   const warnings = await open(page, grid([
     { id: "a", cells: { name: 42, size: "17", seen: "2026-10-16T10:00:00Z" } },

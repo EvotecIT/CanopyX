@@ -71,7 +71,7 @@
 
     controlPanel(title, className, onOpen) {
       const details = h("details", "cx-columns " + className), summary = h("summary", "cx-btn"), panel = h("div", "cx-columns-list cx-grid-panel cx-pop");
-      summary.setAttribute("role","button");panel.setAttribute("role","group");panel.setAttribute("aria-label",title);
+      summary.setAttribute("role","button");panel.setAttribute("role","dialog");panel.setAttribute("aria-label",title);
       if (className !== "cx-grid-filters") summary.classList.add("ghost");
       setText(summary, title); details.append(summary, panel); this.toolbar.appendChild(details);
       // The icon is named by the control: filter, columns, views or export (the more menu's summary is its own icon).

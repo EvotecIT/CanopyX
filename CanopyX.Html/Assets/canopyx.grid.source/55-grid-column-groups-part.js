@@ -40,6 +40,6 @@
   const GRID_PARTS_INIT = DataGrid.prototype.initializeState;
   DataGrid.prototype.initializeState = function () {
     const ready = GRID_PARTS_INIT.call(this), range = this.opts.rangeSelection ?? this.view.rangeSelection;
-    const parts = [this.view.columnGroups?.length && this.loadColumnGroups(), range && range.enabled !== false && this.loadCellRanges()].filter(Boolean);
+    const parts = [(this.view.columnBands ?? this.view.columnGroups)?.length && this.loadColumnGroups(), range && range.enabled !== false && this.loadCellRanges()].filter(Boolean);
     return parts.length ? Promise.all([ready, ...parts.map(part => part.catch(error => this.emit("error", { error })))]).then(([result]) => result) : ready;
   };

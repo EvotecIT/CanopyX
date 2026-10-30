@@ -39,9 +39,9 @@
   Object.assign(DataGrid.prototype, {
     startColumnGroups() {
       if (this.columnGroupModel || this.destroyed) return;
-      if (!this.view.columnGroups?.length) { this.columnGroupModel = { roots: [], byId: new Map(), owner: new Map(), depth: 0 }; return; }
+      if (!(this.view.columnBands ?? this.view.columnGroups)?.length) { this.columnGroupModel = { roots: [], byId: new Map(), owner: new Map(), depth: 0 }; return; }
       const model = this.columnGroupModel = cgRead(this.view), byId = new Map(this.columns.map(column => [column.id, column]));
-      if (this.view.columnGroupMode === "presentation") { cgInstallPresentation(this); return; }
+      if (this.view.columnBands !== undefined) { cgInstallPresentation(this); return; }
       // A restored view keeps the reader's pins; a fresh one starts with the groups' declared pins.
       if (!this.initialState) for (const root of model.roots) if (root.pinned !== undefined) for (const id of root.leaves) byId.get(id).pin = root.pinned || "none";
       // A grouped column's drawer section is its group's title, or the titles down to it when a title repeats.
@@ -94,7 +94,7 @@
 
     /** Shows or hides every column of a semantic group; presentation bands have no collective action. */
     setColumnGroupVisible(id, visible) {
-      if (this.view.columnGroupMode === "presentation") throw new Error("CanopyX: presentation bands do not change column visibility; use setColumnVisible.");
+      if (this.view.columnBands !== undefined) throw new Error("CanopyX: presentation bands do not change column visibility; use setColumnVisible.");
       const node = this.columnGroupModel?.byId.get(id);
       if (!node || typeof visible !== "boolean" || this.destroyed) throw new Error("CanopyX: visibility needs a declared column group and a boolean.");
       const members = this.columns.filter(column => node.leaves.includes(column.id));

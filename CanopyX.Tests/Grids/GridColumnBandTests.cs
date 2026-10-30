@@ -21,7 +21,9 @@ public sealed class GridColumnBandTests {
         view.GetColumn("after").Pinned = CanopyGridColumnPin.Right; view.GetColumn("before").Section = "Authored section";
         var json = view.ToJson(); ProtocolSchema.AssertValid(json, "presentation header bands");
         using var document = JsonDocument.Parse(json);
-        Assert.Equal("presentation", document.RootElement.GetProperty("columnGroupMode").GetString());
+        Assert.Equal(2, document.RootElement.GetProperty("columnBands").GetArrayLength());
+        Assert.False(document.RootElement.TryGetProperty("columnGroups", out _));
+        Assert.False(document.RootElement.TryGetProperty("columnGroupMode", out _));
         Assert.Equal(new[] { "host", "before", "root", "after" }, view.Columns.Select(column => column.Id));
         Assert.Equal(CanopyGridColumnPin.Left, view.GetColumn("host").Pinned);
         Assert.Equal(CanopyGridColumnPin.Right, view.GetColumn("after").Pinned);
@@ -35,7 +37,8 @@ public sealed class GridColumnBandTests {
         var view = View(); view.ColumnGroupMode = CanopyColumnGroupMode.Semantic;
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
         view.ColumnGroups.Clear(); view.ColumnGroups.Add(new CanopyColumnGroup("a", "A", "host", "before"));
-        Assert.DoesNotContain("columnGroupMode", view.ToJson());
+        Assert.DoesNotContain("columnBands", view.ToJson());
+        Assert.Contains("columnGroups", view.ToJson());
     }
 
     [Fact]
@@ -45,7 +48,7 @@ public sealed class GridColumnBandTests {
         view.ColumnGroups[0].Pinned = null; view.ColumnGroupMode = (CanopyColumnGroupMode)9;
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
         view.ColumnGroupMode = CanopyColumnGroupMode.Presentation;
-        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(view.ToJson(), document => document["columnGroups"]![0]!["pinned"] = "left")).IsValid);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(view.ToJson(), document => document["columnBands"]![0]!["pinned"] = "left")).IsValid);
     }
 
     [Fact]
@@ -64,10 +67,9 @@ public sealed class GridColumnBandTests {
         Assert.Equal(2, CanopyStaticHtml.RenderGrid(view).Split("&lt;Live&gt;</th>").Length - 1);
     }
 
-    [Theory]
-    [InlineData("invalid")]
-    [InlineData("")]
-    public void Schema_RejectsUnknownBandModes(string mode) {
-        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(View().ToJson(), document => document["columnGroupMode"] = mode)).IsValid);
+    [Fact]
+    public void Schema_RejectsBandsTogetherWithSemanticGroups() {
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(View().ToJson(), document =>
+            document["columnGroups"] = System.Text.Json.Nodes.JsonNode.Parse("[]"))).IsValid);
     }
 }

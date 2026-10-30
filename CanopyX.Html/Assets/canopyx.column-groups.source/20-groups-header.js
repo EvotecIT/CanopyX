@@ -35,7 +35,7 @@
     cell.setAttribute("role", "columnheader"); cell.setAttribute("aria-colindex", String(first + 1));
     cell.setAttribute("aria-colspan", String(span)); cell.setAttribute("aria-label", node.title); cell.dataset.cxGroup = node.id; cell.dataset.cxLevel = String(node.depth);
     setText(title, node.title); title.title = node.title; cell.appendChild(title);
-    if (grid.view.columnGroupMode !== "presentation") {
+    if (grid.view.columnBands === undefined) {
       if (grid.view.reporting?.columnReorder) cgMoveButton(grid, node, cell);
       cell.appendChild(cgGrip(grid, node));
     }
