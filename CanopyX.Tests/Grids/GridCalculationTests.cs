@@ -86,6 +86,51 @@ public sealed class GridCalculationTests {
         Assert.Equal(42d, result.Cells["lazy"].Value);
     }
 
+    [Fact]
+    public void StaticErrorsIncludeVisibleReasonsWithoutRequiringTooltips() {
+        var view = new CanopyDataGridView("calculations", "Calculated values");
+        view.Columns.Add(new CanopyColumn("quantity", "Quantity") { Kind = CanopyColumnKind.Number });
+        view.Columns.Add(Number("ratio", "1 / [quantity]"));
+        view.Rows.Add(new CanopyGridRow("first"));
+        view.Rows.Add(new CanopyGridRow("second"));
+        foreach (var row in view.Rows) row.Cells["quantity"] = new CanopyCell(0d);
+        var html = CanopyX.Rendering.CanopyStaticHtml.RenderGrid(view);
+        const string reason = "<li>#DIV/0: ratio (1 / [quantity]): Calculation error: Division by zero</li>";
+        Assert.Contains(reason, html);
+        Assert.Equal(html.IndexOf(reason, StringComparison.Ordinal), html.LastIndexOf(reason, StringComparison.Ordinal));
+        Assert.DoesNotContain("<script", html);
+        var healthy = new CanopyGridRow("healthy"); healthy.Cells["quantity"] = new CanopyCell(1d); view.Rows.Insert(0, healthy);
+        var bounded = CanopyX.Rendering.CanopyStaticHtml.RenderGrid(view, options: new CanopyX.Rendering.CanopyStaticHtmlOptions { MaxRows = 1 });
+        Assert.DoesNotContain("<li>#DIV/0:", bounded);
+    }
+
+    [Theory]
+    [InlineData(2, false)]
+    [InlineData(4, true)]
+    public void NestedStaticErrorsDescribeOnlyPrintedRowsAndStayOutsideCapturedCellText(int maxRows, bool hasError) {
+        var child = new CanopyDataGridView("child", "Nested calculations");
+        child.Columns.Add(new CanopyColumn("quantity", "Quantity") { Kind = CanopyColumnKind.Number });
+        child.Columns.Add(Number("ratio", "8 / [quantity]"));
+        var payload = new CanopyGridRowsDetail();
+        foreach (var (id, quantity) in new[] { ("healthy", 2d), ("first-error", 0d), ("second-error", 0d) }) {
+            var row = new CanopyGridRow(id); row.Cells["quantity"] = new CanopyCell(quantity);
+            payload.Rows.Add(row);
+        }
+        var view = new CanopyDataGridView("outer", "Outer records");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Reporting = new CanopyGridReporting { Detail = new CanopyGridDetail { View = child, Print = true } };
+        view.Rows.Add(new CanopyGridRow("outer-row") { Cells = { ["name"] = "Outer" }, Detail = payload });
+        var result = CanopyStaticHtml.RenderGridWithResult(view, options: new CanopyStaticHtmlOptions { MaxRows = maxRows });
+        const string reason = "<li>#DIV/0: ratio (8 / [quantity]): Calculation error: Division by zero</li>";
+        Assert.Equal(hasError, result.Html.Contains(reason));
+        if (hasError) Assert.Equal(result.Html.IndexOf(reason, StringComparison.Ordinal), result.Html.LastIndexOf(reason, StringComparison.Ordinal));
+        Assert.Equal(2, result.Rows.Count);
+        Assert.Contains("4", Assert.Single(result.Rows[1]));
+        Assert.All(payload.Rows, row => Assert.False(row.Cells.ContainsKey("ratio")));
+        Assert.DoesNotContain("Calculation error:", Assert.Single(result.Rows[1]));
+        Assert.DoesNotContain("<script", result.Html);
+    }
+
     [Theory]
     [InlineData(CanopyColumnKind.Number, "\"12\"", "type")]
     [InlineData(CanopyColumnKind.Text, "12", "type")]

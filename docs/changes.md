@@ -36,9 +36,30 @@ string html = list.ToHtmlFragment() + propagation.ToHtmlFragment();     // with 
 string mail = CanopyStaticHtml.RenderChanges(list);                       // script-free, for email and print
 ```
 
-In JavaScript, `CanopyX.createDiff(host, { view })`, `CanopyX.createChangeList(host, { view })` and
-`CanopyX.createPropagation(host, { view })` take the same documents. The grid and reporting entry points carry these functions;
-the views themselves load with the lazy `changes` part on first use. `ChangeViewsExample` in `CanopyX.Examples` writes
+In JavaScript, `createDiff(host, { view })`, `createChangeList(host, { view })` and `createPropagation(host, { view })` take
+the same documents. The grid and reporting entry points carry these functions; the views themselves load with the lazy
+`changes` part on first use. Classic scripts reach them as `CanopyX.createDiff` and so on.
+
+```js
+import { createChangeList, createDiff } from "@evotecit/canopyx/grid";
+import "@evotecit/canopyx/grid.css";
+import "@evotecit/canopyx/changes.js";
+import "@evotecit/canopyx/changes.css";
+
+// The host serves serialized canopyx/2 view documents at these endpoints.
+async function loadView(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`View request failed: ${response.status}`);
+  return response.json();
+}
+const [changeListDocument, diffDocument] = await Promise.all([
+  loadView("/api/views/changes"), loadView("/api/views/diff")
+]);
+const list = createChangeList(document.getElementById("changes"), { view: changeListDocument });
+const diff = createDiff(document.getElementById("diff"), { view: diffDocument });
+```
+
+`ChangeViewsExample` in `CanopyX.Examples` writes
 `changes.html` (and its dark page), `changes-diff-large.html` (a 20,000-line file) and `changes-static.html`.
 
 ## The text diff

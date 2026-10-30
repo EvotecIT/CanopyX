@@ -271,6 +271,7 @@ predecessor leaves the result empty. A zero or missing denominator leaves a perc
 the difference by the preceding value, including its sign. Empty groups stay empty. The optional `values` part owns
 browser mathematics and the menu; C# and JavaScript share the conformance vectors in `tests/fixtures/aggregate-display.json`.
 `CanopyStaticHtml.RenderGridSummary` applies declared modes and captions to the script-free output.
+Its corner names the grouping fields; group rows show plain values and counts, with indentation for nested levels.
 
 ## Labels
 

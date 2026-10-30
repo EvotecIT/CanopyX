@@ -9,13 +9,17 @@
     for (const row of grid.groupRows || []) row.remove();
     grid.groupRows = []; grid.groupCells = [];
     for (let level = 0; level < depth; level++) {
-      const row = h("div", "cx-hrow cx-hgroup-row");
+      const row = h("div", "cx-hrow cx-hgroup-row"), seen = new Set();
       row.setAttribute("role", "row"); row.setAttribute("aria-rowindex", String(level + 1));
       for (let first = 0; first < cols.length;) {
         const node = paths[first][level];
         let end = first + 1;
-        if (node) while (end < cols.length && paths[end][level] === node) end++;
+        if (node) while (end < cols.length && paths[end][level] === node && cols[end].effectivePin === cols[first].effectivePin) end++;
         const cell = node ? cgGroupCell(grid, node, first, end - first) : h("div", "cx-hcell cx-hgroup-pad");
+        if (node && grid.view.columnBands !== undefined) {
+          cell.classList.add("cx-hband");
+          cell.classList.toggle("cx-hband-continuation", seen.has(node)); seen.add(node);
+        }
         if (!node) cell.setAttribute("aria-hidden", "true");
         cell._cxSpan = { first, last: end - 1 };
         row.appendChild(cell); grid.groupCells.push(cell); first = end;
@@ -27,6 +31,7 @@
     grid.host.classList.toggle("cx-column-groups", depth > 0);
     cgDepth(grid, depth);
     cgLayout(grid);
+    grid.columnBandKey = cgBandKey(grid);
   }
 
   function cgGroupCell(grid, node, first, span) {
@@ -34,8 +39,10 @@
     cell.setAttribute("role", "columnheader"); cell.setAttribute("aria-colindex", String(first + 1));
     cell.setAttribute("aria-colspan", String(span)); cell.setAttribute("aria-label", node.title); cell.dataset.cxGroup = node.id; cell.dataset.cxLevel = String(node.depth);
     setText(title, node.title); title.title = node.title; cell.appendChild(title);
-    if (grid.view.reporting?.columnReorder) cgMoveButton(grid, node, cell);
-    cell.appendChild(cgGrip(grid, node));
+    if (grid.view.columnBands === undefined) {
+      if (grid.view.reporting?.columnReorder) cgMoveButton(grid, node, cell);
+      cell.appendChild(cgGrip(grid, node));
+    }
     return cell;
   }
 

@@ -6,6 +6,33 @@
   // list of the focused day under the month.
   const CAL_LANE = 22, CAL_NUMBER = 26;
 
+  /** Fit whole weekly bars first, then timed chips; only days with hidden events reserve a More line. */
+  function calMonthLanes(items, columns, limit) {
+    const bar = item => calInAllDayRow(item.event) || item.event.ed > item.event.sd;
+    const ordered = items.slice().sort((a, b) => Number(bar(b)) - Number(bar(a)) || (bar(a) ? (b.to - b.from) - (a.to - a.from) : 0));
+    const reserved = new Array(columns).fill(false);
+    let visible, counts, busy, changed;
+    do {
+      visible = []; counts = new Array(columns).fill(0); busy = Array.from({ length: columns }, () => []); changed = false;
+      const shown = new Set();
+      for (const item of ordered) {
+        const someColumn = predicate => {
+          for (let col = item.from; col <= item.to; col++) if (predicate(col)) return true;
+          return false;
+        };
+        let lane = 0;
+        while (someColumn(col => busy[col][lane])) lane++;
+        if (someColumn(col => lane >= limit - Number(reserved[col]))) continue;
+        visible.push({ ...item, lane }); shown.add(item.event);
+        for (let col = item.from; col <= item.to; col++) { busy[col][lane] = true; counts[col]++; }
+      }
+      for (const item of items) for (let col = item.from; col <= item.to; col++) {
+        if (!reserved[col] && !shown.has(item.event)) { reserved[col] = true; changed = true; }
+      }
+    } while (changed);
+    return { visible, counts, more: busy.map(lanes => lanes.length) };
+  }
+
   const calDayOrder = (a, b) => (b.allDay - a.allDay) || a.start - b.start || (a.id < b.id ? -1 : 1);
   Object.assign(DataGrid.prototype, {
     /** The shown weekdays in order, starting at the first weekday. */
@@ -71,7 +98,7 @@
       grid.style.setProperty("--cx-cal-cols", String(weekdays.length));
       grid.appendChild(this.calWeekdayRow("cx-cal-dow"));
       const weeks = h("div", "cx-cal-weeks"); weeks.setAttribute("role", "rowgroup"); grid.appendChild(weeks);
-      const fit = Math.max(1, Math.floor((rowHeight - CAL_NUMBER - 4) / CAL_LANE));
+      const fit = Math.max(1, Math.floor((rowHeight - CAL_NUMBER) / CAL_LANE));
       // Print shows every event: rows grow to their lanes instead of folding into "+N more".
       const limit = this.calPrinting ? Infinity : options.dots ? 0 : this.cal.eventLimit === "auto" ? fit : Math.min(this.cal.eventLimit, Math.max(fit, 1));
       for (let week = first; week <= last; week += 7) {
@@ -108,25 +135,16 @@
         }
         const weekEvents = events.filter(event => event.sd <= week + 6 && event.ed >= week);
         const placed = calLanes(weekEvents, week, week + 6, day => order.has(day) && !pad(day) ? order.get(day) : -1);
-        if (this.calPrinting) row.style.minHeight = Math.max(rowHeight, CAL_NUMBER + 6 + (Math.max(-1, ...placed.map(item => item.lane)) + 1) * CAL_LANE) + "px";
         const totals = new Array(shown.length).fill(0);
         for (const item of placed) for (let col = item.from; col <= item.to; col++) totals[col]++;
-        const dayLimit = totals.map(total => total > limit ? Math.max(0, limit - 1) : limit), visible = new Array(shown.length).fill(0);
-        for (const item of placed) {
-          let run = null;
-          const flush = () => {
-            if (!run) return;
-            const event = item.event, bar = calInAllDayRow(event) || event.ed > event.sd, element = this.calEventElement(event, bar ? "bar" : "chip");
-            element.style.setProperty("--c", String(run.from)); element.style.setProperty("--s", String(run.to - run.from + 1)); element.style.setProperty("--l", String(item.lane));
-            if (event.sd < shown[run.from]) element.classList.add("cx-cal-cont-start");
-            if (event.ed > shown[run.to]) element.classList.add("cx-cal-cont-end");
-            cells[run.from].appendChild(element); run = null;
-          };
-          for (let col = item.from; col <= item.to; col++) {
-            if (item.lane < dayLimit[col]) { visible[col]++; if (run) run.to = col; else run = { from: col, to: col }; }
-            else flush();
-          }
-          flush();
+        const layout = calMonthLanes(placed, shown.length, limit);
+        if (this.calPrinting) row.style.minHeight = Math.max(rowHeight, CAL_NUMBER + 6 + (Math.max(-1, ...layout.visible.map(item => item.lane)) + 1) * CAL_LANE) + "px";
+        for (const item of layout.visible) {
+          const event = item.event, bar = calInAllDayRow(event) || event.ed > event.sd, element = this.calEventElement(event, bar ? "bar" : "chip");
+          element.style.setProperty("--c", String(item.from)); element.style.setProperty("--s", String(item.to - item.from + 1)); element.style.setProperty("--l", String(item.lane));
+          if (event.sd < shown[item.from]) element.classList.add("cx-cal-cont-start");
+          if (event.ed > shown[item.to]) element.classList.add("cx-cal-cont-end");
+          cells[item.from].appendChild(element);
         }
         cells.forEach((cell, col) => {
           if (cell.classList.contains("cx-cal-pad")) return;
@@ -135,7 +153,7 @@
             cell.classList.add("cx-cal-bgday"); cell.style.setProperty("--cx-bg-tone", toneVariable(backgrounds[0].tone, false, "var(--hfx-color-status-info-fg)"));
             if (backgrounds[0].sd === day || col === 0) { const label = h("span", "cx-cal-bglabel"); setText(label, backgrounds[0].label); label.setAttribute("aria-hidden", "true"); cell.appendChild(label); }
           }
-          const hidden = totals[col] - visible[col];
+          const hidden = totals[col] - layout.counts[col];
           cell.setAttribute("aria-label", this.calDayName(day, totals[col], backgrounds));
           if (options.dots && totals[col]) {
             const dots = h("span", "cx-cal-dots"); dots.setAttribute("aria-hidden", "true");
@@ -147,7 +165,7 @@
             const more = gridButton(fill(this.calLabels.calendarMore, { count: numberFormat(this.lang).format(hidden) }), () => {});
             more.className = "cx-cal-more-btn"; more.tabIndex = -1; more.dataset.cxDay = String(day);
             more.setAttribute("aria-label", fill(this.calLabels.calendarMoreLabel, { count: numberFormat(this.lang).format(hidden), date: this.calFmt.longDay(day) }));
-            more.style.setProperty("--l", String(dayLimit[col])); more.style.setProperty("--c", String(col));
+            more.style.setProperty("--l", String(layout.more[col])); more.style.setProperty("--c", String(col));
             cell.appendChild(more);
           }
         });

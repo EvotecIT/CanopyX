@@ -189,7 +189,7 @@ test("grouping keeps first-column aggregates and clears collapse keys after regr
   const view = groupedDefinition(); view.reporting.groupBy = [{ column: "region", direction: "asc" }];
   view.rows.forEach(row => { row.cells.region = "Open"; row.cells.status = "Open"; });
   await openGroups(page, view);
-  await expect(page.locator(".cx-grid-group").first().locator(".cx-hidden-aggregates")).toContainText("Order count 48");
+  await expect(page.locator(".cx-grid-group").first().locator(".cx-hidden-aggregates")).toContainText("Order Count 48");
   await page.evaluate(api + ".setGroupCollapsed(" + JSON.stringify((await page.evaluate(api + ".getSummary()")).groups[0].key) + ", true)");
   await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(0);
   await page.evaluate(api + ".setGroupBy([{ column: 'status', direction: 'asc' }])");

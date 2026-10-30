@@ -6,7 +6,19 @@ The normal quality loop builds the libraries, checks their contracts, generates 
 ./Build.ps1 -Configuration Release
 ```
 
-Shared CI runs that loop across Linux, Windows and macOS in Chromium, Firefox and WebKit. It checks returned data, ordering, cancellation, lifecycle cleanup, bounded requests and DOM, generated artifacts and visible behavior. Ordinary test and process timeouts still catch hangs. Elapsed time, relative speed, long tasks, observed heap growth and allocation measurements run only when explicitly requested; shared-runner measurements do not decide PR correctness.
+Quality runs the full loop on Linux in Chromium, Firefox and WebKit, on Windows in Chromium (including visual baselines and packages), and on macOS in WebKit for pull requests. Pushes to `main` and manual runs cover all three engines on all three platforms, retaining the two Windows Firefox and macOS WebKit shards. PRs use five matrix jobs, including one unsharded macOS job; full runs use eleven, including four macOS jobs.
+
+Browser files run on three workers in Quality CI, with tests inside each file kept in order (`fullyParallel: false`) and no retries. `CANOPYX_TEST_WORKERS` selects a different positive worker count for local validation; without it the browser config uses two. The existing 135-minute job deadline and 7,200-second browser-process deadline remain in place.
+
+A PR whose complete diff changes only `Website/**`, `docs/**` or unshipped Markdown files skips the build matrix. Schemas (`docs/schema/**`), shipped images (`docs/images/**`) and package READMEs always require it. The package READMEs are `README.md`, `README.nuget.md`, `CanopyX.Data/README.md`, `CanopyX.AspNetCore/README.md` and `ThirdParty/OfficeIMO/README.md`; deleting or moving one must still reach the package checks. The three required platform checks still run and succeed after a confirmed documentation-only skip; failed coverage selection, failed tests and cancelled builds fail those checks. Website validation runs in its own workflow. Only superseded runs for the same PR are cancelled; each main push and manual run has its own concurrency group.
+
+Check coverage selection locally without building or installing browser packages:
+
+```powershell
+node --test .github/scripts/quality-plan.test.mjs
+```
+
+The suite checks returned data, ordering, cancellation, lifecycle cleanup, bounded requests and DOM, generated artifacts and visible behavior. Ordinary test and process timeouts still catch hangs. Elapsed time, relative speed, long tasks, observed heap growth and allocation measurements run only when explicitly requested; shared-runner measurements do not decide PR correctness.
 
 For a C# correctness change, the shorter command is:
 

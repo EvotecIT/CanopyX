@@ -208,7 +208,8 @@
       this.calGrid = this.tlCanvas;
       if (this.tlScrolledFor !== this.calZoom + ":" + span.firstDay) {
         this.tlScrolledFor = this.calZoom + ":" + span.firstDay;
-        const now = Date.now(), target = now >= axis.from && now < axis.to ? axis.x(now) - this.tlMain.clientWidth / 3 : 0;
+        // The selected date is the initial anchor, even when the reader's current date is later in the same range.
+        const selected = this.calZone.start(this.calDate), target = selected >= axis.from && selected < axis.to ? axis.x(selected) - this.tlMain.clientWidth / 3 : 0;
         this.tlScrollTo(Math.max(0, target));
       }
       this.tlTree.version++; this.tlTree.scheduleRender();

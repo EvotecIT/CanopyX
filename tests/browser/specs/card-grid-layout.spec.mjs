@@ -38,7 +38,8 @@ async function openCards(page, view, { theme = "light", script = "" } = {}) {
   await page.goto(server.url + "card-fixture.html");
   await page.waitForSelector("[data-cx-ready]");
   await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.ready);
-  await settleGrid(page);
+  if (view.rows?.length === 0) await expect(page.locator(".cx-state")).toBeVisible();
+  else await settleGrid(page);
 }
 
 const records = page => page.locator('.cx-canvas > .cx-row[data-cx-id]');
@@ -72,6 +73,40 @@ test("ordinary cards retain warning and danger state indicators without a succes
   expect(new Set(boxes.map(row => row.top)).size).toBe(1);
   expect(page.errors).toEqual([]);
 });
+
+for (const width of [1440, 390]) for (const initiallyEmpty of [false, true]) {
+  test(`empty cards retain the authored bound and settle through resize and recovery at ${width}px (${initiallyEmpty ? "initially empty" : "filtered"})`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const view = cards(initiallyEmpty ? 0 : 40, { autoHeight: true });
+    await openCards(page, view, { script: `
+      const host = document.querySelector('[data-canopyx-host]');
+      host.style.maxHeight = '520px';
+      CanopyX.createDataGrid(host, { view: definition });` });
+    if (!initiallyEmpty) await call(page, "setQuery", { search: "no matching work item" });
+    await expect(page.locator(".cx-state")).toBeVisible();
+    const heights = () => page.locator("[data-canopyx-host]").evaluate(host => new Promise(resolve => {
+      const values = []; let frames = 0;
+      function sample() {
+        if (frames++ >= 10) values.push({ height: host.getBoundingClientRect().height, maximum: parseFloat(getComputedStyle(host).maxHeight) });
+        if (frames < 20) requestAnimationFrame(sample); else resolve(values);
+      }
+      requestAnimationFrame(sample);
+    }));
+    for (const nextWidth of [width, width === 1440 ? 1280 : 420]) {
+      await page.setViewportSize({ width: nextWidth, height: 900 });
+      const values = await heights();
+      expect(Math.max(...values.map(value => value.height))).toBeLessThanOrEqual(521);
+      expect(Math.max(...values.map(value => value.height - value.maximum))).toBeLessThanOrEqual(1);
+      expect(Math.max(...values.map(value => value.height)) - Math.min(...values.map(value => value.height))).toBeLessThanOrEqual(1);
+    }
+    if (!initiallyEmpty) {
+      await call(page, "setQuery", { search: "" }); await settleGrid(page);
+      await expect(records(page).first()).toHaveAttribute("data-cx-id", "item-00000");
+      await expect(records(page).first()).toBeInViewport();
+    }
+    expect(page.errors).toEqual([]);
+  });
+}
 
 for (const [width, theme, lanes] of [[1440, "light", 4], [390, "dark", 1]]) {
   test(`cards form a raised responsive grid with safe status pills (${width}, ${theme})`, async ({ page }, info) => {

@@ -90,7 +90,7 @@
     const apply = gridButton(this.labels.gridApply, () => {}); apply.type = "submit"; apply.dataset.variant = "primary";
     const flat = gridButton(this.labels.gridPivotFlat, () => {
       this.reportingText?._cxOverlay.close(); this.setPivot(false).catch(error => this.emit("error", { error }));
-    }); flat.hidden = !state?.active;
+    }); flat.classList.add("cx-pivot-editor-flat"); flat.hidden = !state?.active || this.host.clientWidth > 640;
     form.append(group, topLabel, sortLabel, flat, error, apply);
     for (const select of form.querySelectorAll("select")) {
       const title = () => { select.title = select.selectedOptions[0]?.textContent || ""; }; title(); select.addEventListener("change", title);

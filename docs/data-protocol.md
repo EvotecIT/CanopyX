@@ -885,6 +885,15 @@ write policy; CanopyX only raises the request.
 
 Optional `columnGroups` draws header rows above a grid's columns ([column-groups.md](column-groups.md)). Each group is `{ id, title, columns?, groups?, pinned? }`: a unique identifier, a title of 1 to 256 characters, the declared columns directly below it and nested groups, at least one of the two. Groups nest at most three levels; a column belongs to one group at most; `pinned` (`left`, `right` or `null`) is the initial pin of every column of a top-level group and is refused on nested groups. The .NET writer requires a group's columns to be adjacent in `columns`; the runtime gathers scattered ones where most of them are. Grid state needs no new field: saved column order and pins restore the groups.
 
+Optional `columnBands` carries presentation definitions with the same shape as `columnGroups`, allowing nonadjacent
+members and refusing group `pinned` settings. A document cannot declare both fields. This additive field is ignored by
+older `canopyx/2` readers, which retain the authored column order and pins without the presentation labels. They draw contiguous runs of the final displayed columns,
+splitting at effective pins, without gathering columns or changing their order, pins, chooser actions, saved state, query,
+exports or drawer sections. Hiding a separator merges adjacent visible members of the same group ID; showing it splits
+them. Equal titles on different IDs do not merge. The script-free fallback follows its visible authored column order and
+declared pin boundaries; it has no responsive viewport. The browser's `getColumnBands()` returns frozen displayed spans
+with `id`, `title`, ordered `columns`, one-based `level`, `columnIndex`, `columnSpan`, and effective `pin`.
+
 The header holds one `row` per group level above the column headers. Group cells are `columnheader`s with `aria-colindex` and `aria-colspan` over their visible columns; body rows' `aria-rowindex` and the grid's `aria-rowcount` count the extra header rows. `getColumnGroups()` returns `{ id, title, columns, visibleColumns, pin, groups }` in the current order and `setColumnGroupVisible(id, visible)` shows or hides a group's columns. The script-free fallback writes the same rows with `colspan` and `rowspan`.
 
 ### Cell ranges and the clipboard

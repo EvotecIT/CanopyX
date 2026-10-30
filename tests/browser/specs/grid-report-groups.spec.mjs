@@ -334,9 +334,9 @@ test('aggregate cells name their function and use consistent precision and trans
   await open(page);
   const footer=page.locator('.cx-summary-row [role="gridcell"]');
   await expect(footer.nth(0)).toHaveText('Grand total');await expect(footer.nth(0)).toHaveClass(/cx-summary-caption/);await expect(footer.nth(2)).not.toHaveClass(/cx-summary-caption/);
-  await expect(footer.nth(2)).toHaveText('count 19 · sum 226.00 · avg 11.89 · min 1.00 · max 23.00');
+  await expect(footer.nth(2)).toHaveText('Count 19 · Sum 226.00 · Avg 11.89 · Min 1.00 · Max 23.00');
   await expect(footer.nth(2)).toHaveAttribute('title','Amounts present · Count: 19 · Total amount · Sum: 226.00 · Average amount · Avg: 11.89 · Minimum amount · Min: 1.00 · Maximum amount · Max: 23.00');
-  await expect(page.locator('.cx-grid-group').first().locator('[role="gridcell"]').nth(2)).toHaveText('count 6 · sum 23.00 · avg 3.83 · min 1.00 · max 7.00');
+  await expect(page.locator('.cx-grid-group').first().locator('[role="gridcell"]').nth(2)).toHaveText('Count 6 · Sum 23.00 · Avg 3.83 · Min 1.00 · Max 7.00');
   const large=definition({reporting:{aggregates:aggregates.filter(item=>['sum','average'].includes(item.id))},
     rows:[1500000.25,2000000.5,12.75].map((amount,i)=>({id:'big'+i,cells:{name:'Big '+i,category:'A',amount}}))});
   await open(page,large,"document.documentElement.lang='de';CanopyX.configure('groups',{labels:{gridAggregateSum:'Summe {value}',gridAggregateAverage:'Ø {value}'}});");

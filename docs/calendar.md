@@ -22,13 +22,28 @@ A list of events is enough. Each event has a title and a start; an end, `allDay`
 `yyyy-MM-dd` start makes an all-day event.
 
 ```js
-CanopyX.createCalendar(document.getElementById("calendar"), {
+import { createCalendar } from "@evotecit/canopyx/grid";
+import "@evotecit/canopyx/grid.css";
+import "@evotecit/canopyx/ui-overlays.js";
+import "@evotecit/canopyx/ui-overlays.css";
+import "@evotecit/canopyx/ui-menu.js";
+import "@evotecit/canopyx/ui-menu.css";
+import "@evotecit/canopyx/calendar.js";
+import "@evotecit/canopyx/calendar.css";
+
+createCalendar(document.getElementById("calendar"), {
   events: [
     { title: "Sprint planning", start: "2026-10-16T09:00:00Z", end: "2026-10-16T10:30:00Z", description: "Pick the next work." },
     { title: "Conference trip", start: "2026-10-20", end: "2026-10-23" }
   ]
 });
 ```
+
+The side-effect imports include the basic calendar part and its styles in the bundle. For advanced options that load
+other parts, serve the package's `canopyx-*.js` and `canopyx-*.css` files from one public directory and set
+`window.CanopyXFilterEditorBase = new URL("/canopyx/", document.baseURI).href` before creating the view. This existing base setting applies to all parts;
+the runtime and part files must come from the same package version. See [Serving parts](plugins.md#serving-parts).
+A page with classic scripts calls `CanopyX.createCalendar` instead and serves those files beside its runtime script.
 
 ```csharp
 var calendar = new CanopyCalendar(new[] {
@@ -71,7 +86,8 @@ CanopyX.createCalendar(host, { events, calendar: { weekNumbers: "iso", validRang
 list of `{ id, label, parent }`), `timeline`, `live`, `facets` and `links`; `calendar` takes any other key of the definition below
 (its functions are the host hooks: `render`, `menu`, `occurrence`), and the rest are grid options (`editing`, `onCreate`, ...).
 In C#, `CanopyCalendar` has a property for each, `ApplyPreset(...)`, and the presets as a constructor argument. The protocol
-carries the resolved keys, never a preset name.
+carries the resolved keys, never a preset name. The timeline joins the preset's views when `timeline: true` or
+`view: "timeline"` asks for it, and with `resources` the `scheduler` preset adds it too.
 
 | Capability | Option |
 | --- | --- |
@@ -154,19 +170,20 @@ The JSON schema is `gridCalendar` in [schema/canopyx-2.schema.json](schema/canop
 
 - **Month**: weeks of days. All-day and multi-day events are bars that continue across weeks (cut ends show where a bar
   continues); timed events are one line with their time. A day with more events than fit shows "+N more", which opens the
-  day's list. Background ranges tint their days and name themselves on the first one. On phones each day shows dots and the
+  day's list. A weekly bar keeps its start column and lane across its full segment; if it cannot fit, the whole segment goes
+  into the day's list. Background ranges tint their days and name themselves on the first one. On phones each day shows dots and the
   list of the focused day sits under the month.
 - **Week, day and N days**: a header of days, an all-day row (all-day events and events of a day or longer), then a column of
   time slots. Overlapping events share their column side by side and widen over free columns; an event over midnight shows in
   each day. Working hours, unavailable time and background ranges shade the columns; a line marks now. With an inline resource tree, day and week views get [resource columns](resource-timeline.md#resource-columns-in-day-and-week-views).
 - **Agenda**: the period's events grouped by day, with their time (or All day), title, subtitle and status. Phones start here.
-- **Year**: twelve small months; each day is shaded by its number of events, which its accessible name and tooltip give.
+- **Year**: twelve small months; days with events have a tint and dot, with stronger tint for busier days. Each day's accessible name and tooltip give its count, and today has an accent ring.
 - **Timeline**: resources as rows, time across; see [resource-timeline.md](resource-timeline.md). Without resources its rows
   are the events themselves, packed by overlap (`calendar-solo.html`); `span` sets its period.
-- **Mini month** (`mini`): a small month like a date picker, at most 360 pixels wide, with a dot per event on each day (in its
-  tone). Selecting a day reports it like any day selection ([Linked views](#linked-views)), so a page can filter a grid or move
+- **Mini month** (`mini`): a month that grows with its host up to 840 pixels wide, with a dot per event on each day (in its
+  tone). The displayed date has an outline, separate from today's filled marker. Selecting a day reports it like any day selection ([Linked views](#linked-views)), so a page can filter a grid or move
   another calendar to it: listen for `canopyx:linkchange` and call `setCalendarDate` on the other calendar.
-- **Week list and day list** (`weekList`, `dayList`): each day's events as a list, all-day events first, without a time axis.
+- **Week list and day list** (`weekList`, `dayList`): each day's events as a list, all-day events first, without a time axis. A timed event crossing days shows its start or end time on the boundary day and "All day" between them; its accessible name retains the full range.
 - **Stacked months** (`months`): `months` months one under another in a scrolling column; each day appears once.
 - **Year with events**: with `yearEvents`, each month of the year lists its events under its days.
 

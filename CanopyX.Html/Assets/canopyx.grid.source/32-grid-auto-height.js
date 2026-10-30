@@ -10,28 +10,31 @@
   };
   DataGrid.prototype.fitHeight = function () {
     if (this.view.autoHeight === false || this.pendingQuery || !this.grid.clientWidth || !this.host.checkVisibility()) return;
-    // The host's own max-height, read before the first change, stays a bound; without rows the host's own value returns.
-    // Pixels bound the fit as a number; a relative bound (a percentage, calc()) stays CSS, so the browser keeps resolving it.
-    const grid = this.grid, style = this.host.style, box = grid.getBoundingClientRect(), computed = getComputedStyle(grid);
-    const borders = parseFloat(computed.borderTopWidth) + parseFloat(computed.borderBottomWidth);
+    // The host's own max-height, read before the first change, stays a bound for empty and populated results.
+    // Preserve relative inline bounds; remeasure stylesheet bounds whenever the host refits.
+    const grid = this.grid, style = this.host.style;
     // Only a real horizontal scrollbar consumes block space. Overlay scrollbars contribute zero, without a guessed gutter.
     // Width overflow can disappear before the occupied gutter is released during a column reset.
-    const scrollbar = Math.max(0, grid.offsetHeight - grid.clientHeight - borders);
     const content = [...grid.children].reduce((sum, child) => {
       const position = getComputedStyle(child).position;
       return position === "absolute" || position === "fixed" ? sum : sum + child.getBoundingClientRect().height;
-    }, borders + scrollbar);
+    }, grid.offsetHeight - grid.clientHeight);
     if (this.fitInline === undefined) {
-      const own = getComputedStyle(this.host).maxHeight;
-      this.fitInline = style.maxHeight; this.fitMax = own === "none" || !own ? Infinity : /^-?[\d.]+px$/.test(own) ? parseFloat(own) : own;
+      // Alternate views restore the authored bound when they take ownership of the host.
+      this.fitInline = style.maxHeight;
+      global.addEventListener("resize", () => this.fitHeight(), { signal: this.lifetime.signal });
     }
-    // Chrome can grow beyond the old fitted host before its flex body has room again.
-    const hostStyle = getComputedStyle(this.host);
-    const chrome = [...this.host.children].filter(child => child !== grid).reduce((sum, child) => {
-      const css = getComputedStyle(child);
-      return css.position === "absolute" || css.position === "fixed" ? sum : sum + child.getBoundingClientRect().height;
-    }, parseFloat(hostStyle.borderTopWidth) + parseFloat(hostStyle.borderBottomWidth) + parseFloat(hostStyle.paddingTop) + parseFloat(hostStyle.paddingBottom));
-    const height = Math.ceil(Math.max(this.host.getBoundingClientRect().height - box.height, chrome) + content), bound = this.fitMax;
-    const value = !this.rowCount() ? this.fitInline : typeof bound === "number" ? Math.min(bound, height) + "px" : "min(" + height + "px, " + bound + ")";
-    if (this.host.style.maxHeight !== value) this.host.style.maxHeight = value;
+    const fitted = style.maxHeight;
+    style.maxHeight = this.fitInline;
+    const resolved = getComputedStyle(this.host).maxHeight;
+    this.fitMax = resolved === "none" || /^(initial|inherit|unset|revert(-layer)?)$/.test(this.fitInline) ? resolved : this.fitInline || resolved;
+    style.maxHeight = fitted;
+    // Reuse the minimum's flow measurement without reserving rows in the empty state.
+    const empty = !this.toolbar.hidden && this.host.classList.contains("cx-grid-awaiting");
+    const height = Math.ceil(Math.max(empty ? 0 : this.host.getBoundingClientRect().height - grid.getBoundingClientRect().height, this.minimumGridHeight(false)) + content), bound = this.fitMax;
+    const value = this.rowCount() || empty ? bound === "none" ? height + "px" : "min(" + height + "px, " + bound + ")" : this.fitInline;
+    // Only release a minimum that empty fitting owned; populated alternate views keep their own sizing.
+    if (empty || this.fitEmpty) style.setProperty("--cx-min-h", empty ? value : this.minimumGridHeight() + "px");
+    this.fitEmpty = empty;
+    if (style.maxHeight !== value) style.maxHeight = value;
   };

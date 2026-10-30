@@ -22,7 +22,8 @@
       const value = display ? display.value : values[aggregate.id];
       if ((value === null || value === undefined) && mode === "value") continue;
       const shown = reportingValueText(grid, aggregate, value, mode), caption = showAsCaption(grid, mode);
-      text.push(mode === "value" ? fill(grid.labels[AGGREGATE_LABELS[aggregate.operation]] || grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation + " {value}", {value: shown}) : shown + " " + caption.replace(/^% /, ""));
+      const labelled = fill(grid.labels[AGGREGATE_LABELS[aggregate.operation]] || grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation + " {value}", {value: shown});
+      text.push(mode === "value" ? labelled.charAt(0).toLocaleUpperCase(grid.lang) + labelled.slice(1) : shown + " " + caption.replace(/^% /, ""));
       titles.push(reportingAggregateName(grid, aggregate) + ": " + shown + (caption ? " (" + caption + ")" : ""));
     }
     return { text: text.join(" · "), title: titles.join(" · "), caption: "" };

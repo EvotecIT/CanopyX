@@ -62,7 +62,7 @@ internal static class CalendarTimelineExample {
 
         var calendar = view.Calendar = new CanopyCalendar("starts") {
             End = "ends", Title = "title", Status = "kind", Resource = "host", Recurrence = "rule", View = CanopyCalendarView.Timeline, Zoom = CanopyCalendarZoom.Day,
-            Date = CalendarExample.Today, FirstDay = DayOfWeek.Monday, Resources = new CanopyCalendarResources(tree) { Label = "Hosts", Width = 392 },
+            Date = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc), FirstDay = DayOfWeek.Monday, Resources = new CanopyCalendarResources(tree) { Label = "Hosts", Width = 392 },
             Capacity = new CanopyCalendarCapacity().Add(4, CanopyTone.Warning).Add(7, CanopyTone.Danger),
             Editing = new CanopyCalendarEditing { Overlap = false, AllowedResources = "allowed", SnapMinutes = 15 }
         };
