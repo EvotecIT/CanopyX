@@ -1,6 +1,11 @@
 using HtmlTinkerX;
 using System.Text.Json;
 
+if (args.FirstOrDefault() == "--readme-images") {
+    await ReadmeImages.RunAsync(args.Skip(1).ToArray());
+    return;
+}
+
 // HtmlTinkerX owns browser installation and repair. This test-only executable selects the engines used by CI.
 var engines = args.Select(name => name switch {
     "chromium" => HtmlBrowserEngine.Chromium,
