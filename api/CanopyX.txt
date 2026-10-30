@@ -595,6 +595,9 @@ CanopyX.CanopyColumnGroup.System.Collections.Generic.IList<System.String> Column
 CanopyX.CanopyColumnGroup.System.Nullable<CanopyX.CanopyGridColumnPin> Pinned { get; set; }
 CanopyX.CanopyColumnGroup.System.String Id { get; }
 CanopyX.CanopyColumnGroup.System.String Title { get; }
+CanopyX.CanopyColumnGroupMode : enum System.Int32
+CanopyX.CanopyColumnGroupMode.const CanopyX.CanopyColumnGroupMode Presentation = 1
+CanopyX.CanopyColumnGroupMode.const CanopyX.CanopyColumnGroupMode Semantic = 0
 CanopyX.CanopyColumnKind : enum System.Int32
 CanopyX.CanopyColumnKind.const CanopyX.CanopyColumnKind DateTime = 2
 CanopyX.CanopyColumnKind.const CanopyX.CanopyColumnKind Number = 1
@@ -637,6 +640,7 @@ CanopyX.CanopyDataGridView.CanopyX.CanopyBoard? Board { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyCalendar? Calendar { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyCardTemplate? CardTemplate { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyColumn GetColumn(System.String id)
+CanopyX.CanopyDataGridView.CanopyX.CanopyColumnGroupMode ColumnGroupMode { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyDatasetCompareInfo? Compare { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyFacetPanel? FacetPanel { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyFormatOptions? Formatting { get; set; }

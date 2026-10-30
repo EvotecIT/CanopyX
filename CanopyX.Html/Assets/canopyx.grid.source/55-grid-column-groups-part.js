@@ -27,6 +27,7 @@
   };
   DataGrid.prototype.loadColumnGroups = gridPartLoader(GRID_COLUMN_GROUPS, "ColumnGroups");
   DataGrid.prototype.loadCellRanges = gridPartLoader(GRID_CELL_RANGE, "CellRanges");
+  DataGrid.prototype.getColumnBands = () => [];
   for (const [part, read, ...actions] of GRID_PART_API) {
     const load = part === "cell-range" ? "loadCellRanges" : "loadColumnGroups";
     DataGrid.prototype[read] = () => [];

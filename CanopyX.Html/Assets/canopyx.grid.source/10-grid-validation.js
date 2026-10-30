@@ -13,6 +13,8 @@
       throw new Error("CanopyX: choose one grid presentation: board, path, stack or calendar (with optional plan).");
     view = gridColumnDefaults(view);
     if (view.allowRegexSearch !== undefined && typeof view.allowRegexSearch !== "boolean") throw new Error("CanopyX: allowRegexSearch is a boolean.");
+    if (view.columnGroupMode !== undefined && !["semantic", "presentation"].includes(view.columnGroupMode))
+      throw new Error("CanopyX: columnGroupMode must be semantic or presentation.");
     if (view.rowIdentity !== undefined && !["stableKey", "ordinal"].includes(view.rowIdentity))
       throw new Error("CanopyX: rowIdentity must be stableKey or ordinal.");
     if (view.rowIdentity === "ordinal" && view.live)

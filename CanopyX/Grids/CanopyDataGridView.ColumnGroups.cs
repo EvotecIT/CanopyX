@@ -8,12 +8,17 @@ namespace CanopyX;
 public sealed partial class CanopyDataGridView {
     /// <summary>Gets the column groups drawn as header rows above the columns. Empty draws one header row.</summary>
     /// <remarks>
-    /// Groups load the grid's <c>column-groups</c> part. Each group's columns must be adjacent in <see cref="Columns"/>; the
+    /// Groups load the grid's <c>column-groups</c> part. In semantic mode each group's columns must be adjacent in <see cref="Columns"/>; the
     /// script-free fallback and print draw the same header rows with spanning cells.
     /// </remarks>
     public IList<CanopyColumnGroup> ColumnGroups { get; } = new List<CanopyColumnGroup>();
 
+    /// <summary>Gets or sets whether groups govern column layout or only draw header bands. The default is semantic grouping.</summary>
+    /// <remarks>Presentation groups may contain nonadjacent columns. Their displayed spans follow visible column order and split at pin boundaries; group pins are not supported.</remarks>
+    public CanopyColumnGroupMode ColumnGroupMode { get; set; }
+
     private void ValidateColumnGroups() {
+        if (!Enum.IsDefined(typeof(CanopyColumnGroupMode), ColumnGroupMode)) throw new InvalidOperationException("Unknown column group mode.");
         if (ColumnGroups.Count == 0) return;
         if (ColumnGroups.Count > 1000) throw new InvalidOperationException("A grid supports at most 1000 column groups.");
         var columns = new Dictionary<string, CanopyColumn>(StringComparer.Ordinal);
@@ -23,6 +28,11 @@ public sealed partial class CanopyDataGridView {
         foreach (var group in ColumnGroups) {
             if (group == null) throw new InvalidOperationException("Column groups cannot be null.");
             group.Validate(columns, groupIds, grouped, 1);
+        }
+        if (ColumnGroupMode == CanopyColumnGroupMode.Presentation) {
+            if (AllColumnGroups(ColumnGroups).Any(group => group.Pinned.HasValue))
+                throw new InvalidOperationException("Presentation column groups do not take pins; pin individual columns instead.");
+            return;
         }
         var order = Columns.Select(column => column.Id).ToList();
         foreach (var group in AllColumnGroups(ColumnGroups)) {
@@ -67,6 +77,7 @@ public sealed partial class CanopyDataGridView {
     }
 
     private void WriteColumnGroupsJson(CanopyJsonWriter writer) {
+        if (ColumnGroupMode == CanopyColumnGroupMode.Presentation) writer.Property("columnGroupMode", "presentation");
         if (ColumnGroups.Count == 0) return;
         writer.Name("columnGroups").BeginArray();
         foreach (var group in ColumnGroups) group.WriteJson(writer);
