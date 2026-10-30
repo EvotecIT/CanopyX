@@ -118,6 +118,40 @@ test("record deep links: the address opens the grid at the record with its drawe
   await expect(drawer(page).locator(".cx-record-live")).toHaveText("Copied to the clipboard");
 });
 
+test("a link or openRecord can name the section to land on: its tab, expanded, scrolled into place", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 520 });
+  await open(page, definition(), "#other=1&record=certificates:c001&recordSection=certificates:advanced");
+  await expect(title(page)).toHaveText("host1.example.test");
+  await expect(drawer(page).getByRole("tab", { name: "Fields" })).toHaveAttribute("aria-selected", "true");
+  const advanced = drawer(page).locator('[data-cx-section="advanced"]');
+  await expect(advanced.locator(".cx-record-toggle")).toHaveAttribute("aria-expanded", "true");
+  // The section lands just under the pinned bar, or as far as the body scrolls when little follows it.
+  const landed = () => page.evaluate(() => {
+    const body = document.querySelector("dialog.cx-drawer[open] .cx-drawer-body"), section = body.querySelector('[data-cx-section="advanced"]'), tools = body.querySelector(".cx-record-tools");
+    const offset = section.getBoundingClientRect().top - body.getBoundingClientRect().top - (tools.hidden ? 0 : tools.offsetHeight), end = body.scrollHeight - body.clientHeight;
+    return body.scrollTop > 0 && (Math.abs(offset) <= 2 || Math.abs(body.scrollTop - end) <= 1 && offset >= 0 && offset < body.clientHeight);
+  });
+  await expect.poll(landed).toBe(true);
+  // The address keeps the record and the host's own parameters, not the section.
+  await expect.poll(() => new URL(page.url()).hash).toBe("#other=1&record=certificates:c001");
+  // A section link to the record that is already open moves its drawer there, then leaves the address.
+  await page.evaluate(() => { location.hash = "other=1&record=certificates:c001&recordSection=certificates:names"; });
+  await expect.poll(() => new URL(page.url()).hash).toBe("#other=1&record=certificates:c001");
+  await expect.poll(() => page.evaluate(() => {
+    const body = document.querySelector("dialog.cx-drawer[open] .cx-drawer-body"), section = body.querySelector('[data-cx-section="names"]'), tools = body.querySelector(".cx-record-tools");
+    return Math.abs(section.getBoundingClientRect().top - body.getBoundingClientRect().top - tools.offsetHeight) <= 2;
+  })).toBe(true);
+  // The same through the API, on another tab; a section the record doesn't have opens at the top as usual.
+  await page.evaluate(api + ".openRecord('c002', { section: 'names' })");
+  await expect(title(page)).toHaveText("host2.example.test");
+  await expect(drawer(page).getByRole("tab", { name: "Fields" })).toHaveAttribute("aria-selected", "true");
+  await expect(drawer(page).locator('[data-cx-section="names"]')).toBeVisible();
+  await page.evaluate(api + ".openRecord('c003', { section: 'missing' })");
+  await expect(title(page)).toHaveText("host3.example.test");
+  await nextFrames(page);
+  expect(await page.evaluate(() => document.querySelector("dialog.cx-drawer[open] .cx-drawer-body").scrollTop)).toBe(0);
+});
+
 test("a configured deep link key and a record outside the current filter", async ({ page }) => {
   const view = definition(); view.record.deepLink = { key: "cert" };
   await open(page, view, "#cert=certificates:c004");

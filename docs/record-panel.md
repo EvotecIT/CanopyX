@@ -156,6 +156,10 @@ A screen reader hears "Showing {record}" or "Back to {record}".
 
 A record nobody has stays unopened and rejects the promise; a link says so in the drawer.
 
+The `section` option names a section to open on (`openRecord(id, { section: "decision" })`): its tab is selected, the section
+is expanded, and the drawer body scrolls to it, waiting for details that are still loading. A section the record doesn't
+have is ignored, and the drawer opens at the top.
+
 ## Timelines and changes
 
 A timeline (`CanopyRecordEvent`: time, summary, actor, kind, tone, a link, and the fields it changed) shows in the order
@@ -169,7 +173,8 @@ With `DeepLink` the open record is written to the address: `#record=<view>:<id>`
 the history entry; closing the drawer removes it. Opening a page with such an address, or changing to one, opens the grid at
 that record with its drawer open. It works offline in a single-file report, because the address is all it reads.
 `DeepLinkKey` changes `record` to another parameter name; a tree writes the node's id path (`#record=tree:a/b/c`). The
-**Copy link** action copies the record's address.
+**Copy link** action copies the record's address. A link can also name the section to land on, `#record=<view>:<id>&recordSection=<view>:<section>`
+(`<key>Section` with `DeepLinkKey`), as the `section` option does; the parameter leaves the address once the drawer opens.
 
 ## Record actions
 

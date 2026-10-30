@@ -12,8 +12,9 @@ public sealed class RecordPanelPartAssetsTests {
         var part = CanopyHtmlAssets.GetPart("record-panel");
         var size = Gzip(part.Script) + Gzip(part.Style!);
         // Guard: the part's size plus about 15% headroom (docs/plugins.md, size budgets).
-        // Combined comparison endpoint formatting and board/path/stack navigation remain in this lazy part.
-        Assert.True(size <= 22400, "The record panel part is " + size + " bytes gzip; the guard is 22,400 bytes.");
+        // Combined comparison endpoint formatting and board/path/stack navigation remain in this lazy part, as does landing on a
+        // named section (openRecord's section option and its deep link parameter).
+        Assert.True(size <= 22800, "The record panel part is " + size + " bytes gzip; the guard is 22,800 bytes.");
         Assert.Equal(new[] { "ui-menu" }, part.Requires);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid })
             Assert.True(part.IsShippedWith(runtime), "The record panel part ships with " + runtime + ".");

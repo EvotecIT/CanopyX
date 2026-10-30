@@ -13,12 +13,20 @@
   };
   // A section link scrolls only the drawer body, so the page behind never moves, and lands the section just below the
   // pinned bar instead of under it. The motion follows the reader's reduced-motion preference.
-  const recordJump = (body, tools, section) => {
+  const recordJump = (body, tools, section, instant) => {
     const top = section.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - (tools.isConnected ? tools.offsetHeight : 0);
     const reduce = global.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    body.scrollTo({ top: Math.max(0, Math.round(top)), behavior: reduce ? "auto" : "smooth" });
+    body.scrollTo({ top: Math.max(0, Math.round(top)), behavior: reduce || instant ? "auto" : "smooth" });
   };
-
+  // The ids from a top-level section down to the one named, or null when the sections don't hold it.
+  const recordTrail = (sections, id) => {
+    for (const section of sections) {
+      if (section.id === id) return [id];
+      const inner = recordTrail(section.sections, id);
+      if (inner) return [section.id, ...inner];
+    }
+    return null;
+  };
   function recordContext(view, record, dialog, context, payload) {
     const ctx = { view, record, payload, dialog, labels: view.labels, fmt: view.fmt, signal: context.signal, index: context.index, origins: 0, pending: [],
       phone: view.host.clientWidth <= 640, print: !!context.print, width: context.print ? 520 : view.host.clientWidth <= 640 ? 300 : 380,
@@ -163,6 +171,9 @@
     const showEmpty = RECORD_SHOW_EMPTY || !layout.hideEmpty;
     const tabs = layout.tabs.filter(tab => tab.sections.some(section => recordHasContent(ctx, section, showEmpty)));
     if (!tabs.length) tabs.push(layout.tabs[0]);
+    // A link that names a section (openRecord's section option) opens on that section's tab, with it and its parents expanded.
+    const owner = state.jump && tabs.find(tab => recordTrail(tab.sections, state.jump));
+    if (owner) { state.tab = owner.id; for (const id of recordTrail(owner.sections, state.jump)) state.collapsed.set(id, false); }
     if (!tabs.some(tab => tab.id === state.tab)) state.tab = tabs[0].id;
     recordSummary(ctx, layout, dialog);
     body.replaceChildren();
@@ -210,6 +221,18 @@
     // pinned bar, so the body starts at the bar. Set inline because host design systems can pad the body from a later layer.
     body.style.paddingBlockStart = "0px";
     tools.hidden = tabs.length < 2 && sub.hidden;
+    // The body lands on the named section once the drawer is laid out and its details have loaded, so sections above it no
+    // longer grow; one the record doesn't have is forgotten, and the drawer opens at the top as usual. The jump finds the
+    // section again when it runs, because a part that installs after the first paint (history, for one) paints the body anew.
+    if (state.jump && entry?.state !== "loading") {
+      const jump = state.jump, find = () => body.querySelector('[data-cx-section="' + CSS.escape(jump) + '"]');
+      if (find()) global.requestAnimationFrame(() => {
+        const target = find();
+        if (state.jump !== jump || !target) return;
+        state.jump = null; recordJump(body, body.querySelector(".cx-record-tools") || tools, target, true);
+      });
+      else state.jump = null;
+    }
     if (entry?.state === "loading") {
       const note = h("p", "cx-record-note"); setText(note, ctx.labels.loading); panel.prepend(note);
       entry.promise.then(() => ctx.repaint(), () => ctx.repaint());
