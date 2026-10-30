@@ -551,6 +551,10 @@ export interface GridColumnGroup{
   readonly groups?:readonly GridColumnGroup[];
   readonly pinned?:"left"|"right"|null;
 }
+export interface GridColumnBandDefinition extends Omit<GridColumnGroup,"pinned"|"groups">{
+  readonly pinned?:never;
+  readonly groups?:readonly GridColumnBandDefinition[];
+}
 export interface GridColumnGroupState{
   readonly id:string;
   readonly title:string;
@@ -1382,7 +1386,7 @@ import type{
 from "./formatting.js";
 export * from "./formatting.js";
 import type{
-  GridColumnGroup,GridColumnGroupApi
+  GridColumnGroup,GridColumnBandDefinition,GridColumnGroupApi
 }
 from "./column-groups.js";
 import type{
@@ -1781,7 +1785,7 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   searchColumns?:GridColumnId<Row>[];
   reporting?:GridReporting;
   columnGroups?:readonly GridColumnGroup[];
-  columnBands?:readonly GridColumnGroup[];
+  columnBands?:readonly GridColumnBandDefinition[];
   rangeSelection?:GridRangeSelection;
   clipboard?:GridClipboardSettings;
   record?:RecordPanelDefinition;

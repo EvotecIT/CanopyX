@@ -69,7 +69,6 @@
   --cx-size-d875em:.875em;
   --cx-size-92px:92px;
   --cx-size-28px:28px;
-  --cx-size-1px:1px;--cx-size-neg-1px:-1px;
   --cx-scrollbar-thumb:color-mix(in srgb,var(--hfx-color-text) 28%,transparent);
   --cx-scrollbar-thumb-hover:color-mix(in srgb,var(--hfx-color-text) 46%,transparent);
   --cx-scrollbar-track:transparent;
@@ -79,14 +78,17 @@
   box-sizing:border-box;
   display:flex;
   flex-direction:column;
-  /* lint-allow layout: viewport or panel dimension */
-  height:480px;
   min-height:0;
   color:var(--hfx-color-text);
   background:var(--hfx-color-surface);
   font-family:var(--hfx-font-sans);
   font-size:var(--hfx-control-font-size);
   line-height:var(--hfx-type-small-line);
+}
+/* Overlays reuse host tokens; their own component controls viewport dimensions. Keep the default's specificity. */
+.cx-host:where(:not(.cx-drawer,.cx-dialog,.cx-popover,.cx-menu,.cx-tooltip)) {
+  /* lint-allow layout: viewport or panel dimension */
+  height:480px;
 }
 /* Embedded (CanopyChrome.Embedded): the view fills a card body the host already frames (without body padding), so it draws
    no frame of its own, lets the card's surface show through, runs its rows to the card's edges and insets its toolbar by the

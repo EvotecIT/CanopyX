@@ -25,6 +25,18 @@ async function mount(page, create, view, { width = 1200, theme = "light", option
   await nextFrames(page);
 }
 
+for (const width of [1440, 390]) test(`a short change view fits its content at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await mount(page, "createDiff", envelope("diff", { id: "short", label: "Short change", before: "Before\n", after: "After\n" }), { width });
+  const geometry = await page.locator(".cx-change-host").evaluate(host => ({
+    height: host.getBoundingClientRect().height, content: host.firstElementChild.getBoundingClientRect().height,
+    page: document.documentElement.scrollWidth, viewport: innerWidth
+  }));
+  expect(geometry.height).toBeLessThan(480);
+  expect(Math.abs(geometry.height - geometry.content)).toBeLessThanOrEqual(2);
+  expect(geometry.page).toBeLessThanOrEqual(geometry.viewport);
+});
+
 test("the browser compares texts as C# does: the shared fixture's hunks", async ({ page }) => {
   await mount(page, "createDiff", envelope("diff", { id: "seed", label: "Seed", before: "a\n", after: "b\n" }));
   for (const entry of cases.lines) {

@@ -25,7 +25,7 @@ import type { enhance, grid } from "./enhance.js";
 export * from "./editing.js";
 import type { GridExportFormat, GridFormatOptions, GridFormatRule } from "./formatting.js";
 export * from "./formatting.js";
-import type { GridColumnGroup, GridColumnGroupApi } from "./column-groups.js";
+import type { GridColumnGroup, GridColumnBandDefinition, GridColumnGroupApi } from "./column-groups.js";
 import type { GridRangeSelection, GridClipboardSettings, GridCellRange, GridPasteEvent, GridCellRangeApi } from "./cell-ranges.js";
 export * from "./column-groups.js";
 export * from "./cell-ranges.js";
@@ -450,7 +450,7 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   /** Header rows above the columns, up to three levels (docs/column-groups.md). */
   columnGroups?: readonly GridColumnGroup[];
   /** Presentation labels follow displayed contiguous members and pins without governing layout. Mutually exclusive with columnGroups. */
-  columnBands?: readonly GridColumnGroup[];
+  columnBands?: readonly GridColumnBandDefinition[];
   /** Cell ranges by mouse, keyboard and touch, the cell menu and the clipboard keys (docs/cell-ranges.md). */
   rangeSelection?: GridRangeSelection;
   /** How cell ranges copy and paste. */

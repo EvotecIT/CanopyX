@@ -47,6 +47,19 @@ for (const count of [1, 2]) test(`phone disclosure counts only ${count} fields b
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(`+${count} column${count === 1 ? "" : "s"}`);
 });
 
+test("phone disclosure stays with its context when the last field wraps", async ({ page }) => {
+  await open(page, { extra: 4, signal: "A long inspection outcome with retained evidence" });
+  const row = page.locator('.cx-row[data-cx-id="r0"]');
+  await expect(row.locator('.cx-hidden-fields')).toHaveText("+4 columns");
+  const geometry = await row.evaluate(element => {
+    const disclosure = element.querySelector('.cx-hidden-fields').getBoundingClientRect();
+    const context = element.querySelectorAll('.cx-phone-field');
+    const last = context[context.length - 1].querySelector('.cx-phone-value').getBoundingClientRect();
+    return { disclosure: (disclosure.top + disclosure.bottom) / 2, context: (last.top + last.bottom) / 2 };
+  });
+  expect(Math.abs(geometry.disclosure - geometry.context)).toBeLessThanOrEqual(2);
+});
+
 test("same-named phone records expose their next priority context without author-hidden fields", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const columns = [{ id: "check", title: "Check", kind: "text", rowHeader: true, width: 180 },

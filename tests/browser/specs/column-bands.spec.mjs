@@ -13,6 +13,47 @@ function definition(patch = {}) {
     rows: ["one", "two"].map(id => ({ id, cells: { host: id, liveBefore: "Valid", rootDomain: "example.test", liveAfter: "Example Issuer" } })), ...patch };
 }
 const bands = page => page.evaluate(() => api.getColumnBands().map(band => band.title + ":" + band.columns.join(",")));
+
+test("contiguous default bands span once and reordered runs visibly continue without regrouping", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const view = definition();
+  view.columns = [view.columns[0], view.columns[2], view.columns[1], view.columns[3]];
+  view.columns[0].pinned = null;
+  await serveGrid(page, view, { runtime: "canopyx-reporting" });
+  expect(await bands(page)).toEqual(["Identity:host,rootDomain", "Live:liveBefore,liveAfter"]);
+  await expect(page.locator(".cx-hband-continuation")).toHaveCount(0);
+  const hierarchy = await page.locator(".cx-hband").first().evaluate(element => {
+    const band = getComputedStyle(element), column = getComputedStyle(document.querySelector(".cx-hrow:not(.cx-hgroup-row) .cx-hcell"));
+    return { distinct: band.backgroundColor !== column.backgroundColor, separator: parseFloat(band.borderInlineEndWidth) };
+  });
+  expect(hierarchy).toEqual({ distinct: true, separator: 1 });
+  await page.evaluate(order => api.setColumnOrder(order), order);
+  expect(await headerColumns(page)).toEqual(order);
+  expect(await bands(page)).toEqual(["Identity:host", "Live:liveBefore", "Identity:rootDomain", "Live:liveAfter"]);
+  const continued = page.locator(".cx-hband-continuation");
+  await expect(continued).toHaveCount(2);
+  expect(await continued.evaluateAll(cells => cells.map(cell => [cell.dataset.cxGroup,
+    getComputedStyle(cell.querySelector(".cx-hgroup-title"), "::before").content,
+    getComputedStyle(cell.querySelector(".cx-hgroup-title")).textDecorationStyle]))).toEqual([
+    ["identity", '"↳ "', "dotted"], ["live", '"↳ "', "dotted"]]);
+  await assertAria(page);
+});
+test("grid construction rejects non-array semantic and presentation definitions", async ({ page }) => {
+  await serveGrid(page, definition({ columnBands: [] }), { runtime: "canopyx-reporting" });
+  const errors = await page.evaluate(view => {
+    const result = [];
+    for (const field of ["columnGroups", "columnBands"]) for (const value of [null, {}, "", "group", 1, { length: 1 }]) {
+      const host = document.body.appendChild(document.createElement("div"));
+      const input = { ...view }; delete input.columnBands; input[field] = value;
+      try { CanopyX.createDataGrid(host, { view: input }); result.push("accepted"); }
+      catch (error) { result.push(error.message); }
+      finally { host.remove(); }
+    }
+    return result;
+  }, definition());
+  expect(errors).toHaveLength(12);
+  expect(errors.every(message => message.includes("as an array"))).toBe(true);
+});
 const state = page => page.evaluate(() => ({ columns: api.getState().columns, query: api.getQuery(), selection: api.getSelection() }));
 async function assertAria(page) {
   expect(await page.locator(".cx-hgroup").evaluateAll(cells => cells.map(cell => ({ title: cell.getAttribute("aria-label"),

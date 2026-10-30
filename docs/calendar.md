@@ -41,7 +41,7 @@ createCalendar(document.getElementById("calendar"), {
 
 The side-effect imports include the basic calendar part and its styles in the bundle. For advanced options that load
 other parts, serve the package's `canopyx-*.js` and `canopyx-*.css` files from one public directory and set
-`window.CanopyXFilterEditorBase = "/canopyx/"` before creating the view. This existing base setting applies to all parts;
+`window.CanopyXFilterEditorBase = new URL("/canopyx/", document.baseURI).href` before creating the view. This existing base setting applies to all parts;
 the runtime and part files must come from the same package version. See [Serving parts](plugins.md#serving-parts).
 A page with classic scripts calls `CanopyX.createCalendar` instead and serves those files beside its runtime script.
 

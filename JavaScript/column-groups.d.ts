@@ -10,6 +10,11 @@ export interface GridColumnGroup {
   /** Initial pin of every column of a top-level semantic group; null scrolls. Not supported in presentation mode. */
   readonly pinned?: "left" | "right" | null;
 }
+/** Presentation labels preserve authored column layout; pins belong to individual columns. */
+export interface GridColumnBandDefinition extends Omit<GridColumnGroup, "pinned" | "groups"> {
+  readonly pinned?: never;
+  readonly groups?: readonly GridColumnBandDefinition[];
+}
 /** A column group as the grid shows it now. */
 export interface GridColumnGroupState {
   readonly id: string;

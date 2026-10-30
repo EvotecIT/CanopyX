@@ -21,7 +21,11 @@ grid.ColumnGroups.Add(new CanopyColumnGroup("live", "Live", "liveBefore", "liveA
 The writer emits these definitions as `columnBands`, separately from semantic `columnGroups`. A wire document declares
 one field or the other. Older `canopyx/2` readers ignore `columnBands` and keep the authored column order and pins.
 JavaScript hosts place the same group definitions in `view.columnBands`.
-Presentation members may be nonadjacent. With authored order `host, liveBefore, rootDomain, liveAfter`, four bands appear.
+Start with contiguous members: `host, rootDomain, liveBefore, liveAfter` draws one Identity span and one Live span.
+Presentation members may become nonadjacent when the reader reorders individual columns. With order
+`host, liveBefore, rootDomain, liveAfter`, four bands appear. A later span of the same logical band has a leading
+continuation arrow (`↳`) and a dotted underline; columns stay where the reader placed them. Band labels use a tinted
+header row and full-height separators above the ordinary column headers.
 If responsive fitting or the ordinary Columns chooser hides `rootDomain`, the two visible Live members become one span;
 showing it again splits that span. Reordering columns recomputes bands in the new visible order. Effective pin boundaries
 split a span, without changing requested pins or the grid's pin budget. Distinct group IDs remain distinct even if their
