@@ -23,9 +23,9 @@ if (new Set(browserNames).size !== browserNames.length || browserNames.some(name
   throw new Error("CANOPYX_TEST_BROWSERS must be \"all\" or name unique chromium, firefox, or webkit engines.");
 }
 
-// Local integration proof can use more file workers without changing the hosted CI defaults.
-const localWorkers = process.env.CANOPYX_TEST_WORKERS;
-if (localWorkers && (!/^[1-9]\d*$/.test(localWorkers) || !Number.isSafeInteger(Number(localWorkers)))) {
+// Hosts can select file-level parallelism. Quality CI supplies three workers; local runs default to two.
+const workers = process.env.CANOPYX_TEST_WORKERS;
+if (workers && (!/^[1-9]\d*$/.test(workers) || !Number.isSafeInteger(Number(workers)))) {
   throw new Error("CANOPYX_TEST_WORKERS must be a positive safe integer.");
 }
 
@@ -55,7 +55,7 @@ export default defineConfig({
   fullyParallel: false,
   shard,
   forbidOnly: !!process.env.CI,
-  workers: localWorkers ? Number(localWorkers) : process.env.CI ? 1 : 2,
+  workers: workers ? Number(workers) : 2,
   retries: 0,
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
   outputDir: process.env.CANOPYX_TEST_OUTPUT_DIR || "test-results",
