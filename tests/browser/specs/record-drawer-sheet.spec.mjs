@@ -92,22 +92,35 @@ test("a section link scrolls only the drawer body and lands the section below th
   expect(await page.evaluate(() => scrollY)).toBe(start);
 });
 
-test("the record drawer is a modal sheet whose scrim closes it, and the side panel stays available", async ({ page }) => {
-  const sheet = await openRecord(page, 1440);
+test("the record drawer is a side panel on wide screens and a sheet on narrow ones by default", async ({ page }) => {
+  let sheet = await openRecord(page, 1440);
+  expect(await sheet.evaluate(element => element.matches(":modal"))).toBe(false);
+  // The side panel docks to the right edge beside the live view.
+  expect(await sheet.evaluate(element => Math.round(innerWidth - element.getBoundingClientRect().right))).toBe(0);
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  sheet = await openRecord(page, 390);
   expect(await sheet.evaluate(element => element.matches(":modal"))).toBe(true);
+  expect(await sheet.evaluate(element => Math.round(element.getBoundingClientRect().width))).toBe(390);
+});
+
+for (const where of ["view", "mount"]) test(`a host opts into the sheet over a scrim at every width through the ${where}`, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const view = definition(); view.record.tabs = [];
+  if (where === "view") view.recordDrawerModal = true;
+  await open(page, view);
+  await page.evaluate(async ([view, where]) => {
+    const old = document.querySelector("[data-canopyx-host]"); old.canopyx.destroy?.(); old.remove();
+    const host = document.createElement("div"); host.className = "cx-host"; document.body.append(host);
+    host.canopyx = CanopyX.createDataGrid(host, where === "mount" ? { view, recordDrawerModal: true } : { view }); await host.canopyx.ready;
+    await host.canopyx.openDetails("c001");
+  }, [view, where]);
+  const sheet = drawer(page);
+  await expect(sheet).toBeVisible();
+  expect(await sheet.evaluate(element => element.matches(":modal"))).toBe(true);
+  // The scrim closes it.
   await page.mouse.click(20, 450);
   await expect(sheet).toHaveCount(0);
-  // A host that wants the older side panel beside a live grid mounts with recordDrawerModal: false.
-  const view = definition(); view.record.tabs = [];
-  await page.evaluate(async view => {
-    const old = document.querySelector("[data-canopyx-host]"); old.canopyx.destroy?.(); old.remove();
-    const host = document.createElement("div"); host.className = "cx-host"; host.id = "side-panel-host"; document.body.append(host);
-    host.canopyx = CanopyX.createDataGrid(host, { view, recordDrawerModal: false }); await host.canopyx.ready;
-    await host.canopyx.openDetails("c001");
-  }, view);
-  const side = drawer(page);
-  await expect(side).toBeVisible();
-  expect(await side.evaluate(element => element.matches(":modal"))).toBe(false);
 });
 test("the record drawer closes when its grid stops rendering and does not reopen in a narrowed layout", async ({ page }) => {
   const sheet = await openRecord(page, 1440);

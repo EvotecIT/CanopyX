@@ -29,10 +29,10 @@
     for(const button of [previous,next,close])button.classList.add("icon");identity.append(title,subtitle);head.append(identity,previous,next,close);dialog.append(head,body);
     document.body.appendChild(dialog);activeRecordDrawer=dialog;this.recordDrawer=dialog;DataGrid.activeDrawers.set(dialog,this);
     const primary=this.visibleColumns()[0],shape=gridResultShape(this.acceptedQuery),owner=this.dataLifetime;let retiredForNavigation=false,paints=null;
-    // The drawer is a full-height sheet over a scrim by default: it does not cover the view's columns and counters while they
-    // stay live underneath, and the scrim closes it. recordDrawerModal: false (on the view or as a mount option) keeps the older
-    // side panel beside a live view. The drawer belongs to its view, so it closes when the view stops rendering.
-    const modal=(this.opts.recordDrawerModal??this.view.recordDrawerModal)!==false;
+    // The drawer is a full-height side panel beside the live view on wide screens and a full-screen sheet on narrow ones.
+    // recordDrawerModal: true (on the view or as a mount option) makes it a sheet over a scrim at every width, which keeps the
+    // view's columns and counters out from under it. The drawer belongs to its view, so it closes when the view stops rendering.
+    const modal=(this.opts.recordDrawerModal??this.view.recordDrawerModal)===true;
     const lifetime=new AbortController(),overlay=dialog._cxOverlay=UI_IMPL.drawer(dialog,{host:this.host,container:this.host,focus:false,dismissible:modal,modal,closeWhenHidden:true},lifetime.signal);
     lifetime.signal.addEventListener("abort",restoreTheme,{once:true});
     // A record outside the accepted result (a deep link or a related record) has no position: previous and next stay off.

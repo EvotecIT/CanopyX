@@ -410,7 +410,7 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   rowAction?: "none" | "details" | "link";
   /** Draw a row tone as a bar at the row start (default false). */
   rowAccents?: boolean;
-  /** The record drawer opens as a full-height sheet over a scrim (default true); false keeps the side panel beside a live view. */
+  /** True opens the record drawer as a full-height sheet over a scrim at every width (default false: a side panel on wide screens, a sheet on narrow ones). */
   recordDrawerModal?: boolean;
   /** How editable columns edit; the host's editing option overrides these. */
   editing?: GridEditingSettings;
@@ -477,7 +477,7 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   timeZone?: TimeZone;
   /** Space-separated host styling classes copied onto body-appended record, text and column overlays when opened. */
   overlayClass?: string;
-  /** The record drawer opens as a full-height sheet over a scrim that closes it (default true). False keeps the side panel beside a live, clickable view. */
+  /** True opens the record drawer as a full-height sheet over a scrim at every width (default false: a side panel on wide screens, a sheet on narrow ones). */
   recordDrawerModal?: boolean;
   labels?: Partial<CanopyLabels>;
   /** Sanitizes trusted host HTML details before insertion; shares the tree host's sanitizer contract. */
@@ -846,7 +846,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   source?: Q extends GridCursorQuery ? GridCursorSource<Row> : GridSource<Row>;
   /** Space-separated host styling classes copied onto body-appended record, text and column overlays when opened. */
   overlayClass?: string;
-  /** The record drawer opens as a full-height sheet over a scrim that closes it (default true). False keeps the side panel beside a live, clickable view. */
+  /** True opens the record drawer as a full-height sheet over a scrim at every width (default false: a side panel on wide screens, a sheet on narrow ones). */
   recordDrawerModal?: boolean;
   labels?: Partial<CanopyLabels>;
   renderers?: Record<string, (row: Row, element: HTMLElement, context: GridCellContext) => boolean | void>;
