@@ -60,6 +60,8 @@
     if (count && button.parentNode !== disclosure) disclosure.appendChild(button);
     fields.forEach((field, index) => {
       this.paintSlot(slot.childSlots[index], row, field, this.columns.indexOf(field), { level: 0, expanded: false });
-      slot.childSlots[index].cell.title = cellText(row.cells[field.id], field, this.fmt) || "";
+      const value = slot.childSlots[index].cell;
+      value.title = cellText(row.cells[field.id], field, this.fmt) || "";
+      value.tabIndex = value.querySelector(".p-pill,.p-state") ? 0 : -1;
     });
   };

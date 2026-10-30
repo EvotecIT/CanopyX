@@ -117,4 +117,9 @@ test("an essential pill wider than the phone scrolls within its record line with
   expect(geometry.pillContent).toBeLessThanOrEqual(geometry.pillWidth + 1);
   expect(geometry.content).toBeGreaterThan(geometry.viewport);
   expect(geometry.page).toBeLessThanOrEqual(390);
+  await expect(value).toHaveAttribute("tabindex", "0");
+  await value.focus();
+  await expect(value).toBeFocused();
+  await value.press("ArrowRight");
+  await expect.poll(() => value.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
 });
