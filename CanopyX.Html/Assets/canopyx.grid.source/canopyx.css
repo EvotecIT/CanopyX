@@ -200,7 +200,7 @@
 .cx-data-grid.cx-phone .cx-phone-primary { align-items:flex-start; }
 .cx-data-grid.cx-phone .cx-phone-primary > .cx-content { flex:1; }
 .cx-data-grid.cx-phone:not([data-cx-layout="scroll"]) .cx-phone-primary :is(.cx-text,.p-mono,.cx-presenter-text) { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;overflow-wrap:anywhere;line-height:1.25;max-height:2.5em; }
-.cx-data-grid.cx-phone .cx-phone-fields > .cx-hidden-fields { margin-left:auto;flex:none; }
+.cx-data-grid.cx-phone .cx-phone-fields .cx-hidden-fields { margin-inline-start:auto;flex:none; }
 
 /* Change view hosts (docs/changes.md): as tall as their content, unless a height bounds them. */
 .cx-host.cx-change-host { min-height:0;display:block; }

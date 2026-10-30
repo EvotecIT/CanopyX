@@ -1026,3 +1026,11 @@ void exportedViewIntent;
 // @ts-expect-error View intent pivot definitions exclude saved-state presentation flags.
 const runtimePivotIntent: GridViewIntent = { ...proposedView, pivot: { rows: [], columns: [], values: ["total"], active: true } };
 void runtimePivotIntent;
+
+import type { GridColumnBandDefinition } from "@evotecit/canopyx/grid";
+const presentationBand: GridColumnBandDefinition = { id: "identity", title: "Identity", groups: [{ id: "child", title: "Child", columns: ["name"] }] };
+// @ts-expect-error Presentation bands cannot set pins on a root group.
+const pinnedBand: GridColumnBandDefinition = { id: "identity", title: "Identity", columns: ["name"], pinned: "left" };
+// @ts-expect-error Presentation bands cannot set pins on nested groups either.
+const nestedPinnedBand: GridColumnBandDefinition = { id: "identity", title: "Identity", groups: [{ id: "child", title: "Child", columns: ["name"], pinned: "right" }] };
+void presentationBand; void pinnedBand; void nestedPinnedBand;

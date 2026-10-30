@@ -68,7 +68,6 @@
 --cx-size-d875em:.875em;
 --cx-size-92px:92px;
 --cx-size-28px:28px;
---cx-size-1px:1px;--cx-size-neg-1px:-1px;
 --cx-scrollbar-thumb:color-mix(in srgb,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)) 28%,transparent);
 --cx-scrollbar-thumb-hover:color-mix(in srgb,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)) 46%,transparent);
 --cx-scrollbar-track:transparent;
@@ -78,13 +77,15 @@
 box-sizing:border-box;
 display:flex;
 flex-direction:column;
-height:480px;
 min-height:0;
 color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));
 background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));
 font-family:var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);
 font-size:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem));
 line-height:var(--hfx-type-small-line,1.4);
+}
+.cx-host:where(:not(.cx-drawer,.cx-dialog,.cx-popover,.cx-menu,.cx-tooltip)){
+height:480px;
 }
 .cx-host[data-cx-chrome="embedded"]{background:transparent;border:0;border-radius:0;}
 .cx-host[data-cx-chrome="embedded"] > .cx-grid{border-inline:0;border-bottom:0;border-radius:0;background:transparent;}
@@ -670,7 +671,7 @@ body .cx-host.cx-chrome{padding:0;}
 .cx-data-grid.cx-phone .cx-phone-primary{align-items:flex-start;}
 .cx-data-grid.cx-phone .cx-phone-primary > .cx-content{flex:1;}
 .cx-data-grid.cx-phone:not([data-cx-layout="scroll"]) .cx-phone-primary :is(.cx-text,.p-mono,.cx-presenter-text){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;overflow-wrap:anywhere;line-height:1.25;max-height:2.5em;}
-.cx-data-grid.cx-phone .cx-phone-fields > .cx-hidden-fields{margin-left:auto;flex:none;}
+.cx-data-grid.cx-phone .cx-phone-fields .cx-hidden-fields{margin-inline-start:auto;flex:none;}
 .cx-host.cx-change-host{min-height:0;display:block;}
 .cx-host:where(.cx-change-host:not([data-cx-height])){height:auto;}
 .cx-host.cx-flow-host{min-height:0;display:block;background:transparent;}

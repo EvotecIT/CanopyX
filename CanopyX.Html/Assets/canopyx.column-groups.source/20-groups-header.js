@@ -9,13 +9,17 @@
     for (const row of grid.groupRows || []) row.remove();
     grid.groupRows = []; grid.groupCells = [];
     for (let level = 0; level < depth; level++) {
-      const row = h("div", "cx-hrow cx-hgroup-row");
+      const row = h("div", "cx-hrow cx-hgroup-row"), seen = new Set();
       row.setAttribute("role", "row"); row.setAttribute("aria-rowindex", String(level + 1));
       for (let first = 0; first < cols.length;) {
         const node = paths[first][level];
         let end = first + 1;
         if (node) while (end < cols.length && paths[end][level] === node && cols[end].effectivePin === cols[first].effectivePin) end++;
         const cell = node ? cgGroupCell(grid, node, first, end - first) : h("div", "cx-hcell cx-hgroup-pad");
+        if (node && grid.view.columnBands !== undefined) {
+          cell.classList.add("cx-hband");
+          cell.classList.toggle("cx-hband-continuation", seen.has(node)); seen.add(node);
+        }
         if (!node) cell.setAttribute("aria-hidden", "true");
         cell._cxSpan = { first, last: end - 1 };
         row.appendChild(cell); grid.groupCells.push(cell); first = end;

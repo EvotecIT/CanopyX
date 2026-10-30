@@ -602,7 +602,7 @@
     {
       "name": "column-groups",
       "label": "column groups",
-      "version": "24d2e49f45026223",
+      "version": "e2a6e37ae984f1ec",
       "script": "canopyx-column-groups.js",
       "style": "canopyx-column-groups.css",
       "runtimes": [
@@ -667,7 +667,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "7d7402e30ec311ca",
+      "version": "c50960e9395d9f85",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [

@@ -85,7 +85,7 @@
   // flags) and takes the strongest tone among them.
   const formatFlag = target => target && target.details && (target.tone || target.glyph || target.badge || target.cue);
   DataGrid.prototype.formatHiddenFields = function (slot, result) {
-    const button = slot.hiddenFields, hidden = this.phoneRemainingColumns().filter(column => formatFlag(result.cells.get(column.id)));
+    const button = slot.hiddenFields, shown = this.phoneLineColumns(), hidden = this.hiddenViewColumns().filter(column => !shown.includes(column) && formatFlag(result.cells.get(column.id)));
     if (!hidden.length) return;
     let tone = null;
     for (const column of hidden) { const next = result.cells.get(column.id).tone; if (next && (FORMAT_RANK[next] || 3) > (FORMAT_RANK[tone] || 0)) tone = next; }
