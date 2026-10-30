@@ -62,6 +62,7 @@
       this.paintSlot(slot.childSlots[index], row, field, this.columns.indexOf(field), { level: 0, expanded: false });
       const value = slot.childSlots[index].cell;
       value.title = cellText(row.cells[field.id], field, this.fmt) || "";
-      value.tabIndex = value.querySelector(".p-pill,.p-state") ? 0 : -1;
+      if (value.querySelector(".p-pill,.p-state") && value.scrollWidth > value.clientWidth + 1) value.tabIndex = -1;
+      else value.removeAttribute("tabindex");
     });
   };

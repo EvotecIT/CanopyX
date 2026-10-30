@@ -12,6 +12,21 @@ const VIEWS = {
     source: { kind: "inline" }, roots: NAMES.map((name, index) => ({ id: "n" + index, label: name })) }
 };
 
+for (const bound of ["initial", "var(--host-bound)"]) {
+  test(`a short grid resolves the unbounded authored max-height ${bound} before fitting`, async ({ page }) => {
+    const view = { ...VIEWS.grid, rows: VIEWS.grid.rows.slice(0, 1) };
+    const html = viewPage(view).replace('<div class="cx-host"',
+      `<div class="cx-host" style="--host-bound:none;max-height:${bound}"`);
+    await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: html }));
+    await page.goto("https://canopyx.test/");
+    await page.waitForSelector("[data-cx-ready]");
+    const host = page.locator(".cx-host");
+    await expect.poll(() => host.evaluate(element => element.style.maxHeight)).toMatch(/^\d+px$/);
+    expect(await host.evaluate(element => element.offsetHeight)).toBeLessThan(200);
+    await expect(page.locator('.cx-row[data-cx-id="r0"]')).toBeVisible();
+  });
+}
+
 for (const [kind, view] of Object.entries(VIEWS)) {
   test(`a ${kind} host with a percentage max-height keeps it as its bound while fitting its rows`, async ({ page }) => {
     const html = viewPage(view).replace("<div class=\"cx-host\"", "<div id=\"box\" style=\"height:400px\"><div class=\"cx-host\" style=\"max-height:50%\"").replace("</div></body>", "</div></div></body>");
