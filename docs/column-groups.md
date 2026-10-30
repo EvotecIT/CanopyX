@@ -18,7 +18,9 @@ grid.ColumnGroups.Add(new CanopyColumnGroup("identity", "Identity", "host", "roo
 grid.ColumnGroups.Add(new CanopyColumnGroup("live", "Live", "liveBefore", "liveAfter"));
 ```
 
-The equivalent wire setting is `columnGroupMode: "presentation"`; omission or `"semantic"` retains semantic grouping.
+The writer emits these definitions as `columnBands`, separately from semantic `columnGroups`. A wire document declares
+one field or the other. Older `canopyx/2` readers ignore `columnBands` and keep the authored column order and pins.
+JavaScript hosts place the same group definitions in `view.columnBands`.
 Presentation members may be nonadjacent. With authored order `host, liveBefore, rootDomain, liveAfter`, four bands appear.
 If responsive fitting or the ordinary Columns chooser hides `rootDomain`, the two visible Live members become one span;
 showing it again splits that span. Reordering columns recomputes bands in the new visible order. Effective pin boundaries

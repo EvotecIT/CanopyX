@@ -7,15 +7,15 @@
 
   /** Checks a view's column groups and indexes them: the roots, each group by id, each column's innermost group and the depth. */
   function cgRead(view) {
-    const declared = new Set(view.columns.map(column => column.id)), owner = new Map(), byId = new Map();
-    if (!Array.isArray(view.columnGroups) || view.columnGroups.length > 1000) cgBad("must be an array of at most 1000 groups");
+    const declared = new Set(view.columns.map(column => column.id)), owner = new Map(), byId = new Map(), definitions = view.columnBands ?? view.columnGroups;
+    if (!Array.isArray(definitions) || definitions.length > 1000) cgBad("must be an array of at most 1000 groups");
     const read = (input, parent, depth) => {
       if (!input || typeof input !== "object" || Array.isArray(input)) cgBad("must be objects");
       requireIdentifier(input.id, "column group ID");
       const columns = input.columns ?? [], groups = input.groups ?? [];
       if (byId.has(input.id) || typeof input.title !== "string" || !input.title.trim() || input.title.length > 256 || depth > CG_DEPTH ||
           !Array.isArray(columns) || !Array.isArray(groups) || !columns.length && !groups.length ||
-          input.pinned !== undefined && (view.columnGroupMode === "presentation" || parent || ![null, "left", "right"].includes(input.pinned)))
+          input.pinned !== undefined && (view.columnBands !== undefined || parent || ![null, "left", "right"].includes(input.pinned)))
         cgBad("need unique IDs, titles, members, at most " + CG_DEPTH + " levels, and a pin only on a top-level group");
       const node = { id: input.id, title: input.title, pinned: input.pinned, parent, depth, columns: [], groups: [], leaves: [] };
       byId.set(node.id, node);
@@ -26,7 +26,7 @@
       for (const group of groups) node.groups.push(read(group, node, depth + 1));
       return node;
     };
-    const roots = view.columnGroups.map(group => read(group, null, 1));
+    const roots = definitions.map(group => read(group, null, 1));
     const gather = node => node.leaves = [...node.columns, ...node.groups.flatMap(gather)];
     roots.forEach(gather);
     return { roots, byId, owner, depth: Math.max(0, ...[...byId.values()].map(node => node.depth)) };

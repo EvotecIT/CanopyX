@@ -24,6 +24,12 @@ A list of events is enough. Each event has a title and a start; an end, `allDay`
 ```js
 import { createCalendar } from "@evotecit/canopyx/grid";
 import "@evotecit/canopyx/grid.css";
+import "@evotecit/canopyx/ui-overlays.js";
+import "@evotecit/canopyx/ui-overlays.css";
+import "@evotecit/canopyx/ui-menu.js";
+import "@evotecit/canopyx/ui-menu.css";
+import "@evotecit/canopyx/calendar.js";
+import "@evotecit/canopyx/calendar.css";
 
 createCalendar(document.getElementById("calendar"), {
   events: [
@@ -33,7 +39,11 @@ createCalendar(document.getElementById("calendar"), {
 });
 ```
 
-A page with classic scripts calls `CanopyX.createCalendar` instead.
+The side-effect imports include the basic calendar part and its styles in the bundle. For advanced options that load
+other parts, serve the package's `canopyx-*.js` and `canopyx-*.css` files from one public directory and set
+`window.CanopyXFilterEditorBase = "/canopyx/"` before creating the view. This existing base setting applies to all parts;
+the runtime and part files must come from the same package version. See [Serving parts](plugins.md#serving-parts).
+A page with classic scripts calls `CanopyX.createCalendar` instead and serves those files beside its runtime script.
 
 ```csharp
 var calendar = new CanopyCalendar(new[] {

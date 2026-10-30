@@ -77,9 +77,9 @@ public sealed partial class CanopyDataGridView {
     }
 
     private void WriteColumnGroupsJson(CanopyJsonWriter writer) {
-        if (ColumnGroupMode == CanopyColumnGroupMode.Presentation) writer.Property("columnGroupMode", "presentation");
-        if (ColumnGroups.Count == 0) return;
-        writer.Name("columnGroups").BeginArray();
+        if (ColumnGroups.Count == 0 && ColumnGroupMode != CanopyColumnGroupMode.Presentation) return;
+        // Older canopyx/2 readers ignore bands, preserving authored order and pins instead of applying semantic grouping.
+        writer.Name(ColumnGroupMode == CanopyColumnGroupMode.Presentation ? "columnBands" : "columnGroups").BeginArray();
         foreach (var group in ColumnGroups) group.WriteJson(writer);
         writer.EndArray();
     }

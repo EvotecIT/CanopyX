@@ -43,7 +43,18 @@ the same documents. The grid and reporting entry points carry these functions; t
 ```js
 import { createChangeList, createDiff } from "@evotecit/canopyx/grid";
 import "@evotecit/canopyx/grid.css";
+import "@evotecit/canopyx/changes.js";
+import "@evotecit/canopyx/changes.css";
 
+// The host serves serialized canopyx/2 view documents at these endpoints.
+async function loadView(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`View request failed: ${response.status}`);
+  return response.json();
+}
+const [changeListDocument, diffDocument] = await Promise.all([
+  loadView("/api/views/changes"), loadView("/api/views/diff")
+]);
 const list = createChangeList(document.getElementById("changes"), { view: changeListDocument });
 const diff = createDiff(document.getElementById("diff"), { view: diffDocument });
 ```

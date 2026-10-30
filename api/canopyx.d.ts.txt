@@ -1781,7 +1781,7 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   searchColumns?:GridColumnId<Row>[];
   reporting?:GridReporting;
   columnGroups?:readonly GridColumnGroup[];
-  columnGroupMode?:"semantic"|"presentation";
+  columnBands?:readonly GridColumnGroup[];
   rangeSelection?:GridRangeSelection;
   clipboard?:GridClipboardSettings;
   record?:RecordPanelDefinition;

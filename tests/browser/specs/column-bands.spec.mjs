@@ -6,10 +6,10 @@ import { nextFrames } from "./support.mjs";
 const order = ["host", "liveBefore", "rootDomain", "liveAfter"];
 function definition(patch = {}) {
   return { protocol: "canopyx/2", type: "grid", id: "bands", label: "Resource status", pageSize: 20, selection: "multiple", search: true,
-    source: { kind: "inline" }, columnGroupMode: "presentation", reporting: { columnReorder: true, responsive: true },
+    source: { kind: "inline" }, reporting: { columnReorder: true, responsive: true },
     columns: order.map((id, index) => ({ id, title: ["Host", "Served", "Root domain", "Issuer"][index], kind: "text", sortable: true,
       width: index === 2 ? 300 : 200, minWidth: index === 2 ? 300 : 200, priority: index === 2 ? "optional" : "essential", ...(index === 0 ? { rowHeader: true } : {}) })),
-    columnGroups: [{ id: "identity", title: "Identity", columns: ["host", "rootDomain"] }, { id: "live", title: "Live", columns: ["liveBefore", "liveAfter"] }],
+    columnBands: [{ id: "identity", title: "Identity", columns: ["host", "rootDomain"] }, { id: "live", title: "Live", columns: ["liveBefore", "liveAfter"] }],
     rows: ["one", "two"].map(id => ({ id, cells: { host: id, liveBefore: "Valid", rootDomain: "example.test", liveAfter: "Example Issuer" } })), ...patch };
 }
 const bands = page => page.evaluate(() => api.getColumnBands().map(band => band.title + ":" + band.columns.join(",")));
@@ -84,7 +84,7 @@ test("presentation chooser hide show and reorder keep ordinary layout and saved 
 test("presentation bands split at effective pins and leave individual pin actions intact", async ({ page }) => {
   const view = definition(); view.columns[0].pinned = "left"; view.columns[3].pinned = "right";
   // One logical group spans both pinned edges and the scrolling centre.
-  view.columnGroups = [{ id: "all", title: "Status", columns: order }];
+  view.columnBands = [{ id: "all", title: "Status", columns: order }];
   await page.setViewportSize({ width: 1440, height: 900 });
   await serveGrid(page, view, { runtime: "canopyx-reporting" });
   expect(await page.evaluate(() => api.getColumnBands().map(band => [band.columns, band.pin]))).toEqual([
@@ -100,7 +100,7 @@ test("presentation bands split at effective pins and leave individual pin action
 });
 
 test("unrelated groups with equal titles remain separate and nested spans preserve level", async ({ page }) => {
-  const view = definition({ columnGroups: [{ id: "outer", title: "Details", groups: [
+  const view = definition({ columnBands: [{ id: "outer", title: "Details", groups: [
     { id: "a", title: "Same", columns: ["host", "liveBefore"] }, { id: "b", title: "Same", columns: ["rootDomain", "liveAfter"] }] }] });
   view.columns[0].pinned = null;
   await serveGrid(page, view, { runtime: "canopyx-reporting" });
@@ -125,9 +125,9 @@ test("presentation mode preserves export snapshots and record drawer sections", 
 });
 
 test("presentation mode rejects group pins while ordinary grids keep bands unloaded", async ({ page }) => {
-  await serveGrid(page, definition({ columnGroups: [] }), { runtime: "canopyx-reporting" });
+  await serveGrid(page, definition({ columnBands: [] }), { runtime: "canopyx-reporting" });
   expect(await page.evaluate(() => api.getColumnBands())).toEqual([]);
-  const invalid = definition(); invalid.columnGroups[0].pinned = "left";
+  const invalid = definition(); invalid.columnBands[0].pinned = "left";
   const message = await page.evaluate(async view => {
     const host = document.body.appendChild(document.createElement("div"));
     const grid = CanopyX.createDataGrid(host, { view }); let error;
@@ -135,4 +135,9 @@ test("presentation mode rejects group pins while ordinary grids keep bands unloa
     await grid.ready; grid.destroy(); host.remove(); return error;
   }, { ...invalid, id: "invalid" });
   expect(message).toContain("column groups");
+  const mixed = definition({ columnGroups: [] });
+  expect(await page.evaluate(view => {
+    try { CanopyX.createDataGrid(document.body.appendChild(document.createElement("div")), { view }); }
+    catch (error) { return error.message; }
+  }, mixed)).toContain("choose columnBands or columnGroups");
 });

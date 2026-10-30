@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "e549d0dc4df32b9f",
+      "version": "d22c8fc9f07ccc86",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -602,7 +602,7 @@
     {
       "name": "column-groups",
       "label": "column groups",
-      "version": "5c35e9f0954090b9",
+      "version": "24d2e49f45026223",
       "script": "canopyx-column-groups.js",
       "style": "canopyx-column-groups.css",
       "runtimes": [
