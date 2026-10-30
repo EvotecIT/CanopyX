@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "8af6a41f495d18ef",
+      "version": "fb8e5b4b0c4d2ea2",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "b4f88191c621ac08",
+      "version": "a0e0ec29f86816bf",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
