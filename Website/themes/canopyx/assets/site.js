@@ -67,11 +67,14 @@
       if (!matchMedia('(hover: hover)').matches) return;
       clearTimeout(state.timer);
       if (item.hasAttribute('data-open')) return;
-      state.timer = setTimeout(function () { closeMenus(item); setMenu(item, true); state.hoverOpened = true; }, 80);
+      state.timer = setTimeout(function () {
+        if (menus.some(function (other) { return other !== item && other.hasAttribute('data-open') && other.contains(document.activeElement); })) return;
+        closeMenus(item); setMenu(item, true); state.hoverOpened = true;
+      }, 80);
     });
     item.addEventListener('mouseleave', function () {
       clearTimeout(state.timer);
-      state.timer = setTimeout(function () { setMenu(item, false); }, 160);
+      state.timer = setTimeout(function () { if (!item.contains(document.activeElement)) setMenu(item, false); }, 160);
     });
     item.addEventListener('focusout', function (event) {
       if (!item.contains(event.relatedTarget)) setMenu(item, false);
