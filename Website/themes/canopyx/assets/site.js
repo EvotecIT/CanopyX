@@ -45,7 +45,10 @@
 
   // The header's Views and Docs panels: a click toggles, hovering opens after a moment, Escape or a click outside closes.
   var menus = Array.prototype.slice.call(document.querySelectorAll('[data-cnx-menu]'));
+  var menuStates = new Map();
   function setMenu(item, open) {
+    var state = menuStates.get(item);
+    if (state) { clearTimeout(state.timer); state.hoverOpened = false; }
     var button = item.querySelector('button[aria-expanded]');
     if (open) item.setAttribute('data-open', ''); else item.removeAttribute('data-open');
     if (button) button.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -53,20 +56,22 @@
   function closeMenus(except) { menus.forEach(function (item) { if (item !== except) setMenu(item, false); }); }
   menus.forEach(function (item) {
     var button = item.querySelector('button[aria-expanded]');
-    var timer = 0;
+    var state = { timer: 0, hoverOpened: false };
+    menuStates.set(item, state);
     button.addEventListener('click', function () {
-      var open = !item.hasAttribute('data-open');
+      var open = !item.hasAttribute('data-open') || state.hoverOpened;
       closeMenus(item);
       setMenu(item, open);
     });
     item.addEventListener('mouseenter', function () {
       if (!matchMedia('(hover: hover)').matches) return;
-      clearTimeout(timer);
-      timer = setTimeout(function () { closeMenus(item); setMenu(item, true); }, 80);
+      clearTimeout(state.timer);
+      if (item.hasAttribute('data-open')) return;
+      state.timer = setTimeout(function () { closeMenus(item); setMenu(item, true); state.hoverOpened = true; }, 80);
     });
     item.addEventListener('mouseleave', function () {
-      clearTimeout(timer);
-      timer = setTimeout(function () { setMenu(item, false); }, 160);
+      clearTimeout(state.timer);
+      state.timer = setTimeout(function () { setMenu(item, false); }, 160);
     });
     item.addEventListener('focusout', function (event) {
       if (!item.contains(event.relatedTarget)) setMenu(item, false);
@@ -194,6 +199,16 @@
   }
 
   // Accessible tabs: arrow keys move between tabs, Home/End jump to the ends.
+  // Demo lists become horizontal rows on narrow pages; keep their keyboard model in sync.
+  var narrowDemos = matchMedia('(max-width: 1100px)');
+  function syncDemoOrientation() {
+    document.querySelectorAll('.cnx-view__demos--list .cnx-demotabs').forEach(function (list) {
+      list.setAttribute('aria-orientation', narrowDemos.matches ? 'horizontal' : 'vertical');
+    });
+  }
+  syncDemoOrientation();
+  narrowDemos.addEventListener('change', syncDemoOrientation);
+
   function wireTabs(tabs, onSelect) {
     tabs.forEach(function (tab, index) {
       tab.addEventListener('click', function () { onSelect(tab); });

@@ -18,6 +18,7 @@
 .cnx-nav { flex: 1; min-width: 0; }
 .cnx-nav__links { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .cnx-nav__link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -38,14 +39,15 @@
 .cnx-nav__link[aria-expanded="true"] .cnx-nav__chevron { transform: rotate(180deg); }
 .cnx-nav__link.is-current { color: var(--cnx-ink); }
 .cnx-nav__link.is-current::after { content: ""; position: absolute; left: 12px; right: 10px; bottom: -11px; height: 2px; border-radius: 2px; background: var(--cnx-accent); }
-.cnx-nav__item { position: relative; }
+.cnx-nav__item { position: static; }
 
 /* The panels under Views and Docs: open on click, hover or keyboard focus; Escape and a click outside close them. */
 .cnx-menu {
   position: absolute;
   z-index: 40;
   top: calc(100% + 10px);
-  left: -12px;
+  left: 16px;
+  max-width: calc(100% - 32px);
   display: none;
   padding: 18px;
   border: 1px solid var(--cnx-line);
