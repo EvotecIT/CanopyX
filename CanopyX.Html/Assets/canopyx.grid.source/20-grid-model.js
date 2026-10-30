@@ -6,7 +6,7 @@
       // page belong to no one else, and copying a large inline dataset would double its parse time and peak memory.
       this.view = JSON.parse(JSON.stringify(definition));
       if (this.view.rowIdentity === "ordinal" && options.live)
-        throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
+        throw new Error("CanopyX: rowIdentity must be stableKey for live updates or deep links.");
       if (rows) this.view.rows = owned ? rows : JSON.parse(JSON.stringify(rows));
       // The rows of rowData arrive in view.rows as the data part decodes them.
       // Structured cloning preserves invalid numeric values for the decoder to reject instead of converting them to null.
@@ -141,6 +141,8 @@
         }
         this.syncQuerySummary();
         this.syncPager();
+        // Fit the final empty notice and query controls even when row count stays zero.
+        this.fitHeight();
         this.emit("query", { query: this.acceptedQuery, revision: page.revision, total: page.total, matched: page.matched });
         this.stateChanged(); return this.getQuery();
       } catch (error) {
@@ -150,6 +152,7 @@
           this.dataLifetime.abort(); this.dataLifetime = new AbortController();
           this.grid.setAttribute("aria-busy", "false"); this.setNotice(cancelled ? "" : fill(this.labels.queryFailed, { error: error.message }), !cancelled);
           this.syncPager();
+          this.fitHeight();
           if (!cancelled) this.emit("error", { error });
         }
         throw error;

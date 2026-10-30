@@ -13,14 +13,17 @@
       throw new Error("CanopyX: choose one grid presentation: board, path, stack or calendar (with optional plan).");
     view = gridColumnDefaults(view);
     if (view.allowRegexSearch !== undefined && typeof view.allowRegexSearch !== "boolean") throw new Error("CanopyX: allowRegexSearch is a boolean.");
+    if (view.columnGroupMode !== undefined && !["semantic", "presentation"].includes(view.columnGroupMode))
+      throw new Error("CanopyX: columnGroupMode must be semantic or presentation.");
     if (view.rowIdentity !== undefined && !["stableKey", "ordinal"].includes(view.rowIdentity))
       throw new Error("CanopyX: rowIdentity must be stableKey or ordinal.");
-    if (view.rowIdentity === "ordinal" && view.live)
-      throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
-    if (view.rowIdentity === "ordinal" && view.record?.deepLink)
-      throw new Error("CanopyX: ordinal row identity is snapshot-local; record deep links require stable row keys.");
+    if (view.rowIdentity === "ordinal" && (view.live || view.record?.deepLink))
+      throw new Error("CanopyX: rowIdentity must be stableKey for live updates or deep links.");
     if (typeof view.label !== "string" || !view.label.trim() || !Array.isArray(view.columns) || !view.columns.length)
       throw new Error("CanopyX: a grid needs a label and columns.");
+    // The source is checked before anything that reads it, such as the reporting options.
+    if (!view.source || typeof view.source !== "object" || !["inline", "host"].includes(view.source.kind))
+      throw new Error("CanopyX: a grid needs source.kind inline or host.");
     if (view.reporting !== undefined) {
       if (!GRID_REPORTING.validate) throw new Error("CanopyX: this view needs the reporting runtime.");
       GRID_REPORTING.validate(view);
@@ -61,12 +64,17 @@
         new Set(view.searchColumns).size !== view.searchColumns.length || view.searchColumns.some(id => !ids.has(id))))
       throw new Error("CanopyX: search columns must identify unique declared columns.");
     if (view.exportFormats !== undefined && !exportFormatIds(view.exportFormats)) throw new Error("CanopyX: exportFormats lists unique format IDs.");
-    if (view.autoRowHeight !== undefined && typeof view.autoRowHeight !== "boolean" ||
-        view.rowHeight !== undefined && view.rowHeight !== "auto" && (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64) ||
-        view.estimatedRowHeight !== undefined && (!Number.isInteger(view.estimatedRowHeight) || view.estimatedRowHeight < 20 || view.estimatedRowHeight > 64) ||
-        !Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000 ||
-        !["none", "single", "multiple"].includes(view.selection)) throw new Error("CanopyX: invalid grid sizing or selection.");
-    if (!view.source || !["inline", "host"].includes(view.source.kind)) throw new Error("CanopyX: grid source must be inline or host.");
+    // Each sizing field is named in its own message, so a missing one is found without reading the protocol.
+    if (!Number.isInteger(view.pageSize) || view.pageSize < 1 || view.pageSize > 10000)
+      throw new Error("CanopyX: pageSize must be 1 to 10000.");
+    if (!["none", "single", "multiple"].includes(view.selection))
+      throw new Error("CanopyX: selection must be none, single or multiple.");
+    if (view.autoRowHeight !== undefined && typeof view.autoRowHeight !== "boolean")
+      throw new Error("CanopyX: autoRowHeight is a boolean.");
+    if (view.rowHeight !== undefined && view.rowHeight !== "auto" && (!Number.isInteger(view.rowHeight) || view.rowHeight < 20 || view.rowHeight > 64))
+      throw new Error("CanopyX: rowHeight must be auto or 20 to 64.");
+    if (view.estimatedRowHeight !== undefined && (!Number.isInteger(view.estimatedRowHeight) || view.estimatedRowHeight < 20 || view.estimatedRowHeight > 64))
+      throw new Error("CanopyX: estimatedRowHeight must be 20 to 64.");
     if (view.calculatedColumnsEditable !== undefined && (typeof view.calculatedColumnsEditable !== "boolean" || view.calculatedColumnsEditable && view.source.kind !== "inline"))
       throw new Error("CanopyX: the calculated-column editor requires an inline grid.");
     if (view.source.navigation !== undefined && !["offset", "cursor"].includes(view.source.navigation))

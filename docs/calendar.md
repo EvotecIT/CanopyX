@@ -22,13 +22,18 @@ A list of events is enough. Each event has a title and a start; an end, `allDay`
 `yyyy-MM-dd` start makes an all-day event.
 
 ```js
-CanopyX.createCalendar(document.getElementById("calendar"), {
+import { createCalendar } from "@evotecit/canopyx/grid";
+import "@evotecit/canopyx/grid.css";
+
+createCalendar(document.getElementById("calendar"), {
   events: [
     { title: "Sprint planning", start: "2026-10-16T09:00:00Z", end: "2026-10-16T10:30:00Z", description: "Pick the next work." },
     { title: "Conference trip", start: "2026-10-20", end: "2026-10-23" }
   ]
 });
 ```
+
+A page with classic scripts calls `CanopyX.createCalendar` instead.
 
 ```csharp
 var calendar = new CanopyCalendar(new[] {
@@ -71,7 +76,8 @@ CanopyX.createCalendar(host, { events, calendar: { weekNumbers: "iso", validRang
 list of `{ id, label, parent }`), `timeline`, `live`, `facets` and `links`; `calendar` takes any other key of the definition below
 (its functions are the host hooks: `render`, `menu`, `occurrence`), and the rest are grid options (`editing`, `onCreate`, ...).
 In C#, `CanopyCalendar` has a property for each, `ApplyPreset(...)`, and the presets as a constructor argument. The protocol
-carries the resolved keys, never a preset name.
+carries the resolved keys, never a preset name. The timeline joins the preset's views when `timeline: true` or
+`view: "timeline"` asks for it, and with `resources` the `scheduler` preset adds it too.
 
 | Capability | Option |
 | --- | --- |

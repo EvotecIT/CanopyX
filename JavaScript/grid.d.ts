@@ -449,6 +449,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   reporting?: GridReporting;
   /** Header rows above the columns, up to three levels (docs/column-groups.md). */
   columnGroups?: readonly GridColumnGroup[];
+  /** Semantic groups govern layout by default; presentation bands only follow displayed contiguous members and pins. */
+  columnGroupMode?: "semantic" | "presentation";
   /** Cell ranges by mouse, keyboard and touch, the cell menu and the clipboard keys (docs/cell-ranges.md). */
   rangeSelection?: GridRangeSelection;
   /** How cell ranges copy and paste. */

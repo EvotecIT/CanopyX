@@ -116,7 +116,9 @@ public static partial class CanopyStaticHtml {
                 if (level < path.Count) {
                     var group = path[level];
                     var end = index + 1;
-                    while (end < columns.Length && paths[end].Count > level && paths[end][level] == group) end++;
+                    while (end < columns.Length && paths[end].Count > level && paths[end][level] == group &&
+                        (view.ColumnGroupMode != CanopyColumnGroupMode.Presentation ||
+                            (columns[end].Pinned ?? CanopyGridColumnPin.None) == (columns[index].Pinned ?? CanopyGridColumnPin.None))) end++;
                     html.Append("<th scope=\"col\" colspan=\"").Append(end - index).Append("\" style=\"").Append(text == null ? styles.Header : styles.InnerHeader).Append("\">");
                     AppendVisibleText(html, group.Title, text, true); html.Append("</th>");
                     index = end;
