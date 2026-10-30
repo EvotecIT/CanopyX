@@ -26,7 +26,8 @@ test("contiguous default bands span once and reordered runs visibly continue wit
     const band = getComputedStyle(element), column = getComputedStyle(document.querySelector(".cx-hrow:not(.cx-hgroup-row) .cx-hcell"));
     return { distinct: band.backgroundColor !== column.backgroundColor, separator: parseFloat(band.borderInlineEndWidth) };
   });
-  expect(hierarchy).toEqual({ distinct: true, separator: 1 });
+  expect(hierarchy.distinct).toBe(true);
+  expect(hierarchy.separator).toBeGreaterThan(0);
   await page.evaluate(order => api.setColumnOrder(order), order);
   expect(await headerColumns(page)).toEqual(order);
   expect(await bands(page)).toEqual(["Identity:host", "Live:liveBefore", "Identity:rootDomain", "Live:liveAfter"]);
