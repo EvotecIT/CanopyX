@@ -25,7 +25,7 @@ for (const [width, theme] of [[1440, "light"], [720, "light"], [390, "dark"]]) {
     expect(await page.locator(".cx-host").evaluate(host => host.style.height)).toBe("auto");
     expect(await page.locator(".cx-cal-srow").last().getAttribute("role")).toBe("row");
     await expect(page.locator(".cx-cal-slot[data-cx-minutes='1050']").first()).toBeInViewport();
-    expect(await page.locator(".cx-cal-srow").first().evaluate(row => row.getBoundingClientRect().height)).toBe(24);
+    await expect.poll(() => page.locator(".cx-cal-srow").first().evaluate(row => row.getBoundingClientRect().height)).toBe(24);
     await page.screenshot({ path: info.outputPath(`calendar-auto-${width}-${theme}.png`), fullPage: true });
     const picker = page.locator(".cx-cal-rpick-select");
     await picker.focus();
@@ -44,7 +44,7 @@ test("bounded full-day calendar keeps native slot geometry and reaches the last 
   await openBuilt(page, "bounded-full-day.html", calendarC1Page({ count: 2, calendar: { minTime: "00:00", maxTime: "24:00" } }));
   const scroller = page.locator(".cx-cal-scroll");
   expect(await scroller.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(300);
-  expect(await page.locator(".cx-cal-srow").first().evaluate(row => row.getBoundingClientRect().height)).toBe(24);
+  await expect.poll(() => page.locator(".cx-cal-srow").first().evaluate(row => row.getBoundingClientRect().height)).toBe(24);
   await page.locator(".cx-cal-slot[data-cx-minutes='1380']").first().focus();
   await page.keyboard.press("ArrowDown");
   await expect(page.locator(".cx-cal-slot[data-cx-minutes='1410']").first()).toBeFocused();
