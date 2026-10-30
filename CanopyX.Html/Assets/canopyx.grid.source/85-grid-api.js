@@ -9,7 +9,6 @@
     const api = {
       element: host, view: grid.view, ready: startPlugins(grid, () => api),
       getTimeZone: () => grid.local ? "local" : "utc",
-      getColumnBands: () => grid.getColumnBands(),
       getSelection: () => [...grid.selected], clearSelection: () => grid.setSelection([]),
       // The loaded records among ids, as copies of { id, cells }; a record not loaded now is left out. Never fetches.
       getLoadedRows: ids => {
