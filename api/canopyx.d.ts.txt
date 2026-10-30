@@ -3672,6 +3672,7 @@ export interface OpenRecordOptions{
   readonly returnFocus?:Element|null;
   readonly path?:readonly string[];
   readonly tab?:string;
+  readonly section?:string;
   readonly reload?:boolean;
 }
 export interface RecordPanelOptions{
