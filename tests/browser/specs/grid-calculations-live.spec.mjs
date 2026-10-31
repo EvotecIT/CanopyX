@@ -14,8 +14,12 @@ function definition() {
 
 for (const operation of ["update", "add", "replace"]) test("live calculated values drive membership and order after " + operation, async ({ page }) => {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
+  const time = new Date("2026-10-31T00:00:00Z");
+  await page.clock.install({ time });
   await open(page, definition(), calculations());
   await page.evaluate(api + ".setQuery({sort:[{column:'derived',direction:'desc'}],filters:[{column:'derived',operator:'ge',values:[4]}]})");
+  // Export enumeration may outlast a transient flash on a busy runner. Freeze before the update, then paint it.
+  await page.clock.pauseAt(new Date(time.getTime() + 60000));
   const result = await page.evaluate(async operation => {
     const grid = document.querySelector('[data-canopyx-host]').canopyx;
     if (operation === "update") await grid.updateRows([{ id: "a", cells: { input: 3 } }]);
@@ -25,8 +29,10 @@ for (const operation of ["update", "add", "replace"]) test("live calculated valu
     return { rows, loaded: grid.getLoadedRows(["a"])[0].cells.derived };
   }, operation);
   expect(result).toEqual({ rows: [["a", 6], ["b", 4]], loaded: 6 });
+  await page.clock.runFor(32);
   await expect(page.locator('[data-cx-id="a"] .cx-live-flash').filter({ hasText: "6" })).toBeVisible();
   await page.evaluate(api + ".updateRows([{id:'a',cells:{input:0}}])");
+  await page.clock.runFor(32);
   await expect(page.locator('[data-cx-id="a"]')).toHaveCount(0); expect(errors).toEqual([]);
 });
 

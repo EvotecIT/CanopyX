@@ -1,6 +1,7 @@
-{{~ ## The one site header: the brand, the top-level sections from the "main" menu in site.json as plain links, and the
-     actions (theme, GitHub, Discord, Get started). Every destination below a section lives in the sidebar, so the header
-     has no panels. On narrow screens the menu button opens the sidebar as a sheet. ## ~}}
+{{~ ## The one site header: the brand, the top-level sections from the "main" menu in site.json, and the actions (theme,
+     GitHub, NuGet, npm, Discord, Get started). Views and Docs open a panel: every view by family from data/views.json,
+     and every documentation topic with the packages. On narrow screens the menu button opens the sidebar as a sheet. ## ~}}
+{{~ views = data.views ~}}
 <a class="cnx-skip" href="#main">Skip to content</a>
 <header class="cnx-header" data-cnx-header>
   <div class="cnx-header__inner">
@@ -10,7 +11,43 @@
       <ul class="cnx-nav__links">
         {{~ for g in (pf.menu "main").items ~}}
         {{~ here = g.is_active || g.is_ancestor || (current_path | string.starts_with g.url) ~}}
-        <li><a class="cnx-nav__link{{ if here }} is-current{{ end }}" href="{{ g.url }}"{{ if here }} aria-current="{{ if current_path == g.url }}page{{ else }}true{{ end }}"{{ end }}>{{ g.title }}</a></li>
+        <li class="cnx-nav__item" data-cnx-menu>
+          <button type="button" class="cnx-nav__link{{ if here }} is-current{{ end }}" aria-expanded="false" aria-controls="cnx-menu-{{ g.id }}">{{ g.title }}<svg class="cnx-nav__chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          {{~ if g.id == "views" ~}}
+          <div class="cnx-menu cnx-menu--views" id="cnx-menu-views">
+            <div class="cnx-menu__cols">
+              {{~ for f in views.families ~}}
+              <section class="cnx-menu__col" aria-labelledby="cnx-menu-family-{{ f.id }}">
+                <h2 class="cnx-menu__family" id="cnx-menu-family-{{ f.id }}"><span class="cnx-tone cnx-tone--{{ f.tone }}" aria-hidden="true"></span>{{ f.name }}</h2>
+                <ul>
+                  {{~ for v in views.views ~}}
+                  {{~ if v.family == f.id; url = "/views/" + v.id + "/" ~}}
+                  <li><a href="{{ url }}"{{ if current_path == url }} aria-current="page"{{ end }}><strong>{{ v.name }}</strong><span>{{ v.example }}</span></a></li>
+                  {{~ end; end ~}}
+                </ul>
+              </section>
+              {{~ end ~}}
+            </div>
+            <p class="cnx-menu__foot"><a href="/views/"{{ if current_path == "/views/" }} aria-current="page"{{ end }}>Every view with its demos and code</a></p>
+          </div>
+          {{~ else if g.id == "docs" ~}}
+          <div class="cnx-menu cnx-menu--docs" id="cnx-menu-docs">
+            <ul class="cnx-menu__topics">
+              {{~ for i in g.items ~}}
+              <li><a href="{{ i.url }}"{{ if current_path == i.url }} aria-current="page"{{ end }}><strong>{{ i.title }}</strong><span>{{ i.description }}</span></a></li>
+              {{~ end ~}}
+            </ul>
+            <section class="cnx-menu__packages" aria-labelledby="cnx-menu-packages">
+              <h2 class="cnx-menu__family" id="cnx-menu-packages">Packages</h2>
+              <ul>
+                {{~ for p in views.packages ~}}
+                <li><a href="{{ p.url }}"><strong>{{ p.name }}<span class="cnx-sr"> on {{ p.where }}</span></strong><span>{{ p.body }}</span></a></li>
+                {{~ end ~}}
+              </ul>
+            </section>
+          </div>
+          {{~ end ~}}
+        </li>
         {{~ end ~}}
       </ul>
     </nav>

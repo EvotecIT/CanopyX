@@ -21,16 +21,31 @@ async function open(page, { dark = false, width = 1440 } = {}) {
   await nextFrames(page);
 }
 
+async function openFrozen(page) {
+  await page.clock.install({ time: new Date("2026-10-31T00:00:00Z") });
+  await open(page);
+  await page.clock.pauseAt(new Date("2026-10-31T01:00:00Z"));
+}
+
+async function frozenUpdate(page, row) {
+  await api(page, "live-endpoints", "(api, el, row) => { window.liveChange = api.updateRows([row]); }", row);
+  // This example batches for 250ms; paint after that batch, then hold the flash while its state is inspected.
+  await page.clock.runFor(250);
+  const result = await page.evaluate(() => window.liveChange);
+  await page.clock.runFor(32);
+  return result;
+}
+
 test.describe("live data", () => {
   test("a changed sort key keeps its row in place, flashes its cells and offers to re-sort", async ({ page }) => {
-    await open(page);
+    await openFrozen(page);
     const before = await shown(page, "live-endpoints");
     const target = before[6];
     await api(page, "live-endpoints", "(api, el, id) => api.setSelection([id])", target);
     const events = [];
     await page.exposeFunction("recordRows", detail => events.push(detail));
     await api(page, "live-endpoints", "(api, element) => element.addEventListener('canopyx:rowsChanged', event => window.recordRows(event.detail))");
-    const result = await api(page, "live-endpoints", "(api, el, id) => api.updateRows([{ id, cells: { latency: 999 } }])", target);
+    const result = await frozenUpdate(page, { id: target, cells: { latency: 999 } });
     expect(result).toMatchObject({ updated: [target], added: [], removed: [], orderChanged: true });
     expect(await shown(page, "live-endpoints")).toEqual(before);
     const monitor = grid(page, "live-endpoints");
@@ -47,6 +62,7 @@ test.describe("live data", () => {
     expect(events[0]).toMatchObject({ updated: [target], orderChanged: true, source: "api" });
     expect(await api(page, "live-endpoints", "api => api.getLiveState()")).toMatchObject({ orderChanged: true, pending: 0 });
     await resort.click();
+    await page.clock.runFor(32);
     await expect(bar).toBeHidden();
     await expect.poll(async () => (await shown(page, "live-endpoints"))[0]).toBe(target);
     await expect(row).toHaveAttribute("aria-selected", "true");
@@ -341,12 +357,13 @@ test.describe("live data appearance and accessibility", () => {
 
   test("with reduced motion changed cells show a still outline instead of fading", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await open(page);
+    await openFrozen(page);
     const ids = await shown(page, "live-endpoints");
-    await api(page, "live-endpoints", "(api, el, id) => api.updateRows([{ id, cells: { requests: 1 } }])", ids[0]);
+    await frozenUpdate(page, { id: ids[0], cells: { requests: 1 } });
     const cell = grid(page, "live-endpoints").locator(".cx-cell.cx-live-flash").first();
     await expect(cell).toBeVisible();
     expect(await cell.evaluate(element => [getComputedStyle(element).animationName, getComputedStyle(element).boxShadow])).toEqual(["none", expect.stringContaining("inset")]);
+    await page.clock.runFor(3000);
     await expect(grid(page, "live-endpoints").locator(".cx-cell.cx-live-flash")).toHaveCount(0, { timeout: 3000 });
   });
 });
