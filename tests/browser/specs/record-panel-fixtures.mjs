@@ -100,8 +100,12 @@ export function definition(extra = {}, count = 12) {
 }
 
 /** Opens a page with the view, routed at a fixed file name so record addresses stay stable. */
-export async function open(page, view, hash = "") {
-  await page.route("http://canopyx.test/records.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+export async function open(page, view, hash = "", chrome) {
+  await page.route("http://canopyx.test/records.html", route => {
+    const html = viewPage(view);
+    const body = chrome ? html.replace('<div class="cx-host" data-canopyx-host', `<div class="cx-host" data-canopyx-host data-cx-chrome="${chrome}"`) : html;
+    return route.fulfill({ contentType: "text/html", body });
+  });
   await page.goto("http://canopyx.test/records.html" + hash);
   await page.waitForSelector("[data-cx-ready]");
   await page.evaluate(api + ".ready");

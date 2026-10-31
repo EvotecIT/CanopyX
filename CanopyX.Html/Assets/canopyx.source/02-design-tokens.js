@@ -10,14 +10,15 @@
     const refresh = () => {
       const parent = host.parentElement && getComputedStyle(host.parentElement);
       const inherited = parent?.colorScheme;
+      const surface = parent && ["--hfx-color-surface-card", "--hfx-color-surface"].some(name => parent.getPropertyValue(name).trim());
       let mode = null;
-      if (!parent?.getPropertyValue("--hfx-color-surface").trim()) {
+      if (!surface) {
         outer: for (let owner = host; owner; owner = owner.parentElement) for (const attribute of MODE_ATTRIBUTES) {
           const value = owner.getAttribute(attribute);
           if (value === "light" || value === "dark") { mode = value; break outer; }
         }
       }
-      if (parent?.getPropertyValue("--hfx-color-surface").trim() || !mode && inherited && inherited !== "normal") {
+      if (surface || !mode && inherited && inherited !== "normal") {
         if (host.hasAttribute("data-cx-fallback-mode")) host.removeAttribute("data-cx-fallback-mode");
       } else if (host.getAttribute("data-cx-fallback-mode") !== (mode || "auto")) host.setAttribute("data-cx-fallback-mode", mode || "auto");
     };

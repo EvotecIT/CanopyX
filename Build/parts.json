@@ -2176,6 +2176,7 @@
       "key": "GRID_OPTIONS",
       "context": [
         "DataGrid",
+        "validateGridPage",
         "GRID_OPTIONS",
         "GRID_OPTION_GRIDS",
         "h",

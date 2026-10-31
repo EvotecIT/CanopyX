@@ -7,6 +7,7 @@
 <style>{{style}}</style>
 <script>{{script}}</script>
 <style>{{example-style}}
+:root { --hfx-color-surface-card:light-dark(#ffffff,#16181c);--hfx-color-surface-line:light-dark(#e2e4e7,#272a30);--hfx-color-text-primary:light-dark(#16181c,#f2f3f5);--hfx-color-text-secondary:light-dark(#626770,#8f949d); }
 .linked-layout { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 20px; align-items: start; margin-top: 20px; }
 .linked-layout > * { min-width: 0; }
 .linked-panel { border: 1px solid var(--example-line); border-radius: 10px; padding: 14px; }
@@ -17,6 +18,7 @@
 .site-bars { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .site-bar { display: grid; grid-template-columns: 72px minmax(0, 1fr) 28px; align-items: center; gap: 10px; width: 100%; min-height: 32px; padding: 4px 8px;
   border: 1px solid transparent; border-radius: 8px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.linked-multi { display:block;margin-top:8px; }
 .site-bar:hover { background: var(--example-tint); }
 .site-bar:focus-visible { outline: 2px solid var(--example-accent); outline-offset: 1px; }
 .site-bar[aria-pressed="true"] { border-color: var(--example-accent); background: color-mix(in srgb, var(--example-accent) 10%, var(--example-surface)); }
@@ -33,7 +35,7 @@
 <main>
 <a class="example-back" href="index.html">CanopyX examples</a>
 <h1>Linked views</h1>
-<p>Pick a site to filter the services and incidents and to highlight its services in the tree. Each filtered view shows a chip saying who filtered it; remove the chip, or pick the site again, to clear it. Select services in the grid to mark their sites in the picker.</p>
+<p>Pick a site to filter the services and incidents and to highlight its services in the tree. Each filtered view shows a chip saying who filtered it; remove the chip, or pick the site again, to clear it. Click services to select them and mark their sites in the picker. Ctrl/Command toggles a row; Shift extends the selection.</p>
 <div class="linked-layout">
 <section class="linked-panel" aria-labelledby="site-picker-title">
 <h2 id="site-picker-title">Services by site</h2>
@@ -88,8 +90,9 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     // The runtime mounted the fragments on DOMContentLoaded before this handler runs; each host carries its grid's API.
-    const hostOf = id => [...document.querySelectorAll("[data-canopyx-host]")].find(host => host.canopyx && host.canopyx.view.id === id);
+    const hostOf = id => document.getElementById(id);
     const hosts = { grid: hostOf("linked-services"), tree: hostOf("linked-sites"), incidents: hostOf("linked-incidents") };
+    hosts.grid.canopyx.selectOnClick = true;
     const view = hosts.grid.canopyx.view;
     const counts = new Map(sites.map(site => [site, view.rows.filter(row => row.cells.site === site).map(row => row.id)]));
     const list = document.getElementById("site-bars"), status = document.getElementById("link-status"), most = Math.max(...[...counts.values()].map(ids => ids.length));
@@ -105,6 +108,12 @@
     }
     // A pick a newer pick replaced resolves false; a failure says what went wrong instead of staying silent.
     const run = promise => promise.catch(error => { status.textContent = error.message; });
+    const combined = document.createElement("button");
+    combined.type = "button"; combined.className = "site-bar linked-multi"; combined.textContent = "Berlin · Healthy";
+    list.after(combined);
+    combined.addEventListener("click", () => run(api("grid").setExternalFilter("service-mark", [
+      { field: "site", values: ["Berlin"], sourceLabel: "Service chart" }, { field: "status", values: ["Healthy"] }
+    ])));
     const mode = () => document.querySelector('input[name="link-mode"]:checked').value;
     const api = name => hosts[name].canopyx;
     function pressed() { for (const button of list.querySelectorAll(".site-bar")) button.setAttribute("aria-pressed", String(button.dataset.site === picked)); }
@@ -124,7 +133,7 @@
     hosts.grid.addEventListener("canopyx:linkchange", event => {
       const detail = event.detail, linked = new Set(detail.values.site || []);
       for (const button of list.querySelectorAll(".site-bar")) button.classList.toggle("is-linked", linked.has(button.dataset.site));
-      status.textContent = detail.action === "select" ? "Selected " + detail.keys.length + " services at " + [...linked].join(", ") + "." : "Nothing selected in the grid.";
+      status.textContent = detail.action === "select" ? "Selected " + detail.keys.length + (detail.keys.length === 1 ? " service at " : " services at ") + [...linked].join(", ") + "." : "Nothing selected in the grid.";
     });
   });
 })();

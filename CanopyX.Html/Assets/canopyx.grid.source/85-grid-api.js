@@ -40,6 +40,10 @@
       api[name] = (...args) => { try { return Promise.resolve(grid[name](...args)); } catch (error) { return Promise.reject(error); } };
     Object.assign(api, linkApi(grid));
     api.ready = linkReady(grid, api.ready);
+    Object.defineProperty(api, "selectOnClick", { enumerable: true,
+      get: () => grid.selectOnClick,
+      set: value => { if (typeof value !== "boolean") throw new Error("CanopyX: selectOnClick is a boolean."); grid.selectOnClick = value; }
+    });
     Object.freeze(api);
     activeGrids.set(host, api); host.setAttribute("data-canopyx-mounted", "true"); host.canopyx = api; recordStart(grid); return api;
   }

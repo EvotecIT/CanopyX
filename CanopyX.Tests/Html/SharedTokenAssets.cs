@@ -24,12 +24,22 @@ internal static class SharedTokenAssets {
         .Where(pair => Regex.IsMatch(pair.Key, @"^--hfx-color-status-.*-(fg|bg)$"))
         .ToDictionary(pair => pair.Key, pair => pair.Value), JsonOptions);
 
+    private static string? CanonicalRole(string name) => name switch {
+        "--hfx-color-surface" => "--hfx-color-surface-card",
+        "--hfx-color-border" => "--hfx-color-surface-line",
+        "--hfx-color-text" => "--hfx-color-text-primary",
+        "--hfx-color-text-muted" => "--hfx-color-text-secondary",
+        _ => null
+    };
+
     /// <summary>Only originally bare references expand; JSON values already carry their nested defaults.</summary>
     internal static string Expand(string source) {
         var expanded = Regex.Replace(source, @"var\((--hfx-[a-z0-9-]+)\)", match => {
             var name = match.Groups[1].Value;
             Assert.True(Fallbacks.TryGetValue(name, out var value), "Missing shared fallback: " + name);
-            return "var(" + name + "," + value + ")";
+            var fallback = "var(" + name + "," + value + ")";
+            var canonical = CanonicalRole(name);
+            return canonical == null ? fallback : "var(" + canonical + "," + fallback + ")";
         }).Replace("__CX_STATUS_FALLBACKS__", StatusFallbackJson);
         foreach (var pair in new[] { ("TEXT", "--hfx-color-text"), ("SURFACE", "--hfx-color-surface"), ("BORDER", "--hfx-color-border-control") }) {
             var value = Fallbacks[pair.Item2];
@@ -69,7 +79,10 @@ internal static class SharedTokenAssets {
                 end++;
             }
             Assert.True(depth == 0, "An assembled shared-token fallback has unbalanced parentheses.");
-            output.Append("var(").Append(match.Groups[1].Value).Append(')');
+            var name = match.Groups[1].Value;
+            var nested = Regex.Match(asset.Substring(match.Index + match.Length), @"^var\((--hfx-[a-z0-9-]+),").Groups[1].Value;
+            if (CanonicalRole(nested) == name) name = nested;
+            output.Append("var(").Append(name).Append(')');
             offset = end;
         }
         // A size between role steps is a multiple of a role (calc(var(--hfx-space-1)*2.5)); like the fallbacks, that is

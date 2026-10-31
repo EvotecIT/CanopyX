@@ -186,13 +186,14 @@ test("search, facet values and only problems filter both axes, and the totals fo
 test("hide empty drops the rows and columns without data, keeps the partners of a search, and empty cells show a faint dot", async ({ page }) => {
   await mountMatrix(page, matrixDoc());
   // A cell without data draws a small dot at its centre and nothing at its edge.
-  const empty = await page.evaluate(() => {
+  const empty = () => page.evaluate(() => {
     const row = [...document.querySelectorAll(".cx-mx-row")].find(item => item.querySelector(".cx-mx-rowhead").textContent === "Row C"), canvas = row.querySelector("canvas");
     const head = document.querySelector('.cx-mx-hcell[aria-colindex="3"]').getBoundingClientRect(), box = canvas.getBoundingClientRect(), ratio = canvas.width / box.width, ctx = canvas.getContext("2d");
     const at = (x, y) => ctx.getImageData(Math.round((head.left - box.left + x) * ratio), Math.round(y * ratio), 1, 1).data[3];
     return { centre: at(head.width / 2, box.height / 2), edge: at(4, 4) };
   });
-  expect(empty.centre).toBeGreaterThan(0); expect(empty.edge).toBe(0);
+  await expect.poll(async () => (await empty()).centre).toBeGreaterThan(0);
+  expect((await empty()).edge).toBe(0);
   const toggle = page.getByRole("checkbox", { name: "Hide empty rows and columns" });
   await toggle.check();
   expect(await rowLabels(page)).toEqual(["Row A", "Row B", "Row C", "Row D", "Row E"]);

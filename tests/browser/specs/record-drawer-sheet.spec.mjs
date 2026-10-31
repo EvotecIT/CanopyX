@@ -9,10 +9,9 @@ async function openRecord(page, width, chrome = "panel", options = {}) {
   await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
   const view = definition(options.extra || {});
   if (options.kind === "tree") { view.type = "view"; view.roots = view.rows.map(row => ({ ...row, label: row.cells.cn.value })); delete view.rows; }
-  view.chrome = chrome;
   // One long record (no tabs) gives the body more evidence than fits and a list of section links.
   view.record.tabs = [];
-  await open(page, view);
+  await open(page, view, "", chrome);
   if (options.ownerAncestor) await page.evaluate(() => {
     const host = document.querySelector("[data-canopyx-host]"), owner = document.createElement("div");
     host.before(owner); owner.append(host);
@@ -33,8 +32,9 @@ for (const width of [1440, 390]) for (const chrome of ["panel", "embedded"]){
         .reduce((sum, element) => { const s = getComputedStyle(element); return sum + element.getBoundingClientRect().height + parseFloat(s.marginTop) + parseFloat(s.marginBottom); }, 0);
       const frame = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth) + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
       return { viewport: innerHeight, sheet: dialog.getBoundingClientRect().height, top: dialog.getBoundingClientRect().top, body: body.getBoundingClientRect().height,
-        chrome, frame, evidence: body.scrollHeight, width: dialog.getBoundingClientRect().width };
+        chrome, frame, evidence: body.scrollHeight, width: dialog.getBoundingClientRect().width, hostChrome: document.querySelector("[data-canopyx-host]").dataset.cxChrome };
     });
+    expect(geometry.hostChrome).toBe(chrome);
     expect(geometry.top).toBeLessThanOrEqual(1);
     expect(geometry.sheet).toBeGreaterThanOrEqual(geometry.viewport - 2);
     expect(geometry.body).toBeGreaterThanOrEqual(geometry.viewport - geometry.chrome - geometry.frame - 2);

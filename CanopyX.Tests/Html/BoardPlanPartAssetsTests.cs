@@ -7,8 +7,8 @@ namespace CanopyX.Tests.Html;
 public sealed class BoardPlanPartAssetsTests {
     [Theory]
     [InlineData("board", 8192)]
-    // The optional plan includes its lane agenda, dependency routing and desktop legend.
-    [InlineData("plan", 12288)]
+    // Canonical role fallbacks add 12 measured gzip bytes; keep a bounded 64-byte allowance.
+    [InlineData("plan", 12288 + 64)]
     public void LayoutPart_StaysOptionalVersionedAndWithinItsGzipBudget(string name, int budget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Matches("^[a-f0-9]{16}$", part.Version);

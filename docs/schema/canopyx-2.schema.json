@@ -869,6 +869,7 @@
         "formatRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridFormatRule" }, "description": "Conditional formatting rules in priority order (docs/conditional-formatting.md)." },
         "formatting": { "type": "object", "additionalProperties": false, "description": "A legend of the labelled rules and the rule editor in the more menu.", "properties": { "legend": { "type": "boolean" }, "editor": { "type": "boolean" } } },
         "pageSize": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "selectOnClick": { "type": "boolean", "description": "Row clicks select instead of running the row action. Ctrl/Command toggles; Shift extends. Default false; selection none remains disabled." },
         "selection": { "enum": ["none", "single", "multiple"] },
         "search": { "type": "boolean" },
         "presentation": { "enum": ["continuous", "paged"] },
