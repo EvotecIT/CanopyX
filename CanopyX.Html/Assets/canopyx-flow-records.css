@@ -1,9 +1,9 @@
 /* The flow-records part: a compact table of editors. */
 .cx-flow-records-scroll{max-width:100%;overflow-x:auto;}
 .cx-flow-records-table{border-collapse:collapse;min-width:min(100%,var(--cx-size-440px));}
-.cx-flow-records-table th{padding:0 var(--cx-size-8px) var(--cx-size-6px) 0;font-size:var(--cx-size-12px);font-weight:600;color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));text-align:start;white-space:nowrap;}
+.cx-flow-records-table th{padding:0 var(--cx-size-8px) var(--cx-size-6px) 0;font-size:var(--cx-size-12px);font-weight:600;color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));text-align:start;white-space:nowrap;}
 .cx-flow-records-table td{padding:0 var(--cx-size-8px) var(--cx-size-6px) 0;vertical-align:top;}
 .cx-flow-records-table .cx-flow-input{min-width:var(--cx-size-92px);}
 .cx-flow-records-table input[type="checkbox"].cx-flow-input{width:var(--cx-size-18px);min-width:0;height:var(--cx-flow-control);margin:0;accent-color:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));}
 .cx-flow-records-actions{width:var(--cx-flow-control);}
-.cx-flow-records-empty{font-size:var(--cx-size-13px);color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));}
+.cx-flow-records-empty{font-size:var(--cx-size-13px);color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));}

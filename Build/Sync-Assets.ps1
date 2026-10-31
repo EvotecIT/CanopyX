@@ -54,12 +54,15 @@ for ($foldOffset = 0; $foldOffset -lt $foldEntries.Count;) {
 $foldPairs = $foldRecords -join ','
 
 $tokenFallbacks = Get-Content -LiteralPath (Join-Path $root 'CanopyX.Html/Assets/Shared/canopyx-fallbacks.json') -Raw | ConvertFrom-Json -AsHashtable
+$canonicalRoles = Get-Content -LiteralPath (Join-Path $root 'CanopyX.Html/Assets/Shared/canopyx-role-aliases.json') -Raw | ConvertFrom-Json -AsHashtable
 function Add-TokenFallbacks([string] $Content) {
     [regex]::Replace($Content, 'var\((--hfx-[a-z0-9-]+)\)', [System.Text.RegularExpressions.MatchEvaluator] {
         param($match)
         $name = $match.Groups[1].Value
         if (-not $tokenFallbacks.ContainsKey($name)) { throw "Missing shared fallback: $name" }
-        'var(' + $name + ',' + $tokenFallbacks[$name] + ')'
+        $value = 'var(' + $name + ',' + $tokenFallbacks[$name] + ')'
+        if ($canonicalRoles.ContainsKey($name)) { $value = 'var(' + $canonicalRoles[$name] + ',' + $value + ')' }
+        $value
     })
 }
 # Paper uses the canonical light branch directly, without assigning palette roles to the host.

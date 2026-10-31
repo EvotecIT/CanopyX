@@ -130,6 +130,7 @@ CanopyX.Html.CanopyHtmlOptions.System.Collections.Generic.ISet<System.String> Pa
 CanopyX.Html.CanopyHtmlOptions.System.String AssetBaseUrl { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.String Language { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.String? Height { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.String? HostId { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.String? Nonce { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.String? Title { get; set; }
 CanopyX.Html.CanopyHtmlPart : sealed class
