@@ -11,7 +11,8 @@
       // The rows of rowData arrive in view.rows as the data part decodes them.
       // Structured cloning preserves invalid numeric values for the decoder to reject instead of converting them to null.
       if (rowData) { this.view.rowData = owned ? rowData : structuredClone(rowData); this.view.rows = []; }
-      this.host = host; this.opts = options; this.id = "cx" + ++instanceSeq;
+      this.selectOnClick = this.view.selectOnClick === true;
+      this.host = host; this.opts = options; do { this.id = "cx" + ++instanceSeq; } while (document.getElementById(this.id));
       this.lifetime = new AbortController(); this.dataLifetime = new AbortController();
       this.source = options.source || (this.view.source.kind === "inline" ? this.view.rowData ? rowDataSource(this) : inlineGridSource(this.view) : null);
       if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
@@ -111,6 +112,7 @@
         gridOperationActive(this, lifetime.signal);
         const hadFocus = this.canvas.contains(document.activeElement), previousId = this.focused && this.focused.key;
         const retireSelection = this.view.rowIdentity === "ordinal" && this.snapshot && this.snapshot.revision !== page.revision;
+        if (!same || this.snapshot?.revision !== page.revision) this.selectionAnchor = null;
         this.pages.clear(); this.rowCache.clear(); this.placeholders.clear(); this.focused = null;
         this.acceptedQuery = gridQuery(this.view, { ...query, revision: page.revision });
         this.snapshot = { revision: page.revision, total: page.total, matched: page.matched };
@@ -230,6 +232,7 @@
       ids.forEach(id => requireIdentifier(id, "selection ID"));
       const next = new Set(ids);
       if (this.view.selection === "none" && next.size || !this.multi && next.size > 1) throw new Error("CanopyX: selection exceeds the view's mode.");
+      this.selectionController?.abort(); this.selectionAnchor = null;
       this.selected = next; this.version++; this.scheduleRender(); this.emit("select", { ids: [...next] });
       this.syncGridChrome();
       this.stateChanged();

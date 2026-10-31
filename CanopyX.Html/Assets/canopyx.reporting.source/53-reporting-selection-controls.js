@@ -113,7 +113,7 @@
         if (!this.view.reporting?.selectionControls) throw error;
         this.runReportingSelection(() => { throw error; }); return;
       }
-      if (this.view.reporting?.selectionControls && row && !row.status && !event.defaultPrevented &&
+      if (!this.selectOnClick && this.view.reporting?.selectionControls && row && !row.status && !event.defaultPrevented &&
           !event.target.closest("a,button,input,select,textarea,[contenteditable]")) this.selectionAnchor = row._ri;
     },
     onKey(event) {

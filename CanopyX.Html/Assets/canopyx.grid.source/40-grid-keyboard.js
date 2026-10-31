@@ -23,10 +23,27 @@
       if (!row || event.defaultPrevented || event.target.closest("a,button,input,select,textarea,[contenteditable]")) return;
       this.setFocus(row, true);
       if (row.status) { if (row.status === "error") this.retry().catch(() => {}); return; }
-      // A plain click never selects; selection comes from Space, row checkboxes or the API. The row's primary action runs.
+      if (this.selectOnClick && this.view.selection !== "none") {
+        if (event.detail < 2) this.selectClickedRow(row, event);
+        return;
+      }
+      // By default a plain click runs the row's primary action.
       // The second click of a double click activates nothing more.
       const action = event.detail < 2 && this.clickAction(element);
       if (action) this.activateRow(row, false, action !== true && action, event);
+    },
+    selectClickedRow(row, event) {
+      const additive = this.multi && (event.ctrlKey || event.metaKey);
+      if (this.multi && event.shiftKey && this.selectionAnchor != null) {
+        this.selectRowRange(this.selectionAnchor, row._ri, { additive }).catch(error => {
+          if (error.name !== "AbortError") this.emit("error", { error });
+        });
+      } else {
+        this.selectionController?.abort();
+        const next = additive ? new Set(this.selected) : new Set();
+        if (next.has(row.key)) next.delete(row.key); else next.add(row.key);
+        this.setSelection([...next]); this.selectionAnchor = row._ri;
+      }
     },
     // What a plain click on the row does: follow its link, open details (true), or nothing; a double click activates otherwise.
     clickAction(element) {
