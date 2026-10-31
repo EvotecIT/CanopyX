@@ -101,7 +101,7 @@ test("canonical theme roles take precedence and legacy-only themes keep their co
   await nextFrames(page);
 });
 
-test("generated hosts expose the API by view id and a multi-field example chip is removable", async ({ page }) => {
+test("generated hosts carry the range reader for runtime pointer opt-in and removable multi-field chips", async ({ page }) => {
   await page.goto(exampleUrl('linked-views.html'));
   await page.waitForFunction(() => document.getElementById('linked-services')?.canopyx);
   await page.evaluate(() => document.getElementById('linked-services').canopyx.ready);
@@ -109,6 +109,10 @@ test("generated hosts expose the API by view id and a multi-field example chip i
   const chip = page.locator('#linked-services .cx-link-chip');
   await expect(chip).toHaveText('Filtered by Service chart: Site: Berlin · Status: Healthy ×');
   await chip.click(); await expect(chip).toHaveCount(0);
+  expect(await page.evaluate(() => document.getElementById('linked-services').canopyx.view.selectOnClick)).toBeUndefined();
+  const rows = page.locator('#linked-services .cx-row[data-cx-id]');
+  await rows.nth(0).click(); await rows.nth(3).click({ modifiers:['Shift'] });
+  await expect.poll(() => page.evaluate(() => document.getElementById('linked-services').canopyx.getSelection())).toEqual(['svc-00', 'svc-01', 'svc-02', 'svc-03']);
 });
 
 

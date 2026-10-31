@@ -116,6 +116,8 @@ The Polish, German, Spanish, French and Italian packs translate them (`CanopyLab
 
 Set `CanopyDataGridView.SelectOnClick = true` in C# (wire option `selectOnClick: true`), or assign `api.selectOnClick = true` after mounting. A click selects one row; Ctrl/Command toggles a row in multiple selection, and Shift extends from the selection anchor. This does not require reporting selection controls or add checkboxes. Selection still raises `canopyx:select` and, with `linkEvents`, `canopyx:linkchange`. Space and Enter retain their keyboard behavior; links and controls inside cells retain their own actions. `selection: "none"` disables row selection.
 
+Self-contained HTML for multiple-selection grids carries the query-extension payload used by Shift ranges, so enabling the property later needs no sidecar files.
+
 The default is false: a plain click runs the configured row action. Set `api.selectOnClick = false` to restore that behavior.
 
 Fragments and pages put the view id on the `data-canopyx-host` element, so `document.getElementById("records").canopyx` returns its runtime API after mounting. `CanopyHtmlOptions.HostId` overrides that HTML id without changing the protocol view id. Use distinct host ids if the same view is embedded more than once. The inner grid keeps its separate instance id for accessibility.
