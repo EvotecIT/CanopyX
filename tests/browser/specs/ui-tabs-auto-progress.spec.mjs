@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test';
 import { openUi } from './ui-support.mjs';
 
 test.use({ viewport: { width: 1280, height: 900 } });
+test.beforeEach(async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-10-23T12:00:01Z'));
+});
 
 // The optional attributes are the CanopyTabsAutoProgress builder contract.
 const markup = (attributes = '') => `<div id="sections" class="cx-tabs cx-tabs--underline" data-cx-tabs ${attributes}>
@@ -28,7 +32,7 @@ async function releasePointerAndFocus(page) {
 }
 
 test('declarative autoProgress supports visible keyboard Pause/Play on wide and phone layouts', async ({ page }) => {
-  await page.clock.install(); await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openUi(page, markup('data-auto-progress-interval="2000" data-auto-progress-pause-on-hover="true" data-auto-progress-pause-on-focus="true"'), init('{}'));
   await releasePointerAndFocus(page); await page.clock.runFor(2100); expect(await selected(page)).toBe('second');
   const pause = page.getByRole('button', { name: 'Pause', exact: true });
@@ -41,7 +45,7 @@ test('declarative autoProgress supports visible keyboard Pause/Play on wide and 
 });
 
 test('initial and dynamic reduced motion block advancement and require explicit Play after changing back', async ({ page }) => {
-  await page.clock.install(); await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await openUi(page, markup(), init('{ autoProgress: { interval: 2000, pauseOnHover: false, pauseOnFocus: false } }'));
   const play = page.getByRole('button', { name: 'Play', exact: true });
   await expect(play).toBeDisabled();
@@ -57,7 +61,7 @@ test('initial and dynamic reduced motion block advancement and require explicit 
 });
 
 test('reduced motion aborts a pending automatic guard without a late commit', async ({ page }) => {
-  await page.clock.install(); await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openUi(page, markup(), init(`{ autoProgress: { interval: 2000, pauseOnHover: false, pauseOnFocus: false },
     beforeChange: (from, to, signal) => new Promise(resolve => { window.guardSignal = signal; window.resolveGuard = resolve; }) }`));
   await page.clock.runFor(2100); await expect.poll(() => page.evaluate(() => !!window.guardSignal)).toBe(true);
@@ -70,8 +74,6 @@ test('reduced motion aborts a pending automatic guard without a late commit', as
 
 for (const mode of ['hover', 'focus']) {
   test(`autoProgress defaults suspend on ${mode} and resume without catch-up`, async ({ page }) => {
-    await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
-    await page.clock.pauseAt(new Date('2026-10-23T12:00:01Z'));
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await openUi(page, markup(), init('{ autoProgress: { interval: 2000 } }'));
     await releasePointerAndFocus(page); await page.clock.runFor(500);
@@ -85,7 +87,7 @@ for (const mode of ['hover', 'focus']) {
 
 for (const choice of ['first', 'locked']) {
   test(`user selection of ${choice} stops progression even after leaving focus`, async ({ page }) => {
-    await page.clock.install(); await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await openUi(page, markup(), init('{ autoProgress: { interval: 2000 } }'));
     await page.getByRole('tab', { name: choice, exact: true }).focus();
     await page.keyboard.press('Enter');
@@ -95,7 +97,7 @@ for (const choice of ['first', 'locked']) {
 }
 
 test('manual selection supersedes an automatic deferred load and destroy releases the timer', async ({ page }) => {
-  await page.clock.install(); await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openUi(page, markup(), init(`{ autoProgress: { interval: 2000, pauseOnHover: false, pauseOnFocus: false },
     tabs: [{ id: 'second', deferred: true, loader: (item, signal) => new Promise(resolve => {
       window.loadSignal = signal; window.resolveLoad = resolve;

@@ -213,7 +213,8 @@ test('overflow menu can select a hidden tab while pills wrap without a menu', as
 });
 
 test('auto progress pauses, resumes and stops after user selection', async ({ page }) => {
-  await page.clock.install();
+  await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-10-23T12:00:01Z'));
   await openUi(page, tabs(), initTabs('{ autoProgress: { interval: 2000, pauseOnHover: true, pauseOnFocus: true } }'));
   await page.mouse.move(1200, 800);
   await page.clock.runFor(2100);
