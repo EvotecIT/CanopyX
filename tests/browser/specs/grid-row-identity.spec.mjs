@@ -54,7 +54,7 @@ for (const pending of ["page", "query", "page timeout", "query timeout"]) test("
   const rows = keys => keys.map(id => [id, "Item " + id, "All"]);
   const count = timeout ? 120 : 110;
   const view = base({ rowData: { version: 1, columns: ["name", "group"], count, ordered: true, base: "data/", chunks: timeout ? 3 : 2 } });
-  let release, finish;
+  let release, finish, finalRequested = false;
   const gate = new Promise(resolve => { release = resolve; });
   const finalGate = new Promise(resolve => { finish = resolve; });
   await page.route("http://canopyx.test/**", async route => {
@@ -64,7 +64,7 @@ for (const pending of ["page", "query", "page timeout", "query timeout"]) test("
       '<script>CanopyX.configure("keys",{requestTimeoutMs:' + (timeout ? 2000 : 30000) + '});</script></body>') });
     const index = Number(/rows\/(\d)\.js$/.exec(file)?.[1]);
     if (index === 1) await gate;
-    if (index === 2) await finalGate;
+    if (index === 2) { finalRequested = true; await finalGate; }
     const keys = index === 2 ? Array.from({ length: 10 }, (_, index) => String(30 + index)) : index ? suffix : prefix;
     return route.fulfill({ contentType: "text/javascript", body: '(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(["keys","rows/' + index + '",' + JSON.stringify(rows(keys)) + "]);" });
   });
@@ -85,6 +85,10 @@ for (const pending of ["page", "query", "page timeout", "query timeout"]) test("
   }, pending);
   release();
   if (timeout) {
+    // The legacy prefix is decoded and the final chunk is held before advancing the armed request's deadline.
+    await until(() => api.view.rows.length === 110);
+    await expect.poll(() => finalRequested).toBe(true);
+    await page.clock.runFor(2000);
     await until(() => window.errors.length > 0 && window.navigationResult !== undefined);
     if (pending.startsWith("query")) expect(await page.evaluate(() => window.queryResult)).not.toBe("accepted");
     await page.evaluate(() => { window.errors = []; });
