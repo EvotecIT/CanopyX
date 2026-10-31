@@ -13,6 +13,10 @@ async function openRecord(page, width, chrome = "panel", options = {}) {
   // One long record (no tabs) gives the body more evidence than fits and a list of section links.
   view.record.tabs = [];
   await open(page, view);
+  if (options.ownerAncestor) await page.evaluate(() => {
+    const host = document.querySelector("[data-canopyx-host]"), owner = document.createElement("div");
+    host.before(owner); owner.append(host);
+  });
   await page.evaluate(api + ".openDetails('c001')");
   const sheet = drawer(page);
   await expect(sheet).toBeVisible();
@@ -140,9 +144,11 @@ for (const where of ["view", "mount"]) test(`a host opts into the sheet over a s
   await page.mouse.click(20, 450);
   await expect(sheet).toHaveCount(0);
 });
-for (const kind of ["grid", "tree"]) test(`${kind} record drawer closes with its hidden view and a hidden open preserves outside focus`, async ({ page }) => {
-  const sheet = await openRecord(page, 1440, "panel", { kind });
-  await page.evaluate(() => { document.querySelector('[data-canopyx-host]').style.display = "none"; });
+for (const kind of ["grid", "tree"]) for (const hiding of ["display", "visibility"]) test(`${kind} record drawer closes with its ${hiding}-hidden view and a hidden open preserves outside focus`, async ({ page }) => {
+  const sheet = await openRecord(page, 1440, "panel", { kind, ownerAncestor: hiding === "visibility" });
+  await page.evaluate(hiding => { const host = document.querySelector("[data-canopyx-host]");
+    (hiding === "visibility" ? host.parentElement : host).style[hiding] = hiding === "visibility" ? "hidden" : "none";
+  }, hiding);
   await expect(sheet).toHaveCount(0);
   await page.evaluate(async () => {
     const button = document.createElement("button"); button.id = "outside-control"; button.textContent = "Visible host control"; document.body.append(button); button.focus();
@@ -150,7 +156,9 @@ for (const kind of ["grid", "tree"]) test(`${kind} record drawer closes with its
   });
   await expect(page.locator("#outside-control")).toBeFocused();
   await expect(drawer(page)).toHaveCount(0);
-  await page.evaluate(() => { document.querySelector('[data-canopyx-host]').style.display = ""; });
+  await page.evaluate(hiding => { const host = document.querySelector("[data-canopyx-host]");
+    (hiding === "visibility" ? host.parentElement : host).style[hiding] = "";
+  }, hiding);
   await expect(drawer(page)).toHaveCount(0);
   await page.evaluate(api + ".openDetails('c001')");
   await expect(drawer(page)).toBeVisible();

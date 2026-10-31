@@ -67,7 +67,8 @@ for (const longTitle of [false, true]) test(`phone disclosure stays with its wra
   expect(Math.abs(geometry.disclosure - geometry.context)).toBeLessThanOrEqual(2);
   expect(geometry.inLast).toBe(true);
   expect(geometry.visible).toBe(true);
-  if (!longTitle) expect(geometry.titleHeight).toBeLessThanOrEqual(geometry.titleLine + 1);
+  if (longTitle) expect(geometry.titleHeight).toBeGreaterThan(geometry.titleLine + 1);
+  else expect(geometry.titleHeight).toBeLessThanOrEqual(geometry.titleLine + 1);
 });
 
 test("same-named phone records expose their next priority context without author-hidden fields", async ({ page }) => {

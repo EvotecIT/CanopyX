@@ -251,7 +251,7 @@ test.describe("live data", () => {
     await page.goto("https://canopyx.test/");
     await page.waitForSelector("[data-cx-ready]");
     await page.clock.install({ time: new Date("2026-10-31T12:00:00Z") });
-    await page.clock.pauseAt(new Date("2026-10-31T12:00:01Z"));
+    await page.clock.pauseAt(new Date("2026-10-31T12:05:00Z"));
     const poller = await page.evaluate(async () => { const api = document.querySelector("[data-canopyx-host]").canopyx; window.poller = await api.poll({ intervalMs: 250 }); return window.poller.active; });
     expect(poller).toBe(true);
     await page.clock.runFor(750);
