@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { repo, runtimeAssets, nextFrames } from "./support.mjs";
+import { repo, runtimeAssets, nextFrames, exampleUrl } from "./support.mjs";
+import { capture } from "./calendar-support.mjs";
 
 const iso = day => "2026-10-" + String(day).padStart(2, "0") + "T00:00:00.000Z";
 function definition() {
@@ -53,6 +54,97 @@ async function openPlan(page, { dark = false, width = 1440, rtl = false, handler
 
 const task = (page, id) => page.locator('.cx-plan-task[data-cx-record="' + id + '"]');
 const actuals = page => page.evaluate(() => ({ changed: JSON.stringify(window.planApi.view.rows) !== window.initialRows, writes: window.writerCalls }));
+
+for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, true]]) for (const rtl of [false, true]) test(`a stacked milestone label clears neighboring bars and its connector with successor on ${nextStart} ${rtl ? "RTL" : "LTR"}${capped ? " capped" : ""}`, async ({ page, browserName }) => {
+  await openPlan(page, { rtl, change: view => {
+    view.rows = [["long", "Long task", 12, 22], ["point", "Stacked milestone", 15, 15], ["next", "Next task", nextStart, Math.max(18, nextStart + 2)]].map(([id, title, start, end]) =>
+      ({ id, cells: { title, owner: "platform", starts: iso(start), ends: iso(end), baselineStart: iso(start), baselineEnd: iso(end), milestone: id === "point" } }));
+    view.plan.dependencies = [{ predecessor: "point", successor: "next" }, { predecessor: "long", successor: "point" }];
+    if (capped) {
+      view.calendar.date = "2026-10-14"; view.calendar.span = { count: 14, unit: "day" };
+      view.rows.push({ id: "previous", cells: { title: "Earlier task", owner: "platform", starts: iso(14), ends: iso(15), baselineStart: iso(14), baselineEnd: iso(15), milestone: false } });
+    }
+  } });
+  const point = task(page, "point");
+  await expect(point.locator(".cx-cal-ev-title")).toBeVisible();
+  expect((await point.locator(".cx-cal-ev-title").boundingBox()).width).toBeGreaterThan(capped ? 8 : 40);
+  if (capped) {
+    expect(await point.locator(".cx-cal-ev-title").evaluate(title => title.scrollWidth > title.clientWidth)).toBe(true);
+    await expect(point).not.toHaveClass(/cx-plan-label-before/);
+  }
+  const intersections = await point.evaluate(element => {
+    const title = element.querySelector(".cx-cal-ev-title").getBoundingClientRect();
+    const bars = [...element.closest(".cx-tl-lane").querySelectorAll(".cx-plan-task")].filter(other => other !== element);
+    const hitsBar = bars.some(other => {
+      const box = other.getBoundingClientRect();
+      return title.left < box.right && title.right > box.left && title.top < box.bottom && title.bottom > box.top;
+    });
+    const path = [...document.querySelectorAll(".cx-plan-links path")].find(path => path.textContent === "Stacked milestone finishes before Next task starts");
+    let hitsLink = false;
+    for (let at = 0; at <= path.getTotalLength(); at++) {
+      const point = path.getPointAtLength(at), screen = new DOMPoint(point.x, point.y).matrixTransform(path.getScreenCTM());
+      if (screen.x > title.left - 1 && screen.x < title.right + 1 && screen.y > title.top - 1 && screen.y < title.bottom + 1) { hitsLink = true; break; }
+    }
+    return { hitsBar, hitsLink };
+  });
+  expect(intersections).toEqual({ hitsBar: false, hitsLink: false });
+  if (capped) await capture(page, `plan-capped-label-${rtl ? "rtl" : "ltr"}`);
+  await expect(point).toHaveClass(/cx-plan-conflict/);
+  // Keep the round trip inside the document when this milestone is its final tab stop.
+  // Firefox moves focus into browser chrome after the final control otherwise.
+  await page.evaluate(() => document.body.appendChild(Object.assign(document.createElement("button"), { id: "after-plan", textContent: "After plan" })));
+  // Safari's default macOS keyboard mode reaches buttons with Option+Tab, as in the menu navigation tests.
+  const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
+  await point.focus(); await page.keyboard.press(tab);
+  await expect(page.locator("#after-plan")).toBeFocused();
+  await page.keyboard.press("Shift+" + tab);
+  await expect(point).toBeFocused();
+  const focus = await point.evaluate(element => ({ visible: element.matches(":focus-visible"), style: getComputedStyle(element).outlineStyle, width: parseFloat(getComputedStyle(element).outlineWidth) }));
+  expect(focus.visible).toBe(true); expect(focus.style).toBe("solid"); expect(focus.width).toBeGreaterThan(0);
+});
+
+for (const rtl of [false, true]) test(`a milestone without dependencies uses its full available label room ${rtl ? "RTL" : "LTR"}`, async ({ page }) => {
+  await openPlan(page, { rtl, change: view => {
+    view.plan.dependencies = [];
+    view.rows = [["previous", "Previous task", 12, 14], ["point", "Go", 15, 15], ["following", "Following task", 16, 18]].map(([id, title, start, end]) =>
+      ({ id, cells: { title, owner: "platform", starts: iso(start), ends: iso(end), baselineStart: iso(start), baselineEnd: iso(end), milestone: id === "point" } }));
+  } });
+  const title = task(page, "point").locator(".cx-cal-ev-title");
+  await expect(title).toBeVisible();
+  expect(await title.evaluate(title => title.scrollWidth <= title.clientWidth)).toBe(true);
+  expect(await page.locator(".cx-plan-links path").count()).toBe(0);
+});
+
+for (const width of [1100, 1440]) for (const dark of [false, true]) {
+  test(`migration example opens with its first task and labels visible at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(exampleUrl(dark ? "plan-dark.html" : "plan.html"));
+    await page.locator('.cx-plan-task[data-cx-record="prepare"]').waitFor();
+    await nextFrames(page);
+    const bounds = await page.evaluate(() => {
+      const rect = element => element.getBoundingClientRect();
+      const main = rect(document.querySelector('.cx-tl-main'));
+      const prepare = rect(document.querySelector('.cx-plan-task[data-cx-record="prepare"]'));
+      const verify = document.querySelector('.cx-plan-task[data-cx-record="verify"]');
+      const bar = rect(verify), label = rect(verify.querySelector('.cx-cal-ev-title'));
+      const pane = document.querySelector('.cx-tl-main'), tree = document.querySelector('.cx-tl-tree .cx-grid');
+      const baseline = [...document.querySelectorAll('.cx-plan-baseline')].at(-1);
+      const release = document.querySelector('.cx-plan-task[data-cx-record="release"]'), releaseBox = rect(release), releaseLabel = rect(release.querySelector('.cx-cal-ev-title'));
+      return { side: rect(document.querySelector('.cx-tl-side')).width, firstInset: prepare.left - main.left,
+        verifyLabelWithinBar: label.left >= bar.left && label.right <= bar.right + 1,
+        treeOverflow: getComputedStyle(tree).overflowX, verticalOverflow: pane.scrollHeight - pane.clientHeight,
+        baselineClearance: main.top + pane.clientHeight - rect(baseline).bottom,
+        milestoneLabelClearance: releaseBox.top + releaseBox.height / 2 - releaseLabel.bottom };
+    });
+    expect(bounds.side).toBeLessThanOrEqual(220);
+    expect(bounds.firstInset).toBeGreaterThan(20);
+    expect(bounds.verifyLabelWithinBar).toBe(true);
+    expect(bounds.treeOverflow).toBe("auto");
+    expect(bounds.verticalOverflow).toBeLessThanOrEqual(1);
+    expect(bounds.baselineClearance).toBeGreaterThanOrEqual(12);
+    expect(bounds.milestoneLabelClearance).toBeGreaterThanOrEqual(3);
+  });
+}
 
 for (const width of [768, 1024, 1440]) for (const dark of [false, true]) {
   test(`plan connectors enter horizontally and labels remain legible without collisions at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {

@@ -25,7 +25,8 @@ public static partial class CanopyStaticHtml {
         html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append("\">");
         var caption = settings.Caption ?? view.Label;
         if (caption.Length > 0) html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption)).Append("</caption>");
-        html.Append("<thead><tr><th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(view.Label)).Append("</th>");
+        var fields = string.Join(" / ", levels.Select(level => view.GetColumn(level.Column).Title));
+        html.Append("<thead><tr><th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(fields)).Append("</th>");
         foreach (var aggregate in aggregates) {
             html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(AggregateName(view, aggregate)));
             if (aggregate.ShowAs != CanopyShowAs.Value) html.Append("<br><span style=\"").Append(styles.Hidden).Append("\">").Append(Encode(CanopyAggregateDisplay.Caption(aggregate.ShowAs, view.Labels))).Append("</span>");
@@ -46,8 +47,8 @@ public static partial class CanopyStaticHtml {
                 var level = levels[depth];
                 var text = group.Value?.Value == null ? view.Labels.GridGroupMissing : level.Bucket != null ?
                     level.Bucket.Label(CanopyNumericValues.ToDouble(group.Value.Value), settings.Culture) : group.Value.DisplayText(view.GetColumn(level.Column), view.Labels);
-                html.Append("<tr><th scope=\"row\" style=\"").Append(styles.Cell).Append("text-align:left;padding-left:").Append(8 + depth * 16).Append("px;\">")
-                    .Append(Encode(view.GetColumn(level.Column).Title)).Append(": ").Append(Encode(text)).Append(" (").Append(group.Count.ToString(settings.Culture)).Append(")</th>");
+                html.Append("<tr><th scope=\"row\" style=\"").Append(styles.Cell).Append("text-align:left;font-weight:400;padding-left:").Append(8 + depth * 16).Append("px;\">")
+                    .Append(Encode(text)).Append(" (").Append(group.Count.ToString(settings.Culture)).Append(")</th>");
                 Values(display.Groups[group.Key]); html.Append("</tr>"); shown++;
                 Groups(group.Groups, depth + 1);
             }
@@ -56,7 +57,7 @@ public static partial class CanopyStaticHtml {
         int Count(IList<CanopyGridGroup> groups) => groups.Sum(group => 1 + Count(group.Groups));
         var totalGroups = Count(summary.Groups);
         if (shown < totalGroups) AppendOverflow(html, shown, totalGroups, aggregates.Count + 1, settings, styles, view.Labels);
-        html.Append("</tbody><tfoot><tr><th scope=\"row\" style=\"").Append(styles.Header).Append("font-weight:700;\">").Append(Encode(view.Labels.GridSummary)).Append("</th>");
+        html.Append("</tbody><tfoot><tr><th scope=\"row\" style=\"").Append(styles.Header).Append("font-weight:700;padding-left:8px;\">").Append(Encode(view.Labels.GridSummary)).Append("</th>");
         Values(display.Totals, true);
         return html.Append("</tr></tfoot></table>").ToString();
     }

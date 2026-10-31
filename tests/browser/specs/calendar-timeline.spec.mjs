@@ -23,6 +23,20 @@ const alignment = page => page.evaluate(() => {
 const live = page => page.locator(".cx-cal > .cx-live");
 
 test.describe("resource timeline", () => {
+  for (const width of [1100, 1440]) for (const dark of [false, true]) {
+    test(`the generated timeline opens without clipping its first visible events at ${width} ${dark ? "dark" : "light"}`, async ({ page }) => {
+      await openCalendar(page, "calendar-timeline.html", { width, dark });
+      const clipped = await page.evaluate(() => {
+        const left = document.querySelector(".cx-tl-main").getBoundingClientRect().left;
+        return [...document.querySelectorAll(".cx-tl-lane .cx-cal-ev-lane")].filter(event => {
+          const box = event.getBoundingClientRect();
+          return box.left < left - 2 && box.right > left;
+        }).map(event => event.textContent.trim());
+      });
+      expect(clipped).toEqual([]);
+    });
+  }
+
   for (const dark of [false, true]) {
     test("zooms from hours to quarters, each with its scale, with lanes level with the tree rows in " + (dark ? "dark" : "light"), async ({ page }) => {
       await openCalendar(page, "calendar-timeline.html", { dark });

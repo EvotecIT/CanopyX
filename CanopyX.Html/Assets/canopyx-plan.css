@@ -26,11 +26,16 @@
 @media print{.cx-plan-links,.cx-plan-proposal{display:none!important;}.cx-plan-print{display:block!important;}}
 .cx-plan-critical.cx-plan-milestone::before{background:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));}
 .cx-plan .cx-tl-main{overflow:auto;}
+.cx-plan .cx-tl-tree.cx-host > .cx-grid{overflow-x:auto;}
+.cx-plan .cx-tl-canvas{padding-block-end:var(--hfx-space-3,0.75rem);}
+.cx-plan .cx-plan-milestone.cx-plan-conflict{outline:0;}
+.cx-plan .cx-plan-milestone.cx-plan-conflict::before{outline:var(--hfx-border-width,1px) dashed var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));outline-offset:var(--hfx-border-width,1px);}
+.cx-plan .cx-plan-milestone.cx-plan-conflict:focus-visible{outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));outline-offset:var(--hfx-focus-offset,2px);}
 .cx-plan .cx-tl-now{background:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));}
 .cx-plan-today{position:absolute;inset-block-start:0;transform:translateX(-50%);padding:var(--hfx-space-1,0.25rem) var(--hfx-space-2,0.5rem);border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));background:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));color:var(--hfx-color-accent-contrast,light-dark(#ffffff,#0c0d10));font-size:var(--hfx-type-caption-size,0.75rem);font-weight:var(--hfx-weight-semibold,600);}
 .cx-plan-key-conflict{border:var(--hfx-border-width,1px) dashed var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));}
 .cx-plan .cx-tl-lane .cx-plan-label-outside{overflow:visible;}
-.cx-plan .cx-tl-lane .cx-plan-label-outside > .cx-cal-ev-title{--cx-plan-label-layer:1;display:block;position:absolute;z-index:var(--cx-plan-label-layer);inset-inline-start:calc(100% + var(--hfx-space-2,0.5rem));max-inline-size:calc(var(--hfx-space-1,0.25rem) * 40);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));font-weight:var(--hfx-weight-semibold,600);visibility:visible;}
+.cx-plan .cx-tl-lane .cx-plan-label-outside > .cx-cal-ev-title{--cx-plan-label-layer:2;display:block;position:absolute;z-index:var(--cx-plan-label-layer);inset-inline-start:calc(100% + var(--hfx-space-2,0.5rem));max-inline-size:calc(var(--hfx-space-1,0.25rem) * 40);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));font-weight:var(--hfx-weight-semibold,600);visibility:visible;}
 .cx-plan-links path{pointer-events:stroke;stroke:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .cx-plan-links path:hover{stroke:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));stroke-width:3;}
 .cx-plan-agenda{display:none;box-sizing:border-box;height:100%;min-height:0;padding:var(--hfx-space-3,0.75rem);flex-direction:column;}
@@ -49,6 +54,8 @@
 @media print{.cx-plan-agenda{display:none;}}
 .cx-plan .cx-tl-lane .cx-plan-label-outside > .cx-cal-ev-title{display:block!important;visibility:visible!important;}
 .cx-plan .cx-tl-lane .cx-plan-label-before > .cx-cal-ev-title{inset-inline-start:auto;inset-inline-end:calc(100% + var(--hfx-space-2,0.5rem));}
+.cx-plan .cx-tl-lane .cx-plan-milestone.cx-plan-label-outside > .cx-cal-ev-title{inset-block-start:var(--hfx-border-width,1px);inset-inline-start:calc(100% + var(--hfx-space-3,0.75rem));}
+.cx-plan .cx-tl-lane .cx-plan-milestone.cx-plan-label-before > .cx-cal-ev-title{inset-inline-start:auto;inset-inline-end:calc(100% + var(--hfx-space-3,0.75rem));}
 .cx-plan-agenda-pager{display:flex;flex:none;align-items:center;justify-content:space-between;gap:var(--hfx-space-2,0.5rem);border-block-start:var(--hfx-border-width,1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));padding-block-start:var(--hfx-space-2,0.5rem);}
 .cx-plan-agenda [hidden]{display:none;}
 .cx-plan-agenda .cx-plan-resource-toggle{padding:0;border:0;min-height:0;height:auto;background:transparent;font:inherit;color:inherit;}

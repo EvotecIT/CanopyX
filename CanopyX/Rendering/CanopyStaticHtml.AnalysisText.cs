@@ -1,8 +1,25 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Text;
 
 namespace CanopyX.Rendering;
 
 public static partial class CanopyStaticHtml {
+    private static void AppendCalculationErrors(StringBuilder html, CanopyColumn[] columns, IEnumerable<CanopyGridRow> rows, CanopyStaticStyles styles) {
+        var errors = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var row in rows) foreach (var column in columns) {
+            if (column.Calculation == null || !row.Cells.TryGetValue(column.Id, out var cell) || cell == null ||
+                cell.Tone != CanopyTone.Danger || cell.Title == null || !(cell.Text is string marker) || !marker.StartsWith("#", StringComparison.Ordinal)) continue;
+            errors.Add(marker + ": " + cell.Title);
+        }
+        if (errors.Count == 0) return;
+        html.Append("<tbody><tr><td colspan=\"").Append(columns.Length).Append("\" style=\"").Append(styles.Cell).Append("\"><ul>");
+        foreach (var error in errors.OrderBy(error => error, StringComparer.Ordinal)) html.Append("<li>").Append(Encode(error)).Append("</li>");
+        html.Append("</ul></td></tr></tbody>");
+    }
+
     private static string AggregateName(CanopyDataGridView view, CanopyGridAggregate aggregate) {
         var labels = view.Labels;
         var operation = aggregate.Operation == CanopyGridAggregateOperation.Count ? labels.GridAggregateCount :

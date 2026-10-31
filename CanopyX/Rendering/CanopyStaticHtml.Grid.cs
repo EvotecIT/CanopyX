@@ -88,6 +88,7 @@ public static partial class CanopyStaticHtml {
         var shown = AppendGridRecords(html, view, supplied, columns, settings, styles, ref remaining, printedRows, null, out var complete,
             allRows);
         html.Append("</tbody>");
+        AppendCalculationErrors(html, columns, supplied.Take(shown), styles);
         if (!matching.HasValue || shown < matching.Value) {
             html.Append("<tbody>");
             AppendOverflow(html, shown, matching, columns.Length, settings, styles, view.Labels);

@@ -49,6 +49,7 @@
       dayRange: (from, to) => range({ day: "numeric", month: "short", year: "numeric" }, from, to),
       monthRange: (from, to) => range({ month: "short", year: "numeric" }, from, to),
       time: value => make({ hour: "numeric", minute: "2-digit" }).format(new Date(value)),
+      timeRange: (from, to) => make({ hour: "numeric", minute: "2-digit" }).formatRange(new Date(from), new Date(to)),
       hour: minutes => make({ hour: "numeric" }, true).format(new Date(minutes * CAL_MINUTE)),
       clock: minutes => make({ hour: "numeric", minute: "2-digit" }, true).format(new Date(minutes * CAL_MINUTE)),
       number: value => numberFormat(lang).format(value)

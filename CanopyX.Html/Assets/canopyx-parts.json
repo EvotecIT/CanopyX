@@ -748,7 +748,7 @@
     {
       "name": "pivot",
       "label": "pivot analysis",
-      "version": "230b05b7fcab6cf1",
+      "version": "52311878382d98bf",
       "script": "canopyx-pivot.js",
       "style": "canopyx-pivot.css",
       "runtimes": [
@@ -800,7 +800,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "c7eead770d16a84b",
+      "version": "24b194b6281ce26b",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -855,7 +855,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "f1ed74d2447e4f11",
+      "version": "3bd814476198f696",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -908,7 +908,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "4762fd2f9e9d1617",
+      "version": "68d85c03250af59e",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -982,7 +982,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "ece982b3b7277183",
+      "version": "bdcaa95038b3cc80",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
@@ -1033,7 +1033,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "640ca4be173c3310",
+      "version": "8ac4de991d941b0f",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [
