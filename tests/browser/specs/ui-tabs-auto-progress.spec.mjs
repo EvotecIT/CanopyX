@@ -70,7 +70,9 @@ test('reduced motion aborts a pending automatic guard without a late commit', as
 
 for (const mode of ['hover', 'focus']) {
   test(`autoProgress defaults suspend on ${mode} and resume without catch-up`, async ({ page }) => {
-    await page.clock.install(); await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
+    await page.clock.pauseAt(new Date('2026-10-23T12:00:01Z'));
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await openUi(page, markup(), init('{ autoProgress: { interval: 2000 } }'));
     await releasePointerAndFocus(page); await page.clock.runFor(500);
     if (mode === 'hover') await page.getByRole('tab', { name: 'first', exact: true }).hover();
