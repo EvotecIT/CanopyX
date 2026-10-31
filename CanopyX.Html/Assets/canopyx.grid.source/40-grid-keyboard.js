@@ -33,6 +33,7 @@
       if (action) this.activateRow(row, false, action !== true && action, event);
     },
     selectClickedRow(row, event) {
+      if (this.pendingQuery) return;
       const additive = this.multi && (event.ctrlKey || event.metaKey);
       if (this.multi && event.shiftKey && this.selectionAnchor != null) {
         this.selectRowRange(this.selectionAnchor, row._ri, { additive }).catch(error => {

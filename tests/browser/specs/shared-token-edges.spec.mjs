@@ -94,16 +94,16 @@ for (const source of ["inline", "stylesheet"]) {
   });
 }
 
-test("watchTheme releases its fallback marker when a parent supplies surface roles and restores the previous marker", async ({ page }) => {
+for (const surfaceRole of ["surface", "surface-card"]) test(`watchTheme releases its fallback marker for parent ${surfaceRole} roles and restores the previous marker`, async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await mount(page, "createDataGrid", grid(), { host: 'data-cx-theme="light" data-cx-fallback-mode="auto"' });
   const host = page.locator("#host");
   await expect(host).toHaveAttribute("data-cx-fallback-mode", "light");
-  await page.locator("#scope").evaluate(element => {
+  await page.locator("#scope").evaluate((element, role) => {
     element.style.colorScheme = "dark";
-    element.style.setProperty("--hfx-color-surface", "rgb(18, 27, 36)");
-    element.style.setProperty("--hfx-color-text", "rgb(240, 245, 250)");
-  });
+    element.style.setProperty("--hfx-color-" + role, "rgb(18, 27, 36)");
+    element.style.setProperty(role === "surface-card" ? "--hfx-color-text-primary" : "--hfx-color-text", "rgb(240, 245, 250)");
+  }, surfaceRole);
   await expect(host).not.toHaveAttribute("data-cx-fallback-mode");
   await palette(host, { surface: "rgb(18, 27, 36)", text: "rgb(240, 245, 250)" });
   await page.evaluate(() => api.destroy());
@@ -148,7 +148,7 @@ for (const profile of ["contrast", "custom", "standalone"]) {
       hfx: profile !== "standalone",
       scope: profile === "standalone" ? "" : `data-hfx-style="${profile === "contrast" ? "contrast" : "evotec"}" data-hfx-mode="dark" data-hfx-density="compact"`,
       host: profile === "standalone" ? 'data-cx-theme="dark"' : profile === "custom"
-        ? 'style="--hfx-color-surface:rgb(18,27,36);--hfx-color-text:rgb(240,245,250);--hfx-color-accent:rgb(155,77,202);--hfx-radius-control:13px;color-scheme:dark"' : ""
+        ? 'style="--hfx-color-surface-card:rgb(18,27,36);--hfx-color-text-primary:rgb(240,245,250);--hfx-color-accent:rgb(155,77,202);--hfx-radius-control:13px;color-scheme:dark"' : ""
     });
     const host = page.locator("#host"), panel = page.getByRole("complementary", { name: "Refine" });
     await expect(panel.getByRole("checkbox")).toHaveCount(2);

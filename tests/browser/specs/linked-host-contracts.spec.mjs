@@ -124,11 +124,11 @@ test("a query shape change retires the pointer range anchor", async ({ page }) =
   await expect.poll(() => selected(page)).toEqual(["r11"]);
 });
 
-test("a later explicit selection cancels an outstanding host range", async ({ page }) => {
+test("host pointer ranges respect newer selection and pending queries", async ({ page }) => {
   await mount(page, { selectOnClick:true, source:{ kind:"host" }, pageSize:100 }, `{
     source:{ async query(query) {
       const items = Array.from({ length:12 }, (_, i) => ({ id:"r" + i, cells:{ name:"Record " + i, site:"Berlin", kind:"Feature" } }));
-      if (window.holdRange) { window.rangeStarted = true; await new Promise(resolve => window.finishRange = resolve); }
+      if (window.holdRange) { window.heldCalls = (window.heldCalls || 0) + 1; window.rangeStarted = true; await new Promise(resolve => window.finishRange = resolve); }
       return { protocol:"canopyx/2", type:"gridPage", view:query.view, revision:"v1", total:12, matched:12,
         offset:query.offset, items:items.slice(query.offset, query.offset + query.limit) };
     } }
@@ -140,6 +140,14 @@ test("a later explicit selection cancels an outstanding host range", async ({ pa
   await page.evaluate(() => { api.setSelection(["r0"]); window.holdRange = false; finishRange(); });
   await nextFrames(page);
   expect(await selected(page)).toEqual(["r0"]);
+  await row(page, 1).click();
+  await page.evaluate(() => { window.holdRange = true; window.rangeStarted = false; window.pendingQueryPromise = api.setQuery({ ...api.getQuery(), search:"next" }); });
+  await page.waitForFunction(() => window.rangeStarted);
+  await row(page, 6).click({ modifiers:["Shift"] });
+  await nextFrames(page);
+  expect(await page.evaluate(() => window.heldCalls)).toBe(2);
+  expect(await selected(page)).toEqual(["r1"]);
+  await page.evaluate(async () => { window.holdRange = false; finishRange(); await window.pendingQueryPromise; });
 });
 
 test("reporting query selection preserves exclusions with pointer opt-in", async ({ page }) => {
