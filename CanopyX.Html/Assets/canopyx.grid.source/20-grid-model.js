@@ -6,7 +6,7 @@
       // page belong to no one else, and copying a large inline dataset would double its parse time and peak memory.
       this.view = JSON.parse(JSON.stringify(definition));
       if (this.view.rowIdentity === "ordinal" && options.live)
-        throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
+        throw new Error("CanopyX: rowIdentity must be stableKey for live updates or deep links.");
       if (rows) this.view.rows = owned ? rows : JSON.parse(JSON.stringify(rows));
       // The rows of rowData arrive in view.rows as the data part decodes them.
       // Structured cloning preserves invalid numeric values for the decoder to reject instead of converting them to null.
@@ -202,6 +202,7 @@
         measured = true;
         if (pass === 3) { this.scheduleRender(); break; }
       }
+      this.syncGridPhoneValues?.();
       for (const [index, row] of this.placeholders) if (!this.rendered.has(row) && this.focused !== row) this.placeholders.delete(index);
       this.loadWindow();
       const origin = this.focusOrigin;

@@ -58,6 +58,18 @@ test.describe("basic calendars", () => {
     expect(error).toContain("presets are basic, standard and scheduler");
   });
 
+  test("opening on the timeline adds it to the preset's views, with or without resources", async ({ page }) => {
+    const resources = [{ id: "web", label: "Web" }, { id: "db", label: "Database" }];
+    const events = EVENTS.map((event, index) => ({ ...event, resource: index % 2 ? "db" : "web" }));
+    await openBuilt(page, "timeline-view.html", calendarPage({ events, resources, view: "timeline", date: "2026-10-16" }));
+    await expect(page.locator(".cx-cal-views button")).toHaveText(["Month", "Week", "Day", "Agenda", "Timeline"]);
+    expect(await calApi(page, "api => api.getCalendar()")).toMatchObject({ view: "timeline" });
+    await openBuilt(page, "timeline-solo.html", calendarPage({ events: EVENTS, view: "timeline", date: "2026-10-16" }));
+    expect(await calApi(page, "api => api.getCalendar()")).toMatchObject({ view: "timeline" });
+    const error = await page.evaluate(() => { try { CanopyX.createCalendar(document.createElement("div"), { view: "timeline", timeline: false }); return null; } catch (error) { return error.message; } });
+    expect(error).toContain("opens on the timeline cannot set timeline: false");
+  });
+
   test("a basic page carries only the core calendar part; the scheduler page carries editing and iCalendar too", () => {
     const basic = fs.readFileSync(path.join(examples, "calendar-basic.html"), "utf8"), scheduler = fs.readFileSync(path.join(examples, "calendar-scheduler.html"), "utf8");
     expect(basic).toContain("calPaintMonth");

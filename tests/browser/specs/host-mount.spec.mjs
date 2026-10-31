@@ -73,12 +73,20 @@ test("a deferred runtime leaves room for a deferred host script to configure the
 });
 
 test("a newer fragment wins over one that is still being looked up", async ({ page }) => {
-  // The first lookup takes longer than the second, so it finishes last.
-  await open(page, { script: hostScript.replace("setTimeout(resolve, 20)", "setTimeout(resolve, fragment === \"record/r1/rev/1\" ? 400 : 20)") });
-  await page.evaluate(() => { location.hash = "#record/r1/rev/1"; });
-  await page.evaluate(() => { location.hash = "#record/r2"; });
-  await expect(row(page, "r2")).toHaveAttribute("aria-selected", "true");
-  await page.waitForTimeout(600);
+  // A host can change history before it notifies the view; the old lookup must already stop selecting.
+  await open(page, { script: hostScript.replace("await new Promise((resolve) => setTimeout(resolve, 20));",
+    'if (fragment === "record/r1/rev/1") await new Promise(resolve => window.finishFirstLookup = resolve);') });
+  await page.evaluate(() => {
+    history.replaceState(null, "", "#record/r1/rev/1");
+    window.firstNavigation = document.querySelector(".cx-host").canopyx.readLocation();
+  });
+  await page.waitForFunction(() => window.finishFirstLookup);
+  await page.evaluate(async () => {
+    history.replaceState(null, "", "#record/r2"); window.finishFirstLookup();
+    await window.firstNavigation;
+  });
+  expect(await page.evaluate(() => window.selected || [])).toEqual([]);
+  await page.evaluate(() => document.querySelector(".cx-host").canopyx.readLocation());
   await expect(row(page, "r2")).toHaveAttribute("aria-selected", "true");
   expect(await hash(page)).toBe("#record/r2");
   expect(await page.evaluate(() => window.selected)).toEqual(["r2"]);

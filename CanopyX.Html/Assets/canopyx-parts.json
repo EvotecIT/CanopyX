@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "ab6490d0ae0e0aff",
+      "version": "d22c8fc9f07ccc86",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -602,7 +602,7 @@
     {
       "name": "column-groups",
       "label": "column groups",
-      "version": "cd6d93e033719439",
+      "version": "e2a6e37ae984f1ec",
       "script": "canopyx-column-groups.js",
       "style": "canopyx-column-groups.css",
       "runtimes": [
@@ -637,7 +637,7 @@
     {
       "name": "links",
       "label": "deep links",
-      "version": "f1ab7e32b501ce37",
+      "version": "c6579c9401f0971d",
       "script": "canopyx-links.js",
       "runtimes": [
         "tree",
@@ -667,7 +667,7 @@
     {
       "name": "formatting",
       "label": "conditional formatting",
-      "version": "7d7402e30ec311ca",
+      "version": "c50960e9395d9f85",
       "script": "canopyx-formatting.js",
       "style": "canopyx-formatting.css",
       "runtimes": [

@@ -92,16 +92,18 @@
     if (create) calendar.create = create;
     if (drop) calendar.drop = true;
     if (pick("print")) calendar.print = true;
-    // A timeline joins the views the preset chose, never a list the host gave.
+    // A timeline joins the views the preset chose, never a list the host gave. Opening on the timeline asks for it.
     const ownViews = own.views !== undefined || options.views !== undefined, addTimeline = () => { if (!ownViews && !calendar.views.includes("timeline")) calendar.views = [...calendar.views, "timeline"]; };
+    const opensOnTimeline = pick("view") === "timeline";
+    if (opensOnTimeline && options.timeline === false) throw new Error("CanopyX: a calendar that opens on the timeline cannot set timeline: false.");
     if (options.resources) {
       // Resources: a tree view document, or a plain list of { id, label, parent? }.
       const list = options.resources, tree = Array.isArray(list) ? { protocol: PROTOCOL, type: "view", id: "resources", label: "Resources", rowHeight: 34, pageSize: 200, selection: "single",
         columns: [{ id: "name", title: "Resource", kind: "text", width: 200 }], source: { kind: "inline" }, roots: calResourceRoots(list) } : list;
       calendar.resources = { view: tree };
-      if (options.timeline !== false && (options.timeline || options.preset === "scheduler")) addTimeline();
+      if (options.timeline !== false && (options.timeline || opensOnTimeline || options.preset === "scheduler")) addTimeline();
       if (options.preset === "scheduler") calendar.capacity = { thresholds: [{ at: 3, tone: "warning" }, { at: 5, tone: "danger" }] };
-    } else if (options.timeline) addTimeline();
+    } else if (options.timeline || opensOnTimeline) addTimeline();
     for (const [name, value] of Object.entries(own)) if (!["toolbar", "editable", "create", "drop"].includes(name)) calendar[name] = value;
     if (calendar.toolbar === true) delete calendar.toolbar;
     if (calendar.details === "drawer") delete calendar.details;

@@ -50,6 +50,7 @@ if (args.Contains("--shared-tokens")) {
     SharedTokensExample.Write(output);
     return;
 }
+if (args.Contains("--column-bands")) { ColumnBandsExample.Write(output); return; }
 
 if (packBench) {
     var catalog = PackBenchTree.View();
@@ -129,6 +130,7 @@ OrdersByRegionExample.Write(output);
 NestedTreeDetailExample.Write(output);
 SupportTicketsExample.Write(output);
 QuarterlyBudgetExample.Write(output);
+ColumnBandsExample.Write(output);
 CertificateInventoryExample.Write(output);
 CalendarBasicExample.Write(output);
 CalendarResourcesExample.Write(output);

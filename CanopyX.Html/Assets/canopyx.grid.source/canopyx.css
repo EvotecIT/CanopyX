@@ -10,10 +10,10 @@
 .cx-phone-field { display:flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden; }
 .cx-phone-field-title { flex:none;color:var(--hfx-color-text-muted);font-size:11px; }
 .cx-row[aria-selected="true"] :is(.cx-phone-field-title,.cx-hidden-fields) { color:var(--hfx-color-text-secondary); }
-.cx-phone-value { display:inline-flex;min-width:0;overflow:hidden;white-space:nowrap; }
-.cx-phone-value > * { min-width:0;overflow:hidden;text-overflow:ellipsis; }
-.cx-phone-value:has(:is(.p-pill,.p-state)) { overflow-x:auto; }
-.cx-phone-value:has(:is(.p-pill,.p-state)) > .cx-content { flex:none;max-width:none;overflow:visible; }
+.cx-data-grid :where(.cx-phone-value) { display:inline-flex;min-width:0;overflow:hidden;white-space:nowrap; }
+.cx-data-grid :where(.cx-phone-value) > * { min-width:0;overflow:hidden;text-overflow:ellipsis; }
+.cx-data-grid :where(.cx-phone-value):has(:is(.p-pill,.p-state)) { overflow-x:auto; }
+.cx-data-grid :where(.cx-phone-value):has(:is(.p-pill,.p-state)) > .cx-content { flex:none;max-width:none;overflow:visible; }
 .cx-data-grid { min-height:var(--cx-min-h,0); }
 .cx-selbar { display:flex;align-items:center;gap:var(--cx-size-6px);padding:0 var(--cx-size-4px) 0 var(--cx-size-10px);height:var(--hfx-control-height-md);border-radius:var(--hfx-radius-control);background:var(--hfx-color-accent-subtle);font-size:var(--cx-size-13d5px);color:var(--hfx-color-text); }
 .cx-selbar b { color:var(--hfx-color-accent-text); }
@@ -200,7 +200,7 @@
 .cx-data-grid.cx-phone .cx-phone-primary { align-items:flex-start; }
 .cx-data-grid.cx-phone .cx-phone-primary > .cx-content { flex:1; }
 .cx-data-grid.cx-phone:not([data-cx-layout="scroll"]) .cx-phone-primary :is(.cx-text,.p-mono,.cx-presenter-text) { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;white-space:normal;overflow-wrap:anywhere;line-height:1.25;max-height:2.5em; }
-.cx-data-grid.cx-phone .cx-phone-fields > .cx-hidden-fields { margin-left:auto;flex:none; }
+.cx-data-grid.cx-phone .cx-phone-fields .cx-hidden-fields { margin-inline-start:auto;flex:none; }
 
 /* Change view hosts (docs/changes.md): as tall as their content, unless a height bounds them. */
 .cx-host.cx-change-host { min-height:0;display:block; }
