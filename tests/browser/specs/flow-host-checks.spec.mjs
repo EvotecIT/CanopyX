@@ -6,11 +6,35 @@ import { openFlow, flowCall, field, next, stepTitle, recordEvents } from "./flow
 
 const check = (page, id) => page.locator(`.cx-flow-check-item[data-cx-check="${id}"]`);
 
+async function mountPendingCheck(page, timeout = 30000) {
+  await page.evaluate(timeout => {
+    const old = document.querySelector("[data-canopyx-host]");
+    const doc = old.canopyx.flow;
+    old.canopyx.destroy(); old.remove();
+    const host = document.createElement("div");
+    host.setAttribute("data-canopyx-host", "");
+    document.querySelector(".cx-main").prepend(host);
+    window.__aborted = false; window.__completeCheck = null;
+    window.CanopyX.createFlow(host, { flow: doc, timeout, hooks: { check: (id, values, { signal }) => new Promise(resolve => {
+      window.__completeCheck = resolve;
+      signal.addEventListener("abort", () => { window.__aborted = true; });
+    }) } });
+  }, timeout);
+  await page.waitForSelector("[data-canopyx-host][data-cx-ready]", { state: "attached" });
+}
+
+async function completeCheck(page, result) {
+  await expect.poll(() => page.evaluate(() => typeof window.__completeCheck)).toBe("function");
+  await page.evaluate(result => { window.__completeCheck(result); window.__completeCheck = null; }, result);
+}
+
 test("a check runs, shows its details, and goes stale when a tested answer changes", async ({ page }) => {
   await openFlow(page, "flow-mail-checks.html");
+  await mountPendingCheck(page);
   const events = await recordEvents(page);
   await page.getByRole("button", { name: "Test the connection" }).click();
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "running");
+  await completeCheck(page, { status: "pass", details: [{ label: "Greeting", value: "220 mail.example.com ESMTP ready" }] });
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "pass");
   await expect(check(page, "connection").locator(".cx-flow-check-details")).toContainText("220 mail.example.com ESMTP ready");
   await field(page, "host").locator("input").fill("other.example.com");
@@ -34,8 +58,11 @@ test("Next runs a required check, and a warning needs an acknowledgement first",
 
 test("a failed check shows the host's field messages and keeps the reader on the step", async ({ page }) => {
   await openFlow(page, "flow-mail-checks.html");
+  await mountPendingCheck(page);
+  const failure = { status: "fail", fieldErrors: { host: "Not reachable from the service." } };
   await field(page, "host").locator("input").fill("fail.example.com");
   await next(page);
+  await completeCheck(page, failure);
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "fail");
   await expect(field(page, "host").locator(".cx-flow-error")).toHaveText("Not reachable from the service.");
   await expect(stepTitle(page)).toHaveText("Which server sends the mail?");
@@ -44,6 +71,7 @@ test("a failed check shows the host's field messages and keeps the reader on the
   await expect(retry).toHaveClass(/cx-primary/);
   await retry.click();
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "running");
+  await completeCheck(page, failure);
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "fail");
 });
 
@@ -68,24 +96,14 @@ test("a pass-required check reads the typed secret once and blocks Next until it
 
 test("Cancel aborts a running check through its signal, and a slow hook fails on the timeout", async ({ page }) => {
   await openFlow(page, "flow-mail-checks.html");
-  const mountPendingCheck = timeout => page.evaluate(timeout => {
-    const old = document.querySelector("[data-canopyx-host]");
-    const doc = old.canopyx.flow;
-    old.canopyx.destroy(); old.remove();
-    const host = document.createElement("div");
-    host.setAttribute("data-canopyx-host", "");
-    document.querySelector(".cx-main").prepend(host);
-    window.__aborted = false;
-    window.CanopyX.createFlow(host, { flow: doc, timeout, hooks: { check: (id, values, { signal }) => new Promise(() => signal.addEventListener("abort", () => { window.__aborted = true; })) } });
-  }, timeout);
-  await mountPendingCheck(30000);
+  await mountPendingCheck(page);
   await page.getByRole("button", { name: "Test the connection" }).click();
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "running");
   await check(page, "connection").getByRole("button", { name: "Cancel" }).click();
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "none");
   expect(await page.evaluate(() => window.__aborted)).toBe(true);
 
-  await mountPendingCheck(150);
+  await mountPendingCheck(page, 150);
   await page.waitForSelector("[data-canopyx-host][data-cx-ready]", { state: "attached" });
   expect(await flowCall(page, "runCheck", "connection")).toMatchObject({ status: "fail" });
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "fail");
