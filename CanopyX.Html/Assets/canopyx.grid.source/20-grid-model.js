@@ -202,6 +202,7 @@
         measured = true;
         if (pass === 3) { this.scheduleRender(); break; }
       }
+      this.syncGridPhoneValues?.();
       for (const [index, row] of this.placeholders) if (!this.rendered.has(row) && this.focused !== row) this.placeholders.delete(index);
       this.loadWindow();
       const origin = this.focusOrigin;

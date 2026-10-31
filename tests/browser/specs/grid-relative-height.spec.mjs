@@ -43,3 +43,21 @@ for (const [kind, view] of Object.entries(VIEWS)) {
     expect(await host.evaluate(element => element.offsetHeight)).toBeLessThanOrEqual(300);
   });
 }
+
+test("a variable max-height that starts unbounded still follows later host limits", async ({ page }) => {
+  const html = viewPage(VIEWS.grid).replace('<div class="cx-host"',
+    '<section id="bounds" style="--host-bound:none"><div class="cx-host" style="max-height:var(--host-bound)"')
+    .replace("</div></body>", "</div></section></body>");
+  await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: html }));
+  await page.goto("https://canopyx.test/");
+  await page.waitForSelector("[data-cx-ready]");
+  const host = page.locator(".cx-host");
+  await expect.poll(() => host.evaluate(element => element.offsetHeight)).toBeGreaterThan(400);
+  const bounds = page.locator("#bounds");
+  await bounds.evaluate(element => element.style.setProperty("--host-bound", "320px"));
+  await expect.poll(() => host.evaluate(element => element.offsetHeight)).toBeLessThanOrEqual(320);
+  await bounds.evaluate(element => element.style.setProperty("--host-bound", "none"));
+  await expect.poll(() => host.evaluate(element => element.offsetHeight)).toBeGreaterThan(400);
+  await host.evaluate(element => element.style.setProperty("--host-bound", "260px"));
+  await expect.poll(() => host.evaluate(element => element.offsetHeight)).toBeLessThanOrEqual(260);
+});

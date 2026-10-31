@@ -122,14 +122,14 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // Add 256 bytes for accessible phone scrolling and authored height bounds beyond the existing validation allowance.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 416);
+        // Add 512 bytes for accessible phone scrolling and live authored height bounds beyond the existing validation allowance.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 672);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
-        // Add 256 bytes for accessible phone scrolling, its scoped styles and authored height bounds.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 256);
+        // Add 512 bytes for accessible phone scrolling, its scoped styles and live authored height bounds.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 512);
     }
 
     [Fact]
