@@ -122,8 +122,8 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // Pointer selection adds a mutable option and lazy range dispatch (256 bytes); the accepted-source reader stays in the optional query part.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 928);
+        // Pointer selection adds a mutable option and lazy range dispatch (384-byte allowance for 277 measured bytes); the accepted-source reader stays in the optional query part.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 1056);
     }
 
     [Fact]
