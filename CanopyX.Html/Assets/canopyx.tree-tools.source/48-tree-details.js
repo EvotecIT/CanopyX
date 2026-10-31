@@ -99,7 +99,7 @@
       const modal = (this.opts.recordDrawerModal ?? this.view?.recordDrawerModal) === true;
       const overlay = dialog._cxOverlay = UI_IMPL.drawer(dialog, { host: this.host, container: this.host, focus: false, dismissible: modal, modal, closeWhenHidden: true }, lifetime.signal);
       lifetime.signal.addEventListener("abort", restoreTheme, { once: true });
-      paint(index); overlay.open(); focusDrawerTitle(title);
+      paint(index); if (overlay.open()) focusDrawerTitle(title);
       return dialog;
     },
 

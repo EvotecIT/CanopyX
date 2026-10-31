@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "91940cf623b7a5a0",
+      "version": "5c0e42da2e853179",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -97,7 +97,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "c043945a9780e2ce",
+      "version": "fb3c4ef644985818",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -129,7 +129,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "a0e0ec29f86816bf",
+      "version": "4ccb59301287a42b",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [

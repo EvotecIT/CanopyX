@@ -69,7 +69,7 @@
       if(!this.recordDrawer&&!dialog._navigating&&!dialog._replaced&&!dialog._cxHidden&&!this.destroyed)gridRestoreFocus(this,returnFocus,record.id,primary,openedFrom);},{once:true});
     RECORD_IMPL.decorate?.(this,dialog,{head,identity,title,subtitle,body,options:options||{}});
     DataGrid.applyDrawerHooks(this,dialog);
-    paint(record,index);overlay.open();this.focusRing(title);
+    paint(record,index);if(overlay.open())this.focusRing(title);
     return dialog;
   };
   Object.assign(DataGrid.prototype,{

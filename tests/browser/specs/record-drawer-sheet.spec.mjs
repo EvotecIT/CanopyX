@@ -8,6 +8,7 @@ import { settleOverlayMotion } from "./support.mjs";
 async function openRecord(page, width, chrome = "panel", options = {}) {
   await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
   const view = definition(options.extra || {});
+  if (options.kind === "tree") { view.type = "view"; view.roots = view.rows.map(row => ({ ...row, label: row.cells.cn.value })); delete view.rows; }
   view.chrome = chrome;
   // One long record (no tabs) gives the body more evidence than fits and a list of section links.
   view.record.tabs = [];
@@ -139,10 +140,18 @@ for (const where of ["view", "mount"]) test(`a host opts into the sheet over a s
   await page.mouse.click(20, 450);
   await expect(sheet).toHaveCount(0);
 });
-test("the record drawer closes when its grid stops rendering and does not reopen in a narrowed layout", async ({ page }) => {
-  const sheet = await openRecord(page, 1440);
+for (const kind of ["grid", "tree"]) test(`${kind} record drawer closes with its hidden view and a hidden open preserves outside focus`, async ({ page }) => {
+  const sheet = await openRecord(page, 1440, "panel", { kind });
   await page.evaluate(() => { document.querySelector('[data-canopyx-host]').style.display = "none"; });
   await expect(sheet).toHaveCount(0);
+  await page.evaluate(async () => {
+    const button = document.createElement("button"); button.id = "outside-control"; button.textContent = "Visible host control"; document.body.append(button); button.focus();
+    await document.querySelector('[data-canopyx-host]').canopyx.openDetails("c001");
+  });
+  await expect(page.locator("#outside-control")).toBeFocused();
+  await expect(drawer(page)).toHaveCount(0);
   await page.evaluate(() => { document.querySelector('[data-canopyx-host]').style.display = ""; });
   await expect(drawer(page)).toHaveCount(0);
+  await page.evaluate(api + ".openDetails('c001')");
+  await expect(drawer(page)).toBeVisible();
 });

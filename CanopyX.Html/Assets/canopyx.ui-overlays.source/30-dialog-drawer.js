@@ -5,7 +5,13 @@
     const overlay = UI_TOOLS.overlay(root, { kind: drawer ? "drawer" : "dialog", trigger, host: options.host || container,
       focus: options.focus, dismissible: options.dismissible ?? root.dataset.dismissible !== "false", initialFocus: options.initialFocus || (element =>
         alert ? element.querySelector('[data-cx-cancel],button:not([data-danger]):not([type="submit"])') : element.querySelector("input:not([type=hidden]),select,textarea")) }, signal);
-    const open = () => overlay.open({ modal: !drawer || phone || options.modal === true || root.dataset.modal === "true" });
+    const open = () => {
+      const opened = overlay.open({ modal: !drawer || phone || options.modal === true || root.dataset.modal === "true" });
+      if (opened && options.closeWhenHidden && !container.getClientRects().length && !matchMedia("print").matches) {
+        root._cxHidden = true; overlay.close("hidden", false, true); return false;
+      }
+      return opened;
+    };
     UI_TOOLS.observe(container, width => {
       // A hidden container measures 0: that says nothing about the room the overlay has, so the layout stays as it was.
       // With closeWhenHidden the overlay closes instead, because the view it belongs to is no longer shown (its page or tab
