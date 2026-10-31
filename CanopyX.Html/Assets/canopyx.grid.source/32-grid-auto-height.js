@@ -24,6 +24,19 @@
       this.fitInline = style.maxHeight;
       global.addEventListener("resize", () => this.fitHeight(), { signal: this.lifetime.signal });
     }
+    if (/var\(/i.test(this.fitInline) && !this.fitBoundObserver) {
+      const observer = this.fitBoundObserver = new MutationObserver(records => {
+        if (records.some(record => record.target !== this.host || record.attributeName === "class") || this.fitStyle !== style.cssText) this.fitHeight();
+      });
+      this.lifetime.signal.addEventListener("abort", () => observer.disconnect(), { once: true });
+    }
+    if (this.fitBoundObserver && this.fitBoundParent !== this.host.parentElement) {
+      this.fitBoundObserver.disconnect();
+      // Observe only the authored bound's inheritance chain, never the document subtree.
+      for (let parent = this.host; parent; parent = parent.parentElement)
+        this.fitBoundObserver.observe(parent, { attributes: true, attributeFilter: ["style", "class"] });
+      this.fitBoundParent = this.host.parentElement;
+    }
     const fitted = style.maxHeight;
     style.maxHeight = this.fitInline;
     const resolved = getComputedStyle(this.host).maxHeight;
@@ -37,4 +50,5 @@
     if (empty || this.fitEmpty) style.setProperty("--cx-min-h", empty ? value : this.minimumGridHeight() + "px");
     this.fitEmpty = empty;
     if (style.maxHeight !== value) style.maxHeight = value;
+    this.fitStyle = style.cssText;
   };

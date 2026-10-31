@@ -62,7 +62,14 @@
       this.paintSlot(slot.childSlots[index], row, field, this.columns.indexOf(field), { level: 0, expanded: false });
       const value = slot.childSlots[index].cell;
       value.title = cellText(row.cells[field.id], field, this.fmt) || "";
-      if (value.querySelector(".p-pill,.p-state") && value.scrollWidth > value.clientWidth + 1) value.tabIndex = -1;
-      else value.removeAttribute("tabindex");
     });
+  };
+
+  // Widths are meaningful after the render passes attach new and recycled rows.
+  DataGrid.prototype.syncGridPhoneValues = function () {
+    if (!this.phone) return;
+    for (const value of this.canvas.querySelectorAll(".cx-phone-value")) {
+      if (value.querySelector(".p-pill,.p-state") && value.scrollWidth > value.clientWidth + 1) value.tabIndex = 0;
+      else value.removeAttribute("tabindex");
+    }
   };
