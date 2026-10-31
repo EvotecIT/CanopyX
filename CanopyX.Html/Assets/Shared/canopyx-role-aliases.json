@@ -1,0 +1,6 @@
+{
+  "--hfx-color-surface": "--hfx-color-surface-card",
+  "--hfx-color-border": "--hfx-color-surface-line",
+  "--hfx-color-text": "--hfx-color-text-primary",
+  "--hfx-color-text-muted": "--hfx-color-text-secondary"
+}

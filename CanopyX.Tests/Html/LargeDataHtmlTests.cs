@@ -29,7 +29,7 @@ public sealed class LargeDataHtmlTests {
     [Fact]
     public void MountWhenVisible_MarksTheFragment_UnlessTheHostMountsItItself() {
         var grid = Grid(1);
-        Assert.Contains("data-canopyx-host data-cx-mount=\"visible\">", grid.ToHtmlFragment(new CanopyHtmlOptions { MountWhenVisible = true }));
+        Assert.Contains("data-canopyx-host id=\"" + grid.Id + "\" data-cx-mount=\"visible\">", grid.ToHtmlFragment(new CanopyHtmlOptions { MountWhenVisible = true }));
         Assert.Contains("data-cx-mount=\"manual\"", grid.ToHtmlFragment(new CanopyHtmlOptions { MountWhenVisible = true, AutoMount = false }));
         Assert.DoesNotContain("data-cx-mount", grid.ToHtmlFragment());
         Assert.Contains("data-cx-mount=\"visible\"", grid.ToHtmlPage(new CanopyHtmlOptions { MountWhenVisible = true }));

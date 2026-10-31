@@ -22,6 +22,17 @@ public sealed class GridOptionsSchemaTests {
     }
 
     [Fact]
+    public void SelectOnClick_IsAnOptionalBooleanInTheGridDocument() {
+        var view = View();
+        Assert.DoesNotContain("selectOnClick", view.ToJson());
+        view.SelectOnClick = true;
+        var json = view.ToJson();
+        Assert.True(System.Text.Json.Nodes.JsonNode.Parse(json)!["selectOnClick"]!.GetValue<bool>());
+        ProtocolSchema.AssertValid(json, "pointer selection without reporting checkboxes");
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, document => document["selectOnClick"] = "true")).IsValid);
+    }
+
+    [Fact]
     public void WriterOptions_QueryHooksAndAcceptedFooterValuesMatchTheProtocolSchema() {
         var view = View();
         ProtocolSchema.AssertValid(view.ToJson(), "grid options with explicit null and empty default overrides");

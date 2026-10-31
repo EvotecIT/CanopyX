@@ -46,7 +46,7 @@ internal static class LinkedViewsExample {
     private static string Name(int index) => Services[index % Services.Length] + "-" + (index / Services.Length + 1).ToString(CultureInfo.InvariantCulture);
 
     private static CanopyDataGridView Grid() {
-        var grid = new CanopyDataGridView("linked-services", "Services") { Selection = CanopySelectionMode.Multiple, PageSize = 100, Noun = "services" };
+        var grid = new CanopyDataGridView("linked-services", "Services") { Selection = CanopySelectionMode.Multiple, SelectOnClick = true, PageSize = 100, Noun = "services" };
         grid.Columns.Add(new CanopyColumn("name", "Service") { Sortable = true, Sizing = CanopyColumnSizing.Preferred(170) });
         grid.Columns.Add(new CanopyColumn("site", "Site") { Sortable = true, Sizing = CanopyColumnSizing.Preferred(110) });
         grid.Columns.Add(new CanopyColumn("status", "Status") { Sortable = true, Sizing = CanopyColumnSizing.Preferred(110) });

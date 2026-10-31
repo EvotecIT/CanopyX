@@ -122,8 +122,8 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // Add 512 bytes for accessible phone scrolling and live authored height bounds beyond the existing validation allowance.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 672);
+        // Pointer selection adds a mutable option and lazy range dispatch (256 bytes); the accepted-source reader stays in the optional query part.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 928);
     }
 
     [Fact]

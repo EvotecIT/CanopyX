@@ -7,6 +7,9 @@ namespace CanopyX.Html;
 /// Options for writing a CanopyX view as an HTML fragment or page.
 /// </summary>
 public sealed class CanopyHtmlOptions {
+    /// <summary>Gets or sets the HTML id of the element carrying the runtime API. Defaults to the view id; use a distinct id when embedding the same view more than once.</summary>
+    public string? HostId { get; set; }
+
     private string _assetBaseUrl = "assets/";
     private string _language = "en";
     private string? _nonce;

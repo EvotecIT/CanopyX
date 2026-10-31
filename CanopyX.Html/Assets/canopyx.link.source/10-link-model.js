@@ -89,6 +89,8 @@
       if (typeof source !== "string" || !LINK_SOURCE.test(source)) throw new Error("CanopyX: a link source is 1 to 128 letters, digits, '.', ':', '_' or '-'.");
       const list = filter == null ? [] : (Array.isArray(filter) ? filter : [filter]).map(item => linkFilter(this, source, item));
       if (list.length > 8) throw new Error("CanopyX: one source applies at most 8 external filters.");
+      const sourceLabel = (Array.isArray(filter) ? filter : [filter]).find(item => item?.sourceLabel)?.sourceLabel;
+      if (sourceLabel) for (const item of list) item.sourceLabel = sourceLabel;
       const next = (this.linkFilters || []).filter(item => item.source !== source).concat(list);
       if (next.length > 32) throw new Error("CanopyX: a view takes at most 32 external filters.");
       return this.linkApply(next, reason);
@@ -114,8 +116,9 @@
     /** One removable chip per source: "Filtered by Sites: Berlin ×". */
     linkChip(source, run) {
       const filters = this.linkCommitted.filter(item => item.source === source), first = filters[0];
-      const values = filters.map(item => linkValuesText(this, item)).join("; ");
-      const description = filters.map(item => linkValuesText(this, item, true)).join("; ");
+      const caption = (item, describeRange = false) => (filters.length > 1 && !item.label ? linkColumn(this, item.field).title + ": " : "") + linkValuesText(this, item, describeRange);
+      const values = filters.map(item => caption(item)).join(" · ");
+      const description = filters.map(item => caption(item, true)).join(" · ");
       const text = fill(this.labels.linkFilteredBy, { source: first.sourceLabel, values });
       const button = h("button", "cx-button cx-link-chip" + (this.kind === "grid" ? " cx-grid-chip" : ""));
       button.type = "button"; filterChipContent(button, text);

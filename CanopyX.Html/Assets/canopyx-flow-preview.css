@@ -1,5 +1,5 @@
 /* The flow-preview part: the host's preview on the review page. */
-.cx-flow-preview{padding:var(--cx-size-10px) var(--cx-size-14px) var(--cx-size-12px);border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));border:var(--cx-size-1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));}
+.cx-flow-preview{padding:var(--cx-size-10px) var(--cx-size-14px) var(--cx-size-12px);border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));border:var(--cx-size-1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));}
 .cx-flow-preview .cx-flow-review-title{border-bottom:0;padding-bottom:0;}
 .cx-flow-preview-title{margin-top:var(--cx-size-6px);font-weight:600;}
 .cx-flow-preview-rows .cx-flow-answer{grid-template-columns:minmax(var(--cx-size-140px),36%) minmax(0,1fr);}

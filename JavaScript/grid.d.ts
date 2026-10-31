@@ -439,6 +439,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   /** Pager settings of a paged view, read by the pager part (canopyx-pager.js); absent keeps the built-in pager. */
   pager?: GridPager;
   selection: "none" | "single" | "multiple";
+  /** Select rows on click instead of running the row action. Ctrl/Command toggles; Shift extends. Default false. */
+  selectOnClick?: boolean;
   /** Ordinal IDs are source positions in one snapshot; saved selection replay and keyed live updates are unavailable. Default stableKey. */
   rowIdentity?: "stableKey" | "ordinal";
   search: boolean;
@@ -1053,6 +1055,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   setTimeZone(zone: TimeZone): void;
   getTimeZone(): TimeZone;
   /** Explicit identities only. Throws in query-selection mode; use getSelectionDescriptor instead. */
+  /** Mutable pointer-selection opt-in, initially taken from the view. Does not add checkboxes. */
+  selectOnClick: boolean;
   getSelection(): string[];
   setSelection(ids: string[]): void;
   clearSelection(): void;

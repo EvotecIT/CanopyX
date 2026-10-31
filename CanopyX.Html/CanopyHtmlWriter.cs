@@ -23,7 +23,7 @@ internal static partial class CanopyHtmlWriter {
         // A single-file tree carries the parts it loads (CanopyHtmlAssets.GetRequiredParts): the tree tools part, the export part
         // its Export menu and exports load on first use, and the search and links parts when it needs them. Fragments that share
         // a document carry each part once.
-        var html = FragmentDocument(view.ToJson(options.HiddenFilterIds), options);
+        var html = FragmentDocument(view.ToJson(options.HiddenFilterIds), view.Id, options);
         var parts = WithRequested(CanopyHtmlAssets.GetRequiredParts(view), options, RuntimeFor(view, options));
         return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, parts);
     }
@@ -50,7 +50,7 @@ internal static partial class CanopyHtmlWriter {
 
     /// <summary>The options of the fragment inside a grid page.</summary>
     private static CanopyHtmlOptions PageFragmentOptions(CanopyHtmlOptions options) {
-        var fragment = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible,
+        var fragment = new CanopyHtmlOptions { HostId = options.HostId, Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible,
             AssetMode = options.AssetMode, RowData = options.RowData, Nonce = options.Nonce, Height = PageHeight(options) };
         fragment.Parts.UnionWith(options.Parts);
         return fragment;
@@ -59,10 +59,11 @@ internal static partial class CanopyHtmlWriter {
     // Full pages fill the window; only explicit content sizing overrides that default.
     private static string? PageHeight(CanopyHtmlOptions options) => options.Height == "auto" ? "auto" : null;
 
-    private static string FragmentDocument(string json, CanopyHtmlOptions options, string? content = null, string hostClass = "cx-host") {
+    private static string FragmentDocument(string json, string viewId, CanopyHtmlOptions options, string? content = null, string hostClass = "cx-host") {
         var builder = new StringBuilder(json.Length + (content?.Length ?? 0) + 160);
         builder.Append("<div class=\"").Append(hostClass).Append("\" data-canopyx-host");
         if (options.Theme != CanopyTheme.Auto) builder.Append(" data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
+        builder.Append(" id=\"").Append(WebUtility.HtmlEncode(options.HostId ?? viewId)).Append('"');
         builder.Append(DirectionAttribute(options.Direction));
         if (options.Chrome == CanopyChrome.Embedded) builder.Append(" data-cx-chrome=\"embedded\"");
         if (!options.AutoMount) {
@@ -91,7 +92,7 @@ internal static partial class CanopyHtmlWriter {
     }
 
     internal static string Page(CanopyTreeView view, CanopyHtmlOptions options) {
-        var fragmentOptions = new CanopyHtmlOptions { Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible, Runtime = options.Runtime, AssetMode = options.AssetMode, Nonce = options.Nonce, Height = PageHeight(options) };
+        var fragmentOptions = new CanopyHtmlOptions { HostId = options.HostId, Theme = options.Theme, AutoMount = options.AutoMount, MountWhenVisible = options.MountWhenVisible, Runtime = options.Runtime, AssetMode = options.AssetMode, Nonce = options.Nonce, Height = PageHeight(options) };
         fragmentOptions.HiddenFilterIds.UnionWith(options.HiddenFilterIds);
         fragmentOptions.Parts.UnionWith(options.Parts);
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
@@ -119,14 +120,14 @@ internal static partial class CanopyHtmlWriter {
         var data = bundled ?? (CanopyGridRowData.ShouldWrite(view, options.RowData) ? new CanopyGridRowData(view, options.RowData) : null);
         string html;
         if (data == null) {
-            html = FragmentDocument(view.ToJson(), options);
+            html = FragmentDocument(view.ToJson(), view.Id, options);
         } else {
             var chunks = new StringBuilder();
             for (var index = 0; bundled == null && index < data.ChunkCount; index++) {
                 chunks.Append("<script type=\"application/x-canopyx-rows\">").Append(data.GetChunk(index)).Append("</script>");
             }
 
-            html = FragmentDocument(data.ToJson(bundleBase), options, chunks.ToString());
+            html = FragmentDocument(data.ToJson(bundleBase), view.Id, options, chunks.ToString());
         }
 
         // A single-file grid carries the filter editor and export parts, the history part when it draws history presenters, the
@@ -155,7 +156,7 @@ internal static partial class CanopyHtmlWriter {
     internal static string Fragment(CanopyFlow flow, CanopyHtmlOptions options) {
         if (flow == null) throw new ArgumentNullException(nameof(flow));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Flows have no tree filter IDs.");
-        var html = FragmentDocument(flow.ToContract(), options, null, "cx-host cx-flow-host");
+        var html = FragmentDocument(flow.ToContract(), flow.Id, options, null, "cx-host cx-flow-host");
         var parts = WithRequested(CanopyHtmlAssets.GetRequiredParts(flow), options, CanopyHtmlAssets.GetRuntime(flow));
         return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, parts);
     }
@@ -180,7 +181,7 @@ internal static partial class CanopyHtmlWriter {
     internal static string Fragment(CanopyMatrix matrix, CanopyHtmlOptions options) {
         if (matrix == null) throw new ArgumentNullException(nameof(matrix));
         if (options.HiddenFilterIds.Count != 0) throw new InvalidOperationException("Matrices have no tree filter IDs.");
-        var html = FragmentDocument(matrix.ToJson(), options, null, "cx-host cx-matrix-host");
+        var html = FragmentDocument(matrix.ToJson(), matrix.Id, options, null, "cx-host cx-matrix-host");
         var parts = WithRequested(CanopyHtmlAssets.GetRequiredParts(matrix), options, CanopyRuntime.DataGrid);
         return options.AssetMode != CanopyAssetMode.Inline ? html : html + SharedParts(options, parts);
     }
