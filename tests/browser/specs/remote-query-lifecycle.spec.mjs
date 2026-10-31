@@ -97,7 +97,10 @@ test("the generated host accepts global order, retains its view on failure, and 
   await value.getByRole("button").click(); await expect(value).toHaveAttribute("aria-sort", "ascending");
   await value.getByRole("button").click(); await expect(value).toHaveAttribute("aria-sort", "descending");
   await expect(page.locator('[data-cx-id="record-60"]')).toBeVisible();
-  await page.getByLabel("Fail next request").check(); await page.getByLabel("Flagged records", { exact: true }).check();
+  await page.getByLabel("Fail next request").check();
+  await expect(page.getByLabel("Flagged records", { exact: true })).not.toBeChecked();
+  // The failed query deliberately restores the unchecked state before check() can verify its checked postcondition.
+  await page.getByLabel("Flagged records", { exact: true }).click();
   await expect(page.locator("#query-status")).toContainText("could not read"); await expect(page.getByLabel("Flagged records", { exact: true })).not.toBeChecked();
   await expect(page.locator('[data-cx-id="record-59"]')).toBeVisible();
   await page.getByLabel("Flagged records", { exact: true }).check(); await expect(page.locator('[data-cx-id="record-45"]')).toBeVisible();
