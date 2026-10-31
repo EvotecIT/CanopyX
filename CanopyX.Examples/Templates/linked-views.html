@@ -133,7 +133,7 @@
     hosts.grid.addEventListener("canopyx:linkchange", event => {
       const detail = event.detail, linked = new Set(detail.values.site || []);
       for (const button of list.querySelectorAll(".site-bar")) button.classList.toggle("is-linked", linked.has(button.dataset.site));
-      status.textContent = detail.action === "select" ? "Selected " + detail.keys.length + " services at " + [...linked].join(", ") + "." : "Nothing selected in the grid.";
+      status.textContent = detail.action === "select" ? "Selected " + detail.keys.length + (detail.keys.length === 1 ? " service at " : " services at ") + [...linked].join(", ") + "." : "Nothing selected in the grid.";
     });
   });
 })();
