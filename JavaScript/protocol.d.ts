@@ -326,6 +326,8 @@ interface ViewDefinitionBase {
   deepLink?: boolean;
   /** The record panel of the tree's drawer (records.d.ts, docs/record-panel.md). */
   record?: RecordPanelDefinition;
+  /** True opens a modal record sheet at every width; the host option takes precedence. Default false. */
+  recordDrawerModal?: boolean;
   labels?: CanopyLabels;
   dragDrop?: boolean;
   contextActions?: ContextAction[];

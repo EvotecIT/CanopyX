@@ -2537,6 +2537,7 @@ export type HostTrustedHTML=typeof globalThis extends{
 }
 ?T:never;
 interface HostOptionsBase extends RecordPanelOptions{
+  recordDrawerModal?:boolean;
   source?:DataSource;
   labels?:CanopyLabels;
   requestTimeoutMs?:number;
@@ -3442,6 +3443,7 @@ interface ViewDefinitionBase{
   stateKey?:string;
   deepLink?:boolean;
   record?:RecordPanelDefinition;
+  recordDrawerModal?:boolean;
   labels?:CanopyLabels;
   dragDrop?:boolean;
   contextActions?:ContextAction[];

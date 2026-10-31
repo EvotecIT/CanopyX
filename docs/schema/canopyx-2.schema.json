@@ -2520,6 +2520,7 @@
         "autoHeight": { "type": "boolean", "description": "A tree whose visible rows fit is as tall as its rows; false keeps the host height. Default true." },
         "stateKey": { "type": "string" },
         "deepLink": { "type": "boolean" },
+        "recordDrawerModal": { "type": "boolean", "description": "Open the record drawer as a modal sheet over a scrim at every width. Default false keeps the responsive side panel or phone sheet." },
         "record": { "$ref": "#/$defs/recordPanel" },
         "labels": {
           "description": "Translations of the texts the runtime writes itself; English where a name is absent. {placeholders} are replaced.",

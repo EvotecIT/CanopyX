@@ -693,6 +693,8 @@ the `timeline` part with `resources` or the `timeline` view.
 
 ### Record panel
 
+Tree and flat-grid views both accept the optional Boolean `recordDrawerModal` (`RecordDrawerModal` in C#). True opens the record drawer as a modal sheet at every width; the Boolean mount option takes precedence, including false to restore the responsive default. Non-Boolean view or mount values reject before mounting.
+
 A grid's or tree view's optional `record` is its record panel ([record-panel.md](record-panel.md)): the record drawer with
 record-only fields, sections, tabs, a pinned summary, structured values, related records, deep links and record actions. A view
 that declares one, a column with a `structured` presenter, or a structured cell loads the `record-panel` part (payload

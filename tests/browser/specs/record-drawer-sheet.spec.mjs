@@ -5,10 +5,15 @@ import { test, expect } from "@playwright/test";
 import { api, definition, open, drawer } from "./record-panel-fixtures.mjs";
 import { settleOverlayMotion } from "./support.mjs";
 
+function recordDefinition(kind, extra = {}) {
+  const view = definition(extra);
+  if (kind === "tree") { view.type = "view"; view.roots = view.rows.map(row => ({ ...row, label: row.cells.cn.value })); delete view.rows; }
+  return view;
+}
+
 async function openRecord(page, width, chrome = "panel", options = {}) {
   await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
-  const view = definition(options.extra || {});
-  if (options.kind === "tree") { view.type = "view"; view.roots = view.rows.map(row => ({ ...row, label: row.cells.cn.value })); delete view.rows; }
+  const view = recordDefinition(options.kind, options.extra);
   // One long record (no tabs) gives the body more evidence than fits and a list of section links.
   view.record.tabs = [];
   await open(page, view, "", chrome);
@@ -99,49 +104,50 @@ test("a section link scrolls only the drawer body and lands the section below th
   expect(await page.evaluate(() => scrollY)).toBe(start);
 });
 
-test("a non-Boolean modal mount option rejects before mounting", async ({ page }) => {
-  await openRecord(page, 1440);
-  const result = await page.evaluate(view => {
+for (const kind of ["grid", "tree"]) for (const where of ["mount", "view"]) test(`${kind} rejects a non-Boolean modal ${where} option before mounting`, async ({ page }) => {
+  await openRecord(page, 1440, "panel", { kind });
+  const view = recordDefinition(kind, { recordDrawerModal: where === "view" ? "true" : true });
+  const result = await page.evaluate(({ view, kind, where }) => {
     const host = document.body.appendChild(document.createElement("div"));
     let error = "", grid;
-    try { grid = CanopyX.createDataGrid(host, { view, recordDrawerModal: "true" }); }
+    try { grid = CanopyX[kind === "tree" ? "createTreeGrid" : "createDataGrid"](host, where === "mount" ? { view, recordDrawerModal: "true" } : { view }); }
     catch (failure) { error = failure.message; }
     const mounted = host.hasAttribute("data-canopyx-mounted");
     grid?.destroy(); host.remove();
     return { error, mounted };
-  }, definition({ recordDrawerModal: true }));
-  expect(result.error).toContain("recordDrawerModal");
+  }, { view, kind, where });
+  expect(result.error).toMatch(/recordDrawerModal|invalid grid appearance/);
   expect(result.mounted).toBe(false);
 });
 
-test("the record drawer is a side panel on wide screens and a sheet on narrow ones by default", async ({ page }) => {
-  let sheet = await openRecord(page, 1440);
+for (const kind of ["grid", "tree"]) test(`${kind} record drawer defaults to a side panel on wide screens and a sheet on narrow ones`, async ({ page }) => {
+  let sheet = await openRecord(page, 1440, "panel", { kind });
   expect(await sheet.evaluate(element => element.matches(":modal"))).toBe(false);
-  // The side panel docks to the right edge beside the live view.
   expect(await sheet.evaluate(element => Math.round(innerWidth - element.getBoundingClientRect().right))).toBe(0);
   await page.keyboard.press("Escape");
   await expect(sheet).toHaveCount(0);
-  sheet = await openRecord(page, 390);
+  sheet = await openRecord(page, 390, "panel", { kind });
   expect(await sheet.evaluate(element => element.matches(":modal"))).toBe(true);
   expect(await sheet.evaluate(element => Math.round(element.getBoundingClientRect().width))).toBe(390);
 });
 
-for (const where of ["view", "mount"]) test(`a host opts into the sheet over a scrim at every width through the ${where}`, async ({ page }) => {
+for (const kind of ["grid", "tree"]) for (const where of ["view", "mount", "override"]) test(`${kind} drawer honors the ${where === "override" ? "false mount override of a true view" : "modal " + where + " preference"}`, async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  const view = definition(); view.record.tabs = [];
-  if (where === "view") view.recordDrawerModal = true;
+  const view = recordDefinition(kind); view.record.tabs = [];
+  if (where !== "mount") view.recordDrawerModal = true;
   await open(page, view);
-  await page.evaluate(async ([view, where]) => {
+  await page.evaluate(async ({ view, kind, where }) => {
     const old = document.querySelector("[data-canopyx-host]"); old.canopyx.destroy?.(); old.remove();
     const host = document.createElement("div"); host.className = "cx-host"; document.body.append(host);
-    host.canopyx = CanopyX.createDataGrid(host, where === "mount" ? { view, recordDrawerModal: true } : { view }); await host.canopyx.ready;
+    host.canopyx = CanopyX[kind === "tree" ? "createTreeGrid" : "createDataGrid"](host,
+      where === "view" ? { view } : { view, recordDrawerModal: where === "mount" }); await host.canopyx.ready;
     await host.canopyx.openDetails("c001");
-  }, [view, where]);
+  }, { view, kind, where });
   const sheet = drawer(page);
   await expect(sheet).toBeVisible();
-  expect(await sheet.evaluate(element => element.matches(":modal"))).toBe(true);
-  // The scrim closes it.
-  await page.mouse.click(20, 450);
+  expect(await sheet.evaluate(element => element.matches(":modal"))).toBe(where !== "override");
+  if (where === "override") await page.keyboard.press("Escape");
+  else await page.mouse.click(20, 450);
   await expect(sheet).toHaveCount(0);
 });
 for (const kind of ["grid", "tree"]) for (const hiding of ["display", "visibility"]) test(`${kind} record drawer closes with its ${hiding}-hidden view and a hidden open preserves outside focus`, async ({ page }) => {
