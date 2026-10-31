@@ -7,7 +7,7 @@
   // End go to the first and last cell, and Escape, F2, or Left from the first cell return to the row. A cell whose
   // control is a button or a link focuses the control; a control that needs the arrow keys (a text box, a list, radio
   // buttons, tabs) is entered with Enter from its cell and left with Escape. Controls in cells and detail rows are not
-  // Tab stops: the grid stays one stop in the page's tab order.
+  // Tab stops: the grid stays one stop in the page's tab order, except overflowing phone values that need native scrolling.
   const CELL_CONTROLS = "a[href],button,input,select,textarea,summary,[tabindex],[contenteditable]:not([contenteditable=false])," +
     "[role=button],[role=checkbox],[role=radio],[role=link],[role=switch],[role=tab],[role=menuitem],[role=textbox],[role=combobox]";
   // Controls that use the arrow keys themselves, and a scrolling detail body, whose arrow keys scroll it.
