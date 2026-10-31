@@ -68,11 +68,7 @@ test("a pass-required check reads the typed secret once and blocks Next until it
 
 test("Cancel aborts a running check through its signal, and a slow hook fails on the timeout", async ({ page }) => {
   await openFlow(page, "flow-mail-checks.html");
-  await page.getByRole("button", { name: "Test the connection" }).click();
-  await check(page, "connection").getByRole("button", { name: "Cancel" }).click();
-  await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "none");
-
-  await page.evaluate(() => {
+  const mountPendingCheck = timeout => page.evaluate(timeout => {
     const old = document.querySelector("[data-canopyx-host]");
     const doc = old.canopyx.flow;
     old.canopyx.destroy(); old.remove();
@@ -80,8 +76,16 @@ test("Cancel aborts a running check through its signal, and a slow hook fails on
     host.setAttribute("data-canopyx-host", "");
     document.querySelector(".cx-main").prepend(host);
     window.__aborted = false;
-    window.CanopyX.createFlow(host, { flow: doc, timeout: 150, hooks: { check: (id, values, { signal }) => new Promise(() => signal.addEventListener("abort", () => { window.__aborted = true; })) } });
-  });
+    window.CanopyX.createFlow(host, { flow: doc, timeout, hooks: { check: (id, values, { signal }) => new Promise(() => signal.addEventListener("abort", () => { window.__aborted = true; })) } });
+  }, timeout);
+  await mountPendingCheck(30000);
+  await page.getByRole("button", { name: "Test the connection" }).click();
+  await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "running");
+  await check(page, "connection").getByRole("button", { name: "Cancel" }).click();
+  await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "none");
+  expect(await page.evaluate(() => window.__aborted)).toBe(true);
+
+  await mountPendingCheck(150);
   await page.waitForSelector("[data-canopyx-host][data-cx-ready]", { state: "attached" });
   expect(await flowCall(page, "runCheck", "connection")).toMatchObject({ status: "fail" });
   await expect(check(page, "connection")).toHaveAttribute("data-cx-state", "fail");

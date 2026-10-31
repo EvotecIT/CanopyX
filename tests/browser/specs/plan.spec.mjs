@@ -55,7 +55,7 @@ async function openPlan(page, { dark = false, width = 1440, rtl = false, handler
 const task = (page, id) => page.locator('.cx-plan-task[data-cx-record="' + id + '"]');
 const actuals = page => page.evaluate(() => ({ changed: JSON.stringify(window.planApi.view.rows) !== window.initialRows, writes: window.writerCalls }));
 
-for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, true]]) for (const rtl of [false, true]) test(`a stacked milestone label clears neighboring bars and its connector with successor on ${nextStart} ${rtl ? "RTL" : "LTR"}${capped ? " capped" : ""}`, async ({ page }) => {
+for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, true]]) for (const rtl of [false, true]) test(`a stacked milestone label clears neighboring bars and its connector with successor on ${nextStart} ${rtl ? "RTL" : "LTR"}${capped ? " capped" : ""}`, async ({ page, browserName }) => {
   await openPlan(page, { rtl, change: view => {
     view.rows = [["long", "Long task", 12, 22], ["point", "Stacked milestone", 15, 15], ["next", "Next task", nextStart, Math.max(18, nextStart + 2)]].map(([id, title, start, end]) =>
       ({ id, cells: { title, owner: "platform", starts: iso(start), ends: iso(end), baselineStart: iso(start), baselineEnd: iso(end), milestone: id === "point" } }));
@@ -93,9 +93,11 @@ for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, t
   // Keep the round trip inside the document when this milestone is its final tab stop.
   // Firefox moves focus into browser chrome after the final control otherwise.
   await page.evaluate(() => document.body.appendChild(Object.assign(document.createElement("button"), { id: "after-plan", textContent: "After plan" })));
-  await point.focus(); await page.keyboard.press("Tab");
+  // Safari's default macOS keyboard mode reaches buttons with Option+Tab, as in the menu navigation tests.
+  const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
+  await point.focus(); await page.keyboard.press(tab);
   await expect(page.locator("#after-plan")).toBeFocused();
-  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Shift+" + tab);
   await expect(point).toBeFocused();
   const focus = await point.evaluate(element => ({ visible: element.matches(":focus-visible"), style: getComputedStyle(element).outlineStyle, width: parseFloat(getComputedStyle(element).outlineWidth) }));
   expect(focus.visible).toBe(true); expect(focus.style).toBe("solid"); expect(focus.width).toBeGreaterThan(0);
