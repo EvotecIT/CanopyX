@@ -14,7 +14,9 @@ const markup = `<div id="sections" class="cx-tabs" data-cx-tabs>
 for (const veto of ['callback', 'event']) {
   test(`an automatic ${veto} veto pauses until explicit Play without moving user focus`, async ({ page }) => {
     const errors = []; page.on('pageerror', error => errors.push(error.message));
-    await page.clock.install(); await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
+    await page.clock.pauseAt(new Date('2026-10-23T12:00:01Z'));
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await openUi(page, markup, `window.attempts = 0; window.allow = false;
       document.getElementById('sections').addEventListener('cx-tabs:beforechange', event => {
         window.attempts++;

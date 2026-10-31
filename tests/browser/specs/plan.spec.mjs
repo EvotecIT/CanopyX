@@ -72,7 +72,8 @@ for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, t
     expect(await point.locator(".cx-cal-ev-title").evaluate(title => title.scrollWidth > title.clientWidth)).toBe(true);
     await expect(point).not.toHaveClass(/cx-plan-label-before/);
   }
-  const intersections = await point.evaluate(element => {
+  const intersections = await page.evaluate(() => {
+    const element = document.querySelector('.cx-plan-task[data-cx-record="point"]');
     const title = element.querySelector(".cx-cal-ev-title").getBoundingClientRect();
     const bars = [...element.closest(".cx-tl-lane").querySelectorAll(".cx-plan-task")].filter(other => other !== element);
     const hitsBar = bars.some(other => {
@@ -80,9 +81,11 @@ for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, t
       return title.left < box.right && title.right > box.left && title.top < box.bottom && title.bottom > box.top;
     });
     const path = [...document.querySelectorAll(".cx-plan-links path")].find(path => path.textContent === "Stacked milestone finishes before Next task starts");
+    const box = path.ownerSVGElement.getBoundingClientRect();
     let hitsLink = false;
     for (let at = 0; at <= path.getTotalLength(); at++) {
-      const point = path.getPointAtLength(at), screen = new DOMPoint(point.x, point.y).matrixTransform(path.getScreenCTM());
+      const point = path.getPointAtLength(at);
+      const screen = { x:box.left+point.x,y:box.top+point.y };
       if (screen.x > title.left - 1 && screen.x < title.right + 1 && screen.y > title.top - 1 && screen.y < title.bottom + 1) { hitsLink = true; break; }
     }
     return { hitsBar, hitsLink };

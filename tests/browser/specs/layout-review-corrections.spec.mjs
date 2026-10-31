@@ -54,14 +54,15 @@ test("desktop disclosure fits with longer values in a wider container", async ({
 for (const width of [768, 1024, 1440]) test("plan dependency avoids unrelated bars at " + width, async ({ page }) => {
   await open(page, "plan", width);
   await expect(page.locator(".cx-plan-links path").filter({ has: page.locator("title", { hasText: /Prepare.*Update/ }) })).toHaveCount(1);
-  const overlaps = await page.locator(".cx-plan-links path").evaluateAll(paths => {
+  const overlaps = await page.evaluate(() => {
+    const paths = [...document.querySelectorAll(".cx-plan-links path")];
     const tasks = [...document.querySelectorAll(".cx-plan-task")];
     return paths.flatMap(path => {
       const description = path.querySelector("title").textContent;
       if (!description.includes("Prepare") || !description.includes("Update")) return [];
-      const matrix = path.getScreenCTM(), collisions = new Set();
+      const box = path.ownerSVGElement.getBoundingClientRect(), collisions = new Set();
       for (let distance = 1; distance < path.getTotalLength() - 1; distance += 2) {
-        const p = path.getPointAtLength(distance).matrixTransform(matrix);
+        const local = path.getPointAtLength(distance), p = { x:box.left+local.x,y:box.top+local.y };
         for (const task of tasks) {
           if (/Prepare|Update/.test(task.getAttribute("aria-label"))) continue;
           const r = task.getBoundingClientRect();
@@ -103,10 +104,16 @@ test("desktop plan fills its range, labels today/conflicts, routes arrows and in
   const paths = await page.locator(".cx-plan-links path").evaluateAll(nodes => nodes.map(node => node.getAttribute("d")));
   expect(paths).toHaveLength(5); expect(paths.every(d => d.includes(" L"))).toBe(true);
   expect(paths[0].split(" M")[0]).not.toContain(" V");
-  const edge=page.locator(".cx-plan-links path").nth(1), point=await edge.evaluate(node => {
-    const p=node.getPointAtLength(node.getTotalLength()*.6), matrix=node.getScreenCTM();return { x:p.x*matrix.a+matrix.e,y:p.y*matrix.d+matrix.f };
-  });
-  await page.mouse.move(point.x,point.y); await expect.poll(() => edge.evaluate(node => getComputedStyle(node).strokeWidth)).toBe("3px");
+  const edge=page.locator(".cx-plan-links path").nth(1);
+  await expect.poll(async () => {
+    const point=await page.evaluate(() => {
+      const node=document.querySelectorAll(".cx-plan-links path")[1];
+      const p=node.getPointAtLength(node.getTotalLength()*.6), box=node.ownerSVGElement.getBoundingClientRect();
+      return { x:box.left+p.x,y:box.top+p.y };
+    });
+    await page.mouse.move(point.x,point.y);
+    return edge.evaluate(node => getComputedStyle(node).strokeWidth);
+  }).toBe("3px");
   const milestone = page.locator(".cx-plan-milestone .cx-cal-ev-title"); await expect(milestone).toBeVisible(); await expect(milestone).toHaveAttribute("title", "Release milestone");
   const labelBox=await milestone.boundingBox(),todayBox=await page.locator(".cx-tl-now").boundingBox();
   expect(todayBox.x>labelBox.x+labelBox.width||todayBox.x+todayBox.width<labelBox.x).toBe(true);

@@ -41,7 +41,7 @@
       "minifyHtml": true,
       "minifyCss": true,
       "minifyJs": true,
-      "exclude": "live/**"
+      "htmlExclude": ["live/**"]
     },
     {
       "task": "agent-ready",
