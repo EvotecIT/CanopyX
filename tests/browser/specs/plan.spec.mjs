@@ -80,9 +80,11 @@ for (const [nextStart, capped] of [[15, false], [16, false], [21, false], [16, t
       return title.left < box.right && title.right > box.left && title.top < box.bottom && title.bottom > box.top;
     });
     const path = [...document.querySelectorAll(".cx-plan-links path")].find(path => path.textContent === "Stacked milestone finishes before Next task starts");
+    const box = path.ownerSVGElement.getBoundingClientRect();
     let hitsLink = false;
     for (let at = 0; at <= path.getTotalLength(); at++) {
-      const point = path.getPointAtLength(at), screen = new DOMPoint(point.x, point.y).matrixTransform(path.getScreenCTM());
+      const point = path.getPointAtLength(at);
+      const screen = { x:box.left+point.x,y:box.top+point.y };
       if (screen.x > title.left - 1 && screen.x < title.right + 1 && screen.y > title.top - 1 && screen.y < title.bottom + 1) { hitsLink = true; break; }
     }
     return { hitsBar, hitsLink };
