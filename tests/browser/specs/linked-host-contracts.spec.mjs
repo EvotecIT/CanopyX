@@ -30,9 +30,9 @@ test("pointer opt-in selects without checkboxes, toggles, extends across source 
   await row(page, 1).click();
   await expect.poll(() => selected(page)).toEqual(["r1"]);
   await expect(row(page, 1)).toHaveAttribute("aria-selected", "true");
-  await row(page, 3).click({ modifiers: ["Control"] });
+  await row(page, 3).click({ modifiers: ["ControlOrMeta"] });
   await expect.poll(() => selected(page)).toEqual(["r1", "r3"]);
-  await row(page, 3).click({ modifiers: ["Meta"] });
+  await row(page, 3).click({ modifiers: ["ControlOrMeta"] });
   await expect.poll(() => selected(page)).toEqual(["r1"]);
   await row(page, 6).click({ modifiers: ["Shift"] });
   await expect.poll(() => selected(page)).toEqual(["r3", "r4", "r5", "r6"]);
@@ -153,6 +153,6 @@ test("host pointer ranges respect newer selection and pending queries", async ({
 test("reporting query selection preserves exclusions with pointer opt-in", async ({ page }) => {
   await mount(page, { selectOnClick:true, reporting:{ selectionControls:true } });
   await page.evaluate(() => api.selectAllMatching());
-  await row(page, 2).click({ modifiers:["Control"] });
+  await row(page, 2).click({ modifiers:["ControlOrMeta"] });
   expect(await page.evaluate(() => api.getSelectionDescriptor())).toMatchObject({ kind:"query", excludedIds:["r2"] });
 });
