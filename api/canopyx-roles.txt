@@ -31,13 +31,16 @@
 --hfx-color-status-warn-bg
 --hfx-color-status-warn-fg
 --hfx-color-surface
+--hfx-color-surface-card
 --hfx-color-surface-inverse
+--hfx-color-surface-line
 --hfx-color-surface-raised
 --hfx-color-surface-sunken
 --hfx-color-text
 --hfx-color-text-disabled
 --hfx-color-text-inverse
 --hfx-color-text-muted
+--hfx-color-text-primary
 --hfx-color-text-secondary
 --hfx-control-font-size
 --hfx-control-height-lg

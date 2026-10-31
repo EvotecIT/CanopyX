@@ -136,6 +136,9 @@ public sealed partial class CanopyDataGridView {
     /// <summary>Gets or sets row-selection behavior, independently of keyboard focus.</summary>
     public CanopySelectionMode Selection { get; set; }
 
+    /// <summary>Gets or sets whether a row click selects instead of running its row action. Ctrl/Command toggles and Shift extends selection without checkboxes. Defaults to false.</summary>
+    public bool SelectOnClick { get; set; }
+
     /// <summary>Gets the per-control toolbar switches: Filters, Columns, Views, Export, the more menu and the result count. All default to on.</summary>
     public CanopyGridToolbar Toolbar { get; } = new CanopyGridToolbar();
 
@@ -205,6 +208,7 @@ public sealed partial class CanopyDataGridView {
             foreach (var format in ExportFormats) writer.String(format);
             writer.EndArray();
         }
+        if (SelectOnClick) writer.Property("selectOnClick", true);
         if (AutoRowHeight) writer.Property("autoRowHeight", true);
         if (DragRows) writer.Property("dragRows", true);
         WriteRowPresentationJson(writer);

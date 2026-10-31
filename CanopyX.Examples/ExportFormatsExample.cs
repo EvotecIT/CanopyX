@@ -38,9 +38,9 @@ internal static class ExportFormatsExample {
 """;
 
     private const string TreeButton = """
-<p style="margin:12px 16px"><button type="button" id="export-tree" style="font:inherit;padding:6px 12px;border:1px solid CanvasText;border-radius:6px;background:Canvas;color:CanvasText">Export visible rows as Markdown</button></p>
+<p style="margin:12px 16px"><button type="button" id="export-tree-download" style="font:inherit;padding:6px 12px;border:1px solid CanvasText;border-radius:6px;background:Canvas;color:CanvasText">Export visible rows as Markdown</button></p>
 <script>
-document.getElementById("export-tree").addEventListener("click", () =>
+document.getElementById("export-tree-download").addEventListener("click", () =>
   document.querySelector("[data-canopyx-host]").canopyx.exportAs("markdown").catch(error => console.error(error)));
 </script>
 """;

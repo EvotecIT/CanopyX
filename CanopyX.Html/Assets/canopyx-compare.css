@@ -1,4 +1,4 @@
-.cx-compare-summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--hfx-space-3,0.75rem) var(--hfx-space-6,2rem);width:100%;box-sizing:border-box;padding:calc(var(--hfx-space-1,0.25rem)*3.5) var(--hfx-space-4,1rem);border-block-end:var(--hfx-border-width,1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5));font:inherit;}
+.cx-compare-summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--hfx-space-3,0.75rem) var(--hfx-space-6,2rem);width:100%;box-sizing:border-box;padding:calc(var(--hfx-space-1,0.25rem)*3.5) var(--hfx-space-4,1rem);border-block-end:var(--hfx-border-width,1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));background:var(--hfx-color-surface-card,var(--hfx-color-surface,light-dark(#ffffff,#16181c)));color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));font:inherit;}
 .cx-compare-counts{display:flex;flex-wrap:wrap;gap:calc(var(--hfx-space-1,0.25rem)*2.5) var(--hfx-space-6,2rem);}
 .cx-compare-count{display:inline-flex;align-items:baseline;gap:var(--hfx-space-1-5,6px);white-space:nowrap;}
 .cx-compare-count strong{font-size:var(--hfx-type-title-size,1.25rem);font-variant-numeric:tabular-nums;}
@@ -9,7 +9,7 @@
 .cx-compare-added{color:var(--hfx-color-status-good-fg,light-dark(#177345,#4cc78a));}
 .cx-compare-removed{color:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));}
 .cx-compare-changed{color:var(--hfx-color-status-warn-fg,light-dark(#8c5c05,#eeb640));}
-.cx-compare-unchanged{color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));}
+.cx-compare-unchanged{color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));}
 .cx-before-after{display:inline-flex;align-items:baseline;gap:var(--hfx-space-1-5,6px);max-width:100%;line-height:inherit;}
 .cx-wrap .cx-before-after{flex-wrap:wrap;}
 .cx-before-after del{color:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));text-decoration-thickness:var(--hfx-border-width,1px);overflow-wrap:anywhere;}
@@ -28,10 +28,10 @@ body .cx-host.cx-compare-drawer{height:var(--cx-ui-viewport-block);min-height:0;
 .cx-compare-drawer .cx-drawer-body .cx-dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:var(--hfx-space-3,0.75rem) var(--hfx-space-4,1rem);margin:0;padding:var(--hfx-space-3,0.75rem) 0;}
 .cx-compare-drawer .cx-dl dt{font-size:var(--hfx-type-small-size,0.8125rem);color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));}
 .cx-compare-drawer .cx-dl dd{margin:0;}
-.cx-compare-record-changes{margin:0;padding:0 0 var(--hfx-space-3,0.75rem);border-bottom:var(--hfx-border-width,1px) solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));}
+.cx-compare-record-changes{margin:0;padding:0 0 var(--hfx-space-3,0.75rem);border-bottom:var(--hfx-border-width,1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));}
 .cx-compare-record-changes h3,.cx-compare-drawer .cx-drawer-body .cx-record-toggle{margin:0;font-size:var(--hfx-type-small-size,0.8125rem);font-weight:var(--hfx-weight-semibold,600);letter-spacing:normal;text-transform:none;color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));}
 .cx-compare-drawer .cx-drawer-body .cx-record-toggle{padding:var(--hfx-space-3,0.75rem) 0 var(--hfx-space-1,0.25rem);justify-content:space-between;}
 .cx-compare-drawer[data-phone="true"] .cx-dl{grid-template-columns:minmax(0,1fr);gap:var(--hfx-space-1,0.25rem);}
 .cx-compare-drawer[data-phone="true"] .cx-dl dd{margin-block-end:var(--hfx-space-2,0.5rem);}
 @media (forced-colors:active){.cx-before-after del{color:CanvasText;}.cx-before-after ins{color:CanvasText;}}
-.cx-compare-removed-row .cx-before-after del{color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));}
+.cx-compare-removed-row .cx-before-after del{color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));}

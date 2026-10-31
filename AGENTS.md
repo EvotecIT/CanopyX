@@ -26,6 +26,7 @@ CanopyX is a generic, dependency-free engine for large interactive data views. T
 ## Change Expectations
 
 - A protocol change updates `docs/data-protocol.md`, `docs/schema/canopyx-2.schema.json`, and the schema contract tests together. Additive optional fields stay in `canopyx/2`; anything that breaks an existing reader needs a new protocol version.
+- Before adding or changing tests, apply the shared [test-audit authoring gate](skills/test-audit/SKILL.md#authoring-gate) and [contract-focused proof guidance](skills/contract-focused-tests/SKILL.md). Resolve these profile links against `CODEX_HOME` (default `~/.codex`).
 - Add or update contract tests for new behavior. Test the protocol, bundle layout, static output, and browser behavior that hosts rely on, not incidental structure.
 - Add or update generated examples when a change affects visible output.
 - Performance changes need measured before/after numbers at normal speed and at a 4x CPU slowdown from `tests/browser/bench`.

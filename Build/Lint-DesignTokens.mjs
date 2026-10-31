@@ -102,6 +102,8 @@ export function roles() {
     for (const role of read(fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, ""))) found.add(role);
   // Build/Sync-Assets.ps1 gives each role its shared fallback, and a fallback can read further roles the shipped CSS then reads too.
   const fallbacks = JSON.parse(fs.readFileSync(path.join(root, "CanopyX.Html/Assets/Shared/canopyx-fallbacks.json"), "utf8"));
+  const aliases = JSON.parse(fs.readFileSync(path.join(root, "CanopyX.Html/Assets/Shared/canopyx-role-aliases.json"), "utf8"));
+  for (const role of found) if (aliases[role]) found.add(aliases[role]);
   for (const role of found) for (const nested of read(fallbacks[role] ?? "")) found.add(nested);
   return [...found].sort();
 }

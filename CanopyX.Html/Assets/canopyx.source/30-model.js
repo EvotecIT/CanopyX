@@ -14,7 +14,7 @@
       for (const name of ["isSelectable", "beforeSelect", "sanitizeHtml"]) {
         if (options[name] !== undefined && typeof options[name] !== "function") throw new Error("CanopyX: " + name + " must be a function.");
       }
-      this.id = "cx" + ++instanceSeq;
+      do { this.id = "cx" + ++instanceSeq; } while (document.getElementById(this.id));
       this.lifetime = new AbortController();
       this.source = options.source || sourceFor(view, { signal: this.lifetime.signal, timeoutMs: options.requestTimeoutMs });
       this.queryAware = this.source.queryAware === true;

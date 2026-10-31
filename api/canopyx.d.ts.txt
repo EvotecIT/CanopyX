@@ -1779,6 +1779,7 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   pageLength?:number;
   pager?:GridPager;
   selection:"none"|"single"|"multiple";
+  selectOnClick?:boolean;
   rowIdentity?:"stableKey"|"ordinal";
   search:boolean;
   searchDelayMs?:number;
@@ -2268,6 +2269,7 @@ export interface DataGrid<Q extends AcceptedGridQuery=GridQuery,Row extends Grid
   selectRange?(start:number,end:number,options?:{selected?:boolean;additive?:boolean;signal?:AbortSignal}):Promise<GridSelection<Q>>;
   setTimeZone(zone:TimeZone):void;
   getTimeZone():TimeZone;
+  selectOnClick:boolean;
   getSelection():string[];
   setSelection(ids:string[]):void;
   clearSelection():void;

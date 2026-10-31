@@ -35,6 +35,8 @@ A source may pass an array of up to eight filters; a view takes at most 32. An i
 
 **Trees** match external filters against their loaded nodes. A node shows when it matches both the external filters and the tree's own filter (a host predicate or the declared filters); its ancestors stay as the path to it, and branches open to show the matches. A query-aware tree source keeps its declared filters in its query and the external filter is applied again to the rows of each new query; nodes it has not loaded cannot match, so a host that needs server-side filtering of a lazy tree also listens to `canopyx:externalfilter` and narrows its own data.
 
+When one source sends several fields, its single chip names each field using its column title, for example "Filtered by Service chart: Site: Berlin · Status: Healthy". An explicit filter `label` replaces that field's caption. `sourceLabel` may be supplied on any filter in the source; the chip names the source once and removes all its fields together.
+
 **What the reader sees.** One chip per source, "Filtered by Sites chart: Berlin ×", sits before the reader's own conditions on a flat grid's query line and on a line of its own under a tree's toolbar. The chip's accessible name says what it removes ("Remove the filter from Sites chart: Berlin"), and the view announces the change through its live region ("Filtered by Sites chart: 12 rows", "Linked filters removed"). The reader's controls (search, column menus, the filter editor, the Filters badge) show only the reader's own conditions; the filtered column's header keeps its filter marker. Removing the chip, or Clear all on a flat grid's query line or in its empty state, removes external filters too. The empty state's count of active filters includes them, since they are why no rows match.
 
 **Telling the host.** Every change dispatches `canopyx:externalfilter` on the host element with `{ filters, reason }`. `reason` is `"user"` when the reader removed a chip or used Clear all, so the view that applied the filter can clear its own selection; `"api"` otherwise.
@@ -109,3 +111,15 @@ The Polish, German, Spanish, French and Italian packs translate them (`CanopyLab
 ## TypeScript
 
 `LinkedView` (which `TreeGrid` and `DataGrid` extend), `ExternalFilterInput`, `ExternalFilter`, `HighlightOptions`, `ExternalFilterEvent`, `LinkChange` and `LinkValue` come from `@evotecit/canopyx`; `linkEvents` is a host option of trees and grids.
+
+## Selecting rows by pointer
+
+Set `CanopyDataGridView.SelectOnClick = true` in C# (wire option `selectOnClick: true`), or assign `api.selectOnClick = true` after mounting. A click selects one row; Ctrl/Command toggles a row in multiple selection, and Shift extends from the selection anchor. This does not require reporting selection controls or add checkboxes. Selection still raises `canopyx:select` and, with `linkEvents`, `canopyx:linkchange`. Space and Enter retain their keyboard behavior; links and controls inside cells retain their own actions. `selection: "none"` disables row selection.
+
+Self-contained HTML for multiple-selection grids carries the query-extension payload used by Shift ranges, so enabling the property later needs no sidecar files.
+
+The default is false: a plain click runs the configured row action. Set `api.selectOnClick = false` to restore that behavior.
+
+Fragments and pages put the view id on the `data-canopyx-host` element, so `document.getElementById("records").canopyx` returns its runtime API after mounting. `CanopyHtmlOptions.HostId` overrides that HTML id without changing the protocol view id. Use distinct host ids if the same view is embedded more than once. The inner grid keeps its separate instance id for accessibility.
+
+CanopyX styles read HtmlForgeX's canonical `--hfx-color-surface-card`, `--hfx-color-surface-line`, `--hfx-color-text-primary`, and `--hfx-color-text-secondary` roles before the legacy `surface`, `border`, `text`, and `text-muted` roles. Existing pages that set only legacy roles keep their current colors.

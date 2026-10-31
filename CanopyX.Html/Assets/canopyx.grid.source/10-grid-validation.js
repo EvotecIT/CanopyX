@@ -12,6 +12,7 @@
     if ([view.board, view.path, view.stack, view.calendar].filter(value => value != null).length > 1)
       throw new Error("CanopyX: choose one grid presentation: board, path, stack or calendar (with optional plan).");
     view = gridColumnDefaults(view);
+    if (view.selectOnClick !== undefined && typeof view.selectOnClick !== "boolean") throw new Error("CanopyX: selectOnClick is a boolean.");
     if (view.allowRegexSearch !== undefined && typeof view.allowRegexSearch !== "boolean") throw new Error("CanopyX: allowRegexSearch is a boolean.");
     const groups = [view.columnBands, view.columnGroups].filter(value => value !== undefined);
     if (groups.length > 1 || groups.some(value => !Array.isArray(value)))

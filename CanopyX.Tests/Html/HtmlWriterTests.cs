@@ -10,11 +10,30 @@ namespace CanopyX.Tests.Html;
 /// script. Hosts such as the HtmlForgeX bridge depend on that fragment shape and on pages loading their assets.
 /// </summary>
 public sealed class HtmlWriterTests {
+    [Theory]
+    [InlineData(null)]
+    [InlineData("records")]
+    [InlineData("record\"<&")]
+    public void HostId_AddressesTheFragmentAndPageAndEscapesAttributeText(string? hostId) {
+        var tree = SampleDocuments.FullView();
+        var grid = new CanopyDataGridView("records", "Records");
+        grid.Columns.Add(new CanopyColumn("name", "Name"));
+        var options = new CanopyHtmlOptions { HostId = hostId, AssetMode = CanopyAssetMode.External };
+        foreach (var (id, fragment, page) in new[] {
+            (tree.Id, tree.ToHtmlFragment(options), tree.ToHtmlPage(options)),
+            (grid.Id, grid.ToHtmlFragment(options), grid.ToHtmlPage(options)) }) {
+            var expected = " id=\"" + WebUtility.HtmlEncode(hostId ?? id) + "\"";
+            Assert.Contains(expected, fragment);
+            Assert.Contains(expected, page);
+            Assert.Single(Regex.Matches(fragment, " id="));
+        }
+    }
+
     [Fact]
     public void Chrome_EmbeddedMarksTheFragmentHostAndStandaloneWritesNothing() {
         var view = SampleDocuments.FullView();
 
-        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-chrome=\"embedded\">", view.ToHtmlFragment(new CanopyHtmlOptions { Chrome = CanopyChrome.Embedded }));
+        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host id=\"" + view.Id + "\" data-cx-chrome=\"embedded\">", view.ToHtmlFragment(new CanopyHtmlOptions { Chrome = CanopyChrome.Embedded }));
         Assert.DoesNotContain("data-cx-chrome", view.ToHtmlFragment());
         // A page fills the window, so it keeps its own frame whatever the option says.
         Assert.DoesNotContain("data-cx-chrome", view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Chrome = CanopyChrome.Embedded }));
@@ -27,7 +46,7 @@ public sealed class HtmlWriterTests {
 
         var html = view.ToHtmlFragment(new CanopyHtmlOptions { Theme = CanopyTheme.Dark, Height = "70vh" });
 
-        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"dark\" style=\"height:70vh\">", html);
+        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"dark\" id=\"" + view.Id + "\" style=\"height:70vh\">", html);
         Assert.Equal(view.ToJson(), ConfigOf(html));
         Assert.DoesNotContain("<style", html);
         // FullView has deep links but no context actions, drag/drop or editable columns: the configuration, overlays and
@@ -72,7 +91,7 @@ public sealed class HtmlWriterTests {
         var view = SampleDocuments.FullView();
 
         Assert.DoesNotContain("data-cx-mount", view.ToHtmlFragment());
-        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-mount=\"manual\">", view.ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false }));
+        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host id=\"" + view.Id + "\" data-cx-mount=\"manual\">", view.ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false }));
         Assert.Contains(" data-cx-mount=\"manual\"", view.ToHtmlPage(new CanopyHtmlOptions { AutoMount = false, AssetMode = CanopyAssetMode.External }));
     }
 
