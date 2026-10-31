@@ -1801,7 +1801,6 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   stateKey?:string;
   timeZone?:TimeZone;
   overlayClass?:string;
-  recordDrawerModal?:boolean;
   labels?:Partial<CanopyLabels>;
   sanitizeHtml?:HostOptions["sanitizeHtml"];
   query?:Q;

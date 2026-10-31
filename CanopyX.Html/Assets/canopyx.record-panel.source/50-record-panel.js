@@ -16,7 +16,7 @@
   const recordJump = (body, tools, section, instant) => {
     const top = section.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - (tools.isConnected ? tools.offsetHeight : 0);
     const reduce = global.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    body.scrollTo({ top: Math.max(0, Math.round(top)), behavior: reduce || instant ? "auto" : "smooth" });
+    body.scrollTo({ top: Math.max(0, Math.round(top)), behavior: reduce || instant ? "instant" : "smooth" });
   };
   // The ids from a top-level section down to the one named, or null when the sections don't hold it.
   const recordTrail = (sections, id) => {

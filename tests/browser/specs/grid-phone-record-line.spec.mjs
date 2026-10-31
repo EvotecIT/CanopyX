@@ -2,11 +2,11 @@ import { test, expect } from "@playwright/test";
 import { viewPage, nextFrames } from "./support.mjs";
 
 const longName = "server-01.branch-office.production-region.internal.".repeat(8);
-async function open(page, { extra = 0, selected = false, labels, lang = "en", signal = "Expires 0-7d" } = {}) {
+async function open(page, { extra = 0, selected = false, labels, lang = "en", signal = "Expires 0-7d", signalTitle = "Signal" } = {}) {
   await page.setViewportSize({ width: 390, height: 844 });
   const columns = [{ id: "name", title: "Record", kind: "text", rowHeader: true, width: 260 },
     { id: "days", title: "Days", kind: "number", priority: 1 },
-    { id: "signal", title: "Signal", kind: "text", priority: 1, presenter: { kind: "enum" } },
+    { id: "signal", title: signalTitle, kind: "text", priority: 1, presenter: { kind: "enum" } },
     ...Array.from({ length: extra }, (_, index) => ({ id: "extra" + index, title: "Detail " + index, kind: "text", priority: "optional" }))];
   const rows = Array.from({ length: 40 }, (_, index) => ({ id: "r" + index, cells: {
     name: longName + index, days: 7, signal: { value: signal, tone: "warning" },
@@ -48,16 +48,21 @@ for (const count of [1, 2]) test(`phone disclosure counts only ${count} fields b
 });
 
 test("phone disclosure stays with its context when the last field wraps", async ({ page }) => {
-  await open(page, { extra: 4, signal: "A long inspection outcome with retained evidence" });
+  await open(page, { extra: 4, signal: "A long inspection outcome with retained evidence", signalTitle: "UnbrokenStatusContextHeading".repeat(5) });
   const row = page.locator('.cx-row[data-cx-id="r0"]');
   await expect(row.locator('.cx-hidden-fields')).toHaveText("+4 columns");
   const geometry = await row.evaluate(element => {
-    const disclosure = element.querySelector('.cx-hidden-fields').getBoundingClientRect();
+    const button = element.querySelector('.cx-hidden-fields'), disclosure = button.getBoundingClientRect();
     const context = element.querySelectorAll('.cx-phone-field');
     const last = context[context.length - 1].querySelector('.cx-phone-value').getBoundingClientRect();
-    return { disclosure: (disclosure.top + disclosure.bottom) / 2, context: (last.top + last.bottom) / 2 };
+    const line = element.querySelector('.cx-phone-fields').getBoundingClientRect();
+    return { disclosure: (disclosure.top + disclosure.bottom) / 2, context: (last.top + last.bottom) / 2,
+      inLast: context[context.length - 1].contains(button),
+      visible: disclosure.width > 0 && disclosure.right <= line.right + 1 && disclosure.left >= line.left - 1 };
   });
   expect(Math.abs(geometry.disclosure - geometry.context)).toBeLessThanOrEqual(2);
+  expect(geometry.inLast).toBe(true);
+  expect(geometry.visible).toBe(true);
 });
 
 test("same-named phone records expose their next priority context without author-hidden fields", async ({ page }) => {

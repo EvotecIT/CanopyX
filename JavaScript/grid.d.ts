@@ -477,8 +477,6 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   timeZone?: TimeZone;
   /** Space-separated host styling classes copied onto body-appended record, text and column overlays when opened. */
   overlayClass?: string;
-  /** True opens the record drawer as a full-height sheet over a scrim at every width (default false: a side panel on wide screens, a sheet on narrow ones). */
-  recordDrawerModal?: boolean;
   labels?: Partial<CanopyLabels>;
   /** Sanitizes trusted host HTML details before insertion; shares the tree host's sanitizer contract. */
   sanitizeHtml?: HostOptions["sanitizeHtml"];

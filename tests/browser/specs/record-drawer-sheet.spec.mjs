@@ -74,11 +74,13 @@ for (const width of [1440, 390]) for (const chrome of ["panel", "embedded"]) {
 test("a section link scrolls only the drawer body and lands the section below the pinned bar", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const sheet = await openRecord(page, 1440);
+  await sheet.locator(".cx-drawer-body").evaluate(body => { body.style.scrollBehavior = "smooth"; });
   const links = sheet.locator(".cx-record-jump-link");
   expect(await links.count()).toBeGreaterThan(1);
   const start = await page.evaluate(() => scrollY);
-  await links.last().click();
   const placed = await sheet.evaluate(dialog => {
+    // Observe the jump in the same task, before smooth scrolling could advance.
+    [...dialog.querySelectorAll(".cx-record-jump-link")].at(-1).click();
     const body = dialog.querySelector(".cx-drawer-body"), tools = body.querySelector(".cx-record-tools");
     const sections = [...body.querySelectorAll(".cx-record-panel > .cx-record-section")], target = sections.at(-1);
     const maxScroll = body.scrollHeight - body.clientHeight;
@@ -90,6 +92,21 @@ test("a section link scrolls only the drawer body and lands the section below th
   else expect(placed.offset).toBeGreaterThanOrEqual(-1);
   expect(placed.focused).toBe(true);
   expect(await page.evaluate(() => scrollY)).toBe(start);
+});
+
+test("a non-Boolean modal mount option rejects before mounting", async ({ page }) => {
+  await openRecord(page, 1440);
+  const result = await page.evaluate(view => {
+    const host = document.body.appendChild(document.createElement("div"));
+    let error = "", grid;
+    try { grid = CanopyX.createDataGrid(host, { view, recordDrawerModal: "true" }); }
+    catch (failure) { error = failure.message; }
+    const mounted = host.hasAttribute("data-canopyx-mounted");
+    grid?.destroy(); host.remove();
+    return { error, mounted };
+  }, definition({ recordDrawerModal: true }));
+  expect(result.error).toContain("recordDrawerModal");
+  expect(result.mounted).toBe(false);
 });
 
 test("the record drawer is a side panel on wide screens and a sheet on narrow ones by default", async ({ page }) => {
