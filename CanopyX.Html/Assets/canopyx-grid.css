@@ -494,9 +494,9 @@ body .cx-host.cx-chrome{padding:0;}
 .cx-data-grid.cx-phone .cx-cell:has(> .cx-phone-primary){display:block;min-width:0;white-space:normal;}
 .cx-phone-primary{display:flex;align-items:center;gap:var(--cx-size-6px);min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;}
 .cx-phone-primary > :not(.cx-hidden-fields):not(input),.cx-phone-primary .cx-content > :is(.p-mono,.p-sub,.cx-presenter-text,.cx-text){min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;}
-.cx-phone-fields{display:flex;flex-wrap:wrap;gap:4px 12px;min-width:0;margin-top:4px;font-size:12px;}
+.cx-phone-fields{display:flex;flex-wrap:wrap;gap:4px 12px;min-width:0;margin-top:4px;font-size:12px;container-type:inline-size;}
 .cx-phone-field{display:flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;}
-.cx-phone-field-title{flex:0 1 auto;min-width:0;overflow-wrap:anywhere;color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));font-size:11px;}
+.cx-phone-field-title{flex:none;min-width:0;max-width:50cqi;overflow-wrap:anywhere;color:var(--hfx-color-text-muted,light-dark(#626770,#8f949d));font-size:11px;}
 .cx-row[aria-selected="true"] :is(.cx-phone-field-title,.cx-hidden-fields){color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));}
 .cx-data-grid :where(.cx-phone-value){display:inline-flex;min-width:0;overflow:hidden;white-space:nowrap;}
 .cx-data-grid :where(.cx-phone-value) > *{min-width:0;overflow:hidden;text-overflow:ellipsis;}

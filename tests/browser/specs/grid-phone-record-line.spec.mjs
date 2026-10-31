@@ -32,12 +32,14 @@ for (const selected of [false, true]) test(`phone record contains an over-viewpo
     const name = element.querySelector('.cx-phone-primary .cx-text'), card = document.querySelector('[data-canopyx-host]');
     return { page: document.documentElement.scrollWidth, viewport: innerWidth, right: card.getBoundingClientRect().right,
       clipped: name.scrollWidth > name.clientWidth || name.scrollHeight > name.clientHeight + 1, ellipsis: getComputedStyle(name).textOverflow, line: element.querySelector('.cx-phone-fields').getBoundingClientRect().bottom,
-      bottom: element.getBoundingClientRect().bottom };
+      bottom: element.getBoundingClientRect().bottom,
+      wrappedTitles: [...element.querySelectorAll('.cx-phone-field-title')].some(title => title.getBoundingClientRect().height > parseFloat(getComputedStyle(title).lineHeight) + 1) };
   });
   expect(geometry.page).toBeLessThanOrEqual(geometry.viewport);
   expect(geometry.right).toBeLessThanOrEqual(geometry.viewport);
   expect(geometry.clipped).toBe(true); expect(geometry.ellipsis).toBe("ellipsis");
   expect(geometry.line).toBeLessThanOrEqual(geometry.bottom + 1);
+  expect(geometry.wrappedTitles).toBe(false);
   await page.locator('.cx-grid').evaluate(grid => grid.scrollTop = 700); await nextFrames(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
@@ -47,8 +49,8 @@ for (const count of [1, 2]) test(`phone disclosure counts only ${count} fields b
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(`+${count} column${count === 1 ? "" : "s"}`);
 });
 
-test("phone disclosure stays with its context when the last field wraps", async ({ page }) => {
-  await open(page, { extra: 4, signal: "A long inspection outcome with retained evidence", signalTitle: "UnbrokenStatusContextHeading".repeat(5) });
+for (const longTitle of [false, true]) test(`phone disclosure stays with its wrapped context and ${longTitle ? "long" : "ordinary"} title`, async ({ page }) => {
+  await open(page, { extra: 4, signal: "A long inspection outcome with retained evidence", signalTitle: longTitle ? "UnbrokenStatusContextHeading".repeat(5) : "Updated" });
   const row = page.locator('.cx-row[data-cx-id="r0"]');
   await expect(row.locator('.cx-hidden-fields')).toHaveText("+4 columns");
   const geometry = await row.evaluate(element => {
@@ -56,13 +58,16 @@ test("phone disclosure stays with its context when the last field wraps", async 
     const context = element.querySelectorAll('.cx-phone-field');
     const last = context[context.length - 1].querySelector('.cx-phone-value').getBoundingClientRect();
     const line = element.querySelector('.cx-phone-fields').getBoundingClientRect();
+    const title = context[context.length - 1].querySelector('.cx-phone-field-title');
     return { disclosure: (disclosure.top + disclosure.bottom) / 2, context: (last.top + last.bottom) / 2,
       inLast: context[context.length - 1].contains(button),
+      titleHeight: title.getBoundingClientRect().height, titleLine: parseFloat(getComputedStyle(title).lineHeight),
       visible: disclosure.width > 0 && disclosure.right <= line.right + 1 && disclosure.left >= line.left - 1 };
   });
   expect(Math.abs(geometry.disclosure - geometry.context)).toBeLessThanOrEqual(2);
   expect(geometry.inLast).toBe(true);
   expect(geometry.visible).toBe(true);
+  if (!longTitle) expect(geometry.titleHeight).toBeLessThanOrEqual(geometry.titleLine + 1);
 });
 
 test("same-named phone records expose their next priority context without author-hidden fields", async ({ page }) => {
