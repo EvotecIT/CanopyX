@@ -4,6 +4,8 @@ Server-side execution of the CanopyX remote grid protocol. A hosted CanopyX data
 value lists, summaries and exports, and commits edited rows; this package validates them against a column allow-list
 and safety limits, runs them against your data and writes the documents the browser runtime accepts.
 
+![A hosted CanopyX data grid: grouped devices with filters, totals and export, answered by the server](https://raw.githubusercontent.com/EvotecIT/CanopyX/main/docs/images/views/inventory-light.png)
+
 ```csharp
 var map = new CanopyColumnMap<Host>(view)
     .Key(x => x.Id)
@@ -26,4 +28,4 @@ string page = await handler.QueryAsync(requestBody, cancellationToken);
   record answers and request size.
 - `CanopyCsvExportFormat` streams CSV; register further `ICanopyExportFormat` writers for other formats.
 
-`CanopyX.AspNetCore` maps the handler to minimal-API endpoints. See `docs/remote-dotnet.md` in the repository.
+`CanopyX.AspNetCore` maps the handler to minimal-API endpoints. The guide [Server-side data for .NET](https://github.com/EvotecIT/CanopyX/blob/main/docs/remote-dotnet.md) walks through a complete setup, and the [live demos](https://canopyx.dev/views/inventory/) show what readers get.

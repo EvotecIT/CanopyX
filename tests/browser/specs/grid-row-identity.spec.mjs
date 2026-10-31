@@ -40,12 +40,21 @@ test("numeric keys written in identity order load as ordered row data, and older
 
 for (const pending of ["page", "query", "page timeout", "query timeout"]) test("legacy row order replaces cached prefixes and retires a pending " + pending, async ({ page }) => {
   const timeout = pending.endsWith("timeout");
+  if (timeout) {
+    await page.clock.install({ time: new Date("2026-10-31T00:00:00Z") });
+    await page.clock.pauseAt(new Date("2026-10-31T00:00:01Z"));
+  }
+  // Advance the controlled clock only until the observable request/layout condition settles.
+  const until = predicate => expect.poll(async () => {
+    if (timeout) await page.clock.runFor(16);
+    return page.evaluate(predicate);
+  }, { intervals: [0] }).toBe(true);
   const prefix = Array.from({ length: 100 }, (_, index) => String(100 + index));
   const suffix = Array.from({ length: 10 }, (_, index) => String(20 + index));
   const rows = keys => keys.map(id => [id, "Item " + id, "All"]);
   const count = timeout ? 120 : 110;
   const view = base({ rowData: { version: 1, columns: ["name", "group"], count, ordered: true, base: "data/", chunks: timeout ? 3 : 2 } });
-  let release, finish;
+  let release, finish, finalRequested = false;
   const gate = new Promise(resolve => { release = resolve; });
   const finalGate = new Promise(resolve => { finish = resolve; });
   await page.route("http://canopyx.test/**", async route => {
@@ -55,12 +64,12 @@ for (const pending of ["page", "query", "page timeout", "query timeout"]) test("
       '<script>CanopyX.configure("keys",{requestTimeoutMs:' + (timeout ? 2000 : 30000) + '});</script></body>') });
     const index = Number(/rows\/(\d)\.js$/.exec(file)?.[1]);
     if (index === 1) await gate;
-    if (index === 2) await finalGate;
+    if (index === 2) { finalRequested = true; await finalGate; }
     const keys = index === 2 ? Array.from({ length: 10 }, (_, index) => String(30 + index)) : index ? suffix : prefix;
     return route.fulfill({ contentType: "text/javascript", body: '(self.CanopyXSidecar=self.CanopyXSidecar||[]).push(["keys","rows/' + index + '",' + JSON.stringify(rows(keys)) + "]);" });
   });
   await page.goto("http://canopyx.test/", { waitUntil: "domcontentloaded" });
-  await page.waitForSelector(".cx-row[data-cx-id]");
+  await until(() => !!document.querySelector(".cx-row[data-cx-id]"));
   await page.evaluate(async () => {
     window.api = document.querySelector("[data-canopyx-host]").canopyx;
     window.errors = [];
@@ -68,22 +77,32 @@ for (const pending of ["page", "query", "page timeout", "query timeout"]) test("
     await api.ready;
   });
   expect((await ids(page))[0]).toBe("100");
-  await page.evaluate(() => api.scrollToRow(75));
+  await page.evaluate(() => { window.positioned = false; api.scrollToRow(75).then(() => { window.positioned = true; }); });
+  await until(() => window.positioned);
   await page.evaluate(pending => {
-    window.navigation = api.scrollToRow(100).then(() => "accepted", error => error.name);
+    window.navigation = api.scrollToRow(100).then(() => "accepted", error => error.name).then(result => window.navigationResult = result);
     if (pending.startsWith("query")) window.queryResult = api.sort([{ column: "group", direction: "desc" }]).then(() => "accepted", error => error.name);
   }, pending);
   release();
   if (timeout) {
-    await expect.poll(() => page.evaluate(() => window.errors.length)).toBeGreaterThan(0);
+    // The legacy prefix is decoded and the final chunk is held before advancing the armed request's deadline.
+    await until(() => api.view.rows.length === 110);
+    await expect.poll(() => finalRequested).toBe(true);
+    await page.clock.runFor(2000);
+    await until(() => window.errors.length > 0 && window.navigationResult !== undefined);
     if (pending.startsWith("query")) expect(await page.evaluate(() => window.queryResult)).not.toBe("accepted");
     await page.evaluate(() => { window.errors = []; });
     finish();
   }
-  await page.waitForFunction(count => api.view.rows.length === count && document.querySelector(".cx-data-grid .cx-grid").getAttribute("aria-busy") === "false", count);
-  await expect.poll(async () => (await ids(page))[0]).toBe("20");
+  await expect.poll(async () => {
+    if (timeout) await page.clock.runFor(16);
+    return page.evaluate(count => api.view.rows.length === count && document.querySelector(".cx-data-grid .cx-grid").getAttribute("aria-busy") === "false", count);
+  }, { intervals: [0] }).toBe(true);
+  await until(() => document.querySelector('.cx-row[data-cx-id="20"]') !== null);
+  expect((await ids(page))[0]).toBe("20");
   if (pending === "query") expect(await page.evaluate(() => window.queryResult)).toBe("accepted");
-  await page.evaluate(() => api.scrollToRow(100));
+  await page.evaluate(() => { window.positioned = false; api.scrollToRow(100).then(() => { window.positioned = true; }); });
+  await until(() => window.positioned);
   await expect(page.locator('.cx-row[data-cx-id="' + (timeout ? "180" : "190") + '"]')).toHaveAttribute("aria-rowindex", "102");
   expect(await page.evaluate(() => window.errors)).toEqual([]);
 });

@@ -59,7 +59,9 @@ test('touch long-press opens actions without sorting and a moved press stays a s
   test.skip(browserName === 'firefox', 'Playwright does not emulate touch contexts in Firefox');
   const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
   try {
-    const page = await context.newPage(); await open(page);
+    const page = await context.newPage();
+    await page.clock.install({ time: new Date('2026-10-31T00:00:00Z') });
+    await open(page);
     const sort = header(page, 'c0').locator('.cx-sort');
     let cdp;
     if (browserName === 'chromium') {
@@ -85,23 +87,26 @@ test('touch long-press opens actions without sorting and a moved press stays a s
     await page.keyboard.press('Enter');
     await expect(page.getByRole('menuitem', { name: 'Sort ascending', exact: true })).toBeFocused();
     await page.keyboard.press('Escape');
+    await page.clock.pauseAt(new Date('2026-10-31T01:00:00Z'));
     await sort.dispatchEvent('pointerdown', { pointerId: 8, pointerType: 'touch', isPrimary: true, button: 0, clientX: 30, clientY: 100 });
     await sort.dispatchEvent('pointermove', { pointerId: 8, pointerType: 'touch', clientX: 55, clientY: 100 });
-    await page.waitForTimeout(650);
+    await page.clock.runFor(650);
     await sort.dispatchEvent('pointerup', { pointerId: 8, pointerType: 'touch' });
     await expect(page.getByRole('menu')).toHaveCount(0);
+    await page.clock.resume();
     await header(page, 'c0').tap({ position: { x: 8, y: 2 } });
     await expect(button(page, 'c0')).toHaveCSS('opacity', '1');
     await button(page, 'c0').tap();
     await page.getByRole('menuitem', { name: 'Sort ascending', exact: true }).tap();
     await expect(header(page, 'c0')).toHaveAttribute('aria-sort', 'ascending');
+    await page.clock.pauseAt(new Date('2026-10-31T02:00:00Z'));
     await sort.dispatchEvent('pointerdown', { pointerId: 9, pointerType: 'touch', isPrimary: true, button: 0 });
     await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setColumnVisible('c11', false));
-    await page.waitForTimeout(650);
+    await page.clock.runFor(650);
     await expect(page.getByRole('menu')).toHaveCount(0);
     await sort.dispatchEvent('pointerdown', { pointerId: 10, pointerType: 'touch', isPrimary: true, button: 0 });
     await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.destroy());
-    await page.waitForTimeout(650);
+    await page.clock.runFor(650);
     await expect(page.getByRole('menu')).toHaveCount(0);
   } finally { await context.close(); }
 });
