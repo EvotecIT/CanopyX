@@ -106,6 +106,11 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
 .cx-drawer.cx-phone :is(.cx-record-link,.cx-record-crumb) { min-height:var(--cx-size-24px); }
 .cx-drawer.cx-phone .cx-record-nested { height:var(--cx-size-280px); }
 .cx-drawer.cx-phone .cx-record-section .cx-record-section { margin-inline:var(--cx-size-10px); }
+.cx-drawer.cx-phone .cx-record-subtools { flex-direction:column; align-items:stretch; }
+.cx-drawer.cx-phone .cx-record-jump { flex:none; flex-wrap:nowrap; width:100%; box-sizing:border-box; overflow-x:auto; scroll-snap-type:x proximity; scrollbar-width:thin; padding-block:var(--hfx-space-0-5); padding-inline-end:var(--hfx-space-4); mask-image:linear-gradient(to right,var(--hfx-color-text) calc(100% - var(--hfx-space-4)),transparent); }
+.cx-drawer.cx-phone .cx-record-jump:dir(rtl) { mask-image:linear-gradient(to left,var(--hfx-color-text) calc(100% - var(--hfx-space-4)),transparent); }
+.cx-drawer.cx-phone .cx-record-jump-link { flex:none; white-space:nowrap; scroll-snap-align:start; }
+.cx-drawer.cx-phone .cx-record-empty { align-self:flex-start; margin-inline-start:0; }
 /* Print one record: the sheet alone, in the light theme, every section open. */
 .cx-record-print { display:none; }
 @media print {

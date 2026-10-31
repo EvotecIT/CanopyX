@@ -123,25 +123,27 @@ test("a short scalar gives second-line room to a longer essential status pill", 
   expect(await signal.evaluate(element => [...element.querySelectorAll('*')].every(child => child.scrollWidth <= child.clientWidth + 1))).toBe(true);
 });
 
-test("an essential pill wider than the phone scrolls within its record line without clipping the value", async ({ page }) => {
-  await open(page, { signal: "Needs confirmation from the regional operations and service delivery review team" });
-  const value = page.locator('.cx-row[data-cx-id="r0"] .cx-phone-value').nth(1);
-  const geometry = await value.evaluate(element => { const pill=element.querySelector('.p-pill');return {pillWidth:pill.clientWidth,pillContent:pill.scrollWidth,viewport:element.clientWidth,content:element.scrollWidth,page:document.documentElement.scrollWidth}; });
-  expect(geometry.pillContent).toBeLessThanOrEqual(geometry.pillWidth + 1);
-  expect(geometry.content).toBeGreaterThan(geometry.viewport);
-  expect(geometry.page).toBeLessThanOrEqual(390);
-  await expect(value).toHaveAttribute("tabindex", "0");
-  await page.locator('.cx-row[data-cx-id="r0"]').focus();
-  await page.keyboard.press("F2");
-  await expect(value).toBeFocused();
-  await value.press("ArrowRight");
-  await expect.poll(() => value.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
-  await page.locator(".cx-grid").evaluate(grid => { grid.scrollTop = grid.scrollHeight; });
-  const recycled = page.locator('.cx-row[data-cx-id="r39"] .cx-phone-value').nth(1);
-  await expect(recycled).toHaveAttribute("tabindex", "0");
-  await page.locator('.cx-row[data-cx-id="r39"]').focus();
-  await page.keyboard.press("F2");
-  await expect(recycled).toBeFocused();
-  await recycled.press("ArrowRight");
-  await expect.poll(() => recycled.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+test("long phone status chips wrap completely within original and recycled record lines", async ({ page }) => {
+  const signal = "Needs confirmation from the regional operations and service delivery review team";
+  await open(page, { signal, signalTitle: "UnbrokenStatusContextHeading".repeat(5), extra: 4 });
+  for (const id of ["r0", "r39"]) {
+    if (id === "r39") await page.locator(".cx-grid").evaluate(grid => { grid.scrollTop = grid.scrollHeight; });
+    const row = page.locator(`.cx-row[data-cx-id="${id}"]`), value = row.locator(".cx-phone-value").nth(1);
+    await expect(value).toHaveText(signal);
+    await expect(value).toHaveAttribute("title", signal);
+    const geometry = await value.evaluate(element => {
+      const pill = element.querySelector(".p-pill"), field = element.parentElement, box = pill.getBoundingClientRect();
+      const text = document.createRange(); text.selectNodeContents(pill);
+      return { pillWidth: pill.clientWidth, pillContent: pill.scrollWidth, height: pill.clientHeight, fullHeight: pill.scrollHeight,
+        lines: new Set([...text.getClientRects()].map(rect => Math.round(rect.top))).size, viewport: element.clientWidth, content: element.scrollWidth,
+        right: box.right, fieldRight: field.getBoundingClientRect().right, page: document.documentElement.scrollWidth };
+    });
+    expect(geometry.pillContent).toBeLessThanOrEqual(geometry.pillWidth + 1);
+    expect(geometry.content).toBeLessThanOrEqual(geometry.viewport + 1);
+    expect(geometry.fullHeight).toBeLessThanOrEqual(geometry.height + 1);
+    expect(geometry.lines).toBeGreaterThan(1);
+    expect(geometry.right).toBeLessThanOrEqual(geometry.fieldRight + 1);
+    expect(geometry.page).toBeLessThanOrEqual(390);
+    await expect(row.locator(".cx-hidden-fields")).toHaveText("+4 columns");
+  }
 });

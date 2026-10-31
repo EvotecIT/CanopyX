@@ -81,12 +81,28 @@ for (const width of [1440, 390]) for (const chrome of ["panel", "embedded"]) {
   });
 }
 
-test("a section link scrolls only the drawer body and lands the section below the pinned bar", async ({ page }) => {
+for (const width of [1440, 390]) test(`a section link scrolls only the drawer body and lands below the pinned bar at ${width}px`, async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const sheet = await openRecord(page, 1440);
+  const sheet = await openRecord(page, width);
   await sheet.locator(".cx-drawer-body").evaluate(body => { body.style.scrollBehavior = "smooth"; });
   const links = sheet.locator(".cx-record-jump-link");
   expect(await links.count()).toBeGreaterThan(1);
+  if (width === 390) {
+    const compact = await sheet.evaluate(dialog => {
+      const jump = dialog.querySelector(".cx-record-jump"), box = jump.getBoundingClientRect();
+      return { tops: [...jump.children].map(link => link.getBoundingClientRect().top),
+        width: jump.clientWidth, content: jump.scrollWidth,
+        emptyTop: dialog.querySelector(".cx-record-empty").getBoundingClientRect().top, bottom: box.bottom };
+    });
+    expect(Math.max(...compact.tops) - Math.min(...compact.tops)).toBeLessThanOrEqual(1);
+    expect(compact.content).toBeGreaterThan(compact.width);
+    expect(compact.emptyTop).toBeGreaterThanOrEqual(compact.bottom - 1);
+    await links.last().focus();
+    await expect.poll(() => links.last().evaluate(link => {
+      const button = link.getBoundingClientRect(), row = link.parentElement.getBoundingClientRect();
+      return button.left >= row.left - 1 && button.right <= row.right + 1;
+    })).toBe(true);
+  }
   const start = await page.evaluate(() => scrollY);
   const placed = await sheet.evaluate(dialog => {
     // Observe the jump in the same task, before smooth scrolling could advance.
