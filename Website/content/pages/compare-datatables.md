@@ -1,11 +1,11 @@
 ---
-title: CanopyX vs DataTables
-description: How CanopyX compares with DataTables, how to enhance an existing table, and when DataTables is the better choice.
+title: DataTables alternative without jQuery
+description: Looking for a DataTables alternative? How CanopyX enhances an existing HTML table, and when DataTables remains the right choice.
 slug: compare/datatables
-meta.seo_title: CanopyX vs DataTables: features, pricing and migration
+meta.seo_title: DataTables alternative: CanopyX compared | CanopyX
 ---
 
-[DataTables](https://datatables.net/) has been upgrading HTML tables for many years, and its extension list is long. CanopyX's `enhance` covers the same starting point and leads into more views. Details below were checked against [DataTables Plus](https://datatables.net/plus/) and its [extensions](https://datatables.net/extensions/), with Editor's [server libraries](https://datatables.net/extensions/editor/), on 1 November 2026.
+[DataTables](https://datatables.net/) has been upgrading HTML tables for many years, and we used it in our own reports for a long time. If you're looking for an alternative, CanopyX's `enhance` starts from the same place: a table already in your page. Details below were checked against [DataTables Plus](https://datatables.net/plus/) and its [extensions](https://datatables.net/extensions/), with Editor's [server libraries](https://datatables.net/extensions/editor/), on 1 November 2026.
 
 | | CanopyX | DataTables |
 | --- | --- | --- |
@@ -19,19 +19,19 @@ meta.seo_title: CanopyX vs DataTables: features, pricing and migration
 | Editing server libraries | .NET | PHP, .NET, Node.js and Python |
 | Community | New | Large and long-established |
 
-## When to choose DataTables
+## When DataTables is the right choice
 
 - You already run it and it does what you need.
 - Your site is built on jQuery plugins, or you depend on a specific extension or integration.
 - You want the large archive of community answers.
 
-## When to choose CanopyX
+## When CanopyX may suit you
 
 - You want one library from a simple table up to grouping, editing and other views.
 - Your server is .NET, and you'd like paging, filters and saved edits over `IQueryable`.
 - You want virtual scrolling and saved views in the core.
 
-## Moving a table across
+## Trying it on an existing table
 
 Your table stays as it is. The familiar `data-order` and `data-search` cell attributes work, and so does `data-page-length`:
 

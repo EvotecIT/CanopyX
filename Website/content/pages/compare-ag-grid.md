@@ -1,11 +1,11 @@
 ---
-title: CanopyX vs AG Grid
-description: Licensing, features and migration from AG Grid to CanopyX, with the cases where AG Grid is the better choice.
+title: AG Grid alternative for .NET and JavaScript
+description: Looking for an AG Grid alternative? How CanopyX compares on licensing and features, and when AG Grid remains the right choice.
 slug: compare/ag-grid
-meta.seo_title: CanopyX vs AG Grid: features, licensing and migration
+meta.seo_title: AG Grid alternative: CanopyX compared | CanopyX
 ---
 
-[AG Grid](https://www.ag-grid.com/) is the benchmark for data grids. The short version: AG Grid has more depth and reach, while CanopyX includes more under MIT and adds report delivery from .NET. Details below were checked against [AG Grid's edition comparison](https://www.ag-grid.com/javascript-data-grid/community-vs-enterprise/) for version 36.2 on 1 November 2026.
+[AG Grid](https://www.ag-grid.com/) is the benchmark for data grids, with more depth and reach than CanopyX. If you're looking for an alternative, CanopyX is worth a look when you want grouping and pivots in an MIT package, or reports generated from .NET. Details below were checked against [AG Grid's edition comparison](https://www.ag-grid.com/javascript-data-grid/community-vs-enterprise/) for version 36.2 on 1 November 2026.
 
 | | CanopyX | AG Grid Community | AG Grid Enterprise |
 | --- | --- | --- | --- |
@@ -23,14 +23,14 @@ meta.seo_title: CanopyX vs AG Grid: features, licensing and migration
 | Single-file reports from C# | Yes | No | No |
 | Script-free email table | Yes | No | No |
 
-## When to choose AG Grid
+## When AG Grid is the right choice
 
 - Your app is React, Angular or Vue and you want official components.
 - Your grids have well over 100 columns. CanopyX mounts every visible column in a flat grid, and [our own benchmark](https://github.com/EvotecIT/CanopyX/blob/main/docs/large-data.md) starts to drop frames around there.
 - You want charts built into the grid, or Excel export of a pivot. CanopyX can't write pivots to Excel yet.
 - You need a commercial support contract, or a long production record.
 
-## When to choose CanopyX
+## When CanopyX may suit you
 
 - You want grouping, pivots and cell ranges without a per-developer licence.
 - You write .NET and want reports that open from disk, with no Node.js or build step.
