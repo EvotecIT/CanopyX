@@ -1,18 +1,18 @@
 @layer hfx.components{
-:where([data-cx-tabs],[data-cx-stepper]){
+:where([data-cx-tabs],[data-cx-stepper],[data-cx-accordion]){
 color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));
 font-family:var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);
 font-size:var(--hfx-type-body-size,0.875rem);
 line-height:var(--hfx-type-body-line,1.5);
 min-inline-size:0;
 }
-.cx-tabs [hidden],.cx-stepper-host [hidden]{display:none;}
+.cx-tabs [hidden],.cx-stepper-host [hidden],.cx-accordion [hidden]{display:none;}
 .cx-navigation-print{display:none;}
 @media print{
 .cx-navigation-print{display:block;}
-:is(.cx-tabpanel,.cx-step-panel):has(> .cx-navigation-print) > .cx-navigation-body{display:none;}
+:is(.cx-tabpanel,.cx-step-panel,.cx-accordion-panel):has(> .cx-navigation-print) > .cx-navigation-body{display:none;}
 }
-:where([data-cx-tabs],[data-cx-stepper]) :where(button,[tabindex]):focus-visible{
+:where([data-cx-tabs],[data-cx-stepper],[data-cx-accordion]) :where(button,input,[tabindex]):focus-visible{
 outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));
 outline-offset:var(--hfx-focus-offset,2px);
 }

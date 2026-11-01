@@ -6,6 +6,8 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     private static void AddUiDefaults(Dictionary<string, string> defaults) {
         foreach (var entry in new Dictionary<string, string>(StringComparer.Ordinal) {
+        [nameof(AccordionSearch)] = "Filter sections", [nameof(AccordionNoMatches)] = "No matching sections",
+        [nameof(AccordionCopyTitle)] = "Copy title", [nameof(AccordionCopied)] = "Copied",
         [nameof(TabsMore)] = "More", [nameof(TabsMoreSelected)] = "More: {label}",
         [nameof(TabsScrollPrevious)] = "Previous tabs", [nameof(TabsScrollNext)] = "Next tabs",
         [nameof(TabsSection)] = "Section", [nameof(TabsPosition)] = "{current} of {total}",

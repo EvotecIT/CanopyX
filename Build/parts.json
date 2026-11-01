@@ -6,7 +6,8 @@
       "label": "UI overlays",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [],
       "key": "UI_IMPL",
@@ -33,7 +34,8 @@
       "label": "UI menu",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [
         "tree",
@@ -69,7 +71,8 @@
       "label": "UI picker",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [],
       "key": "UI_IMPL",
@@ -98,12 +101,13 @@
       "label": "UI navigation",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [],
       "key": "UI_IMPL",
       "requires": [
-        "ui-picker"
+        "ui-overlays"
       ],
       "context": [
         "UI_IMPL",
@@ -127,11 +131,13 @@
       "label": "UI tabs",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [],
       "key": "UI_IMPL",
       "requires": [
+        "ui-picker",
         "ui-navigation"
       ],
       "context": [
@@ -156,11 +162,13 @@
       "label": "UI stepper",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [],
       "key": "UI_IMPL",
       "requires": [
+        "ui-picker",
         "ui-navigation"
       ],
       "context": [
@@ -178,6 +186,36 @@
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.ui-stepper.source/stepper.css"
+      ]
+    },
+    {
+      "name": "ui-accordion",
+      "label": "UI accordion",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-navigation"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-accordion.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-accordion.source/accordion.css"
       ]
     },
     {

@@ -22,9 +22,9 @@
     .gallery-toolbar { display:flex;flex-wrap:wrap;gap:var(--hfx-space-3);align-items:end; }
     .gallery-toolbar label[hidden] { display:none; }
     .gallery-toolbar label,.gallery-field { display:grid;gap:var(--hfx-space-1);font-size:var(--hfx-type-small-size);color:var(--hfx-color-text-secondary); }
-    .gallery-page :where(input:not([type="checkbox"]),select) { min-block-size:var(--hfx-control-height-md);max-inline-size:100%;padding:var(--hfx-space-1) var(--hfx-space-2);border:var(--hfx-border-width) solid var(--hfx-color-border-control);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:inherit; }
+    .gallery-page :where(input:not([type="checkbox"],[type="search"]),select) { min-block-size:var(--hfx-control-height-md);max-inline-size:100%;padding:var(--hfx-space-1) var(--hfx-space-2);border:var(--hfx-border-width) solid var(--hfx-color-border-control);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:inherit; }
     .gallery-page input[type="checkbox"] { accent-color:var(--hfx-color-accent); }
-    .gallery-page :where(button:not(.cx-tab):not(.cx-menu-item):not(.cx-step-btn):not(.cx-overlay-close):not(.cx-picker-trigger):not(.cx-tabs-scroll):not(.cx-tabs-play)) { min-block-size:var(--hfx-control-height-md);padding:var(--hfx-space-1) var(--hfx-control-padding-x);border:var(--hfx-border-width) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:inherit;cursor:pointer; }
+    .gallery-page :where(button:not(.cx-tab):not(.cx-menu-item):not(.cx-step-btn):not(.cx-overlay-close):not(.cx-picker-trigger):not(.cx-tabs-scroll):not(.cx-tabs-play):not(.cx-accordion-trigger):not(.cx-accordion-copy)) { min-block-size:var(--hfx-control-height-md);padding:var(--hfx-space-1) var(--hfx-control-padding-x);border:var(--hfx-border-width) solid var(--hfx-color-border-strong);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:inherit;cursor:pointer; }
     .gallery-page :where(button:not(.cx-tab):not(.cx-menu-item):not(.cx-step-btn)):hover { background:var(--hfx-color-hover); }
     .gallery-page button.gallery-primary { background:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast);border-color:var(--hfx-color-accent); }
     .gallery-page button.gallery-primary:hover { background:var(--hfx-color-accent-hover); }
@@ -77,7 +77,7 @@
 <main class="gallery">
   <header class="gallery-header">
     <div><span class="gallery-eyebrow">CanopyX · UI primitives</span><h1>Small controls. Complete flows.</h1><p>Explore tabs, guided steps and overlays. Every example keeps its content readable and its actions visible.</p>
-      <nav class="gallery-nav" aria-label="Gallery sections"><a href="#navigation">Tabs</a><a href="#guided-steps">Steppers</a><a href="#overlays">Overlays</a><a href="#activity-log-section">Activity log</a></nav>
+      <nav class="gallery-nav" aria-label="Gallery sections"><a href="#navigation">Tabs</a><a href="#accordions">Accordions</a><a href="#guided-steps">Steppers</a><a href="#overlays">Overlays</a><a href="#activity-log-section">Activity log</a></nav>
     </div>
     <div class="gallery-toolbar" role="group" aria-label="Gallery appearance" data-gallery-needs-js>
       <label>Theme<select id="gallery-theme"><option value="evotec">Evotec</option><option value="neutral">Neutral</option><option value="slate">Slate</option><option value="warm">Warm</option><option value="contrast">High contrast</option></select></label>
@@ -99,6 +99,14 @@
       <article class="gallery-card"><h3>A guided tour</h3><p>Advances every eight seconds. Pause, focus, hover or choose a section to take control.</p><div class="gallery-demo">{{tabs-auto}}</div><label class="gallery-note" data-gallery-needs-js><input id="guard-selection" type="checkbox">Keep the current section selected. Clear this option to allow section changes.</label></article>
     </div>
   </section>
+  <section id="accordions" class="gallery-section" aria-labelledby="accordions-title">
+    <div class="gallery-section-heading"><h2 id="accordions-title">Show one thing at a time</h2><p>Single or multiple open sections, disabled sections, a filter, content on demand and remembered state. The headings keep the page outline, and Up, Down, Home and End move between them.</p></div>
+    <div class="gallery-grid">
+      <article class="gallery-card"><h3>Questions</h3><p>Opening one closes the other. Filter with several words, a quoted phrase or a leading minus.</p><div class="gallery-demo">{{accordion-single}}</div></article>
+      <article class="gallery-card"><h3>Settings</h3><p>Several can stay open, and the page remembers which. Load on demand fetches its content the first time it opens.</p><div class="gallery-demo">{{accordion-multiple}}</div></article>
+    </div>
+  </section>
+
   <section id="guided-steps" class="gallery-section" aria-labelledby="steps-title">
     <div class="gallery-section-heading"><h2 id="steps-title">Move work forward</h2><p>Validation, optional steps and clear progress. Use Next with an empty name to see a recoverable error.</p></div>
     <div class="gallery-grid">
@@ -135,6 +143,14 @@
 <template data-gallery-fragment="month"><p>This month: publish the guide and review all shared records.</p></template>
 <template data-gallery-fragment="overflow"><p>Every section remains available in the overflow menu, including its count and selected state.</p></template>
 <template data-gallery-fragment="ready"><p>This panel is available immediately. Other panels demonstrate loading and recovery.</p></template>
+<template data-gallery-fragment="accordion-start"><p>Choose Create a workspace, name it, then invite the people who need it.</p></template>
+<template data-gallery-fragment="accordion-share"><p>Files follow the workspace's sharing settings, and everyone with access sees the same version.</p></template>
+<template data-gallery-fragment="accordion-export"><p>Reports export to Excel, Word, PDF and CSV from the Export menu.</p></template>
+<template data-gallery-fragment="accordion-billing"><p>Billing belongs to your organization's administrator.</p></template>
+<template data-gallery-fragment="accordion-general"><p>The name and description appear on every page of the workspace.</p></template>
+<template data-gallery-fragment="accordion-deferred"><p>Usage shows the last thirty days of activity.</p></template>
+<template data-gallery-fragment="accordion-alerts"><p>Alerts go to workspace owners by email.</p></template>
+<template data-gallery-fragment="accordion-retention"><p>Files stay for ninety days after they are removed.</p></template>
 <template data-gallery-fragment="deferred-fallback"><p>Details include the workspace owner, three files and twelve recent updates.</p></template>
 <template data-gallery-fragment="retry-fallback"><p>The recovered view contains the latest workspace summary. With scripting enabled, the first attempt demonstrates an error and a Retry action.</p></template>
 <template data-gallery-fragment="tour-organize"><p>Organize records into clear sections so that the next action is easy to find.</p></template>
@@ -211,6 +227,12 @@
       if (++recoveryAttempts === 1) throw new Error('The example request failed. Choose Retry to try again.');
       record('The request recovered successfully.');
       const paragraph = document.createElement('p'); paragraph.textContent = 'Recovered successfully. The latest workspace summary is now available.'; return paragraph;
+    } }
+  ] });
+  bind('accordion', 'workspace-settings', { sections: [
+    { id: 'loaded', deferred: true, loader: async (item, signal) => {
+      await delay(signal); record('Usage loaded.');
+      const paragraph = document.createElement('p'); paragraph.textContent = 'Usage loaded: 214 visits in the last thirty days.'; return paragraph;
     } }
   ] });
   bind('tabs', 'tour', { autoProgress: { interval: 8000, pauseOnHover: true, pauseOnFocus: true } });

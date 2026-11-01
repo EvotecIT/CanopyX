@@ -24,6 +24,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.DataGrid => GridScriptResource.Value,
         CanopyRuntime.ReportingGrid => ReportingScriptResource.Value,
         CanopyRuntime.Flow => FlowScriptResource.Value,
+        CanopyRuntime.Ui => UiScriptResource.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -37,6 +38,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.DataGrid => GridStyleResource.Value,
         CanopyRuntime.ReportingGrid => ReportingStyleResource.Value,
         CanopyRuntime.Flow => FlowStyleResource.Value,
+        CanopyRuntime.Ui => UiStyleResource.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -50,6 +52,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.DataGrid => GridScriptHash.Value,
         CanopyRuntime.ReportingGrid => ReportingScriptHash.Value,
         CanopyRuntime.Flow => FlowScriptHash.Value,
+        CanopyRuntime.Ui => UiScriptHash.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -63,6 +66,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.DataGrid => GridStyleHash.Value,
         CanopyRuntime.ReportingGrid => ReportingStyleHash.Value,
         CanopyRuntime.Flow => FlowStyleHash.Value,
+        CanopyRuntime.Ui => UiStyleHash.Value,
         _ => throw new ArgumentOutOfRangeException(nameof(runtime), runtime, "Unknown browser runtime.")
     };
 
@@ -93,6 +97,7 @@ public static partial class CanopyHtmlAssets {
         CanopyRuntime.DataGrid => "canopyx-grid",
         CanopyRuntime.ReportingGrid => "canopyx-reporting",
         CanopyRuntime.Flow => "canopyx-flow-entry",
+        CanopyRuntime.Ui => "canopyx-ui",
         _ => "canopyx-interactive"
     };
 }

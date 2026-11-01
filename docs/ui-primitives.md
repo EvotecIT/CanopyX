@@ -1,6 +1,6 @@
 # UI primitives
 
-Tabs, steppers, dialogs, drawers, popovers, tooltips and menus work on their own or beside CanopyX data views. The runtime loads their versioned parts when a component is mounted. Serve the `canopyx-ui-*.js` and `.css` files beside the entry point, together with its other part files. `CanopyHtmlAssets.WriteTo(...)` writes that asset set from .NET.
+Tabs, steppers, accordions, dialogs, drawers, popovers, tooltips and menus work on their own or beside CanopyX data views. The runtime loads their versioned parts when a component is mounted. Serve the `canopyx-ui-*.js` and `.css` files beside the entry point, together with its other part files. `CanopyHtmlAssets.WriteTo(...)` writes that asset set from .NET.
 
 ## Write a tab set from .NET
 
@@ -25,11 +25,11 @@ Include the runtime and its base stylesheet once in the page that contains `frag
 
 The builders encode identities, labels, badges and accessibility references. Properties named `ContentHtml` or `FooterHtml` contain trusted host HTML; encode or sanitize untrusted content before assigning them. Without JavaScript, tab and step panels remain readable with headings. Overlay builders emit their closed content and a separate `ToTriggerHtmlFragment(label)` button.
 
-For a self-contained page, embed the required UI parts using `CanopyHtmlAssets.GetPart(name).Markup`. Include each part's `Requires` dependencies too. The `ui-primitives.html` example embeds all six UI parts as inert payloads; they execute only when loaded by the runtime. Use `GetMarkup(nonce)` for a page protected by a nonce-based Content Security Policy.
+For a self-contained page, embed the required UI parts using `CanopyHtmlAssets.GetPart(name).Markup`. Include each part's `Requires` dependencies too. The `ui-primitives.html` example embeds all seven UI parts as inert payloads; they execute only when loaded by the runtime. Use `GetMarkup(nonce)` for a page protected by a nonce-based Content Security Policy.
 
 ## Configure behavior in JavaScript
 
-The tree, grid and reporting entry points expose the same UI factories. The slim flow entry point contains forms and flows; use a grid entry point for a page combining flows and these UI controls. Each factory returns a stable controller immediately; `ready` resolves after its part and dependencies have loaded. Calls made before readiness wait for initialization.
+The UI, tree, grid and reporting entry points expose the same UI factories. The slim flow entry point contains forms and flows; use a grid entry point for a page combining flows and these UI controls. Each factory returns a stable controller immediately; `ready` resolves after its part and dependencies have loaded. Calls made before readiness wait for initialization.
 
 ```javascript
 const sections = CanopyX.tabs('#workspace', {
@@ -45,7 +45,7 @@ await sections.select('activity');
 sections.destroy();
 ```
 
-Tabs support underline, pills, segmented and vertical styles; scroll, More and pill-wrap overflow; deferred panels; hash state; and optional automatic progression with a visible Pause/Play control. A deferred loader receives the destination record and an `AbortSignal`. New navigation cancels stale guards and loaders. `keepAlive: false` reloads deferred content after leaving it.
+Tabs support underline, pills, segmented and vertical styles; scroll, More and pill-wrap overflow; `justified` equal-width tabs; deferred panels; hash state; `remember`, which keeps the selected tab in `localStorage`; `next()` and `back()`; and optional automatic progression with a visible Pause/Play control. A deferred loader receives the destination record and an `AbortSignal`. New navigation cancels stale guards and loaders. `keepAlive: false` reloads deferred content after leaving it.
 
 ### Automatic tab progression
 
@@ -95,6 +95,44 @@ enabled tabs. No compatibility alias is provided.
 
 `CanopyX.stepper(root, options)` adds guarded steps, optional skipping, validation, drafts and finish callbacks. A validation callback returns `false` or a list of messages to keep the current step open. Messages appear in a focused alert and are linked to invalid fields. Report and static stepper modes remain script-free. Tabs and interactive steppers share the same phone picker, preserving badges and counts. Tabs measure their labels, icons and badges before collapsing, with an eight-pixel resize margin to prevent repeated switching near the boundary. Menu overflow keeps at least three visible choices plus More while they fit. Interactive steppers use the picker below a container width of 640 px.
 
+## Show sections with an accordion
+
+```csharp
+var help = new CanopyAccordion("help", new CanopyAccordionOptions { Search = true });
+help.Items.Add(new CanopyAccordionItem("start", "Getting started") {
+    Open = true,
+    ContentHtml = "<p>Create a workspace.</p>"
+});
+help.Items.Add(new CanopyAccordionItem("billing", "Billing") {
+    Disabled = true,
+    ContentHtml = "<p>Ask your administrator.</p>"
+});
+string fragment = help.ToHtmlFragment();
+```
+
+Every section stays open and readable until the runtime is ready, so a page without JavaScript shows all of its content under its headings. `Multiple` keeps several sections open; otherwise opening a section closes the open one, and the last one can still be closed. `HeadingLevel` fits the headings into the page's outline. `Style` chooses a bordered, flush, separated or section look, and `Indicator` and `IndicatorPosition` choose a chevron or plus on either side. Panels are `region` landmarks in an accordion of up to six sections, as the ARIA pattern advises.
+
+```javascript
+const help = CanopyX.accordion('#help', {
+  multiple: true,
+  hash: true,
+  remember: 'help-page',
+  sections: [{ id: 'usage', loader: (item, signal) => fetch('/usage', { signal }).then(response => response.text()) }]
+});
+await help.ready;
+await help.open('usage');
+help.getOpen();      // ['start', 'usage']
+help.filter('usage or "getting started" -archived');
+```
+
+- **Open state.** `hash` writes open sections to the address (`#help=start&help=usage`) and follows Back and Forward; `remember` keeps them in `localStorage` under `canopyx:accordion:<key>`. A link wins over remembered state, and remembered state over `open` and the markup. A disabled section keeps its markup state.
+- **Deferred content.** A `template` in a panel, `deferred: true` or a `loader` defers it, as in tabs. In a multiple accordion each section loads on its own, so opening one never cancels another. Closing a section aborts its pending loader, and opening it again loads afresh; `keepAlive: false` also disposes loaded content when it closes.
+- **Guards and events.** `beforeChange(from, to, signal)` can refuse a change: `to.open` is the requested state, and in a single-open accordion `from` is the section that would close. The root fires cancelable `cx-accordion:beforechange`, then `cx-accordion:change` (`{ item, open, source }`), `cx-accordion:load` and `cx-accordion:error`. These events bubble, so a nested accordion's reach its parent; compare `event.target`.
+- **Filter.** `search` adds a filter box, `filter(query)` drives it from the host, and Escape clears it. It reads each section's header, including badges and actions, and understands `or` or `|`, quoted phrases and a leading `-` or `!`. Filtering hides sections without closing them, so clearing it restores what was open.
+- **Header actions.** `ActionsHtml` places links and buttons beside the heading, never inside its button, so they keep their own clicks and the heading stays a valid control. `CopyTitle` adds a button that copies the section title.
+- **Content.** A grid or tree in a closed section stays unrendered until the section opens, and then sizes to its panel. `MountWhenVisible` also postpones parsing it. Mount a fragment that a loader returned from `cx-accordion:load` with `CanopyX.mount(event.detail.panel)`.
+- **Nesting.** A section can hold another accordion. Each one owns only its own headings, keys and single-open rule.
+
 ## Open overlays
 
 Use `CanopyX.dialog`, `drawer`, `popover`, `tooltip` and `menu` with their declarative roots. The returned controllers expose `open`, `close`, `refresh` and `destroy` as applicable. A trigger can come from the builder's `data-cx-trigger` reference or the `trigger` option.
@@ -127,7 +165,7 @@ Right-click, Shift+F10, the Context Menu key and a 500 ms touch press open the s
 
 ## Keyboard, labels and print
 
-Tabs use roving focus, arrow keys and Home/End; guarded or deferred tabs use manual activation unless explicitly overridden. Menu buttons open with Enter, Space or ArrowDown. Menus use arrow keys, Home/End, typeahead and logical submenu arrows. Disabled tabs and menu items remain focusable and announce their disabled state.
+Accordion headings are ordinary buttons in the Tab order: Enter and Space toggle a section, and Up, Down, Home and End move between headings, wrapping at the ends and skipping filtered sections. A disabled heading stays focusable and sets `aria-disabled`. Tabs use roving focus, arrow keys and Home/End; guarded or deferred tabs use manual activation unless explicitly overridden. Menu buttons open with Enter, Space or ArrowDown. Menus use arrow keys, Home/End, typeahead and logical submenu arrows. Disabled tabs and menu items remain focusable and announce their disabled state.
 
 Pass translated `labels` in component options. The built-in locale packs include UI strings in Polish, German, Spanish, French and Italian. Content labels and action names remain host-owned.
 
@@ -155,3 +193,16 @@ The browser's synchronous `beforeprint` event materializes unvisited local templ
 Deferred bodies cleared by `keepAlive: false` retain a detached snapshot for printing, including current form values. Print-only projections remain hidden on screen and are removed, together with their snapshots, after printing or destruction. Projection copies are inert; their IDs, control names and explicit form associations are removed to protect live forms. Style print content through classes. Normal navigation still reloads disposed bodies. Prepare again for each print attempt after content or selection changes; preparation does not wait for images, fonts, or host work outside the content loaders.
 
 Reduced-motion preferences make navigation transitions and overlay motion instant. Forced-color styles retain borders, focus rings and state glyphs.
+
+## Slim entry point
+
+A content page with no grid or tree can load `canopyx-ui.js` and `canopyx-ui.css` instead of a data view entry point. `canopyx-ui.js` holds the part loader, the theme helpers and the UI factories, about 5 KB gzipped against 57 KB for `canopyx.js`, and the components load the same `canopyx-ui-*` parts beside it. It offers `mountUi`, `contextMenu`, `tabs`, `stepper`, `accordion`, `dialog`, `drawer`, `popover`, `tooltip`, `menu`, `registerPart` and `setNonce`.
+
+```html
+<link rel="stylesheet" href="assets/canopyx-ui.css">
+<script src="assets/canopyx-ui.js" defer></script>
+```
+
+In .NET, `CanopyHtmlAssets.WriteTo("assets", CanopyAssetNaming.Plain, CanopyRuntime.Ui)` writes the entry point and its parts, and `GetParts(CanopyRuntime.Ui)` lists the parts to embed in a self-contained page. In npm, `@evotecit/canopyx/ui` is its ES module, and `/ui.js` and `/ui.css` are the classic files.
+
+Load one entry point per page. A page that also shows a grid or tree loads that view's entry point, which carries the same factories.

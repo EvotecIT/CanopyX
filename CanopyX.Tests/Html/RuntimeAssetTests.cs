@@ -15,6 +15,7 @@ public sealed class RuntimeAssetTests {
     [InlineData(CanopyRuntime.DataGrid)]
     [InlineData(CanopyRuntime.ReportingGrid)]
     [InlineData(CanopyRuntime.Flow)]
+    [InlineData(CanopyRuntime.Ui)]
     public void Script_MatchesItsSourceParts(CanopyRuntime runtime) {
         var root = RepositoryPaths.Root;
         var files = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
@@ -27,6 +28,10 @@ public sealed class RuntimeAssetTests {
             files = new[] { "canopyx.flow-entry.source/00-flow-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-number-format.js", "canopyx.source/01-trust.js", "canopyx.source/02-design-tokens.js",
                 "canopyx.source/05-patterns.js", "canopyx.source/05-search-folding.js", "canopyx.grid.source/00-grid-pure.js", "canopyx.source/82-parts.js",
                 "canopyx.flow-entry.source/50-flow-shell.js", "canopyx.flow-entry.source/90-flow-boot.js" }
+                .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
+        } else if (runtime == CanopyRuntime.Ui) {
+            files = new[] { "canopyx.ui-entry.source/00-ui-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-trust.js", "canopyx.source/02-design-tokens.js",
+                "canopyx.source/82-parts.js", "canopyx.source/85-ui.js", "canopyx.ui-entry.source/90-ui-boot.js" }
                 .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
         } else if (runtime != CanopyRuntime.TreeGrid) {
             var extensions = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid
@@ -55,20 +60,23 @@ public sealed class RuntimeAssetTests {
 
         var expected = WithoutCommentLines(string.Join("\n", parts) + "\n");
         const string marker = "__CANOPYX_FOLD_PAIRS__";
-        Assert.Contains(marker, expected);
-        var tableSource = File.ReadAllText(Path.Combine(root, "CanopyX", "Search", "CanopySearchFoldingTable.cs"));
-        var start = tableSource.IndexOf("internal const string LowercasePairs =", StringComparison.Ordinal);
-        Assert.True(start >= 0, "The canonical search folding table is missing.");
-        var end = tableSource.IndexOf(';', start);
-        Assert.True(end > start, "The canonical search folding table is incomplete.");
-        var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
-        var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
-        Assert.NotEmpty(encoded);
-        var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS\\s*=\\s*\"([0-9a-z.,-]+)\";");
-        Assert.True(actual.Success, "The browser folding table is missing.");
-        var compact = actual.Groups[1].Value;
-        Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
-        expected = expected.Replace(marker, compact);
+        // The UI entry point has no search, so it carries no folding table.
+        if (runtime != CanopyRuntime.Ui) {
+            Assert.Contains(marker, expected);
+            var tableSource = File.ReadAllText(Path.Combine(root, "CanopyX", "Search", "CanopySearchFoldingTable.cs"));
+            var start = tableSource.IndexOf("internal const string LowercasePairs =", StringComparison.Ordinal);
+            Assert.True(start >= 0, "The canonical search folding table is missing.");
+            var end = tableSource.IndexOf(';', start);
+            Assert.True(end > start, "The canonical search folding table is incomplete.");
+            var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
+            var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
+            Assert.NotEmpty(encoded);
+            var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS\\s*=\\s*\"([0-9a-z.,-]+)\";");
+            Assert.True(actual.Success, "The browser folding table is missing.");
+            var compact = actual.Groups[1].Value;
+            Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
+            expected = expected.Replace(marker, compact);
+        }
         // The entry point reads the manifest of the parts it knows: name -> [version, hashed script, hashed stylesheet].
         const string partsMarker = "__CX_PARTS__";
         Assert.Contains(partsMarker, expected);
@@ -86,14 +94,17 @@ public sealed class RuntimeAssetTests {
     [InlineData(CanopyRuntime.DataGrid)]
     [InlineData(CanopyRuntime.ReportingGrid)]
     [InlineData(CanopyRuntime.Flow)]
+    [InlineData(CanopyRuntime.Ui)]
     public void Style_MatchesItsSource(CanopyRuntime runtime) {
         // Every entry point starts from component geometry (base.css); the flow entry point adds only its host rules, which the
         // grid entry points carry too so they can host a flow.
         var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
         // The shared controls (buttons, fields, chips, badges) follow the geometry in every entry point.
-        var names = new List<string> { "canopyx.source/base.css", "canopyx.source/controls.css" };
-        if (runtime != CanopyRuntime.Flow) names.Add("canopyx.source/canopyx.css");
-        if (runtime != CanopyRuntime.TreeGrid && runtime != CanopyRuntime.Flow) names.Add("canopyx.interactive.source/canopyx.css");
+        // The UI entry point has base.css alone: every component brings its own styles in its part.
+        var names = new List<string> { "canopyx.source/base.css" };
+        if (runtime != CanopyRuntime.Ui) names.Add("canopyx.source/controls.css");
+        if (runtime != CanopyRuntime.Flow && runtime != CanopyRuntime.Ui) names.Add("canopyx.source/canopyx.css");
+        if (runtime != CanopyRuntime.TreeGrid && runtime != CanopyRuntime.Flow && runtime != CanopyRuntime.Ui) names.Add("canopyx.interactive.source/canopyx.css");
         if (grid) names.AddRange(new[] { "canopyx.grid.source/chrome.css", "canopyx.grid.source/canopyx.css" });
         if (runtime == CanopyRuntime.ReportingGrid) names.Add("canopyx.reporting.source/canopyx.css");
         if (grid || runtime == CanopyRuntime.Flow) names.Add("canopyx.flow-entry.source/flow-host.css");
@@ -124,7 +135,8 @@ public sealed class RuntimeAssetTests {
     public void GridAssets_StayWithinTheirCompressedBudget() {
         // Pointer selection adds a mutable option and lazy range dispatch (384-byte allowance for 277 measured bytes); the accepted-source reader stays in the optional query part.
         // Reserve 128 bytes for Boolean tree-drawer host/view validation in the shared core.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 1184);
+        // Reserve 64 bytes for the ui-accordion manifest row, whose content hashes do not compress.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 1248);
     }
 
     [Fact]
@@ -243,9 +255,9 @@ public sealed class RuntimeAssetTests {
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
             // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, links and search parts,
-            // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the six lazy UI parts
+            // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the seven lazy UI parts
             // (one script and one stylesheet each).
-            Assert.Equal(28, Directory.GetFiles(directory).Length);
+            Assert.Equal(30, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

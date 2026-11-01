@@ -2527,6 +2527,10 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "accordionSearch": { "type": "string" },
+            "accordionNoMatches": { "type": "string" },
+            "accordionCopyTitle": { "type": "string" },
+            "accordionCopied": { "type": "string" },
             "tabsMore": { "type": "string" },
             "tabsMoreSelected": { "type": "string" },
             "tabsScrollPrevious": { "type": "string" },

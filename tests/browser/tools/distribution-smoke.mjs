@@ -24,6 +24,7 @@ try {
     "CanopyX.Html/Assets/canopyx-module.mjs", "CanopyX.Html/Assets/canopyx.js", "CanopyX.Html/Assets/canopyx.css",
     "CanopyX.Html/Assets/canopyx-interactive.js", "CanopyX.Html/Assets/canopyx-interactive.css", "JavaScript/grid.d.ts", "JavaScript/pivot.d.ts",
     "CanopyX.Html/Assets/canopyx-grid-module.mjs", "CanopyX.Html/Assets/canopyx-grid.js", "CanopyX.Html/Assets/canopyx-grid.css",
+    "CanopyX.Html/Assets/canopyx-ui-module.mjs", "CanopyX.Html/Assets/canopyx-ui.js", "CanopyX.Html/Assets/canopyx-ui.css",
     "CanopyX.Html/Assets/canopyx-reporting-module.mjs", "CanopyX.Html/Assets/canopyx-reporting.js", "CanopyX.Html/Assets/canopyx-reporting.css",
     "CanopyX.Html/Assets/canopyx-filter-editor.js", "CanopyX.Html/Assets/canopyx-filter-editor.css", "CanopyX.Html/Assets/canopyx-export.js", "CanopyX.Html/Assets/canopyx-history.js", "CanopyX.Html/Assets/canopyx-pager.js", "CanopyX.Html/Assets/canopyx-pager.css", "CanopyX.Html/Assets/canopyx-enhance.js", "CanopyX.Html/Assets/canopyx-data.js", "CanopyX.Html/Assets/canopyx-editing.js", "CanopyX.Html/Assets/canopyx-editing.css", "CanopyX.Html/Assets/canopyx-forms.js", "CanopyX.Html/Assets/canopyx-forms.css", "CanopyX.Html/Assets/canopyx-flow.js", "CanopyX.Html/Assets/canopyx-flow.css", "CanopyX.Html/Assets/canopyx-matrix.js", "CanopyX.Html/Assets/canopyx-matrix.css", "CanopyX.Html/Assets/canopyx-changes.js", "CanopyX.Html/Assets/canopyx-changes.css", "CanopyX.Html/Assets/canopyx-flow-module.mjs", "CanopyX.Html/Assets/canopyx-flow-entry.js", "CanopyX.Html/Assets/canopyx-flow-entry.css", "CanopyX.Html/Assets/canopyx-tree-tools.js", "CanopyX.Html/Assets/canopyx-tree-tools.css", "CanopyX.Html/Assets/canopyx-detail-rows.js", "CanopyX.Html/Assets/canopyx-detail-rows.css", "CanopyX.Html/Assets/canopyx-grouping.js", "CanopyX.Html/Assets/canopyx-grouping.css",
     "CanopyX.Html/Assets/canopyx-links.js", "CanopyX.Html/Assets/canopyx-search.js", "CanopyX.Html/Assets/canopyx-link.js", "CanopyX.Html/Assets/canopyx-link.css",
@@ -56,6 +57,7 @@ try {
     import GridRuntime, { createDataGrid, createCalendar, createMatrix, createDiff, createChangeList, createPropagation, enhance, grid } from '@evotecit/canopyx/grid';
     import ReportingRuntime from '@evotecit/canopyx/reporting';
     import FlowRuntime, { createFlow } from '@evotecit/canopyx/flow';
+    import UiRuntime, { accordion, mountUi } from '@evotecit/canopyx/ui';
     import polish, { staticLabels } from '@evotecit/canopyx/locales/pl';
     import german from '@evotecit/canopyx/locales/de';
     import spanish from '@evotecit/canopyx/locales/es';
@@ -69,6 +71,7 @@ try {
     assert.equal(createDataGrid, GridRuntime.createDataGrid); assert.equal(createCalendar, GridRuntime.createCalendar);
     assert.equal(enhance, GridRuntime.enhance); assert.equal(grid, GridRuntime.grid); assert.equal(typeof ReportingRuntime.enhance, 'function');
     assert.equal(typeof ReportingRuntime.createDataGrid, 'function');
+    assert.equal(accordion, UiRuntime.accordion); assert.equal(mountUi, UiRuntime.mountUi); assert.equal(UiRuntime.createTreeGrid, undefined);
     assert.equal(createFlow, FlowRuntime.createFlow); assert.equal(typeof GridRuntime.createFlow, 'function');
     assert.equal(createMatrix, GridRuntime.createMatrix); assert.equal(typeof ReportingRuntime.createMatrix, 'function');
     assert.equal(createDiff, GridRuntime.createDiff); assert.equal(createChangeList, GridRuntime.createChangeList); assert.equal(createPropagation, GridRuntime.createPropagation);

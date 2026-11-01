@@ -176,6 +176,13 @@ $assets = @(
     }
 )
 
+# The UI entry point: the part loader and the UI factories, without grid, tree or flow code (docs/ui-primitives.md#slim-entry-point).
+$uiEntryParts = @('CanopyX.Html/Assets/canopyx.source/01-fill.js', 'CanopyX.Html/Assets/canopyx.source/01-trust.js', 'CanopyX.Html/Assets/canopyx.source/02-design-tokens.js',
+    'CanopyX.Html/Assets/canopyx.source/82-parts.js', 'CanopyX.Html/Assets/canopyx.source/85-ui.js', 'CanopyX.Html/Assets/canopyx.ui-entry.source/90-ui-boot.js')
+$assets += @{ Source = 'CanopyX.Html/Assets/canopyx.ui-entry.source/00-ui-entry.js'; Extension = $uiEntryParts; Target = 'CanopyX.Html/Assets/canopyx-ui.js'; Folding = $true; Kind = 'ui' }
+$assets += @{ Source = 'CanopyX.Html/Assets/canopyx.source/base.css'; Target = 'CanopyX.Html/Assets/canopyx-ui.css' }
+$assets += @{ Source = 'CanopyX.Html/Assets/canopyx.ui-entry.source/00-ui-entry.js'; Extension = $uiEntryParts; Target = 'CanopyX.Html/Assets/canopyx-ui-module.mjs'; Folding = $true; Module = $true; Kind = 'ui' }
+
 # Lazy parts (Build/parts.json): each part's scripts and styles, the context its code receives and the entry points that know it.
 # Entry points leave out every script a part lists, unless that part also lists it as shared.
 $partList = @((Get-Content -LiteralPath (Join-Path $PSScriptRoot 'parts.json') -Raw | ConvertFrom-Json).parts)
@@ -288,7 +295,7 @@ function Remove-CommentLines {
 }
 
 function ConvertTo-Module {
-    param([string] $Content, [switch] $Grid, [switch] $Flow)
+    param([string] $Content, [switch] $Grid, [switch] $Flow, [switch] $Ui)
 
     # The module uses the same implementation as the interactive classic script. Only its host, automatic
     # browser mount, and exports differ; importing it on a server neither needs a DOM nor changes global state.
@@ -309,9 +316,9 @@ throw new Error("CanopyX: load the interactive runtime or module before the core
     $exports = @'
 const CanopyX = runtimeHost.CanopyX;
 const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce,
-  mountUi, contextMenu, tabs, stepper, dialog, drawer, popover, tooltip, menu } = CanopyX;
+  mountUi, contextMenu, tabs, stepper, accordion, dialog, drawer, popover, tooltip, menu } = CanopyX;
 export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce,
-  mountUi, contextMenu, tabs, stepper, dialog, drawer, popover, tooltip, menu };
+  mountUi, contextMenu, tabs, stepper, accordion, dialog, drawer, popover, tooltip, menu };
 export default CanopyX;
 '@
     # Parts load from files beside the module (Build/parts.json), as they do beside a classic runtime script.
@@ -326,7 +333,13 @@ export default CanopyX;
         $header = $header.Replace('(runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)', '!runtimeHost.CanopyX.createFlow')
         $header = $header.Replace('interactive runtime or module before the core script', 'flow or grid runtime, or this module, before the core script')
         $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'createFlow, configure, unconfigure, mount, use, registerPart, setNonce')
-        $exports = [regex]::Replace($exports, ',\r?\n\s+mountUi, contextMenu, tabs, stepper, dialog, drawer, popover, tooltip, menu', '')
+        $exports = [regex]::Replace($exports, ',\r?\n\s+mountUi, contextMenu, tabs, stepper, accordion, dialog, drawer, popover, tooltip, menu', '')
+    }
+    if ($Ui) {
+        # The UI module needs only an entry point with the UI factories, which every entry point except the flow entry has.
+        $header = $header.Replace('(runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)', '!runtimeHost.CanopyX.mountUi')
+        $header = $header.Replace('interactive runtime or module before the core script', 'UI, tree or grid runtime, or this module, before the core script')
+        $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'registerPart, setNonce')
     }
     $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
 }
@@ -452,13 +465,13 @@ foreach ($asset in $assets) {
         if (-not $generated.Contains('__CX_PARTS__')) { throw 'The part manifest marker is missing.' }
         $generated = $generated.Replace('__CX_PARTS__', (Get-PartManifest $(if ($asset.Kind) { $asset.Kind } elseif ($grid) { 'grid' } else { 'tree' })))
     }
-    if ($asset.Folding) {
+    if ($asset.Folding -and $asset.Kind -ne 'ui') {
         if (-not $generated.Contains('__CANOPYX_FOLD_PAIRS__')) { throw 'The browser search folding marker is missing.' }
         $generated = $generated.Replace('__CANOPYX_FOLD_PAIRS__', $foldPairs)
     }
     $generated = (Add-TokenFallbacks $generated).Replace('__CX_STATUS_FALLBACKS__', $statusFallbackJson)
     foreach ($marker in $printDefaults.Keys) { $generated = $generated.Replace($marker, $printDefaults[$marker]) }
-    if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) -Flow:($asset.Kind -eq 'flow') }
+    if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) -Flow:($asset.Kind -eq 'flow') -Ui:($asset.Kind -eq 'ui') }
     if ($asset.Folding) { $generated = Compress-ScriptSpacing -Content $generated }
     if (-not $asset.Generated -and $asset.Target.EndsWith('.css')) {
         $generated = Compress-StyleSpacing -Content $generated

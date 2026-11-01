@@ -1,9 +1,9 @@
   // Standalone UI uses the same versioned, nonce-aware parts loader as data views and plugins.
   function UiHost() {}
   const UI_IMPL = {}, UI_TOOLS = {}, uiInstances = new WeakMap();
-  const UI_KINDS = { tabs: "ui-tabs", stepper: "ui-stepper", menu: "ui-menu", dialog: "ui-overlays", drawer: "ui-overlays", popover: "ui-overlays", tooltip: "ui-overlays" };
+  const UI_KINDS = { tabs: "ui-tabs", stepper: "ui-stepper", accordion: "ui-accordion", menu: "ui-menu", dialog: "ui-overlays", drawer: "ui-overlays", popover: "ui-overlays", tooltip: "ui-overlays" };
   const uiContext = () => ({ UI_IMPL, UI_TOOLS, h, setText, fill, watchTheme, overlayTheme, hostHtml });
-  for (const name of ["ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper"]) SHARED_PARTS[name] = definePart(UiHost, name, name.replace("ui-", "UI "), uiContext);
+  for (const name of Object.keys(PARTS).filter(part => part.startsWith("ui-"))) SHARED_PARTS[name] = definePart(UiHost, name, name.replace("ui-", "UI "), uiContext);
 
   function createUi(kind, target, options = {}) {
     const root = typeof target === "string" ? document.querySelector(target) : target;
@@ -23,7 +23,7 @@
       if (lifetime.signal.aborted) return;
       lifetime.abort(); instance?.destroy?.(); registrations.delete(kind);
     } };
-    for (const name of ["select", "getSelected", "refresh", "preparePrint", "open", "close", "next", "back", "skip", "finish", "setStepState", "getState"]) api[name] = (...args) => {
+    for (const name of ["select", "getSelected", "refresh", "preparePrint", "open", "close", "next", "back", "skip", "finish", "setStepState", "getState", "toggle", "getOpen", "filter"]) api[name] = (...args) => {
       if (lifetime.signal.aborted) throw new Error("CanopyX: UI component destroyed.");
       return instance ? instance[name]?.(...args) : ready.then(() => instance[name]?.(...args));
     };
