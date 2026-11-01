@@ -1,0 +1,30 @@
+{{~ ## The first stage of the home page: one set of records in four views, so the claim is seen before it is read.
+     Copy and pages come from data/home.json, the count from data/demos.json. ## ~}}
+{{~ one = data.home.oneview ~}}
+<section class="cnx-bench cnx-oneview" data-cnx-stage aria-labelledby="cnx-oneview-title">
+  <h2 id="cnx-oneview-title" class="cnx-oneview__title">{{ one.title }}</h2>
+  <div class="cnx-bench__tabs" role="tablist" aria-label="{{ one.title }}">
+    {{~ for t in one.tabs ~}}
+    <button type="button" role="tab" class="cnx-bench__tab" id="cnx-oneview-tab-{{ t.id }}" aria-controls="cnx-oneview-{{ t.id }}" aria-selected="{{ if for.first }}true{{ else }}false{{ end }}" tabindex="{{ if for.first }}0{{ else }}-1{{ end }}" data-cnx-demo="{{ t.id }}"><span class="cnx-tone cnx-tone--{{ t.tone }}" aria-hidden="true"></span>{{ t.label }}</button>
+    {{~ end ~}}
+  </div>
+  <div class="cnx-bench__panel">
+    <figure class="cnx-bench__demo">
+      <div class="cnx-bench__bar">
+        {{~ for t in one.tabs ~}}
+        <p class="cnx-bench__title" data-cnx-caption="{{ t.id }}"{{ if !for.first }} hidden{{ end }}><strong>{{ data.demos.oneview.stat }}</strong><span>{{ t.note }}</span></p>
+        {{~ end ~}}
+        <a class="cnx-frame__open" data-cnx-demo-open href="{{ one.tabs[0].src }}">Open these records full screen</a>
+      </div>
+      <div class="cnx-bench__screen">
+        {{~ for t in one.tabs ~}}
+        <div class="cnx-demo" role="tabpanel" id="cnx-oneview-{{ t.id }}" aria-labelledby="cnx-oneview-tab-{{ t.id }}"{{ if !for.first }} hidden{{ end }}>
+          <iframe title="CanopyX {{ t.label | string.downcase }} of the change records" data-cnx-frame data-src="{{ t.src }}"></iframe>
+        </div>
+        {{~ end ~}}
+      </div>
+    </figure>
+  </div>
+  <p class="cnx-oneview__more"><a class="cnx-link" href="/showcase/">See a complete report built from these records</a></p>
+</section>
+

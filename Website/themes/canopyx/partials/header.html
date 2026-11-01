@@ -11,6 +11,9 @@
       <ul class="cnx-nav__links">
         {{~ for g in (pf.menu "main").items ~}}
         {{~ here = g.is_active || g.is_ancestor || (current_path | string.starts_with g.url) ~}}
+        {{~ if g.id != "views" && g.id != "docs" ~}}
+        <li class="cnx-nav__item"><a class="cnx-nav__link{{ if here }} is-current{{ end }}" href="{{ g.url }}"{{ if here }} aria-current="page"{{ end }}>{{ g.title }}</a></li>
+        {{~ continue; end ~}}
         <li class="cnx-nav__item" data-cnx-menu>
           <button type="button" class="cnx-nav__link{{ if here }} is-current{{ end }}" aria-expanded="false" aria-controls="cnx-menu-{{ g.id }}">{{ g.title }}<svg class="cnx-nav__chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           {{~ if g.id == "views" ~}}

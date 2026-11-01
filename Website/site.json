@@ -212,6 +212,18 @@
         ]
       },
       {
+        "Match": "/showcase/**",
+        "Bundles": [
+          "pages"
+        ]
+      },
+      {
+        "Match": "/compare/**",
+        "Bundles": [
+          "pages"
+        ]
+      },
+      {
         "Match": "/docs/**",
         "Bundles": [
           "docs"
@@ -283,6 +295,16 @@
             "Id": "views",
             "Title": "Views",
             "Url": "/views/"
+          },
+          {
+            "Id": "showcase",
+            "Title": "Showcase",
+            "Url": "/showcase/"
+          },
+          {
+            "Id": "compare",
+            "Title": "Compare",
+            "Url": "/compare/"
           },
           {
             "Id": "docs",

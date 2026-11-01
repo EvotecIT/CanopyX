@@ -361,8 +361,7 @@
     frame.cnxFit = fit;
   }
 
-  var stage = document.querySelector('[data-cnx-stage]');
-  if (stage) {
+  document.querySelectorAll('[data-cnx-stage]').forEach(function (stage) {
     var stageTabs = Array.prototype.slice.call(stage.querySelectorAll('[role="tab"]'));
     var open = stage.querySelector('[data-cnx-demo-open]');
     var screen = stage.querySelector('.cnx-frame__screen');
@@ -414,5 +413,5 @@
     } else {
       show(current());
     }
-  }
+  });
 })();

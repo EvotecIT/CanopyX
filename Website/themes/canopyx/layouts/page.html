@@ -16,7 +16,7 @@
 {{ include "site-sidebar" }}
 <div class="cnx-shell__content">
 <main id="main" class="cnx-main">
-  <article class="cnx-page">
+  <article class="cnx-page{{ if page.meta.wide }} cnx-page--wide{{ end }}">
     {{ include "pagehead" }}
 
     <div class="cnx-prose">
