@@ -135,11 +135,11 @@ test("pasted lines skip the group headings of a grouped report", async ({ page }
   expect(await page.evaluate(() => events[0])).toEqual([first + ":1", (first + 2) + ":2", (first + 3) + ":3"]);
 });
 
-test("Shift and Ctrl clicks make ranges without changing the row selection", async ({ page }) => {
+test("Shift and Control/Command clicks make ranges without changing the row selection", async ({ page }) => {
   await serveGrid(page, budgetView({ rangeSelection: true, reporting: { selectionControls: true } }), { runtime: "canopyx-reporting" });
   await bodyCell(page, 1, 3).click();
   await bodyCell(page, 3, 5).click({ modifiers: ["Shift"] });
-  await bodyCell(page, 6, 5).click({ modifiers: ["Control"] });
+  await bodyCell(page, 6, 5).click({ modifiers: ["ControlOrMeta"] });
   expect(await ranges(page)).toHaveLength(2);
   expect(await page.evaluate(() => api.getSelection())).toEqual([]);
 });

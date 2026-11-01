@@ -3,6 +3,8 @@
   /** Creates a flat grid. A host source implements query(gridQuery, { signal }) and returns a complete gridPage. */
   function createDataGrid(host, options) {
     if (!host || !options || !options.view) throw new Error("CanopyX: createDataGrid needs a host element and a grid document.");
+    if (options.recordDrawerModal !== undefined && typeof options.recordDrawerModal !== "boolean")
+      throw new Error("CanopyX: recordDrawerModal must be a Boolean.");
     const existing = activeGrids.get(host);
     if (existing) return existing;
     const grid = new DataGrid(host, options);

@@ -165,6 +165,8 @@ export interface TreeExport extends ExportCapture {
 export type HostTrustedHTML = typeof globalThis extends { TrustedHTML: { prototype: infer T } } ? T : never;
 /** Hooks stay with the host. Acceptance never makes the grid perform a write. */
 interface HostOptionsBase extends RecordPanelOptions {
+  /** Overrides the view: true opens a modal record sheet at every width; false keeps the responsive side panel/sheet. */
+  recordDrawerModal?: boolean;
   source?: DataSource;
   labels?: CanopyLabels;
   requestTimeoutMs?: number;

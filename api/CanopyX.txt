@@ -672,6 +672,7 @@ CanopyX.CanopyDataGridView.System.Boolean AutoHeight { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean AutoRowHeight { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean CalculatedColumnsEditable { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean DragRows { get; set; }
+CanopyX.CanopyDataGridView.System.Boolean RecordDrawerModal { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean RowAccents { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean Search { get; set; }
 CanopyX.CanopyDataGridView.System.Boolean SelectOnClick { get; set; }
@@ -3415,6 +3416,7 @@ CanopyX.CanopyTreeView.System.Boolean AutoHeight { get; set; }
 CanopyX.CanopyTreeView.System.Boolean DeepLink { get; set; }
 CanopyX.CanopyTreeView.System.Boolean DragDrop { get; set; }
 CanopyX.CanopyTreeView.System.Boolean PinTreeColumn { get; set; }
+CanopyX.CanopyTreeView.System.Boolean RecordDrawerModal { get; set; }
 CanopyX.CanopyTreeView.System.Collections.Generic.IDictionary<System.String, System.String> Icons { get; }
 CanopyX.CanopyTreeView.System.Collections.Generic.IList<CanopyX.CanopyCheckIntent> CheckIntents { get; }
 CanopyX.CanopyTreeView.System.Collections.Generic.IList<CanopyX.CanopyColumn> Columns { get; }

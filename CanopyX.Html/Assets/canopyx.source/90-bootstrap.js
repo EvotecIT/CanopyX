@@ -34,6 +34,8 @@
     if (!host || !options || !options.view) {
       throw new Error("CanopyX: createTreeGrid needs a host element and a view document.");
     }
+    if (options.recordDrawerModal !== undefined && typeof options.recordDrawerModal !== "boolean")
+      throw new Error("CanopyX: recordDrawerModal must be a Boolean.");
     const existing = activeGrids.get(host);
     if (existing) return existing;
     const grid = new TreeGrid(host, options);

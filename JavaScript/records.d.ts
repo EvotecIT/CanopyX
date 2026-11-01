@@ -134,6 +134,8 @@ export interface RecordOpenAll {
 /** Options that open a record (openRecord). */
 export interface OpenRecordOptions {
   readonly returnFocus?: Element | null; readonly path?: readonly string[]; readonly tab?: string;
+  /** A record panel section id to open on: its tab is selected, the section expanded and the drawer body scrolled to it. */
+  readonly section?: string;
   /** Read this record's details again after a host mutation, even when the grid's row/revision has not changed. */
   readonly reload?: boolean;
 }
