@@ -14,7 +14,7 @@
         {{~ for t in one.tabs ~}}
         <p class="cnx-bench__title" data-cnx-caption="{{ t.id }}"{{ if !for.first }} hidden{{ end }}><strong>{{ data.demos.oneview.stat }}</strong><span>{{ t.note }}</span></p>
         {{~ end ~}}
-        <a class="cnx-frame__open" data-cnx-demo-open href="{{ one.tabs[0].src }}">Open full screen</a>
+        <a class="cnx-frame__open" data-cnx-demo-open href="{{ one.tabs[0].src }}">Open these records full screen</a>
       </div>
       <div class="cnx-bench__screen">
         {{~ for t in one.tabs ~}}
