@@ -10,13 +10,13 @@ namespace CanopyX.Tests.Html;
 /// C# writers handle them alike, so a new part needs no host code.
 /// </summary>
 public sealed class RuntimePartTests {
-    private static readonly CanopyRuntime[] AllRuntimes = { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid, CanopyRuntime.Flow };
+    private static readonly CanopyRuntime[] AllRuntimes = { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid, CanopyRuntime.Flow, CanopyRuntime.Ui };
 
     [Fact]
     public void Parts_FollowTheBuildListInOrder() {
         Assert.Equal(PartManifestFile.Read().Select(part => part.Name), CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[9]);
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
+        Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[10]);
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("missing"));
     }
 
@@ -39,14 +39,14 @@ public sealed class RuntimePartTests {
             }
         }
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid }) {
-            Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "tree-tools", "export", "office-export", "links", "search", "link", "highlight", "layouts", "record-panel" }, CanopyHtmlAssets.GetParts(runtime).Select(part => part.Name));
+            Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "export", "office-export", "links", "search", "link", "highlight", "layouts", "record-panel" }, CanopyHtmlAssets.GetParts(runtime).Select(part => part.Name));
         }
         // The flow entry point knows only the forms and flow parts and the flow's feature parts; the grid entry points know them
         // too, so a grid page can host a flow.
         Assert.Equal(new[] { "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent" },
             CanopyHtmlAssets.GetParts(CanopyRuntime.Flow).Select(part => part.Name));
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare" }, CanopyHtmlAssets.GetParts(runtime).Select(part => part.Name));
+            Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare" }, CanopyHtmlAssets.GetParts(runtime).Select(part => part.Name));
         }
     }
 
@@ -58,8 +58,8 @@ public sealed class RuntimePartTests {
             Assert.DoesNotContain("function entryFile(", script);
             Assert.DoesNotContain("writeDeepLink(w,revision=this.selectionRevision)", script);
             Assert.Contains("function registerPart(", script);
-            // The flow entry point has no trees, so it has no sidecar search to check.
-            Assert.Equal(runtime != CanopyRuntime.Flow, script.Contains("function checkSearchIndex(", StringComparison.Ordinal));
+            // The flow and UI entry points have no trees, so they have no sidecar search to check.
+            Assert.Equal(runtime != CanopyRuntime.Flow && runtime != CanopyRuntime.Ui, script.Contains("function checkSearchIndex(", StringComparison.Ordinal));
         }
         Assert.Contains("function entryFile(", CanopyHtmlAssets.GetPart("search").Script);
         Assert.Contains("writeDeepLink(w,revision=this.selectionRevision)", CanopyHtmlAssets.GetPart("links").Script);

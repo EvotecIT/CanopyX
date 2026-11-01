@@ -70,6 +70,10 @@ export interface UiTabsOptions extends UiNavigationOptions {
   transition?: "none" | "fade" | "slide";
   hash?: boolean;
   hashHistory?: "replace" | "push";
+  /** Remembers the selected tab in localStorage, under the root id (true) or this key. A link in the address wins. */
+  remember?: boolean | string;
+  /** Horizontal tabs share the full width equally. */
+  justified?: boolean;
   tabs?: readonly UiTabOptions[];
   /** Optional automatic progression. Manual selection stops it; reduced motion disables it.
    * False disables settings emitted by the .NET builder. */
@@ -94,7 +98,65 @@ export interface UiNavigationController extends UiController {
   /** Prepares deferred print bodies without navigation. Await before window.print(); rejects on load failure or cancellation. */
   preparePrint(): Promise<void>;
 }
-export interface UiTabsController extends UiNavigationController {}
+export interface UiTabsController extends UiNavigationController {
+  /** Selects the next or previous enabled tab, stopping at the ends. Resolves false when there is none. */
+  next(): Promise<boolean>;
+  back(): Promise<boolean>;
+}
+
+/** An accordion section. In beforeChange, open is the state being requested. */
+export interface UiAccordionItem extends UiNavigationItem {
+  readonly open: boolean;
+}
+/** Deferred settings for one section, matched by its data-accordion-id. */
+export interface UiAccordionSectionOptions extends UiDeferredOptions<UiAccordionItem> {
+  id: string;
+}
+/** Accordion over the .NET heading and panel contract. Each section loads on its own; closing one aborts its pending loader. */
+export interface UiAccordionOptions extends UiDeferredOptions<UiAccordionItem> {
+  /** Lets several sections stay open. Defaults to false: opening a section closes the open one. */
+  multiple?: boolean;
+  /** Section identities or indexes to open, instead of the markup's own. A link in the address and remembered state win over this. */
+  open?: readonly (string | number)[];
+  style?: "default" | "flush" | "separated" | "section";
+  indicator?: "chevron" | "plus";
+  indicatorPosition?: "end" | "start";
+  transition?: "none" | "slide";
+  print?: "all" | "selected";
+  /** Writes open sections to the address as repeated `root-id=section-id` pairs. Requires a root id. */
+  hash?: boolean;
+  hashHistory?: "replace" | "push";
+  /** Remembers open sections in localStorage, under the root id (true) or this key. */
+  remember?: boolean | string;
+  /** A filter box above the sections. Filtering hides sections without closing them.
+   * It reads the header text; `or`, `|`, quoted phrases and a leading `-` or `!` are understood. */
+  search?: boolean | {
+    placeholder?: string;
+    /** Delay after typing, in milliseconds. Defaults to 150. */
+    debounce?: number;
+  };
+  /** Adds a copy-title button to every section, or removes the ones the markup asks for. */
+  copyTitle?: boolean;
+  /** Renders an encoded icon name from the markup into a decorative node or plain text. */
+  renderIcon?: (icon: string, item: Partial<UiAccordionItem>) => Node | string | null | void;
+  labels?: UiLabels;
+  sections?: readonly UiAccordionSectionOptions[];
+  /** Returning false cancels. In a single-open accordion from is the section that would close; to.open is the requested state. */
+  beforeChange?: (from: UiAccordionItem | undefined, to: UiAccordionItem, signal: AbortSignal) => boolean | void | Promise<boolean | void>;
+}
+export interface UiAccordionController extends UiController {
+  open(idOrIndex: string | number): Promise<boolean>;
+  close(idOrIndex: string | number): Promise<boolean>;
+  toggle(idOrIndex: string | number): Promise<boolean>;
+  /** The open section identities in display order. */
+  getOpen(): UiResult<string[]>;
+  /** Filters sections by header text and returns how many remain visible. An empty query shows all. */
+  filter(query?: string): UiResult<number>;
+  /** Rediscovers the current markup and updates presentation. */
+  refresh(): UiResult<void>;
+  /** Prepares deferred print bodies without opening sections. Await before window.print(); rejects on load failure or cancellation. */
+  preparePrint(): Promise<void>;
+}
 
 /** Step states are presentation supplied by the host or by successful navigation and validation. */
 export type UiStepState = "upcoming" | "current" | "done" | "error" | "skipped" | "disabled";
@@ -241,21 +303,27 @@ export function contextMenu(target: UiTarget,
   options?: UiContextMenuOptions): UiContextMenuDisposer;
 export function tabs(target: UiTarget, options?: UiTabsOptions): UiTabsController;
 export function stepper(target: UiTarget, options?: UiStepperOptions): UiStepperController;
+export function accordion(target: UiTarget, options?: UiAccordionOptions): UiAccordionController;
 export function dialog(target: UiTarget, options?: UiDialogOptions): UiDialogController;
 export function drawer(target: UiTarget, options?: UiDrawerOptions): UiDialogController;
 export function popover(target: UiTarget, options?: UiOverlayOptions): UiOverlayController;
 export function tooltip(target: UiTarget, options?: UiOverlayOptions): UiOverlayController;
 export function menu(target: UiTarget, options?: UiMenuOptions): UiMenuController;
 
-/** Named UI exports shared by tree and grid/reporting entry points. */
+/** Named UI exports shared by the tree, grid, reporting and UI entry points. */
 export interface UiApi {
   mountUi: typeof mountUi;
   contextMenu: typeof contextMenu;
   tabs: typeof tabs;
   stepper: typeof stepper;
+  accordion: typeof accordion;
   dialog: typeof dialog;
   drawer: typeof drawer;
   popover: typeof popover;
   tooltip: typeof tooltip;
   menu: typeof menu;
 }
+
+/** The UI entry point (`@evotecit/canopyx/ui`): the UI factories, the part registration and the nonce setter. */
+declare const CanopyXUi: UiApi & { registerPart(name: string, part: { version: string; requires?: string[]; install(context: object): void }): void; setNonce(nonce: string): void };
+export default CanopyXUi;

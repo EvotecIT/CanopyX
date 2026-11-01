@@ -25,6 +25,8 @@ CanopyX.Html.CanopyHtmlAssets.const System.String ScriptFileName = "canopyx.js"
 CanopyX.Html.CanopyHtmlAssets.const System.String StyleFileName = "canopyx.css"
 CanopyX.Html.CanopyHtmlAssets.const System.String TreeToolsScriptFileName = "canopyx-tree-tools.js"
 CanopyX.Html.CanopyHtmlAssets.const System.String TreeToolsStyleFileName = "canopyx-tree-tools.css"
+CanopyX.Html.CanopyHtmlAssets.const System.String UiScriptFileName = "canopyx-ui.js"
+CanopyX.Html.CanopyHtmlAssets.const System.String UiStyleFileName = "canopyx-ui.css"
 CanopyX.Html.CanopyHtmlAssets.static CanopyX.Html.CanopyHtmlPart GetPart(System.String name)
 CanopyX.Html.CanopyHtmlAssets.static CanopyX.Html.CanopyRuntime GetRuntime(CanopyX.CanopyChangeList list)
 CanopyX.Html.CanopyHtmlAssets.static CanopyX.Html.CanopyRuntime GetRuntime(CanopyX.CanopyDataGridView view)
@@ -156,6 +158,7 @@ CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime Flow = 4
 CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime InteractiveTreeGrid = 1
 CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime ReportingGrid = 3
 CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime TreeGrid = 0
+CanopyX.Html.CanopyRuntime.const CanopyX.Html.CanopyRuntime Ui = 5
 CanopyX.Html.CanopyTextDirection : enum System.Int32
 CanopyX.Html.CanopyTextDirection.const CanopyX.Html.CanopyTextDirection Auto = 0
 CanopyX.Html.CanopyTextDirection.const CanopyX.Html.CanopyTextDirection Ltr = 1
@@ -164,6 +167,50 @@ CanopyX.Html.CanopyTheme : enum System.Int32
 CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Auto = 0
 CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Dark = 2
 CanopyX.Html.CanopyTheme.const CanopyX.Html.CanopyTheme Light = 1
+CanopyX.Html.Ui.CanopyAccordion : sealed class
+CanopyX.Html.Ui.CanopyAccordion..ctor(System.String id, CanopyX.Html.Ui.CanopyAccordionOptions? options = null)
+CanopyX.Html.Ui.CanopyAccordion.CanopyX.Html.Ui.CanopyAccordionOptions Options { get; }
+CanopyX.Html.Ui.CanopyAccordion.System.Collections.Generic.IList<CanopyX.Html.Ui.CanopyAccordionItem> Items { get; }
+CanopyX.Html.Ui.CanopyAccordion.System.String Id { get; }
+CanopyX.Html.Ui.CanopyAccordion.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyAccordionIndicator : enum System.Int32
+CanopyX.Html.Ui.CanopyAccordionIndicator.const CanopyX.Html.Ui.CanopyAccordionIndicator Chevron = 0
+CanopyX.Html.Ui.CanopyAccordionIndicator.const CanopyX.Html.Ui.CanopyAccordionIndicator Plus = 1
+CanopyX.Html.Ui.CanopyAccordionIndicatorPosition : enum System.Int32
+CanopyX.Html.Ui.CanopyAccordionIndicatorPosition.const CanopyX.Html.Ui.CanopyAccordionIndicatorPosition End = 0
+CanopyX.Html.Ui.CanopyAccordionIndicatorPosition.const CanopyX.Html.Ui.CanopyAccordionIndicatorPosition Start = 1
+CanopyX.Html.Ui.CanopyAccordionItem : sealed class
+CanopyX.Html.Ui.CanopyAccordionItem..ctor(System.String id, System.String label)
+CanopyX.Html.Ui.CanopyAccordionItem.System.Boolean Disabled { get; set; }
+CanopyX.Html.Ui.CanopyAccordionItem.System.Boolean Open { get; set; }
+CanopyX.Html.Ui.CanopyAccordionItem.System.Nullable<System.Boolean> CopyTitle { get; set; }
+CanopyX.Html.Ui.CanopyAccordionItem.System.String ContentHtml { get; set; }
+CanopyX.Html.Ui.CanopyAccordionItem.System.String Id { get; }
+CanopyX.Html.Ui.CanopyAccordionItem.System.String Label { get; }
+CanopyX.Html.Ui.CanopyAccordionItem.System.String? ActionsHtml { get; set; }
+CanopyX.Html.Ui.CanopyAccordionItem.System.String? Badge { get; set; }
+CanopyX.Html.Ui.CanopyAccordionItem.System.String? Icon { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions : sealed class
+CanopyX.Html.Ui.CanopyAccordionOptions..ctor()
+CanopyX.Html.Ui.CanopyAccordionOptions.CanopyX.Html.Ui.CanopyAccordionIndicator Indicator { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.CanopyX.Html.Ui.CanopyAccordionIndicatorPosition IndicatorPosition { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.CanopyX.Html.Ui.CanopyAccordionStyle Style { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.Boolean Animate { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.Boolean CopyTitle { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.Boolean Hash { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.Boolean Multiple { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.Boolean PrintAll { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.Boolean Search { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.Int32 HeadingLevel { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.Nullable<System.Int32> SearchDebounce { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.String? RememberKey { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.String? SearchPlaceholder { get; set; }
+CanopyX.Html.Ui.CanopyAccordionOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyAccordionStyle : enum System.Int32
+CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Default = 0
+CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Flush = 1
+CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Section = 3
+CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Separated = 2
 CanopyX.Html.Ui.CanopyDialog : sealed class
 CanopyX.Html.Ui.CanopyDialog..ctor(System.String id, System.String title, CanopyX.Html.Ui.CanopyDialogOptions? options = null)
 CanopyX.Html.Ui.CanopyDialog.CanopyX.Html.Ui.CanopyDialogOptions Options { get; }
@@ -337,9 +384,11 @@ CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabActivation Activation
 CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsAutoProgress? AutoProgress { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsOverflow Overflow { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.CanopyX.Html.Ui.CanopyTabsStyle Style { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.System.Boolean Justified { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.System.Boolean PrintAll { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.System.Int32 SelectedIndex { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.System.Nullable<System.Boolean> CollapseToPicker { get; set; }
+CanopyX.Html.Ui.CanopyTabsOptions.System.String? RememberKey { get; set; }
 CanopyX.Html.Ui.CanopyTabsOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyTabsOverflow : enum System.Int32
 CanopyX.Html.Ui.CanopyTabsOverflow.const CanopyX.Html.Ui.CanopyTabsOverflow Menu = 1

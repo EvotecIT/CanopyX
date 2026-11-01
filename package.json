@@ -116,6 +116,14 @@
     "./ui-tabs.css": "./CanopyX.Html/Assets/canopyx-ui-tabs.css",
     "./ui-stepper.js": "./CanopyX.Html/Assets/canopyx-ui-stepper.js",
     "./ui-stepper.css": "./CanopyX.Html/Assets/canopyx-ui-stepper.css",
+    "./ui-accordion.js": "./CanopyX.Html/Assets/canopyx-ui-accordion.js",
+    "./ui-accordion.css": "./CanopyX.Html/Assets/canopyx-ui-accordion.css",
+    "./ui": {
+      "types": "./JavaScript/ui.d.ts",
+      "import": "./CanopyX.Html/Assets/canopyx-ui-module.mjs"
+    },
+    "./ui.js": "./CanopyX.Html/Assets/canopyx-ui.js",
+    "./ui.css": "./CanopyX.Html/Assets/canopyx-ui.css",
     "./locales/pl": {
       "types": "./JavaScript/locales/pl.d.ts",
       "import": "./JavaScript/locales/pl.mjs"
@@ -256,6 +264,11 @@
     "CanopyX.Html/Assets/canopyx-ui-tabs.css",
     "CanopyX.Html/Assets/canopyx-ui-stepper.js",
     "CanopyX.Html/Assets/canopyx-ui-stepper.css",
+    "CanopyX.Html/Assets/canopyx-ui-accordion.js",
+    "CanopyX.Html/Assets/canopyx-ui-accordion.css",
+    "CanopyX.Html/Assets/canopyx-ui.js",
+    "CanopyX.Html/Assets/canopyx-ui.css",
+    "CanopyX.Html/Assets/canopyx-ui-module.mjs",
     "CanopyX.Html/Assets/canopyx-board.js",
     "CanopyX.Html/Assets/canopyx-board.css",
     "CanopyX.Html/Assets/canopyx-plan.js",
