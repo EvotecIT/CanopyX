@@ -16,6 +16,10 @@ public sealed class CanopyTabsOptions {
     public bool? CollapseToPicker { get; set; }
     /// <summary>Gets or sets whether all panels print, rather than only the selected panel.</summary>
     public bool PrintAll { get; set; } = true;
+    /// <summary>Gets or sets whether horizontal tabs share the full width equally.</summary>
+    public bool Justified { get; set; }
+    /// <summary>Gets or sets the browser storage key that remembers the selected tab across visits. Null remembers nothing.</summary>
+    public string? RememberKey { get; set; }
     /// <summary>Gets or sets the product styling variant emitted as an encoded attribute.</summary>
     public string? Variant { get; set; }
 }

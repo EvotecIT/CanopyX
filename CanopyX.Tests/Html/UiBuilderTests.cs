@@ -47,6 +47,66 @@ public sealed class UiBuilderTests {
     }
 
     [Fact]
+    public void Accordion_LinksHeadingsToReadablePanelsWithoutPrematureHiding() {
+        var accordion = new CanopyAccordion("help", new CanopyAccordionOptions { Multiple = true, HeadingLevel = 4, Hash = true, RememberKey = "help", Search = true, SearchDebounce = 0 });
+        accordion.Items.Add(new CanopyAccordionItem("start", "Start") { Open = true, Badge = "New", ContentHtml = "<p>Open content</p>" });
+        accordion.Items.Add(new CanopyAccordionItem("later", "Later") { ContentHtml = "<p>Closed content</p>", ActionsHtml = "<a href=\"#more\">More</a>" });
+        accordion.Items.Add(new CanopyAccordionItem("locked", "Locked") { Disabled = true, CopyTitle = true });
+
+        var html = accordion.ToHtmlFragment();
+        var root = Parse(html).Element("div")!;
+        Assert.NotNull(root.Attribute("data-cx-accordion"));
+        Assert.Equal("true", Attr(root, "data-multiple"));
+        Assert.Equal("true", Attr(root, "data-hash"));
+        Assert.Equal("help", Attr(root, "data-remember"));
+        Assert.Equal("0", Attr(root, "data-search-debounce"));
+        var triggers = root.Descendants("h4").Select(heading => heading.Element("button")!).ToArray();
+        var panels = Role(root, "region").ToArray();
+        Assert.Equal(3, triggers.Length);
+        Assert.Equal(3, panels.Length);
+        for (var i = 0; i < 3; i++) {
+            Assert.Equal(Attr(panels[i], "id"), Attr(triggers[i], "aria-controls"));
+            Assert.Equal(Attr(triggers[i], "id"), Attr(panels[i], "aria-labelledby"));
+            Assert.Equal(i == 0 ? "true" : "false", Attr(triggers[i], "aria-expanded"));
+        }
+        Assert.Equal("true", Attr(triggers[2], "aria-disabled"));
+        Assert.Null(triggers[2].Attribute("disabled"));
+        Assert.Equal("Closed content", panels[1].Element("p")!.Value);
+        // A heading button cannot contain interactive content, so actions sit beside it.
+        Assert.Empty(triggers[1].Descendants("a"));
+        Assert.Equal("#more", root.Descendants("a").Single().Attribute("href")!.Value);
+        Assert.Empty(root.DescendantsAndSelf().Attributes("hidden"));
+        Assert.Null(root.Attribute("data-cx-ready"));
+        AssertReferences(Parse(html));
+        AssertDeclarative(html);
+    }
+
+    [Fact]
+    public void Accordion_DropsRegionsBeyondSixSectionsAndEncodesText() {
+        var accordion = new CanopyAccordion("many");
+        for (var i = 0; i < 7; i++) accordion.Items.Add(new CanopyAccordionItem("s" + i, "<b>" + i + "</b>"));
+        var html = accordion.ToHtmlFragment();
+        Assert.Empty(Role(Parse(html).Element("div")!, "region"));
+        Assert.Contains("&lt;b&gt;0&lt;/b&gt;", html);
+    }
+
+    [Fact]
+    public void Accordion_RefusesWhatTheRuntimeCouldNotHonor() {
+        Assert.Throws<ArgumentException>(() => new CanopyAccordion("empty").ToHtmlFragment());
+        var two = new CanopyAccordion("two");
+        two.Items.Add(new CanopyAccordionItem("a", "A") { Open = true });
+        two.Items.Add(new CanopyAccordionItem("b", "B") { Open = true });
+        Assert.Throws<ArgumentException>(() => two.ToHtmlFragment());
+        var duplicate = new CanopyAccordion("same");
+        duplicate.Items.Add(new CanopyAccordionItem("a", "A"));
+        duplicate.Items.Add(new CanopyAccordionItem("a", "B"));
+        Assert.Throws<ArgumentException>(() => duplicate.ToHtmlFragment());
+        var heading = new CanopyAccordion("heading", new CanopyAccordionOptions { HeadingLevel = 1 });
+        heading.Items.Add(new CanopyAccordionItem("a", "A"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => heading.ToHtmlFragment());
+    }
+
+    [Fact]
     public void Tabs_EncodeTextAndAttributeValuesButPreserveExplicitlyTrustedContent() {
         const string hostile = "\"<&'";
         var tabs = new CanopyTabs("set" + hostile, "Sections " + hostile, new CanopyTabsOptions { Variant = "product." + hostile });
@@ -460,7 +520,7 @@ public sealed class UiBuilderTests {
 
     // Normalize only the builders' known HTML boolean attributes so LINQ to XML can inspect their real structure.
     private static XElement Parse(string html) => XElement.Parse("<root>" + Regex.Replace(html,
-        @"\s(data-cx-tabs|data-cx-stepper|data-cx-menu|data-cx-tooltip|hidden)(?=[\s>])", " $1=\"\"") + "</root>");
+        @"\s(data-cx-tabs|data-cx-stepper|data-cx-accordion|data-cx-menu|data-cx-tooltip|hidden)(?=[\s>])", " $1=\"\"") + "</root>");
     private static string? Attr(XElement element, string name) => (string?)element.Attribute(name);
     private static IEnumerable<XElement> Role(XElement root, string role) => root.DescendantsAndSelf().Where(e => Attr(e, "role") == role);
     private static string?[] Actions(XElement root) => root.Descendants("button").Select(e => Attr(e, "data-cx-stepper-action")).Where(a => a != null).ToArray();
