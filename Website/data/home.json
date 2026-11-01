@@ -17,6 +17,15 @@
       "MIT licence"
     ]
   },
+  "oneview": {
+    "title": "The same records, four views",
+    "tabs": [
+      { "id": "grid", "label": "Data grid", "tone": "explore", "note": "Sort, filter and select", "src": "/live/oneview/grid.html" },
+      { "id": "board", "label": "Board", "tone": "plan", "note": "Lanes from the status column", "src": "/live/oneview/board.html" },
+      { "id": "calendar", "label": "Calendar", "tone": "plan", "note": "Placed by their start and end", "src": "/live/oneview/calendar.html" },
+      { "id": "pivot", "label": "Pivot", "tone": "explore", "note": "Hours by team and status", "src": "/live/oneview/pivot.html" }
+    ]
+  },
   "install": [
     {
       "id": "dotnet",
@@ -65,7 +74,7 @@
     {
       "name": "OfficeIMO",
       "url": "https://officeimo.com/",
-      "body": "Export the same records to Excel, Word or PDF from your host application."
+      "body": "Excel and PDF exports that run in the reader's browser, and Word and more from your host application."
     },
     {
       "name": "ConsoleMonster",

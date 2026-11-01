@@ -49,6 +49,7 @@ File.WriteAllText(Path.Combine(demos, "changes.html"),
 // The other views (board, calendar, plan, timeline, pivot, matrix, comparison, snapshots, flow, paths and layers),
 // from the repository's examples.
 var viewStats = SiteDemos.ViewDemos.Write(demos);
+var oneViewStat = SiteDemos.Showcase.ChangeWeek.Write(demos);
 Console.WriteLine(SiteDemos.Views.ViewCode.Write(website, utf8));
 
 // Email and print: the script-free outline of a smaller tree, following the page's theme variables.
@@ -86,7 +87,8 @@ var manifest = new {
     flow = new { stat = viewStats["flow"] },
     path = new { stat = viewStats["path"] },
     stack = new { stat = viewStats["stack"] },
-    email = new { stat = "Script-free HTML for mail, print and Word" }
+    email = new { stat = "Script-free HTML for mail, print and Word" },
+    oneview = new { stat = oneViewStat }
 };
 File.WriteAllText(Path.Combine(website, "data", "demos.json"),
     JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }) + "\n", utf8);

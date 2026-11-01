@@ -212,6 +212,12 @@
         ]
       },
       {
+        "Match": "/showcase/**",
+        "Bundles": [
+          "pages"
+        ]
+      },
+      {
         "Match": "/docs/**",
         "Bundles": [
           "docs"
@@ -283,6 +289,11 @@
             "Id": "views",
             "Title": "Views",
             "Url": "/views/"
+          },
+          {
+            "Id": "showcase",
+            "Title": "Showcase",
+            "Url": "/showcase/"
           },
           {
             "Id": "docs",

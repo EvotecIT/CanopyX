@@ -106,3 +106,8 @@
   .cnx-view__pager { grid-template-columns: minmax(0, 1fr); }
   .cnx-view__next { grid-column: auto; }
 }
+
+/* The showcase report: the page inside scrolls, so its frame takes most of the viewport. */
+.cnx-page--wide .cnx-prose, .cnx-page--wide .markdown-body { max-width: none; }
+.cnx-page--wide .markdown-body > :not(.cnx-showcase) { max-width: 70ch; }
+.cnx-showcase iframe { display: block; width: 100%; height: clamp(600px, 84vh, 1000px); border: 0; background: var(--cnx-card); }

@@ -151,9 +151,9 @@
 
 /* Closing call to action: the one dark band, the colour of the code surfaces. */
 .cnx-cta { margin-top: clamp(72px, 9vw, 112px); background: var(--cnx-code-bg); color: var(--cnx-code-ink); }
-.cnx-cta__inner { display: grid; justify-items: start; gap: 22px; width: min(100% - 2 * clamp(16px, 3.5vw, 48px), var(--cnx-max)); margin-inline: auto; padding-block: clamp(48px, 7vw, 80px); }
+.cnx-cta__inner { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; gap: 22px; width: min(100% - 2 * clamp(16px, 3.5vw, 48px), var(--cnx-max)); margin-inline: auto; padding-block: clamp(48px, 7vw, 80px); }
 .cnx-cta h2 { max-width: 22ch; color: #fff; font-size: clamp(1.875rem, 1.1rem + 2.4vw, 2.75rem); line-height: 1.08; }
-.cnx-cta__lines { display: grid; gap: 8px; width: min(100%, 480px); }
+.cnx-cta__lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; width: min(100%, 480px); }
 .cnx-cta .cnx-install__line { border: 1px solid var(--cnx-code-line); border-radius: var(--cnx-radius-sm); background: var(--cnx-code-bar); }
 .cnx-cta .cnx-btn { background: var(--cnx-code-key); border-color: var(--cnx-code-key); color: #0e0b26; }
 .cnx-cta .cnx-btn:hover { background: #c3cdff; }
@@ -193,3 +193,10 @@
 .cnx-pkgicon--npm { --cnx-pkg: #cb3837; --cnx-pkg-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M3 3h18v18H3V3Zm3.5 3.5v11h5.5v-8h3v8h2.5v-11h-11Z'/%3E%3C/svg%3E"); }
 :root[data-theme="dark"] .cnx-pkgicon--nuget { --cnx-pkg: #5aa9e6; }
 :root[data-theme="dark"] .cnx-pkgicon--npm { --cnx-pkg: #e5605b; }
+
+/* The first stage: one set of records in four views, with no code beside it. */
+.cnx-oneview { margin-bottom: clamp(36px, 5vw, 56px); }
+.cnx-oneview__title { margin: 0 0 12px; font-size: clamp(1.25rem, 1.1rem + .6vw, 1.5rem); }
+.cnx-oneview .cnx-bench__panel { grid-template-columns: minmax(0, 1fr); }
+.cnx-oneview .cnx-bench__screen { height: clamp(420px, 58vh, 560px); }
+.cnx-oneview__more { margin: 12px 0 0; font-size: .9375rem; }
