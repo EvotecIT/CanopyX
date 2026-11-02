@@ -8,7 +8,7 @@ namespace CanopyX;
 public sealed partial class CanopyCalendar {
     /// <summary>The fixed column ids of a calendar built from events.</summary>
     private const string ColumnTitle = "title", ColumnStart = "start", ColumnEnd = "end", ColumnAllDay = "allDay", ColumnDescription = "description", ColumnTone = "tone",
-        ColumnResource = "resource", ColumnResourceIds = "resourceIds", ColumnRecurrence = "recurrence", ColumnExceptions = "exceptions", ColumnSource = "source",
+        ColumnResource = "resource", ColumnResourceIds = "resourceIds", ColumnRecurrence = "recurrence", ColumnExceptions = "exceptions", ColumnSource = "source", ColumnLocation = "location",
         ColumnSeries = "series", ColumnRecurrenceId = "recurrenceId";
 
     /// <summary>The columns of a calendar built from events that editing changes, and so are editable while the calendar edits.</summary>
@@ -30,7 +30,7 @@ public sealed partial class CanopyCalendar {
     /// </summary>
     /// <remarks>
     /// The grid has the columns <c>title</c> (the row header), <c>start</c> and <c>end</c> (date and time), and the text columns
-    /// <c>allDay</c>, <c>description</c>, <c>tone</c>, <c>resource</c>, <c>recurrence</c>, <c>exceptions</c> and <c>source</c> when
+    /// <c>allDay</c>, <c>description</c>, <c>location</c>, <c>tone</c>, <c>resource</c>, <c>recurrence</c>, <c>exceptions</c> and <c>source</c> when
     /// an event uses them; all of these but the description are hidden. A row's id is the event's <see cref="CanopyCalendarEvent.Id"/>,
     /// else <c>e1</c>, <c>e2</c>, ... in input order. The title, start, end, resource, all-day, recurrence and exceptions columns are
     /// editable exactly while the calendar edits (<see cref="Editing"/>), creates (<see cref="Create"/>) or accepts drops
@@ -54,6 +54,7 @@ public sealed partial class CanopyCalendar {
         _end = ColumnEnd;
         if (list.Exists(item => item.AllDay)) _allDay = Optional(grid, ColumnAllDay, "All day", true);
         if (list.Exists(item => item.Description != null)) _description = Optional(grid, ColumnDescription, "Description", false);
+        if (list.Exists(item => item.Location != null)) _location = Optional(grid, ColumnLocation, "Location", true);
         if (list.Exists(item => item.Tone.Name != null)) _tone = Optional(grid, ColumnTone, "Tone", true);
         if (list.Exists(item => item.Resource != null)) _resource = Optional(grid, ColumnResource, "Resource", true);
         if (list.Exists(item => item.ResourceIds.Count > 0)) ResourceIds = Optional(grid, ColumnResourceIds, "Resources", true);
@@ -77,6 +78,7 @@ public sealed partial class CanopyCalendar {
             if (end.HasValue) row.Cells[ColumnEnd] = end.Value;
             if (item.AllDay) row.Cells[ColumnAllDay] = true;
             if (item.Description != null) row.Cells[ColumnDescription] = item.Description;
+            if (item.Location != null) row.Cells[ColumnLocation] = item.Location;
             if (item.Tone.Name != null) row.Cells[ColumnTone] = item.Tone.Name;
             if (item.Resource != null) row.Cells[ColumnResource] = item.Resource;
             if (item.ResourceIds.Count > 0) {

@@ -12,7 +12,7 @@ public sealed partial class CanopyCalendar {
             .OptionalProperty("allDay", _allDay).OptionalProperty("resource", _resource).OptionalProperty("resourceIds", ResourceIds).OptionalProperty("status", _status)
             .OptionalProperty("recurrence", _recurrence).OptionalProperty("exceptions", _exceptions).OptionalProperty("series", _series)
             .OptionalProperty("recurrenceId", _recurrenceId).OptionalProperty("display", _display).OptionalProperty("seriesEnd", _seriesEnd)
-            .OptionalProperty("description", _description).OptionalProperty("tone", _tone).OptionalProperty("source", _source);
+            .OptionalProperty("description", _description).OptionalProperty("tone", _tone).OptionalProperty("source", _source).OptionalProperty("location", _location);
         var offered = EffectiveViews;
         if (View.HasValue && View.Value != offered[0]) writer.Property("view", CanopyCalendarValues.Name(View.Value));
         if (Views.Count > 0 && !SameViews(Views)) {
@@ -92,6 +92,7 @@ public sealed partial class CanopyCalendar {
         if (AgendaSpan != CanopyCalendarAgendaSpan.Month) writer.Property("agendaSpan", CanopyCalendarValues.Name(AgendaSpan));
         if (_months != 6) writer.Property("months", _months);
         if (Print) writer.Property("print", true);
+        WriteScreensJson(writer);
     }
 
     /// <summary>What moving an occurrence changes without a setting: ask when override records are possible, else every occurrence.</summary>

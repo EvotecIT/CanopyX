@@ -112,13 +112,18 @@
   inset-inline-start:calc(var(--cx-cal-gutter) + (100% - var(--cx-cal-gutter)) * (var(--d) + var(--c) / var(--k)) / var(--cx-cal-n) + var(--cx-size-2px));width:calc((100% - var(--cx-cal-gutter)) * var(--sp) / var(--k) / var(--cx-cal-n) - var(--cx-size-4px));
   top:calc(var(--t) * var(--cx-cal-ppm) + var(--cx-size-1px));height:calc(var(--h) * var(--cx-cal-ppm) - var(--cx-size-2px)); }
 .cx-cal-ev-block > .cx-cal-ev-title { font-weight:600;overflow:hidden;flex:none; }
-.cx-cal-ev-block > .cx-cal-ev-time { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none; }
+.cx-cal-ev-block > .cx-cal-ev-time { white-space:nowrap;flex:none; }
 .cx-cal-ev-block > :is(.cx-cal-ev-time,.cx-cal-ev-sub) { font-size:var(--cx-size-12px); }
 .cx-cal-ev-block > .cx-cal-ico { position:absolute;inset-inline-end:var(--cx-size-4px);top:var(--cx-size-4px); }
 .cx-cal-ev-block > .cx-cal-shared { position:absolute;inset-inline-end:var(--cx-size-4px);top:var(--cx-size-2px);font-size:var(--cx-size-10px);line-height:var(--cx-size-14px); }
 .cx-cal-ev-block:has(> .cx-cal-shared) > .cx-cal-ev-time { padding-inline-end:var(--cx-size-56px); }
 .cx-cal-ev-block:has(> .cx-cal-shared) > .cx-cal-ico { display:none; }
-.cx-cal-slots .cx-cal-ev-block.cx-cal-short { flex-direction:row;align-items:center;gap:var(--cx-size-4px);white-space:nowrap; }
+/* The title wins: it leads every time-grid event, and the start time follows only when it fits whole. In a short event a time
+   that does not fit wraps onto a line out of view; in a narrow column it is left out. The accessible name keeps it. */
+.cx-cal-slots .cx-cal-ev-block:not(.cx-cal-marker) { container-type:inline-size; }
+.cx-cal-slots .cx-cal-ev-block:not(.cx-cal-marker) > .cx-cal-ev-title { order:-1; }
+.cx-cal-slots .cx-cal-ev-block.cx-cal-short { flex-flow:row wrap;align-content:flex-start;align-items:center;row-gap:100%;column-gap:var(--hfx-space-1);white-space:nowrap; }
+@container (width < 4.5em) { .cx-cal-slots .cx-cal-ev-block > .cx-cal-ev-time { display:none; } }
 .cx-cal-slots .cx-cal-ev-block:is(.cx-cal-short,.cx-cal-marker) > .cx-cal-ev-title { flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis; }
 .cx-cal-slots .cx-cal-ev-block:is(.cx-cal-short,.cx-cal-marker) > .cx-cal-ev-time { flex:none; }
 .cx-cal-slots .cx-cal-ev-block.cx-cal-short > :is(.cx-cal-ev-sub,.cx-cal-ev-status) { display:none; }
@@ -303,7 +308,18 @@
 .cx-cal-ask-actions { flex-direction:column;align-items:stretch; }
 .cx-cal-ask-actions .cx-btn { justify-content:flex-start; }
 /* Sources: one switch per source under the bar, its swatch in the source's tone; a switched-off source is struck through. */
-.cx-cal-legend { display:flex;flex-wrap:wrap;align-items:center;gap:var(--cx-size-6px);padding:0 var(--cx-size-12px) var(--cx-size-8px); }
+.cx-cal-legend { position:relative;display:flex;align-items:center;gap:var(--cx-size-6px);min-width:0;padding:0 var(--cx-size-12px) var(--cx-size-8px); }
+/* The switches stay on one line; when they do not fit, they fold into a menu of checkboxes. */
+.cx-cal-srcs { display:flex;align-items:center;gap:var(--hfx-space-1-5);min-width:0;overflow:hidden; }
+.cx-cal-srcs > .cx-cal-src { flex:none; }
+/* lint-allow layout: a menu wide enough for source names and short enough to stay inside the screen */
+.cx-cal-src-menu { --cx-cal-menu-room:var(--cx-size-360px);position:absolute;inset-inline-start:var(--hfx-space-3);top:100%;z-index:var(--hfx-z-popover);display:flex;flex-direction:column;min-width:var(--cx-size-180px);max-height:min(var(--cx-size-60vh),var(--cx-cal-menu-room));overflow:auto;padding:var(--hfx-space-1);background:var(--hfx-color-surface-raised);border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-overlay);box-shadow:var(--hfx-elevation-2); }
+.cx-cal-src-menu[hidden] { display:none; }
+.cx-cal-src-menu.cx-cal-src-up { top:auto;bottom:100%; }
+.cx-cal-src-item { display:flex;align-items:center;gap:var(--hfx-space-2);min-height:var(--hfx-control-height-sm);padding:0 var(--hfx-space-2);border-radius:var(--hfx-radius-sm);font-size:var(--hfx-type-small-size);cursor:pointer; }
+.cx-cal-src-item:hover { background:var(--hfx-color-hover); }
+.cx-cal-src-item > input { margin:0;accent-color:var(--cx-ev,var(--hfx-color-accent)); }
+@media (any-pointer:coarse) { .cx-cal-src-item { min-height:var(--hfx-control-height-lg); } }
 .cx-cal-src-swatch { width:var(--cx-size-10px);height:var(--cx-size-10px);border-radius:50%;background:var(--cx-ev,var(--hfx-color-accent));border:var(--cx-size-2px) solid var(--cx-ev,var(--hfx-color-accent)); }
 /* A legend: every source starts on, so on stays a plain chip and only a switched-off source stands out. */
 .cx-cal-src[aria-pressed="true"] { border-color:var(--hfx-color-border);background:var(--hfx-color-surface);color:var(--hfx-color-text); }

@@ -3734,6 +3734,27 @@
     "Détails de {title}",
     "Dettagli di {title}"
   ],
+  "CalendarReset": [
+    "Resetuj",
+    "Zurücksetzen",
+    "Restablecer",
+    "Réinitialiser",
+    "Ripristina"
+  ],
+  "CalendarSharedBy": [
+    "Wspólne: {names}",
+    "Geteilt von {names}",
+    "Compartido por {names}",
+    "Partagé par {names}",
+    "Condiviso da {names}"
+  ],
+  "CalendarSourcesShown": [
+    "{shown} z {total}",
+    "{shown} von {total}",
+    "{shown} de {total}",
+    "{shown} sur {total}",
+    "{shown} di {total}"
+  ],
   "FlowSteps": [
     "Kroki",
     "Schritte",

@@ -676,7 +676,15 @@ start and title columns and saved as inserts ([Editing and commit](#editing-and-
 `following` or `all`; default `ask` with `series` and `recurrenceId`, else `all`; `this` and `following` need them),
 `weekNumbers` (`false`, `iso` or `locale`), `navLinks`, `validRange` (`{ start?, end? }` dates, end exclusive),
 `fixedWeeks`, `outsideDays`, `span` (`{ count: 1..366, unit: day|week|month }` for the timeline), `menu`, `hover`,
-`yearEvents`, `agendaSpan` (`day`, `week`, `month` or `year`; default `month`) and `months` (2 to 24, default 6). The
+`yearEvents`, `agendaSpan` (`day`, `week`, `month` or `year`; default `month`) and `months` (2 to 24, default 6).
+
+The shared-screen keys ([calendar.md](calendar.md#shared-screens)) are `location` (a text column), `merge` (`true` or `{ tone }`:
+copies of one event in several sources with the same title, start, end, all-day flag and location draw once), `fadePast` (0.1 to
+0.9), `dayNotes` (at most 1,000 `{ date, text, tone? }`, text 1 to 64 characters), `faces` (at most 1,000 `{ resource, avatar?,
+initials?, icon? }`, one per resource, each with at least one of the three), `listDays` (2 to 14), `dayWidth` (60 to 400 pixels),
+`listBelow` (2 to 7) and `reset`. A source takes the same `avatar` (a relative or same-origin http(s) URL, or a base64
+`data:image` URL of PNG, JPEG, GIF, WebP or SVG, at most 100,000 characters), `initials` (1 to 3 characters) and `icon` (1 to 4
+characters). JSON feed events may carry `location`. The
 C# presets (`CanopyCalendarPreset`) and basic calendars built from events (`new CanopyCalendar(events)`) only write these keys.
 
 Recurrence rules are the RRULE subset of RFC 5545 that `CanopyRecurrence` (C#) and the browser share: `FREQ` (`DAILY`,
@@ -688,8 +696,9 @@ UTC. `exceptions` values are separated by commas, semicolons or white space (at 
 wall times without one in the series zone, or `yyyy-MM-dd` dates. `tests/fixtures/recurrence-cases.json`
 holds the cases both implementations check. A view with `calendar` loads the `calendar` part; the `calendar-recurrence` part
 with a `recurrence` column, a recurring range or an iCalendar source; the `calendar-edit` part with `editable`, `create` or
-`drop`; the `calendar-ics` part with an iCalendar source or the Export control in the toolbar (otherwise on first export); and
-the `timeline` part with `resources` or the `timeline` view.
+`drop`; the `calendar-ics` part with an iCalendar source or the Export control in the toolbar (otherwise on first export); the
+`calendar-screen` part with a shared-screen key or a source face (otherwise on the first `resetCalendar()`); and the `timeline`
+part with `resources` or the `timeline` view.
 
 ### Record panel
 

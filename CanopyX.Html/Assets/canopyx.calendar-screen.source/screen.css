@@ -1,0 +1,81 @@
+/* Shared screens: faces, merged events, finished events, day notes, run layouts and the Reset button (docs/calendar.md#shared-screens). */
+/* A face: an avatar, initials or an icon in the source's colour, ringed so overlapping faces stay apart. */
+.cx-cal-faces { flex:none;display:inline-flex;align-items:center; }
+.cx-cal-face { --cx-face:var(--cx-ev,var(--hfx-color-accent));--cx-face-size:calc(var(--hfx-icon-md) + var(--hfx-space-0-5));flex:none;display:inline-grid;place-items:center;width:var(--cx-face-size);height:var(--cx-face-size);border-radius:50%;background:color-mix(in srgb,var(--cx-face) 24%,var(--hfx-color-surface));color:color-mix(in srgb,var(--cx-face) 45%,var(--hfx-color-text));box-shadow:0 0 0 calc(1.5 * var(--hfx-border-width)) var(--cx-ev-bg,var(--hfx-color-surface));font-size:calc(var(--cx-face-size) / 2);font-weight:var(--hfx-weight-semibold);line-height:1;letter-spacing:0;overflow:hidden;user-select:none; }
+.cx-cal-face > img { width:100%;height:100%;object-fit:cover; }
+.cx-cal-face-icon { background:transparent;box-shadow:none;font-size:calc(var(--cx-face-size) * .72); }
+.cx-cal-faces > .cx-cal-face + .cx-cal-face { margin-inline-start:calc(-1 * var(--hfx-space-0-5)); }
+.cx-cal-face-more { background:var(--hfx-color-surface);color:var(--hfx-color-text-secondary); }
+.cx-cal-ev.cx-cal-faced::before { display:none; }
+/* In a time block the title keeps the first line; the faces lead the line under it, or the title's line in a short block. */
+.cx-cal-slots .cx-cal-ev-block.cx-cal-faced:not(.cx-cal-marker) { flex-flow:row wrap;align-content:flex-start;align-items:center;column-gap:var(--hfx-space-1); }
+.cx-cal-slots .cx-cal-ev-block.cx-cal-faced:not(.cx-cal-short,.cx-cal-marker) > :not(.cx-cal-faces,.cx-cal-ev-time,.cx-cal-ico) { flex:1 0 100%;min-width:0; }
+.cx-cal-slots .cx-cal-ev-block.cx-cal-faced.cx-cal-short > .cx-cal-faces { order:-2; }
+/* A short block keeps one line: its first face and a count lead, and the title keeps the rest of the line. */
+.cx-cal-slots .cx-cal-ev-block.cx-cal-short .cx-cal-faces > .cx-cal-face + .cx-cal-face { display:none; }
+.cx-cal-slots .cx-cal-ev-block.cx-cal-short .cx-cal-faces[data-cx-more]::after { display:inline; }
+@container (width >= 7.5em) {
+  .cx-cal-slots .cx-cal-ev-block.cx-cal-faced.cx-cal-short > .cx-cal-ev-title { max-width:calc(100% - var(--hfx-icon-md) - var(--hfx-space-0-5) - var(--hfx-space-1)); }
+  .cx-cal-slots .cx-cal-ev-block.cx-cal-faced.cx-cal-short:has(> .cx-cal-faces[data-cx-more]) > .cx-cal-ev-title { max-width:calc(100% - var(--hfx-icon-md) - var(--hfx-space-5) - var(--hfx-space-1)); }
+}
+.cx-cal-ev-block.cx-cal-faced > .cx-cal-ico { display:none; }
+/* Faces on a filled block ring in the block's colour; in a narrow column they stack tighter, then show the first face and a count. */
+.cx-cal-ev:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) .cx-cal-face { --cx-ev-bg:var(--cx-ev); }
+.cx-cal-faces[data-cx-more]::after { display:none;content:attr(data-cx-more);margin-inline-start:var(--hfx-space-0-5);font-size:var(--hfx-type-caption-size);font-weight:var(--hfx-weight-semibold); }
+@container (width < 9em) { .cx-cal-ev-block .cx-cal-faces > .cx-cal-face + .cx-cal-face { margin-inline-start:calc(-1 * var(--hfx-space-1)); } }
+@container (width < 7.5em) { .cx-cal-slots .cx-cal-ev-block.cx-cal-short > .cx-cal-faces { display:none; } }
+@container (width < 6.5em) {
+  .cx-cal-ev-block .cx-cal-faces > .cx-cal-face + .cx-cal-face { display:none; }
+  .cx-cal-ev-block .cx-cal-faces[data-cx-more]::after { display:inline; }
+}
+:is(.cx-cal-ev-bar,.cx-cal-ev-chip,.cx-cal-ev-lane) .cx-cal-face { --cx-face-size:var(--hfx-icon-md); }
+.cx-cal-ev-item .cx-cal-face { --cx-face-size:calc(var(--hfx-icon-lg) + var(--hfx-space-0-5)); }
+.cx-cal-ev-item > .cx-cal-faces { align-self:center; }
+.cx-cal-legend .cx-cal-face { --cx-face-size:var(--hfx-icon-lg);margin-inline-start:calc(-1 * var(--hfx-space-1));box-shadow:none; }
+.cx-cal-src-item .cx-cal-face { margin-inline-start:0; }
+.cx-cal-src[aria-pressed="false"] .cx-cal-face { filter:grayscale(1);opacity:.55; }
+/* A merged event with a shared tone keeps the tone's tint; each owner still shows by face. */
+.cx-cal-det-owners { display:flex;flex-wrap:wrap;gap:var(--hfx-space-1) var(--hfx-space-3);margin:0; }
+.cx-cal-det-owner { display:inline-flex;align-items:center;gap:var(--hfx-space-1-5);color:var(--hfx-color-text-secondary); }
+/* Finished events fade without losing text contrast: blocks wash out to a pale tint, text turns secondary, and the colour bar,
+   dot and faces dim by the configured strength. Focus and hover bring them back. */
+.cx-cal-ev.cx-cal-past { color:var(--hfx-color-text-secondary);transition:background-color .15s ease; }
+.cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) { --cx-cal-past-bg:color-mix(in srgb,var(--cx-ev) calc(var(--cx-cal-fade,.4) * 25%),var(--hfx-color-surface));background:var(--cx-cal-past-bg);color:var(--hfx-color-text); }
+.cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) .cx-cal-face { --cx-ev-bg:var(--cx-cal-past-bg); }
+.cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) :is(.cx-cal-ev-time,.cx-cal-ev-sub,.cx-cal-ico) { color:var(--hfx-color-text-secondary);opacity:1; }
+.cx-cal-ev.cx-cal-past::before,.cx-cal-ev.cx-cal-past .cx-cal-faces { opacity:var(--cx-cal-fade,.4);filter:saturate(.5); }
+.cx-cal-ev.cx-cal-past:is(:hover,:focus-visible),.cx-cal-arow:focus-within .cx-cal-ev.cx-cal-past { background:var(--cx-ev-bg);color:var(--hfx-color-text); }
+.cx-cal-ev.cx-cal-past:is(:hover,:focus-visible)::before,.cx-cal-ev.cx-cal-past:is(:hover,:focus-visible) .cx-cal-faces { opacity:1;filter:none; }
+.cx-cal-arow:has(.cx-cal-past) > .cx-cal-atime { color:var(--hfx-color-text-secondary); }
+/* Day notes: small pills under the day's name in the time grid, beside it in lists and the agenda, beside the number of month days. */
+.cx-cal-notes { display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-1);min-width:0; }
+.cx-cal-note { --cx-note:var(--hfx-color-text-secondary);display:inline-flex;align-items:center;gap:var(--hfx-space-1);max-width:100%;padding:0 var(--hfx-space-1-5);border-radius:var(--hfx-radius-pill);background:color-mix(in srgb,var(--cx-note) 12%,transparent);color:color-mix(in srgb,var(--cx-note) 80%,var(--hfx-color-text));font-size:var(--hfx-type-caption-size);font-weight:var(--hfx-weight-semibold);line-height:var(--hfx-type-caption-line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.cx-cal-note-host { background:transparent;padding:0; }
+.cx-cal-dayhead:has(> .cx-cal-notes) { flex-wrap:wrap;row-gap:var(--hfx-space-0-5); }
+.cx-cal-dayhead > .cx-cal-notes { flex:1 0 100%;justify-content:center;overflow:hidden; }
+.cx-cal-lhead > .cx-cal-notes { margin-inline-start:auto;justify-content:flex-end; }
+.cx-cal-lhead:has(> .cx-cal-wknum) > .cx-cal-notes { margin-inline-start:var(--hfx-space-1-5); }
+.cx-cal-ahead-c > .cx-cal-notes, .cx-cal-daylist-h > .cx-cal-notes { margin-inline-start:var(--hfx-space-2); }
+.cx-cal-month .cx-cal-day > .cx-cal-notes { float:inline-end;max-width:70%;margin-top:var(--hfx-space-0-5);flex-wrap:nowrap;overflow:hidden; }
+/* Run layouts: the week list's days as columns of event boxes, stacked into a list when too few columns fit. */
+.cx-cal-boxes .cx-cal-lday > .cx-cal-ev-item { --cx-cal-bar:calc(var(--hfx-indicator-width) + var(--hfx-border-width));padding:var(--hfx-space-1-5) var(--hfx-space-2);border-radius:var(--hfx-radius-sm);background:var(--cx-ev-bg);box-shadow:inset var(--cx-cal-bar) 0 0 var(--cx-ev); }
+:where(.cx-cal-rtl) .cx-cal-boxes .cx-cal-lday > .cx-cal-ev-item { box-shadow:inset calc(-1 * var(--cx-cal-bar)) 0 0 var(--cx-ev); }
+.cx-cal-boxes .cx-cal-lday > .cx-cal-ev-item::before { display:none; }
+.cx-cal-boxes .cx-cal-lday > .cx-cal-ev-item:focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
+.cx-cal-list.cx-cal-boxes:not(.cx-cal-list-day):not(.cx-cal-stack) .cx-cal-lday > .cx-cal-ev-item.cx-cal-faced > .cx-cal-faces { order:0; }
+.cx-cal-stack .cx-cal-lrow { grid-template-columns:minmax(0,1fr); }
+.cx-cal-stack .cx-cal-lday { border-inline-start:0;border-top:var(--hfx-border-width) solid var(--hfx-color-border);padding:var(--hfx-space-2) var(--hfx-space-3); }
+.cx-cal-stack .cx-cal-lday:first-child { border-top:0; }
+.cx-cal-list.cx-cal-stack .cx-cal-lday > .cx-cal-ev-item > .cx-cal-ev-title { flex:1 1 auto;order:0; }
+.cx-cal-list.cx-cal-stack .cx-cal-lday > .cx-cal-ev-item > .cx-cal-ev-time { order:-1; }
+.cx-cal-list.cx-cal-stack .cx-cal-lday > .cx-cal-ev-item > .cx-cal-faces { order:-2; }
+.cx-cal-stack .cx-cal-lday > .cx-cal-empty { display:none; }
+/* Reset appears only once the calendar differs from its defaults. */
+.cx-cal-reset { border-color:color-mix(in srgb,var(--hfx-color-accent) 45%,var(--hfx-color-border));background:var(--hfx-color-accent-subtle);color:var(--hfx-color-accent-text);font-weight:var(--hfx-weight-semibold); }
+.cx-cal-reset[hidden] { display:none; }
+@media (forced-colors:active) {
+  .cx-cal-face { forced-color-adjust:none;border:var(--hfx-border-width) solid CanvasText;background:Canvas;color:CanvasText; }
+  .cx-cal-ev.cx-cal-past { text-decoration:line-through; }
+}
+@media print { .cx-cal-reset { display:none !important; } .cx-cal-ev.cx-cal-past :is(.cx-cal-faces) { opacity:1;filter:none; } }
+@media (prefers-reduced-motion:reduce) { .cx-cal-ev.cx-cal-past { transition:none; } }

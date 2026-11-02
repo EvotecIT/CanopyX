@@ -45,14 +45,14 @@
     if (!Array.isArray(list) || !list.length || list.length > 50) calInvalid("calendar sources are a list of 1 to 50.");
     const ids = new Set();
     return list.map(item => {
-      if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).some(key => !["id", "label", "tone", "ics", "url", "fetchParams", "color", "hidden"].includes(key)) ||
+      if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).some(key => !["id", "label", "tone", "ics", "url", "fetchParams", "color", "hidden", ...CAL_FACE].includes(key)) ||
           typeof item.id !== "string" || !CAL_ID.test(item.id) || ids.has(item.id) || typeof item.label !== "string" || !item.label.trim() || item.label.length > 256 ||
           item.tone !== undefined && !CAL_TONE.test(item.tone) || item.url !== undefined && (!calSameOrigin(item.url) || item.ics !== undefined) ||
           item.color !== undefined && !/^#[0-9a-fA-F]{6}$/.test(item.color) || !calFetchParams(item.fetchParams, item.url) || item.ics !== undefined && !calSameOrigin(item.ics) || item.hidden !== undefined && typeof item.hidden !== "boolean")
         calInvalid("a calendar source has a unique id, a label, and optional tone, ics (a same-origin address) and hidden.");
       if (item.ics === undefined && item.url === undefined && !sourceColumn) calInvalid("calendar sources without ics need the source column.");
       ids.add(item.id);
-      return { id: item.id, label: item.label, tone: calSafeTone(item.tone), ics: item.ics ?? null, url: item.url ?? null, fetchParams: item.fetchParams || {}, color: item.color ?? null, hidden: item.hidden === true };
+      return { id: item.id, label: item.label, tone: calSafeTone(item.tone), ics: item.ics ?? null, url: item.url ?? null, fetchParams: item.fetchParams || {}, color: item.color ?? null, hidden: item.hidden === true, face: item };
     });
   }
   function calFetchParams(value, url) {
