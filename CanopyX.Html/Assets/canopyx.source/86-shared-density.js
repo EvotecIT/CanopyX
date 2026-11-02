@@ -6,10 +6,13 @@
   }
 
   function watchSharedDensity(view) {
-    document.fonts.addEventListener("loadingdone", () => {
+    const loaded = () => document.fonts.ready.then(() => {
+      if (view.destroyed) return;
       FONT_METRICS.clear();
       refreshSharedDensity(view);
-    }, { signal: view.lifetime.signal });
+    });
+    document.fonts.addEventListener("loading", loaded, { signal: view.lifetime.signal });
+    loaded();
     let previous = sharedDensity(view.host);
     const metrics = () => { if (previous) view.host.style.setProperty("--cx-compact", previous === "compact" ? "1" : "0"); else view.host.style.removeProperty("--cx-compact"); };
     metrics();

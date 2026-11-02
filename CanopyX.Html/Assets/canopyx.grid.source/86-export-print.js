@@ -205,7 +205,7 @@
       }
       await new Promise((resolve, reject) => {
         cancelFontWait = () => reject(new DOMException("Grid cancelled.", "AbortError"));
-        Promise.all(fontLoads).then(() => doc.fonts.ready).then(resolve, reject);
+        Promise.all(fontLoads).then(() => { doc.body.getBoundingClientRect(); return doc.fonts.ready; }).then(resolve, reject);
       });
       if ([...doc.fonts].some(face => face.status === "error")) throw new Error("CanopyX: print font failed to load.");
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
