@@ -27,6 +27,8 @@ internal static class UiPrimitivesExample {
             ["tabs-overflow"] = OverflowTabs(fragments),
             ["tabs-deferred"] = DeferredTabs(fragments),
             ["tabs-auto"] = AutoTabs(fragments),
+            ["accordion-single"] = SingleAccordion(fragments),
+            ["accordion-multiple"] = MultipleAccordion(fragments),
             ["stepper"] = Wizard(fragments),
             ["stepper-vertical"] = VerticalStepper(fragments),
             ["stepper-report"] = ReportStepper(fragments),
@@ -94,6 +96,36 @@ internal static class UiPrimitivesExample {
         tabs.Tabs.Add(new CanopyTab("review", "Review") { ContentHtml = fragments["tour-review"] });
         tabs.Tabs.Add(new CanopyTab("share", "Share") { ContentHtml = fragments["tour-share"] });
         return tabs.ToHtmlFragment();
+    }
+
+    private static string SingleAccordion(IReadOnlyDictionary<string, string> fragments) {
+        var accordion = new CanopyAccordion("help", new CanopyAccordionOptions { Animate = true, Search = true, SearchPlaceholder = "Filter questions", CopyTitle = true });
+        accordion.Items.Add(new CanopyAccordionItem("start", "How do I start a workspace?") { Open = true, ContentHtml = fragments["accordion-start"] });
+        accordion.Items.Add(new CanopyAccordionItem("share", "Who can see shared files?") { Badge = "New", ContentHtml = fragments["accordion-share"] });
+        accordion.Items.Add(new CanopyAccordionItem("export", "Can I export a report?") { ContentHtml = fragments["accordion-export"] });
+        accordion.Items.Add(new CanopyAccordionItem("billing", "How does billing work?") { Disabled = true, ContentHtml = fragments["accordion-billing"] });
+        return accordion.ToHtmlFragment();
+    }
+
+    private static string MultipleAccordion(IReadOnlyDictionary<string, string> fragments) {
+        var accordion = new CanopyAccordion("workspace-settings", new CanopyAccordionOptions {
+            Multiple = true, Style = CanopyAccordionStyle.Separated, Indicator = CanopyAccordionIndicator.Plus,
+            IndicatorPosition = CanopyAccordionIndicatorPosition.Start, RememberKey = "gallery-settings"
+        });
+        accordion.Items.Add(new CanopyAccordionItem("general", "General") {
+            Open = true, ContentHtml = fragments["accordion-general"],
+            ActionsHtml = "<a href=\"#activity-log-section\">See activity</a>"
+        });
+        accordion.Items.Add(new CanopyAccordionItem("loaded", "Load on demand") { ContentHtml = fragments["accordion-deferred"] });
+        accordion.Items.Add(new CanopyAccordionItem("nested", "Nested sections") { ContentHtml = NestedAccordion(fragments) });
+        return accordion.ToHtmlFragment();
+    }
+
+    private static string NestedAccordion(IReadOnlyDictionary<string, string> fragments) {
+        var accordion = new CanopyAccordion("nested-settings", new CanopyAccordionOptions { Style = CanopyAccordionStyle.Flush, HeadingLevel = 4 });
+        accordion.Items.Add(new CanopyAccordionItem("alerts", "Alerts") { ContentHtml = fragments["accordion-alerts"] });
+        accordion.Items.Add(new CanopyAccordionItem("retention", "Retention") { ContentHtml = fragments["accordion-retention"] });
+        return accordion.ToHtmlFragment();
     }
 
     private static string Wizard(IReadOnlyDictionary<string, string> fragments) {

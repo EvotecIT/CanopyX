@@ -52,6 +52,19 @@ test('tabs keep disabled tabs focusable without activating them', async ({ page 
   await expect(overview).toHaveAttribute('aria-selected', 'true');
 });
 
+test('a remembered tab returns after a reload, and next and back stop at the ends past disabled tabs', async ({ page }) => {
+  await openUi(page, tabs('sections', 'data-remember="report-tabs"'));
+  await page.getByRole('tab', { name: 'Checks 3' }).click();
+  await page.reload();
+  await page.evaluate(() => Promise.all(CanopyX.mountUi(document).map(api => api.ready)));
+  await expect(page.getByRole('tab', { name: 'Checks 3' })).toHaveAttribute('aria-selected', 'true');
+  const moved = await page.evaluate(async () => {
+    const tabs = CanopyX.tabs('#sections');
+    return [await tabs.next(), tabs.getSelected(), await tabs.next(), await tabs.back(), await tabs.back(), await tabs.back(), tabs.getSelected()];
+  });
+  expect(moved).toEqual([true, 'audit', false, true, true, false, 'overview']);
+});
+
 test('manual activation and RTL arrows preserve the panel until Enter', async ({ page }) => {
   await openUi(page, tabs('sections', 'dir="rtl"'), initTabs("{ activation: 'manual' }"));
   await page.getByRole('tab', { name: 'Overview' }).focus();

@@ -15,5 +15,8 @@ public enum CanopyRuntime {
     ReportingGrid,
 
     /// <summary>The slim flow entry point: forms and guided flows, no grid code.</summary>
-    Flow
+    Flow,
+
+    /// <summary>The slim UI entry point: tabs, steppers, accordions, overlays and menus, no grid or tree code.</summary>
+    Ui
 }

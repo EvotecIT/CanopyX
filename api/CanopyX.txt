@@ -1896,6 +1896,10 @@ CanopyX.CanopyLabels.CanopyX.CanopyLabels Clone()
 CanopyX.CanopyLabels.System.Boolean RequiresDataGridRuntime { get; }
 CanopyX.CanopyLabels.System.Boolean RequiresInteractiveRuntime { get; }
 CanopyX.CanopyLabels.System.Boolean RequiresReportingRuntime { get; }
+CanopyX.CanopyLabels.System.String AccordionCopied { get; set; }
+CanopyX.CanopyLabels.System.String AccordionCopyTitle { get; set; }
+CanopyX.CanopyLabels.System.String AccordionNoMatches { get; set; }
+CanopyX.CanopyLabels.System.String AccordionSearch { get; set; }
 CanopyX.CanopyLabels.System.String Actions { get; set; }
 CanopyX.CanopyLabels.System.String BoardEmpty { get; set; }
 CanopyX.CanopyLabels.System.String BoardKeys { get; set; }

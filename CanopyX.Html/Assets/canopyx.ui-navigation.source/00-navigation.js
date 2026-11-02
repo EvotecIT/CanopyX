@@ -2,7 +2,7 @@
 UI_TOOLS.navigation = (() => {
   const focusable = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
   function owned(root, selector) {
-    return Array.from(root.querySelectorAll(selector)).filter(el => el.closest('[data-cx-tabs],[data-cx-stepper]') === root);
+    return Array.from(root.querySelectorAll(selector)).filter(el => el.closest('[data-cx-tabs],[data-cx-stepper],[data-cx-accordion]') === root);
   }
   function scope(signal) {
     const life = new AbortController();
@@ -11,13 +11,13 @@ UI_TOOLS.navigation = (() => {
     return life;
   }
   function records(root, kind, options) {
-    const tabs = kind === 'tabs';
-    const buttons = owned(root, tabs ? '[role="tab"]' : '[data-step-id]');
-    const panels = owned(root, tabs ? '[role="tabpanel"]' : '.cx-step-panel');
+    const tabs = kind === 'tabs', accordion = kind === 'accordion';
+    const buttons = owned(root, tabs ? '[role="tab"]' : accordion ? '.cx-accordion-trigger' : '[data-step-id]');
+    const panels = owned(root, tabs ? '[role="tabpanel"]' : accordion ? '.cx-accordion-panel' : '.cx-step-panel');
     return buttons.map((element, index) => {
-      const id = tabs ? element.dataset.tabId : element.dataset.stepId;
-      const config = (options[tabs ? 'tabs' : 'steps'] || []).find(item => item.id === id) || {};
-      const panel = tabs ? panels.find(el => el.id === element.getAttribute('aria-controls')) : panels[index];
+      const id = tabs ? element.dataset.tabId : accordion ? element.dataset.accordionId : element.dataset.stepId;
+      const config = (options[tabs ? 'tabs' : accordion ? 'sections' : 'steps'] || []).find(item => item.id === id) || {};
+      const panel = tabs || accordion ? panels.find(el => el.id === element.getAttribute('aria-controls')) : panels[index];
       const iconSlot = element.querySelector('[data-icon]');
       if (iconSlot && options.renderIcon) {
         const rendered = options.renderIcon(iconSlot.dataset.icon, { ...config, id, index, element, panel });
@@ -25,12 +25,13 @@ UI_TOOLS.navigation = (() => {
         else setText(iconSlot, typeof rendered === 'string' ? rendered : '');
       }
       return { ...config, id, index, element, panel,
-        label: element.querySelector(tabs ? '.cx-tab-label' : '.cx-step-label')?.textContent || config.label || id,
-        badge: element.querySelector('.cx-tab-badge')?.textContent || config.badge,
+        label: element.querySelector(tabs ? '.cx-tab-label' : accordion ? '.cx-accordion-label' : '.cx-step-label')?.textContent || config.label || id,
+        badge: element.querySelector('.cx-tab-badge,.cx-accordion-badge')?.textContent || config.badge,
         icon: iconSlot ? iconSlot.firstElementChild || iconSlot.textContent || undefined : config.icon,
         disabled: element.getAttribute('aria-disabled') === 'true' || element.dataset.state === 'disabled',
         optional: element.dataset.optional === 'true',
         visited: element.dataset.visited === 'true',
+        open: element.getAttribute('aria-expanded') === 'true',
         state: element.dataset.state || 'upcoming' };
     });
   }
@@ -52,8 +53,8 @@ UI_TOOLS.navigation = (() => {
       const live = () => ticket === version && !controller.signal.aborted && !life.signal.aborted;
       const from = read();
       const restoreFocus = () => {
-        // Automatic progression leaves the user's focus where it is.
-        if (context === 'auto') return;
+        // Automatic progression leaves the user's focus where it is, and a refused section keeps it on the section they chose.
+        if (context === 'auto' || prefix === 'accordion') return;
         const target = prefix === 'tabs' ? from?.element : from?.element.querySelector('button') || from?.panel?.querySelector('[data-hfx-part="title"],h3');
         target?.focus();
       };
@@ -63,7 +64,7 @@ UI_TOOLS.navigation = (() => {
       try {
         if (prepare && await wait(prepare(from, target, controller.signal, live), controller.signal) === false) return false;
         if (!live()) return false;
-        const guard = from !== target || context === 'finish';
+        const guard = !target.quiet && (from !== target || context === 'finish');
         if (guard && !UI_TOOLS.emit(root, prefix, 'beforechange', { from, to: target, signal: controller.signal }, true)) {
           if (live()) restoreFocus();
           return false;

@@ -15,6 +15,9 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
   root.dataset.collapse = options.collapse || root.dataset.collapse || (effectiveStyle === 'segmented' ? 'none' : 'picker');
   root.dataset.print = options.print || root.dataset.print || 'all';
   root.dataset.transition = options.transition || 'none';
+  root.dataset.justified = String(options.justified ?? root.dataset.justified === 'true');
+  const remember = options.remember ?? root.dataset.remember;
+  const storageKey = remember ? 'canopyx:tabs:' + (remember === true ? root.id : remember) : null;
   list?.setAttribute('aria-orientation', effectiveStyle === 'vertical' ? 'vertical' : 'horizontal');
   const deferred = n.deferred(root, 'tabs', options, life, id => select(id));
   function render() {
@@ -31,10 +34,12 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
     }
     layout?.update(items, current);
   }
-  const selection = n.selection(root, 'tabs', options, life, () => current, async (from, to, loadSignal, live) => {
+  const selection = n.selection(root, 'tabs', options, life, () => current, async (from, to, loadSignal, live, source) => {
     if (from !== to) deferred.leave(from);
     current = to; render();
     if (options.hash && root.id) writeHash(to.id);
+    // Private windows and full or blocked storage still work; the choice just is not remembered.
+    if (storageKey && source !== 'auto') try { localStorage.setItem(storageKey, to.id); } catch { }
     if (from !== to) UI_TOOLS.emit(root, 'tabs', 'change', { from, to });
     const loaded = await deferred.load(to, loadSignal, live);
     if (live() && loaded) animate(to, from);
@@ -47,6 +52,13 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
     if (!target || target.disabled) { selection.cancel(); return Promise.resolve(false); }
     if (target === current && !deferred.isDeferred(target)) { selection.cancel(); return Promise.resolve(true); }
     return selection.request(target, undefined, source);
+  }
+  function step(direction) {
+    const enabled = items.filter(item => !item.disabled);
+    return select(enabled[enabled.indexOf(current) + direction]?.id);
+  }
+  function remembered() {
+    try { return n.resolve(items, localStorage.getItem(storageKey)); } catch { return undefined; }
   }
   function animate(to, from) {
     if (!to.panel || root.dataset.transition === 'none' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -136,12 +148,12 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
   refresh();
   layout = UI_TOOLS.tabsLayout(root, list, options, labels, life, id => select(id, 'user'));
   root.dataset.cxReady = 'true'; render();
-  const requested = options.hash && n.resolve(items, hashId()) || n.resolve(items, options.selectedIndex ?? options.selected);
+  const requested = options.hash && n.resolve(items, hashId()) || storageKey && remembered() || n.resolve(items, options.selectedIndex ?? options.selected);
   const initial = requested && !requested.disabled ? requested : current;
   if (options.hash && root.id && initial === current && current) writeHash(current.id);
   const ready = select(initial?.id, 'initial');
   auto = UI_TOOLS.tabsAuto(root, list, options, labels, life, () => ({ items, current }),
     id => select(id, 'auto'), () => selection.cancel(), ready);
   signal?.addEventListener('abort', destroy, { once: true });
-  return { select, getSelected: () => current?.id ?? null, refresh, preparePrint: () => deferred.preparePrint(), destroy, ready };
+  return { select, next: () => step(1), back: () => step(-1), getSelected: () => current?.id ?? null, refresh, preparePrint: () => deferred.preparePrint(), destroy, ready };
 };

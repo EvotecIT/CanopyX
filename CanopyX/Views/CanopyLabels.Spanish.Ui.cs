@@ -3,6 +3,10 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     private static CanopyLabels WithSpanishUi(CanopyLabels labels) {
+        labels.AccordionSearch = "Filtrar secciones";
+        labels.AccordionNoMatches = "No hay secciones coincidentes";
+        labels.AccordionCopyTitle = "Copiar título";
+        labels.AccordionCopied = "Copiado";
         labels.TabsMore = "Más";
         labels.TabsMoreSelected = "Más: {label}";
         labels.TabsScrollPrevious = "Pestañas anteriores";

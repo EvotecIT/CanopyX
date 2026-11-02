@@ -53,7 +53,6 @@
       this.rendered = new Map(); this.pool = []; this.selected = new Set(); this.focused = null; this.rafId = 0;
       this.prepareState();
       this.build();
-      watchFontMetrics(this);
       this.ready = this.initializeState();
     }
 

@@ -1,18 +1,15 @@
-  // A host's density is inherited by nested views; virtualization must follow the same height as its CSS.
+  // Density and loaded fonts affect measured rows; nested views observe both through their own lifetime.
   const FONT_METRICS = new Map();
-  function watchFontMetrics(view) {
-    document.fonts.addEventListener("loadingdone", () => {
-      FONT_METRICS.clear();
-      refreshSharedDensity(view);
-    }, { signal: view.lifetime.signal });
-  }
-
   function sharedDensity(host) {
     const value = host.closest("[data-hfx-density]")?.getAttribute("data-hfx-density");
     return value === "compact" || value === "comfortable" ? value : null;
   }
 
   function watchSharedDensity(view) {
+    document.fonts.addEventListener("loadingdone", () => {
+      FONT_METRICS.clear();
+      refreshSharedDensity(view);
+    }, { signal: view.lifetime.signal });
     let previous = sharedDensity(view.host);
     const metrics = () => { if (previous) view.host.style.setProperty("--cx-compact", previous === "compact" ? "1" : "0"); else view.host.style.removeProperty("--cx-compact"); };
     metrics();

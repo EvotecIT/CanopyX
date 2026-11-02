@@ -3,12 +3,13 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "1822a346992534dd",
+      "version": "39804c2061ff6d0b",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": []
     },
@@ -20,7 +21,8 @@
       "style": "canopyx-ui-menu.css",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [
         "tree",
@@ -42,7 +44,8 @@
       "style": "canopyx-ui-picker.css",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [],
       "requires": [
@@ -52,42 +55,63 @@
     {
       "name": "ui-navigation",
       "label": "UI navigation",
-      "version": "50cd7c6c56e8ca28",
+      "version": "0e3fed3d150a9da0",
       "script": "canopyx-ui-navigation.js",
       "style": "canopyx-ui-navigation.css",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [],
       "requires": [
-        "ui-picker"
+        "ui-overlays"
       ]
     },
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "a2e7724a831ae3bf",
+      "version": "d97c13adf5742644",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
       ],
       "views": [],
       "requires": [
+        "ui-picker",
         "ui-navigation"
       ]
     },
     {
       "name": "ui-stepper",
       "label": "UI stepper",
-      "version": "e90267a655a5a5ac",
+      "version": "3215ba65fac39e46",
       "script": "canopyx-ui-stepper.js",
       "style": "canopyx-ui-stepper.css",
       "runtimes": [
         "tree",
-        "grid"
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-picker",
+        "ui-navigation"
+      ]
+    },
+    {
+      "name": "ui-accordion",
+      "label": "UI accordion",
+      "version": "2dcae6b70bbee048",
+      "script": "canopyx-ui-accordion.js",
+      "style": "canopyx-ui-accordion.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
       ],
       "views": [],
       "requires": [

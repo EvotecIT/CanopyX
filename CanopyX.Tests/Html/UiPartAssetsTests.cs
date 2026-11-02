@@ -11,6 +11,7 @@ public sealed class UiPartAssetsTests {
     [InlineData("ui-navigation", 6 * 1024)]
     [InlineData("ui-tabs", 9 * 1024)]
     [InlineData("ui-stepper", 7 * 1024)]
+    [InlineData("ui-accordion", 6 * 1024)]
     public void UiPart_ComponentAssetsStayWithinTheirOwnGzipCap(string name, int componentBudget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.NotNull(part.Style);
@@ -94,6 +95,22 @@ public sealed class UiPartAssetsTests {
         Assert.Equal(new[] { "ui-overlays", "tree-tools", "export" },
             CanopyHtmlAssets.GetRequiredParts(tree).Select(part => part.Name));
         Assert.DoesNotContain("application/x-canopyx-ui-menu", tree.ToHtmlFragment());
+    }
+
+    [Fact]
+    public void UiEntryPoint_IsSlimAndKnowsOnlyTheUiParts() {
+        // #127: a content page must not pay for the 57 KB tree runtime to reach a 20 KB overlay part.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Ui, 6 * 1024);
+        var script = CanopyHtmlAssets.GetScript(CanopyRuntime.Ui);
+        foreach (var marker in new[] { "createTreeGrid", "createDataGrid", "createFlow", "class TreeGrid", "class DataGrid" }) Assert.DoesNotContain(marker, script);
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion" },
+            CanopyHtmlAssets.GetParts(CanopyRuntime.Ui).Select(part => part.Name));
+    }
+
+    [Fact]
+    public void Accordion_LoadsWithoutTheTabPicker() {
+        Assert.Equal(new[] { "ui-navigation" }, CanopyHtmlAssets.GetPart("ui-accordion").Requires);
+        Assert.Equal(new[] { "ui-overlays" }, CanopyHtmlAssets.GetPart("ui-navigation").Requires);
     }
 
     [Fact]

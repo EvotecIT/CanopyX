@@ -109,6 +109,7 @@
     inline-size: var(--hfx-indicator-width);
     background: var(--hfx-color-accent-indicator);
   }
+  .cx-tabs[data-justified="true"]:not(.cx-tabs--vertical) > .cx-tablist > .cx-tab { flex: 1 1 0; }
   .cx-tabs[data-overflow="wrap"] > .cx-tablist { flex-wrap: wrap; overflow: visible; }
   .cx-tabs[data-overflow="menu"] > .cx-tablist { overflow: hidden; }
   .cx-tabs-tools { display: flex; gap: var(--hfx-space-1); grid-column: 2; grid-row: 1; }
