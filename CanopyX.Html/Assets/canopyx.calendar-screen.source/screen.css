@@ -43,9 +43,9 @@
 .cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) { --cx-cal-past-bg:color-mix(in srgb,var(--cx-ev) calc(var(--cx-cal-fade,.4) * 25%),var(--hfx-color-surface));background:var(--cx-cal-past-bg);color:var(--hfx-color-text); }
 .cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) .cx-cal-face { --cx-ev-bg:var(--cx-cal-past-bg); }
 .cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) :is(.cx-cal-ev-time,.cx-cal-ev-sub,.cx-cal-ico) { color:var(--hfx-color-text-secondary);opacity:1; }
-.cx-cal-ev.cx-cal-past::before,.cx-cal-ev.cx-cal-past .cx-cal-faces { opacity:var(--cx-cal-fade,.4);filter:saturate(.5); }
+.cx-cal-ev.cx-cal-past::before,.cx-cal-ev.cx-cal-past .cx-cal-face > img { opacity:var(--cx-cal-fade,.4);filter:saturate(.5); }
 .cx-cal-ev.cx-cal-past:is(:hover,:focus-visible),.cx-cal-arow:focus-within .cx-cal-ev.cx-cal-past { background:var(--cx-ev-bg);color:var(--hfx-color-text); }
-.cx-cal-ev.cx-cal-past:is(:hover,:focus-visible)::before,.cx-cal-ev.cx-cal-past:is(:hover,:focus-visible) .cx-cal-faces { opacity:1;filter:none; }
+.cx-cal-ev.cx-cal-past:is(:hover,:focus-visible)::before,.cx-cal-ev.cx-cal-past:is(:hover,:focus-visible) .cx-cal-face > img { opacity:1;filter:none; }
 .cx-cal-arow:has(.cx-cal-past) > .cx-cal-atime { color:var(--hfx-color-text-secondary); }
 /* Day notes: small pills under the day's name in the time grid, beside it in lists and the agenda, beside the number of month days. */
 .cx-cal-notes { display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-1);min-width:0; }
@@ -77,5 +77,5 @@
   .cx-cal-face { forced-color-adjust:none;border:var(--hfx-border-width) solid CanvasText;background:Canvas;color:CanvasText; }
   .cx-cal-ev.cx-cal-past { text-decoration:line-through; }
 }
-@media print { .cx-cal-reset { display:none !important; } .cx-cal-ev.cx-cal-past :is(.cx-cal-faces) { opacity:1;filter:none; } }
+@media print { .cx-cal-reset { display:none !important; } .cx-cal-ev.cx-cal-past .cx-cal-face > img { opacity:1;filter:none; } }
 @media (prefers-reduced-motion:reduce) { .cx-cal-ev.cx-cal-past { transition:none; } }
