@@ -167,6 +167,8 @@ internal static class ChangeWeek {
         // A click selects a day in the month view, which is what links the calendar to the records.
         var calendar = Calendar("report-calendar", "Change calendar").View;
         calendar.Calendar!.View = CanopyCalendarView.Month;
+        var records = Grid("report-records", "Change records").View;
+        records.SelectOnClick = true;
         var (canvas, ink, muted) = dark ? ("#111118", "#ececf3", "#b0afc2") : ("#ffffff", "#16151f", "#4b4a5e");
         return "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Change weeks report</title><style>"
             + CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid)
@@ -177,7 +179,7 @@ internal static class ChangeWeek {
             + "<p id=\"status\" role=\"status\">Click a day in the calendar to filter the records, or select records to mark them in the calendar.</p>"
             + "<div class=\"chart\">" + ChartSvg(dark) + "</div>"
             + calendar.ToHtmlFragment(Options("620px"))
-            + Grid("report-records", "Change records").View.ToHtmlFragment(Options("420px"))
+            + records.ToHtmlFragment(Options("420px"))
             + "</main><script>" + LinkScript + "</script></body></html>";
     }
 
@@ -192,6 +194,7 @@ internal static class ChangeWeek {
             const calendar = hostOf("report-calendar"), grid = hostOf("report-records");
             calendar.addEventListener("canopyx:linkchange", event => {
               const detail = event.detail;
+              if (detail.scope !== "select") return;
               if (detail.action === "clear" || !detail.range) { grid.canopyx.setExternalFilter("calendar", null); status.textContent = "Nothing selected in the calendar."; return; }
               const to = new Date(Date.parse(detail.range.to) - 1000).toISOString().replace(".000Z", "Z");
               grid.canopyx.setExternalFilter("calendar", { field: detail.range.column, range: [detail.range.from, to], label: detail.label, sourceLabel: "Calendar" });
@@ -203,6 +206,10 @@ internal static class ChangeWeek {
               if (detail.action === "clear") { calendar.canopyx.clearHighlight(); status.textContent = "Nothing selected in the records."; return; }
               calendar.canopyx.setHighlight(detail.keys, { source: "Records" });
               status.textContent = "Records: " + detail.label;
+            });
+            grid.addEventListener("canopyx:externalfilter", event => {
+              const detail = event.detail;
+              if (detail.reason === "user" && !detail.filters.some(filter => filter.source === "calendar")) calendar.canopyx.clearCalendarSelection();
             });
           });
         })();

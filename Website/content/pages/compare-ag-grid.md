@@ -5,7 +5,7 @@ slug: compare/ag-grid
 meta.seo_title: AG Grid alternative: CanopyX compared | CanopyX
 ---
 
-[AG Grid](https://www.ag-grid.com/) is the benchmark for data grids, with more depth and reach than CanopyX. If you're looking for an alternative, CanopyX is worth a look when you want grouping and pivots in an MIT package, or reports generated from .NET. Details below were checked against [AG Grid's edition comparison](https://www.ag-grid.com/javascript-data-grid/community-vs-enterprise/) for version 36.2 on 1 November 2026.
+[AG Grid](https://www.ag-grid.com/) is a long-established data grid with a wide feature set and integrations for the major JavaScript frameworks. If you're looking for an alternative, CanopyX is worth a look when you want grouping and pivots in an MIT package, or reports generated from .NET. Details below were checked against [AG Grid's edition comparison](https://www.ag-grid.com/javascript-data-grid/community-vs-enterprise/) for version 36.2 on 1 November 2026.
 
 | | CanopyX | AG Grid Community | AG Grid Enterprise |
 | --- | --- | --- | --- |

@@ -69,6 +69,7 @@
 .cnx-bench__demo { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; margin: 0; }
 .cnx-bench__bar { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 8px 6px 16px; border-bottom: 1px solid var(--cnx-line); }
 .cnx-bench__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
+.cnx-bench__title[hidden] { display: none; }
 .cnx-bench__title strong { color: var(--cnx-ink); font-size: .9688rem; }
 .cnx-bench__title span { color: var(--cnx-ink-3); font-size: .8125rem; }
 .cnx-bench__bar .cnx-frame__open { margin-left: auto; }

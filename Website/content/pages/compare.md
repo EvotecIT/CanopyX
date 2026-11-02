@@ -1,5 +1,5 @@
 ---
-title: CanopyX alternatives and comparisons
+title: AG Grid, DataTables and FullCalendar alternatives
 description: Looking for an open source alternative to AG Grid, DataTables or FullCalendar? See how CanopyX compares and where each library fits best.
 slug: compare
 meta.seo_title: AG Grid, DataTables and FullCalendar alternatives | CanopyX
