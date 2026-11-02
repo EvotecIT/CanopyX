@@ -1,8 +1,8 @@
   // A host's density is inherited by nested views; virtualization must follow the same height as its CSS.
-  const FONT_METRICS = { version: 0 };
+  const FONT_METRICS = new Map();
   function watchFontMetrics(view) {
     document.fonts.addEventListener("loadingdone", () => {
-      FONT_METRICS.version++;
+      FONT_METRICS.clear();
       refreshSharedDensity(view);
     }, { signal: view.lifetime.signal });
   }
