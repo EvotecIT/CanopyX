@@ -30,7 +30,7 @@ public sealed class GridCalendarPartTests {
         Assert.DoesNotContain("function calIcsParse(", part.Script);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         // Multi-resource projection, JSON feeds and assignment-aware focus stay in this optional part, with the legend that folds
-        // its switches into a menu and the hooks of the shared-screen part. It measures 42,053 bytes; keep it bounded at 42 KiB.
+        // its switches into a menu and the hooks of the shared-screen part. It measures 42,240 bytes; keep it bounded at 42 KiB.
         Assert.True(ComponentGzip(part.Script) <= 42 * 1024, "The calendar part is " + ComponentGzip(part.Script) + " bytes gzip; the guard is 42 KiB for resource projection, feeds, focus and the folding legend.");
         Assert.True(ComponentGzip(part.Style!) <= 6400, "The calendar stylesheet is " + ComponentGzip(part.Style!) + " bytes gzip; the guard is 6,400 (5,522 measured + 15%).");
 
@@ -51,8 +51,8 @@ public sealed class GridCalendarPartTests {
     // Minute fields, explicit scope, EXDATE removal, shared-resource context and the phone sheet measure 14,374 bytes.
     [InlineData("calendar-edit", "calendar editing", "calCreateForm(proposal", 14848)]
     [InlineData("calendar-ics", "iCalendar", "function calIcsParse(", 9450)]
-    // Faces, merging, fading, day notes, fitted days and Reset measure 6,047 bytes and their stylesheet, with the narrow-event
-    // face rules, 1,895.
+    // Faces, merging, fading, day notes, fitted days and Reset measure 6,186 bytes and their stylesheet, with the narrow-event
+    // face rules, 1,903.
     [InlineData("calendar-screen", "calendar shared screens", "function calScreenSettings(", 6950, 2180)]
     public void CalendarSubParts_AreBoundedAndOutsideTheCore(string name, string label, string marker, int guard, int styleGuard = 0) {
         var part = CanopyHtmlAssets.GetPart(name);

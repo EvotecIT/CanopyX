@@ -47,7 +47,7 @@
 .cx-cal-dayhead > .cx-cal-notes{flex:1 0 100%;justify-content:center;overflow:hidden;}
 .cx-cal-lhead > .cx-cal-notes{margin-inline-start:auto;justify-content:flex-end;}
 .cx-cal-lhead:has(> .cx-cal-wknum) > .cx-cal-notes{margin-inline-start:var(--hfx-space-1-5,6px);}
-.cx-cal-ahead-c > .cx-cal-notes{margin-inline-start:var(--hfx-space-2,0.5rem);}
+.cx-cal-ahead-c > .cx-cal-notes,.cx-cal-daylist-h > .cx-cal-notes{margin-inline-start:var(--hfx-space-2,0.5rem);}
 .cx-cal-month .cx-cal-day > .cx-cal-notes{float:inline-end;max-width:70%;margin-top:var(--hfx-space-0-5,2px);flex-wrap:nowrap;overflow:hidden;}
 .cx-cal-boxes .cx-cal-lday > .cx-cal-ev-item{--cx-cal-bar:calc(var(--hfx-indicator-width,2px) + var(--hfx-border-width,1px));padding:var(--hfx-space-1-5,6px) var(--hfx-space-2,0.5rem);border-radius:var(--hfx-radius-sm,4px);background:var(--cx-ev-bg);box-shadow:inset var(--cx-cal-bar) 0 0 var(--cx-ev);}
 :where(.cx-cal-rtl) .cx-cal-boxes .cx-cal-lday > .cx-cal-ev-item{box-shadow:inset calc(-1 * var(--cx-cal-bar)) 0 0 var(--cx-ev);}

@@ -10,7 +10,8 @@
   function calFace(item, name) {
     const { avatar, initials, icon } = item;
     if (avatar === undefined && initials === undefined && icon === undefined) return null;
-    const short = (text, most) => typeof text === "string" && !!text.trim() && [...text.trim()].length <= most;
+    // Characters as people see them (an emoji with a skin tone is one), as the C# API counts text elements.
+    const short = (text, most) => typeof text === "string" && !!text.trim() && [...(typeof Intl.Segmenter === "function" ? new Intl.Segmenter().segment(text.trim()) : text.trim())].length <= most;
     if (avatar !== undefined && !(typeof avatar === "string" && (avatar.length <= 100000 && CAL_IMAGE.test(avatar) || calSameOrigin(avatar))) ||
         initials !== undefined && !short(initials, 3) || icon !== undefined && !short(icon, 4))
       calInvalid(name + " has an avatar (a same-origin address or a base64 data:image URL), initials (1 to 3 characters) or an icon (1 to 4 characters).");

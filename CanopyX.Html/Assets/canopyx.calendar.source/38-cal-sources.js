@@ -15,7 +15,7 @@
       fold.type = "button"; fold.hidden = true; menu.hidden = true; menu.id = this.id + "-cal-srcs"; fold.setAttribute("aria-controls", menu.id); fold.setAttribute("aria-expanded", "false");
       menu.setAttribute("role", "group"); menu.setAttribute("aria-label", labels.calendarSources);
       const close = focus => { menu.hidden = true; fold.setAttribute("aria-expanded", "false"); if (focus) fold.focus(); };
-      fold.addEventListener("click", () => { menu.hidden = !menu.hidden; fold.setAttribute("aria-expanded", String(!menu.hidden)); menu.querySelector("input").focus(); });
+      fold.addEventListener("click", () => { menu.hidden = !menu.hidden; fold.setAttribute("aria-expanded", String(!menu.hidden)); if (!menu.hidden) this.calPlaceLegendMenu(); menu.querySelector("input").focus(); });
       menu.addEventListener("keydown", event => { if (event.key === "Escape") { event.stopPropagation(); close(true); } });
       for (const type of ["focusout", "pointerdown"]) document.addEventListener(type, event => { if (!legend.contains(event.relatedTarget ?? event.target)) close(false); }, { signal: this.lifetime.signal });
       for (const source of sources) {
@@ -43,10 +43,18 @@
       if (!legend?.clientWidth) return;
       const folded = legend.classList.contains("cx-cal-folded");
       if (!folded) this.calLegendNeed = this.calLegendChips.scrollWidth;
-      const fold = legend.clientWidth < this.calLegendNeed - 1;
+      // The chips get the legend's content width: its padding is not theirs.
+      const style = getComputedStyle(legend), fold = legend.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) < this.calLegendNeed - 1;
       if (fold === folded) return;
       legend.classList.toggle("cx-cal-folded", fold); this.calLegendFold.hidden = !fold; this.calLegendChips.hidden = fold;
       if (!fold) { this.calLegendMenu.hidden = true; this.calLegendFold.setAttribute("aria-expanded", "false"); }
+    },
+    /** Opens the menu below the legend, or above it when there is more room there, no taller than the screen has room for. */
+    calPlaceLegendMenu() {
+      const menu = this.calLegendMenu, box = this.calLegend.getBoundingClientRect(), screen = window.visualViewport?.height ?? window.innerHeight;
+      const below = screen - box.bottom, above = box.top, up = below < menu.scrollHeight && above > below;
+      menu.classList.toggle("cx-cal-src-up", up);
+      menu.style.setProperty("--cx-cal-menu-room", Math.max(0, Math.min(360, Math.floor((up ? above : below) - 8))) + "px");
     },
     calSyncLegend() {
       const total = this.cal.sources.length, shown = total - this.calHiddenSources.size;

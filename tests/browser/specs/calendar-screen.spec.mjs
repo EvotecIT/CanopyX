@@ -80,6 +80,19 @@ test.describe("calendar shared screens", () => {
     expect((await page.evaluate(() => window.errors)).filter(message => !message.includes("linked views"))).toEqual([]);
   });
 
+  test("each copy in a source joins its own merged event, and a resource's face shows in the details", async ({ page }) => {
+    const swim = (id, source) => timed(id, "Swim", source, "16:00", "17:00", { resource: "r1" });
+    const events = [swim("a1", "anna"), swim("a2", "anna"), swim("t1", "tom"), swim("t2", "tom"), { id: "r", title: "Fix sink", resource: "r1", start: "2026-10-16T12:00:00Z", end: "2026-10-16T13:00:00Z" }];
+    // Initials count as people see them: an emoji with a skin tone and a hair style is one, as in the C# API.
+    await open(page, "pairs.html", screenPage({ events, sources: PEOPLE, resources: [{ id: "r1", label: "Plumber" }], faces: [{ resource: "r1", initials: "👩🏽‍🦰" }],
+      date: "2026-10-16", view: "day", details: "popover", merge: true }));
+    await expect(page.locator(".cx-cal-ev.cx-cal-merged")).toHaveCount(2);
+    await page.locator('.cx-cal-ev[data-cx-record="r"]').click();
+    const owner = page.getByRole("dialog", { name: "Fix sink" }).locator(".cx-cal-det-owner");
+    await expect(owner.locator(".cx-cal-face")).toHaveText("👩🏽‍🦰");
+    await expect(owner.locator("span:last-child")).toHaveText("Plumber");
+  });
+
   test("finished events fade in the time and list views, and keep fading as time passes", async ({ page }) => {
     const events = [timed("done", "Stand-up", "anna", "09:00", "10:00"), timed("now", "Review", "anna", "10:00", "11:00"), timed("later", "Lunch", "anna", "12:00", "13:00")];
     await open(page, "fade.html", screenPage({ events, sources: PEOPLE, date: "2026-10-16", view: "week", views: ["week", "agenda", "month"], firstDay: 1, fadePast: 0.6 }), { clock: "install" });
@@ -138,6 +151,14 @@ test.describe("calendar shared screens", () => {
     }
     await call(page, "api => api.setCalendarView('agenda')");
     await expect(page.locator(".cx-cal-ahead-c", { hasText: "Oct 14" }).locator(".cx-cal-note")).toHaveText("1 planned");
+    // A phone month's small cells name their notes, and the chosen day's list under the month shows them.
+    await page.locator("#cal").evaluate(host => host.style.width = "400px");
+    await call(page, "api => api.setCalendarView('month')");
+    const cell = page.locator('.cx-cal-day[data-cx-day="' + Date.UTC(2026, 9, 16) / 86400000 + '"]');
+    await expect(cell).toHaveAttribute("aria-label", /, ♻ Bin day$/);
+    await expect(cell.locator(".cx-cal-notes")).toHaveCount(0);
+    await cell.click();
+    await expect(page.locator(".cx-cal-daylist-h .cx-cal-note")).toHaveText("♻ Bin day");
   });
 
   test("dayWidth drops one day at a time as the calendar narrows, keeping today, and steps by the days shown", async ({ page }) => {
@@ -196,6 +217,10 @@ test.describe("calendar shared screens", () => {
     await expect(reset).toBeHidden();
     expect(await call(page, "api => api.getCalendar().view")).toBe("week");
     await expect(page.locator('[data-cx-source="tom"]')).toHaveAttribute("aria-pressed", "true");
+    // November's grid also draws October 31, the home day; it is still another month.
+    await open(page, "reset-month.html", screenPage({ events: [], sources: PEOPLE, date: "2026-10-31", view: "month", firstDay: 1, reset: true }));
+    await page.getByRole("button", { name: "Next period" }).click();
+    await expect(reset).toBeVisible();
   });
 
   test("legend switches that do not fit fold into a menu of checkboxes", async ({ page }) => {
@@ -227,6 +252,12 @@ test.describe("calendar shared screens", () => {
     await page.locator("#cal").evaluate(host => host.style.width = "1200px");
     await expect(fold).toBeHidden();
     await expect(page.locator(".cx-cal-srcs")).toBeVisible();
+    // Near the bottom of a screen that does not scroll, the menu opens where it fits.
+    await page.evaluate(() => { document.body.style.overflow = "hidden"; Object.assign(document.querySelector("#cal").style, { width: "360px", marginTop: innerHeight - 200 + "px" }); });
+    await fold.click();
+    const box = await page.locator(".cx-cal-src-menu").boundingBox(), screen = page.viewportSize().height;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(screen);
   });
 
   test("the shared-screen settings are checked when the calendar starts", async ({ page }) => {

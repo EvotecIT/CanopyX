@@ -560,7 +560,7 @@ CanopyX.createCalendar(host, { events, view: "week", timeZone: "Europe/Warsaw",
   full strength. Forced colours strike them through instead, and print shows them at full strength.
 - **Day header notes.** `dayNotes: [{ date, text, tone? }]` (at most 1,000, text 1–64 characters) puts small notes in day
   headers: under the day in the week, day and N-day views, beside it in the lists and the agenda, and beside the number of month
-  days. The host's `calendar.dayHeader({ day, events, view, element, labels })` hook adds its own: return text, or write into
+  days (a phone month names them in its small day cells and shows them beside the chosen day's list). The host's `calendar.dayHeader({ day, events, view, element, labels })` hook adds its own: return text, or write into
   the fresh `element` with DOM methods (`textContent`, `append`) and return `true`, as the event template does; the calendar
   never writes host markup. Every note's text joins the day's accessible name. A hook that throws reports the error through the
   grid's `error` event and leaves the day as it was.
@@ -574,8 +574,9 @@ CanopyX.createCalendar(host, { events, view: "week", timeZone: "Europe/Warsaw",
   today), switches the view or the timeline zoom, or hides a source, and puts all of them back in one press; focus moves to
   Today. `resetCalendar()` does the same from code, with or without the button.
 - **Folding legend.** For every calendar with sources: when the legend's switches do not fit on one line they fold into a
-  "Calendars · 3 of 5" button whose menu holds a checkbox per source, in its colour and with its face; Escape closes it and
-  returns to the button. They unfold once there is room again.
+  "Calendars · 3 of 5" button whose menu holds a checkbox per source, in its colour and with its face. The menu opens below
+  the legend, or above it when there is more room there, and is never taller than the screen has room for; Escape closes it
+  and returns to the button. They unfold once there is room again.
 
 In C#, `CanopyCalendar.Merge` (`CanopyCalendarMerge`), `FadePast`, `DayNotes` (`CanopyCalendarDayNote`), `Faces`
 (`CanopyCalendarFace`), `ListDays`, `DayWidth`, `ListBelow`, `Reset` and `Location`, `CanopyCalendarSource.Avatar`, `Initials`
@@ -620,13 +621,13 @@ stubs. Single-file pages carry the parts' payloads for views that need them: a c
 
 | Asset | gzip measured | Guard |
 | --- | --- | --- |
-| `canopyx-calendar.js` | 42,053 bytes | 43,008 (42 KiB) |
-| `canopyx-calendar.css` | 6,092 bytes | 6,400 |
+| `canopyx-calendar.js` | 42,240 bytes | 43,008 (42 KiB) |
+| `canopyx-calendar.css` | 6,120 bytes | 6,400 |
 | `canopyx-calendar-recurrence.js` | 3,273 bytes | 3,800 |
 | `canopyx-calendar-edit.js` | 14,439 bytes | 14,848 |
 | `canopyx-calendar-ics.js` | 8,302 bytes | 9,450 |
-| `canopyx-calendar-screen.js` | 6,047 bytes | 6,950 |
-| `canopyx-calendar-screen.css` | 1,895 bytes | 2,180 |
+| `canopyx-calendar-screen.js` | 6,186 bytes | 6,950 |
+| `canopyx-calendar-screen.css` | 1,903 bytes | 2,180 |
 | `canopyx-timeline.js` | 11,575 bytes | 13,824 |
 | `canopyx-timeline.css` | 2,114 bytes | 2,256 |
 

@@ -6,7 +6,8 @@
   // as the calendar (not the window) narrows they show one day fewer at a time, always keeping today, and step by the days
   // shown. listDays sets the week list's own length, and a week list with fewer columns than listBelow stacks its days instead.
   const CAL_SCREEN_DAYS = { range: DataGrid.prototype.calRangeOf, step: DataGrid.prototype.calStepDate, count: DataGrid.prototype.calDaysCount,
-    today: DataGrid.prototype.calendarToday, view: DataGrid.prototype.setCalendarView, paint: DataGrid.prototype.calPaint };
+    today: DataGrid.prototype.calendarToday, view: DataGrid.prototype.setCalendarView, paint: DataGrid.prototype.calPaint,
+    list: DataGrid.prototype.calDayList };
   const CAL_FADE_VIEWS = ["week", "day", "days", "weekList", "dayList", "agenda"];
 
   Object.assign(DataGrid.prototype, {
@@ -24,35 +25,46 @@
       if (list && (this.cal.dayWidth || this.cal.listDays || this.cal.listBelow)) { list.classList.add("cx-cal-boxes"); list.classList.toggle("cx-cal-stack", this.calStacked()); }
       this.calDayNotes();
     },
-    /** Writes each shown day's notes into its header. */
+    /** Writes each shown day's notes into its header. A phone month's small cells carry them in their names, and the list of
+     *  the chosen day under the month shows them. */
     calDayNotes() {
-      const notes = this.cal.dayNotes, hook = this.opts.calendar?.dayHeader;
-      if (!notes.size && typeof hook !== "function") return;
+      if (!this.cal.dayNotes.size && typeof this.opts.calendar?.dayHeader !== "function") return;
       const heads = [];
       for (const head of this.calBody.querySelectorAll(".cx-cal-dayhead[data-cx-day]")) heads.push([head, head, head]);
       for (const cell of this.calBody.querySelectorAll(".cx-cal-lday[data-cx-day]")) heads.push([cell, cell.querySelector(".cx-cal-lhead"), cell]);
-      if (!this.calPhone) for (const cell of this.calBody.querySelectorAll(".cx-cal-month:not(.cx-cal-mini) .cx-cal-day[data-cx-day]")) heads.push([cell, cell, cell]);
+      for (const cell of this.calBody.querySelectorAll(".cx-cal-month:not(.cx-cal-mini) .cx-cal-day[data-cx-day]")) heads.push([cell, this.calPhone ? null : cell, cell]);
       for (const group of this.calBody.querySelectorAll(".cx-cal-agroup")) heads.push([group.querySelector(".cx-cal-arow"), group.querySelector(".cx-cal-ahead-c"), null]);
       for (const [dated, target, named] of heads) {
-        const day = Number(dated.dataset.cxDay), box = h("span", "cx-cal-notes"), texts = [];
-        for (const note of notes.get(day) || []) {
-          const item = h("span", "cx-cal-note"); setText(item, note.text);
-          if (note.tone) item.style.setProperty("--cx-note", toneVariable(note.tone, false, "var(--hfx-color-text-secondary)"));
-          box.appendChild(item); texts.push(note.text);
-        }
-        if (typeof hook === "function") {
-          const element = h("span", "cx-cal-note cx-cal-note-host");
-          try {
-            const answer = hook({ day: calDayText(day), events: this.calEventsOn(day).length, view: this.calView, element, labels: this.calLabels });
-            if (typeof answer === "string" && answer.trim()) setText(element, answer.trim());
-            if (answer === true || typeof answer === "string" && answer.trim()) { box.appendChild(element); if (element.textContent.trim()) texts.push(element.textContent.trim()); }
-          } catch (error) { this.emit("error", { error }); }
-        }
-        if (!box.childNodes.length) continue;
-        box.setAttribute("aria-hidden", String(!!named));
-        target.appendChild(box);
-        if (named) named.setAttribute("aria-label", named.getAttribute("aria-label") + ", " + texts.join(", "));
+        const notes = this.calNotesOf(Number(dated.dataset.cxDay));
+        if (!notes) continue;
+        notes.box.setAttribute("aria-hidden", String(!!named));
+        target?.appendChild(notes.box);
+        if (named) named.setAttribute("aria-label", named.getAttribute("aria-label") + ", " + notes.texts.join(", "));
       }
+    },
+    /** One day's notes and what the host's dayHeader hook adds: { box, texts }, or null for a day without any. */
+    calNotesOf(day) {
+      const hook = this.opts.calendar?.dayHeader, box = h("span", "cx-cal-notes"), texts = [];
+      for (const note of this.cal.dayNotes.get(day) || []) {
+        const item = h("span", "cx-cal-note"); setText(item, note.text);
+        if (note.tone) item.style.setProperty("--cx-note", toneVariable(note.tone, false, "var(--hfx-color-text-secondary)"));
+        box.appendChild(item); texts.push(note.text);
+      }
+      if (typeof hook === "function") {
+        const element = h("span", "cx-cal-note cx-cal-note-host");
+        try {
+          const answer = hook({ day: calDayText(day), events: this.calEventsOn(day).length, view: this.calView, element, labels: this.calLabels });
+          if (typeof answer === "string" && answer.trim()) setText(element, answer.trim());
+          if (answer === true || typeof answer === "string" && answer.trim()) { box.appendChild(element); if (element.textContent.trim()) texts.push(element.textContent.trim()); }
+        } catch (error) { this.emit("error", { error }); }
+      }
+      return box.childNodes.length ? { box, texts } : null;
+    },
+    /** The list of a day under a phone month shows the day's notes beside its heading. */
+    calDayList(day) {
+      const list = CAL_SCREEN_DAYS.list.call(this, day), notes = this.cal.dayNotes && this.calNotesOf(day);
+      if (notes) list.querySelector(".cx-cal-daylist-h").append(" ", notes.box);
+      return list;
     },
 
     /** The days a run view shows on its own: the week's shown days, the N-day count, or listDays for the week list. */

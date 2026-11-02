@@ -55,7 +55,7 @@
 .cx-cal-dayhead > .cx-cal-notes { flex:1 0 100%;justify-content:center;overflow:hidden; }
 .cx-cal-lhead > .cx-cal-notes { margin-inline-start:auto;justify-content:flex-end; }
 .cx-cal-lhead:has(> .cx-cal-wknum) > .cx-cal-notes { margin-inline-start:var(--hfx-space-1-5); }
-.cx-cal-ahead-c > .cx-cal-notes { margin-inline-start:var(--hfx-space-2); }
+.cx-cal-ahead-c > .cx-cal-notes, .cx-cal-daylist-h > .cx-cal-notes { margin-inline-start:var(--hfx-space-2); }
 .cx-cal-month .cx-cal-day > .cx-cal-notes { float:inline-end;max-width:70%;margin-top:var(--hfx-space-0-5);flex-wrap:nowrap;overflow:hidden; }
 /* Run layouts: the week list's days as columns of event boxes, stacked into a list when too few columns fit. */
 .cx-cal-boxes .cx-cal-lday > .cx-cal-ev-item { --cx-cal-bar:calc(var(--hfx-indicator-width) + var(--hfx-border-width));padding:var(--hfx-space-1-5) var(--hfx-space-2);border-radius:var(--hfx-radius-sm);background:var(--cx-ev-bg);box-shadow:inset var(--cx-cal-bar) 0 0 var(--cx-ev); }

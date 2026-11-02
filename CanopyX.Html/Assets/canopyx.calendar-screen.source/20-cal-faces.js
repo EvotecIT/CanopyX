@@ -42,11 +42,11 @@
       for (const event of shown) {
         const source = event.base.source;
         if (event.background || !order.has(source)) { out.push(event); continue; }
-        const key = JSON.stringify([event.title.trim().toLocaleLowerCase(), event.start, event.end, event.allDay, event.base.location.toLocaleLowerCase()]), group = groups.get(key);
-        // Two copies in one source are two events of that source: they stay apart.
-        if (group && !group.some(member => member.base.source === source)) { group.push(event); continue; }
-        const members = [event]; out.push(members);
-        if (!group) groups.set(key, members);
+        const key = JSON.stringify([event.title.trim().toLocaleLowerCase(), event.start, event.end, event.allDay, event.base.location.toLocaleLowerCase()]), list = groups.get(key) || groups.set(key, []).get(key);
+        // Two copies in one source are two events of that source: each joins a group its source is not in yet.
+        const group = list.find(members => !members.some(member => member.base.source === source));
+        if (group) { group.push(event); continue; }
+        const members = [event]; out.push(members); list.push(members);
       }
       return out.map(item => {
         if (!Array.isArray(item)) return item;
@@ -92,14 +92,11 @@
     /** The details add each owner (face and name) and the location of a record. */
     calDetailsContent(event, titleId) {
       const parts = CAL_SCREEN_BASE.details.call(this, event, titleId), faces = this.cal.dayNotes ? this.calFacesOf(event) : [];
-      if (event.owners || faces.length) {
+      // Every owner of a merged event, else the source's or the resource's face, with its name.
+      if (faces.length) {
         const owners = h("p", "cx-cal-det-owners");
-        for (const id of event.owners || [event.base.source]) {
-          const source = this.cal.sources.find(item => item.id === id), item = h("span", "cx-cal-det-owner"), text = h("span");
-          if (!source) continue;
-          setText(text, source.label); item.append(calFaceElement(source.face || {}, source.label, this.calSourceColor(source)), text); owners.appendChild(item);
-        }
-        if (owners.childNodes.length) parts.splice(2, 0, owners);
+        for (const { face, label, color } of faces) { const item = h("span", "cx-cal-det-owner"), text = h("span"); setText(text, label); item.append(calFaceElement(face, label, color), text); owners.appendChild(item); }
+        parts.splice(2, 0, owners);
       }
       if (!event.base?.external && event.base?.location) { const where = h("p", "cx-cal-det-facts"); setText(where, event.base.location); parts.splice(2, 0, where); }
       return parts;

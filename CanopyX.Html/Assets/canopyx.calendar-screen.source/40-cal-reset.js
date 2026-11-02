@@ -15,10 +15,18 @@
     },
     /** The configured defaults: the view the calendar started in (the phone view on a phone), and the configured date or today. */
     calHome() { return { view: this.calHomeView || this.cal.view, day: this.calClampDay(this.cal.date ?? this.calZone.day(Date.now())) }; },
+    /** The date Reset goes to: the home day, the start of its fitted run, or the next shown day in the day views. */
+    calHomeDate(home) {
+      const view = home.view, date = this.calFitStart?.(view, home.day) ?? home.day;
+      return view === "day" || view === "days" ? this.calShownDay(date, 1) : date;
+    },
     calResetNeeded() {
       const home = this.calHome(), range = this.calRange, hidden = this.calHiddenSources, start = this.calHomeSources;
-      return !!range && (this.calView !== home.view || home.day < range.firstDay || home.day > range.lastDay || this.calZoom !== this.cal.zoom ||
-        hidden.size !== start.size || [...hidden].some(id => !start.has(id)));
+      if (!range) return false;
+      // The period Reset would show, not only whether the home day is drawn: a month grid also draws the last days of the month before.
+      const homeRange = this.calView === home.view ? this.calRangeOf(home.view, this.calHomeDate(home)) : null;
+      return !homeRange || homeRange.firstDay !== range.firstDay || homeRange.lastDay !== range.lastDay || this.calZoom !== this.cal.zoom ||
+        hidden.size !== start.size || [...hidden].some(id => !start.has(id));
     },
     calSyncReset() {
       const button = this.calResetButton;
@@ -34,7 +42,6 @@
       const home = this.calHome(), start = this.calHomeSources || new Set(this.cal.sources.filter(source => source.hidden).map(source => source.id));
       for (const source of this.cal.sources) if (this.calHiddenSources.has(source.id) !== start.has(source.id)) this.calToggleSource(source.id, !start.has(source.id));
       this.calZoom = this.cal.zoom;
-      const view = home.view, date = this.calFitStart?.(view, home.day) ?? home.day;
-      return this.calGo(view === "day" || view === "days" ? this.calShownDay(date, 1) : date, view, home.day);
+      return this.calGo(this.calHomeDate(home), home.view, home.day);
     }
   });
