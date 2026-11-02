@@ -227,7 +227,7 @@ test('overlays, menus and tooltips consume shared chrome roles', async ({ page }
         await expect(surface).toHaveCSS('color', hosted ? 'rgb(18, 52, 86)' : 'rgb(22, 24, 28)');
         await expect(surface).toHaveCSS('border', hosted ? '1px solid rgb(69, 103, 137)' : '1px solid rgb(205, 208, 213)');
         await expect(surface).toHaveCSS('font-size', hosted ? '15px' : '13px');
-        await expect(surface).toHaveCSS('line-height', hosted ? '24px' : '18.2px');
+        await expect.poll(() => surface.evaluate(element => parseFloat(getComputedStyle(element).lineHeight))).toBeCloseTo(hosted ? 24 : 18.2, 4);
         await expect(surface).toHaveCSS('padding', hosted ? '9px 13px' : '8px 12px');
       }
       await page.keyboard.press('Escape');

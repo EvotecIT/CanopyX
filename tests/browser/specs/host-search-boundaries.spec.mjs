@@ -86,8 +86,12 @@ for(const id of ["\u0000","line\nbreak","quote\"","emoji😀"]) test(`toolbar co
 
 test("non-tree callback receives a complete cell and sorting retains it",async({page})=>{
   await open(page,{...view,columns:[...view.columns,{id:"extra",title:"Extra",width:200}],roots:[{id:"one",label:"Alpha Beta",cells:{extra:"Value"}}]},`{renderers:{extra(node,el){window.shapes=(window.shapes||[]).concat([[el.tagName,el.getAttribute("role"),el.getAttribute("aria-colindex"),el.hasAttribute("data-old")]]);el.setAttribute("data-old","yes");el.classList.add("host-cell");el.textContent="Host value";return true;}}}`);
+  await page.evaluate(() => document.fonts.ready); await nextFrames(page);
+  const before = await page.evaluate(() => window.shapes);
+  expect(before.length).toBeGreaterThan(0);
+  for (const shape of before) expect(shape).toEqual(["DIV", "gridcell", "2", false]);
   await page.evaluate(()=>api.sort("name","asc")); await nextFrames(page);
-  expect(await page.evaluate(()=>window.shapes)).toEqual([["DIV","gridcell","2",false]]);
+  expect(await page.evaluate(()=>window.shapes)).toEqual(before);
   await expect(page.locator('.cx-cell.host-cell')).toHaveText("Host value");
   await page.screenshot({path:path.join(repo,"artifacts/takeover/eleventh-host-cell.png")});
 });

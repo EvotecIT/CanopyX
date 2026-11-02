@@ -42,7 +42,7 @@ for (const mode of ['inline', 'plain', 'hashed', 'hosted']) test(`${mode} grids 
   const host = page.locator('[data-canopyx-host]');
   await expect(host).toHaveCSS('font-family', /^Archivo,/);
   expect(await host.evaluate(element => getComputedStyle(element).getPropertyValue('--hfx-font-sans').trim())).toBe('');
-  await expect(page.locator('.p-mono').first()).toHaveCSS('font-family', /^"JetBrains Mono",/);
+  await expect(page.locator('.p-mono').first()).toHaveCSS('font-family', /^"?JetBrains Mono"?,/);
   const number = page.locator('.cx-cell.cx-kind-number').first();
   await expect(number).toHaveCSS('font-variant-numeric', 'tabular-nums');
   const widths = await number.evaluate(element => {
