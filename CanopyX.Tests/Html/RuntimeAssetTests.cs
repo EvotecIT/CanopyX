@@ -135,8 +135,7 @@ public sealed class RuntimeAssetTests {
     public void GridAssets_StayWithinTheirCompressedBudget() {
         // Pointer selection adds a mutable option and lazy range dispatch (384-byte allowance for 277 measured bytes); the accepted-source reader stays in the optional query part.
         // Reserve 128 bytes for Boolean tree-drawer host/view validation in the shared core.
-        // Reserve 64 bytes for the ui-accordion manifest row, whose content hashes do not compress.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 1248);
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 1184);
     }
 
     [Fact]

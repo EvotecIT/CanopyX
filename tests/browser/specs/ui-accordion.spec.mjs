@@ -23,7 +23,7 @@ function accordion(id = 'help', extra = '', entries = [
 const start = page => page.getByRole('button', { name: 'Start' });
 const usage = page => page.getByRole('button', { name: 'Usage New' });
 
-test('single-open sections follow the ARIA accordion keyboard pattern', async ({ page }) => {
+test('single-open sections follow the ARIA accordion keyboard pattern', async ({ page, browserName }) => {
   await openUi(page, accordion());
   await expect(page.getByRole('region', { name: 'Start' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Usage New' })).toBeHidden();
@@ -51,7 +51,8 @@ test('single-open sections follow the ARIA accordion keyboard pattern', async ({
   await expect(page.getByRole('button', { name: 'Audit' })).toBeFocused();
   await page.keyboard.press('Home');
   await expect(start(page)).toBeFocused();
-  await page.keyboard.press('Tab');
+  // WebKit on macOS reaches buttons with Alt+Tab, as Safari does without Full Keyboard Access.
+  await page.keyboard.press(process.platform === 'darwin' && browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
   await expect(usage(page)).toBeFocused();
 });
 
