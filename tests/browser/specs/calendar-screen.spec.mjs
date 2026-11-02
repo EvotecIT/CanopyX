@@ -93,6 +93,20 @@ test.describe("calendar shared screens", () => {
     await expect(owner.locator("span:last-child")).toHaveText("Plumber");
   });
 
+  test("past participant initials keep readable contrast in both themes and calendar views", async ({ page }) => {
+    const events = [timed("done", "Stand-up", "tom", "09:00", "10:00")];
+    await open(page, "past-initials.html", screenPage({ events, sources: PEOPLE, date: "2026-10-16", view: "week", views: ["week", "agenda"], firstDay: 1, fadePast: 0.6 }));
+    for (const theme of ["light", "dark"]) {
+      await page.emulateMedia({ colorScheme: theme });
+      await page.locator("#cal").evaluate((host, theme) => host.dataset.cxTheme = theme, theme);
+      for (const view of ["week", "agenda"]) {
+        await call(page, "api => api.setCalendarView(" + JSON.stringify(view) + ")");
+        await expect(page.locator('.cx-cal-past[data-cx-record="done"] .cx-cal-face')).toHaveText("TO");
+        const violations = await new AxeBuilder({ page }).include(".cx-cal-body").withRules(["color-contrast"]).analyze();
+        expect.soft(violations.violations, `${theme} ${view} past participant contrast`).toEqual([]);
+      }
+    }
+  });
   test("finished events fade in the time and list views, and keep fading as time passes", async ({ page }) => {
     const events = [timed("done", "Stand-up", "anna", "09:00", "10:00"), timed("now", "Review", "anna", "10:00", "11:00"), timed("later", "Lunch", "anna", "12:00", "13:00")];
     await open(page, "fade.html", screenPage({ events, sources: PEOPLE, date: "2026-10-16", view: "week", views: ["week", "agenda", "month"], firstDay: 1, fadePast: 0.6 }), { clock: "install" });
@@ -104,6 +118,10 @@ test.describe("calendar shared screens", () => {
     await expect.poll(past).toEqual(["done", "now"]);
     await call(page, "api => api.setCalendarView('agenda')");
     await expect.poll(past).toEqual(["done", "now"]);
+    const row = page.locator(".cx-cal-arow").filter({ has: page.locator('[data-cx-record="done"]') });
+    await row.focus();
+    await expect(row.locator(".cx-cal-face img")).toHaveCSS("opacity", "1");
+    await expect(row.locator(".cx-cal-face img")).toHaveCSS("filter", "none");
     await call(page, "api => api.setCalendarView('month')");
     expect(await past()).toEqual([]);
   });
