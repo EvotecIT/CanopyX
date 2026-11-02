@@ -118,6 +118,10 @@ test.describe("calendar shared screens", () => {
     await expect.poll(past).toEqual(["done", "now"]);
     await call(page, "api => api.setCalendarView('agenda')");
     await expect.poll(past).toEqual(["done", "now"]);
+    const row = page.locator(".cx-cal-arow").filter({ has: page.locator('[data-cx-record="done"]') });
+    await row.focus();
+    await expect(row.locator(".cx-cal-face img")).toHaveCSS("opacity", "1");
+    await expect(row.locator(".cx-cal-face img")).toHaveCSS("filter", "none");
     await call(page, "api => api.setCalendarView('month')");
     expect(await past()).toEqual([]);
   });

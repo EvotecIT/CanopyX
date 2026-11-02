@@ -1006,7 +1006,7 @@
     {
       "name": "calendar-screen",
       "label": "calendar shared screens",
-      "version": "ffaa2c2cc8ec315a",
+      "version": "c2be4b1ddf96a778",
       "script": "canopyx-calendar-screen.js",
       "style": "canopyx-calendar-screen.css",
       "runtimes": [
