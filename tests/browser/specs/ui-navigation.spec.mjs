@@ -120,6 +120,21 @@ test('nested templates belong to their child component rather than the containin
   await expect(page.getByText('Deferred child evidence', { exact: true })).toHaveCount(0);
 });
 
+test('shared loaders own live and printable bodies without an explicit deferred flag', async ({ page }) => {
+  await openUi(page, tabs('sections', '', [
+    { id: 'overview', label: 'Overview' },
+    { id: 'checks', label: 'Checks', body: '<div><template><p>Child template</p></template></div>' }
+  ]), initTabs(`{ loader: async item => {
+    (window.sharedLoads ||= []).push(item.id); return '<p>Loaded ' + item.id + '</p>';
+  } }`));
+  await expect(page.getByText('Loaded overview', { exact: true })).toBeVisible();
+  await page.evaluate(() => tabs.preparePrint());
+  expect(await page.evaluate(() => sharedLoads)).toEqual(['overview', 'checks']);
+  await expect(page.locator('#sections-panel-checks .cx-navigation-print')).toContainText('Loaded checks');
+  await page.getByRole('tab', { name: 'Checks', exact: true }).click();
+  await expect(page.getByText('Loaded checks', { exact: true })).toBeVisible();
+});
+
 test('deferred templates keep live content across revisits and loaders retry failures', async ({ page }) => {
   const markup = tabs('sections', '', [{ id: 'overview', label: 'Overview' },
     { id: 'checks', label: 'Checks', body: '<template><label>Note<input value="initial"></label></template>' }, { id: 'audit', label: 'Audit' }]);

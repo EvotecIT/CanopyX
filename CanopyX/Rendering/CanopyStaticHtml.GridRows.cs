@@ -70,7 +70,9 @@ public static partial class CanopyStaticHtml {
             if (link) {
                 html.Append("<a href=\"").Append(Encode(url!)).Append('"');
                 if (presenter!.NewWindow) html.Append(" target=\"_blank\" rel=\"noopener noreferrer\"");
-                html.Append(" style=\"").Append(styles.Link).Append("\">");
+                var inheritsColor = styles.ToneColor(tone).Length != 0 || styles.ToneColor(rowTone).Length != 0
+                    || paint?.Tone.Name != null || paint?.Css?.ContainsKey("color") == true || outcome?.Row?.Css?.ContainsKey("color") == true;
+                html.Append(" style=\"").Append(inheritsColor ? "color:inherit;" : styles.Link).Append("\">");
             }
             if (template != null || !AppendComparisonCell(html, text, view, row, column, cell))
                 AppendVisibleText(html, displayed, text);

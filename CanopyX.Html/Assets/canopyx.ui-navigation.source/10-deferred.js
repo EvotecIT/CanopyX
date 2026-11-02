@@ -22,7 +22,7 @@ UI_TOOLS.navigation.deferred = (root, prefix, options, life, retry) => {
     }
     return bodies.get(item.panel);
   }
-  function isDeferred(item) { return !!item && (item.deferred ?? (options.deferred || !!item.loader || !!(item.panel && templateFor(item.panel)))); }
+  function isDeferred(item) { return !!item && (item.deferred ?? (options.deferred || !!options.loader || !!item.loader || !!(item.panel && templateFor(item.panel)))); }
   async function load(item, signal, live) {
     if (destroyed || life.signal.aborted || signal.aborted || !live()) return false;
     if (!isDeferred(item) || !item.panel) { n.panelTabStop(item.panel); return true; }
