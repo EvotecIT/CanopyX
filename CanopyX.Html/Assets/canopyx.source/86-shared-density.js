@@ -6,15 +6,15 @@
   }
 
   function watchSharedDensity(view) {
-    const loaded = () => document.fonts.ready.then(() => {
-      if (view.destroyed) return;
+    // Loaded views retain their cells; pending and future font loads refresh geometry.
+    const ready = () => document.fonts.ready.then(() => {
       FONT_METRICS.clear();
       refreshSharedDensity(view);
     });
-    document.fonts.addEventListener("loading", loaded, { signal: view.lifetime.signal });
-    loaded();
+    document.fonts.addEventListener("loading", ready, { signal: view.lifetime.signal });
+    if (document.fonts.status === "loading") ready();
     let previous = sharedDensity(view.host);
-    const metrics = () => { if (previous) view.host.style.setProperty("--cx-compact", previous === "compact" ? "1" : "0"); else view.host.style.removeProperty("--cx-compact"); };
+    const metrics = () => view.host.style.setProperty("--cx-compact", previous === "compact" ? "1" : previous ? "0" : "");
     metrics();
     const observer = new MutationObserver(() => {
       const current = sharedDensity(view.host);
@@ -76,7 +76,7 @@
 
   // Density changes update geometry without rebuilding header controls or loading optional layout UI.
   function refreshSharedDensity(view) {
-    if (!view.grid) return;
+    if (!view.grid || view.destroyed) return;
     if (view.kind === "grid") {
       view.fitKey = null; view.fitFont = null;
       if (view.layoutMode === "cards" && VIEW_MODES.refreshCardDensity) VIEW_MODES.refreshCardDensity(view);
