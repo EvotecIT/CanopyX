@@ -5,6 +5,21 @@ namespace CanopyX.Tests.Rendering;
 
 public sealed class StaticGridResultTests {
     [Theory]
+    [InlineData("https://example.test/evidence?x=1&y=2", true)]
+    [InlineData("javascript:alert(1)", false)]
+    public void LinkPresenterPreservesSafeDestinationsAndEncodedLabels(string destination, bool safe) {
+        var view = new CanopyDataGridView("links", "Evidence");
+        view.Columns.Add(new CanopyColumn("label", "Reference") { Presenter = CanopyGridPresenter.Link("url") });
+        view.Columns.Add(new CanopyColumn("url", "URL") { Hidden = true });
+        view.Rows.Add(new CanopyGridRow("a") { Cells = { ["label"] = "Evidence <&>", ["url"] = destination } });
+        var result = CanopyStaticHtml.RenderGridWithResult(view);
+        Assert.Contains("Evidence &lt;&amp;&gt;", result.Html);
+        Assert.Equal(safe, result.Html.Contains("<a href="));
+        if (safe) Assert.Contains("https://example.test/evidence?x=1&amp;y=2", result.Html);
+        Assert.Equal("Evidence <&>", result.Rows[0][0]);
+    }
+
+    [Theory]
     [InlineData(1)]
     [InlineData(10)]
     public void InlineResult_CapturesDisplayedCellsAndBadgesInDocumentOrder(int limit) {
