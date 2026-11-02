@@ -2,7 +2,7 @@
   function UiHost() {}
   const UI_IMPL = {}, UI_TOOLS = {}, uiInstances = new WeakMap();
   const UI_KINDS = { tabs: "ui-tabs", stepper: "ui-stepper", accordion: "ui-accordion", menu: "ui-menu", dialog: "ui-overlays", drawer: "ui-overlays", popover: "ui-overlays", tooltip: "ui-overlays" };
-  const uiContext = () => ({ UI_IMPL, UI_TOOLS, h, setText, fill, watchTheme, overlayTheme, hostHtml });
+  const uiContext = () => ({ UI_IMPL, UI_TOOLS, h, setText, fill, watchTheme, overlayTheme, watchOverlayTheme, hostHtml });
   for (const name of Object.keys(PARTS).filter(part => part.startsWith("ui-"))) SHARED_PARTS[name] = definePart(UiHost, name, name.replace("ui-", "UI "), uiContext);
 
   function createUi(kind, target, options = {}) {

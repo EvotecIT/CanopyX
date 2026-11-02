@@ -39,7 +39,7 @@ internal static class UiPrimitivesExample {
         template = ApplyTokenFallbacks(template);
         var parts = string.Concat(CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid)
             .Where(part => part.Name.StartsWith("ui-", StringComparison.Ordinal)).Select(part => part.Markup));
-        template = template.Replace("{{style}}", CanopyHtmlAssets.Style).Replace("{{ui-parts}}", parts)
+        template = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.Style).Replace("{{ui-parts}}", parts)
             .Replace("{{script}}", CanopyHtmlAssets.Script);
         Directory.CreateDirectory(output);
         await File.WriteAllTextAsync(Path.Combine(output, "ui-primitives.html"), template);

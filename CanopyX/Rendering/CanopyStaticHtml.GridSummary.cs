@@ -37,7 +37,7 @@ public static partial class CanopyStaticHtml {
             foreach (var aggregate in aggregates) {
                 var shownValue = values[aggregate.Id]; var value = shownValue.Value;
                 var text = AggregateText(view, aggregate, value, shownValue.Mode, settings.Culture);
-                html.Append("<td style=\"").Append(total ? styles.Header + "font-weight:700;" : styles.Cell).Append("text-align:right;\">").Append(Encode(text)).Append("</td>");
+                html.Append("<td style=\"").Append(total ? styles.Header + "font-weight:700;" : styles.Cell).Append("text-align:right;font-variant-numeric:tabular-nums;\">").Append(Encode(text)).Append("</td>");
             }
         }
         var shown = 0;

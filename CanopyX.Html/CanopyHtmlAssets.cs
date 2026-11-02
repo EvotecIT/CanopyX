@@ -126,6 +126,7 @@ public static partial class CanopyHtmlAssets {
 
         // Every part the entry point knows goes beside it (Build/parts.json): the runtime loads a part from there on first use.
         foreach (var part in GetParts(runtime)) WritePart(part, directory, naming);
+        WriteFonts(directory, naming);
         return new[] { script, style };
     }
 
@@ -179,9 +180,11 @@ public static partial class CanopyHtmlAssets {
         }
     }
 
-    internal static string Hash(string content) {
+    internal static string Hash(string content) => Hash(FileEncoding.GetBytes(content));
+
+    internal static string Hash(byte[] content) {
         using (var sha = SHA256.Create()) {
-            var hash = sha.ComputeHash(FileEncoding.GetBytes(content));
+            var hash = sha.ComputeHash(content);
             var hex = new StringBuilder(16);
             for (var index = 0; index < 8; index++) {
                 hex.Append(hash[index].ToString("x2", CultureInfo.InvariantCulture));

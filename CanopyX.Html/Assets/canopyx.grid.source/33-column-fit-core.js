@@ -19,7 +19,7 @@
   // punctuation (including date hyphens and spaces). Some engines shape these only within a numeric run, so one native
   // batch per effective font/variant captures numeric and plain advances. Row samples still use canvas, and fonts without
   // different advances keep its ordinary fast path.
-  const COLUMN_DIGITS = new Map(), COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_NUMERIC = /[0-9\s.,:;+\-−/()\[\]]/;
+  const COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_NUMERIC = /[0-9\s.,:;+\-−/()\[\]]/;
   function gridNumericVariant(grid) {
     let sample = grid.querySelector(".cx-cell"), owned = !sample;
     if (owned) { sample = document.createElement("span"); sample.className = "cx-cell"; sample.style.display = "none"; grid.appendChild(sample); }
@@ -39,10 +39,10 @@
     const text = String(value).slice(0, 512), measured = context.measureText(text).width;
     if (!variant.includes("tabular-nums") || !COLUMN_HAS_NUMERIC.test(text)) return measured;
     const font = context.font;
-    let variants = COLUMN_DIGITS.get(font);
+    let variants = FONT_METRICS.get(font);
     if (!variants) {
-      if (COLUMN_DIGITS.size === 32) COLUMN_DIGITS.delete(COLUMN_DIGITS.keys().next().value);
-      COLUMN_DIGITS.set(font, variants = new Map());
+      if (FONT_METRICS.size === 32) FONT_METRICS.delete(FONT_METRICS.keys().next().value);
+      FONT_METRICS.set(font, variants = new Map());
     }
     if (!variants.has(variant)) {
       const probe = document.createElement("span"), glyphs = [];

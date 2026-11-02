@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "24afaa117ebf3fb5",
+      "version": "39804c2061ff6d0b",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -16,7 +16,7 @@
     {
       "name": "ui-menu",
       "label": "UI menu",
-      "version": "352b1ee391133ff0",
+      "version": "c4f0fca7c76607b4",
       "script": "canopyx-ui-menu.js",
       "style": "canopyx-ui-menu.css",
       "runtimes": [
@@ -39,7 +39,7 @@
     {
       "name": "ui-picker",
       "label": "UI picker",
-      "version": "d415103478faf52a",
+      "version": "189d98810d13fd70",
       "script": "canopyx-ui-picker.js",
       "style": "canopyx-ui-picker.css",
       "runtimes": [
@@ -55,7 +55,7 @@
     {
       "name": "ui-navigation",
       "label": "UI navigation",
-      "version": "2553d01c5276d56a",
+      "version": "0e3fed3d150a9da0",
       "script": "canopyx-ui-navigation.js",
       "style": "canopyx-ui-navigation.css",
       "runtimes": [
@@ -71,7 +71,7 @@
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "19ece8184f3daf4a",
+      "version": "d97c13adf5742644",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [
@@ -88,7 +88,7 @@
     {
       "name": "ui-stepper",
       "label": "UI stepper",
-      "version": "5682c49db1b85314",
+      "version": "3215ba65fac39e46",
       "script": "canopyx-ui-stepper.js",
       "style": "canopyx-ui-stepper.css",
       "runtimes": [
@@ -105,7 +105,7 @@
     {
       "name": "ui-accordion",
       "label": "UI accordion",
-      "version": "1424f075b78d0ccd",
+      "version": "2dcae6b70bbee048",
       "script": "canopyx-ui-accordion.js",
       "style": "canopyx-ui-accordion.css",
       "runtimes": [
@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "ef0d06c82135ae2e",
+      "version": "7b81d5509b59b4a9",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -153,7 +153,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "b760f978327dbab0",
+      "version": "745f4f5e2a018960",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -170,7 +170,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "15abf3205094bda6",
+      "version": "40fc70195b5fce3a",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -260,7 +260,7 @@
     {
       "name": "forms",
       "label": "forms",
-      "version": "381a3edba481660b",
+      "version": "52c0bff75ef0c845",
       "script": "canopyx-forms.js",
       "style": "canopyx-forms.css",
       "runtimes": [
@@ -278,7 +278,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "02a915fe174e4710",
+      "version": "dcb95a59b40e8001",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -439,7 +439,7 @@
     {
       "name": "flow-command",
       "label": "flow command",
-      "version": "a30245a47f6d4530",
+      "version": "894d9ef50477d5ce",
       "script": "canopyx-flow-command.js",
       "style": "canopyx-flow-command.css",
       "runtimes": [
@@ -480,7 +480,7 @@
     {
       "name": "flow-dialog",
       "label": "flow dialogs",
-      "version": "8c45e0a8bb6a8ab9",
+      "version": "193073a1ff3ef4a2",
       "script": "canopyx-flow-dialog.js",
       "style": "canopyx-flow-dialog.css",
       "runtimes": [
@@ -580,7 +580,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "002a6d917bb4d638",
+      "version": "c2a68618b4fddfc5",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -593,7 +593,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "7d9a526aa07a8838",
+      "version": "4c42834380da8fe6",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [
@@ -606,7 +606,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "88e4ca705a7eb0c3",
+      "version": "03f172b14b70b46b",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -756,7 +756,7 @@
     {
       "name": "calculations",
       "label": "calculated columns",
-      "version": "f902dc5856fc7bdd",
+      "version": "071421edfaa0704b",
       "script": "canopyx-calculations.js",
       "style": "canopyx-calculations.css",
       "runtimes": [
@@ -843,7 +843,7 @@
     {
       "name": "highlight",
       "label": "search highlighting",
-      "version": "5ebf0042011ba4fd",
+      "version": "00b4a742a9dd48d1",
       "script": "canopyx-highlight.js",
       "style": "canopyx-highlight.css",
       "runtimes": [
@@ -911,7 +911,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "cb6bcd1baf644a51",
+      "version": "42af6ec5267dc088",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -1041,7 +1041,7 @@
     {
       "name": "board",
       "label": "board view",
-      "version": "dd02be00df77f53a",
+      "version": "8a08962fded201f6",
       "script": "canopyx-board.js",
       "style": "canopyx-board.css",
       "runtimes": [
@@ -1057,7 +1057,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "db07c2eb53541d49",
+      "version": "ddb8a0bf5f4f8b8e",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [
@@ -1076,7 +1076,7 @@
     {
       "name": "path",
       "label": "path view",
-      "version": "c6fa2dbab6a0dbaa",
+      "version": "52afa0f2951dcc5b",
       "script": "canopyx-path.js",
       "style": "canopyx-path.css",
       "runtimes": [
@@ -1092,7 +1092,7 @@
     {
       "name": "stack",
       "label": "stack view",
-      "version": "e29298edc07edb6d",
+      "version": "c624a1035fc55133",
       "script": "canopyx-stack.js",
       "style": "canopyx-stack.css",
       "runtimes": [
@@ -1108,7 +1108,7 @@
     {
       "name": "time-slider",
       "label": "snapshot playback",
-      "version": "5516099a165cc345",
+      "version": "c0af93eb89f1c250",
       "script": "canopyx-time-slider.js",
       "style": "canopyx-time-slider.css",
       "runtimes": [

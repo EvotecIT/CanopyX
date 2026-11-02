@@ -60,7 +60,7 @@
   .cx-step-label { font-size: var(--hfx-control-font-size); font-weight: var(--hfx-weight-semibold); }
   .cx-step-desc, .cx-step-position, .cx-step-state {
     font-size: var(--hfx-type-caption-size);
-    line-height: var(--hfx-type-caption-line);
+    line-height: var(--hfx-type-caption-line-height,var(--hfx-type-caption-line));
     color: var(--hfx-color-text-muted);
   }
   .cx-step[aria-current="step"] { color: var(--hfx-color-text); }
@@ -92,7 +92,7 @@
   }
   .cx-step[data-state="disabled"]::after { background: var(--hfx-color-border); }
   .cx-step-panel { min-inline-size: 0; }
-  .cx-step-print-state { display: none; color: var(--hfx-color-text-muted); font-size: var(--hfx-type-caption-size); line-height: var(--hfx-type-caption-line); }
+  .cx-step-print-state { display: none; color: var(--hfx-color-text-muted); font-size: var(--hfx-type-caption-size); line-height: var(--hfx-type-caption-line-height,var(--hfx-type-caption-line)); }
   .cx-step-print-marker { display: none; }
   .cx-step-panel > h3 { margin-block: 0 var(--hfx-space-3); font-size: var(--hfx-type-heading-size); font-weight: var(--hfx-weight-semibold); }
   .cx-stepper-footer {
@@ -112,10 +112,10 @@
     border-radius: var(--hfx-radius-control);
     background: var(--hfx-color-surface);
     color: var(--hfx-color-text);
-    font-family: var(--hfx-font-sans);
+    font-family: var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);
     font-size: var(--hfx-control-font-size);
     font-weight: var(--hfx-weight-medium);
-    line-height: var(--hfx-type-body-line);
+    line-height: var(--hfx-type-body-line-height,var(--hfx-type-body-line));
     cursor: pointer;
   }
   .cx-stepper-footer button:hover, .cx-stepper-phone-back:hover { background: var(--hfx-color-hover); }

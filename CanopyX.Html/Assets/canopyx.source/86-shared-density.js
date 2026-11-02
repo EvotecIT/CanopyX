@@ -1,12 +1,20 @@
-  // A host's density is inherited by nested views; virtualization must follow the same height as its CSS.
+  // Density and loaded fonts affect measured rows; nested views observe both through their own lifetime.
+  const FONT_METRICS = new Map();
   function sharedDensity(host) {
     const value = host.closest("[data-hfx-density]")?.getAttribute("data-hfx-density");
     return value === "compact" || value === "comfortable" ? value : null;
   }
 
   function watchSharedDensity(view) {
+    // Loaded views retain their cells; pending and future font loads refresh geometry.
+    const ready = () => document.fonts.ready.then(() => {
+      FONT_METRICS.clear();
+      refreshSharedDensity(view);
+    });
+    document.fonts.addEventListener("loading", ready, { signal: view.lifetime.signal });
+    if (document.fonts.status === "loading") ready();
     let previous = sharedDensity(view.host);
-    const metrics = () => { if (previous) view.host.style.setProperty("--cx-compact", previous === "compact" ? "1" : "0"); else view.host.style.removeProperty("--cx-compact"); };
+    const metrics = () => view.host.style.setProperty("--cx-compact", previous === "compact" ? "1" : previous ? "0" : "");
     metrics();
     const observer = new MutationObserver(() => {
       const current = sharedDensity(view.host);
@@ -68,7 +76,7 @@
 
   // Density changes update geometry without rebuilding header controls or loading optional layout UI.
   function refreshSharedDensity(view) {
-    if (!view.grid) return;
+    if (!view.grid || view.destroyed) return;
     if (view.kind === "grid") {
       view.fitKey = null; view.fitFont = null;
       if (view.layoutMode === "cards" && VIEW_MODES.refreshCardDensity) VIEW_MODES.refreshCardDensity(view);

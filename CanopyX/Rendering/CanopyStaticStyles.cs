@@ -48,8 +48,8 @@ internal sealed partial class CanopyStaticStyles {
         var mutedColor = Declare("color", _muted);
         var rowLine = Border("border-bottom", _line);
 
-        Table = "border-collapse:collapse;font-family:'Segoe UI Variable Text','Segoe UI',Arial,Helvetica,sans-serif;"
-            + (_variables ? "font-family:var(--hfx-font-sans,'Segoe UI Variable Text','Segoe UI',Arial,Helvetica,sans-serif);" : string.Empty)
+        Table = "border-collapse:collapse;font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;"
+            + (_variables ? "font-family:var(--hfx-font-sans,Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif);" : string.Empty)
             + "font-size:13px;line-height:1.4;" + Declare("color", _text) + Declare("background", _surface);
         // A caption lies outside the table's own box, so it carries the surface itself.
         Caption = "text-align:left;font-weight:600;font-size:14px;padding:4px 8px 6px 8px;" + Declare("background", _surface);

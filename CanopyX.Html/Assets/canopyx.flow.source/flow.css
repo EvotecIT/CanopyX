@@ -1,7 +1,7 @@
 /* Flow part: steps, fields, the review page and the result, in the grid's tokens, density and type (docs/flow.md#layouts). */
 /* Logical properties only, so right-to-left pages mirror the rail, the fields and the action bar. */
 .cx-flow { --cx-flow-pad:var(--cx-size-20px);--cx-flow-gap:var(--cx-size-16px);--cx-flow-control:var(--cx-size-34px);
-  --cx-size-220px:220px;--cx-size-720px:720px;container-type:inline-size;position:relative;color:var(--hfx-color-text);background:var(--hfx-color-surface);border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);font:var(--cx-size-14px)/1.45 var(--hfx-font-sans); }
+  --cx-size-220px:220px;--cx-size-720px:720px;container-type:inline-size;position:relative;color:var(--hfx-color-text);background:var(--hfx-color-surface);border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);font:var(--cx-size-14px)/1.45 var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif); }
 .cx-flow[data-cx-density="compact"] { --cx-flow-pad:var(--cx-size-14px);--cx-flow-gap:var(--cx-size-12px);--cx-flow-control:var(--cx-size-30px); }
 .cx-flow[data-cx-density="comfortable"] { --cx-flow-pad:var(--cx-size-24px);--cx-flow-gap:var(--cx-size-20px);--cx-flow-control:var(--cx-size-38px); }
 .cx-flow :where(h2,h3,h4,p,ul,ol,dl,dd) { margin:0; }
@@ -143,7 +143,7 @@
 
 /* ---------- buttons and the action bar ---------- */
 .cx-flow-btn { display:inline-flex;align-items:center;justify-content:center;gap:var(--cx-size-6px);height:var(--cx-flow-control);min-height:var(--cx-flow-control);padding:0 var(--cx-size-14px);border:var(--cx-size-1px) solid var(--hfx-color-border-strong);
-  border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:500 var(--cx-size-14px) var(--hfx-font-sans);white-space:nowrap;cursor:pointer; }
+  border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);color:var(--hfx-color-text);font:500 var(--cx-size-14px) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);white-space:nowrap;cursor:pointer; }
 .cx-flow-btn:hover { background:var(--hfx-color-hover); }
 .cx-flow-btn:disabled { opacity:.5;cursor:default; }
 .cx-flow-btn.cx-primary { background:var(--hfx-color-accent);border-color:var(--hfx-color-accent);color:var(--hfx-color-accent-contrast);font-weight:600; }
@@ -192,7 +192,7 @@
 .cx-flow-panel .cx-flow-step-title { display:flex;align-items:center;gap:var(--cx-size-10px); }
 .cx-flow-panel-mark { display:inline-flex;align-items:center;justify-content:center;width:var(--cx-size-28px);height:var(--cx-size-28px);border-radius:50%;background:var(--hfx-color-status-good-bg);color:var(--hfx-color-status-good-fg);font-size:var(--cx-size-14px); }
 .cx-flow-progress .cx-flow-panel-mark { background:var(--hfx-color-accent-subtle);color:var(--hfx-color-accent-text); }
-.cx-flow-result-value { display:inline-block;max-width:100%;padding:var(--cx-size-4px) var(--cx-size-8px);border-radius:var(--hfx-radius-sm);background:var(--hfx-color-surface-sunken);font-family:var(--hfx-font-mono);font-size:var(--cx-size-13px);overflow-wrap:anywhere;white-space:normal; }
+.cx-flow-result-value { display:inline-block;max-width:100%;padding:var(--cx-size-4px) var(--cx-size-8px);border-radius:var(--hfx-radius-sm);background:var(--hfx-color-surface-sunken);font-family:var(--hfx-font-mono,"JetBrains Mono",monospace);font-size:var(--cx-size-13px);overflow-wrap:anywhere;white-space:normal; }
 .cx-flow-once .cx-flow-answer-value { align-items:flex-start;gap:var(--cx-size-6px); }
 .cx-flow-links { display:flex;flex-direction:column;gap:var(--cx-size-4px);padding-inline-start:var(--cx-size-18px); }
 .cx-flow-panel-actions { position:static;margin-top:var(--cx-flow-gap);padding-inline:0;border-top:0; }

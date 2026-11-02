@@ -3,7 +3,7 @@
 .cx-flow-launcher { display:contents; }
 .cx-flow-launcher > .cx-flow-launch { height:auto;min-height:var(--cx-size-36px);padding:0 var(--cx-size-16px); }
 .cx-flow-dialog { box-sizing:border-box;width:min(var(--cx-size-640px),calc(var(--cx-size-100vw) - var(--cx-size-32px)));max-height:calc(var(--cx-size-100vh) - var(--cx-size-32px));padding:0;border:0;border-radius:var(--hfx-radius-overlay);
-  background:transparent;color:var(--hfx-color-text);overflow:auto;box-shadow:var(--hfx-elevation-3); }
+  background:transparent;color:var(--hfx-color-text);overflow:auto;box-shadow:var(--hfx-elevation-2); }
 .cx-flow-dialog::backdrop { background:var(--hfx-color-overlay); }
 .cx-flow-dialog.cx-flow-drawer { margin:0 0 0 auto;inset-inline-end:0;inset-inline-start:auto;width:min(var(--cx-size-560px,560px),var(--cx-size-100vw));height:var(--cx-size-100vh);max-height:none;border-radius:var(--hfx-radius-none); }
 .cx-flow-dialog.cx-flow-drawer > .cx-flow { min-height:100%;border-radius:var(--hfx-radius-none);border-block:0;border-inline-end:0; }

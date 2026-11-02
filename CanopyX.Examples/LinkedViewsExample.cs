@@ -29,7 +29,7 @@ internal static class LinkedViewsExample {
                 options.Parts.Add("link");
                 return options;
             }
-            var page = template.Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
+            var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid))
                 .Replace("{{example-style}}", exampleStyle)
                 .Replace("{{grid}}", Grid().ToHtmlFragment(Options("360px")))
