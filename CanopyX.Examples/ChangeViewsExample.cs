@@ -21,7 +21,7 @@ internal static class ChangeViewsExample {
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var document = new CanopyHtmlDocument();
             CanopyHtmlOptions Options() => new CanopyHtmlOptions { Theme = theme, Document = document };
-            var page = template.Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
+            var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid))
                 .Replace("{{example-style}}", exampleStyle)
                 .Replace("{{list}}", List().ToHtmlFragment(Options()))
@@ -33,9 +33,9 @@ internal static class ChangeViewsExample {
         Large(20000).SaveHtmlPage(Path.Combine(output, "changes-diff-large.html"), new CanopyHtmlOptions { Title = "A diff of 20,000 lines", Height = "86vh" });
         foreach (var (name, theme, background) in new[] { ("changes-static.html", new CanopyStaticTheme(), "#ffffff"), ("changes-static-dark.html", CanopyStaticTheme.Dark(), "#16181c") }) {
             var options = new CanopyStaticHtmlOptions { Theme = theme, MaxRows = 400 };
-            var html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Change views static fallback</title></head><body style=\"font-family:Calibri,Arial,sans-serif;margin:16px;background:" + background + "\">" +
+            var html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Change views static fallback</title></head><body style=\"font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;margin:16px;background:" + background + "\">" +
                 CanopyStaticHtml.RenderChanges(List(), options) + "<br>" + CanopyStaticHtml.RenderPropagation(Propagation(), options) + "<br>" + CanopyStaticHtml.RenderDiff(ScriptDiff(), options) + "</body></html>";
-            File.WriteAllText(Path.Combine(output, name), html, new UTF8Encoding(false));
+            File.WriteAllText(Path.Combine(output, name), html.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>"), new UTF8Encoding(false));
         }
     }
 

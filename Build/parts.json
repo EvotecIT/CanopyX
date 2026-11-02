@@ -16,8 +16,8 @@
         "h",
         "setText",
         "fill",
-        "watchTheme",
         "overlayTheme",
+        "watchOverlayTheme",
         "hostHtml"
       ],
       "scripts": [
@@ -53,7 +53,7 @@
         "h",
         "setText",
         "fill",
-        "watchTheme",
+        "watchOverlayTheme",
         "overlayTheme",
         "hostHtml"
       ],
@@ -82,7 +82,7 @@
         "h",
         "setText",
         "fill",
-        "watchTheme",
+        "watchOverlayTheme",
         "overlayTheme",
         "hostHtml"
       ],
@@ -111,7 +111,7 @@
         "h",
         "setText",
         "fill",
-        "watchTheme",
+        "watchOverlayTheme",
         "overlayTheme",
         "hostHtml"
       ],
@@ -140,7 +140,7 @@
         "h",
         "setText",
         "fill",
-        "watchTheme",
+        "watchOverlayTheme",
         "overlayTheme",
         "hostHtml"
       ],
@@ -169,7 +169,7 @@
         "h",
         "setText",
         "fill",
-        "watchTheme",
+        "watchOverlayTheme",
         "overlayTheme",
         "hostHtml"
       ],
@@ -195,6 +195,7 @@
         "ui-overlays"
       ],
       "context": [
+        "FONT_METRICS",
         "UI_IMPL",
         "UI_TOOLS",
         "TreeGrid",
@@ -417,6 +418,7 @@
         "cellValue",
         "cellText",
         "isCellObject",
+        "withNonce",
         "exportTimeout",
         "exportFormat",
         "EXPORT_FORMATS",

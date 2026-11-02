@@ -179,7 +179,7 @@
 }
 
 /* ---------- full pages written by CanopyX.Html ---------- */
-body.cx-page { margin:0;font-family:var(--hfx-font-sans);}
+body.cx-page { margin:0;font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);}
 /* lint-allow layout: viewport or panel dimension */
 body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host { height:100vh;padding:var(--hfx-space-3) var(--hfx-space-4);}
 /* Header grips remain visible when keyboard traversal directs focus programmatically. */

@@ -34,10 +34,10 @@
     border: 0;
     background: transparent;
     color: var(--hfx-color-text-secondary);
-    font-family: var(--hfx-font-sans);
+    font-family: var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);
     font-size: var(--hfx-control-font-size);
     font-weight: var(--hfx-weight-medium);
-    line-height: var(--hfx-type-body-line);
+    line-height: var(--hfx-type-body-line-height,var(--hfx-type-body-line));
     cursor: pointer;
     white-space: nowrap;
   }
@@ -56,7 +56,7 @@
     color: var(--hfx-color-accent-text);
     background: var(--hfx-color-accent-subtle);
     font-size: var(--hfx-type-caption-size);
-    line-height: var(--hfx-type-caption-line);
+    line-height: var(--hfx-type-caption-line-height,var(--hfx-type-caption-line));
     font-weight: var(--hfx-weight-medium);
   }
   .cx-tabs-indicator {
@@ -130,7 +130,7 @@
   .cx-tabpanel { grid-column: 1 / -1; min-inline-size: 0; padding-block: var(--hfx-space-4); }
   .cx-tabs--vertical > .cx-tabpanel { grid-column: 2; grid-row: 1 / span 3; padding-inline-start: var(--hfx-space-4); }
   .cx-tabs[data-cx-ready] > .cx-tabpanel > .cx-tabpanel-heading { display: none; }
-  .cx-tabs-position { grid-column: 1 / -1; color: var(--hfx-color-text-muted); font-size: var(--hfx-type-caption-size); line-height: var(--hfx-type-caption-line); margin-block: var(--hfx-space-1); }
+  .cx-tabs-position { grid-column: 1 / -1; color: var(--hfx-color-text-muted); font-size: var(--hfx-type-caption-size); line-height: var(--hfx-type-caption-line-height,var(--hfx-type-caption-line)); margin-block: var(--hfx-space-1); }
   .cx-tabs-phone-picker { grid-column: 1 / -1; inline-size: 100%; }
   .cx-tabs[data-phone="true"] { grid-template-columns: minmax(0, 1fr); }
   .cx-tabs[data-phone="true"] > .cx-tabs-tools { grid-column: 1; grid-row: auto; justify-content: end; }

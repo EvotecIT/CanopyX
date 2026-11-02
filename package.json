@@ -19,6 +19,7 @@
       "import": "./CanopyX.Html/Assets/canopyx-module.mjs"
     },
     "./styles.css": "./CanopyX.Html/Assets/canopyx-interactive.css",
+    "./fonts.css": "./CanopyX.Html/Assets/Fonts/canopyx-fonts.css",
     "./core.css": "./CanopyX.Html/Assets/canopyx.css",
     "./classic.js": "./CanopyX.Html/Assets/canopyx-interactive.js",
     "./core.js": "./CanopyX.Html/Assets/canopyx.js",
@@ -153,6 +154,7 @@
     "./time-slider.css": "./CanopyX.Html/Assets/canopyx-time-slider.css"
   },
   "files": [
+    "CanopyX.Html/Assets/Fonts/",
     "CanopyX.Html/Assets/canopyx-office-export.js",
     "ThirdParty/OfficeIMO/LICENSE",
     "ThirdParty/OfficeIMO/README.md",

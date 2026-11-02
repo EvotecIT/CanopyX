@@ -15,9 +15,9 @@ internal static class RunsBoardExample {
         var runs = RunsGridExample.Create();
         runs.Reporting = new CanopyGridReporting { FilterGroups = true };
         var page = "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n" +
-            "<title>Pipeline board</title><style>" + CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid) + "</style><script>" +
+            "<title>Pipeline board</title>" + CanopyHtmlAssets.FontHead() + "<style>" + CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid) + "</style><script>" +
             CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid) + "</script>\n" +
-            "<style>body { margin:0; padding:16px; color-scheme:light dark; background:Canvas; color:CanvasText; font-family:system-ui,\"Segoe UI\",sans-serif; } h2 { font-size:15px; margin:16px 0 8px; }</style></head>\n" +
+            "<style>body { margin:0; padding:16px; color-scheme:light dark; background:Canvas; color:CanvasText; font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif; } h2 { font-size:15px; margin:16px 0 8px; }</style></head>\n" +
             "<body><main>\n<h2>Pipelines</h2>\n" + Board().ToHtmlFragment(options) + "\n<h2>Runs</h2>\n" + runs.ToHtmlFragment(options) +
             "\n</main></body></html>\n";
         File.WriteAllText(Path.Combine(output, "runs-board.html"), page);

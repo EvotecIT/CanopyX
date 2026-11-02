@@ -133,7 +133,10 @@ public sealed class RuntimePartTests {
                 var main = CanopyHtmlAssets.WriteTo(directory, naming, runtime);
                 var expected = CanopyHtmlAssets.GetParts(runtime).SelectMany(part => new[] { part.GetScriptFileName(naming), part.GetStyleFileName(naming) })
                     .Where(name => name != null).Concat(main.Select(Path.GetFileName)).OrderBy(name => name, StringComparer.Ordinal);
-                Assert.Equal(expected, Directory.GetFiles(directory).Select(Path.GetFileName).OrderBy(name => name, StringComparer.Ordinal));
+                var actual = Directory.GetFiles(directory).Select(Path.GetFileName).ToArray();
+                var fonts = actual.Where(name => Regex.IsMatch(name!, @"^(?:(?:Archivo|JetBrainsMono)(?:\.[a-f0-9]{16})?\.woff2|OFL-(?:Archivo|JetBrainsMono)\.txt|canopyx-fonts(?:\.[a-f0-9]{16})?\.css)$")).ToArray();
+                Assert.Equal(5, fonts.Length);
+                Assert.Equal(expected, actual.Except(fonts).OrderBy(name => name, StringComparer.Ordinal));
                 foreach (var part in CanopyHtmlAssets.GetParts(runtime)) Assert.Equal(part.Script, File.ReadAllText(Path.Combine(directory, part.GetScriptFileName(naming))));
             } finally {
                 Directory.Delete(directory, true);
@@ -151,8 +154,9 @@ public sealed class RuntimePartTests {
     }
 
     [Fact]
-    public void EmbeddedAssets_AreTheEntryPointsThePartsAndTheManifestOnly() {
-        var expected = new HashSet<string>(StringComparer.Ordinal) { "page.html", "canopyx-parts.json" };
+    public void EmbeddedAssets_AreTheEntryPointsPartsManifestAndStandaloneFonts() {
+        var expected = new HashSet<string>(StringComparer.Ordinal) { "page.html", "canopyx-parts.json",
+            "Fonts.Archivo.woff2", "Fonts.JetBrainsMono.woff2", "Fonts.OFL-Archivo.txt", "Fonts.OFL-JetBrainsMono.txt", "Fonts.canopyx-fonts.css" };
         foreach (var runtime in AllRuntimes) { expected.Add(CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.Plain, runtime)); expected.Add(CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.Plain, runtime)); }
         foreach (var part in CanopyHtmlAssets.Parts) { expected.Add(part.ScriptFileName); if (part.StyleFileName != null) expected.Add(part.StyleFileName); }
         var embedded = typeof(CanopyHtmlAssets).Assembly.GetManifestResourceNames().Where(name => name.StartsWith("CanopyX.Html.Assets.", StringComparison.Ordinal))

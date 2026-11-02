@@ -14,7 +14,7 @@ internal static class ColumnLayoutExample {
         var template = reader.ReadToEnd();
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var options = new CanopyHtmlOptions { Theme = theme, Height = "420px" };
-            var page = template.Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
+            var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid))
                 .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light")
                 .Replace("{{products}}", Products("products").ToHtmlFragment(options))

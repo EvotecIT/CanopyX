@@ -39,10 +39,11 @@
     const text = String(value).slice(0, 512), measured = context.measureText(text).width;
     if (!variant.includes("tabular-nums") || !COLUMN_HAS_NUMERIC.test(text)) return measured;
     const font = context.font;
-    let variants = COLUMN_DIGITS.get(font);
+    const key = font + ":" + FONT_METRICS.version;
+    let variants = COLUMN_DIGITS.get(key);
     if (!variants) {
       if (COLUMN_DIGITS.size === 32) COLUMN_DIGITS.delete(COLUMN_DIGITS.keys().next().value);
-      COLUMN_DIGITS.set(font, variants = new Map());
+      COLUMN_DIGITS.set(key, variants = new Map());
     }
     if (!variants.has(variant)) {
       const probe = document.createElement("span"), glyphs = [];

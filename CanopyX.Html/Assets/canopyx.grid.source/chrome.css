@@ -2,7 +2,7 @@
    and badges are the shared controls (canopyx.source/controls.css). */
 /* Flat-grid hosts and trees with their tree tools part carry .cx-chrome; the tree tools part ships this file for trees on
  * the tree runtimes, the grid stylesheets include it ahead of the grid's own rules. */
-.cx-chrome { border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-container);overflow:hidden;font:var(--hfx-control-font-size)/1.4 var(--hfx-font-sans); }
+.cx-chrome { border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-container);overflow:hidden;font:var(--hfx-control-font-size)/1.4 var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif); }
 .cx-page > .cx-chrome,.cx-page > .cx-main > .cx-chrome { padding:0; }
 body .cx-host.cx-chrome { padding:0; }
 .cx-chrome [hidden] { display:none!important; }
@@ -13,7 +13,7 @@ body .cx-host.cx-chrome { padding:0; }
 .cx-chrome .cx-search-input { flex:1;min-width:0;width:100%;max-width:none;min-height:0;height:100%;border:0;padding:0;border-radius:0;background:transparent; }
 .cx-chrome .cx-search:focus-within { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
 .cx-chrome .cx-search .cx-search-input:focus-visible { outline:0; }
-.cx-chrome .cx-search kbd { font:var(--cx-size-11px) var(--hfx-font-mono);border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);padding:0 var(--cx-size-5px); }
+.cx-chrome .cx-search kbd { font:var(--cx-size-11px) var(--hfx-font-mono,"JetBrains Mono",monospace);border:var(--cx-size-1px) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);padding:0 var(--cx-size-5px); }
 .cx-chrome .cx-columns > summary::after { display:none; }
 .cx-spacer { flex:1; }
 .cx-sep { width:var(--cx-size-1px);height:var(--cx-size-20px);background:var(--hfx-color-border); }
@@ -42,7 +42,7 @@ body .cx-host.cx-chrome { padding:0; }
 .cx-export-formats,.cx-export-actions { display:flex;flex-direction:column;gap:var(--hfx-space-0-5); }
 .cx-export-actions { border-top:var(--hfx-border-width) solid var(--hfx-color-border);padding-top:var(--hfx-space-2);margin-top:var(--hfx-space-1); }
 .cx-chrome .cx-export-choice { width:100%;height:auto;min-height:var(--hfx-control-height-lg);justify-content:flex-start;text-align:left;padding:var(--hfx-space-2) var(--hfx-space-2);gap:var(--hfx-space-3);border:0;background:transparent;white-space:normal; }
-.cx-export-icon { flex:none;display:grid;place-items:center;box-sizing:border-box;width:calc(var(--hfx-icon-md)*2.5);height:var(--hfx-menu-item-height);padding:var(--hfx-space-1);border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);color:var(--hfx-color-text-muted);font:var(--hfx-weight-semibold) var(--hfx-type-caption-size) var(--hfx-font-sans); }
+.cx-export-icon { flex:none;display:grid;place-items:center;box-sizing:border-box;width:calc(var(--hfx-icon-md)*2.5);height:var(--hfx-menu-item-height);padding:var(--hfx-space-1);border:var(--hfx-border-width) solid var(--hfx-color-border);border-radius:var(--hfx-radius-control);color:var(--hfx-color-text-muted);font:var(--hfx-weight-semibold) var(--hfx-type-caption-size) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif); }
 .cx-export-actions .cx-export-icon { font-size:var(--hfx-icon-md); }
 .cx-export-choice-text { display:flex;flex-direction:column;min-width:0;gap:var(--hfx-space-1); }
 .cx-export-choice-title { font-weight:var(--hfx-weight-semibold); }

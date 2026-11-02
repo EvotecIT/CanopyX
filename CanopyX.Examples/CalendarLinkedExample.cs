@@ -28,7 +28,7 @@ internal static class CalendarLinkedExample {
             var grid = CalendarExample.Create("linked-records", "Maintenance records").View;
             grid.Calendar = null;
             grid.Selection = CanopySelectionMode.Multiple;
-            var page = template.Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
+            var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid))
                 .Replace("{{example-style}}", exampleStyle)
                 .Replace("{{calendar}}", calendar.ToHtmlFragment(Options("560px")))

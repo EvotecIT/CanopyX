@@ -52,6 +52,9 @@ CanopyX.Html.CanopyHtmlAssets.static System.String FilterEditorMarkup { get; }
 CanopyX.Html.CanopyHtmlAssets.static System.String FilterEditorScript { get; }
 CanopyX.Html.CanopyHtmlAssets.static System.String FilterEditorStyle { get; }
 CanopyX.Html.CanopyHtmlAssets.static System.String FilterEditorVersion { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String FontHead(CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlAssets.static System.String FontStyle { get; }
+CanopyX.Html.CanopyHtmlAssets.static System.String GetFontStyleFileName(CanopyX.Html.CanopyAssetNaming naming = ContentHash)
 CanopyX.Html.CanopyHtmlAssets.static System.String GetScript(CanopyX.Html.CanopyRuntime runtime)
 CanopyX.Html.CanopyHtmlAssets.static System.String GetScriptFileName(CanopyX.Html.CanopyAssetNaming naming)
 CanopyX.Html.CanopyHtmlAssets.static System.String GetScriptFileName(CanopyX.Html.CanopyAssetNaming naming, CanopyX.Html.CanopyRuntime runtime)

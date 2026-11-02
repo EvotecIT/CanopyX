@@ -78,6 +78,7 @@
       this.prepareViewModes();
       this.build();
       this.buildToolbar();
+      watchFontMetrics(this);
       // The links part (86-links.js) loads beside the data; a failure is reported when the address is first read.
       if (view.deepLink) loadPart(LINKS).catch(() => {});
       // The declared view modes (87-view-modes.js) start with the tree tools part; ready waits for them too.

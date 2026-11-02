@@ -49,5 +49,7 @@
     <!-- Every runtime entry point, every part of Build/parts.json and the part manifest; the label packs ship as .NET factories. -->
     <EmbeddedResource Include="Assets\canopyx.js;Assets\canopyx.css;Assets\canopyx-*.js;Assets\canopyx-*.css;Assets\canopyx-parts.json" Exclude="Assets\canopyx-labels-*.js" LogicalName="CanopyX.Html.Assets.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Assets\page.html" LogicalName="CanopyX.Html.Assets.page.html" />
+    <EmbeddedResource Include="Assets\Fonts\*.woff2;Assets\Fonts\*.css;Assets\Fonts\OFL-*.txt" LogicalName="CanopyX.Html.Assets.Fonts.%(Filename)%(Extension)" />
+    <None Update="Assets\Fonts\OFL-*.txt;Assets\Fonts\font-sources.json" Pack="true" PackagePath="licenses\fonts" />
   </ItemGroup>
 </Project>

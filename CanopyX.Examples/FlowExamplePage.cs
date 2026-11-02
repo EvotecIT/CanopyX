@@ -43,10 +43,10 @@ internal static class FlowExamplePage {
     // The page around the flow: a quiet background, the flow centred at a readable width, and the received proposal below it.
     private static string Inject(string page, CanopyTheme theme, int width, string? script) {
         var dark = theme == CanopyTheme.Dark;
-        var style = "<style>\nbody.cx-page{margin:0;background:" + (dark ? "#0e1013" : "#f3f4f6") + ";color:" + (dark ? "#f2f3f5" : "#16181c") + ";font:14px/1.45 Calibri,Carlito,\"Segoe UI\",system-ui,sans-serif}\n" +
+        var style = "<style>\nbody.cx-page{margin:0;background:" + (dark ? "#0e1013" : "#f3f4f6") + ";color:" + (dark ? "#f2f3f5" : "#16181c") + ";font:14px/1.45 Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif}\n" +
             ".cx-main{box-sizing:border-box;max-width:" + width.ToString(CultureInfo.InvariantCulture) + "px;margin:0 auto;padding:32px 16px 48px}\n" +
             ".flow-received{margin-top:24px}.flow-received h2{margin:0 0 8px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.7}\n" +
-            ".flow-received pre{box-sizing:border-box;max-height:320px;margin:0;padding:12px 14px;overflow:auto;border:1px solid " + (dark ? "#272a30" : "#e2e4e7") + ";border-radius:8px;background:" + (dark ? "#16181c" : "#fff") + ";font:12.5px/1.5 \"IBM Plex Mono\",Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}\n" +
+            ".flow-received pre{box-sizing:border-box;max-height:320px;margin:0;padding:12px 14px;overflow:auto;border:1px solid " + (dark ? "#272a30" : "#e2e4e7") + ";border-radius:8px;background:" + (dark ? "#16181c" : "#fff") + ";font:12.5px/1.5 'JetBrains Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere}\n" +
             ".flow-mock{display:flex;padding:8px 14px;border:1px solid " + (dark ? "#272a30" : "#e2e4e7") + ";border-radius:8px;background:" + (dark ? "#16181c" : "#fff") + ";flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 16px;font-size:13px}.flow-mock legend{float:left;margin-inline-end:6px;font-weight:600}.flow-mock label{display:inline-flex;gap:6px;align-items:center}\n" +
             "@media (max-width:640px){.cx-main{padding:16px 12px 32px}}\n</style>\n";
         return page.Replace("</head>", style + "</head>").Replace("</main>", (script ?? string.Empty) + HostScript + "</main>");
