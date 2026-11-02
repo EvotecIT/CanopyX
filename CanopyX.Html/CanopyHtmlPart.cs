@@ -279,6 +279,7 @@ public sealed class CanopyHtmlPart {
         "tree" => new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid },
         "grid" => new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid },
         "flow" => new[] { CanopyRuntime.Flow },
+        "ui" => new[] { CanopyRuntime.Ui },
         _ => throw new InvalidOperationException("Unknown CanopyX part runtime '" + kind + "'.")
     };
 

@@ -2,6 +2,18 @@ namespace CanopyX;
 
 // Texts supplied by the optional standalone UI parts, independently of the grid and tree runtimes.
 public sealed partial class CanopyLabels {
+    /// <summary>Gets or sets the accessible name and default placeholder of the accordion filter box. Default "Filter sections".</summary>
+    public string AccordionSearch { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the message shown when no accordion section matches the filter. Default "No matching sections".</summary>
+    public string AccordionNoMatches { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the button that copies a section title. Default "Copy title".</summary>
+    public string AccordionCopyTitle { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the copy button after a section title was copied. Default "Copied".</summary>
+    public string AccordionCopied { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the button that lists tabs hidden by overflow. Default "More".</summary>
     public string TabsMore { get => Get(); set => Set(value); }
 

@@ -23,10 +23,8 @@
       if (typeof source !== "object" || Array.isArray(source)) throw new Error("CanopyX: labels must be an object of strings.");
       Object.keys(source).forEach((name) => {
         // Parts that carry the English defaults of their own labels: forms and editing (gridEdit…), conditional formatting (format…),
-        // the calendar (calendar…), flows (flow…), the matrix (matrix…) and the change views (change…), so a whole label pack applies to any view.
-        // Standalone UI parts likewise carry their own defaults; accept their known names before those parts load.
-        const uiLabel = /^(?:tabs(?:More(?:Selected)?|ScrollPrevious|ScrollNext|Section|Position|Pause|Play|MotionDisabled)|stepper(?:StepOf|Back|Next|Finish|Skip|SaveDraft|AllSteps|Optional|Completed|Skipped|Issues?)|dialogClose|drawer(?:Close|Previous|Next)|state(?:Loading|Retry|Details))$/.test(name);
-        if (!Object.hasOwn(DEFAULT_LABELS, name) && !/^(?:gridEdit|format|calendar|flow|matrix|change|board|plan|path|stack|time|compare|viewIntent)[A-Z]\w{0,63}$/.test(name) && !uiLabel) throw new Error("CanopyX: there is no label '" + name + "'.");
+        // the calendar (calendar…), flows (flow…), the matrix (matrix…), the change views (change…) and standalone UI, so a whole label pack applies to any view.
+        if (!Object.hasOwn(DEFAULT_LABELS, name) && !/^(?:gridEdit|format|calendar|flow|matrix|change|board|plan|path|stack|time|compare|viewIntent|tabs|stepper|accordion|dialog|drawer|state)[A-Z]\w{0,63}$/.test(name)) throw new Error("CanopyX: there is no label '" + name + "'.");
         if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
         if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
         labels[name] = source[name];

@@ -13,7 +13,8 @@ UI_TOOLS.navigation.deferred = (root, prefix, options, life, retry) => {
       const body = document.createElement('div');
       body.className = 'cx-navigation-body';
       for (const child of Array.from(item.panel.childNodes)) {
-        if (child === template || child.nodeType === 1 && child.matches('h3,[data-hfx-part="title"],.cx-step-print-state,.cx-step-errors,.cx-navigation-print')) continue;
+        // An accordion's heading sits outside its panel, so every other child of the panel is content.
+        if (child === template || prefix !== 'accordion' && child.nodeType === 1 && child.matches('h3,[data-hfx-part="title"],.cx-step-print-state,.cx-step-errors,.cx-navigation-print')) continue;
         body.append(child);
       }
       item.panel.append(body);

@@ -55,6 +55,8 @@ public sealed class CanopyTabs {
         UiHtml.Attribute(html, "data-activation", UiHtml.Token(Options.Activation));
         UiHtml.Attribute(html, "data-collapse", (Options.CollapseToPicker ?? style != CanopyTabsStyle.Segmented) ? "picker" : "none");
         UiHtml.Attribute(html, "data-print", Options.PrintAll ? "all" : "selected");
+        if (Options.Justified) UiHtml.Attribute(html, "data-justified", "true");
+        UiHtml.Attribute(html, "data-remember", Options.RememberKey);
         if (Options.AutoProgress != null) {
             UiHtml.Attribute(html, "data-auto-progress-interval", UiHtml.Number(Options.AutoProgress.Interval));
             UiHtml.Attribute(html, "data-auto-progress-pause-on-hover", UiHtml.Bool(Options.AutoProgress.PauseOnHover));

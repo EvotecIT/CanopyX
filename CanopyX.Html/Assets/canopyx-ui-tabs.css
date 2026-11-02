@@ -106,6 +106,7 @@ inset-block:var(--hfx-space-2,0.5rem);
 inline-size:var(--hfx-indicator-width,2px);
 background:var(--hfx-color-accent-indicator,light-dark(#11776f,#37c9b8));
 }
+.cx-tabs[data-justified="true"]:not(.cx-tabs--vertical) > .cx-tablist > .cx-tab{flex:1 1 0;}
 .cx-tabs[data-overflow="wrap"] > .cx-tablist{flex-wrap:wrap;overflow:visible;}
 .cx-tabs[data-overflow="menu"] > .cx-tablist{overflow:hidden;}
 .cx-tabs-tools{display:flex;gap:var(--hfx-space-1,0.25rem);grid-column:2;grid-row:1;}

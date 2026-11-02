@@ -1,4 +1,8 @@
 {
+  "AccordionSearch": ["Filtruj sekcje", "Abschnitte filtern", "Filtrar secciones", "Filtrer les sections", "Filtra le sezioni"],
+  "AccordionNoMatches": ["Brak pasujących sekcji", "Keine passenden Abschnitte", "No hay secciones coincidentes", "Aucune section correspondante", "Nessuna sezione corrispondente"],
+  "AccordionCopyTitle": ["Kopiuj tytuł", "Titel kopieren", "Copiar título", "Copier le titre", "Copia titolo"],
+  "AccordionCopied": ["Skopiowano", "Kopiert", "Copiado", "Copié", "Copiato"],
   "CalendarEditOccurrence": [
     "Edytuj to wystąpienie",
     "Dieses Vorkommen bearbeiten",
