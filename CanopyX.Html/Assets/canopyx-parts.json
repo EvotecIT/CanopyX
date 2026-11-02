@@ -55,7 +55,7 @@
     {
       "name": "ui-navigation",
       "label": "UI navigation",
-      "version": "eb8107dd47d5db70",
+      "version": "49c14eeee8d0d884",
       "script": "canopyx-ui-navigation.js",
       "style": "canopyx-ui-navigation.css",
       "runtimes": [

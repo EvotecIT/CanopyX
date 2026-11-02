@@ -108,6 +108,18 @@ test('sync event cancellation and async cancellation return focus to the selecte
   await expect(page.getByRole('tabpanel', { name: 'Overview' })).toBeVisible();
 });
 
+test('nested templates belong to their child component rather than the containing tab', async ({ page }) => {
+  await openUi(page, tabs('sections', '', [
+    { id: 'overview', label: 'Overview' },
+    { id: 'checks', label: 'Checks', body: '<div id="child-component"><p>Child heading</p><template><p>Deferred child evidence</p></template></div>' }
+  ]), initTabs('{}'));
+  await page.getByRole('tab', { name: 'Checks', exact: true }).click();
+  await expect(page.locator('#child-component')).toBeVisible();
+  await expect(page.getByText('Child heading', { exact: true })).toBeVisible();
+  expect(await page.locator('#child-component template').evaluate(template => template.content.textContent)).toContain('Deferred child evidence');
+  await expect(page.getByText('Deferred child evidence', { exact: true })).toHaveCount(0);
+});
+
 test('deferred templates keep live content across revisits and loaders retry failures', async ({ page }) => {
   const markup = tabs('sections', '', [{ id: 'overview', label: 'Overview' },
     { id: 'checks', label: 'Checks', body: '<template><label>Note<input value="initial"></label></template>' }, { id: 'audit', label: 'Audit' }]);
