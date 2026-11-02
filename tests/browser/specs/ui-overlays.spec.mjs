@@ -5,8 +5,8 @@ import { openUi } from './ui-support.mjs';
 const overlay = (kind, id, body = '<label>Record name<input value="Example"></label>', extra = '') =>
   `<button id="${id}-trigger" aria-controls="${id}" aria-expanded="false">Open ${id}</button>
   <dialog id="${id}" class="cx-${kind}" data-cx-${kind} data-cx-trigger="${id}-trigger" data-side="end" data-size="md" aria-labelledby="${id}-title" ${extra}>
-    <header data-hfx-part="header"><h2 id="${id}-title">${id} settings</h2><button class="cx-overlay-close" data-cx-close aria-label="Close"></button></header>
-    <div data-hfx-part="body">${body}</div><footer data-hfx-part="footer"><button data-cx-cancel>Cancel</button><button>Save</button></footer>
+    <header data-cx-part="header"><h2 id="${id}-title">${id} settings</h2><button class="cx-overlay-close" data-cx-close aria-label="Close"></button></header>
+    <div data-cx-part="body">${body}</div><footer data-cx-part="footer"><button data-cx-cancel>Cancel</button><button>Save</button></footer>
   </dialog>`;
 
 test('dialog traps focus, restores its trigger and keeps the document scroll state', async ({ page }) => {

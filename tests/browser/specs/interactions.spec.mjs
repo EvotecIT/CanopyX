@@ -189,7 +189,7 @@ test('context menus have keyboard navigation and disabled actions never execute'
   await mount(page,`{onAction(p){window.action=p;return true},isActionEnabled:n=>n.id!=='b'}`);
   await row(page,'b').focus(); await page.keyboard.press('Shift+F10');
   await expect(page.getByRole('menu',{name:'Actions'})).toBeVisible();
-  await expect(page.getByRole('menu',{name:'Actions'})).toHaveAttribute('data-hfx-part','menu');
+  await expect(page.getByRole('menu',{name:'Actions'})).toHaveAttribute('data-cx-part','menu');
   await expect(page.getByRole('menuitem',{name:'Inspect record'})).toBeFocused();
   await expect(page.getByRole('menuitem')).toHaveAttribute('aria-disabled','true');
   await page.keyboard.press('Enter'); expect(await page.evaluate(()=>window.action)).toBeUndefined();

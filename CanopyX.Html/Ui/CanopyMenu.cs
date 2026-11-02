@@ -59,12 +59,12 @@ public sealed class CanopyMenu {
     }
 
     private void Menu(StringBuilder html, string id, string labelledBy, IList<CanopyMenuItem> items, bool root) {
-        html.Append("<div class=\"cx-menu\" role=\"menu\" data-cx-menu data-hfx-part=\"menu\" data-state=\"closed\" popover=\"manual\" hidden");
+        html.Append("<div class=\"cx-menu\" role=\"menu\" data-cx-menu data-cx-part=\"menu\" data-state=\"closed\" popover=\"manual\" hidden");
         UiHtml.Attribute(html, "id", id);
         UiHtml.Attribute(html, "aria-labelledby", labelledBy);
         UiHtml.Attribute(html, "data-cx-trigger", labelledBy);
         UiHtml.Attribute(html, "data-placement", root ? UiHtml.Token(Options.Placement) : "right");
-        UiHtml.Attribute(html, "data-hfx-variant", Options.Variant);
+        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         html.Append('>');
         foreach (var item in items) Entry(html, item);
         html.Append("</div>");
@@ -82,7 +82,7 @@ public sealed class CanopyMenu {
             return;
         }
         var checkable = item.Checked.HasValue || item.Kind == CanopyMenuItemKind.Checkbox || item.Kind == CanopyMenuItemKind.Radio;
-        html.Append("<button type=\"button\" class=\"cx-menu-item\" data-hfx-part=\"menu-item\" tabindex=\"-1\"");
+        html.Append("<button type=\"button\" class=\"cx-menu-item\" data-cx-part=\"menu-item\" tabindex=\"-1\"");
         UiHtml.Attribute(html, "id", ItemId(item));
         UiHtml.Attribute(html, "data-item-id", item.Id);
         UiHtml.Attribute(html, "role", item.Kind == CanopyMenuItemKind.Radio ? "menuitemradio" : checkable ? "menuitemcheckbox" : "menuitem");

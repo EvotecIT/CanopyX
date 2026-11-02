@@ -139,7 +139,9 @@ Use `CanopyX.dialog`, `drawer`, `popover`, `tooltip` and `menu` with their decla
 
 Dialogs use the native modal dialog. Drawers are non-modal on desktop and become full-height modal sheets when their container narrows below 640 px. `modal: true` also makes a desktop drawer modal. The shared overlay manager handles nested Escape order, modal focus trapping, scroll locking, dismissal and focus return. Anchored overlays flip and shift within the viewport.
 
-An overlay copies its host's resolved scheme and scoped design roles when moved outside that host. Its colors, typography, spacing, radii, elevation and motion consume `--hfx-*` roles with standalone fallbacks. Use `data-theme="light"` or `"dark"` on a standalone component, or supply roles from its parent. Component styles live in `@layer hfx.components`; a product layer can restyle public `data-hfx-part`, `data-state` and `data-hfx-variant` hooks.
+An overlay copies its host's resolved scheme and scoped design roles when moved outside that host. Its colors, typography, spacing, radii, elevation and motion consume `--hfx-*` roles with standalone fallbacks. Use `data-theme="light"` or `"dark"` on a standalone component, or supply roles from its parent. Component styles live in `@layer hfx.components`; a product layer can restyle public `data-cx-part`, `data-state` and `data-cx-variant` hooks.
+
+Custom part and variant selectors use `data-cx-part` and `data-cx-variant`. When updating an existing host, change its `data-hfx-part` and `data-hfx-variant` selectors together with the runtime assets; the shared `--hfx-*` theme roles keep their names.
 
 ## Add a context menu
 

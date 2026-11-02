@@ -17,7 +17,7 @@ function navigation(kind = 'tabs', bodies = [], selected = 0, count = 3) {
     </${tabs ? 'div' : 'ol'}>
     ${entries.map((item, i) => `<section id="panel-${item.id}" class="${tabs ? 'cx-tabpanel' : 'cx-step-panel'}"
       ${tabs ? `role="tabpanel" aria-labelledby="tab-${item.id}"` : `aria-labelledby="heading-${item.id}"`}>
-      <h3 id="heading-${item.id}" class="cx-tabpanel-heading" data-hfx-part="title">${item.label}</h3>
+      <h3 id="heading-${item.id}" class="cx-tabpanel-heading" data-cx-part="title">${item.label}</h3>
       ${bodies[i] ?? `<p>Body ${i}</p>`}</section>`).join('')}</div>`;
 }
 

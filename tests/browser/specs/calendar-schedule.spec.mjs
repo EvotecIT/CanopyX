@@ -281,7 +281,7 @@ test.describe("context menus and hover cards", () => {
     await p.locator('.cx-cal-ev[data-cx-record="a"]').click({ button: "right" });
     const menu = p.getByRole("menu", { name: "Actions for Planning" });
     await expect(menu).toBeVisible();
-    await expect(menu).toHaveAttribute("data-hfx-part", "menu");
+    await expect(menu).toHaveAttribute("data-cx-part", "menu");
     await expect(menu.getByRole("menuitem")).toHaveText(["Open", "Move"]);
     await expect(menu.getByRole("menuitem").first()).toBeFocused();
     await capture(p, "calendar-context-menu");

@@ -50,7 +50,7 @@ UI_IMPL.treeActions = {
       if (this.destroyed || this.interactionClosing || this.interactionPanel || (this.uiWorkRevision || 0) !== revision || !anchor?.isConnected) return null;
       const panel = this.interactionPanel = h("div", "cx-interaction-panel"), lifetime = new AbortController();
       const signal = lifetime.signal;
-      panel.setAttribute("role", role); panel.setAttribute("aria-label", label); panel.dataset.hfxPart = "popover";
+      panel.setAttribute("role", role); panel.setAttribute("aria-label", label); panel.dataset.cxPart = "popover";
       // Keep the existing editor geometry when the shared overlay promotes it to the native top layer.
       panel.style.inset = "auto"; panel.style.margin = "0";
       this.panelNode = w; this.host.appendChild(panel);

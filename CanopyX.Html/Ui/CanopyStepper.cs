@@ -28,10 +28,10 @@ public sealed class CanopyStepper {
         Validate();
         var html = new StringBuilder("<div");
         UiHtml.Attribute(html, "id", Id);
-        html.Append(" class=\"cx-stepper-host\" data-cx-stepper data-hfx-part=\"stepper\"");
+        html.Append(" class=\"cx-stepper-host\" data-cx-stepper data-cx-part=\"stepper\"");
         UiHtml.Attribute(html, "data-linear", UiHtml.Bool(Options.Linear));
         UiHtml.Attribute(html, "data-mode", UiHtml.Token(Options.Mode));
-        UiHtml.Attribute(html, "data-hfx-variant", Options.Variant);
+        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         html.Append('>');
         if (Options.Mode != CanopyUiMode.Report) Header(html);
         if (Options.Mode != CanopyUiMode.Static) {
@@ -85,7 +85,7 @@ public sealed class CanopyStepper {
             var clickable = Options.Mode == CanopyUiMode.Interactive && i != Options.SelectedIndex
                 && state != CanopyStepState.Disabled && (!Options.Linear || step.Visited
                     || state == CanopyStepState.Done || state == CanopyStepState.Error || state == CanopyStepState.Skipped);
-            html.Append("<li class=\"cx-step\" data-hfx-part=\"step\"");
+            html.Append("<li class=\"cx-step\" data-cx-part=\"step\"");
             UiHtml.Attribute(html, "id", StepId(step));
             UiHtml.Attribute(html, "data-step-id", step.Id);
             UiHtml.Attribute(html, "data-state", UiHtml.Token(state));
@@ -111,11 +111,11 @@ public sealed class CanopyStepper {
     }
 
     private void Panel(StringBuilder html, CanopyStep step, int index) {
-        html.Append("<section class=\"cx-step-panel\" data-hfx-part=\"step-panel\"");
+        html.Append("<section class=\"cx-step-panel\" data-cx-part=\"step-panel\"");
         UiHtml.Attribute(html, "id", PanelId(step));
         UiHtml.Attribute(html, "aria-labelledby", HeadingId(step));
         UiHtml.Attribute(html, "data-state", UiHtml.Token(State(step, index)));
-        html.Append("><h3 data-hfx-part=\"title\"");
+        html.Append("><h3 data-cx-part=\"title\"");
         UiHtml.Attribute(html, "id", HeadingId(step));
         if (Options.Mode == CanopyUiMode.Interactive) UiHtml.Attribute(html, "tabindex", "-1");
         html.Append('>');
@@ -130,7 +130,7 @@ public sealed class CanopyStepper {
 
     private void Footer(StringBuilder html) {
         var step = Steps[Options.SelectedIndex];
-        html.Append("<div class=\"cx-stepper-footer\" data-hfx-part=\"footer\"");
+        html.Append("<div class=\"cx-stepper-footer\" data-cx-part=\"footer\"");
         UiHtml.Attribute(html, "data-back-label", Options.BackLabel);
         UiHtml.Attribute(html, "data-next-label", Options.NextLabel);
         UiHtml.Attribute(html, "data-finish-label", Options.FinishLabel);
@@ -157,7 +157,7 @@ public sealed class CanopyStepper {
     private static void Marker(StringBuilder html, CanopyStepState state, int index) {
         var text = state == CanopyStepState.Done ? "✓" : state == CanopyStepState.Error ? "!"
             : state == CanopyStepState.Skipped ? "–" : UiHtml.Number(index + 1);
-        html.Append("<span class=\"cx-step-marker\" data-hfx-part=\"step-marker\" aria-hidden=\"true\">")
+        html.Append("<span class=\"cx-step-marker\" data-cx-part=\"step-marker\" aria-hidden=\"true\">")
             .Append(UiHtml.Encode(text)).Append("</span>");
     }
 

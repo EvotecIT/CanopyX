@@ -36,11 +36,11 @@ public sealed class CanopyTooltip {
     /// <summary>Renders an initially hidden tooltip with encoded content and placement metadata.</summary>
     public string ToHtmlFragment() {
         Validate();
-        var html = new StringBuilder("<div class=\"cx-tooltip\" role=\"tooltip\" data-cx-tooltip data-hfx-part=\"tooltip\" data-state=\"closed\" hidden");
+        var html = new StringBuilder("<div class=\"cx-tooltip\" role=\"tooltip\" data-cx-tooltip data-cx-part=\"tooltip\" data-state=\"closed\" hidden");
         UiHtml.Attribute(html, "id", Id);
         UiHtml.Attribute(html, "data-cx-trigger", TriggerId);
         UiHtml.Attribute(html, "data-placement", UiHtml.Token(Options.Placement));
-        UiHtml.Attribute(html, "data-hfx-variant", Options.Variant);
+        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         return html.Append('>').Append(UiHtml.Encode(Text)).Append("</div>").ToString();
     }
 

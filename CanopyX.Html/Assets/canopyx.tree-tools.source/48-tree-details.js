@@ -54,7 +54,7 @@
       dialog._returnFocus = returnFocus;
       // Nested views and host renderers inherit the theme on their first paint, before opening the dialog.
       const restoreTheme = UI_TOOLS.theme(this.host, dialog);
-      dialog.dataset.hfxPart = "drawer"; dialog.dataset.side = "end"; head.dataset.hfxPart = "header"; title.dataset.hfxPart = "title"; body.dataset.hfxPart = "body";
+      dialog.dataset.cxPart = "drawer"; dialog.dataset.side = "end"; head.dataset.cxPart = "header"; title.dataset.cxPart = "title"; body.dataset.cxPart = "body";
       title.id = this.id + "-record-title"; title.tabIndex = -1; title.setAttribute("aria-level", "2"); dialog.setAttribute("aria-labelledby", title.id);
       const button = (icon, label, run) => { const item = gridDecorateButton(gridButton("", run), icon, true); item.classList.add("icon"); item.setAttribute("aria-label", labels[label]); return item; };
       const step = position => { paint(position); focusDrawerTitle(title); };

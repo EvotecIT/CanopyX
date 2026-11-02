@@ -59,7 +59,7 @@ internal static class UiHtml {
 
     internal static void Span(StringBuilder html, string className, string text, string? part = null) {
         html.Append("<span class=\"").Append(className).Append('"');
-        Attribute(html, "data-hfx-part", part);
+        Attribute(html, "data-cx-part", part);
         html.Append('>').Append(Encode(text)).Append("</span>");
     }
 }

@@ -36,7 +36,7 @@ public sealed class TreeToolsAssetsTests {
         Assert.NotNull(overlays);
         Assert.Contains("@layer hfx.components", overlays);
         foreach (var element in new[] { "header", "title", "body", "footer" }) {
-            Assert.Matches(@"[^{}]*\.cx-dialog[^{}]*\.cx-drawer[^{}]*\.cx-popover[^{}]*\[data-hfx-part=""" + element + @"""\]\s*\{", overlays!);
+            Assert.Matches(@"[^{}]*\.cx-dialog[^{}]*\.cx-drawer[^{}]*\.cx-popover[^{}]*\[data-cx-part=""" + element + @"""\]\s*\{", overlays!);
         }
     }
 
