@@ -58,6 +58,15 @@ export interface GridCalendarSource{
   fetchParams?:Readonly<Record<string,string>>;
   color?:string;
   hidden?:boolean;
+  avatar?:string;
+  initials?:string;
+  icon?:string;
+}
+export interface GridCalendarFace{
+  resource:string;
+  avatar?:string;
+  initials?:string;
+  icon?:string;
 }
 export type GridCalendarZoom="hour"|"day"|"week"|"month"|"quarter";
 export type GridCalendarTime=`${number}:${number}`;
@@ -148,6 +157,15 @@ export interface GridCalendarDefinition<Row extends GridRow=GridRow>{
   agendaSpan?:"day"|"week"|"month"|"year";
   months?:number;
   print?:boolean;
+  location?:GridColumnId<Row>;
+  merge?:boolean|{tone?:string};
+  fadePast?:number;
+  dayNotes?:readonly{date:string;text:string;tone?:string}[];
+  faces?:readonly GridCalendarFace[];
+  listDays?:number;
+  dayWidth?:number;
+  listBelow?:number;
+  reset?:boolean;
 }
 export interface GridCalendarEvent{
   readonly id:string;
@@ -162,6 +180,7 @@ export interface GridCalendarEvent{
   readonly background?:boolean;
   readonly source?:string|null;
   readonly external?:boolean;
+  readonly owners?:readonly string[];
 }
 export type GridCalendarTemplate=(context:{readonly event:GridCalendarEvent;readonly row:GridRow;readonly element:HTMLElement;readonly kind:"bar"|"chip"|"block"|"item"|"lane";readonly labels:Readonly<Record<string,string>>;}) => boolean|void;
 export interface GridCalendarMenuContext{
@@ -181,6 +200,7 @@ export interface GridCalendarOptions{
   render?:GridCalendarTemplate;
   menu?:(context:GridCalendarMenuContext,defaults:readonly{readonly id:string;readonly label:string}[]) => readonly GridCalendarMenuItem[]|null|false|void;
   occurrence?:(change:GridOccurrenceChange) => "this"|"following"|"all"|false|void|PromiseLike<"this"|"following"|"all"|false|void>;
+  dayHeader?:(context:{readonly day:string;readonly events:number;readonly view:GridCalendarView;readonly element:HTMLElement;readonly labels:Readonly<Record<string,string>>}) => string|boolean|void;
 }
 export interface GridEventCreate{
   readonly start:string;
@@ -206,6 +226,7 @@ export interface CalendarEventInput{
   recurrence?:string;
   exceptions?:string;
   source?:string;
+  location?:string;
 }
 export interface CalendarOptions{
   events?:readonly CalendarEventInput[];
@@ -300,6 +321,7 @@ export interface GridCalendarApi{
   editCalendarOccurrence(id:string):Promise<boolean>;
   clearCalendarSelection():void|Promise<void>;
   setCalendarSource(id:string,visible?:boolean):boolean|Promise<boolean>;
+  resetCalendar():Promise<GridCalendarState>;
 }
 
 // ---- JavaScript/cell-ranges.d.ts ----

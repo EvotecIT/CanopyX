@@ -26,6 +26,19 @@ export interface GridCalendarSource {
   color?: string;
   /** Starts switched off. */
   hidden?: boolean;
+  /** A face drawn in front of the source's events and in its legend switch: a same-origin or base64 data:image URL. */
+  avatar?: string;
+  /** 1..3 characters, also shown when the avatar fails. */
+  initials?: string;
+  /** 1..4 characters such as an emoji, when there is neither an avatar nor initials. */
+  icon?: string;
+}
+/** The face of a resource, drawn in front of its events. */
+export interface GridCalendarFace {
+  resource: string;
+  avatar?: string;
+  initials?: string;
+  icon?: string;
 }
 /** The resource timeline's zoom levels. */
 export type GridCalendarZoom = "hour" | "day" | "week" | "month" | "quarter";
@@ -182,6 +195,24 @@ export interface GridCalendarDefinition<Row extends GridRow = GridRow> {
   months?: number;
   /** A print button in the calendar bar. */
   print?: boolean;
+  /** A text column with each event's location (details; merged copies match on it). */
+  location?: GridColumnId<Row>;
+  /** Copies of one event in several sources (same title, start, end, all-day flag and location) draw once; tone colours them. */
+  merge?: boolean | { tone?: string };
+  /** How strongly finished events fade in week, day, N-day, list and agenda views, 0.1..0.9. */
+  fadePast?: number;
+  /** Short notes in day headers, at most 1000. */
+  dayNotes?: readonly { date: string; text: string; tone?: string }[];
+  /** Faces of resources, one per resource. */
+  faces?: readonly GridCalendarFace[];
+  /** Days the week list shows from its date, 2..14, instead of the calendar week. */
+  listDays?: number;
+  /** The narrowest day column, 60..400 pixels: narrower calendars show fewer days, keeping today. */
+  dayWidth?: number;
+  /** The week list stacks its days when fewer than this many columns (2..7) fit. */
+  listBelow?: number;
+  /** A Reset button that appears once the calendar differs from its defaults. */
+  reset?: boolean;
 }
 
 /** An occurrence as the calendar shows it. */
@@ -201,6 +232,8 @@ export interface GridCalendarEvent {
   readonly source?: string | null;
   /** An event of an iCalendar source: read-only, and its record id is not a record of the grid. */
   readonly external?: boolean;
+  /** The sources of a merged event, in source order (merge). */
+  readonly owners?: readonly string[];
 }
 
 /** The template hook: draws an event's content into a fresh element; return true to own it. Text is the host's to escape. */
@@ -237,6 +270,8 @@ export interface GridCalendarOptions {
   menu?: (context: GridCalendarMenuContext, defaults: readonly { readonly id: string; readonly label: string }[]) => readonly GridCalendarMenuItem[] | null | false | void;
   /** Decides how an occurrence change applies before the calendar asks: a mode, false to cancel, or nothing to keep the setting. */
   occurrence?: (change: GridOccurrenceChange) => "this" | "following" | "all" | false | void | PromiseLike<"this" | "following" | "all" | false | void>;
+  /** Content for a day's header: return text, or write into element with DOM methods and return true. Its text joins the day's name. */
+  dayHeader?: (context: { readonly day: string; readonly events: number; readonly view: GridCalendarView; readonly element: HTMLElement; readonly labels: Readonly<Record<string, string>> }) => string | boolean | void;
 }
 
 /** canopyx:eventCreate (cancelable; cancel it to open your own form): the proposed new event. */
@@ -268,6 +303,8 @@ export interface CalendarEventInput {
   recurrence?: string;
   exceptions?: string;
   source?: string;
+  /** Where it takes place (details); merged copies of one event match on it. */
+  location?: string;
 }
 /** The options of CanopyX.createCalendar: a preset's defaults, each overridden by its own option. */
 export interface CalendarOptions {
@@ -374,4 +411,6 @@ export interface GridCalendarApi {
   clearCalendarSelection(): void | Promise<void>;
   /** Shows (true) or hides a source's events; omitted switches it. Resolves with whether they show. */
   setCalendarSource(id: string, visible?: boolean): boolean | Promise<boolean>;
+  /** Puts back the configured view, date, zoom and sources (the Reset button of reset: true). */
+  resetCalendar(): Promise<GridCalendarState>;
 }

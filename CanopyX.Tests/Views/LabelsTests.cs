@@ -121,6 +121,8 @@ public sealed class LabelsTests {
         Assert.All(calendar.Keys, name => Assert.StartsWith("calendar", name));
         Assert.All(calendar.Keys, name => Assert.False(runtime.ContainsKey(name), name + " is defined twice."));
         foreach (var (name, text) in calendar) runtime.Add(name, text);
+        // The shared-screen part brings the texts only it shows (Reset, who shares a merged event).
+        foreach (var (name, text) in PartLabels("calendar-screen", "CAL_SCREEN_LABELS")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("board", "BOARD_TEXT")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("plan", "PLAN_LABELS")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("path", "PATH_TEXT")) runtime.Add(name, text);

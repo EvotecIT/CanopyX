@@ -133,7 +133,7 @@ export function runtimeAssets(runtime = "tree") {
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-live.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-facets.js"),"utf8") +
         // The calendar and resource timeline parts of grids that declare a calendar.
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-calendar.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-timeline.js"),"utf8") +
-        ["calendar-recurrence", "calendar-edit", "calendar-ics"].map(name => "\n" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".js"), "utf8")).join("") : "") +
+        ["calendar-recurrence", "calendar-edit", "calendar-ics", "calendar-screen"].map(name => "\n" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".js"), "utf8")).join("") : "") +
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-export.js"),"utf8") + "\n" + treeToolsAssets().script +
       // The links and search parts every runtime loads for deep links and sidecar searches.
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-links.js"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-search.js"),"utf8") +
@@ -148,7 +148,8 @@ export function runtimeAssets(runtime = "tree") {
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-detail-rows.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-grouping.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-values.css"),"utf8") +
         "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-live.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-facets.css"),"utf8") +
-        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-calendar.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-timeline.css"),"utf8") : "") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-calendar.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-timeline.css"),"utf8") +
+        "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-calendar-screen.css"),"utf8") : "") +
       "\n" + treeToolsAssets().style + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-highlight.css"),"utf8") +
       "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-layouts.css"),"utf8") + "\n" + fs.readFileSync(path.join(repo,"CanopyX.Html/Assets/canopyx-record-panel.css"),"utf8") +
       ["ui-overlays", "ui-menu"].map(name => "\n" + fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-" + name + ".css"), "utf8")).join("")

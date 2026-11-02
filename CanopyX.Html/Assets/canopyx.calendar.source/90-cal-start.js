@@ -70,7 +70,7 @@
         if (this.destroyed || !root.clientWidth) return;
         // Month repaint replaces day controls. Keep a held target until its release can deliver the click.
         if (root.querySelector(":active")) { resizeFrame = requestAnimationFrame(resize); return; }
-        this.updateGridPhone();
+        this.updateGridPhone(); this.calFitLegend();
         const phone = host.clientWidth <= 640, changed = phone !== this.calPhone || Math.abs(root.clientWidth - width) > 1 || Math.abs(this.calBody.clientHeight - height) > 1;
         width = root.clientWidth; height = this.calBody.clientHeight;
         const switched = phone !== this.calPhone;
@@ -258,7 +258,7 @@
 
   /** The calendar methods need a calendar: a grid without one says so instead of failing deep inside. */
   function calNeed(grid) { if (!grid.cal) throw new Error("CanopyX: this grid has no calendar."); }
-  for (const name of ["setCalendarView", "setCalendarDate", "setCalendarZoom", "calendarStep", "calendarToday", "getCalendarEvents", "exportCalendar", "openCalendarEvent", "clearCalendarSelection", "setCalendarSource"]) {
+  for (const name of ["setCalendarView", "setCalendarDate", "setCalendarZoom", "calendarStep", "calendarToday", "getCalendarEvents", "exportCalendar", "openCalendarEvent", "clearCalendarSelection", "setCalendarSource", "resetCalendar"]) {
     const method = DataGrid.prototype[name];
     if (method) DataGrid.prototype[name] = function (...args) { calNeed(this); return method.apply(this, args); };
   }

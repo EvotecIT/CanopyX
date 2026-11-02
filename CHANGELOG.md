@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add shared-screen options to the calendar (`calendar-screen` part): source and resource faces (avatar, initials or icon), merging copies of one event across sources, fading finished events (`fadePast`), day header notes and the `dayHeader` hook, `dayWidth`, `listDays` and `listBelow` for days that fit the calendar's width, and a Reset button (`reset`, `resetCalendar()`). Events take a `location`.
+- Fold a calendar legend that does not fit on one line into a menu with a checkbox per source.
 - Add a first-party accordion (`CanopyX.accordion`, C# `CanopyAccordion`): single or multiple open sections, disabled sections, deferred content, a filter, copy-title and header actions, hash and remembered state, nesting and readable content without JavaScript.
 - Add the slim UI entry point (`canopyx-ui.js`, `@evotecit/canopyx/ui`, `CanopyRuntime.Ui`): about 5 KB gzipped, for content pages with no grid or tree.
 - Add tab `remember`, `justified`, `next()` and `back()`.

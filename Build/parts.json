@@ -2075,7 +2075,7 @@
         "loadPart",
         "PROTOCOL"
       ],
-      "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid };",
+      "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid, calSameOrigin, calSafeTone, calInvalid };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar.source"
       ],
@@ -2164,6 +2164,40 @@
       "end": "Object.assign(DataGrid.prototype.calKit, { calIcsText, calIcsFold, calIcsParse });",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar-ics.source"
+      ]
+    },
+    {
+      "name": "calendar-screen",
+      "label": "calendar shared screens",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "calendarScreens"
+      ],
+      "key": "DataGrid.prototype",
+      "requires": [
+        "calendar"
+      ],
+      "context": [
+        "DataGrid",
+        "h",
+        "setText",
+        "fill",
+        "gridButton",
+        "gridFreeze",
+        "toneVariable"
+      ],
+      "start": "const { CAL_DAY, CAL_GUTTER, calCount, calDayText, calParseDay, calDow, calSameOrigin, calSafeTone, calInvalid } = DataGrid.prototype.calKit;",
+      "end": "DataGrid.prototype.calKit.calScreenSettings = calScreenSettings;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.calendar-screen.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.calendar-screen.source/screen.css"
       ]
     },
     {

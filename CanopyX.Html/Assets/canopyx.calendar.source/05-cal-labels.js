@@ -27,7 +27,8 @@
     calendarSharedResources: "{count} {resources}", calendarResourceWindow: "{resources} {start}–{end} of {total}",
     calendarThisEvent: "This event", calendarThisAndFollowing: "This and following events", calendarAllEvents: "All events", calendarSources: "Calendars",
     calendarImportFailed: "Could not read {source}: {error}", calendarActions: "Actions for {title}", calendarOpen: "Open", calendarMove: "Move",
-    calendarNewHere: "New event here", calendarOutsideRange: "Outside the dates this calendar shows", calendarClose: "Close", calendarDetailsOf: "Details of {title}"
+    calendarNewHere: "New event here", calendarOutsideRange: "Outside the dates this calendar shows", calendarClose: "Close", calendarDetailsOf: "Details of {title}",
+    calendarSourcesShown: "{shown} of {total}"
   };
   /** The calendar's texts: the English defaults, then whatever the view and the host translated. */
   function calLabelsFor(labels) {

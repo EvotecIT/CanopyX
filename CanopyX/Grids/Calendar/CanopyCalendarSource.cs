@@ -13,7 +13,7 @@ public sealed class CanopyCalendarSource {
     private string _id;
     private string _label;
     private string? _ics;
-    private string? _url, _color;
+    private string? _url, _color, _avatar, _initials, _icon;
 
     /// <summary>Creates a source.</summary>
     /// <param name="id">The source id that records name in the source column, unique within the calendar.</param>
@@ -76,6 +76,21 @@ public sealed class CanopyCalendarSource {
         }
     }
 
+    /// <summary>
+    /// Gets or sets the avatar drawn in front of the source's events and in its legend switch: a relative or same-origin http(s)
+    /// URL, or a base64 <c>data:image</c> URL (PNG, JPEG, GIF, WebP or SVG) of at most 100,000 characters; null for none.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value is neither.</exception>
+    public string? Avatar { get => _avatar; set => _avatar = CanopyCalendarFace.CheckAvatar(value, nameof(value)); }
+
+    /// <summary>Gets or sets the initials drawn in front of the source's events, 1 to 3 characters (and when the avatar fails); null for none.</summary>
+    /// <exception cref="ArgumentException">The value is blank or longer than 3 characters.</exception>
+    public string? Initials { get => _initials; set => _initials = CanopyCalendarFace.CheckShort(value, 3, nameof(value)); }
+
+    /// <summary>Gets or sets an icon drawn in front of the source's events, 1 to 4 characters such as an emoji, when there is neither an avatar nor initials; null for none.</summary>
+    /// <exception cref="ArgumentException">The value is blank or longer than 4 characters.</exception>
+    public string? Icon { get => _icon; set => _icon = CanopyCalendarFace.CheckShort(value, 4, nameof(value)); }
+
     internal void Validate() {
         if (_ics != null && _url != null) throw new InvalidOperationException("A calendar source has one feed: url or ics.");
         if (FetchParams.Count > 50 || FetchParams.Count > 0 && _url == null) throw new InvalidOperationException("At most 50 fetch parameters belong to a JSON feed.");
@@ -103,6 +118,7 @@ public sealed class CanopyCalendarSource {
         Validate();
         writer.BeginObject().Property("id", _id).Property("label", _label).OptionalProperty("tone", Tone.Name).OptionalProperty("ics", _ics);
         writer.OptionalProperty("url", _url).OptionalProperty("color", _color);
+        CanopyCalendarFace.WriteFace(writer, _avatar, _initials, _icon);
         if (FetchParams.Count > 0) {
             writer.Name("fetchParams").BeginObject();
             foreach (var pair in FetchParams) writer.Property(pair.Key, pair.Value);
