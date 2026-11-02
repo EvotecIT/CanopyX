@@ -250,27 +250,31 @@ test.describe("live data", () => {
       </script></head>`) }));
     await page.goto("https://canopyx.test/");
     await page.waitForSelector("[data-cx-ready]");
+    await page.clock.install({ time: new Date("2026-10-31T12:00:00Z") });
+    await page.clock.pauseAt(new Date("2026-10-31T12:05:00Z"));
     const poller = await page.evaluate(async () => { const api = document.querySelector("[data-canopyx-host]").canopyx; window.poller = await api.poll({ intervalMs: 250 }); return window.poller.active; });
     expect(poller).toBe(true);
+    await page.clock.runFor(750);
     await expect.poll(() => page.evaluate(() => window.pollRequests)).toBeGreaterThan(2);
     // Hidden: no polls. Shown again: one at once.
     await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); });
-    await page.waitForTimeout(400);
+    await page.clock.runFor(400);
     source = await page.evaluate(() => window.pollRequests);
-    await page.waitForTimeout(700);
+    await page.clock.runFor(700);
     expect(await page.evaluate(() => window.pollRequests)).toBe(source);
     await page.evaluate(() => { window.pollRevision = 2; Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
+    await page.clock.runFor(32);
     await expect(page.locator('.cx-row[data-cx-id="a"]')).toContainText("Revision 2");
     // Paused and stopped pollers stay quiet; refresh() polls now, and does not add a second timer.
     await page.evaluate(() => window.poller.pause());
     source = await page.evaluate(() => window.pollRequests);
-    await page.waitForTimeout(700);
+    await page.clock.runFor(700);
     expect(await page.evaluate(() => window.pollRequests)).toBe(source);
     await page.evaluate(() => window.poller.refresh());
     expect(await page.evaluate(() => window.pollRequests)).toBe(source + 1);
     await page.evaluate(async () => { window.poller.resume(); await window.poller.refresh(); await window.poller.refresh(); await window.poller.refresh(); });
     source = await page.evaluate(() => window.pollRequests);
-    await page.waitForTimeout(1100);
+    await page.clock.runFor(1100);
     expect(await page.evaluate(() => window.pollRequests) - source).toBeLessThanOrEqual(6);
     await page.evaluate(() => window.poller.pause());
     expect(await page.evaluate(() => { window.poller.stop(); return [window.poller.active, document.querySelector("[data-canopyx-host]").canopyx.getLiveState().polling]; })).toEqual([false, false]);

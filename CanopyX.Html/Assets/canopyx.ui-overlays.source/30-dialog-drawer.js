@@ -5,8 +5,28 @@
     const overlay = UI_TOOLS.overlay(root, { kind: drawer ? "drawer" : "dialog", trigger, host: options.host || container,
       focus: options.focus, dismissible: options.dismissible ?? root.dataset.dismissible !== "false", initialFocus: options.initialFocus || (element =>
         alert ? element.querySelector('[data-cx-cancel],button:not([data-danger]):not([type="submit"])') : element.querySelector("input:not([type=hidden]),select,textarea")) }, signal);
-    const open = () => overlay.open({ modal: !drawer || phone || options.modal === true || root.dataset.modal === "true" });
+    const ownerHidden = () => !container.getClientRects().length || /^(hidden|collapse)$/.test(getComputedStyle(container).visibility);
+    const closeHidden = () => {
+      if (!options.closeWhenHidden || !overlay.opened || !ownerHidden() || matchMedia("print").matches) return false;
+      root._cxHidden = true; overlay.close("hidden", false, true); return true;
+    };
+    if (options.closeWhenHidden) {
+      const visibility = new MutationObserver(closeHidden);
+      for (let owner = container; owner; owner = owner.parentElement) visibility.observe(owner, { attributes: true, attributeFilter: ["style", "class", "hidden"] });
+      signal?.addEventListener("abort", () => visibility.disconnect(), { once: true });
+    }
+    const open = () => {
+      const opened = overlay.open({ modal: !drawer || phone || options.modal === true || root.dataset.modal === "true" });
+      return opened && !closeHidden();
+    };
     UI_TOOLS.observe(container, width => {
+      // A hidden container measures 0: that says nothing about the room the overlay has, so the layout stays as it was.
+      // With closeWhenHidden the overlay closes instead, because the view it belongs to is no longer shown (its page or tab
+      // was hidden, or it left the document). Print media hides views on purpose and does not count.
+      if (!width && !container.getClientRects().length) {
+        closeHidden();
+        return;
+      }
       phone = width < 640; root.dataset.phone = String(phone); root.classList.toggle("cx-phone", phone);
       if (drawer && overlay.opened) overlay.setModal(phone || options.modal === true || root.dataset.modal === "true");
     }, signal);

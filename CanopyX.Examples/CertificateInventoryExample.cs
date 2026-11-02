@@ -9,6 +9,7 @@ namespace CanopyX.Examples;
 /// grid"), a timeline with before/after changes, a days-left sparkline, record deep links, print and export. A small page plugin
 /// fills a drawer section (the extension point a host fills with a chart) and adds a record action. Writes:
 ///   certificate-inventory.html (and -dark)    the records carry their fields inline
+///   certificate-drawer.html (and -modal/-dark) continuous records in the default or modal drawer
 ///   certificate-sidecar/index.html            the same grid whose record details load from record packs (file:// works)
 ///   certificate-tree.html                     the tree drawer: issuers and their certificates with the same record panel
 /// </summary>
@@ -116,6 +117,17 @@ internal static class CertificateInventoryExample {
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX certificate inventory", Theme = theme });
             File.WriteAllText(Path.Combine(output, "certificate-inventory" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), page.Replace("</body>", Plugin + "</body>"));
+        }
+
+        // Continuous records make the pinned section navigation and single-scroller drawer easy to explore.
+        view.Record!.Tabs.Clear();
+        foreach (var modal in new[] { false, true }) {
+            view.RecordDrawerModal = modal;
+            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+                var name = "certificate-drawer" + (modal ? "-modal" : "") + (theme == CanopyTheme.Dark ? "-dark" : "");
+                var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX certificate drawer", Theme = theme });
+                File.WriteAllText(Path.Combine(output, name + ".html"), page.Replace("</body>", Plugin + "</body>"));
+            }
         }
 
         // The same grid without record fields in the page: each drawer loads its record from a pack beside the page.

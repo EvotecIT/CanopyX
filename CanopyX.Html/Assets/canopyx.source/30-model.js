@@ -6,6 +6,8 @@
   class TreeGrid {
     constructor(host, options) {
       const view = checkDocument(options.view, "view");
+      if (view.recordDrawerModal !== undefined && typeof view.recordDrawerModal !== "boolean")
+        throw new Error("CanopyX: recordDrawerModal must be a Boolean.");
       requireIdentifier(view.id, "view ID");
       if (view.columns.some(column => column.format !== undefined)) throw new Error("CanopyX: number formats apply to flat grids only.");
       this.host = host;

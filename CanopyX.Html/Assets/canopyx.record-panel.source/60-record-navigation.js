@@ -92,8 +92,15 @@
   // With record.deepLink, the open record is written to the address as #<key>=<view>:<id> (key "record" by default; a tree
   // writes the id path joined by "/"), next to other "&" parameters and replacing the history entry; closing the drawer
   // removes it. Opening the page with such an address, or changing to one, opens the grid at that record with its drawer.
-  // It works offline in single-file pages: the address is all it reads.
+  // It works offline in single-file pages: the address is all it reads. A link can also name the section to land on,
+  // #<key>Section=<view>:<section id> (as openRecord's section option); the drawer drops it from the address once it opens.
   const recordLinkKey = view => view.view.record?.deepLink?.key || "record";
+  const recordSectionPrefix = view => recordLinkKey(view) + "Section=" + encodeURIComponent(view.view.id) + ":";
+  function recordLinkSection(view) {
+    const prefix = recordSectionPrefix(view), param = recordLinkParams().find(item => item.startsWith(prefix));
+    try { return param && decodeURIComponent(param.slice(prefix.length)) || null; }
+    catch (error) { return null; }
+  }
   const recordLinkParams = () => (global.location.hash || "").replace(/^#/, "").split("&").filter(Boolean);
   const recordLinkPath = ids => ids.map(encodeURIComponent).join("/");
   function recordLinkRead(view) {
@@ -127,7 +134,7 @@
     if (!view.view.record?.deepLink) return;
     const link = record && recordLinkFor(view, record);
     view._recordLinkOwner = record ? { dialog, link } : null;
-    const prefix = recordLinkPrefix(view), params = recordLinkParams().filter(param => !param.startsWith(prefix));
+    const prefix = recordLinkPrefix(view), section = recordSectionPrefix(view), params = recordLinkParams().filter(param => !param.startsWith(prefix) && !param.startsWith(section));
     if (record) params.push(link);
     const hash = params.length ? "#" + params.join("&") : "";
     if ((global.location.hash || "") === hash) return;
@@ -144,11 +151,19 @@
     const read = () => {
       const ids = recordLinkRead(view), key = ids ? recordLinkPath(ids) : null, owner = view._recordLinkOwner?.dialog;
       if (!ids) { view._recordLinkOpen = null; view._recordLinkOwner = null; return; }
-      if (key === view._recordLinkOpen && (!owner || owner.open || owner._replaced)) return;
+      if (key === view._recordLinkOpen && (!owner || owner.open || owner._replaced)) {
+        // A section link to the record already open moves its drawer to that section, then leaves the address.
+        const section = recordLinkSection(view);
+        if (section && owner?.open && owner._cxPanel && owner._cxRecord) {
+          owner._cxPanel.jump = section; recordRepaint(view, owner, owner._cxRecord, owner._cxPanel.index); recordLinkWrite(view, owner._cxRecord, owner);
+        }
+        return;
+      }
       // Reading a new address retires the previous drawer's cleanup before opening can await a source.
       view._recordLinkOwner = null;
       view._recordLinkOpen = key;
-      RECORD_IMPL.open(view, ids[ids.length - 1], { path: ids }).catch(error => view.emit("error", { error }));
+      const section = recordLinkSection(view);
+      RECORD_IMPL.open(view, ids[ids.length - 1], section ? { path: ids, section } : { path: ids }).catch(error => view.emit("error", { error }));
     };
     global.addEventListener("hashchange", read, { signal: view.lifetime.signal });
     view.lifetime.signal.addEventListener("abort", () => { view._recordLinkOwner = null; view._recordLinkOpen = null; }, { once: true });
@@ -161,7 +176,7 @@
     // An invalid record panel is reported once the body paints; its head stays plain.
     try { recordSpec(view); } catch (error) { return; }
     dialog.id ||= view.id + "-record"; dialog.classList.add("cx-record-drawer");
-    const state = dialog._cxPanel = { stack: Array.isArray(options.stack) ? options.stack : [], tab: options.tab || null, collapsed: new Map() }, labels = view.labels;
+    const state = dialog._cxPanel = { stack: Array.isArray(options.stack) ? options.stack : [], tab: options.tab || null, jump: typeof options.section === "string" && options.section || null, collapsed: new Map() }, labels = view.labels;
     const live = h("div", "cx-record-live cx-sr-only"); live.setAttribute("aria-live", "polite"); dialog.appendChild(live);
     if (state.stack.length) {
       const trail = h("nav", "cx-record-trail"), crumbs = h("ol", "cx-record-crumbs"), last = state.stack[state.stack.length - 1];

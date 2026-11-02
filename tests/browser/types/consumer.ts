@@ -410,6 +410,13 @@ api.selectAll({ scope: "loaded" });
 await api.updateActiveFilters({ add: ["flagged"], remove: ["other"] });
 // @ts-expect-error Filter changes contain arrays of declared IDs.
 api.updateActiveFilters({ remove: "other" });
+// Tree modal drawers share the host/view Boolean contract with flat grids.
+createTreeGrid(document.createElement("div"), { view: { ...view, recordDrawerModal: true }, recordDrawerModal: false });
+// @ts-expect-error Modal host options are Boolean.
+createTreeGrid(document.createElement("div"), { view, recordDrawerModal: "true" });
+// @ts-expect-error Modal view preferences are Boolean.
+const invalidModalTree: CanopyView = { ...view, recordDrawerModal: "true" };
+
 // Tree toolbar switches, host actions, all-rows exports, named views and column order.
 createTreeGrid(document.createElement("div"), { view: { ...view, toolbar: { export: false }, autoHeight: false, exportFormats: ["xlsx"] },
   toolbar: { columns: false, search: false }, actions: [{ label: "Audit", run: ({ nodes, signal }) => signal.aborted || nodes.length }] });

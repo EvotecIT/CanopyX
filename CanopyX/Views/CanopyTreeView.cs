@@ -163,6 +163,9 @@ public sealed partial class CanopyTreeView {
     /// related records, record deep links and actions. Null keeps the plain drawer of the columns. Presenters of record fields apply on flat grids only.</summary>
     public CanopyRecordPanel? Record { get; set; }
 
+    /// <summary>Gets or sets whether the record drawer opens as a modal sheet over a scrim at every width. Defaults to false: a side panel on wide screens and a full-screen sheet on narrow ones.</summary>
+    public bool RecordDrawerModal { get; set; }
+
     /// <summary>
     /// Gets or sets the texts CanopyX writes itself for this view, in the browser and in the static outline. English
     /// by default; set translations once here. Assign one <see cref="CanopyLabels"/> to several views, or
@@ -343,6 +346,8 @@ public sealed partial class CanopyTreeView {
         if (DeepLink) {
             writer.Property("deepLink", true);
         }
+
+        if (RecordDrawerModal) writer.Property("recordDrawerModal", true);
 
         if (Record != null) {
             writer.Name("record");

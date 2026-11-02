@@ -55,7 +55,7 @@
     if (view.columns.every(column => column.hidden) || view.columns.filter(column => column.rowHeader).length > 1)
       throw new Error("CanopyX: a grid needs a visible column and one row header at most.");
     if (view.density !== undefined && !["compact", "default", "comfortable"].includes(view.density) ||
-        ["zebra", "statusBar", "autoHeight", "rowAccents"].some(name => view[name] !== undefined && typeof view[name] !== "boolean") ||
+        ["zebra", "statusBar", "autoHeight", "rowAccents", "recordDrawerModal"].some(name => view[name] !== undefined && typeof view[name] !== "boolean") ||
         view.rowAction !== undefined && !["none", "details", "link"].includes(view.rowAction) ||
         view.noun !== undefined && (typeof view.noun !== "string" || !view.noun.trim() || view.noun.length > 256) ||
         view.emptyReason !== undefined && (typeof view.emptyReason !== "string" || view.emptyReason.length > 4096)) throw new Error("CanopyX: invalid grid appearance or state text.");
