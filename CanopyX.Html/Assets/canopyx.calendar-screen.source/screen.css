@@ -7,11 +7,27 @@
 .cx-cal-faces > .cx-cal-face + .cx-cal-face { margin-inline-start:calc(-1 * var(--hfx-space-0-5)); }
 .cx-cal-face-more { background:var(--hfx-color-surface);color:var(--hfx-color-text-secondary); }
 .cx-cal-ev.cx-cal-faced::before { display:none; }
-/* In a time block the faces lead the time's line and the title keeps a full line of its own. */
-.cx-cal-slots .cx-cal-ev-block.cx-cal-faced:not(.cx-cal-short,.cx-cal-marker) { flex-flow:row wrap;align-content:flex-start;align-items:center;column-gap:var(--hfx-space-1); }
-.cx-cal-slots .cx-cal-ev-block.cx-cal-faced:not(.cx-cal-short,.cx-cal-marker) > .cx-cal-ev-time { flex:1 1 0;min-width:0; }
+/* In a time block the title keeps the first line; the faces lead the line under it, or the title's line in a short block. */
+.cx-cal-slots .cx-cal-ev-block.cx-cal-faced:not(.cx-cal-marker) { flex-flow:row wrap;align-content:flex-start;align-items:center;column-gap:var(--hfx-space-1); }
 .cx-cal-slots .cx-cal-ev-block.cx-cal-faced:not(.cx-cal-short,.cx-cal-marker) > :not(.cx-cal-faces,.cx-cal-ev-time,.cx-cal-ico) { flex:1 0 100%;min-width:0; }
+.cx-cal-slots .cx-cal-ev-block.cx-cal-faced.cx-cal-short > .cx-cal-faces { order:-2; }
+/* A short block keeps one line: its first face and a count lead, and the title keeps the rest of the line. */
+.cx-cal-slots .cx-cal-ev-block.cx-cal-short .cx-cal-faces > .cx-cal-face + .cx-cal-face { display:none; }
+.cx-cal-slots .cx-cal-ev-block.cx-cal-short .cx-cal-faces[data-cx-more]::after { display:inline; }
+@container (width >= 7.5em) {
+  .cx-cal-slots .cx-cal-ev-block.cx-cal-faced.cx-cal-short > .cx-cal-ev-title { max-width:calc(100% - var(--hfx-icon-md) - var(--hfx-space-0-5) - var(--hfx-space-1)); }
+  .cx-cal-slots .cx-cal-ev-block.cx-cal-faced.cx-cal-short:has(> .cx-cal-faces[data-cx-more]) > .cx-cal-ev-title { max-width:calc(100% - var(--hfx-icon-md) - var(--hfx-space-5) - var(--hfx-space-1)); }
+}
 .cx-cal-ev-block.cx-cal-faced > .cx-cal-ico { display:none; }
+/* Faces on a filled block ring in the block's colour; in a narrow column they stack tighter, then show the first face and a count. */
+.cx-cal-ev:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) .cx-cal-face { --cx-ev-bg:var(--cx-ev); }
+.cx-cal-faces[data-cx-more]::after { display:none;content:attr(data-cx-more);margin-inline-start:var(--hfx-space-0-5);font-size:var(--hfx-type-caption-size);font-weight:var(--hfx-weight-semibold); }
+@container (width < 9em) { .cx-cal-ev-block .cx-cal-faces > .cx-cal-face + .cx-cal-face { margin-inline-start:calc(-1 * var(--hfx-space-1)); } }
+@container (width < 7.5em) { .cx-cal-slots .cx-cal-ev-block.cx-cal-short > .cx-cal-faces { display:none; } }
+@container (width < 6.5em) {
+  .cx-cal-ev-block .cx-cal-faces > .cx-cal-face + .cx-cal-face { display:none; }
+  .cx-cal-ev-block .cx-cal-faces[data-cx-more]::after { display:inline; }
+}
 :is(.cx-cal-ev-bar,.cx-cal-ev-chip,.cx-cal-ev-lane) .cx-cal-face { --cx-face-size:var(--hfx-icon-md); }
 .cx-cal-ev-item .cx-cal-face { --cx-face-size:calc(var(--hfx-icon-lg) + var(--hfx-space-0-5)); }
 .cx-cal-ev-item > .cx-cal-faces { align-self:center; }
@@ -24,7 +40,8 @@
 /* Finished events fade without losing text contrast: blocks wash out to a pale tint, text turns secondary, and the colour bar,
    dot and faces dim by the configured strength. Focus and hover bring them back. */
 .cx-cal-ev.cx-cal-past { color:var(--hfx-color-text-secondary);transition:background-color .15s ease; }
-.cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) { background:color-mix(in srgb,var(--cx-ev) calc(var(--cx-cal-fade,.4) * 25%),var(--hfx-color-surface));color:var(--hfx-color-text); }
+.cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) { --cx-cal-past-bg:color-mix(in srgb,var(--cx-ev) calc(var(--cx-cal-fade,.4) * 25%),var(--hfx-color-surface));background:var(--cx-cal-past-bg);color:var(--hfx-color-text); }
+.cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) .cx-cal-face { --cx-ev-bg:var(--cx-cal-past-bg); }
 .cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) :is(.cx-cal-ev-time,.cx-cal-ev-sub,.cx-cal-ico) { color:var(--hfx-color-text-secondary);opacity:1; }
 .cx-cal-ev.cx-cal-past::before,.cx-cal-ev.cx-cal-past .cx-cal-faces { opacity:var(--cx-cal-fade,.4);filter:saturate(.5); }
 .cx-cal-ev.cx-cal-past:is(:hover,:focus-visible),.cx-cal-arow:focus-within .cx-cal-ev.cx-cal-past { background:var(--cx-ev-bg);color:var(--hfx-color-text); }

@@ -51,8 +51,9 @@ public sealed class GridCalendarPartTests {
     // Minute fields, explicit scope, EXDATE removal, shared-resource context and the phone sheet measure 14,374 bytes.
     [InlineData("calendar-edit", "calendar editing", "calCreateForm(proposal", 14848)]
     [InlineData("calendar-ics", "iCalendar", "function calIcsParse(", 9450)]
-    // Faces, merging, fading, day notes, fitted days and Reset measure 6,029 bytes and their stylesheet 1,580.
-    [InlineData("calendar-screen", "calendar shared screens", "function calScreenSettings(", 6950, 1820)]
+    // Faces, merging, fading, day notes, fitted days and Reset measure 6,047 bytes and their stylesheet, with the narrow-event
+    // face rules, 1,895.
+    [InlineData("calendar-screen", "calendar shared screens", "function calScreenSettings(", 6950, 2180)]
     public void CalendarSubParts_AreBoundedAndOutsideTheCore(string name, string label, string marker, int guard, int styleGuard = 0) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Equal(label, part.Label);

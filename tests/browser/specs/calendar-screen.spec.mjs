@@ -95,6 +95,29 @@ test.describe("calendar shared screens", () => {
     expect(await past()).toEqual([]);
   });
 
+  test("in narrow time-grid events the title wins over faces and the time, and a time shows whole or not at all", async ({ page }) => {
+    const events = [timed("s1", "School run", "anna", "07:45", "08:15"), timed("s2", "School run", "tom", "07:45", "08:15"),
+      timed("o1", "Office", "home", "07:30", "12:00"), timed("w1", "Workshop", "anna", "08:00", "11:00"), timed("w1b", "Workshop", "tom", "08:00", "11:00"), timed("w2", "Dentist", "tom", "08:30", "10:00")];
+    // Each block: is the title shown untruncated whenever the time is shown, and is the time either whole inside the block or out of view?
+    const blocks = () => page.locator(".cx-cal-slots .cx-cal-ev-block").evaluateAll(items => items.map(item => {
+      const box = item.getBoundingClientRect(), title = item.querySelector(".cx-cal-ev-title"), time = item.querySelector(".cx-cal-ev-time");
+      const titleBox = title.getBoundingClientRect(), timeBox = time?.getBoundingClientRect();
+      const timeShown = !!timeBox && timeBox.width > 0 && timeBox.top < box.bottom - 1;
+      return { record: item.dataset.cxRecord, titleShown: titleBox.width > 0 && titleBox.top < box.bottom, titleFirst: !timeShown || titleBox.top <= timeBox.top + 1,
+        titleWhole: !timeShown || title.scrollWidth <= title.clientWidth, timeWhole: !timeShown || (timeBox.right <= box.right + 0.5 && time.scrollWidth <= time.clientWidth) };
+    }));
+    for (const width of [1000, 560]) {
+      await open(page, "narrow-" + width + ".html", screenPage({ events, sources: PEOPLE, date: "2026-10-16", view: "week", views: ["week"], firstDay: 1, merge: true }, { width }));
+      const found = await blocks();
+      expect(found.map(block => block.record).sort()).toEqual(["o1", "s1", "w1", "w2"]);
+      for (const block of found) expect(block, width + "px " + block.record).toMatchObject({ titleShown: true, titleFirst: true, titleWhole: true, timeWhole: true });
+    }
+    // At 560px a short shared event gives its line to the title, and a taller one shows its first face and a count.
+    expect(await page.locator('.cx-cal-ev[data-cx-record="s1"] .cx-cal-faces').evaluate(group => getComputedStyle(group).display)).toBe("none");
+    const faces = page.locator('.cx-cal-ev[data-cx-record="w1"] .cx-cal-faces');
+    expect(await faces.evaluate(group => [group.dataset.cxMore, [...group.children].filter(face => face.getBoundingClientRect().width > 0).length, getComputedStyle(group, "::after").content])).toEqual(["+1", 1, "\"+1\""]);
+  });
+
   test("day headers carry notes and host content as text, in their accessible names", async ({ page }) => {
     const hooks = "options.calendar = { ...options.calendar, dayHeader({ day, events, element }) { if (day === '2026-10-14') return events + ' planned'; " +
       "if (day === '2026-10-15') { const b = document.createElement('b'); b.textContent = '☀ 18°'; element.append(b); return true; } " +

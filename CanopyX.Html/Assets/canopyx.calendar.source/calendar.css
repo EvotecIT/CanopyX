@@ -112,13 +112,18 @@
   inset-inline-start:calc(var(--cx-cal-gutter) + (100% - var(--cx-cal-gutter)) * (var(--d) + var(--c) / var(--k)) / var(--cx-cal-n) + var(--cx-size-2px));width:calc((100% - var(--cx-cal-gutter)) * var(--sp) / var(--k) / var(--cx-cal-n) - var(--cx-size-4px));
   top:calc(var(--t) * var(--cx-cal-ppm) + var(--cx-size-1px));height:calc(var(--h) * var(--cx-cal-ppm) - var(--cx-size-2px)); }
 .cx-cal-ev-block > .cx-cal-ev-title { font-weight:600;overflow:hidden;flex:none; }
-.cx-cal-ev-block > .cx-cal-ev-time { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none; }
+.cx-cal-ev-block > .cx-cal-ev-time { white-space:nowrap;flex:none; }
 .cx-cal-ev-block > :is(.cx-cal-ev-time,.cx-cal-ev-sub) { font-size:var(--cx-size-12px); }
 .cx-cal-ev-block > .cx-cal-ico { position:absolute;inset-inline-end:var(--cx-size-4px);top:var(--cx-size-4px); }
 .cx-cal-ev-block > .cx-cal-shared { position:absolute;inset-inline-end:var(--cx-size-4px);top:var(--cx-size-2px);font-size:var(--cx-size-10px);line-height:var(--cx-size-14px); }
 .cx-cal-ev-block:has(> .cx-cal-shared) > .cx-cal-ev-time { padding-inline-end:var(--cx-size-56px); }
 .cx-cal-ev-block:has(> .cx-cal-shared) > .cx-cal-ico { display:none; }
-.cx-cal-slots .cx-cal-ev-block.cx-cal-short { flex-direction:row;align-items:center;gap:var(--cx-size-4px);white-space:nowrap; }
+/* The title wins: it leads every time-grid event, and the start time follows only when it fits whole. In a short event a time
+   that does not fit wraps onto a line out of view; in a narrow column it is left out. The accessible name keeps it. */
+.cx-cal-slots .cx-cal-ev-block:not(.cx-cal-marker) { container-type:inline-size; }
+.cx-cal-slots .cx-cal-ev-block:not(.cx-cal-marker) > .cx-cal-ev-title { order:-1; }
+.cx-cal-slots .cx-cal-ev-block.cx-cal-short { flex-flow:row wrap;align-content:flex-start;align-items:center;row-gap:100%;column-gap:var(--hfx-space-1);white-space:nowrap; }
+@container (width < 4.5em) { .cx-cal-slots .cx-cal-ev-block > .cx-cal-ev-time { display:none; } }
 .cx-cal-slots .cx-cal-ev-block:is(.cx-cal-short,.cx-cal-marker) > .cx-cal-ev-title { flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis; }
 .cx-cal-slots .cx-cal-ev-block:is(.cx-cal-short,.cx-cal-marker) > .cx-cal-ev-time { flex:none; }
 .cx-cal-slots .cx-cal-ev-block.cx-cal-short > :is(.cx-cal-ev-sub,.cx-cal-ev-status) { display:none; }

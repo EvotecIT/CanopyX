@@ -179,7 +179,8 @@ The JSON schema is `gridCalendar` in [schema/canopyx-2.schema.json](schema/canop
   list of the focused day sits under the month.
 - **Week, day and N days**: a header of days, an all-day row (all-day events and events of a day or longer), then a column of
   time slots. Overlapping events share their column side by side and widen over free columns; an event over midnight shows in
-  each day. Working hours, unavailable time and background ranges shade the columns; a line marks now. With an inline resource tree, day and week views get [resource columns](resource-timeline.md#resource-columns-in-day-and-week-views).
+  each day. An event's title comes first and its start time follows when it fits whole; in a short or narrow event the time is
+  left out rather than cut, and stays in the accessible name. Working hours, unavailable time and background ranges shade the columns; a line marks now. With an inline resource tree, day and week views get [resource columns](resource-timeline.md#resource-columns-in-day-and-week-views).
 - **Agenda**: the period's events grouped by day, with their time (or All day), title, subtitle and status. Phones start here.
 - **Year**: twelve small months; days with events have a tint and dot, with stronger tint for busier days. Each day's accessible name and tooltip give its count, and today has an accent ring.
 - **Timeline**: resources as rows, time across; see [resource-timeline.md](resource-timeline.md). Without resources its rows
@@ -544,7 +545,8 @@ CanopyX.createCalendar(host, { events, view: "week", timeZone: "Europe/Warsaw",
   `initials` (1–3 characters) or `icon` (1–4 characters, such as an emoji) is drawn in front of its events in every view, in the
   details and in its legend switch, so whose plan it is shows before the title can be read. A failed image falls back to the
   initials. `faces: [{ resource, avatar?, initials?, icon? }]` gives resources faces the same way; an event's source face wins over
-  its resource's. Faces are decoration: they
+  its resource's. In a narrow time-grid event the faces stack closer, then show the first face and a count ("+1"); a short
+  event too narrow for a face and its title keeps the title. Faces are decoration: they
   are hidden from assistive technology and accessible names keep their meaning. A `render` template that owns an event's
   content draws its own faces (the template's event carries `source` and, merged, `owners`).
 - **Merged events.** With `merge`, copies of one event in several sources draw once: the same title (ignoring case and
@@ -619,12 +621,12 @@ stubs. Single-file pages carry the parts' payloads for views that need them: a c
 | Asset | gzip measured | Guard |
 | --- | --- | --- |
 | `canopyx-calendar.js` | 42,053 bytes | 43,008 (42 KiB) |
-| `canopyx-calendar.css` | 5,967 bytes | 6,400 |
+| `canopyx-calendar.css` | 6,092 bytes | 6,400 |
 | `canopyx-calendar-recurrence.js` | 3,273 bytes | 3,800 |
 | `canopyx-calendar-edit.js` | 14,439 bytes | 14,848 |
 | `canopyx-calendar-ics.js` | 8,302 bytes | 9,450 |
-| `canopyx-calendar-screen.js` | 6,029 bytes | 6,950 |
-| `canopyx-calendar-screen.css` | 1,580 bytes | 1,820 |
+| `canopyx-calendar-screen.js` | 6,047 bytes | 6,950 |
+| `canopyx-calendar-screen.css` | 1,895 bytes | 2,180 |
 | `canopyx-timeline.js` | 11,575 bytes | 13,824 |
 | `canopyx-timeline.css` | 2,114 bytes | 2,256 |
 
