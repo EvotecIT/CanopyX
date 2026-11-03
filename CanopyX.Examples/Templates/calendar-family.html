@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX family week</title>
+<style>{{style}}</style>
+<script>{{script}}</script>
+<style>{{example-style}}
+.calendar-family { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 20px; margin-top: 20px; align-items: start; }
+.calendar-family > * { min-width: 0; }
+.calendar-family h2 { margin: 0 0 8px; font-size: 15px; }
+@media (max-width: 960px) { .calendar-family { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>Family week</h1>
+<p>A week on a shared screen. Each person's face sits in front of their plans, so you know whose they are before you read them; plans several people share show once, with every face. Today's finished events fade, day headers carry notes such as bin day, and the calendar shows fewer days as it narrows, always keeping today. Page away, switch the view or hide someone, and Reset brings the screen back in one press. The column beside it is the same calendar as a compact list of the next three days.</p>
+<div class="calendar-family">
+<section aria-labelledby="family-week-h"><h2 id="family-week-h">This week</h2>{{week}}</section>
+<section aria-labelledby="family-next-h"><h2 id="family-next-h">Next three days</h2>{{next}}</section>
+</div>
+</main>
+</body>
+</html>

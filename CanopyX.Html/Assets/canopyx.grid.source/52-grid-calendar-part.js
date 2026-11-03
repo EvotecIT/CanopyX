@@ -1,7 +1,7 @@
   // ---------- calendar: a calendar of the grid's records comes with a part (docs/calendar.md) ----------
   // A grid whose view declares calendar shows its records as a calendar (month, week, day, N days, agenda, year and, with
   // resources, the resource timeline) from canopyx-calendar.js, with canopyx-timeline.js, canopyx-calendar-recurrence.js,
-  // canopyx-calendar-edit.js and canopyx-calendar-ics.js for definitions that use them (Build/parts.json). The part loads
+  // canopyx-calendar-edit.js, canopyx-calendar-ics.js and canopyx-calendar-screen.js for definitions that use them (Build/parts.json). The part loads
   // before the first query, so the first paint is the calendar; until it is in, the calendar methods load it first.
   const GRID_CALENDAR = definePart(DataGrid, "calendar", "calendar", () => ({ DataGrid, h, setText, fill, plural, gridButton, gridIcon, gridFreeze, cellText,
     cellValue, isCellObject, gridQuery, gridQueryRows, gridResultShape, gridPresenterTone, validateGridRows, repairGridCell, validateGridPage, validateGridCursorPage, validStructuralCount, checkDocument,
@@ -11,8 +11,10 @@
   definePart(DataGrid, "calendar-recurrence", "calendar recurrence", () => ({ DataGrid }));
   definePart(DataGrid, "calendar-edit", "calendar editing", () => ({ DataGrid, h, setText, fill, cellValue, GRID_DRAG }));
   definePart(DataGrid, "calendar-ics", "iCalendar", () => ({ DataGrid, h, fill, cellText }));
+  // Shared screens: faces, merged events, faded past events, day notes, fitted day counts and the Reset button.
+  definePart(DataGrid, "calendar-screen", "calendar shared screens", () => ({ DataGrid, h, setText, fill, gridButton, gridFreeze, toneVariable }));
   const GRID_CALENDAR_API = ["getCalendar", "setCalendarView", "setCalendarDate", "setCalendarZoom", "calendarStep", "calendarToday", "getCalendarEvents",
-    "exportCalendar", "openCalendarEvent", "editCalendarOccurrence", "clearCalendarSelection", "setCalendarSource"];
+    "exportCalendar", "openCalendarEvent", "editCalendarOccurrence", "clearCalendarSelection", "setCalendarSource", "resetCalendar"];
   for (const name of GRID_CALENDAR_API) DataGrid.prototype[name] = function (...args) { return this.loadCalendar().then(() => this[name](...args)); };
   DataGrid.prototype.loadCalendar = function () {
     return this.calLoad ||= loadPart(GRID_CALENDAR).then(() => this.destroyed || this.calParts()).then(() => this.destroyed || this.startCalendar()).catch(error => { this.calLoad = null; this.emit("error", { error }); throw error; });
@@ -32,8 +34,8 @@
     standard: { toolbar: ["search", "filters", "export"], details: "popover", print: true, views: ["month", "week", "day", "days", "agenda", "year"] },
     scheduler: { toolbar: ["search", "filters", "views", "export"], details: "drawer", print: true, editable: true, create: true, views: ["month", "week", "day", "agenda"] }
   };
-  const CAL_FIELDS = ["allDay", "description", "tone", "resource", "resourceIds", "recurrence", "exceptions", "series", "recurrenceId", "source"];
-  const CAL_TITLES = { allDay: "All day", description: "Description", tone: "Tone", resource: "Resource", resourceIds: "Resources", series: "Series", recurrenceId: "Original start", recurrence: "Repeats", exceptions: "Exceptions", source: "Source" };
+  const CAL_FIELDS = ["allDay", "description", "location", "tone", "resource", "resourceIds", "recurrence", "exceptions", "series", "recurrenceId", "source"];
+  const CAL_TITLES = { allDay: "All day", description: "Description", location: "Location", tone: "Tone", resource: "Resource", resourceIds: "Resources", series: "Series", recurrenceId: "Original start", recurrence: "Repeats", exceptions: "Exceptions", source: "Source" };
   const CAL_OWN = new Set(["events", "preset", "id", "label", "views", "view", "date", "timeZone", "firstDay", "toolbar", "details", "editable", "create", "drop",
     "resources", "timeline", "live", "facets", "drawer", "export", "print", "sources", "calendar", "links"]);
   const calPad = (value, size = 2) => String(value).padStart(size, "0");

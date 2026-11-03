@@ -80,6 +80,9 @@ public sealed class CanopyCalendarEvent {
     /// <summary>Gets or sets the description shown in the details popover, the hover card and the drawer; null for none.</summary>
     public string? Description { get; set; }
 
+    /// <summary>Gets or sets where the event takes place, shown in the details; merged copies of one event match on it. Null for none.</summary>
+    public string? Location { get; set; }
+
     /// <summary>Gets or sets the event's tone; <see cref="CanopyTone.None"/> (the default) uses the calendar's.</summary>
     public CanopyTone Tone { get; set; }
 

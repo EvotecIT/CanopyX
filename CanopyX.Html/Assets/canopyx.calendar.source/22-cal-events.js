@@ -45,7 +45,7 @@
         resource: calResourceOf(value("resource")), resourceIds: calResourceIds(value("resourceIds")), color: cal.sources?.find(source => source.id === (fields ? row.external : read(cal.source)))?.color,
         background: cal.display ? String(read(cal.display) || "").toLowerCase() === "background" : false, rule: null, ruleError: null,
         seriesZone: allDay ? CAL_UTC() : fields?.seriesZone ? calZone(fields.seriesZone) : view.calSeriesZone,
-        series, recurrenceId: calInstant(value("recurrenceId")) });
+        series, recurrenceId: calInstant(value("recurrenceId")), location: String(value("location") ?? "").trim() });
       const text = value("recurrence");
       if (typeof text === "string" && text.trim() && !base.series) {
         try { const rec = calRec(); if (!rec) throw new Error("CanopyX: the calendar recurrence part is not loaded."); base.rule = rec.calRule(text); Object.assign(base, rec.calExceptions(value("exceptions"), base.seriesZone)); }

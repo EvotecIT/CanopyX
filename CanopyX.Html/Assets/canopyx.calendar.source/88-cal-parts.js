@@ -4,12 +4,15 @@
   // the calendar starts when the definition uses them, or on first use (the Export menu, exportCalendar).
   Object.assign(DataGrid.prototype, {
     editCalendarOccurrence() { return Promise.resolve(false); },
+    /** Puts back the configured view, date, zoom and sources (the calendar-screen part). */
+    resetCalendar() { return this.calLoadPart("calendar-screen").then(() => this.resetCalendar()); },
     calParts() {
       const input = this.view.calendar || {}, ranges = Array.isArray(input.ranges) ? input.ranges : [], sources = Array.isArray(input.sources) ? input.sources : [];
       const ics = sources.some(source => source && source.ics !== undefined), needs = [];
       if (input.recurrence !== undefined || ics || sources.some(source => source?.url) || ranges.some(range => range && range.recurrence !== undefined)) needs.push("calendar-recurrence");
       if (input.editable || input.create || input.drop) needs.push("calendar-edit");
       if (ics) needs.push("calendar-ics");
+      if (CAL_SCREEN.some(name => input[name] !== undefined) || sources.some(source => CAL_FACE.some(name => source?.[name] !== undefined))) needs.push("calendar-screen");
       return Promise.all(needs.map(name => this.calLoadPart(name)));
     },
     calLoadPart(name) { return loadPart(DataGrid.prototype.parts[name]); },

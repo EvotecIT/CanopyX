@@ -33,6 +33,7 @@
   "calendar": [
     { "page": "calendar-basic", "title": "Basic calendar", "body": "A list of events and nothing else: month, week, day and agenda, read-only, with a details popover." },
     { "page": "calendar-scheduler", "title": "Scheduler", "body": "Creating events, dropping work from a grid, sources with a legend, office hours shaded and context menus." },
+    { "page": "calendar-family", "title": "Family week", "body": "A shared screen: faces in front of each person's plans, shared plans shown once, finished events faded, day notes, and days that fit the width." },
     { "page": "calendar-layouts", "title": "Layouts", "body": "A mini month, week and day lists, stacked months and a year with its events." },
     { "page": "calendar-certificates", "title": "3,000 certificate expiries", "body": "A facet panel beside the calendar, busy days folded into +N more, and a timeline per issuer at month zoom." },
     { "page": "calendar-passwords", "title": "Password expiries", "body": "A directory's password expiries as an all-day agenda per person, grouped by department in the timeline." },

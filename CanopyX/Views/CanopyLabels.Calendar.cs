@@ -232,4 +232,13 @@ public sealed partial class CanopyLabels {
 
     /// <summary>Gets or sets the accessible name of an event's details popover, including <c>{title}</c>. Default "Details of {title}".</summary>
     public string CalendarDetailsOf { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that restores a calendar's configured view, date and sources. Default "Reset".</summary>
+    public string CalendarReset { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the part of a merged event's accessible name that lists its sources, including <c>{names}</c>. Default "Shared by {names}".</summary>
+    public string CalendarSharedBy { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets how many sources show in a folded legend, including <c>{shown}</c> and <c>{total}</c>. Default "{shown} of {total}".</summary>
+    public string CalendarSourcesShown { get => Get(); set => Set(value); }
 }

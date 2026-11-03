@@ -78,11 +78,11 @@
       const id = item.id ?? String(index + 1);
       if (typeof id !== "string" || !CAL_ID.test(id) || ids.has(id)) throw new Error("JSON event ids must be unique identifiers.");
       ids.add(id);
-      for (const name of ["description", "resource", "recurrence", "exceptions", "series", "recurrenceId"]) if (item[name] != null && (typeof item[name] !== "string" || item[name].length > 10000)) throw new Error("Invalid JSON event " + name + ".");
+      for (const name of ["description", "location", "resource", "recurrence", "exceptions", "series", "recurrenceId"]) if (item[name] != null && (typeof item[name] !== "string" || item[name].length > 10000)) throw new Error("Invalid JSON event " + name + ".");
       if (item.allDay !== undefined && typeof item.allDay !== "boolean") throw new Error("JSON allDay is a boolean.");
       const allDay = item.allDay ?? item.start.length === 10, normalize = value => value?.length === 10 ? value + "T00:00:00Z" : value;
       return { id: identity(id), external: source, cells: {}, fields: { title: item.title, start: normalize(item.start), end: normalize(item.end), allDay,
-        description: item.description || "", resource: item.resource || null, resourceIds: calResourceIds(item.resourceIds), recurrence: item.recurrence,
+        description: item.description || "", location: item.location || "", resource: item.resource || null, resourceIds: calResourceIds(item.resourceIds), recurrence: item.recurrence,
         exceptions: item.exceptions, series: item.series ? identity(item.series) : null, recurrenceId: normalize(item.recurrenceId) } };
     });
   }

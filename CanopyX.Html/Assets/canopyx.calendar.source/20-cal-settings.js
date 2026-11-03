@@ -3,12 +3,14 @@
   // subtitle, allDay, resource, status, recurrence, exceptions, the series and recurrenceId of an overridden occurrence, display
   // ("background" marks a background range) and seriesEnd (what a server reads to find series in a range). The rest are the
   // views and how they look. Everything is optional except start; an unknown key or a column of the wrong kind is an error.
+  // The shared-screen settings: the calendar-screen part reads and checks them (docs/calendar.md#shared-screens).
+  const CAL_SCREEN = ["merge", "fadePast", "dayNotes", "listDays", "dayWidth", "listBelow", "reset", "faces"], CAL_FACE = ["avatar", "initials", "icon"];
   const CAL_VIEWS = ["month", "week", "day", "days", "agenda", "year", "timeline", "mini", "weekList", "dayList", "months"], CAL_ZOOMS = ["hour", "day", "week", "month", "quarter"];
   const CAL_KEYS = new Set(["start", "end", "title", "subtitle", "allDay", "resource", "resourceIds", "status", "recurrence", "exceptions", "series", "recurrenceId", "display",
     "seriesEnd", "view", "views", "date", "days", "firstDay", "hiddenDays", "slotMinutes", "minTime", "maxTime", "scrollTime", "workingHours", "nowIndicator",
     "eventLimit", "eventStyle", "timeZone", "editable", "resources", "zoom", "zooms", "capacity", "ranges", "availability", "limit", "phone",
     "toolbar", "details", "description", "tone", "source", "sources", "create", "drop", "occurrence", "weekNumbers", "navLinks", "validRange", "fixedWeeks",
-    "outsideDays", "span", "menu", "hover", "yearEvents", "agendaSpan", "months", "print"]);
+    "outsideDays", "span", "menu", "hover", "yearEvents", "agendaSpan", "months", "print", "location", ...CAL_SCREEN]);
   const CAL_TONE = /^[a-z][a-z0-9-]{0,31}$/;
 
   function calInvalid(message) { throw new Error("CanopyX: " + message); }
@@ -38,7 +40,8 @@
       start: column("start", ["datetime"], true), end: column("end", ["datetime"]), allDay: column("allDay", ["text"]),
       title: column("title") || grid.columns.find(item => item.rowHeader) || grid.columns.find(item => !item.hidden), subtitle: column("subtitle"),
       resource: column("resource", ["text"]), resourceIds: column("resourceIds", ["text"]), status: column("status"), recurrence: column("recurrence", ["text"]), exceptions: column("exceptions", ["text"]),
-      series: column("series", ["text"]), recurrenceId: column("recurrenceId", ["datetime"]), display: column("display", ["text"]), seriesEnd: column("seriesEnd", ["datetime"])
+      series: column("series", ["text"]), recurrenceId: column("recurrenceId", ["datetime"]), display: column("display", ["text"]), seriesEnd: column("seriesEnd", ["datetime"]),
+      location: column("location", ["text"])
     };
     if (!settings.series !== !settings.recurrenceId) calInvalid("calendar series and recurrenceId come together.");
     const views = input.views === undefined ? ["month", "week", "day", "agenda"].concat(input.resources ? ["timeline"] : []) : input.views;
@@ -90,6 +93,7 @@
     settings.ranges = calRanges(input.ranges);
     settings.availability = calAvailability(input.availability);
     calSettingsMore(input, column, settings);
+    DataGrid.prototype.calKit.calScreenSettings?.(input, settings);
     return settings;
   }
 

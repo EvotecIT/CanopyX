@@ -14,7 +14,8 @@ set up; every other capability is one option away. Start with the [quick start](
 `calendar-solo.html` turn on one option at a time. The `calendar.html` example is an operations calendar written from typed records. `calendar-timeline.html`,
 `calendar-resources.html`, `calendar-certificates.html`, `calendar-passwords.html` and `calendar-linked.html` show the
 resource timeline, resource columns, a facet panel with thousands of certificate expiries, an all-day agenda and a calendar
-linked with a grid. `calendar-pl.html` and `calendar-de.html` show the Polish and German label packs.
+linked with a grid. `calendar-pl.html` and `calendar-de.html` show the Polish and German label packs. `calendar-family.html` is a
+family week for a shared screen ([Shared screens](#shared-screens)).
 
 ## Quick start
 
@@ -104,6 +105,7 @@ carries the resolved keys, never a preset name. The timeline joins the preset's 
 | Shading the time outside ranges | `ranges[].inverse` |
 | Context menus and hover cards | `menu`, `hover` (both on by default) |
 | Print button | `print` |
+| Faces, merged events, faded past, day notes, fitted days, Reset, folding legend | [Shared screens](#shared-screens) |
 
 ## The calendar definition
 
@@ -162,6 +164,8 @@ the recurrence rule), and `Definition` holds every other setting. `CanopyCalenda
 | `menu`, `hover` | [Context menus and hover cards](#context-menus-and-hover-cards) (both default true). |
 | `yearEvents`, `agendaSpan`, `months`, `print` | The year view lists each month's events; the agenda's period (`day`, `week`, `month` or `year`); the number of stacked months (2–24, default 6); a Print button in the bar. |
 | `limit` | Most occurrences one range shows, 1–100,000 (default 20,000); more shows a notice to narrow the period or the filters. |
+| `location` | Text column with each event's location, shown in the details; merged copies match on it. |
+| `merge`, `fadePast`, `dayNotes`, `faces`, `listDays`, `dayWidth`, `listBelow`, `reset` | [Shared screens](#shared-screens). |
 
 An unknown field, a column that does not exist or a column of the wrong kind is an error, in the browser and in the C# writer.
 The JSON schema is `gridCalendar` in [schema/canopyx-2.schema.json](schema/canopyx-2.schema.json).
@@ -175,7 +179,8 @@ The JSON schema is `gridCalendar` in [schema/canopyx-2.schema.json](schema/canop
   list of the focused day sits under the month.
 - **Week, day and N days**: a header of days, an all-day row (all-day events and events of a day or longer), then a column of
   time slots. Overlapping events share their column side by side and widen over free columns; an event over midnight shows in
-  each day. Working hours, unavailable time and background ranges shade the columns; a line marks now. With an inline resource tree, day and week views get [resource columns](resource-timeline.md#resource-columns-in-day-and-week-views).
+  each day. An event's title comes first and its start time follows when it fits whole; in a short or narrow event the time is
+  left out rather than cut, and stays in the accessible name. Working hours, unavailable time and background ranges shade the columns; a line marks now. With an inline resource tree, day and week views get [resource columns](resource-timeline.md#resource-columns-in-day-and-week-views).
 - **Agenda**: the period's events grouped by day, with their time (or All day), title, subtitle and status. Phones start here.
 - **Year**: twelve small months; days with events have a tint and dot, with stronger tint for busier days. Each day's accessible name and tooltip give its count, and today has an accent ring.
 - **Timeline**: resources as rows, time across; see [resource-timeline.md](resource-timeline.md). Without resources its rows
@@ -521,6 +526,62 @@ The go-to-date control shows the date in the calendar's language and opens the b
 browser cannot open the picker from a script, the native date input shows instead. The year view has a legend for its shading,
 and each day's tooltip and accessible name give its number of events. The now line runs beneath events and capacity counts.
 
+## Shared screens
+
+A week on a wall tablet, a calendar in a dashboard section, the same calendar on a phone: several people read it at a glance,
+nobody owns it, and its width is whatever the layout gives it. These options are for that. Each is opt-in and generic; the
+`calendar-screen` part brings them (about 6 KB compressed) and loads only for calendars that use one.
+
+```js
+CanopyX.createCalendar(host, { events, view: "week", timeZone: "Europe/Warsaw",
+  sources: [{ id: "anna", label: "Anna", color: "#2563eb", avatar: "/faces/anna.png", initials: "A" },
+            { id: "tom", label: "Tom", color: "#059669", initials: "T" }, { id: "home", label: "Home", icon: "🏠" }],
+  calendar: { merge: true, fadePast: 0.5, dayWidth: 120, reset: true,
+    dayNotes: [{ date: "2026-11-02", text: "♻ Bin day", tone: "success" }],
+    dayHeader: ({ day, events }) => events > 4 ? "Busy" : undefined } });
+```
+
+- **Faces.** A source's `avatar` (a relative or same-origin address, or a base64 `data:image` URL of PNG, JPEG, GIF, WebP or SVG),
+  `initials` (1–3 characters) or `icon` (1–4 characters, such as an emoji) is drawn in front of its events in every view, in the
+  details and in its legend switch, so whose plan it is shows before the title can be read. A failed image falls back to the
+  initials. `faces: [{ resource, avatar?, initials?, icon? }]` gives resources faces the same way; an event's source face wins over
+  its resource's. In a narrow time-grid event the faces stack closer, then show the first face and a count ("+1"); a short
+  event too narrow for a face and its title keeps the title. Faces are decoration: they
+  are hidden from assistive technology and accessible names keep their meaning. A `render` template that owns an event's
+  content draws its own faces (the template's event carries `source` and, merged, `owners`).
+- **Merged events.** With `merge`, copies of one event in several sources draw once: the same title (ignoring case and
+  surrounding space), start, end, all-day flag and `location`. The event shows every owner's face in source order and its
+  accessible name ends with "Shared by Anna, Tom". `merge: { tone }` colours merged events with a shared tone of their own;
+  otherwise they keep the first owner's colour. Hiding a source in the legend leaves the event to the others. The first owner's
+  copy is the one that opens, the details list every owner, `getCalendarEvents()` lists `owners`, a linked selection reports the
+  records of every copy, and `exportCalendar()` writes the event once. Two copies in one source stay two events.
+- **Finished events.** `fadePast` (0.1 to 0.9, how strongly) fades events that have ended in the week, day, N-day, list and
+  agenda views, and keeps fading them as time passes; they stay readable and clickable, and hover and focus bring them back to
+  full strength. Forced colours strike them through instead, and print shows them at full strength.
+- **Day header notes.** `dayNotes: [{ date, text, tone? }]` (at most 1,000, text 1–64 characters) puts small notes in day
+  headers: under the day in the week, day and N-day views, beside it in the lists and the agenda, and beside the number of month
+  days (a phone month names them in its small day cells and shows them beside the chosen day's list). The host's `calendar.dayHeader({ day, events, view, element, labels })` hook adds its own: return text, or write into
+  the fresh `element` with DOM methods (`textContent`, `append`) and return `true`, as the event template does; the calendar
+  never writes host markup. Every note's text joins the day's accessible name. A hook that throws reports the error through the
+  grid's `error` event and leaves the day as it was.
+- **Days that fit.** `dayWidth` (60 to 400 pixels) is the narrowest day column of the week, N-day and week list views. As the
+  calendar itself narrows (its container, not the window), these views show one day fewer at a time, always keeping today:
+  past days go first, then the last days. Fitted views step by the days they show, and Today returns to the run that holds
+  today. Below 640 pixels the calendar still switches to its phone layout. `listDays` (2 to 14) makes the week list show that
+  many days from its date instead of the calendar week, as columns of event boxes without an hour axis, and `listBelow` (2 to 7)
+  stacks the week list's days as one list when fewer columns than that fit.
+- **Reset.** With `reset`, a Reset button appears beside the navigation once someone pages away from the configured date (or
+  today), switches the view or the timeline zoom, or hides a source, and puts all of them back in one press; focus moves to
+  Today. `resetCalendar()` does the same from code, with or without the button.
+- **Folding legend.** For every calendar with sources: when the legend's switches do not fit on one line they fold into a
+  "Calendars · 3 of 5" button whose menu holds a checkbox per source, in its colour and with its face. The menu opens below
+  the legend, or above it when there is more room there, and is never taller than the screen has room for; Escape closes it
+  and returns to the button. They unfold once there is room again.
+
+In C#, `CanopyCalendar.Merge` (`CanopyCalendarMerge`), `FadePast`, `DayNotes` (`CanopyCalendarDayNote`), `Faces`
+(`CanopyCalendarFace`), `ListDays`, `DayWidth`, `ListBelow`, `Reset` and `Location`, `CanopyCalendarSource.Avatar`, `Initials`
+and `Icon`, and `CanopyCalendarEvent.Location` write the same settings; the typed builder maps `Location(x => x.Where)`.
+
 ## API
 
 | Member | Meaning |
@@ -541,34 +602,41 @@ and each day's tooltip and accessible name give its number of events. The now li
 | `insertRow({ id?, cells })` | The editing API's insert, which creating and dropping use ([editing.md](editing.md)). |
 | `CanopyX.createCalendar(host, options)` | A calendar from a list of events ([Quick start](#quick-start)). |
 
+| `resetCalendar()` | Puts back the configured view, date, zoom and sources ([Shared screens](#shared-screens)). |
+
 The calendar methods load the calendar part first. TypeScript types are in `calendar.d.ts` (`GridCalendarDefinition`,
 `GridCalendarApi`, `GridRangeQuery`, `CalendarOptions`, `CalendarEventInput`, …), re-exported from `@evotecit/canopyx/grid`.
 
 ## Parts and sizes
 
 The calendar core ships in the `calendar` part (`canopyx-calendar.js` and `.css`): every view, the bar, the popover, menus,
-hover cards and sources. What a basic calendar does not use is in parts of its own, loaded before the calendar starts when the
-definition uses them, or on first use: `calendar-recurrence` (rules and exceptions, recurring ranges, iCalendar sources),
-`calendar-edit` (moving, resizing, creating, dropping and occurrence changes), `calendar-ics` (iCalendar export, from the Export
-menu or `exportCalendar`, and import) and `timeline` (the timeline, resources and resource columns). A grid whose view declares
+hover cards, sources and the folding legend. What a basic calendar does not use is in parts of its own, loaded before the calendar
+starts when the definition uses them, or on first use: `calendar-recurrence` (rules and exceptions, recurring ranges, iCalendar
+sources), `calendar-edit` (moving, resizing, creating, dropping and occurrence changes), `calendar-ics` (iCalendar export, from
+the Export menu or `exportCalendar`, and import), `calendar-screen` ([shared screens](#shared-screens)) and `timeline` (the
+timeline, resources and resource columns). A grid whose view declares
 a calendar loads its parts before its first query, so the first paint is the calendar; the grid entry points keep only the
 stubs. Single-file pages carry the parts' payloads for views that need them: a calendar whose toolbar shows Export carries
 `calendar-ics`, so a page from disk can still export ([plugins.md](plugins.md)).
 
-| Asset | gzip baseline | Guard |
+| Asset | gzip measured | Guard |
 | --- | --- | --- |
-| `canopyx-calendar.js` | 34,796 bytes | 40,000 |
-| `canopyx-calendar.css` | 5,522 bytes | 6,400 |
-| `canopyx-calendar-recurrence.js` | 3,304 bytes | 3,800 |
-| `canopyx-calendar-edit.js` | 12,196 bytes | 14,050 |
-| `canopyx-calendar-ics.js` | 8,209 bytes | 9,450 |
-| `canopyx-timeline.js` | 10,883 bytes | 11,450 |
-| `canopyx-timeline.css` | 2,046 bytes | 2,256 |
+| `canopyx-calendar.js` | 42,240 bytes | 43,008 (42 KiB) |
+| `canopyx-calendar.css` | 6,120 bytes | 6,400 |
+| `canopyx-calendar-recurrence.js` | 3,273 bytes | 3,800 |
+| `canopyx-calendar-edit.js` | 14,439 bytes | 14,848 |
+| `canopyx-calendar-ics.js` | 8,302 bytes | 9,450 |
+| `canopyx-calendar-screen.js` | 6,186 bytes | 6,950 |
+| `canopyx-calendar-screen.css` | 1,903 bytes | 2,180 |
+| `canopyx-timeline.js` | 11,575 bytes | 13,824 |
+| `canopyx-timeline.css` | 2,114 bytes | 2,256 |
 
-The guards in `GridCalendarPartTests` bound compressed asset growth. The editing and iCalendar budgets use the current
-measured sizes plus about 15%; the other parts retain their existing budgets. A basic calendar page (`calendar-basic.html`) carries
+The guards in `GridCalendarPartTests` bound compressed asset growth (gzip at the smallest size, without the shared token
+fallbacks). New parts start at their measured size plus about 15%. The core calendar's guard is 42 KiB: it carries the folding
+legend, which every calendar with sources uses, and the hooks that keep the shared-screen options in their own part. A basic calendar page (`calendar-basic.html`) carries
 the core part only (and `calendar-recurrence` when an event repeats); a scheduler page carries the editing, iCalendar and
 recurrence parts too.
+
 ## Performance
 
 `tests/browser/specs/calendar-performance.spec.mjs` records opt-in Chromium measurements. Paint timing runs in the page from

@@ -33,7 +33,7 @@ public sealed class CanopyHtmlPart {
     // The view features a part can name in Build/parts.json (features); Uses maps each to the view settings that turn it on.
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "officeExport",
-        "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs",
+        "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs", "calendarScreens",
         "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations"
     };
 
@@ -217,9 +217,16 @@ public sealed class CanopyHtmlPart {
             "calendarRecurrence" => view.Calendar != null && (view.Calendar.Recurrence != null || view.Calendar.Ranges.Any(range => range.Recurrence != null) || view.Calendar.Sources.Any(source => source.Ics != null || source.Url != null)),
             "calendarEditing" => view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "calendarIcs" => view.Calendar != null && UsesCalendarIcs(view.Calendar),
+            "calendarScreens" => view.Calendar != null && UsesCalendarScreens(view.Calendar),
             _ => false
         };
     }
+
+    /// <summary>Whether a calendar uses the shared-screen part: faces, merging, fading, day notes, fitted days or Reset.</summary>
+    private static bool UsesCalendarScreens(CanopyCalendar calendar) =>
+        calendar.Merge != null || calendar.FadePast.HasValue || calendar.DayNotes.Count > 0 || calendar.Faces.Count > 0 || calendar.ListDays.HasValue ||
+        calendar.DayWidth.HasValue || calendar.ListBelow.HasValue || calendar.Reset ||
+        calendar.Sources.Any(source => source != null && (source.Avatar != null || source.Initials != null || source.Icon != null));
 
     /// <summary>
     /// Whether a calendar uses the iCalendar part: an iCalendar source, or the Export menu (which offers iCalendar) in its
