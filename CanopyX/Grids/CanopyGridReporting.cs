@@ -24,6 +24,9 @@ public sealed class CanopyGridReporting {
     /// <summary>Gets or sets whether readers can configure a pivot from declared columns and aggregates.</summary>
     public bool Pivotable { get; set; }
 
+    /// <summary>Gets or sets whether readers can chart accepted ranges, selections, groups and pivots with the optional ChartForgeX browser renderer.</summary>
+    public bool Chartable { get; set; }
+
     /// <summary>Gets or sets expandable detail rows under the records, or null for none.</summary>
     public CanopyGridDetail? Detail { get; set; }
 
@@ -117,6 +120,7 @@ public sealed class CanopyGridReporting {
         if (Groupable) writer.Property("groupable", true);
         if (Pivot != null) { writer.Name("pivot"); Pivot.WriteJson(writer); }
         if (Pivotable) writer.Property("pivotable", true);
+        if (Chartable) writer.Property("chartable", true);
         if (Detail != null) { writer.Name("detail"); Detail.WriteJson(writer); }
         if (Aggregates.Count != 0) {
             writer.Name("aggregates").BeginArray(); foreach (var aggregate in Aggregates) aggregate.WriteJson(writer); writer.EndArray();

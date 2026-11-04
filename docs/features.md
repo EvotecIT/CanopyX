@@ -133,7 +133,8 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Move nodes by drag and drop or keyboard | Tree | `dragDrop`, `onDrop`, `requestDrop()` | [Host actions, editing, and moving nodes](authoring.md#host-actions-editing-and-moving-nodes) |
 | Context actions | Tree | `contextActions`, `onAction`, right-click, Shift+F10 | [Host actions, editing, and moving nodes](authoring.md#host-actions-editing-and-moving-nodes) |
 | More-menu actions and host content | Grid, Tree | `actions: [{ label, run }]`; reporting adds `{ label, render }` | [Toolbar controls](authoring.md#toolbar-controls-slots-and-menu-entries) |
-| Chart action from the selection bar | Grid | `onChart`; the host draws the chart | [Flat data grid](authoring.md#flat-data-grid) |
+| Chart analysis from ranges, selected/filtered records, groups and pivots | Reporting grid | `reporting.chartable`, `openChart`; optional ChartForgeX renderer | [Chart analysis](charts.md) |
+| Host-provided chart action from the selection bar | Grid | `onChart`; the host draws the chart | [Flat data grid](authoring.md#flat-data-grid) |
 | Flat-grid editing: typed editors, validation, change marks, undo and redo, row and batch commit, the phone edit form | Grid | `editable`, `editor`, `validation`, `editing` | [editing.md](editing.md) |
 
 ## Grouping and summaries

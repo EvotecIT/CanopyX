@@ -18,7 +18,7 @@ public sealed class OfficeExportPartAssetsTests {
         using (var gzip = new GZipStream(output, CompressionLevel.SmallestSize, true)) {
             var bytes = Encoding.UTF8.GetBytes(part.Script); gzip.Write(bytes, 0, bytes.Length);
         }
-        Assert.True(output.Length <= 128 * 1024, "The optional Office writer exceeds its 128 KiB gzip budget.");
+        Assert.True(output.Length <= 132 * 1024, "The optional OfficeIMO 0.1.5 pivot writer exceeds its 132 KiB gzip budget.");
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             Assert.DoesNotContain("OfficeIMO.exportCanopy", CanopyHtmlAssets.GetScript(runtime));
             Assert.Contains(part.HashedScriptFileName, CanopyHtmlAssets.GetScript(runtime));

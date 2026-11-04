@@ -8,7 +8,8 @@ internal static class AnalystExample {
     internal static void Write(string output) {
         var month = CanopyBucket.Calendar(CanopyBucketKind.Month);
         var view = new CanopyDataGridView("analysis", "Records by month") {
-            Reporting = new CanopyGridReporting { Groupable = true, HeaderFilters = true, Responsive = true },
+            Reporting = new CanopyGridReporting { Groupable = true, HeaderFilters = true, Responsive = true, Chartable = true },
+            RangeSelection = new CanopyGridRangeSelection(), ExportFormats = CanopyExportFormats.Office(),
             Presentation = CanopyGridPresentation.Paged, PageLength = 20, Selection = CanopySelectionMode.Multiple,
             FacetPanel = new CanopyFacetPanel { Position = CanopyFacetPosition.Top }
         };

@@ -1,0 +1,3 @@
+/* lint-allow layout: the compact drawing viewport fits the existing virtual row content. */
+.cx-chart-cell{width:100%;min-width:0;height:24px;--cfx-color-text:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));--cfx-color-border:var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)))}
+.cx-chart-cell>svg{height:100%}

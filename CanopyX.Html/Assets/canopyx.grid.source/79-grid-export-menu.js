@@ -35,7 +35,7 @@
           numberFormat(this.lang).format(request.recordCount) + " " + labels.gridRows);
       } catch { setText(count, scope.selectedOptions[0].textContent); }
     };
-    scope.addEventListener("change", updateCount);
+    scope.addEventListener("change", () => { updateCount(); busy(operation !== null); });
     const decorate = (button, title, hint, icon) => {
       button.classList.add("cx-export-choice"); button.setAttribute("aria-label", title);
       const symbol = h("span", "cx-export-icon"); symbol.setAttribute("aria-hidden", "true"); setText(symbol, icon);
@@ -58,7 +58,8 @@
     const canExport = () => this.view.type !== "grid" || this.defaultExportColumns().length > 0;
     const busy = state => {
       scope.disabled = state; cancel.hidden = meter.hidden = !state;
-      for (const button of [csv, ...formats, copy, print, this.printButton]) if (button) button.disabled = state || !canExport();
+      for (const button of [csv, ...formats, copy, print, this.printButton]) if (button) button.disabled = state || !canExport() ||
+        this.pivotState?.active === true && ["xlsx", "pdf"].includes(button.value) && scope.value !== "filtered";
     };
     // Ordinary grids take no progress option; the reporting runtime reports CSV and copy progress through it.
     const traced = (options, onProgress) => reporting ? { ...options, onProgress } : options;
@@ -96,9 +97,11 @@
       try {
         const available = EXPORT_IMPL.formatsOf(this);
         print.hidden = !(typeof this.print === "function" && (menu.print ?? true));
-        formats = available.filter(format => format.showInMenu && (!this.pivotState?.active || !["xlsx", "pdf"].includes(format.id))).map(format => Object.assign(decorate(gridButton(format.label, () =>
-          panel.cxRun((options, onProgress) => this.exportAs(format.id, { ...options, onProgress }))), format.label,
-          format.id === "xlsx" ? labels.gridExportWorkbookHint : format.id === "pdf" ? labels.gridExportPdfHint : null,
+        formats = available.filter(format => format.showInMenu).map(format => Object.assign(decorate(gridButton(format.label, () =>
+          panel.cxRun((options, onProgress) => this.exportAs(format.id, { ...options, onProgress,
+            pivot: this.pivotState?.active === true && ["xlsx", "pdf"].includes(format.id) }))), format.label,
+          this.pivotState?.active === true && ["xlsx", "pdf"].includes(format.id) ? labels.gridPivot + " · " + labels.gridFilteredResults :
+            format.id === "xlsx" ? labels.gridExportWorkbookHint : format.id === "pdf" ? labels.gridExportPdfHint : null,
           format.extension.toUpperCase()), { value: format.id }));
       } catch (error) { formats = []; this.emit("error", { error }); }
       list.replaceChildren(...formats, csv); actions.hidden = copy.hidden && print.hidden;

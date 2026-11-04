@@ -24,7 +24,10 @@
         button.setAttribute("aria-haspopup","dialog");button.setAttribute("aria-label",fill(grid.labels.gridExpandCell,{column:column.title}));
         button.addEventListener("click",()=>grid.showReportingText(column,value,button,row.id,options.mono));return button;
       };
-      if (GRID_HISTORY_KINDS.includes(options.kind)) {
+      if (GRID_CHART_CELL_KINDS.includes(options.kind)) {
+        if (GRID_CHART_CELLS.render) GRID_CHART_CELLS.render(grid,column,options,cell,element,text);
+        else { add(text); grid.loadChartCells(); }
+      } else if (GRID_HISTORY_KINDS.includes(options.kind)) {
         if(GRID_HISTORY_IMPL.render)GRID_HISTORY_IMPL.render(grid,column,options,cell,element,text);else grid.loadHistory();
       } else if (options.kind==="structured") {
         // Lists, objects and collections summarise through the record panel part (52-grid-record-part.js).

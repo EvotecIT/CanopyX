@@ -33,5 +33,13 @@ public enum CanopyGridPresenterKind {
     /// <summary>Normal text with an em dash for missing values.</summary>
     Missing,
     /// <summary>A summary of a structured value (a list, object, collection, timeline or changes): a count, chips, or the first item and +N.</summary>
-    Structured
+    Structured,
+    /// <summary>An optional ChartForgeX area history.</summary>
+    SparklineArea,
+    /// <summary>An optional ChartForgeX column history.</summary>
+    SparklineColumns,
+    /// <summary>An optional ChartForgeX sign history.</summary>
+    SparklineWinLoss,
+    /// <summary>A numeric measure against an authored target.</summary>
+    Bullet
 }
