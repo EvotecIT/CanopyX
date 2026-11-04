@@ -16,10 +16,10 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX.Html</PackageId>
-    <Version>0.3.5</Version>
+    <Version>0.3.6</Version>
     <Authors>Evotec</Authors>
     <Description>Self-contained tree and flat-grid browser runtimes with virtual rows, typed query controls, saved views, scoped exports, host data sources, and theme CSS, plus page, fragment, tree bundle, and asset writers.</Description>
-    <PackageReleaseNotes>Virtual tree and flat grids, typed query controls, saved views, scoped CSV and clipboard exports, host-governed Office exports and details, and page, fragment, bundle, and asset writers.</PackageReleaseNotes>
+    <PackageReleaseNotes>Embedded grids use the host card surface for pinned cells and header tint, with the raised surface as a fallback.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>tree-grid;treegrid;treeview;data-grid;virtualization;lazy-loading;data-views;html;javascript;reports;zero-dependency;aot;trimming</PackageTags>

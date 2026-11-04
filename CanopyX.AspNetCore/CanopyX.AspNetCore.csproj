@@ -12,10 +12,10 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX.AspNetCore</PackageId>
-    <Version>0.3.5</Version>
+    <Version>0.3.6</Version>
     <Authors>Evotec</Authors>
     <Description>Minimal-API endpoints for the CanopyX remote grid protocol: query, value-list, summary, streamed export and commit routes over IQueryable or a custom data provider, with a separate write policy, plus the browser source script.</Description>
-    <PackageReleaseNotes>First release: MapCanopyRemote endpoint mapping with cancellation, typed client errors and the browser remote source script.</PackageReleaseNotes>
+    <PackageReleaseNotes>Embedded grids use the host card surface for pinned cells and header tint, with the raised surface as a fallback.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>data-grid;server-side;aspnetcore;minimal-api;paging;filtering;export;canopyx</PackageTags>
