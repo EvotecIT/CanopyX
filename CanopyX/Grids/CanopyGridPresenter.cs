@@ -89,11 +89,14 @@ public sealed partial class CanopyGridPresenter {
         CanopyGridPresenterKind.Change => "change", CanopyGridPresenterKind.StatusStrip => "statusStrip",
         CanopyGridPresenterKind.SparklineBars => "sparklineBars", CanopyGridPresenterKind.SparklineLine => "sparklineLine",
         CanopyGridPresenterKind.Identifier => "identifier", CanopyGridPresenterKind.Tags => "tags",
+        CanopyGridPresenterKind.SparklineArea => "sparklineArea", CanopyGridPresenterKind.SparklineColumns => "sparklineColumns",
+        CanopyGridPresenterKind.SparklineWinLoss => "sparklineWinLoss", CanopyGridPresenterKind.Bullet => "bullet",
         CanopyGridPresenterKind.Structured => "structured", _ => "missing"
     };
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("kind", WireKind);
+        if (Kind == CanopyGridPresenterKind.Bullet) writer.Name("target").Number(Target);
         if (HrefColumn != null) writer.Property("hrefColumn", HrefColumn);
         if (NewWindow) writer.Property("newWindow", true);
         if (Glyph != null) writer.Property("glyph", Glyph);

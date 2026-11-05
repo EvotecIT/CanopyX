@@ -3,6 +3,22 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     private static CanopyLabels WithPolishAnalysis(CanopyLabels labels) {
+        labels.GridChartType = "Typ wykresu";
+        labels.GridChartSource = "Dane";
+        labels.GridChartSourceFiltered = "Przefiltrowane rekordy";
+        labels.GridChartSourceSelected = "Zaznaczone rekordy";
+        labels.GridChartSourceRange = "Zaznaczony zakres komórek";
+        labels.GridChartSourceGroups = "Grupy";
+        labels.GridChartSourcePivot = "Tabela przestawna";
+        labels.GridChartClearFilter = "Wyczyść filtr wykresu";
+        labels.GridChartLoading = "Odczytywanie przyjętych danych…";
+        labels.GridChartLine = "Liniowy";
+        labels.GridChartArea = "Warstwowy";
+        labels.GridChartBar = "Słupkowy poziomy";
+        labels.GridChartColumn = "Kolumnowy";
+        labels.GridChartStacked = "Kolumnowy skumulowany";
+        labels.GridChartWinLoss = "Zysk/strata";
+        labels.GridChartBullet = "Wykres celu";
         labels.GridPivotFieldOptions = "Opcje pola";
         labels.GridCalculationResultType = "Typ wyniku";
         labels.GridCalculationDivideZero = "Dzielenie przez zero";

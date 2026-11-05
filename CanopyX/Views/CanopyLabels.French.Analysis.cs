@@ -3,6 +3,22 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     private static CanopyLabels WithFrenchAnalysis(CanopyLabels labels) {
+        labels.GridChartType = "Type de graphique";
+        labels.GridChartSource = "Données";
+        labels.GridChartSourceFiltered = "Enregistrements filtrés";
+        labels.GridChartSourceSelected = "Enregistrements sélectionnés";
+        labels.GridChartSourceRange = "Plage de cellules sélectionnée";
+        labels.GridChartSourceGroups = "Groupes";
+        labels.GridChartSourcePivot = "Tableau croisé";
+        labels.GridChartClearFilter = "Effacer le filtre du graphique";
+        labels.GridChartLoading = "Lecture des données acceptées…";
+        labels.GridChartLine = "Courbe";
+        labels.GridChartArea = "Aires";
+        labels.GridChartBar = "Barres";
+        labels.GridChartColumn = "Colonnes";
+        labels.GridChartStacked = "Colonnes empilées";
+        labels.GridChartWinLoss = "Gains/pertes";
+        labels.GridChartBullet = "Comparaison à un objectif";
         labels.GridPivotFieldOptions = "Options du champ";
         labels.GridCalculationResultType = "Type du résultat";
         labels.GridCalculationDivideZero = "Division par zéro";

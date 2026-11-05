@@ -34,8 +34,13 @@
   function linkFilter(grid, source, input) {
     if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("CanopyX: an external filter is an object.");
     const column = linkColumn(grid, input.field), filter = { source, field: column.id };
-    if ((input.values === undefined) === (input.range === undefined)) throw new Error("CanopyX: an external filter has values or a range.");
-    if (input.values !== undefined) {
+    if ([input.values, input.range, input.predicate].filter(value => value !== undefined).length !== 1)
+      throw new Error("CanopyX: an external filter has values, a range or a grid predicate.");
+    if (input.predicate !== undefined) {
+      if (grid.kind !== "grid" || input.predicate?.column !== column.id)
+        throw new Error("CanopyX: a linked predicate belongs to its declared grid column.");
+      filter.predicate = LINK_IMPL.predicate(grid, input.predicate);
+    } else if (input.values !== undefined) {
       if (!Array.isArray(input.values) || !input.values.length || input.values.length > LINK_MAX_VALUES) throw new Error("CanopyX: an external filter has 1 to " + LINK_MAX_VALUES + " values.");
       filter.values = Array.from(new Set(input.values.map(value => linkOperand(column, value))));
     } else {
@@ -51,7 +56,8 @@
 
   /** What a chip says about a filter's values: its label, or the values (and ranges) themselves, shortened past three. */
   function linkValuesText(grid, filter, describeRange = false) {
-    const shown = filter.values ? filter.values.slice(0, 3).map(String) : [filter.range.map(value => value == null ? "…" : String(value)).join(" – ")];
+    const shown = filter.predicate ? [filter.predicate.operator + " " + filter.predicate.values.join(", ")] :
+      filter.values ? filter.values.slice(0, 3).map(String) : [filter.range.map(value => value == null ? "…" : String(value)).join(" – ")];
     const values = shown.join(", ") + (filter.values && filter.values.length > 3 ? " +" + numberFormat(grid.lang).format(filter.values.length - 3) : "");
     // A host caption can name a category or an approximate interval. Keep its visible label, and describe the
     // actual range as well in tooltips and accessible names, using the same raw-value text as an unlabelled range.
@@ -65,7 +71,7 @@
 
   /** The ordinary predicates of external filters, shared by grid queries and trees' loaded records. */
   function linkPredicates(filters) {
-    return filters.flatMap(filter => filter.values ? [{ column: filter.field, operator: filter.values.length === 1 ? "eq" : "in", values: filter.values.slice() }] :
+    return filters.flatMap(filter => filter.predicate ? [filter.predicate] : filter.values ? [{ column: filter.field, operator: filter.values.length === 1 ? "eq" : "in", values: filter.values.slice() }] :
       [filter.range[0] == null ? null : { column: filter.field, operator: "ge", values: [filter.range[0]] }, filter.range[1] == null ? null : { column: filter.field, operator: "le", values: [filter.range[1]] }].filter(Boolean));
   }
 

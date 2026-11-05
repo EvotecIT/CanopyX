@@ -1063,6 +1063,7 @@
         "groupable": { "type": "boolean", "description": "Readers can group by sortable columns. Not combined with grouping." },
         "pivot": { "$ref": "#/$defs/gridPivotDefinition" },
         "pivotable": { "type": "boolean" },
+        "chartable": { "type": "boolean" },
         "detail": { "$ref": "#/$defs/gridDetail" },
         "aggregates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } },
         "ordering": { "type": "object", "additionalProperties": { "$ref": "#/$defs/gridOrdering" } },
@@ -1810,6 +1811,40 @@
                 "worst",
                 "last"
               ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "sparklineArea",
+                "sparklineColumns",
+                "sparklineWinLoss"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "target"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "bullet"
+            },
+            "target": {
+              "type": "number",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
             }
           }
         },
@@ -2934,6 +2969,22 @@
             "gridPivotColumns": { "$ref": "#/$defs/accessibleLabel" },
             "gridPivotValues": { "$ref": "#/$defs/accessibleLabel" },
             "gridPivotFlat": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartType": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartSource": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartSourceFiltered": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartSourceSelected": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartSourceRange": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartSourceGroups": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartSourcePivot": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartClearFilter": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartLoading": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartLine": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartArea": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartBar": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartColumn": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartStacked": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartWinLoss": { "$ref": "#/$defs/accessibleLabel" },
+            "gridChartBullet": { "$ref": "#/$defs/accessibleLabel" },
             "gridPivotConfigure": { "$ref": "#/$defs/accessibleLabel" },
             "gridPivotOther": { "$ref": "#/$defs/accessibleLabel" },
             "gridPivotLimited": { "$ref": "#/$defs/accessibleLabel" },

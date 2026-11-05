@@ -85,3 +85,11 @@ gridFacetSearch: "Search values",
     gridNoData: "No data",
     gridPeriodRange: "{from}–{to}: {state}",
   }));
+
+  DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {
+    gridChartType: "Chart type", gridChartSource: "Data", gridChartSourceFiltered: "Filtered records",
+    gridChartSourceSelected: "Selected records", gridChartSourceRange: "Selected cell range", gridChartSourceGroups: "Groups",
+    gridChartSourcePivot: "Pivot", gridChartClearFilter: "Clear chart filter", gridChartLoading: "Reading accepted data…",
+    gridChartLine: "Line", gridChartArea: "Area", gridChartBar: "Bar", gridChartColumn: "Column",
+    gridChartStacked: "Stacked column", gridChartWinLoss: "Win/loss", gridChartBullet: "Bullet"
+  }));

@@ -34,6 +34,8 @@ test('the standalone gallery offers working fallback appearance controls without
 const surfaces = { evotec: ['#ffffff', '#16181c'], neutral: ['#ffffff', '#181818'], slate: ['#ffffff', '#141b26'], warm: ['#fffdf9', '#1c1814'], contrast: ['#ffffff', '#0a0a0a'] };
 for (const style of Object.keys(surfaces)) for (const mode of ['light', 'dark']) {
   test(`typed UI gallery renders ${style} ${mode} with accessible names and states`, async ({ page }, info) => {
+    // Six accessibility scans and their captures can exceed one minute on macOS WebKit.
+    test.setTimeout(90000);
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.setViewportSize({ width: 1440, height: 1100 });
     await page.goto(address + '?style=' + style + '&mode=' + mode);

@@ -16,10 +16,10 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX.Html</PackageId>
-    <Version>0.3.5</Version>
+    <Version>0.4.0</Version>
     <Authors>Evotec</Authors>
     <Description>Self-contained tree and flat-grid browser runtimes with virtual rows, typed query controls, saved views, scoped exports, host data sources, and theme CSS, plus page, fragment, tree bundle, and asset writers.</Description>
-    <PackageReleaseNotes>Virtual tree and flat grids, typed query controls, saved views, scoped CSV and clipboard exports, host-governed Office exports and details, and page, fragment, bundle, and asset writers.</PackageReleaseNotes>
+    <PackageReleaseNotes>Reporting grids gain optional ChartForgeX charts, linked filters, chart-cell presenters and semantic pivot selection. Filtered pivots export to Excel and PDF through OfficeIMO, preserving typed values, outlines and repeated print headers.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>tree-grid;treegrid;treeview;data-grid;virtualization;lazy-loading;data-views;html;javascript;reports;zero-dependency;aot;trimming</PackageTags>
@@ -43,6 +43,7 @@
   <ItemGroup>
     <None Include="..\README.nuget.md" Pack="true" PackagePath="README.md" />
     <None Include="..\ThirdParty\OfficeIMO\LICENSE" Pack="true" PackagePath="licenses\OfficeIMO.txt" />
+    <None Include="..\ThirdParty\ChartForgeX\LICENSE" Pack="true" PackagePath="licenses\ChartForgeX.txt" />
   </ItemGroup>
 
   <ItemGroup>

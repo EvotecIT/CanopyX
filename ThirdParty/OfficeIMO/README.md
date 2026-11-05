@@ -1,13 +1,13 @@
 # OfficeIMO browser document writers
 
-`officeimo-canopyx.js` is the unmodified standalone CanopyX integration from `@evotecit/officeimo` 0.1.3, published under the MIT license. `LICENSE` preserves its license and copyright notice.
+`officeimo-canopyx.js` is the unmodified standalone CanopyX integration from `@evotecit/officeimo` 0.1.5, published under the MIT license. `LICENSE` preserves its license and copyright notice.
 
-The source is [the published npm archive](https://registry.npmjs.org/@evotecit/officeimo/-/officeimo-0.1.3.tgz), file `package/bundles/officeimo-canopyx.js`. The archive integrity is `sha512-zYFbU9P/9svr5Jp8dpu3EJZradQ5nipk/+JC9OlI10oxaDS88eNfK9ZVAvdhnI8Y+hoT9FTlc2eUL3u7zW7OXA==`.
+The source is [the published npm archive](https://registry.npmjs.org/@evotecit/officeimo/-/officeimo-0.1.5.tgz), file `package/bundles/officeimo-canopyx.js`. The archive integrity is `sha512-R+bQIufsbo9gv8W0/2e+PyUBzzxRQxtrp9v2Wp60fqLw3+8tqO9KsE+9p5023iMOBSdrMhatXswR2BKqf8wicA==`.
 
 The asset assembler includes this source only in the optional `office-export` part. Base runtime files contain the format descriptors and lazy loader, without the document engines. An offline page embeds the inert part only when its view declares XLSX or PDF.
 
 Document-engine changes belong in OfficeIMO. Refresh this source from a published package after validating the archive integrity, preserve the license, regenerate assets, and run actual XLSX/PDF consumer checks. Do not patch the copied bundle.
 
-The published writer does not preserve pivot semantics. Pivot XLSX/PDF export is not supported yet: the menu omits those formats while a pivot is active, and `exportAs` rejects an explicit `pivot: true` request. Pivot capture, print and host delivery remain available. The containing writer and real-producer artifact qualification are tracked in [OfficeIMO #3202](https://github.com/EvotecIT/OfficeIMO/pull/3202).
+The writer preserves the frozen pivot projection for XLSX and PDF, including hierarchical row and column outlines, totals, numeric formats and repeated print context. CanopyX passes its accepted `prepareExport({ pivot: true })` capture without regrouping or recalculating the values. The export menu uses that pivot capture while the pivot view is active.
 
-For ordinary PDFs, the integration bridge explicitly enables cell wrapping so default screen widths can fit the printed page without rejecting or losing text, dates or numbers. This temporary policy stays outside the unmodified vendored writer; adopt the canonical default-sizing fix with the next qualified published bundle. XLSX retains the captured width and wrapping policy.
+OfficeIMO owns PDF width measurement, wrapping and horizontal pagination. The bridge reports the explicit text fallback for PDF-native workbook rules and leaves other unsupported presentation as an error. XLSX retains the captured width and wrapping policy.

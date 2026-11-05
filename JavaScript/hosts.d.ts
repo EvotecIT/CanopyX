@@ -1,3 +1,4 @@
+import type { GridBuiltinFilter } from "./grid.js";
 import type {
   CanopyNode, CanopyColumn, CanopyView, InlineView, SidecarView, RemoteView, CanopyLabels, CellValue, CheckIntent,
   CountsDocument, PageResult, SearchResult, ViewQuery, ReadonlyViewQuery, ContextAction, TimeZone, TreeToolbarControls
@@ -258,14 +259,17 @@ interface ExternalFilterText {
 }
 /** What another view applies: 1 to 1000 values of a declared column, or a [from, to] range (either end null) of a number or date column. */
 export type ExternalFilterInput = ExternalFilterText & (
-  | { field: string; values: readonly LinkValue[]; range?: never }
-  | { field: string; range: readonly [LinkValue, LinkValue | null] | readonly [null, LinkValue]; values?: never });
+  | { field: string; values: readonly LinkValue[]; range?: never; predicate?: never }
+  | { field: string; range: readonly [LinkValue, LinkValue | null] | readonly [null, LinkValue]; values?: never; predicate?: never }
+  | { field: string; predicate: GridBuiltinFilter; values?: never; range?: never });
 /** An applied external filter, as getExternalFilters and canopyx:externalfilter report it. */
 export interface ExternalFilter {
   readonly source: string;
   readonly field: string;
   readonly values?: readonly LinkValue[];
   readonly range?: readonly [LinkValue | null, LinkValue | null];
+  /** Grid-only canonical predicate, including null and bucket categories. */
+  readonly predicate?: GridBuiltinFilter;
   readonly label?: string;
   readonly sourceLabel: string;
   readonly persist: boolean;
