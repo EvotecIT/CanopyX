@@ -805,7 +805,7 @@
     {
       "name": "charts",
       "label": "chart analysis",
-      "version": "bf3ab0be46b47287",
+      "version": "a50b7dd51a5dab82",
       "script": "canopyx-charts.js",
       "style": "canopyx-charts.css",
       "runtimes": [

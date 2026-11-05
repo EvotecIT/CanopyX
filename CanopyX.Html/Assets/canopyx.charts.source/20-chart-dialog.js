@@ -48,6 +48,7 @@
       if (controller) controller.update(descriptor);
       else controller = window.ChartForgeXRenderer.create(canvas, descriptor, { signal: lifetime.signal,
         onSelect: mark => {
+          if (canvas.hasAttribute("aria-busy")) return;
           const filters = drawingFilters.get(mark.categoryId);
           if (filters?.length) this.setExternalFilter(linkedSource, filters).catch(error => this.emit("error", { error }));
         } });

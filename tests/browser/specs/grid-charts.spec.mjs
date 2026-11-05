@@ -76,6 +76,54 @@ test("selected and ranged raw cells chart through accepted grid captures", async
   expect(errors).toEqual([]);
 });
 
+test("chart marks wait for the current hosted capture before applying linked filters", async ({ page }) => {
+  const view = { protocol: "canopyx/2", type: "grid", id: "remote-charts", label: "Remote records", source: { kind: "host" },
+    pageSize: 20, selection: "none", reporting: { chartable: true }, rangeSelection: true,
+    columns: [{ id: "name", title: "Name", kind: "text" }, { id: "value", title: "Value", kind: "number" }] };
+  const before = "window.hold=false;window.releasePages=[];window.filterQueries=[];window.errors=[];window.addEventListener('error',event=>errors.push(event.message));";
+  const options = `{source:{async query(query){if(query.filters.length)filterQueries.push(query.filters);
+    if(hold)await new Promise(resolve=>releasePages.push(resolve));
+    const rows=Array.from({length:40},(_,index)=>({id:'r'+index,cells:{name:'Record '+index,value:index+1}}))
+      .filter(row=>query.filters.every(filter=>row.cells[filter.column]===filter.values[0]));
+    return {protocol:'canopyx/2',type:'gridPage',view:query.view,revision:'one',offset:query.offset,total:40,matched:rows.length,
+      items:rows.slice(query.offset,query.offset+query.limit)};}}}`;
+  await serveGrid(page, view, { runtime: "canopyx-reporting", height: 160, before, options });
+  await page.evaluate(() => window.api.openChart({ source: "filtered" }));
+  await expect(page.locator(".cx-chart-canvas [data-cfx-category]")).toHaveCount(40);
+  await page.evaluate(async () => {
+    await window.api.setCellRanges([{ startRow: 0, endRow: 30, startColumn: "name", endColumn: "value" }]);
+    window.hold = true;
+  });
+  await page.getByLabel("Data", { exact: true }).selectOption("range");
+  await expect.poll(() => page.evaluate(() => window.releasePages.length)).toBeGreaterThan(0);
+  await expect(page.locator(".cx-chart-canvas")).toHaveAttribute("aria-busy", "true");
+  await page.getByLabel("Chart type", { exact: true }).selectOption("column");
+  await page.locator(".cx-chart-canvas [data-cfx-category]").first().click();
+  expect(await page.evaluate(() => window.filterQueries)).toEqual([]);
+  await page.evaluate(() => { window.hold = false; for (const release of window.releasePages.splice(0)) release(); });
+  await expect(page.locator(".cx-chart-canvas")).not.toHaveAttribute("aria-busy", "true");
+  await expect(page.locator(".cx-chart-canvas [data-cfx-category]")).toHaveCount(31);
+  expect(await page.evaluate(() => window.errors)).toEqual([]);
+  await page.locator(".cx-chart-canvas [data-cfx-category]").first().click();
+  await expect.poll(() => page.evaluate(() => window.filterQueries.length)).toBeGreaterThan(0);
+});
+
+for (const source of ["filtered", "groups"]) {
+  test(`non-filterable ${source} chart categories remain usable without a linked-filter action`, async ({ page }) => {
+    const view = definition();
+    view.columns.find(column => column.id === "region").filterable = false;
+    if (source !== "groups") view.reporting.groupBy = [];
+    const { errors } = await chartPage(page, view);
+    await page.evaluate(api + ".openChart(" + JSON.stringify({ source, ...(source === "filtered" ? { category: "region", values: ["amount"] } : {}) }) + ")");
+    const marks = page.locator(".cx-chart-canvas [data-cfx-category]");
+    const count = await marks.count(); expect(count).toBeGreaterThan(0);
+    await marks.first().click();
+    expect(await page.evaluate(api + ".getExternalFilters()")).toEqual([]);
+    await expect(marks).toHaveCount(count);
+    expect(errors).toEqual([]);
+  });
+}
+
 test("pivot charts use accepted leaf values and linked row-axis predicates", async ({ page }, info) => {
   const view = definition(); view.reporting.groupBy = []; view.reporting.pivotable = true;
   view.reporting.pivot = { rows: [{ column: "region", direction: "asc" }], columns: [{ column: "status", direction: "asc" }], values: ["total"] };

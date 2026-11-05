@@ -1,6 +1,7 @@
   // CanopyX maps accepted records and analysis results. ChartForgeX owns all drawing and chart geometry.
   const chartTypes = ["line", "area", "bar", "column", "stacked", "win-loss", "bullet"];
   function chartFilters(grid, levels, path) {
+    if (levels.slice(0, path.length).some(level => grid.view.columns.find(column => column.id === level.column).filterable === false)) return [];
     return path.map((value, index) => {
       const level = levels[index];
       const column = grid.view.columns.find(item => item.id === level.column);
