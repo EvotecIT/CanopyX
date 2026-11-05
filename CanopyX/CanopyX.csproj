@@ -16,10 +16,10 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX</PackageId>
-    <Version>0.3.6</Version>
+    <Version>0.4.0</Version>
     <Authors>Evotec</Authors>
     <Description>Dependency-free tree and flat-grid definitions, typed queries, the versioned canopyx/2 data protocol, a sidecar tree bundle writer, and script-free fallback rendering for large interactive data views.</Description>
-    <PackageReleaseNotes>Embedded grids use the host card surface for pinned cells and header tint, with the raised surface as a fallback.</PackageReleaseNotes>
+    <PackageReleaseNotes>Reporting grids gain optional ChartForgeX charts, linked filters, chart-cell presenters and semantic pivot selection. Filtered pivots export to Excel and PDF through OfficeIMO, preserving typed values, outlines and repeated print headers.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>tree-grid;treegrid;treeview;data-grid;virtualization;lazy-loading;data-views;html;reports;zero-dependency;aot;trimming</PackageTags>
