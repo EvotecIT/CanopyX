@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { changedPaths, qualityMatrix, requiresBuild } from "./quality-plan.mjs";
+import { changedPaths, qualityMatrix, requiresAllEngines, requiresBuild } from "./quality-plan.mjs";
 
 test("only documentation and Website PRs skip builds; schemas and mixed changes require coverage", () => {
   assert.equal(requiresBuild("pull_request", ["Website/src/index.html", "docs/testing.md", "CONTRIBUTING.md", "nested/NOTES.md"]), false);
@@ -25,13 +25,24 @@ test("shipped package READMEs and images require pack and archive validation", (
   }
 });
 
-test("PR coverage keeps every Linux engine, Windows visuals and packing, and one unsharded macOS WebKit job", () => {
-  const jobs = qualityMatrix("pull_request").include;
-  assert.deepEqual(jobs.map(job => [job.platform.name, job.engine, job.shard]), [
-    ["Linux", "chromium", undefined], ["Linux", "firefox", undefined], ["Linux", "webkit", undefined],
-    ["Windows", "chromium", undefined], ["macOS", "webkit", undefined]
-  ]);
-  assert.deepEqual(jobs.map(job => job.platform.runner), ["ubuntu-24.04", "ubuntu-24.04", "ubuntu-24.04", "windows-2025", "macos-15"]);
+test("browser runtime and shared build inputs keep every PR engine, sharded, with one packing job per platform", () => {
+  for (const file of ["CanopyX.Html/Assets/canopyx.source/10-core.js", "tests/browser/specs/grid.spec.mjs", "JavaScript/index.d.ts",
+    ".github/workflows/quality.yml", "Directory.Build.props", "tests/browser/package-lock.json", "Build.ps1", "Build/Sync-Assets.ps1"]) {
+    assert.equal(requiresAllEngines("pull_request", ["CanopyX/Node.cs", file]), true, file);
+  }
+  const jobs = qualityMatrix("pull_request", true).include;
+  const lanes = jobs.map(job => `${job.platform.name}/${job.engine}/${job.shard}/${job.shards}`);
+  assert.deepEqual(lanes, ["Linux/chromium/1/2", "Linux/chromium/2/2", "Linux/firefox/1/2", "Linux/firefox/2/2",
+    "Linux/webkit/1/2", "Linux/webkit/2/2", "Windows/chromium/1/2", "Windows/chromium/2/2",
+    "macOS/webkit/1/3", "macOS/webkit/2/3", "macOS/webkit/3/3"]);
+  assert.deepEqual(jobs.filter(job => job.pack).map(job => `${job.platform.name}/${job.shard}`), ["Linux/1", "Windows/1"]);
+});
+
+test("other code PRs keep Chromium on Linux and Windows", () => {
+  assert.equal(requiresAllEngines("pull_request", ["CanopyX/Node.cs", "CanopyX.Data/Query.cs", "docs/testing.md"]), false);
+  const jobs = qualityMatrix("pull_request", false).include;
+  assert.deepEqual(jobs.map(job => `${job.platform.name}/${job.engine}/${job.shard}`),
+    ["Linux/chromium/1", "Linux/chromium/2", "Windows/chromium/1", "Windows/chromium/2"]);
 });
 
 test("main pushes and manual coverage keep every OS and engine and the existing two shard pairs", () => {
@@ -39,6 +50,7 @@ test("main pushes and manual coverage keep every OS and engine and the existing 
     const jobs = qualityMatrix(event).include;
     assert.equal(jobs.length, 11, event);
     for (const platform of ["Linux", "Windows", "macOS"]) {
+      assert.equal(jobs.filter(job => job.platform.name === platform && job.pack).length, 1, `${event}/${platform} pack`);
       for (const engine of ["chromium", "firefox", "webkit"]) {
         const shards = jobs.filter(job => job.platform.name === platform && job.engine === engine).map(job => job.shard);
         assert.deepEqual(shards, (platform === "Windows" && engine === "firefox") ||
