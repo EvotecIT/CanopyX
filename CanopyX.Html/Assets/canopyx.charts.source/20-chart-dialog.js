@@ -26,23 +26,32 @@
     this.showReportingText({ ...this.view.columns[0], title: this.labels.gridChart }, "", document.activeElement, undefined, false, body, this.lifetime.signal);
     const dialog = this.reportingText, lifetime = new AbortController();
     dialog.dataset.size = "lg"; dialog.classList.add("cx-chart-dialog");
-    let pending, controller, captured, revision = 0;
+    let pending, controller, captured, revision = 0, nextIdentity = 0, identities = new Map(), drawingFilters = new Map();
     const draw = () => {
       if (!captured.series.length) {
         const heldFocus = canvas.contains(document.activeElement);
         controller?.destroy(); controller = null;
+        identities.clear(); drawingFilters.clear();
         setText(status, this.labels.gridPivotValues + " · " + this.labels.gridNoData);
         if (heldFocus) values.focus();
         return;
       }
-      const descriptor = { type: type.value, label: this.view.label + " · " + source.selectedOptions[0].textContent,
-        categories: captured.categories, series: captured.series };
+      // Compact drawing IDs retain semantic identity without imposing the renderer's string bound on pivot paths.
+      const current = new Map(), identity = value => {
+        const id = current.get(value) || identities.get(value) || "k" + ++nextIdentity;
+        current.set(value, id); return id;
+      };
+      const descriptor = { type: type.value, label: GRID_DATA_CHARTS.caption(this.view.label + " · " + source.selectedOptions[0].textContent, this.labels.gridChart),
+        categories: captured.categories.map(item => ({ ...item, id: identity(item.id) })),
+        series: captured.series.map(item => ({ ...item, id: identity(item.id) })) };
+      drawingFilters = new Map(captured.categories.map(item => [current.get(item.id), captured.filters.get(item.id)]));
       if (controller) controller.update(descriptor);
       else controller = window.ChartForgeXRenderer.create(canvas, descriptor, { signal: lifetime.signal,
         onSelect: mark => {
-          const filters = captured.filters.get(mark.categoryId);
+          const filters = drawingFilters.get(mark.categoryId);
           if (filters?.length) this.setExternalFilter(linkedSource, filters).catch(error => this.emit("error", { error }));
         } });
+      identities = current;
     };
     const refresh = async () => {
       pending?.abort(); pending = new AbortController(); const signal = pending.signal, current = ++revision;

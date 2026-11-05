@@ -1077,8 +1077,9 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   exportToHost(format: string, options: GridExportOptions & { timeoutMs?: number }): Promise<void>;
   /** Captures now (invalid capture options throw synchronously), then runs a registered or configured export format (the same writers the Export menu lists) and downloads its file. */
   exportAs(format: string, options: Omit<GridExportOptions, "onProgress" | "maxRows"> & ExportFormatOptions): Promise<ExportFormatResult>;
-  /** Reporting runtime only. Complete bounded record snapshot; default maxRows is 1000, never silently truncates. */
+  /** Reporting runtime only, with reporting.chartable. Opens the chart dialog over accepted data and loads the optional renderer on first use. */
   openChart?(options?: GridChartOptions): Promise<void>;
+  /** Reporting runtime only. Complete bounded record snapshot; default maxRows is 1000, never silently truncates. */
   materializeExport?(options: GridExportOptions): Promise<GridExportSnapshot<Q>>;
   /** Prints a bounded complete static snapshot, or passes it to onPrint. Default maxRows is 1000; never prints viewport DOM. */
   print(options: GridExportOptions): Promise<void>;

@@ -3,9 +3,13 @@
   function chartFilters(grid, levels, path) {
     return path.map((value, index) => {
       const level = levels[index];
+      const column = grid.view.columns.find(item => item.id === level.column);
+      const text = value === null ? grid.labels.gridGroupMissing :
+        level.bucket ? GRID_BUCKETS.label(level.bucket, value, grid.lang) : cellText(value, column, grid.fmt);
       return { field: level.column, predicate: { column: level.column,
         operator: value === null ? "isNull" : "eq", values: value === null ? [] : [value],
-        ...(level.bucket ? { bucket: level.bucket } : {}) }, sourceLabel: grid.labels.gridChart };
+        ...(level.bucket ? { bucket: level.bucket } : {}) }, sourceLabel: grid.labels.gridChart,
+        ...(String(text).trim() ? { label: String(text).slice(0, 256).replace(/[\uD800-\uDBFF]$/, "") } : {}) };
     });
   }
   function chartRecords(grid, capture, options) {
@@ -22,7 +26,8 @@
     const instants = category.kind === "datetime" ? capture.rows.map(row => raw(row, category.id)) : null;
     if (instants?.every((value, index) => value && Number.isFinite(Date.parse(value)) &&
         (!index || Date.parse(value) > Date.parse(instants[index - 1])))) categories.forEach((item, index) => item.instant = instants[index]);
-    const filters = new Map(capture.rows.map((row, index) => [categories[index].id, chartFilters(grid, [{ column: category.id }], [raw(row, category.id) ?? null])]));
+    const filters = options.source === "pivot" ? new Map() : new Map(capture.rows.map((row, index) =>
+      [categories[index].id, chartFilters(grid, [{ column: category.id }], [raw(row, category.id) ?? null])]));
     return { categories, series: values.map(column => ({ id: column.id, name: column.title,
       values: capture.rows.map(row => { const value = raw(row, column.id); return typeof value === "number" ? value : null; }) })), filters,
       availableValues: numeric.map(column => ({ id: column.id, name: column.title })),
@@ -96,5 +101,8 @@
       data = chartRecords(grid, capture, options);
     }
     if (signal.aborted) throw new DOMException("Chart capture cancelled.", "AbortError");
+    data.categories = data.categories.map(item => ({ ...item, label: GRID_DATA_CHARTS.caption(item.label, grid.labels.gridGroupMissing) }));
+    data.series = data.series.map(item => ({ ...item, name: GRID_DATA_CHARTS.caption(item.name, item.id) }));
+    data.availableValues = data.availableValues.map(item => ({ ...item, name: GRID_DATA_CHARTS.caption(item.name, item.id) }));
     return data;
   };

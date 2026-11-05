@@ -1543,7 +1543,8 @@
       ],
       "features": [
         "grouping",
-        "detail"
+        "detail",
+        "charts"
       ],
       "key": "DataGrid.prototype",
       "context": [
@@ -1677,7 +1678,8 @@
       "requires": [
         "buckets",
         "filter-editor",
-        "chart-renderer"
+        "chart-renderer",
+        "link"
       ],
       "context": [
         "DataGrid",
@@ -1688,7 +1690,8 @@
         "gridButton",
         "cellValue",
         "cellText",
-        "reportingAggregateName"
+        "reportingAggregateName",
+        "GRID_DATA_CHARTS"
       ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.charts.source"
@@ -2005,7 +2008,8 @@
         "overlayTheme",
         "watchOverlayTheme",
         "GRID_BUCKETS",
-        "gridBucketDefinition"
+        "gridBucketDefinition",
+        "GRID_CHART_CELL_KINDS"
       ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",

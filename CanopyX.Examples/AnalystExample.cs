@@ -66,6 +66,22 @@ internal static class AnalystExample {
         WriteStatic(output, "analysis-pivot-static", settings => CanopyStaticHtml.RenderGridPivot(view, result, settings));
         CalculatedColumnExample.Write(output);
         BucketFilterExample.Write(output);
+        WriteChartOnly(output);
+    }
+
+    private static void WriteChartOnly(string output) {
+        var view = new CanopyDataGridView("chart-analysis", "Orders by region") {
+            Reporting = new CanopyGridReporting { Chartable = true }
+        };
+        view.Columns.Add(new CanopyColumn("region", "Region"));
+        view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number });
+        foreach (var item in new[] { (Id: "north", Amount: 12), (Id: "south", Amount: 8) }) {
+            var row = new CanopyGridRow(item.Id);
+            row.Cells["region"] = item.Id;
+            row.Cells["amount"] = item.Amount;
+            view.Rows.Add(row);
+        }
+        File.WriteAllText(Path.Combine(output, "analysis-charts.html"), view.ToHtmlPage(new CanopyHtmlOptions { Title = view.Label }));
     }
 
     internal static void WriteStatic(string output, string name, Func<CanopyStaticHtmlOptions, string> render) {

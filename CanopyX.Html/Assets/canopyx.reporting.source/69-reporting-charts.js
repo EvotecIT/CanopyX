@@ -1,7 +1,7 @@
   // Only the intent and action are eager. The renderer and capture adapter load on first use.
   const GRID_CHARTS = {};
   const CHART_PART = definePart(DataGrid, "charts", "chart analysis", () => ({ DataGrid, GRID_CHARTS, GRID_BUCKETS,
-    h, setText, gridButton, cellValue, cellText, reportingAggregateName }));
+    h, setText, gridButton, cellValue, cellText, reportingAggregateName, GRID_DATA_CHARTS }));
   const CHART_VALIDATE = GRID_REPORTING.validate, CHART_CHROME = DataGrid.prototype.buildGridChrome,
     CHART_API = GRID_REPORTING.api;
   GRID_REPORTING.validate = view => {

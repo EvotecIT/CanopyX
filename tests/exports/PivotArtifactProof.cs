@@ -30,6 +30,8 @@ internal static class PivotArtifactProof {
         var outline = sheet.GetFirstChild<SheetProperties>()?.OutlineProperties;
         Require(outline?.SummaryBelow?.Value == false && outline.SummaryRight?.Value == false,
             "Pivot summaries must precede their descendants on both axes.");
+        Require(columns.Length > 1 && columns.Skip(1).All(column => column.TryGetProperty("axisKey", out _)),
+            "Pivot contract must carry axis metadata for its value columns.");
         for (int column = 0; column < columns.Length; column++) {
             var metadata = columns[column];
             Require(ReadCell(rows[0], column) == metadata.GetProperty("title").GetString(), "Pivot header differs.");

@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
-import { repo } from "./support.mjs";
+import { repo, openExample } from "./support.mjs";
 import { definition, open, api } from "./grid-grouping-fixtures.mjs";
 import { serveGrid } from "./column-groups-support.mjs";
 
-async function chartPage(page, view, theme = "light") {
+async function chartPage(page, view, theme = "light", beforeOpen = async () => {}) {
   const errors = [], loads = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.route("**/canopyx-*.{js,css}", route => {
@@ -13,10 +13,23 @@ async function chartPage(page, view, theme = "light") {
     return route.fulfill({ contentType: name.endsWith(".js") ? "text/javascript" : "text/css",
       body: readFileSync(path.join(repo, "CanopyX.Html/Assets", name), "utf8") });
   });
+  await beforeOpen();
   view.reporting.chartable = true; delete view.reporting.detail;
   await open(page, view, "", theme);
   return { errors, loads };
 }
+
+test("a native self-contained chart-only page loads its parts and filters without network assets", async ({ page }) => {
+  const errors = [], requests = [];
+  page.on("pageerror", error => errors.push(error.message)); page.on("request", request => requests.push(request.url()));
+  await openExample(page, "analysis-charts.html");
+  await page.locator(".cx-chart-open").click();
+  await expect(page.locator(".cx-chart-canvas [data-cfx-category]")).toHaveCount(2);
+  await page.locator(".cx-chart-canvas [data-cfx-category]").first().click();
+  await expect(page.locator(".cx-chart-canvas [data-cfx-category]")).toHaveCount(1);
+  expect(requests.filter(url => !url.endsWith("analysis-charts.html"))).toEqual([]);
+  expect(errors).toEqual([]);
+});
 
 test("chart renderer loads only on first action and accepted groups filter both ways without losing the reader query", async ({ page }, info) => {
   const view = definition(), { errors, loads } = await chartPage(page, view);
@@ -36,11 +49,11 @@ test("chart renderer loads only on first action and accepted groups filter both 
   await page.getByLabel("Chart type", { exact: true }).selectOption("stacked");
   await expect(page.locator(".cx-chart-canvas svg")).toHaveAttribute("data-cfx-renderer", "stacked");
   expect(await page.locator(".cx-chart-dialog [data-hfx-part='body']").evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
-  await page.screenshot({ path: info.outputPath("group-chart-light.png") });
+  await page.screenshot({ path: info.outputPath("group-chart-light.png"), animations: "disabled" });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".cx-chart-dialog")).toHaveAttribute("data-phone", "true");
   expect(await page.locator(".cx-chart-dialog [data-hfx-part='body']").evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
-  await page.screenshot({ path: info.outputPath("group-chart-phone.png") });
+  await page.screenshot({ path: info.outputPath("group-chart-phone.png"), animations: "disabled" });
   await page.getByRole("button", { name: "Close complete text", exact: true }).click();
   await expect(page.locator(".cx-chart-analysis")).toHaveCount(0);
   expect(errors).toEqual([]);
@@ -70,7 +83,7 @@ test("pivot charts use accepted leaf values and linked row-axis predicates", asy
   await page.evaluate(api + ".openChart({source:'pivot'})");
   await expect(page.locator(".cx-chart-canvas [data-cfx-category]")).toHaveCount(12);
   await expect(page.locator(".cx-chart-canvas svg")).toHaveAttribute("data-cfx-renderer", "stacked");
-  await page.screenshot({ path: info.outputPath("pivot-chart-dark.png") });
+  await page.screenshot({ path: info.outputPath("pivot-chart-dark.png"), animations: "disabled" });
   await page.locator(".cx-chart-canvas [data-cfx-category]").first().click();
   await expect.poll(() => page.evaluate(api + ".getExternalFilters()[0]?.predicate.column")).toBe("region");
   await expect(page.locator(".cx-chart-canvas [data-cfx-category]")).toHaveCount(3);
@@ -118,7 +131,7 @@ test("optional chart cells keep raw values and release their drawings when rows 
     return rows;
   });
   expect(rows[0].cells.sparklineArea.value).toBe(3);
-  await page.screenshot({ path: info.outputPath("chart-cells-light.png") });
+  await page.screenshot({ path: info.outputPath("chart-cells-light.png"), animations: "disabled" });
   await page.evaluate(api + ".setQuery({..." + api + ".getQuery(),search:'SO-1000'})");
   await expect(page.locator(".cx-chart-cell svg")).toHaveCount(4);
   expect(errors).toEqual([]);
@@ -230,5 +243,72 @@ test("explicit pivot values retain semantic identity when filtering reorders exp
   await expect(page.locator(".cx-chart-status")).toContainText("No data");
   await picker.selectOption(await valueFor("C:"));
   await expect(mark).toHaveCount(1); await expect(mark).toHaveAttribute("aria-label", /C:.*R1: 20$/);
+  expect(errors).toEqual([]);
+});
+
+test("valid empty and long captions remain renderable", async ({ page }) => {
+  const view = definition(); view.reporting = {};
+  view.columns.find(column => column.id === "amount").title = "";
+  view.columns.find(column => column.id === "amount").presenter = { kind: "bullet", target: 2000 };
+  view.columns.find(column => column.id === "items").title = "Long title ".repeat(250);
+  view.columns.find(column => column.id === "items").presenter = { kind: "sparklineArea" };
+  view.rows = view.rows.slice(0, 4);
+  for (const row of view.rows) row.cells.items = { value: 3, text: "Full value ".repeat(250),
+    series: [{ period: "Long period ".repeat(250), value: 3 }, { period: "Next", value: 4 }] };
+  const { errors } = await chartPage(page, view);
+  await expect(page.locator("[data-canopyx-host] .cx-chart-cell svg")).toHaveCount(8);
+  expect(await page.locator(".cx-chart-cell svg").evaluateAll(nodes => nodes.every(node => node.getAttribute("aria-label").length <= 2000))).toBe(true);
+  await page.evaluate(api + ".openChart({source:'filtered',category:'order',values:['amount','items']})");
+  await expect(page.locator(".cx-chart-canvas svg")).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test("chart presenters keep facet choices readable as scalar text", async ({ page }) => {
+  const view = definition(); view.reporting = {}; view.rows = view.rows.slice(0, 4);
+  view.columns.find(column => column.id === "amount").presenter = { kind: "bullet", target: 2000 };
+  view.facets = { columns: [{ column: "amount", kind: "list", label: "Amount" }], open: true };
+  const { errors } = await chartPage(page, view);
+  await expect(page.locator("[data-canopyx-host] .cx-chart-cell svg")).toHaveCount(4);
+  await page.evaluate(api + ".setQuery({..." + api + ".getQuery(),search:'SO-100'})");
+  await expect(page.locator(".cx-facet-values .cx-chart-cell")).toHaveCount(0);
+  await expect(page.locator(".cx-facet-values")).toContainText(String(view.rows[0].cells.amount));
+  expect(errors).toEqual([]);
+});
+
+test("record-only chart presenters load before the first drawer paint", async ({ page }) => {
+  const view = definition(); view.reporting = {};
+  view.record = { fields: [{ id: "measure", title: "Record measure", kind: "number", presenter: { kind: "bullet", target: 10 } }] };
+  for (const row of view.rows) row.fields = { measure: 4 };
+  const { errors } = await chartPage(page, view);
+  await page.evaluate(api + ".openDetails('o000')");
+  await expect(page.locator(".cx-drawer dd[data-cx-field='measure'] svg")).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test("a failed chart-cell request recovers on the next native paint", async ({ page }) => {
+  const view = definition(); view.reporting = {};
+  view.rows = view.rows.slice(0, 4);
+  view.columns.find(column => column.id === "amount").presenter = { kind: "bullet", target: 2000 };
+  let requests = 0;
+  const { errors } = await chartPage(page, view, "light", () => page.route("**/canopyx-chart-cells.js", route => {
+    requests++; return requests === 1 ? route.abort("failed") : route.fallback();
+  }));
+  await page.evaluate(api + ".setSelection(['o000'])");
+  await expect(page.locator("[data-canopyx-host] .cx-chart-cell svg")).toHaveCount(4);
+  expect(requests).toBe(2); expect(errors).toEqual([]);
+});
+
+test("long pivot paths keep bounded drawing IDs and exact linked-filter values", async ({ page }) => {
+  const view = definition(), region = "Region ".repeat(350);
+  view.reporting.groupBy = []; view.reporting.pivotable = true;
+  view.rows = view.rows.slice(0, 2); view.rows[0].cells.region = region; view.rows[1].cells.region = "Short";
+  view.reporting.pivot = { rows: [{ column: "region", direction: "asc" }], columns: [{ column: "status", direction: "asc" }], values: ["total"] };
+  const { errors } = await chartPage(page, view);
+  await page.evaluate(api + ".openChart({source:'pivot'})");
+  const mark = page.locator(".cx-chart-canvas [data-cfx-category]").first();
+  await expect(mark).toHaveAttribute("data-cfx-category", /^k\d+$/);
+  await mark.click();
+  await expect.poll(() => page.evaluate(api + ".getExternalFilters()[0]?.predicate.values[0]")).toBe(region);
+  await expect(page.locator(".cx-chart-canvas [data-cfx-category]")).toHaveCount(1);
   expect(errors).toEqual([]);
 });

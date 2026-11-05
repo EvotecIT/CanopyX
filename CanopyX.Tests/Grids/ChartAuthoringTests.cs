@@ -22,6 +22,8 @@ public sealed class ChartAuthoringTests {
         Assert.Equal(6, parsed.RootElement.GetProperty("columns")[3].GetProperty("presenter").GetProperty("target").GetDouble());
         var parts = CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name).ToArray();
         Assert.Contains("charts", parts); Assert.Contains("chart-cells", parts); Assert.Contains("chart-renderer", parts);
+        Assert.Contains("detail-rows", parts);
+        Assert.Contains("link", parts);
         Assert.Single(parts, name => name == "chart-renderer");
     }
 

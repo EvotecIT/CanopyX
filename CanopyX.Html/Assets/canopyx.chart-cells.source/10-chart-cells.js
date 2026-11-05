@@ -16,12 +16,13 @@
   };
   GRID_CHART_CELLS.render = (grid, column, options, cell, element, text) => {
     const previous = grid.chartCellControllers?.get(element); previous?.destroy();
-    const points = options.kind === "bullet" ? [{ period: column.title, value: typeof cell === "number" ? cell : cell?.value }] : gridSeries(cell);
+    const title = GRID_DATA_CHARTS.caption(column.title, column.id);
+    const points = options.kind === "bullet" ? [{ period: title, value: typeof cell === "number" ? cell : cell?.value }] : gridSeries(cell);
     const data = { type: { sparklineArea: "area", sparklineColumns: "column", sparklineWinLoss: "win-loss", bullet: "bullet" }[options.kind],
-      label: column.title + ": " + text,
-      categories: points.map((point, index) => ({ id: String(index), label: point.period || String(index + 1) })),
-      series: [{ id: "value", name: column.title, values: points.map(point => typeof point.value === "number" ? point.value : null) }] };
-    if (options.kind === "bullet") data.series.push({ id: "target", name: grid.labels.gridChartBullet || column.title, values: [options.target] });
+      label: GRID_DATA_CHARTS.caption(title + ": " + text, title),
+      categories: points.map((point, index) => ({ id: String(index), label: GRID_DATA_CHARTS.caption(point.period, String(index + 1)) })),
+      series: [{ id: "value", name: GRID_DATA_CHARTS.caption(column.title, column.id), values: points.map(point => typeof point.value === "number" ? point.value : null) }] };
+    if (options.kind === "bullet") data.series.push({ id: "target", name: GRID_DATA_CHARTS.caption(grid.labels.gridChartBullet, column.id), values: [options.target] });
     if (!grid.chartCellControllers) {
       grid.chartCellControllers = new Map();
       grid.lifetime.signal.addEventListener("abort", () => { for (const controller of grid.chartCellControllers.values()) controller.destroy(); grid.chartCellControllers.clear(); }, { once: true });

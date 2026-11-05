@@ -81,7 +81,7 @@ test("default-width text date and number columns produce a complete PDF through 
     const grid = document.querySelector("[data-canopyx-host]").canopyx;
     const capture = grid.prepareExport({ scope: "filtered" }), rows = [];
     for await (const row of capture.rows()) rows.push(row);
-    const output = await grid.exportAs("pdf", { scope: "filtered", download: false });
+    const output = await grid.exportAs("pdf", { scope: "filtered", values: capture.request.values, download: false });
     return { request: capture.request, rows, bytes: [...new Uint8Array(await output.blob.arrayBuffer())] };
   });
   expect(result.request.columns.map(column => column.kind)).toEqual(["text", "text", "text", "text", "datetime", "number", "number"]);
