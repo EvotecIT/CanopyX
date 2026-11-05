@@ -12,7 +12,7 @@
     gridFacetCollapse: "Collapse {column}", gridFacetExpand: "Expand {column}", gridFacetInvalid: "Enter a valid value.", gridFacetReversed: "From must not be after To."
   }));
   const GRID_FACETS = definePart(DataGrid, "facets", "facet panel", () => ({ DataGrid, h, setText, fill, gridButton, gridIcon, gridQueryStart,
-    gridQueryRows, gridColumnProjection, gridScalar, gridOrder, gridKeyCompare, gridFacetKey, cellText, foldText, numberFormat, gridCellRenderer, gridFreeze, overlayTheme, watchOverlayTheme, GRID_BUCKETS, gridBucketDefinition }));
+    gridQueryRows, gridColumnProjection, gridScalar, gridOrder, gridKeyCompare, gridFacetKey, cellText, foldText, numberFormat, gridCellRenderer, gridFreeze, overlayTheme, watchOverlayTheme, GRID_BUCKETS, gridBucketDefinition, GRID_CHART_CELL_KINDS }));
   Object.assign(DataGrid.prototype, {
     loadFacets() { return this.facetLoad ||= Promise.resolve().then(async () => {
       if ((this.opts.facets?.columns || this.view.facets?.columns)?.some(facet => facet?.bucket)) await loadPart(BUCKETS_PART);

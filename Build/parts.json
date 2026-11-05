@@ -335,6 +335,8 @@
         "badgeElement",
         "GRID_HISTORY_KINDS",
         "GRID_HISTORY_IMPL",
+        "GRID_CHART_CELL_KINDS",
+        "GRID_CHART_CELLS",
         "RECORD_IMPL"
       ],
       "scripts": [
@@ -1541,7 +1543,8 @@
       ],
       "features": [
         "grouping",
-        "detail"
+        "detail",
+        "charts"
       ],
       "key": "DataGrid.prototype",
       "context": [
@@ -1607,6 +1610,94 @@
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.calculations.source/calculations.css"
+      ]
+    },
+    {
+      "name": "chart-renderer",
+      "label": "ChartForgeX renderer",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [],
+      "key": "GRID_DATA_CHARTS",
+      "context": [
+        "GRID_DATA_CHARTS"
+      ],
+      "scripts": [
+        "ThirdParty/ChartForgeX/cfx-renderer.js",
+        "CanopyX.Html/Assets/canopyx.chart-renderer.source/10-renderer.js"
+      ]
+    },
+    {
+      "name": "chart-cells",
+      "label": "chart cells",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "presenters": [
+        "sparklineArea",
+        "sparklineColumns",
+        "sparklineWinLoss",
+        "bullet"
+      ],
+      "key": "GRID_CHART_CELLS",
+      "requires": [
+        "chart-renderer"
+      ],
+      "context": [
+        "DataGrid",
+        "GRID_CHART_CELLS",
+        "GRID_DATA_CHARTS",
+        "gridSeries",
+        "h",
+        "setText"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.chart-cells.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.chart-cells.source/chart-cells.css"
+      ]
+    },
+    {
+      "name": "charts",
+      "label": "chart analysis",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "charts"
+      ],
+      "key": "GRID_CHARTS",
+      "requires": [
+        "buckets",
+        "filter-editor",
+        "chart-renderer",
+        "link"
+      ],
+      "context": [
+        "DataGrid",
+        "GRID_CHARTS",
+        "GRID_BUCKETS",
+        "h",
+        "setText",
+        "gridButton",
+        "cellValue",
+        "cellText",
+        "reportingAggregateName",
+        "GRID_DATA_CHARTS"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.charts.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.charts.source/charts.css"
       ]
     },
     {
@@ -1917,7 +2008,8 @@
         "overlayTheme",
         "watchOverlayTheme",
         "GRID_BUCKETS",
-        "gridBucketDefinition"
+        "gridBucketDefinition",
+        "GRID_CHART_CELL_KINDS"
       ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/65-grid-column-clauses.js",
