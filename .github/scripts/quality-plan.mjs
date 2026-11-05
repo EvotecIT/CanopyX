@@ -15,7 +15,23 @@ export function requiresBuild(event, paths) {
     !(file.startsWith("Website/") || file.startsWith("docs/") || file.endsWith(".md")));
 }
 
-export function qualityMatrix(event) {
+// Shared build inputs and the browser runtime keep the complete PR engine set. Other code changes keep the .NET suites
+// and Chromium browser coverage on Linux and Windows (visual baselines, .NET Framework and packing).
+export function requiresAllEngines(event, paths) {
+  if (event !== "pull_request" || paths.length === 0) return true;
+  return paths.some(file => file.startsWith(".github/") || file.startsWith("Build/") || file.startsWith("JavaScript/") ||
+    file.startsWith("CanopyX.Html/Assets/") || file.startsWith("tests/browser/") || file.startsWith("tests/BrowserInstall/") ||
+    /(^|\/)(Directory\.Build\.[^/]+|global\.json|package(-lock)?\.json|NuGet\.config|[^/]+\.sln)$/i.test(file) ||
+    file === "Build.ps1");
+}
+
+// Pushes to main and manual runs keep every OS and engine with their existing shards. PRs split long browser suites into
+// parallel shards so the slowest lane stays near half an hour.
+const fullShards = { "Windows/firefox": 2, "macOS/webkit": 2 };
+const prShards = { "Linux/chromium": 2, "Linux/firefox": 2, "Linux/webkit": 2, "Windows/chromium": 2, "macOS/webkit": 3 };
+
+export function qualityMatrix(event, allEngines = true) {
+  const pr = event === "pull_request";
   const include = [];
   for (const platform of [
     { name: "Linux", runner: "ubuntu-24.04" },
@@ -23,14 +39,14 @@ export function qualityMatrix(event) {
     { name: "macOS", runner: "macos-15" }
   ]) {
     for (const engine of ["chromium", "firefox", "webkit"]) {
-      if (event === "pull_request" && platform.name !== "Linux" &&
-          engine !== (platform.name === "Windows" ? "chromium" : "webkit")) continue;
-      // Keep the existing full-matrix shards. Three workers let PR WebKit run in one macOS job.
-      const sharded = event !== "pull_request" &&
-        ((platform.name === "Windows" && engine === "firefox") ||
-         (platform.name === "macOS" && engine === "webkit"));
-      for (const shard of sharded ? [1, 2] : [null]) {
-        include.push({ platform, engine, ...(shard ? { shard } : {}) });
+      const key = `${platform.name}/${engine}`;
+      if (pr && !(key in prShards)) continue;
+      if (pr && !allEngines && engine !== "chromium") continue;
+      const shards = (pr ? prShards : fullShards)[key] || 0;
+      for (const shard of shards ? Array.from({ length: shards }, (_, index) => index + 1) : [null]) {
+        // One Chromium job per platform packs and uploads the packages and example pages.
+        const pack = engine === "chromium" && (shard ?? 1) === 1;
+        include.push({ platform, engine, pack, ...(shard ? { shard, shards } : {}) });
       }
     }
   }
@@ -47,7 +63,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const event = process.env.GITHUB_EVENT_NAME;
   const paths = event === "pull_request" ? changedPaths(process.env.BASE_SHA, process.env.HEAD_SHA) : [];
   const build = requiresBuild(event, paths);
+  const allEngines = requiresAllEngines(event, paths);
   appendFileSync(process.env.GITHUB_OUTPUT,
-    `build=${build}\nmatrix=${JSON.stringify(qualityMatrix(event))}\n`);
-  console.log(build ? "Build and browser coverage required." : "Only Website, documentation or Markdown changed; matrix skipped.");
+    `build=${build}\nmatrix=${JSON.stringify(qualityMatrix(event, allEngines))}\n`);
+  console.log(!build ? "Only Website, documentation or Markdown changed; matrix skipped." :
+    allEngines ? "Build and every selected browser engine required." : "Library code changed; Chromium on Linux and Windows required.");
 }

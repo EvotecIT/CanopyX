@@ -62,10 +62,11 @@ jobs:
           if ($env:MATRIX_RESULT -ne 'success') { throw "The browser/platform matrix did not pass: $env:MATRIX_RESULT" }
 
   build-test-pack:
-    # PRs cover all Linux engines, Windows Chromium and macOS WebKit; main pushes and manual runs keep the full matrix.
-    # The Chromium job of each selected platform
-    # also packs; the Windows Chromium job also checks the visual baselines (tests/browser/playwright.config.mjs).
-    name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }}${{ matrix.shard && format(', shard {0}/2', matrix.shard) || '' }})
+    # Main pushes and manual runs keep the full matrix. PRs that touch the browser runtime or shared build inputs cover
+    # all Linux engines, Windows Chromium and macOS WebKit; other code PRs cover Chromium on Linux and Windows
+    # (.github/scripts/quality-plan.mjs). The first Chromium job of each selected platform also packs; the Windows
+    # Chromium jobs also check the visual baselines (tests/browser/playwright.config.mjs).
+    name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }}${{ matrix.shard && format(', shard {0}/{1}', matrix.shard, matrix.shards) || '' }})
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 135
     needs: changes
@@ -78,7 +79,8 @@ jobs:
       DOTNET_NOLOGO: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
       CANOPYX_TEST_BROWSERS: ${{ matrix.engine }}
-      CANOPYX_TEST_SHARD: ${{ matrix.shard && format('{0}/2', matrix.shard) || '' }}
+      CANOPYX_TEST_SHARD: ${{ matrix.shard && format('{0}/{1}', matrix.shard, matrix.shards) || '' }}
+      CANOPYX_PACK: ${{ matrix.pack && '1' || '0' }}
       CANOPYX_TEST_WORKERS: "3"
       CANOPYX_BENCHMARKS: "0"
     steps:
@@ -117,14 +119,14 @@ jobs:
           # Keep the existing deadline to catch a stalled suite.
           # Performance measurements run only by explicit opt-in.
           $seconds = 7200
-          if ($env:CANOPYX_TEST_BROWSERS -eq 'chromium') {
+          if ($env:CANOPYX_PACK -eq '1') {
             ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds $seconds
           } else {
             ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds $seconds -SkipPack
           }
 
       - name: Upload packages
-        if: matrix.engine == 'chromium'
+        if: matrix.pack
         uses: actions/upload-artifact@v7
         with:
           name: canopyx-packages-${{ matrix.platform.name }}
@@ -134,7 +136,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload example pages
-        if: always() && matrix.engine == 'chromium'
+        if: always() && matrix.pack
         uses: actions/upload-artifact@v7
         with:
           name: canopyx-examples-${{ matrix.platform.name }}
