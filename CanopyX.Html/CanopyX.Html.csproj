@@ -43,6 +43,7 @@
   <ItemGroup>
     <None Include="..\README.nuget.md" Pack="true" PackagePath="README.md" />
     <None Include="..\ThirdParty\OfficeIMO\LICENSE" Pack="true" PackagePath="licenses\OfficeIMO.txt" />
+    <None Include="..\ThirdParty\ChartForgeX\LICENSE" Pack="true" PackagePath="licenses\ChartForgeX.txt" />
   </ItemGroup>
 
   <ItemGroup>

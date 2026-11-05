@@ -190,6 +190,8 @@ export type GridPresenter =
   | { readonly kind: "change"; readonly beforeAfter: true }
   | { readonly kind: "statusStrip" | "missing" }
   | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
+  | { readonly kind: "sparklineArea" | "sparklineColumns" | "sparklineWinLoss" }
+  | { readonly kind: "bullet"; readonly target: number }
   | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean }
   | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 }
   /** A structured value's summary: a count (countText with {count}), chips (limit) or the first item and +N. The record panel shows it whole. */
@@ -224,6 +226,8 @@ export interface GridReporting {
   readonly pivot?: GridPivotDefinition;
   /** Readers can configure pivots over declared sortable/filterable fields and aggregates. */
   readonly pivotable?: boolean;
+  /** Load the optional ChartForgeX renderer when readers first chart accepted data. */
+  readonly chartable?: boolean;
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
   readonly grouping?: GridSort & { readonly headerTemplate?: string };
   /** Initial runtime grouping levels, outermost first (at most four). Not combined with grouping. */
@@ -1073,6 +1077,8 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   exportToHost(format: string, options: GridExportOptions & { timeoutMs?: number }): Promise<void>;
   /** Captures now (invalid capture options throw synchronously), then runs a registered or configured export format (the same writers the Export menu lists) and downloads its file. */
   exportAs(format: string, options: Omit<GridExportOptions, "onProgress" | "maxRows"> & ExportFormatOptions): Promise<ExportFormatResult>;
+  /** Reporting runtime only, with reporting.chartable. Opens the chart dialog over accepted data and loads the optional renderer on first use. */
+  openChart?(options?: GridChartOptions): Promise<void>;
   /** Reporting runtime only. Complete bounded record snapshot; default maxRows is 1000, never silently truncates. */
   materializeExport?(options: GridExportOptions): Promise<GridExportSnapshot<Q>>;
   /** Prints a bounded complete static snapshot, or passes it to onPrint. Default maxRows is 1000; never prints viewport DOM. */
@@ -1131,3 +1137,13 @@ export { createDiff, createChangeList, createPropagation } from "./changes.js";
 export type { ChangeNote, DiffHunk, DiffBody, DiffDocument, DiffOptions, DiffApi, ChangeVersion, ChangeItem, ChangeAction, ChangeListDocument, ChangeListState, ChangeActionDetail, ChangeExportDetail, ChangeListOptions, ChangeListApi, PropagationState, PropagationDocument, PropagationOptions, PropagationApi } from "./changes.js";
 declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; createDiff: typeof createDiff; createChangeList: typeof createChangeList; createPropagation: typeof createPropagation; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;
+
+/** Chart analysis reads accepted data through the normal grid capture contracts. */
+export interface GridChartOptions {
+  source?: "filtered" | "selected" | "range" | "groups" | "pivot";
+  type?: "line" | "area" | "bar" | "column" | "stacked" | "win-loss" | "bullet";
+  category?: string;
+  values?: readonly string[];
+  /** An accepted group key whose children become chart categories. */
+  group?: string;
+}

@@ -1,4 +1,4 @@
-  DataGrid.prototype.showReportingText=function(column,text,returnFocus,rowId,mono=false,extra){
+  DataGrid.prototype.showReportingText=function(column,text,returnFocus,rowId,mono=false,extra,signal=this.dataLifetime.signal){
     if(this.destroyed||this.pendingQuery||!this.acceptedQuery)return;
     this.reportingText?._cxOverlay.close("replace",false,true);
     const dialog=h("dialog","cx-host cx-grid-overlay cx-dialog cx-text-dialog cx-reporting-text"),head=h("div","cx-drawer-h"),title=h("h4"),body=h("div"),content=h("pre",mono?"p-mono":"");
@@ -14,7 +14,7 @@
       const apply=extra.querySelector('[type="submit"]');apply.setAttribute("form",extra.id);footer.append(cancel,apply);dialog.append(footer);
     }document.body.appendChild(dialog);this.reportingText=dialog;
     const lifetime=new AbortController(),overlay=dialog._cxOverlay=UI_IMPL.dialog(dialog,{host:this.host,container:this.host,focus:false},lifetime.signal);
-    const signal=this.dataLifetime.signal,abort=()=>overlay.close("data",false,true);signal.addEventListener("abort",abort,{once:true});
+    const abort=()=>overlay.close("data",false,true);signal.addEventListener("abort",abort,{once:true});
     dialog.addEventListener("close",()=>{lifetime.abort();signal.removeEventListener("abort",abort);dialog.remove();if(this.reportingText===dialog)this.reportingText=null;
       if(!this.reportingText&&!signal.aborted)gridRestoreFocus(this,returnFocus,rowId,column);},{once:true});
     overlay.open();(extra?.querySelector("button,select,input,textarea")||content).focus();

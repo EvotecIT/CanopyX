@@ -4,11 +4,13 @@
   }));
   const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
-    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "identifier", "tags", "missing", "structured"];
+    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "sparklineArea", "sparklineColumns", "sparklineWinLoss", "bullet", "identifier", "tags", "missing", "structured"];
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
     if (!options || typeof options !== "object" || Array.isArray(options) || !kinds.includes(options.kind)) invalid();
     if ((options.kind==="progress" || options.kind==="change" && !options.beforeAfter) && column.kind!=="number" ||
         ["boolean","list","tags","link"].includes(options.kind) && column.kind!=="text") invalid();
+    if (["sparklineArea","sparklineColumns","sparklineWinLoss","bullet"].includes(options.kind) && column.kind !== "number" ||
+        options.kind === "bullet" && (typeof options.target !== "number" || !Number.isFinite(options.target) || Math.abs(options.target) > Number.MAX_SAFE_INTEGER)) invalid();
     for (const name of ["newWindow","inverted","mono","higherIsGood","beforeAfter"]) if (options[name]!==undefined && typeof options[name]!=="boolean") invalid();
     for (const name of ["hrefColumn","deltaColumn","secondaryColumn"]) if (options[name]!==undefined) {
       const target=columns.find(item=>item.id===options[name]);

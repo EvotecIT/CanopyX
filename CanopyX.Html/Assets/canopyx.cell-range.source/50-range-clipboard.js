@@ -67,18 +67,29 @@
     return loaded;
   }
   /** The rows of the blocks by position, loading the pages that are not in the cache first. */
-  async function crLoad(grid, blocks) {
+  async function crLoad(grid, blocks, signal) {
     const rows = crRows(grid), epoch = grid.queryEpoch, loaded = new Map();
     crCount(blocks);
     for (const block of blocks) for (const position of block.rows) {
+      if (signal?.aborted) throw new DOMException("Range capture cancelled.", "AbortError");
       let row = rows.rowItem(position);
-      if (row?.status === "loading") row = await grid.waitForRow(row._ri, epoch);
+      if (row?.status === "loading") row = await grid.waitForRow(row._ri, epoch, signal);
       if (row?.status === "error") crBad("a row of the range could not be loaded");
       if (row && !row.status) loaded.set(position, row);
     }
     if (epoch !== grid.queryEpoch) throw new DOMException("The ranges changed while their rows loaded.", "AbortError");
+    if (signal?.aborted) throw new DOMException("Range capture cancelled.", "AbortError");
     return loaded;
   }
+  // Charting and clipboard capture share the range owner's projection and page loading.
+  DataGrid.prototype.captureChartRange = async function (signal) {
+    const blocks = crBlocks(this, this.cellRanges.map(range => crRect(this, range)).filter(Boolean));
+    if (!blocks.length) throw new Error("CanopyX: select a cell range before charting it.");
+    if (blocks.length !== 1) throw new Error("CanopyX: chart ranges need the same column span.");
+    const rows = await crLoad(this, blocks, signal), block = blocks[0];
+    return { columns: this.cols.slice(block.left, block.right + 1),
+      rows: [...rows.values()].map(row => ({ id: row.key, cells: row.h.cells })) };
+  };
   /** The header lines of a block: group rows (with column groups) and the column titles. */
   function crHeaders(grid, columns) {
     const lines = [], model = grid.columnGroupModel, paths = model?.roots.length ? columns.map(column => cgPathOf(model, column.id)) : [];

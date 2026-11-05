@@ -138,7 +138,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "d5f9d61bb730974b",
+      "version": "636e0c76ce4fa35d",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -153,7 +153,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "b760f978327dbab0",
+      "version": "197facbac4d1e52a",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -170,7 +170,7 @@
     {
       "name": "export",
       "label": "export part",
-      "version": "15abf3205094bda6",
+      "version": "172c4f8b623b47c2",
       "script": "canopyx-export.js",
       "runtimes": [
         "tree",
@@ -187,7 +187,7 @@
     {
       "name": "office-export",
       "label": "Office export writers",
-      "version": "4fb7a4d570390ee9",
+      "version": "c3c0ccc72f258ab9",
       "script": "canopyx-office-export.js",
       "runtimes": [
         "tree",
@@ -642,7 +642,7 @@
     {
       "name": "cell-range",
       "label": "cell ranges",
-      "version": "cb29468954702795",
+      "version": "5baf5b48e6ad6890",
       "script": "canopyx-cell-range.js",
       "style": "canopyx-cell-range.css",
       "runtimes": [
@@ -727,7 +727,7 @@
     {
       "name": "link",
       "label": "linked views",
-      "version": "7485f5c9875e9f9b",
+      "version": "9f30ab1b4440b15f",
       "script": "canopyx-link.js",
       "style": "canopyx-link.css",
       "runtimes": [
@@ -750,7 +750,8 @@
       ],
       "features": [
         "grouping",
-        "detail"
+        "detail",
+        "charts"
       ]
     },
     {
@@ -767,6 +768,60 @@
       ],
       "features": [
         "calculations"
+      ]
+    },
+    {
+      "name": "chart-renderer",
+      "label": "ChartForgeX renderer",
+      "version": "bbc9e4de9df8fe70",
+      "script": "canopyx-chart-renderer.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": []
+    },
+    {
+      "name": "chart-cells",
+      "label": "chart cells",
+      "version": "8bd20a3ce3496c90",
+      "script": "canopyx-chart-cells.js",
+      "style": "canopyx-chart-cells.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "presenters": [
+        "sparklineArea",
+        "sparklineColumns",
+        "sparklineWinLoss",
+        "bullet"
+      ],
+      "requires": [
+        "chart-renderer"
+      ]
+    },
+    {
+      "name": "charts",
+      "label": "chart analysis",
+      "version": "a50b7dd51a5dab82",
+      "script": "canopyx-charts.js",
+      "style": "canopyx-charts.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "charts"
+      ],
+      "requires": [
+        "buckets",
+        "filter-editor",
+        "chart-renderer",
+        "link"
       ]
     },
     {
@@ -879,7 +934,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "e78c2340a96fa802",
+      "version": "9502ac7664410602",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [

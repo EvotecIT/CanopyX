@@ -92,7 +92,7 @@
   function facetValueText(grid, facet, value, element) {
     if (facet.bucket) { const text = GRID_BUCKETS.label(facet.bucket, value, grid.lang); setText(element, text); return text; }
     const column = facet.def, options = column.presenter, text = cellText(value, column, grid.fmt) || String(value);
-    if (options && !["statusStrip", "sparklineBars", "sparklineLine", "change", "identifier", "longText", "list", "tags", "structured"].includes(options.kind)) {
+    if (options && !GRID_CHART_CELL_KINDS.includes(options.kind) && !["statusStrip", "sparklineBars", "sparklineLine", "change", "identifier", "longText", "list", "tags", "structured"].includes(options.kind)) {
       try { gridCellRenderer(grid, column, options)({ id: "facet", cells: { [column.id]: value } }, element); return text; } catch (_) { element.replaceChildren(); }
     }
     setText(element, text);

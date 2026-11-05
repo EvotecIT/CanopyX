@@ -8,7 +8,8 @@ internal static class AnalystExample {
     internal static void Write(string output) {
         var month = CanopyBucket.Calendar(CanopyBucketKind.Month);
         var view = new CanopyDataGridView("analysis", "Records by month") {
-            Reporting = new CanopyGridReporting { Groupable = true, HeaderFilters = true, Responsive = true },
+            Reporting = new CanopyGridReporting { Groupable = true, HeaderFilters = true, Responsive = true, Chartable = true },
+            RangeSelection = new CanopyGridRangeSelection(), ExportFormats = CanopyExportFormats.Office(),
             Presentation = CanopyGridPresentation.Paged, PageLength = 20, Selection = CanopySelectionMode.Multiple,
             FacetPanel = new CanopyFacetPanel { Position = CanopyFacetPosition.Top }
         };
@@ -65,6 +66,22 @@ internal static class AnalystExample {
         WriteStatic(output, "analysis-pivot-static", settings => CanopyStaticHtml.RenderGridPivot(view, result, settings));
         CalculatedColumnExample.Write(output);
         BucketFilterExample.Write(output);
+        WriteChartOnly(output);
+    }
+
+    private static void WriteChartOnly(string output) {
+        var view = new CanopyDataGridView("chart-analysis", "Orders by region") {
+            Reporting = new CanopyGridReporting { Chartable = true }
+        };
+        view.Columns.Add(new CanopyColumn("region", "Region"));
+        view.Columns.Add(new CanopyColumn("amount", "Amount") { Kind = CanopyColumnKind.Number });
+        foreach (var item in new[] { (Id: "north", Amount: 12), (Id: "south", Amount: 8) }) {
+            var row = new CanopyGridRow(item.Id);
+            row.Cells["region"] = item.Id;
+            row.Cells["amount"] = item.Amount;
+            view.Rows.Add(row);
+        }
+        File.WriteAllText(Path.Combine(output, "analysis-charts.html"), view.ToHtmlPage(new CanopyHtmlOptions { Title = view.Label }));
     }
 
     internal static void WriteStatic(string output, string name, Func<CanopyStaticHtmlOptions, string> render) {
