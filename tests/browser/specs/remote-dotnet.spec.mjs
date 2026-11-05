@@ -15,7 +15,8 @@ const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const rows = 20000;
 let server, base, folder;
 
-test.describe.configure({ mode: "serial" });
+// A cold Windows WebKit grid can spend almost a minute becoming ready before the real query assertions run.
+test.describe.configure({ mode: "serial", timeout: 90000 });
 
 test.beforeAll(async () => {
   test.skip(!sample, "The fleet sample is not built: " + candidates.join(", "));
