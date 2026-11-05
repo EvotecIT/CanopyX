@@ -25,8 +25,10 @@ window.menu = CanopyX.menu(document.querySelector('#actions'), { onSelect: item 
 } });`;
 
 async function stopClock(page) {
-  await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
-  await page.clock.pauseAt(new Date('2026-10-23T12:00:01Z'));
+  const start = new Date('2026-10-23T12:00:00Z');
+  await page.clock.install({ time: start });
+  // Browser IPC can outlast one second; pause before the test budget can expire.
+  await page.clock.pauseAt(new Date(start.getTime() + test.info().timeout));
 }
 
 test('menu trigger keys, wrapping, disabled focus and typeahead follow APG', async ({ page }) => {

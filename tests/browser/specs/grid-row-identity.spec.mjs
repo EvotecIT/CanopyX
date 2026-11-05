@@ -41,8 +41,9 @@ test("numeric keys written in identity order load as ordered row data, and older
 for (const pending of ["page", "query", "page timeout", "query timeout"]) test("legacy row order replaces cached prefixes and retires a pending " + pending, async ({ page }) => {
   const timeout = pending.endsWith("timeout");
   if (timeout) {
-    await page.clock.install({ time: new Date("2026-10-31T00:00:00Z") });
-    await page.clock.pauseAt(new Date("2026-10-31T00:00:01Z"));
+    const start = new Date("2026-10-31T00:00:00Z");
+    await page.clock.install({ time: start });
+    await page.clock.pauseAt(new Date(start.getTime() + test.info().timeout));
   }
   // Advance the controlled clock only until the observable request/layout condition settles.
   const until = predicate => expect.poll(async () => {
