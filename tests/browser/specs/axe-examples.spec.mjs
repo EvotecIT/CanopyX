@@ -28,6 +28,9 @@ function pages() {
   return found.sort();
 }
 
+// Each page is scanned in its own browser contexts, so the pages can run on any worker or shard.
+test.describe.configure({ mode: "parallel" });
+
 const all = pages();
 for (const name of all) {
   const twin = name.endsWith("-dark.html") || all.includes(name.replace(/\.html$/, "-dark.html"));
