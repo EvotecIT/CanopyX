@@ -118,9 +118,10 @@ jobs:
         id: apt
         if: runner.os == 'Linux'
         run: |
+          # The runner image's zz-retries file sets one retry; a later file name wins.
           mkdir -p "$HOME/apt-archives/partial"
           printf '%s\n' "Dir::Cache::Archives \"$HOME/apt-archives/\";" 'APT::Keep-Downloaded-Packages "true";' \
-            'Acquire::Retries "5";' 'Acquire::http::Timeout "15";' | sudo tee /etc/apt/apt.conf.d/99-canopyx-ci
+            'Acquire::Retries "5";' 'Acquire::http::Timeout "15";' | sudo tee /etc/apt/apt.conf.d/zzz-canopyx-ci
           echo "image=$ImageOS-$ImageVersion" >> "$GITHUB_OUTPUT"
 
       - name: Restore browser apt packages
