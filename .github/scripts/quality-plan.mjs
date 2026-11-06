@@ -25,10 +25,16 @@ export function requiresAllEngines(event, paths) {
     file === "Build.ps1");
 }
 
-// Pushes to main and manual runs keep every OS and engine with their existing shards. PRs split long browser suites into
-// parallel shards so the slowest lane stays near half an hour.
-const fullShards = { "Windows/firefox": 2, "macOS/webkit": 2 };
-const prShards = { "Linux/chromium": 2, "Linux/firefox": 2, "Linux/webkit": 2, "Windows/chromium": 2, "macOS/webkit": 3 };
+// Pushes to main and manual runs cover every OS and engine; PRs cover the lanes selected above. Each lane runs in
+// enough deterministic shards (tests/browser/tools/shards.mjs) to keep its browser tests near a quarter of an hour on
+// three workers. The first job of each platform also runs the .NET suites and the engine-independent checks; the first
+// Chromium job of each platform packs.
+const shards = {
+  "Linux/chromium": 2, "Linux/firefox": 3, "Linux/webkit": 3,
+  "Windows/chromium": 3, "Windows/firefox": 4, "Windows/webkit": 3,
+  "macOS/chromium": 2, "macOS/firefox": 3, "macOS/webkit": 4
+};
+const prLanes = new Set(["Linux/chromium", "Linux/firefox", "Linux/webkit", "Windows/chromium", "macOS/webkit"]);
 
 export function qualityMatrix(event, allEngines = true) {
   const pr = event === "pull_request";
@@ -40,13 +46,11 @@ export function qualityMatrix(event, allEngines = true) {
   ]) {
     for (const engine of ["chromium", "firefox", "webkit"]) {
       const key = `${platform.name}/${engine}`;
-      if (pr && !(key in prShards)) continue;
-      if (pr && !allEngines && engine !== "chromium") continue;
-      const shards = (pr ? prShards : fullShards)[key] || 0;
-      for (const shard of shards ? Array.from({ length: shards }, (_, index) => index + 1) : [null]) {
-        // One Chromium job per platform packs and uploads the packages and example pages.
-        const pack = engine === "chromium" && (shard ?? 1) === 1;
-        include.push({ platform, engine, pack, ...(shard ? { shard, shards } : {}) });
+      if (pr && (!prLanes.has(key) || (!allEngines && engine !== "chromium"))) continue;
+      for (let shard = 1; shard <= shards[key]; shard++) {
+        const suites = !include.some(job => job.platform.name === platform.name);
+        const pack = engine === "chromium" && shard === 1;
+        include.push({ platform, engine, shard, shards: shards[key], suites, pack });
       }
     }
   }

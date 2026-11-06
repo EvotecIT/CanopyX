@@ -25,38 +25,36 @@ test("shipped package READMEs and images require pack and archive validation", (
   }
 });
 
-test("browser runtime and shared build inputs keep every PR engine, sharded, with one packing job per platform", () => {
+const lanes = jobs => [...new Set(jobs.map(job => `${job.platform.name}/${job.engine}/${job.shards}`))];
+const shardsOf = (jobs, lane) => jobs.filter(job => `${job.platform.name}/${job.engine}` === lane).map(job => job.shard);
+const firstJobs = (jobs, flag) => jobs.filter(job => job[flag]).map(job => `${job.platform.name}/${job.engine}/${job.shard}`);
+
+test("browser runtime and shared build inputs keep every PR engine, with the .NET suites and packing once per platform", () => {
   for (const file of ["CanopyX.Html/Assets/canopyx.source/10-core.js", "tests/browser/specs/grid.spec.mjs", "JavaScript/index.d.ts",
     ".github/workflows/quality.yml", "Directory.Build.props", "tests/browser/package-lock.json", "Build.ps1", "Build/Sync-Assets.ps1"]) {
     assert.equal(requiresAllEngines("pull_request", ["CanopyX/Node.cs", file]), true, file);
   }
   const jobs = qualityMatrix("pull_request", true).include;
-  const lanes = jobs.map(job => `${job.platform.name}/${job.engine}/${job.shard}/${job.shards}`);
-  assert.deepEqual(lanes, ["Linux/chromium/1/2", "Linux/chromium/2/2", "Linux/firefox/1/2", "Linux/firefox/2/2",
-    "Linux/webkit/1/2", "Linux/webkit/2/2", "Windows/chromium/1/2", "Windows/chromium/2/2",
-    "macOS/webkit/1/3", "macOS/webkit/2/3", "macOS/webkit/3/3"]);
-  assert.deepEqual(jobs.filter(job => job.pack).map(job => `${job.platform.name}/${job.shard}`), ["Linux/1", "Windows/1"]);
+  assert.deepEqual(lanes(jobs), ["Linux/chromium/2", "Linux/firefox/3", "Linux/webkit/3", "Windows/chromium/3", "macOS/webkit/4"]);
+  assert.deepEqual(shardsOf(jobs, "macOS/webkit"), [1, 2, 3, 4]);
+  assert.deepEqual(firstJobs(jobs, "suites"), ["Linux/chromium/1", "Windows/chromium/1", "macOS/webkit/1"]);
+  assert.deepEqual(firstJobs(jobs, "pack"), ["Linux/chromium/1", "Windows/chromium/1"]);
 });
 
 test("other code PRs keep Chromium on Linux and Windows", () => {
   assert.equal(requiresAllEngines("pull_request", ["CanopyX/Node.cs", "CanopyX.Data/Query.cs", "docs/testing.md"]), false);
   const jobs = qualityMatrix("pull_request", false).include;
-  assert.deepEqual(jobs.map(job => `${job.platform.name}/${job.engine}/${job.shard}`),
-    ["Linux/chromium/1", "Linux/chromium/2", "Windows/chromium/1", "Windows/chromium/2"]);
+  assert.deepEqual(lanes(jobs), ["Linux/chromium/2", "Windows/chromium/3"]);
+  assert.deepEqual(firstJobs(jobs, "suites"), ["Linux/chromium/1", "Windows/chromium/1"]);
 });
 
-test("main pushes and manual coverage keep every OS and engine and the existing two shard pairs", () => {
+test("main pushes and manual coverage keep every OS and engine, with the .NET suites and packing once per platform", () => {
   for (const event of ["push", "workflow_dispatch"]) {
     const jobs = qualityMatrix(event).include;
-    assert.equal(jobs.length, 11, event);
-    for (const platform of ["Linux", "Windows", "macOS"]) {
-      assert.equal(jobs.filter(job => job.platform.name === platform && job.pack).length, 1, `${event}/${platform} pack`);
-      for (const engine of ["chromium", "firefox", "webkit"]) {
-        const shards = jobs.filter(job => job.platform.name === platform && job.engine === engine).map(job => job.shard);
-        assert.deepEqual(shards, (platform === "Windows" && engine === "firefox") ||
-          (platform === "macOS" && engine === "webkit") ? [1, 2] : [undefined], `${event}/${platform}/${engine}`);
-      }
-    }
+    assert.deepEqual(lanes(jobs), ["Linux/chromium/2", "Linux/firefox/3", "Linux/webkit/3", "Windows/chromium/3", "Windows/firefox/4",
+      "Windows/webkit/3", "macOS/chromium/2", "macOS/firefox/3", "macOS/webkit/4"], event);
+    assert.deepEqual(firstJobs(jobs, "suites"), ["Linux/chromium/1", "Windows/chromium/1", "macOS/chromium/1"], event);
+    assert.deepEqual(firstJobs(jobs, "pack"), ["Linux/chromium/1", "Windows/chromium/1", "macOS/chromium/1"], event);
   }
 });
 
