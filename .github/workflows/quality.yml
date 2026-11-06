@@ -111,16 +111,40 @@ jobs:
           # The small test dependency set does not need a restored npm cache.
           package-manager-cache: false
 
-      # The install normally takes under a minute; a stalled download or apt step fails here instead of at the job deadline.
+      # Linux installs the browser's OS packages through apt. The Azure mirror sometimes stalls a download for most of an
+      # hour (8.5, 15, 31 and 52 minutes in recent runs); drop idle connections quickly and retry them.
+      - name: Make apt downloads fail fast and retry
+        if: runner.os == 'Linux'
+        run: |
+          printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "15";' 'Acquire::https::Timeout "15";' \
+            'Acquire::http::Pipeline-Depth "0";' | sudo tee /etc/apt/apt.conf.d/99-canopyx-ci
+
+      # The install normally takes about a minute. A stalled attempt stops and the next step tries once more.
       - name: Install browser test dependencies
-        timeout-minutes: 10
+        id: browser-install
+        timeout-minutes: 6
+        continue-on-error: true
         working-directory: tests/browser
         shell: pwsh
-        env:
+        env: &browser-install-env
           PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "120000"
           # Hosted Linux jobs are non-root; let HtmlTinkerX install the selected browser's OS prerequisites.
           HTMLTINKERX_PLAYWRIGHT_WITH_DEPS: "1"
         run: |
+          npm ci --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- $env:CANOPYX_TEST_BROWSERS
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Retry browser test dependencies
+        if: steps.browser-install.outcome == 'failure'
+        timeout-minutes: 15
+        working-directory: tests/browser
+        shell: pwsh
+        env: *browser-install-env
+        run: |
+          # An interrupted apt run can leave packages unconfigured.
+          if ($IsLinux) { sudo dpkg --configure -a }
           npm ci --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- $env:CANOPYX_TEST_BROWSERS
