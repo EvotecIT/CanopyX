@@ -268,7 +268,7 @@ test('shared phone picker keeps badges and radios and delegates selection to its
     <section id="panel-c" role="tabpanel" aria-labelledby="tab-c">Locked content</section></div>`;
   await openUi(page, tabs);
   const picker = page.locator('.cx-tabs-phone-picker');
-  await expect(picker).toBeVisible(); await expect(picker).toHaveAttribute('data-hfx-part', 'picker');
+  await expect(picker).toBeVisible(); await expect(picker).toHaveAttribute('data-cx-part', 'picker');
   await picker.getByRole('button').click();
   await expect(page.getByRole('menuitemradio', { name: 'Overview', exact: true })).toHaveAttribute('aria-checked', 'true');
   const locked = page.getByRole('menuitemradio', { name: 'Locked', exact: true });

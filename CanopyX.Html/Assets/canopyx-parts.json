@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "24afaa117ebf3fb5",
+      "version": "2c0de06c7fa92b6a",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -16,7 +16,7 @@
     {
       "name": "ui-menu",
       "label": "UI menu",
-      "version": "352b1ee391133ff0",
+      "version": "fe4dc473ef05247b",
       "script": "canopyx-ui-menu.js",
       "style": "canopyx-ui-menu.css",
       "runtimes": [
@@ -39,7 +39,7 @@
     {
       "name": "ui-picker",
       "label": "UI picker",
-      "version": "d415103478faf52a",
+      "version": "b854b7d3caaa4b00",
       "script": "canopyx-ui-picker.js",
       "style": "canopyx-ui-picker.css",
       "runtimes": [
@@ -55,7 +55,7 @@
     {
       "name": "ui-navigation",
       "label": "UI navigation",
-      "version": "2553d01c5276d56a",
+      "version": "967fbce68d775fb0",
       "script": "canopyx-ui-navigation.js",
       "style": "canopyx-ui-navigation.css",
       "runtimes": [
@@ -88,7 +88,7 @@
     {
       "name": "ui-stepper",
       "label": "UI stepper",
-      "version": "5682c49db1b85314",
+      "version": "654c488a21aa1444",
       "script": "canopyx-ui-stepper.js",
       "style": "canopyx-ui-stepper.css",
       "runtimes": [
@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "ef0d06c82135ae2e",
+      "version": "7c4b7d2739d1b461",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -153,7 +153,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "197facbac4d1e52a",
+      "version": "1985b34e5fe156fc",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [

@@ -166,14 +166,14 @@ test("phone drawer reserves a full title row and aligns section text with fields
   await open(page, "path", 390); await page.locator(".cx-path-title").first().click();
   const drawer=page.getByRole("dialog"); await expect(drawer).toBeVisible();
   const layout=await drawer.evaluate(node => {
-    const title=node.querySelector('[data-hfx-part="title"]'), header=node.querySelector('[data-hfx-part="header"]');
+    const title=node.querySelector('[data-cx-part="title"]'), header=node.querySelector('[data-cx-part="header"]');
     const toggle=node.querySelector(".cx-record-toggle"), range=document.createRange();range.selectNodeContents(toggle.lastChild);
     return { titleWidth:title.getBoundingClientRect().width, titleBottom:title.getBoundingClientRect().bottom, actionTop:header.querySelector("button").getBoundingClientRect().top,
       headingX:range.getBoundingClientRect().left, fieldX:node.querySelector("dt").getBoundingClientRect().left };
   });
   expect(layout.titleWidth).toBeGreaterThan(300); expect(layout.actionTop).toBeGreaterThanOrEqual(layout.titleBottom);
   expect(Math.abs(layout.headingX-layout.fieldX), JSON.stringify(layout)).toBeLessThanOrEqual(1);
-  const buttons=await drawer.locator('[data-hfx-part="header"] button').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).map(node=>{const box=node.getBoundingClientRect();return {left:box.left,right:box.right};}));
+  const buttons=await drawer.locator('[data-cx-part="header"] button').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).map(node=>{const box=node.getBoundingClientRect();return {left:box.left,right:box.right};}));
   expect(buttons[0].left).toBeLessThan(45);expect(buttons.at(-1).right-buttons[0].left).toBeLessThan(220);
 });
 

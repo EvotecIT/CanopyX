@@ -232,7 +232,7 @@ test("tree menus and the actions menu close on focus outside, another menu and t
   // The actions menu opens from the keyboard (the API Shift+F10 uses) and closes when focus leaves it.
   await host(page, 0).evaluate(element => element.canopyx.openActions("a"));
   await expect(page.getByRole("menu", { name: "Actions" })).toBeVisible();
-  await expect(page.getByRole("menu", { name: "Actions" })).toHaveAttribute("data-hfx-part", "menu");
+  await expect(page.getByRole("menu", { name: "Actions" })).toHaveAttribute("data-cx-part", "menu");
   await expect.poll(() => page.evaluate(() => window.menuEvents.at(-1))).toBe("cx-menu");
   await page.locator("#host-popover").focus();
   await expect(page.getByRole("menu", { name: "Actions" })).toHaveCount(0);

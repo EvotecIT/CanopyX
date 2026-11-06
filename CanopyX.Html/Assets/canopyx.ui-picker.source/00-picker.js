@@ -1,11 +1,11 @@
 let uiPickerIdentity = 0;
 UI_TOOLS.picker = (root, options = {}) => {
-  const element = h('div', 'cx-picker'); element.dataset.hfxPart = 'picker';
+  const element = h('div', 'cx-picker'); element.dataset.cxPart = 'picker';
   const trigger = h('button', 'cx-picker-trigger cx-ui-button'); trigger.type = 'button';
   const lead = h('span', 'cx-picker-lead'), separator = h('span', 'cx-picker-separator');
   separator.setAttribute('aria-hidden', 'true'); setText(separator, '·');
   const icon = h('span', 'cx-picker-icon'); icon.setAttribute('aria-hidden', 'true');
-  const label = h('span', 'cx-picker-label'), badge = h('span', 'cx-picker-badge'); badge.dataset.hfxPart = 'badge';
+  const label = h('span', 'cx-picker-label'), badge = h('span', 'cx-picker-badge'); badge.dataset.cxPart = 'badge';
   const chevron = h('span', 'cx-picker-chevron'); chevron.setAttribute('aria-hidden', 'true'); setText(chevron, '▾');
   trigger.append(lead, separator, icon, label, badge, chevron);
   const menu = h('div', 'cx-menu'); menu.hidden = true; menu.setAttribute('role', 'menu');

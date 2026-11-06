@@ -16,7 +16,7 @@ UI_TOOLS.menuItems = (menu, items, options = {}) => {
       }
       const button = h('button', 'cx-menu-item'); button.type = 'button'; button.tabIndex = -1;
       button.id = 'cx-ui-menu-item-' + ++uiMenuIdentity;
-      button.dataset.itemId = String(item.id); button.dataset.hfxPart = 'menu-item';
+      button.dataset.itemId = String(item.id); button.dataset.cxPart = 'menu-item';
       const role = kind === 'radio' || item.role === 'menuitemradio' ? 'menuitemradio' :
         kind === 'checkbox' || item.checked != null ? 'menuitemcheckbox' : 'menuitem';
       button.setAttribute('role', role);
@@ -35,7 +35,7 @@ UI_TOOLS.menuItems = (menu, items, options = {}) => {
       button.append(icon);
       const label = h('span', 'cx-menu-label'); setText(label, item.label); button.append(label);
       if (item.badge != null && item.badge !== '') {
-        const badge = h('span', 'cx-menu-badge'); badge.dataset.hfxPart = 'badge';
+        const badge = h('span', 'cx-menu-badge'); badge.dataset.cxPart = 'badge';
         setText(badge, item.badge); button.append(badge);
       }
       if (item.shortcut) { const shortcut = h('kbd'); setText(shortcut, item.shortcut); button.append(shortcut); }
@@ -44,7 +44,7 @@ UI_TOOLS.menuItems = (menu, items, options = {}) => {
         button.setAttribute('aria-haspopup', 'menu'); button.setAttribute('aria-expanded', 'false');
         const child = h('div', 'cx-menu'); child.id = button.id + '-menu'; child.hidden = true;
         child.setAttribute('role', 'menu'); child.setAttribute('aria-labelledby', button.id);
-        child.dataset.hfxPart = 'menu'; child.dataset.state = 'closed';
+        child.dataset.cxPart = 'menu'; child.dataset.state = 'closed';
         button.setAttribute('aria-controls', child.id);
         const chevron = h('span', 'cx-menu-chevron'); chevron.setAttribute('aria-hidden', 'true');
         setText(chevron, '›'); button.append(chevron); container.append(child); render(child, item.items);

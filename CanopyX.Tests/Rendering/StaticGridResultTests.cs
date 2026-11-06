@@ -5,6 +5,47 @@ namespace CanopyX.Tests.Rendering;
 
 public sealed class StaticGridResultTests {
     [Theory]
+    [InlineData("https://example.test/evidence?x=1&y=2", true)]
+    [InlineData("javascript:alert(1)", false)]
+    public void LinkPresenterPreservesSafeDestinationsAndEncodedLabels(string destination, bool safe) {
+        var view = new CanopyDataGridView("links", "Evidence");
+        view.Columns.Add(new CanopyColumn("label", "Reference") { Presenter = CanopyGridPresenter.Link("url") });
+        view.Columns.Add(new CanopyColumn("url", "URL") { Hidden = true });
+        view.Rows.Add(new CanopyGridRow("a") { Cells = { ["label"] = "Evidence <&>", ["url"] = destination } });
+        var result = CanopyStaticHtml.RenderGridWithResult(view);
+        Assert.Contains("Evidence &lt;&amp;&gt;", result.Html);
+        Assert.Equal(safe, result.Html.Contains("<a href="));
+        if (safe) Assert.Contains("https://example.test/evidence?x=1&amp;y=2", result.Html);
+        Assert.Equal("Evidence <&>", result.Rows[0][0]);
+    }
+
+    [Theory]
+    [InlineData("none", false)]
+    [InlineData("cell", true)]
+    [InlineData("row", true)]
+    [InlineData("format", true)]
+    [InlineData("cell-css", true)]
+    [InlineData("row-css", true)]
+    public void LinkedTextPreservesRowAndCellColors(string toneSource, bool inherits) {
+        var view = new CanopyDataGridView("toned-links", "Evidence");
+        view.Columns.Add(new CanopyColumn("label", "Reference") { Presenter = CanopyGridPresenter.Link("url") });
+        view.Columns.Add(new CanopyColumn("url", "URL") { Hidden = true });
+        view.Rows.Add(new CanopyGridRow("a") {
+            Tone = toneSource == "row" ? CanopyTone.Danger : CanopyTone.None,
+            Cells = { ["label"] = new CanopyCell("Inspect evidence") { Tone = toneSource == "cell" ? CanopyTone.Danger : CanopyTone.None },
+                ["url"] = "https://example.test/evidence" }
+        });
+        if (toneSource == "format") view.FormatRules.Add(CanopyFormatRule.ForCell("ink", "label", CanopyFormatStyle.Highlight(CanopyTone.Danger)));
+        if (toneSource.EndsWith("-css", StringComparison.Ordinal)) {
+            var style = new CanopyFormatStyle(); style.Css["color"] = "#ad1234";
+            view.FormatRules.Add(toneSource == "row-css" ? new CanopyFormatRule("ink", style) { Target = CanopyFormatTarget.Row } : CanopyFormatRule.ForCell("ink", "label", style));
+        }
+        var html = CanopyStaticHtml.RenderGrid(view);
+        Assert.Equal(inherits, html.Contains("style=\"color:inherit;\""));
+        Assert.Contains("href=\"https://example.test/evidence\"", html);
+    }
+
+    [Theory]
     [InlineData(1)]
     [InlineData(10)]
     public void InlineResult_CapturesDisplayedCellsAndBadgesInDocumentOrder(int limit) {

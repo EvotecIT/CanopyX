@@ -32,7 +32,7 @@
     }, signal);
     trigger?.addEventListener("click", open, { signal });
     root.addEventListener("click", event => { if (event.target.closest("[data-cx-close],[data-cx-cancel]")) overlay.close("cancel"); }, { signal });
-    const body = root.querySelector('[data-hfx-part="body"]');
+    const body = root.querySelector('[data-cx-part="body"]');
     body?.addEventListener("scroll", () => { root.dataset.scrolled = String(body.scrollTop > 0); }, { signal });
     if (drawer) root.addEventListener("keydown", event => {
       if (!options.records || /^(?:INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) || event.target.isContentEditable) return;
