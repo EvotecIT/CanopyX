@@ -8,3 +8,4 @@ node_modules/
 tests/browser/test-results/
 tests/browser/playwright-report/
 tests/browser/bench-results/
+tests/browser/shard-results/
