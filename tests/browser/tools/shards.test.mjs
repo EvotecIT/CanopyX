@@ -20,7 +20,7 @@ test("shards keep serial spec files whole, stripe parallel-file tests and balanc
   assert.deepEqual(shards.map(shard => shard.ids.length), [3, 6, 3]);
 });
 
-test("lane coverage rejects missing shards and tests that were dropped, duplicated, unlisted or not run once", () => {
+test("lane coverage rejects missing shards and tests that were dropped, duplicated, unlisted or not run once, or only skipped", () => {
   const records = planShards(ids, 2, () => false).map((shard, index) => ({ shard: index + 1, shards: 2, full: ids,
     assigned: shard.ids, selected: shard.ids, results: shard.ids.map(id => ({ id, status: "passed" })) }));
   assert.deepEqual(laneProblems(records, 2), []);
@@ -38,4 +38,6 @@ test("lane coverage rejects missing shards and tests that were dropped, duplicat
   assert.deepEqual(laneProblems(unrun, 2), [`shard 2: ran 0 times: ${dropped}`]);
   const empty = [first, { ...second, assigned: [], selected: [], results: [] }];
   assert.ok(laneProblems(empty, 2).includes("shard 2: the shard has no tests"));
+  const skipped = [first, { ...second, results: second.results.map(result => ({ ...result, status: "skipped" })) }];
+  assert.deepEqual(laneProblems(skipped, 2), ["shard 2: every test skipped"]);
 });

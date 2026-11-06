@@ -111,7 +111,9 @@ jobs:
           # The small test dependency set does not need a restored npm cache.
           package-manager-cache: false
 
+      # The install normally takes under a minute; a stalled download or apt step fails here instead of at the job deadline.
       - name: Install browser test dependencies
+        timeout-minutes: 10
         working-directory: tests/browser
         shell: pwsh
         env:

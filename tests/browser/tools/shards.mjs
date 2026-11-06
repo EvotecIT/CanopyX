@@ -63,6 +63,8 @@ export function shardProblems(assigned, selected, results) {
   for (const result of results) runs.set(result.id, (runs.get(result.id) || 0) + 1);
   for (const id of assigned) if (runs.get(id) !== 1) problems.push(`ran ${runs.get(id) || 0} times: ${id}`);
   for (const id of runs.keys()) if (!expected.has(id)) problems.push(`ran without assignment: ${id}`);
+  // Skipped tests still end once; a shard whose every test skipped proves nothing about its engine.
+  if (results.length && results.every(result => result.status === "skipped")) problems.push("every test skipped");
   return problems;
 }
 
