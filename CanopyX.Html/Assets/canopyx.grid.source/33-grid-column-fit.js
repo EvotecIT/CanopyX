@@ -114,6 +114,7 @@
       if (key !== this.fitKey || !this.fitCh) {
         this.fitKey = key; this.fitFont = null;
         for (const column of this.columns) column.need = this.measureGridColumn(column).width;
+        refitOnFontsReady(this);
       }
       this.desktopDisclosureColumn = null;
       // Base widths depend on content, not on the available width, so responsive policies read stable values.
