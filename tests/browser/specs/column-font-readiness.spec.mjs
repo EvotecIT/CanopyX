@@ -4,7 +4,7 @@ import { viewPage, settleGrid } from "./support.mjs";
 
 const font = fs.readFileSync(new URL("../fonts/Inter-latin.woff2", import.meta.url));
 
-for (const type of ["grid", "view"]) test(`${type} automatic columns recover after a delayed web font without changing reader widths`, async ({ page }) => {
+for (const [type, delayedRows] of [["grid", false], ["view", false], ["grid", true]]) test(`${type} automatic columns recover after a delayed web font${delayedRows ? " requested by late initial rows" : ""} without changing reader widths`, async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   const columns = [
@@ -19,7 +19,7 @@ for (const type of ["grid", "view"]) test(`${type} automatic columns recover aft
   const view = { protocol: "canopyx/2", type, id: "late-font", label: "Records", selection: "single", pageSize: 100,
     source: { kind: "inline" }, columns, ...(type === "grid" ? { rows } : { roots: rows }) };
   const css = `<style>
-    @font-face { font-family: "Delayed Grid Font"; src: url("/delayed.woff2") format("woff2"); font-display: swap; }
+    @font-face { font-family: "Delayed Grid Font"; src: url("/delayed.woff2") format("woff2"); font-display: swap; ${delayedRows ? "unicode-range: U+0057;" : ""} }
     .cx-host { width: 1200px; height: 260px; }
     .cx-host, .cx-host * { font-family: "Delayed Grid Font", monospace !important; }
     .cx-cell { font-variant-numeric: tabular-nums; }
@@ -30,13 +30,25 @@ for (const type of ["grid", "view"]) test(`${type} automatic columns recover aft
     await held;
     await route.fulfill({ contentType: "font/woff2", body: font });
   });
+  const delayedView = { ...view, source: { kind: "host" } }; delete delayedView.rows;
+  const setup = delayedRows ? `<script>CanopyX.configure("late-font", { source: { async query(query) {
+    await new Promise(resolve => { window.releaseRows = resolve; });
+    return { protocol: "canopyx/2", type: "gridPage", view: "late-font", revision: "r1", offset: 0,
+      total: 3, matched: 3, items: ${JSON.stringify(rows)} };
+  } } });</script>` : "";
   await page.route("https://canopyx.test/columns", route => route.fulfill({ contentType: "text/html",
-    body: viewPage(view).replace("</head>", css + "</head>") }));
+    body: viewPage(delayedRows ? delayedView : view).replace("</head>", css + setup + "</head>") }));
   const widths = host => host.locator(".cx-hcell").evaluateAll(cells => cells.map(cell => Math.round(cell.getBoundingClientRect().width)));
   const original = page.locator(".cx-host").first();
   let control;
   try {
     await page.goto("https://canopyx.test/columns", { waitUntil: "domcontentloaded" });
+    if (delayedRows) {
+      await page.waitForFunction(() => typeof window.releaseRows === "function");
+      await page.evaluate(async () => { await document.fonts.ready; await new Promise(requestAnimationFrame); });
+      expect(await page.evaluate(() => document.fonts.status)).toBe("loaded");
+      await page.evaluate(() => window.releaseRows());
+    }
     await page.waitForSelector("[data-cx-ready]");
     await original.evaluate(async host => { await host.canopyx.ready; host.canopyx.setColumnWidth("manual", 173); });
     expect(await page.evaluate(() => document.fonts.status)).toBe("loading");
@@ -51,7 +63,7 @@ for (const type of ["grid", "view"]) test(`${type} automatic columns recover aft
     await control.route("https://canopyx.test/columns", route => route.fulfill({ contentType: "text/html", body: controlHtml }));
     await control.goto("https://canopyx.test/columns");
     await control.evaluate(async () => {
-      await document.fonts.load('14px "Delayed Grid Font"');
+      await document.fonts.load('14px "Delayed Grid Font"', "W");
       const host = document.querySelector("[data-deferred-host]");
       host.setAttribute("data-canopyx-host", "");
       await CanopyX.mount(host); await host.canopyx.ready; host.canopyx.setColumnWidth("manual", 173);

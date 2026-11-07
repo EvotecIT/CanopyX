@@ -39,7 +39,6 @@
       if (identity.pinned !== null && !this.restoredPin) this.host.classList.add("cx-pin-tree");
       this.fitReady = true; this.fitRows = null;
       this.observeFit();
-      refitOnFontsReady(this);
       this.buildHeader();
     },
 
@@ -96,6 +95,7 @@
       const key = this.layout + ":" + this.local + ":" + (this.host.clientWidth <= 640);
       if (this.fitRows !== this.rows || this.fitKey !== key) {
         this.fitRows = this.rows; this.fitKey = key; this.measureTreeColumns();
+        refitOnFontsReady(this);
       }
       const shown = TREE_FIT.visibleColumns.call(this), phone = this.host.clientWidth <= 640, identity = this.columns[0];
       // On phones the tree column also holds the "+N" button of the hidden fields (48-tree-details.js): its width is reserved

@@ -20,9 +20,9 @@
   // batch per effective font/variant captures numeric and plain advances. Row samples still use canvas, and fonts without
   // different advances keep its ordinary fast path.
   const COLUMN_DIGITS = new Map(), COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_NUMERIC = /[0-9\s.,:;+\-−/()\[\]]/;
-  // The CSS font string stays the same when a web font replaces its fallback. Both column needs and tabular
-  // advances must be measured again after initial font loading, without resetting authored or reader widths.
+  // A loaded web font keeps its CSS font string, so cached advances must be measured again.
   function refitOnFontsReady(view) {
+    if (document.fonts.status !== "loading") return;
     document.fonts.ready.then(() => {
       if (view.destroyed) return;
       COLUMN_DIGITS.clear();

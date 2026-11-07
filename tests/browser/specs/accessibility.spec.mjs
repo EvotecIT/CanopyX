@@ -33,6 +33,8 @@ async function openEverything(page) {
 
 for (const theme of ["light", "dark"]) {
   test(`axe finds no violations on the inline example (${theme})`, async ({ page }) => {
+    // Four complete axe audits, including their isolated result pages, can exceed one minute on macOS WebKit.
+    test.setTimeout(120000);
     await page.emulateMedia({ colorScheme: theme });
     await openExample(page, "inline.html");
     // The auto theme follows the system preference, so the dark run really scans dark colours.
