@@ -39,6 +39,7 @@
       if (identity.pinned !== null && !this.restoredPin) this.host.classList.add("cx-pin-tree");
       this.fitReady = true; this.fitRows = null;
       this.observeFit();
+      refitOnFontsReady(this);
       this.buildHeader();
     },
 
