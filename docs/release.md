@@ -73,18 +73,28 @@ still verifying public archive integrity.
 
 ## Manual NuGet deployment
 
-Set `CanopyXProductVersion` in `Directory.Build.props` for the .NET release and
-run the quality loop. Both .NET packages use this version; npm's automatic patch
-releases do not change it.
-
 `Build/Build-Project.ps1` invokes PowerForge using `Build/project.build.json`.
-After qualification, publish the chosen version explicitly:
+The configuration selects the next coordinated patch version for all four .NET
+packages. Preview the resolved versions before qualification:
 
 ```powershell
-./Build/Build-Project.ps1 -Build $true -PublishNuget $true -UpdateVersions $false -PublishGitHub $false -Plan $false
+./Build/Build-Project.ps1 -Plan $true -UpdateVersions $true -PublishNuget $true -PublishGitHub $true
+```
+
+After the quality and review gates pass, run the native signed publisher:
+
+```powershell
+./Build/Build-Project.ps1 -Build $true -PublishNuget $true -UpdateVersions $true -PublishGitHub $true -Plan $false
 ```
 
 The configuration owns package IDs, signing and credential-file locations.
+The publisher updates the project versions automatically, and the .NET SDK derives
+assembly, file and informational versions from those values. Copied dependency
+assemblies are signed before they enter the release archives. No separate product
+version needs a manual update. Commit the generated version metadata directly to
+`main` after verifying the published packages and archives. npm's automatic version
+selection remains independent.
+
 Keep signing material on the approved publisher workstation. Do not copy a
 private signing key or NuGet credential to a general CI runner.
 

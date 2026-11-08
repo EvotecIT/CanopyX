@@ -10,6 +10,7 @@
   },
   "ExpectedVersionMapAsInclude": true,
   "ExpectedVersionMapUseWildcards": false,
+  "AlignPackageVersions": true,
   "ExcludeProjects": [
     "CanopyX.Examples",
     "CanopyX.Tests",
@@ -31,6 +32,7 @@
   "CreateReleaseZip": true,
   "CertificateThumbprint": "92e95fb58effa6a4a75e77a33cdd6bfe6dd30f1a",
   "CertificateStore": "CurrentUser",
+  "SignDependencyAssemblies": true,
   "TimeStampServer": "http://timestamp.digicert.com",
   "PublishSource": "https://api.nuget.org/v3/index.json",
   "PublishApiKeyFilePath": "C:\\Support\\Important\\NugetOrgEvotec.txt",

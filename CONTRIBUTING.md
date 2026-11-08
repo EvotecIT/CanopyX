@@ -131,4 +131,4 @@ Pass `--bundle <folder>` to measure a bundle written by the version before the c
 
 ## Releases
 
-The owner publishes packages. `Build/project.build.json` keeps `PublishNuget` and `PublishGitHub` set to `false`, and the version comes from `CanopyXProductVersion` in `Directory.Build.props`. Contributors do not publish from local machines or CI.
+Maintainers publish packages through `Build/Build-Project.ps1`. `Build/project.build.json` keeps publication disabled by default and selects the next coordinated .NET patch version. The native publisher updates the project versions; the .NET SDK derives assembly, file and informational versions from them. Contributors do not publish from local machines or CI.
