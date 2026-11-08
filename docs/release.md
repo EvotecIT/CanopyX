@@ -81,10 +81,18 @@ packages. Preview the resolved versions before qualification:
 ./Build/Build-Project.ps1 -Plan $true -UpdateVersions $true -PublishNuget $true -PublishGitHub $true
 ```
 
-After the quality and review gates pass, run the native signed publisher:
+Apply that selection to the project files without building, signing or uploading:
 
 ```powershell
-./Build/Build-Project.ps1 -Build $true -PublishNuget $true -UpdateVersions $true -PublishGitHub $true -Plan $false
+./Build/Build-Project.ps1 -Build $false -UpdateVersions $true -PublishNuget $false -PublishGitHub $false -Plan $false
+```
+
+Run `./Build.ps1 -Configuration Release` against the prepared versions. After the
+quality and review gates pass, publish those same versions with version updates
+disabled so publication cannot select a different patch:
+
+```powershell
+./Build/Build-Project.ps1 -Build $true -PublishNuget $true -UpdateVersions $false -PublishGitHub $true -Plan $false
 ```
 
 The configuration owns package IDs, signing and credential-file locations.
