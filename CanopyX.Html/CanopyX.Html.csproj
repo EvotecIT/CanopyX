@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PackageVersion>0.4.1</PackageVersion>
     <TargetFrameworks>net472;netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -16,7 +17,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX.Html</PackageId>
-    <Version>0.4.0</Version>
+    <Version>0.4.1</Version>
     <Authors>Evotec</Authors>
     <Description>Self-contained tree and flat-grid browser runtimes with virtual rows, typed query controls, saved views, scoped exports, host data sources, and theme CSS, plus page, fragment, tree bundle, and asset writers.</Description>
     <PackageReleaseNotes>Reporting grids gain optional ChartForgeX charts, linked filters, chart-cell presenters and semantic pivot selection. Filtered pivots export to Excel and PDF through OfficeIMO, preserving typed values, outlines and repeated print headers.</PackageReleaseNotes>
