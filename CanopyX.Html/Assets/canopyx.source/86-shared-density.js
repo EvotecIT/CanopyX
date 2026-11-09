@@ -5,14 +5,20 @@
     return value === "compact" || value === "comfortable" ? value : null;
   }
 
-  function watchSharedDensity(view) {
-    // Loaded views retain their cells; pending and future font loads refresh geometry.
-    const ready = () => document.fonts.ready.then(() => {
+  function watchSharedFonts(view) {
+    if (document.fonts.status !== "loading" || view.fontReady === document.fonts.ready) return;
+    view.fontReady = document.fonts.ready;
+    view.fontReady.then(() => {
       FONT_METRICS.clear();
       refreshSharedDensity(view);
     });
+  }
+
+  function watchSharedDensity(view) {
+    // Loaded views retain their cells; pending and future font loads refresh geometry.
+    const ready = () => watchSharedFonts(view);
     document.fonts.addEventListener("loading", ready, { signal: view.lifetime.signal });
-    if (document.fonts.status === "loading") ready();
+    ready();
     let previous = sharedDensity(view.host);
     const metrics = () => view.host.style.setProperty("--cx-compact", previous === "compact" ? "1" : previous ? "0" : "");
     metrics();

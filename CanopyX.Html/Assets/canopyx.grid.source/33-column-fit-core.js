@@ -120,6 +120,8 @@
     // above content (so long values keep their measured width before short columns keep their declared one), then content
     // slack down to the floors (fitShrink); spare width is spread by fitSpare.
     fitWidths(cols, width) {
+      // Canvas-triggered loads can omit WebKit's loading event after the document's first font cycle.
+      watchSharedFonts(this);
       let total = 0, target;
       for (const column of cols) total += column.renderWidth = this.fitSize(column);
       // The scroll and card layouts (87-view-modes.js) keep every column at its own width and scroll sideways instead.

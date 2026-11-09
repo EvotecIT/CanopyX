@@ -234,6 +234,7 @@
       ],
       "context": [
         "FONT_METRICS",
+        "watchSharedFonts",
         "UI_IMPL",
         "UI_TOOLS",
         "TreeGrid",
