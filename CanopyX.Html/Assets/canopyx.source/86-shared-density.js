@@ -78,7 +78,7 @@
   function refreshSharedDensity(view) {
     if (!view.grid || view.destroyed) return;
     if (view.kind === "grid") {
-      view.fitKey = null; view.fitFont = null;
+      view.fitKey = null; view.fitFont = null; view.fitCh = 0;
       if (view.layoutMode === "cards" && VIEW_MODES.refreshCardDensity) VIEW_MODES.refreshCardDensity(view);
       else {
         const anchor = layoutAnchor(view);
