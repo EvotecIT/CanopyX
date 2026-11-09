@@ -135,13 +135,15 @@ public sealed class RuntimeAssetTests {
     public void GridAssets_StayWithinTheirCompressedBudget() {
         // Pointer selection adds a mutable option and lazy range dispatch (384-byte allowance for 277 measured bytes); the accepted-source reader stays in the optional query part.
         // Reserve 128 bytes for Boolean tree-drawer host/view validation in the shared core.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 1184);
+        // Includes the optional chart-cell loader and three lazy-part manifest entries.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2208);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         // Add 512 bytes for accessible phone scrolling, its scoped styles and live authored height bounds.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 512);
+        // Includes chart intent, localized controls and the lazy analysis loader.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1536);
     }
 
     [Fact]

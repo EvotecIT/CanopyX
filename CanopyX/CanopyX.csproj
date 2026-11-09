@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PackageVersion>0.4.2</PackageVersion>
     <TargetFrameworks>net472;netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -16,10 +17,10 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX</PackageId>
-    <Version>0.3.5</Version>
+    <Version>0.4.2</Version>
     <Authors>Evotec</Authors>
     <Description>Dependency-free tree and flat-grid definitions, typed queries, the versioned canopyx/2 data protocol, a sidecar tree bundle writer, and script-free fallback rendering for large interactive data views.</Description>
-    <PackageReleaseNotes>Tree and flat-grid definitions, typed filtering and stable sorting, the canopyx/2 protocol, tree bundle writing, and script-free fallback rendering.</PackageReleaseNotes>
+    <PackageReleaseNotes>Automatic columns remeasure after web fonts load. Binary versions follow the published package version automatically, and release archives include signed copied dependencies.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>tree-grid;treegrid;treeview;data-grid;virtualization;lazy-loading;data-views;html;reports;zero-dependency;aot;trimming</PackageTags>

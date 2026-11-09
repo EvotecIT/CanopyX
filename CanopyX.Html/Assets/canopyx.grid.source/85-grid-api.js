@@ -1,5 +1,7 @@
   // ---------- flat-grid entry point ----------
   LINK_IMPL.DataGrid = DataGrid; LINK_IMPL.gridQueryStart = gridQueryStart; linkMethods(DataGrid); linkGridPart(DataGrid);
+  LINK_IMPL.predicate = (grid, input) => gridPredicate(input, new Map(grid.view.columns.map(column => [column.id, column])),
+    { predicates: 0, filterable: true, strict: true });
   /** Creates a flat grid. A host source implements query(gridQuery, { signal }) and returns a complete gridPage. */
   function createDataGrid(host, options) {
     if (!host || !options || !options.view) throw new Error("CanopyX: createDataGrid needs a host element and a grid document.");

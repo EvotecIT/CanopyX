@@ -78,14 +78,17 @@
       return token.promise;
     },
 
-    async waitForRow(index, epoch) {
+    async waitForRow(index, epoch, signal) {
       while (!this.destroyed && epoch === this.queryEpoch) {
+        if (signal?.aborted) throw new DOMException("Grid navigation cancelled.", "AbortError");
         const row = this.rowItem(index);
         if (!row || row.status !== "loading") return row;
         const offset = Math.floor(index / this.pageSize) * this.pageSize, pending = this.pendingPages.get(offset);
-        if (pending) await pending.promise;
-        else if (this.pendingPages.size < 4) await this.loadPage(offset);
-        else await Promise.race([...this.pendingPages.values()].map(token => token.promise));
+        const wait = pending ? pending.promise : this.pendingPages.size < 4 ? this.loadPage(offset) :
+          Promise.race([...this.pendingPages.values()].map(token => token.promise));
+        // A reader cancels its wait, while pages already serving the grid keep their own lifetime.
+        if (signal) await this.runGridHook(() => wait, signal);
+        else await wait;
       }
       throw new DOMException("Grid navigation was superseded.", "AbortError");
     },

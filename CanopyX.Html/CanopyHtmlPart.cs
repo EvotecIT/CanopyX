@@ -34,7 +34,7 @@ public sealed class CanopyHtmlPart {
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "officeExport",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs", "calendarScreens",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations"
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations", "charts"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -206,6 +206,7 @@ public sealed class CanopyHtmlPart {
             "facets" => view.FacetPanel != null,
             "aggregateValues" => reporting?.Aggregates.Count > 0,
             "pivot" => reporting?.Pivot != null || reporting?.Pivotable == true,
+            "charts" => reporting?.Chartable == true,
             "calculations" => view.CalculatedColumnsEditable || view.Columns.Any(column => column.Calculation != null),
             "buckets" => reporting?.Groupable == true && view.Columns.Any(column => column.Kind == CanopyColumnKind.DateTime || column.Kind == CanopyColumnKind.Number) || reporting?.GroupBy.Any(level => level.Bucket != null) == true || view.Query?.GroupBy?.Any(level => level.Bucket != null) == true || view.FacetPanel?.Facets.Any(facet => facet.Bucket != null) == true || UsesBucketFilters(view.Query),
             "calendar" => view.Calendar != null,

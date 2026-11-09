@@ -117,6 +117,8 @@ for (const kind of ['dialog', 'drawer']) for (const sequence of ['open/open', 'c
       });
     }, { kind, sequence });
     await page.locator('#rapid-trigger').click();
+    // The phone sheet slides in; a click aimed at #cycle mid-slide lands on whatever moved under the point.
+    await page.locator('#rapid').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished.catch(() => {}))));
     await page.locator('#cycle').click();
     // Observe the real queued native event before checking the replacement opening.
     await expect.poll(() => page.evaluate(() => window.queuedCloses)).toBe(sequence === 'open/open' ? 2 : 1);

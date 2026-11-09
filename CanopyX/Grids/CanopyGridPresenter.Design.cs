@@ -134,6 +134,8 @@ public sealed partial class CanopyGridPresenter {
     }
     internal static bool Safe(double value) => !double.IsNaN(value) && !double.IsInfinity(value) && Math.Abs(value) <= 9007199254740991d;
     internal void Validate(CanopyColumn column, IList<CanopyColumn> columns) {
+        if (UsesChartRenderer && column.Kind != CanopyColumnKind.Number)
+            throw new InvalidOperationException("Chart cells require numeric raw values.");
         if ((Kind == CanopyGridPresenterKind.Progress || Kind == CanopyGridPresenterKind.Change && !BeforeAfterValues) && column.Kind != CanopyColumnKind.Number)
             throw new InvalidOperationException("Progress and change presenters require numeric raw values.");
         if ((Kind == CanopyGridPresenterKind.Boolean || Kind == CanopyGridPresenterKind.List || Kind == CanopyGridPresenterKind.Tags || Kind == CanopyGridPresenterKind.Link) && column.Kind != CanopyColumnKind.Text)

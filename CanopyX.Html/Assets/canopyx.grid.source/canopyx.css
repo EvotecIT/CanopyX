@@ -1,6 +1,6 @@
 /* Graphite components ported from docs/design/data-grid-spec.html to the virtual ARIA grid. */
 .cx-data-grid { min-width:0;max-width:100%;box-sizing:border-box; }
-.cx-data-grid[data-cx-chrome="embedded"] { --cx-grid-surface:var(--hfx-color-surface-raised);--cx-grid-header:color-mix(in srgb,var(--hfx-color-text) 4%,var(--hfx-color-surface-raised)); }
+.cx-data-grid[data-cx-chrome="embedded"] { --cx-grid-surface:var(--hfx-color-surface-card,var(--hfx-color-surface-raised));--cx-grid-header:color-mix(in srgb,var(--hfx-color-text) 4%,var(--cx-grid-surface)); }
 .cx-data-grid[data-cx-chrome="embedded"] .cx-hrow { background:var(--cx-grid-header); }
 .cx-data-grid .cx-grid { min-width:0;max-width:100%; }
 .cx-data-grid.cx-phone .cx-cell:has(> .cx-phone-primary) { display:block;min-width:0;white-space:normal; }

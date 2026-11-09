@@ -8,6 +8,8 @@ public sealed class RegexQuickSearchTests {
         var view = View(); view.Columns[0].Filterable = true;
         var schema = new CanopyDataSchema(view);
         var value = new string('x', 4096);
+        // Warm first-use regex runtime code outside the provider's evaluation budget.
+        new CanopyGridRegexSearch("^x").IsMatch(value);
         var rows = new[] { value, new string('x', 4095) + "y" };
         var provider = new CanopyInMemoryProvider<string>(schema, () => rows, item => Array.IndexOf(rows, item).ToString(),
             new Dictionary<string, Func<string, object?>> { ["name"] = item => item });

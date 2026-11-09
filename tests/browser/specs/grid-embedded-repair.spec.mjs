@@ -131,6 +131,10 @@ test("embedded pinned cells and headers follow a distinct live card surface", as
     await expect(page.locator('.cx-hcell[data-cx-pin="left"]')).toHaveCSS("background-color", header);
     expect(header).not.toBe("rgb(8, 12, 16)");
   }
+  // A host that names its card role (HtmlForgeX paints cards with surface, not raised) wins over the raised default.
+  await page.locator("#card").evaluate(card => { card.style.setProperty("--hfx-color-surface-card", "#1d1b19"); card.style.background = "var(--hfx-color-surface-card)"; });
+  await expect(pinned).toHaveCSS("background-color", "rgb(29, 27, 25)");
+  expect(await page.locator(".cx-hrow").evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe("rgb(58, 45, 75)");
   expect(await page.locator("[data-canopyx-host]").evaluate(host => [...host.style].some(name => name.startsWith("--hfx-")))).toBe(false);
 });
 

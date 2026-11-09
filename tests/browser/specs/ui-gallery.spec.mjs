@@ -45,6 +45,8 @@ async function openTypedGallery(page, style, mode) {
 
 for (const style of Object.keys(surfaces)) for (const mode of ['light', 'dark']) {
   test(`typed UI gallery renders ${style} ${mode} with accessible names and states`, async ({ page }, info) => {
+    // Six accessibility scans and captures need the existing macOS WebKit budget.
+    test.setTimeout(90000);
     const errors = await openTypedGallery(page, style, mode);
     await expect(page.locator('html')).toHaveAttribute('data-hfx-style', style);
     expect(await page.locator('#sections').evaluate(el => getComputedStyle(el).getPropertyValue('--hfx-color-surface').trim())).toBe(surfaces[style][mode === 'dark' ? 1 : 0]);

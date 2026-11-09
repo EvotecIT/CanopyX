@@ -16,6 +16,10 @@ foreach (var sidecar in Directory.EnumerateFiles(args[0], "*.json", SearchOption
     using var expected = JsonDocument.Parse(File.ReadAllText(file + ".json"));
     var contract = expected.RootElement;
     int count = contract.GetProperty("expectedCount").GetInt32();
+    if (contract.TryGetProperty("pivot", out _)) {
+        reports.Add(PivotArtifactProof.Validate(file, contract));
+        continue;
+    }
     if (file.EndsWith(".xlsx")) {
         using var sdk = SpreadsheetDocument.Open(file, false);
         var errors = new OpenXmlValidator().Validate(sdk).ToArray();

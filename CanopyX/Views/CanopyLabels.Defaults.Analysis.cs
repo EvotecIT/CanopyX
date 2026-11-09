@@ -6,6 +6,22 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     private static void AddAnalysisDefaults(Dictionary<string, string> defaults) {
         foreach (var entry in new Dictionary<string, string>(StringComparer.Ordinal) {
+        [nameof(GridChartType)] = "Chart type",
+        [nameof(GridChartSource)] = "Data",
+        [nameof(GridChartSourceFiltered)] = "Filtered records",
+        [nameof(GridChartSourceSelected)] = "Selected records",
+        [nameof(GridChartSourceRange)] = "Selected cell range",
+        [nameof(GridChartSourceGroups)] = "Groups",
+        [nameof(GridChartSourcePivot)] = "Pivot",
+        [nameof(GridChartClearFilter)] = "Clear chart filter",
+        [nameof(GridChartLoading)] = "Reading accepted data…",
+        [nameof(GridChartLine)] = "Line",
+        [nameof(GridChartArea)] = "Area",
+        [nameof(GridChartBar)] = "Bar",
+        [nameof(GridChartColumn)] = "Column",
+        [nameof(GridChartStacked)] = "Stacked column",
+        [nameof(GridChartWinLoss)] = "Win/loss",
+        [nameof(GridChartBullet)] = "Bullet",
         [nameof(GridPivotFieldOptions)] = "Field options",
         [nameof(GridCalculationResultType)] = "Result type",
         [nameof(GridCalculationDivideZero)] = "Division by zero",
