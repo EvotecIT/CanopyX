@@ -13,7 +13,7 @@
   }));
   const LAYOUT_MODES = ["fit", "scroll", "cards"], LAYOUT_DENSITIES = ["compact", "default", "comfortable"];
   // Row height steps per density, relative to the view's own row height and declared density.
-  const DENSITY_STEP = { tree: { compact: -8, default: 0, comfortable: 0 }, grid: { compact: -8, default: 0, comfortable: 0 } };
+  const DENSITY_STEP = { compact: -8, default: 0, comfortable: 0 };
   // Filled by the parts when they install: highlightStart, setHighlight, matches, step, layoutsStart and setLayout.
   const VIEW_MODES = {};
   const HIGHLIGHT_KEYS = ["enabled", "search", "filters", "matchCase", "ignoreAccents", "minLength", "filterTones"];
@@ -66,8 +66,7 @@
   function densityRowHeight(view, density) {
     const shared = sharedDensity(view.host);
     if (shared) return shared === "compact" ? 32 : 40;
-    const steps = DENSITY_STEP[view.kind];
-    return Math.max(20, Math.min(64, view.baseRowH + steps[density] - steps[view.declaredDensity]));
+    return Math.max(20, Math.min(64, view.baseRowH + DENSITY_STEP[density] - DENSITY_STEP[view.declaredDensity]));
   }
 
   const VIEW_MODE_METHODS = {
