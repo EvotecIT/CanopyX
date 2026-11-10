@@ -23,7 +23,7 @@ internal static class LiveDataExample {
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var document = new CanopyHtmlDocument();
             CanopyHtmlOptions Options(string height) => new() { Theme = theme, Height = height, Document = document };
-            var page = template.Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
+            var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid))
                 .Replace("{{example-style}}", exampleStyle)
                 .Replace("{{monitor}}", Monitor().ToHtmlFragment(Options("440px")))

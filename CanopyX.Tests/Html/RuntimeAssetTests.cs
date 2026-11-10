@@ -258,7 +258,8 @@ public sealed class RuntimeAssetTests {
             // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, links and search parts,
             // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the seven lazy UI parts
             // (one script and one stylesheet each).
-            Assert.Equal(30, Directory.GetFiles(directory).Length);
+            // Standalone font CSS, the two qualified faces and their two OFL notices travel with external pages.
+            Assert.Equal(35, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

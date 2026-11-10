@@ -5,7 +5,6 @@
   const THEME_ATTRIBUTES = [...MODE_ATTRIBUTES, "data-hfx-style", "data-hfx-density", "data-cx-fallback-mode", "style", "class"];
 
   function watchTheme(host, signal) {
-    const attributes = THEME_ATTRIBUTES;
     const previous = host.getAttribute("data-cx-fallback-mode");
     const refresh = () => {
       const parent = host.parentElement && getComputedStyle(host.parentElement);
@@ -23,7 +22,7 @@
       } else if (host.getAttribute("data-cx-fallback-mode") !== (mode || "auto")) host.setAttribute("data-cx-fallback-mode", mode || "auto");
     };
     const observer = new MutationObserver(refresh);
-    for (let owner = host; owner; owner = owner.parentElement) observer.observe(owner, { attributes: true, attributeFilter: attributes });
+    for (let owner = host; owner; owner = owner.parentElement) observer.observe(owner, { attributes: true, attributeFilter: THEME_ATTRIBUTES });
     refresh();
     const dispose = () => { observer.disconnect(); if (previous === null) host.removeAttribute("data-cx-fallback-mode"); else host.setAttribute("data-cx-fallback-mode", previous); };
     signal?.addEventListener("abort", dispose, { once: true });
@@ -42,16 +41,16 @@
     return copied;
   }
 
-  // Persistent siblings and portal sheets follow host roles throughout their owned lifetime.
-  function watchOverlayTheme(host, element, signal) {
+  // Persistent siblings and portals share scoped observation and teardown.
+  function watchOverlayTheme(host, element, signal, refresh) {
     if (signal?.aborted) return () => {};
     let copied = [];
-    const refresh = () => {
+    refresh ||= () => {
       for (const name of copied) element.style.removeProperty(name);
       copied = overlayTheme(host, element, element.parentElement === host.parentElement);
     };
     const observer = new MutationObserver(refresh);
-    for (let owner = host; owner; owner = owner.parentElement) observer.observe(owner, { attributes: true,
+    for (let owner = host; owner; owner = owner.parentElement) if (owner !== element) observer.observe(owner, { attributes: true,
       attributeFilter: THEME_ATTRIBUTES });
     const media = ["(prefers-color-scheme:dark)", "(prefers-contrast:more)", "(forced-colors:active)"].map(query => matchMedia(query));
     for (const query of media) query.addEventListener("change", refresh);

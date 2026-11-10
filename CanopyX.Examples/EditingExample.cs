@@ -15,7 +15,7 @@ internal static class EditingExample {
     private const string Script = """
 <style>
 body{background:Canvas;color:CanvasText}
-.register-log{box-sizing:border-box;margin:0;padding:10px 16px 0;font:13px/1.4 system-ui,sans-serif;color:CanvasText}
+.register-log{box-sizing:border-box;margin:0;padding:10px 16px 0;font:13px/1.4 Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;color:CanvasText}
 .register-log b{font-weight:600}
 body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
 </style>

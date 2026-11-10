@@ -1,0 +1,15 @@
+/* SIL Open Font License 1.1; see OFL-Archivo.txt and OFL-JetBrainsMono.txt. */
+@font-face {
+  font-family: Archivo;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("Archivo.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("JetBrainsMono.woff2") format("woff2");
+}

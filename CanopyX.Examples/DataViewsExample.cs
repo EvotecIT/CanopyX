@@ -23,7 +23,7 @@ internal static class DataViewsExample {
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var document = new CanopyHtmlDocument();
             var options = new CanopyHtmlOptions { Theme = theme, Document = document, Height = "440px" };
-            var page = Template().Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
+            var page = Template().Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid))
                 .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light")
                 .Replace("{{compare}}", compare.ToHtmlFragment(options)).Replace("{{intent}}", ask.ToHtmlFragment(options));
@@ -34,8 +34,8 @@ internal static class DataViewsExample {
                 new CanopyStaticHtmlOptions { Theme = dark ? CanopyStaticTheme.Dark() : new CanopyStaticTheme() });
             var background = dark ? "#16181c" : "#ffffff";
             File.WriteAllText(Path.Combine(output, "dataset-compare-static" + (dark ? "-dark" : "") + ".html"),
-                "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Inventory changes</title>" +
-                "<body style=\"font-family:Calibri,Arial,sans-serif;margin:16px;background:" + background + "\">" + staticHtml + "</body></html>", new UTF8Encoding(false));
+                "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Inventory changes</title>" + CanopyHtmlAssets.FontHead() +
+                "<body style=\"font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;margin:16px;background:" + background + "\">" + staticHtml + "</body></html>", new UTF8Encoding(false));
         }
     }
 

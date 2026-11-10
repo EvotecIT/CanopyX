@@ -32,17 +32,22 @@ test('the standalone gallery offers working fallback appearance controls without
 });
 
 const surfaces = { evotec: ['#ffffff', '#16181c'], neutral: ['#ffffff', '#181818'], slate: ['#ffffff', '#141b26'], warm: ['#fffdf9', '#1c1814'], contrast: ['#ffffff', '#0a0a0a'] };
+async function openTypedGallery(page, style, mode) {
+  const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(address + '?style=' + style + '&mode=' + mode);
+  await expect(page.locator('html')).toHaveAttribute('data-gallery-ready', 'true');
+  const pause = page.getByRole('button', { name: 'Pause', exact: true });
+  if (await pause.isVisible()) await pause.click();
+  await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
+  return errors;
+}
+
 for (const style of Object.keys(surfaces)) for (const mode of ['light', 'dark']) {
   test(`typed UI gallery renders ${style} ${mode} with accessible names and states`, async ({ page }, info) => {
-    // Six accessibility scans and their captures can exceed one minute on macOS WebKit.
+    // Six accessibility scans and captures need the existing macOS WebKit budget.
     test.setTimeout(90000);
-    const errors = []; page.on('pageerror', error => errors.push(error.message));
-    await page.setViewportSize({ width: 1440, height: 1100 });
-    await page.goto(address + '?style=' + style + '&mode=' + mode);
-    await expect(page.locator('html')).toHaveAttribute('data-gallery-ready', 'true');
-    const pause = page.getByRole('button', { name: 'Pause', exact: true });
-    if (await pause.isVisible()) await pause.click();
-    await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
+    const errors = await openTypedGallery(page, style, mode);
     await expect(page.locator('html')).toHaveAttribute('data-hfx-style', style);
     expect(await page.locator('#sections').evaluate(el => getComputedStyle(el).getPropertyValue('--hfx-color-surface').trim())).toBe(surfaces[style][mode === 'dark' ? 1 : 0]);
     await expect(page.locator('#sections [role="tab"]').first()).toHaveAttribute('aria-selected', 'true');
@@ -75,7 +80,14 @@ for (const style of Object.keys(surfaces)) for (const mode of ['light', 'dark'])
     await page.evaluate(() => scrollTo(0, 0));
     await page.screenshot({ path: path.join(folder, `1440-${style}-${mode}-gallery.png`), fullPage: true });
     await page.screenshot({ path: path.join(folder, `1440-${style}-${mode}.png`) });
-    for (const [id, kind] of [['edit-workspace', 'dialog'], ['record-details', 'drawer'], ['view-options', 'popover'], ['record-actions', 'menu'], ['shortcut-help', 'tooltip']]) {
+    expect(errors).toEqual([]);
+  });
+
+  for (const [id, kind] of [['edit-workspace', 'dialog'], ['record-details', 'drawer'], ['view-options', 'popover'], ['record-actions', 'menu'], ['shortcut-help', 'tooltip']]) {
+    test(`typed UI gallery ${kind} renders ${style} ${mode} with accessible names and states`, async ({ page }, info) => {
+      const errors = await openTypedGallery(page, style, mode);
+      const folder = process.env.CANOPYX_UI_REVIEW_FRAMES || info.outputPath('frames');
+      fs.mkdirSync(folder, { recursive: true });
       const trigger = page.locator('#' + id + '-trigger'), popup = page.locator('#' + id);
       if (kind === 'tooltip') await trigger.focus(); else await trigger.click();
       await expect(popup).toBeVisible();
@@ -85,9 +97,9 @@ for (const style of Object.keys(surfaces)) for (const mode of ['light', 'dark'])
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
       await page.screenshot({ path: path.join(folder, `1440-${style}-${mode}-${kind}.png`) });
       await page.keyboard.press('Escape'); await expect(popup).not.toBeVisible();
-    }
-    expect(errors).toEqual([]);
-  });
+      expect(errors).toEqual([]);
+    });
+  }
 }
 
 test('the phone gallery uses the shared pickers and exposes its drawer as a sheet', async ({ page }, info) => {

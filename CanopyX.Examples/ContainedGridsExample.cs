@@ -10,7 +10,7 @@ internal static class ContainedGridsExample {
         using var reader = new StreamReader(stream);
         var template = reader.ReadToEnd();
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var page = template.Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
+            var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid))
                 .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light");
             foreach (var id in new[] { "tab-grid", "accordion-grid", "details-grid" }) {

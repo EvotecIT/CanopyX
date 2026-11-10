@@ -6,16 +6,26 @@ The normal quality loop builds the libraries, checks their contracts, generates 
 ./Build.ps1 -Configuration Release
 ```
 
-Quality runs the full loop on Linux in Chromium, Firefox and WebKit, on Windows in Chromium (including visual baselines and packages), and on macOS in WebKit for pull requests. Pushes to `main` and manual runs cover all three engines on all three platforms, retaining the two Windows Firefox and macOS WebKit shards. PRs use five matrix jobs, including one unsharded macOS job; full runs use eleven, including four macOS jobs.
+Pushes to `main` and manual runs cover all three engines on all three platforms. Pull requests choose their lanes from the complete diff:
 
-Browser files run on three workers in Quality CI, with tests inside each file kept in order (`fullyParallel: false`) and no retries. `CANOPYX_TEST_WORKERS` selects a different positive worker count for local validation; without it the browser config uses two. The existing 135-minute job deadline and 7,200-second browser-process deadline remain in place.
+| PR changes | Quality jobs |
+| --- | --- |
+| Only `Website/**`, `docs/**` or unshipped Markdown | None; the required platform checks pass after the confirmed skip |
+| Browser runtime or shared build inputs: `CanopyX.Html/Assets/**`, `JavaScript/**`, `tests/browser/**`, `tests/BrowserInstall/**`, `.github/**`, `Build/**`, `Build.ps1`, `Directory.Build.*`, `global.json`, `package.json`, lock files, `NuGet.config`, solutions | Linux Chromium, Firefox and WebKit, Windows Chromium and macOS WebKit |
+| Any other code | Linux and Windows Chromium |
 
-A PR whose complete diff changes only `Website/**`, `docs/**` or unshipped Markdown files skips the build matrix. Schemas (`docs/schema/**`), shipped images (`docs/images/**`) and package READMEs always require it. The package READMEs are `README.md`, `README.nuget.md`, `CanopyX.Data/README.md`, `CanopyX.AspNetCore/README.md` and `ThirdParty/OfficeIMO/README.md`; deleting or moving one must still reach the package checks. The three required platform checks still run and succeed after a confirmed documentation-only skip; failed coverage selection, failed tests and cancelled builds fail those checks. Website validation runs in its own workflow. Only superseded runs for the same PR are cancelled; each main push and manual run has its own concurrency group.
+Every lane runs in a fixed number of shards, sized to keep each shard's browser tests near a quarter of an hour (`.github/scripts/quality-plan.mjs`): Linux Chromium 2, Firefox 3, WebKit 3; Windows Chromium 3, Firefox 4, WebKit 3; macOS Chromium 2, Firefox 3, WebKit 4. Every shard builds the solution and generates the examples. The first job of each platform also runs the .NET suites, the TypeScript API report and the JavaScript package smoke; the first Chromium job of each platform also packs and uploads packages and example pages.
+
+`tests/browser/tools/shards.mjs` runs one shard. It lists the complete suite for the selected engine, keeps each spec file whole and balances files by test count. Tests of a file that declares `test.describe.configure({ mode: "parallel" })`, such as the axe sweep, are striped across shards one by one. Each shard records the complete list, its assignment and the result of every test it ran, and fails if Playwright selected or ran anything else. The **Browser shard coverage** job then checks that the shards of every selected lane listed the same suite and together ran every listed test exactly once; the required platform checks depend on it. Run a shard locally with `CANOPYX_TEST_SHARD=2/4 node tools/shards.mjs` in `tests/browser`.
+
+Browser files run on three workers in Quality CI, with tests inside each file kept in order (`fullyParallel: false`) and no retries. `CANOPYX_TEST_WORKERS` selects a different positive worker count for local validation; without it the browser config uses two. Jobs have a 60-minute deadline and the browser process a 2,700-second one.
+
+Schemas (`docs/schema/**`), shipped images (`docs/images/**`) and package READMEs always require it. The package READMEs are `README.md`, `README.nuget.md`, `CanopyX.Data/README.md`, `CanopyX.AspNetCore/README.md` and `ThirdParty/OfficeIMO/README.md`; deleting or moving one must still reach the package checks. The three required platform checks still run and succeed after a confirmed documentation-only skip; failed coverage selection, failed tests and cancelled builds fail those checks. Website validation runs in its own workflow. Only superseded runs for the same PR are cancelled; each main push and manual run has its own concurrency group.
 
 Check coverage selection locally without building or installing browser packages:
 
 ```powershell
-node --test .github/scripts/quality-plan.test.mjs
+node --test .github/scripts/quality-plan.test.mjs tests/browser/tools/shards.test.mjs
 ```
 
 The suite checks returned data, ordering, cancellation, lifecycle cleanup, bounded requests and DOM, generated artifacts and visible behavior. Ordinary test and process timeouts still catch hangs. Elapsed time, relative speed, long tasks, observed heap growth and allocation measurements run only when explicitly requested; shared-runner measurements do not decide PR correctness.

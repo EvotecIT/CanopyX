@@ -29,9 +29,9 @@ internal static class MatrixExamples {
         var services = Services(24);
         services.Columns.GroupBy = "tier";
         foreach (var (name, theme, background) in new[] { ("matrix-static.html", new CanopyStaticTheme(), "#ffffff"), ("matrix-static-dark.html", CanopyStaticTheme.Dark(), "#16181c") }) {
-            var page = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Matrix static fallback</title></head><body style=\"font-family:Calibri,Arial,sans-serif;margin:16px;background:" + background + "\">" +
+            var page = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Matrix static fallback</title></head><body style=\"font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;margin:16px;background:" + background + "\">" +
                 CanopyStaticHtml.RenderMatrix(services, new CanopyStaticHtmlOptions { Theme = theme }) + "<br>" + CanopyStaticHtml.RenderMatrix(Consistency(), new CanopyStaticHtmlOptions { Theme = theme }) + "</body></html>";
-            File.WriteAllText(Path.Combine(output, name), page, new System.Text.UTF8Encoding(false));
+            File.WriteAllText(Path.Combine(output, name), page.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>"), new System.Text.UTF8Encoding(false));
         }
     }
 

@@ -99,7 +99,8 @@
         trigger && owner.element.contains(trigger)) || null;
       returnFocus = trigger || document.activeElement;
       modal = settings.modal ?? options.modal ?? false;
-      restoreTheme = UI_TOOLS.theme(host, element);
+      const position = () => UI_TOOLS.position(element, trigger, options.placement || element.dataset.placement, settings.point);
+      restoreTheme = UI_TOOLS.theme(host, element, () => { if (opened && options.anchored && trigger) position(); });
       const parentDialog = trigger?.closest("dialog[open]");
       const portal = options.portal || parentDialog || trigger?.closest('main,[role="main"]') || document.body;
       if (element.localName !== "dialog" && element.parentNode !== portal) {
@@ -132,8 +133,6 @@
       if (modal) element.setAttribute("aria-modal", "true"); else element.removeAttribute("aria-modal");
       if (trigger && decorateTrigger()) trigger.setAttribute("aria-expanded", "true");
       if (options.anchored && trigger) {
-        const placement = options.placement || element.dataset.placement;
-        const position = () => UI_TOOLS.position(element, trigger, placement, settings.point);
         position(); global.addEventListener("resize", position); document.addEventListener("scroll", position, true);
         reposition = () => { global.removeEventListener("resize", position); document.removeEventListener("scroll", position, true); };
       }

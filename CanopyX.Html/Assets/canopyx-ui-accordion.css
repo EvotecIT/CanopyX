@@ -32,10 +32,10 @@ padding:var(--hfx-space-2,0.5rem) var(--hfx-space-4,1rem);
 border:0;
 background:transparent;
 color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));
-font-family:var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);
+font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);
 font-size:var(--hfx-type-body-size,0.875rem);
 font-weight:var(--hfx-weight-semibold,600);
-line-height:var(--hfx-type-body-line,1.5);
+line-height:var(--hfx-type-body-line-height,var(--hfx-type-body-line,1.5));
 text-align:start;
 cursor:pointer;
 }

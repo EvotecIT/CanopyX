@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { examples, openGridControl } from "./support.mjs";
+import { examples, openGridControl, viewPage } from "./support.mjs";
 import { serveExamples } from "../tools/example-server.mjs";
 
 let server;
@@ -27,6 +27,40 @@ test("print retains frozen query context, group subtotals and query totals with 
   expect(result.columns).toEqual(["", "", "1%", "144px", "1%"]);
   expect(result.links).toHaveLength(30); expect(result.links.every(css => css.includes("color: inherit") && css.includes("text-decoration: none"))).toBe(true);
   expect(result.colorSpans).toBe(0);
+});
+
+for (const layout of ['table', 'stacked']) test(`${layout} grouped print retains tabular numbers in records and totals`, async ({ page }) => {
+  await page.addInitScript(() => { window.print = () => {
+    const values = selector => [...document.querySelectorAll(selector)].map(element => ({
+      text: element.textContent, variant: getComputedStyle(element).fontVariantNumeric
+    }));
+    const stacked = !!document.querySelector('.cx-print-cards');
+    window.parent.printedNumbers = {
+      records: values(stacked ? '.cx-print-card dl>div:nth-child(2) dd' : '[data-cx-print-record]>td:nth-child(3)'),
+      subtotals: values(stacked ? '[data-cx-print-subtotal]>div:last-child' : '[data-cx-print-subtotal] td div>span:last-child'),
+      totals: values(stacked ? '[data-cx-print-total]>div:last-child' : '[data-cx-print-total] td div>span:last-child')
+    };
+  }; });
+  const view = { protocol: 'canopyx/2', type: 'grid', id: 'print-numbers', label: 'Grouped amounts', locale: 'en-US',
+    source: { kind: 'inline' }, rowHeight: 28, pageSize: 10, selection: 'none', layout: { mode: layout === 'stacked' ? 'cards' : 'scroll' },
+    reporting: { grouping: { column: 'region', direction: 'asc' }, aggregates: [{ id: 'total', column: 'amount', operation: 'sum', label: 'Total amount' }] },
+    columns: [{ id: 'name', title: 'Name', kind: 'text', width: 200 }, { id: 'region', title: 'Region', kind: 'text', width: 120, sortable: true },
+      { id: 'amount', title: 'Amount', kind: 'number', width: 150 }],
+    rows: [{ id: 'ones', cells: { name: 'First', region: 'North', amount: 111111 } }, { id: 'eights', cells: { name: 'Second', region: 'North', amount: 888888 } }] };
+  await page.route('http://canopyx.test/print-numbers', route => route.fulfill({ contentType: 'text/html', body: viewPage(view) }));
+  await page.goto('http://canopyx.test/print-numbers');
+  await page.waitForSelector('[data-cx-ready]');
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.print({ scope: 'filtered' }));
+  const numbers = await page.evaluate(() => window.printedNumbers);
+  expect(numbers.records).toHaveLength(2);
+  expect(numbers.subtotals).toHaveLength(1);
+  expect(numbers.totals).toHaveLength(1);
+  expect(numbers.subtotals[0].text).toContain('999,999');
+  expect(numbers.totals[0].text).toContain('999,999');
+  for (const value of [...numbers.records, ...numbers.subtotals, ...numbers.totals]) {
+    expect(value.text).toMatch(/\d/);
+    expect(value.variant, `${layout}: ${value.text}`).toBe('tabular-nums');
+  }
 });
 
 test("export menu is one vertical format list and announces the chosen scope count", async ({ page }) => {

@@ -117,6 +117,8 @@ for (const kind of ['dialog', 'drawer']) for (const sequence of ['open/open', 'c
       });
     }, { kind, sequence });
     await page.locator('#rapid-trigger').click();
+    // The phone sheet slides in; a click aimed at #cycle mid-slide lands on whatever moved under the point.
+    await page.locator('#rapid').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished.catch(() => {}))));
     await page.locator('#cycle').click();
     // Observe the real queued native event before checking the replacement opening.
     await expect.poll(() => page.evaluate(() => window.queuedCloses)).toBe(sequence === 'open/open' ? 2 : 1);
@@ -204,6 +206,36 @@ test('body-mounted overlays retain scoped dark roles and restore component-owned
   await page.evaluate(() => CanopyX.popover('#help').destroy());
   expect(await popup.evaluate(el => el.parentElement.tagName)).toBe('SECTION');
   expect(await popup.evaluate(el => el.style.getPropertyValue('--hfx-color-surface-raised'))).toBe('');
+});
+
+test('overlays, menus and tooltips consume shared chrome roles', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
+  const menu = `<button id="actions-trigger">Actions</button>
+    <div id="actions" class="cx-menu" data-cx-menu data-cx-trigger="actions-trigger" role="menu" popover="manual" hidden>
+      <button class="cx-menu-item" role="menuitem" tabindex="-1">Inspect record</button></div>`;
+  for (const hosted of [false, true]) {
+    const roles = hosted ? 'style="--hfx-radius-overlay:19px;--hfx-elevation-2:0 4px 12px rgb(1,2,3);--hfx-color-surface:#e6f0fa;--hfx-color-text:#123456;--hfx-color-border-strong:#456789;--hfx-type-small-size:15px;--hfx-type-small-line:1.6;--hfx-space-2:9px;--hfx-space-3:13px"' : '';
+    const tooltip = '<button id="tip-trigger">Report format</button><div id="tip" class="cx-tooltip" data-cx-tooltip data-cx-trigger="tip-trigger" role="tooltip" hidden>Choose a report format</div>';
+    await openUi(page, `<section ${roles}>${overlay('dialog', 'record')}${overlay('drawer', 'details')}${popover}${menu}${tooltip}</section>`);
+    for (const [id, radius] of [['record', '10px'], ['details', '0px'], ['help', '10px'], ['actions', '10px'], ['tip', '10px']]) {
+      await page.locator(`#${id}-trigger`).click();
+      const surface = page.locator(`#${id}`);
+      await expect(surface).toBeVisible();
+      await expect(surface).toHaveCSS('border-radius', hosted && id !== 'details' ? '19px' : radius);
+      await expect(surface).toHaveCSS('box-shadow', hosted ? 'rgb(1, 2, 3) 0px 4px 12px 0px' :
+        'rgba(22, 24, 28, 0.05) 0px 1px 2px 0px, rgba(22, 24, 28, 0.18) 0px 6px 18px -10px');
+      if (id === 'tip') {
+        await expect(surface).toHaveCSS('background-color', hosted ? 'rgb(230, 240, 250)' : 'rgb(255, 255, 255)');
+        await expect(surface).toHaveCSS('color', hosted ? 'rgb(18, 52, 86)' : 'rgb(22, 24, 28)');
+        await expect(surface).toHaveCSS('border', hosted ? '1px solid rgb(69, 103, 137)' : '1px solid rgb(205, 208, 213)');
+        await expect(surface).toHaveCSS('font-size', hosted ? '15px' : '13px');
+        await expect.poll(() => surface.evaluate(element => parseFloat(getComputedStyle(element).lineHeight))).toBeCloseTo(hosted ? 24 : 18.2, 4);
+        await expect(surface).toHaveCSS('padding', hosted ? '9px 13px' : '8px 12px');
+      }
+      await page.keyboard.press('Escape');
+      await expect(surface).toBeHidden();
+    }
+  }
 });
 
 for (const kind of ['popover', 'tooltip']) for (const authored of [false, true]) {

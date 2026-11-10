@@ -111,7 +111,8 @@
       const compact = !phone && shown.some(c => gridLevel(c) > 1);
       this.host.classList.toggle("cx-narrow", compact);
       const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone + compact;
-      if (key !== this.fitKey || !this.fitCh) {
+      // A pending query retains the accepted key, while font or density refreshes can invalidate its measurements.
+      if (key !== this.fitKey || !this.fitCh || !this.fitFont) {
         this.fitKey = key; this.fitFont = null;
         for (const column of this.columns) column.need = this.measureGridColumn(column).width;
       }

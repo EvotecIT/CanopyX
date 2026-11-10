@@ -58,9 +58,10 @@ internal static class CspExamples {
         var page = new StringBuilder()
             .Append("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
             .Append("<title>CanopyX fragments under a strict policy</title>\n")
+            .Append(CanopyHtmlAssets.FontHead(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Nonce = NoncePlaceholder }))
             .Append("<link rel=\"stylesheet\" href=\"assets/").Append(CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, runtime)).Append("\" nonce=\"").Append(NoncePlaceholder).Append("\">\n")
             .Append("<script src=\"assets/").Append(CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, runtime)).Append("\" nonce=\"").Append(NoncePlaceholder).Append("\" defer></script>\n")
-            .Append("<style nonce=\"").Append(NoncePlaceholder).Append("\">body{margin:0;padding:16px;font-family:system-ui,sans-serif}main{display:grid;gap:16px}</style>\n")
+            .Append("<style nonce=\"").Append(NoncePlaceholder).Append("\">body{margin:0;padding:16px;font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif}main{display:grid;gap:16px}</style>\n")
             .Append("</head>\n<body>\n<main>\n<h1>Fragments</h1>\n").Append(tree).Append('\n').Append(grid).Append("\n</main>\n</body>\n</html>\n");
         File.WriteAllText(Path.Combine(folder, "fragments.html"), page.ToString(), new UTF8Encoding(false));
     }

@@ -101,7 +101,7 @@ internal static class CalendarBasicExample {
         var document = new CanopyHtmlDocument();
         CanopyHtmlOptions Options(string height) => new() { Theme = theme, Height = height, Document = document };
         var page = Template("calendar-scheduler.html")
-            .Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
+            .Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
             .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid))
             .Replace("{{example-style}}", Template("examples.css"))
             .Replace("{{calendar}}", calendar.ToHtmlFragment(Options("700px")))

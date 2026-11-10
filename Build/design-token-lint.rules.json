@@ -7,7 +7,12 @@
   ],
   "exclude": [
     "hfx-tokens.css",
-    "hfx-theme.css"
+    "hfx-tokens.print.css",
+    "hfx-theme.css",
+    "hfx-legacy-adapter.css",
+    "hfx-legacy-variables.css",
+    "hfx-legacy-*.css",
+    "hfx-legacy-*.css"
   ],
   "generatedMarkers": {
     "begin": "/* hfx-token-fallbacks:begin */",

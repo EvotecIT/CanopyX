@@ -18,7 +18,7 @@ dotnet test .\CanopyX.sln -c Release
 
 The solution also holds `CanopyX.Tests.NetFramework`, which runs the framework-sensitive contract tests (search folding) against the `net472` build. It builds on every platform and runs on Windows.
 
-Useful switches: `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging. `-BrowserTestTimeoutSeconds` separately bounds the browser suite; CI runs one engine per job and gives it 1200 seconds (1500 on Windows).
+Useful switches: `-SkipTests` (leaves out the .NET suites and the engine-independent API report and package smoke), `-SkipExamples` (also skips browser tests), `-SkipBrowserTests`, `-SkipPack`. `-DotNetCommandTimeoutSeconds` (default 900) limits every `dotnet` step so a stuck restore or test run fails with a named timeout instead of hanging. `-BrowserTestTimeoutSeconds` separately bounds the browser suite; CI runs one engine shard per job and gives it 2700 seconds.
 
 ## Browser Tests
 
@@ -131,4 +131,4 @@ Pass `--bundle <folder>` to measure a bundle written by the version before the c
 
 ## Releases
 
-The owner publishes packages. `Build/project.build.json` keeps `PublishNuget` and `PublishGitHub` set to `false`, and the version comes from `CanopyXProductVersion` in `Directory.Build.props`. Contributors do not publish from local machines or CI.
+Maintainers publish packages through `Build/Build-Project.ps1`. `Build/project.build.json` keeps publication disabled by default and selects the next coordinated .NET patch version. The native publisher updates the project versions; the .NET SDK derives assembly, file and informational versions from them. Contributors do not publish from local machines or CI.

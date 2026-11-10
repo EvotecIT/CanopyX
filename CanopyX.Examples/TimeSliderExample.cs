@@ -68,7 +68,7 @@ internal static class TimeSliderExample {
 
     private static void WriteStatic(string output, string file, string title, string table) {
         var page = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>" + title +
-            "</title></head><body style=\"font-family:Calibri,Arial,sans-serif;margin:16px\">" + table + "</body></html>";
-        File.WriteAllText(Path.Combine(output, file), page, new UTF8Encoding(false));
+            "</title></head><body style=\"font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;margin:16px\">" + table + "</body></html>";
+        File.WriteAllText(Path.Combine(output, file), page.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>"), new UTF8Encoding(false));
     }
 }

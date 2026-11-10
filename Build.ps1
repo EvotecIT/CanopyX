@@ -6,6 +6,9 @@ Benchmark measurements are excluded from the normal .NET and browser test routes
 Run the documented opt-in benchmark commands when performance evidence is requested.
 .PARAMETER Configuration
 Build configuration, Release by default.
+.PARAMETER SkipTests
+Leaves out the .NET correctness tests and the engine-independent API report and JavaScript package checks, for browser
+shards whose platform runs them in another job.
 .PARAMETER SkipExamples
 Leaves out example generation and its browser checks.
 .PARAMETER SkipBrowserTests
@@ -26,6 +29,8 @@ Build output, generated examples, validation reports and packages unless skipped
 param(
     [ValidateSet('Debug', 'Release')]
     [string] $Configuration = 'Release',
+
+    [switch] $SkipTests,
 
     [switch] $SkipExamples,
 
@@ -275,10 +280,12 @@ try {
 
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('restore', $solution) -Description 'Solution restore' -TimeoutSeconds $DotNetCommandTimeoutSeconds
     Invoke-ToolCommand -FileName 'dotnet' -Arguments @('build', $solution, '-c', $Configuration, '--no-restore') -Description 'Solution build' -TimeoutSeconds $DotNetCommandTimeoutSeconds
-    Invoke-ToolCommand -FileName 'dotnet' -Arguments @('test', $solution, '-c', $Configuration, '--no-build', '--no-restore', '--filter', 'Category!=Benchmark') -Description 'Correctness tests' -TimeoutSeconds $DotNetCommandTimeoutSeconds
-    # The TypeScript API report needs only node, so it runs with or without the browser tests (docs/versioning.md).
-    if (Get-Command node -CommandType Application -ErrorAction SilentlyContinue) {
-        Invoke-ToolCommand -FileName 'node' -Arguments @((Join-Path $root 'tests/browser/tools/api-report.mjs')) -Description 'TypeScript API report check' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+    if (-not $SkipTests) {
+        Invoke-ToolCommand -FileName 'dotnet' -Arguments @('test', $solution, '-c', $Configuration, '--no-build', '--no-restore', '--filter', 'Category!=Benchmark') -Description 'Correctness tests' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+        # The TypeScript API report needs only node, so it runs with or without the browser tests (docs/versioning.md).
+        if (Get-Command node -CommandType Application -ErrorAction SilentlyContinue) {
+            Invoke-ToolCommand -FileName 'node' -Arguments @((Join-Path $root 'tests/browser/tools/api-report.mjs')) -Description 'TypeScript API report check' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+        }
     }
 
     if (-not $SkipExamples) {
@@ -304,8 +311,12 @@ try {
             $env:CANOPYX_EXAMPLES = $examplesOutput
             $env:CANOPYX_BENCHMARKS = '0'
             try {
-                Invoke-ToolCommand -FileName 'npm' -Arguments @('run', 'test:distribution') -WorkingDirectory $browserRoot -Description 'JavaScript package consumer smoke' -TimeoutSeconds $DotNetCommandTimeoutSeconds
-                Invoke-ToolCommand -FileName 'node' -Arguments @('node_modules/@playwright/test/cli.js', 'test') -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $BrowserTestTimeoutSeconds
+                if (-not $SkipTests) {
+                    Invoke-ToolCommand -FileName 'npm' -Arguments @('run', 'test:distribution') -WorkingDirectory $browserRoot -Description 'JavaScript package consumer smoke' -TimeoutSeconds $DotNetCommandTimeoutSeconds
+                }
+                # A shard runs its deterministic share of the listed tests and records what ran (tests/browser/tools/shards.mjs).
+                $browserTests = if ($env:CANOPYX_TEST_SHARD) { @('tools/shards.mjs') } else { @('node_modules/@playwright/test/cli.js', 'test') }
+                Invoke-ToolCommand -FileName 'node' -Arguments $browserTests -WorkingDirectory $browserRoot -Description 'Browser tests' -TimeoutSeconds $BrowserTestTimeoutSeconds
                 # Chromium includes the real offline Office artifacts. Other engines/shards retain their browser contracts.
                 if (-not $env:CANOPYX_TEST_BROWSERS -or $env:CANOPYX_TEST_BROWSERS -eq 'all' -or ($env:CANOPYX_TEST_BROWSERS -split '\s*,\s*') -contains 'chromium') {
                     $exportResults = if ($env:CANOPYX_TEST_OUTPUT_DIR) {

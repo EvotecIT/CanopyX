@@ -10,7 +10,7 @@
 .cx-tree-tools .cx-hcell[aria-sort="descending"] .cx-sort::after { content:"↓";font-size:var(--cx-size-14px);color:var(--hfx-color-accent); }
 .cx-tree-tools .cx-switch { font-size:var(--cx-size-14px);color:var(--hfx-color-text-secondary);white-space:nowrap; }
 /* The "+N" button of the fields hidden on a phone (48-tree-details.js), as on a flat grid. */
-.cx-tree-tools .cx-hidden-fields { color:var(--hfx-color-text-muted);font:var(--cx-size-12d5px) var(--hfx-font-sans);border:0;background:transparent;padding:0;flex:none;height:auto;min-height:var(--cx-size-24px);min-width:var(--cx-size-24px);margin-left:var(--cx-size-4px);position:relative; }
+.cx-tree-tools .cx-hidden-fields { color:var(--hfx-color-text-muted);font:var(--cx-size-12d5px) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);border:0;background:transparent;padding:0;flex:none;height:auto;min-height:var(--cx-size-24px);min-width:var(--cx-size-24px);margin-left:var(--cx-size-4px);position:relative; }
 /* The record drawer's keyboard focus ring, as on a flat grid's overlays. */
 .cx-tree-tools.cx-drawer :focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
 .cx-tree-tools.cx-drawer [data-cx-pointer-focus]:focus-visible { outline:none; }

@@ -30,7 +30,7 @@ internal static class ThemeProofExample {
             .Replace("{{calendar}}", CalendarBasicExample.Basic().ToHtmlFragment(Options("560px")))
             .Replace("{{matrix}}", matrix.ToHtmlFragment(Options("420px")))
             .Replace("{{changes}}", ChangeViewsExample.List().ToHtmlFragment(Options("480px")))
-            .Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
+            .Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
             .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid));
         File.WriteAllText(Path.Combine(output, "theme-proof.html"), page);
     }
