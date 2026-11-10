@@ -19,17 +19,7 @@
   // punctuation (including date hyphens and spaces). Some engines shape these only within a numeric run, so one native
   // batch per effective font/variant captures numeric and plain advances. Row samples still use canvas, and fonts without
   // different advances keep its ordinary fast path.
-  const COLUMN_DIGITS = new Map(), COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_NUMERIC = /[0-9\s.,:;+\-−/()\[\]]/;
-  // A loaded web font keeps its CSS font string, so cached advances must be measured again.
-  function refitOnFontsReady(view) {
-    if (document.fonts.status !== "loading") return;
-    document.fonts.ready.then(() => {
-      if (view.destroyed) return;
-      COLUMN_DIGITS.clear();
-      view.fitKey = null; view.fitCh = 0;
-      view.applyWidths();
-    });
-  }
+  const COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_NUMERIC = /[0-9\s.,:;+\-−/()\[\]]/;
   function gridNumericVariant(grid) {
     let sample = grid.querySelector(".cx-cell"), owned = !sample;
     if (owned) { sample = document.createElement("span"); sample.className = "cx-cell"; sample.style.display = "none"; grid.appendChild(sample); }
@@ -49,10 +39,10 @@
     const text = String(value).slice(0, 512), measured = context.measureText(text).width;
     if (!variant.includes("tabular-nums") || !COLUMN_HAS_NUMERIC.test(text)) return measured;
     const font = context.font;
-    let variants = COLUMN_DIGITS.get(font);
+    let variants = FONT_METRICS.get(font);
     if (!variants) {
-      if (COLUMN_DIGITS.size === 32) COLUMN_DIGITS.delete(COLUMN_DIGITS.keys().next().value);
-      COLUMN_DIGITS.set(font, variants = new Map());
+      if (FONT_METRICS.size === 32) FONT_METRICS.delete(FONT_METRICS.keys().next().value);
+      FONT_METRICS.set(font, variants = new Map());
     }
     if (!variants.has(variant)) {
       const probe = document.createElement("span"), glyphs = [];
@@ -130,6 +120,8 @@
     // above content (so long values keep their measured width before short columns keep their declared one), then content
     // slack down to the floors (fitShrink); spare width is spread by fitSpare.
     fitWidths(cols, width) {
+      // Canvas-triggered loads can omit WebKit's loading event after the document's first font cycle.
+      this.watchFonts();
       let total = 0, target;
       for (const column of cols) total += column.renderWidth = this.fitSize(column);
       // The scroll and card layouts (87-view-modes.js) keep every column at its own width and scroll sideways instead.

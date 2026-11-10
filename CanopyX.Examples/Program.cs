@@ -46,6 +46,7 @@ if (args.Contains("--ui-primitives")) {
     return;
 }
 var clock = Stopwatch.StartNew();
+if (args.Contains("--fonts")) { FontDeliveryExample.Write(output); return; }
 if (args.Contains("--shared-tokens")) {
     SharedTokensExample.Write(output);
     return;
@@ -90,6 +91,7 @@ var inline = ExampleViews.FileShares("files-inline", smallTree.Build(shares: 4, 
 inline.SaveHtmlPage(Path.Combine(output, "inline.html"), new CanopyHtmlOptions { Title = "CanopyX inline file shares" });
 Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
+FontDeliveryExample.Write(output);
 SharedTokensExample.Write(output);
 ThemeProofExample.Write(output);
 OrdinalGridExample.Write(output);
@@ -230,7 +232,7 @@ static bool FlagLarge(CanopyX.CanopyNode node) {
 static void Report(FormattableString message) => Console.WriteLine(message.ToString(CultureInfo.InvariantCulture));
 
 static void WriteTemplate(string name, string path, string content, CanopyRuntime runtime = CanopyRuntime.TreeGrid) {
-    File.WriteAllText(path, ReadTemplate(name).Replace("{{content}}", content)
+    File.WriteAllText(path, ReadTemplate(name).Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{content}}", content)
         .Replace("{{example-style}}", ReadTemplate("examples.css"))
         .Replace("{{style}}", CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, runtime))
         .Replace("{{script}}", CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, runtime)), new UTF8Encoding(false));

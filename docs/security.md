@@ -9,8 +9,10 @@ The browser tests `tests/browser/specs/csp.spec.mjs` and `tests/browser/specs/xs
 CanopyX works under a policy without `'unsafe-inline'` or `'unsafe-eval'`:
 
 ```text
-Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; object-src 'none'; base-uri 'none'
+Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'
 ```
+
+Standalone pages bundle Archivo and JetBrains Mono. External assets load fonts from the same origin; single-file pages embed the font bytes as data URLs, so their policy includes `font-src data:`. Hosted fragments use the host's font faces and do not add font declarations.
 
 The runtime never evaluates strings: there is no `eval`, no `Function` constructor and no string `setTimeout`. It sets dynamic styles (widths, positions, heights, the print outline's indent) through the style object (`element.style.width = …`), which a policy allows, and never writes a `style` attribute through markup or `setAttribute`.
 
@@ -46,7 +48,7 @@ A nonce is new for every response. Write the markup per response with the respon
 ```csharp
 var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(18));
 response.Headers["Content-Security-Policy"] =
-    $"default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; object-src 'none'; base-uri 'none'";
+    $"default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'";
 var html = view.ToHtmlPage(new CanopyHtmlOptions { Nonce = nonce });
 ```
 

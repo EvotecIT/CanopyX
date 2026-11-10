@@ -81,9 +81,9 @@
   min-height:0;
   color:var(--hfx-color-text);
   background:var(--hfx-color-surface);
-  font-family:var(--hfx-font-sans);
+  font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);
   font-size:var(--hfx-control-font-size);
-  line-height:var(--hfx-type-small-line);
+  line-height:var(--hfx-type-small-line-height,var(--hfx-type-small-line));
 }
 /* Overlays reuse host tokens; their own component controls viewport dimensions. Keep the default's specificity. */
 .cx-host:where(:not(.cx-drawer,.cx-dialog,.cx-popover,.cx-menu,.cx-tooltip)) {
@@ -105,7 +105,7 @@
 
 .cx-host *,.cx-host *::before,.cx-host *::after { box-sizing:border-box;}
 .cx-host .cx-button.cx-filter-chip { display:inline-flex;align-items:center;justify-content:flex-start;gap:var(--hfx-space-1-5);min-width:0; }
-.cx-filter-chip > .cx-chip-label { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:var(--hfx-type-small-line); }
+.cx-filter-chip > .cx-chip-label { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:var(--hfx-type-small-line-height,var(--hfx-type-small-line)); }
 .cx-filter-chip > .cx-chip-remove { flex:none; }
 @media print { .cx-filter-chip > .cx-chip-label { white-space:normal;overflow:visible;text-overflow:clip; } }
 

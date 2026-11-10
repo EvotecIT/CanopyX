@@ -32,10 +32,10 @@ padding:0 var(--hfx-space-3,0.75rem);
 border:0;
 background:transparent;
 color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));
-font-family:var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);
+font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);
 font-size:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem));
 font-weight:var(--hfx-weight-medium,500);
-line-height:var(--hfx-type-body-line,1.5);
+line-height:var(--hfx-type-body-line-height,var(--hfx-type-body-line,1.5));
 cursor:pointer;
 white-space:nowrap;
 }
@@ -54,7 +54,7 @@ border-radius:var(--hfx-radius-badge,var(--hfx-radius-sm,4px));
 color:var(--hfx-color-accent-text,light-dark(#02726a,#37c9b8));
 background:var(--hfx-color-accent-subtle,light-dark(#e7f1f1,#1b3435));
 font-size:var(--hfx-type-caption-size,0.75rem);
-line-height:var(--hfx-type-caption-line,1.35);
+line-height:var(--hfx-type-caption-line-height,var(--hfx-type-caption-line,1.35));
 font-weight:var(--hfx-weight-medium,500);
 }
 .cx-tabs-indicator{
@@ -128,7 +128,7 @@ cursor:pointer;
 .cx-tabpanel{grid-column:1 / -1;min-inline-size:0;padding-block:var(--hfx-space-4,1rem);}
 .cx-tabs--vertical > .cx-tabpanel{grid-column:2;grid-row:1 / span 3;padding-inline-start:var(--hfx-space-4,1rem);}
 .cx-tabs[data-cx-ready] > .cx-tabpanel > .cx-tabpanel-heading{display:none;}
-.cx-tabs-position{grid-column:1 / -1;color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));font-size:var(--hfx-type-caption-size,0.75rem);line-height:var(--hfx-type-caption-line,1.35);margin-block:var(--hfx-space-1,0.25rem);}
+.cx-tabs-position{grid-column:1 / -1;color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));font-size:var(--hfx-type-caption-size,0.75rem);line-height:var(--hfx-type-caption-line-height,var(--hfx-type-caption-line,1.35));margin-block:var(--hfx-space-1,0.25rem);}
 .cx-tabs-phone-picker{grid-column:1 / -1;inline-size:100%;}
 .cx-tabs[data-phone="true"]{grid-template-columns:minmax(0,1fr);}
 .cx-tabs[data-phone="true"] > .cx-tabs-tools{grid-column:1;grid-row:auto;justify-content:end;}

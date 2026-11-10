@@ -1,9 +1,9 @@
 @layer hfx.components{
 :where([data-cx-tabs],[data-cx-stepper],[data-cx-accordion]){
 color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));
-font-family:var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);
+font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);
 font-size:var(--hfx-type-body-size,0.875rem);
-line-height:var(--hfx-type-body-line,1.5);
+line-height:var(--hfx-type-body-line-height,var(--hfx-type-body-line,1.5));
 min-inline-size:0;
 }
 .cx-tabs [hidden],.cx-stepper-host [hidden],.cx-accordion [hidden]{display:none;}

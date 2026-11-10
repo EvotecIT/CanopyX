@@ -89,8 +89,8 @@ internal static class AnalystExample {
             var theme = dark ? CanopyStaticTheme.Dark() : CanopyStaticTheme.Light();
             var table = render(new CanopyStaticHtmlOptions { Theme = theme });
             var page = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Analytical report</title></head>" +
-                "<body style=\"margin:12px;background:" + theme.Surface + ";color:" + theme.Text + ";font-family:Calibri,Arial,sans-serif;\"><div tabindex=\"0\" role=\"region\" aria-label=\"Analytical report\" style=\"max-width:100%;overflow:auto;\">" + table + "</div></body></html>";
-            File.WriteAllText(Path.Combine(output, name + (dark ? "-dark" : string.Empty) + ".html"), page);
+                "<body style=\"margin:12px;background:" + theme.Surface + ";color:" + theme.Text + ";font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;\"><div tabindex=\"0\" role=\"region\" aria-label=\"Analytical report\" style=\"max-width:100%;overflow:auto;\">" + table + "</div></body></html>";
+            File.WriteAllText(Path.Combine(output, name + (dark ? "-dark" : string.Empty) + ".html"), page.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>"));
         }
     }
 }

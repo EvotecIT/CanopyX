@@ -1,5 +1,5 @@
 /* The flat grid's overlays, after the drawer: an overlay drawer keeps the overlay's font and height. */
-.cx-grid-overlay { color:var(--hfx-color-text); font:var(--hfx-control-font-size)/1.45 var(--hfx-font-sans); }
+.cx-grid-overlay { color:var(--hfx-color-text); font:var(--hfx-control-font-size)/1.45 var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif); }
 /* Drawer sizing belongs to the shared overlay shell, including container-driven phone modality. */
 body .cx-host.cx-grid-overlay:not(.cx-drawer) { height:auto; min-height:0; padding:0; }
 .cx-grid-overlay [hidden] { display:none!important; }
