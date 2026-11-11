@@ -13,6 +13,7 @@ holds a state (a tone and a symbol, never colour alone), and optionally a value,
 - [Phones](#phones)
 - [Labels and right to left](#labels-and-right-to-left)
 - [Static output, print and email](#static-output-print-and-email)
+- [A table from the server](#a-table-from-the-server)
 - [API](#api)
 - [Performance](#performance)
 - [Packaging and size](#packaging-and-size)
@@ -67,7 +68,7 @@ and `large/matrix-400.html`.
 | `diagonal` | The self cells of a square matrix: `self` (the default) draws them hatched and counts them nowhere; `data` treats them as ordinary cells. |
 | `states` | 1 to 36 states, **worst first**: `id`, `label`, `tone` (a CanopyX or host tone), the required `symbol` (check, cross, warning, info, dot, dash, question, clock, pause) so no state relies on colour alone, and `attention`. |
 | `cells` | One string per row, one character per column: the state's position as a digit (`0`-`9`, `a`-`z`), `.` for no data. A 400 by 400 matrix is about 160 KB. |
-| `notes` | Sparse extras, `[row, column, value, text, title, details]` by position: a number the cell shows, short text instead (at most 64 characters), a longer title for the tooltip and the dialog, and up to 16 `[label, value]` details. Trailing items can be left out. |
+| `notes` | Sparse extras, `[row, column, value, text, title, details, href]` by position: a number the cell shows, short text instead (at most 64 characters), a longer title for the tooltip and the dialog, up to 16 `[label, value]` details, and the cell's link (http, https, mailto or relative). Trailing items can be left out. |
 | `totals` | `states` the totals count (by default those marked `attention`), and `rows: false` or `columns: false` to hide the totals column or row. |
 | `attentionOnly` | Opens on the rows and columns that have a cell needing attention. |
 | `hideEmpty` | Opens hiding the rows and columns whose visible cells all lack data. |
@@ -119,9 +120,10 @@ The query is plain data, raised as `canopyx:matrixState` and accepted by `setSta
 Hovering a cell (after a short pause) or moving to it with the keyboard shows a tooltip with both items, the state, the value
 and the details. Clicking a cell or pressing Enter raises `canopyx:matrixCell` (cancelable) with the row and column ids (or
 their group keys for rolled-up cells), the state id (`self` for a self cell, null without data), the value, text, title,
-details, and how many members a rolled-up cell covers and need attention. Unless the host calls `preventDefault`, or the
-document sets `details: "host"`, a dialog lists the same and returns focus to the cell when it closes. Row and column headers
-with an `href` are links. CanopyX never acts on a cell itself.
+details, the cell's `href` (null for rolled-up cells), and how many members a rolled-up cell covers and need attention. Unless
+the host calls `preventDefault`, or the document sets `details: "host"`, a cell with a link follows it (in a new window with
+Ctrl, Shift or Command), and any other cell opens a dialog that lists the same and returns focus to the cell when it closes.
+Row and column headers with an `href` are links. CanopyX never acts on a cell itself.
 
 ## Keyboard
 
@@ -162,8 +164,54 @@ print to keep the tints (`print-color-adjust: exact`). A grouped row axis keeps 
 in the axis's `groupCount` and its total, each group a table body of its own), a grouped column axis as bands above the column
 labels (with their counts, over column groups); groups follow their labels in natural order and items their declared order, as the
 browser opens them when the axis declares no sort (a declared sort is not applied). Row totals and a legend with each state's count follow. A matrix of more than 2,500
-cells is listed instead as the cells that need attention (row, column, state, value), up to `MaxRows`. Printing a page draws the
-same from the visible matrix, with its current groups, collapsed groups and tones.
+cells is listed instead as the cells that need attention (row, column, state, value), up to `MaxRows`. Headers and cells with an
+`Href` are links. Printing a page draws the same from the visible matrix, with its current groups, collapsed groups and tones.
+
+## A table from the server
+
+A page that must work without script and stay indexable writes the matrix as a plain table: row headers, column headers, and
+cells whose links are the no-script path. `CanopyX.enhance` (on a table marked `data-view="matrix"`) or `CanopyX.matrix` reads
+the model from the table and mounts the interactive matrix in its place: windowed, with grouping, facets, search, only
+problems and the keyboard. Readers without script, search engines and print-to-file tools see the table itself.
+
+```html
+<table id="services" data-view="matrix"
+       data-matrix='{"states":[{"id":"critical","label":"Critical","tone":"danger","symbol":"cross","attention":true},
+                               {"id":"ok","label":"Running","tone":"success","symbol":"check"}],
+                     "rows":{"attributes":[{"id":"site","title":"Site","facet":true}],"groupBy":"site"}}'>
+  <caption>Services by server</caption>
+  <thead><tr><th>Server</th><th data-id="dns">DNS</th><th data-id="ntp"><a href="/services/ntp">Time</a></th></tr></thead>
+  <tbody>
+    <tr><th scope="rowgroup" colspan="3">Oslo</th></tr>
+    <tr data-id="srv1"><th scope="row"><a href="/servers/srv1">SRV-OSL-01</a></th>
+      <td data-state="critical" title="Critical"><a href="/checks/srv1/dns">✕ 3/3</a></td>
+      <td data-state="ok" title="Running">✓</td></tr>
+  </tbody>
+</table>
+<script>CanopyX.enhance("#services", { details: "host" });</script>
+```
+
+| Markup | The matrix reads |
+| --- | --- |
+| `data-matrix` on the table | Document fields as JSON: `states`, the axes' `title`, `attributes`, `groupBy`, `sort`, `noun` and `groupCount`, `square`, `diagonal`, `totals`, `attentionOnly`, `cellWidth`, `labels` and the rest; the markup gives the items, cells and notes. |
+| `<caption>` (or `aria-label`, `title`) and `id` | The label and the id, unless `data-matrix` names them. |
+| The bottom header row | The corner cell's text is the row title; each further header is a column (`data-id` or `id`, the text or `data-label`, a link inside it, `data-secondary`, `data-values` as the document's `values`). A header marked `data-total` is skipped: the matrix draws its own totals. |
+| Header rows above it | Bands: each names the group (`data-group`, or its text) of the columns below it that carry no value of the columns' `groupBy`. |
+| Body rows | An item each: the first cell is its header (the row's `data-id` or `id`, the same fields as a column header, on the row or the header cell). A row whose first cell is `scope="rowgroup"`, or that has `data-group`, names the group of the rows after it in its section, as bands do; a row whose first cell spans columns (a legend) is skipped, and so is `<tfoot>`. |
+| A cell | Its state: `data-state` (a declared state, or a new one named by `data-label` or the cell's `title`), or one read from `data-tone`, `data-symbol` or a leading symbol (✓ ✕ ! i • – ? ◷ ‖, as the static table writes them). New states follow the declared ones, danger and warning first; `danger` and `warning` need attention unless `data-attention="false"`. A cell with none of these has no data. |
+| A cell's extras | `data-value` (a number), `data-text` (otherwise what the cell shows after its symbol), `data-title` (or a `title` that differs from the state's label), `data-details` (`[[label, value], …]`) and its link: `data-href` or the first link inside it. |
+
+A square matrix (`"square": true`) maps each column header to its row by id, or by its place. Options are `details`
+(`"host"` hands every click to the page: `canopyx:matrixCell` and `onCell` carry the row and column ids and the `href`, and
+nothing is followed), `view` (document fields that win over the table's), `labels`, `state`, `theme`, `height` (the host's
+height, `min(720px, 85vh)` by default, or the table's `data-height`; a short matrix is only as tall as its content), `onReady`,
+`onCell` and `onStateChange`. The promise resolves with the matrix's API plus `table`, and `destroy()` puts the same table
+element back. A table that does not read as a matrix stays in the page and the promise rejects with the reason.
+
+`CanopyStaticHtml.RenderEnhanceableMatrix(matrix, options)` writes this table from a `CanopyMatrix`: the static table above with
+every row and column (no cell or row limit), links on headers and cells with an `Href`, and the ids, values, states and notes in
+`data-*` attributes. `EnhanceExamples` in `CanopyX.Examples` writes `matrix-table.html`: the services matrix as such a table,
+enhanced with `details: "host"`, with a button that puts the table back.
 
 ## API
 
@@ -178,6 +226,9 @@ same from the visible matrix, with its current groups, collapsed groups and tone
 | `focusCell(row, column)` | Moves focus to a cell. |
 | `update(document)` | Replaces the document and keeps the query that still applies, for live refresh. |
 | `destroy()`, `ready` | Removes the matrix; a promise that settles once the first window is painted. |
+
+`CanopyX.matrix(table, options)` (and `CanopyX.enhance` on a matrix table) returns a promise of the same API, plus `table`;
+see [A table from the server](#a-table-from-the-server).
 
 Options: `view`, `labels`, `state`, `onReady`, `onCell(detail, event)` and `onStateChange(state)`; the events are
 `canopyx:matrixReady`, `canopyx:matrixCell`, `canopyx:matrixState` and `canopyx:error`. TypeScript: `MatrixDocument`,
@@ -213,6 +264,8 @@ The grid scroll benchmark at 4x (5,000 rows, nine columns) drops 3 frames in 40 
 The matrix ships as the lazy `matrix` part (`canopyx-matrix.js` and `.css`, about 25 KB gzip, guard 27 KiB), loaded by the grid
 and reporting entry points when a matrix document mounts. The grid entry points carry only the `createMatrix` shell and
 `AxisWindow`. CanopyX.Html writes a matrix page with the data-grid entry point and embeds the matrix part in single-file pages.
+Reading a table is the `matrix-table` part (`canopyx-matrix-table.js`, about 3.6 KB gzip), loaded with the matrix part only by
+`CanopyX.matrix` and `CanopyX.enhance` on a matrix table.
 
 ## Limits
 

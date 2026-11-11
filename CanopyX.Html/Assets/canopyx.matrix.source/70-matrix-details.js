@@ -1,7 +1,8 @@
   // ---------- matrix: a cell's tooltip, its event and its details dialog ----------
   // Hover (after a short pause) or keyboard focus shows a tooltip with both items, the state, the value and the details.
   // Click or Enter raises canopyx:matrixCell (cancelable); unless the host handles it, or the matrix says details "host",
-  // a dialog lists the same and returns focus to the cell when it closes. CanopyX never acts on the cell itself.
+  // a dialog lists the same and returns focus to the cell when it closes, or the cell's link is followed. CanopyX never acts on
+  // the cell itself.
   Object.assign(MatrixView.prototype, {
     cellInfo(cell) {
       const row = this.model.rows[cell._r], column = this.model.columns[cell._c];
@@ -49,16 +50,21 @@
       tip.style.left = left + "px"; tip.style.top = top + "px";
     },
     hideTip() { clearTimeout(this.tipTimer); this.tip.hidden = true; this.tipKeyboard = false; this.pointerCell = null; this.hoverElement?.remove(); },
-    openCell(cell) {
+    // A cell with a link follows it, as the table it came from did (with Ctrl, Shift or Command in a new window), unless the
+    // host handles the event or the matrix says details "host".
+    openCell(cell, event) {
       const data = this.cellInfo(cell);
       if (!data) return;
       this.hideTip();
       const note = data.info.note, member = entry => entry.kind === "item" ? entry.item.id : null, group = entry => entry.kind === "item" ? null : entry.group.key;
       const detail = Object.freeze({ matrix: this.doc.id, row: member(data.row), rowGroup: group(data.row), column: member(data.column), columnGroup: group(data.column),
         state: data.state ? data.state.id : data.info.state === MATRIX_SELF ? "self" : null, value: note ? note.value : null, text: note ? note.text : null,
-        title: note ? note.title : null, details: note && note.details ? note.details.map(pair => [...pair]) : [], members: data.info.members, attention: data.info.attention });
+        title: note ? note.title : null, details: note && note.details ? note.details.map(pair => [...pair]) : [], members: data.info.members, attention: data.info.attention,
+        href: !data.info.rolled && note ? note.href : null });
       if (!this.emit("matrixCell", detail, "onCell", true) || this.doc.details === "host") return;
-      this.openDialog(data, cell);
+      if (!detail.href) this.openDialog(data, cell);
+      else if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) global.open(detail.href, "_blank", "noopener");
+      else global.location.assign(detail.href);
     },
     openDialog(data, cell) {
       const labels = this.labels, dialog = this.dialog ||= this.buildDialog();

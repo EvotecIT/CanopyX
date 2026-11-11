@@ -1129,13 +1129,13 @@ export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGrid
 import type { createFlow, FlowApi, FlowOptions } from "./flow.js";
 export { createFlow } from "./flow.js";
 export type { FlowDocument, FlowField, FlowStep, FlowSection, FlowOption, FlowCondition, FlowValidation, FlowValue, FlowSubmission, FlowSubmitDetail, FlowAnswer, FlowHooks, FlowOptions, FlowApi, FlowState, FlowValidationResult } from "./flow.js";
-import type { createMatrix, MatrixOptions, MatrixApi } from "./matrix.js";
-export { createMatrix } from "./matrix.js";
-export type { MatrixDocument, MatrixAxis, MatrixItem, MatrixAttribute, MatrixState, MatrixSort, MatrixNote, MatrixQueryState, MatrixStateInput, MatrixCellDetail, MatrixOptions, MatrixApi } from "./matrix.js";
+import type { createMatrix, matrix, MatrixOptions, MatrixApi } from "./matrix.js";
+export { createMatrix, matrix } from "./matrix.js";
+export type { MatrixDocument, MatrixAxis, MatrixItem, MatrixAttribute, MatrixState, MatrixSort, MatrixNote, MatrixQueryState, MatrixStateInput, MatrixCellDetail, MatrixOptions, MatrixApi, MatrixTableOptions, EnhancedMatrix } from "./matrix.js";
 import type { createDiff, createChangeList, createPropagation, DiffOptions, DiffApi, ChangeListOptions, ChangeListApi, PropagationOptions, PropagationApi } from "./changes.js";
 export { createDiff, createChangeList, createPropagation } from "./changes.js";
 export type { ChangeNote, DiffHunk, DiffBody, DiffDocument, DiffOptions, DiffApi, ChangeVersion, ChangeItem, ChangeAction, ChangeListDocument, ChangeListState, ChangeActionDetail, ChangeExportDetail, ChangeListOptions, ChangeListApi, PropagationState, PropagationDocument, PropagationOptions, PropagationApi } from "./changes.js";
-declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; createDiff: typeof createDiff; createChangeList: typeof createChangeList; createPropagation: typeof createPropagation; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; createDiff: typeof createDiff; createChangeList: typeof createChangeList; createPropagation: typeof createPropagation; enhance: typeof enhance; grid: typeof grid; matrix: typeof matrix; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;
 
 /** Chart analysis reads accepted data through the normal grid capture contracts. */

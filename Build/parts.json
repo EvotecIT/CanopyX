@@ -1185,6 +1185,26 @@
       ]
     },
     {
+      "name": "matrix-table",
+      "label": "matrix table",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [],
+      "key": "MATRIX_TABLE_IMPL",
+      "context": [
+        "MATRIX_TABLE_IMPL",
+        "MATRIX_IMPL",
+        "createMatrix",
+        "h",
+        "PROTOCOL"
+      ],
+      "end": "MATRIX_TABLE_IMPL.create = matrixTableCreate;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.matrix-table.source"
+      ]
+    },
+    {
       "name": "changes",
       "label": "change views",
       "runtimes": [

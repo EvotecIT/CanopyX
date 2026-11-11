@@ -52,8 +52,8 @@ export interface MatrixSort {
   direction?: "asc" | "desc";
 }
 
-/** A cell's extras: [row index, column index, value, text, title, [label, value][]]. */
-export type MatrixNote = [number, number, number | null, (string | null)?, (string | null)?, ([string, string][] | null)?];
+/** A cell's extras: [row index, column index, value, text, title, [label, value][], link]. */
+export type MatrixNote = [number, number, number | null, (string | null)?, (string | null)?, ([string, string][] | null)?, (string | null)?];
 
 /** The matrix document: `{ protocol: "canopyx/2", type: "matrix" }`. */
 export interface MatrixDocument {
@@ -111,6 +111,8 @@ export interface MatrixCellDetail {
   text: string | null;
   title: string | null;
   details: [string, string][];
+  /** The cell's link; null for rolled-up cells. Followed unless the host handles the event or details is "host". */
+  href: string | null;
   /** The cells a rolled-up cell covers, and how many of them need attention. */
   members: number;
   attention: number;
@@ -163,3 +165,22 @@ export interface MatrixApi {
 
 /** Creates a status matrix in a host element (docs/matrix.md). Ships with the grid and reporting entry points. */
 export declare function createMatrix(host: HTMLElement, options: MatrixOptions): MatrixApi;
+
+/** Options of CanopyX.matrix, and of CanopyX.enhance on a table marked data-view="matrix" (docs/matrix.md#a-table-from-the-server). */
+export interface MatrixTableOptions extends Partial<Omit<MatrixOptions, "view">> {
+  /** Document fields that win over the table's data-matrix and markup. */
+  view?: Partial<MatrixDocument>;
+  /** "host" hands every cell click to the page (canopyx:matrixCell and onCell, with the href); nothing is followed. */
+  details?: "dialog" | "host";
+  theme?: "light" | "dark" | (string & {});
+  /** The CSS height of the element that replaces the table; min(720px, 85vh) by default. */
+  height?: string;
+}
+
+/** A matrix mounted from a table: its API plus the table, which destroy() puts back. */
+export interface EnhancedMatrix extends MatrixApi {
+  readonly table: HTMLTableElement;
+}
+
+/** Reads a server-rendered table into a matrix and mounts it in the table's place. Ships with the grid and reporting entry points. */
+export declare function matrix(table: HTMLTableElement | string, options?: MatrixTableOptions): Promise<EnhancedMatrix>;

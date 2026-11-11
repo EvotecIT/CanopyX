@@ -126,16 +126,17 @@
     const notes = new Map();
     if (doc.notes !== undefined && !Array.isArray(doc.notes)) matrixFail("notes must be a list");
     for (const note of doc.notes || []) {
-      if (!Array.isArray(note) || note.length < 3 || note.length > 6 || !Number.isInteger(note[0]) || !Number.isInteger(note[1]) || note[0] < 0 || note[1] < 0 || note[0] >= R || note[1] >= C) matrixFail("a note names no cell");
+      if (!Array.isArray(note) || note.length < 3 || note.length > 7 ||!Number.isInteger(note[0]) || !Number.isInteger(note[1]) || note[0] < 0 || note[1] < 0 || note[0] >= R || note[1] >= C) matrixFail("a note names no cell");
       const at = note[0] * C + note[1];
       if (grid[at] >= MATRIX_SELF || notes.has(at)) matrixFail("a note names a cell without a state, or twice");
-      const [, , value = null, text = null, title = null, details = null] = note;
+      const [, , value = null, text = null, title = null, details = null, href = null] = note;
+      if (href !== null && !matrixHref(href)) matrixFail("a cell link is not an http, https, mailto or relative address");
       if (value !== null && (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER)) matrixFail("a note value must be a finite number");
       if (text !== null) matrixText(text, "a note text", 64);
       if (title !== null) matrixText(title, "a note title", 1000);
       if (details !== null && (!Array.isArray(details) || details.length > 16 || details.some(pair => !Array.isArray(pair) || pair.length !== 2 ||
         typeof pair[0] !== "string" || !/\S/.test(pair[0]) || pair[0].length > 200 || typeof pair[1] !== "string" || pair[1].length > 1000))) matrixFail("note details are up to 16 label and value pairs");
-      notes.set(at, Object.freeze({ value, text, title, details: details ? Object.freeze(details.map(pair => Object.freeze([...pair]))) : null }));
+      notes.set(at, Object.freeze({ value, text, title, details: details ? Object.freeze(details.map(pair => Object.freeze([...pair]))) : null, href }));
     }
     const totals = doc.totals === undefined ? {} : matrixKeys(doc.totals, ["states", "rows", "columns"], "totals");
     if (totals.states !== undefined && (!Array.isArray(totals.states) || totals.states.some(state => !stateIds.has(state)))) matrixFail("totals count undeclared states");

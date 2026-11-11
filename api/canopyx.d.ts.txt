@@ -2346,15 +2346,15 @@ export type{
 }
 from "./flow.js";
 import type{
-  createMatrix,MatrixOptions,MatrixApi
+  createMatrix,matrix,MatrixOptions,MatrixApi
 }
 from "./matrix.js";
 export{
-  createMatrix
+  createMatrix,matrix
 }
 from "./matrix.js";
 export type{
-  MatrixDocument,MatrixAxis,MatrixItem,MatrixAttribute,MatrixState,MatrixSort,MatrixNote,MatrixQueryState,MatrixStateInput,MatrixCellDetail,MatrixOptions,MatrixApi
+  MatrixDocument,MatrixAxis,MatrixItem,MatrixAttribute,MatrixState,MatrixSort,MatrixNote,MatrixQueryState,MatrixStateInput,MatrixCellDetail,MatrixOptions,MatrixApi,MatrixTableOptions,EnhancedMatrix
 }
 from "./matrix.js";
 import type{
@@ -2379,6 +2379,7 @@ declare const gridRuntime:Omit<typeof CanopyX,"configure"|"mount">&{
   createPropagation:typeof createPropagation;
   enhance:typeof enhance;
   grid:typeof grid;
+  matrix:typeof matrix;
   configure:typeof configure;
   mount:typeof mount
 }
@@ -2919,7 +2920,7 @@ export interface MatrixSort{
   by:"#label"|"#total"|(string&{});
   direction?:"asc"|"desc";
 }
-export type MatrixNote=[number,number,number|null,(string|null)?,(string|null)?,([string,string][]|null)?];
+export type MatrixNote=[number,number,number|null,(string|null)?,(string|null)?,([string,string][]|null)?,(string|null)?];
 export interface MatrixDocument{
   protocol:"canopyx/2";
   type:"matrix";
@@ -2964,6 +2965,7 @@ export interface MatrixCellDetail{
   text:string|null;
   title:string|null;
   details:[string,string][];
+  href:string|null;
   members:number;
   attention:number;
 }
@@ -3002,6 +3004,16 @@ export interface MatrixApi{
   destroy():void;
 }
 export declare function createMatrix(host:HTMLElement,options:MatrixOptions):MatrixApi;
+export interface MatrixTableOptions extends Partial<Omit<MatrixOptions,"view">>{
+  view?:Partial<MatrixDocument>;
+  details?:"dialog"|"host";
+  theme?:"light"|"dark"|(string&{});
+  height?:string;
+}
+export interface EnhancedMatrix extends MatrixApi{
+  readonly table:HTMLTableElement;
+}
+export declare function matrix(table:HTMLTableElement|string,options?:MatrixTableOptions):Promise<EnhancedMatrix>;
 
 // ---- JavaScript/path.d.ts ----
 import type{
