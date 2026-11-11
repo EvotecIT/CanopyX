@@ -500,6 +500,42 @@ writes them in a canonical order (`ToString()`), parses them (`Parse`, `TryParse
 `TimeZoneInfo` (`Occurrences`). The browser and C# implementations are checked against the same cases
 (`tests/fixtures/recurrence-cases.json`), which include the RFC 5545 examples the subset covers and DST transitions.
 
+### How a series reads
+
+A recurring event says how it repeats in words. The details popover and the hover card show the sentence under the event's
+time, and the event's accessible name ends with it instead of the bare "Repeats", so a screen reader hears what the repeat
+marker means. In C#, `rule.Describe(start, culture, labels, allDay, exceptions)` writes the same sentence; `start` is the series
+start as a wall time in its zone, which supplies the weekday, day and month a rule leaves out.
+
+| Rule (start) | English | Polish |
+|---|---|---|
+| `FREQ=DAILY;INTERVAL=3;COUNT=5` | Every 3 days, at 09:00, 5 times | Co 3 dni, o 09:00, 5 razy |
+| `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR` | On weekdays, at 04:00 | W dni robocze, o 04:00 |
+| `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH` | Monday through Thursday, at 09:00 | Poniedziałek–czwartek, o 09:00 |
+| `FREQ=WEEKLY;INTERVAL=2;COUNT=10;BYDAY=MO,WE` | Every 2 weeks, on Monday and Wednesday, at 09:00, 10 times | Co 2 tygodnie, poniedziałek i środa, o 09:00, 10 razy |
+| `FREQ=MONTHLY;UNTIL=20261231;BYDAY=-1FR` | Every month, on the last Friday, at 09:00, until December 31, 2026 | Co miesiąc, ostatni piątek, o 09:00, do 31 grudnia 2026 |
+| `FREQ=MONTHLY;BYMONTHDAY=1,15` | Every month, on days 1 and 15, at 09:00 | Co miesiąc, w dni 1 i 15, o 09:00 |
+| `FREQ=YEARLY` (15 March, all-day) | Every year, on March 15 | Co roku, 15 marca |
+| `FREQ=DAILY` with two exceptions | Every day, at 09:00, except 2 dates | Codziennie, o 09:00, z wyjątkiem 2 dat |
+
+The same rules in the other packs: German "Alle 2 Wochen, am Montag und Mittwoch, um 09:00, 10-mal" and "Jeden Monat, am letzten
+Freitag, um 09:00, bis 31. Dezember 2026"; Spanish "Cada mes, el primer lunes, a las 09:00" and "Cada mes, los días 1 y 15, a las
+09:00"; French "Du lundi au jeudi, à 09:00" and "Tous les ans, le 15 mars"; Italian "Ogni 2 settimane, lunedì e mercoledì, alle
+09:00, 10 volte" and "Ogni mese, il primo lunedì, alle 09:00".
+
+- Weekday and month names, the day and month of a yearly rule and the `UNTIL` date come from the culture (`Intl` in the
+  browser, `CultureInfo` in C#); the words around them are the `calendarRecurrence…` labels, which the label packs translate.
+  Ordinals of numbered weekdays (first to fifth, and last) are one label, `calendarRecurrenceOrdinals`, six texts separated by
+  `|`. The calendar writes the time as it writes event times; `Describe` writes `HH:mm`.
+- Monday to Friday reads as weekdays, Saturday and Sunday as weekends, three or more consecutive days as a range; with
+  `INTERVAL=1` those phrases stand without "every week". A daily rule on weekdays reads as the weekly rule it equals.
+  `BYSETPOS` over a single weekday reads as a numbered weekday (`BYDAY=MO;BYSETPOS=2` is "the second Monday").
+- A rule the sentences cannot say exactly is shown as its rule text (in the details, "Repeats: FREQ=…"), never guessed:
+  plain weekdays in a monthly or yearly rule, numbered weekdays of a whole year (no `BYMONTH`), ordinals beyond the fifth,
+  `BYSETPOS` over several days, days counted from the month's end other than the last, days of the month with weekdays, and
+  every second day on given weekdays. `WKST` does not change the sentence.
+- `tests/fixtures/recurrence-descriptions.json` holds the sentences for every pack; C# and the browser check the same vectors.
+
 ## Export and print
 
 - **iCalendar:** the Export menu offers "iCalendar (.ics)" for its scopes, and `exportCalendar({ scope })` exports the records
@@ -611,7 +647,7 @@ The calendar methods load the calendar part first. TypeScript types are in `cale
 
 The calendar core ships in the `calendar` part (`canopyx-calendar.js` and `.css`): every view, the bar, the popover, menus,
 hover cards, sources and the folding legend. What a basic calendar does not use is in parts of its own, loaded before the calendar
-starts when the definition uses them, or on first use: `calendar-recurrence` (rules and exceptions, recurring ranges, iCalendar
+starts when the definition uses them, or on first use: `calendar-recurrence` (rules, exceptions and their sentences, recurring ranges, iCalendar
 sources), `calendar-edit` (moving, resizing, creating, dropping and occurrence changes), `calendar-ics` (iCalendar export, from
 the Export menu or `exportCalendar`, and import), `calendar-screen` ([shared screens](#shared-screens)) and `timeline` (the
 timeline, resources and resource columns). A grid whose view declares
@@ -623,7 +659,7 @@ stubs. Single-file pages carry the parts' payloads for views that need them: a c
 | --- | --- | --- |
 | `canopyx-calendar.js` | 42,240 bytes | 43,008 (42 KiB) |
 | `canopyx-calendar.css` | 6,120 bytes | 6,400 |
-| `canopyx-calendar-recurrence.js` | 3,273 bytes | 3,800 |
+| `canopyx-calendar-recurrence.js` | 5,289 bytes | 6,000 |
 | `canopyx-calendar-edit.js` | 14,439 bytes | 14,848 |
 | `canopyx-calendar-ics.js` | 8,302 bytes | 9,450 |
 | `canopyx-calendar-screen.js` | 6,186 bytes | 6,950 |

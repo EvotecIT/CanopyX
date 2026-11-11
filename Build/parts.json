@@ -2196,8 +2196,8 @@
       "context": [
         "DataGrid"
       ],
-      "start": "const { CAL_DAY, CAL_MINUTE, calDayNumber, calDayParts, calDow, calMonthDays, calParseDay } = DataGrid.prototype.calKit;",
-      "end": "Object.assign(DataGrid.prototype.calKit, { calRule, calExpand, calSeriesEnd, calExceptions, CAL_WEEKDAYS });",
+      "start": "const { CAL_DAY, CAL_MINUTE, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calParseDay } = DataGrid.prototype.calKit;",
+      "end": "Object.assign(DataGrid.prototype.calKit, { calRule, calExpand, calSeriesEnd, calExceptions, calDescribe, CAL_WEEKDAYS });",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar-recurrence.source"
       ]

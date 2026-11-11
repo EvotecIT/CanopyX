@@ -1,8 +1,9 @@
 // The calendar's pure helpers (docs/calendar.md): time zones and DST, the RRULE subset against the shared RFC 5545 cases
-// (tests/fixtures/recurrence-cases.json, which the C# CanopyRecurrence checks too), lane and column layout, and the iCalendar
+// (tests/fixtures/recurrence-cases.json, which the C# CanopyRecurrence checks too) and their sentences (recurrence-descriptions.json),
+// lane and column layout, and the iCalendar
 // writer's escaping and folding. They run on the calendar part installed into a stand-in grid class.
 import { test, expect } from "@playwright/test";
-import { loadKit, recurrenceCases } from "./calendar-support.mjs";
+import { loadKit, recurrenceCases, recurrenceDescriptions } from "./calendar-support.mjs";
 
 test.describe("calendar helpers", () => {
   test.beforeEach(async ({ page }) => { await loadKit(page); });
@@ -23,6 +24,21 @@ test.describe("calendar helpers", () => {
       }
       return out;
     }, recurrenceCases());
+    expect(failures).toEqual([]);
+  });
+
+  test("recurrence rules read as the sentences C# CanopyRecurrence.Describe writes, in each label pack", async ({ page }) => {
+    const failures = await page.evaluate(cases => {
+      const kit = window.kit, out = [];
+      for (const item of cases) {
+        // The start is a wall time: its weekday, day and minutes are what the sentence reads.
+        const [date, time] = item.start.split("T"), day = kit.calParseDay(date), [h, m] = time.split(":").map(Number);
+        const at = { ...kit.calDayParts(day), day, minutes: h * 60 + m }, { excluded, excludedDays } = kit.calExceptions((item.exceptions || []).join(","), kit.calZone("utc"));
+        const actual = kit.calDescribe(kit.calRule(item.rule), at, { lang: item.culture, labels: item.labels, allDay: !!item.allDay, exceptions: excluded.size + excludedDays.size }) ?? item.rule;
+        if (actual !== item.expected) out.push({ name: item.name, expected: item.expected, actual });
+      }
+      return out;
+    }, await recurrenceDescriptions());
     expect(failures).toEqual([]);
   });
 

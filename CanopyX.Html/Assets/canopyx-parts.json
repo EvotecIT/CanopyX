@@ -1006,7 +1006,7 @@
     {
       "name": "calendar-recurrence",
       "label": "calendar recurrence",
-      "version": "64bcc24d785bd1af",
+      "version": "ffdf4d402d398d37",
       "script": "canopyx-calendar-recurrence.js",
       "runtimes": [
         "grid"
