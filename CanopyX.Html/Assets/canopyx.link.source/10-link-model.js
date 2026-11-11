@@ -129,7 +129,7 @@
       const button = h("button", "cx-button cx-link-chip" + (this.kind === "grid" ? " cx-grid-chip" : ""));
       button.type = "button"; filterChipContent(button, text);
       button.title = fill(this.labels.linkFilteredBy, { source: first.sourceLabel, values: description });
-      button.setAttribute("aria-label", fill(this.labels.linkRemoveFilter, { source: first.sourceLabel, values: description }));
+      button.setAttribute("aria-label", text + ", " + fill(this.labels.linkRemoveFilter, { source: first.sourceLabel, values: description }));
       button.setAttribute("data-cx-condition", "link-" + source); button.setAttribute("data-cx-link-source", source);
       button.onclick = () => { button.focus({ preventScroll: true }); run(); };
       return button;

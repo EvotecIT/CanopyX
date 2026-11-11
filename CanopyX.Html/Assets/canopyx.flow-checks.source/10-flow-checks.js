@@ -87,7 +87,7 @@
       const phase = state?.running ? "running" : !result ? "none" : state.stale ? "stale" : result.status;
       item.dataset.cxState = phase;
       setText(parts.run, result ? labels.flowRunAgain : check.label);
-      parts.run.setAttribute("aria-label", result ? fill(labels.flowRunCheckAgain, { check: check.label }) : check.label);
+      parts.run.setAttribute("aria-label", result ? labels.flowRunAgain + ", " + fill(labels.flowRunCheckAgain, { check: check.label }) : check.label);
       parts.run.classList.toggle("cx-primary", phase === "fail");
       setText(parts.mark, FLOW_CHECK_MARKS[phase] || "");
       setText(parts.text, phase === "running" ? labels.flowCheckRunning : phase === "none" ? labels.flowCheckNotRun : phase === "stale" ? labels.flowCheckStale :
@@ -215,7 +215,7 @@
           row.dataset.cxState = phase;
           const again = h("button", "cx-flow-link cx-flow-check-again");
           again.type = "button"; again.dataset.cxCheck = check.id; setText(again, labels.flowRunAgain);
-          again.setAttribute("aria-label", fill(labels.flowRunCheckAgain, { check: check.label }));
+          again.setAttribute("aria-label", labels.flowRunAgain + ", " + fill(labels.flowRunCheckAgain, { check: check.label }));
           if (phase === "running") again.setAttribute("aria-disabled", "true");
           // Not while it runs, and not while the answers are being submitted.
           again.addEventListener("click", () => { if (again.getAttribute("aria-disabled") !== "true" && !this.busy) this.runCheck(check.id).catch(error => this.report(error, "check")); });

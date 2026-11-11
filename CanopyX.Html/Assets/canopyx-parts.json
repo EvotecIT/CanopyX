@@ -315,7 +315,7 @@
     {
       "name": "flow-checks",
       "label": "flow checks",
-      "version": "53394e75b7d1b0e2",
+      "version": "d8bb7053ab6846a6",
       "script": "canopyx-flow-checks.js",
       "style": "canopyx-flow-checks.css",
       "runtimes": [
@@ -727,7 +727,7 @@
     {
       "name": "link",
       "label": "linked views",
-      "version": "9f30ab1b4440b15f",
+      "version": "7cb24c0e58b3d00e",
       "script": "canopyx-link.js",
       "style": "canopyx-link.css",
       "runtimes": [
