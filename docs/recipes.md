@@ -25,6 +25,7 @@ right runtime automatically.
 - [Group rows with totals](#group-rows-with-totals)
 - [Filter by values with counts](#filter-by-values-with-counts)
 - [Keep a grid up to date while it is open](#keep-a-grid-up-to-date-while-it-is-open)
+- [Build an operations screen from several views](#build-an-operations-screen-from-several-views)
 - [Remember the reader's view](#remember-the-readers-view)
 - [Translate the controls](#translate-the-controls)
 
@@ -320,6 +321,23 @@ view.Live = new CanopyGridLive { PollMilliseconds = 10000, Flash = true };
 
 See [live data](live-data.md).
 
+## Build an operations screen from several views
+
+A console page combines CanopyX views with your own page chrome. Your page owns the header and the summary cards (static
+cards belong to ChartForgeX.VisualBlocks or your HTML) and computes their counts; a card click filters a grid through the
+[linked views](linked-views.md) API, and the grid shows the filter as a removable chip:
+
+```javascript
+card.addEventListener("click", () => document.getElementById("jobs").canopyx
+  .setExternalFilter("summary", { field: "status", values: ["Paused"], sourceLabel: "Summary" }));
+```
+
+In C#, write each view as a fragment that shares one `CanopyHtmlDocument`, put them in `CanopyTabs` panels, and include one
+grid entry point (`CanopyRuntime.ReportingGrid`) with the tab part's markup. Row actions, record actions and a flow in a
+drawer (`CanopyFlowContainer.Drawer`) raise proposals; your scheduler answers them and pushes the result back with
+`updateRows`, `addRows` and `removeRows`. The `scheduler-console.html` example (and its dark twin) puts it together: state
+pills, run-history slots, relative next runs with `CanopyRecurrence.Describe` text, a record panel, a live run history with
+log detail rows and a median and P95 summary row, and a New job form.
 ## Remember the reader's view
 
 ```csharp
