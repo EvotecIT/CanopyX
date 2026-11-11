@@ -1225,7 +1225,7 @@
     {
       "name": "compare",
       "label": "dataset comparison",
-      "version": "46245b96483e9c30",
+      "version": "2aee327cf55d6ab1",
       "script": "canopyx-compare.js",
       "style": "canopyx-compare.css",
       "runtimes": [
