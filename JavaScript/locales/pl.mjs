@@ -833,7 +833,7 @@ const labels = Object.freeze({
   calendarRecurrenceFourthWeekday: "w czwarty poniedziałek|w czwarty wtorek|w czwartą środę|w czwarty czwartek|w czwarty piątek|w czwartą sobotę|w czwartą niedzielę",
   calendarRecurrenceFifthWeekday: "w piąty poniedziałek|w piąty wtorek|w piątą środę|w piąty czwartek|w piąty piątek|w piątą sobotę|w piątą niedzielę",
   calendarRecurrenceLastWeekday: "w ostatni poniedziałek|w ostatni wtorek|w ostatnią środę|w ostatni czwartek|w ostatni piątek|w ostatnią sobotę|w ostatnią niedzielę",
-  calendarRecurrenceInMonths: "w miesiącach: {months}",
+  calendarRecurrenceInMonth: "w styczniu|w lutym|w marcu|w kwietniu|w maju|w czerwcu|w lipcu|w sierpniu|we wrześniu|w październiku|w listopadzie|w grudniu",
   calendarRecurrenceOnDate: "{date}",
   calendarRecurrenceAt: "o {time}",
   calendarRecurrenceTimes: "[one]{count} raz[few]{count} razy[many]{count} razy[other]{count} razy",

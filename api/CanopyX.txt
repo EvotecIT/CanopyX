@@ -2039,7 +2039,7 @@ CanopyX.CanopyLabels.System.String CalendarRecurrenceExcept { get; set; }
 CanopyX.CanopyLabels.System.String CalendarRecurrenceFifthWeekday { get; set; }
 CanopyX.CanopyLabels.System.String CalendarRecurrenceFirstWeekday { get; set; }
 CanopyX.CanopyLabels.System.String CalendarRecurrenceFourthWeekday { get; set; }
-CanopyX.CanopyLabels.System.String CalendarRecurrenceInMonths { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceInMonth { get; set; }
 CanopyX.CanopyLabels.System.String CalendarRecurrenceLastDay { get; set; }
 CanopyX.CanopyLabels.System.String CalendarRecurrenceLastWeekday { get; set; }
 CanopyX.CanopyLabels.System.String CalendarRecurrenceList { get; set; }

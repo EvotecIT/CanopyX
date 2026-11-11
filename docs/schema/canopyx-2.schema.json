@@ -3198,7 +3198,7 @@
             "calendarRecurrenceWeekdays": { "type": "string" }, "calendarRecurrenceWeekends": { "type": "string" }, "calendarRecurrenceDayRange": { "type": "string" }, "calendarRecurrenceRangeDay": { "type": "string" },
             "calendarRecurrenceList": { "type": "string" }, "calendarRecurrenceMonthDays": { "type": "string" }, "calendarRecurrenceLastDay": { "type": "string" },
             "calendarRecurrenceFirstWeekday": { "type": "string" }, "calendarRecurrenceSecondWeekday": { "type": "string" }, "calendarRecurrenceThirdWeekday": { "type": "string" }, "calendarRecurrenceFourthWeekday": { "type": "string" },
-            "calendarRecurrenceFifthWeekday": { "type": "string" }, "calendarRecurrenceLastWeekday": { "type": "string" }, "calendarRecurrenceInMonths": { "type": "string" }, "calendarRecurrenceOnDate": { "type": "string" }, "calendarRecurrenceAt": { "type": "string" },
+            "calendarRecurrenceFifthWeekday": { "type": "string" }, "calendarRecurrenceLastWeekday": { "type": "string" }, "calendarRecurrenceInMonth": { "type": "string" }, "calendarRecurrenceOnDate": { "type": "string" }, "calendarRecurrenceAt": { "type": "string" },
             "calendarRecurrenceTimes": { "type": "string" }, "calendarRecurrenceUntil": { "type": "string" }, "calendarRecurrenceExcept": { "type": "string" },
             "pathEmpty": { "type": "string" },
             "pathSource": { "type": "string" },

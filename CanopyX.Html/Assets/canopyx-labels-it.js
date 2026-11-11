@@ -834,7 +834,7 @@ const labels = Object.freeze({
   calendarRecurrenceFourthWeekday: "il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|la quarta {day}",
   calendarRecurrenceFifthWeekday: "il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|la quinta {day}",
   calendarRecurrenceLastWeekday: "l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultima {day}",
-  calendarRecurrenceInMonths: "a {months}",
+  calendarRecurrenceInMonth: "a {month}|a {month}|a {month}|ad {month}|a {month}|a {month}|a {month}|ad {month}|a {month}|a {month}|a {month}|a {month}",
   calendarRecurrenceOnDate: "il {date}",
   calendarRecurrenceAt: "alle {time}",
   calendarRecurrenceTimes: "[one]{count} volta[other]{count} volte",

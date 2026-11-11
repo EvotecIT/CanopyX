@@ -33,7 +33,7 @@ public sealed partial class CanopyLabels {
         labels.CalendarRecurrenceFourthWeekday = "w czwarty poniedziałek|w czwarty wtorek|w czwartą środę|w czwarty czwartek|w czwarty piątek|w czwartą sobotę|w czwartą niedzielę";
         labels.CalendarRecurrenceFifthWeekday = "w piąty poniedziałek|w piąty wtorek|w piątą środę|w piąty czwartek|w piąty piątek|w piątą sobotę|w piątą niedzielę";
         labels.CalendarRecurrenceLastWeekday = "w ostatni poniedziałek|w ostatni wtorek|w ostatnią środę|w ostatni czwartek|w ostatni piątek|w ostatnią sobotę|w ostatnią niedzielę";
-        labels.CalendarRecurrenceInMonths = "w miesiącach: {months}";
+        labels.CalendarRecurrenceInMonth = "w styczniu|w lutym|w marcu|w kwietniu|w maju|w czerwcu|w lipcu|w sierpniu|we wrześniu|w październiku|w listopadzie|w grudniu";
         labels.CalendarRecurrenceOnDate = "{date}";
         labels.CalendarRecurrenceAt = "o {time}";
         labels.CalendarRecurrenceTimes = "[one]{count} raz[few]{count} razy[many]{count} razy[other]{count} razy";

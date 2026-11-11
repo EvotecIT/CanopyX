@@ -36,7 +36,7 @@ public sealed partial class CanopyLabels {
             [nameof(CalendarRecurrenceFourthWeekday)] = "the fourth {day}",
             [nameof(CalendarRecurrenceFifthWeekday)] = "the fifth {day}",
             [nameof(CalendarRecurrenceLastWeekday)] = "the last {day}",
-            [nameof(CalendarRecurrenceInMonths)] = "in {months}",
+            [nameof(CalendarRecurrenceInMonth)] = "in {month}",
             [nameof(CalendarRecurrenceOnDate)] = "on {date}",
             [nameof(CalendarRecurrenceAt)] = "at {time}",
             [nameof(CalendarRecurrenceTimes)] = "[one]{count} time[other]{count} times",

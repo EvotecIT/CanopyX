@@ -52,12 +52,13 @@ foreach ($language in $languages) {
         $english = $entry.Groups[2].Value | ConvertFrom-Json
         $expected = @([regex]::Matches($english, '\{\w+\}') | ForEach-Object Value | Sort-Object -Unique)
         $provided = @([regex]::Matches($text, '\{\w+\}') | ForEach-Object Value | Sort-Object -Unique)
-        if ($expected -contains '{day}') {
-            # Weekday labels hold one phrase, or seven (Monday to Sunday) separated by |; a phrase may write the weekday out in its
-            # own case instead of {day}, the culture's name.
+        $phrased = @{ '{day}' = 7; '{month}' = 12 }.GetEnumerator() | Where-Object { $expected -contains $_.Key }
+        if ($phrased) {
+            # Weekday labels hold one phrase, or seven (Monday to Sunday) separated by |, and month labels one or twelve (January to
+            # December); a phrase may write the name out in its own case instead of {day} or {month}, the culture's name.
             $phrases = $text.Split('|')
-            if ($phrases.Count -notin 1, 7 -or @($phrases | Where-Object { -not $_.Trim() }).Count -or @($provided | Where-Object { $_ -ne '{day}' }).Count) {
-                throw "The $($language.Id) label $name needs one phrase or seven separated by |, with no placeholder but {day}."
+            if ($phrases.Count -notin 1, $phrased.Value -or @($phrases | Where-Object { -not $_.Trim() }).Count -or @($provided | Where-Object { $_ -ne $phrased.Key }).Count) {
+                throw "The $($language.Id) label $name needs one phrase or $($phrased.Value) separated by |, with no placeholder but $($phrased.Key)."
             }
         } elseif (@(Compare-Object $expected $provided).Count) { throw "The $($language.Id) label $name must preserve its placeholders." }
         # Plural texts ([one]...[other]...) name known categories, end with an other form, and keep the placeholders in every form.

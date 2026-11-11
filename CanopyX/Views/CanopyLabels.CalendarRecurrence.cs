@@ -81,9 +81,13 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the last weekday of a month in <see cref="CalendarRecurrenceOn"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "the last {day}".</summary>
     public string CalendarRecurrenceLastWeekday { get => Get(); set => Set(value); }
 
-
-    /// <summary>Gets or sets the months a rule repeats in, with <c>{months}</c>. Default "in {months}".</summary>
-    public string CalendarRecurrenceInMonths { get => Get(); set => Set(value); }
+    /// <summary>
+    /// Gets or sets a month a rule repeats in: one phrase, or twelve (January to December) separated by <c>|</c>; <c>{month}</c> is
+    /// the culture's month name, which a phrase may write out in its own case instead. Several months join with
+    /// <see cref="CalendarRecurrenceList"/>, and a later phrase that opens with the first phrase's opening word drops it ("in January
+    /// and July", "w styczniu i lipcu"). Default "in {month}".
+    /// </summary>
+    public string CalendarRecurrenceInMonth { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the date a yearly rule repeats on, with <c>{date}</c> (day and month). Default "on {date}".</summary>
     public string CalendarRecurrenceOnDate { get => Get(); set => Set(value); }

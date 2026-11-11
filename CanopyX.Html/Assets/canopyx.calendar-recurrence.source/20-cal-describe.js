@@ -3,7 +3,8 @@
   // holds the vectors both check. Weekday and month names and dates come from Intl in the page language, the words around them
   // from the calendarRecurrence… labels. A rule the sentences cannot say exactly is described as null, and callers show its text.
   // The …Day and …Weekday labels hold one phrase, or seven (Monday to Sunday) separated by |, so a language can inflect each
-  // weekday ("w pierwszą środę", "la prima domenica"); {day} in a phrase is the culture's weekday name.
+  // weekday ("w pierwszą środę", "la prima domenica"); {day} in a phrase is the culture's weekday name. …InMonth holds one phrase
+  // or twelve (January to December) the same way, with {month}.
   const CAL_RECURRENCE_LABELS = {
     calendarRecurrenceDaily: "every day", calendarRecurrenceDailyInterval: "every {count} days", calendarRecurrenceWeekly: "every week",
     calendarRecurrenceWeeklyInterval: "every {count} weeks", calendarRecurrenceMonthly: "every month", calendarRecurrenceMonthlyInterval: "every {count} months",
@@ -13,7 +14,7 @@
     calendarRecurrenceMonthDays: "[one]on day {days}[other]on days {days}", calendarRecurrenceLastDay: "on the last day of the month",
     calendarRecurrenceFirstWeekday: "the first {day}", calendarRecurrenceSecondWeekday: "the second {day}", calendarRecurrenceThirdWeekday: "the third {day}",
     calendarRecurrenceFourthWeekday: "the fourth {day}", calendarRecurrenceFifthWeekday: "the fifth {day}", calendarRecurrenceLastWeekday: "the last {day}",
-    calendarRecurrenceInMonths: "in {months}", calendarRecurrenceOnDate: "on {date}",
+    calendarRecurrenceInMonth: "in {month}", calendarRecurrenceOnDate: "on {date}",
     calendarRecurrenceAt: "at {time}", calendarRecurrenceTimes: "[one]{count} time[other]{count} times", calendarRecurrenceUntil: "until {date}",
     calendarRecurrenceExcept: "[one]except {count} date[other]except {count} dates"
   };
@@ -52,13 +53,20 @@
     if (dows.length && (freq === "MONTHLY" || freq === "YEARLY")) return null;
     if (monthDays && (rule.byDay || !monthly || (monthDays.length > 1 ? monthDays.some(day => day < 0) : monthDays[0] < -1))) return null;
     if (freq === "DAILY" && dows.length) { if (rule.interval > 1) return null; freq = "WEEKLY"; }
-    // A weekday label with neither one phrase nor seven cannot say the rule.
-    let days = "", saysRepeat = false, malformed = false;
-    const day = (name, dow) => {
+    // A weekday label with neither one phrase nor seven, or a month label with neither one nor twelve, cannot say the rule.
+    let days = "", saysRepeat = false, malformed = false, lead;
+    const phrase = (name, index, size) => {
       const phrases = text(name).split("|");
-      if (phrases.length !== 1 && phrases.length !== 7) malformed = true;
-      return phrases[phrases.length === 7 ? (dow + 6) % 7 : 0].replaceAll("{day}", names.days[dow]);
-    };
+      if (phrases.length !== 1 && phrases.length !== size) malformed = true;
+      return phrases[phrases.length === size ? index : 0];
+    }, day = (name, dow) => phrase(name, (dow + 6) % 7, 7).replaceAll("{day}", names.days[dow]);
+    // Later months drop the opening word they share with the first ("in January and July", "w styczniu i lipcu").
+    const months = rule.byMonth && list([...new Set(rule.byMonth)].sort((a, b) => a - b).map((m, index) => {
+      const said = phrase("calendarRecurrenceInMonth", m - 1, 12), word = /^[^\s{]+(?=\s)/.exec(said)?.[0];
+      if (!index) lead = word;
+      const out = said.replaceAll("{month}", names.months[m - 1]);
+      return index && word && word === lead ? out.slice(word.length).trimStart() : out;
+    }));
     if (freq === "WEEKLY") {
       const order = dow => (dow + 6) % 7, set = [...new Set(dows.length ? dows : [at.dow])].sort((a, b) => order(a) - order(b)), key = set.join(), last = set[set.length - 1];
       saysRepeat = rule.interval === 1;
@@ -80,7 +88,7 @@
     if (malformed) return null;
     const parts = [], word = CAL_FREQ_WORDS[freq], pad = value => String(value).padStart(2, "0");
     if (!saysRepeat) parts.push(rule.interval === 1 ? text("calendarRecurrence" + word) : calCount(grid, text("calendarRecurrence" + word + "Interval"), rule.interval));
-    if (rule.byMonth) parts.push(say("calendarRecurrenceInMonths", { months: list([...new Set(rule.byMonth)].sort((a, b) => a - b).map(m => names.months[m - 1])) }));
+    if (months) parts.push(months);
     if (days) parts.push(days);
     if (!options.allDay) parts.push(say("calendarRecurrenceAt", { time: options.time ?? pad(Math.floor(at.minutes / 60)) + ":" + pad(at.minutes % 60) }));
     if (rule.count !== null) parts.push(calCount(grid, text("calendarRecurrenceTimes"), rule.count));
