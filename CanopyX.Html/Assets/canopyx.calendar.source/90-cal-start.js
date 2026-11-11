@@ -87,13 +87,13 @@
       const observer = new ResizeObserver(() => { if (!resizeFrame) resizeFrame = requestAnimationFrame(resize); });
       observer.observe(root);
       // Host renderers can update retained content. Coalesce reads and ignore our own aria-label writes.
-      const labels = this.calLabelObserver = new MutationObserver(() => {
-        if (!this.destroyed && !this.calLabelFrame) this.calLabelFrame = requestAnimationFrame(() => {
+      const labels = this.calLabelObserver = new MutationObserver(records => {
+        if (!this.destroyed && !this.calLabelFrame && records.some(record => record.attributeName !== "aria-label")) this.calLabelFrame = requestAnimationFrame(() => {
           this.calLabelFrame = 0;
-          if (!this.destroyed && this.calBody.isConnected) this.calLabelContent();
+          if (!this.destroyed && root.isConnected) this.calLabelContent();
         });
       });
-      labels.observe(this.calBody, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
+      labels.observe(root, { subtree: true, childList: true, characterData: true, attributes: true });
       host.classList.toggle("cx-cal-phone", this.calPhone);
       const timer = setInterval(() => { if (!this.destroyed && this.cal.now) this.calTick?.(); }, 60000);
       // Print: the month shows every event, the time grid every hour, and the timeline writes its static copy.

@@ -5,7 +5,7 @@ import { runtimeAssets } from "./support.mjs";
 export async function rendererFixture() {
   const { script, style } = runtimeAssets("grid");
   const html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Calendar renderer contract</title><style>" +
-    style + "body{margin:0;padding:16px}#calendar{height:720px}</style><script>" + script + "</script></head><body class=\"cx-page\"><div id=\"calendar\" data-cx-theme=\"light\"></div><script>(" + install.toString() + ")();</script></body></html>";
+    style + "body{margin:0;padding:16px}#calendar{height:720px}[data-caption-state=hidden] .fixture-caption{display:none}</style><script>" + script + "</script></head><body class=\"cx-page\"><div id=\"calendar\" data-cx-theme=\"light\"></div><script>(" + install.toString() + ")();</script></body></html>";
   const server = http.createServer((request, response) => {
     if (request.url === "/favicon.ico") { response.writeHead(204).end(); return; }
     response.writeHead(200, { "Content-Type": "text/html" }).end(html);
@@ -32,7 +32,7 @@ function install() {
       columns: [{ id: "title", title: "Title", kind: "text", rowHeader: true }, { id: "starts", title: "Starts", kind: "datetime" },
         { id: "ends", title: "Ends", kind: "datetime" }, { id: "status", title: "Status", kind: "text" }],
       calendar: { start: "starts", end: "ends", title: "title", status: "status", date: "2026-10-16", timeZone: "utc",
-        view: phoneMonth ? "month" : "day", views: ["day", "agenda", "month"], phone: phoneMonth ? "month" : "agenda", toolbar: false } },
+        view: phoneMonth ? "month" : "day", views: ["day", "agenda", "month"], eventLimit: 2, phone: phoneMonth ? "month" : "agenda", toolbar: false } },
     renderers: { status(row, element, context) {
       // The same public renderer also serves hidden grid cells; record just calendar-owned invocations.
       if (!element.classList.contains("cx-cal-ev-status")) return false;
@@ -49,7 +49,15 @@ function install() {
       window.addEventListener("renderer-status", event => { element.textContent = event.detail; }, { signal: context.signal });
       return true;
     } },
-    calendar: { render({ element }) { element.dataset.hostCalendar = "decorated"; return false; } }
+    calendar: { render({ element, event, kind }) {
+      element.dataset.hostCalendar = "decorated";
+      if (kind !== "chip" || event.record !== "owned") return false;
+      const caption = document.createElement("span"); caption.className = "fixture-caption"; caption.textContent = "Queue";
+      element.appendChild(caption);
+      element.addEventListener("pointerenter", () => { caption.textContent = "Ready"; });
+      element.addEventListener("renderer-caption", update => { element.dataset.captionState = update.detail; });
+      return true;
+    } }
   });
 }
 

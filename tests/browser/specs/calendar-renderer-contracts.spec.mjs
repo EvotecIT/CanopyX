@@ -109,6 +109,60 @@ test("a throwing calendar status renderer is disposed immediately and falls back
   expect(errors).toEqual([]);
 });
 
+test("opening overflow preserves a pending retained month-renderer name update", async ({ page }) => {
+  const errors = await open(page);
+  await page.evaluate(() => window.api.setCalendarView("month"));
+  const event = page.locator('.cx-cal-body .cx-cal-ev[data-cx-record="owned"]');
+  const day = event.locator('xpath=ancestor::*[@role="gridcell"][1]');
+  await expect(event).toHaveAccessibleName(/^Queue,/);
+  await event.evaluate(element => { window.retainedMonthLabelEvent = element; });
+  await page.evaluate(async () => {
+    const event = document.querySelector('.cx-cal-body .cx-cal-ev[data-cx-record="owned"]');
+    event.dispatchEvent(new PointerEvent("pointerenter"));
+    await Promise.resolve();
+    event.closest('[role="gridcell"]').querySelector(".cx-cal-more-btn").click();
+  });
+  await expect(page.locator(".cx-cal-more-list")).toBeVisible();
+  await nextFrames(page);
+  expect(await event.evaluate(element => element === window.retainedMonthLabelEvent)).toBe(true);
+  await expect(event).toHaveAccessibleName(/^Ready, Event owned, 9:00 AM – 10:00 AM, Status owned$/);
+  await expect(day).toHaveAccessibleName(/Ready/);
+  expect(await day.getAttribute("aria-label")).not.toContain("Queue");
+  const result = await new AxeBuilder({ page }).include(".cx-cal").withRules(["label-content-name-mismatch"]).analyze();
+  expect(result.violations).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test("overflow renderer names follow retained text and visibility until close", async ({ page }) => {
+  const errors = await open(page);
+  await page.evaluate(() => window.api.setCalendarView("month"));
+  await page.locator(".cx-cal-more-btn").first().click();
+  const event = page.locator('.cx-cal-more-list .cx-cal-ev[data-cx-record="owned"]');
+  await expect(event).toHaveAccessibleName(/^Queue,/);
+  await event.evaluate(element => { window.retainedPopupLabelEvent = element; });
+  await event.dispatchEvent("pointerenter");
+  await nextFrames(page);
+  expect(await event.evaluate(element => element === window.retainedPopupLabelEvent)).toBe(true);
+  await expect(event).toHaveAccessibleName(/^Ready, Event owned, 9:00 AM – 10:00 AM, Status owned$/);
+  await event.evaluate(element => element.dispatchEvent(new CustomEvent("renderer-caption", { detail: "hidden" })));
+  await nextFrames(page);
+  await expect(event).toHaveAccessibleName("Event owned, 9:00 AM – 10:00 AM, Status owned");
+  await event.evaluate(element => element.dispatchEvent(new CustomEvent("renderer-caption", { detail: "visible" })));
+  await nextFrames(page);
+  await expect(event).toHaveAccessibleName(/^Ready,/);
+  const result = await new AxeBuilder({ page }).include(".cx-cal").withRules(["label-content-name-mismatch"]).analyze();
+  expect(result.violations).toEqual([]);
+  const name = await event.getAttribute("aria-label");
+  await page.evaluate(() => {
+    window.retainedPopupLabelEvent.querySelector(".fixture-caption").textContent = "Pending";
+    document.querySelector(".cx-cal-more-close").click(); window.api.destroy();
+  });
+  await nextFrames(page);
+  expect(await page.evaluate(() => window.retainedPopupLabelEvent.isConnected)).toBe(false);
+  expect(await page.evaluate(() => window.retainedPopupLabelEvent.getAttribute("aria-label"))).toBe(name);
+  expect(errors).toEqual([]);
+});
+
 test("phone month day changes release replaced status renderer elements and preserve the current list", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const errors = await open(page, "?phone"), checkpoints = [];

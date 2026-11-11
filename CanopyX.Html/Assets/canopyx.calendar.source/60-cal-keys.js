@@ -18,9 +18,11 @@
   }
   Object.assign(DataGrid.prototype, {
     // Read all painted text before changing names to avoid a layout per event. Full date/event context remains available.
-    calLabelContent(container = this.calBody) {
-      cancelAnimationFrame(this.calLabelFrame); this.calLabelFrame = 0;
-      this.calLabelObserver?.takeRecords();
+    calLabelContent(container = this.calRoot) {
+      if (container === this.calRoot) {
+        cancelAnimationFrame(this.calLabelFrame); this.calLabelFrame = 0;
+        this.calLabelObserver?.takeRecords();
+      }
       const labels = [...container.querySelectorAll("[tabindex][aria-label],button[aria-label]")].map(element =>
         ({ element, visible: calVisibleLabel(element).trim().replace(/\s+/g, " "), label: element.getAttribute("aria-label") }));
       for (const { element, visible, label } of labels) {
