@@ -53,7 +53,7 @@ for (const [language,labels,staticLabels] of packs) {
     const flow = manifest.parts.filter(part=>part.name==='flow'||part.name.startsWith('flow-'))
       .map(part=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',part.script),'utf8')).join('\n');
     const formatting = ['formatting','format-editor'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
-    const calendar = ['canopyx-calendar.js','canopyx-calendar-screen.js'].map(file=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',file),'utf8')).join('\n');
+    const calendar = ['canopyx-calendar.js','canopyx-calendar-screen.js','canopyx-calendar-recurrence.js'].map(file=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',file),'utf8')).join('\n');
     const matrix = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-matrix.js'),'utf8');
     const changes = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-changes.js'),'utf8');
     const board = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-board.js'),'utf8');

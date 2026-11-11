@@ -59,8 +59,13 @@ public sealed partial class CanopyRecurrence {
             frequency = CanopyRecurrenceFrequency.Weekly;
         }
 
-        var ordinals = labels.CalendarRecurrenceOrdinals.Split('|');
-        if (numbered.Count > 0 && ordinals.Length != 6) return null;
+        // A weekday label with neither one phrase nor seven (Monday to Sunday) cannot say the rule.
+        var malformed = false;
+        string Day(string label, DayOfWeek day) {
+            var phrases = label.Split('|');
+            if (phrases.Length != 1 && phrases.Length != 7) malformed = true;
+            return phrases[phrases.Length == 7 ? MondayFirst(day) : 0].Replace("{day}", names.DayNames[(int)day]);
+        }
         string List(IEnumerable<string> items) {
             var all = items.ToList();
             return all.Count < 2 ? all[0] : labels.CalendarRecurrenceList.Replace("{items}", string.Join(", ", all.Take(all.Count - 1))).Replace("{last}", all[all.Count - 1]);
@@ -76,15 +81,13 @@ public sealed partial class CanopyRecurrence {
             if (key == "1,2,3,4,5") days = labels.CalendarRecurrenceWeekdays;
             else if (key == "6,0") days = labels.CalendarRecurrenceWeekends;
             else if (set.Count > 2 && MondayFirst(set[set.Count - 1]) - MondayFirst(set[0]) == set.Count - 1)
-                days = labels.CalendarRecurrenceDayRange.Replace("{first}", names.DayNames[(int)set[0]]).Replace("{last}", names.DayNames[(int)set[set.Count - 1]]);
-            else {
-                days = labels.CalendarRecurrenceOn.Replace("{days}", List(set.Select(day => names.DayNames[(int)day])));
-                saysRepeat = false;
-            }
+                days = labels.CalendarRecurrenceDayRange.Replace("{first}", Day(labels.CalendarRecurrenceRangeDay, set[0])).Replace("{last}", Day(labels.CalendarRecurrenceRangeDay, set[set.Count - 1]));
+            // Every week reads as the weekdays it repeats on ("every Monday", "w poniedziałki"); a longer interval names them.
+            else if (saysRepeat) days = labels.CalendarRecurrenceEvery.Replace("{days}", List(set.Select(day => Day(labels.CalendarRecurrenceEveryDay, day))));
+            else days = labels.CalendarRecurrenceOn.Replace("{days}", List(set.Select(day => Day(labels.CalendarRecurrenceOnDay, day))));
         } else if (frequency != CanopyRecurrenceFrequency.Daily) {
             if (numbered.Count > 0)
-                days = labels.CalendarRecurrenceOn.Replace("{days}", List(numbered.Select(day => labels.CalendarRecurrenceNth
-                    .Replace("{ordinal}", ordinals[day.Ordinal < 0 ? 5 : day.Ordinal - 1]).Replace("{day}", names.DayNames[(int)day.Day]))));
+                days = labels.CalendarRecurrenceOn.Replace("{days}", List(numbered.Select(day => Day(NumberedWeekday(labels, day.Ordinal), day.Day))));
             else if (_monthDays.Count == 1 && _monthDays[0] == -1) days = labels.CalendarRecurrenceLastDay;
             else if (_monthDays.Count > 0 || monthly) {
                 var list = _monthDays.Count > 0 ? _monthDays.Distinct().OrderBy(day => day).ToList() : new List<int> { start.Day };
@@ -92,6 +95,7 @@ public sealed partial class CanopyRecurrence {
             } else days = labels.CalendarRecurrenceOnDate.Replace("{date}", new DateTime(2000, start.Month, start.Day).ToString(names.MonthDayPattern, culture));
         }
 
+        if (malformed) return null;
         var parts = new List<string>();
         if (!saysRepeat) parts.Add(_interval == 1 ? Every(labels, frequency) : Count(EveryInterval(labels, frequency), _interval));
         if (_months.Count > 0) parts.Add(labels.CalendarRecurrenceInMonths.Replace("{months}", List(_months.Distinct().OrderBy(month => month).Select(month => names.MonthNames[month - 1]))));
@@ -105,6 +109,15 @@ public sealed partial class CanopyRecurrence {
     }
 
     private static int MondayFirst(DayOfWeek day) => ((int)day + 6) % 7;
+
+    private static string NumberedWeekday(CanopyLabels labels, int ordinal) => ordinal switch {
+        1 => labels.CalendarRecurrenceFirstWeekday,
+        2 => labels.CalendarRecurrenceSecondWeekday,
+        3 => labels.CalendarRecurrenceThirdWeekday,
+        4 => labels.CalendarRecurrenceFourthWeekday,
+        5 => labels.CalendarRecurrenceFifthWeekday,
+        _ => labels.CalendarRecurrenceLastWeekday
+    };
 
     private static string Every(CanopyLabels labels, CanopyRecurrenceFrequency frequency) => frequency switch {
         CanopyRecurrenceFrequency.Daily => labels.CalendarRecurrenceDaily,

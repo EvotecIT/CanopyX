@@ -46,7 +46,8 @@ public sealed class GridCalendarPartTests {
     }
 
     [Theory]
-    // Expansion and the sentences that describe a rule, with their English words and the details line, measure 5,289 bytes.
+    // Expansion and the sentences that describe a rule, with their English words, weekday phrases and the details line, measure
+    // 5,445 bytes.
     [InlineData("calendar-recurrence", "calendar recurrence", "function calExpand(", 6000)]
     // Current repaired parts: 12,196 and 8,209 bytes gzip, with about 15% headroom.
     // Minute fields, explicit scope, EXDATE removal, shared-resource context and the phone sheet measure 14,374 bytes.
