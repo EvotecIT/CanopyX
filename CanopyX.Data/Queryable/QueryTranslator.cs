@@ -25,8 +25,8 @@ internal sealed partial class QueryTranslator<T> {
         Row = Expression.Parameter(typeof(T), "row");
         Key = ExpressionTools.Bind(map.KeyExpression!, Row, nullSafe);
         foreach (var column in map.Columns) {
-            _values[column.Id] = Finite(ExpressionTools.Bind(column.Value, Row, nullSafe));
-            if (column.SortBy != null) _sorts[column.Id] = Finite(ExpressionTools.Bind(column.SortBy, Row, nullSafe));
+            _values[column.Id] = Finite(Utc(ExpressionTools.Bind(column.Value, Row, nullSafe)));
+            if (column.SortBy != null) _sorts[column.Id] = Finite(Utc(ExpressionTools.Bind(column.SortBy, Row, nullSafe)));
             if (column.SearchBy != null) _search[column.Id] = ExpressionTools.Bind(column.SearchBy, Row, nullSafe);
             var sorted = column.SortBy ?? column.Value;
             var type = ExpressionTools.Underlying(sorted.ReturnType);
@@ -46,6 +46,21 @@ internal sealed partial class QueryTranslator<T> {
         var valid = Expression.AndAlso(Expression.GreaterThanOrEqual(value, Bound(minimum)), Expression.LessThanOrEqual(value, Bound(maximum)));
         return Expression.Condition(valid, Expression.Convert(value, nullable), Expression.Constant(null, nullable));
     }
+
+    private static readonly MethodInfo UtcMethod = typeof(QueryTranslator<T>).GetMethod(nameof(ToUtc), BindingFlags.Static | BindingFlags.NonPublic)!;
+
+    /// <summary>In memory, a local <see cref="DateTime"/> compares, sorts and groups as the UTC instant the wire shows.
+    /// Databases do not keep the kind, so stored date and time values are read as UTC there.</summary>
+    private Expression Utc(Expression value) {
+        if (!_memory || ExpressionTools.Underlying(value.Type) != typeof(DateTime)) return value;
+        if (value.Type == typeof(DateTime)) return Expression.Call(UtcMethod, value);
+        return Expression.Condition(ExpressionTools.IsNull(value), Expression.Constant(null, value.Type),
+            Expression.Convert(Expression.Call(UtcMethod, Expression.Property(value, "Value")), value.Type));
+    }
+
+    private Expression FoldText(Expression text, CanopyTextComparison comparison) => ExpressionTools.Fold(text, comparison, _memory);
+
+    private static DateTime ToUtc(DateTime value) => value.Kind == DateTimeKind.Local ? value.ToUniversalTime() : value;
 
     internal CanopyColumnMap<T> Map { get; }
     internal CanopyTextComparison Comparison { get; }
@@ -68,7 +83,7 @@ internal sealed partial class QueryTranslator<T> {
 
     internal Expression<Func<T, bool>>? Where(CanopyDataRequest request) {
         if (request.SearchMode == CanopyGridSearchMode.Regex && request.Search.Length != 0)
-            throw new NotSupportedException("Bounded regex quick search requires an in-memory provider or an explicit host implementation; it cannot be translated to this query provider.");
+            throw new CanopyRequestException(CanopyRequestError.Unsupported, "Pattern search is not available on this endpoint.");
         Expression? body = null;
         if (request.Ids != null) body = ExpressionTools.And(body, KeyIn(request.Ids));
         if (request.ExcludedIds.Count != 0) body = ExpressionTools.And(body, Expression.Not(KeyIn(request.ExcludedIds)));
@@ -177,7 +192,7 @@ internal sealed partial class QueryTranslator<T> {
         return ExpressionTools.IsNullable(value.Type) ? Expression.AndAlso(ExpressionTools.NotNull(value), contains) : contains;
     }
     private Expression TextContains(Expression text, string term) => Expression.AndAlso(ExpressionTools.NotNull(text),
-        Expression.Call(ExpressionTools.Fold(text, Comparison), ExpressionTools.ContainsMethod, ExpressionTools.Parameter(ExpressionTools.FoldOperand(term, Comparison), typeof(string))));
+        Expression.Call(FoldText(text, Comparison), ExpressionTools.ContainsMethod, ExpressionTools.Parameter(ExpressionTools.FoldOperand(term, Comparison), typeof(string))));
 
     /// <summary>Tests a finite domain (booleans, enumeration members) member by member with the exact protocol rules, then matches the members that pass.</summary>
     private static Expression Domain(Expression value, ValueShape shape, Func<object, bool> passes) {

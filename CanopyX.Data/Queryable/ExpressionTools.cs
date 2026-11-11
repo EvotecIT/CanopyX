@@ -15,6 +15,7 @@ internal sealed class Box<TValue> {
 internal static class ExpressionTools {
     private static readonly MethodInfo FoldMethod = typeof(CanopyTextFolding).GetMethod(nameof(CanopyTextFolding.Fold), new[] { typeof(string) })!;
     private static readonly MethodInfo ToLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
+    private static readonly MethodInfo ToLowerInvariantMethod = typeof(string).GetMethod(nameof(string.ToLowerInvariant), Type.EmptyTypes)!;
     internal static readonly MethodInfo ContainsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!;
     internal static readonly MethodInfo StartsWithMethod = typeof(string).GetMethod(nameof(string.StartsWith), new[] { typeof(string) })!;
     internal static readonly MethodInfo StartsWithOrdinalMethod = typeof(string).GetMethod(nameof(string.StartsWith), new[] { typeof(string), typeof(StringComparison) })!;
@@ -35,8 +36,11 @@ internal static class ExpressionTools {
         return Expression.Call(EnumerableContains.MakeGenericMethod(item.Type), Parameter(list, listType), item);
     }
 
-    internal static Expression Fold(Expression text, CanopyTextComparison comparison) => comparison switch {
-        CanopyTextComparison.Lowercase => Expression.Call(text, ToLowerMethod),
+    /// <summary>Folds a column for comparison with <see cref="FoldOperand"/>. The operand is lowered invariantly, so in memory
+    /// the column is too (the current culture would lower a Turkish I differently); databases translate only
+    /// <c>ToLower()</c>, as <c>LOWER</c>, which ignores the CLR culture anyway.</summary>
+    internal static Expression Fold(Expression text, CanopyTextComparison comparison, bool memory) => comparison switch {
+        CanopyTextComparison.Lowercase => Expression.Call(text, memory ? ToLowerInvariantMethod : ToLowerMethod),
         CanopyTextComparison.Canonical => Expression.Call(FoldMethod, text),
         _ => text
     };

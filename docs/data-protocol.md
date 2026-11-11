@@ -318,11 +318,14 @@ An absent `searchMode` means `substring`: the complete search text must be a sub
 `searchMode: "regex"` additionally requires `allowRegexSearch: true` on the owning grid. It uses the existing bounded condition
 pattern grammar: literals, character classes and at most one variable repetition anchored at `^`; groups, alternatives and
 backreferences are rejected. Matching is case-insensitive, without accent folding, against each searchable raw/search-text cell.
-Patterns are limited to 256 UTF-16 code units, cell inputs to 4,096; oversized input is rejected rather than truncated. Empty
+Patterns are limited to 256 UTF-16 code units, cell inputs to 4,096; a longer cell does not match (it is never truncated),
+and the other cells of its row still do. Empty
 search still matches all rows. The browser allows 50 ms of regex evaluation per query and retains the previous accepted query
 when validation or execution fails. The input reports an invalid pattern and uses the translated `gridRegexSearch` label.
 C# uses `AllowRegexSearch`, `CanopyGridSearchMode.Regex` and `CanopyGridRegexSearch`; the in-memory provider implements the same
-grammar with a 100 ms cumulative regex evaluation budget and native match timeout. Time spent evaluating other filters is not charged to that budget. The portable IQueryable provider rejects regex execution explicitly;
+grammar with a 100 ms cumulative regex evaluation budget and native match timeout, and answers `limitExceeded` when either
+runs out. Time spent evaluating other filters is not charged to that budget. The portable IQueryable provider rejects regex
+execution with `unsupported`, and `MapCanopyRemote` refuses an `IQueryable` callback for a grid that allows regex search;
 it never downloads a database result to simulate matching. Other hosts implement or reject regex queries themselves.
 
 The optional grid properties `stickyHeader` and `cardTemplate` configure page-scroll headers and literal card token slots

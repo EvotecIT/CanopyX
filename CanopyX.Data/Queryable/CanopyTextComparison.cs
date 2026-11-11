@@ -4,7 +4,7 @@ namespace CanopyX.Data;
 public enum CanopyTextComparison {
     /// <summary><see cref="Canonical"/> for in-memory queries (LINQ to objects), <see cref="Lowercase"/> for every other LINQ provider.</summary>
     Auto = 0,
-    /// <summary>Compares <c>ToLower()</c> of the column with the lowercased operand. Translates to SQL <c>LOWER</c>; how far
+    /// <summary>Compares the lowercased column (<c>ToLower()</c>, or <c>ToLowerInvariant()</c> in memory) with the invariantly lowercased operand. Translates to SQL <c>LOWER</c>; how far
     /// case folding reaches beyond ASCII depends on the database (SQLite folds ASCII only). Prevents plain index use.</summary>
     Lowercase,
     /// <summary>Compares the column as stored and leaves case to the database collation. Use with a case-insensitive

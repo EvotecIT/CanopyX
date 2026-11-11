@@ -44,7 +44,7 @@ internal sealed partial class QueryTranslator<T> {
     private Expression TextCondition(Expression value, CanopyGridFilterOperator op, IReadOnlyList<object> operands, Expression? guard, bool exactTokens = false) {
         var comparison = exactTokens ? CanopyTextComparison.Collation : Comparison;
         var texts = operands.OfType<string>().Select(text => ExpressionTools.FoldOperand(text, comparison)).ToList();
-        var folded = ExpressionTools.Fold(value, comparison);
+        var folded = FoldText(value, comparison);
         switch (op) {
             case CanopyGridFilterOperator.Equal:
                 return texts.Count == 0 ? Expression.Constant(false) : Expression.Equal(folded, ExpressionTools.Parameter(texts[0], typeof(string)));

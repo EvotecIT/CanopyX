@@ -46,9 +46,33 @@ public sealed class RegexQuickSearchTests {
         using var summary = System.Text.Json.JsonDocument.Parse(await handler.SummaryAsync(queryJson));
         Assert.Equal(1, summary.RootElement.GetProperty("matched").GetInt32());
         Assert.Equal(1, summary.RootElement.GetProperty("aggregates").GetProperty("sum").GetDouble());
+        // An over-long searchable cell does not match; the other cells still answer the search.
         records[0].SearchText = new string('X', CanopyGridRegexSearch.MaximumInputLength + 1);
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await provider.CountAsync(
-            CanopyRequestParser.ParseQuery("""{"search":"^X","searchMode":"regex"}""", schema), CancellationToken.None));
+        records[2].SearchText = "X";
+        Assert.Equal(1, await provider.CountAsync(CanopyRequestParser.ParseQuery("""{"search":"^X","searchMode":"regex"}""", schema), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task RegexBudget_AnswersALimitClientError() {
+        var schema = new CanopyDataSchema(View());
+        // Every position of each cell is a candidate that fails on its next character: far more matching work than the
+        // 100 ms budget allows, which stops the search before it reaches the last row.
+        var cell = new string('a', CanopyGridRegexSearch.MaximumInputLength);
+        var provider = new CanopyInMemoryProvider<int>(schema, () => Enumerable.Range(0, 100000), item => item.ToString(),
+            new Dictionary<string, Func<int, object?>> { ["name"] = _ => cell });
+        var request = CanopyRequestParser.ParseQuery("""{"search":"a[b-c]","searchMode":"regex"}""", schema);
+        var error = await Assert.ThrowsAsync<CanopyRequestException>(async () => await provider.CountAsync(request, CancellationToken.None));
+        Assert.Equal(CanopyRequestError.LimitExceeded, error.Error);
+    }
+
+    [Fact]
+    public async Task RegexOverQueryable_AnswersUnsupported() {
+        var view = View(); var schema = new CanopyDataSchema(view);
+        var map = new CanopyColumnMap<string>(view).Key(x => x).Column("name", x => x);
+        var provider = new CanopyQueryableProvider<string>(new[] { "a" }.AsQueryable(), map);
+        var error = await Assert.ThrowsAsync<CanopyRequestException>(async () =>
+            await provider.CountAsync(CanopyRequestParser.ParseQuery("""{"search":"^a","searchMode":"regex"}""", map.Schema), CancellationToken.None));
+        Assert.Equal(CanopyRequestError.Unsupported, error.Error);
     }
 
     private static CanopyDataGridView View(bool enabled = true) {
