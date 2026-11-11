@@ -229,7 +229,7 @@ The following assessment uses the current CanopyX source and the primary referen
 | Wide tables | Row virtualization and grouped headers; all visible columns are mounted | Frozen summary rows and measured need for column virtualization | C |
 | Live data | In-place transactions, stable sort prompts, change cues and revision-aware polling | Qualify sustained updates in a real reporting consumer | Adoption |
 | Analytical interaction | Row selection, rectangular ranges, range copy/paste and a host-governed fill handle | Scoped status summaries and pivot UI for a measured consumer need | C |
-| Editing and reordering records | Typed flat-grid editors, validation, change marks, undo/redo, row/batch commit proposals and tree proposal hooks | Flat-row/context actions and host-governed record reordering | D |
+| Editing and reordering records | Typed flat-grid editors, validation, change marks, undo/redo, row/batch commit proposals, flat-grid row actions and tree proposal hooks | Host-governed record reordering | D |
 | Host integration | Typed .NET and TypeScript rows, page/fragment writers, JavaScript grid entry point and local inventory bridge proof | A documented typed HtmlForgeX table migration surface, maintained examples and consumer-specific replacement gates | Adoption |
 
 ### Stage A: Finish Everyday Table Interaction
@@ -300,7 +300,8 @@ Gate: produce a measured wide/live inventory demonstration. Record DOM/cache bou
 
 Consumers: a later HtmlForgeX editable inventory or administrative explorer that actually needs governed changes. Product adoption requires its own later scope; existing tree editing is not proof of flat-grid editing.
 
-- [x] Flat cell editors: the editing part (docs/editing.md) has typed editors, validation, cancellation, saving states, an accessible error surface and host-returned canonical cells and revisions. CanopyX raises intent; the host authorizes and executes changes. Row/context actions on flat grids remain open.
+- [x] Flat cell editors: the editing part (docs/editing.md) has typed editors, validation, cancellation, saving states, an accessible error surface and host-returned canonical cells and revisions. CanopyX raises intent; the host authorizes and executes changes.
+- [x] Flat-grid row actions (docs/row-actions.md): an actions column with state-dependent buttons, a More menu, locked rows and host proposals through `onRowAction`.
 - Paste and fill into editable ranges, validation, undo and redo are implemented by the editing and range parts. Batch commit reports partial failure and conflicts per row (`gridCommit`); audit, conflict resolution and write transactions stay host-owned.
 - [ ] Add flat-record reordering by drag and keyboard only for a named host workflow, raising proposals to the host like tree moves. Preserve current sort order and reject stale or unauthorized writes.
 - [ ] Evaluate formula/computed columns and merged body cells only after a consumer and public-contract design justify them. Automatic fill already uses the host-governed editing path.

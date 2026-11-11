@@ -119,6 +119,7 @@ More detail, with measured numbers, is in [delivery modes](https://canopyx.dev/d
 | --- | --- |
 | Group, filter, total and export records | [Reporting grids](https://canopyx.dev/docs/reporting/), [grouping](docs/grouping.md), [export formats](docs/authoring.md#export-formats) |
 | Let readers edit cells and save through my code | [Editing](docs/editing.md) |
+| Put Run, Pause or Delete buttons on each row | [Row actions](docs/row-actions.md) |
 | Colour cells and rows by rule | [Conditional formatting](docs/conditional-formatting.md) |
 | Show the same records as a calendar, board or plan | [Calendar](docs/calendar.md), [resource timeline](docs/resource-timeline.md), [board](docs/board.md), [plan](docs/plan.md) |
 | Serve a grid from my database | [Server-side data for .NET](docs/remote-dotnet.md), [paging](docs/paging.md) |

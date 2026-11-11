@@ -138,7 +138,9 @@ public sealed class RuntimeAssetTests {
         // Includes the optional chart-cell loader and three lazy-part manifest entries.
         // Reserve 128 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
         // Reserve 448 bytes for right-to-left logical layout and keys, the matrix-table route in enhance and digit-aware aggregate text.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448);
+        // Reserve 384 bytes for the row actions column shell (its part, labels and menus load only with rowActions).
+        // Reserve 384 bytes for the activity presenters' validation, column-fit rules and part entry (their painting is the lazy activity part).
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384);
     }
 
     [Fact]
@@ -148,7 +150,9 @@ public sealed class RuntimeAssetTests {
         // Reserve 192 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
         // Reserve 640 bytes for the same right-to-left, matrix-table and aggregate-text changes plus the phone toolbar and footer fixes.
         // Reserve 192 bytes for the built-in median and percentile aggregates in the reporting menus and labels.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192);
+        // Reserve 320 bytes for the same row actions column shell.
+        // Reserve 384 bytes for the same activity presenter shell.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192 + 320 + 384);
     }
 
     [Fact]

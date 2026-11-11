@@ -136,6 +136,7 @@ CanopyX never writes data itself. It raises proposals to hooks the host provides
 | Chart analysis from ranges, selected/filtered records, groups and pivots | Reporting grid | `reporting.chartable`, `openChart`; optional ChartForgeX renderer | [Chart analysis](charts.md) |
 | Host-provided chart action from the selection bar | Grid | `onChart`; the host draws the chart | [Flat data grid](authoring.md#flat-data-grid) |
 | Flat-grid editing: typed editors, validation, change marks, undo and redo, row and batch commit, the phone edit form | Grid | `editable`, `editor`, `validation`, `editing` | [editing.md](editing.md) |
+| Row actions: buttons by row state, a More menu, locked rows and host proposals | Grid | `rowActions`, `onRowAction`, `requestRowAction`; C# `CanopyRowActions` | [row-actions.md](row-actions.md) |
 
 ## Grouping and summaries
 

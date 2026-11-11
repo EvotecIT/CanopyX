@@ -2665,6 +2665,47 @@
       "styles": [
         "CanopyX.Html/Assets/canopyx.compare.source/compare.css"
       ]
+    },
+    {
+      "name": "row-actions",
+      "label": "row actions",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "rowActions"
+      ],
+      "requires": [
+        "ui-menu"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "UI_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "gridFreeze",
+        "gridIcon",
+        "svgIcon",
+        "cellValue",
+        "foldText",
+        "boundedPattern",
+        "wildcardMatch",
+        "requireIdentifier",
+        "gridQueryStart",
+        "MAX_PROTOCOL_INTEGER"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.formatting.source/10-format-conditions.js",
+        "CanopyX.Html/Assets/canopyx.row-actions.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.row-actions.source/row-actions.css"
+      ]
     }
   ]
 }

@@ -1003,6 +1003,19 @@ Number columns use numeric editors even when their current cell is empty; an acc
 
 Interaction control translations use the view's `labels`: `actions`, `editValue`, `saveEdit`, `cancelEdit`, `invalidEdit`, `interactionPending`, `interactionRejected`, `interactionFailed`, `markMove`, `moveHere`, `moveBefore`, `moveAfter`, and `cancelMove`. `editValue` and `invalidEdit` accept `{column}`; `interactionFailed` accepts `{error}`. Include the interactive entry point when overriding these labels.
 
+### Flat-Grid Row Actions
+
+A `grid` definition's optional `rowActions` adds the grid's own actions column at the end edge ([row-actions.md](row-actions.md)). It is not a column of the document: sources, queries, exports, the record drawer and the static renderer never see it, and no declared column may use its id `cx-row-actions`.
+
+| Field | Meaning |
+| --- | --- |
+| `actions` | 1 to 16 `{ id, label, icon?, tone?, when?, disabledWhen?, disabledReason?, refresh? }`. `icon` is `check` (default), `play`, `pause`, `stop`, `retry`, `edit`, `delete`, `copy`, `open`, `close` or `download`; `tone` is `neutral`, `primary` or `danger`; `when` and `disabledWhen` are [formatting conditions](conditional-formatting.md#conditions) over declared columns. |
+| `inline` | 0 to 4 actions shown as buttons, default 2; the rest go into the More menu, except that one left over shows inline. |
+| `reveal` | `always` (default) or `hover`. |
+| `pin` | `right` (default) or `none`. |
+| `lockedWhen`, `lockedLabel` | Rows that show a lock and no actions, and the lock's accessible name. |
+
+A row action proposal is `{ id, action, row }` with a copy of the row. The runtime freezes it, raises the cancelable `canopyx:beforeRowAction`, then calls the host's `onRowAction(proposal, { signal, reason, query, revision })`, which answers a boolean, `{ accepted, message? }`, or a promise of either. `canopyx:rowAction` reports `{ proposal, accepted, reason, message }`. These are the context-action rules above applied to flat rows, with one difference: each row owns its own pending proposal, so a proposal on one row does not cancel another row's. `interactionTimeoutMs`, `cancelRowAction` and destruction settle it. An accepted action with `refresh: true` reads the rows again (`refreshRows()` on a live grid, otherwise `reload()`); CanopyX applies nothing itself.
 ### Checking Intent
 
 An enabled `checkboxes` mode is independent of `selection`. In `independent` mode each rule applies only to its exact path. In `hierarchical` mode a rule applies to the path's branch, including unloaded descendants; a deeper rule overrides it. The default is unchecked. A branch with a checked descendant or an exception to its own checked rule is mixed. Complete loaded sibling sets can combine into one branch intent; partially loaded lists and server-filtered lists never imply a choice for unseen siblings.

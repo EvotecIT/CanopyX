@@ -145,6 +145,7 @@ BoardExample.Write(output);
 PlanExample.Write(output);
 PathExample.Write(output);
 StackExample.Write(output);
+RowActionsExample.Write(output);
 TimeSliderExample.Write(output);
 CalendarCertificatesExample.Write(output);
 CalendarLinkedExample.Write(output);

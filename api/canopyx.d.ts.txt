@@ -1348,6 +1348,11 @@ import type{
   GridStackDefinition
 }
 from "./stack.js";
+import type{
+  GridRowActionsDefinition,GridRowActionOptions,GridRowActionApi
+}
+from "./row-actions.js";
+export * from "./row-actions.js";
 export * from "./stack.js";
 export * from "./time-slider.js";
 import CanopyX from "./index.js";
@@ -1838,6 +1843,7 @@ interface GridDefinition<Q extends AcceptedGridQuery=GridQuery,Row extends GridR
   calendar?:GridCalendarDefinition<Row>;
   path?:GridPathDefinition;
   stack?:GridStackDefinition;
+  rowActions?:GridRowActionsDefinition;
   board?:GridBoardDefinition;
   plan?:GridPlanDefinition;
   dragRows?:boolean;
@@ -2182,7 +2188,7 @@ export interface GridViewStore<Q extends AcceptedGridQuery=GridQuery>{
   load(event:{key:string;view:string;signal:AbortSignal}):GridViewSettings<Q>|null|PromiseLike<GridViewSettings<Q>|null>;
   save(event:{key:string;view:string;settings:GridViewSettings<Q>;signal:AbortSignal}):void|PromiseLike<void>;
 }
-interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>{
+interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>extends GridRowActionOptions<Q>{
   toolbar?:boolean|GridToolbarOptions;
   searchDelayMs?:number;
   source?:Q extends GridCursorQuery?GridCursorSource<Row>:GridSource<Row>;
@@ -2250,7 +2256,7 @@ export type CursorGridOptions<Row extends GridRow=GridRow>=GridHostOptions<GridC
   source:GridCursorSource<Row>
 }
 ;
-export interface DataGrid<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>extends GridPivotApi,GridEditingApi,LinkedView,ViewModeMethods,GridColumnGroupApi,GridCellRangeApi,GridLiveApi<Row,Q>,GridFacetPanelApi,GridCalendarApi,GridViewIntentApi<Q>{
+export interface DataGrid<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>extends GridPivotApi,GridEditingApi,LinkedView,ViewModeMethods,GridColumnGroupApi,GridCellRangeApi,GridLiveApi<Row,Q>,GridFacetPanelApi,GridCalendarApi,GridViewIntentApi<Q>,GridRowActionApi{
   readonly element:HTMLElement;
   readonly view:GridView<Row>;
   readonly ready:Promise<Q>;
@@ -3768,6 +3774,64 @@ export interface RecordPanelOptions{
   recordActions?:readonly RecordAction[];
   onOpenAll?:(event:RecordOpenAll) => boolean|void;
   onRecordPrint?:(event:{readonly id:string;readonly element:HTMLElement;readonly dispose:() => void}) => boolean|void;
+}
+
+// ---- JavaScript/row-actions.d.ts ----
+import type{
+  GridFormatCondition
+}
+from "./formatting.js";
+export type GridRowActionIcon="check"|"play"|"pause"|"stop"|"retry"|"edit"|"delete"|"copy"|"open"|"close"|"download";
+export interface GridRowActionDefinition{
+  id:string;
+  label:string;
+  icon?:GridRowActionIcon;
+  tone?:"neutral"|"primary"|"danger";
+  when?:GridFormatCondition;
+  disabledWhen?:GridFormatCondition;
+  disabledReason?:string;
+  refresh?:boolean;
+}
+export interface GridRowActionsDefinition{
+  label?:string;
+  inline?:number;
+  reveal?:"always"|"hover";
+  pin?:"right"|"none";
+  lockedWhen?:GridFormatCondition;
+  lockedLabel?:string;
+  actions:GridRowActionDefinition[];
+}
+export interface GridRowActionProposal{
+  readonly id:string;
+  readonly action:string;
+  readonly row:{readonly id:string;readonly cells:Readonly<Record<string,unknown>>};
+}
+export interface GridRowActionRequest<Q=unknown>{
+  readonly signal:AbortSignal;
+  readonly reason:string;
+  readonly query:Q|null;
+  readonly revision:string|null;
+}
+export type GridRowActionResult=boolean|{
+  accepted:boolean;
+  message?:string
+}
+;
+export interface GridRowActionOutcome{
+  readonly proposal:GridRowActionProposal;
+  readonly accepted:boolean;
+  readonly reason:string;
+  readonly message:string|null;
+}
+export interface GridRowActionOptions<Q=unknown>{
+  onRowAction?:(proposal:GridRowActionProposal,request:GridRowActionRequest<Q>) => GridRowActionResult|PromiseLike<GridRowActionResult>;
+  isRowActionEnabled?:(row:Readonly<{id:string;cells:Readonly<Record<string,unknown>>}>,action:Readonly<{id:string;label:string}>) => boolean;
+  onBeforeRowAction?:(proposal:GridRowActionProposal) => boolean|void;
+  interactionTimeoutMs?:number;
+}
+export interface GridRowActionApi{
+  requestRowAction(id:string,action:string,options?:{signal?:AbortSignal;reason?:string}):Promise<boolean>;
+  cancelRowAction(id?:string):boolean;
 }
 
 // ---- JavaScript/stack.d.ts ----

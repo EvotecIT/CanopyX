@@ -1,6 +1,8 @@
 import type { GridPathDefinition } from "./path.js";
 export * from "./path.js";
 import type { GridStackDefinition } from "./stack.js";
+import type { GridRowActionsDefinition, GridRowActionOptions, GridRowActionApi } from "./row-actions.js";
+export * from "./row-actions.js";
 export * from "./stack.js";
 export * from "./time-slider.js";
 import CanopyX from "./index.js";
@@ -481,6 +483,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   /** Lane cards with the grid's search, facets, saved views and record panel; loaded as an optional part. */
   path?: GridPathDefinition;
   stack?: GridStackDefinition;
+  /** The grid's own actions column: buttons and a More menu that raise host proposals (row-actions.d.ts). */
+  rowActions?: GridRowActionsDefinition;
   board?: GridBoardDefinition;
   /** Dependencies, baseline and governed proposals on the calendar's resource timeline. */
   plan?: GridPlanDefinition;
@@ -851,7 +855,7 @@ export interface GridViewStore<Q extends AcceptedGridQuery = GridQuery> {
   load(event: { key: string; view: string; signal: AbortSignal }): GridViewSettings<Q> | null | PromiseLike<GridViewSettings<Q> | null>;
   save(event: { key: string; view: string; settings: GridViewSettings<Q>; signal: AbortSignal }): void | PromiseLike<void>;
 }
-interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> {
+interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridRowActionOptions<Q> {
   /** False hides the whole toolbar so a host can compose controls around the same grid controller; an object switches
    * single controls off (overriding the view's toolbar switches). Switched-off controls are not built. */
   toolbar?: boolean | GridToolbarOptions;
@@ -979,7 +983,7 @@ export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQue
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridPivotApi, GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi, GridViewIntentApi<Q> {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridPivotApi, GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi, GridViewIntentApi<Q>, GridRowActionApi {
   readonly element: HTMLElement;
   readonly view: GridView<Row>;
   readonly ready: Promise<Q>;
