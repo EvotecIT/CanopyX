@@ -275,6 +275,10 @@ code, pre, kbd { font-family: var(--cnx-mono); }
 .cnx-install__line { display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 14px; }
 .cnx-install__line code { flex: 1; min-width: 0; overflow-x: auto; color: var(--cnx-code-on); font-size: .9375rem; white-space: nowrap; }
 .cnx-install__prompt { color: var(--cnx-code-key); font-weight: 700; }
+/* Phones: a smaller mono size keeps the command on one line, and it wraps between words rather than scrolling. */
+@media (max-width: 480px) {
+  .cnx-install__line code { overflow-x: visible; font-size: .75rem; white-space: normal; overflow-wrap: anywhere; }
+}
 
 /* Copy buttons sit on the code surfaces and take their colours. */
 .cnx-copy {
