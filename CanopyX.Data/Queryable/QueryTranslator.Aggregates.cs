@@ -53,6 +53,10 @@ internal sealed partial class QueryTranslator<T> {
         foreach (var aggregate in aggregates) {
             if (aggregate.Operation == CanopyGridAggregateOperation.Custom)
                 throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not compute the custom aggregate '" + aggregate.CustomOperation + "'.");
+            // A median or percentile needs every value of a group. LINQ has no portable translation, and reading the values would
+            // materialise the query, so only a pivot (grouped by the value, within its contribution bound) computes it here.
+            if (aggregate.Ranked && !pivot)
+                throw new CanopyRequestException(CanopyRequestError.Unsupported, "This endpoint does not compute medians or percentiles for groups and totals; a host provider can.");
         }
         var parts = columns.Select((column, index) => levels == null ? GroupValue(column) : GroupValue(levels[index])).ToArray();
         // One column groups by its value; several by a composite key, which LINQ providers translate like an anonymous type.
@@ -80,7 +84,8 @@ internal sealed partial class QueryTranslator<T> {
                 : (Expression)Expression.Call(CountAll.MakeGenericMethod(typeof(T)), group);
             bindings.Add(Expression.Bind(rowType.GetProperty("N" + i)!, present));
             var operation = aggregates[i].Operation;
-            if (operation == CanopyGridAggregateOperation.Count) continue;
+            // A pivot groups by a ranked aggregate's value, so the group key and count carry it.
+            if (operation == CanopyGridAggregateOperation.Count || aggregates[i].Ranked) continue;
             if (operation == CanopyGridAggregateOperation.DistinctCount) {
                 // COUNT(DISTINCT value) over the nonmissing values: group.Where(value != null).Select(value).Distinct().Count().
                 Expression members = group;

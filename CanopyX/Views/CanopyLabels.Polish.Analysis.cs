@@ -68,6 +68,8 @@ public sealed partial class CanopyLabels {
         labels.GridBucketEdges = "Granice przedziałów";
         labels.GridBucketOrigin = "Początek przedziałów";
         labels.GridBucketInvalid = "Podaj poprawne ustawienia przedziałów.";
+        labels.GridAggregateMedian = "mediana {value}";
+        labels.GridAggregatePercentile = "p{percentile} {value}";
         return labels;
     }
 }

@@ -71,6 +71,8 @@ public sealed partial class CanopyLabels {
         [nameof(GridBucketEdges)] = "Range edges",
         [nameof(GridBucketOrigin)] = "Range origin",
         [nameof(GridBucketInvalid)] = "Enter valid bucket settings.",
+        [nameof(GridAggregateMedian)] = "median {value}",
+        [nameof(GridAggregatePercentile)] = "p{percentile} {value}",
         }) defaults.Add(entry.Key, entry.Value);
     }
 }

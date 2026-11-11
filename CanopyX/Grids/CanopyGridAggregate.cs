@@ -20,7 +20,8 @@ public sealed partial class CanopyGridAggregate {
     /// <param name="format">Explicit value format; null uses the column format, except that counts use whole numbers.</param>
     public CanopyGridAggregate(string id, string column, CanopyGridAggregateOperation operation, string label, CanopyGridNumberFormat? format) {
         CanopyIdentifiers.Require(id, nameof(id)); CanopyIdentifiers.Require(column, nameof(column));
-        if (!Enum.IsDefined(typeof(CanopyGridAggregateOperation), operation) || operation == CanopyGridAggregateOperation.Custom) throw new ArgumentOutOfRangeException(nameof(operation));
+        if (!Enum.IsDefined(typeof(CanopyGridAggregateOperation), operation) || operation == CanopyGridAggregateOperation.Custom ||
+            operation == CanopyGridAggregateOperation.Percentile) throw new ArgumentOutOfRangeException(nameof(operation), "Use a custom operation name for a custom aggregate and AtPercentile for a percentile.");
         if (string.IsNullOrWhiteSpace(label) || label.Length > 512) throw new ArgumentException("An aggregate needs a label of 1 to 512 characters.", nameof(label));
         Id = id; Column = column; Operation = operation; Label = label; Format = format;
     }
@@ -41,8 +42,33 @@ public sealed partial class CanopyGridAggregate {
             throw new ArgumentException("A custom aggregate operation is a lowercase letter followed by up to 31 letters and digits, other than a built-in name.", nameof(customOperation));
         Operation = CanopyGridAggregateOperation.Custom; CustomOperation = customOperation;
     }
+    /// <summary>Creates a percentile aggregate over a number column: the value at <paramref name="percentile"/> percent of the sorted
+    /// finite values, interpolated linearly between the closest ranks (Excel PERCENTILE.INC, NumPy's default).</summary>
+    /// <param name="id">Stable aggregate identity, independent of the column and display label.</param>
+    /// <param name="column">The declared number column identity.</param>
+    /// <param name="percentile">The percentile, greater than 0 and less than 100 (for example 90, 95 or 99).</param>
+    /// <param name="label">Plain display text, bounded to 512 characters.</param>
+    /// <returns>The aggregate descriptor.</returns>
+    public static CanopyGridAggregate AtPercentile(string id, string column, double percentile, string label) => AtPercentile(id, column, percentile, label, null);
+    /// <summary>Creates a percentile aggregate with an explicit display format.</summary>
+    /// <param name="id">Stable aggregate identity, independent of the column and display label.</param>
+    /// <param name="column">The declared number column identity.</param>
+    /// <param name="percentile">The percentile, greater than 0 and less than 100.</param>
+    /// <param name="label">Plain display text, bounded to 512 characters.</param>
+    /// <param name="format">Explicit value format; null uses the column format.</param>
+    /// <returns>The aggregate descriptor.</returns>
+    public static CanopyGridAggregate AtPercentile(string id, string column, double percentile, string label, CanopyGridNumberFormat? format) {
+        if (double.IsNaN(percentile) || percentile <= 0 || percentile >= 100) throw new ArgumentOutOfRangeException(nameof(percentile), "A percentile is greater than 0 and less than 100.");
+        var aggregate = new CanopyGridAggregate(id, column, CanopyGridAggregateOperation.Median, label, format);
+        aggregate.Operation = CanopyGridAggregateOperation.Percentile; aggregate.Percentile = percentile;
+        return aggregate;
+    }
     private static readonly Regex CustomName = new Regex("^[a-z][a-zA-Z0-9]{0,31}$", RegexOptions.CultureInvariant);
-    private static readonly string[] BuiltIn = { "count", "sum", "average", "minimum", "maximum", "distinctCount" };
+    private static readonly string[] BuiltIn = { "count", "sum", "average", "minimum", "maximum", "distinctCount", "median", "percentile" };
+    /// <summary>Gets the percentile of a <see cref="CanopyGridAggregateOperation.Percentile"/> aggregate (between 0 and 100, exclusive), or null.</summary>
+    public double? Percentile { get; private set; }
+    /// <summary>The percentile a ranked operation reads: 50 for a median, the declared percentile, otherwise null.</summary>
+    internal double? Rank => Operation == CanopyGridAggregateOperation.Median ? 50 : Percentile;
     /// <summary>Gets the operation name of a <see cref="CanopyGridAggregateOperation.Custom"/> aggregate, or null.</summary>
     public string? CustomOperation { get; }
     /// <summary>Gets the stable aggregate identity.</summary>
@@ -68,16 +94,18 @@ public sealed partial class CanopyGridAggregate {
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("column", Column)
             .Property("operation", CustomOperation ?? OperationName(Operation)).Property("label", Label);
+        if (Percentile.HasValue) writer.Name("percentile").Number(Percentile.Value);
         if (Format != null) { writer.Name("format"); Format.WriteJson(writer); }
         if (ShowAs != CanopyShowAs.Value) writer.Property("showAs", CanopyAggregateDisplay.Name(ShowAs));
         writer.EndObject();
     }
     internal static string OperationName(CanopyGridAggregateOperation operation) => operation == CanopyGridAggregateOperation.Count ? "count" :
         operation == CanopyGridAggregateOperation.Sum ? "sum" : operation == CanopyGridAggregateOperation.Average ? "average" :
-        operation == CanopyGridAggregateOperation.Minimum ? "minimum" : operation == CanopyGridAggregateOperation.Maximum ? "maximum" : "distinctCount";
+        operation == CanopyGridAggregateOperation.Minimum ? "minimum" : operation == CanopyGridAggregateOperation.Maximum ? "maximum" :
+        operation == CanopyGridAggregateOperation.Median ? "median" : operation == CanopyGridAggregateOperation.Percentile ? "percentile" : "distinctCount";
     /// <summary>Whether the aggregate counts values (count, distinct count), so its value is a whole number within the record count.</summary>
     internal bool Counting => Operation == CanopyGridAggregateOperation.Count || Operation == CanopyGridAggregateOperation.DistinctCount;
     /// <summary>Whether the aggregate reads a number column.</summary>
     internal bool Numeric => Operation == CanopyGridAggregateOperation.Sum || Operation == CanopyGridAggregateOperation.Average ||
-        Operation == CanopyGridAggregateOperation.Minimum || Operation == CanopyGridAggregateOperation.Maximum;
+        Operation == CanopyGridAggregateOperation.Minimum || Operation == CanopyGridAggregateOperation.Maximum || Rank.HasValue;
 }

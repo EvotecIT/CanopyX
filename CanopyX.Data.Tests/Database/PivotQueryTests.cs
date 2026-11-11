@@ -11,7 +11,7 @@ public sealed class PivotQueryTests {
     [InlineData(4, 200)]
     [InlineData(4, 3)]
     public async Task AllBuiltinsMatchRawRecordsAtEveryPrefixAndOtherWithOneGroupedSelect(int rowDepth, int cap) {
-        var hosts = Records(); var view = View(); var definition = Definition(view, rowDepth, cap);
+        var hosts = Records(); var view = RankedView(); var definition = Definition(view, rowDepth, cap);
         using var store = new SqliteFleet(hosts); using var database = store.Create(log: true);
         var map = Fleet.Map(view);
         var sql = new CanopyQueryableProvider<Host>(() => database.Hosts, map, Options());
@@ -225,6 +225,16 @@ public sealed class PivotQueryTests {
         return view;
     }
 
+    // Ranked aggregates group by their value in the store; every prefix and Other must still rank the raw records. Summaries of a
+    // translated query answer them as unsupported, so only the pivot view declares them.
+    private static CanopyDataGridView RankedView() {
+        var view = View();
+        view.Reporting!.Aggregates.Add(new CanopyGridAggregate("memoryMedian", "memory", CanopyGridAggregateOperation.Median, "Memory"));
+        view.Reporting.Aggregates.Add(CanopyGridAggregate.AtPercentile("memoryP90", "memory", 90, "Memory"));
+        view.Reporting.Aggregates.Add(CanopyGridAggregate.AtPercentile("coresP25", "cores", 25, "Cores"));
+        return view;
+    }
+
     internal static CanopyGridPivot Definition(CanopyDataGridView view, int rows, int cap) {
         var definition = new CanopyGridPivot { MaxColumns = cap };
         foreach (var column in new[] { "site", "os", "online", "owner" }.Take(rows)) definition.Rows.Add(new CanopyGridGroupLevel(column));
@@ -287,6 +297,8 @@ public sealed class PivotQueryTests {
                     CanopyGridAggregateOperation.Average => raw.Average(value => Convert.ToDouble(value, CultureInfo.InvariantCulture)),
                     CanopyGridAggregateOperation.Minimum => raw.Min(value => Convert.ToDouble(value, CultureInfo.InvariantCulture)),
                     CanopyGridAggregateOperation.Maximum => raw.Max(value => Convert.ToDouble(value, CultureInfo.InvariantCulture)),
+                    CanopyGridAggregateOperation.Median => Ranked(raw, 50),
+                    CanopyGridAggregateOperation.Percentile => Ranked(raw, aggregate.Percentile!.Value),
                     _ => throw new InvalidOperationException("Unexpected fixture aggregate.")
                 };
                 var actual = cell.Aggregates[id];
@@ -294,6 +306,13 @@ public sealed class PivotQueryTests {
                 if (expected.HasValue) Assert.True(Math.Abs(expected.Value - actual!.Value) < 1e-8, $"{id} at {row.Key}/{column.Key}: expected {expected}, actual {actual}.");
             }
         }
+    }
+
+    // The documented method, written independently: rank (n - 1) * p / 100, linear between the closest ranks.
+    private static double Ranked(object?[] raw, double percentile) {
+        var sorted = raw.Select(value => Convert.ToDouble(value, CultureInfo.InvariantCulture)).OrderBy(value => value).ToArray();
+        var rank = (sorted.Length - 1) * percentile / 100; var lower = (int)Math.Floor(rank); var upper = (int)Math.Ceiling(rank);
+        return sorted[lower] + (sorted[upper] - sorted[lower]) * (rank - lower);
     }
 
     private static bool Prefix(IReadOnlyList<CanopyCell?> path, IList<CanopyGridGroupLevel> levels, Host host) {

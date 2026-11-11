@@ -282,8 +282,10 @@ public sealed class PivotTests {
         var footer = table.Element("tfoot")!.Element("tr")!;
         Assert.Equal("Razem", footer.Element("th")!.Value);
         Assert.All(footer.Elements(), cell => Assert.Contains("font-weight:700", cell.Attribute("style")!.Value));
-        Assert.Equal("12", footer.Elements("td").TakeLast(6).First().Value);
-        Assert.Equal("252.00", footer.Elements("td").TakeLast(5).First().Value);
+        Assert.Equal("12", footer.Elements("td").TakeLast(7).First().Value);
+        Assert.Equal("252.00", footer.Elements("td").TakeLast(6).First().Value);
+        // The median of the twelve amounts (-5, 0, 7, 10, 10, 10, 20, 30, 30, 30, 30, 80) is between the sixth and seventh.
+        Assert.Equal("15.00", footer.Elements("td").Last().Value);
         Assert.Contains("Showing 3 of", table.Value);
         var outline = ParseTable(CanopyStaticHtml.RenderGridPivot(view, result));
         Assert.Contains("&child", outline.Value);
@@ -326,7 +328,7 @@ public sealed class PivotTests {
     private static XElement ParseTable(string html) => XDocument.Parse(html.Replace("<br>", "<br />", StringComparison.Ordinal)).Root!;
 
     private static readonly CanopyGridAggregateOperation[] Builtins = { CanopyGridAggregateOperation.Count, CanopyGridAggregateOperation.Sum,
-        CanopyGridAggregateOperation.Average, CanopyGridAggregateOperation.Minimum, CanopyGridAggregateOperation.Maximum, CanopyGridAggregateOperation.DistinctCount };
+        CanopyGridAggregateOperation.Average, CanopyGridAggregateOperation.Minimum, CanopyGridAggregateOperation.Maximum, CanopyGridAggregateOperation.DistinctCount, CanopyGridAggregateOperation.Median };
 
     private static CanopyDataGridView View() {
         var view = new CanopyDataGridView("pivot", "Pivot") { Reporting = new CanopyGridReporting() };
@@ -356,7 +358,10 @@ public sealed class PivotTests {
         if (operation == CanopyGridAggregateOperation.DistinctCount) return values.Distinct().Count();
         if (values.Length == 0) return null;
         return operation switch { CanopyGridAggregateOperation.Sum => values.Sum(), CanopyGridAggregateOperation.Average => values.Average(),
-            CanopyGridAggregateOperation.Minimum => values.Min(), CanopyGridAggregateOperation.Maximum => values.Max(), _ => throw new ArgumentOutOfRangeException(nameof(operation)) };
+            CanopyGridAggregateOperation.Minimum => values.Min(), CanopyGridAggregateOperation.Maximum => values.Max(),
+            // Median: the mean of the middle two of an even count, the middle value otherwise.
+            CanopyGridAggregateOperation.Median => values.Length % 2 == 1 ? values.OrderBy(value => value).ElementAt(values.Length / 2) :
+                values.OrderBy(value => value).Skip(values.Length / 2 - 1).Take(2).Average(), _ => throw new ArgumentOutOfRangeException(nameof(operation)) };
     }
     private static bool Matches(CanopyGridTupleFilter predicate, CanopyGridRow row) {
         var match = predicate.Values.Any(tuple => predicate.Columns.Select((field, index) => {

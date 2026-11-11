@@ -4,7 +4,7 @@ using CanopyX.Html;
 namespace CanopyX.Examples;
 
 /// <summary>
-/// Orders grouped by region and status with labelled sum, average, count and distinct-count aggregates in the headings and
+/// Orders grouped by region and status with labelled sum, average, P95, count and distinct-count aggregates in the headings and
 /// the totals row; each order expands into a nested grid of its order lines. Readers regroup from the column menus or the
 /// group-by bar (docs/grouping.md).
 /// </summary>
@@ -40,6 +40,7 @@ internal static class OrdersByRegionExample {
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("customers", "customer", CanopyGridAggregateOperation.DistinctCount, "Customers"));
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("total", "amount", CanopyGridAggregateOperation.Sum, "Total amount"));
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("average", "amount", CanopyGridAggregateOperation.Average, "Average order"));
+        view.Reporting.Aggregates.Add(CanopyGridAggregate.AtPercentile("p95", "amount", 95, "Large order"));
         view.GetColumn("status").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.Ordinal, Statuses);
 
         var start = new DateTime(2026, 7, 1, 9, 0, 0, DateTimeKind.Utc);

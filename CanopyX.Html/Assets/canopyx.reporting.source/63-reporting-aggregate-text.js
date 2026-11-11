@@ -1,10 +1,12 @@
   // ---------- aggregate cells: function labels and the same declared precision on every aggregate surface ----------
   const AGGREGATE_LABELS = { count: "gridAggregateCount", sum: "gridAggregateSum", average: "gridAggregateAverage", minimum: "gridAggregateMinimum", maximum: "gridAggregateMaximum",
-    distinctCount: "gridAggregateDistinct" };
+    distinctCount: "gridAggregateDistinct", median: "gridAggregateMedian", percentile: "gridAggregatePercentile" };
   const reportingCounting = operation => operation === "count" || operation === "distinctCount";
+  // The operation's {value} template; a percentile names its percentile with invariant digits ("p95", "p99.9"), as static output does.
+  const reportingOperationTemplate = (grid, aggregate) => (grid.labels[AGGREGATE_LABELS[aggregate.operation]] ||
+    grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation + " {value}").replace("{percentile}", aggregate.percentile === undefined ? "{percentile}" : String(aggregate.percentile));
   function reportingAggregateName(grid, aggregate) {
-    const template = grid.labels[AGGREGATE_LABELS[aggregate.operation]] || grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation;
-    const operation = template.replace("{value}", "").trim() || aggregate.operation;
+    const operation = reportingOperationTemplate(grid, aggregate).replace("{value}", "").trim() || aggregate.operation;
     return aggregate.label + " · " + operation.charAt(0).toLocaleUpperCase(grid.lang) + operation.slice(1);
   }
   function reportingValueText(grid, aggregate, value, mode = "value") {
@@ -26,7 +28,7 @@
       const value = display ? display.value : values[aggregate.id];
       if ((value === null || value === undefined) && mode === "value") continue;
       const shown = reportingValueText(grid, aggregate, value, mode), caption = showAsCaption(grid, mode);
-      const labelled = fill(grid.labels[AGGREGATE_LABELS[aggregate.operation]] || grid.groupAggregates?.get(aggregate.operation)?.label || aggregate.operation + " {value}", {value: shown});
+      const labelled = fill(reportingOperationTemplate(grid, aggregate), {value: shown});
       text.push(mode === "value" ? labelled.charAt(0).toLocaleUpperCase(grid.lang) + labelled.slice(1) : shown + " " + caption.replace(/^% /, ""));
       titles.push(reportingAggregateName(grid, aggregate) + ": " + shown + (caption ? " (" + caption + ")" : ""));
     }

@@ -217,8 +217,7 @@ public sealed partial class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICa
     private static double? Aggregate(CanopySummaryAggregate aggregate, IReadOnlyList<Record> records, CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
         Supported(aggregate);
-        var definition = new CanopyGridAggregate(aggregate.Id, aggregate.Column.Id, aggregate.Operation, aggregate.Id);
-        return definition.Evaluate(records.Select(record => {
+        return aggregate.Definition().Evaluate(records.Select(record => {
             cancellationToken.ThrowIfCancellationRequested();
             return CanopyDataValues.ToCell(record.Values[aggregate.Column.Ordinal]);
         }));

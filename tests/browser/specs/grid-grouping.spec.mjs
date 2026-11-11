@@ -4,9 +4,8 @@ import { nextFrames } from "./support.mjs";
 import { api, definition, open, orders } from "./grid-grouping-fixtures.mjs";
 
 const headings = page => page.locator(".cx-grid-group");
-const pluginSetup = `CanopyX.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute(values) {
-  const sorted = [...values].sort((a, b) => a - b), middle = sorted.length >> 1;
-  return !sorted.length ? null : sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2; } } } });`;
+const pluginSetup = `CanopyX.use({ name: "range-aggregate", aggregates: { range: { label: "range {value}", compute(values) {
+  return values.length ? Math.max(...values) - Math.min(...values) : null; } } } });`;
 
 test("two levels nest complete groups, label their aggregates and make the grid a treegrid", async ({ page }) => {
   await open(page);
@@ -167,13 +166,13 @@ test("a heading selects its group's records; exports of the filtered result carr
 test("distinct counts and plugin aggregates are computed for inline data and labelled with their own templates", async ({ page }) => {
   const view = definition();
   view.reporting.aggregates = [{ id: "customers", column: "customer", operation: "distinctCount", label: "Customers" },
-    { id: "median", column: "amount", operation: "median", label: "Median amount" }];
+    { id: "range", column: "amount", operation: "range", label: "Amount range" }];
   await open(page, view, pluginSetup);
   const summary = await page.evaluate(api + ".getSummary()");
   expect(summary.aggregates.customers).toBe(new Set(orders().map(row => row.cells.customer)).size);
-  const amounts = orders().map(row => row.cells.amount).sort((a, b) => a - b);
-  expect(summary.aggregates.median).toBe((amounts[23] + amounts[24]) / 2);
-  await expect(page.locator(".cx-summary-row [role='gridcell']").last()).toHaveText(/^Med [\d,.]+$/);
+  const amounts = orders().map(row => row.cells.amount);
+  expect(summary.aggregates.range).toBe(Math.max(...amounts) - Math.min(...amounts));
+  await expect(page.locator(".cx-summary-row [role='gridcell']").last()).toHaveText(/^Range [\d,.]+$/);
   await expect(page.locator(".cx-summary-row [role='gridcell']").nth(1)).toHaveText(/^Distinct \d+$/);
   const failure = await page.evaluate(async view => {
     const host = document.createElement("div"); document.body.appendChild(host);

@@ -13,7 +13,7 @@ public sealed class GridFooterStaticTests {
             var footer = new CanopyGridFooter(scope == CanopyGridFooterScope.Page ? "page" : "all", "<Totals>", scope);
             footer.Aggregates.Add(new CanopyGridAggregate("sum", "amount", CanopyGridAggregateOperation.Sum, "<Sum>"));
             footer.Aggregates.Add(new CanopyGridAggregate("count", "name", CanopyGridAggregateOperation.Count, "Count"));
-            footer.Aggregates.Add(new CanopyGridAggregate("custom", "amount", "median", "Median"));
+            footer.Aggregates.Add(new CanopyGridAggregate("custom", "amount", "mode", "Mode"));
             view.Footers.Add(footer);
         }
         return view;
@@ -31,7 +31,7 @@ public sealed class GridFooterStaticTests {
         Assert.Equal(2, footer.Split("$ 7.00").Length - 1);
         Assert.Contains("(Page)", footer); Assert.Contains("(All matching)", footer);
         Assert.Contains("&lt;Totals&gt;", footer); Assert.Contains("&lt;Sum&gt;", footer);
-        Assert.DoesNotContain("<Totals>", footer); Assert.Contains("Median: Unavailable", footer);
+        Assert.DoesNotContain("<Totals>", footer); Assert.Contains("Mode: Unavailable", footer);
         Assert.Contains("class=\"money\"", footer); Assert.Contains("text-align:center;", footer);
         Assert.DoesNotContain("<script", result.Html); Assert.DoesNotContain("onclick", result.Html);
     }
@@ -45,7 +45,7 @@ public sealed class GridFooterStaticTests {
         page.FooterValues["page"] = new Dictionary<string, double?> { ["custom"] = 4 };
         page.FooterValues["all"] = new Dictionary<string, double?> { ["sum"] = 27, ["count"] = 3, ["custom"] = null };
         html = CanopyStaticHtml.RenderGrid(view, page);
-        Assert.Contains("&lt;Sum&gt;: $ 27.00", html); Assert.Contains("Median: $ 4.00", html); Assert.Contains("Median: —", html);
+        Assert.Contains("&lt;Sum&gt;: $ 27.00", html); Assert.Contains("Mode: $ 4.00", html); Assert.Contains("Mode: —", html);
         using var json = JsonDocument.Parse(page.ToJson(view));
         Assert.Equal(27, json.RootElement.GetProperty("footerValues").GetProperty("all").GetProperty("sum").GetDouble());
         Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("footerValues").GetProperty("all").GetProperty("custom").ValueKind);
@@ -89,7 +89,7 @@ public sealed class GridFooterStaticTests {
         page.FooterValues["all"]["count"] = 0;
         using var json = JsonDocument.Parse(page.ToJson(view));
         Assert.Equal(0, json.RootElement.GetProperty("footerValues").GetProperty("all").GetProperty("count").GetDouble());
-        Assert.Contains("Median: —", CanopyStaticHtml.RenderGrid(view, page));
+        Assert.Contains("Mode: —", CanopyStaticHtml.RenderGrid(view, page));
     }
 
     [Fact]

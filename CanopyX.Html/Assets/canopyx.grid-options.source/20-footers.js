@@ -14,7 +14,8 @@
         const column = grid.view.columns.find(column => column.id === aggregate.column), custom = !GROUP_OPERATIONS.includes(aggregate.operation);
         if (!column || aggregates.has(aggregate.id) || typeof aggregate.label !== "string" || !aggregate.label.trim() || aggregate.label.length > 512 ||
             typeof aggregate.operation !== "string" || !/^[a-z][a-zA-Z\d]{0,31}$/.test(aggregate.operation) ||
-            ["sum", "average", "minimum", "maximum"].includes(aggregate.operation) && column.kind !== "number" ||
+            ["sum", "average", "minimum", "maximum", "median", "percentile"].includes(aggregate.operation) && column.kind !== "number" ||
+            (aggregate.operation === "percentile" ? !(typeof aggregate.percentile === "number" && aggregate.percentile > 0 && aggregate.percentile < 100) : aggregate.percentile !== undefined) ||
             custom && grid.view.source.kind === "inline" && !grid.groupAggregates.has(aggregate.operation))
           throw new Error("CanopyX: invalid footer aggregate or missing custom aggregate plugin.");
         aggregates.add(aggregate.id);

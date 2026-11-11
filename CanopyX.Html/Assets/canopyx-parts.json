@@ -889,7 +889,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "11c7db5208ff48db",
+      "version": "79eb97f84d8f969c",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -1109,7 +1109,7 @@
     {
       "name": "grid-options",
       "label": "grid footer and query extensions",
-      "version": "a3f03dbc746cab52",
+      "version": "ceca82369d2d01bb",
       "script": "canopyx-grid-options.js",
       "style": "canopyx-grid-options.css",
       "runtimes": [

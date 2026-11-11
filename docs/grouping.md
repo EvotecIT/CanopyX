@@ -121,28 +121,49 @@ heading.
 | `count` | any | nonmissing values |
 | `distinctCount` | any | distinct nonmissing raw values |
 | `sum`, `average`, `minimum`, `maximum` | number | over finite values; null for no values |
+| `median`, `percentile` | number | interpolated between the closest ranks (below); null for no values |
 | any other name | any | a custom aggregate (below) |
 
-Every aggregate cell shows its function: `sum 12.7M`, `avg 36.2`, `distinct 16`. The templates are translatable labels
-with a `{value}` placeholder (`gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`, `gridAggregateMinimum`,
-`gridAggregateMaximum`, `gridAggregateDistinct`). Values use the aggregate's or the column's declared `format`; a
+Every aggregate cell shows its function: `sum 12.7M`, `avg 36.2`, `distinct 16`, `Median 410`, `P95 1,250`. The templates
+are translatable labels with a `{value}` placeholder (`gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`,
+`gridAggregateMinimum`, `gridAggregateMaximum`, `gridAggregateMedian`, `gridAggregateDistinct`); `gridAggregatePercentile`
+(`p{percentile} {value}`) also names the percentile. Values use the aggregate's or the column's declared `format`; a
 `progress` column shows its totals as a share of the presenter's maximum (`avg 77%`). Without either, a value shows the
 fraction digits it needs, at most two (`sum 717`, `avg 77.04`); counts show none. The tooltip and the cell's accessible
 name give the declared label and the full value. Columns with aggregates are measured with them, so the labelled values
 fit; a narrower cell keeps one line and breaks only between whole aggregates.
 
+**Medians and percentiles.** `percentile` names its percentile, greater than 0 and less than 100; `median` is the 50th:
+
+```js
+{ id: "p95", column: "duration", operation: "percentile", percentile: 95, label: "Duration" },
+{ id: "median", column: "duration", operation: "median", label: "Duration" }
+```
+
+```csharp
+view.Reporting.Aggregates.Add(CanopyGridAggregate.AtPercentile("p95", "duration", 95, "Duration"));
+view.Reporting.Aggregates.Add(new CanopyGridAggregate("median", "duration", CanopyGridAggregateOperation.Median, "Duration"));
+```
+
+Both use one method everywhere (browser, static output, `CanopyX.Data`): missing values are left out, the remaining *n*
+values are sorted, and the value at rank *h* = (*n* − 1) × *p* / 100 is interpolated linearly between the values at the
+closest ranks ⌊*h*⌋ and ⌈*h*⌉ (zero based). It is Excel's `PERCENTILE.INC` and NumPy's default `linear` method, so the
+median of an even count is the mean of the middle two. For `[1, 2, 3, 4, 10]`: median 3, P90 7.6 (rank 3.6, between 4 and
+10), P25 2. Group and total values are always computed from the records, never combined from inner groups. A database
+behind `CanopyQueryableProvider` answers them only in pivots ([provider support](remote-dotnet.md#grouping-levels)).
+
 **Custom aggregates** are registered by a plugin and named by an aggregate's `operation`:
 
 ```js
-CanopyX.use({ name: "median", aggregates: { median: { label: "med {value}", compute(values) {
-  const sorted = [...values].sort((a, b) => a - b), middle = sorted.length >> 1;
-  return !sorted.length ? null : sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+CanopyX.use({ name: "mode", aggregates: { mode: { label: "mode {value}", compute(values) {
+  const counts = new Map(); for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
+  return values.length ? [...counts].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0] : null;
 } } } });
 ```
 
 `compute(values, { column, aggregate })` receives the raw nonmissing values of a group (or of the whole result) and returns
 a finite number within the safe-integer magnitude, or null. `label` is the cell template (default `<name> {value}`). In
-C# use `new CanopyGridAggregate(id, column, "median", label)`. Inline data needs the plugin (a grid without it reports an
+C# use `new CanopyGridAggregate(id, column, "mode", label)`. Inline data needs the plugin (a grid without it reports an
 error); a host source computes the value itself.
 
 ### Working with the rest of the grid
@@ -277,5 +298,5 @@ Its corner names the grouping fields; group rows show plain values and counts, w
 ## Labels
 
 `gridGroupBy`, `gridUngroup`, `gridGroupDrop`, `gridExpandAll`, `gridCollapseAll`, `gridExpandLevel`, `gridCollapseLevel`,
-`gridGroupMove`, `gridGroupSortBy`, `gridGroupSortValue`, `gridGroupSortAggregate`, `gridSelectGroup`, `gridAggregateDistinct`, `gridShowDetail`,
+`gridGroupMove`, `gridGroupSortBy`, `gridGroupSortValue`, `gridGroupSortAggregate`, `gridSelectGroup`, `gridAggregateDistinct`, `gridAggregateMedian`, `gridAggregatePercentile`, `gridShowDetail`,
 `gridHideDetail`, `gridDetailOf` and `gridDetailFailed` join the existing grouping and aggregate labels, with Polish, German, Spanish, French and Italian translations in the shipped packs.

@@ -158,7 +158,7 @@ public sealed class MultiLevelGroupingTests {
     [Fact]
     public async Task CustomAggregates_AreUnsupportedByTheBuiltInProviders() {
         var view = Fleet.DynamicView();
-        view.Reporting!.Aggregates.Add(new CanopyGridAggregate("median", "memory", "median", "Median memory"));
+        view.Reporting!.Aggregates.Add(new CanopyGridAggregate("mode", "memory", "mode", "Mode memory"));
         foreach (var kind in new[] { ProviderKind.Reference, ProviderKind.Linq }) {
             var harness = new Harness(Hosts, kind, view: view);
             var error = await Assert.ThrowsAsync<CanopyRequestException>(() => harness.Handler.SummaryAsync("{\"revision\":\"r1\"}"));

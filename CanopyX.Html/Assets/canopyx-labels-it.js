@@ -775,6 +775,8 @@ const labels = Object.freeze({
   gridBucketEdges: "Limiti degli intervalli",
   gridBucketOrigin: "Origine degli intervalli",
   gridBucketInvalid: "Inserisci impostazioni valide per gli intervalli.",
+  gridAggregateMedian: "mediana {value}",
+  gridAggregatePercentile: "p{percentile} {value}",
   boardLane: "Corsia",
   boardUnassigned: "Non assegnato",
   boardEmpty: "Nessun record in questa corsia",

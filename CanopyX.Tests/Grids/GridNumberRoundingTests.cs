@@ -45,9 +45,9 @@ public sealed class GridNumberRoundingTests {
         var custom = typeof(CanopyGridAggregate).GetConstructor(new[] { typeof(string), typeof(string), typeof(string), typeof(string) });
         Assert.NotNull(custom);
         var format = CanopyGridNumberFormat.Fixed(1, suffix: " ms");
-        var aggregate = new CanopyGridAggregate("median", "amount", "median", "Median", format);
+        var aggregate = new CanopyGridAggregate("mode", "amount", "mode", "Mode", format);
         Assert.Equal(CanopyGridAggregateOperation.Custom, aggregate.Operation);
-        Assert.Equal("median", aggregate.CustomOperation);
+        Assert.Equal("mode", aggregate.CustomOperation);
         Assert.Same(format, aggregate.Format);
     }
 

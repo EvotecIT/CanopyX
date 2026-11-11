@@ -571,7 +571,7 @@ export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSour
   position?(query: GridQuery, id: string, options: { signal: AbortSignal }): number | PromiseLike<number>;
 }
 /** Built-in operations, or the name of a custom aggregate a plugin registers (inline data) or the host source computes. */
-export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | (string & {});
+export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | "median" | "percentile" | (string & {});
 /** Declarative defaults selected by *, #columnId, .classToken or index:N (zero based). */
 export type GridColumnDefaults = Pick<GridColumn, "className" | "alignment" | "sortable" | "filterable" | "hidden" | "orderData" | "orderSequence" | "sortComparator"> & { readonly targets: readonly string[] };
 export interface GridFooter {
@@ -584,6 +584,9 @@ export interface GridAggregate {
   /** The label is shown beside the value in group headings and the query totals row. */
   readonly id: string; readonly column: string; readonly label: string;
   readonly operation: GridAggregateOperation;
+  /** The percentile of a "percentile" aggregate, greater than 0 and less than 100 (95 for P95); median is the 50th. Both
+   * interpolate linearly between the closest ranks of the sorted values (Excel PERCENTILE.INC, NumPy's default). */
+  readonly percentile?: number;
   /** Explicit value format; otherwise the column format applies, except that count and distinctCount use whole numbers. */
   readonly format?: GridNumberFormat;
 }

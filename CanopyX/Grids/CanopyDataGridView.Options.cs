@@ -22,7 +22,8 @@ public partial class CanopyDataGridView {
         void Add(CanopyGridAggregate aggregate) {
             if (aggregate == null) throw new InvalidOperationException("An aggregate cannot be null.");
             if (ids.TryGetValue(aggregate.Id, out var existing)) {
-                if (existing.Column != aggregate.Column || existing.Operation != aggregate.Operation || existing.CustomOperation != aggregate.CustomOperation)
+                if (existing.Column != aggregate.Column || existing.Operation != aggregate.Operation || existing.CustomOperation != aggregate.CustomOperation ||
+                    existing.Percentile != aggregate.Percentile)
                     throw new InvalidOperationException("An aggregate identity must describe the same operation and column everywhere.");
                 return;
             }

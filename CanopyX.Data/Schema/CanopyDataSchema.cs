@@ -77,7 +77,8 @@ public sealed class CanopyDataSchema {
         foreach (var aggregate in view.GetSummaryAggregates()) {
             if (!_byId.TryGetValue(aggregate.Column, out var column)) throw new ArgumentException("The aggregate column '" + aggregate.Column + "' must be allowed.", nameof(columns));
             aggregates.Add(aggregate);
-            bindings.Add(new CanopySummaryAggregate(aggregate.Id, column, aggregate.Operation, aggregate.CustomOperation));
+            bindings.Add(aggregate.Percentile.HasValue ? new CanopySummaryAggregate(aggregate.Id, column, aggregate.Percentile.Value) :
+                new CanopySummaryAggregate(aggregate.Id, column, aggregate.Operation, aggregate.CustomOperation));
         }
         Aggregates = new ReadOnlyCollection<CanopyGridAggregate>(aggregates);
         SummaryAggregates = new ReadOnlyCollection<CanopySummaryAggregate>(bindings);
