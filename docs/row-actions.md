@@ -42,6 +42,7 @@ In the document it is the grid's `rowActions` ([protocol](data-protocol.md#flat-
 
 | Setting | Meaning |
 | --- | --- |
+| `label` | The actions column's name (default "Actions"). Screen readers hear it; the narrow header shows no text. |
 | `actions` | 1 to 16 actions in their order, each with an `id`, a `label` (the button's accessible name and tooltip, and the menu text), an `icon` and a `tone` (`neutral`, `primary` or `danger`). |
 | `when` | The rows that offer the action. Without it every row that is not locked does. |
 | `disabledWhen`, `disabledReason` | The rows on which the action shows but cannot run, and why: the reason is the button's description and tooltip. |

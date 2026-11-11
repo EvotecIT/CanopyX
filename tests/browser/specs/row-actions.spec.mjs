@@ -183,7 +183,8 @@ test("the deadline settles a proposal the host never answers", async ({ page }) 
 test("hover reveal keeps buttons reachable, and the column stays pinned at the end edge, also right to left", async ({ page }) => {
   await controlled(page, { reveal: "hover" });
   const start = action(page, "b", "start");
-  expect(await start.evaluate(button => getComputedStyle(button).opacity)).toBe("0");
+  // The cell repaints once the part has started; read the button that is in the page.
+  await expect.poll(() => start.evaluate(button => getComputedStyle(button).opacity)).toBe("0");
   await page.locator('[data-cx-id="b"]').hover();
   await expect.poll(() => start.evaluate(button => getComputedStyle(button).opacity)).toBe("1");
   await page.mouse.move(0, 0);
@@ -192,6 +193,10 @@ test("hover reveal keeps buttons reachable, and the column stays pinned at the e
   await expect(action(page, "a", "start")).toBeFocused();
   await expect.poll(() => action(page, "a", "start").evaluate(button => getComputedStyle(button).opacity)).toBe("1");
   await expect(cell(page, "a")).toHaveAttribute("data-cx-pin", "right");
+  // The narrow column keeps its name for assistive technology and shows no clipped title.
+  const header = page.locator('.cx-hcell[data-cx-column="cx-row-actions"]');
+  await expect(header).toHaveAccessibleName("Actions");
+  expect(await header.locator(".cx-htext").evaluate(text => getComputedStyle(text).visibility)).toBe("hidden");
   await page.evaluate(() => { document.querySelector("[data-canopyx-host]").dir = "rtl"; });
   const [grid, actions] = await Promise.all([page.locator(".cx-grid").boundingBox(), cell(page, "a").boundingBox()]);
   expect(actions.x - grid.x).toBeLessThan(40);

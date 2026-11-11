@@ -189,3 +189,15 @@ test("lists below the item and preview limits remain readable when the column cl
   await expect(page.getByRole("dialog").locator("pre")).toHaveText(owners);
   await page.getByRole("button", { name: "Close complete text" }).click(); await expect(button).toBeFocused();
 });
+
+test("an identifier stacks its secondary text in two-line rows and keeps it beside the value in fixed rows", async ({ page }) => {
+  const secondary = { name: { kind: "identifier", secondaryColumn: "url" } };
+  const lines = () => row(page, "a").locator(".p-sub").evaluate(element => {
+    const cell = element.closest(".cx-cell"), value = cell.querySelector(".cx-presenter-text").getBoundingClientRect(), sub = element.getBoundingClientRect();
+    return { stacked: !!cell.querySelector(".p-stack"), below: sub.top >= value.bottom - 1 };
+  });
+  await open(page, { reporting: { presenters: secondary } });
+  expect(await lines()).toEqual({ stacked: false, below: false });
+  await open(page, { rowHeight: "auto", reporting: { presenters: secondary } });
+  expect(await lines()).toEqual({ stacked: true, below: true });
+});
