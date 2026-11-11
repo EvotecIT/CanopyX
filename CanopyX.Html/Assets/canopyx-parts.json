@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "5e71a22aa437efbc",
+      "version": "9d4e8e8a90ffe27a",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "9a5fac70ac4adc53",
+      "version": "0341595c709f974f",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -961,7 +961,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "814c25fe8d09261f",
+      "version": "2218022f7b96706d",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -993,7 +993,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "afdb6d3e9a4f81c8",
+      "version": "6fc4ab188b273646",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
