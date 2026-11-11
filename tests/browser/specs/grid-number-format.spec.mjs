@@ -152,15 +152,17 @@ test("aggregate overrides and count defaults use the current shared heading and 
     { id: "average", column: "amount", operation: "average", label: "Average amount", format: { minimumFractionDigits: 2, maximumFractionDigits: 2, prefix: "$" } },
     { id: "count", column: "amount", operation: "count", label: "Amounts present" },
     { id: "distinct", column: "amount", operation: "distinctCount", label: "Distinct amounts" },
-    { id: "median", column: "amount", operation: "median", label: "Median amount", format: { maximumFractionDigits: 1, suffix: " ms" } }
+    { id: "median", column: "amount", operation: "median", label: "Median amount", format: { maximumFractionDigits: 1, suffix: " ms" } },
+    { id: "p90", column: "amount", operation: "percentile", percentile: 90, label: "Slow amount" }
   ] };
   view.rows = [10, 20, null, 2, 4, null].map((amount, i) => ({ id: "r" + i, cells: { name: "Item " + i, category: i < 3 ? "A" : "B", amount } }));
-  await open(page, view, `CanopyX.use({name:'format-median',aggregates:{median:{label:'med {value}',compute(values){values=[...values].sort((a,b)=>a-b);const middle=values.length>>1;return !values.length?null:values.length%2?values[middle]:(values[middle-1]+values[middle])/2;}}}});`);
+  await open(page, view);
   const first = page.locator(".cx-grid-group").first().locator(".cx-aggregate");
   await expect(first).toContainText("Sum 30%"); await expect(first).toContainText("Avg $15.00");
   await expect(first).toContainText("Count 2"); await expect(first).toContainText("Distinct 2");
-  await expect(first).toContainText("Med 15 ms");
-  await expect(first).toHaveAttribute("title", /Total amount · Sum: 30%.*Average amount · Avg: \$15.00.*Amounts present · Count: 2.*Distinct amounts · Distinct: 2.*Median amount · Med: 15 ms/);
+  // Built-in medians and percentiles use the aggregate's format, or else the column's: P90 of 10 and 20 is 19.
+  await expect(first).toContainText("Median 15 ms"); await expect(first).toContainText("P90 19%");
+  await expect(first).toHaveAttribute("title", /Total amount · Sum: 30%.*Average amount · Avg: \$15.00.*Amounts present · Count: 2.*Distinct amounts · Distinct: 2.*Median amount · Median: 15 ms.*Slow amount · P90: 19%/);
   await page.evaluate(api + ".setSelection(['r0','r1'])");
   await expect(page.locator(".cx-grid-status .agg")).toHaveText("Amount: 30%");
   await expect(page.locator(".cx-grid-status .agg span")).toHaveAttribute("title", /Average: 15%/);
@@ -193,11 +195,11 @@ test("aggregate overrides and count defaults use the current shared heading and 
   const dialog = page.locator(".cx-reporting-text");
   await expect(dialog.getByRole("button", { name: "Apply", exact: true })).toBeInViewport();
   await expect(dialog).toContainText("Average amount · Avg: $15.00");
-  await expect(dialog).toContainText("Median amount · Med: 15 ms");
+  await expect(dialog).toContainText("Median amount · Median: 15 ms");
   if (process.env.CANOPYX_EVIDENCE && testInfo.project.name === "chromium") for (const theme of ["light", "dark"]) {
     await page.keyboard.press("Escape");
     await page.locator("[data-canopyx-host]").evaluate((element, theme) => element.dataset.cxTheme = theme, theme);
-    await phone.click(); await expect(dialog).toContainText("Median amount · Med: 15 ms");
+    await phone.click(); await expect(dialog).toContainText("Median amount · Median: 15 ms");
     await nextFrames(page);
     await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, "number-formats-dialog-390-" + theme + ".png"), fullPage: true });
   }

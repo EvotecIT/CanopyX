@@ -6394,6 +6394,20 @@
     "Saisissez des paramètres d’intervalle valides.",
     "Inserisci impostazioni valide per gli intervalli."
   ],
+  "GridAggregateMedian": [
+    "mediana {value}",
+    "Median {value}",
+    "mediana {value}",
+    "médiane {value}",
+    "mediana {value}"
+  ],
+  "GridAggregatePercentile": [
+    "p{percentile} {value}",
+    "P{percentile} {value}",
+    "p{percentile} {value}",
+    "p{percentile} {value}",
+    "p{percentile} {value}"
+  ],
   "CompareSummary": [
     "Porównanie zbiorów danych",
     "Datensatzvergleich",

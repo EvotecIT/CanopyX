@@ -2388,7 +2388,7 @@
         "gridResultShape",
         "GRID_REPORTING"
       ],
-      "start": "const GROUP_OPERATIONS = [\"count\", \"sum\", \"average\", \"minimum\", \"maximum\", \"distinctCount\"];\nconst reportingGroupKey = value => JSON.stringify([typeof value, value]);",
+      "start": "const GROUP_OPERATIONS = [\"count\", \"sum\", \"average\", \"minimum\", \"maximum\", \"distinctCount\", \"median\", \"percentile\"];\nconst reportingGroupKey = value => JSON.stringify([typeof value, value]);",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.aggregates.source",
         "CanopyX.Html/Assets/canopyx.grid-options.source"

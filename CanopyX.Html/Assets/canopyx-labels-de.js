@@ -775,6 +775,8 @@ const labels = Object.freeze({
   gridBucketEdges: "Intervallgrenzen",
   gridBucketOrigin: "Intervallursprung",
   gridBucketInvalid: "Gültige Intervalleinstellungen eingeben.",
+  gridAggregateMedian: "Median {value}",
+  gridAggregatePercentile: "P{percentile} {value}",
   boardLane: "Spalte",
   boardUnassigned: "Nicht zugewiesen",
   boardEmpty: "Keine Datensätze in dieser Spalte",

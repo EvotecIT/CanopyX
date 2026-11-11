@@ -39,7 +39,7 @@ public sealed class GridGroupingContractTests {
     [Fact]
     public void Definition_WritesLevelsGroupableDistinctAndCustomAggregatesAndDetailRows() {
         var view = View();
-        view.Reporting!.Aggregates.Add(new CanopyGridAggregate("median", "amount", "median", "Median amount"));
+        view.Reporting!.Aggregates.Add(new CanopyGridAggregate("mode", "amount", "mode", "Mode amount"));
         var lines = new CanopyDataGridView("lines", "Lines");
         lines.Columns.Add(new CanopyColumn("product", "Product"));
         view.Reporting.Detail = new CanopyGridDetail { View = lines, Print = false, Label = "Order lines" };
@@ -50,7 +50,7 @@ public sealed class GridGroupingContractTests {
         Assert.Equal("desc", reporting.GetProperty("groupBy")[1].GetProperty("direction").GetString());
         Assert.True(reporting.GetProperty("groupable").GetBoolean());
         Assert.Equal("distinctCount", reporting.GetProperty("aggregates")[1].GetProperty("operation").GetString());
-        Assert.Equal("median", reporting.GetProperty("aggregates")[2].GetProperty("operation").GetString());
+        Assert.Equal("mode", reporting.GetProperty("aggregates")[2].GetProperty("operation").GetString());
         Assert.Equal(CanopyGridAggregateOperation.Custom, view.Reporting.Aggregates[2].Operation);
         Assert.Equal("lines", reporting.GetProperty("detail").GetProperty("view").GetProperty("id").GetString());
         Assert.False(reporting.GetProperty("detail").GetProperty("print").GetBoolean());

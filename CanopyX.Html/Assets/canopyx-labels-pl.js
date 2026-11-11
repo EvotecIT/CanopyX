@@ -775,6 +775,8 @@ const labels = Object.freeze({
   gridBucketEdges: "Granice przedziałów",
   gridBucketOrigin: "Początek przedziałów",
   gridBucketInvalid: "Podaj poprawne ustawienia przedziałów.",
+  gridAggregateMedian: "mediana {value}",
+  gridAggregatePercentile: "p{percentile} {value}",
   boardLane: "Tor",
   boardUnassigned: "Nieprzypisane",
   boardEmpty: "Brak rekordów w tym torze",

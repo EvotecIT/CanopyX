@@ -102,7 +102,7 @@ public sealed class GridOptionsRemoteTests {
 
     [Fact]
     public async Task HostCustomFooterValues_ArePreservedAndMissingUnsupportedTotalsStayUnavailable() {
-        var view = View(); var custom = new CanopyGridAggregate("custom", "cores", "median", "Median");
+        var view = View(); var custom = new CanopyGridAggregate("custom", "cores", "mode", "Mode");
         foreach (var footer in view.Footers) footer.Aggregates.Add(custom);
         var harness = new Harness(Hosts, ProviderKind.Reference, view: view);
         var provider = new HostProvider(harness.Provider) {

@@ -1404,17 +1404,22 @@ CanopyX.CanopyGridAggregate.CanopyX.CanopyGridAggregateOperation Operation { get
 CanopyX.CanopyGridAggregate.CanopyX.CanopyGridNumberFormat? Format { get; }
 CanopyX.CanopyGridAggregate.CanopyX.CanopyShowAs ShowAs { get; }
 CanopyX.CanopyGridAggregate.System.Nullable<System.Double> Evaluate(System.Collections.Generic.IEnumerable<CanopyX.CanopyCell?> values)
+CanopyX.CanopyGridAggregate.System.Nullable<System.Double> Percentile { get; }
 CanopyX.CanopyGridAggregate.System.String Column { get; }
 CanopyX.CanopyGridAggregate.System.String Id { get; }
 CanopyX.CanopyGridAggregate.System.String Label { get; }
 CanopyX.CanopyGridAggregate.System.String? CustomOperation { get; }
+CanopyX.CanopyGridAggregate.static CanopyX.CanopyGridAggregate AtPercentile(System.String id, System.String column, System.Double percentile, System.String label)
+CanopyX.CanopyGridAggregate.static CanopyX.CanopyGridAggregate AtPercentile(System.String id, System.String column, System.Double percentile, System.String label, CanopyX.CanopyGridNumberFormat? format)
 CanopyX.CanopyGridAggregateOperation : enum System.Int32
 CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation Average = 2
 CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation Count = 0
 CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation Custom = 6
 CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation DistinctCount = 5
 CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation Maximum = 4
+CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation Median = 7
 CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation Minimum = 3
+CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation Percentile = 8
 CanopyX.CanopyGridAggregateOperation.const CanopyX.CanopyGridAggregateOperation Sum = 1
 CanopyX.CanopyGridClipboard : sealed class
 CanopyX.CanopyGridClipboard..ctor()
@@ -2352,7 +2357,9 @@ CanopyX.CanopyLabels.System.String GridAggregateAverage { get; set; }
 CanopyX.CanopyLabels.System.String GridAggregateCount { get; set; }
 CanopyX.CanopyLabels.System.String GridAggregateDistinct { get; set; }
 CanopyX.CanopyLabels.System.String GridAggregateMaximum { get; set; }
+CanopyX.CanopyLabels.System.String GridAggregateMedian { get; set; }
 CanopyX.CanopyLabels.System.String GridAggregateMinimum { get; set; }
+CanopyX.CanopyLabels.System.String GridAggregatePercentile { get; set; }
 CanopyX.CanopyLabels.System.String GridAggregateSum { get; set; }
 CanopyX.CanopyLabels.System.String GridAll { get; set; }
 CanopyX.CanopyLabels.System.String GridAllResults { get; set; }

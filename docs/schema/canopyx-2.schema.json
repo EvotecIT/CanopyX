@@ -1487,10 +1487,12 @@
     "gridAggregate": {
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
-        "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
+        "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount", "median", "percentile"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
+        "percentile": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 100, "description": "The percentile of a percentile aggregate (95 for P95), interpolated linearly between the closest ranks." },
         "label": { "type": "string", "minLength": 1, "maxLength": 512 },
         "showAs": { "$ref": "#/$defs/gridShowAs" },
-        "format": { "$ref": "#/$defs/gridNumberFormat", "description": "Explicit value format; otherwise the column format applies, except that counts default to whole numbers." } }
+        "format": { "$ref": "#/$defs/gridNumberFormat", "description": "Explicit value format; otherwise the column format applies, except that counts default to whole numbers." } },
+      "if": { "properties": { "operation": { "const": "percentile" } } }, "then": { "required": ["percentile"] }, "else": { "not": { "required": ["percentile"] } }
     },
     "gridShowAs": { "enum": ["value", "percentGrandTotal", "percentParent", "percentColumn", "percentRow", "runningTotal", "rank", "difference", "percentChange"] },
     "gridNumberFormat": {
@@ -3009,6 +3011,8 @@
             "gridAggregateAverage": { "$ref": "#/$defs/accessibleLabel" },
             "gridAggregateMinimum": { "$ref": "#/$defs/accessibleLabel" },
             "gridAggregateMaximum": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateMedian": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregatePercentile": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupBy": { "$ref": "#/$defs/accessibleLabel" },
             "gridUngroup": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupDrop": { "$ref": "#/$defs/accessibleLabel" },

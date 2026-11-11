@@ -824,7 +824,7 @@ void badCalendar;
 const wrongColumn: GridCalendarDefinition<ShiftRow> = { start: "opened" };
 void wrongColumn;
 // Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
-ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
+ReportingRuntime.use({ name: "mode-aggregate", aggregates: { mode: { label: "mode {value}", compute: values => values.length ? Number(values[0]) : null } },
   detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });
 const groupedApi = ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "orders", label: "Orders",
   source: { kind: "inline" }, rows: [{ id: "o1", cells: { region: "North", amount: 10 }, detail: { type: "properties", items: [{ name: "Owner", value: "Ops" }] } }],
@@ -832,7 +832,7 @@ const groupedApi = ReportingRuntime.createDataGrid(document.createElement("div")
   columns: [{ id: "region", title: "Region", kind: "text", sortable: true }, { id: "amount", title: "Amount", kind: "number", sortable: true }],
   reporting: { groupBy: [{ column: "region", direction: "asc" }], groupable: true, detail: { print: false },
     aggregates: [{ id: "total", column: "amount", operation: "sum", label: "Total" }, { id: "distinct", column: "region", operation: "distinctCount", label: "Regions" },
-      { id: "median", column: "amount", operation: "median", label: "Median" }] } },
+      { id: "mode", column: "amount", operation: "mode", label: "Mode" }, { id: "p95", column: "amount", operation: "percentile", percentile: 95, label: "P95" }] } },
   detail: { hasDetail: row => !!row.detail, export: row => ({ type: "html", html: row.id }) } });
 const levels: readonly GroupLevel[] = groupedApi.getGroupBy?.() ?? [];
 void groupedApi.setGroupBy?.([...levels, { column: "amount", direction: "desc", aggregate: "total" }]);
