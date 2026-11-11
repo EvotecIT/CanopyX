@@ -219,6 +219,22 @@ test('tabs collapse on container resize and the picker retains badges', async ({
   await expect(page.getByRole('tablist')).toBeVisible();
 });
 
+test('setBadge changes a tab badge, its name and the picker, and removes it', async ({ page }) => {
+  await openUi(page, `<div id="container" style="width:900px">${tabs()}</div>`, initTabs('{}'));
+  expect(await page.evaluate(() => tabs.setBadge('checks', 1234))).toBe(true);
+  await expect(page.getByRole('tab', { name: 'Checks 1,234' })).toBeVisible();
+  await expect(page.locator('#sections-panel-checks .cx-tab-badge')).toHaveText('1,234');
+  expect(await page.evaluate(() => tabs.setBadge('audit', 'New'))).toBe(true);
+  await expect(page.getByRole('tab', { name: 'Audit New' })).toBeVisible();
+  expect(await page.evaluate(() => tabs.setBadge('checks', null))).toBe(true);
+  await expect(page.getByRole('tab', { name: 'Checks', exact: true })).toBeVisible();
+  await expect(page.locator('#sections [data-tab-id="checks"] .cx-tab-badge')).toHaveCount(0);
+  expect(await page.evaluate(() => tabs.setBadge('missing', 1))).toBe(false);
+  await page.evaluate(() => { document.querySelector('#container').style.width = '260px'; });
+  await page.locator('.cx-tabs-phone-picker').getByRole('button').click();
+  await expect(page.getByRole('menuitemradio', { name: /Audit.*New/ })).toBeVisible();
+});
+
 test('overflow menu can select a hidden tab while pills wrap without a menu', async ({ page }) => {
   const entries = Array.from({ length: 8 }, (_, index) => ({ id: 's' + index, label: 'Long section ' + index, badge: String(index) }));
   await openUi(page, `<div style="width:700px">${tabs('sections', 'data-collapse="none"', entries)}</div>`, initTabs("{ overflow: 'menu' }"));

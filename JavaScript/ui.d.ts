@@ -102,6 +102,11 @@ export interface UiTabsController extends UiNavigationController {
   /** Selects the next or previous enabled tab, stopping at the ends. Resolves false when there is none. */
   next(): Promise<boolean>;
   back(): Promise<boolean>;
+  /**
+   * Sets a tab's badge in the tab and its panel heading: text, a count in the page language's number format, or null
+   * (or "") to remove it. The badge is part of the tab's accessible name. False when there is no such tab.
+   */
+  setBadge(idOrIndex: string | number, badge: string | number | null): UiResult<boolean>;
 }
 
 /** An accordion section. In beforeChange, open is the state being requested. */
