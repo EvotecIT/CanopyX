@@ -7,8 +7,9 @@ namespace CanopyX;
 
 /// <summary>
 /// A flat grid authored from a typed record: columns come from member expressions (<c>grid.Column(x =&gt; x.Owner)</c>), so a
-/// renamed or removed member fails the build, and rows are written from <see cref="IEnumerable{T}"/>. Unlike
-/// <see cref="CanopyGridMapper{T}"/>, which takes a column and a selector per column, it derives each column from its member.
+/// renamed or removed member fails the build, and rows are written from <see cref="IEnumerable{T}"/>.
+/// <see cref="CanopyDataGridView.From{TRecord}(IEnumerable{TRecord}, string, string, string)"/> builds one with a column for every
+/// public property in one call.
 /// </summary>
 /// <typeparam name="T">The record type.</typeparam>
 /// <remarks>
@@ -95,13 +96,23 @@ public sealed partial class CanopyDataGridView<T> {
     }
 
     private CanopyColumn AddColumn<TValue>(string id, Expression<Func<T, TValue>> member, IReadOnlyList<MemberInfo>? path, Action<CanopyColumn>? configure, Func<TValue, CanopyCell?>? cell, string title) {
-        foreach (var existing in View.Columns) if (existing.Id == id) throw new ArgumentException("The grid already has a column '" + id + "'.", nameof(id));
-        if (View.Record != null) foreach (var field in View.Record.Fields) if (field.Id == id) throw new ArgumentException("The record panel already has a field '" + id + "'.", nameof(id));
+        RequireFreeId(id);
         var column = new CanopyColumn(id, title) { Kind = CanopyTypedMembers.Kind(CanopyTypedMembers.ValueType(member)) };
         configure?.Invoke(column);
-        _cells.Add(new KeyValuePair<CanopyColumn, Func<T, CanopyCell?>>(column, Writer(member, path, cell)));
+        return AddColumn(column, Writer(member, path, cell));
+    }
+
+    /// <summary>Adds a prepared column and the writer of its cells (the automatic columns of <see cref="CanopyDataGridView.From{TRecord}(IEnumerable{TRecord}, string, string, string)"/>).</summary>
+    internal CanopyColumn AddColumn(CanopyColumn column, Func<T, CanopyCell?> writer) {
+        RequireFreeId(column.Id);
+        _cells.Add(new KeyValuePair<CanopyColumn, Func<T, CanopyCell?>>(column, writer));
         View.Columns.Add(column);
         return column;
+    }
+
+    private void RequireFreeId(string id) {
+        foreach (var existing in View.Columns) if (existing.Id == id) throw new ArgumentException("The grid already has a column '" + id + "'.", nameof(id));
+        if (View.Record != null) foreach (var field in View.Record.Fields) if (field.Id == id) throw new ArgumentException("The record panel already has a field '" + id + "'.", nameof(id));
     }
 
     /// <summary>Adds a record panel field (a drawer-only value, not a grid column) for a member and returns it.</summary>

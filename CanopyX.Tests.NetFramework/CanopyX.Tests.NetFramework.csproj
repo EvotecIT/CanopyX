@@ -34,6 +34,7 @@
     <Compile Include="..\CanopyX.Tests\Grids\GridColumnGroupTests.cs" Link="Grids\GridColumnGroupTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\TypedGridTests.cs" Link="Grids\TypedGridTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\TypedCalendarTests.cs" Link="Grids\TypedCalendarTests.cs" />
+    <Compile Include="..\CanopyX.Tests\Grids\TypedGridFromTests.cs" Link="Grids\TypedGridFromTests.cs" />
     <Compile Include="..\CanopyX.Tests\Grids\CalendarEventsTests.cs" Link="Grids\CalendarEventsTests.cs" />
     <Compile Include="..\CanopyX.Tests\Calendar\ICalendarTests.cs" Link="Calendar\ICalendarTests.cs" />
     <Compile Include="..\CanopyX.Tests\Records\RecordFrameworkTests.cs" Link="Records\RecordFrameworkTests.cs" />

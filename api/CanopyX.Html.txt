@@ -102,6 +102,7 @@ CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.Ca
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyPropagation view, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyTextDiff diff, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment<T>(CanopyX.CanopyDataGridView<T> grid, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyCalendar calendar, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyChangeList list, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
@@ -110,6 +111,7 @@ CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.Canopy
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyPropagation view, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyTextDiff diff, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage(CanopyX.CanopyTreeView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlPage<T>(CanopyX.CanopyDataGridView<T> grid, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyCalendar calendar, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyChangeList list, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyDataGridView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
@@ -118,6 +120,7 @@ CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.Canopy
 CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyPropagation view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyTextDiff diff, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage(CanopyX.CanopyTreeView view, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.Void SaveHtmlPage<T>(CanopyX.CanopyDataGridView<T> grid, System.String path, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlOptions : sealed class
 CanopyX.Html.CanopyHtmlOptions..ctor()
 CanopyX.Html.CanopyHtmlOptions.CanopyX.CanopyRowDataOptions? RowData { get; set; }

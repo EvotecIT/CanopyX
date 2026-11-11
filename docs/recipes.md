@@ -73,17 +73,16 @@ retry. The grid cancels requests it no longer needs through `signal`.
 In C#, a .NET endpoint can write the page with the same column mapping it uses for inline pages:
 
 ```csharp
-var mapper = new CanopyGridMapper<Order>(order => order.Number)
-    .AddColumn(new CanopyColumn("number", "Order") { Sortable = true }, order => order.Number)
-    .AddColumn(new CanopyColumn("placed", "Placed") { Kind = CanopyColumnKind.DateTime, Sortable = true }, order => order.Placed)
-    .AddColumn(new CanopyColumn("total", "Total") { Kind = CanopyColumnKind.Number, Sortable = true }, order => order.Total);
-var view = mapper.CreateView("orders", "Orders");
-view.Source = CanopyGridSource.HostedOffset();
+var orders = new CanopyDataGridView<Order>("orders", "Orders", order => order.Number);
+orders.Column(x => x.Number, "Order", column => column.Sortable = true);
+orders.Column(x => x.Placed, configure: column => column.Sortable = true);   // a date column
+orders.Column(x => x.Total, configure: column => column.Sortable = true);    // a number column
+orders.View.Source = CanopyGridSource.HostedOffset();
 
 // In the endpoint, after running the query:
 var page = new CanopyGridPage("orders", revision, offset, total, matched);
-foreach (var order in window) page.Rows.Add(mapper.MapRow(order));
-string json = page.ToJson(view);
+foreach (var order in window) page.Rows.Add(orders.Row(order));
+string json = page.ToJson(orders.View);
 ```
 
 A page written with `view.ToHtmlFragment()` gets its `source` from `CanopyX.configure("orders", { source })` in a script that
