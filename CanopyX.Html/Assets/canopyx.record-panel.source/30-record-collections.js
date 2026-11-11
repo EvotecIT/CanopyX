@@ -1,7 +1,7 @@
   // ---------- record panel: collections ----------
   // A collection is { columns, rows, total?, pageLength?, pageSize?, target? } (rows of { id, cells }) or { columns, roots } for
   // a tree. It shows as a nested CanopyX grid with its own sorting, search and paging (a nested tree for roots, or on the
-  // tree runtimes), as cards on phones and as a plain table in print. Rows past the ones it carries load through the
+  // tree runtimes), as cards when the drawer is too narrow for its columns and as a plain table in print. Rows past the ones it carries load through the
   // record's source ("Load more" asks for the field from offset). target { view, column?, values?, filters? } names the view
   // whose records the rows are: a row opens that record, and "Open all in grid" filters that grid (a host can take it over).
   let recordNestedSeq = 0;
@@ -51,8 +51,8 @@
     if (head.firstChild) block.appendChild(head);
     block.appendChild(body);
     if (ctx.print) recordTable(ctx, list, body);
-    else if (ctx.phone && !list.roots) recordCards(ctx, field, list, body);
-    else recordNested(ctx, field, list, body);
+    else if (list.roots) recordNested(ctx, field, list, body);
+    else recordFit(ctx, field, list, body);
     if (!ctx.print && !list.roots && rows.length < total && recordLoader(ctx.view)) {
       const more = recordButton(labels.recordLoadMore, () => recordMore(ctx, field, list, more), "cx-record-load-more");
       block.appendChild(more);
@@ -60,9 +60,24 @@
     element.appendChild(block);
   }
 
+  // Rows are a table while the collection has room for its columns and cards only when it is genuinely too narrow. The
+  // width is the collection's own, measured once the drawer lays it out and again when it resizes, never the page's.
+  function recordFit(ctx, field, list, body) {
+    let cards = null, part = null;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width, narrow = width < Math.max(360, list.columns.length * 112);
+      if (!width || narrow === cards) return;
+      cards = narrow; part?.abort(); part = new AbortController(); body.replaceChildren();
+      const inner = { ...ctx, signal: AbortSignal.any([ctx.signal, part.signal]) };
+      if (narrow) recordCards(inner, field, list, body); else recordNested(inner, field, list, body);
+    });
+    observer.observe(body); recordOnDispose(ctx.signal, () => { observer.disconnect(); part?.abort(); });
+  }
+
   function recordNested(ctx, field, list, body) {
     const grid = recordGridHelpers(), host = h("div", "cx-host cx-record-nested"), rows = list.rows, tree = !!list.roots || !grid.createDataGrid;
-    const columns = list.columns.map(column => ({ kind: "text", sortable: true, ...column })), id = "cx-record-" + ++recordNestedSeq;
+    // The record panel chose a table: every column stays in it rather than moving to a phone's context line.
+    const columns = list.columns.map(column => ({ kind: "text", sortable: true, alwaysVisible: true, ...column })), id = "cx-record-" + ++recordNestedSeq;
     // Rows keep the order they come in: the nested grid sees positional ids and maps them back to the records.
     const byKey = new Map(rows.map((row, at) => ["r" + String(at).padStart(6, "0"), row]));
     const open = item => { const row = byKey.get(item.id) || item, ref = recordRowRef(list, row); if (ref) ctx.navigate(ref, host); };

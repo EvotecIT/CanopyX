@@ -2,11 +2,14 @@
   // The head's actions menu: copy link (with deep links), copy values (tab-separated) or JSON, export CSV or JSON, print the
   // record alone, then the host's recordActions option and plugins' recordActions ({ label, run({ record, view, api, payload,
   // signal }) }). record.actions switches the built-in ones off. Exports carry every field with its section, empty ones too.
+  // A prominent action is also a footer button in its tone: primary (the default), neutral (a secondary button) or danger,
+  // which follows the others at the far end of the footer.
+  const RECORD_TONES = ["primary", "neutral", "danger"];
   function recordActionsMenu(view, dialog, identity) {
     dialog.querySelector(".cx-record-footer")?.remove();
     const spec = recordSpec(view), switches = spec.actions || {}, labels = view.labels, items = [];
     const failed = error => { recordAnnounce(dialog, error?.message ?? String(error)); view.emit("error", { error }); };
-    const add = (label, task, prominent = false, visible = () => true, disabled = false) => {
+    const add = (label, task, prominent = false, visible = () => true, disabled = false, tone = "primary") => {
       let running = false, button;
       const run = async () => {
         if (running || disabled || !visible()) return;
@@ -14,14 +17,14 @@
         try { return await task(); }
         finally { running = false; if (button) button.disabled = disabled; }
       };
-      const item = { label, task: run, visible, disabled, primary: typeof prominent === "function" ? prominent : () => prominent === true };
+      const item = { label, task: run, visible, disabled, tone, primary: typeof prominent === "function" ? prominent : () => prominent === true };
       items.push(item);
       if (prominent) {
         let footer = dialog.querySelector(".cx-record-footer");
         if (!footer) { footer = h("footer", "cx-record-footer"); dialog.appendChild(footer); }
-        button = recordButton(label, () => { Promise.resolve().then(run).catch(failed); }, "cx-record-btn cx-record-primary");
+        button = recordButton(label, () => { Promise.resolve().then(run).catch(failed); }, "cx-record-btn cx-record-" + (tone === "neutral" ? "secondary" : tone));
         button.disabled = disabled; item.footer = button;
-        footer.appendChild(button);
+        footer.insertBefore(button, tone === "danger" ? null : footer.querySelector(".cx-record-danger"));
       }
     };
     if (switches.link !== false && spec.deepLink) add(labels.recordCopyLink, () => recordCopy(view, dialog, recordAddress(view, dialog._cxRecord)));
@@ -29,7 +32,7 @@
     if (switches.export !== false) { add(labels.recordExportCsv, () => recordDownload(view, dialog, "csv")); add(labels.recordExportJson, () => recordDownload(view, dialog, "json")); }
     if (switches.print !== false) add(labels.recordPrint, () => recordPrint(view, dialog));
     for (const action of [...(Array.isArray(view.opts.recordActions) ? view.opts.recordActions : []), ...view.plugins.flatMap(item => item.recordActions || [])]) {
-      if (!action || typeof action.label !== "string" || typeof action.run !== "function") continue;
+      if (!action || typeof action.label !== "string" || typeof action.run !== "function" || action.tone !== undefined && !RECORD_TONES.includes(action.tone)) continue;
       const context = () => {
         const record = dialog._cxRecord, entry = record && recordEntry(view, record.id);
         return Object.freeze({ record: record ? JSON.parse(JSON.stringify(record)) : { id: "" }, view: view.view.id, api: view.host.canopyx,
@@ -39,7 +42,7 @@
         if (typeof value !== "function") return value === undefined ? fallback : value === true;
         try { return value(context()) === true; } catch (error) { failed(error); return false; }
       };
-      add(action.label, () => action.run(context()), () => condition(action.prominent, false), () => condition(action.visible, true), action.disabled === true);
+      add(action.label, () => action.run(context()), () => condition(action.prominent, false), () => condition(action.visible, true), action.disabled === true, action.tone);
     }
     if (!items.length) return;
     // Share keyboard handling, focus return and nested Escape order with every other menu.
@@ -49,7 +52,7 @@
     toggle.setAttribute("aria-label", labels.recordActions); toggle.title = labels.recordActions;
     for (const item of items) {
       const button = h("button", "cx-record-btn cx-record-menu-item"); button.type = "button"; setText(button, item.label);
-      button.setAttribute("role", "menuitem"); button.disabled = item.disabled;
+      button.setAttribute("role", "menuitem"); button.disabled = item.disabled; if (item.tone === "danger") button.dataset.tone = "danger";
       button.dataset.itemId = String(actions.size); actions.set(button.dataset.itemId, item.task);
       item.button = button;
     }
