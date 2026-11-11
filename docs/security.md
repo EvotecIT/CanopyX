@@ -59,8 +59,12 @@ Fragments that share a `CanopyHtmlDocument` carry each part once; pass the same 
 For a hosted grid, give its endpoint configuration script the same nonce before the grid mounts:
 
 ```csharp
-var source = CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/hosts", nonce);
+var page = view.ToHtmlPage(new CanopyHtmlOptions {
+    Nonce = nonce, HeadHtml = CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/hosts", nonce) });
 ```
+
+`HeadHtml` is written as given, after the runtime, so every element in it needs the response's nonce and none of it may come
+from report data.
 
 `CanopyRemoteScript.Script(...)` returns the same script body for a host that writes its own nonced element.
 

@@ -525,6 +525,11 @@ const releaseOptions = CanopyX.configure("files", { renderers: { owner: drawOwne
 
 With `CanopyHtmlOptions.AutoMount = false` the fragment waits until the host calls `CanopyX.mount()`.
 
+A complete page from `ToHtmlPage` or `SaveHtmlPage` carries such a script, or host styles, in `CanopyHtmlOptions.HeadHtml`: it is
+written as given at the end of the page's `head`, after the inline runtime, so `CanopyX.configure` is available to it. With
+external assets the runtime script is deferred; configure from a `DOMContentLoaded` listener there. Put only host-authored
+markup in it, with the response's `Nonce` on its elements under a Content Security Policy.
+
 Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. Destruction releases loaded rows, selection, caches, and the row pool. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
 
 Registered fragment options persist for remounting until their disposer is called or `CanopyX.unconfigure(viewId)` removes them. Removing a registration leaves a mounted grid intact, and an older disposer cannot remove a newer registration.

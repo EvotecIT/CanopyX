@@ -137,6 +137,7 @@ CanopyX.Html.CanopyHtmlOptions.System.Collections.Generic.ISet<System.String> Hi
 CanopyX.Html.CanopyHtmlOptions.System.Collections.Generic.ISet<System.String> Parts { get; }
 CanopyX.Html.CanopyHtmlOptions.System.String AssetBaseUrl { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.String Language { get; set; }
+CanopyX.Html.CanopyHtmlOptions.System.String? HeadHtml { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.String? Height { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.String? HostId { get; set; }
 CanopyX.Html.CanopyHtmlOptions.System.String? Nonce { get; set; }
