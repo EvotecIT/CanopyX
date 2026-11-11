@@ -38,6 +38,47 @@
     "{resources} {start}–{end} sur {total}",
     "{resources} {start}–{end} di {total}"
   ],
+  "CalendarRecurrenceDaily": ["codziennie", "jeden Tag", "cada día", "tous les jours", "ogni giorno"],
+  "CalendarRecurrenceDailyInterval": ["[few]co {count} dni[many]co {count} dni[other]co {count} dnia", "alle {count} Tage", "cada {count} días", "tous les {count} jours", "ogni {count} giorni"],
+  "CalendarRecurrenceWeekly": ["co tydzień", "jede Woche", "cada semana", "toutes les semaines", "ogni settimana"],
+  "CalendarRecurrenceWeeklyInterval": ["[few]co {count} tygodnie[many]co {count} tygodni[other]co {count} tygodnia", "alle {count} Wochen", "cada {count} semanas", "toutes les {count} semaines", "ogni {count} settimane"],
+  "CalendarRecurrenceMonthly": ["co miesiąc", "jeden Monat", "cada mes", "tous les mois", "ogni mese"],
+  "CalendarRecurrenceMonthlyInterval": ["[few]co {count} miesiące[many]co {count} miesięcy[other]co {count} miesiąca", "alle {count} Monate", "cada {count} meses", "tous les {count} mois", "ogni {count} mesi"],
+  "CalendarRecurrenceYearly": ["co roku", "jedes Jahr", "cada año", "tous les ans", "ogni anno"],
+  "CalendarRecurrenceYearlyInterval": ["[few]co {count} lata[many]co {count} lat[other]co {count} roku", "alle {count} Jahre", "cada {count} años", "tous les {count} ans", "ogni {count} anni"],
+  "CalendarRecurrenceOn": ["{days}", "am {days}", "el {days}", "le {days}", "{days}"],
+  "CalendarRecurrenceWeekdays": ["w dni robocze", "werktags", "entre semana", "en semaine", "nei giorni feriali"],
+  "CalendarRecurrenceWeekends": ["w weekendy", "am Wochenende", "los fines de semana", "le week-end", "nel fine settimana"],
+  "CalendarRecurrenceDayRange": ["{first}–{last}", "{first} bis {last}", "de {first} a {last}", "du {first} au {last}", "da {first} a {last}"],
+  "CalendarRecurrenceList": ["{items} i {last}", "{items} und {last}", "{items} y {last}", "{items} et {last}", "{items} e {last}"],
+  "CalendarRecurrenceMonthDays": [
+    "[one]dnia {days}[few]w dni {days}[many]w dni {days}[other]w dni {days}",
+    "[one]am Tag {days}[other]an den Tagen {days}",
+    "[one]el día {days}[other]los días {days}",
+    "[one]le {days}[other]les {days}",
+    "[one]il giorno {days}[other]i giorni {days}"
+  ],
+  "CalendarRecurrenceLastDay": ["w ostatni dzień miesiąca", "am letzten Tag des Monats", "el último día del mes", "le dernier jour du mois", "l’ultimo giorno del mese"],
+  "CalendarRecurrenceNth": ["{ordinal} {day}", "{ordinal} {day}", "{ordinal} {day}", "{ordinal} {day}", "{ordinal} {day}"],
+  "CalendarRecurrenceOrdinals": [
+    "1.|2.|3.|4.|5.|ostatni",
+    "1.|2.|3.|4.|5.|letzten",
+    "primer|segundo|tercer|cuarto|quinto|último",
+    "premier|deuxième|troisième|quatrième|cinquième|dernier",
+    "il primo|il secondo|il terzo|il quarto|il quinto|l’ultimo"
+  ],
+  "CalendarRecurrenceInMonths": ["w miesiącach: {months}", "im {months}", "en {months}", "en {months}", "a {months}"],
+  "CalendarRecurrenceOnDate": ["{date}", "am {date}", "el {date}", "le {date}", "il {date}"],
+  "CalendarRecurrenceAt": ["o {time}", "um {time}", "a las {time}", "à {time}", "alle {time}"],
+  "CalendarRecurrenceTimes": ["[one]{count} raz[few]{count} razy[many]{count} razy[other]{count} razy", "{count}-mal", "[one]{count} vez[other]{count} veces", "{count} fois", "[one]{count} volta[other]{count} volte"],
+  "CalendarRecurrenceUntil": ["do {date}", "bis {date}", "hasta el {date}", "jusqu’au {date}", "fino al {date}"],
+  "CalendarRecurrenceExcept": [
+    "[one]z wyjątkiem {count} daty[few]z wyjątkiem {count} dat[many]z wyjątkiem {count} dat[other]z wyjątkiem {count} daty",
+    "[one]außer {count} Termin[other]außer {count} Terminen",
+    "[one]excepto {count} fecha[other]excepto {count} fechas",
+    "[one]sauf {count} date[other]sauf {count} dates",
+    "[one]tranne {count} data[other]tranne {count} date"
+  ],
   "GridDownloadXlsx": [
     "Skoroszyt Excel (.xlsx)",
     "Excel-Arbeitsmappe (.xlsx)",
