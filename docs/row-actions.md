@@ -88,7 +88,7 @@ authorizes the action.
 
 | API | Meaning |
 | --- | --- |
-| `requestRowAction(id, action, { signal?, reason? })` | Raises an action of a loaded row as if it were picked; resolves with your answer, or `false` when the row, the action or the hook is not available, the action is disabled, or the row already has a proposal. |
+| `requestRowAction(id, action, { signal?, reason? })` | Raises an action of a loaded row as if it were picked; resolves with `{ accepted, reason, message }`, as `canopyx:rowAction` reports it, so a caller shows your refusal's message. It resolves `accepted: false` with no message when the row, the action or the hook is not available, the action is disabled, the row already has a proposal, or the proposal is vetoed or cancelled. |
 | `cancelRowAction(id?)` | Aborts the proposal of a row, or of every row. Your hook's `signal` aborts. |
 | `canopyx:beforeRowAction` (cancelable), `onBeforeRowAction` | Before the hook, with the proposal; cancel or return `false` to veto. |
 | `canopyx:rowAction` | After the answer: `{ proposal, accepted, reason, message }`. |

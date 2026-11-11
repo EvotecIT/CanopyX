@@ -8,15 +8,19 @@
   function rowActionAborted(signal) {
     return new Promise((_, reject) => signal.addEventListener("abort", () => reject(signal.reason), { once: true }));
   }
+  // requestRowAction resolves what canopyx:rowAction reports, { accepted, reason, message }; a proposal that was never made
+  // (no such row or action, a disabled action, a pending proposal, a veto) or was cancelled resolves accepted false, message null.
+  const rowActionResult = (accepted, reason, message = null) => Object.freeze({ accepted, reason, message });
   Object.assign(DataGrid.prototype, {
     async requestRowAction(id, actionId, options = {}) {
       if (!options || typeof options !== "object") throw new Error("CanopyX: row action options are an object.");
-      if (this.destroyed || !this.rowActions || options.signal?.aborted || this.rowActionPending.has(id)) return false;
+      const reason = options.reason || "api", none = rowActionResult(false, reason);
+      if (this.destroyed || !this.rowActions || options.signal?.aborted || this.rowActionPending.has(id)) return none;
       const row = this.rowActionRow(id), state = row && this.rowActionState(row.h), entry = state?.all.find(item => item.action.id === actionId);
-      if (!entry || entry.disabled || typeof this.opts.onRowAction !== "function") return false;
-      const action = entry.action, reason = options.reason || "api";
+      if (!entry || entry.disabled || typeof this.opts.onRowAction !== "function") return none;
+      const action = entry.action;
       const proposal = gridFreeze({ id, action: actionId, row: JSON.parse(JSON.stringify(row.h)) });
-      if (!this.emit("beforeRowAction", proposal) || this.destroyed || this.rowActionPending.has(id)) return false;
+      if (!this.emit("beforeRowAction", proposal) || this.destroyed || this.rowActionPending.has(id)) return none;
       const controller = new AbortController(), pending = { action, controller };
       this.rowActionPending.set(id, pending); this.rowActionResults.delete(id); this.showRowActionStatus(null);
       this.repaintRowActions(); setText(this.live, fill(this.rowActionText.rowActionPending, { action: action.label }));
@@ -33,11 +37,11 @@
           accepted = result.accepted; message = result.message ? result.message.slice(0, 500) : null;
         } else throw new Error("CanopyX: onRowAction must answer a boolean or { accepted, message }.");
       } catch (error) { failure = error; } finally { clearTimeout(timer); }
-      if (this.destroyed || this.rowActionPending.get(id) !== pending) return false;
+      if (this.destroyed || this.rowActionPending.get(id) !== pending) return none;
       this.rowActionPending.delete(id);
       const cancelled = controller.signal.aborted && controller.signal.reason?.name === "AbortError";
       controller.abort();
-      if (cancelled) { this.repaintRowActions(); setText(this.live, ""); return false; }
+      if (cancelled) { this.repaintRowActions(); setText(this.live, ""); return none; }
       if (failure) message = fill(this.rowActionText.rowActionFailed, { action: action.label, error: failure.message || String(failure) });
       else if (!accepted) message = message || fill(this.rowActionText.rowActionRejected, { action: action.label });
       if (!accepted) { this.rowActionResults.set(id, { action, message }); this.showRowActionStatus(message); setText(this.live, ""); }
@@ -45,7 +49,7 @@
       this.repaintRowActions();
       this.host.dispatchEvent(new CustomEvent("canopyx:rowAction", { detail: Object.freeze({ proposal, accepted, reason, message }) }));
       if (accepted && action.refresh) this.refreshAfterRowAction();
-      return accepted;
+      return rowActionResult(accepted, reason, message);
     },
     /** Cancels the pending proposal of a row, or of every row; true when one was pending. */
     cancelRowAction(id) {
