@@ -199,3 +199,42 @@ test("phone month day changes release replaced status renderer elements and pres
   }
   expect(destroyed.every(call => call.disposed === 1 && call.aborted === 1 && call.signalAborted)).toBe(true);
 });
+
+test("destroying keyboard-open overflow releases document listeners across remounts", async ({ page }) => {
+  await page.addInitScript(() => {
+    const add = document.addEventListener, remove = document.removeEventListener;
+    const listeners = window.unscopedPointerCaptures = new Set();
+    const capturing = options => options === true || !!options?.capture;
+    document.addEventListener = function (type, listener, options) {
+      if (type === "pointerdown" && listener && capturing(options) && !options?.signal) listeners.add(listener);
+      return add.call(this, type, listener, options);
+    };
+    document.removeEventListener = function (type, listener, options) {
+      if (type === "pointerdown" && capturing(options)) listeners.delete(listener);
+      return remove.call(this, type, listener, options);
+    };
+  });
+  const errors = await open(page);
+  const baseline = await page.evaluate(() => {
+    window.baselinePointerCaptures = new Set(window.unscopedPointerCaptures);
+    return window.baselinePointerCaptures.size;
+  });
+  for (let cycle = 0; cycle < 3; cycle++) {
+    if (cycle) {
+      await page.evaluate(() => window.mountRendererCalendar());
+      await page.waitForSelector("[data-cx-calendar-ready]");
+    }
+    await page.evaluate(() => window.api.setCalendarView("month"));
+    expect(await page.evaluate(() => window.unscopedPointerCaptures.size)).toBe(baseline);
+    await page.locator(".cx-cal-more-btn").first().focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".cx-cal-more-list")).toBeVisible();
+    expect(await page.evaluate(() => window.unscopedPointerCaptures.size)).toBe(baseline + 1);
+    await page.evaluate(() => window.api.destroy());
+    await nextFrames(page);
+    await expect(page.locator(".cx-cal")).toHaveCount(0);
+    expect(await page.evaluate(() => window.unscopedPointerCaptures.size)).toBe(baseline);
+    expect(await page.evaluate(() => [...window.unscopedPointerCaptures].every(listener => window.baselinePointerCaptures.has(listener)))).toBe(true);
+  }
+  expect(errors).toEqual([]);
+});

@@ -16,6 +16,7 @@ export async function rendererFixture() {
 
 /* global CanopyX */
 function install() {
+  window.mountRendererCalendar = install;
   window.rendererCalls = []; window.rendererErrors = [];
   const phoneMonth = new URLSearchParams(location.search).has("phone");
   let rows = ["owned", "false", "void", "throw"].map((mode, index) => ({ id: mode, cells: {
