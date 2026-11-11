@@ -505,7 +505,8 @@ writes them in a canonical order (`ToString()`), parses them (`Parse`, `TryParse
 A recurring event says how it repeats in words. The details popover and the hover card show the sentence under the event's
 time, and the event's accessible name ends with it instead of the bare "Repeats", so a screen reader hears what the repeat
 marker means. In C#, `rule.Describe(start, culture, labels, allDay, exceptions)` writes the same sentence; `start` is the series
-start as a wall time in its zone, which supplies the weekday, day and month a rule leaves out.
+start as a wall time in its zone, which supplies the weekday, day and month a rule leaves out. In the browser,
+`grid.describeCalendarRecurrence(rule, start, options)` resolves with the same sentence in the grid's language and labels.
 
 | Rule (start) | English | Polish |
 |---|---|---|
@@ -638,6 +639,7 @@ and `Icon`, and `CanopyCalendarEvent.Location` write the same settings; the type
 | `getCalendarEvents()` | The occurrences shown: `{ id, record, start, end, allDay, title, resource, recurring, background }`. |
 | `openCalendarEvent(id)` | Opens an event's record. |
 | `exportCalendar(options)` | iCalendar text, see above. |
+| `describeCalendarRecurrence(rule, start, { allDay?, exceptions? })` | Resolves with the sentence the calendar shows for a rule ([How a series reads](#how-a-series-reads)), or the rule text when the sentences cannot say it; `start` is a `Date` or an ISO date-time with a zone (a `yyyy-MM-dd` date when all-day), read in the series zone. |
 | `clearCalendarSelection()` | Clears a selected day, range or resource. |
 | `canopyx:calendar` / `onCalendar` | After each paint of a view or range, with `getCalendar()`'s state. |
 | `canopyx:occurrenceChange` / `onOccurrenceChange` | Before an occurrence of a series moves; cancelable. |
@@ -669,7 +671,7 @@ stubs. Single-file pages carry the parts' payloads for views that need them: a c
 | --- | --- | --- |
 | `canopyx-calendar.js` | 42,240 bytes | 43,008 (42 KiB) |
 | `canopyx-calendar.css` | 6,120 bytes | 6,400 |
-| `canopyx-calendar-recurrence.js` | 5,445 bytes | 6,000 |
+| `canopyx-calendar-recurrence.js` | 5,661 bytes | 6,000 |
 | `canopyx-calendar-edit.js` | 14,439 bytes | 14,848 |
 | `canopyx-calendar-ics.js` | 8,302 bytes | 9,450 |
 | `canopyx-calendar-screen.js` | 6,186 bytes | 6,950 |

@@ -92,6 +92,20 @@
 
   const { calEventName, calDetailsContent } = DataGrid.prototype;
   Object.assign(DataGrid.prototype, {
+    /**
+     * A rule as the calendar's sentence, in the grid's language and labels: start is the series start (a Date, an ISO date-time
+     * with Z or an offset, or a yyyy-MM-dd date when allDay), read in the calendar's series zone; exceptions is EXDATE text. The
+     * rule text when the sentences cannot say it; rejects a rule outside the subset.
+     */
+    async describeCalendarRecurrence(rule, start, options = {}) {
+      const parsed = calRule(rule), allDay = !!options.allDay, zone = allDay ? calZone("utc") : this.calSeriesZone;
+      // An all-day Date names the reader's own date, as createCalendar reads it.
+      const time = start instanceof Date ? (allDay ? Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()) : start.getTime()) : allDay ? calParseDay(String(start).slice(0, 10)) * CAL_DAY : calInstant(start);
+      if (!Number.isFinite(time)) throw new Error("CanopyX: a recurrence's start is a Date or an ISO date-time with a zone.");
+      const { excluded, excludedDays } = calExceptions(options.exceptions, zone);
+      return calDescribe(parsed, zone.parts(time), { lang: this.lang, labels: this.labels, allDay, time: allDay ? "" : this.calFmt.time(time),
+        exceptions: excluded.size + excludedDays.size }) ?? parsed.text;
+    },
     /** The sentence of an event's series, kept with the series; null when it has no rule or the sentences cannot say it. */
     calSeriesText(base) {
       if (!base?.rule || base.ruleError) return null;

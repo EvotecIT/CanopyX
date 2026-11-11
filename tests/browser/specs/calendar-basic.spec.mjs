@@ -392,6 +392,21 @@ test.describe("builder options", () => {
     await open().click();
     await expect(page.locator(".cx-cal-details .cx-cal-det-repeat")).toHaveText("W dni robocze, o " + polishTime + ", z wyjątkiem 1 daty");
   });
+
+  test("describeCalendarRecurrence loads the recurrence part on first use and says a rule in the grid's language", async ({ page }) => {
+    const labels = Object.fromEntries(Object.entries((await import("../../../JavaScript/locales/pl.mjs")).labels).filter(([name]) => name.startsWith("calendar")));
+    await openBuilt(page, "describe-pl.html", calendarPage({ events: EVENTS, date: "2026-10-16", timeZone: "utc", labels }, { lang: "pl" }));
+    // No event repeats, so the part is not in until the method asks for it.
+    expect(await page.evaluate(() => typeof window.api.calSeriesText)).toBe("undefined");
+    const said = await calApi(page, `api => Promise.all([
+      api.describeCalendarRecurrence("FREQ=MONTHLY;BYDAY=-1WE", "2026-10-28T09:00:00Z"),
+      api.describeCalendarRecurrence("FREQ=WEEKLY;BYDAY=TU,TH", "2026-10-20", { allDay: true, exceptions: "2026-10-22" }),
+      api.describeCalendarRecurrence("FREQ=MONTHLY;BYDAY=MO", "2026-10-19T09:00:00Z"),
+      api.describeCalendarRecurrence("FREQ=HOURLY", "2026-10-19T09:00:00Z").then(() => "resolved", error => error.message)])`);
+    expect(said[0]).toMatch(/^Co miesiąc, w ostatnią środę, o 0?9:00$/);
+    expect(said.slice(1, 3)).toEqual(["We wtorki i w czwartki, z wyjątkiem 1 daty", "FREQ=MONTHLY;BYDAY=MO"]);
+    expect(said[3]).toContain("FREQ is DAILY, WEEKLY, MONTHLY or YEARLY");
+  });
 });
 
 test.describe("review guards", () => {

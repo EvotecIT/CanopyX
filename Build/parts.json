@@ -2190,7 +2190,7 @@
         "loadPart",
         "PROTOCOL"
       ],
-      "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid, calSameOrigin, calSafeTone, calInvalid };",
+      "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calInstant, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid, calSameOrigin, calSafeTone, calInvalid };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar.source"
       ],
@@ -2217,7 +2217,7 @@
       "context": [
         "DataGrid"
       ],
-      "start": "const { CAL_DAY, CAL_MINUTE, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calParseDay } = DataGrid.prototype.calKit;",
+      "start": "const { CAL_DAY, CAL_MINUTE, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calParseDay, calZone, calInstant } = DataGrid.prototype.calKit;",
       "end": "Object.assign(DataGrid.prototype.calKit, { calRule, calExpand, calSeriesEnd, calExceptions, calDescribe, CAL_WEEKDAYS });",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar-recurrence.source"
