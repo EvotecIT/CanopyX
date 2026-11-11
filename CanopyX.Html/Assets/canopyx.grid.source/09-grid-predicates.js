@@ -56,8 +56,8 @@
       if (term.pattern) {
         if (performance.now() > term.deadline) throw new Error("CanopyX: regex search exceeded its 50 ms evaluation budget.");
         const input = text == null ? "" : String(text);
-        if (input.length > 4096) throw new Error("CanopyX: regex search cell input exceeds 4,096 characters.");
-        return term.pattern.test(input);
+        // Like the .NET providers, a cell over 4,096 code units never matches; the row can still match on its other cells.
+        return input.length <= 4096 && term.pattern.test(input);
       }
       return foldText(text).includes(term);
     }));
