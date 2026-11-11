@@ -46,6 +46,11 @@ test("an RTL tree mirrors its columns and keeps the tree column pinned at the ri
   const label = async (id) => (await edges(row(page, id).locator(".cx-text").first())).right;
   expect(await label("doc-0-0-0")).toBeLessThan(await label("team-0-0"));
   expect(await label("team-0-0")).toBeLessThan(await label("team-0"));
+  // The print outline, also the email and Word copy, indents with a physical right padding those clients understand.
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+  const indent = page.locator(".cx-outline td").first();
+  await expect(indent).toBeAttached();
+  expect(await indent.evaluate(td => [td.style.paddingRight, td.style.paddingLeft])).toEqual(["4px", ""]);
 });
 
 test("in an RTL tree Left opens and enters a row, Right goes back to the parent and closes it", async ({ page }) => {
