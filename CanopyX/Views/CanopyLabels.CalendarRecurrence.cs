@@ -27,8 +27,20 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets a rule that repeats every few years, with <c>{count}</c> (2 or more). Default "every {count} years".</summary>
     public string CalendarRecurrenceYearlyInterval { get => Get(); set => Set(value); }
 
-    /// <summary>Gets or sets the weekdays a rule repeats on, with <c>{days}</c> (weekday names, or numbered weekdays). Default "on {days}".</summary>
+    /// <summary>Gets or sets the weekdays a rule repeats on, with <c>{days}</c> (<see cref="CalendarRecurrenceOnDay"/> phrases, or numbered weekdays). Default "on {days}".</summary>
     public string CalendarRecurrenceOn { get => Get(); set => Set(value); }
+
+    /// <summary>
+    /// Gets or sets a weekday in <see cref="CalendarRecurrenceOn"/>: one phrase, or seven (Monday to Sunday) separated by <c>|</c>;
+    /// <c>{day}</c> is the culture's weekday name, which a phrase may write out in its own case instead. Default "{day}".
+    /// </summary>
+    public string CalendarRecurrenceOnDay { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the weekdays of a rule that repeats every week, with <c>{days}</c> (<see cref="CalendarRecurrenceEveryDay"/> phrases). Default "every {days}".</summary>
+    public string CalendarRecurrenceEvery { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets a weekday in <see cref="CalendarRecurrenceEvery"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "{day}".</summary>
+    public string CalendarRecurrenceEveryDay { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets a rule that repeats Monday to Friday. Default "on weekdays".</summary>
     public string CalendarRecurrenceWeekdays { get => Get(); set => Set(value); }
@@ -39,6 +51,9 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets three or more consecutive weekdays, with <c>{first}</c> and <c>{last}</c>. Default "{first} through {last}".</summary>
     public string CalendarRecurrenceDayRange { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets a weekday in <see cref="CalendarRecurrenceDayRange"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "{day}".</summary>
+    public string CalendarRecurrenceRangeDay { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets a list of two or more names, with <c>{items}</c> (all but the last, separated by commas) and <c>{last}</c>. Default "{items} and {last}".</summary>
     public string CalendarRecurrenceList { get => Get(); set => Set(value); }
 
@@ -48,11 +63,24 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets a rule that repeats on the last day of the month. Default "on the last day of the month".</summary>
     public string CalendarRecurrenceLastDay { get => Get(); set => Set(value); }
 
-    /// <summary>Gets or sets a numbered weekday, with <c>{ordinal}</c> and <c>{day}</c>. Default "the {ordinal} {day}".</summary>
-    public string CalendarRecurrenceNth { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the first weekday of a month in <see cref="CalendarRecurrenceOn"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "the first {day}".</summary>
+    public string CalendarRecurrenceFirstWeekday { get => Get(); set => Set(value); }
 
-    /// <summary>Gets or sets the six ordinals of numbered weekdays, first to fifth and last, separated by <c>|</c>. Default "first|second|third|fourth|fifth|last".</summary>
-    public string CalendarRecurrenceOrdinals { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the second weekday of a month in <see cref="CalendarRecurrenceOn"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "the second {day}".</summary>
+    public string CalendarRecurrenceSecondWeekday { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the third weekday of a month in <see cref="CalendarRecurrenceOn"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "the third {day}".</summary>
+    public string CalendarRecurrenceThirdWeekday { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the fourth weekday of a month in <see cref="CalendarRecurrenceOn"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "the fourth {day}".</summary>
+    public string CalendarRecurrenceFourthWeekday { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the fifth weekday of a month in <see cref="CalendarRecurrenceOn"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "the fifth {day}".</summary>
+    public string CalendarRecurrenceFifthWeekday { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the last weekday of a month in <see cref="CalendarRecurrenceOn"/>, one phrase or seven as <see cref="CalendarRecurrenceOnDay"/>. Default "the last {day}".</summary>
+    public string CalendarRecurrenceLastWeekday { get => Get(); set => Set(value); }
+
 
     /// <summary>Gets or sets the months a rule repeats in, with <c>{months}</c>. Default "in {months}".</summary>
     public string CalendarRecurrenceInMonths { get => Get(); set => Set(value); }

@@ -322,6 +322,7 @@ export interface GridCalendarApi{
   clearCalendarSelection():void|Promise<void>;
   setCalendarSource(id:string,visible?:boolean):boolean|Promise<boolean>;
   resetCalendar():Promise<GridCalendarState>;
+  describeCalendarRecurrence(rule:string,start:Date|string,options?:{allDay?:boolean;exceptions?:string}):Promise<string>;
 }
 
 // ---- JavaScript/cell-ranges.d.ts ----

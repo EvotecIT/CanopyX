@@ -1014,7 +1014,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "12bae18ebb1731f9",
+      "version": "0b2bfccfedebe53a",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1033,7 +1033,7 @@
     {
       "name": "calendar-recurrence",
       "label": "calendar recurrence",
-      "version": "ffdf4d402d398d37",
+      "version": "b736bdd5dd38aec0",
       "script": "canopyx-calendar-recurrence.js",
       "runtimes": [
         "grid"

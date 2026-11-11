@@ -2,18 +2,23 @@
   // C# CanopyRecurrence.Describe writes the same sentences from the same labels; tests/fixtures/recurrence-descriptions.json
   // holds the vectors both check. Weekday and month names and dates come from Intl in the page language, the words around them
   // from the calendarRecurrence… labels. A rule the sentences cannot say exactly is described as null, and callers show its text.
+  // The …Day and …Weekday labels hold one phrase, or seven (Monday to Sunday) separated by |, so a language can inflect each
+  // weekday ("w pierwszą środę", "la prima domenica"); {day} in a phrase is the culture's weekday name.
   const CAL_RECURRENCE_LABELS = {
     calendarRecurrenceDaily: "every day", calendarRecurrenceDailyInterval: "every {count} days", calendarRecurrenceWeekly: "every week",
     calendarRecurrenceWeeklyInterval: "every {count} weeks", calendarRecurrenceMonthly: "every month", calendarRecurrenceMonthlyInterval: "every {count} months",
-    calendarRecurrenceYearly: "every year", calendarRecurrenceYearlyInterval: "every {count} years", calendarRecurrenceOn: "on {days}",
-    calendarRecurrenceWeekdays: "on weekdays", calendarRecurrenceWeekends: "on weekends", calendarRecurrenceDayRange: "{first} through {last}",
-    calendarRecurrenceList: "{items} and {last}", calendarRecurrenceMonthDays: "[one]on day {days}[other]on days {days}",
-    calendarRecurrenceLastDay: "on the last day of the month", calendarRecurrenceNth: "the {ordinal} {day}",
-    calendarRecurrenceOrdinals: "first|second|third|fourth|fifth|last", calendarRecurrenceInMonths: "in {months}", calendarRecurrenceOnDate: "on {date}",
+    calendarRecurrenceYearly: "every year", calendarRecurrenceYearlyInterval: "every {count} years", calendarRecurrenceOn: "on {days}", calendarRecurrenceOnDay: "{day}",
+    calendarRecurrenceEvery: "every {days}", calendarRecurrenceEveryDay: "{day}", calendarRecurrenceWeekdays: "on weekdays", calendarRecurrenceWeekends: "on weekends",
+    calendarRecurrenceDayRange: "{first} through {last}", calendarRecurrenceRangeDay: "{day}", calendarRecurrenceList: "{items} and {last}",
+    calendarRecurrenceMonthDays: "[one]on day {days}[other]on days {days}", calendarRecurrenceLastDay: "on the last day of the month",
+    calendarRecurrenceFirstWeekday: "the first {day}", calendarRecurrenceSecondWeekday: "the second {day}", calendarRecurrenceThirdWeekday: "the third {day}",
+    calendarRecurrenceFourthWeekday: "the fourth {day}", calendarRecurrenceFifthWeekday: "the fifth {day}", calendarRecurrenceLastWeekday: "the last {day}",
+    calendarRecurrenceInMonths: "in {months}", calendarRecurrenceOnDate: "on {date}",
     calendarRecurrenceAt: "at {time}", calendarRecurrenceTimes: "[one]{count} time[other]{count} times", calendarRecurrenceUntil: "until {date}",
     calendarRecurrenceExcept: "[one]except {count} date[other]except {count} dates"
   };
   const CAL_FREQ_WORDS = { DAILY: "Daily", WEEKLY: "Weekly", MONTHLY: "Monthly", YEARLY: "Yearly" }, CAL_NAMES = new Map();
+  const CAL_ORDINALS = ["First", "Second", "Third", "Fourth", "Fifth", "Last"];
   /** Weekday and month names, a day and month, and a long date, in a language (English when the browser does not know it). */
   function calNames(lang) {
     let names = CAL_NAMES.get(lang);
@@ -47,24 +52,32 @@
     if (dows.length && (freq === "MONTHLY" || freq === "YEARLY")) return null;
     if (monthDays && (rule.byDay || !monthly || (monthDays.length > 1 ? monthDays.some(day => day < 0) : monthDays[0] < -1))) return null;
     if (freq === "DAILY" && dows.length) { if (rule.interval > 1) return null; freq = "WEEKLY"; }
-    const ordinals = text("calendarRecurrenceOrdinals").split("|");
-    if (nth.length && ordinals.length !== 6) return null;
-    let days = "", saysRepeat = false;
+    // A weekday label with neither one phrase nor seven cannot say the rule.
+    let days = "", saysRepeat = false, malformed = false;
+    const day = (name, dow) => {
+      const phrases = text(name).split("|");
+      if (phrases.length !== 1 && phrases.length !== 7) malformed = true;
+      return phrases[phrases.length === 7 ? (dow + 6) % 7 : 0].replaceAll("{day}", names.days[dow]);
+    };
     if (freq === "WEEKLY") {
       const order = dow => (dow + 6) % 7, set = [...new Set(dows.length ? dows : [at.dow])].sort((a, b) => order(a) - order(b)), key = set.join(), last = set[set.length - 1];
       saysRepeat = rule.interval === 1;
       if (key === "1,2,3,4,5") days = text("calendarRecurrenceWeekdays");
       else if (key === "6,0") days = text("calendarRecurrenceWeekends");
-      else if (set.length > 2 && order(last) - order(set[0]) === set.length - 1) days = say("calendarRecurrenceDayRange", { first: names.days[set[0]], last: names.days[last] });
-      else { days = say("calendarRecurrenceOn", { days: list(set.map(dow => names.days[dow])) }); saysRepeat = false; }
+      else if (set.length > 2 && order(last) - order(set[0]) === set.length - 1)
+        days = say("calendarRecurrenceDayRange", { first: day("calendarRecurrenceRangeDay", set[0]), last: day("calendarRecurrenceRangeDay", last) });
+      // Every week reads as the weekdays it repeats on ("every Monday", "w poniedziałki"); a longer interval names them.
+      else if (saysRepeat) days = say("calendarRecurrenceEvery", { days: list(set.map(dow => day("calendarRecurrenceEveryDay", dow))) });
+      else days = say("calendarRecurrenceOn", { days: list(set.map(dow => day("calendarRecurrenceOnDay", dow))) });
     } else if (freq !== "DAILY") {
-      if (nth.length) days = say("calendarRecurrenceOn", { days: list(nth.map(item => say("calendarRecurrenceNth", { ordinal: ordinals[item.n < 0 ? 5 : item.n - 1], day: names.days[item.dow] }))) });
+      if (nth.length) days = say("calendarRecurrenceOn", { days: list(nth.map(item => day("calendarRecurrence" + CAL_ORDINALS[item.n < 0 ? 5 : item.n - 1] + "Weekday", item.dow))) });
       else if (monthDays && monthDays.length === 1 && monthDays[0] === -1) days = text("calendarRecurrenceLastDay");
       else if (monthDays || monthly) {
         const picked = monthDays ? [...new Set(monthDays)].sort((a, b) => a - b) : [at.d];
         days = calCount(grid, text("calendarRecurrenceMonthDays"), picked.length, { days: list(picked.map(String)) });
       } else days = say("calendarRecurrenceOnDate", { date: names.monthDay.format(Date.UTC(2000, at.m - 1, at.d)) });
     }
+    if (malformed) return null;
     const parts = [], word = CAL_FREQ_WORDS[freq], pad = value => String(value).padStart(2, "0");
     if (!saysRepeat) parts.push(rule.interval === 1 ? text("calendarRecurrence" + word) : calCount(grid, text("calendarRecurrence" + word + "Interval"), rule.interval));
     if (rule.byMonth) parts.push(say("calendarRecurrenceInMonths", { months: list([...new Set(rule.byMonth)].sort((a, b) => a - b).map(m => names.months[m - 1])) }));
@@ -79,6 +92,20 @@
 
   const { calEventName, calDetailsContent } = DataGrid.prototype;
   Object.assign(DataGrid.prototype, {
+    /**
+     * A rule as the calendar's sentence, in the grid's language and labels: start is the series start (a Date, an ISO date-time
+     * with Z or an offset, or a yyyy-MM-dd date when allDay), read in the calendar's series zone; exceptions is EXDATE text. The
+     * rule text when the sentences cannot say it; rejects a rule outside the subset.
+     */
+    async describeCalendarRecurrence(rule, start, options = {}) {
+      const parsed = calRule(rule), allDay = !!options.allDay, zone = allDay ? calZone("utc") : this.calSeriesZone;
+      // An all-day Date names the reader's own date, as createCalendar reads it.
+      const time = start instanceof Date ? (allDay ? Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()) : start.getTime()) : allDay ? calParseDay(String(start).slice(0, 10)) * CAL_DAY : calInstant(start);
+      if (!Number.isFinite(time)) throw new Error("CanopyX: a recurrence's start is a Date or an ISO date-time with a zone.");
+      const { excluded, excludedDays } = calExceptions(options.exceptions, zone);
+      return calDescribe(parsed, zone.parts(time), { lang: this.lang, labels: this.labels, allDay, time: allDay ? "" : this.calFmt.time(time),
+        exceptions: excluded.size + excludedDays.size }) ?? parsed.text;
+    },
     /** The sentence of an event's series, kept with the series; null when it has no rule or the sentences cannot say it. */
     calSeriesText(base) {
       if (!base?.rule || base.ruleError) return null;
