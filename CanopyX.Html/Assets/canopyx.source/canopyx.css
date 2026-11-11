@@ -66,6 +66,22 @@
 /* The pinned cell covers the row's focus ring where it lies over it, so it carries the ring itself. */
 .cx-pin-tree .cx-row:focus-visible > .cx-tree { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(-1 * var(--hfx-focus-width));}
 .cx-canvas { position:relative;min-width:100%;}
+/* Placeholder rows in an empty panel: before the runtime mounts a host, and while a mounted view loads its parts and first rows. */
+@property --cx-skel-mix { syntax:"<percentage>";inherits:true;initial-value:8%; }
+@keyframes cx-skel { 50% { --cx-skel-mix:16%; } }
+.cx-host[aria-busy="true"]:not([data-cx-ready]) > .cx-grid,.cx-host[data-canopyx-host]:not([data-canopyx-mounted],[data-cx-mount="manual"]) {
+  --cx-skel:color-mix(in srgb,var(--hfx-color-text) var(--cx-skel-mix),transparent);
+  --cx-skel-rows:repeating-linear-gradient(transparent 0 calc(var(--cx-row-h) / 3),var(--cx-skel) 0 calc(var(--cx-row-h) * 2 / 3),transparent 0 var(--cx-row-h));
+  background-image:var(--cx-skel-rows);background-repeat:no-repeat;background-position:var(--hfx-space-3) var(--hfx-table-header-height);
+  background-size:calc(100% - var(--hfx-space-6)) calc(var(--cx-row-h) * 5);animation:cx-skel 1.4s ease-in-out infinite;
+}
+/* Before the runtime has run, a toolbar bar stands above the rows. Reduced motion stops the pulse with every other animation. */
+.cx-host[data-canopyx-host]:not([data-canopyx-mounted],[data-cx-mount="manual"]) {
+  background-image:linear-gradient(var(--cx-skel) 0 0),var(--cx-skel-rows);
+  background-position:var(--hfx-space-3) var(--hfx-space-3),var(--hfx-space-3) calc(var(--hfx-control-height-md) + var(--hfx-space-6));
+  background-size:40% var(--hfx-control-height-md),calc(100% - var(--hfx-space-6)) calc(var(--cx-row-h) * 5);
+}
+@media (scripting:none) { .cx-host[data-canopyx-host]:not([data-canopyx-mounted]) { background-image:none; } }
 .cx-canvas[data-cx-scaled] { overflow:clip;}
 /* Fixed row dimensions let the browser contain layout and painting during scroll. Details measure their content below. */
 .cx-row {

@@ -205,6 +205,11 @@
         const create = flow ? FLOW_API.createFlow : matrix ? MATRIX_API.createMatrix : change ? change : view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
         const api = create(host, Object.assign({}, view && configured.get(view.id), flow ? { flow: view } : { view }));
         created.push(api);
+        // Until the view has loaded its parts and first rows, the host is busy and its stylesheet draws placeholder rows.
+        if (!host.hasAttribute("data-cx-ready")) {
+          const done = () => host.removeAttribute("aria-busy");
+          host.setAttribute("aria-busy", "true"); api.ready.then(done, done);
+        }
         api.ready.catch((err) => {
           // Grid query failures keep their retryable loading/error surface and accepted snapshot.
           if (view.type !== "grid" && !matrix && !change && activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api, view);
