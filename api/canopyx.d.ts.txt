@@ -3959,6 +3959,13 @@ export interface UiOverlayController extends UiController{
   open(options?:UiOverlayOpenOptions):UiResult<boolean>;
   close(reason?:string,restoreFocus?:boolean,force?:boolean):UiResult<boolean>;
 }
+export type UiContent=Node|string;
+export type UiBodyLoader=(signal:AbortSignal) => UiContent|null|undefined|Promise<UiContent|null|undefined>;
+export interface UiOverlayHistory{
+  url:string|URL;
+  push?:boolean;
+  base?:string|URL;
+}
 export interface UiDialogOptions{
   trigger?:HTMLElement;
   host?:HTMLElement;
@@ -3966,18 +3973,29 @@ export interface UiDialogOptions{
   labels?:UiLabels;
   dismissible?:boolean;
   initialFocus?:HTMLElement|((element:HTMLElement) => HTMLElement|null|undefined);
+  loader?:UiBodyLoader;
+  history?:UiOverlayHistory;
 }
 export interface UiDrawerOptions extends UiDialogOptions{
   modal?:boolean;
   records?:(direction:-1|1) => void;
 }
+export interface UiDialogOpenOptions extends UiOverlayOpenOptions{
+  returnFocus?:HTMLElement;
+  content?:UiContent;
+  loader?:UiBodyLoader;
+  history?:UiOverlayHistory;
+  position?:{current:number;total:number};
+}
 export interface UiDialogState{
   open:boolean;
-  modal:boolean
+  modal:boolean;
+  loading:boolean
 }
 export interface UiDialogController extends UiOverlayController{
-  open():UiResult<boolean>;
-  refresh():UiResult<void>;
+  open(options?:UiDialogOpenOptions):UiResult<boolean>;
+  setContent(content:UiContent):UiResult<void>;
+  refresh():UiResult<Promise<boolean>>;
   getState():UiResult<UiDialogState>;
 }
 export interface UiMenuItem{

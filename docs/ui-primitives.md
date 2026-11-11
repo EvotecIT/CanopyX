@@ -45,7 +45,7 @@ await sections.select('activity');
 sections.destroy();
 ```
 
-Tabs support underline, pills, segmented and vertical styles; scroll, More and pill-wrap overflow; `justified` equal-width tabs; deferred panels; hash state; `remember`, which keeps the selected tab in `localStorage`; `next()` and `back()`; and optional automatic progression with a visible Pause/Play control. A deferred loader receives the destination record and an `AbortSignal`. New navigation cancels stale guards and loaders. `keepAlive: false` reloads deferred content after leaving it.
+Tabs support underline, pills, segmented and vertical styles; scroll, More and pill-wrap overflow; `justified` equal-width tabs; deferred panels; hash state (`#<id>=<tab>`, beside a plain anchor and other sets in the same fragment, keeping `history.state`); `remember`, which keeps the selected tab in `localStorage`; `next()` and `back()`; and optional automatic progression with a visible Pause/Play control. A deferred loader receives the destination record and an `AbortSignal`. New navigation cancels stale guards and loaders. `keepAlive: false` reloads deferred content after leaving it.
 
 ### Automatic tab progression
 
@@ -139,7 +139,43 @@ Use `CanopyX.dialog`, `drawer`, `popover`, `tooltip` and `menu` with their decla
 
 Dialogs use the native modal dialog. Drawers are non-modal on desktop and become full-height modal sheets when their container narrows below 640 px. `modal: true` also makes a desktop drawer modal. The shared overlay manager handles nested Escape order, modal focus trapping, scroll locking, dismissal and focus return. Anchored overlays flip and shift within the viewport.
 
+### Show records in a drawer
+
+A dialog or drawer's `open(options)` takes what it shows. Calling `open` on one that is already open keeps it open: it swaps the content and moves the focus return to the new record, with no close and reopen.
+
+```javascript
+const reader = CanopyX.drawer('#evidence', {
+  records: direction => showRecord(index + direction)
+});
+
+function showRecord(next, trigger) {
+  index = next;
+  reader.open({
+    returnFocus: trigger,                       // Focus goes back here when the drawer closes.
+    position: { current: index + 1, total: rows.length },
+    history: { url: '?record=' + rows[index].id },
+    loader: async signal => {
+      const response = await fetch('/evidence/' + rows[index].id, { signal });
+      if (!response.ok) throw new Error('The evidence could not be loaded');
+      return await response.text();             // Trusted host HTML, or a Node.
+    }
+  });
+}
+```
+
+- **Content.** `content` (a Node, or HTML the host trusts) replaces the body at once; `setContent(content)` does the same without opening. `loader(signal)` marks the overlay `aria-busy`, shows a loading line, and replaces it with the result. A newer `open` aborts the previous loader's signal and ignores its late result. A failure shows its message with a Retry button; `refresh()` runs the current loader again. A `loader` factory option loads once, on the first opening. The root fires `cx-drawer:load` and `cx-drawer:error` (`cx-dialog:` for dialogs), and `getState().loading` tells whether a load is pending.
+- **Records.** With `records`, the drawer header shows Previous and Next buttons beside the close button, and Up and Down move between records when focus is outside a field. `position: { current, total }` adds the "2 of 14" label (the `tabsPosition` label) and marks the buttons disabled at the ends. The buttons use the `drawerPrevious` and `drawerNext` labels.
+- **Address.** `history: { url }` pushes the address on opening, so a link or reload can show the same record and Back closes the overlay; Forward opens it again. A record switch replaces that entry, and closing the overlay goes back. `push: false` replaces the current address and restores it on closing. Given as a factory option, `history` also opens the overlay when the page is loaded on that address; with `base`, the landing entry becomes `base` and the overlay's address is pushed above it, so Back stays on the page. The overlay marks its own entries with `cxOverlay` in `history.state` and keeps the rest of the state the host put there.
+
 An overlay copies its host's resolved scheme and scoped design roles when moved outside that host. Its colors, typography, spacing, radii, elevation and motion consume `--hfx-*` roles with standalone fallbacks. Use `data-theme="light"` or `"dark"` on a standalone component, or supply roles from its parent. Component styles live in `@layer hfx.components`; a product layer can restyle public `data-hfx-part`, `data-state` and `data-hfx-variant` hooks.
+
+## Embedding in an existing site
+
+Component styles live in `@layer hfx.components`. Unlayered rules always beat layered ones, whatever their specificity, so a site's own element rules win over the components' rules for the same properties. A typical reset such as `button { font: inherit; padding: .5em 1em; background: none }` restyles every component button.
+
+- The overlay close button keeps its label hidden with an unlayered `.cx-overlay-close { font-size: 0 }`, so the label never prints beside the × glyph.
+- For other properties a site sets on bare elements (`button`, `input`, `select`, `a`, `h2`, `ul`), either scope those rules away from the components (`:where(main) button:not([class^="cx-"])`), put them in a layer declared before `hfx.components` (`@layer site, hfx.components;`), or restate the components' values in an unlayered rule of your own.
+- Tabs, menus and steppers restate `font-family`, `font-size` and `color` on their roots; padding, background, border and line height on their buttons come from the layer.
 
 ## Add a context menu
 

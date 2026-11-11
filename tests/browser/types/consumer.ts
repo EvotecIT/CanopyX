@@ -1013,6 +1013,14 @@ const disposeMenu = contextMenu(".record", (_event, element) => [{ id: element.i
 });
 void disposeMenu.ready.then(() => disposeMenu());
 void GridRuntime.drawer("#details").ready;
+// One drawer shows record after record: content, loader, address and position on each opening.
+const evidence = GridRuntime.drawer("#evidence", { records: direction => { void direction; }, history: { url: "?record=1", base: "/" } });
+void evidence.open({ returnFocus: document.body, position: { current: 1, total: 3 }, history: { url: "?record=1", push: false },
+  loader: async signal => (await fetch("/evidence/1", { signal })).text() });
+void evidence.setContent(document.createElement("p"));
+void Promise.resolve(evidence.refresh()).then(loaded => { const done: boolean = loaded; void done; });
+// @ts-expect-error A position needs its total.
+void evidence.open({ position: { current: 1 } });
 void ReportingRuntime.dialog("#confirm").ready;
 
 // View proposals carry the same analysis contracts while retaining an explicit preview/apply boundary.
