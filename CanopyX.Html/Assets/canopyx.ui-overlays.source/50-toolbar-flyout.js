@@ -24,8 +24,17 @@
         panel.style.top = parseFloat(panel.style.top) - bounds.top + parent.scrollTop - parent.clientTop + "px";
       }
     };
+    // A phone sheet sits over a scrim: a tap on the scrim closes the sheet, and the click that follows it does not reach
+    // whatever lies beneath. Another press, or a moment without a click, ends the guard.
+    const guardClick = () => {
+      const timer = global.setTimeout(() => done(), 700);
+      const stop = event => { event.preventDefault(); event.stopImmediatePropagation(); done(); };
+      const done = () => { global.clearTimeout(timer); global.removeEventListener("click", stop, true); global.removeEventListener("pointerdown", done, true); };
+      global.addEventListener("click", stop, true); global.addEventListener("pointerdown", done, true);
+    };
     panel.addEventListener("cx-popover:close", event => {
       if (event.target !== panel) return;
+      if (event.detail.reason === "outside" && anchor.closest(".cx-phone")) guardClick();
       if (anchor.localName === "details") anchor.open = false;
       for (const inner of panel.querySelectorAll("details[open]")) inner.open = false;
       if (event.detail.reason === "cancel") trigger.focus({ preventScroll: true });

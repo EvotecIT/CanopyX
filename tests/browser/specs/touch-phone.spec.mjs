@@ -79,6 +79,17 @@ test("the more menu opens as a bottom sheet by tap, and its Export entry replace
   await expect(page.locator("details[open]")).toHaveCount(0);
 });
 
+test("a tap on the more sheet's scrim closes it without reaching the rows beneath", async ({ page }) => {
+  await open(page, gridView({}));
+  await page.locator(".cx-grid-overflow > summary").tap();
+  await expect(page.locator(".cx-grid-overflow > .cx-grid-panel")).toBeVisible();
+  const rowBox = await row(page, "r002").boundingBox();
+  await page.touchscreen.tap(rowBox.x + rowBox.width / 2, rowBox.y + rowBox.height / 2);
+  await expect(page.locator(".cx-grid-overflow")).not.toHaveAttribute("open", "");
+  await expect(page.locator("dialog.cx-drawer")).toHaveCount(0);
+  expect(await activations(page)).toEqual([]);
+});
+
 test("a column menu opens by tap and its entries sort the column", async ({ page }) => {
   await open(page, gridView({}));
   await page.getByRole("button", { name: "Menu for Name", exact: true }).tap();

@@ -140,8 +140,23 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
 .cx-record-footer .cx-record-primary:disabled { background:var(--hfx-color-surface-sunken); }
 .cx-record-menu-item[data-tone="danger"] { color:var(--hfx-color-status-bad-fg); }
 .cx-record-subtitle { margin:var(--hfx-space-1) 0 0; font-size:var(--hfx-type-small-size); color:var(--hfx-color-text-muted); }
+/* Hierarchy: the record's title leads, section headings come next, then values over their quieter labels. A card in a
+   collection is one step down: its title leads and its values read at the small size. */
+.cx-drawer.cx-record-drawer .cx-drawer-h [data-hfx-part="title"] { font-size:var(--hfx-type-title-size); }
+.cx-drawer.cx-record-drawer:not(.cx-compare-drawer) .cx-record-section:not(.cx-record-section .cx-record-section) > .cx-record-section-h > .cx-record-toggle { font-size:var(--hfx-type-heading-size); }
 .cx-record-drawer .cx-dl dt { color:var(--hfx-color-text-muted); font-size:var(--hfx-type-caption-size); font-weight:normal; }
 .cx-record-drawer .cx-dl dd { font-size:var(--hfx-type-body-size); }
+.cx-drawer.cx-record-drawer .cx-record-card dd { font-size:var(--hfx-type-small-size); }
+.cx-record-drawer .cx-record-card dt { font-size:var(--hfx-type-caption-size); }
+/* The summary and the footer line up with the head and body. */
+.cx-record-drawer :is(.cx-record-summary,.cx-record-footer) { padding-inline:var(--hfx-card-padding-x); }
+/* Phones: the head's controls keep Close at the far end, and the footer groups its actions: primary first, neutral beside
+   it, and a danger action on its own full-width row below them. */
+.cx-drawer.cx-record-drawer.cx-phone .cx-drawer-h > :last-child { margin-inline-start:auto; }
+.cx-drawer.cx-phone .cx-record-footer { gap:var(--hfx-space-2); }
+.cx-drawer.cx-phone .cx-record-footer > .cx-record-btn { flex:1 1 0; justify-content:center; min-width:0; }
+.cx-drawer.cx-phone .cx-record-footer > .cx-record-primary { order:-1; }
+.cx-drawer.cx-phone .cx-record-footer > .cx-record-danger { order:1; flex-basis:100%; margin-inline-start:0; margin-block-start:var(--hfx-space-1); }
 /* A long record title wraps inside the drawer head instead of running under the navigation and close buttons. */
 .cx-drawer.cx-record-drawer .cx-drawer-h h4 { width:auto; max-width:100%; overflow-wrap:anywhere; }
 .cx-drawer.cx-record-drawer .cx-drawer-h > :not(:first-child) { flex:none;margin-inline:0; }

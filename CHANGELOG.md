@@ -9,6 +9,9 @@
 - Add `stack` to the identifier presenter (C# `Identifier(stack: true)`): rows that size to their content put the secondary text under the value, as relative times do. The record drawer always does; fixed-height rows keep it beside the value.
 - Hide the actions column's clipped header text; the column keeps its accessible name.
 - Keep record panel lists as tables while the drawer has room for their columns, measured in the drawer rather than the page, and drop a field's title when it repeats its section's heading.
+- Dim the page behind a phone toolbar sheet (More, Views, Export, Columns); a tap on the scrim closes the sheet without reaching the rows beneath it.
+- Fold toolbar facets into the one Refine sheet on phones.
+- Give the record drawer a clearer hierarchy (a larger title, section headings above values, quieter collection cards) and group its footer actions on phones: primary first, a danger action on its own row.
 
 - Build a grid in one call with `CanopyDataGridView.From(records, x => x.Id)`: a typed column per public property, adjusted with `[CanopyKey]`, `[CanopyColumn(Title, Order, Hidden, Format)]` and `[CanopyIgnore]`. `From` also takes a `DataTable` or dictionary rows (`Dictionary<string, object?>`, PowerShell hashtables) with a named key column.
 - Write typed grids directly with `ToHtmlPage`, `SaveHtmlPage` and `ToHtmlFragment`, and any tree or grid as a script-free table with `ToStaticHtml()`.

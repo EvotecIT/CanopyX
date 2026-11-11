@@ -64,6 +64,14 @@ body .cx-host.cx-chrome { padding:0; }
 .cx-chrome.cx-phone .cx-grid-panel::before { content:"";display:block;width:var(--cx-size-32px);height:var(--cx-size-4px);border-radius:var(--hfx-radius-pill);background:var(--hfx-color-text-muted);margin:0 auto var(--cx-size-8px); }
 /* A menu opened inside the more menu's sheet (Views, Export) is the sheet now: its handle replaces the parent's. */
 .cx-chrome.cx-phone .cx-grid-panel:has(> [open])::before { display:none; }
+/* A phone sheet dims the page behind it like the drawer and dialogs; tapping the scrim closes it (the overlay stack reads a
+   tap outside the sheet). A menu opened inside the more sheet keeps the one scrim. */
+.cx-chrome.cx-phone .cx-grid-panel::backdrop { background:var(--hfx-color-overlay); }
+.cx-chrome.cx-phone .cx-grid-panel .cx-grid-panel::backdrop { background:transparent; }
+@media (prefers-reduced-motion:no-preference) {
+  .cx-chrome.cx-phone .cx-grid-panel::backdrop { transition:opacity var(--hfx-motion-duration-base) var(--hfx-motion-easing-standard); }
+  @starting-style { .cx-chrome.cx-phone .cx-grid-panel:popover-open::backdrop { opacity:0; } }
+}
 .cx-chrome.cx-phone .cx-hrow { height:var(--cx-size-44px); }
 .cx-chrome.cx-phone .cx-hidden-fields::after { content:"";position:absolute;inset:calc(-1 * var(--cx-size-10px)) calc(-1 * var(--cx-size-8px)); }
 .cx-grid-column-choice:hover { background:var(--hfx-color-hover); }
