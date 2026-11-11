@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "09ee5721963cc87a",
+      "version": "e8fe4a12005681b7",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -459,7 +459,7 @@
     {
       "name": "flow-tasks",
       "label": "flow task lists",
-      "version": "03feba75f60058b6",
+      "version": "629600774c4ced8f",
       "script": "canopyx-flow-tasks.js",
       "style": "canopyx-flow-tasks.css",
       "runtimes": [
@@ -636,7 +636,7 @@
     {
       "name": "column-groups",
       "label": "column groups",
-      "version": "6e603e4d7ecccafc",
+      "version": "4bcde7623dafd9d4",
       "script": "canopyx-column-groups.js",
       "style": "canopyx-column-groups.css",
       "runtimes": [
@@ -997,7 +997,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "067a14ada05b7ea4",
+      "version": "12bae18ebb1731f9",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
