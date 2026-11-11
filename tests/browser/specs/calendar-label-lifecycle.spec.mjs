@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
+import fs from "node:fs";
+import path from "node:path";
 import { test, expect } from "@playwright/test";
-import { nextFrames } from "./support.mjs";
+import { examples, nextFrames } from "./support.mjs";
 import { api, openBuilt, openCalendar, timelinePage } from "./calendar-support.mjs";
 
 async function labelMismatches(page) {
@@ -49,4 +51,38 @@ test("timeline speech targets survive vertical lane recycling and horizontal win
   expect(await page.locator(".cx-tl-main").evaluate(main => main.scrollLeft)).toBeGreaterThan(480);
   expect(await page.locator(".cx-tl-lane .cx-cal-ev").count()).toBeGreaterThan(0);
   expect(await labelMismatches(page)).toEqual([]);
+});
+
+test("calendar speech targets refresh after the shipped font loads without replacing events", async ({ page }) => {
+  const fonts = [];
+  const html = fs.readFileSync(path.join(examples, "calendar-linked-dark.html"), "utf8")
+    .replace(/data:font\/woff2;base64,([A-Za-z0-9+/=]+)/g, (_, data) => {
+      fonts.push(Buffer.from(data, "base64"));
+      return "http://canopyx.test/calendar-font-" + (fonts.length - 1) + ".woff2";
+    });
+  let releaseFont;
+  const held = new Promise(resolve => { releaseFont = resolve; });
+  await page.route("http://canopyx.test/calendar-font-*.woff2", async route => {
+    const index = Number(route.request().url().match(/font-(\d+)/)[1]);
+    await held;
+    await route.fulfill({ contentType: "font/woff2", body: fonts[index] });
+  });
+  await page.route("http://canopyx.test/late-calendar-font.html", route => route.fulfill({ contentType: "text/html", body: html }));
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("http://canopyx.test/late-calendar-font.html", { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-cx-calendar-ready]");
+    await nextFrames(page);
+    expect(await page.evaluate(() => document.fonts.status)).toBe("loading");
+    const event = page.locator('.cx-cal-ev-block[data-cx-event="op-012"]');
+    await event.evaluate(element => { window.originalFontLabelEvent = element; });
+    releaseFont();
+    await page.evaluate(() => document.fonts.ready);
+    await nextFrames(page);
+    expect(await event.evaluate(element => element === window.originalFontLabelEvent)).toBe(true);
+    expect(await labelMismatches(page)).toEqual([]);
+    await expect(event).toHaveAccessibleName(/^1:00 PM Patch ring 1 pilot sign-off Planned,/);
+    await expect(event).toHaveAccessibleName(/1:00 PM – 2:00 PM, Planned, Windows team$/);
+  } finally { releaseFont(); }
 });

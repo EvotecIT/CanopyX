@@ -61,7 +61,7 @@
         let copy = CAL_ROW_COPIES.get(event.row);
         if (copy?.version !== this.calVersion) { copy = { version: this.calVersion, row: gridFreeze(JSON.parse(JSON.stringify(event.row))) }; CAL_ROW_COPIES.set(event.row, copy); }
         const row = copy.row;
-        try { if (template({ event: this.calPublicEvent(event), row, element, kind, labels: this.calLabels }) === true) return element; }
+        try { if (template({ event: this.calPublicEvent(event), row, element, kind, labels: this.calLabels }) === true) { element.append(" "); return element; } }
         catch (error) { this.emit("error", { error }); element.textContent = ""; }
       }
       const time = h("span", "cx-cal-ev-time"), title = h("span", "cx-cal-ev-title");
@@ -86,6 +86,8 @@
         }
       }
       if (event.recurring) element.appendChild(calIcon("repeat"));
+      // An offscreen slot can hide its own text while its event buttons still extend into view.
+      element.append(" ");
       return element;
     },
     calPublicEvent(event) {

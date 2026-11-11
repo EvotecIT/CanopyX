@@ -94,4 +94,5 @@
     } else layoutApplyTree(view);
     view.host.style.setProperty("--cx-row-h", view.rowH + "px");
     view.fitHeight?.();
+    if (view.calBody?.isConnected) view.calLabelContent?.();
   }
