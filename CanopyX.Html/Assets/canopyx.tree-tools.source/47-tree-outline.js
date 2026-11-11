@@ -13,7 +13,7 @@
         if (w.status) {
           return;
         }
-        const tr = body.appendChild(h("tr")), indent = (td) => { td.style.paddingLeft = ((w.level - 1) * 14 + 4) + "px"; return td; };
+        const tr = body.appendChild(h("tr")), indent = (td) => { td.style.paddingInlineStart = ((w.level - 1) * 14 + 4) + "px"; return td; };
         if (w.h.detail) {
           // The print copy shows a detail's html as text (renderDetail's plain mode).
           const td = indent(tr.appendChild(h("td")));

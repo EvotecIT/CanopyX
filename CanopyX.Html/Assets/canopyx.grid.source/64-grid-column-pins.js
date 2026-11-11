@@ -21,7 +21,8 @@
   DataGrid.prototype.applyWidths=function(widths){GRID_PIN_WIDTHS.call(this,widths);if(!this.view.reporting)gridPinGeometry(this);this.syncPinnedShadows();};
   DataGrid.prototype.applyColumnPin=function(cell,column){
     const pin=column.effectivePin||"none";if(pin==="none")cell.removeAttribute("data-cx-pin");else cell.dataset.cxPin=pin;
-    cell.style.left=pin==="left"?column.pinOffset+"px":"";cell.style.right=pin==="right"?column.pinOffset+"px":"";
+    // "left" and "right" name the start and end edges, so a right-to-left grid mirrors them.
+    cell.style.insetInlineStart=pin==="left"?column.pinOffset+"px":"";cell.style.insetInlineEnd=pin==="right"?column.pinOffset+"px":"";
     const side=pin==="left"?this.cols.filter(item=>item.effectivePin==="left").at(-1):this.cols.find(item=>item.effectivePin==="right");
     cell.classList.toggle("cx-pin-edge",side===column);
   };

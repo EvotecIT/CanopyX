@@ -69,7 +69,7 @@
       const head = cells[first], tail = cells[last], pin = head.dataset.cxPin;
       cell.style.width = width + "px";
       if (pin) cell.dataset.cxPin = pin; else cell.removeAttribute("data-cx-pin");
-      cell.style.left = pin === "left" ? head.style.left : ""; cell.style.right = pin === "right" ? tail.style.right : "";
+      cell.style.insetInlineStart = pin === "left" ? head.style.insetInlineStart : ""; cell.style.insetInlineEnd = pin === "right" ? tail.style.insetInlineEnd : "";
       cell.classList.toggle("cx-pin-edge", cells.slice(first, last + 1).some(item => item.classList.contains("cx-pin-edge")));
       const grip = cell.querySelector(":scope > .cx-resize"), columns = grid.cols.slice(first, last + 1);
       if (grip) {
