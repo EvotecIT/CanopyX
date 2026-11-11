@@ -38,6 +38,19 @@ const invalidTuple: GridTupleFilter = { columns: [tupleField], values: [[1]],
   // @ts-expect-error Exclusion is a boolean; operands retain their scalar types.
   exclude: "true" };
 void invalidTuple;
+import type { GridRowActionsDefinition, GridRowActionProposal, GridRowActionOutcome } from "@evotecit/canopyx/grid";
+const rowActions: GridRowActionsDefinition = { inline: 1, reveal: "hover", actions: [
+  { id: "run", label: "Run", icon: "play", tone: "primary", when: { operator: "and", filters: [{ column: "state", operator: "ne", values: ["Running"] }], groups: [] } },
+  { id: "delete", label: "Delete", icon: "delete", tone: "danger", disabledReason: "Pause it first.", refresh: true }] };
+const actionApi = createDataGrid(document.createElement("div"), { view: { ...calculationView, id: "actions", rowActions },
+  onRowAction: async (proposal: GridRowActionProposal, request) => request.signal.aborted ? false : { accepted: proposal.action === "run", message: "Refused." },
+  isRowActionEnabled: (row, action) => action.id !== "delete" || row.id !== "r1" });
+const requested: Promise<boolean> = actionApi.requestRowAction("r1", "run", { reason: "shortcut" });
+const cancelledAction: boolean = actionApi.cancelRowAction();
+const outcome = (event: CustomEvent<GridRowActionOutcome>): string | null => event.detail.message;
+// @ts-expect-error Row action icons come from the built-in set.
+const unknownIcon: GridRowActionsDefinition = { actions: [{ id: "x", label: "X", icon: "rocket" }] };
+void requested; void cancelledAction; void outcome; void unknownIcon;
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
 import spanish from "@evotecit/canopyx/locales/es";

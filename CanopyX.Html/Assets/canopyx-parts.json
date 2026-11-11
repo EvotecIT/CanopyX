@@ -767,7 +767,7 @@
     {
       "name": "calculations",
       "label": "calculated columns",
-      "version": "071421edfaa0704b",
+      "version": "b5261d723b5a9445",
       "script": "canopyx-calculations.js",
       "style": "canopyx-calculations.css",
       "runtimes": [
@@ -1239,6 +1239,25 @@
       ],
       "requires": [
         "presenters"
+      ]
+    },
+    {
+      "name": "row-actions",
+      "label": "row actions",
+      "version": "90ee9b6f28abe638",
+      "script": "canopyx-row-actions.js",
+      "style": "canopyx-row-actions.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "rowActions"
+      ],
+      "requires": [
+        "ui-menu"
       ]
     }
   ]

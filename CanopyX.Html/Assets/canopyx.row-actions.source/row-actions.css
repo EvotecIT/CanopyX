@@ -1,0 +1,38 @@
+/* Row actions: icon buttons at the row's end edge, a lock on read-only rows and the status line above the rows. */
+.cx-data-grid .cx-cell.cx-row-actions-cell { padding-block:0;padding-inline:var(--cx-size-6px);text-overflow:clip; }
+.cx-data-grid .cx-ra { display:flex;align-items:center;justify-content:flex-end;gap:var(--cx-size-2px);block-size:100%;min-inline-size:0; }
+.cx-data-grid .cx-ra-btn { flex:none;inline-size:var(--cx-size-28px);block-size:var(--cx-size-28px);min-block-size:var(--cx-size-28px);padding:0;color:var(--hfx-color-text-secondary); }
+.cx-data-grid .cx-ra-btn .cx-ico { inline-size:var(--cx-size-16px);block-size:var(--cx-size-16px); }
+.cx-data-grid .cx-ra-btn[data-tone="primary"] { color:var(--hfx-color-accent); }
+.cx-data-grid .cx-ra-btn[data-tone="danger"] { color:var(--hfx-color-status-bad-fg); }
+.cx-data-grid .cx-ra-btn[aria-disabled="true"] { color:color-mix(in srgb,var(--hfx-color-text-secondary) 45%,transparent);cursor:not-allowed; }
+.cx-data-grid .cx-ra-btn[aria-disabled="true"]:hover { background:transparent; }
+/* Busy: the icon gives way to a turning ring; with reduced motion the ring stays still. */
+.cx-data-grid .cx-ra-btn[data-cx-state="busy"] .cx-ico { visibility:hidden; }
+.cx-data-grid .cx-ra-btn[data-cx-state="busy"] { position:relative;cursor:progress; }
+.cx-data-grid .cx-ra-btn[data-cx-state="busy"]::after { content:"";position:absolute;inset:var(--cx-size-7px);border:var(--cx-size-2px) solid color-mix(in srgb,var(--hfx-color-accent) 25%,transparent);border-top-color:var(--hfx-color-accent);border-radius:50%;animation:cx-ra-spin .8s linear infinite; }
+@keyframes cx-ra-spin { to { transform:rotate(1turn); } }
+.cx-data-grid .cx-ra-btn[data-cx-state="rejected"] { box-shadow:inset 0 0 0 var(--cx-size-1px) var(--hfx-color-status-bad-border);color:var(--hfx-color-status-bad-fg); }
+.cx-data-grid .cx-ra-lock { display:inline-grid;place-items:center;inline-size:var(--cx-size-28px);block-size:var(--cx-size-28px);color:var(--hfx-color-text-muted); }
+.cx-data-grid .cx-ra-lock .cx-ico { inline-size:var(--cx-size-16px);block-size:var(--cx-size-16px); }
+/* Reveal on hover: the buttons fade in on the hovered, focused or busy row and stay reachable from the keyboard
+   (opacity keeps them focusable). Touch screens, which cannot hover, always show them. */
+.cx-data-grid[data-cx-row-actions="hover"] .cx-ra-btn { transition:opacity .12s ease-out; }
+@media (hover:hover) {
+  .cx-data-grid[data-cx-row-actions="hover"] .cx-row:not(:hover,:focus,:focus-within,[aria-selected="true"]) .cx-ra-btn:not([data-cx-state],[aria-expanded="true"]) { opacity:0; }
+}
+.cx-data-grid .cx-ra-status { display:flex;align-items:center;gap:var(--hfx-space-2);padding:var(--cx-size-4px) var(--cx-size-4px) var(--cx-size-4px) var(--hfx-space-3);border:var(--cx-size-1px) solid var(--hfx-color-status-bad-border);border-radius:var(--hfx-radius-control);background:var(--hfx-color-status-bad-bg);color:var(--hfx-color-status-bad-fg);font-size:var(--cx-size-13px); }
+.cx-data-grid .cx-ra-status[hidden] { display:none; }
+.cx-data-grid .cx-ra-status-text { flex:1;min-inline-size:0;overflow-wrap:anywhere; }
+.cx-data-grid .cx-ra-status .cx-btn { flex:none;color:inherit; }
+@media (prefers-reduced-motion:reduce) {
+  .cx-data-grid .cx-ra-btn[data-cx-state="busy"]::after { animation:none;border-top-color:color-mix(in srgb,var(--hfx-color-accent) 25%,transparent);border-inline-end-color:var(--hfx-color-accent); }
+  .cx-data-grid[data-cx-row-actions="hover"] .cx-row .cx-ra-btn { transition:none; }
+}
+@media (forced-colors:active) {
+  .cx-data-grid .cx-ra-btn[aria-disabled="true"] { color:GrayText; }
+  .cx-data-grid .cx-ra-btn[data-cx-state="busy"]::after { border-color:CanvasText;border-top-color:Highlight; }
+  .cx-data-grid .cx-ra-btn[data-cx-state="rejected"] { outline:var(--cx-size-2px) solid Mark; }
+  .cx-data-grid .cx-ra-status { border-color:CanvasText;background:Canvas;color:CanvasText; }
+}
+@media print { .cx-data-grid .cx-row-actions-cell, .cx-data-grid .cx-ra-status { display:none; } }

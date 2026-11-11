@@ -129,6 +129,7 @@ public sealed class LabelsTests {
         foreach (var (name, text) in PartLabels("plan", "PLAN_LABELS")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("path", "PATH_TEXT")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("stack", "STACK_TEXT")) runtime.Add(name, text);
+        foreach (var (name, text) in PartLabels("row-actions", "ROW_ACTION_TEXT")) runtime.Add(name, text);
         foreach (var part in new[] { ("compare", "COMPARE_LABELS"), ("view-intents", "VIEW_INTENT_LABELS") }) {
             var dataView = PartLabels(part.Item1, part.Item2);
             Assert.NotEmpty(dataView);

@@ -51,6 +51,7 @@
       this.queryAware = true; this.queryEpoch = 0; this.version = 1; this.total = 0;
       this.pages = new Map(); this.rowCache = new Map(); this.placeholders = new Map(); this.pendingPages = new Map();
       this.rendered = new Map(); this.pool = []; this.selected = new Set(); this.focused = null; this.rafId = 0;
+      if (this.view.rowActions) this.columns.push(gridRowActionColumn(this));
       this.prepareState();
       this.build();
       this.ready = this.initializeState();
