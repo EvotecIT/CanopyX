@@ -67,8 +67,8 @@
   global.CanopyX = Object.freeze({ createFlow, configure, unconfigure, mount: root => mount(root, false), use, registerPart, setNonce });
 
   // As the other entry points: wait for DOMContentLoaded unless the page has already been parsed.
-  const navigation = global.performance?.timing || global.performance?.getEntriesByType?.("navigation")?.[0];
-  if (document.readyState === "loading" || (document.readyState === "interactive" && navigation && navigation.domContentLoadedEventStart === 0)) {
+  const navigation = global.performance?.getEntriesByType?.("navigation")[0] || global.performance?.timing;
+  if (document.readyState === "loading" || (document.readyState === "interactive" && navigation?.domContentLoadedEventStart === 0)) {
     document.addEventListener("DOMContentLoaded", () => mount(document, true));
   } else {
     mount(document, true);

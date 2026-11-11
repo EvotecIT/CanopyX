@@ -77,6 +77,36 @@ test("a deferred runtime leaves room for a deferred host script to configure the
   await expect(row(page, "r2").locator('[aria-colindex="2"]')).toHaveText("state: late");
 });
 
+test("a late runtime mounts before full load when legacy performance timing is disabled", async ({ page }) => {
+  const { script, style } = runtimeAssets();
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  // Firefox's dom.enable_performance=false leaves legacy timing at zero while navigation entries remain available.
+  await page.addInitScript(() => Object.defineProperty(performance, "timing", { value: { domContentLoadedEventStart: 0 } }));
+  let finishImage;
+  const imagePending = new Promise(resolve => { finishImage = resolve; });
+  await page.route("https://canopyx.test/pending-image", async route => {
+    await imagePending;
+    await route.fulfill({ status: 204, body: "" });
+  });
+  const html = '<!doctype html><html lang="en"><head><title>Late runtime</title><style>' + style
+    + '</style></head><body><img src="/pending-image" alt=""><div class="cx-host" data-canopyx-host>'
+    + '<script type="application/json" class="cx-config">' + JSON.stringify(view) + '</script></div></body></html>';
+  await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: html }));
+  try {
+    await page.goto("https://canopyx.test/", { waitUntil: "domcontentloaded" });
+    expect(await page.evaluate(() => document.readyState)).toBe("interactive");
+    await page.addScriptTag({ content: script });
+    await expect(row(page, "group")).toContainText("Group");
+    await page.evaluate(() => { window.firstMountedView = document.querySelector(".cx-host").canopyx; });
+  } finally {
+    finishImage();
+    await page.waitForLoadState("load");
+  }
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx === window.firstMountedView)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 test("a newer fragment wins over one that is still being looked up", async ({ page }) => {
   // A host can change history before it notifies the view; the old lookup must already stop selecting.
   await open(page, { script: hostScript.replace("await new Promise((resolve) => setTimeout(resolve, 20));",

@@ -300,7 +300,7 @@ function ConvertTo-Module {
     # The module uses the same implementation as the interactive classic script. Only its host, automatic
     # browser mount, and exports differ; importing it on a server neither needs a DOM nor changes global state.
     $footer = '})(typeof window !== "undefined" ? window : this);'
-    $automatic = 'const navigation = global.performance?.timing || global.performance?.getEntriesByType?.("navigation")?.[0];'
+    $automatic = 'const navigation = global.performance?.getEntriesByType?.("navigation")[0] || global.performance?.timing;'
     if (-not $Content.EndsWith($footer + "`n", [System.StringComparison]::Ordinal) -or
         ([regex]::Matches($Content, [regex]::Escape($automatic))).Count -ne 1) {
         throw 'The canonical runtime mount boundary changed; update the module assembly explicitly.'

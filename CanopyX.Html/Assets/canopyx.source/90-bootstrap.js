@@ -242,8 +242,9 @@
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it
   // has not been dispatched yet, and mount at once only when the runtime is added to a page that is already loaded.
   // Firefox may expose the navigation entry only after deferred scripts finish. Its document timing is available earlier.
-  const navigation = global.performance?.timing || global.performance?.getEntriesByType?.("navigation")?.[0];
-  if (document.readyState === "loading" || (document.readyState === "interactive" && navigation && navigation.domContentLoadedEventStart === 0)) {
+  // Prefer the modern entry when available: Firefox can disable legacy document timing independently.
+  const navigation = global.performance?.getEntriesByType?.("navigation")[0] || global.performance?.timing;
+  if (document.readyState === "loading" || (document.readyState === "interactive" && navigation?.domContentLoadedEventStart === 0)) {
     document.addEventListener("DOMContentLoaded", () => mount(document, true));
   } else {
     mount(document, true);
