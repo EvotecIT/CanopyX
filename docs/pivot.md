@@ -96,8 +96,9 @@ For example, let the complete paths be `2026 / Q1 = 100`, `2026 / Q2 = 40` and `
 
 The expanded leaf columns partition the records: 100 + 60 = 160. Collapsing `2026` shows its full-prefix subtotal of
 140 beside Other's 60; those visible scopes overlap by 40 and must not be added as if they were disjoint leaves.
-Label such a collapsed column as a **full-prefix subtotal** when presenting or exporting a custom layout. Averages
-and distinct counts always come from the underlying records, not from adding or averaging displayed child values.
+Label such a collapsed column as a **full-prefix subtotal** when presenting or exporting a custom layout. Averages,
+distinct counts, medians and percentiles always come from the underlying records, not from adding or averaging displayed
+child values.
 
 ## Drill-through and atomic tuples
 
@@ -165,7 +166,8 @@ Attach the exact accepted query and revision when adapting a direct computed res
 
 An `IQueryable` provider uses its mapped expressions and the store's native collation for grouping and tuple equality.
 For exact parity with inline results, hosts must use ordinal/binary text comparison on axis fields, tuple fields and
-distinct-count inputs. A case-insensitive store collation can merge paths that the inline engine keeps separate.
+distinct-count inputs. A median or percentile value stays a grouping dimension too: the store groups by it and counts
+each value, so a column with many distinct values reaches the 100,000-contribution bound (`limitExceeded`) sooner. A case-insensitive store collation can merge paths that the inline engine keeps separate.
 That distinction must be preserved before the store groups records; it cannot be recovered from an already merged
 contribution.
 

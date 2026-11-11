@@ -629,8 +629,10 @@ CanopyX.Data.CanopySortKey.CanopyX.Data.CanopyDataColumn Column { get; }
 CanopyX.Data.CanopySortKey.System.Boolean Descending { get; }
 CanopyX.Data.CanopySummaryAggregate : sealed class
 CanopyX.Data.CanopySummaryAggregate..ctor(System.String id, CanopyX.Data.CanopyDataColumn column, CanopyX.CanopyGridAggregateOperation operation, System.String? customOperation = null)
+CanopyX.Data.CanopySummaryAggregate..ctor(System.String id, CanopyX.Data.CanopyDataColumn column, System.Double percentile)
 CanopyX.Data.CanopySummaryAggregate.CanopyX.CanopyGridAggregateOperation Operation { get; }
 CanopyX.Data.CanopySummaryAggregate.CanopyX.Data.CanopyDataColumn Column { get; }
+CanopyX.Data.CanopySummaryAggregate.System.Nullable<System.Double> Percentile { get; }
 CanopyX.Data.CanopySummaryAggregate.System.String Id { get; }
 CanopyX.Data.CanopySummaryAggregate.System.String? CustomOperation { get; }
 CanopyX.Data.CanopySummaryGroup : sealed class

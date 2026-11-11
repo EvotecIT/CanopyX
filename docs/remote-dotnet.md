@@ -204,7 +204,7 @@ returned by the column descriptors do not change the endpoint contract; create a
 | Text comparison | | Case-insensitive; see [Text, numbers and dates](#text-numbers-and-dates). |
 | Quick search | `search`, `searchMode` | Substring and all-words (quoted phrases) over the searchable columns. |
 | Value lists | `gridFacetQuery` → `gridFacetPage` | Full: case-insensitive buckets, counts over the complete query, value search, `includeCurrentFilter: false` projection, deterministic order, ≤ 200 buckets. |
-| Grouping and aggregates | `source.summary` → `gridSummary` | Full: a fixed grouping or up to four runtime `groupBy` levels (ordered by value or by an aggregate), nested groups with absolute ranges and keys unique across levels, `count`/`distinctCount`/`sum`/`average`/`minimum`/`maximum`; pages and exports read group by group. Custom aggregates need a provider of your own (see [Grouping levels](#grouping-levels)). |
+| Grouping and aggregates | `source.summary` → `gridSummary` | Full: a fixed grouping or up to four runtime `groupBy` levels (ordered by value or by an aggregate), nested groups with absolute ranges and keys unique across levels, `count`/`distinctCount`/`sum`/`average`/`minimum`/`maximum`; pages and exports read group by group. `median`/`percentile` in memory and in pivots only. Custom aggregates need a provider of your own (see [Grouping levels](#grouping-levels)). |
 | Editing | `gridCommit` → `gridCommitResult` | Full with a writer: editable columns only, values checked again with the view's validation, rows saved independently (or all or nothing), conflicts from original values, the new revision (see [Saving edits](#saving-edits)). |
 | Record details | `gridRecordQuery` → `gridRecord` | Full with a record map or provider: record fields, columns' drawer values (`cells`), the row, collections that page with totals, timelines, change lists and links to related records (see [Record details](#record-details)). |
 | Range queries | `gridRangeQuery` → `gridRangePage` | Full with the built-in providers: the records that overlap a UTC window after the query's criteria, recurring series, resource restriction, start order, `matched` and `truncated` (see [Range queries](#range-queries)). |
@@ -296,6 +296,19 @@ view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os"));
   database; dates at protocol precision in memory). Custom aggregate operations (a `CanopyGridAggregate` with an operation
   name) reach a provider as `CanopySummaryAggregate.CustomOperation`; the built-in providers answer `unsupported`, so a
   view with a custom aggregate needs an `ICanopyDataProvider` that computes it.
+- **Medians and percentiles.** `median` and `percentile` (`CanopyGridAggregate.AtPercentile`) interpolate linearly
+  between the closest ranks, as [Grouping](grouping.md#aggregates) describes. A rank needs every value of a group, which
+  LINQ cannot translate portably and which CanopyX never reads by materialising a query:
+
+  | Provider | Groups, totals and footers | Pivots |
+  | --- | --- | --- |
+  | `CanopyInMemoryProvider<T>` | computed | computed |
+  | `CanopyQueryableProvider<T>` | `unsupported` (400) | computed: the store groups by the value, within the 100,000-contribution bound (`limitExceeded` beyond) |
+  | your `ICanopyDataProvider` | computes them (`PERCENTILE_CONT(p / 100) WITHIN GROUP (ORDER BY …)` matches) | through `ICanopyPivotProvider` |
+
+  Over a translated query, a view with a median or percentile answers summary requests `unsupported` and shows
+  all-records footers as unavailable; implement `SummarizeAsync` in a provider of your own (for example with the
+  database's `PERCENTILE_CONT`) to serve them. Read `CanopySummaryAggregate.Percentile` (null for a median, the 50th).
 - **Echo.** The summary includes a complete normalized `gridQuery`, even when a direct handler request contains only
   its revision. The offset is zero; the accepted limit, search, predicate shape and operands are retained, and the
   effective grouping levels lead the sort. For code-built requests, an unused summary limit outside 1–10,000 is echoed
@@ -422,7 +435,7 @@ Contract details:
   `TotalValues` counted after value search.
 - **Summaries.** Return every group of the first level (any order; the endpoint orders them and assigns ranges) with its
   count and the declared aggregates, and inside each group of an outer level the groups of the next level
-  (`new CanopySummaryGroup(value, count, aggregates, innerGroups)`); `count` and `distinctCount` count nonmissing values,
+  (`new CanopySummaryGroup(value, count, aggregates, innerGroups)`); `count` and `distinctCount` count nonmissing values, `median` and `percentile` interpolate between ranks,
   the others are null for a group without values. Group by every prefix of the levels (one `GROUP BY` per level, or a rollup).
 - **Rows.** Build `CanopyGridRow`s; `CanopyDataValues.ToCell` converts store values to protocol cells and `FormatId` formats keys.
 - **Unsupported capabilities** throw `CanopyRequestException(CanopyRequestError.Unsupported, …)`.
