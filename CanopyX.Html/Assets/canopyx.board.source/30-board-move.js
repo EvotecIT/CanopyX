@@ -35,10 +35,17 @@
         const otherMoves = [...board.targets].filter(([record, target]) => record !== id && target === key).length;
         if (!current || current.wipLimit && current.count + otherMoves >= current.wipLimit) return false;
         const record = JSON.parse(JSON.stringify(currentRow)), spec = this.edit.specs.get(board.settings.column);
+        // The moved cell shows its lane's label, as a select editor's label would, rather than the raw lane value.
+        if (lane.value != null) this.editRemember?.(board.settings.column, { value: lane.value, label: lane.label });
         if (!this.editApply(id, spec, lane.value, "board", record)) return false;
-        const result = await this.commitChanges({ ids: [id] });
-        if (!result.ok) { this.revertChanges([id]); return false; }
-        await this.boardReload(); this.boardFocus(id);
+        let result;
+        board.committing++;
+        try { result = await this.commitChanges({ ids: [id] }); } finally { board.committing--; }
+        if (!result.ok) this.revertChanges([id]);
+        // One reload covers the commit and any query accepted while it saved.
+        await this.boardReload();
+        if (!result.ok) return false;
+        this.boardFocus(id);
         setText(this.live, fill(board.labels.boardMoved, { title: boardText(this, row, board.settings.titleColumn), lane: lane.label }));
         return true;
       } catch (error) { if (!signal.aborted) this.emit("error", { error }); return false; }

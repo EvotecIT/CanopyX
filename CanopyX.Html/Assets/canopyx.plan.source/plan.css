@@ -27,7 +27,9 @@
 
 .cx-plan-critical.cx-plan-milestone::before { background:var(--hfx-color-status-bad-fg); }
 .cx-plan .cx-tl-main { overflow:auto; }
-.cx-plan .cx-tl-tree.cx-host > .cx-grid { overflow-x:auto; }
+/* The resource column has a fixed width and ellipsizes its names; only the task lanes scroll sideways. */
+.cx-plan .cx-tl-tree.cx-host > .cx-grid { overflow-x:hidden; }
+.cx-plan .cx-tl-lane .cx-plan-has-next:not(.cx-plan-milestone,.cx-plan-label-outside) { padding-inline-end:var(--hfx-space-3); }
 .cx-plan .cx-tl-canvas { padding-block-end:var(--hfx-space-3); }
 .cx-plan .cx-plan-milestone.cx-plan-conflict { outline:0; }
 .cx-plan .cx-plan-milestone.cx-plan-conflict::before { outline:var(--hfx-border-width) dashed var(--hfx-color-status-bad-fg);outline-offset:var(--hfx-border-width); }

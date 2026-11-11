@@ -49,6 +49,13 @@
       dayRange: (from, to) => range({ day: "numeric", month: "short", year: "numeric" }, from, to),
       monthRange: (from, to) => range({ month: "short", year: "numeric" }, from, to),
       time: value => make({ hour: "numeric", minute: "2-digit" }).format(new Date(value)),
+      // A month line's time: "7:30am" and "8pm" where the language writes AM and PM, its own short time elsewhere.
+      shortTime: value => {
+        const parts = make({ hour: "numeric", minute: "2-digit" }).formatToParts(new Date(value)), period = parts.find(part => part.type === "dayPeriod");
+        if (!period || !/^[ap]\.?\s?m\.?$/i.test(period.value)) return parts.map(part => part.value).join("");
+        const minute = parts.find(part => part.type === "minute")?.value;
+        return parts.find(part => part.type === "hour").value + (minute && minute !== "00" ? ":" + minute : "") + period.value.replace(/[.\s]/g, "").toLowerCase();
+      },
       timeRange: (from, to) => make({ hour: "numeric", minute: "2-digit" }).formatRange(new Date(from), new Date(to)),
       hour: minutes => make({ hour: "numeric" }, true).format(new Date(minutes * CAL_MINUTE)),
       clock: minutes => make({ hour: "numeric", minute: "2-digit" }, true).format(new Date(minutes * CAL_MINUTE)),

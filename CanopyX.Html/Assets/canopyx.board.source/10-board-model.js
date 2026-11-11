@@ -28,14 +28,15 @@
       if (this.board) return;
       const settings = boardSettings(this), labels = {};
       for (const [key, text] of Object.entries(BOARD_TEXT)) labels[key] = this.opts.labels?.[key] || this.view.labels?.[key] || text;
-      const board = this.board = { settings, labels, rows: [], lanes: [], pending: new Set(), targets: new Map(), epoch: 0, version: 0 };
+      const board = this.board = { settings, labels, rows: [], lanes: [], pending: new Set(), targets: new Map(), epoch: 0, version: 0, committing: 0 };
       // Editing can install after this part; resolve its setter at call time for this board instance.
       this.setReadOnly = (...args) => { const result = DataGrid.prototype.setReadOnly.apply(this, args); this.boardPaint(); return result; };
       this.host.classList.add("cx-board-host"); this.grid.hidden = true;
       if (this.pager) this.pager.hidden = true;
       this.boardFrame = h("section", "cx-board"); this.boardFrame.setAttribute("aria-label", this.view.label);
       this.host.insertBefore(this.boardFrame, this.grid.nextSibling);
-      this.host.addEventListener("canopyx:commit", () => this.boardReload(), { signal: this.lifetime.signal });
+      // A board move reloads once after its own commit; other commits reload here.
+      this.host.addEventListener("canopyx:commit", () => { if (!board.committing) this.boardReload(); }, { signal: this.lifetime.signal });
       this.host.addEventListener("canopyx:rowsChanged", event => {
         board.version++; board.epoch++;
         if ((this.view.source.kind !== "inline" || this.opts.source) && event.detail.source === "api") {
@@ -92,5 +93,5 @@
   });
   const BOARD_QUERY = DataGrid.prototype.setQuery;
   DataGrid.prototype.setQuery = async function (...args) {
-    const result = await BOARD_QUERY.apply(this, args); if (this.board) await this.boardReload(); return result;
+    const result = await BOARD_QUERY.apply(this, args); if (this.board && !this.board.committing) await this.boardReload(); return result;
   };

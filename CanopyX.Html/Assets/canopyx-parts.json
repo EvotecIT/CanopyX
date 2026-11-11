@@ -874,7 +874,7 @@
     {
       "name": "buckets",
       "label": "date and range buckets",
-      "version": "cc69c8336c15df83",
+      "version": "234183bf88b589ca",
       "script": "canopyx-buckets.js",
       "runtimes": [
         "grid"
@@ -997,7 +997,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "961e92374a7ee2e5",
+      "version": "067a14ada05b7ea4",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1125,7 +1125,7 @@
     {
       "name": "board",
       "label": "board view",
-      "version": "8a08962fded201f6",
+      "version": "7c31cbc229d6a0b7",
       "script": "canopyx-board.js",
       "style": "canopyx-board.css",
       "runtimes": [
@@ -1141,7 +1141,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "f24e87cbfe9e25a4",
+      "version": "7fc411e6239ae466",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [
