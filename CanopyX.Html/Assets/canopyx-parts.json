@@ -105,7 +105,7 @@
     {
       "name": "ui-accordion",
       "label": "UI accordion",
-      "version": "2dcae6b70bbee048",
+      "version": "a1e96f0e827d731c",
       "script": "canopyx-ui-accordion.js",
       "style": "canopyx-ui-accordion.css",
       "runtimes": [
