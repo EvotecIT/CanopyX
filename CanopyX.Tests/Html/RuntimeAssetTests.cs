@@ -147,7 +147,8 @@ public sealed class RuntimeAssetTests {
         // Includes chart intent, localized controls and the lazy analysis loader.
         // Reserve 192 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
         // Reserve 640 bytes for the same right-to-left, matrix-table and aggregate-text changes plus the phone toolbar and footer fixes.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640);
+        // Reserve 192 bytes for the built-in median and percentile aggregates in the reporting menus and labels.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192);
     }
 
     [Fact]
