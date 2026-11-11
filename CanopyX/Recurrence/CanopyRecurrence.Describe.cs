@@ -10,6 +10,7 @@ namespace CanopyX;
 // same sentences from the same labels; tests/fixtures/recurrence-descriptions.json holds the vectors both check.
 public sealed partial class CanopyRecurrence {
     private static readonly Regex Weekday = new Regex(@"^dddd[,\s]*|[,\s]*dddd$", RegexOptions.CultureInvariant);
+    private static readonly Regex Lead = new Regex(@"^[^\s{]+(?=\s)", RegexOptions.CultureInvariant);
 
     /// <summary>
     /// Describes the rule as a short sentence in a culture's words, such as "Every week, on Monday and Wednesday, at 09:00, 10 times"
@@ -59,13 +60,15 @@ public sealed partial class CanopyRecurrence {
             frequency = CanopyRecurrenceFrequency.Weekly;
         }
 
-        // A weekday label with neither one phrase nor seven (Monday to Sunday) cannot say the rule.
+        // A weekday label with neither one phrase nor seven (Monday to Sunday), or a month label with neither one nor twelve, cannot
+        // say the rule.
         var malformed = false;
-        string Day(string label, DayOfWeek day) {
+        string Phrase(string label, int index, int size) {
             var phrases = label.Split('|');
-            if (phrases.Length != 1 && phrases.Length != 7) malformed = true;
-            return phrases[phrases.Length == 7 ? MondayFirst(day) : 0].Replace("{day}", names.DayNames[(int)day]);
+            if (phrases.Length != 1 && phrases.Length != size) malformed = true;
+            return phrases[phrases.Length == size ? index : 0];
         }
+        string Day(string label, DayOfWeek day) => Phrase(label, MondayFirst(day), 7).Replace("{day}", names.DayNames[(int)day]);
         string List(IEnumerable<string> items) {
             var all = items.ToList();
             return all.Count < 2 ? all[0] : labels.CalendarRecurrenceList.Replace("{items}", string.Join(", ", all.Take(all.Count - 1))).Replace("{last}", all[all.Count - 1]);
@@ -95,10 +98,23 @@ public sealed partial class CanopyRecurrence {
             } else days = labels.CalendarRecurrenceOnDate.Replace("{date}", new DateTime(2000, start.Month, start.Day).ToString(names.MonthDayPattern, culture));
         }
 
+        // Later months drop the opening word they share with the first ("in January and July", "w styczniu i lipcu").
+        var months = string.Empty;
+        if (_months.Count > 0) {
+            var lead = string.Empty;
+            months = List(_months.Distinct().OrderBy(month => month).Select((month, index) => {
+                var phrase = Phrase(labels.CalendarRecurrenceInMonth, month - 1, 12);
+                var word = Lead.Match(phrase).Value;
+                if (index == 0) lead = word;
+                phrase = phrase.Replace("{month}", names.MonthNames[month - 1]);
+                return index > 0 && word.Length > 0 && word == lead ? phrase.Substring(word.Length).TrimStart() : phrase;
+            }));
+        }
+
         if (malformed) return null;
         var parts = new List<string>();
         if (!saysRepeat) parts.Add(_interval == 1 ? Every(labels, frequency) : Count(EveryInterval(labels, frequency), _interval));
-        if (_months.Count > 0) parts.Add(labels.CalendarRecurrenceInMonths.Replace("{months}", List(_months.Distinct().OrderBy(month => month).Select(month => names.MonthNames[month - 1]))));
+        if (months.Length > 0) parts.Add(months);
         if (days.Length > 0) parts.Add(days);
         if (!allDay) parts.Add(labels.CalendarRecurrenceAt.Replace("{time}", start.ToString("HH:mm", CultureInfo.InvariantCulture)));
         if (_count.HasValue) parts.Add(Count(labels.CalendarRecurrenceTimes, _count.Value));

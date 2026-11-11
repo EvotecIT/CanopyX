@@ -33,7 +33,7 @@ public sealed partial class CanopyLabels {
         labels.CalendarRecurrenceFourthWeekday = "il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|la quarta {day}";
         labels.CalendarRecurrenceFifthWeekday = "il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|la quinta {day}";
         labels.CalendarRecurrenceLastWeekday = "l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultima {day}";
-        labels.CalendarRecurrenceInMonths = "a {months}";
+        labels.CalendarRecurrenceInMonth = "a {month}|a {month}|a {month}|ad {month}|a {month}|a {month}|a {month}|ad {month}|a {month}|a {month}|a {month}|a {month}";
         labels.CalendarRecurrenceOnDate = "il {date}";
         labels.CalendarRecurrenceAt = "alle {time}";
         labels.CalendarRecurrenceTimes = "[one]{count} volta[other]{count} volte";

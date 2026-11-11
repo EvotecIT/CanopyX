@@ -518,6 +518,7 @@ start as a wall time in its zone, which supplies the weekday, day and month a ru
 | `FREQ=MONTHLY;UNTIL=20261231;BYDAY=-1FR` | Every month, on the last Friday, at 09:00, until December 31, 2026 | Co miesiąc, w ostatni piątek, o 09:00, do 31 grudnia 2026 |
 | `FREQ=MONTHLY;BYDAY=-1WE` | Every month, on the last Wednesday, at 09:00 | Co miesiąc, w ostatnią środę, o 09:00 |
 | `FREQ=MONTHLY;BYMONTHDAY=1,15` | Every month, on days 1 and 15, at 09:00 | Co miesiąc, w dniach 1 i 15, o 09:00 |
+| `FREQ=YEARLY;BYMONTH=3,6,12;BYDAY=-1FR` | Every year, in March, June and December, on the last Friday, at 09:00 | Co roku, w marcu, czerwcu i grudniu, w ostatni piątek, o 09:00 |
 | `FREQ=YEARLY` (15 March, all-day) | Every year, on March 15 | Co roku, 15 marca |
 | `FREQ=DAILY` with two exceptions | Every day, at 09:00, except 2 dates | Codziennie, o 09:00, z wyjątkiem 2 dat |
 
@@ -538,6 +539,12 @@ French "Du lundi au jeudi, à 09:00" and "Tous les ans, le 15 mars"; Italian "Og
   {day}|…|la prima {day}"); Polish writes every form with its preposition ("w pierwszy poniedziałek|w pierwszy wtorek|w pierwszą
   środę|…", "w poniedziałki|we wtorki|…", "poniedziałku|wtorku|…" for "od {first} do {last}"). `Build/Sync-Labels.ps1` refuses
   any other number of phrases; a host label that has one makes the description fall back to the rule text.
+- Months take their grammar the same way: `calendarRecurrenceInMonth` holds one phrase, or twelve for January to December
+  separated by `|`, with `{month}` the culture's month name. Several months join with `calendarRecurrenceList`, and a later
+  phrase that opens with the same word as the first drops it, so the preposition is said once: English "in {month}" reads "in
+  January and July", German "im {month}" "im Januar und Juli". Polish writes the locative forms out ("w styczniu|w lutym|…|we
+  wrześniu|…"), giving "w styczniu, marcu i lipcu" and "w styczniu i we wrześniu"; Italian says "ad {month}" for April and
+  August, giving "a gennaio e ad agosto".
 - Monday to Friday reads as weekdays, Saturday and Sunday as weekends, three or more consecutive days as a range; with
   `INTERVAL=1` those phrases, and other weekdays ("every Tuesday"), stand without "every week". A daily rule on weekdays reads as the weekly rule it equals.
   `BYSETPOS` over a single weekday reads as a numbered weekday (`BYDAY=MO;BYSETPOS=2` is "the second Monday").

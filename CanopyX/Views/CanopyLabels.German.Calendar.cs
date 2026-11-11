@@ -33,7 +33,7 @@ public sealed partial class CanopyLabels {
         labels.CalendarRecurrenceFourthWeekday = "vierten {day}";
         labels.CalendarRecurrenceFifthWeekday = "fünften {day}";
         labels.CalendarRecurrenceLastWeekday = "letzten {day}";
-        labels.CalendarRecurrenceInMonths = "im {months}";
+        labels.CalendarRecurrenceInMonth = "im {month}";
         labels.CalendarRecurrenceOnDate = "am {date}";
         labels.CalendarRecurrenceAt = "um {time}";
         labels.CalendarRecurrenceTimes = "{count}-mal";

@@ -25,7 +25,7 @@
   {"name":"pl-PL FREQ=WEEKLY;INTERVAL=2;COUNT=10;BYDAY=MO,WE","rule":"FREQ=WEEKLY;INTERVAL=2;COUNT=10;BYDAY=MO,WE","start":"2026-10-19T09:00:00","culture":"pl-PL","expected":"Co 2 tygodnie, w poniedziałek i w środę, o 09:00, 10 razy"},
   {"name":"pl-PL FREQ=WEEKLY;INTERVAL=5;COUNT=22;BYDAY=FR","rule":"FREQ=WEEKLY;INTERVAL=5;COUNT=22;BYDAY=FR","start":"2026-10-16T09:00:00","culture":"pl-PL","expected":"Co 5 tygodni, w piątek, o 09:00, 22 razy"},
   {"name":"pl-PL FREQ=MONTHLY;UNTIL=20261231;BYDAY=-1FR","rule":"FREQ=MONTHLY;UNTIL=20261231;BYDAY=-1FR","start":"2026-10-30T09:00:00","culture":"pl-PL","expected":"Co miesiąc, w ostatni piątek, o 09:00, do 31 grudnia 2026"},
-  {"name":"pl-PL FREQ=YEARLY;BYMONTH=1,7;BYDAY=1SU","rule":"FREQ=YEARLY;BYMONTH=1,7;BYDAY=1SU","start":"2027-01-03T09:00:00","culture":"pl-PL","expected":"Co roku, w miesiącach: styczeń i lipiec, w pierwszą niedzielę, o 09:00"},
+  {"name":"pl-PL FREQ=YEARLY;BYMONTH=1,7;BYDAY=1SU","rule":"FREQ=YEARLY;BYMONTH=1,7;BYDAY=1SU","start":"2027-01-03T09:00:00","culture":"pl-PL","expected":"Co roku, w styczniu i lipcu, w pierwszą niedzielę, o 09:00"},
   {"name":"pl-PL FREQ=DAILY with exceptions","rule":"FREQ=DAILY","start":"2026-10-16T09:00:00","culture":"pl-PL","exceptions":["2026-10-20","2026-10-21T09:00:00"],"expected":"Codziennie, o 09:00, z wyjątkiem 2 dat"},
   {"name":"pl-PL FREQ=YEARLY all-day","rule":"FREQ=YEARLY","start":"2027-03-15T00:00:00","culture":"pl-PL","allDay":true,"expected":"Co roku, 15 marca"},
   {"name":"de-DE FREQ=WEEKLY;INTERVAL=2;COUNT=10;BYDAY=MO,WE","rule":"FREQ=WEEKLY;INTERVAL=2;COUNT=10;BYDAY=MO,WE","start":"2026-10-19T09:00:00","culture":"de-DE","expected":"Alle 2 Wochen, am Montag und Mittwoch, um 09:00, 10-mal"},
@@ -63,5 +63,14 @@
   {"name":"es-ES FREQ=MONTHLY;UNTIL=20261231;BYDAY=-1FR","rule":"FREQ=MONTHLY;UNTIL=20261231;BYDAY=-1FR","start":"2026-10-30T09:00:00","culture":"es-ES","expected":"Cada mes, el último viernes, a las 09:00, hasta el 31 de diciembre de 2026"},
   {"name":"es-ES FREQ=WEEKLY;BYDAY=SU","rule":"FREQ=WEEKLY;BYDAY=SU","start":"2026-10-18T04:00:00","culture":"es-ES","expected":"Cada domingo, a las 04:00"},
   {"name":"fr-FR FREQ=MONTHLY;BYDAY=1MO","rule":"FREQ=MONTHLY;BYDAY=1MO","start":"2026-11-02T09:00:00","culture":"fr-FR","expected":"Tous les mois, le premier lundi, à 09:00"},
-  {"name":"fr-FR FREQ=DAILY;BYDAY=MO,WE,FR","rule":"FREQ=DAILY;BYDAY=MO,WE,FR","start":"2026-10-16T09:00:00","culture":"fr-FR","expected":"Chaque lundi, mercredi et vendredi, à 09:00"}
+  {"name":"fr-FR FREQ=DAILY;BYDAY=MO,WE,FR","rule":"FREQ=DAILY;BYDAY=MO,WE,FR","start":"2026-10-16T09:00:00","culture":"fr-FR","expected":"Chaque lundi, mercredi et vendredi, à 09:00"},
+  {"name":"pl-PL FREQ=YEARLY;BYMONTH=9;BYDAY=1MO","rule":"FREQ=YEARLY;BYMONTH=9;BYDAY=1MO","start":"2027-01-03T09:00:00","culture":"pl-PL","expected":"Co roku, we wrześniu, w pierwszy poniedziałek, o 09:00"},
+  {"name":"pl-PL FREQ=YEARLY;BYMONTH=1,9;BYDAY=1MO","rule":"FREQ=YEARLY;BYMONTH=1,9;BYDAY=1MO","start":"2027-01-03T09:00:00","culture":"pl-PL","expected":"Co roku, w styczniu i we wrześniu, w pierwszy poniedziałek, o 09:00"},
+  {"name":"pl-PL FREQ=YEARLY;BYMONTH=3,6,12;BYDAY=-1FR","rule":"FREQ=YEARLY;BYMONTH=3,6,12;BYDAY=-1FR","start":"2027-01-03T09:00:00","culture":"pl-PL","expected":"Co roku, w marcu, czerwcu i grudniu, w ostatni piątek, o 09:00"},
+  {"name":"en-US FREQ=YEARLY;BYMONTH=9;BYDAY=1MO","rule":"FREQ=YEARLY;BYMONTH=9;BYDAY=1MO","start":"2027-01-03T09:00:00","culture":"en-US","expected":"Every year, in September, on the first Monday, at 09:00"},
+  {"name":"en-US FREQ=YEARLY;BYMONTH=3,6,12;BYDAY=-1FR","rule":"FREQ=YEARLY;BYMONTH=3,6,12;BYDAY=-1FR","start":"2027-01-03T09:00:00","culture":"en-US","expected":"Every year, in March, June and December, on the last Friday, at 09:00"},
+  {"name":"de-DE FREQ=YEARLY;BYMONTH=1,7;BYDAY=1SU","rule":"FREQ=YEARLY;BYMONTH=1,7;BYDAY=1SU","start":"2027-01-03T09:00:00","culture":"de-DE","expected":"Jedes Jahr, im Januar und Juli, am ersten Sonntag, um 09:00"},
+  {"name":"fr-FR FREQ=YEARLY;BYMONTH=1,7;BYDAY=1SU","rule":"FREQ=YEARLY;BYMONTH=1,7;BYDAY=1SU","start":"2027-01-03T09:00:00","culture":"fr-FR","expected":"Tous les ans, en janvier et juillet, le premier dimanche, à 09:00"},
+  {"name":"it-IT FREQ=YEARLY;BYMONTH=1,8;BYDAY=1SU","rule":"FREQ=YEARLY;BYMONTH=1,8;BYDAY=1SU","start":"2027-01-03T09:00:00","culture":"it-IT","expected":"Ogni anno, a gennaio e ad agosto, la prima domenica, alle 09:00"},
+  {"name":"it-IT FREQ=YEARLY;BYMONTH=4,8;BYDAY=1SU","rule":"FREQ=YEARLY;BYMONTH=4,8;BYDAY=1SU","start":"2027-01-03T09:00:00","culture":"it-IT","expected":"Ogni anno, ad aprile e agosto, la prima domenica, alle 09:00"}
 ]

@@ -123,7 +123,7 @@
     "dernier {day}",
     "l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultima {day}"
   ],
-  "CalendarRecurrenceInMonths": ["w miesiącach: {months}", "im {months}", "en {months}", "en {months}", "a {months}"],
+  "CalendarRecurrenceInMonth": ["w styczniu|w lutym|w marcu|w kwietniu|w maju|w czerwcu|w lipcu|w sierpniu|we wrześniu|w październiku|w listopadzie|w grudniu", "im {month}", "en {month}", "en {month}", "a {month}|a {month}|a {month}|ad {month}|a {month}|a {month}|a {month}|ad {month}|a {month}|a {month}|a {month}|a {month}"],
   "CalendarRecurrenceOnDate": ["{date}", "am {date}", "el {date}", "le {date}", "il {date}"],
   "CalendarRecurrenceAt": ["o {time}", "um {time}", "a las {time}", "à {time}", "alle {time}"],
   "CalendarRecurrenceTimes": ["[one]{count} raz[few]{count} razy[many]{count} razy[other]{count} razy", "{count}-mal", "[one]{count} vez[other]{count} veces", "{count} fois", "[one]{count} volta[other]{count} volte"],
