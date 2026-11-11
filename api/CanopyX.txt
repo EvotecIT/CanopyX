@@ -697,6 +697,7 @@ CanopyX.CanopyDataGridView.CanopyX.CanopyLayoutOptions? Layout { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyPath? Path { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyPlan? Plan { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyRecordPanel? Record { get; set; }
+CanopyX.CanopyDataGridView.CanopyX.CanopyRowActions RowActions { get; }
 CanopyX.CanopyDataGridView.CanopyX.CanopySearchHighlight? SearchHighlight { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopySelectionMode Selection { get; set; }
 CanopyX.CanopyDataGridView.CanopyX.CanopyStack? Stack { get; set; }
@@ -2864,6 +2865,14 @@ CanopyX.CanopyLabels.System.String RecordTrail { get; set; }
 CanopyX.CanopyLabels.System.String RecordUnavailable { get; set; }
 CanopyX.CanopyLabels.System.String RecordValue { get; set; }
 CanopyX.CanopyLabels.System.String ResizeColumn { get; set; }
+CanopyX.CanopyLabels.System.String RowActionColumn { get; set; }
+CanopyX.CanopyLabels.System.String RowActionDismiss { get; set; }
+CanopyX.CanopyLabels.System.String RowActionDone { get; set; }
+CanopyX.CanopyLabels.System.String RowActionFailed { get; set; }
+CanopyX.CanopyLabels.System.String RowActionLocked { get; set; }
+CanopyX.CanopyLabels.System.String RowActionMore { get; set; }
+CanopyX.CanopyLabels.System.String RowActionPending { get; set; }
+CanopyX.CanopyLabels.System.String RowActionRejected { get; set; }
 CanopyX.CanopyLabels.System.String SaveEdit { get; set; }
 CanopyX.CanopyLabels.System.String SearchFailed { get; set; }
 CanopyX.CanopyLabels.System.String SearchNoResults { get; set; }
@@ -3332,6 +3341,46 @@ CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Daily 
 CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Monthly = 2
 CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Weekly = 1
 CanopyX.CanopyRecurrenceFrequency.const CanopyX.CanopyRecurrenceFrequency Yearly = 3
+CanopyX.CanopyRowAction : sealed class
+CanopyX.CanopyRowAction..ctor(System.String id, System.String label, CanopyX.CanopyRowActionIcon icon = Check)
+CanopyX.CanopyRowAction.CanopyX.CanopyFormatCondition? DisabledWhen { get; set; }
+CanopyX.CanopyRowAction.CanopyX.CanopyFormatCondition? When { get; set; }
+CanopyX.CanopyRowAction.CanopyX.CanopyRowActionIcon Icon { get; set; }
+CanopyX.CanopyRowAction.CanopyX.CanopyRowActionTone Tone { get; set; }
+CanopyX.CanopyRowAction.System.Boolean Refresh { get; set; }
+CanopyX.CanopyRowAction.System.String Id { get; }
+CanopyX.CanopyRowAction.System.String Label { get; }
+CanopyX.CanopyRowAction.System.String? DisabledReason { get; set; }
+CanopyX.CanopyRowActionIcon : enum System.Int32
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Check = 0
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Close = 9
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Copy = 7
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Delete = 6
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Download = 10
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Edit = 5
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Open = 8
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Pause = 2
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Play = 1
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Retry = 4
+CanopyX.CanopyRowActionIcon.const CanopyX.CanopyRowActionIcon Stop = 3
+CanopyX.CanopyRowActionReveal : enum System.Int32
+CanopyX.CanopyRowActionReveal.const CanopyX.CanopyRowActionReveal Always = 0
+CanopyX.CanopyRowActionReveal.const CanopyX.CanopyRowActionReveal Hover = 1
+CanopyX.CanopyRowActionTone : enum System.Int32
+CanopyX.CanopyRowActionTone.const CanopyX.CanopyRowActionTone Danger = 2
+CanopyX.CanopyRowActionTone.const CanopyX.CanopyRowActionTone Neutral = 0
+CanopyX.CanopyRowActionTone.const CanopyX.CanopyRowActionTone Primary = 1
+CanopyX.CanopyRowActions : sealed class
+CanopyX.CanopyRowActions..ctor()
+CanopyX.CanopyRowActions.CanopyX.CanopyFormatCondition? LockedWhen { get; set; }
+CanopyX.CanopyRowActions.CanopyX.CanopyRowActionReveal Reveal { get; set; }
+CanopyX.CanopyRowActions.CanopyX.CanopyRowActions Add(CanopyX.CanopyRowAction action)
+CanopyX.CanopyRowActions.System.Boolean Pinned { get; set; }
+CanopyX.CanopyRowActions.System.Collections.Generic.IList<CanopyX.CanopyRowAction> Actions { get; }
+CanopyX.CanopyRowActions.System.Int32 Inline { get; set; }
+CanopyX.CanopyRowActions.System.String? Label { get; set; }
+CanopyX.CanopyRowActions.System.String? LockedLabel { get; set; }
+CanopyX.CanopyRowActions.const System.String ColumnId = "cx-row-actions"
 CanopyX.CanopyRowDataOptions : sealed class
 CanopyX.CanopyRowDataOptions..ctor()
 CanopyX.CanopyRowDataOptions.CanopyX.CanopyRowFormat Format { get; set; }

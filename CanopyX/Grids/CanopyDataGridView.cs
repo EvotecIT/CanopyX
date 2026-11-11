@@ -233,6 +233,7 @@ public sealed partial class CanopyDataGridView {
         WriteCalendarJson(writer);
         WritePathJson(writer);
         WriteStackJson(writer);
+        WriteRowActionsJson(writer);
         WriteBoardJson(writer);
         WritePlanJson(writer);
         if (Compare != null) { writer.Name("compare"); Compare.WriteJson(writer); }
@@ -335,6 +336,7 @@ public sealed partial class CanopyDataGridView {
             throw new InvalidOperationException("Choose one grid presentation: board, path, stack or calendar (with optional plan). ");
         ValidatePath();
         ValidateStack();
+        ValidateRowActions();
         ValidateBoard();
         ValidatePlan();
         Compare?.Validate(this);

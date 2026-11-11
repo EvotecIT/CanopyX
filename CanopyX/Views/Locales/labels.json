@@ -6730,5 +6730,13 @@
     "Opciones de campo",
     "Options du champ",
     "Opzioni campo"
-  ]
+  ],
+  "RowActionColumn": ["Akcje", "Aktionen", "Acciones", "Actions", "Azioni"],
+  "RowActionMore": ["Więcej akcji", "Weitere Aktionen", "Más acciones", "Plus d’actions", "Altre azioni"],
+  "RowActionLocked": ["Tylko do odczytu", "Schreibgeschützt", "Solo lectura", "Lecture seule", "Sola lettura"],
+  "RowActionDismiss": ["Zamknij", "Schließen", "Descartar", "Ignorer", "Ignora"],
+  "RowActionPending": ["{action}: w toku", "{action}: läuft", "{action}: en curso", "{action} : en cours", "{action}: in corso"],
+  "RowActionDone": ["{action}: gotowe", "{action}: erledigt", "{action}: hecho", "{action} : terminé", "{action}: fatto"],
+  "RowActionRejected": ["Nie wykonano: {action}.", "{action} wurde nicht ausgeführt.", "{action} no se ha realizado.", "{action} n’a pas été effectué.", "{action} non è stata eseguita."],
+  "RowActionFailed": ["Nie udało się wykonać: {action}. {error}", "{action} fehlgeschlagen: {error}", "Error en {action}: {error}", "Échec de {action} : {error}", "{action} non riuscita: {error}"]
 }

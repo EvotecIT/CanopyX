@@ -878,6 +878,7 @@
         "calendar": { "$ref": "#/$defs/gridCalendar" },
         "path": { "$ref": "#/$defs/gridPath" },
         "stack": { "$ref": "#/$defs/gridStack" },
+        "rowActions": { "$ref": "#/$defs/rowActionColumn" },
         "board": { "$ref": "#/$defs/gridBoard" },
         "plan": { "$ref": "#/$defs/gridPlan" },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
@@ -2795,6 +2796,14 @@
         "gridLiveOrderChanged": { "type": "string" },
         "gridLiveOrderHint": { "type": "string" },
         "gridLiveRecordRemoved": { "type": "string" },
+        "rowActionColumn": { "type": "string" },
+        "rowActionMore": { "type": "string" },
+        "rowActionLocked": { "type": "string" },
+        "rowActionDismiss": { "type": "string" },
+        "rowActionPending": { "type": "string" },
+        "rowActionDone": { "type": "string" },
+        "rowActionRejected": { "type": "string" },
+        "rowActionFailed": { "type": "string" },
         "gridLiveRefresh": { "type": "string" },
         "gridLiveResort": { "type": "string" },
         "gridLiveSorted": { "type": "string" },
@@ -3593,6 +3602,38 @@
         }
       },
       "description": "Explicit host-provided chains over stable inline records. At most 10,000 total hop occurrences; every reference must exist."
+    },
+    "rowActionColumn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actions"],
+      "description": "The grid's own actions column at the end edge (docs/row-actions.md): buttons that raise host proposals through onRowAction. Sources, exports, the record drawer and the static renderer leave it out; no declared column may use the id cx-row-actions.",
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S", "description": "Column header and button group name. Default the rowActionColumn label." },
+        "inline": { "type": "integer", "minimum": 0, "maximum": 4, "description": "Actions shown as buttons; the rest go into the More menu. When only one would be left over it shows inline instead. Default 2." },
+        "reveal": { "enum": ["always", "hover"], "description": "hover shows the buttons on the hovered, focused, selected or busy row; touch screens and the keyboard reach them on every row. Default always." },
+        "pin": { "enum": ["right", "none"], "description": "right keeps the column at the end edge while the grid scrolls sideways. Default right." },
+        "lockedWhen": { "$ref": "#/$defs/gridFormatCondition", "description": "Rows that show a lock and no actions." },
+        "lockedLabel": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "\\S", "description": "The lock's accessible name. Default the rowActionLocked label." },
+        "actions": {
+          "type": "array", "minItems": 1, "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "$ref": "#/$defs/identifier", "description": "Unique among the grid's row actions; the proposal's action." },
+              "label": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S", "description": "The button's accessible name and the menu entry's text." },
+              "icon": { "enum": ["check", "play", "pause", "stop", "retry", "edit", "delete", "copy", "open", "close", "download"], "description": "Default check." },
+              "tone": { "enum": ["neutral", "primary", "danger"], "description": "Default neutral." },
+              "when": { "$ref": "#/$defs/gridFormatCondition", "description": "Rows that offer the action. Absent offers it on every row that is not locked." },
+              "disabledWhen": { "$ref": "#/$defs/gridFormatCondition", "description": "Rows on which the action shows but cannot run." },
+              "disabledReason": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "\\S", "description": "The disabled button's description." },
+              "refresh": { "type": "boolean", "description": "After the host accepts, a live grid runs refreshRows() and any other grid reloads its accepted query. Default false." }
+            }
+          }
+        }
+      }
     },
     "gridStack": {
       "type": "object",
