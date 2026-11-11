@@ -141,7 +141,7 @@ test("header-only slack preserves usable sort and menu targets in a phone-width 
   expect(bounds.width).toBeGreaterThanOrEqual(24); expect(bounds.height).toBeGreaterThanOrEqual(24);
   const result = await new AxeBuilder({ page }).include(".cx-grid").withRules(["target-size"]).analyze();
   expect(result.violations.map(violation => violation.id)).toEqual([]);
-  // The trailing menu intentionally overlays the sort button: exercise its separate clear target.
+  // The trailing menu sits in its own reserved room beside the sort button: exercise both targets.
   const clearWidth = await sort.evaluate(button => button.closest('.cx-hcell').querySelector('.cx-grid-column-menu').getBoundingClientRect().left - button.getBoundingClientRect().left);
   expect(clearWidth).toBeGreaterThanOrEqual(24);
   await sort.click({ position: { x: 12, y: bounds.height / 2 } });
