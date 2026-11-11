@@ -120,8 +120,8 @@ for (const kind of ['dialog', 'drawer']) for (const sequence of ['open/open', 'c
     // The phone sheet slides in; a click aimed at #cycle mid-slide lands on whatever moved under the point.
     await page.locator('#rapid').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished.catch(() => {}))));
     await page.locator('#cycle').click();
-    // Observe the real queued native event before checking the replacement opening.
-    await expect.poll(() => page.evaluate(() => window.queuedCloses)).toBe(sequence === 'open/open' ? 2 : 1);
+    // Observe the real queued native event before checking the replacement opening. Opening an open overlay keeps it open.
+    await expect.poll(() => page.evaluate(() => window.queuedCloses)).toBe(sequence === 'open/open' ? 0 : 1);
     await expect(page.locator('#rapid')).toBeVisible();
     await expect(page.locator('#rapid')).toHaveAttribute('data-state', 'open');
     expect(await page.locator('#rapid').evaluate(el => el.matches(':modal'))).toBe(true);
@@ -278,6 +278,94 @@ for (const kind of ['popover', 'tooltip']) test(`${kind} preserves author direct
       .toEqual(['ltr', 'important', 'rtl-scope']);
     if (action === 'close') await page.locator('#rtl-overlay').evaluate(el => { el.removeAttribute('dir'); el.style.removeProperty('direction'); });
   }
+});
+
+// A drawer the host creates with options; the declarative mount leaves it alone.
+const reader = `<button id="first">Record 1</button><button id="second">Record 2</button>
+  <dialog id="reader" class="cx-drawer" data-side="end" aria-labelledby="reader-title">
+    <header data-hfx-part="header"><h2 id="reader-title">Record</h2><button class="cx-overlay-close" data-cx-close>Close</button></header>
+    <div data-hfx-part="body"></div></dialog>`;
+const openReader = async (page, options = '{}', before = '') => {
+  await openUi(page, reader, `${before} window.reader = CanopyX.drawer('#reader', ${options});`);
+  await page.evaluate(() => window.reader.ready);
+};
+
+test('opening an open drawer swaps its content and focus return without closing it', async ({ page }) => {
+  await openReader(page);
+  await page.evaluate(() => {
+    window.closes = 0; document.querySelector('#reader').addEventListener('cx-drawer:close', () => window.closes++);
+    window.reader.open({ content: '<p>First record</p>', returnFocus: document.querySelector('#first') });
+    window.reader.open({ content: '<p>Second record</p>', returnFocus: document.querySelector('#second') });
+  });
+  await expect(page.locator('#reader')).toContainText('Second record');
+  await page.evaluate(() => window.reader.setContent('<p>Second record, edited</p>'));
+  await expect(page.locator('#reader')).toContainText('Second record, edited');
+  expect(await page.evaluate(() => window.closes)).toBe(0);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#reader')).not.toBeVisible();
+  await expect(page.locator('#second')).toBeFocused();
+});
+
+test('a drawer loader shows a busy body, abandons a superseded record and retries a failure', async ({ page }) => {
+  await openReader(page);
+  const drawer = page.locator('#reader');
+  await page.evaluate(() => { window.signals = []; window.reader.open({ loader: signal => { window.signals.push(signal); return new Promise(() => {}); } }); });
+  await expect(drawer).toHaveAttribute('aria-busy', 'true');
+  await expect(drawer.getByRole('status')).toHaveText('Loading…');
+  await page.evaluate(() => {
+    window.attempts = 0;
+    window.reader.open({ loader: async () => { if (++window.attempts === 1) throw new Error('Record unavailable'); return '<p>Loaded record</p>'; } });
+  });
+  await expect(drawer.getByRole('alert')).toHaveText('Record unavailable');
+  expect(await page.evaluate(() => [window.signals[0].aborted, document.querySelector('#reader').hasAttribute('aria-busy')])).toEqual([true, false]);
+  await drawer.getByRole('button', { name: 'Retry' }).click();
+  await expect(drawer).toContainText('Loaded record');
+  expect(await page.evaluate(() => [window.attempts, window.reader.getState().loading])).toEqual([2, false]);
+});
+
+test('a drawer with an address pushes it on open, closes on Back and reopens on Forward', async ({ page }) => {
+  await openReader(page, '{}', `history.replaceState({ host: 1 }, '', '#overview');`);
+  const drawer = page.locator('#reader');
+  await page.evaluate(() => window.reader.open({ content: '<p>Record 7</p>', history: { url: '#record-7' } }));
+  expect(await page.evaluate(() => [location.hash, history.state.cxOverlay])).toEqual(['#record-7', 'reader']);
+  await page.goBack();
+  await expect(drawer).not.toBeVisible();
+  expect(await page.evaluate(() => [location.hash, history.state])).toEqual(['#overview', { host: 1 }]);
+  await page.goForward();
+  await expect(drawer).toContainText('Record 7');
+  await page.keyboard.press('Escape');
+  await expect(drawer).not.toBeVisible();
+  await expect.poll(() => page.evaluate(() => location.hash)).toBe('#overview');
+});
+
+test('a page opened on a drawer address opens the drawer, and Back returns to the page without it', async ({ page }) => {
+  await openReader(page, `{ history: { url: '#record-3', base: location.pathname }, loader: async () => '<p>Record 3</p>' }`,
+    `history.replaceState(null, '', '#record-3');`);
+  await expect(page.locator('#reader')).toContainText('Record 3');
+  await page.goBack();
+  await expect(page.locator('#reader')).not.toBeVisible();
+  expect(await page.evaluate(() => location.hash)).toBe('');
+});
+
+test('record navigation shows Previous, Next and the position, and stops at the ends', async ({ page }) => {
+  await openReader(page, '{ records: direction => window.steps.push(direction) }', 'window.steps = [];');
+  const drawer = page.locator('#reader');
+  await page.evaluate(() => window.reader.open({ content: '<p>Record</p>', position: { current: 1, total: 3 } }));
+  await expect(drawer.locator('[data-hfx-part="records"]')).toHaveText('1 of 3');
+  await expect(drawer.getByRole('button', { name: 'Previous record' })).toHaveAttribute('aria-disabled', 'true');
+  await page.keyboard.press('ArrowUp');
+  await drawer.getByRole('button', { name: 'Next record' }).click();
+  await page.keyboard.press('ArrowDown');
+  await page.evaluate(() => window.reader.open({ position: { current: 3, total: 3 } }));
+  await expect(drawer.locator('[data-hfx-part="records"]')).toHaveText('3 of 3');
+  await page.keyboard.press('ArrowDown');
+  expect(await page.evaluate(() => window.steps)).toEqual([1, 1]);
+});
+
+test('the close button keeps its label hidden under a host stylesheet that restyles buttons', async ({ page }) => {
+  await openReader(page, '{}', `document.head.insertAdjacentHTML('beforeend', '<style>button { font: inherit; }</style>');`);
+  await page.evaluate(() => window.reader.open({ content: '<p>Record</p>' }));
+  expect(await page.locator('#reader .cx-overlay-close').evaluate(element => getComputedStyle(element).fontSize)).toBe('0px');
 });
 
 test('dialog cancellation can be prevented and destroy still releases its modal resources', async ({ page }) => {

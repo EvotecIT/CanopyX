@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "39804c2061ff6d0b",
+      "version": "5e71a22aa437efbc",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -71,7 +71,7 @@
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "d97c13adf5742644",
+      "version": "3847ee99ceecf377",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [

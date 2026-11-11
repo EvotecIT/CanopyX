@@ -161,6 +161,12 @@ test('two hash tab sets preserve each other and respond to hashchange', async ({
   await expect(page.locator('#other-panel-checks')).toBeVisible();
 });
 
+test('a hash tab set keeps a plain anchor and the page history state', async ({ page }) => {
+  await openUi(page, tabs(), `history.replaceState({ host: 1 }, '', '#section-2'); ${initTabs('{ hash: true }')}`);
+  await page.locator('#sections-tab-audit').click();
+  expect(await page.evaluate(() => [location.hash, history.state])).toEqual(['#section-2&sections=audit', { host: 1 }]);
+});
+
 test('tabs collapse only at measured overflow with resize hysteresis and focus return', async ({ page }) => {
   await openUi(page, `<div id="container" style="width:620px">${tabs()}</div>`, initTabs('{}'));
   const list = page.getByRole('tablist'); await expect(list).toBeVisible();

@@ -223,6 +223,18 @@ export interface UiOverlayController extends UiController {
   open(options?: UiOverlayOpenOptions): UiResult<boolean>;
   close(reason?: string, restoreFocus?: boolean, force?: boolean): UiResult<boolean>;
 }
+/** Body content: a node, or HTML the host trusts. */
+export type UiContent = Node | string;
+/** Loads body content; a newer opening aborts the signal and ignores the late result. */
+export type UiBodyLoader = (signal: AbortSignal) => UiContent | null | undefined | Promise<UiContent | null | undefined>;
+/** An overlay's address in the browser history. */
+export interface UiOverlayHistory {
+  url: string | URL;
+  /** False replaces the current address and restores it on closing. Defaults to true. */
+  push?: boolean;
+  /** When the page was opened on `url`, the address below the overlay's entry, so Back stays on the page. */
+  base?: string | URL;
+}
 export interface UiDialogOptions {
   trigger?: HTMLElement;
   host?: HTMLElement;
@@ -231,17 +243,34 @@ export interface UiDialogOptions {
   labels?: UiLabels;
   dismissible?: boolean;
   initialFocus?: HTMLElement | ((element: HTMLElement) => HTMLElement | null | undefined);
+  /** Loads the body on the first opening; refresh() runs it again. */
+  loader?: UiBodyLoader;
+  /** The address of every opening; a page loaded on it opens the overlay. */
+  history?: UiOverlayHistory;
 }
 export interface UiDrawerOptions extends UiDialogOptions {
   modal?: boolean;
-  /** Header navigation when focus is outside an editable field. */
+  /** Previous and Next header buttons, and Up and Down when focus is outside an editable field. */
   records?: (direction: -1 | 1) => void;
 }
-export interface UiDialogState { open: boolean; modal: boolean }
+/** One opening of a dialog or drawer. On an open overlay these replace what it shows without closing it. */
+export interface UiDialogOpenOptions extends UiOverlayOpenOptions {
+  /** The element focused when the overlay closes, instead of its trigger or the focused element. */
+  returnFocus?: HTMLElement;
+  content?: UiContent;
+  loader?: UiBodyLoader;
+  history?: UiOverlayHistory;
+  /** The "n of N" label beside the record buttons; the buttons are disabled at the ends. */
+  position?: { current: number; total: number };
+}
+export interface UiDialogState { open: boolean; modal: boolean; loading: boolean }
 export interface UiDialogController extends UiOverlayController {
   /** Dialog modality is fixed; drawer modality comes from its container width and factory options. */
-  open(): UiResult<boolean>;
-  refresh(): UiResult<void>;
+  open(options?: UiDialogOpenOptions): UiResult<boolean>;
+  /** Replaces the body and cancels a pending load. */
+  setContent(content: UiContent): UiResult<void>;
+  /** Runs the current loader again; resolves false without a loader or on failure. */
+  refresh(): UiResult<Promise<boolean>>;
   getState(): UiResult<UiDialogState>;
 }
 

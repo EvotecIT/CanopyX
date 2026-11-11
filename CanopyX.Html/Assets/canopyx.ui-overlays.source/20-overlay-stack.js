@@ -97,7 +97,7 @@
       // Capture the open context before moving the surface. Focus alone does not make a sibling a child.
       entry.parent = uiOverlayStack.slice().reverse().find(owner => owner.element.contains(element) ||
         trigger && owner.element.contains(trigger)) || null;
-      returnFocus = trigger || document.activeElement;
+      returnFocus = settings.returnFocus || trigger || document.activeElement;
       modal = settings.modal ?? options.modal ?? false;
       const position = () => UI_TOOLS.position(element, trigger, options.placement || element.dataset.placement, settings.point);
       restoreTheme = UI_TOOLS.theme(host, element, () => { if (opened && options.anchored && trigger) position(); });
@@ -169,5 +169,7 @@
     }
     const destroy = () => { close("destroy", false, true); element.removeEventListener("cancel", cancel); element.removeEventListener("close", nativeClose, true); if (hadTabindex === null) element.removeAttribute("tabindex"); else element.setAttribute("tabindex", hadTabindex); };
     signal?.addEventListener("abort", destroy, { once: true });
-    return { element, open, close, destroy, setModal, get opened() { return opened; }, get modal() { return modal; } };
+    // An open overlay that now shows another record returns focus to that record's control.
+    const setReturnFocus = target => { if (opened && target) returnFocus = target; };
+    return { element, open, close, destroy, setModal, setReturnFocus, get opened() { return opened; }, get modal() { return modal; } };
   };

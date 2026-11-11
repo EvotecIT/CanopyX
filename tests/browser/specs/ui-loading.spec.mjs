@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
+import path from 'node:path';
 import { openUi } from './ui-support.mjs';
+import { repo } from './support.mjs';
 
 const tabs = `<div id="late" data-cx-tabs><div role="tablist" aria-label="Late sections">
   <button id="late-a" role="tab" data-tab-id="a" aria-controls="late-panel-a" aria-selected="true">First</button>
@@ -34,6 +36,25 @@ test('destroying a controller before lazy initialization releases its marker and
   }, tabs);
   expect(result).toEqual({ error: 'AbortError', marker: null, reused: false, selected: 'b' });
   await expect(page.getByRole('tabpanel', { name: 'Second', exact: true })).toBeVisible();
+});
+
+test('a component whose part failed to load is not kept, so a later call loads the part again', async ({ page }) => {
+  let fail = true;
+  await page.route('http://canopyx.test/canopyx-ui-tabs.*', route => fail ? route.fulfill({ status: 404, body: '' }) :
+    route.fulfill({ path: path.join(repo, 'CanopyX.Html/Assets', new URL(route.request().url()).pathname.slice(1)) }));
+  await openUi(page, '<h1>Report</h1>');
+  const first = await page.evaluate(markup => {
+    document.querySelectorAll('script[type^="application/x-canopyx-ui-tabs"]').forEach(script => script.remove());
+    document.querySelector('main').insertAdjacentHTML('beforeend', markup);
+    window.first = CanopyX.tabs('#late');
+    return window.first.ready.then(() => 'ready', error => error.message);
+  }, tabs);
+  expect(first).toContain('unavailable');
+  fail = false;
+  expect(await page.evaluate(async () => {
+    const second = CanopyX.tabs('#late'); await second.ready; await second.select('b');
+    return [second === window.first, second.getSelected()];
+  })).toEqual([false, 'b']);
 });
 
 test('component destruction restores readable panels and removes only its own interaction state', async ({ page }) => {
