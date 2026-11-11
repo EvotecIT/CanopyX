@@ -1,4 +1,5 @@
 import path from "node:path";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { nextFrames } from "./support.mjs";
 import { rendererFixture, rendererSnapshot } from "./calendar-renderer-fixture.mjs";
@@ -58,6 +59,39 @@ test("calendar status renderers keep normal text for false and void with calenda
   await expect(page.locator('.cx-cal-ev[data-host-calendar="decorated"]')).toHaveCount(4);
   expect(errors).toEqual([]);
   if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, testInfo.project.name + "-status-fallback.png") });
+});
+
+test("calendar renderer text updates refresh retained event and slot names until destroy", async ({ page }) => {
+  const errors = await open(page);
+  const event = page.locator('.cx-cal-ev-block[data-cx-record="owned"]'), slot = event.locator("..");
+  await expect(event).toHaveAccessibleName(/Host status/);
+  await expect(slot).toHaveAccessibleName(/Host status/);
+  const size = await page.locator(".cx-cal").boundingBox();
+  await event.evaluate(element => { window.retainedLabelEvent = element; window.retainedLabelStatus = element.querySelector(".cx-cal-ev-status"); });
+  let previous = "Host status";
+  for (const text of ["Ready", "Queue", "Ready"]) {
+    await page.evaluate(text => window.dispatchEvent(new CustomEvent("renderer-status", { detail: text })), text);
+    await nextFrames(page);
+    expect(await event.evaluate(element => element === window.retainedLabelEvent)).toBe(true);
+    await expect(event.locator(".cx-cal-ev-status")).toHaveText(text);
+    await expect(event).toHaveAccessibleName(new RegExp("9:00 AM Event owned " + text + ","));
+    await expect(event).toHaveAccessibleName(/Event owned, 9:00 AM – 10:00 AM, Status owned$/);
+    await expect(slot).toHaveAccessibleName(new RegExp("9:00 AM Event owned " + text + ","));
+    expect(await event.getAttribute("aria-label")).not.toContain(previous);
+    expect(await slot.getAttribute("aria-label")).not.toContain(previous);
+    const result = await new AxeBuilder({ page }).include(".cx-cal").withRules(["label-content-name-mismatch"]).analyze();
+    expect(result.violations).toEqual([]);
+    expect(await page.locator(".cx-cal").boundingBox()).toEqual(size);
+    previous = text;
+  }
+  const name = await event.getAttribute("aria-label");
+  await page.evaluate(() => { window.dispatchEvent(new CustomEvent("renderer-status", { detail: "Pending" })); window.api.destroy(); });
+  await nextFrames(page);
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("renderer-status", { detail: "Retired" })));
+  expect(await page.evaluate(() => window.retainedLabelStatus.textContent)).toBe("Pending");
+  expect(await page.evaluate(() => window.retainedLabelEvent.getAttribute("aria-label"))).toBe(name);
+  expect((await rendererSnapshot(page)).every(call => call.disposed === 1 && call.aborted === 1 && call.signalAborted)).toBe(true);
+  expect(errors).toEqual([]);
 });
 
 test("a throwing calendar status renderer is disposed immediately and falls back without breaking siblings", async ({ page }) => {

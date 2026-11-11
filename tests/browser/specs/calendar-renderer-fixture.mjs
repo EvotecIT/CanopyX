@@ -45,7 +45,9 @@ function install() {
       if (row.id === "throw") { element.textContent = "Partial failed content"; element.hidden = true; throw new Error("calendar renderer failure"); }
       if (row.id === "false") { element.classList.add("host-decoration"); return false; }
       if (row.id === "void") return;
-      const badge = CanopyX.badge({ text: "Host status", tone: "success" }); element.appendChild(badge); return true;
+      const badge = CanopyX.badge({ text: "Host status", tone: "success" }); element.appendChild(badge);
+      window.addEventListener("renderer-status", event => { element.textContent = event.detail; }, { signal: context.signal });
+      return true;
     } },
     calendar: { render({ element }) { element.dataset.hostCalendar = "decorated"; return false; } }
   });
