@@ -26,15 +26,16 @@ internal static class ViewDemos {
         plan.SaveHtmlPage(Path.Combine(demos, "plan.html"), Options("migration plan"));
         var path = PathExample.Create();
         path.SaveHtmlPage(Path.Combine(demos, "path.html"), Options("approval routes"));
+        // The dataset comparison on its own, like the other views; its example page with the view proposal is in the gallery.
+        DataViewsExample.Comparison().SaveHtmlPage(Path.Combine(demos, "compare.html"), Options("inventory changes"));
         var stack = StackExample.Create();
         stack.SaveHtmlPage(Path.Combine(demos, "stack.html"), Options("configuration layers"));
 
         // The flow example writes a light and a dark page; the site picks the one that matches its theme.
         FlowSetupTasksExample.Write(demos);
 
-        // The pivot, the dataset comparison and the snapshots write their own light and dark pages; the site keeps those.
+        // The pivot and the snapshots write their own light and dark pages; the site keeps those.
         Copy(demos, AnalystExample.Write, "analysis-pivot", "pivot");
-        Copy(demos, DataViewsExample.Write, "data-views", "compare");
         Copy(demos, TimeSliderExample.Write, "time-matrix", "time");
 
         return new Dictionary<string, string> {
