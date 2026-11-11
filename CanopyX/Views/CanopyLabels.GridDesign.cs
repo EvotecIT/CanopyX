@@ -119,6 +119,10 @@ public sealed partial class CanopyLabels {
     public string GridNoData { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the period range label.</summary>
     public string GridPeriodRange { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the accessible name of the footer totals row group.</summary>
+    public string GridFooterTotals { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the text of a footer total the host did not supply.</summary>
+    public string GridFooterUnavailable { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the healthy label.</summary>
     public string GridHealthy { get => Get(); set => Set(value); }
 }

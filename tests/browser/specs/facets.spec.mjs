@@ -47,6 +47,26 @@ test.describe("facet panel", () => {
     await expect.poll(() => api(page, "api => [api.getQuery().filters.length, !!api.getQuery().filterGroup, api.getQuery().search]")).toEqual([0, false, "sign"]);
   });
 
+  test("a source without a matched count announces no result count after a choice", async ({ page }) => {
+    // A cursor source may leave matched unknown; the panel must not announce that as "0 matching rows".
+    const view = { protocol: "canopyx/2", type: "grid", id: "unknown", label: "Unknown count", rowHeight: 34, pageSize: 2, pageLength: 2, presentation: "paged",
+      selection: "none", columns: [{ id: "name", title: "Name", kind: "text" }, { id: "site", title: "Site", kind: "text" }],
+      source: { kind: "host", navigation: "cursor" }, reporting: { facetColumns: ["site"] }, facets: { columns: ["site"] } };
+    await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("</head>", `<script>
+      window.choices = 0; const items = [{ id: "u1", cells: { name: "One", site: "Oslo" } }, { id: "u2", cells: { name: "Two", site: "Oslo" } }];
+      CanopyX.configure("unknown", { source: {
+        query(query) { if (query.filters.length) window.choices++; return { protocol: "canopyx/2", type: "gridCursorPage", view: "unknown", revision: "r1", offset: 0, total: null, matched: null, nextCursor: "next", items }; },
+        facet(request) { return { protocol: "canopyx/2", type: "gridFacetPage", view: "unknown", revision: "r1", column: request.column, search: request.search,
+          includeCurrentFilter: request.includeCurrentFilter, matched: 2, totalValues: 1, truncated: false, items: [{ value: "Oslo", count: 2 }] }; } } });
+      </script></head>`) }));
+    await page.goto("https://canopyx.test/");
+    await page.waitForSelector(".cx-facet .cx-facet-val");
+    await facet(page, "site").getByRole("checkbox", { name: /^Oslo/ }).check();
+    await expect.poll(() => page.evaluate(() => window.choices)).toBeGreaterThan(0);
+    await expect.poll(() => api(page, "api => api.getQuery().filters.length")).toBe(1);
+    await nextFrames(page);
+    await expect(page.locator(".cx-facets p.cx-sr-only").first()).toHaveText("");
+  });
   test("ranges draw a histogram and filter by From and To or a bar", async ({ page }) => {
     await open(page);
     const age = facet(page, "age");

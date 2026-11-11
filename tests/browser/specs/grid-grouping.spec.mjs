@@ -183,15 +183,15 @@ test("distinct counts and plugin aggregates are computed for inline data and lab
   expect(String(failure)).toContain("no plugin computes the aggregate 'spread'");
 });
 
-test("every aggregate of one function in a column keeps the same decimals, trailing zeros included", async ({ page }) => {
+test("undeclared aggregate formats show the decimals their values need, at most two", async ({ page }) => {
   const view = definition();
   view.reporting.groupBy = [{ column: "region", direction: "asc" }];
   view.rows = [["North", 2], ["North", 4], ["South", 1], ["South", 2], ["West", 2.5], ["West", 3.25]].map(([region, amount], i) =>
     ({ id: "r" + i, cells: { order: "SO-" + i, customer: "C", region, status: "Open", amount, items: 1, placed: "2026-01-01T00:00:00Z" } }));
   await open(page, view);
-  // Undeclared aggregate formats use two decimals consistently in headings and totals, independent of the loaded sample.
+  // Integer totals read as integers; fractional ones keep up to two digits without trailing zeros, in headings and totals alike.
   const texts = await page.locator(".cx-grid-group [role='gridcell']:last-child, .cx-summary-row [role='gridcell']:last-child").allTextContents();
-  expect(texts).toEqual(["Sum 6.00 · Avg 3.00", "Sum 3.00 · Avg 1.50", "Sum 5.75 · Avg 2.88", "Sum 14.75 · Avg 2.46"]);
+  expect(texts).toEqual(["Sum 6 · Avg 3", "Sum 3 · Avg 1.5", "Sum 5.75 · Avg 2.88", "Sum 14.75 · Avg 2.46"]);
 });
 
 test("runtime grouping keeps the inline source's facet counts", async ({ page }) => {

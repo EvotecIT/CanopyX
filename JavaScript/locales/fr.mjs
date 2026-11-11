@@ -96,6 +96,8 @@ const labels = Object.freeze({
   gridShowMore: "Afficher plus",
   gridNoData: "Aucune donnée",
   gridPeriodRange: "{from}–{to} : {state}",
+  gridFooterTotals: "Totaux du pied de tableau",
+  gridFooterUnavailable: "Indisponible",
   gridHealthy: "Sain",
   gridResultCount: "{count} sur {total} lignes",
   gridUnknownCount: "Nombre de résultats indisponible",

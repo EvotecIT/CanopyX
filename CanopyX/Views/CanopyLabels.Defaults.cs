@@ -106,6 +106,8 @@ public sealed partial class CanopyLabels {
         [nameof(GridShowMore)] = "Show more",
         [nameof(GridNoData)] = "No data",
         [nameof(GridPeriodRange)] = "{from}–{to}: {state}",
+        [nameof(GridFooterTotals)] = "Footer totals",
+        [nameof(GridFooterUnavailable)] = "Unavailable",
         [nameof(GridHealthy)] = "Healthy",
         [nameof(GridResultCount)] = "{count} of {total} rows",
         [nameof(GridUnknownCount)] = "Result count unavailable",

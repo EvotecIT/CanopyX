@@ -1837,6 +1837,20 @@
     "{from}–{to} : {state}",
     "{from}–{to}: {state}"
   ],
+  "GridFooterTotals": [
+    "Sumy w stopce",
+    "Fußzeilensummen",
+    "Totales del pie de tabla",
+    "Totaux du pied de tableau",
+    "Totali a piè di pagina"
+  ],
+  "GridFooterUnavailable": [
+    "Niedostępne",
+    "Nicht verfügbar",
+    "No disponible",
+    "Indisponible",
+    "Non disponibile"
+  ],
   "GridHealthy": [
     "Prawidłowy",
     "Normal",

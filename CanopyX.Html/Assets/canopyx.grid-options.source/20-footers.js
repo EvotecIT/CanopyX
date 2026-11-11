@@ -76,7 +76,7 @@
   function footerAggregateText(grid, footer, aggregate) {
     const column = grid.view.columns.find(column => column.id === aggregate.column), value = grid.footerCandidate.values[footer.id][aggregate.id];
     const format = aggregate.format || (groupCounting(aggregate.operation) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : column.format);
-    return aggregate.label + ": " + (value === undefined ? "Unavailable" : value === null ? "—" : numberText(value, grid.lang, format));
+    return aggregate.label + ": " + (value === undefined ? grid.labels.gridFooterUnavailable : value === null ? "—" : numberText(value, grid.lang, format));
   }
   function renderFooters(grid) {
     const key = JSON.stringify([grid.acceptedQuery, grid.footerCandidate.values, grid.cols.map(column => [column.id, column.renderWidth ?? column.width, column.effectivePin, column.pinOffset])]);
@@ -87,7 +87,7 @@
     if (grid.footerKey === key) return;
     grid.footerKey = key;
     const root = grid.footerRoot ||= grid.grid.appendChild(h("div", "cx-footers"));
-    root.setAttribute("role", "rowgroup"); root.setAttribute("aria-label", "Footer totals"); root.replaceChildren();
+    root.setAttribute("role", "rowgroup"); root.setAttribute("aria-label", grid.labels.gridFooterTotals); root.replaceChildren();
     for (const [footerIndex, footer] of grid.view.footers.entries()) {
       const row = h("div", "cx-footer-row"); row.setAttribute("role", "row"); row.setAttribute("data-cx-footer", footer.id); row.setAttribute("aria-rowindex", String(bodyCount + footerIndex + 1));
       row.style.width = grid.rowWidth + "px"; row.style.minWidth = "100%";

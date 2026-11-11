@@ -100,6 +100,8 @@ public sealed partial class CanopyLabels {
         GridShowMore = "Mostrar más",
         GridNoData = "Sin datos",
         GridPeriodRange = "{from}–{to}: {state}",
+        GridFooterTotals = "Totales del pie de tabla",
+        GridFooterUnavailable = "No disponible",
         GridHealthy = "Correcto",
         GridResultCount = "{count} de {total} filas",
         GridUnknownCount = "El número de resultados no está disponible",

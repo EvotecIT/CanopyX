@@ -103,17 +103,23 @@
       let query = this.queryForChange(true);
       for (const { facet, choice } of pending.values()) query = facetQuery(query, facet, choice);
       // setQuery reports its own failures (the error event); the result count is announced after a choice applies.
-      return this.setQuery(query).then(() => this.facetAnnounce(), () => {});
+      return this.facetSetQuery(query);
     },
     facetClearAll() {
       clearTimeout(this.facetTimer); this.facetPending = null;
       let query = this.queryForChange(true);
       for (const facet of this.facetColumns) query = facetQuery(query, facet, facet.kind === "list" ? [] : { low: null, high: null });
-      return this.setQuery(query).then(() => this.facetAnnounce(), () => {});
+      return this.facetSetQuery(query);
+    },
+    /** Applies a facet query and announces its result, unless a newer query replaced it before it settled. */
+    facetSetQuery(query) {
+      const result = this.setQuery(query), epoch = this.queryEpoch;
+      return result.then(() => { if (epoch === this.queryEpoch) this.facetAnnounce(); }, () => {});
     },
     facetAnnounce() {
-      const numbers = numberFormat(this.lang);
-      setText(this.facetLive, ""); setText(this.facetLive, fill(this.labels.gridFacetResult, { count: numbers.format(this.snapshot?.matched ?? 0) }));
+      // A source that does not report its matched count gets no count announcement rather than a wrong "0".
+      const matched = this.snapshot?.matched;
+      setText(this.facetLive, ""); if (typeof matched === "number") setText(this.facetLive, fill(this.labels.gridFacetResult, { count: numberFormat(this.lang).format(matched) }));
     },
     /**
      * Counts every facet (or the given ones, as a hosted list's search does) again for the accepted query. Each facet has its

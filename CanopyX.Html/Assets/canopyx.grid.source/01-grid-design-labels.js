@@ -84,6 +84,8 @@ gridFacetSearch: "Search values",
     gridShowMore: "Show more",
     gridNoData: "No data",
     gridPeriodRange: "{from}–{to}: {state}",
+    gridFooterTotals: "Footer totals",
+    gridFooterUnavailable: "Unavailable",
   }));
 
   DEFAULT_LABELS = Object.freeze(Object.assign({}, DEFAULT_LABELS, {

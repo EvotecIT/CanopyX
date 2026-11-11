@@ -136,7 +136,7 @@
   const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, GRID_OPTIONS, GRID_OPTION_GRIDS, h, setText, fill, numberFormat,
     formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridIdOrder, gridQueryRows, gridButton, gridDecorateButton,
     gridCellRenderer, gridPresenterTone, GRID_TONE_RANK, validateGridRows, validateGridPage, checkDocument, requireIdentifier, validStructuralCount, PROTOCOL,
-    gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, disposeRowHostCells, quietControls, TreeGrid, GRID_BUCKETS, gridBucketDefinition }));
+    gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, reportingAggregateSpans, disposeRowHostCells, quietControls, TreeGrid, GRID_BUCKETS, gridBucketDefinition }));
   GRID_ROWS.base.requestPage = DataGrid.prototype.requestPage;
   Object.assign(DataGrid.prototype, {
     loadRows() {

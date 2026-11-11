@@ -268,6 +268,11 @@ test("a log keeps long messages readable and the phone layout keeps essential co
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(/^\+\d+ columns?$/);
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-phone-fields')).toContainText("Category:");
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).not.toHaveAttribute("title", /Category/);
+  // The disclosure follows the context value from the content start instead of floating to the row's far edge.
+  expect(await page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields').evaluate(button => {
+    const value = button.previousElementSibling.getBoundingClientRect(), own = button.getBoundingClientRect();
+    return Math.round(own.left - value.right);
+  })).toBeLessThanOrEqual(12);
 });
 
 test("a row tone stays quiet unless the host asks for row accents", async ({ page }) => {
