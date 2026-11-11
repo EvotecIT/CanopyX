@@ -26,7 +26,8 @@
 @media print{.cx-plan-links,.cx-plan-proposal{display:none!important;}.cx-plan-print{display:block!important;}}
 .cx-plan-critical.cx-plan-milestone::before{background:var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));}
 .cx-plan .cx-tl-main{overflow:auto;}
-.cx-plan .cx-tl-tree.cx-host > .cx-grid{overflow-x:auto;}
+.cx-plan .cx-tl-tree.cx-host > .cx-grid{overflow-x:hidden;}
+.cx-plan .cx-tl-lane .cx-plan-has-next:not(.cx-plan-milestone,.cx-plan-label-outside){padding-inline-end:var(--hfx-space-3,0.75rem);}
 .cx-plan .cx-tl-canvas{padding-block-end:var(--hfx-space-3,0.75rem);}
 .cx-plan .cx-plan-milestone.cx-plan-conflict{outline:0;}
 .cx-plan .cx-plan-milestone.cx-plan-conflict::before{outline:var(--hfx-border-width,1px) dashed var(--hfx-color-status-bad-fg,light-dark(#b8292a,#f47171));outline-offset:var(--hfx-border-width,1px);}
