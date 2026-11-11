@@ -100,7 +100,6 @@
         queueMicrotask(() => this.destroyed || this.applyWidths());
       }
       FIT.applyWidths.call(this, this.fitWidths(cols, width));
-      if (this.headRow.matches(":hover")) this.syncColumnMenuRoom?.();
       // A column resize can introduce a classic horizontal scrollbar without changing the observed border box.
       this.fitHeight();
     },
@@ -137,7 +136,7 @@
         const style = getComputedStyle(this.grid), head = this.headCells?.[0] && getComputedStyle(this.headCells[0]), family = " " + style.fontFamily;
         // The formatting extension also reads the base/cue/header/padding positions in this array.
         this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
-          parseFloat(head?.paddingRight) || 12];
+          parseFloat(head?.paddingInlineStart) || 12];
         // Monospace identifiers and their secondary text are drawn in their own fonts, so they are measured in them.
         this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"), gridClassFont(this.grid, "p-pill", this.fitPill = {}), gridClassFont(this.grid, "cx-sort-priority"));
         this.fitNumericVariant = gridNumericVariant(this.grid);
@@ -145,10 +144,11 @@
       }
       const [, , headFont, pad, mono, sub, pillFont, priorityFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
-      // Reorder glyphs keep their native advance and padding. Column menus overlay the title and cost no fit width.
+      // Reorder glyphs keep their native advance and padding. A column menu replaces the trailing padding with the room
+      // canopyx.css reserves for its 24 px (phone: 44 px) button, so the menu never covers the caption.
       const move = this.view.reporting?.columnReorder ? Math.max(32, Math.ceil(text("⋮⋮", headFont, false)) + 8) : 0, target = this.host.clientWidth <= 640 ? 44 : 24;
-      const sort = query?.sort.findIndex(sort => sort.column === column.id) ?? -1;
-      const chrome = 2 * pad + 8 + move + (sort < 0 ? 0 : 22 + (query.sort.length > 1 ? text(sort + 1, priorityFont, false) + 4 : 0)) +
+      const sort = query?.sort.findIndex(sort => sort.column === column.id) ?? -1, end = this.tools.columnMenus === false ? pad : target > 24 ? 56 : 32;
+      const chrome = pad + end + 8 + move + (sort < 0 ? 0 : 22 + (query.sort.length > 1 ? text(sort + 1, priorityFont, false) + 4 : 0)) +
         (gridColumnFiltered(query, column.id) ? target : 0) + (first && this.selectionControls ? target + 2 : 0);
       const title = text(column.title, headFont, false), head = Math.ceil(Math.max(24, title) + chrome);
       const words = column.title.trim().split(/\s+/);
@@ -156,7 +156,6 @@
       for (let split = 1; split < words.length; split++) balanced = Math.min(balanced,
         Math.max(text(words.slice(0, split).join(" "), headFont, false), text(words.slice(split).join(" "), headFont, false)));
       column.headWrapNeed = Math.ceil(Math.max(24, balanced) + chrome);
-      // Neither the caption nor body measurements reserve space for the overlaid menu.
       let values = 0, sampled = 0;
       // Presenter-aware estimates of rendered values, without touching the DOM.
       // Wrapping and complete-text columns keep a declared width: they show more lines or a "show more" control instead.
