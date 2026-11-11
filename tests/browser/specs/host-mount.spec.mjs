@@ -57,6 +57,11 @@ test("options configured before the page loads reach the fragment the runtime mo
 });
 
 test("a deferred runtime leaves room for a deferred host script to configure the view", async ({ page }) => {
+  // Firefox can withhold navigation entries until loading finishes, while deferred scripts are still running.
+  await page.addInitScript(() => {
+    const entries = performance.getEntriesByType.bind(performance);
+    performance.getEntriesByType = type => type === "navigation" ? [] : entries(type);
+  });
   // The page SaveHtmlBundle writes loads canopyx.js with defer; a host adds its own deferred script after it.
   const { script, style } = runtimeAssets();
   const html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Deferred</title><style>" + style + "</style>"
@@ -70,6 +75,36 @@ test("a deferred runtime leaves room for a deferred host script to configure the
   await page.waitForSelector("[data-cx-ready]");
   await expect(row(page, "r2")).toHaveAttribute("aria-selected", "true");
   await expect(row(page, "r2").locator('[aria-colindex="2"]')).toHaveText("state: late");
+});
+
+test("a late runtime mounts before full load when legacy performance timing is disabled", async ({ page }) => {
+  const { script, style } = runtimeAssets();
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  // Firefox's dom.enable_performance=false leaves legacy timing at zero while navigation entries remain available.
+  await page.addInitScript(() => Object.defineProperty(performance, "timing", { value: { domContentLoadedEventStart: 0 } }));
+  let finishImage;
+  const imagePending = new Promise(resolve => { finishImage = resolve; });
+  await page.route("https://canopyx.test/pending-image", async route => {
+    await imagePending;
+    await route.fulfill({ status: 204, body: "" });
+  });
+  const html = '<!doctype html><html lang="en"><head><title>Late runtime</title><style>' + style
+    + '</style></head><body><img src="/pending-image" alt=""><div class="cx-host" data-canopyx-host>'
+    + '<script type="application/json" class="cx-config">' + JSON.stringify(view) + '</script></div></body></html>';
+  await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: html }));
+  try {
+    await page.goto("https://canopyx.test/", { waitUntil: "domcontentloaded" });
+    expect(await page.evaluate(() => document.readyState)).toBe("interactive");
+    await page.addScriptTag({ content: script });
+    await expect(row(page, "group")).toContainText("Group");
+    await page.evaluate(() => { window.firstMountedView = document.querySelector(".cx-host").canopyx; });
+  } finally {
+    finishImage();
+    await page.waitForLoadState("load");
+  }
+  expect(await page.evaluate(() => document.querySelector(".cx-host").canopyx === window.firstMountedView)).toBe(true);
+  expect(errors).toEqual([]);
 });
 
 test("a newer fragment wins over one that is still being looked up", async ({ page }) => {
