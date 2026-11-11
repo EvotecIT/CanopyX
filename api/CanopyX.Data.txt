@@ -560,6 +560,7 @@ CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxExportRows { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxFilterDepth { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxFilterGroups { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxFilterTerms { get; set; }
+CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxFilterValues { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxGroups { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxInValues { get; set; }
 CanopyX.Data.CanopyRemoteLimits.System.Int32 MaxOperandLength { get; set; }

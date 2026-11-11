@@ -12,3 +12,4 @@
 - Address fragment and page hosts by their view id, or override it with `CanopyHtmlOptions.HostId`.
 - Name each field in multi-field linked-filter chips while keeping one removable chip per source and honoring explicit labels.
 - Read canonical HtmlForgeX surface, border and text roles first, with legacy role names as fallbacks.
+- Add `CanopyRemoteLimits.MaxFilterValues` (default 1,000 operands per query) and lower the `MaxSelectedIds` default from 10,000 to 1,000, so a default query stays within SQL Server's 2,100 parameters when a provider expands lists. Migration: raise both when your provider sends a list as one parameter.

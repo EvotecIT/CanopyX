@@ -88,6 +88,10 @@ public sealed class RequestParserTests {
         var limits = new CanopyRemoteLimits { MaxInValues = 10 };
         var eleven = string.Join(",", Enumerable.Range(0, 11).Select(i => "\"v" + i + "\""));
         Assert.Equal(CanopyRequestError.LimitExceeded, Rejects("{\"filters\":[{\"column\":\"name\",\"operator\":\"in\",\"values\":[" + eleven + "]}]}", limits).Error);
+        // Operands add up across predicates: two lists of 600 stay within each list's bound but not the query's default of 1,000.
+        var list = "{\"column\":\"name\",\"operator\":\"in\",\"values\":[" + string.Join(",", Enumerable.Range(0, 600).Select(i => "\"v" + i + "\"")) + "]}";
+        CanopyRequestParser.ParseQuery("{\"filters\":[" + list + "]}", Schema);
+        Assert.Equal(CanopyRequestError.LimitExceeded, Rejects("{\"filters\":[" + list + "," + list + "]}").Error);
     }
 
     [Fact]

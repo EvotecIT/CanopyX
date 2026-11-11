@@ -319,12 +319,13 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 | `MaxFilterTerms` (flat and nested predicates) | 64 | 64 |
 | `MaxFilterGroups` | 64 | 64 |
 | `MaxInValues` | 1,000 | 1,000 |
+| `MaxFilterValues` (operands of all predicates in one query) | 1,000 | 64,000 |
 | `MaxValueListSize` | 200 | 200 |
 | `MaxSearchLength` | 1,024 | 16,384 |
 | `MaxSearchTerms` (all-words search; repeated words count once) | 16 | — |
 | `MaxOperandLength` | 4,096 | — |
 | `MaxRequestBytes` | 1 MiB | — (JSON nesting is also capped at 64) |
-| `MaxSelectedIds` (selected exports, exclusions) | 10,000 | 10,000 |
+| `MaxSelectedIds` (selected exports, exclusions) | 1,000 | 10,000 |
 | `MaxGroups` (across all grouping levels) | 10,000 | 10,000 |
 | `MaxCommitRows` | 100 | — |
 | `MaxCommitTextLength` (one written text value) | 65,536 | — |
@@ -850,9 +851,11 @@ Notes:
   host-normalized text with suitable indexes, or a host provider that groups and counts indexed canonical keys in the store.
   Nonempty numeric value-list search also transfers every distinct numeric group to search its canonical text; retained
   values/counts stay proportional to the requested limit. Empty numeric search retains the database-limited prefix path.
-- **Large parameter lists.** Selected exports send up to 10,000 identities and a membership filter up to 1,000 values as
-  one parameterized collection. On SQL Server, whose limit is 2,100 parameters per command, configure EF Core to send
-  parameterized collections as one JSON parameter, or lower `MaxSelectedIds` and `MaxInValues`.
+- **Large parameter lists.** A selected export sends its identities, and each membership filter its values, as one
+  parameterized collection. Some providers expand a collection into a parameter per element (EF Core can, depending on
+  version and configuration), and SQL Server allows 2,100 parameters per command. The defaults (`MaxFilterValues` and
+  `MaxSelectedIds` at 1,000 each) keep a query within that limit. When your provider sends a collection as one parameter
+  (EF Core's JSON or `OPENJSON` translation), you can raise them up to 64,000 operands and 10,000 identities.
 - **Grouped views** read the group counts with each page request (one grouped scan per level over each prefix of the
   grouping columns, with the aggregate a level orders by; summaries and pages build the same group tree, so they agree
   also under case-insensitive collations) and then fetch the window: up to eight innermost groups slice by slice through
