@@ -36,12 +36,13 @@ test("a task list opens on its hub with the host's states, and Save and return b
   await expect(task(page, "licence").locator(".cx-flow-task-summary")).toHaveText("Activated");
 });
 
-test("a task reached with the keyboard stays clear of the sticky action bar", async ({ page }) => {
+test("a task reached with the keyboard stays clear of the sticky action bar", async ({ page, browserName }) => {
   await page.setViewportSize({ width: 600, height: 420 });
   await openFlow(page, "flow-setup-tasks.html");
   await task(page, "schedules").locator("button").focus();
   await page.evaluate(() => scrollTo(0, 0));
-  await page.keyboard.press("Tab");
+  // WebKit on macOS reaches buttons with Alt+Tab, as Safari does without Full Keyboard Access.
+  await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
   const open = task(page, "branding").locator("button");
   await expect(open).toBeFocused();
   const [button, bar] = await Promise.all([open.boundingBox(), page.locator(".cx-flow-actions").boundingBox()]);

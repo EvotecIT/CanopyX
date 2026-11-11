@@ -66,6 +66,14 @@ export function settleOverlayMotion(overlay) {
 }
 
 /** Opens a toolbar control through its desktop button or the phone overflow. */
+// A phone toolbar sheet (More) dims the page, so a tap outside it only closes it; tests that go on to the page close it first.
+export async function closeGridOverflow(page) {
+  const overflow = page.locator('.cx-grid-overflow');
+  if (!await overflow.count() || !await overflow.first().evaluate(element => element.open)) return;
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.querySelector('.cx-grid-overflow')?.open);
+}
+
 export async function openGridControl(page, kind) {
   const control = page.locator('.cx-grid-' + kind), summary = control.locator(':scope > summary');
   // Data readiness can precede the observer that moves phone controls into More.

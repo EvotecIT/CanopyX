@@ -4,7 +4,7 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { api } from "./calendar-support.mjs";
 import { calendarRangePage, calendarRow } from "./calendar-range-support.mjs";
-import { nextFrames, openGridControl } from "./support.mjs";
+import { closeGridOverflow, nextFrames, openGridControl } from "./support.mjs";
 
 let server, origin, pages = new Map(), sequence = 0;
 test.beforeAll(async () => {
@@ -197,6 +197,7 @@ test("the iCalendar Export menu shows the finite-limit error without downloading
     if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, testInfo.project.name + "-bounded-export-menu-" + width + ".png") });
     await button.press("Escape");
     await expect(panel).toBeHidden();
+    await closeGridOverflow(page);
     await page.getByRole("button", { name: "Next period", exact: true }).click();
     await expect(page.getByRole("heading", { name: "May 2021", exact: true })).toBeVisible();
     expect(errors).toEqual([]);
@@ -381,7 +382,7 @@ test("the Export menu reports unrepresentable zoned data and remains dismissible
     await expect(button).toBeEnabled(); expect(downloads).toEqual([]);
     await testInfo.attach("representability-menu-" + id, { body: JSON.stringify({ width, downloads, errors, status: await page.locator(".cx-grid-export .cx-grid-delivery-status").innerText() }), contentType: "application/json" });
     if (process.env.CANOPYX_EVIDENCE) await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, testInfo.project.name + "-representability-menu-" + id + "-" + width + ".png") });
-    await button.press("Escape"); await expect(panel).toBeHidden();
+    await button.press("Escape"); await expect(panel).toBeHidden(); await closeGridOverflow(page);
     const heading = page.getByRole("heading").first(), previous = await heading.innerText();
     await page.getByRole("button", { name: "Next period", exact: true }).click(); await expect(heading).not.toHaveText(previous);
     expect(errors).toEqual([]);

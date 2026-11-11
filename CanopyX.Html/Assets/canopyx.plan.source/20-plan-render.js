@@ -65,8 +65,11 @@
             // A label beside a visible bar stays inside the scrolled view; one that would cross its edge stays in its bar.
             const pane = this.tlMain.getBoundingClientRect(), from = this.calRtl ? pane.right - this.tlMain.clientWidth : pane.left, to = from + this.tlMain.clientWidth;
             const bar = element.getBoundingClientRect(), label = title.getBoundingClientRect();
-            if (outside && !planMilestone(this, task) && bar.left >= from && bar.right <= to && (label.left < from || label.right > to))
-              element.classList.remove("cx-plan-label-outside", "cx-plan-label-before");
+            if (outside && bar.left >= from && bar.right <= to && (label.left < from || label.right > to)) {
+              // A milestone has no bar to hold its label, so the label moves to the milestone's other side instead.
+              if (planMilestone(this, task)) element.classList.toggle("cx-plan-label-before");
+              else element.classList.remove("cx-plan-label-outside", "cx-plan-label-before");
+            }
           }
           if (!spec.baselineStart || !spec.baselineEnd) continue;
           const from = planInstant(task.row.cells[spec.baselineStart]), to = planInstant(task.row.cells[spec.baselineEnd]);
