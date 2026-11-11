@@ -6,7 +6,7 @@
 - Add `tone` to record actions: a prominent action's footer button is `primary` (default), `neutral` (secondary) or `danger`, which stands apart at the footer's end and is marked in the menu.
 - Add `setBadge(id, badge)` to tabs, for counts that change while the page is open.
 - Read footer totals as group rows do ("Average 98.0%"); a hidden column's total names the column ("Success rate, average 98.0%").
-- Stack an identifier's secondary text under its value in two-line rows and the drawer, as relative times do.
+- Add `stack` to the identifier presenter (C# `Identifier(stack: true)`): rows that size to their content put the secondary text under the value, as relative times do. The record drawer always does; fixed-height rows keep it beside the value.
 - Hide the actions column's clipped header text; the column keeps its accessible name.
 - Keep record panel lists as tables while the drawer has room for their columns, measured in the drawer rather than the page, and drop a field's title when it repeats its section's heading.
 
