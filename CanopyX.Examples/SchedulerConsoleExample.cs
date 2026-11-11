@@ -209,7 +209,7 @@ internal static class SchedulerConsoleExample {
 
         var summary = new CanopyGridFooter("all", "All matching runs");
         summary.Aggregates.Add(new CanopyGridAggregate("runs", "id", CanopyGridAggregateOperation.Count, "Runs"));
-        summary.Aggregates.Add(new CanopyGridAggregate("rate", "ok", CanopyGridAggregateOperation.Average, "average", new CanopyGridNumberFormat(1, 1, suffix: " %")));
+        summary.Aggregates.Add(new CanopyGridAggregate("rate", "ok", CanopyGridAggregateOperation.Average, "average", new CanopyGridNumberFormat(1, 1, suffix: "%")));
         summary.Aggregates.Add(new CanopyGridAggregate("failures", "failed", CanopyGridAggregateOperation.Sum, "total"));
         summary.Aggregates.Add(new CanopyGridAggregate("average", "duration", CanopyGridAggregateOperation.Average, "Avg", Seconds));
         summary.Aggregates.Add(new CanopyGridAggregate("median", "duration", CanopyGridAggregateOperation.Median, "Median", Seconds));

@@ -147,13 +147,11 @@
     const list = [...jobs.values()], by = status => list.filter(job => job.status === status).length;
     return { all: list.length, running: by("Running"), paused: by("Paused"), failed: list.filter(job => job.failed24 > 0).length, readonly: by("Read-only"), errors: by("Error") };
   }
-  function badge(tab, text) {
-    for (const element of document.querySelectorAll('#sc-sections [data-tab-id="' + tab + '"] [data-hfx-part="badge"]')) element.textContent = text;
-  }
+  const sections = CanopyX.tabs("#sc-sections");
   function refreshCounts() {
     const now = counts();
     for (const [id, count] of Object.entries(now)) { const element = document.querySelector('[data-sc-count="' + id + '"]'); if (element) element.textContent = count; }
-    badge("jobs", String(now.all)); badge("running", String(running.size));
+    sections.setBadge("jobs", now.all); sections.setBadge("running", running.size);
   }
 
   // ---------- the summary cards filter the jobs grid ----------
@@ -170,7 +168,7 @@
   for (const card of cards) card.addEventListener("click", async () => {
     const id = card.dataset.scCard, active = card.getAttribute("aria-pressed") === "true" && id !== "all" ? "all" : id;
     pressCard(active);
-    await CanopyX.tabs("#sc-sections").select("jobs");
+    await sections.select("jobs");
     const filter = filters[active];
     await api("sc-jobs").setExternalFilter("summary", filter && { ...filter, sourceLabel: "Summary" });
   });
@@ -227,12 +225,6 @@
   }
 
   // ---------- proposals from the jobs grid and its record drawer ----------
-  const refused = new Map();
-  async function answer(action, id, signal) {
-    const result = await decide(action, id, signal);
-    if (result && result.accepted === false) refused.set(id, result.message); else refused.delete(id);
-    return result;
-  }
   async function decide(action, id, signal) {
     await wait(signal);
     const job = jobs.get(id);
@@ -255,20 +247,20 @@
     refreshCounts();
     return true;
   }
-  // Record actions go through the same proposal path as the row buttons; a refusal shows in the drawer.
+  // Record actions go through the same proposal path as the row buttons; a refusal's message shows in the drawer.
   const status = context => value(context.record.cells?.status);
   const propose = action => async context => {
     const result = await api("sc-jobs").requestRowAction(context.record.id, action);
-    if (!result || result.accepted === false) throw new Error(refused.get(context.record.id) || "The scheduler did not carry this out.");
+    if (!result.accepted) throw new Error(result.message || "The scheduler did not carry this out.");
   };
   CanopyX.configure("sc-jobs", {
-    onRowAction: (proposal, request) => answer(proposal.action, proposal.id, request.signal),
+    onRowAction: (proposal, request) => decide(proposal.action, proposal.id, request.signal),
     recordActions: [
       { label: "Run now", prominent: true, visible: context => !["Running", "Paused", "Read-only"].includes(status(context)), run: propose("run") },
       { label: "Resume", prominent: true, visible: context => status(context) === "Paused", run: propose("resume") },
       { label: "Pause", visible: context => ["Scheduled", "Running", "Error"].includes(status(context)), run: propose("pause") },
-      { label: "Edit", visible: context => status(context) !== "Read-only", run: propose("edit") },
-      { label: "Delete", visible: context => !["Running", "Read-only"].includes(status(context)), run: propose("delete") }
+      { label: "Edit", prominent: true, tone: "neutral", visible: context => status(context) !== "Read-only", run: propose("edit") },
+      { label: "Delete", prominent: true, tone: "danger", visible: context => !["Running", "Read-only"].includes(status(context)), run: propose("delete") }
     ]
   });
 
