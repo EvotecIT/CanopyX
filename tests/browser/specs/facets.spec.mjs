@@ -251,15 +251,24 @@ test.describe("facet panel", () => {
     await expect.poll(() => api(page, "api => api.getQuery().filters")).toEqual([]);
   });
 
-  test("toolbar facets remain usable on a phone", async ({ page }) => {
+  test("toolbar facets fold into one titled sheet on a phone", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: inlinePage({ columns: ["city", "team"], position: "toolbar" }) }));
     await page.goto("https://canopyx.test/"); await page.waitForSelector("[data-cx-ready]");
-    const team = page.locator(".cx-grid-facet").filter({ hasText: "Team" });
-    await team.locator("summary").click(); await team.getByRole("checkbox", { name: /^Red,/ }).check();
+    await expect(page.locator(".cx-grid-facet")).toHaveCount(2);
+    await expect(page.locator(".cx-grid-facet:visible")).toHaveCount(0);
+    const open = page.getByRole("button", { name: "Refine" });
+    await open.click();
+    const sheet = page.getByRole("dialog", { name: "Refine" });
+    await expect(sheet.getByRole("heading", { name: "Refine" })).toBeVisible();
+    await sheet.locator('.cx-facet[data-cx-facet="team"]').getByRole("checkbox", { name: /^Red,/ }).check();
     await expect.poll(() => api(page, "api => api.getPaging().matched")).toBe(20);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    await page.keyboard.press("Escape"); await expect(team.locator("summary")).toBeFocused();
+    await page.keyboard.press("Escape"); await expect(sheet).toHaveCount(0); await expect(open).toBeFocused();
+    // The sections go back to their toolbar menus, which return at a wider width.
+    await page.setViewportSize({ width: 1024, height: 844 });
+    await expect(page.locator(".cx-grid-facet:visible")).toHaveCount(2);
+    await expect(page.locator('.cx-grid-facet .cx-facet[data-cx-facet="team"]')).toHaveCount(1);
   });
 
   test("an inline list's search filters as it draws, and clearing it brings every value back", async ({ page }) => {

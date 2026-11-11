@@ -180,7 +180,11 @@
       const panel = this.facetPanel, options = this.facetOptions;
       if (!panel || this.facetSheet) return;
       if (options.position === "toolbar" && !options.target) {
-        panel.hidden = true; this.facetSheetButton.hidden = this.opts.toolbar !== false; return;
+        // On a phone the row of facet menus folds into the one sheet button, whose sheet holds every facet.
+        const folded = this.opts.toolbar === false || this.host.clientWidth <= 640;
+        panel.hidden = true; this.facetSheetButton.hidden = !folded;
+        for (const control of this.facetToolbarControls || []) { if (folded) control.details.open = false; control.details.hidden = folded; }
+        return;
       }
       const width = (this.facetFrame || this.host).clientWidth, fits = options.target ? true : options.position === "side" ? width >= options.width + 480 : width > 640;
       this.facetFits = fits;
@@ -215,9 +219,13 @@
       const clear = this.facetClear, clearHome = clear.parentNode, clearNext = clear.nextSibling;
       done.classList.add("cx-btn"); head.append(title, clear, done); sheet.append(head, panel);
       panel.hidden = false; panel.classList.remove("cx-facets-closed"); panel.classList.add("cx-facets-in-sheet");
+      // Toolbar facets lend their sections to the sheet and take them back when it closes.
+      const borrowed = this.facetToolbarControls || [], list = panel.querySelector(".cx-facets-list");
+      for (const control of borrowed) list.appendChild(control.section.section);
       document.body.appendChild(sheet); this.facetTheme.refresh();
       sheet.addEventListener("close", () => {
         if (this.facetPanel !== panel) { sheet.remove(); return; }   // The grid was destroyed meanwhile; the panel is gone.
+        for (const control of borrowed) control.panel.appendChild(control.section.section);
         panel.classList.remove("cx-facets-in-sheet"); home?.insertBefore(panel, next); this.facetTheme.refresh(); clearHome.insertBefore(clear, clearNext);
         sheet.remove(); this.facetSheet = null; this.facetFit();
         if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
