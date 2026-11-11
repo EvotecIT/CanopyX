@@ -221,7 +221,7 @@
     {
       "name": "activity",
       "label": "relative time and log cells",
-      "version": "d388d5c517fc7712",
+      "version": "e4e9b4c2c8a7a579",
       "script": "canopyx-activity.js",
       "style": "canopyx-activity.css",
       "runtimes": [
@@ -1261,7 +1261,7 @@
     {
       "name": "row-actions",
       "label": "row actions",
-      "version": "90ee9b6f28abe638",
+      "version": "9acda52ef80c061b",
       "script": "canopyx-row-actions.js",
       "style": "canopyx-row-actions.css",
       "runtimes": [
