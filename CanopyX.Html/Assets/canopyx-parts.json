@@ -993,7 +993,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "afdb6d3e9a4f81c8",
+      "version": "8e6e9e4f31a2973c",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

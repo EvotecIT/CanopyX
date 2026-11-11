@@ -63,15 +63,21 @@
   // Rows are a table while the collection has room for its columns and cards only when it is genuinely too narrow. The
   // width is the collection's own, measured once the drawer lays it out and again when it resizes, never the page's.
   function recordFit(ctx, field, list, body) {
-    let cards = null, part = null;
+    let cards = null, part = null, frame = 0;
+    // The rows are swapped in the next frame: replacing the observed body while its notification is delivered resizes
+    // it again in the same frame, which browsers report as an undelivered ResizeObserver loop.
     const observer = new ResizeObserver(([entry]) => {
       const width = entry.contentRect.width, narrow = width < Math.max(360, list.columns.length * 112);
       if (!width || narrow === cards) return;
-      cards = narrow; part?.abort(); part = new AbortController(); body.replaceChildren();
-      const inner = { ...ctx, signal: AbortSignal.any([ctx.signal, part.signal]) };
-      if (narrow) recordCards(inner, field, list, body); else recordNested(inner, field, list, body);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (narrow === cards || ctx.signal.aborted) return;
+        cards = narrow; part?.abort(); part = new AbortController(); body.replaceChildren();
+        const inner = { ...ctx, signal: AbortSignal.any([ctx.signal, part.signal]) };
+        if (narrow) recordCards(inner, field, list, body); else recordNested(inner, field, list, body);
+      });
     });
-    observer.observe(body); recordOnDispose(ctx.signal, () => { observer.disconnect(); part?.abort(); });
+    observer.observe(body); recordOnDispose(ctx.signal, () => { observer.disconnect(); cancelAnimationFrame(frame); part?.abort(); });
   }
 
   function recordNested(ctx, field, list, body) {

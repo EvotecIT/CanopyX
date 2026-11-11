@@ -13,6 +13,7 @@ internal static class RowActionsExample {
     private const string Script = """
 <style>
 .jobs-log{box-sizing:border-box;margin:0;padding:10px 16px 0;font:13px/1.4 Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;color:CanvasText}
+body{background:Canvas;color:CanvasText}
 body.cx-page > .cx-main > .cx-host{height:calc(100vh - 40px)}
 </style>
 <script>
