@@ -303,7 +303,7 @@ public sealed class PivotTests {
         var pivot = new CanopyGridPivot { Rows = { new("amount", bucket: CanopyBucket.FixedWidth(10)) }, Columns = { new("year") }, Values = { "Sum" } };
         var result = CanopyPivot.Compute(view, pivot, Rows(new[] { new Input("R", "T", "X", "Q", 11), new("R", "T", "Y", "Q", 12) }));
         var table = ParseTable(CanopyStaticHtml.RenderGridPivot(view, result));
-        Assert.Contains("[10, 20)", table.Value);
+        Assert.Contains("10 – 20", table.Value);
         var values = table.Element("tbody")!.Elements("tr").First().Elements("td").Select(cell => cell.Value).ToArray();
         Assert.Equal(new[] { (11d / 23).ToString("P2", CultureInfo.InvariantCulture).Replace(" %", "%"), (12d / 23).ToString("P2", CultureInfo.InvariantCulture).Replace(" %", "%"), 1d.ToString("P2", CultureInfo.InvariantCulture).Replace(" %", "%") }, values);
         var empty = CanopyPivot.Compute(View(), Definition(), Array.Empty<CanopyGridRow>());
