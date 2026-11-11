@@ -75,8 +75,8 @@
         bar.style.width=Math.min(100,Math.max(0,raw/maximum*100))+"%";toneColors(bar,toneOf(tone));track.appendChild(bar);box.append(track,document.createTextNode(text));
       } else if(options.kind==="identifier") {
         const secondary=options.secondaryColumn?cellText(row.cells[options.secondaryColumn],grid.columns.find(item=>item.id===options.secondaryColumn),grid.fmt):object&&cell.secondary;
-        // Two-line rows (automatic heights and the drawer) put the secondary text under the value, as relative times do.
-        const stack=secondary&&(record||complete||grid.autoRows)&&add("","p-stack");
+        // The drawer, and two-line rows of a column that asks with stack, put the secondary text under the value.
+        const stack=secondary&&(record||options.stack&&(complete||grid.autoRows))&&add("","p-stack");
         for(const item of [add(text,options.mono?"p-mono":"cx-presenter-text"),secondary&&add(secondary,"p-sub")])if(item&&stack)stack.appendChild(item);
       } else if(options.kind==="tags"||options.kind==="list") {
         const values=text.split(options.separator).map(item=>item.trim()).filter(Boolean),limit=options.kind==="tags"?3:options.limit||3;

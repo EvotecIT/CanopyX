@@ -63,7 +63,7 @@ internal static class SchedulerConsoleExample {
             Live = new CanopyGridLive { Flash = true },
             FacetPanel = new CanopyFacetPanel { Position = CanopyFacetPosition.Toolbar }.Add("type").Add("status").Add("group")
         };
-        view.Columns.Add(new CanopyColumn("name", "Job") { Sortable = true, RowHeader = true, Wrap = true, Presenter = CanopyGridPresenter.Identifier(), Sizing = CanopyColumnSizing.Flex(1, 200, 420, preferredWidth: 260) });
+        view.Columns.Add(new CanopyColumn("name", "Job") { Sortable = true, RowHeader = true, Wrap = true, Presenter = CanopyGridPresenter.Identifier(stack: true), Sizing = CanopyColumnSizing.Flex(1, 200, 420, preferredWidth: 260) });
         view.Columns.Add(new CanopyColumn("group", "Group") { Sortable = true, Hidden = true });
         view.Query = new CanopyGridQuery("sc-jobs");
         view.Query.Sort.Add(new CanopyGridSort("name"));
@@ -164,7 +164,7 @@ internal static class SchedulerConsoleExample {
         var view = new CanopyDataGridView("sc-running", "Running jobs") {
             Noun = "running jobs", Density = CanopyGridDensity.Comfortable, Search = false, Live = new CanopyGridLive { StableOrder = false }
         };
-        view.Columns.Add(new CanopyColumn("name", "Job") { RowHeader = true, Presenter = CanopyGridPresenter.Identifier(), Sizing = CanopyColumnSizing.Flex(1, 200, 420, preferredWidth: 260) });
+        view.Columns.Add(new CanopyColumn("name", "Job") { RowHeader = true, Presenter = CanopyGridPresenter.Identifier(stack: true), Sizing = CanopyColumnSizing.Flex(1, 200, 420, preferredWidth: 260) });
         view.Columns.Add(new CanopyColumn("started", "Started") { Kind = CanopyColumnKind.DateTime, Presenter = CanopyGridPresenter.RelativeTime(), Sizing = CanopyColumnSizing.Preferred(150) });
         view.Columns.Add(new CanopyColumn("progress", "Progress") { Kind = CanopyColumnKind.Number, Presenter = CanopyGridPresenter.Progress(), Sizing = CanopyColumnSizing.Preferred(180) });
         view.Columns.Add(new CanopyColumn("step", "Step") { Sizing = CanopyColumnSizing.Flex(1, 160, 360, preferredWidth: 220), ResponsivePriority = 3 });
@@ -194,7 +194,7 @@ internal static class SchedulerConsoleExample {
         };
         view.Query.Sort.Add(new CanopyGridSort("started", descending: true));
         view.Columns.Add(new CanopyColumn("id", "Run") { Sortable = true, Presenter = CanopyGridPresenter.Identifier(mono: true), Sizing = CanopyColumnSizing.Preferred(116) });
-        view.Columns.Add(new CanopyColumn("job", "Job") { Sortable = true, RowHeader = true, Presenter = CanopyGridPresenter.Identifier(), Sizing = CanopyColumnSizing.Flex(1, 190, 400, preferredWidth: 240) });
+        view.Columns.Add(new CanopyColumn("job", "Job") { Sortable = true, RowHeader = true, Presenter = CanopyGridPresenter.Identifier(stack: true), Sizing = CanopyColumnSizing.Flex(1, 190, 400, preferredWidth: 240) });
         view.Columns.Add(new CanopyColumn("group", "Group") { Sortable = true, Hidden = true });
         view.Columns.Add(new CanopyColumn("outcome", "Outcome") {
             Sortable = true, Sizing = CanopyColumnSizing.Preferred(132),

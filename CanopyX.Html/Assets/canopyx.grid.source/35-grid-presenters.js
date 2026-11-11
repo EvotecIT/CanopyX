@@ -18,7 +18,7 @@
         ["boolean","list","tags","link"].includes(options.kind) && column.kind!=="text") invalid();
     if (["sparklineArea","sparklineColumns","sparklineWinLoss","bullet"].includes(options.kind) && column.kind !== "number" ||
         options.kind === "bullet" && (typeof options.target !== "number" || !Number.isFinite(options.target) || Math.abs(options.target) > Number.MAX_SAFE_INTEGER)) invalid();
-    for (const name of ["newWindow","inverted","mono","higherIsGood","beforeAfter"]) if (options[name]!==undefined && typeof options[name]!=="boolean") invalid();
+    for (const name of ["newWindow","inverted","mono","stack","higherIsGood","beforeAfter"]) if (options[name]!==undefined && typeof options[name]!=="boolean") invalid();
     for (const name of ["hrefColumn","deltaColumn","secondaryColumn"]) if (options[name]!==undefined) {
       const target=columns.find(item=>item.id===options[name]);
       if (!target || name==="hrefColumn"&&target.kind!=="text" || name==="deltaColumn"&&target.kind!=="number") invalid();

@@ -10,6 +10,8 @@ public sealed partial class CanopyGridPresenter {
     public bool Inverted { get; private set; }
     /// <summary>Gets whether identifier or expanded text uses the monospace font.</summary>
     public bool Mono { get; private set; }
+    /// <summary>Gets whether identifier secondary text sits under the value in rows that size to their content.</summary>
+    public bool Stack { get; private set; }
     /// <summary>Gets the numeric column supplying a change delta.</summary>
     public string? DeltaColumn { get; private set; }
     /// <summary>Gets whether an increasing change is good.</summary>
@@ -89,9 +91,10 @@ public sealed partial class CanopyGridPresenter {
     /// <summary>Creates primary and optional secondary identifier text.</summary>
     /// <param name="secondaryColumn">Optional declared column supplying secondary text; otherwise uses cell metadata.</param>
     /// <param name="mono">Whether the primary text is monospace.</param>
-    public static CanopyGridPresenter Identifier(string? secondaryColumn = null, bool mono = false) {
+    /// <param name="stack">Whether rows that size to their content put the secondary text under the value; fixed-height rows keep it beside.</param>
+    public static CanopyGridPresenter Identifier(string? secondaryColumn = null, bool mono = false, bool stack = false) {
         if (secondaryColumn != null) CanopyIdentifiers.Require(secondaryColumn, nameof(secondaryColumn));
-        return new CanopyGridPresenter(CanopyGridPresenterKind.Identifier) { SecondaryColumn = secondaryColumn, Mono = mono };
+        return new CanopyGridPresenter(CanopyGridPresenterKind.Identifier) { SecondaryColumn = secondaryColumn, Mono = mono, Stack = stack };
     }
     /// <summary>Creates at most three outlined tags with a complete-text control.</summary>
     /// <param name="separator">Nonempty literal separator, at most sixteen code units.</param>
@@ -152,6 +155,7 @@ public sealed partial class CanopyGridPresenter {
         if (BeforeAfterValues) writer.Property("beforeAfter", true);
         if (Inverted) writer.Property("inverted", true);
         if (Mono) writer.Property("mono", true);
+        if (Stack) writer.Property("stack", true);
         if (HigherIsGood) writer.Property("higherIsGood", true);
         if (MarkLast) writer.Property("mark", "last");
         writer.OptionalProperty("deltaColumn", DeltaColumn).OptionalProperty("secondaryColumn", SecondaryColumn);

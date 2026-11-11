@@ -1621,7 +1621,8 @@ export type GridPresenter=|{
 |{
   readonly kind:"identifier";
   readonly secondaryColumn?:string;
-  readonly mono?:boolean
+  readonly mono?:boolean;
+  readonly stack?:boolean
 }
 |{
   readonly kind:"tags";

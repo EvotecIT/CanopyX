@@ -1925,6 +1925,9 @@
             },
             "mono": {
               "type": "boolean"
+            },
+            "stack": {
+              "type": "boolean"
             }
           }
         },

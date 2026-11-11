@@ -138,7 +138,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "97d78871f87491bc",
+      "version": "6ce031472945ca7c",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"

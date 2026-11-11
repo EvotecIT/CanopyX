@@ -808,7 +808,7 @@ Cell objects optionally include `secondary` and up to 4096 ordered `series` peri
 | `statusStrip` | None | One segment per period, shrinking to two pixels before adjacent periods merge into worst-state buckets. Tooltips name the original period or merged range. |
 | `sparklineBars` / `sparklineLine` | Optional `thresholds`, paired `minimum` / `scaleMaximum`, `higherIsGood`, and `mark` | Compact history with a per-cell or declared shared scale and a marked worst or last point. |
 | `sparklineBars` with `slots: true` | As `sparklineBars` | A run history: one slot per period, keeping the most recent periods that fit the column. A period without a `value` or `state` draws a faint baseline; a run in the `danger` tone stands at least two thirds tall; height follows the value (for example the duration) and the tone comes from `thresholds`, the tones map or the period's `tone`. Slots mark no point. |
-| `identifier` | Optional `secondaryColumn` and `mono` | Identifier text with secondary text from another column or the cell's `secondary` field. |
+| `identifier` | Optional `secondaryColumn`, `mono` and `stack` | Identifier text with secondary text from another column or the cell's `secondary` field. The record drawer puts the secondary text under the value; with `stack`, rows that size to their content do too, while fixed-height rows keep it beside the value. |
 | `tags` | Literal `separator` | Up to three tags, then a `+N` complete-text action. |
 | `missing` | None | Empty values use a muted em dash. |
 | `list` | Required literal `separator`, 1–16 code units, and integer `limit`, 1–16 | Text column with a bounded delimiter-separated preview and a complete-text dialog when truncated. |

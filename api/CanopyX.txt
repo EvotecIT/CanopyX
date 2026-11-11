@@ -1659,6 +1659,7 @@ CanopyX.CanopyGridPresenter.System.Boolean NewWindow { get; }
 CanopyX.CanopyGridPresenter.System.Boolean Pill { get; }
 CanopyX.CanopyGridPresenter.System.Boolean Slots { get; }
 CanopyX.CanopyGridPresenter.System.Boolean SplitLines { get; }
+CanopyX.CanopyGridPresenter.System.Boolean Stack { get; }
 CanopyX.CanopyGridPresenter.System.Collections.Generic.IReadOnlyDictionary<System.String, CanopyX.CanopyTone> Tones { get; }
 CanopyX.CanopyGridPresenter.System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> Icons { get; }
 CanopyX.CanopyGridPresenter.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyGridThreshold> Thresholds { get; }
@@ -1683,7 +1684,7 @@ CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Bullet(System.Dou
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Change(System.String deltaColumn, System.Boolean higherIsGood = False)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Enum(System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyTone>? tones = null)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Icon(System.String glyph)
-CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Identifier(System.String? secondaryColumn = null, System.Boolean mono = False)
+CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Identifier(System.String? secondaryColumn = null, System.Boolean mono = False, System.Boolean stack = False)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Link(System.String? hrefColumn = null, System.Boolean newWindow = False)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter List(System.String separator = ",", System.Int32 limit = 3)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Log(System.Int32 lines = 10, System.Boolean split = False, System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyTone>? levelTones = null)
