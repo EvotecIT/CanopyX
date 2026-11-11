@@ -2001,6 +2001,29 @@ CanopyX.CanopyLabels.System.String CalendarOutsideRange { get; set; }
 CanopyX.CanopyLabels.System.String CalendarOverlaps { get; set; }
 CanopyX.CanopyLabels.System.String CalendarPrevious { get; set; }
 CanopyX.CanopyLabels.System.String CalendarReceived { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceAt { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceDaily { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceDailyInterval { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceDayRange { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceExcept { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceInMonths { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceLastDay { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceList { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceMonthDays { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceMonthly { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceMonthlyInterval { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceNth { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceOn { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceOnDate { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceOrdinals { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceTimes { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceUntil { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceWeekdays { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceWeekends { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceWeekly { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceWeeklyInterval { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceYearly { get; set; }
+CanopyX.CanopyLabels.System.String CalendarRecurrenceYearlyInterval { get; set; }
 CanopyX.CanopyLabels.System.String CalendarRemoveOccurrence { get; set; }
 CanopyX.CanopyLabels.System.String CalendarRepeats { get; set; }
 CanopyX.CanopyLabels.System.String CalendarReset { get; set; }
@@ -3267,6 +3290,7 @@ CanopyX.CanopyRecurrence.System.Nullable<System.DateTime> UntilValue { get; }
 CanopyX.CanopyRecurrence.System.Nullable<System.DateTimeOffset> SeriesEnd(System.DateTime start, System.TimeSpan duration, System.TimeZoneInfo zone, System.String? exceptions = null)
 CanopyX.CanopyRecurrence.System.Nullable<System.DateTimeOffset> SeriesEnd(System.DateTimeOffset start, System.TimeSpan duration, System.TimeZoneInfo zone, System.String? exceptions = null)
 CanopyX.CanopyRecurrence.System.Nullable<System.Int32> Count { get; }
+CanopyX.CanopyRecurrence.System.String Describe(System.DateTime start, System.Globalization.CultureInfo culture, CanopyX.CanopyLabels? labels = null, System.Boolean allDay = False, System.String? exceptions = null)
 CanopyX.CanopyRecurrence.static CanopyX.CanopyRecurrence Daily()
 CanopyX.CanopyRecurrence.static CanopyX.CanopyRecurrence Monthly()
 CanopyX.CanopyRecurrence.static CanopyX.CanopyRecurrence Parse(System.String text)
