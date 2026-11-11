@@ -74,10 +74,13 @@
     if (this.view.footers?.length && this.acceptedQuery && this.footerCandidate &&
         this.footerCandidate.page.revision === this.snapshot.revision && this.footerCandidate.query.offset === this.acceptedQuery.offset && gridResultShape(this.footerCandidate.query) === gridResultShape(this.acceptedQuery)) renderFooters(this);
   };
-  function footerAggregateText(grid, footer, aggregate) {
+  // An aggregate reads as its label and value ("Average 98.0%"), as group rows do; the aggregates of a hidden column follow
+  // its title ("Duration, average 18.1 s, median 6.1 s").
+  function footerAggregateText(grid, footer, aggregate, inline = false) {
     const column = grid.view.columns.find(column => column.id === aggregate.column), value = grid.footerCandidate.values[footer.id][aggregate.id];
     const format = aggregate.format || (groupCounting(aggregate.operation) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : column.format);
-    return aggregate.label + ": " + (value === undefined ? grid.labels.gridFooterUnavailable : value === null ? "—" : numberText(value, grid.lang, format));
+    const label = inline ? aggregate.label : aggregate.label.charAt(0).toLocaleUpperCase(grid.lang) + aggregate.label.slice(1);
+    return [label + " ", value === undefined ? grid.labels.gridFooterUnavailable : value === null ? "—" : numberText(value, grid.lang, format)];
   }
   function renderFooters(grid) {
     const key = JSON.stringify([grid.acceptedQuery, grid.footerCandidate.values, grid.cols.map(column => [column.id, column.renderWidth ?? column.width, column.effectivePin, column.pinOffset])]);
@@ -101,23 +104,24 @@
         cell.style.textAlign = column.alignment || (column.kind === "number" ? "end" : "start");
         const parts = footer.aggregates.filter(aggregate => aggregate.column === column.id).map(aggregate => footerAggregateText(grid, footer, aggregate));
         const text = h("span"); text.id = grid.id + "-footer-value-" + footerIndex + "-" + columnIndex;
-        parts.forEach((part, index) => {
+        parts.forEach(([kind, shown], index) => {
           if (index) text.appendChild(document.createTextNode(" · "));
-          const lead = h("span", "cx-footer-kind"), value = h("strong"), at = part.indexOf(": ");
-          setText(lead, part.slice(0, at + 2)); setText(value, part.slice(at + 2)); text.append(lead, value);
+          const lead = h("span", "cx-footer-kind"), value = h("strong");
+          setText(lead, kind); setText(value, shown); text.append(lead, value);
         }); cell.appendChild(text);
-        let extra;
+        let extra, hidden = [];
         if (columnIndex === 0) {
-          const hidden = footer.aggregates.filter(aggregate => !grid.cols.some(column => column.id === aggregate.column));
+          hidden = [...new Set(footer.aggregates.map(aggregate => aggregate.column))].filter(id => !grid.cols.some(column => column.id === id)).map(id => grid.view.columns.find(column => column.id === id).title + ", " +
+            footer.aggregates.filter(aggregate => aggregate.column === id).map(aggregate => footerAggregateText(grid, footer, aggregate, true).join("")).join(", "));
           if (hidden.length) {
             extra = h("span", "cx-footer-hidden"); extra.id = text.id + "-hidden";
-            setText(extra, hidden.map(aggregate => grid.view.columns.find(column => column.id === aggregate.column).title + " — " + footerAggregateText(grid, footer, aggregate)).join(" · "));
+            setText(extra, hidden.join(" · "));
             cell.append(" ", extra);
           }
         }
         cell.setAttribute("aria-colindex", String(columnIndex + 1));
         cell.setAttribute("aria-labelledby", grid.headCells[columnIndex].id + " " + label.id + " " + text.id + (extra ? " " + extra.id : ""));
-        cell.title = [footer.label, ...parts].join(" — ");
+        cell.title = [footer.label, [...parts.map(part => part.join("")), ...hidden].join(" · ")].filter(Boolean).join(": ");
         row.appendChild(cell);
       }
       const filler = h("div", "cx-footer-fill"); filler.setAttribute("aria-hidden", "true"); row.appendChild(filler);

@@ -32,13 +32,13 @@ async function mount(page, hosted, paged = true) {
 
 for (const hosted of [false, true]) for (const paged of [false, true]) test("live footer acceptance " + (hosted ? "hosted" : "inline") + " " + (paged ? "paged" : "continuous"), async ({ page }) => {
   await mount(page, hosted, paged);
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 30");
   if (hosted) await page.evaluate(async () => { window.version=2; await api.refreshRows(); });
   else await page.evaluate(() => api.updateRows([{ id: "b", cells: { amount: 30 } }]));
   await expect(page.locator('[data-cx-id="b"]')).toContainText("30");
-  for (const scope of ["page", "all"]) await expect(page.locator('[data-cx-footer="' + scope + '"]')).toContainText("Sum: 40");
+  for (const scope of ["page", "all"]) await expect(page.locator('[data-cx-footer="' + scope + '"]')).toContainText("Sum 40");
   await page.evaluate(() => api.setColumnVisible("amount", false));
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 40");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 40");
 });
 
 test("failed live refresh preserves accepted rows and totals", async ({ page }) => {
@@ -46,7 +46,7 @@ test("failed live refresh preserves accepted rows and totals", async ({ page }) 
   expect(await page.evaluate(async () => { version=2;broken=true;try {await api.refreshRows();return false;}catch{return true;} })).toBe(true);
   await expect(page.locator('[data-cx-id="b"]')).toContainText("20");
   await page.evaluate(() => api.setColumnVisible("amount", false));
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 30");
 });
 
 test("a superseded live refresh cannot replace newer query totals", async ({ page }) => {
@@ -56,6 +56,6 @@ test("a superseded live refresh cannot replace newer query totals", async ({ pag
   await page.evaluate(async () => { version=3;held=false;await api.setQuery({search:"Beta"}); });
   await page.evaluate(async () => { release();await window.refresh; });
   await expect(page.locator('[data-cx-id="a"]')).toHaveCount(0);
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 30");
   expect(await page.evaluate(() => api.getLiveState().revision)).toBe("r3");
 });
