@@ -79,6 +79,6 @@ document.addEventListener("canopyx:flowSubmitted", event => {
 });
 </script>
 """;
-        FlowExamplePage.Write(output, "flow-setup-tasks", Flow(), "Set up the reporting service", script, width: 860);
+        FlowExamplePage.Write(output, "flow-setup-tasks", Flow(), "Set up the reporting service", script, width: 1120);
     }
 }

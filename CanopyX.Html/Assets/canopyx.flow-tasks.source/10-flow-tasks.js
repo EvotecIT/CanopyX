@@ -107,18 +107,21 @@
       if (this.hub && !this.tasksReady()) { result.valid = false; result.errors.push({ message: this.labels.flowTasksIncomplete }); }
       return result;
     },
-    hubAnnouncement() {
+    hubCounts() {
       const counted = this.tasks().filter(step => this.counted(step));
-      return fill(this.labels.flowTasksProgress, { done: counted.filter(step => this.taskState(step) === "complete").length, count: counted.length });
+      return { done: counted.filter(step => this.taskState(step) === "complete").length, count: counted.length };
     },
+    hubAnnouncement() { return fill(this.labels.flowTasksProgress, this.hubCounts()); },
 
+    /** The hub: its title, the progress line with a bar under it (the line is what assistive technology reads), and the tasks. */
     hubSection() {
-      const section = h("section", "cx-flow-step cx-flow-hub"), heading = h("h3", "cx-flow-step-title"), progress = h("p", "cx-flow-hub-progress");
+      const section = h("section", "cx-flow-step cx-flow-hub"), heading = h("h3", "cx-flow-step-title"), progress = h("p", "cx-flow-hub-progress"), bar = h("span", "cx-flow-hub-bar");
       heading.id = this.id + "-hub"; heading.tabIndex = -1; setText(heading, this.labels.flowTasks);
       section.setAttribute("aria-labelledby", heading.id);
       progress.id = this.id + "-hub-progress";
+      bar.setAttribute("aria-hidden", "true");
       const lists = h("div", "cx-flow-task-groups");
-      section.append(heading, progress, lists);
+      section.append(heading, progress, bar, lists);
       this.hubNode = section;
       this.paintHub();
       this.loadStatus();
@@ -143,7 +146,9 @@
         flowTaskOrder(group.querySelector("ol"), steps.map(step => this.taskRow(step, rows.get(step.id))));
         return group;
       }));
-      setText(section.querySelector(".cx-flow-hub-progress"), this.hubAnnouncement());
+      const counts = this.hubCounts();
+      setText(section.querySelector(".cx-flow-hub-progress"), fill(labels.flowTasksProgress, counts));
+      section.querySelector(".cx-flow-hub-bar").style.setProperty("--cx-flow-done", Math.round(counts.done / (counts.count || 1) * 100) + "%");
       const banner = this.reviewStep() ? null : this.banner;
       if (section._cxBanner !== banner) {
         section.querySelector(":scope > .cx-flow-answer-banner")?.remove();
@@ -160,7 +165,7 @@
         const open = h("button", "cx-flow-task-open"), title = h("span", "cx-flow-task-title"), status = h("span", "cx-flow-task-state"), mark = h("span", "cx-flow-task-mark");
         const words = document.createTextNode(""), summary = h("span", "cx-flow-task-summary"), blockers = h("ul", "cx-flow-task-blockers");
         open.type = "button"; mark.setAttribute("aria-hidden", "true"); status.id = this.id + "-ts-" + step.id; summary.id = this.id + "-tsum-" + step.id;
-        status.append(mark, words); open.append(title); row.append(open, status);
+        status.append(words); open.append(title); row.append(mark, open, status);
         open.addEventListener("click", () => { if (open.getAttribute("aria-disabled") !== "true") this.goTo(step.id).catch(error => this.report(error, "goTo")); });
         row._cx = { open, title, status, mark, words, summary, blockers };
       }
@@ -169,7 +174,7 @@
       setText(title, step.title);
       words.nodeValue = state === "complete" ? labels.flowStepComplete : state === "error" ? fill(labels.flowStepErrors, { count: this.stepErrorCount(step) }) :
         state === "needsAction" ? labels.flowTaskNeedsAction : state === "blocked" ? labels.flowTaskBlocked : step.optional ? labels.flowStepOptional : labels.flowStepNotStarted;
-      setText(mark, FLOW_TASK_MARKS[state] || "");
+      setText(mark, FLOW_TASK_MARKS[state]); row.toggleAttribute("data-cx-optional", !!step.optional);
       const notes = [status.id];
       if (host?.summary) { setText(summary, host.summary); if (summary.parentNode !== open) open.appendChild(summary); notes.push(summary.id); }
       else summary.remove();
