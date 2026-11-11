@@ -58,6 +58,8 @@ internal static class AnalystExample {
         pivot.Rows.Add(new CanopyGridGroupLevel("region"));
         pivot.Columns.Add(new CanopyGridGroupLevel("observed", bucket: month));
         pivot.Values.Add("total"); pivot.Values.Add("records");
+        // The pivot is the subject of this page: its facets start collapsed so the table opens above the fold.
+        view.FacetPanel!.Open = false;
         foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
             var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
             File.WriteAllText(Path.Combine(output, "analysis-pivot" + suffix + ".html"), view.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Title = "Regions by month" }));

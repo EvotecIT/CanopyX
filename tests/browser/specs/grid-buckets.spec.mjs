@@ -69,4 +69,6 @@ test("the grouping chip changes calendar and range partitions without replacing 
   await page.getByLabel("Amount: Range width", { exact: true }).press("Tab");
   await expect.poll(async () => (await page.evaluate(api + ".getGroupBy()"))[0].bucket.width).toBe(250);
   expect((await page.evaluate(api + ".getSummary()")).matched).toBe(48);
+  // Range groups read as plain ranges rather than interval notation.
+  await expect(page.locator(".cx-grid-group-text").first()).toContainText(/\d – -?\d/);
 });
