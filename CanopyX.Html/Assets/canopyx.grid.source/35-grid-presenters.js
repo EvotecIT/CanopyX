@@ -4,9 +4,16 @@
   }));
   const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
-    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "sparklineArea", "sparklineColumns", "sparklineWinLoss", "bullet", "identifier", "tags", "missing", "structured"];
+    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "sparklineArea", "sparklineColumns", "sparklineWinLoss", "bullet", "identifier", "tags", "missing", "structured", "relativeTime", "log"];
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
     if (!options || typeof options !== "object" || Array.isArray(options) || !kinds.includes(options.kind)) invalid();
+    // Kind-specific options: relative times read dates, logs text; a state pill, its glyphs, bar slots and log line bounds.
+    const only = (name, kind, valid) => options[name] !== undefined && (options.kind !== kind || !valid(options[name])) && invalid();
+    if (options.kind === "relativeTime" && column.kind !== "datetime" || options.kind === "log" && column.kind !== "text") invalid();
+    only("style", "state", value => value === "dot" || value === "pill"); only("slots", "sparklineBars", value => typeof value === "boolean");
+    only("split", "log", value => typeof value === "boolean"); only("lines", "log", value => Number.isInteger(value) && value > 0 && value <= 500);
+    only("icons", "state", value => value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length <= 512 &&
+      Object.entries(value).every(([key, glyph]) => key.length <= 4096 && typeof glyph === "string" && glyph.trim() && glyph.length <= 32));
     if ((options.kind==="progress" || options.kind==="change" && !options.beforeAfter) && column.kind!=="number" ||
         ["boolean","list","tags","link"].includes(options.kind) && column.kind!=="text") invalid();
     if (["sparklineArea","sparklineColumns","sparklineWinLoss","bullet"].includes(options.kind) && column.kind !== "number" ||

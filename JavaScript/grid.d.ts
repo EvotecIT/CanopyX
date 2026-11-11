@@ -185,17 +185,24 @@ export type GridPresenter =
   | { readonly kind: "boolean"; readonly inverted?: boolean }
   | { readonly kind: "list"; readonly separator: string; readonly limit: number }
   | { readonly kind: "longText"; readonly mono?: boolean }
-  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain text instead of a chip or dot. */ readonly quietTones?: readonly string[]; /** Quiet values muted (default) or in the normal text colour. */ readonly quietStyle?: "muted" | "plain" }
+  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain text instead of a chip or dot. */ readonly quietTones?: readonly string[]; /** Quiet values muted (default) or in the normal text colour. */ readonly quietStyle?: "muted" | "plain";
+    /** State only: "pill" sets the dot and text in a tone pill. */ readonly style?: "dot" | "pill"; /** State only: decorative glyphs (1-32 code units) shown instead of the dot, by raw value. */ readonly icons?: Readonly<Record<string,string>> }
   | { readonly kind: "change"; readonly deltaColumn: string; readonly higherIsGood?: boolean }
   | { readonly kind: "change"; readonly beforeAfter: true }
   | { readonly kind: "statusStrip" | "missing" }
   | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
+  /** A run history: one slot per recent period, a faint baseline without a run, danger runs at least two thirds tall. */
+  | ({ readonly kind: "sparklineBars"; readonly slots: boolean } & GridHistoryPresentation)
   | { readonly kind: "sparklineArea" | "sparklineColumns" | "sparklineWinLoss" }
   | { readonly kind: "bullet"; readonly target: number }
   | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean }
   | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 }
   /** A structured value's summary: a count (countText with {count}), chips (limit) or the first item and +N. The record panel shows it whole. */
-  | { readonly kind: "structured"; readonly display?: "count" | "chips" | "first"; readonly limit?: number; readonly countText?: string };
+  | { readonly kind: "structured"; readonly display?: "count" | "chips" | "first"; readonly limit?: number; readonly countText?: string }
+  /** A datetime column relative to now ("in 3 hr.", "27 sec. ago"), kept current; the exact time is the tooltip. */
+  | { readonly kind: "relativeTime"; readonly secondaryColumn?: string }
+  /** Monospace log lines from the cell's events or its text lines (split reads "time level message"), level tones, copy and lines (1-500, default 10) before Show all. */
+  | { readonly kind: "log"; readonly lines?: number; readonly split?: boolean; readonly tones?: Readonly<Record<string,string>> };
 /** Ascending inclusive upper bounds; unmatched values use cell tones. */
 export interface GridThreshold { readonly upperBound: number; readonly tone: string; }
 /** Both shared scale bounds must be supplied together; otherwise each cell scales independently. */

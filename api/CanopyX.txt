@@ -1642,8 +1642,11 @@ CanopyX.CanopyGridPresentation : enum System.Int32
 CanopyX.CanopyGridPresentation.const CanopyX.CanopyGridPresentation Continuous = 0
 CanopyX.CanopyGridPresentation.const CanopyX.CanopyGridPresentation Paged = 1
 CanopyX.CanopyGridPresenter : sealed class
+CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenter WithIcons(System.Collections.Generic.IDictionary<System.String, System.String> icons)
+CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenter WithPill()
 CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenter WithQuietStyle(CanopyX.CanopyGridQuietStyle style)
 CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenter WithQuietTones(params CanopyX.CanopyTone[] tones)
+CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenter WithSlots()
 CanopyX.CanopyGridPresenter.CanopyX.CanopyGridPresenterKind Kind { get; }
 CanopyX.CanopyGridPresenter.CanopyX.CanopyGridQuietStyle QuietStyle { get; }
 CanopyX.CanopyGridPresenter.System.Boolean BeforeAfterValues { get; }
@@ -1652,12 +1655,17 @@ CanopyX.CanopyGridPresenter.System.Boolean Inverted { get; }
 CanopyX.CanopyGridPresenter.System.Boolean MarkLast { get; }
 CanopyX.CanopyGridPresenter.System.Boolean Mono { get; }
 CanopyX.CanopyGridPresenter.System.Boolean NewWindow { get; }
+CanopyX.CanopyGridPresenter.System.Boolean Pill { get; }
+CanopyX.CanopyGridPresenter.System.Boolean Slots { get; }
+CanopyX.CanopyGridPresenter.System.Boolean SplitLines { get; }
 CanopyX.CanopyGridPresenter.System.Collections.Generic.IReadOnlyDictionary<System.String, CanopyX.CanopyTone> Tones { get; }
+CanopyX.CanopyGridPresenter.System.Collections.Generic.IReadOnlyDictionary<System.String, System.String> Icons { get; }
 CanopyX.CanopyGridPresenter.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyGridThreshold> Thresholds { get; }
 CanopyX.CanopyGridPresenter.System.Collections.Generic.IReadOnlyList<CanopyX.CanopyTone> QuietTones { get; }
 CanopyX.CanopyGridPresenter.System.Double Maximum { get; }
 CanopyX.CanopyGridPresenter.System.Double Target { get; }
 CanopyX.CanopyGridPresenter.System.Int32 Limit { get; }
+CanopyX.CanopyGridPresenter.System.Int32 Lines { get; }
 CanopyX.CanopyGridPresenter.System.Nullable<CanopyX.CanopyGridStructuredDisplay> Display { get; }
 CanopyX.CanopyGridPresenter.System.Nullable<System.Double> Minimum { get; }
 CanopyX.CanopyGridPresenter.System.Nullable<System.Double> ScaleMaximum { get; }
@@ -1677,11 +1685,13 @@ CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Icon(System.Strin
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Identifier(System.String? secondaryColumn = null, System.Boolean mono = False)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Link(System.String? hrefColumn = null, System.Boolean newWindow = False)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter List(System.String separator = ",", System.Int32 limit = 3)
+CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Log(System.Int32 lines = 10, System.Boolean split = False, System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyTone>? levelTones = null)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter LongText()
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter LongText(System.Boolean mono)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Missing()
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Progress(System.Double maximum = 100)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Progress(System.Double maximum, System.Collections.Generic.IEnumerable<CanopyX.CanopyGridThreshold> thresholds)
+CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter RelativeTime(System.String? secondaryColumn = null)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter SparklineArea()
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter SparklineBars(System.Collections.Generic.IEnumerable<CanopyX.CanopyGridThreshold>? thresholds = null, System.Nullable<System.Double> minimum = null, System.Nullable<System.Double> maximum = null, System.Boolean higherIsGood = False, System.Boolean markLast = False)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter SparklineColumns()
@@ -1700,9 +1710,11 @@ CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Icon = 1
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Identifier = 12
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Link = 0
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind List = 4
+CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Log = 21
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind LongText = 5
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Missing = 14
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Progress = 2
+CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind RelativeTime = 20
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind SparklineArea = 16
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind SparklineBars = 10
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind SparklineColumns = 17

@@ -114,6 +114,7 @@ GridPolishExample.Write(output);
 OfficeExportExample.Write(output);
 GraphiteGridExample.Write(output);
 ServiceStatusExample.Write(output);
+ScheduledJobsExample.Write(output);
 WideTreeExample.Write(output);
 RtlExample.Write(output);
 RunsGridExample.Write(output);

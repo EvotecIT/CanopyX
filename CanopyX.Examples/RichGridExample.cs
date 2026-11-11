@@ -21,7 +21,7 @@ internal static class RichGridExample {
         view.GetColumn("owners").Sizing = CanopyColumnSizing.Flex(1, 140, 380, preferredWidth: 220);
         view.GetColumn("notes").Sizing = CanopyColumnSizing.Flex(2, 180, 800, preferredWidth: 280);
         view.GetColumn("name").Presenter = CanopyGridPresenter.Link("url", newWindow: true);
-        view.GetColumn("status").Presenter = CanopyGridPresenter.Icon("●");
+        view.GetColumn("status").Presenter = CanopyGridPresenter.State().WithPill();
         view.GetColumn("progress").Presenter = CanopyGridPresenter.Progress();
         view.GetColumn("enabled").Presenter = CanopyGridPresenter.Boolean();
         view.GetColumn("owners").Presenter = CanopyGridPresenter.List(", ", limit: 2);

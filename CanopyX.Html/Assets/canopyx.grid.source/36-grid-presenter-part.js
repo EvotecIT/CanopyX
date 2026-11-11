@@ -2,7 +2,7 @@
   const GRID_PRESENTER_IMPL = {}, GRID_PRESENTERS = definePart(DataGrid, "presenters", "cell presenters", () => ({
     GRID_PRESENTER_IMPL, h, setText, fill, cellValue, cellText, changeCellText, isCellObject, columnNumericTone, columnValueTone,
     gridPresenterTone, gridPresenterLink, numberFormat, toneColors, toneOf, applyTone, gridIcon, badgeElement,
-    GRID_HISTORY_KINDS, GRID_HISTORY_IMPL, GRID_CHART_CELL_KINDS, GRID_CHART_CELLS, RECORD_IMPL
+    GRID_HISTORY_KINDS, GRID_HISTORY_IMPL, GRID_CHART_CELL_KINDS, GRID_CHART_CELLS, RECORD_IMPL, DataGrid, definePart, loadPart, formatValue
   }));
   function gridCellRenderer(grid, column, options, record = false, complete = false) {
     let paint;
@@ -12,5 +12,6 @@
     };
   }
   DataGrid.prototype.loadPresenters = function () {
-    return this.presenterLoad ||= loadPart(GRID_PRESENTERS).then(() => { this.version++; this.scheduleRender(); });
+    // The part then starts the parts its columns need (the activity part, 36-grid-presenter-activity.js).
+    return this.presenterLoad ||= loadPart(GRID_PRESENTERS).then(() => { this.version++; this.scheduleRender(); return GRID_PRESENTER_IMPL.ready(this); });
   };

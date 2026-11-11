@@ -1589,7 +1589,9 @@ export type GridPresenter=|{
   readonly kind:"enum"|"state";
   readonly tones?:Readonly<Record<string,string>>;
   readonly quietTones?:readonly string[];
-  readonly quietStyle?:"muted"|"plain"
+  readonly quietStyle?:"muted"|"plain";
+  readonly style?:"dot"|"pill";
+  readonly icons?:Readonly<Record<string,string>>
 }
 |{
   readonly kind:"change";
@@ -1603,7 +1605,7 @@ export type GridPresenter=|{
 |{
   readonly kind:"statusStrip"|"missing"
 }
-|({readonly kind:"sparklineBars"|"sparklineLine"}&GridHistoryPresentation)|{
+|({readonly kind:"sparklineBars"|"sparklineLine"}&GridHistoryPresentation)|({readonly kind:"sparklineBars";readonly slots:boolean}&GridHistoryPresentation)|{
   readonly kind:"sparklineArea"|"sparklineColumns"|"sparklineWinLoss"
 }
 |{
@@ -1625,6 +1627,16 @@ export type GridPresenter=|{
   readonly display?:"count"|"chips"|"first";
   readonly limit?:number;
   readonly countText?:string
+}
+|{
+  readonly kind:"relativeTime";
+  readonly secondaryColumn?:string
+}
+|{
+  readonly kind:"log";
+  readonly lines?:number;
+  readonly split?:boolean;
+  readonly tones?:Readonly<Record<string,string>>
 }
 ;
 export interface GridThreshold{

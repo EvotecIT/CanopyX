@@ -96,7 +96,8 @@
       else if (kind === "items") recordItems(ctx, field, cell.items, element);
       else if (kind === "fields") recordObject(ctx, field, cell.fields, element, depth);
       else if (kind === "records") recordCollection(ctx, field, cell.records, element);
-      else if (kind === "events") recordTimeline(ctx, field, cell.events, element);
+      // A log column shows its events as its own log lines, not as a timeline.
+      else if (kind === "events" && (depth || (field.column || field).presenter?.kind !== "log")) recordTimeline(ctx, field, cell.events, element);
       else if (kind === "changes") recordChanges(ctx, field, cell.changes, element);
       else if (depth) isCellObject(cell) && cell.ref ? recordLink(ctx, cell, field, element) : recordPlain(ctx, field, cell, element);
       else recordScalar(ctx, field, cell, element);
