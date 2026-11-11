@@ -20,6 +20,16 @@
         item.setAttribute("data-cx-periods",String(points.length));item.setAttribute("aria-hidden","true");toneColors(item,toneOf(tone));strip.appendChild(item);}
       element.appendChild(strip);return;
     }
+    if(options.kind==="sparklineBars"&&options.slots) {
+      // Run history: one slot per recent period. Missing runs keep a faint baseline; danger runs stand at least two thirds tall.
+      const box=h("span","p-spark p-slots"),points=series.slice(-Math.max(1,Math.floor(width/6))),numbers=points.map(point=>point.value).filter(value=>typeof value==="number");
+      const low=options.minimum??Math.min(0,...numbers),high=options.scaleMaximum??Math.max(low,...numbers);
+      box.setAttribute("role","img");box.setAttribute("aria-label",column.title+": "+text);
+      for(const point of points){const tone=gridHistoryTone(point,options),run=tone!=="none",item=h("i",run?tone:"empty");item.title=title(point);
+        if(run){item.style.height=Math.max(3,typeof point.value==="number"?(point.value-low)/(high-low||1)*20:0,tone==="danger"?14:0)+"px";toneColors(item,toneOf(tone));}
+        box.appendChild(item);}
+      element.appendChild(box);return;
+    }
     const values=series.filter(point=>typeof point.value==="number");
     if(!values.length){setText(element,"—");element.classList.add("p-missing");return;}
     const minimum=options.minimum??Math.min(0,...values.map(point=>point.value)),maximum=options.scaleMaximum??Math.max(...values.map(point=>point.value));

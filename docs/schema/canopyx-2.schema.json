@@ -1719,6 +1719,9 @@
             },
             "quietTones": { "$ref": "#/$defs/quietTones" },
             "quietStyle": { "enum": ["muted", "plain"] },
+            "style": { "enum": ["dot", "pill"], "description": "pill sets the dot (or glyph) and text in a tone pill." },
+            "icons": { "type": "object", "maxProperties": 512, "propertyNames": { "type": "string", "maxLength": 4096 },
+              "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 32 }, "description": "Decorative glyphs shown instead of the dot, by exact raw value." },
             "tones": {
               "type": "object",
               "maxProperties": 512,
@@ -1773,6 +1776,7 @@
             "kind": {
               "const": "sparklineBars"
             },
+            "slots": { "type": "boolean", "description": "One slot per recent period: a faint baseline without a run, danger runs at least two thirds tall." },
             "thresholds": {
               "type": "array",
               "maxItems": 32,
@@ -1960,6 +1964,19 @@
           "properties": {
             "kind": { "const": "structured" }, "display": { "enum": ["count", "chips", "first"] },
             "limit": { "type": "integer", "minimum": 1, "maximum": 16 }, "countText": { "type": "string", "maxLength": 256, "pattern": "\\{count\\}" }
+          }
+        },
+        {
+          "type": "object", "required": ["kind"], "additionalProperties": false,
+          "description": "A date column shown relative to now (\"in 3 hr.\", \"27 sec. ago\"), kept current, with the exact time as its tooltip.",
+          "properties": { "kind": { "const": "relativeTime" }, "secondaryColumn": { "$ref": "#/$defs/identifier" } }
+        },
+        {
+          "type": "object", "required": ["kind"], "additionalProperties": false,
+          "description": "Monospace log lines from a timeline value or the lines of a text value, with level tones, copy and bounded lines.",
+          "properties": {
+            "kind": { "const": "log" }, "lines": { "type": "integer", "minimum": 1, "maximum": 500 }, "split": { "type": "boolean" },
+            "tones": { "type": "object", "maxProperties": 512, "propertyNames": { "type": "string", "maxLength": 4096 }, "additionalProperties": { "$ref": "#/$defs/tone" } }
           }
         }
       ]

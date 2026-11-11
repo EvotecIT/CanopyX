@@ -70,7 +70,7 @@
       };
       const render=()=>{list.replaceChildren();for(const item of items){const label=h("label","cx-val"),check=h("input"),value=h("span","cx-facet-value"),count=h("span","cx-val-n");check.type="checkbox";check.checked=chosen(item.value);
           const options=column.presenter;
-          if(options&&!['statusStrip','sparklineBars','sparklineLine','change','identifier','longText','list','tags'].includes(options.kind))gridCellRenderer(this,column,options)({id:"facet",cells:{[column.id]:item.value}},value);else setText(value,cellText(item.value,column,this.fmt)||"—");
+          if(options&&!['statusStrip','sparklineBars','sparklineLine','change','identifier','longText','list','tags','relativeTime','log'].includes(options.kind))gridCellRenderer(this,column,options)({id:"facet",cells:{[column.id]:item.value}},value);else setText(value,cellText(item.value,column,this.fmt)||"—");
           setText(count,numberFormat(this.lang).format(item.count));label.append(check,value,count);list.appendChild(label);
           check.addEventListener("change",()=>{if(check.checked===matches(item.value))selected.delete(key(item.value));else selected.set(key(item.value),{value:item.value,checked:check.checked});syncAll();commit();});}
         syncAll();};

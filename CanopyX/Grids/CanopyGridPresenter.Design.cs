@@ -140,6 +140,8 @@ public sealed partial class CanopyGridPresenter {
             throw new InvalidOperationException("Progress and change presenters require numeric raw values.");
         if ((Kind == CanopyGridPresenterKind.Boolean || Kind == CanopyGridPresenterKind.List || Kind == CanopyGridPresenterKind.Tags || Kind == CanopyGridPresenterKind.Link) && column.Kind != CanopyColumnKind.Text)
             throw new InvalidOperationException("This presenter requires text or boolean raw values.");
+        if (Kind == CanopyGridPresenterKind.RelativeTime && column.Kind != CanopyColumnKind.DateTime || Kind == CanopyGridPresenterKind.Log && column.Kind != CanopyColumnKind.Text)
+            throw new InvalidOperationException("Relative times require date columns and logs text columns.");
         foreach (var id in new[] { HrefColumn, DeltaColumn, SecondaryColumn }) if (id != null) {
             CanopyColumn? target = null; foreach (var candidate in columns) if (candidate.Id == id) target = candidate;
             if (target == null || id == DeltaColumn && target.Kind != CanopyColumnKind.Number || id == HrefColumn && target.Kind != CanopyColumnKind.Text)

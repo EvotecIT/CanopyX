@@ -64,6 +64,8 @@
   :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) :is(.p-dot,.p-progress .fill,.p-spark i,.p-strip i) { forced-color-adjust:none;background:CanvasText; }
   :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-progress .track { outline:var(--cx-size-1px) solid; }
   .cx-data-grid .cx-row[aria-selected="true"] :is(.p-dot,.p-progress .fill,.p-spark i,.p-strip i) { background:HighlightText!important; }
+  :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-spark i.empty { background:none!important;border-color:GrayText; }
+  :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-pill.p-status .p-dot { background:CanvasText; }
   :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-pill { outline:var(--cx-size-1px) solid;outline-offset:calc(-1 * var(--cx-size-1px)); }
 }
 
@@ -80,6 +82,9 @@
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-dot.warning { background:var(--hfx-color-status-warn-fg); }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-dot.info { background:var(--hfx-color-status-info-fg); }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-state.quiet { color:var(--hfx-color-text-secondary); }
+/* A status pill: the tone's ink draws a decorative dot or glyph before the text. */
+:is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-status .p-dot { width:var(--cx-size-6px);height:var(--cx-size-6px);background:currentColor; }
+:is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-glyph { flex:none;line-height:1; }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-delta { font-size:var(--cx-size-12d5px); font-weight:700; margin-right:var(--cx-size-6px); }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-delta.bad { color:var(--hfx-color-status-bad-fg); }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-delta.good { color:var(--hfx-color-status-good-fg); }
@@ -93,6 +98,7 @@
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-spark i { width:var(--cx-size-4px); border-radius:var(--cx-size-1px); background:var(--hfx-color-status-good-solid); }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-spark i.danger { background:var(--hfx-color-status-bad-fg); }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-spark i.warning { background:var(--hfx-color-status-warn-fg); }
+:is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-spark i.empty { height:0;border-bottom:var(--cx-size-2px) solid color-mix(in srgb,var(--hfx-color-text) 22%,transparent);background:none; }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-strip { display:inline-flex; gap:var(--cx-size-1px); height:var(--cx-size-14px); vertical-align:middle; border-radius:var(--cx-size-2px); overflow:hidden; }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-strip i { width:var(--cx-size-6px); background:var(--hfx-color-status-good-solid); opacity:.55; }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-strip i.danger { background:var(--hfx-color-status-bad-fg); opacity:1; }
