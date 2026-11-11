@@ -15,7 +15,8 @@ public sealed class RecordPanelPartAssetsTests {
         // Combined comparison endpoint formatting and board/path/stack navigation remain in this lazy part, as does landing on a
         // named section (openRecord's section option and its deep link parameter).
         // Reserve 256 bytes for the phone's single-row section navigation, snap points and edge fade.
-        Assert.True(size <= 23056, "The record panel part is " + size + " bytes gzip; the guard is 23,056 bytes.");
+        // Reserve 384 bytes for footer action tones, lists measured in the drawer (table or cards) and section-titled fields.
+        Assert.True(size <= 23440, "The record panel part is " + size + " bytes gzip; the guard is 23,440 bytes.");
         Assert.Equal(new[] { "ui-menu" }, part.Requires);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid })
             Assert.True(part.IsShippedWith(runtime), "The record panel part ships with " + runtime + ".");

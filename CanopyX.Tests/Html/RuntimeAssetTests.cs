@@ -153,7 +153,8 @@ public sealed class RuntimeAssetTests {
         // Reserve 192 bytes for the built-in median and percentile aggregates in the reporting menus and labels.
         // Reserve 320 bytes for the same row actions column shell.
         // Reserve 384 bytes for the same activity presenter shell.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192 + 320 + 384);
+        // Reserve 96 bytes for stacked identifier text in two-line rows and the actions column's hidden header text.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192 + 320 + 384 + 96);
     }
 
     [Fact]
