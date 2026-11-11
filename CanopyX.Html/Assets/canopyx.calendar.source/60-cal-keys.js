@@ -12,9 +12,9 @@
     const box = element.getBoundingClientRect(), style = getComputedStyle(element), clipped = style.overflow !== "visible";
     if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0" || clipped && (!box.width || !box.height)) return "";
     if (clip && (box.right <= clip.left || box.left >= clip.right || box.bottom <= clip.top || box.top >= clip.bottom)) return "";
-    const boundary = clipped ? { left: Math.max(box.left, clip?.left ?? box.left), right: Math.min(box.right, clip?.right ?? box.right),
-      top: Math.max(box.top, clip?.top ?? box.top), bottom: Math.min(box.bottom, clip?.bottom ?? box.bottom) } : clip;
-    return [...element.childNodes].map(child => calVisibleLabel(child, boundary)).join("");
+    if (clipped) clip = clip ? { left: Math.max(box.left, clip.left), right: Math.min(box.right, clip.right),
+      top: Math.max(box.top, clip.top), bottom: Math.min(box.bottom, clip.bottom) } : box;
+    return [...element.childNodes].map(child => calVisibleLabel(child, clip)).join("");
   }
   Object.assign(DataGrid.prototype, {
     // Read all painted text before changing names to avoid a layout per event. Full date/event context remains available.

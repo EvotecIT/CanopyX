@@ -4,7 +4,7 @@
   // timeline's span, context menus, hover cards, the year's event lists, the agenda's period, the stacked months and printing.
   const CAL_TOOLBAR = ["search", "filters", "columns", "views", "export", "more"], CAL_ID = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
 
-  function calSettingsMore(input, column, settings) {
+  function calSettingsMore(input, column, settings, integer) {
     const flag = (name, fallback) => {
       if (input[name] === undefined) return fallback;
       if (typeof input[name] !== "boolean") calInvalid("calendar " + name + " is a boolean.");
@@ -19,6 +19,8 @@
     if (toolbar !== undefined && typeof toolbar !== "boolean" && !(Array.isArray(toolbar) && new Set(toolbar).size === toolbar.length && toolbar.every(item => CAL_TOOLBAR.includes(item))))
       calInvalid("calendar toolbar is true, false or a list of " + CAL_TOOLBAR.join(", ") + ".");
     settings.toolbar = toolbar === undefined || toolbar === true ? true : toolbar === false ? false : new Set(toolbar);
+    settings.now = flag("nowIndicator", true);
+    settings.eventStyle = choice("eventStyle", ["quiet", "strong"], "quiet");
     settings.details = choice("details", ["drawer", "popover"], "drawer");
     settings.description = column("description", ["text"]); settings.tone = column("tone", ["text"]); settings.source = column("source", ["text"]);
     settings.sources = calSources(input.sources, settings.source);
@@ -36,8 +38,7 @@
     settings.span = calSpan(input.span);
     settings.menu = flag("menu", true); settings.hover = flag("hover", true); settings.yearEvents = flag("yearEvents", false); settings.print = flag("print", false);
     settings.agendaSpan = choice("agendaSpan", ["day", "week", "month", "year"], "month");
-    if (input.months !== undefined && (!Number.isInteger(input.months) || input.months < 2 || input.months > 24)) calInvalid("calendar months is an integer from 2 to 24.");
-    settings.months = input.months ?? 6;
+    settings.months = integer("months", 2, 24, 6);
   }
 
   function calSources(list, sourceColumn) {
