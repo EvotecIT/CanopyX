@@ -100,6 +100,11 @@ test("fixed pre-sort leaves user priorities independent and footer bands fill th
     await expect.poll(() => page.locator('.cx-footer-row').evaluateAll(rows => rows.every(row => row.getBoundingClientRect().width >= row.closest('.cx-grid').clientWidth - 1))).toBe(true);
     await expect(page.locator('.cx-footer-fill')).toHaveCount(2);
     await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 100");
+    // The last visible cell reaches the row's end, so a phone shows no empty divided column after the totals.
+    if (width === 390) await expect.poll(() => page.locator('.cx-footer-row').evaluateAll(rows => rows.map(row => {
+      const cells = row.querySelectorAll(".cx-footer-cell"), last = cells[cells.length - 1].getBoundingClientRect();
+      return Math.round(row.getBoundingClientRect().right - last.right);
+    }))).toEqual([0, 0]);
   }
 });
 
@@ -127,6 +132,24 @@ test("hosted totals use explicit page values and never cached partial records", 
   const definition = view({ source: { kind: "host" }, footers }); delete definition.rows;
   await mount(page, definition, `window.options={source:{query:query=>({protocol:"canopyx/2",type:"gridPage",view:"inventory",revision:"r1",offset:query.offset,total:4,matched:4,items:[{id:"a",cells:{name:"Alpha",amount:10,rank:3}},{id:"b",cells:{name:"Beta",amount:20,rank:1}}],footerValues:{all:{sum:100}}})}}`);
   await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 100");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 30");
+});
+
+test("a phone toolbar shows Filters as a compact control in line with the other toolbar controls", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await mount(page, view({ footers }));
+  const filters = page.locator(".cx-grid-filters > summary"), columns = page.locator(".cx-grid-columns > summary");
+  await expect(filters).toHaveAccessibleName(/Filters/);
+  const [own, other] = [await filters.boundingBox(), await columns.boundingBox()];
+  expect(Math.abs(own.y - other.y)).toBeLessThan(2);
+  expect(Math.abs(own.height - other.height)).toBeLessThan(2);
+  expect(own.width).toBeLessThan(60);
+});
+test("footer totals name their row group and missing hosted totals from the label set", async ({ page }) => {
+  const definition = view({ source: { kind: "host" }, footers }); delete definition.rows;
+  await mount(page, definition, `window.options={labels:{gridFooterTotals:"Sumy w stopce",gridFooterUnavailable:"Niedostępne"},source:{query:query=>({protocol:"canopyx/2",type:"gridPage",view:"inventory",revision:"r1",offset:query.offset,total:4,matched:4,items:[{id:"a",cells:{name:"Alpha",amount:10,rank:3}},{id:"b",cells:{name:"Beta",amount:20,rank:1}}]})}}`);
+  await expect(page.getByRole("rowgroup", { name: "Sumy w stopce", exact: true })).toHaveCount(1);
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: Niedostępne");
   await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 30");
 });
 

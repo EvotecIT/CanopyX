@@ -2811,6 +2811,8 @@
         "gridShowMore": { "type": "string" },
         "gridNoData": { "type": "string" },
         "gridPeriodRange": { "type": "string" },
+        "gridFooterTotals": { "type": "string" },
+        "gridFooterUnavailable": { "type": "string" },
         "gridHealthy": { "type": "string" },
         "searchPlaceholder": { "$ref": "#/$defs/accessibleLabel" },
             "searchResults": { "$ref": "#/$defs/accessibleLabel" },

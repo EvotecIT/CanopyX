@@ -2529,6 +2529,8 @@ CanopyX.CanopyLabels.System.String GridFirstPage { get; set; }
 CanopyX.CanopyLabels.System.String GridFitAllColumns { get; set; }
 CanopyX.CanopyLabels.System.String GridFitColumn { get; set; }
 CanopyX.CanopyLabels.System.String GridFitContent { get; set; }
+CanopyX.CanopyLabels.System.String GridFooterTotals { get; set; }
+CanopyX.CanopyLabels.System.String GridFooterUnavailable { get; set; }
 CanopyX.CanopyLabels.System.String GridGroupBy { get; set; }
 CanopyX.CanopyLabels.System.String GridGroupCollapse { get; set; }
 CanopyX.CanopyLabels.System.String GridGroupCount { get; set; }

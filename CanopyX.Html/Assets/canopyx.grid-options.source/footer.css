@@ -9,3 +9,6 @@
 
 .cx-data-grid .cx-footer-cell[data-cx-pin]{position:sticky;background:var(--hfx-color-surface)}
 .cx-data-grid .cx-footer-hidden{display:block;margin-block-start:var(--cx-size-4px);font-weight:normal;color:var(--hfx-color-text-muted);text-align:start}
+/* On a phone the last visible footer cell takes the row's remaining width, so no empty divided column follows it. */
+.cx-data-grid.cx-phone .cx-footer-cell:has(+ .cx-footer-fill) { flex-grow:1;border-inline-end:0; }
+.cx-data-grid.cx-phone .cx-footer-fill { display:none; }

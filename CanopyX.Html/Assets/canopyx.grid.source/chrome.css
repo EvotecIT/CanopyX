@@ -53,6 +53,9 @@ body .cx-host.cx-chrome { padding:0; }
 .cx-chrome .cx-grid-overflow .cx-grid-panel > .cx-button { width:100%;justify-content:start;border:0;border-radius:var(--hfx-radius-control); }
 .cx-chrome.cx-phone .cx-toolbar { gap:var(--cx-size-6px); }
 .cx-chrome.cx-phone .cx-search { max-width:none;flex-basis:100%;height:var(--cx-size-44px); }
+/* On a phone Filters is an icon control like Columns (its count badge stays), so the controls below the search read as one row. */
+.cx-chrome.cx-phone .cx-grid-filters > summary { min-width:var(--cx-size-44px);justify-content:center;gap:var(--cx-size-4px);padding-inline:var(--cx-size-12px);font-size:0; }
+.cx-chrome.cx-phone .cx-grid-filters > summary .badge { font-size:var(--cx-size-11px); }
 .cx-chrome.cx-phone .cx-spacer,.cx-chrome.cx-phone .cx-sep { display:none; }
 .cx-chrome.cx-phone .cx-grid-columns > summary { width:var(--cx-size-44px);font-size:0;padding:0; }
 .cx-chrome.cx-phone .cx-grid-columns > summary .cx-ico { width:var(--cx-size-16px);height:var(--cx-size-16px); }
