@@ -137,7 +137,8 @@ public sealed class RuntimeAssetTests {
         // Reserve 128 bytes for Boolean tree-drawer host/view validation in the shared core.
         // Includes the optional chart-cell loader and three lazy-part manifest entries.
         // Reserve 128 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336);
+        // Reserve 448 bytes for right-to-left logical layout and keys, the matrix-table route in enhance and digit-aware aggregate text.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448);
     }
 
     [Fact]
@@ -145,7 +146,8 @@ public sealed class RuntimeAssetTests {
         // Add 512 bytes for accessible phone scrolling, its scoped styles and live authored height bounds.
         // Includes chart intent, localized controls and the lazy analysis loader.
         // Reserve 192 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728);
+        // Reserve 640 bytes for the same right-to-left, matrix-table and aggregate-text changes plus the phone toolbar and footer fixes.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640);
     }
 
     [Fact]

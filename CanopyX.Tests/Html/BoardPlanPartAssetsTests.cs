@@ -6,9 +6,11 @@ namespace CanopyX.Tests.Html;
 
 public sealed class BoardPlanPartAssetsTests {
     [Theory]
-    [InlineData("board", 8192)]
+    // Lane labels kept after a move, one reload per move, reading-direction moves and the compact move control add 322 measured bytes.
+    [InlineData("board", 8192 + 384)]
     // Canonical role fallbacks add 12 measured gzip bytes; keep a bounded 64-byte allowance.
-    [InlineData("plan", 12288 + 64)]
+    // Keeping bar labels clear of dependency arrows and the scrolled edge adds 213 measured bytes on top.
+    [InlineData("plan", 12288 + 320)]
     public void LayoutPart_StaysOptionalVersionedAndWithinItsGzipBudget(string name, int budget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Matches("^[a-f0-9]{16}$", part.Version);
