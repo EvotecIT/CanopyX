@@ -138,7 +138,7 @@ test("a pending proposal keeps its row busy, leaves other rows free and settles 
   expect(await page.evaluate(() => window.calls.map(call => [call.proposal.id, call.proposal.action, call.proposal.row.cells.name, call.frozen])))
     .toEqual([["a", "start", "Alpha", true]]);
   // The same row takes no second proposal; another row does.
-  expect(await page.evaluate(() => window.grid.requestRowAction("a", "edit"))).toBe(false);
+  expect(await page.evaluate(() => window.grid.requestRowAction("a", "edit"))).toEqual({ accepted: false, reason: "api", message: null });
   await action(page, "b", "start").click();
   expect(await page.evaluate(() => window.calls.length)).toBe(2);
   await page.evaluate(() => window.answer({ accepted: false, message: "Beta is locked by another user." }));
@@ -152,30 +152,31 @@ test("the API resolves with acceptance, a failure is reported and cancellation a
   const accepted = page.evaluate(() => window.grid.requestRowAction("a", "edit", { reason: "shortcut" }));
   await page.waitForFunction(() => window.calls?.length === 1);
   await page.evaluate(() => window.answer(true));
-  expect(await accepted).toBe(true);
+  expect(await accepted).toEqual({ accepted: true, reason: "shortcut", message: null });
   expect(await page.evaluate(() => window.outcomes.at(-1).reason)).toBe("shortcut");
   const failed = page.evaluate(() => window.grid.requestRowAction("a", "start"));
   await page.waitForFunction(() => window.calls.length === 2);
   await page.evaluate(() => window.fail("Scheduler unavailable"));
-  expect(await failed).toBe(false);
+  // The caller hears what the status line shows.
+  expect(await failed).toEqual({ accepted: false, reason: "api", message: "Start failed: Scheduler unavailable" });
   await expect(page.locator(".cx-ra-status")).toContainText("Start failed: Scheduler unavailable");
   const cancelled = page.evaluate(() => window.grid.requestRowAction("b", "start"));
   await page.waitForFunction(() => window.calls.length === 3);
   expect(await page.evaluate(() => window.grid.cancelRowAction("b"))).toBe(true);
-  expect(await cancelled).toBe(false);
+  expect(await cancelled).toEqual({ accepted: false, reason: "api", message: null });
   expect(await page.evaluate(() => window.aborted)).toBe("AbortError");
   await expect(action(page, "b", "start")).not.toHaveAttribute("aria-busy", "true");
   // Disabled by condition: the API refuses as the button does.
-  expect(await page.evaluate(() => window.grid.requestRowAction("c", "start"))).toBe(false);
+  expect((await page.evaluate(() => window.grid.requestRowAction("c", "start"))).accepted).toBe(false);
   // A host veto cancels before the hook.
   await page.evaluate(() => document.querySelector("[data-canopyx-host]").addEventListener("canopyx:beforeRowAction", event => event.preventDefault(), { once: true }));
-  expect(await page.evaluate(() => window.grid.requestRowAction("a", "edit"))).toBe(false);
+  expect(await page.evaluate(() => window.grid.requestRowAction("a", "edit"))).toEqual({ accepted: false, reason: "api", message: null });
   expect(await page.evaluate(() => window.calls.length)).toBe(3);
 });
 
 test("the deadline settles a proposal the host never answers", async ({ page }) => {
   await controlled(page, { timeout: 200 });
-  expect(await page.evaluate(() => window.grid.requestRowAction("a", "start"))).toBe(false);
+  expect(await page.evaluate(() => window.grid.requestRowAction("a", "start"))).toMatchObject({ accepted: false, message: "Start failed: no answer within 200 ms" });
   await expect(page.locator(".cx-ra-status")).toContainText("Start failed: no answer within 200 ms");
   expect(await page.evaluate(() => window.aborted)).toBe("TimeoutError");
 });
@@ -183,7 +184,8 @@ test("the deadline settles a proposal the host never answers", async ({ page }) 
 test("hover reveal keeps buttons reachable, and the column stays pinned at the end edge, also right to left", async ({ page }) => {
   await controlled(page, { reveal: "hover" });
   const start = action(page, "b", "start");
-  expect(await start.evaluate(button => getComputedStyle(button).opacity)).toBe("0");
+  // The cell repaints once the part has started; read the button that is in the page.
+  await expect.poll(() => start.evaluate(button => getComputedStyle(button).opacity)).toBe("0");
   await page.locator('[data-cx-id="b"]').hover();
   await expect.poll(() => start.evaluate(button => getComputedStyle(button).opacity)).toBe("1");
   await page.mouse.move(0, 0);
@@ -192,6 +194,10 @@ test("hover reveal keeps buttons reachable, and the column stays pinned at the e
   await expect(action(page, "a", "start")).toBeFocused();
   await expect.poll(() => action(page, "a", "start").evaluate(button => getComputedStyle(button).opacity)).toBe("1");
   await expect(cell(page, "a")).toHaveAttribute("data-cx-pin", "right");
+  // The narrow column keeps its name for assistive technology and shows no clipped title.
+  const header = page.locator('.cx-hcell[data-cx-column="cx-row-actions"]');
+  await expect(header).toHaveAccessibleName("Actions");
+  expect(await header.locator(".cx-htext").evaluate(text => getComputedStyle(text).visibility)).toBe("hidden");
   await page.evaluate(() => { document.querySelector("[data-canopyx-host]").dir = "rtl"; });
   const [grid, actions] = await Promise.all([page.locator(".cx-grid").boundingBox(), cell(page, "a").boundingBox()]);
   expect(actions.x - grid.x).toBeLessThan(40);

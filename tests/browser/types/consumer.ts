@@ -45,7 +45,7 @@ const rowActions: GridRowActionsDefinition = { inline: 1, reveal: "hover", actio
 const actionApi = createDataGrid(document.createElement("div"), { view: { ...calculationView, id: "actions", rowActions },
   onRowAction: async (proposal: GridRowActionProposal, request) => request.signal.aborted ? false : { accepted: proposal.action === "run", message: "Refused." },
   isRowActionEnabled: (row, action) => action.id !== "delete" || row.id !== "r1" });
-const requested: Promise<boolean> = actionApi.requestRowAction("r1", "run", { reason: "shortcut" });
+const requested: Promise<string | null> = actionApi.requestRowAction("r1", "run", { reason: "shortcut" }).then(result => result.accepted ? null : result.message);
 const cancelledAction: boolean = actionApi.cancelRowAction();
 const outcome = (event: CustomEvent<GridRowActionOutcome>): string | null => event.detail.message;
 // @ts-expect-error Row action icons come from the built-in set.
@@ -892,7 +892,7 @@ const recordGrid = ReportingRuntime.createDataGrid(document.createElement("div")
       fields: { contacts: { records: { columns: [{ id: "role", title: "Role" }], rows: [{ id: "o", cells: { role: "Owner" } }], total: 3, target: { view: "people", column: "role" } } },
         trend: { value: 3, series: [{ period: "2026-01", value: 3 }] } } }],
     record: recordPanel },
-  loadRecord, recordActions: [{ label: "Open", run: () => undefined }], onOpenAll: event => event.ids.length > 0, onRecordPrint: event => void event.element });
+  loadRecord, recordActions: [{ label: "Open", run: () => undefined }, { label: "Delete", prominent: true, tone: "danger", run: () => undefined }], onOpenAll: event => event.ids.length > 0, onRecordPrint: event => void event.element });
 void recordGrid.openRecord("c1", { tab: "overview" });
 const recordTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "tree", label: "Tree", rowHeight: 28, pageSize: 100, selection: "single",
   columns: [{ id: "name", title: "Name", width: 200, kind: "text" }, { id: "state", title: "State", width: 120, kind: "text", section: "Health", drawer: true }], source: { kind: "inline" },
@@ -1020,6 +1020,7 @@ const uiTabs: UiTabsController = tabs("#sections", {
   renderIcon: name => { const span = document.createElement("span"); span.textContent = name; return span; }
 });
 void uiTabs.ready.then(controller => controller.select("activity"));
+void uiTabs.setBadge("activity", 14); void uiTabs.setBadge(0, null);
 stepper("#setup", { validate: step => step.id === "review" ? true : ["Choose a workspace."], onFinish: () => {} });
 const disposeMenu = contextMenu(".record", (_event, element) => [{ id: element.id, label: "Open record" }], {
   onSelect: (item, _event, _element, detail) => { const id: string = detail.id; void id; void item.checked; }

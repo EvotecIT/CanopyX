@@ -2,8 +2,7 @@
 :is(.cx-data-grid,.cx-grid-overlay) .p-when { display:inline-flex;align-items:baseline;min-width:0;max-width:100%;white-space:nowrap; }
 :is(.cx-data-grid,.cx-grid-overlay) .p-when-text { flex:none; }
 :is(.cx-data-grid,.cx-grid-overlay) .p-when .p-sub { min-width:0;overflow:hidden;text-overflow:ellipsis; }
-:is(.cx-data-grid,.cx-grid-overlay) .p-when.p-stack { flex-direction:column;align-items:flex-start;line-height:var(--hfx-type-caption-line-height); }
-:is(.cx-data-grid,.cx-grid-overlay) .p-when.p-stack .p-sub { margin-left:0; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-when.p-stack { line-height:var(--hfx-type-caption-line-height); }
 
 /* Logs: monospace lines with a muted time and a level in its tone. Long messages wrap under their own column. */
 :is(.cx-data-grid,.cx-grid-overlay) .p-log { min-width:0;max-width:100%;font-family:var(--hfx-font-mono,"JetBrains Mono",ui-monospace,monospace);font-size:var(--hfx-type-caption-size);line-height:var(--hfx-type-body-line-height); }

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Breaking: `requestRowAction` resolves `{ accepted, reason, message }`, as `canopyx:rowAction` reports it, so a caller can show the host's refusal message. Migration: replace `if (await grid.requestRowAction(id, action))` with `if ((await grid.requestRowAction(id, action)).accepted)`; the object is always truthy.
+- Add `tone` to record actions: a prominent action's footer button is `primary` (default), `neutral` (secondary) or `danger`, which stands apart at the footer's end and is marked in the menu.
+- Add `setBadge(id, badge)` to tabs, for counts that change while the page is open.
+- Read footer totals as group rows do ("Average 98.0%"); a hidden column's total names the column ("Success rate, average 98.0%").
+- Stack an identifier's secondary text under its value in two-line rows and the drawer, as relative times do.
+- Hide the actions column's clipped header text; the column keeps its accessible name.
+- Keep record panel lists as tables while the drawer has room for their columns, measured in the drawer rather than the page, and drop a field's title when it repeats its section's heading.
+
 - Build a grid in one call with `CanopyDataGridView.From(records, x => x.Id)`: a typed column per public property, adjusted with `[CanopyKey]`, `[CanopyColumn(Title, Order, Hidden, Format)]` and `[CanopyIgnore]`. `From` also takes a `DataTable` or dictionary rows (`Dictionary<string, object?>`, PowerShell hashtables) with a named key column.
 - Write typed grids directly with `ToHtmlPage`, `SaveHtmlPage` and `ToHtmlFragment`, and any tree or grid as a script-free table with `ToStaticHtml()`.
 - Add `CanopyHtmlOptions.HeadHtml` for host styles and scripts in a page's head, in place of replacing `</head>` in the written page.

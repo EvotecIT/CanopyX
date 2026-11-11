@@ -74,9 +74,10 @@
         track.setAttribute("aria-valuemax",String(maximum));track.setAttribute("aria-valuenow",String(Math.min(maximum,Math.max(0,raw))));track.setAttribute("aria-valuetext",text);
         bar.style.width=Math.min(100,Math.max(0,raw/maximum*100))+"%";toneColors(bar,toneOf(tone));track.appendChild(bar);box.append(track,document.createTextNode(text));
       } else if(options.kind==="identifier") {
-        add(text,options.mono?"p-mono":"cx-presenter-text");
         const secondary=options.secondaryColumn?cellText(row.cells[options.secondaryColumn],grid.columns.find(item=>item.id===options.secondaryColumn),grid.fmt):object&&cell.secondary;
-        if(secondary)add(secondary,"p-sub");
+        // Two-line rows (automatic heights and the drawer) put the secondary text under the value, as relative times do.
+        const stack=secondary&&(record||complete||grid.autoRows)&&add("","p-stack");
+        for(const item of [add(text,options.mono?"p-mono":"cx-presenter-text"),secondary&&add(secondary,"p-sub")])if(item&&stack)stack.appendChild(item);
       } else if(options.kind==="tags"||options.kind==="list") {
         const values=text.split(options.separator).map(item=>item.trim()).filter(Boolean),limit=options.kind==="tags"?3:options.limit||3;
         const preview=add("","cx-tag-list");element.classList.add("cx-list-cell");

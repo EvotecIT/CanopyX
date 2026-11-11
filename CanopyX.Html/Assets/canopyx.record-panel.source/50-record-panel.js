@@ -29,7 +29,7 @@
   };
   function recordContext(view, record, dialog, context, payload) {
     const ctx = { view, record, payload, dialog, labels: view.labels, fmt: view.fmt, signal: context.signal, index: context.index, origins: 0, pending: [],
-      phone: view.host.clientWidth <= 640, print: !!context.print, width: context.print ? 520 : view.host.clientWidth <= 640 ? 300 : 380,
+      print: !!context.print, width: context.print ? 520 : view.host.clientWidth <= 640 ? 300 : 380,
       row: { id: record.id, cells: recordMerge(record.cells, payload?.cells, record.fields, payload?.fields) },
       node: view.kind === "tree" ? { ...record, cells: recordMerge(record.cells, payload?.cells) } : null };
     ctx.navigate = (ref, origin) => recordNavigate(ctx, ref, origin);
@@ -67,21 +67,23 @@
       recordEmptyCount(ctx, section.sections), 0);
   }
 
-  function recordFieldsInto(ctx, fields, content, showEmpty) {
+  // A field titled like its section does not repeat the section's heading: a block drops its title, a term is read but not shown.
+  function recordFieldsInto(ctx, fields, content, showEmpty, label = "") {
     let list = null;
+    const fold = text => String(text).trim().toLocaleLowerCase();
     for (const field of fields) {
       const cell = recordCell(ctx.view, ctx.record, ctx.payload, field);
       if (!recordVisible(ctx, field, cell, showEmpty)) continue;
-      const kind = recordKind(cell);
+      const kind = recordKind(cell), repeated = fold(field.title) === fold(label);
       if (kind === "records" || kind === "events" || kind === "changes") {
         const block = h("div", "cx-record-block"), heading = h("div", "cx-record-block-h"), value = h("div", "cx-record-block-b");
         setText(heading, field.title); block.setAttribute("data-cx-field", field.id); value.setAttribute("data-cx-field", field.id);
-        block.append(heading, value); content.appendChild(block); list = null;
+        block.append(...repeated ? [value] : [heading, value]); content.appendChild(block); list = null;
         recordValue(ctx, field, cell, value);
         continue;
       }
       if (!list) { list = h("dl", "cx-dl cx-record-fields"); content.appendChild(list); }
-      const term = h("dt"), value = h("dd"); setText(term, field.title);
+      const term = h("dt", repeated ? "cx-sr-only" : undefined), value = h("dd"); setText(term, field.title);
       term.setAttribute("data-cx-field", field.id); value.setAttribute("data-cx-field", field.id);
       list.append(term, value); recordValue(ctx, field, cell, value);
     }
@@ -106,7 +108,7 @@
     }
     element.append(heading, content); content.hidden = collapsed;
     if (section.renderer) recordCustom(ctx, section, content);
-    recordFieldsInto(ctx, section.fields, content, showEmpty);
+    recordFieldsInto(ctx, section.fields, content, showEmpty, section.label);
     for (const child of section.sections) { const nested = recordSection(ctx, child, state, showEmpty); if (nested) content.appendChild(nested); }
     return element;
   }

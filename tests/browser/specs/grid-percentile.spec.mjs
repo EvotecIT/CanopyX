@@ -49,7 +49,7 @@ test("medians and percentiles label group rows, the summary and footers with val
   const heading = page.locator(".cx-grid-group .cx-aggregate-button").first();
   await expect(heading).toHaveText(/^Median [\d,.]+ · P95 [\d,.]+$/);
   await expect(heading).toHaveAttribute("title", /^Amount · Median: [\d,.]+ · Amount · P95: [\d,.]+$/);
-  await expect(page.locator(".cx-footer-row")).toContainText("P99.5: ");
+  await expect(page.locator(".cx-footer-row")).toContainText("P99.5 ");
   // The aggregate menu names each value by its label and function.
   await heading.click();
   const dialog = page.getByRole("dialog");

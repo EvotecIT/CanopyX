@@ -121,6 +121,7 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
   .cx-record-print .cx-record-section { break-inside:avoid; border:0; }
   .cx-record-print .cx-record-section-h { margin:var(--cx-size-10px) 0 var(--cx-size-2px); font-size:var(--cx-size-11d5px); font-weight:700; text-transform:uppercase; color:var(--hfx-color-text-muted); }
   .cx-record-print .cx-dl { display:grid; grid-template-columns:var(--cx-size-180px) 1fr; gap:var(--cx-size-2px) var(--cx-size-12px); margin:0; padding:0; }
+  .cx-record-print .cx-dl > .cx-sr-only + dd { grid-column:1 / -1; }
   .cx-record-print dd { margin:0; }
   .cx-record-print .p-sub { margin-inline-start:var(--cx-size-6px); color:var(--hfx-color-text-muted); }
   .cx-record-print .cx-record-summary { border:var(--cx-size-1px) solid var(--hfx-color-border); background:var(--hfx-color-surface); }
@@ -129,9 +130,15 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
 @media (forced-colors:active) { .cx-record-tab[aria-selected="true"] { border-bottom-color:Highlight; } .cx-timeline-dot { forced-color-adjust:none; background:CanvasText; } }
 
 /* Optional visible host action, separate from secondary actions in the menu. */
-.cx-record-footer { flex:none; display:flex; justify-content:flex-end; gap:var(--hfx-space-2); padding:var(--hfx-space-3) var(--hfx-space-4); border-top:var(--hfx-border-width) solid var(--hfx-color-border); background:var(--hfx-color-surface); }
+.cx-record-footer { flex:none; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:var(--hfx-space-2); padding:var(--hfx-space-3) var(--hfx-space-4); border-top:var(--hfx-border-width) solid var(--hfx-color-border); background:var(--hfx-color-surface); }
 .cx-record-footer .cx-record-primary { color:var(--hfx-color-accent-contrast); background:var(--hfx-color-accent); border-color:var(--hfx-color-accent); }
-.cx-record-footer .cx-record-primary:disabled { color:var(--hfx-color-text-muted); background:var(--hfx-color-surface-sunken); border-color:var(--hfx-color-border); cursor:wait; }
+/* A neutral action is a secondary button; a danger action stands apart at the far end. */
+.cx-record-footer .cx-record-secondary { border-color:var(--hfx-color-border-strong); }
+.cx-record-footer .cx-record-danger { margin-inline-start:auto; color:var(--hfx-color-status-bad-fg); border-color:var(--hfx-color-status-bad-border); }
+.cx-record-footer .cx-record-danger:hover { background:var(--hfx-color-status-bad-bg); }
+.cx-record-footer .cx-record-btn:disabled { color:var(--hfx-color-text-muted); border-color:var(--hfx-color-border); cursor:wait; }
+.cx-record-footer .cx-record-primary:disabled { background:var(--hfx-color-surface-sunken); }
+.cx-record-menu-item[data-tone="danger"] { color:var(--hfx-color-status-bad-fg); }
 .cx-record-subtitle { margin:var(--hfx-space-1) 0 0; font-size:var(--hfx-type-small-size); color:var(--hfx-color-text-muted); }
 .cx-record-drawer .cx-dl dt { color:var(--hfx-color-text-muted); font-size:var(--hfx-type-caption-size); font-weight:normal; }
 .cx-record-drawer .cx-dl dd { font-size:var(--hfx-type-body-size); }

@@ -42,7 +42,7 @@ for (const runtime of ["grid", "reporting"]) {
     // No additional poll is allowed to repair the dataset before this next page reads it.
     await page.evaluate(() => fixture.api.nextPage());
     await expect(page.getByText("Current next", { exact: true }).first()).toBeVisible();
-    await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 30");
+    await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 30");
     await page.evaluate(() => { fixture.poller.stop(); fixture.api.destroy(); });
   });
 
@@ -136,7 +136,7 @@ for (const runtime of ["grid", "reporting"]) {
       else await fixture.poller.refresh();
     }, interruption);
     await expect(page.getByText("Current evidence", { exact: true }).first()).toBeVisible();
-    await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 2");
+    await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 2");
     expect(await page.evaluate(() => fixture.api.view.rows[0].cells.name)).toBe("Current evidence");
     expect(await page.evaluate(() => fixture.api.getLiveState().pending)).toBe(0);
     if (interruption !== "query refresh") expect(await page.evaluate(() => fixture.changes))

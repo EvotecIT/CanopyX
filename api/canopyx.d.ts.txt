@@ -3750,6 +3750,7 @@ export interface RecordAction{
   readonly disabled?:boolean;
   readonly visible?:boolean|((context:RecordActionContext) => boolean);
   readonly prominent?:boolean|((context:RecordActionContext) => boolean);
+  readonly tone?:"primary"|"neutral"|"danger";
   readonly label:string;
   run(context:RecordActionContext):void|PromiseLike<void>;
 }
@@ -3830,8 +3831,13 @@ export interface GridRowActionOptions<Q=unknown>{
   onBeforeRowAction?:(proposal:GridRowActionProposal) => boolean|void;
   interactionTimeoutMs?:number;
 }
+export interface GridRowActionRequestResult{
+  readonly accepted:boolean;
+  readonly reason:string;
+  readonly message:string|null;
+}
 export interface GridRowActionApi{
-  requestRowAction(id:string,action:string,options?:{signal?:AbortSignal;reason?:string}):Promise<boolean>;
+  requestRowAction(id:string,action:string,options?:{signal?:AbortSignal;reason?:string}):Promise<GridRowActionRequestResult>;
   cancelRowAction(id?:string):boolean;
 }
 
@@ -3960,6 +3966,7 @@ export interface UiNavigationController extends UiController{
 export interface UiTabsController extends UiNavigationController{
   next():Promise<boolean>;
   back():Promise<boolean>;
+  setBadge(idOrIndex:string|number,badge:string|number|null):UiResult<boolean>;
 }
 export interface UiAccordionItem extends UiNavigationItem{
   readonly open:boolean;

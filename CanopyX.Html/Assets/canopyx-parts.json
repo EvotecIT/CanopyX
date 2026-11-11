@@ -71,7 +71,7 @@
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "3847ee99ceecf377",
+      "version": "5f829d64d561fc04",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [
@@ -138,7 +138,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "85cfad2dfe6875cd",
+      "version": "97d78871f87491bc",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -221,7 +221,7 @@
     {
       "name": "activity",
       "label": "relative time and log cells",
-      "version": "e4e9b4c2c8a7a579",
+      "version": "50d97496d9b56edc",
       "script": "canopyx-activity.js",
       "style": "canopyx-activity.css",
       "runtimes": [
@@ -993,7 +993,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "9386d0af5c7d46ba",
+      "version": "afdb6d3e9a4f81c8",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -1126,7 +1126,7 @@
     {
       "name": "grid-options",
       "label": "grid footer and query extensions",
-      "version": "ceca82369d2d01bb",
+      "version": "845d8c1fed0736e0",
       "script": "canopyx-grid-options.js",
       "style": "canopyx-grid-options.css",
       "runtimes": [
@@ -1261,7 +1261,7 @@
     {
       "name": "row-actions",
       "label": "row actions",
-      "version": "9acda52ef80c061b",
+      "version": "2ccf491daa583c92",
       "script": "canopyx-row-actions.js",
       "style": "canopyx-row-actions.css",
       "runtimes": [

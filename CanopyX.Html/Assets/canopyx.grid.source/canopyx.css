@@ -31,6 +31,8 @@
 .cx-data-grid .cx-hcell[data-cx-sort="desc"] .cx-sort::after { content:"↓";font-size:var(--cx-size-14px);color:var(--hfx-color-accent);order:-2; }
 .cx-data-grid .cx-hcell[aria-sort="other"] .cx-sort::before { content:none; }
 .cx-data-grid .cx-hcell :is(.cx-sort,.cx-htext) { min-width:0;text-overflow:ellipsis;white-space:nowrap; }
+/* The actions column is named for assistive technology; its narrow header shows no clipped title. */
+.cx-data-grid .cx-hcell[data-cx-column="cx-row-actions"] .cx-htext { visibility:hidden; }
 .cx-data-grid .cx-hcell .cx-sort { display:flex;flex:1;align-items:center;gap:4px;min-width:24px;text-align:inherit; }
 .cx-data-grid .cx-hcell.cx-kind-number .cx-htext { text-align:end; }
 .cx-data-grid .cx-hcell.cx-kind-number .cx-sort { justify-content:flex-end; }
@@ -111,6 +113,9 @@
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-link:hover { text-decoration:underline; }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-mono { font-family:var(--hfx-font-mono,"JetBrains Mono",monospace); font-size:var(--cx-size-12d5px); }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-sub { color:var(--hfx-color-text-muted); font-size:var(--cx-size-12d5px); margin-left:var(--cx-size-6px); }
+/* A value with its secondary text underneath, in two-line rows and the drawer. */
+:is(.cx-data-grid,.cx-grid-overlay) .p-stack { display:inline-flex; flex-direction:column; align-items:flex-start; min-width:0; max-width:100%; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-stack > * { max-width:100%; overflow:hidden; text-overflow:ellipsis; margin-left:0; }
 :is(.cx-data-grid,.cx-grid-overlay,.cx-facets) .p-tag { display:inline-flex; height:var(--cx-size-20px); align-items:center; padding:0 var(--cx-size-7px); border:var(--cx-size-1px) solid var(--hfx-color-border-strong); border-radius:var(--hfx-radius-badge); font-size:var(--cx-size-12px); color:var(--hfx-color-text-secondary); margin-right:var(--cx-size-4px); }
 
 

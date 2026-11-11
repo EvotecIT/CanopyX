@@ -83,10 +83,22 @@ export interface GridRowActionOptions<Q = unknown> {
   interactionTimeoutMs?: number;
 }
 
+/**
+ * What requestRowAction resolves: the outcome canopyx:rowAction reports, without the proposal. A proposal that was never
+ * made (an unknown row or action, a disabled action, a pending proposal or a veto) or was cancelled is not accepted and
+ * has no message.
+ */
+export interface GridRowActionRequestResult {
+  readonly accepted: boolean;
+  readonly reason: string;
+  /** The host's message, the rejection label, or the failure; null when accepted or never proposed. */
+  readonly message: string | null;
+}
+
 /** The row action members of a flat grid's API. */
 export interface GridRowActionApi {
-  /** Raises an action of a loaded row as if it were activated; resolves with the host's acceptance. */
-  requestRowAction(id: string, action: string, options?: { signal?: AbortSignal; reason?: string }): Promise<boolean>;
+  /** Raises an action of a loaded row as if it were activated; resolves with the host's answer. */
+  requestRowAction(id: string, action: string, options?: { signal?: AbortSignal; reason?: string }): Promise<GridRowActionRequestResult>;
   /** Cancels the pending proposal of a row, or of every row; true when one was pending. */
   cancelRowAction(id?: string): boolean;
 }

@@ -45,6 +45,14 @@ await sections.select('activity');
 sections.destroy();
 ```
 
+`setBadge(id, badge)` changes a tab's badge as counts change: text, a number (formatted in the page language) or `null` to
+remove it. It updates the tab, its panel heading and the More and phone pickers, and the tab's accessible name follows.
+
+```javascript
+sections.setBadge('activity', 14);
+sections.setBadge('activity', null);
+```
+
 Tabs support underline, pills, segmented and vertical styles; scroll, More and pill-wrap overflow; `justified` equal-width tabs; deferred panels; hash state (`#<id>=<tab>`, beside a plain anchor and other sets in the same fragment, keeping `history.state`); `remember`, which keeps the selected tab in `localStorage`; `next()` and `back()`; and optional automatic progression with a visible Pause/Play control. A deferred loader receives the destination record and an `AbortSignal`. New navigation cancels stale guards and loaders. `keepAlive: false` reloads deferred content after leaving it.
 
 ### Automatic tab progression

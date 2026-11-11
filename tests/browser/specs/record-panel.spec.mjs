@@ -163,3 +163,19 @@ test("an invalid record panel is reported and the record shows in the plain draw
   expect(await errors).toContain("record section validity");
   await expect(drawer(page).locator('dd[data-cx-field="status"]')).toBeVisible();
 });
+
+test("lists stay tables while the drawer has room, and a field titled like its section shows no second title", async ({ page }) => {
+  // A 600-pixel page opens the drawer as a full-width sheet: room for the contacts' three columns.
+  await page.setViewportSize({ width: 600, height: 900 });
+  await open(page, definition());
+  await openRecord(page);
+  const contacts = drawer(page).locator('.cx-record-block-b[data-cx-field="contacts"]');
+  await expect(contacts.locator(".cx-record-nested .cx-hcell")).toHaveText(["Role", "Name", "Email"]);
+  await expect(contacts.locator(".cx-record-card")).toHaveCount(0);
+  await drawer(page).getByRole("tab", { name: "Fields" }).click();
+  // "Names" in the Names section: the term stays for screen readers but is not shown again.
+  const term = drawer(page).locator('[data-cx-section="names"] dt[data-cx-field="names"]');
+  await expect(term).toHaveText("Names");
+  await expect(term).toHaveClass("cx-sr-only");
+  await expect(drawer(page).locator('[data-cx-section="names"] dt[data-cx-field="keyUsage"]')).toBeVisible();
+});

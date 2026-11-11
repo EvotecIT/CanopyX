@@ -73,6 +73,8 @@ test("a job opens in the record drawer with its sections and record navigation",
   await expect(drawer).toBeVisible();
   for (const section of ["Recent runs", "Triggers", "Job data"]) await expect(drawer.getByRole("button", { name: section, exact: true })).toBeVisible();
   await expect(drawer.locator(".cx-record-footer")).toContainText("Run now");
+  // Delete stands apart as the footer's danger action.
+  await expect(drawer.locator(".cx-record-footer .cx-record-danger")).toHaveText("Delete");
   await expect(drawer.getByRole("button", { name: /Next/ }).first()).toBeEnabled();
 });
 
@@ -86,5 +88,15 @@ test("a history row expands to show its run log", async ({ page }) => {
   await expect(detail).toContainText("INFO");
   await expect(detail).toContainText(/started on worker-\d/);
   // The summary row reads the whole query, medians and percentiles included.
-  await expect(page.locator('#sc-history [data-cx-footer="all"]')).toContainText(/P95: [\d.,]+ s/);
+  await expect(page.locator('#sc-history [data-cx-footer="all"]')).toContainText(/P95 [\d.,]+ s/);
+  await expect(page.locator('#sc-history [data-cx-footer="all"]')).toContainText(/Success rate, average [\d.]+%/);
+});
+
+test("a refused record action shows the scheduler's reason in the drawer", async ({ page }) => {
+  await open(page);
+  await page.evaluate(() => document.getElementById("sc-jobs").canopyx.openRecord("catalog-prices"));
+  const drawer = page.locator("dialog.cx-drawer[open]");
+  await drawer.locator(".cx-record-footer").getByRole("button", { name: "Delete" }).click();
+  await expect(drawer.locator(".cx-record-live")).toHaveText(/Search ranking reads the price index/);
+  expect(await page.evaluate(() => document.getElementById("sc-jobs").canopyx.view.rows.some(row => row.id === "catalog-prices"))).toBe(true);
 });

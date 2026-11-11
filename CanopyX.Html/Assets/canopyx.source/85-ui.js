@@ -23,7 +23,7 @@
       if (lifetime.signal.aborted) return;
       lifetime.abort(); instance?.destroy?.(); registrations.delete(kind);
     } };
-    for (const name of ["select", "getSelected", "refresh", "preparePrint", "open", "close", "setContent", "next", "back", "skip", "finish", "setStepState", "getState", "toggle", "getOpen", "filter"]) api[name] = (...args) => {
+    for (const name of ["select", "getSelected", "refresh", "setBadge", "preparePrint", "open", "close", "setContent", "next", "back", "skip", "finish", "setStepState", "getState", "toggle", "getOpen", "filter"]) api[name] = (...args) => {
       if (lifetime.signal.aborted) throw new Error("CanopyX: UI component destroyed.");
       return instance ? instance[name]?.(...args) : ready.then(() => instance[name]?.(...args));
     };
