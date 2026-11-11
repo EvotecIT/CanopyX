@@ -145,12 +145,15 @@ and export to the server without changing what readers see:
 | `POST {pattern}/range` | `gridRangeQuery` document | `gridRangePage` (400 `unsupported` when the provider has no range capability) |
 | `POST {pattern}/export/{format}` | the grid's export request (`scope`, `query`, `revision`, `selection`, `querySelection`, `columns`, `values`, …) | the file, streamed |
 | `GET {pattern}/view` | | the `grid` definition document |
-| `POST {pattern}/commit` (with `options.Writer`) | `gridCommit` document | `gridCommitResult` |
+| `POST {pattern}/commit` (with `options.UseQueryableWriter` or `options.Writer`) | `gridCommit` document | `gridCommitResult` |
 | `POST {pattern}/record` (with a record map or `options.Records`) | `gridRecordQuery` document | `gridRecord` (404 `recordNotFound` when the caller has no such record) |
 
 The GET form is off by default because query strings reach access logs, proxies and referrers. POST bodies must be `application/json` (or `+json`); other content types get 415, which also means cross-origin pages
 cannot post without passing a CORS preflight. Responses carry `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
 Every handler observes `HttpContext.RequestAborted`; the token flows into the provider and the database command.
+Factories run per request (`provider`, `options.Writer`, `options.Records`, and the store of `UseQueryableWriter`): the
+endpoint disposes an instance that is `IDisposable` or `IAsyncDisposable` when the response completes, so return a new
+instance each time rather than a shared disposable one.
 
 Outside ASP.NET Core, use `CanopyRemoteHandler` directly: `QueryAsync(json)`, `FacetAsync(json)`, `SummaryAsync(json)`, `RangeAsync(json)`,
 `PrepareExportAsync(json, format)`, with a writer (`new CanopyRemoteHandler(schema, provider, options, writer)`)
@@ -220,7 +223,7 @@ the empty string is a value, and dates compare as UTC instants at millisecond pr
 LINQ to objects implement them exactly (`CanopyTextFolding` is the shared folding). Databases get the closest translation:
 
 - **Text.** `CanopyQueryOptions.TextComparison`: `Lowercase` (the default for database providers) compares `LOWER(column)`
-  with the lowercased operand, which folds ASCII on SQLite and as far as the database's `LOWER` goes elsewhere; `Collation`
+  with the operand lowered invariantly (in memory the column is lowered invariantly too), which folds ASCII on SQLite and as far as the database's `LOWER` goes elsewhere; `Collation`
   leaves case to a case-insensitive column collation and keeps index seeks; `Canonical` is the exact in-memory rule.
   Wildcard characters (`%`, `_`, `[`) in operands match literally: operands are parameters to `Contains`/`StartsWith`,
   which the LINQ provider escapes.
@@ -246,7 +249,9 @@ LINQ to objects implement them exactly (`CanopyTextFolding` is the shared foldin
   On .NET Framework, request readers normalize exactly representable decimal JSON spellings before converting them;
   number texts outside decimal's precision or range retain the platform JSON parser's rounding.
 - **Dates** become half-open bounds: `eq t` is `t ≤ v < t + 1 ms`, `gt t` is `v ≥ t + 1 ms`. Store UTC; `DateTime` values
-  without a kind are read as UTC. In-memory ordering compares UTC milliseconds and breaks ties by record identity.
+  without a kind are read as UTC. In memory, a `DateTime` of kind `Local` is filtered, sorted and grouped as the UTC instant
+  its cell shows; databases do not keep the kind, so a store that holds local times is compared as if they were UTC.
+  In-memory ordering compares UTC milliseconds and breaks ties by record identity.
   Database ordering requires an explicit `SortBy` mapping whose values have the same ordering and ties, usually an indexed
   UTC millisecond key. Mapping the timestamp itself is appropriate only when the store guarantees whole milliseconds.
   Without that mapping, date sorts return `unsupported` before querying or preparing an export. No client-side full-table sort is used.
@@ -337,6 +342,9 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 | `MaxRecordRequestBytes` (one record request body, within `MaxRequestBytes`) | 16 KiB | — |
 | `MaxRangeRows` (records of one range answer; a larger request `limit` is lowered to it) | 5,000 | 10,000 |
 
+- **Regex quick search** runs in memory only. `MapCanopyRemote` refuses an `IQueryable` callback for a view with
+  `AllowRegexSearch`, and a regex query that still reaches `CanopyQueryableProvider<T>` answers `unsupported`. In memory, a
+  pattern that exceeds its 100 ms evaluation budget answers `limitExceeded`.
 - **Typed errors.** Rejections throw `CanopyRequestException` and answer `{ "error": code, "message": text }` with status 400
   (409 for `staleRevision`, 404 for `recordNotFound`, 413 for an oversized body, 415 for a non-JSON body). Codes: `invalidJson`, `invalidDocument`,
   `unknownColumn`, `invalidSort`, `columnNotFilterable`, `invalidOperator`, `invalidOperand`, `limitExceeded`,
@@ -548,14 +556,12 @@ app.MapCanopyRemote("/api/machines", Readable, map, options => {
     options.Query.Revision = store.GetRevisionAsync;
     options.AuthorizationPolicy = "Inventory.Read";
     options.WriteAuthorizationPolicy = "Inventory.Write";           // required with a writer, on top of the read policy
-    options.Writer = http => {
+    // The writer's scope is Readable: a commit changes only records the caller can read.
+    options.UseQueryableWriter(http => new EfCoreWriteStore<Machine>(http.RequestServices.GetRequiredService<FleetDb>()), (http, writer) => {
         var db = http.RequestServices.GetRequiredService<FleetDb>();
-        return new CanopyQueryableWriter<Machine>(map, new EfCoreWriteStore<Machine>(db), new CanopyQueryableWriterOptions<Machine> {
-            Scope = () => Readable(http),                           // a commit changes only records the caller can read
-            Revision = store.GetRevisionAsync,
-            Saving = async (context, token) => { await store.BumpRevisionAsync(db, token); return null; } // inside the row's transaction
-        });
-    };
+        writer.Revision = store.GetRevisionAsync;
+        writer.Saving = async (context, token) => { await store.BumpRevisionAsync(db, token); return null; }; // inside the row's transaction
+    });
 });
 ```
 
@@ -596,9 +602,10 @@ writer is not called and every row answers as not saved; the invalid rows retain
 - It writes only editable columns mapped to a member of the record itself (`x => x.Cores`); creating it fails when an
   editable column maps a navigation chain such as `x => x.Team!.Name`, the record key, or a member marked
   `[ConcurrencyCheck]` or `[Timestamp]` (tokens configured fluently are not visible to it: keep those columns read-only).
-- **Scope.** It changes any record `ICanopyWriteStore<T>.Records` returns. Set `Options.Scope` to the endpoint's query
-  callback, as above, so that a row whose record the caller cannot read answers as missing and is not written; or
-  restrict `Records` itself.
+- **Scope.** A row whose record lies outside `Options.Scope` answers as missing and is not written. `UseQueryableWriter`
+  sets the scope to the endpoint's query callback, as above. A writer you create yourself needs `Scope`, or
+  `AllowUnscoped = true` when every caller may change every record `ICanopyWriteStore<T>.Records` returns (for example
+  because `Records` itself is restricted); creating it with neither fails.
 - Per row it loads the record by the map's key and compares each changed column's original value with the stored one at
   protocol precision: a difference is a `conflict` and nothing is written. A record that no longer exists is a conflict
   too. With a revision source (`Options.Revision`, read inside the row's transaction), the comparison is skipped while the
@@ -608,7 +615,8 @@ writer is not called and every row answers as not saved; the invalid rows retain
   Give the record a concurrency token (EF Core `IsRowVersion()` or `IsConcurrencyToken()`); the store then refuses a save
   over a newer version and the row answers a conflict.
 - It converts values to the member types: whole numbers in range for integer members, enumeration members by their raw
-  text (`[EnumMember]` value or name), null only for nullable members; a value a member cannot hold answers a cell error.
+  text (`[EnumMember]` value or name), null only for nullable members; a value a member cannot hold, such as a number
+  beyond a `float` or `decimal` member's range (`CommitMessages.OutOfRange`), answers a cell error.
 - It runs `Saving` (stamp an audit column, change the revision, or refuse the row with a message) and saves. A store
   exception stops its row only: the row answers "The row could not be saved." (the exception goes to `Failed` for
   logging), or a conflict when the store reports a concurrency failure (EF Core's `DbUpdateConcurrencyException` for
