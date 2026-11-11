@@ -987,7 +987,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "8b35ce685f00a299",
+      "version": "51793de45dcebcf9",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1080,7 +1080,7 @@
     {
       "name": "timeline",
       "label": "resource timeline",
-      "version": "cb9b9dd33154172c",
+      "version": "ba1c091e0398bbc5",
       "script": "canopyx-timeline.js",
       "style": "canopyx-timeline.css",
       "runtimes": [
@@ -1131,7 +1131,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "ddb8a0bf5f4f8b8e",
+      "version": "f24e87cbfe9e25a4",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [

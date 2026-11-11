@@ -79,7 +79,10 @@
         // Only the month (its rows and "+N more" follow the height) and a phone switch rebuild; other views follow by CSS.
         if (switched || this.calView === "month" || this.calTimeWindow || this.view.plan && this.calView === "timeline" && Math.abs((this.planFitWidth||0)-this.tlMain.clientWidth)>1) this.calPaint({ keep: true, resize: true });
         else if (this.calView === "timeline") this.tlPaintLanes?.();
-        else if (this.calScroller?.isConnected) this.calGrid.querySelector(".cx-cal-thead").style.paddingInlineEnd = Math.max(0, this.calScroller.offsetWidth - this.calScroller.clientWidth) + "px";
+        else {
+          if (this.calScroller?.isConnected) this.calGrid.querySelector(".cx-cal-thead").style.paddingInlineEnd = Math.max(0, this.calScroller.offsetWidth - this.calScroller.clientWidth) + "px";
+          this.calLabelContent();
+        }
       };
       const observer = new ResizeObserver(() => { if (!resizeFrame) resizeFrame = requestAnimationFrame(resize); });
       observer.observe(root);
