@@ -142,7 +142,7 @@ for (const width of [1100, 1440]) for (const dark of [false, true]) {
     expect(bounds.side).toBeLessThanOrEqual(220);
     expect(bounds.firstInset).toBeGreaterThan(20);
     expect(bounds.verifyLabelWithinBar).toBe(true);
-    expect(bounds.treeOverflow).toBe("auto");
+    expect(bounds.treeOverflow).toBe("hidden");
     expect(bounds.verticalOverflow).toBeLessThanOrEqual(1);
     expect(bounds.baselineClearance).toBeGreaterThanOrEqual(12);
     expect(bounds.milestoneLabelClearance).toBeGreaterThanOrEqual(3);
@@ -155,19 +155,23 @@ for (const width of [768, 1024, 1440]) for (const dark of [false, true]) {
     const result = await page.evaluate(() => {
       const rect = element => { const box = element.getBoundingClientRect(); return { left: box.left, right: box.right, top: box.top, bottom: box.bottom }; };
       const overlap = (a, b) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
-      const collisions = [], clipped = [];
+      const collisions = [], clipped = [], beyond = [], main = document.querySelector(".cx-tl-main"), pane = main.getBoundingClientRect();
       for (const lane of document.querySelectorAll(".cx-tl-lane")) {
         const tasks = [...lane.querySelectorAll(".cx-plan-task")];
         for (const element of tasks) {
           const title = element.querySelector(".cx-cal-ev-title"); if (!title) continue;
           if (title.scrollHeight > title.clientHeight + 1) clipped.push(title.textContent);
+          // A label beside a bar in view stays in view rather than running past the scroll edge.
+          const bar = rect(element), label = rect(title);
+          if (element.classList.contains("cx-plan-label-outside") && bar.left >= pane.left && bar.right <= pane.left + main.clientWidth &&
+              (label.left < pane.left - 1 || label.right > pane.left + main.clientWidth + 1)) beyond.push(title.textContent);
           if (element.classList.contains("cx-plan-label-outside") && tasks.some(other => other !== element &&
               (overlap(rect(title), rect(other)) || overlap(rect(title), rect(other.querySelector(".cx-cal-ev-title")))))) collisions.push(title.textContent);
         }
       }
-      return { collisions, clipped, routes: [...document.querySelectorAll(".cx-plan-links path")].map(path => path.getAttribute("d").split(" M")[0]) };
+      return { collisions, clipped, beyond, routes: [...document.querySelectorAll(".cx-plan-links path")].map(path => path.getAttribute("d").split(" M")[0]) };
     });
-    expect(result.collisions).toEqual([]); expect(result.clipped).toEqual([]);
+    expect(result.collisions).toEqual([]); expect(result.clipped).toEqual([]); expect(result.beyond).toEqual([]);
     expect(result.routes.length).toBeGreaterThan(0);
     for (const route of result.routes) {
       expect(route).toMatch(/ H-?[\d.]+$/);

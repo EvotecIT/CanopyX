@@ -54,12 +54,19 @@
           const rect = element.getBoundingClientRect(), start = axis.x(task.tlStart), end = axis.x(planMilestone(this, task) ? task.tlStart : task.tlEnd);
           if (!positions.has(task.key)) positions.set(task.key, { start, end, y: rect.top - canvasBox.top + rect.height / 2, top: rect.top - canvasBox.top, bottom: rect.bottom - canvasBox.top, element });
           const title = element.querySelector(".cx-cal-ev-title");
+          // A bar whose end a dependency arrow leaves from keeps its text clear of the arrow.
+          element.classList.toggle("cx-plan-has-next", !!network.nodes.get(task.key)?.after.length);
           if (title) {
             title.style.maxInlineSize = "";
             title.title = task.title; element.classList.remove("cx-plan-label-before");
             const outside=title.scrollWidth>element.clientWidth-12||planMilestone(this,task);element.classList.toggle("cx-plan-label-outside",outside);
             const box=title.getBoundingClientRect(),x=axis.x(Date.now()),today=canvasBox.left+(this.calRtl?axis.total-x:x);
             element.classList.toggle("cx-plan-label-before",outside&&this.cal.now&&today>=box.left-4&&today<=box.right+4);
+            // A label beside a visible bar stays inside the scrolled view; one that would cross its edge stays in its bar.
+            const pane = this.tlMain.getBoundingClientRect(), from = this.calRtl ? pane.right - this.tlMain.clientWidth : pane.left, to = from + this.tlMain.clientWidth;
+            const bar = element.getBoundingClientRect(), label = title.getBoundingClientRect();
+            if (outside && !planMilestone(this, task) && bar.left >= from && bar.right <= to && (label.left < from || label.right > to))
+              element.classList.remove("cx-plan-label-outside", "cx-plan-label-before");
           }
           if (!spec.baselineStart || !spec.baselineEnd) continue;
           const from = planInstant(task.row.cells[spec.baselineStart]), to = planInstant(task.row.cells[spec.baselineEnd]);
@@ -84,9 +91,14 @@
           items.sort((a, b) => a.box.left - b.box.left);
           for (const [index, item] of items.entries()) {
             if (!item.title || !item.element.classList.contains("cx-plan-label-outside") || item.element.classList.contains("cx-plan-milestone")) continue;
-            const box = item.title.getBoundingClientRect();
-            if ([items[index - 1], items[index + 1]].some(other => other && (overlaps(box, other.box) || other.title && overlaps(box, other.title.getBoundingClientRect()))))
-              item.element.classList.remove("cx-plan-label-outside", "cx-plan-label-before");
+            const box = item.title.getBoundingClientRect(), clashes = area => items.some(other => other !== item && (overlaps(area, other.box) || other.title && overlaps(area, other.title.getBoundingClientRect())));
+            if (!clashes(box)) continue;
+            // Try the free side before the bar when no dependency arrow enters there; otherwise the label stays in its bar.
+            const left = this.calRtl ? item.box.right + 8 : item.box.left - 8 - box.width, before = { left, right: left + box.width, top: box.top, bottom: box.bottom };
+            const pane = this.tlMain.getBoundingClientRect(), from = Math.max(canvasBox.left, this.calRtl ? pane.right - this.tlMain.clientWidth : pane.left), to = Math.min(canvasBox.right, from + this.tlMain.clientWidth);
+            if (!network.nodes.get(item.element._calEvent.key)?.before.length && before.left >= from && before.right <= to && !clashes(before))
+              item.element.classList.add("cx-plan-label-before");
+            else item.element.classList.remove("cx-plan-label-outside", "cx-plan-label-before");
           }
         }
         // A milestone has no bar to hold a clipped title. Use the clearer side and cap its label at the next obstacle.
