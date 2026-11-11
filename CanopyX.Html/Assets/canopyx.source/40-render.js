@@ -132,7 +132,9 @@
           if (!["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) return;
           e.preventDefault();
           e.stopPropagation();
-          column.width = columnWidth(column, e.key === "Home" ? 40 : column.width + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10));
+          // The grip moves the way the arrow points: towards the end of the line widens, right to left too.
+          const key = inlineKey(e.key, this.grid);
+          column.width = columnWidth(column, key === "Home" ? 40 : column.width + (key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 50 : 10));
           this.applyWidths();
           this.stateChanged();
         });

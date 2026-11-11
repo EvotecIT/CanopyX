@@ -118,7 +118,7 @@
       cell.setAttribute("aria-colspan", String(this.cols.length));
       // The body sticks at the indent while the grid scrolls sideways, and takes the visible width from there.
       const left = (w.level - 1) * INDENT + 8 + "px";
-      cell.style.paddingLeft = left;
+      cell.style.paddingInlineStart = left;
       cell.style.setProperty("--cx-detail-left", left);
       this.renderDetail(node, cell);
       // As in node rows, the controls of the detail are reached with cell navigation, not with Tab.

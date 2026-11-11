@@ -90,7 +90,9 @@
       }
       const at = control ? controls.indexOf(control) : cell && cell._cxAt >= 0 && cell._cxAt < controls.length ? cell._cxAt : -1;
       let index = pendingPage ? navigation.index : row._ri, nextColumn = column, nextControl = null;
-      switch (event.key) {
+      // Left and Right mean start and end: right to left, Left moves on to the next column.
+      const rtl = /^Arrow(Left|Right)$/.test(event.key) && getComputedStyle(this.grid).direction === "rtl";
+      switch (rtl ? (event.key === "ArrowLeft" ? "ArrowRight" : "ArrowLeft") : event.key) {
         case "ArrowUp": index--; break;
         case "ArrowDown": index++; break;
         case "PageUp": index = this.gridPageStep({ ...row, _ri: index }, -1); break;

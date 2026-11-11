@@ -4,6 +4,19 @@
   // PageUp/PageDown, Enter toggles and selects, Space selects (toggles with multi-select), Shift extends a multi-select,
   // printable keys run type-ahead on labels. Tab and Shift+Tab leave the grid, also from a cell. Right on a row that
   // cannot open further, and F2 on any row, move into the row's cells when one holds a control (see 62-cell-focus.js).
+  // Left and Right here mean start and end: in a right-to-left grid Left opens and Right closes.
+
+  /** Whether an element lays out right to left, from its computed direction (the dir attribute or the stylesheet). */
+  function isRtl(element) {
+    return getComputedStyle(element).direction === "rtl";
+  }
+
+  /** Reads ArrowLeft and ArrowRight as the start and end keys of the grid's direction: swapped right to left. */
+  function inlineKey(key, element) {
+    if (key !== "ArrowLeft" && key !== "ArrowRight" || !isRtl(element)) return key;
+    return key === "ArrowLeft" ? "ArrowRight" : "ArrowLeft";
+  }
+
   function hostControl(target) {
     const row = target.closest(".cx-row");
     const control = target.closest("input,textarea,select,button,a,summary,[tabindex],[contenteditable]:not([contenteditable=false]),[role=button],[role=checkbox],[role=radio],[role=link],[role=textbox],[role=combobox],[role=menuitem],[role=separator]");
@@ -32,8 +45,9 @@
       const i = this.indexOf(w);
       const pageHeight = Math.max(this.rowH, this.grid.clientHeight - this.head.offsetHeight - this.rowH);
       const last = this.rows.length - 1;
-      // A space inside a running type-ahead term continues the term ("lab c").
-      const key = e.key === " " && this.typeBuf && performance.now() - this.typeAt <= TYPEAHEAD_MS ? "typeahead" : e.key;
+      // A space inside a running type-ahead term continues the term ("lab c"). Right to left, the arrows swap sides:
+      // the key that points to the end of the line opens and enters, the one that points to its start closes.
+      const key = e.key === " " && this.typeBuf && performance.now() - this.typeAt <= TYPEAHEAD_MS ? "typeahead" : inlineKey(e.key, this.grid);
       let target = null;
       let handled = true;
       switch (key) {

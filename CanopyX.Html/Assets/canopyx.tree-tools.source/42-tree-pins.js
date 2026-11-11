@@ -1,7 +1,7 @@
   // ---------- tree tools: pinned columns besides the tree column ----------
   // The tree column pins left (the cx-pin-tree class). Like a flat grid, any other column pins left or right (pinned in the
   // view, setColumnPinned, or remembered state): left pins follow the tree column and right pins stay at the right edge while
-  // the other columns scroll. Pinned columns hide for width only on phones, after the others, to keep the tree column
+  // the other columns scroll. Right to left, both sides mirror: the tree column and left pins stay at the right edge. Pinned columns hide for width only on phones, after the others, to keep the tree column
   // readable (33-column-fit-core.js); when they would leave the scrolling columns less than 128 pixels, the innermost of
   // them scroll too.
   const TREE_PINS = {};
@@ -49,8 +49,9 @@
       const place = (cell, column) => {
         const side = column?.pinAt != null && column.pin, key = side && side + column.pinAt;
         if (cell._pin === key) return;
-        cell._pin = key; cell.style.left = cell.style.right = "";
-        if (side) { cell.dataset.cxPin = side; cell.style[side] = column.pinAt + "px"; } else delete cell.dataset.cxPin;
+        // "left" and "right" name the start and end edges, so a right-to-left tree mirrors them.
+        cell._pin = key; cell.style.insetInlineStart = cell.style.insetInlineEnd = "";
+        if (side) { cell.dataset.cxPin = side; cell.style[side === "left" ? "insetInlineStart" : "insetInlineEnd"] = column.pinAt + "px"; } else delete cell.dataset.cxPin;
       };
       // Once a layout placed pins, every render checks its rows: rows reused from the pool may still carry them.
       if (!(this.pinsPlaced ||= this.pinned)) return;
