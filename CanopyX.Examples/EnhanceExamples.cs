@@ -9,7 +9,8 @@ namespace CanopyX.Examples;
 /// <summary>
 /// Progressive enhancement and simple init: a plain HTML table enhanced with one call, grids built from records and from a
 /// URL, and server processing against a stand-in server. The pages load the grid runtime as plain files, the way a page
-/// loads it from a CDN, with the parts beside it. A C#-authored paged grid shows the same pager settings from .NET.
+/// loads it from a CDN, with the parts beside it. A C#-authored paged grid shows the same pager settings from .NET, and a
+/// server-written matrix table becomes the interactive matrix (matrix-table.html).
 /// </summary>
 internal static class EnhanceExamples {
     private static readonly string[] Sites = { "Warsaw", "Berlin", "Madrid", "Lisbon", "Oslo" };
@@ -23,7 +24,17 @@ internal static class EnhanceExamples {
             .Replace("{{rows}}", TableRows(out var footer)).Replace("{{footer}}", footer), new UTF8Encoding(false));
         foreach (var page in new[] { "enhance-data.html", "enhance-server.html" })
             File.WriteAllText(Path.Combine(output, page), Template(page).Replace("{{example-style}}", style), new UTF8Encoding(false));
+        File.WriteAllText(Path.Combine(output, "matrix-table.html"), Template("matrix-table.html").Replace("{{example-style}}", style).Replace("{{table}}", MatrixTable()), new UTF8Encoding(false));
         WritePagedGrid(output);
+    }
+
+    // The services matrix as a server writes it for a page without script: each server and probe a link, the table enhanceable.
+    private static string MatrixTable() {
+        var matrix = MatrixExamples.Services(24);
+        matrix.Columns.GroupBy = "tier";
+        foreach (var server in matrix.Rows.Items) server.Href = "#server-" + server.Id;
+        foreach (var cell in matrix.Cells) cell.Href = "#probe-" + cell.Row + "-" + cell.Column;
+        return Rendering.CanopyStaticHtml.RenderEnhanceableMatrix(matrix);
     }
 
     // Sixty servers with sort values on usage and last contact, search codes on sites, status tones and a console link.
