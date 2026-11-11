@@ -9,10 +9,16 @@ namespace CanopyX.Data;
 /// <typeparam name="T">The record type.</typeparam>
 public sealed class CanopyQueryableWriterOptions<T> where T : class {
     /// <summary>Gets or sets the records this caller may read, usually the endpoint's query callback (<c>() =&gt; query(http)</c>).
-    /// A row whose key is not in it answers as a missing record and is not written. Null adds no further restriction: the writer then
-    /// writes any record <see cref="ICanopyWriteStore{T}.Records"/> holds.</summary>
-    /// <remarks>Set it whenever callers may read only some records, so a caller cannot change a record it cannot see.</remarks>
+    /// A row whose key is not in it answers as a missing record and is not written. A writer needs a scope unless
+    /// <see cref="AllowUnscoped"/> is set.</summary>
+    /// <remarks>The ASP.NET Core endpoints set it to the grid's own query callback with <c>UseQueryableWriter</c>.</remarks>
     public Func<IQueryable<T>>? Scope { get; set; }
+
+    /// <summary>Gets or sets whether the writer may run without <see cref="Scope"/>, writing any record
+    /// <see cref="ICanopyWriteStore{T}.Records"/> holds. Default false: creating an unscoped writer fails.</summary>
+    /// <remarks>Set it only when every caller may change every record, or when the store's <see cref="ICanopyWriteStore{T}.Records"/>
+    /// already holds only the records this caller may change.</remarks>
+    public bool AllowUnscoped { get; set; }
 
     /// <summary>
     /// Gets or sets how a new record of an insert row is created, before the row's values are applied: set the fields the caller

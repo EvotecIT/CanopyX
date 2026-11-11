@@ -12,6 +12,7 @@ public sealed class InsertStoreScopeTests {
         var store = new ScopedStore();
         var map = Fleet.Map(Fleet.EditableView());
         var writer = new CanopyQueryableWriter<Host>(map, store, new CanopyQueryableWriterOptions<Host> {
+            AllowUnscoped = true,
             Transaction = transaction,
             NewRecord = row => new Host { OwnerId = row.Id == "new-2" ? 1 : 2 }
         });

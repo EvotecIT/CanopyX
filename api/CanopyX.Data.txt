@@ -33,6 +33,7 @@ CanopyX.Data.CanopyCommitMessages.System.String MinimumLength { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Missing { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String NotSaved { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Number { get; set; }
+CanopyX.Data.CanopyCommitMessages.System.String OutOfRange { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Pattern { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Required { get; set; }
 CanopyX.Data.CanopyCommitMessages.System.String Step { get; set; }
@@ -429,7 +430,7 @@ CanopyX.Data.CanopyQueryableRecordProvider<T>.CanopyX.Data.CanopyRecordMap<T> Ma
 CanopyX.Data.CanopyQueryableRecordProvider<T>.CanopyX.Data.CanopyRecordSchema Schema { get; }
 CanopyX.Data.CanopyQueryableRecordProvider<T>.System.Threading.Tasks.ValueTask<CanopyX.CanopyGridRecord?> GetRecordAsync(CanopyX.Data.CanopyRecordRequest request, System.Threading.CancellationToken cancellationToken)
 CanopyX.Data.CanopyQueryableWriter<T> : sealed class (CanopyX.Data.ICanopyDataWriter, CanopyX.Data.ICanopyInsertWriter) where T : class
-CanopyX.Data.CanopyQueryableWriter<T>..ctor(CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.ICanopyWriteStore<T> store, CanopyX.Data.CanopyQueryableWriterOptions<T>? options = null)
+CanopyX.Data.CanopyQueryableWriter<T>..ctor(CanopyX.Data.CanopyColumnMap<T> map, CanopyX.Data.ICanopyWriteStore<T> store, CanopyX.Data.CanopyQueryableWriterOptions<T> options)
 CanopyX.Data.CanopyQueryableWriter<T>.CanopyX.Data.CanopyCommitTransaction Transaction { get; }
 CanopyX.Data.CanopyQueryableWriter<T>.System.Boolean AcceptsInserts { get; }
 CanopyX.Data.CanopyQueryableWriter<T>.System.Threading.Tasks.ValueTask<CanopyX.Data.CanopyCommitResult> CommitAsync(CanopyX.Data.CanopyCommitBatch batch, System.String revision, System.Threading.CancellationToken cancellationToken)
@@ -439,6 +440,7 @@ CanopyX.Data.CanopyQueryableWriterOptions<T>.CanopyX.Data.CanopyCommitMessages? 
 CanopyX.Data.CanopyQueryableWriterOptions<T>.CanopyX.Data.CanopyCommitTransaction Transaction { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.CanopyX.Data.CanopyQueryExecutor Executor { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Action<CanopyX.Data.CanopyCommitRow, System.Exception>? Failed { get; set; }
+CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Boolean AllowUnscoped { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Boolean AlwaysCompareOriginals { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<CanopyX.Data.CanopyCommitRow, T>? NewRecord { get; set; }
 CanopyX.Data.CanopyQueryableWriterOptions<T>.System.Func<CanopyX.Data.CanopyWriteContext<T>, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.String?>>? Saving { get; set; }

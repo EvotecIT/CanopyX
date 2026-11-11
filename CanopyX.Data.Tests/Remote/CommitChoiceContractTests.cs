@@ -231,7 +231,7 @@ public sealed class CommitChoiceContractTests {
             });
             var map = new CanopyColumnMap<Record<T>>(view).Key(row => row.Id).Column("value", row => row.Value);
             Handler = new CanopyRemoteHandler(map.Schema, new CanopyQueryableProvider<Record<T>>(Store.Records, map), null,
-                new CanopyQueryableWriter<Record<T>>(map, Store));
+                new CanopyQueryableWriter<Record<T>>(map, Store, new CanopyQueryableWriterOptions<Record<T>> { AllowUnscoped = true }));
         }
         public Record<T> Record { get; }
         public Store<T> Store { get; }
