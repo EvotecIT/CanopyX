@@ -29,14 +29,51 @@ public sealed partial class CanopyMatrix {
             int r = rows[cell.Row], c = columns[cell.Column];
             if (Square && Diagonal == CanopyMatrixDiagonal.Self && r == c) continue;
             grid[r][c] = StateDigits[stateIndex[cell.State]];
-            if (cell.Value.HasValue || cell.Text != null || cell.Title != null || cell.Details.Count > 0) notes.Add((r, c, cell));
+            if (cell.Value.HasValue || cell.Text != null || cell.Title != null || cell.Details.Count > 0 || cell.Href != null) notes.Add((r, c, cell));
         }
 
         notes.Sort((a, b) => a.Row != b.Row ? a.Row.CompareTo(b.Row) : a.Column.CompareTo(b.Column));
         var writer = new CanopyJsonWriter(256 + grid.Length * (columns.Count + 4));
-        writer.BeginObject().Envelope("matrix").Property("id", Id).Property("label", Label);
-        writer.Name("rows"); WriteAxis(writer, Rows);
-        if (Square) writer.Property("square", true).OptionalProperty("columnTitle", Columns.Title); else { writer.Name("columns"); WriteAxis(writer, Columns); }
+        writer.BeginObject().Envelope("matrix");
+        WriteHead(writer, true);
+        writer.Name("cells").BeginArray();
+        foreach (var row in grid) writer.String(new string(row));
+        writer.EndArray();
+        if (notes.Count > 0) {
+            writer.Name("notes").BeginArray();
+            foreach (var (row, column, cell) in notes) WriteNote(writer, row, column, cell);
+            writer.EndArray();
+        }
+
+        WriteSettings(writer);
+        if (TimeSlider != null) { writer.Name("timeSlider"); TimeSlider.WriteJson(writer, frame => frame.ToJson()); }
+        return writer.EndObject().ToString();
+    }
+
+    /// <summary>
+    /// The document fields an enhanceable table carries in <c>data-matrix</c>: everything but the items, the cells, their notes and
+    /// the snapshots, which the table's markup holds (docs/matrix.md#a-table-from-the-server).
+    /// </summary>
+    internal string ToTableJson() {
+        var writer = new CanopyJsonWriter();
+        writer.BeginObject();
+        WriteHead(writer, false);
+        WriteSettings(writer);
+        return writer.EndObject().ToString();
+    }
+
+    /// <summary>An item's attribute values as the document writes them, or null without any.</summary>
+    internal static string? ValuesJson(CanopyMatrixAxis axis, CanopyMatrixItem item) {
+        if (item.Values.Count == 0) return null;
+        var writer = new CanopyJsonWriter(64);
+        WriteValues(writer, axis, item);
+        return writer.ToString();
+    }
+
+    private void WriteHead(CanopyJsonWriter writer, bool items) {
+        writer.Property("id", Id).Property("label", Label);
+        writer.Name("rows"); WriteAxis(writer, Rows, items);
+        if (Square) writer.Property("square", true).OptionalProperty("columnTitle", Columns.Title); else { writer.Name("columns"); WriteAxis(writer, Columns, items); }
         if (Diagonal == CanopyMatrixDiagonal.Data) writer.Property("diagonal", "data");
         writer.Name("states").BeginArray();
         foreach (var state in States) {
@@ -46,15 +83,10 @@ public sealed partial class CanopyMatrix {
             writer.EndObject();
         }
 
-        writer.EndArray().Name("cells").BeginArray();
-        foreach (var row in grid) writer.String(new string(row));
         writer.EndArray();
-        if (notes.Count > 0) {
-            writer.Name("notes").BeginArray();
-            foreach (var (row, column, cell) in notes) WriteNote(writer, row, column, cell);
-            writer.EndArray();
-        }
+    }
 
+    private void WriteSettings(CanopyJsonWriter writer) {
         if (TotalStates.Count > 0 || !RowTotals || !ColumnTotals) {
             writer.Name("totals").BeginObject();
             if (TotalStates.Count > 0) writer.StringArray("states", TotalStates);
@@ -72,11 +104,9 @@ public sealed partial class CanopyMatrix {
         if (!Legend) writer.Property("legend", false);
         if (!AutoHeight) writer.Property("autoHeight", false);
         if (Labels != null && Labels.HasMatrixLabels) { writer.Name("labels"); Labels.WriteMatrixJson(writer); }
-        if (TimeSlider != null) { writer.Name("timeSlider"); TimeSlider.WriteJson(writer, frame => frame.ToJson()); }
-        return writer.EndObject().ToString();
     }
 
-    private static void WriteAxis(CanopyJsonWriter writer, CanopyMatrixAxis axis) {
+    private static void WriteAxis(CanopyJsonWriter writer, CanopyMatrixAxis axis, bool items) {
         writer.BeginObject().OptionalProperty("title", axis.Title).OptionalProperty("noun", axis.Noun).OptionalProperty("groupCount", axis.GroupCount);
         if (axis.Attributes.Count > 0) {
             writer.Name("attributes").BeginArray();
@@ -90,38 +120,47 @@ public sealed partial class CanopyMatrix {
             writer.EndArray();
         }
 
-        writer.Name("items").BeginArray();
-        foreach (var item in axis.Items) {
-            writer.BeginObject().Property("id", item.Id).Property("label", item.Label).OptionalProperty("secondary", item.Secondary).OptionalProperty("href", item.Href);
-            if (item.Values.Count > 0) {
-                writer.Name("values").BeginObject();
-                foreach (var attribute in axis.Attributes) {
-                    if (item.Values.TryGetValue(attribute.Id, out var value) && value != null) { writer.Name(attribute.Id); value.WriteJson(writer); }
-                }
-
+        if (items) {
+            writer.Name("items").BeginArray();
+            foreach (var item in axis.Items) {
+                writer.BeginObject().Property("id", item.Id).Property("label", item.Label).OptionalProperty("secondary", item.Secondary).OptionalProperty("href", item.Href);
+                if (item.Values.Count > 0) { writer.Name("values"); WriteValues(writer, axis, item); }
                 writer.EndObject();
             }
 
-            writer.EndObject();
+            writer.EndArray();
         }
 
-        writer.EndArray().OptionalProperty("groupBy", axis.GroupBy);
+        writer.OptionalProperty("groupBy", axis.GroupBy);
         if (axis.SortBy != null) writer.Name("sort").BeginObject().Property("by", axis.SortBy).Property("direction", axis.SortDescending ? "desc" : "asc").EndObject();
+        writer.EndObject();
+    }
+
+    private static void WriteValues(CanopyJsonWriter writer, CanopyMatrixAxis axis, CanopyMatrixItem item) {
+        writer.BeginObject();
+        foreach (var attribute in axis.Attributes) {
+            if (item.Values.TryGetValue(attribute.Id, out var value) && value != null) { writer.Name(attribute.Id); value.WriteJson(writer); }
+        }
+
         writer.EndObject();
     }
 
     private static void WriteNote(CanopyJsonWriter writer, int row, int column, CanopyMatrixCell cell) {
         writer.BeginArray().Number(row).Number(column);
-        var last = cell.Details.Count > 0 ? 4 : cell.Title != null ? 3 : cell.Text != null ? 2 : 1;
+        var last = cell.Href != null ? 5 : cell.Details.Count > 0 ? 4 : cell.Title != null ? 3 : cell.Text != null ? 2 : 1;
         if (cell.Value.HasValue) writer.Number(cell.Value.Value); else writer.Null();
         if (last >= 2) writer.String(cell.Text);
         if (last >= 3) writer.String(cell.Title);
-        if (last >= 4) {
-            writer.BeginArray();
-            foreach (var detail in cell.Details) writer.BeginArray().String(detail.Key).String(detail.Value).EndArray();
-            writer.EndArray();
-        }
+        if (last >= 4 && cell.Details.Count == 0) writer.Null();
+        else if (last >= 4) WriteDetails(writer, cell);
+        if (last >= 5) writer.String(cell.Href);
+        writer.EndArray();
+    }
 
+    /// <summary>A cell's details as the document writes them: a list of label and value pairs.</summary>
+    internal static void WriteDetails(CanopyJsonWriter writer, CanopyMatrixCell cell) {
+        writer.BeginArray();
+        foreach (var detail in cell.Details) writer.BeginArray().String(detail.Key).String(detail.Value).EndArray();
         writer.EndArray();
     }
 
@@ -281,11 +320,12 @@ public sealed partial class CanopyMatrix {
 
         var noted = new HashSet<long>();
         foreach (var node in CanopyFlowContract.Items(map, "notes", what, MaxCells)) {
-            if (!(node is List<object?> note) || note.Count < 3 || note.Count > 6 || !(note[0] is long r) || !(note[1] is long c) || r < 0 || c < 0 || r >= rows.Count || c >= columns.Count ||
+            if (!(node is List<object?> note) || note.Count < 3 || note.Count > 7 || !(note[0] is long r) || !(note[1] is long c) || r < 0 || c < 0 || r >= rows.Count || c >= columns.Count ||
                 !placed.TryGetValue(r * columns.Count + c, out var cell) || !noted.Add(r * columns.Count + c)) throw new InvalidOperationException(what + " has a note that names no cell, or a cell twice.");
             cell.Value = note[2] switch { null => null, long whole => whole, double real => real, _ => throw new InvalidOperationException(what + " has a note value that is not a number.") };
             cell.Text = note.Count > 3 ? note[3] as string ?? (note[3] == null ? null : throw new InvalidOperationException(what + " has a note text that is not text.")) : null;
             cell.Title = note.Count > 4 ? note[4] as string ?? (note[4] == null ? null : throw new InvalidOperationException(what + " has a note title that is not text.")) : null;
+            cell.Href = note.Count > 6 ? note[6] as string ?? (note[6] == null ? null : throw new InvalidOperationException(what + " has a note link that is not text.")) : null;
             if (note.Count > 5 && note[5] != null) {
                 if (!(note[5] is List<object?> details)) throw new InvalidOperationException(what + " has note details that are not a list.");
                 foreach (var detail in details) {

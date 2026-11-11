@@ -20,6 +20,17 @@ public sealed class MatrixPartAssetsTests {
     }
 
     [Fact]
+    public void MatrixTablePart_IsBoundedStylesheetFreeAndLoadedOnlyByPageCode() {
+        var part = CanopyHtmlAssets.GetPart("matrix-table");
+        Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }, part.Runtimes);
+        Assert.Null(part.Style);
+        Assert.Contains("function mxTableDocument(", part.Script);
+        foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) Assert.DoesNotContain("function mxTableDocument(", CanopyHtmlAssets.GetScript(runtime));
+        // Its first size plus about 15%, rounded up to KiB.
+        Assert.True(Gzip(part.Script) <= 4 * 1024, "The matrix-table part is " + Gzip(part.Script) + " bytes gzip; the guard is 4 KiB.");
+    }
+
+    [Fact]
     public void GridEntryPoints_CarryTheShellAndTheTreeEntryPointDoesNot() {
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             var script = CanopyHtmlAssets.GetScript(runtime);

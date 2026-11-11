@@ -2986,6 +2986,7 @@ CanopyX.CanopyMatrixCell.System.Nullable<System.Double> Value { get; set; }
 CanopyX.CanopyMatrixCell.System.String Column { get; }
 CanopyX.CanopyMatrixCell.System.String Row { get; }
 CanopyX.CanopyMatrixCell.System.String State { get; set; }
+CanopyX.CanopyMatrixCell.System.String? Href { get; set; }
 CanopyX.CanopyMatrixCell.System.String? Text { get; set; }
 CanopyX.CanopyMatrixCell.System.String? Title { get; set; }
 CanopyX.CanopyMatrixDetails : enum System.Int32
@@ -3523,6 +3524,7 @@ CanopyX.Rendering.CanopyStaticHtml.static System.String Render(CanopyX.CanopyTre
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderChanges(CanopyX.CanopyChangeList list, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderComparison(CanopyX.CanopyDataGridView view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderDiff(CanopyX.CanopyTextDiff diff, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
+CanopyX.Rendering.CanopyStaticHtml.static System.String RenderEnhanceableMatrix(CanopyX.CanopyMatrix matrix, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGrid(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridCursorPage page, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGrid(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridPage? page = null, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGridPivot(CanopyX.CanopyDataGridView view, CanopyX.CanopyPivotResult result, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)

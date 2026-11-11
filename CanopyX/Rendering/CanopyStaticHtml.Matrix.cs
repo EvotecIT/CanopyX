@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using CanopyX.Json;
 
 namespace CanopyX.Rendering;
 
@@ -24,7 +25,8 @@ public static partial class CanopyStaticHtml {
     /// and its tone: a cell that needs attention is a print-safe tint of its tone with the symbol in bold, any other state the symbol
     /// in its tone's colour, so a state never relies on colour alone. A grouped axis keeps its groups: a heading row per row group
     /// (its label, its count in <see cref="CanopyMatrixAxis.GroupCount"/> or <see cref="CanopyLabels.MatrixGroupCount"/>, and its
-    /// total) and a band above the column labels per column group. Row totals and a legend with each state's count follow. A matrix
+    /// total) and a band above the column labels per column group. Headers and cells with an <c>Href</c> are links. Row totals and a
+    /// legend with each state's count follow. A matrix
     /// of more than <see cref="MaxStaticMatrixCells"/> cells is listed instead as the cells that need attention (row, column, state,
     /// value), up to <see cref="CanopyStaticHtmlOptions.MaxRows"/>.
     /// </summary>
@@ -38,7 +40,23 @@ public static partial class CanopyStaticHtml {
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is null.</exception>
     /// <exception cref="InvalidOperationException">The matrix is not valid.</exception>
-    public static string RenderMatrix(CanopyMatrix matrix, CanopyStaticHtmlOptions? options = null) {
+    public static string RenderMatrix(CanopyMatrix matrix, CanopyStaticHtmlOptions? options = null) => RenderMatrix(matrix, options, false);
+
+    /// <summary>
+    /// Renders the same table for a page that works without script and that <c>CanopyX.enhance</c> (or <c>CanopyX.matrix</c>) turns
+    /// into the interactive matrix: every row and column, whatever <see cref="MaxStaticMatrixCells"/> and
+    /// <see cref="CanopyStaticHtmlOptions.MaxRows"/> say, headers and cells with an <c>Href</c> as links, and the ids, attribute
+    /// values, states and notes the browser reads back in <c>data-*</c> attributes, the document's other fields in
+    /// <c>data-matrix</c> (docs/matrix.md#a-table-from-the-server).
+    /// </summary>
+    /// <param name="matrix">The matrix.</param>
+    /// <param name="options">Caption (the matrix label by default), theme and culture.</param>
+    /// <returns>The table.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The matrix is not valid.</exception>
+    public static string RenderEnhanceableMatrix(CanopyMatrix matrix, CanopyStaticHtmlOptions? options = null) => RenderMatrix(matrix, options, true);
+
+    private static string RenderMatrix(CanopyMatrix matrix, CanopyStaticHtmlOptions? options, bool enhance) {
         if (matrix == null) throw new ArgumentNullException(nameof(matrix));
         matrix.Validate();
         var parentLabels = matrix.Labels;
@@ -58,7 +76,10 @@ public static partial class CanopyStaticHtml {
         foreach (var cell in matrix.Cells) cells[(long)rowIndex[cell.Row] * columns.Count + columnIndex[cell.Column]] = cell;
         bool Self(int r, int c) => matrix.Square && matrix.Diagonal == CanopyMatrixDiagonal.Self && r == c;
         var html = new StringBuilder(512 + Math.Min(cells.Count, MaxStaticMatrixCells) * 64);
-        html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append(CanopyStaticStyles.PrintColors).Append("\">");
+        html.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"").Append(styles.Table).Append(CanopyStaticStyles.PrintColors).Append('"');
+        if (enhance) html.Append(" data-view=\"matrix\" data-matrix=\"").Append(Encode(matrix.ToTableJson())).Append('"');
+        html.Append('>');
+        var maxRows = enhance ? int.MaxValue : settings.MaxRows;
         var caption = settings.Caption ?? matrix.Label;
         if (caption.Length != 0 || snapshot != null) {
             html.Append("<caption style=\"").Append(styles.Caption).Append("\">").Append(Encode(caption));
@@ -72,7 +93,7 @@ public static partial class CanopyStaticHtml {
 
             html.Append("</caption>");
         }
-        var table = (long)rows.Count * columns.Count <= MaxStaticMatrixCells;
+        var table = enhance || (long)rows.Count * columns.Count <= MaxStaticMatrixCells;
         var span = table ? columns.Count + 1 + (matrix.RowTotals ? 1 : 0) : 4;
         if (table) {
             var columnGroups = MatrixGroups(columnAxis, settings.Culture);
@@ -93,14 +114,21 @@ public static partial class CanopyStaticHtml {
             }
 
             html.Append("<tr><th scope=\"col\" style=\"").Append(styles.Header).Append("\">").Append(Encode(matrix.Rows.Title ?? labels.MatrixRows)).Append("</th>");
-            foreach (var c in order) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("text-align:center;\">").Append(Encode(columns[c].Label)).Append("</th>");
-            if (matrix.RowTotals) html.Append("<th scope=\"col\" style=\"").Append(styles.Header).Append("text-align:right;\">").Append(Encode(labels.MatrixTotal)).Append("</th>");
+            foreach (var c in order) {
+                html.Append("<th scope=\"col\"");
+                if (enhance) AppendMatrixItemData(html, columnAxis, columns[c]);
+                html.Append(" style=\"").Append(styles.Header).Append("text-align:center;\">");
+                AppendMatrixLabel(html, columns[c]);
+                html.Append("</th>");
+            }
+
+            if (matrix.RowTotals) html.Append("<th scope=\"col\"").Append(enhance ? " data-total" : string.Empty).Append(" style=\"").Append(styles.Header).Append("text-align:right;\">").Append(Encode(labels.MatrixTotal)).Append("</th>");
             html.Append("</tr></thead>");
             int Total(int r) => order.Count(c => !Self(r, c) && cells.TryGetValue((long)r * columns.Count + c, out var cell) && counted.Contains(cell.State));
             var grouped = matrix.Rows.GroupBy != null;
             var shown = 0;
             foreach (var group in MatrixGroups(matrix.Rows, settings.Culture)) {
-                if (shown >= settings.MaxRows) break;
+                if (shown >= maxRows) break;
                 // Each group is a body of its own, so its heading (scope="rowgroup") names only its own rows.
                 html.Append("<tbody>");
                 if (grouped) {
@@ -112,11 +140,14 @@ public static partial class CanopyStaticHtml {
                 }
 
                 foreach (var r in group.Members) {
-                    if (shown >= settings.MaxRows) break;
+                    if (shown >= maxRows) break;
                     shown++;
-                    html.Append("<tr><th scope=\"row\" style=\"").Append(styles.Cell).Append("text-align:left;font-weight:600;").Append(grouped ? "padding-left:20px;" : string.Empty).Append("\">")
-                        .Append(Encode(rows[r].Label)).Append("</th>");
-                    foreach (var c in order) AppendMatrixCell(html, r, c, Self(r, c), cells.TryGetValue((long)r * columns.Count + c, out var cell) ? cell : null, states, styles, labels, settings);
+                    html.Append("<tr");
+                    if (enhance) AppendMatrixItemData(html, matrix.Rows, rows[r]);
+                    html.Append("><th scope=\"row\" style=\"").Append(styles.Cell).Append("text-align:left;font-weight:600;").Append(grouped ? "padding-left:20px;" : string.Empty).Append("\">");
+                    AppendMatrixLabel(html, rows[r]);
+                    html.Append("</th>");
+                    foreach (var c in order) AppendMatrixCell(html, Self(r, c), cells.TryGetValue((long)r * columns.Count + c, out var cell) ? cell : null, states, styles, labels, settings, enhance);
                     if (matrix.RowTotals) html.Append("<td style=\"").Append(styles.Cell).Append("text-align:right;font-weight:600;\">").Append(Total(r).ToString("N0", settings.Culture)).Append("</td>");
                     html.Append("</tr>");
                 }
@@ -148,14 +179,45 @@ public static partial class CanopyStaticHtml {
         return html.Append("</table>").ToString();
     }
 
-    private static void AppendMatrixCell(StringBuilder html, int r, int c, bool self, CanopyMatrixCell? cell, Dictionary<string, CanopyMatrixState> states, CanopyStaticStyles styles,
-        CanopyLabels labels, CanopyStaticHtmlOptions settings) {
-        html.Append("<td style=\"").Append(styles.Cell).Append("text-align:center;white-space:nowrap;");
+    private static void AppendMatrixCell(StringBuilder html, bool self, CanopyMatrixCell? cell, Dictionary<string, CanopyMatrixState> states, CanopyStaticStyles styles,
+        CanopyLabels labels, CanopyStaticHtmlOptions settings, bool enhance) {
+        if (self || cell == null || !enhance) html.Append("<td");
+        else {
+            // What the browser reads back: the state by id, and the cell's extras as the document's note holds them.
+            html.Append("<td data-state=\"").Append(Encode(cell.State)).Append('"');
+            if (cell.Value.HasValue) html.Append(" data-value=\"").Append(cell.Value.Value.ToString("R", CultureInfo.InvariantCulture)).Append('"');
+            if (cell.Text != null) html.Append(" data-text=\"").Append(Encode(cell.Text)).Append('"');
+            if (cell.Title != null) html.Append(" data-title=\"").Append(Encode(cell.Title)).Append('"');
+            if (cell.Details.Count > 0) {
+                var details = new CanopyJsonWriter();
+                CanopyMatrix.WriteDetails(details, cell);
+                html.Append(" data-details=\"").Append(Encode(details.ToString())).Append('"');
+            }
+        }
+
+        html.Append(" style=\"").Append(styles.Cell).Append("text-align:center;white-space:nowrap;");
         if (self) { html.Append(styles.SelfCell).Append("\" title=\"").Append(Encode(labels.MatrixSelf)).Append("\"></td>"); return; }
         if (cell == null) { html.Append(styles.MutedText).Append("\" title=\"").Append(Encode(labels.MatrixNoData)).Append("\">·</td>"); return; }
         var state = states[cell.State];
         html.Append(styles.MatrixTone(state.Tone, state.Attention)).Append("\" title=\"").Append(Encode(state.Label)).Append("\">");
-        html.Append(Encode(Glyph(state) + Shown(cell, settings))).Append("</td>");
+        var content = Encode(Glyph(state) + Shown(cell, settings));
+        if (cell.Href != null) html.Append("<a href=\"").Append(Encode(cell.Href)).Append("\" style=\"color:inherit;\">").Append(content).Append("</a>");
+        else html.Append(content);
+        html.Append("</td>");
+    }
+
+    /// <summary>A header's label, a link when the item has an <c>Href</c>.</summary>
+    private static void AppendMatrixLabel(StringBuilder html, CanopyMatrixItem item) {
+        if (item.Href == null) { html.Append(Encode(item.Label)); return; }
+        html.Append("<a href=\"").Append(Encode(item.Href)).Append("\" style=\"color:inherit;\">").Append(Encode(item.Label)).Append("</a>");
+    }
+
+    /// <summary>An item's id, secondary text and attribute values, as the enhanceable table carries them.</summary>
+    private static void AppendMatrixItemData(StringBuilder html, CanopyMatrixAxis axis, CanopyMatrixItem item) {
+        html.Append(" data-id=\"").Append(Encode(item.Id)).Append('"');
+        if (item.Secondary != null) html.Append(" data-secondary=\"").Append(Encode(item.Secondary)).Append('"');
+        var values = CanopyMatrix.ValuesJson(axis, item);
+        if (values != null) html.Append(" data-values=\"").Append(Encode(values)).Append('"');
     }
 
     private static void AppendMatrixLegend(StringBuilder html, CanopyMatrix matrix, int span, IEnumerable<CanopyMatrixCell> cells, Func<int, int, bool> self,
