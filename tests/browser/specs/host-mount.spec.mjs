@@ -57,6 +57,11 @@ test("options configured before the page loads reach the fragment the runtime mo
 });
 
 test("a deferred runtime leaves room for a deferred host script to configure the view", async ({ page }) => {
+  // Firefox can withhold navigation entries until loading finishes, while deferred scripts are still running.
+  await page.addInitScript(() => {
+    const entries = performance.getEntriesByType.bind(performance);
+    performance.getEntriesByType = type => type === "navigation" ? [] : entries(type);
+  });
   // The page SaveHtmlBundle writes loads canopyx.js with defer; a host adds its own deferred script after it.
   const { script, style } = runtimeAssets();
   const html = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Deferred</title><style>" + style + "</style>"
