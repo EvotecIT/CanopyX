@@ -20,7 +20,7 @@ public sealed class EfCoreWriterSafetyTests : IDisposable {
         var map = Fleet.Map(Fleet.EditableView());
         var db = _sqlite.Create();
         var store = new InterferingStore(new EfCoreWriteStore<Host>(db));
-        var options = new CanopyQueryableWriterOptions<Host>();
+        var options = new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true };
         configure?.Invoke(options);
         var writer = new CanopyQueryableWriter<Host>(map, store, options);
         var provider = new CanopyQueryableProvider<Host>(() => db.Hosts, map, new CanopyQueryOptions { Executor = new EfExecutor(), Revision = _ => new ValueTask<string>("r" + _revision) });
@@ -176,10 +176,20 @@ public sealed class EfCoreWriterSafetyTests : IDisposable {
         view.Columns.Add(new CanopyColumn("id", "Id") { Kind = CanopyColumnKind.Number, Editable = true });
         view.Columns.Add(new CanopyColumn("stamp", "Stamp") { Editable = true });
         var keyed = new CanopyColumnMap<Token>(view).Key(x => x.Id).Column("id", x => x.Id).Column("stamp", x => x.Stamp);
-        Assert.Contains("record key", Assert.Throws<ArgumentException>(() => new CanopyQueryableWriter<Token>(keyed, new ListStore<Token>())).Message);
+        Assert.Contains("record key", Assert.Throws<ArgumentException>(() => new CanopyQueryableWriter<Token>(keyed, new ListStore<Token>(), Unscoped)).Message);
         view.Columns[0].Editable = false;
         var stamped = new CanopyColumnMap<Token>(view).Key(x => x.Id).Column("id", x => x.Id).Column("stamp", x => x.Stamp);
-        Assert.Contains("concurrency token", Assert.Throws<ArgumentException>(() => new CanopyQueryableWriter<Token>(stamped, new ListStore<Token>())).Message);
+        Assert.Contains("concurrency token", Assert.Throws<ArgumentException>(() => new CanopyQueryableWriter<Token>(stamped, new ListStore<Token>(), Unscoped)).Message);
+    }
+
+    private static CanopyQueryableWriterOptions<Token> Unscoped => new CanopyQueryableWriterOptions<Token> { AllowUnscoped = true };
+
+    [Fact]
+    public void Writers_NeedAScopeOrAnExplicitOptIn() {
+        var map = Fleet.Map(Fleet.EditableView());
+        var store = new EfCoreWriteStore<Host>(_sqlite.Create());
+        Assert.Contains("Scope", Assert.Throws<ArgumentException>(() => new CanopyQueryableWriter<Host>(map, store, new CanopyQueryableWriterOptions<Host>())).Message);
+        Assert.NotNull(new CanopyQueryableWriter<Host>(map, store, new CanopyQueryableWriterOptions<Host> { Scope = () => _hosts.AsQueryable() }));
     }
 
     [Fact]
@@ -190,11 +200,34 @@ public sealed class EfCoreWriterSafetyTests : IDisposable {
         var records = new List<Token> { new Token { Id = 1 }, new Token { Id = 2 } };
         var store = new ListStore<Token>(records);
         var handler = new CanopyRemoteHandler(map.Schema, new CanopyInMemoryProvider<Token>(map.Schema, () => records, x => x.Id.ToString(CultureInfo.InvariantCulture),
-            new Dictionary<string, Func<Token, object?>> { ["count"] = x => x.Count }), null, new CanopyQueryableWriter<Token>(map, store));
+            new Dictionary<string, Func<Token, object?>> { ["count"] = x => x.Count }), null, new CanopyQueryableWriter<Token>(map, store, Unscoped));
         var json = await handler.CommitAsync("{\"rows\":[{\"id\":\"1\",\"values\":{\"count\":7},\"original\":{\"count\":0}},{\"id\":\"2\",\"values\":{\"count\":-1},\"original\":{\"count\":0}}]}");
         Assert.Equal(new[] { "saved", "error" }, Statuses(json));
         Assert.Equal(7UL, records[0].Count);
         Assert.Equal(0UL, records[1].Count);
+    }
+
+    [Fact]
+    public async Task NumbersBeyondFloatOrDecimal_AnswerACellError() {
+        var view = new CanopyDataGridView("measures", "Measures") { Source = CanopyGridSource.HostedOffset() };
+        view.Columns.Add(new CanopyColumn("ratio", "Ratio") { Kind = CanopyColumnKind.Number, Editable = true });
+        view.Columns.Add(new CanopyColumn("price", "Price") { Kind = CanopyColumnKind.Number, Editable = true });
+        var map = new CanopyColumnMap<Measure>(view).Key(x => x.Id).Column("ratio", x => x.Ratio).Column("price", x => x.Price);
+        var records = new List<Measure> { new Measure { Id = 1 } };
+        var writer = new CanopyQueryableWriter<Measure>(map, new ListStore<Measure>(records), new CanopyQueryableWriterOptions<Measure> { AllowUnscoped = true });
+        // A batch built in code skips the endpoint's ±2^53−1 check, so the writer is the last guard.
+        var values = new Dictionary<string, object?> { ["ratio"] = 1e300, ["price"] = 1e300 };
+        var original = new Dictionary<string, object?> { ["ratio"] = 0d, ["price"] = 0d };
+        var row = Assert.Single((await writer.CommitAsync(new CanopyCommitBatch(map.Schema, null, new[] { new CanopyCommitRow("1", values, original) }), "r1", default)).Rows);
+        Assert.Equal(CanopyCommitStatus.Error, row.Status);
+        Assert.Equal(new[] { "price", "ratio" }, row.Errors.Keys.OrderBy(key => key, StringComparer.Ordinal));
+        Assert.Equal(0f, records[0].Ratio);
+    }
+
+    public sealed class Measure {
+        public int Id { get; set; }
+        public float Ratio { get; set; }
+        public decimal Price { get; set; }
     }
 
     public sealed class Token {

@@ -116,7 +116,7 @@ public sealed class WriterProblemObserverTests {
         var store = new ObserverStore { FailDispose = true };
         var failures = new List<Exception>();
         var revisions = 0;
-        var options = new CanopyQueryableWriterOptions<Host> {
+        var options = new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true,
             Transaction = transaction,
             Revision = _ => ++revisions == 1 ? new ValueTask<string>("r5") : throw new IOException("revision unavailable"),
             Failed = (_, error) => { failures.Add(error); throw new InvalidOperationException("logger unavailable"); }
@@ -142,7 +142,7 @@ public sealed class WriterProblemObserverTests {
     public async Task ThrowingWriterLogger_KeepsFailureResultRollbackAndDisposal(CanopyCommitTransaction transaction, bool failCommit) {
         var store = new ObserverStore { Failure = failCommit ? "commit" : "save", FailRollback = true, FailDispose = true };
         var failures = new List<Exception>();
-        var handler = QueryableHandler(store, new CanopyQueryableWriterOptions<Host> {
+        var handler = QueryableHandler(store, new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true,
             Transaction = transaction,
             Failed = (_, error) => { failures.Add(error); throw new OperationCanceledException("logger canceled"); }
         });
@@ -167,7 +167,7 @@ public sealed class WriterProblemObserverTests {
     public async Task ThrowingWriterLogger_TransactionStartFailureStillAnswersTheRow() {
         var store = new ObserverStore { Failure = "begin" };
         var logged = 0;
-        var handler = QueryableHandler(store, new CanopyQueryableWriterOptions<Host> {
+        var handler = QueryableHandler(store, new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true,
             Failed = (_, _) => { logged++; throw new InvalidOperationException("logger unavailable"); }
         });
 
@@ -189,7 +189,7 @@ public sealed class WriterProblemObserverTests {
         var original = new OperationCanceledException("store canceled", cancellation.Token);
         var store = new ObserverStore { FailDispose = true, Save = () => { cancellation.Cancel(); throw original; } };
         var logged = 0;
-        var handler = QueryableHandler(store, new CanopyQueryableWriterOptions<Host> {
+        var handler = QueryableHandler(store, new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true,
             Transaction = transaction,
             Failed = (_, _) => { logged++; throw new IOException("logger unavailable"); }
         });
@@ -218,7 +218,7 @@ public sealed class WriterProblemObserverTests {
         var map = Fleet.Map(Fleet.EditableView());
         var store = new InsertObserverStore();
         var failures = new List<Exception>();
-        var writer = new CanopyQueryableWriter<Host>(map, store, new CanopyQueryableWriterOptions<Host> {
+        var writer = new CanopyQueryableWriter<Host>(map, store, new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true,
             NewRecord = _ => new Host { Id = ++store.NextId },
             Failed = (_, error) => { failures.Add(error); throw canceledObserver ? new OperationCanceledException("logger canceled") : new IOException("logger unavailable"); }
         });

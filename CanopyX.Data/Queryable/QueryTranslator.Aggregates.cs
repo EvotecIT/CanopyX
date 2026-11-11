@@ -136,7 +136,7 @@ internal sealed partial class QueryTranslator<T> {
     internal Task<List<StoreBucket>> BucketsAsync(IQueryable<T> source, string column, int? take, CanopyQueryExecutor executor, CancellationToken cancellationToken) {
         var value = FacetValue(column);
         var text = Map.Get(column).Shape == ValueShape.Text;
-        var key = text ? ExpressionTools.Fold(value, Comparison) : value;
+        var key = text ? FoldText(value, Comparison) : value;
         var method = typeof(QueryTranslator<T>).GetMethod(nameof(BucketsCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(key.Type, value.Type);
         return (Task<List<StoreBucket>>)method.Invoke(this, new object?[] { source, key, value, text, take, executor, cancellationToken })!;
     }
@@ -144,7 +144,7 @@ internal sealed partial class QueryTranslator<T> {
     /// <summary>Counts distinct value-list keys after value search.</summary>
     internal Task<int> DistinctAsync(IQueryable<T> source, string column, CanopyQueryExecutor executor, CancellationToken cancellationToken) {
         var value = FacetValue(column);
-        var key = Map.Get(column).Shape == ValueShape.Text ? ExpressionTools.Fold(value, Comparison) : value;
+        var key = Map.Get(column).Shape == ValueShape.Text ? FoldText(value, Comparison) : value;
         var method = typeof(QueryTranslator<T>).GetMethod(nameof(DistinctCoreAsync), BindingFlags.NonPublic | BindingFlags.Instance)!.MakeGenericMethod(key.Type);
         return (Task<int>)method.Invoke(this, new object[] { source, key, executor, cancellationToken })!;
     }

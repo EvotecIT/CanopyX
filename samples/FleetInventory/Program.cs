@@ -61,16 +61,13 @@ foreach (var grid in grids) {
         //     options.RecordEndpoint = route => route.RequireRateLimiting("records");
         // The sample leaves it out so its browser tests can open many records quickly.
         if (!editable) return;
-        options.Writer = http => {
+        // Commits change only records the caller can read: the writer's scope is the grid's own Readable query.
+        options.UseQueryableWriter(http => new EfCoreWriteStore<Machine>(http.RequestServices.GetRequiredService<FleetDb>()), (http, writer) => {
             var db = http.RequestServices.GetRequiredService<FleetDb>();
-            return new CanopyQueryableWriter<Machine>(map, new EfCoreWriteStore<Machine>(db), new CanopyQueryableWriterOptions<Machine> {
-                // Commits change only records the caller can read through the same query as the grid.
-                Scope = () => Readable(http),
-                Revision = revision.ReadAsync,
-                Saving = async (_, token) => { await FleetRevision.IncrementAsync(db, token); return null; },
-                Failed = (row, error) => http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("FleetInventory").LogError(error, "Machine {Id} was not saved.", row.Id)
-            });
-        };
+            writer.Revision = revision.ReadAsync;
+            writer.Saving = async (_, token) => { await FleetRevision.IncrementAsync(db, token); return null; };
+            writer.Failed = (row, error) => http.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("FleetInventory").LogError(error, "Machine {Id} was not saved.", row.Id);
+        });
         // Real hosts name the policy that may write (options.WriteAuthorizationPolicy = "Inventory.Write"); the sample has no sign-in.
         options.AllowAnonymousWrites = true;
     }
