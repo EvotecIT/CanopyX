@@ -140,7 +140,8 @@ public sealed class RuntimeAssetTests {
         // Reserve 448 bytes for right-to-left logical layout and keys, the matrix-table route in enhance and digit-aware aggregate text.
         // Reserve 384 bytes for the row actions column shell (its part, labels and menus load only with rowActions).
         // Reserve 384 bytes for the activity presenters' validation, column-fit rules and part entry (their painting is the lazy activity part).
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384);
+        // Reserve 64 bytes for the describeCalendarRecurrence method name that loads the recurrence part on first use.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384 + 64);
     }
 
     [Fact]
