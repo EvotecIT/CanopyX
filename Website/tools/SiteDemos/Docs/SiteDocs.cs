@@ -318,7 +318,7 @@ internal sealed class SiteDocs {
         // The pages ViewDemos writes from the repository examples, light and dark. Pages with their own chrome keep it.
         foreach (var (page, title, id) in new[] {
             ("pivot", "Sales by region", "pivot"), ("pivot-dark", "Sales by region", "pivot"),
-            ("board", "Migration board", "board"), ("plan", "Rollout plan", "plan"),
+            ("board", "Migration board", "board"), ("plan", "Rollout plan", "plan"), ("compare", "Inventory changes", "compare"),
             ("time", "Service health over time", "time"), ("time-dark", "Service health over time", "time"),
             ("flow-setup-tasks", "Service setup", "flow"), ("flow-setup-tasks-dark", "Service setup", "flow"),
             ("path", "Approval route", "path"), ("stack", "Configuration layers", "stack") }) {

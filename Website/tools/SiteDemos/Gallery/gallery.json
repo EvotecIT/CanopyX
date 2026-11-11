@@ -50,6 +50,9 @@
   "changes": [
     { "page": "changes-diff-large", "title": "A 20,000-line diff", "body": "One large file's diff with windowed rows, folded regions and word marks, still quick to scroll." }
   ],
+  "compare": [
+    { "page": "data-views", "title": "Review, then explore", "body": "The same comparison with a read-only view proposal the host supplies: active items by location, or units by location and stage." }
+  ],
   "time": [
     { "page": "time-propagation", "title": "Rollout propagation", "body": "The same three snapshots as a propagation view: which services have the update, since when, and how long the rest have waited." }
   ],
