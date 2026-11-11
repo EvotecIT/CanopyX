@@ -11,7 +11,7 @@
   function calRule(text) {
     if (CAL_RULE_CACHE.has(text)) return CAL_RULE_CACHE.get(text);
     if (typeof text !== "string" || text.length > 1024) throw new Error("CanopyX: a recurrence rule is text of at most 1024 characters.");
-    const rule = { interval: 1, byDay: null, byMonthDay: null, byMonth: null, bySetPos: null, wkst: 1, count: null, until: null };
+    const rule = { text: text.trim().replace(/^RRULE:/i, ""), interval: 1, byDay: null, byMonthDay: null, byMonth: null, bySetPos: null, wkst: 1, count: null, until: null };
     const seen = new Set(), list = (value, check) => value.split(",").map(item => { if (!check(item)) throw new Error("CanopyX: invalid recurrence value " + item + "."); return item; });
     const integer = (value, min, max) => /^[+-]?\d{1,4}$/.test(value) && +value >= min && +value <= max && +value !== 0;
     for (const part of text.trim().replace(/^RRULE:/i, "").split(";")) {

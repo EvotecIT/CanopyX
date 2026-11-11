@@ -45,7 +45,8 @@ export async function loadKit(page) {
     const FakeGrid = function () {};
     const fill = (template, values) => template.replace(/\{(\w+)\}/g, (match, key) => values && Object.hasOwn(values, key) ? String(values[key]) : match);
     part.install({ DataGrid: FakeGrid, h: tag => document.createElement(tag), setText: (element, value) => { element.textContent = value == null ? "" : String(value); }, fill,
-      plural: template => template, gridButton: () => document.createElement("button"), gridIcon: () => document.createElement("span"), gridFreeze: value => Object.freeze(value),
+      // Plural forms as the core picks them, so counted labels (descriptions of recurrence rules) read as on a page.
+      plural: (template, count, lang) => { if (!template.startsWith("[")) return template; const forms = Object.fromEntries([...template.matchAll(/\[(\w+)\]([^[]*)/g)].map(match => [match[1], match[2]])); return forms[new Intl.PluralRules(lang || "en").select(count)] ?? forms.other; }, gridButton: () => document.createElement("button"), gridIcon: () => document.createElement("span"), gridFreeze: value => Object.freeze(value),
       cellText: cell => String(cell ?? ""), cellValue: cell => cell, isCellObject: () => false, gridQuery: () => ({}), gridQueryRows: () => [], gridResultShape: () => "",
       gridPresenterTone: () => null, validateGridRows: rows => rows, validateGridPage: page => page, validStructuralCount: value => Number.isInteger(value) && value >= 0,
       checkDocument: value => value, numberFormat: lang => new Intl.NumberFormat(lang), loadPart: () => Promise.resolve(), PROTOCOL: "canopyx/2" });
@@ -58,6 +59,15 @@ export async function loadKit(page) {
 /** The recurrence cases the browser and the C# CanopyRecurrence both check. */
 export function recurrenceCases() {
   return JSON.parse(fs.readFileSync(path.join(repo, "tests/fixtures/recurrence-cases.json"), "utf8"));
+}
+/** The description cases the browser and the C# CanopyRecurrence.Describe both check, each with its language's label pack. */
+export async function recurrenceDescriptions() {
+  const cases = JSON.parse(fs.readFileSync(path.join(repo, "tests/fixtures/recurrence-descriptions.json"), "utf8"));
+  for (const item of cases) {
+    const language = item.culture.slice(0, 2);
+    item.labels = language === "en" ? {} : (await import(new URL("../../../JavaScript/locales/" + language + ".mjs", import.meta.url))).labels;
+  }
+  return cases;
 }
 
 /**

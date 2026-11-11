@@ -8,6 +8,29 @@ public sealed partial class CanopyLabels {
         labels.CalendarOccurrenceScope = "Seul le {date} change ; les autres dates de {title} restent inchangées.";
         labels.CalendarSharedResources = "{count} {resources}";
         labels.CalendarResourceWindow = "{resources} {start}–{end} sur {total}";
+        labels.CalendarRecurrenceDaily = "tous les jours";
+        labels.CalendarRecurrenceDailyInterval = "tous les {count} jours";
+        labels.CalendarRecurrenceWeekly = "toutes les semaines";
+        labels.CalendarRecurrenceWeeklyInterval = "toutes les {count} semaines";
+        labels.CalendarRecurrenceMonthly = "tous les mois";
+        labels.CalendarRecurrenceMonthlyInterval = "tous les {count} mois";
+        labels.CalendarRecurrenceYearly = "tous les ans";
+        labels.CalendarRecurrenceYearlyInterval = "tous les {count} ans";
+        labels.CalendarRecurrenceOn = "le {days}";
+        labels.CalendarRecurrenceWeekdays = "en semaine";
+        labels.CalendarRecurrenceWeekends = "le week-end";
+        labels.CalendarRecurrenceDayRange = "du {first} au {last}";
+        labels.CalendarRecurrenceList = "{items} et {last}";
+        labels.CalendarRecurrenceMonthDays = "[one]le {days}[other]les {days}";
+        labels.CalendarRecurrenceLastDay = "le dernier jour du mois";
+        labels.CalendarRecurrenceNth = "{ordinal} {day}";
+        labels.CalendarRecurrenceOrdinals = "premier|deuxième|troisième|quatrième|cinquième|dernier";
+        labels.CalendarRecurrenceInMonths = "en {months}";
+        labels.CalendarRecurrenceOnDate = "le {date}";
+        labels.CalendarRecurrenceAt = "à {time}";
+        labels.CalendarRecurrenceTimes = "{count} fois";
+        labels.CalendarRecurrenceUntil = "jusqu’au {date}";
+        labels.CalendarRecurrenceExcept = "[one]sauf {count} date[other]sauf {count} dates";
         return labels;
     }
 }

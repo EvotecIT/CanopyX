@@ -372,6 +372,26 @@ test.describe("builder options", () => {
     await expect(page.locator(".cx-grid-export")).toBeVisible();
     await expect(page.locator(".cx-grid-overflow")).toHaveCount(0);
   });
+
+  test("a series says how it repeats in its details and its accessible name, in the page's language", async ({ page }) => {
+    const series = { id: "s", title: "Standup", start: "2026-10-12T09:00:00Z", end: "2026-10-12T09:15:00Z", recurrence: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", exceptions: "2026-10-14" };
+    const open = () => page.locator('.cx-cal-ev[data-cx-record="s"]').first();
+    await openBuilt(page, "series.html", calendarPage({ events: [series], date: "2026-10-16", timeZone: "utc", view: "week" }));
+    // The sentence writes the time as the event shows it.
+    const time = (await open().locator(".cx-cal-ev-time").textContent()).trim();
+    const sentence = "On weekdays, at " + time + ", except 1 date";
+    await expect(open()).toHaveAttribute("aria-label", new RegExp(sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"));
+    await open().click();
+    await expect(page.getByRole("dialog", { name: "Standup" }).locator(".cx-cal-det-repeat")).toHaveText(sentence);
+    await capture(page, "calendar-series-description");
+
+    // The Polish pack's calendar words, passed as a host passes its translation.
+    const labels = Object.fromEntries(Object.entries((await import("../../../JavaScript/locales/pl.mjs")).labels).filter(([name]) => name.startsWith("calendar")));
+    await openBuilt(page, "series-pl.html", calendarPage({ events: [series], date: "2026-10-16", timeZone: "utc", view: "week", labels }, { lang: "pl" }));
+    const polishTime = (await open().locator(".cx-cal-ev-time").textContent()).trim();
+    await open().click();
+    await expect(page.locator(".cx-cal-details .cx-cal-det-repeat")).toHaveText("W dni robocze, o " + polishTime + ", z wyjątkiem 1 daty");
+  });
 });
 
 test.describe("review guards", () => {

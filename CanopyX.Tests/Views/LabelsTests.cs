@@ -123,6 +123,8 @@ public sealed class LabelsTests {
         foreach (var (name, text) in calendar) runtime.Add(name, text);
         // The shared-screen part brings the texts only it shows (Reset, who shares a merged event).
         foreach (var (name, text) in PartLabels("calendar-screen", "CAL_SCREEN_LABELS")) runtime.Add(name, text);
+        // The recurrence part brings the words of a rule's sentence.
+        foreach (var (name, text) in PartLabels("calendar-recurrence", "CAL_RECURRENCE_LABELS")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("board", "BOARD_TEXT")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("plan", "PLAN_LABELS")) runtime.Add(name, text);
         foreach (var (name, text) in PartLabels("path", "PATH_TEXT")) runtime.Add(name, text);
