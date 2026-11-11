@@ -38,6 +38,8 @@ internal static class BoardExample {
         view.Board.Lanes.Add(new CanopyBoardLane("active", "In progress") { WipLimit = 4 });
         view.Board.Lanes.Add(new CanopyBoardLane("done", "Done"));
         var status = view.Columns.Single(column => column.Id == "status");
+        // The status editor offers the lanes by their labels, so editing a record never shows a raw lane key.
+        status.Editor = CanopyCellEditor.Select(view.Board.Lanes.Select(lane => new CanopyEditorOption((string)lane.Value!.Value!, lane.Label)));
         foreach (var lane in view.Board.Lanes) { status.ValueLabels.Add((string)lane.Value!.Value!, lane.Label); status.ValueOrder.Add((string)lane.Value.Value!); }
         view.Board.Fields.Add("assignee");
         view.Board.Fields.Add("priority");
