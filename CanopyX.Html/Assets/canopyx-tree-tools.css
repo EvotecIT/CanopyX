@@ -51,6 +51,8 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-tree-tools .cx-grid-overflow .cx-grid-panel > .cx-button{width:100%;justify-content:start;border:0;border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));}
 .cx-tree-tools.cx-phone .cx-toolbar{gap:var(--cx-size-6px);}
 .cx-tree-tools.cx-phone .cx-search{max-width:none;flex-basis:100%;height:var(--cx-size-44px);}
+.cx-tree-tools.cx-phone .cx-grid-filters > summary{min-width:var(--cx-size-44px);justify-content:center;gap:var(--cx-size-4px);padding-inline:var(--cx-size-12px);font-size:0;}
+.cx-tree-tools.cx-phone .cx-grid-filters > summary .badge{font-size:var(--cx-size-11px);}
 .cx-tree-tools.cx-phone .cx-spacer,.cx-tree-tools.cx-phone .cx-sep{display:none;}
 .cx-tree-tools.cx-phone .cx-grid-columns > summary{width:var(--cx-size-44px);font-size:0;padding:0;}
 .cx-tree-tools.cx-phone .cx-grid-columns > summary .cx-ico{width:var(--cx-size-16px);height:var(--cx-size-16px);}

@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "7c74d03d3e20bbc9",
+      "version": "1de9a05892fd648a",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -879,7 +879,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "7180f72b083df0b7",
+      "version": "11c7db5208ff48db",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -934,7 +934,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "9502ac7664410602",
+      "version": "261370185f76cfbc",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -1099,7 +1099,7 @@
     {
       "name": "grid-options",
       "label": "grid footer and query extensions",
-      "version": "80a20e04b5c76c33",
+      "version": "a3f03dbc746cab52",
       "script": "canopyx-grid-options.js",
       "style": "canopyx-grid-options.css",
       "runtimes": [
