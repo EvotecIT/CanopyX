@@ -67,8 +67,8 @@ app.MapCanopyRemote("/api/machines", http => http.RequestServices.GetRequiredSer
 
 // 4. The page: the grid plus the script that points its source at the endpoints.
 app.MapGet("/machines", () => Results.Content(
-    view.ToHtmlPage(new CanopyHtmlOptions { Title = "Machines" })
-        .Replace("</head>", CanopyRemoteScript.Element(map.Schema, "/api/machines") + "</head>"), "text/html"));
+    view.ToHtmlPage(new CanopyHtmlOptions { Title = "Machines", HeadHtml = CanopyRemoteScript.Element(map.Schema, "/api/machines") }),
+    "text/html"));
 ```
 
 For a page with a nonce-based Content Security Policy, pass the response's nonce to both `CanopyHtmlOptions.Nonce`
@@ -696,7 +696,7 @@ app.MapCanopyRemote("/api/machines", Readable, records, options => {
 });
 
 // 4. The page script: a record schema wires the grid source's record hook to the route.
-html = html.Replace("</head>", CanopyRemoteScript.Element(records.Schema, "/api/machines") + "</head>");
+var html = view.ToHtmlPage(new CanopyHtmlOptions { HeadHtml = CanopyRemoteScript.Element(records.Schema, "/api/machines") });
 ```
 
 **Mapping.** Every mapped field must be a record panel field of the view (`CanopyRecordPanel.Fields`), every drawer value a

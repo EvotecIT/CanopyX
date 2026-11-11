@@ -612,6 +612,12 @@ CanopyX.CanopyColumn.System.String? SortComparator { get; set; }
 CanopyX.CanopyColumn.System.String? Tooltip { get; set; }
 CanopyX.CanopyColumn.const System.Int32 MinWidth = 40
 CanopyX.CanopyColumn.const System.String AutoTooltip = "auto"
+CanopyX.CanopyColumnAttribute : sealed class (System.Attribute)
+CanopyX.CanopyColumnAttribute..ctor()
+CanopyX.CanopyColumnAttribute.System.Boolean Hidden { get; set; }
+CanopyX.CanopyColumnAttribute.System.Int32 Order { get; set; }
+CanopyX.CanopyColumnAttribute.System.String? Format { get; set; }
+CanopyX.CanopyColumnAttribute.System.String? Title { get; set; }
 CanopyX.CanopyColumnAutoSize : enum System.Int32
 CanopyX.CanopyColumnAutoSize.const CanopyX.CanopyColumnAutoSize Content = 0
 CanopyX.CanopyColumnAutoSize.const CanopyX.CanopyColumnAutoSize Header = 1
@@ -730,6 +736,10 @@ CanopyX.CanopyDataGridView.System.String? EmptyReason { get; set; }
 CanopyX.CanopyDataGridView.System.String? Noun { get; set; }
 CanopyX.CanopyDataGridView.System.String? StateKey { get; set; }
 CanopyX.CanopyDataGridView.System.Void Validate()
+CanopyX.CanopyDataGridView.static CanopyX.CanopyDataGridView<System.Data.DataRow> From(System.Data.DataTable table, System.String? key = null, System.String? id = null, System.String? label = null)
+CanopyX.CanopyDataGridView.static CanopyX.CanopyDataGridView<T> From<T>(System.Collections.Generic.IEnumerable<T> records, System.Func<T, System.Int64> key, System.String? id = null, System.String? label = null)
+CanopyX.CanopyDataGridView.static CanopyX.CanopyDataGridView<T> From<T>(System.Collections.Generic.IEnumerable<T> records, System.Func<T, System.String> key, System.String? id = null, System.String? label = null)
+CanopyX.CanopyDataGridView.static CanopyX.CanopyDataGridView<T> From<T>(System.Collections.Generic.IEnumerable<T> records, System.String? key = null, System.String? id = null, System.String? label = null)
 CanopyX.CanopyDataGridView<T> : sealed class
 CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, CanopyX.CanopyGridRowIdentity rowIdentity)
 CanopyX.CanopyDataGridView<T>..ctor(System.String id, System.String label, System.Func<T, System.Int64> identity)
@@ -1568,11 +1578,6 @@ CanopyX.CanopyGridLive.System.Boolean StableOrder { get; set; }
 CanopyX.CanopyGridLive.System.Int32 BatchMilliseconds { get; set; }
 CanopyX.CanopyGridLive.System.Int32 PollMilliseconds { get; set; }
 CanopyX.CanopyGridLive.System.Nullable<System.Int32> FlashMilliseconds { get; set; }
-CanopyX.CanopyGridMapper<T> : sealed class
-CanopyX.CanopyGridMapper<T>..ctor(System.Func<T, System.String> identity)
-CanopyX.CanopyGridMapper<T>.CanopyX.CanopyDataGridView CreateView(System.String id, System.String label, System.Collections.Generic.IEnumerable<T>? records = null, System.Action<CanopyX.CanopyDataGridView>? configure = null)
-CanopyX.CanopyGridMapper<T>.CanopyX.CanopyGridMapper<T> AddColumn(CanopyX.CanopyColumn column, System.Func<T, CanopyX.CanopyCell> cell)
-CanopyX.CanopyGridMapper<T>.CanopyX.CanopyGridRow MapRow(T record)
 CanopyX.CanopyGridNavigation : enum System.Int32
 CanopyX.CanopyGridNavigation.const CanopyX.CanopyGridNavigation Cursor = 1
 CanopyX.CanopyGridNavigation.const CanopyX.CanopyGridNavigation Offset = 0
@@ -1928,6 +1933,10 @@ CanopyX.CanopyICalendarResult.System.Collections.Generic.IReadOnlyList<CanopyX.C
 CanopyX.CanopyICalendarResult.System.Collections.Generic.IReadOnlyList<System.String> Notes { get; }
 CanopyX.CanopyICalendarResult.System.Int32 Skipped { get; }
 CanopyX.CanopyICalendarResult.System.String? TimeZone { get; }
+CanopyX.CanopyIgnoreAttribute : sealed class (System.Attribute)
+CanopyX.CanopyIgnoreAttribute..ctor()
+CanopyX.CanopyKeyAttribute : sealed class (System.Attribute)
+CanopyX.CanopyKeyAttribute..ctor()
 CanopyX.CanopyLabels : sealed class
 CanopyX.CanopyLabels..ctor()
 CanopyX.CanopyLabels.CanopyX.CanopyLabels Clone()
@@ -3520,6 +3529,10 @@ CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGridPivot(CanopyX.
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderGridSummary(CanopyX.CanopyDataGridView view, CanopyX.CanopyGridSummary summary, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderMatrix(CanopyX.CanopyMatrix matrix, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtml.static System.String RenderPropagation(CanopyX.CanopyPropagation view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
+CanopyX.Rendering.CanopyStaticHtmlExtensions : static class
+CanopyX.Rendering.CanopyStaticHtmlExtensions.static System.String ToStaticHtml(CanopyX.CanopyDataGridView view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
+CanopyX.Rendering.CanopyStaticHtmlExtensions.static System.String ToStaticHtml(CanopyX.CanopyTreeView view, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
+CanopyX.Rendering.CanopyStaticHtmlExtensions.static System.String ToStaticHtml<T>(CanopyX.CanopyDataGridView<T> grid, CanopyX.Rendering.CanopyStaticHtmlOptions? options = null)
 CanopyX.Rendering.CanopyStaticHtmlOptions : sealed class
 CanopyX.Rendering.CanopyStaticHtmlOptions..ctor()
 CanopyX.Rendering.CanopyStaticHtmlOptions.CanopyX.Rendering.CanopyStaticTheme Theme { get; set; }

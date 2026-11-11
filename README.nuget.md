@@ -30,19 +30,19 @@ dotnet add package CanopyX.Html
 using CanopyX;
 using CanopyX.Html;
 
-var inventory = new CanopyDataGridView("inventory", "Inventory");
-inventory.Columns.Add(new CanopyColumn("name", "Name") { Sortable = true });
-inventory.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
+var items = new[] { new Item("Archive", 2048, DateTime.UtcNow), new Item("Documents", 512, DateTime.UtcNow) };
+CanopyDataGridView.From(items, x => x.Name).SaveHtmlPage("inventory.html");
 
-foreach (var (name, bytes) in new[] { ("Archive", 2048L), ("Documents", 512L) })
-{
-    var row = new CanopyGridRow(name);
-    row.Cells["name"] = name;
-    row.Cells["size"] = new CanopyCell(bytes) { Text = $"{bytes:N0} bytes" };
-    inventory.Rows.Add(row);
-}
+record Item(string Name, long Size, DateTime Modified);
+```
 
-inventory.SaveHtmlPage("inventory.html");
+Every public property becomes a typed column: `Size` sorts as a number and `Modified` as a date. `[CanopyColumn(Title = "…", Format = "N0")]`, `[CanopyIgnore]` and `[CanopyKey]` adjust them, and `From` also takes a `DataTable` or dictionary rows. To choose the columns yourself, name each one from its member, so a renamed property fails the build:
+
+```csharp
+var inventory = new CanopyDataGridView<Item>("inventory", "Inventory", x => x.Name);
+inventory.Column(x => x.Name, configure: column => column.Sortable = true);
+inventory.Column(x => x.Size, cell: bytes => new CanopyCell(bytes) { Text = $"{bytes:N0} bytes" });
+inventory.AddRows(items).SaveHtmlPage("inventory.html");
 ```
 
 Open `inventory.html` in any browser. It carries its own runtime and data, so you can attach it to a ticket or put it on a file share. Numeric values drive sorting; `Text` is what the reader sees.
@@ -69,7 +69,7 @@ files.SaveHtmlBundle("file-report");  // or a folder that loads branches on dema
 ```csharp
 using CanopyX.Rendering;
 
-string table = CanopyStaticHtml.RenderGrid(inventory);
+string table = inventory.ToStaticHtml();
 ```
 
 The result is an HTML table with inline styles and no scripts, ready for a mail body, a print layout or Word.
@@ -81,7 +81,7 @@ The result is an HTML table with inline styles and no scripts, ready for a mail 
 | One file to attach or archive | `view.SaveHtmlPage("report.html")` | Data and runtime in a single page |
 | A big tree or grid on a file share | `view.SaveHtmlBundle("report")` | A folder whose branches and rows load as the reader scrolls |
 | Millions of database rows | `CanopyX.Data` + `CanopyX.AspNetCore` | Paging, filters, summaries, export and edits answered by your server |
-| A table in an email | `CanopyStaticHtml.Render(view)` | A script-free table that survives mail clients |
+| A table in an email | `view.ToStaticHtml()` | A script-free table that survives mail clients |
 
 ## Guides
 

@@ -97,20 +97,28 @@ inventory.Rows.Add(row);
 inventory.SaveHtmlPage("inventory.html");
 ```
 
-For typed records, declare selectors once and reuse the mapper for inline rows or hosted result pages:
+For typed records there are two routes, both returning a `CanopyDataGridView<T>` ([typed grids](typed-grids.md)):
 
 ```csharp
-var mapper = new CanopyGridMapper<FileRecord>(record => record.Id)
-    .AddColumn(new CanopyColumn("name", "Name") { Sortable = true }, record => record.Name)
-    .AddColumn(new CanopyColumn("size", "Size") {
-        Kind = CanopyColumnKind.Number,
-        Sizing = CanopyColumnSizing.Preferred(140)
-    }, record => new CanopyCell(record.Bytes) { Text = record.DisplaySize });
-var inventory = mapper.CreateView("inventory", "Inventory", records);
-inventory.SaveHtmlPage("inventory.html");
+// Every public property becomes a column; [CanopyKey], [CanopyColumn] and [CanopyIgnore] adjust them.
+CanopyDataGridView.From(records, x => x.Id).SaveHtmlPage("inventory.html");
+
+// Or declare each column from its member, with any column setting.
+var inventory = new CanopyDataGridView<FileRecord>("inventory", "Inventory", record => record.Id);
+inventory.Column(x => x.Name, configure: column => column.Sortable = true);
+inventory.Column(x => x.Bytes, "Size", column => column.Sizing = CanopyColumnSizing.Preferred(140),
+    cell: bytes => new CanopyCell(bytes) { Text = bytes / 1024 + " KiB" });
+inventory.AddRows(records).SaveHtmlPage("inventory.html");
 ```
 
-`FileRecord` and `records` are host-owned. The mapper uses selectors rather than reflection and validates the resulting view. Column definitions remain mutable and are reused by its views. Its optional `configure` callback sets reporting or source options before validation. `MapRow(record)` supplies the same mapping to a hosted page. To take columns from member expressions instead (`grid.Column(x => x.Owner)`), use `CanopyDataGridView<T>` ([typed grids](typed-grids.md)).
+`FileRecord` and `records` are host-owned. `inventory.Row(record)` writes the same cells into a hosted result page, and
+`inventory.View` holds every other grid setting. `CanopyDataGridView.From(dataTable)` and `CanopyDataGridView.From(rows, "Name")`
+over dictionaries (a `Dictionary<string, object?>` or a PowerShell hashtable per row) build the same grid from untyped data.
+
+Migration: `CanopyGridMapper<T>` is removed. `new CanopyGridMapper<T>(key).AddColumn(new CanopyColumn(id, title) { … }, selector)`
+becomes `new CanopyDataGridView<T>(id, label, key)` with `Column(id, selector, title, column => { … })` per column; `MapRow`
+becomes `Row`, and `CreateView(id, label, records, configure)` becomes `AddRows(records)` followed by settings on `View`. A
+selector that returns a `CanopyCell` writes a text column; set `column.Kind` in `configure` for numbers and dates.
 
 Choose `CanopyGridSource.Inline()`, `HostedOffset()` or `HostedCursor()` through `view.Source`. Cursor sources select paged presentation and reject continuous presentation. Call `view.Validate()` to check a definition before writing it. `CanopyStaticHtml.RenderGrid(view, cursorPage)` accepts a cursor snapshot, including unknown totals, for script-free fallback.
 
@@ -516,6 +524,11 @@ const releaseOptions = CanopyX.configure("files", { renderers: { owner: drawOwne
 ```
 
 With `CanopyHtmlOptions.AutoMount = false` the fragment waits until the host calls `CanopyX.mount()`.
+
+A complete page from `ToHtmlPage` or `SaveHtmlPage` carries such a script, or host styles, in `CanopyHtmlOptions.HeadHtml`: it is
+written as given at the end of the page's `head`, after the inline runtime, so `CanopyX.configure` is available to it. With
+external assets the runtime script is deferred; configure from a `DOMContentLoaded` listener there. Put only host-authored
+markup in it, with the response's `Nonce` on its elements under a Content Security Policy.
 
 Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. Destruction releases loaded rows, selection, caches, and the row pool. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
 
