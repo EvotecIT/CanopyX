@@ -50,7 +50,7 @@
         });
       }
       if (button.textContent !== parts.text + (parts.caption ? " " + parts.caption : "")) {
-        setText(button, parts.text);
+        reportingAggregateSpans(button, parts.parts);
         if (parts.caption) { const caption = h("span", "cx-aggregate-caption"); setText(caption, parts.caption); button.append(" ", caption); }
       }
       button._cxAggregateValues = values;

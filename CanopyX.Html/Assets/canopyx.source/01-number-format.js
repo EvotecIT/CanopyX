@@ -19,7 +19,8 @@
 
   /** A raw number in a declared format: digits in the reader's language, the prefix after any sign, then the suffix. */
   function numberText(value, lang, format) {
-    if (!format) return numberFormat(lang).format(value);
+    // Without a declared format a value under the third decimal (or negative zero) shows as 0, never "-0".
+    if (!format) return numberFormat(lang).format(Math.abs(value) < 5e-4 ? 0 : value);
     const minimum = format.minimumFractionDigits ?? 0, maximum = format.maximumFractionDigits ?? 3;
     // Round the binary64 value once. Keep the fixed-point decimal string intact for Intl, and discard a rounded zero's sign.
     // toFixed switches to shortest exponential text at 1e21; these values are integers, so BigInt retains every binary digit.

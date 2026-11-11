@@ -125,10 +125,11 @@ heading.
 
 Every aggregate cell shows its function: `sum 12.7M`, `avg 36.2`, `distinct 16`. The templates are translatable labels
 with a `{value}` placeholder (`gridAggregateCount`, `gridAggregateSum`, `gridAggregateAverage`, `gridAggregateMinimum`,
-`gridAggregateMaximum`, `gridAggregateDistinct`). Values use the column's precision (the most fraction digits among its
-loaded values, at most three; averages one more; counts none) and turn compact from one million. The tooltip and the
-cell's accessible name give the declared label and the full value. Columns with aggregates are measured with them, so
-the labelled values fit.
+`gridAggregateMaximum`, `gridAggregateDistinct`). Values use the aggregate's or the column's declared `format`; a
+`progress` column shows its totals as a share of the presenter's maximum (`avg 77%`). Without either, a value shows the
+fraction digits it needs, at most two (`sum 717`, `avg 77.04`); counts show none. The tooltip and the cell's accessible
+name give the declared label and the full value. Columns with aggregates are measured with them, so the labelled values
+fit; a narrower cell keeps one line and breaks only between whole aggregates.
 
 **Custom aggregates** are registered by a plugin and named by an aggregate's `operation`:
 

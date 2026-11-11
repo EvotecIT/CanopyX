@@ -213,7 +213,7 @@ for (const depth of [1, 2]) test(`phone group totals use cell navigation and pre
   await page.keyboard.press("Enter");
   const dialog = page.locator("dialog.cx-reporting-text");
   await expect(dialog).toBeVisible(); await expect(dialog.locator("h4")).toContainText("Region:");
-  await expect(dialog.locator("pre")).toHaveText("Order\nOrders · Count: 12\nAmount\nTotal amount · Sum: 6,568.00 · Average amount · Avg: 547.33");
+  await expect(dialog.locator("pre")).toHaveText("Order\nOrders · Count: 12\nAmount\nTotal amount · Sum: 6,568 · Average amount · Avg: 547.33");
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(totals).toBeFocused();
   await page.keyboard.press("ArrowRight");
   const plain = heading.getByRole("gridcell").nth(1); await expect(plain).toBeFocused();

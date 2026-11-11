@@ -1870,6 +1870,7 @@
         "reportingDynamicGroups",
         "GROUP_OPERATIONS",
         "reportingAggregateParts",
+        "reportingAggregateSpans",
         "disposeRowHostCells",
         "quietControls",
         "TreeGrid",
