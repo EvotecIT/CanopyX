@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Build a grid in one call with `CanopyDataGridView.From(records, x => x.Id)`: a typed column per public property, adjusted with `[CanopyKey]`, `[CanopyColumn(Title, Order, Hidden, Format)]` and `[CanopyIgnore]`. `From` also takes a `DataTable` or dictionary rows (`Dictionary<string, object?>`, PowerShell hashtables) with a named key column.
+- Write typed grids directly with `ToHtmlPage`, `SaveHtmlPage` and `ToHtmlFragment`, and any tree or grid as a script-free table with `ToStaticHtml()`.
+- Add `CanopyHtmlOptions.HeadHtml` for host styles and scripts in a page's head, in place of replacing `</head>` in the written page.
+- Breaking: remove `CanopyGridMapper<T>`. Use `CanopyDataGridView<T>`: `Column(id, selector, title, configure)` per column, `Row(record)` for `MapRow`, and `AddRows(records)` with settings on `View` for `CreateView` (see [authoring](docs/authoring.md#flat-data-grid)).
+
 - Keep visible text in accessible names for calendar events, grid summaries, sort priorities, details buttons, matrix groups, linked filters and check retries. Calendar names follow font loads, layout changes and host-rendered content updates. Picker buttons use their visible labels directly, including on narrow layouts.
 - Add shared-screen options to the calendar (`calendar-screen` part): source and resource faces (avatar, initials or icon), merging copies of one event across sources, fading finished events (`fadePast`), day header notes and the `dayHeader` hook, `dayWidth`, `listDays` and `listBelow` for days that fit the calendar's width, and a Reset button (`reset`, `resetCalendar()`). Events take a `location`.
 - Fold a calendar legend that does not fit on one line into a menu with a checkbox per source.
