@@ -29,8 +29,9 @@
         if (!version || !version.hash || index === 1 && item.before?.hash === version.hash) continue;
         if (hash.childNodes.length) { const arrow = h("span", "cx-chg-arrow"); setText(arrow, "→"); arrow.setAttribute("aria-hidden", "true"); hash.appendChild(arrow); }
         const button = h("button", "cx-chg-hashbtn"); button.type = "button"; button._copy = version.hash; button.title = labels.changeCopyHash + ": " + version.hash;
-        button.setAttribute("aria-label", labels.changeCopyHash + ": " + version.hash);
-        setText(button, version.hash.length > doc.hashLength ? version.hash.slice(0, doc.hashLength) + "…" : version.hash); hash.appendChild(button);
+        const shown = version.hash.length > doc.hashLength ? version.hash.slice(0, doc.hashLength) + "…" : version.hash;
+        button.setAttribute("aria-label", shown + ", " + labels.changeCopyHash + ": " + version.hash);
+        setText(button, shown); hash.appendChild(button);
       }
       meta.append(size, hash);
       const actions = h("div", "cx-chg-actions");

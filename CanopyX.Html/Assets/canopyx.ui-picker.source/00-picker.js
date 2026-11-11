@@ -7,7 +7,7 @@ UI_TOOLS.picker = (root, options = {}) => {
   const icon = h('span', 'cx-picker-icon'); icon.setAttribute('aria-hidden', 'true');
   const label = h('span', 'cx-picker-label'), badge = h('span', 'cx-picker-badge'); badge.dataset.hfxPart = 'badge';
   const chevron = h('span', 'cx-picker-chevron'); chevron.setAttribute('aria-hidden', 'true'); setText(chevron, '▾');
-  trigger.append(lead, separator, icon, label, badge, chevron);
+  trigger.append(lead, ' ', separator, ' ', icon, ' ', label, ' ', badge, ' ', chevron);
   const menu = h('div', 'cx-menu'); menu.hidden = true; menu.setAttribute('role', 'menu');
   menu.id = 'cx-ui-picker-menu-' + ++uiPickerIdentity;
   trigger.id = menu.id + '-trigger';
@@ -45,7 +45,6 @@ UI_TOOLS.picker = (root, options = {}) => {
     icon.replaceChildren(); icon.hidden = selected?.icon == null;
     if (selected?.icon?.nodeType) icon.append(selected.icon.cloneNode(true));
     else if (selected?.icon != null) setText(icon, selected.icon);
-    trigger.setAttribute('aria-label', [state.lead, selected?.label, selected?.badge].filter(value => value != null && value !== '').join(' '));
     trigger.disabled = !items.length;
     element.dataset.state = !items.length ? 'disabled' : selected ? 'selected' : '';
     // Dispose child overlays before replacing their DOM. Picker choices are leaves.

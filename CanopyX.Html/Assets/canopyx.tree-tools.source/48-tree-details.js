@@ -27,7 +27,7 @@
         button.addEventListener("click", event => event.stopPropagation());
       }
       if (button.parentNode !== slot.cell) slot.cell.appendChild(button);
-      button.dataset.cxRecord = w.h.id; button.setAttribute("aria-label", this.labels.gridDetails); setText(button, "+" + count);
+      button.dataset.cxRecord = w.h.id; button.setAttribute("aria-label", "+" + count + ", " + this.labels.gridDetails); setText(button, "+" + count);
     },
 
     /** Opens the record drawer of a loaded node: its label, then the other columns under their sections. */

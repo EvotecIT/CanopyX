@@ -65,11 +65,11 @@
         catch (error) { this.emit("error", { error }); element.textContent = ""; }
       }
       const time = h("span", "cx-cal-ev-time"), title = h("span", "cx-cal-ev-title");
-      if (!event.allDay && kind !== "bar" && kind !== "lane") { setText(time, kind === "item" ? this.calTimeText(event, day) : this.calFmt.time(event.start)); element.appendChild(time); }
+      if (!event.allDay && kind !== "bar" && kind !== "lane") { setText(time, kind === "item" ? this.calTimeText(event, day) : this.calFmt.time(event.start)); element.append(time, " "); }
       setText(title, event.title); element.appendChild(title);
-      if (assignments.length > 1) { const shared = h("span", "cx-cal-shared"); setText(shared, calCount(this, this.calLabels.calendarSharedResources, assignments.length, { resources: this.calLabels.calendarResources.toLocaleLowerCase(this.lang) })); shared.setAttribute("aria-hidden", "true"); element.appendChild(shared); }
+      if (assignments.length > 1) { const shared = h("span", "cx-cal-shared"); setText(shared, calCount(this, this.calLabels.calendarSharedResources, assignments.length, { resources: this.calLabels.calendarResources.toLocaleLowerCase(this.lang) })); shared.setAttribute("aria-hidden", "true"); element.append(" ", shared); }
       if (kind === "block" || kind === "item" || kind === "lane") {
-        if (event.subtitle) { const subtitle = h("span", "cx-cal-ev-sub"); setText(subtitle, event.subtitle); element.appendChild(subtitle); }
+        if (event.subtitle) { const subtitle = h("span", "cx-cal-ev-sub"); setText(subtitle, event.subtitle); element.append(" ", subtitle); }
         const column = this.cal.status;
         if (column && (kind !== "lane") && cellValue(event.row.cells[column.id]) != null) {
           const statusClass = "cx-cal-ev-status" + (event.base?.toneFromStatus ? " cx-cal-status-tone" : "");
@@ -82,7 +82,7 @@
             catch (error) { disposeHostSlot(slot); this.calHostSlots.delete(slot); status = h("span", statusClass); this.emit("error", { error }); }
           }
           if (!drawn) { const text = h("span"); setText(text, this.calStatusText(event)); status.appendChild(text); }
-          element.appendChild(status);
+          element.append(" ", status);
         }
       }
       if (event.recurring) element.appendChild(calIcon("repeat"));
@@ -135,6 +135,7 @@
       panel.append(head, list);
       panel._calAnchor = anchor;
       this.calRoot.appendChild(panel);
+      this.calLabelContent(panel);
       const box = anchor.getBoundingClientRect(), frame = this.calRoot.getBoundingClientRect();
       const width = Math.min(300, frame.width - 16);
       panel.style.width = width + "px";

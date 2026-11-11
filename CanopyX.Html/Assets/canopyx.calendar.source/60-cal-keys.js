@@ -3,7 +3,26 @@
   // repaint (new data, a resize, live changes) puts focus back on the same day, slot or event. Keys follow each view's grid
   // (arrows, Page Up and Down for the period, Home and End); Enter goes into a day or opens an event, Escape comes back out.
   // Selecting a day or a range of slots reports canopyx:linkchange with the range, so another view can follow it.
+  // Text in a zero-height, clipped subtitle is not a speech target, even though innerText still includes it.
+  function calVisibleLabel(element, clip) {
+    if (element.nodeType === 3) return element.nodeValue;
+    if (element.nodeType !== 1) return "";
+    if (element.tagName === "BR") return " ";
+    const box = element.getBoundingClientRect();
+    if (!box.width || !box.height || getComputedStyle(element).visibility === "hidden") return "";
+    if (clip && (box.right <= clip.left || box.left >= clip.right || box.bottom <= clip.top || box.top >= clip.bottom)) return "";
+    const boundary = element.classList.contains("cx-cal-ev") ? box : clip;
+    return [...element.childNodes].map(child => calVisibleLabel(child, boundary)).join("");
+  }
   Object.assign(DataGrid.prototype, {
+    // Read all painted text before changing names to avoid a layout per event. Full date/event context remains available.
+    calLabelContent(container = this.calBody) {
+      const labels = [...container.querySelectorAll("[tabindex][aria-label],button[aria-label]")].map(element =>
+        ({ element, visible: calVisibleLabel(element).trim().replace(/\s+/g, " "), label: element.getAttribute("aria-label") }));
+      for (const { element, visible, label } of labels) {
+        if (visible && !label.toLocaleLowerCase().includes(visible.toLocaleLowerCase())) element.setAttribute("aria-label", visible + ", " + label);
+      }
+    },
     calPaint(options = {}) {
       if (!this.calBody || this.destroyed) return;
       this.calDisposeEventRenderers();
@@ -24,6 +43,7 @@
       else if (view === "agenda") this.calPaintAgenda();
       else if (view === "year") this.calPaintYear();
       else this.calPaintTimeline(options);
+      if (!this.cal.dayNotes) this.calLabelContent();
       const restored = scroll && !options.resize && this.calRestoreScroll(scroll);
       if (!restored && view === "agenda") this.calScrollAgenda();
       this.calMarkSelection();

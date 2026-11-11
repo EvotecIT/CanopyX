@@ -39,7 +39,7 @@
     {
       "name": "ui-picker",
       "label": "UI picker",
-      "version": "189d98810d13fd70",
+      "version": "41b99f30a881ba20",
       "script": "canopyx-ui-picker.js",
       "style": "canopyx-ui-picker.css",
       "runtimes": [
@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "92830c53948bf7a6",
+      "version": "7c74d03d3e20bbc9",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -138,7 +138,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "636e0c76ce4fa35d",
+      "version": "de8ca287bd36b2e0",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -580,7 +580,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "c2a68618b4fddfc5",
+      "version": "909b40e6945c88cd",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -593,7 +593,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "4c42834380da8fe6",
+      "version": "77bec81b2b058eee",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [
@@ -879,7 +879,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "c82705991ff01a4c",
+      "version": "7180f72b083df0b7",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -987,7 +987,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "b414f93d261b2b76",
+      "version": "8b35ce685f00a299",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1061,7 +1061,7 @@
     {
       "name": "calendar-screen",
       "label": "calendar shared screens",
-      "version": "c2be4b1ddf96a778",
+      "version": "5be2f180b4b9aa6f",
       "script": "canopyx-calendar-screen.js",
       "style": "canopyx-calendar-screen.css",
       "runtimes": [
@@ -1099,7 +1099,7 @@
     {
       "name": "grid-options",
       "label": "grid footer and query extensions",
-      "version": "ee53e6f124b99d5a",
+      "version": "80a20e04b5c76c33",
       "script": "canopyx-grid-options.js",
       "style": "canopyx-grid-options.css",
       "runtimes": [

@@ -30,7 +30,7 @@
           element.querySelector(".cx-cal-ev-time")?.remove();
           title.appendChild(element);
           row.setAttribute("aria-label", fmt.longDay(day) + ", " + this.calEventName(event));
-          row.append(time, title);
+          row.append(time, " ", title);
           group.appendChild(row); rows++;
         }
         grid.appendChild(group);

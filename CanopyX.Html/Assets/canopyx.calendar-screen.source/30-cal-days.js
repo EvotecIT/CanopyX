@@ -24,6 +24,7 @@
       const list = this.calBody.querySelector(".cx-cal-list");
       if (list && (this.cal.dayWidth || this.cal.listDays || this.cal.listBelow)) { list.classList.add("cx-cal-boxes"); list.classList.toggle("cx-cal-stack", this.calStacked()); }
       this.calDayNotes();
+      this.calLabelContent();
     },
     /** Writes each shown day's notes into its header. A phone month's small cells carry them in their names, and the list of
      *  the chosen day under the month shows them. */
@@ -38,7 +39,7 @@
         const notes = this.calNotesOf(Number(dated.dataset.cxDay));
         if (!notes) continue;
         notes.box.setAttribute("aria-hidden", String(!!named));
-        target?.appendChild(notes.box);
+        target?.append(" ", notes.box);
         if (named) named.setAttribute("aria-label", named.getAttribute("aria-label") + ", " + notes.texts.join(", "));
       }
     },
@@ -48,7 +49,7 @@
       for (const note of this.cal.dayNotes.get(day) || []) {
         const item = h("span", "cx-cal-note"); setText(item, note.text);
         if (note.tone) item.style.setProperty("--cx-note", toneVariable(note.tone, false, "var(--hfx-color-text-secondary)"));
-        box.appendChild(item); texts.push(note.text);
+        box.append(item, " "); texts.push(note.text);
       }
       if (typeof hook === "function") {
         const element = h("span", "cx-cal-note cx-cal-note-host");

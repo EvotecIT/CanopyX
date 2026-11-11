@@ -77,11 +77,11 @@
       } else {
         const toggle = h("button", "cx-mx-toggle"), open = entry.kind === "heading";
         toggle.type = "button"; toggle.tabIndex = -1; toggle.setAttribute("aria-expanded", String(open));
-        toggle.setAttribute("aria-label", fill(open ? labels.matrixCollapseGroup : labels.matrixExpandGroup, { group: entry.label }));
+        toggle.setAttribute("aria-label", fill(open ? labels.matrixCollapseGroup : labels.matrixExpandGroup, { group: entry.label + " " + this.groupCount("rows", entry.members.length) }));
         toggle._group = { axis: "rows", key: entry.group.key };
         const label = h("span", "cx-mx-label"), count = h("span", "cx-mx-sub");
         setText(label, entry.label); setText(count, this.groupCount("rows", entry.members.length));
-        toggle.append(label, count); head.appendChild(toggle);
+        toggle.append(label, " ", count); head.appendChild(toggle);
         head.removeAttribute("title");
       }
       const total = row._total; total.hidden = !this.totalW;

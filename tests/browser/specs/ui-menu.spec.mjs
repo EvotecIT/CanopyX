@@ -274,7 +274,7 @@ test('shared phone picker keeps badges and radios and delegates selection to its
   const locked = page.getByRole('menuitemradio', { name: 'Locked', exact: true });
   await locked.focus(); await page.keyboard.press('Enter'); await expect(locked).toBeFocused();
   await page.getByRole('menuitemradio', { name: 'Checks 3' }).click();
-  await expect(picker.getByRole('button')).toHaveAttribute('aria-label', 'Section Checks 3');
+  await expect(picker.getByRole('button')).toHaveAccessibleName('Section Checks 3');
   await expect(picker.locator('.cx-picker-badge')).toHaveText('3');
   await expect(page.getByRole('tabpanel', { name: 'Checks' })).toBeVisible();
 });

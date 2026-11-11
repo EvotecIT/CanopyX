@@ -21,7 +21,7 @@
       };
       const more=(value,label=grid.labels.gridShowMore)=>{
         const button=add(label,"cx-link cx-presenter-expand","button");button.type="button";
-        button.setAttribute("aria-haspopup","dialog");button.setAttribute("aria-label",fill(grid.labels.gridExpandCell,{column:column.title}));
+        button.setAttribute("aria-haspopup","dialog");button.setAttribute("aria-label",label+", "+fill(grid.labels.gridExpandCell,{column:column.title}));
         button.addEventListener("click",()=>grid.showReportingText(column,value,button,row.id,options.mono));return button;
       };
       if (GRID_CHART_CELL_KINDS.includes(options.kind)) {

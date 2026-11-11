@@ -48,11 +48,11 @@
         const head = h("div", "cx-cal-lhead"), name = h("span", "cx-cal-dayname"), number = h("span", "cx-cal-num");
         head.setAttribute("aria-hidden", "true");
         setText(name, fmt.weekday(day, days.length === 1 ? "long" : "short")); setText(number, fmt.dayNumber(day));
-        head.append(name, number);
+        head.append(name, " ", number, " ");
         if (this.cal.weekNumbers && day === days[0]) { const wk = h("span", "cx-cal-wknum"); setText(wk, fill(this.calLabels.calendarWeekShort, { number: this.calWeekNumber(day) })); head.appendChild(wk); }
-        cell.appendChild(head);
+        cell.append(head, " ");
         if (!events.length) { const empty = h("p", "cx-cal-empty"); setText(empty, this.calLabels.calendarNoEvents); empty.setAttribute("aria-hidden", "true"); cell.appendChild(empty); }
-        for (const event of events) cell.appendChild(this.calEventElement(event, "item", day));
+        for (const event of events) cell.append(this.calEventElement(event, "item", day), " ");
         const backgrounds = this.calBackgroundsOn(day);
         if (backgrounds.length) { cell.classList.add("cx-cal-bgday"); cell.style.setProperty("--cx-bg-tone", toneVariable(backgrounds[0].tone, false, "var(--hfx-color-status-info-fg)")); }
         this.calCells.set(day, cell); row.appendChild(cell);

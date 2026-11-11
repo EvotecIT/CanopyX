@@ -37,8 +37,9 @@
     // values as its tooltip and accessible name. A bounded button opens the complete values without covering other cells.
     paintAggregates(cell, column, aggregates, values) {
       const parts = reportingAggregateParts(this, column, aggregates, values);
+      const name = [parts.text, parts.caption, parts.title].filter(Boolean).join(", ");
       cell.title = parts.title; cell.classList.add("cx-aggregate");
-      if (parts.text) cell.setAttribute("aria-label", parts.title); else cell.removeAttribute("aria-label");
+      if (parts.text) cell.setAttribute("aria-label", name); else cell.removeAttribute("aria-label");
       if (!parts.text) { cell.replaceChildren(); return; }
       let button = cell.querySelector(":scope > .cx-aggregate-button");
       if (!button) {
@@ -48,11 +49,11 @@
           event.stopPropagation(); this.showAggregateMenu(column, aggregates, button._cxAggregateValues, button).catch(error => this.emit("error", { error }));
         });
       }
-      if (button.textContent !== parts.text + (parts.caption || "")) {
+      if (button.textContent !== parts.text + (parts.caption ? " " + parts.caption : "")) {
         setText(button, parts.text);
-        if (parts.caption) { const caption = h("span", "cx-aggregate-caption"); setText(caption, parts.caption); button.append(caption); }
+        if (parts.caption) { const caption = h("span", "cx-aggregate-caption"); setText(caption, parts.caption); button.append(" ", caption); }
       }
       button._cxAggregateValues = values;
-      button._cxAggregateText = parts.title; button.title = parts.title; button.setAttribute("aria-label", parts.title);
+      button._cxAggregateText = parts.title; button.title = parts.title; button.setAttribute("aria-label", name);
     }
   });

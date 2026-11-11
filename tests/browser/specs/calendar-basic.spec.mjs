@@ -253,12 +253,13 @@ test.describe("simple layouts", () => {
   test("week list shows a multi-day event without repeating its range and keeps short times together", async ({ page }) => {
     await openCalendar(page, "calendar-layouts.html", { width: 1100 });
     await api(page, "api => api.setCalendarView('weekList')");
-    const onCall = page.locator('.cx-cal-lday .cx-cal-ev[aria-label^="On call: Ana"]');
+    const onCall = page.locator('.cx-cal-lday .cx-cal-ev').filter({ has: page.locator('.cx-cal-ev-title', { hasText: /^On call: Ana$/ }) });
     await expect(onCall).toHaveCount(7);
     await expect(onCall.first().locator('.cx-cal-ev-time')).toHaveText('8:00 AM');
+    await expect(onCall.first()).toHaveAccessibleName(/^8:00 AM On call: Ana, On call: Ana,/);
     for (let index = 1; index < 7; index++) await expect(onCall.nth(index).locator('.cx-cal-ev-time')).toHaveText('All day');
     await expect(onCall.first()).toHaveAttribute('aria-label', /Oct 12.*Oct 19/);
-    const standup = page.locator('.cx-cal-lday .cx-cal-ev[aria-label^="Stand-up"]').first();
+    const standup = page.locator('.cx-cal-lday .cx-cal-ev').filter({ has: page.locator('.cx-cal-ev-title', { hasText: /^Stand-up$/ }) }).first();
     const geometry = await standup.evaluate(element => {
       const time = element.querySelector('.cx-cal-ev-time').getBoundingClientRect();
       const icon = element.querySelector('.cx-cal-ico').getBoundingClientRect();
