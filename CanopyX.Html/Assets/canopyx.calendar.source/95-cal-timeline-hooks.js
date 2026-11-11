@@ -16,3 +16,10 @@
   // A hidden table never scrolls to a record: the record panel opens it beside the calendar instead.
   const CAL_FOCUS_RESULT = DataGrid.prototype.focusResult;
   DataGrid.prototype.focusResult = function (...args) { return this.cal ? Promise.resolve() : CAL_FOCUS_RESULT.apply(this, args); };
+  // Font and density refreshes use the grid's height hook even when the calendar keeps the same outer dimensions.
+  const CAL_FIT_HEIGHT = DataGrid.prototype.fitHeight;
+  DataGrid.prototype.fitHeight = function (...args) {
+    const result = CAL_FIT_HEIGHT.apply(this, args);
+    if (!this.destroyed && this.calBody?.isConnected) this.calLabelContent();
+    return result;
+  };

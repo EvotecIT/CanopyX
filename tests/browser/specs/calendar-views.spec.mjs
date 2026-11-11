@@ -149,7 +149,7 @@ test.describe("calendar views", () => {
     // The now line sits in today's column at 10:30.
     expect(await page.locator(".cx-cal-now").evaluate(element => [element.style.getPropertyValue("--t"), element.hidden])).toEqual(["630", false]);
     // An event over midnight shows in both days.
-    await expect(page.locator('.cx-cal-ev-block[aria-label^="Core switch firmware upgrade"]')).toHaveCount(2);
+    await expect(page.locator('.cx-cal-ev-block').filter({ has: page.locator('.cx-cal-ev-title', { hasText: /^Core switch firmware upgrade$/ }) })).toHaveCount(2);
     await capture(page, "week-overlaps-light-1440");
     // The keyboard walks slots and extends a selection with Shift (calendar-links.spec.mjs checks what it reports).
     const slot = page.locator('.cx-cal-slot[data-cx-day="' + day("2026-10-14") + '"][data-cx-minutes="540"]');
@@ -287,7 +287,7 @@ test.describe("calendar views", () => {
       await openCalendar(page, "calendar.html");
       await api(page, "api => api.setTimeZone('local')");
       await api(page, "api => api.setCalendarView('day')");
-      const failover = page.locator('.cx-cal-ev-block[aria-label^="Database failover test"]');
+      const failover = page.locator('.cx-cal-ev-block[data-cx-record="op-010"]');
       await expect(failover).toHaveAttribute("aria-label", /5:00 AM – 7:00 AM/);
       // All-day events keep their dates in every zone.
       await api(page, "api => api.setCalendarView('month')");

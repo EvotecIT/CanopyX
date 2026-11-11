@@ -296,9 +296,13 @@ test("restoring an acknowledged envelope clears a recoverable size error without
 
 test("keyboard resizing during preference loading and presentation edits during query restoration win", async ({ page }) => {
   await open(page, definition(), "CanopyX.configure('prefs',{viewStore:{load(){return new Promise(r=>window.loadResolve=r);},save(){}}});", false);
-  // Keyboard resizing starts from the rendered width, which includes the identity column's share of spare width.
-  const rendered = await page.locator('.cx-hcell[data-cx-column="name"]').evaluate(cell => Math.floor(cell.getBoundingClientRect().width));
+  // Initial layout can still change while preferences are pending. Read the width at the native keydown boundary.
+  await page.evaluate(() => document.addEventListener('keydown', event => {
+    window.resizeStartWidth = Math.floor(event.target.closest('.cx-hcell').getBoundingClientRect().width);
+  }, { capture: true, once: true }));
   await page.locator('[data-cx-column="name"] .cx-resize').press('ArrowRight');
+  const rendered = await page.evaluate(() => resizeStartWidth);
+  expect((await page.evaluate(api+'.getState()')).columns[0].width).toBe(rendered + 10);
   await page.evaluate(input => loadResolve(input),settings()); await page.evaluate(api+'.ready');
   expect((await page.evaluate(api+'.getState()')).columns[0].width).toBe(rendered + 10);
   const input=settings(), rows=definition().rows.filter(row=>row.cells.name==='Archive').slice(0,10);

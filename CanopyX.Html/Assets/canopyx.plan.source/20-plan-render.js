@@ -143,5 +143,6 @@
       }
       this.planPaintAgenda(network);
       this.planPaintProposal();
+      this.calLabelContent();
     }
   });

@@ -111,7 +111,7 @@
           if (hidden.length) {
             extra = h("span", "cx-footer-hidden"); extra.id = text.id + "-hidden";
             setText(extra, hidden.map(aggregate => grid.view.columns.find(column => column.id === aggregate.column).title + " — " + footerAggregateText(grid, footer, aggregate)).join(" · "));
-            cell.appendChild(extra);
+            cell.append(" ", extra);
           }
         }
         cell.setAttribute("aria-colindex", String(columnIndex + 1));

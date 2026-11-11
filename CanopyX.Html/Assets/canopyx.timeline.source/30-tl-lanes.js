@@ -82,6 +82,7 @@
       for (const [key, lane] of lanes) if (!keep.has(key)) { if (lane.contains(document.activeElement)) continue; lane.remove(); lanes.delete(key); }
       this.tlPaintCanvas(left, right, total);
       this.calMarkSelection();
+      if (!this.view.plan) this.calLabelContent(canvas);
       if (this.calRoot.contains(document.activeElement) && !this.calBody.contains(document.activeElement)) return;
       if (!canvas.querySelector('[tabindex="0"]')) this.calRestoreFocus(false);
     },
@@ -132,7 +133,7 @@
         if (width < 40) element.classList.add("cx-tl-narrow");
         if (event.tlStart < axis.from) element.classList.add("cx-cal-cont-start");
         if (event.tlEnd > axis.to) element.classList.add("cx-cal-cont-end");
-        (cell || lane).appendChild(element);
+        (cell || lane).append(element, " ");
       }
     },
     tlUnitLabel(unit) {

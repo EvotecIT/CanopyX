@@ -128,7 +128,7 @@
           if (segment.clippedBottom) element.classList.add("cx-cal-cont-end");
           if ((segment.bottom - segment.top) * ppm < 40) element.classList.add("cx-cal-short");
           const start = Math.min(cal.maxMinutes - slot, Math.floor(segment.top / slot) * slot);
-          (this.calSlotCells.get(index + ":" + start) || slots).appendChild(element);
+          (this.calSlotCells.get(index + ":" + start) || slots).append(element, " ");
         }
         const count = segmentsByColumn[index].length;
         if (count) for (let minutes = cal.minMinutes; minutes < cal.maxMinutes; minutes += slot) {
@@ -180,7 +180,7 @@
         const flush = to => { if (from === null) return; const element = this.calEventElement(item.event, "bar");
           element.style.setProperty("--c", String(from)); element.style.setProperty("--s", String(to - from + 1)); element.style.setProperty("--l", String(item.lane));
           if (item.event.sd < columns[from].day) element.classList.add("cx-cal-cont-start"); if (item.event.ed > columns[to].day) element.classList.add("cx-cal-cont-end");
-          cells[from].appendChild(element); from = null; };
+          cells[from].append(element, " "); from = null; };
         for (let at = item.from; at <= item.to; at++) { if (item.lane < limit[at]) { shown[at]++; if (from === null) from = at; } else flush(at - 1); }
         flush(item.to);
       }

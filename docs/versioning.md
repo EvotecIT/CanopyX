@@ -1,7 +1,9 @@
 # Versions, compatibility and deprecation
 
 CanopyX ships four NuGet packages (`CanopyX`, `CanopyX.Html`, `CanopyX.Data`, `CanopyX.AspNetCore`) and one npm package
-(`@evotecit/canopyx`). They share one version number and are released together.
+(`@evotecit/canopyx`). The four NuGet packages use one aligned SDK version. The npm publisher selects its own next patch
+version after the matching `main` quality run passes, so its version can differ from the SDK version. Both release paths
+select the next version automatically.
 
 ## What a version number promises
 

@@ -68,7 +68,7 @@ test.describe("calendar links and data", () => {
     const drawer = page.locator("dialog.cx-drawer");
     await expect(drawer.locator("h4")).toHaveText("Database failover test");
     await api(page, "api => api.updateRows([{ id: 'op-010', cells: { title: 'Database failover rehearsal', ends: '2026-10-16T12:00:00Z' } }])");
-    await expect(page.locator('.cx-cal-ev[data-cx-record="op-010"]')).toHaveAttribute("aria-label", /^Database failover rehearsal, 9:00 AM – 12:00 PM/);
+    await expect(page.locator('.cx-cal-ev[data-cx-record="op-010"]')).toHaveAccessibleName(/^9:00 AM Database failover rehearsal.*Database failover rehearsal, 9:00 AM – 12:00 PM/);
     await expect(drawer.locator("h4")).toHaveText("Database failover rehearsal");
     await page.keyboard.press("Escape");
     await page.locator('.cx-cal-ev[data-cx-record="op-010"]').focus();

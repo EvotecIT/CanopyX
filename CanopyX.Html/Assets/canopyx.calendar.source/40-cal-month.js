@@ -126,9 +126,9 @@
           if (invalid) cell.setAttribute("aria-disabled", "true");
           if (day === today) cell.setAttribute("aria-current", "date");
           const number = h("span", "cx-cal-num"); setText(number, this.calFmt.dayNumber(day)); number.setAttribute("aria-hidden", "true");
-          cell.appendChild(number);
+          cell.append(number, " ");
           if (this.cal.weekNumbers && cells.every(item => item.classList.contains("cx-cal-pad"))) {
-            const wk = h("span", "cx-cal-wknum"); setText(wk, fill(this.calLabels.calendarWeekShort, { number: row.dataset.cxWeek })); wk.setAttribute("aria-hidden", "true"); cell.appendChild(wk);
+            const wk = h("span", "cx-cal-wknum"); setText(wk, fill(this.calLabels.calendarWeekShort, { number: row.dataset.cxWeek })); wk.setAttribute("aria-hidden", "true"); cell.append(wk, " ");
           }
           cell.style.gridColumn = String(order.get(day) + 1);
           cells.push(cell); this.calCells.set(day, cell); row.appendChild(cell);
@@ -144,14 +144,14 @@
           element.style.setProperty("--c", String(item.from)); element.style.setProperty("--s", String(item.to - item.from + 1)); element.style.setProperty("--l", String(item.lane));
           if (event.sd < shown[item.from]) element.classList.add("cx-cal-cont-start");
           if (event.ed > shown[item.to]) element.classList.add("cx-cal-cont-end");
-          cells[item.from].appendChild(element);
+          cells[item.from].append(element, " ");
         }
         cells.forEach((cell, col) => {
           if (cell.classList.contains("cx-cal-pad")) return;
           const day = shown[col], backgrounds = this.calBackgroundsOn(day);
           if (backgrounds.length) {
             cell.classList.add("cx-cal-bgday"); cell.style.setProperty("--cx-bg-tone", toneVariable(backgrounds[0].tone, false, "var(--hfx-color-status-info-fg)"));
-            if (backgrounds[0].sd === day || col === 0) { const label = h("span", "cx-cal-bglabel"); setText(label, backgrounds[0].label); label.setAttribute("aria-hidden", "true"); cell.appendChild(label); }
+            if (backgrounds[0].sd === day || col === 0) { const label = h("span", "cx-cal-bglabel"); setText(label, backgrounds[0].label); label.setAttribute("aria-hidden", "true"); cell.append(label, " "); }
           }
           const hidden = totals[col] - layout.counts[col];
           cell.setAttribute("aria-label", this.calDayName(day, totals[col], backgrounds));
@@ -166,7 +166,7 @@
             more.className = "cx-cal-more-btn"; more.tabIndex = -1; more.dataset.cxDay = String(day);
             more.setAttribute("aria-label", fill(this.calLabels.calendarMoreLabel, { count: numberFormat(this.lang).format(hidden), date: this.calFmt.longDay(day) }));
             more.style.setProperty("--l", String(layout.more[col])); more.style.setProperty("--c", String(col));
-            cell.appendChild(more);
+            cell.append(more, " ");
           }
         });
         weeks.appendChild(row);
@@ -268,7 +268,7 @@
       if (this.calPhone && view === "month") {
         // The day's list under the month changes; the live region says which day and how many events it holds.
         const list = this.calBody.querySelector(".cx-cal-daylist");
-        if (list) { this.calDisposeEventRenderers(list); list.replaceWith(this.calDayList(day)); }
+        if (list) { this.calDisposeEventRenderers(list); const next = this.calDayList(day); list.replaceWith(next); this.calLabelContent(next); }
         this.calMarkListedDay(day);
         const count = this.calEventsOn(day).length;
         this.calAnnounce(this.calFmt.longDay(day) + ", " + (count ? calCount(this, this.calLabels.calendarEvents, count) : this.calLabels.calendarNoEvents));
