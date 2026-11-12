@@ -56,13 +56,13 @@ UI_TOOLS.stepperView = (root, options, labels, life, select, back, issueCount) =
     setText(accessible, ', ' + n.position(labels, 'stepperStepOf', item.index, items.length) + (text ? ', ' + text : ''));
     if (item.panel) {
       if (!printStates.has(item.panel)) {
-        const line = h('p', 'cx-step-print-state'); line.dataset.hfxPart = 'step-state';
-        const heading = item.panel.querySelector('[data-hfx-part="title"],h3');
+        const line = h('p', 'cx-step-print-state'); line.dataset.cxPart = 'step-state';
+        const heading = item.panel.querySelector('[data-cx-part="title"],h3');
         if (heading) heading.after(line); else item.panel.prepend(line);
         printStates.set(item.panel, line); inserted.add(line);
       }
       setText(printStates.get(item.panel), status(item));
-      const heading = item.panel.querySelector('[data-hfx-part="title"],h3');
+      const heading = item.panel.querySelector('[data-cx-part="title"],h3');
       if (heading && !printMarkers.has(item.panel)) {
         const marker = h('span', 'cx-step-marker cx-step-print-marker'); marker.setAttribute('aria-hidden', 'true');
         heading.prepend(marker); printMarkers.set(item.panel, marker); inserted.add(marker);
@@ -114,7 +114,7 @@ UI_TOOLS.stepperView = (root, options, labels, life, select, back, issueCount) =
       const button = footer?.querySelector('[data-cx-stepper-action="' + action + '"]'); if (button) footer.append(button);
     }
     if (focus) {
-      const heading = current.panel?.querySelector('[data-hfx-part="title"],h1,h2,h3');
+      const heading = current.panel?.querySelector('[data-cx-part="title"],h1,h2,h3');
       if (heading) { heading.tabIndex = -1; heading.focus(); }
       if (live) setText(live, position + ': ' + current.label);
     } else if (ownedFocus && (document.activeElement !== active || !active.checkVisibility())) {
@@ -122,7 +122,7 @@ UI_TOOLS.stepperView = (root, options, labels, life, select, back, issueCount) =
       if (active.isConnected && active.checkVisibility()) active.focus({ preventScroll: true });
       else if (navigationFocus) {
         const target = narrow ? picker.element.querySelector('button')
-          : current.panel?.querySelector('[data-hfx-part="title"],h1,h2,h3') || header?.querySelector('.cx-step-btn');
+          : current.panel?.querySelector('[data-cx-part="title"],h1,h2,h3') || header?.querySelector('.cx-step-btn');
         if (target) { if (target.tagName !== 'BUTTON') target.tabIndex = -1; target.focus({ preventScroll: true }); }
       }
     }

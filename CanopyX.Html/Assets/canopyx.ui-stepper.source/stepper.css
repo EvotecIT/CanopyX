@@ -146,7 +146,7 @@
   .cx-stepper--vertical .cx-step-panel { grid-column: 2; padding-block: var(--hfx-space-3); }
   .cx-stepper-phone { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--hfx-space-2); }
   .cx-stepper-phone > :only-child { grid-column: 1 / -1; }
-  .cx-stepper-phone-back[hidden] + [data-hfx-part="picker"] { grid-column: 1 / -1; }
+  .cx-stepper-phone-back[hidden] + [data-cx-part="picker"] { grid-column: 1 / -1; }
   .cx-stepper-progress { grid-column: 1 / -1; block-size: var(--hfx-space-1); border-radius: var(--hfx-radius-pill); background: var(--hfx-color-border); overflow: hidden; }
   .cx-stepper-progress > span { display: block; block-size: 100%; background: var(--hfx-color-accent-indicator); border-radius: inherit; }
   .cx-stepper-host[data-phone="true"] { grid-template-columns: minmax(0, 1fr); }

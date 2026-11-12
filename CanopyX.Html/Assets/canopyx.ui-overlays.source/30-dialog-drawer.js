@@ -45,7 +45,7 @@
     }, signal);
     trigger?.addEventListener("click", () => open(), { signal });
     root.addEventListener("click", event => { if (event.target.closest("[data-cx-close],[data-cx-cancel]")) overlay.close("cancel"); }, { signal });
-    const scroller = root.querySelector('[data-hfx-part="body"]');
+    const scroller = root.querySelector('[data-cx-part="body"]');
     scroller?.addEventListener("scroll", () => { root.dataset.scrolled = String(scroller.scrollTop > 0); }, { signal });
     if (steps) root.addEventListener("keydown", event => {
       if (/^(?:INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) || event.target.isContentEditable) return;

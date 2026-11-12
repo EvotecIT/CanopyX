@@ -48,11 +48,11 @@ test("chart renderer loads only on first action and accepted groups filter both 
   await expect(page.locator(".cx-chart-canvas svg [data-cfx-category]")).toHaveCount(4);
   await page.getByLabel("Chart type", { exact: true }).selectOption("stacked");
   await expect(page.locator(".cx-chart-canvas svg")).toHaveAttribute("data-cfx-renderer", "stacked");
-  expect(await page.locator(".cx-chart-dialog [data-hfx-part='body']").evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  expect(await page.locator(".cx-chart-dialog [data-cx-part='body']").evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   await page.screenshot({ path: info.outputPath("group-chart-light.png"), animations: "disabled" });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".cx-chart-dialog")).toHaveAttribute("data-phone", "true");
-  expect(await page.locator(".cx-chart-dialog [data-hfx-part='body']").evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  expect(await page.locator(".cx-chart-dialog [data-cx-part='body']").evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   await page.screenshot({ path: info.outputPath("group-chart-phone.png"), animations: "disabled" });
   await page.getByRole("button", { name: "Close complete text", exact: true }).click();
   await expect(page.locator(".cx-chart-analysis")).toHaveCount(0);

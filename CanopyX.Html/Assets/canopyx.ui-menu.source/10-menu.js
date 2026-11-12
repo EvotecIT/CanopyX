@@ -6,7 +6,7 @@ UI_IMPL.menu = (root, options = {}, signal) => {
   let entries = [], children = new Map(), active = null, hoverTimer, searchTimer, search = '', destroyed = false;
   let pointer, origin, pending, graceUntil = 0;
   root.classList.add('cx-menu'); root.setAttribute('role', 'menu'); root.tabIndex = -1;
-  root.dataset.hfxPart = 'menu';
+  root.dataset.cxPart = 'menu';
   if (!root.id) root.id = 'cx-ui-menu-' + ++uiMenuIdentity;
   if (trigger && options.decorateTrigger !== false) {
     if (!trigger.id) trigger.id = root.id + '-trigger';
@@ -105,7 +105,7 @@ UI_IMPL.menu = (root, options = {}, signal) => {
     for (const child of children.values()) child.destroy(); children = new Map();
     entries = [...root.querySelectorAll(uiMenuItemSelector)].filter(owned);
     for (const entry of entries) {
-      entry.classList.add('cx-menu-item'); entry.dataset.hfxPart = 'menu-item'; entry.tabIndex = -1;
+      entry.classList.add('cx-menu-item'); entry.dataset.cxPart = 'menu-item'; entry.tabIndex = -1;
       if (entry.disabled) { entry.disabled = false; entry.setAttribute('aria-disabled', 'true'); }
       syncState(entry);
       if (entry.hasAttribute('aria-checked')) {

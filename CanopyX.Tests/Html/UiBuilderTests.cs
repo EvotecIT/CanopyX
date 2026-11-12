@@ -17,7 +17,7 @@ public sealed class UiBuilderTests {
         var html = tabs.ToHtmlFragment();
         var root = Parse(html).Element("div")!;
         Assert.NotNull(root.Attribute("data-cx-tabs"));
-        Assert.Equal("tabs", Attr(root, "data-hfx-part"));
+        Assert.Equal("tabs", Attr(root, "data-cx-part"));
         var list = Role(root, "tablist").Single();
         Assert.Equal("Report sections", Attr(list, "aria-label"));
         Assert.Equal("horizontal", Attr(list, "aria-orientation"));
@@ -117,7 +117,7 @@ public sealed class UiBuilderTests {
         Assert.Equal("set" + hostile + "-tab-one" + hostile, Attr(tab, "id"));
         Assert.Equal(hostile, Attr(tab.Descendants("span").First(e => e.Attribute("data-icon") != null), "data-icon"));
         Assert.Equal("Label " + hostile, tab.Elements("span").Single(e => Attr(e, "class") == "cx-tab-label").Value);
-        Assert.Equal("product." + hostile, Attr(root.Element("div")!, "data-hfx-variant"));
+        Assert.Equal("product." + hostile, Attr(root.Element("div")!, "data-cx-variant"));
         Assert.Contains(WebUtility.HtmlEncode("Label " + hostile), html);
         Assert.Single(root.Descendants("strong"));
         AssertReferences(root);
@@ -190,7 +190,7 @@ public sealed class UiBuilderTests {
         Assert.Null(steps[1].Element("button"));
         Assert.Null(steps[3].Element("button"));
         Assert.Null(steps[5].Element("button"));
-        Assert.Equal("step-marker", Attr(steps[0].Descendants("span").First(), "data-hfx-part"));
+        Assert.Equal("step-marker", Attr(steps[0].Descendants("span").First(), "data-cx-part"));
         Assert.Contains("Completed", steps[0].Value);
         var panels = root.Elements("section").ToArray();
         Assert.Equal(6, panels.Length);
@@ -289,7 +289,7 @@ public sealed class UiBuilderTests {
         var document = Parse(html);
         Assert.Equal("wizard" + hostile, Attr(document.Element("div")!, "id"));
         Assert.Equal("Setup " + hostile, Attr(document.Descendants("ol").Single(), "aria-label"));
-        Assert.Equal(hostile, Attr(document.Element("div")!, "data-hfx-variant"));
+        Assert.Equal(hostile, Attr(document.Element("div")!, "data-cx-variant"));
         Assert.Equal("Label " + hostile, document.Descendants("h3").Single().Value);
         Assert.Contains(document.Descendants("span"), s => s.Value == "Description " + hostile);
         Assert.Equal("Trusted step", document.Descendants("strong").Single().Value);
@@ -346,7 +346,7 @@ public sealed class UiBuilderTests {
         var document = Parse(html);
         var overlay = document.Element("dialog")!;
         Assert.Equal("dialog", Attr(overlay, "role"));
-        Assert.Equal("dialog", Attr(overlay, "data-hfx-part"));
+        Assert.Equal("dialog", Attr(overlay, "data-cx-part"));
         Assert.Equal("true", Attr(overlay, "data-modal"));
         Assert.Equal("true", Attr(overlay, "aria-modal"));
         Assert.Equal("lg", Attr(overlay, "data-size"));
@@ -381,7 +381,7 @@ public sealed class UiBuilderTests {
         var document = Parse(html);
         var overlay = document.Element("dialog")!;
         Assert.NotNull(overlay.Attribute("data-cx-drawer"));
-        Assert.Equal("drawer", Attr(overlay, "data-hfx-part"));
+        Assert.Equal("drawer", Attr(overlay, "data-cx-part"));
         Assert.Equal("false", Attr(overlay, "data-modal"));
         Assert.Equal("true", Attr(overlay, "data-phone-modal"));
         Assert.Equal("start", Attr(overlay, "data-side"));
@@ -403,7 +403,7 @@ public sealed class UiBuilderTests {
         var document = Parse(html);
         var overlay = document.Element("div")!;
         Assert.Equal("dialog", Attr(overlay, "role"));
-        Assert.Equal("popover", Attr(overlay, "data-hfx-part"));
+        Assert.Equal("popover", Attr(overlay, "data-cx-part"));
         Assert.Equal("bottom-start", Attr(overlay, "data-placement"));
         Assert.Equal("manual", Attr(overlay, "popover"));
         Assert.NotNull(overlay.Attribute("hidden"));
@@ -424,7 +424,7 @@ public sealed class UiBuilderTests {
         Assert.Equal("help", Attr(trigger, "aria-describedby"));
         Assert.Equal(tooltip.TriggerId, Attr(trigger, "id"));
         Assert.Equal(tooltip.TriggerId, Attr(overlay, "data-cx-trigger"));
-        Assert.Equal("tooltip", Attr(overlay, "data-hfx-part"));
+        Assert.Equal("tooltip", Attr(overlay, "data-cx-part"));
         Assert.Equal("top", Attr(overlay, "data-placement"));
         Assert.Equal("Help <script> & details", overlay.Value);
         Assert.Empty(overlay.Elements());
@@ -446,7 +446,7 @@ public sealed class UiBuilderTests {
         var document = Parse(html);
         var menus = Role(document, "menu").ToArray();
         Assert.Equal(2, menus.Length);
-        Assert.Equal("menu", Attr(menus[0], "data-hfx-part"));
+        Assert.Equal("menu", Attr(menus[0], "data-cx-part"));
         AssertTrigger(document.Element("button")!, menu.Id, menu.TriggerId, "menu");
         Assert.Equal(menu.TriggerId, Attr(menus[0], "aria-labelledby"));
         var check = Role(document, "menuitemcheckbox").Single();

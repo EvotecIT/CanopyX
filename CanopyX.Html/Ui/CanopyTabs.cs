@@ -49,8 +49,8 @@ public sealed class CanopyTabs {
         if (Tabs[Options.SelectedIndex].Disabled) throw new ArgumentException("The selected tab cannot be disabled.");
         var html = new StringBuilder("<div");
         UiHtml.Attribute(html, "id", Id);
-        html.Append(" class=\"cx-tabs cx-tabs--").Append(UiHtml.Token(style)).Append("\" data-cx-tabs data-hfx-part=\"tabs\"");
-        UiHtml.Attribute(html, "data-hfx-variant", Options.Variant);
+        html.Append(" class=\"cx-tabs cx-tabs--").Append(UiHtml.Token(style)).Append("\" data-cx-tabs data-cx-part=\"tabs\"");
+        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         UiHtml.Attribute(html, "data-overflow", UiHtml.Token(Options.Overflow));
         UiHtml.Attribute(html, "data-activation", UiHtml.Token(Options.Activation));
         UiHtml.Attribute(html, "data-collapse", (Options.CollapseToPicker ?? style != CanopyTabsStyle.Segmented) ? "picker" : "none");
@@ -69,7 +69,7 @@ public sealed class CanopyTabs {
         for (var i = 0; i < Tabs.Count; i++) {
             var tab = Tabs[i];
             var selected = i == Options.SelectedIndex;
-            html.Append("<button type=\"button\" class=\"cx-tab\" role=\"tab\" data-hfx-part=\"tab\"");
+            html.Append("<button type=\"button\" class=\"cx-tab\" role=\"tab\" data-cx-part=\"tab\"");
             UiHtml.Attribute(html, "id", TabId(tab));
             UiHtml.Attribute(html, "data-tab-id", tab.Id);
             UiHtml.Attribute(html, "aria-controls", PanelId(tab));
@@ -92,12 +92,12 @@ public sealed class CanopyTabs {
         }
         html.Append("</div>");
         foreach (var tab in Tabs) {
-            html.Append("<section class=\"cx-tabpanel\" role=\"tabpanel\" data-hfx-part=\"tabpanel\"");
+            html.Append("<section class=\"cx-tabpanel\" role=\"tabpanel\" data-cx-part=\"tabpanel\"");
             UiHtml.Attribute(html, "id", PanelId(tab));
             UiHtml.Attribute(html, "aria-labelledby", TabId(tab));
             if (ReferenceEquals(tab, Tabs[Options.SelectedIndex])) UiHtml.Attribute(html, "data-state", "selected");
             if (!tab.HasFocusableContent) UiHtml.Attribute(html, "tabindex", "0");
-            html.Append("><h3 class=\"cx-tabpanel-heading\" data-hfx-part=\"title\">").Append(UiHtml.Encode(tab.Label));
+            html.Append("><h3 class=\"cx-tabpanel-heading\" data-cx-part=\"title\">").Append(UiHtml.Encode(tab.Label));
             if (tab.Badge != null) {
                 html.Append(' ');
                 UiHtml.Span(html, "cx-tab-badge", tab.Badge, "badge");

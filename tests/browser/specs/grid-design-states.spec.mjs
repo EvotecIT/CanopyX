@@ -21,6 +21,41 @@ test('empty inventory and no matches have distinct reasons and a working clear a
  await expect(page.getByRole('heading',{name:'No matching services',exact:true})).toBeVisible();await expect(page.locator('.cx-state p')).toContainText('unavailable-name');await expect(page.locator('.cx-state p')).toContainText('1');await capture(page,'state-no-matches-light');
  await page.locator('.cx-state').getByRole('button',{name:'Clear all',exact:true}).click();await expect(page.locator('.cx-state')).toHaveCount(0);await expect(page.locator('.cx-row[data-cx-id]')).not.toHaveCount(0);
 });
+test('the no-matches reason names the search, the filters or both, and only the empty state offers to clear them',async({page})=>{
+ await open(page);await api(page,api=>api.ready);const state=page.locator('.cx-state'),reason=state.locator('p'),summaryClear=page.locator('.cx-grid-query-summary [data-cx-condition="clear"]');
+ await api(page,api=>api.setQuery({search:'unavailable-name'}));
+ await expect(reason).toHaveText('No services match “unavailable-name”.');await expect(state.getByRole('button')).toHaveText('Clear search');
+ await expect(page.locator('.cx-grid-query-summary [data-cx-condition="search"]')).toBeVisible();await expect(summaryClear).toBeHidden();
+ await api(page,api=>api.setQuery({search:'unavailable-name',filters:[{column:'amount',operator:'gt',values:[99]},{column:'state',operator:'eq',values:['Healthy']}]}));
+ await expect(reason).toHaveText('No services match “unavailable-name” with 2 filters.');await expect(state.getByRole('button')).toHaveText('Clear all');await expect(summaryClear).toBeHidden();
+ await api(page,api=>api.setQuery({search:'',filters:[{column:'amount',operator:'gt',values:[99]}]}));
+ await expect(reason).toHaveText('No services match the 1 active filter.');await expect(state.getByRole('button')).toHaveText('Clear all');await expect(summaryClear).toBeHidden();
+ // With rows on screen the summary offers Clear all again.
+ await api(page,api=>api.setQuery({search:'',filters:[{column:'amount',operator:'lt',values:[5]}]}));
+ await expect(state).toHaveCount(0);await expect(summaryClear).toBeVisible();
+ // Removing a chip that leaves no rows moves focus to a visible chip, never to the hidden link.
+ await api(page,api=>api.setQuery({search:'unavailable-name',filters:[{column:'amount',operator:'lt',values:[5]}]}));await expect(summaryClear).toBeHidden();
+ await page.locator('.cx-grid-query-summary [data-cx-condition="filter-0"]').focus();await page.keyboard.press('Enter');
+ await expect(reason).toHaveText('No services match “unavailable-name”.');await expect(page.locator('.cx-grid-query-summary [data-cx-condition="search"]')).toBeFocused();
+ await state.getByRole('button',{name:'Clear search',exact:true}).click();await expect(state).toHaveCount(0);await expect(page.locator('.cx-row[data-cx-id]')).not.toHaveCount(0);
+});
+test('a focused summary Clear all hidden by a no-match result hands focus to a visible chip',async({page})=>{
+ await open(page);await api(page,api=>api.ready);const summaryClear=page.locator('.cx-grid-query-summary [data-cx-condition="clear"]');
+ await api(page,api=>api.setQuery({filters:[{column:'amount',operator:'lt',values:[5]}]}));await expect(summaryClear).toBeVisible();await summaryClear.focus();
+ await api(page,api=>api.setQuery({filters:[{column:'amount',operator:'gt',values:[99]}]}));
+ await expect(page.locator('.cx-state')).toBeVisible();await expect(summaryClear).toBeHidden();await expect(page.locator('.cx-grid-query-summary [data-cx-condition="filter-0"]')).toBeFocused();
+});
+test('a failed query after a no-match result gives the summary its Clear all back',async({page})=>{
+ const options='{source:{query(query){if(window.__fail)return Promise.reject(new Error("Connection interrupted"));const matched=query.search?0:40;return {protocol:"canopyx/2",type:"gridPage",view:"states",offset:query.offset,total:40,matched,revision:"one",items:Array.from({length:Math.max(0,Math.min(query.limit,matched-query.offset))},(_,i)=>({id:"r"+(i+query.offset),cells:{name:"Service "+(i+query.offset),state:"Healthy",amount:i+query.offset}}))};}}}';
+ await open(page,{source:{kind:'host'},rows:undefined},options);await api(page,api=>api.ready);const summaryClear=page.locator('.cx-grid-query-summary [data-cx-condition="clear"]');
+ await api(page,api=>api.setQuery({search:'unavailable-name'}));await expect(page.locator('.cx-state')).toBeVisible();await expect(summaryClear).toBeHidden();
+ await page.evaluate(()=>{window.__fail=true;return document.querySelector('[data-canopyx-host]').canopyx.setQuery({search:'other-name'}).catch(()=>{});});
+ await expect(page.getByRole('alert')).toContainText('Connection interrupted');await expect(page.locator('.cx-state')).toHaveCount(0);await expect(summaryClear).toBeVisible();
+});
+test('a document that still carries the deprecated no-matches reason mounts and shows the plain reason',async({page})=>{
+ await open(page,{labels:{gridNoMatchesReason:'Legacy reason: {search}, {count}.'}});await api(page,api=>api.ready);
+ await api(page,api=>api.setQuery({search:'unavailable-name'}));await expect(page.locator('.cx-state p')).toHaveText('No services match “unavailable-name”.');
+});
 test('initial skeletons wait 150ms, reduced motion is static, and failure keeps accepted rows',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});const time=new Date('2026-10-05T12:00:00Z');await page.clock.install({time});
  // The clock advances during protocol round trips. Pause ahead while the page is empty, before starting any view timers.

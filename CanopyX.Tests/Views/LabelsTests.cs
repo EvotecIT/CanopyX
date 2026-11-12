@@ -42,6 +42,18 @@ public sealed class LabelsTests {
         Assert.Equal("Szukaj plików", JsonNode.Parse(view.ToJson())!["search"]!["placeholder"]!.GetValue<string>());
     }
 
+    [Fact]
+    public void DeprecatedGridNoMatchesReason_StillTravelsInAValidGridDocument() {
+        var view = new CanopyDataGridView("services", "Services");
+        view.Columns.Add(new CanopyColumn("name", "Service"));
+        view.Labels.GridNoMatchesReason = "Szukano: {search}. Filtry: {count}.";
+
+        var json = view.ToJson();
+
+        Assert.Equal("Szukano: {search}. Filtry: {count}.", JsonNode.Parse(json)!["labels"]!["gridNoMatchesReason"]!.GetValue<string>());
+        CanopyX.Tests.Protocol.ProtocolSchema.AssertValid(json, "grid carrying the deprecated no-matches reason");
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

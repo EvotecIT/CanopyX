@@ -110,7 +110,7 @@ test("a short viewport keeps the calculation editor header and scrolled Apply bu
   // Firefox on macOS can finish scrolling the focused textarea after fill returns.
   await dialog.getByLabel("Expression", { exact: true }).blur();
   await expect.poll(() => dialog.evaluate(element => {
-    const body = element.querySelector('[data-hfx-part="body"]'); body.scrollTop = body.scrollHeight;
+    const body = element.querySelector('[data-cx-part="body"]'); body.scrollTop = body.scrollHeight;
     const box = element.getBoundingClientRect(), button = element.querySelector('button[form]').getBoundingClientRect(), heading = element.querySelector(".cx-drawer-h").getBoundingClientRect();
     return { buttonInside: button.top >= box.top && button.bottom <= box.bottom, headingInside: heading.top >= box.top && heading.bottom <= box.bottom,
       dialogInside: box.top >= 0 && box.bottom <= innerHeight };

@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete French labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels French() => WithFrenchUi(WithFrenchRowActions(WithFrenchForest(WithFrenchDataViews(WithFrenchChanges(WithFrenchCalendar(WithFrenchBoardPlan(WithFrenchAnalysis(new CanopyLabels {
+    public static CanopyLabels French() => WithFrenchUi(WithFrenchRowActions(WithFrenchGridStates(WithFrenchForest(WithFrenchDataViews(WithFrenchChanges(WithFrenchCalendar(WithFrenchBoardPlan(WithFrenchAnalysis(new CanopyLabels {
         GridNoExportColumns = "Aucune colonne visible ne permet l’exportation.",
         GridDownloadXlsx = "Classeur Excel (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -717,5 +717,5 @@ public sealed partial class CanopyLabels {
         MatrixState = "État",
         MatrixAllClear = "Rien à examiner",
         MatrixShowMore = "Afficher plus",
-    }))))))));
+    })))))))));
 }

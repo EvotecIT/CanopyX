@@ -55,7 +55,7 @@ UI_TOOLS.navigation = (() => {
       const restoreFocus = () => {
         // Automatic progression leaves the user's focus where it is, and a refused section keeps it on the section they chose.
         if (context === 'auto' || prefix === 'accordion') return;
-        const target = prefix === 'tabs' ? from?.element : from?.element.querySelector('button') || from?.panel?.querySelector('[data-hfx-part="title"],h3');
+        const target = prefix === 'tabs' ? from?.element : from?.element.querySelector('button') || from?.panel?.querySelector('[data-cx-part="title"],h3');
         target?.focus();
       };
       target.element.setAttribute('aria-busy', 'true');

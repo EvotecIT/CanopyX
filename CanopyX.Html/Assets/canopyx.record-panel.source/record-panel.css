@@ -142,7 +142,7 @@ body .cx-host.cx-drawer.cx-record-drawer { max-width:var(--cx-size-640px); }
 .cx-record-subtitle { margin:var(--hfx-space-1) 0 0; font-size:var(--hfx-type-small-size); color:var(--hfx-color-text-muted); }
 /* Hierarchy: the record's title leads, section headings come next, then values over their quieter labels. A card in a
    collection is one step down: its title leads and its values read at the small size. */
-.cx-drawer.cx-record-drawer .cx-drawer-h [data-hfx-part="title"] { font-size:var(--hfx-type-title-size); }
+.cx-drawer.cx-record-drawer .cx-drawer-h [data-cx-part="title"] { font-size:var(--hfx-type-title-size); }
 .cx-drawer.cx-record-drawer:not(.cx-compare-drawer) .cx-record-section:not(.cx-record-section .cx-record-section) > .cx-record-section-h > .cx-record-toggle { font-size:var(--hfx-type-heading-size); }
 .cx-record-drawer .cx-dl dt { color:var(--hfx-color-text-muted); font-size:var(--hfx-type-caption-size); font-weight:normal; }
 .cx-record-drawer .cx-dl dd { font-size:var(--hfx-type-body-size); }

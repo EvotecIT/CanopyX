@@ -4,7 +4,7 @@
       this.closeGridPopover(false);
       const panel=h("div","cx-host cx-grid-overlay cx-pop cx-popover "+className),controller=new AbortController(),signal=controller.signal;
       for(const name of (this.opts.overlayClass||"").split(/\s+/).filter(Boolean))panel.classList.add(name);
-      panel.dataset.hfxPart="popover";panel.setAttribute("role","dialog");panel.setAttribute("aria-label",title);panel.tabIndex=-1;
+      panel.dataset.cxPart="popover";panel.setAttribute("role","dialog");panel.setAttribute("aria-label",title);panel.tabIndex=-1;
       panel.id=this.id+"-popover";anchor.setAttribute("aria-controls",panel.id);anchor.setAttribute("aria-expanded","true");document.body.appendChild(panel);
       // Other CanopyX menus close; this grid closes the popover on a press, focus or menu event outside it (57-toolbar-panels.js).
       const pressed=new Set();let positionPending=false,releaseFrame=0;

@@ -5,8 +5,8 @@ import { openUi } from './ui-support.mjs';
 const overlay = (kind, id, body = '<label>Record name<input value="Example"></label>', extra = '') =>
   `<button id="${id}-trigger" aria-controls="${id}" aria-expanded="false">Open ${id}</button>
   <dialog id="${id}" class="cx-${kind}" data-cx-${kind} data-cx-trigger="${id}-trigger" data-side="end" data-size="md" aria-labelledby="${id}-title" ${extra}>
-    <header data-hfx-part="header"><h2 id="${id}-title">${id} settings</h2><button class="cx-overlay-close" data-cx-close aria-label="Close"></button></header>
-    <div data-hfx-part="body">${body}</div><footer data-hfx-part="footer"><button data-cx-cancel>Cancel</button><button>Save</button></footer>
+    <header data-cx-part="header"><h2 id="${id}-title">${id} settings</h2><button class="cx-overlay-close" data-cx-close aria-label="Close"></button></header>
+    <div data-cx-part="body">${body}</div><footer data-cx-part="footer"><button data-cx-cancel>Cancel</button><button>Save</button></footer>
   </dialog>`;
 
 test('dialog traps focus, restores its trigger and keeps the document scroll state', async ({ page }) => {
@@ -283,8 +283,8 @@ for (const kind of ['popover', 'tooltip']) test(`${kind} preserves author direct
 // A drawer the host creates with options; the declarative mount leaves it alone.
 const reader = `<button id="first">Record 1</button><button id="second">Record 2</button>
   <dialog id="reader" class="cx-drawer" data-side="end" aria-labelledby="reader-title">
-    <header data-hfx-part="header"><h2 id="reader-title">Record</h2><button class="cx-overlay-close" data-cx-close>Close</button></header>
-    <div data-hfx-part="body"></div></dialog>`;
+    <header data-cx-part="header"><h2 id="reader-title">Record</h2><button class="cx-overlay-close" data-cx-close>Close</button></header>
+    <div data-cx-part="body"></div></dialog>`;
 const openReader = async (page, options = '{}', before = '') => {
   await openUi(page, reader, `${before} window.reader = CanopyX.drawer('#reader', ${options});`);
   await page.evaluate(() => window.reader.ready);
@@ -353,13 +353,13 @@ test('record navigation shows Previous, Next and the position, and stops at the 
   await openReader(page, '{ records: direction => window.steps.push(direction) }', 'window.steps = [];');
   const drawer = page.locator('#reader');
   await page.evaluate(() => window.reader.open({ content: '<p>Record</p>', position: { current: 1, total: 3 } }));
-  await expect(drawer.locator('[data-hfx-part="records"]')).toHaveText('1 of 3');
+  await expect(drawer.locator('[data-cx-part="records"]')).toHaveText('1 of 3');
   await expect(drawer.getByRole('button', { name: 'Previous record' })).toHaveAttribute('aria-disabled', 'true');
   await page.keyboard.press('ArrowUp');
   await drawer.getByRole('button', { name: 'Next record' }).click();
   await page.keyboard.press('ArrowDown');
   await page.evaluate(() => window.reader.open({ position: { current: 3, total: 3 } }));
-  await expect(drawer.locator('[data-hfx-part="records"]')).toHaveText('3 of 3');
+  await expect(drawer.locator('[data-cx-part="records"]')).toHaveText('3 of 3');
   await page.keyboard.press('ArrowDown');
   expect(await page.evaluate(() => window.steps)).toEqual([1, 1]);
 });

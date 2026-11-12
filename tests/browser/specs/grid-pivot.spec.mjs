@@ -119,7 +119,7 @@ test("phone pivot scrolls all column groups and display changes keep numeric exp
   await expect(page.getByRole("combobox", { name: "Choose column", exact: true })).toHaveCount(0);
   expect(await page.locator(".cx-pivot-scroll").evaluate(scroll => scroll.scrollWidth > scroll.clientWidth)).toBe(true);
   await page.getByRole("button", { name: "Choose column", exact: true }).click();
-  await expect(page.getByRole("menu", { name: "Choose column", exact: true })).toHaveAttribute("data-hfx-part", "menu");
+  await expect(page.getByRole("menu", { name: "Choose column", exact: true })).toHaveAttribute("data-cx-part", "menu");
   await page.getByRole("menuitem", { name: "Grand total", exact: true }).click();
   expect(await page.locator(".cx-pivot-scroll").evaluate(scroll => scroll.scrollLeft)).toBeGreaterThan(0);
   await page.locator(".cx-pivot-scroll").evaluate(scroll => { scroll.scrollLeft = 0; });
@@ -148,7 +148,7 @@ test("pivot configuration validates axes and values without a script expression"
   const trigger = page.locator(".cx-pivot-toggle");
   await trigger.click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.locator('[data-hfx-part="body"]')).toHaveCount(1);
+  await expect(dialog.locator('[data-cx-part="body"]')).toHaveCount(1);
   expect(await dialog.locator('input[type="checkbox"]').evaluateAll(inputs => inputs.every(input => input.getBoundingClientRect().width <= 28))).toBe(true);
   await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0); await expect(trigger).toBeFocused();
   await trigger.click();

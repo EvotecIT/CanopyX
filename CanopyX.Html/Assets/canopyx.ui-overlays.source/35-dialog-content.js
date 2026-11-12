@@ -1,6 +1,6 @@
   // The body of a dialog or drawer: host content, or a loader(signal) with a busy state and an error with Retry, like tab panels.
   UI_TOOLS.dialogBody = (root, kind, options, labels, signal) => {
-    const body = root.querySelector('[data-hfx-part="body"]');
+    const body = root.querySelector('[data-cx-part="body"]');
     let loader = options.loader, loaded = false, pending = null;
     const settle = () => { pending = null; root.removeAttribute("aria-busy"); };
     const abort = () => { if (pending) { pending.abort(); settle(); } };
@@ -44,7 +44,7 @@
 
   // Previous and Next record buttons with an "n of N" position, shown when the host navigates records with options.records.
   UI_TOOLS.recordSteps = (root, options, labels, signal) => {
-    const header = root.querySelector('[data-hfx-part="header"]'), group = h("div", "cx-overlay-records"), position = h("span", "cx-overlay-position");
+    const header = root.querySelector('[data-cx-part="header"]'), group = h("div", "cx-overlay-records"), position = h("span", "cx-overlay-position");
     let at = null;
     const step = direction => { if (!at || (direction < 0 ? at.current > 1 : at.current < at.total)) options.records(direction); };
     const button = (label, direction) => {
@@ -52,7 +52,7 @@
       element.setAttribute("aria-label", label); element.addEventListener("click", () => step(direction)); return element;
     };
     const previous = button(labels.drawerPrevious, -1), next = button(labels.drawerNext, 1);
-    group.dataset.hfxPart = "records"; position.hidden = true; position.setAttribute("aria-live", "polite");
+    group.dataset.cxPart = "records"; position.hidden = true; position.setAttribute("aria-live", "polite");
     group.append(previous, position, next);
     header?.insertBefore(group, header.querySelector(".cx-overlay-close"));
     signal?.addEventListener("abort", () => group.remove(), { once: true });

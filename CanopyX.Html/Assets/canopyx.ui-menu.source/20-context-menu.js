@@ -41,8 +41,8 @@ UI_IMPL.contextMenu = (target, itemsOrFactory, options = {}) => {
     if (!items?.length || destroyed || !element.isConnected) return false;
     close('replace', false, true);
     const menu = h('div', 'cx-menu'); menu.hidden = true; menu.dataset.contextMenu = '';
-    menu.setAttribute('role', 'menu'); menu.dataset.hfxPart = 'menu';
-    if (options.variant) menu.dataset.hfxVariant = options.variant;
+    menu.setAttribute('role', 'menu'); menu.dataset.cxPart = 'menu';
+    if (options.variant) menu.dataset.cxVariant = options.variant;
     document.body.append(menu); UI_TOOLS.menuItems(menu, items, options);
     const touch = !!settings.touch, byKey = settings.keyboard ?? keyboard(event);
     const label = (typeof options.label === 'function' ? options.label(event, element) : options.label) ||
@@ -50,7 +50,7 @@ UI_IMPL.contextMenu = (target, itemsOrFactory, options = {}) => {
     let sheet;
     if (touch) {
       sheet = h('dialog', 'cx-drawer cx-context-sheet'); sheet.dataset.side = 'bottom';
-      sheet.dataset.hfxPart = 'drawer'; sheet.hidden = true; sheet.setAttribute('aria-label', label);
+      sheet.dataset.cxPart = 'drawer'; sheet.hidden = true; sheet.setAttribute('aria-label', label);
       document.body.append(sheet); sheet.append(menu);
     }
     const anchor = options.anchor?.(event, element) || (byKey && !options.match && nodeOf(event)) || element;

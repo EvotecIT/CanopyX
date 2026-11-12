@@ -14,7 +14,7 @@ UI_TOOLS.navigation.deferred = (root, prefix, options, life, retry) => {
       body.className = 'cx-navigation-body';
       for (const child of Array.from(item.panel.childNodes)) {
         // An accordion's heading sits outside its panel, so every other child of the panel is content.
-        if (child === template || prefix !== 'accordion' && child.nodeType === 1 && child.matches('h3,[data-hfx-part="title"],.cx-step-print-state,.cx-step-errors,.cx-navigation-print')) continue;
+        if (child === template || prefix !== 'accordion' && child.nodeType === 1 && child.matches('h3,[data-cx-part="title"],.cx-step-print-state,.cx-step-errors,.cx-navigation-print')) continue;
         body.append(child);
       }
       item.panel.append(body);
@@ -22,7 +22,7 @@ UI_TOOLS.navigation.deferred = (root, prefix, options, life, retry) => {
     }
     return bodies.get(item.panel);
   }
-  function isDeferred(item) { return !!item && (item.deferred ?? (options.deferred || !!item.loader || !!item.panel?.querySelector('template'))); }
+  function isDeferred(item) { return !!item && (item.deferred ?? (options.deferred || !!options.loader || !!item.loader || !!(item.panel && templateFor(item.panel)))); }
   async function load(item, signal, live) {
     if (destroyed || life.signal.aborted || signal.aborted || !live()) return false;
     if (!isDeferred(item) || !item.panel) { n.panelTabStop(item.panel); return true; }
