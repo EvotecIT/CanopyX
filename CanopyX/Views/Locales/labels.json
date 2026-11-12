@@ -38,6 +38,103 @@
     "{resources} {start}–{end} sur {total}",
     "{resources} {start}–{end} di {total}"
   ],
+  "CalendarRecurrenceDaily": ["codziennie", "jeden Tag", "cada día", "tous les jours", "ogni giorno"],
+  "CalendarRecurrenceDailyInterval": ["[few]co {count} dni[many]co {count} dni[other]co {count} dnia", "alle {count} Tage", "cada {count} días", "tous les {count} jours", "ogni {count} giorni"],
+  "CalendarRecurrenceWeekly": ["co tydzień", "jede Woche", "cada semana", "toutes les semaines", "ogni settimana"],
+  "CalendarRecurrenceWeeklyInterval": ["[few]co {count} tygodnie[many]co {count} tygodni[other]co {count} tygodnia", "alle {count} Wochen", "cada {count} semanas", "toutes les {count} semaines", "ogni {count} settimane"],
+  "CalendarRecurrenceMonthly": ["co miesiąc", "jeden Monat", "cada mes", "tous les mois", "ogni mese"],
+  "CalendarRecurrenceMonthlyInterval": ["[few]co {count} miesiące[many]co {count} miesięcy[other]co {count} miesiąca", "alle {count} Monate", "cada {count} meses", "tous les {count} mois", "ogni {count} mesi"],
+  "CalendarRecurrenceYearly": ["co roku", "jedes Jahr", "cada año", "tous les ans", "ogni anno"],
+  "CalendarRecurrenceYearlyInterval": ["[few]co {count} lata[many]co {count} lat[other]co {count} roku", "alle {count} Jahre", "cada {count} años", "tous les {count} ans", "ogni {count} anni"],
+  "CalendarRecurrenceOn": ["{days}", "am {days}", "el {days}", "le {days}", "{days}"],
+  "CalendarRecurrenceOnDay": [
+    "w poniedziałek|we wtorek|w środę|w czwartek|w piątek|w sobotę|w niedzielę",
+    "{day}",
+    "{day}",
+    "{day}",
+    "{day}"
+  ],
+  "CalendarRecurrenceEvery": ["{days}", "jeden {days}", "cada {days}", "chaque {days}", "ogni {days}"],
+  "CalendarRecurrenceEveryDay": [
+    "w poniedziałki|we wtorki|w środy|w czwartki|w piątki|w soboty|w niedziele",
+    "{day}",
+    "{day}",
+    "{day}",
+    "{day}"
+  ],
+  "CalendarRecurrenceWeekdays": ["w dni robocze", "werktags", "entre semana", "en semaine", "nei giorni feriali"],
+  "CalendarRecurrenceWeekends": ["w weekendy", "am Wochenende", "los fines de semana", "le week-end", "nel fine settimana"],
+  "CalendarRecurrenceDayRange": ["od {first} do {last}", "{first} bis {last}", "de {first} a {last}", "du {first} au {last}", "da {first} a {last}"],
+  "CalendarRecurrenceRangeDay": [
+    "poniedziałku|wtorku|środy|czwartku|piątku|soboty|niedzieli",
+    "{day}",
+    "{day}",
+    "{day}",
+    "{day}"
+  ],
+  "CalendarRecurrenceList": ["{items} i {last}", "{items} und {last}", "{items} y {last}", "{items} et {last}", "{items} e {last}"],
+  "CalendarRecurrenceMonthDays": [
+    "[one]dnia {days}[few]w dniach {days}[many]w dniach {days}[other]w dniach {days}",
+    "[one]am Tag {days}[other]an den Tagen {days}",
+    "[one]el día {days}[other]los días {days}",
+    "[one]le {days}[other]les {days}",
+    "[one]il giorno {days}[other]i giorni {days}"
+  ],
+  "CalendarRecurrenceLastDay": ["w ostatni dzień miesiąca", "am letzten Tag des Monats", "el último día del mes", "le dernier jour du mois", "l’ultimo giorno del mese"],
+  "CalendarRecurrenceFirstWeekday": [
+    "w pierwszy poniedziałek|w pierwszy wtorek|w pierwszą środę|w pierwszy czwartek|w pierwszy piątek|w pierwszą sobotę|w pierwszą niedzielę",
+    "ersten {day}",
+    "primer {day}",
+    "premier {day}",
+    "il primo {day}|il primo {day}|il primo {day}|il primo {day}|il primo {day}|il primo {day}|la prima {day}"
+  ],
+  "CalendarRecurrenceSecondWeekday": [
+    "w drugi poniedziałek|w drugi wtorek|w drugą środę|w drugi czwartek|w drugi piątek|w drugą sobotę|w drugą niedzielę",
+    "zweiten {day}",
+    "segundo {day}",
+    "deuxième {day}",
+    "il secondo {day}|il secondo {day}|il secondo {day}|il secondo {day}|il secondo {day}|il secondo {day}|la seconda {day}"
+  ],
+  "CalendarRecurrenceThirdWeekday": [
+    "w trzeci poniedziałek|w trzeci wtorek|w trzecią środę|w trzeci czwartek|w trzeci piątek|w trzecią sobotę|w trzecią niedzielę",
+    "dritten {day}",
+    "tercer {day}",
+    "troisième {day}",
+    "il terzo {day}|il terzo {day}|il terzo {day}|il terzo {day}|il terzo {day}|il terzo {day}|la terza {day}"
+  ],
+  "CalendarRecurrenceFourthWeekday": [
+    "w czwarty poniedziałek|w czwarty wtorek|w czwartą środę|w czwarty czwartek|w czwarty piątek|w czwartą sobotę|w czwartą niedzielę",
+    "vierten {day}",
+    "cuarto {day}",
+    "quatrième {day}",
+    "il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|il quarto {day}|la quarta {day}"
+  ],
+  "CalendarRecurrenceFifthWeekday": [
+    "w piąty poniedziałek|w piąty wtorek|w piątą środę|w piąty czwartek|w piąty piątek|w piątą sobotę|w piątą niedzielę",
+    "fünften {day}",
+    "quinto {day}",
+    "cinquième {day}",
+    "il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|il quinto {day}|la quinta {day}"
+  ],
+  "CalendarRecurrenceLastWeekday": [
+    "w ostatni poniedziałek|w ostatni wtorek|w ostatnią środę|w ostatni czwartek|w ostatni piątek|w ostatnią sobotę|w ostatnią niedzielę",
+    "letzten {day}",
+    "último {day}",
+    "dernier {day}",
+    "l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultimo {day}|l’ultima {day}"
+  ],
+  "CalendarRecurrenceInMonth": ["w styczniu|w lutym|w marcu|w kwietniu|w maju|w czerwcu|w lipcu|w sierpniu|we wrześniu|w październiku|w listopadzie|w grudniu", "im {month}", "en {month}", "en {month}", "a {month}|a {month}|a {month}|ad {month}|a {month}|a {month}|a {month}|ad {month}|a {month}|a {month}|a {month}|a {month}"],
+  "CalendarRecurrenceOnDate": ["{date}", "am {date}", "el {date}", "le {date}", "il {date}"],
+  "CalendarRecurrenceAt": ["o {time}", "um {time}", "a las {time}", "à {time}", "alle {time}"],
+  "CalendarRecurrenceTimes": ["[one]{count} raz[few]{count} razy[many]{count} razy[other]{count} razy", "{count}-mal", "[one]{count} vez[other]{count} veces", "{count} fois", "[one]{count} volta[other]{count} volte"],
+  "CalendarRecurrenceUntil": ["do {date}", "bis {date}", "hasta el {date}", "jusqu’au {date}", "fino al {date}"],
+  "CalendarRecurrenceExcept": [
+    "[one]z wyjątkiem {count} daty[few]z wyjątkiem {count} dat[many]z wyjątkiem {count} dat[other]z wyjątkiem {count} daty",
+    "[one]außer {count} Termin[other]außer {count} Terminen",
+    "[one]excepto {count} fecha[other]excepto {count} fechas",
+    "[one]sauf {count} date[other]sauf {count} dates",
+    "[one]tranne {count} data[other]tranne {count} date"
+  ],
   "GridDownloadXlsx": [
     "Skoroszyt Excel (.xlsx)",
     "Excel-Arbeitsmappe (.xlsx)",
@@ -1836,6 +1933,20 @@
     "{from}–{to}: {state}",
     "{from}–{to} : {state}",
     "{from}–{to}: {state}"
+  ],
+  "GridFooterTotals": [
+    "Sumy w stopce",
+    "Fußzeilensummen",
+    "Totales del pie de tabla",
+    "Totaux du pied de tableau",
+    "Totali a piè di pagina"
+  ],
+  "GridFooterUnavailable": [
+    "Niedostępne",
+    "Nicht verfügbar",
+    "No disponible",
+    "Indisponible",
+    "Non disponibile"
   ],
   "GridHealthy": [
     "Prawidłowy",
@@ -6380,6 +6491,20 @@
     "Saisissez des paramètres d’intervalle valides.",
     "Inserisci impostazioni valide per gli intervalli."
   ],
+  "GridAggregateMedian": [
+    "mediana {value}",
+    "Median {value}",
+    "mediana {value}",
+    "médiane {value}",
+    "mediana {value}"
+  ],
+  "GridAggregatePercentile": [
+    "p{percentile} {value}",
+    "P{percentile} {value}",
+    "p{percentile} {value}",
+    "p{percentile} {value}",
+    "p{percentile} {value}"
+  ],
   "CompareSummary": [
     "Porównanie zbiorów danych",
     "Datensatzvergleich",
@@ -6661,5 +6786,13 @@
     "Opciones de campo",
     "Options du champ",
     "Opzioni campo"
-  ]
+  ],
+  "RowActionColumn": ["Akcje", "Aktionen", "Acciones", "Actions", "Azioni"],
+  "RowActionMore": ["Więcej akcji", "Weitere Aktionen", "Más acciones", "Plus d’actions", "Altre azioni"],
+  "RowActionLocked": ["Tylko do odczytu", "Schreibgeschützt", "Solo lectura", "Lecture seule", "Sola lettura"],
+  "RowActionDismiss": ["Zamknij", "Schließen", "Descartar", "Ignorer", "Ignora"],
+  "RowActionPending": ["{action}: w toku", "{action}: läuft", "{action}: en curso", "{action} : en cours", "{action}: in corso"],
+  "RowActionDone": ["{action}: gotowe", "{action}: erledigt", "{action}: hecho", "{action} : terminé", "{action}: fatto"],
+  "RowActionRejected": ["Nie wykonano: {action}.", "{action} wurde nicht ausgeführt.", "{action} no se ha realizado.", "{action} n’a pas été effectué.", "{action} non è stata eseguita."],
+  "RowActionFailed": ["Nie udało się wykonać: {action}. {error}", "{action} fehlgeschlagen: {error}", "Error en {action}: {error}", "Échec de {action} : {error}", "{action} non riuscita: {error}"]
 }

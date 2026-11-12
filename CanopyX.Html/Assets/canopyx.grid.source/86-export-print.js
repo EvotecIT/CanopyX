@@ -26,10 +26,12 @@
     const frame = document.createElement("iframe"); frame.title = grid.labels.gridPrint;
     frame.style.cssText = "position:fixed;width:1px;height:1px;inset:0;border:0;clip-path:inset(100%)";
     document.body.appendChild(frame);
-    const dispose = () => frame.remove();
+    let cancelFontWait;
+    const dispose = () => { cancelFontWait?.(); frame.remove(); };
     signal?.addEventListener("abort", dispose, { once: true });
     try {
       const doc = frame.contentDocument, columns = projection ? snapshot.request.columns.filter(column => projection.includes(column.id)) : snapshot.request.columns;
+      const fontSources = document.head.querySelectorAll("style[data-font-source],link[rel=stylesheet][data-font-source]"), fontLoads = [];
       doc.documentElement.lang = snapshot.request.locale || grid.lang || "en";
       doc.title = grid.view.label;
       doc.documentElement.style.colorScheme = "light";
@@ -38,11 +40,12 @@
       for (const name of theme) if (/^--hfx-(?:font|type|weight)-/.test(name)) doc.documentElement.style.setProperty(name, theme.getPropertyValue(name));
       const add = (tag, parent, text, css) => {
         const element = doc.createElement(tag);
+        if (tag === "style") { element.nonce = fontSources[0]?.nonce || ""; withNonce(element); }
         if (text !== undefined) element.textContent = String(text);
         if (css) element.style.cssText = css;
         parent.appendChild(element); return element;
       };
-      add("style", doc.head, "@page{size:A4 " + (layout !== "stacked" && columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans);color:var(--hfx-color-text-muted)}}' +
+      add("style", doc.head, "@page{size:A4 " + (layout !== "stacked" && columns.length > 6 ? "landscape" : "portrait") + ';margin:16mm 14mm;@bottom-right{content:counter(page);font:var(--hfx-type-caption-size) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);color:var(--hfx-color-text-muted)}}' +
         "thead{display:table-header-group}tfoot{display:table-row-group}tr{break-inside:avoid}a{color:inherit;text-decoration:none}" +
         "@media screen{body{padding:40px}main{max-width:1100px;margin:auto}}@media screen and (max-width:600px){body{padding:20px}}" +
         "@media (max-width:600px){body{font-size:10px!important}td,th{padding:6px 4px!important;white-space:normal!important}td.cx-print-number{white-space:nowrap!important}col.cx-print-date{width:80px!important}}" +
@@ -58,7 +61,17 @@
         "@media screen and (min-width:1200px){.cx-print-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}" +
         "@media screen and (max-width:600px){.cx-print-cards{grid-template-columns:minmax(0,1fr)}}" +
         "@media print{body{padding:0}h1{break-after:avoid}header{break-after:avoid}}");
-      doc.body.style.cssText = 'margin:0;background:var(--hfx-color-surface);color:var(--hfx-color-text);font:11px/1.4 var(--hfx-font-sans)';
+      for (const source of fontSources) {
+        const copy = source.cloneNode(true); copy.nonce = source.nonce;
+        if (source.tagName === "LINK") {
+          copy.href = source.href;
+          fontLoads.push(new Promise((resolve, reject) => {
+            copy.onload = resolve; copy.onerror = () => reject(new Error("CanopyX: print font stylesheet failed to load."));
+          }));
+        }
+        doc.head.appendChild(copy);
+      }
+      doc.body.style.cssText = 'margin:0;background:var(--hfx-color-surface);color:var(--hfx-color-text);font:11px/1.4 var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);font-variant-numeric:tabular-nums';
       const main = add("main", doc.body), reportHeader = add("header", main, undefined, "margin-bottom:22px;padding-bottom:14px;border-bottom:2px solid var(--hfx-color-border-strong)");
       add("h1", reportHeader, grid.view.label, "font-size:26px;letter-spacing:-.5px;line-height:1.2;margin:0 0 8px");
       add("p", reportHeader, printContext(grid, snapshot), "margin:0;max-width:90ch;color:var(--hfx-color-text-muted);font-size:11px;line-height:1.6");
@@ -190,7 +203,11 @@
         }
         summary(add("tfoot", table), grouping?.totals, grid.labels.gridSummary, false);
       }
-      await doc.fonts.ready;
+      await new Promise((resolve, reject) => {
+        cancelFontWait = () => reject(new DOMException("Grid cancelled.", "AbortError"));
+        Promise.all(fontLoads).then(() => { doc.body.getBoundingClientRect(); return doc.fonts.ready; }).then(resolve, reject);
+      });
+      if ([...doc.fonts].some(face => face.status === "error")) throw new Error("CanopyX: print font failed to load.");
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       gridOperationActive(grid, signal);
       frame.contentWindow.focus(); frame.contentWindow.print();

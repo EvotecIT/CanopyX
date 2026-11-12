@@ -76,7 +76,8 @@
     for (const row of grid.view.rows || []) for (const column of grid.view.columns) if (column.calculation !== undefined && !ids.has(column.id)) delete row.cells[column.id];
     grid.view.columns = columns;
     grid.columns = columns.map(column => ({ ...column, ...previous.get(column.id), id: column.id, title: column.title, kind: column.kind, calculation: column.calculation,
-      autoWidth: previous.get(column.id)?.autoWidth ?? (column.autoWidth || column.width === undefined), render: previous.get(column.id)?.render || null }));
+      autoWidth: previous.get(column.id)?.autoWidth ?? (column.autoWidth || column.width === undefined), render: previous.get(column.id)?.render || null }))
+      .concat(grid.columns.filter(column => column.rowActions));
     gridFitPrepare(grid);
     calculationPlans.set(grid.view, plan);
     calculationApply(grid.view);

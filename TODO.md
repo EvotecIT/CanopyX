@@ -142,7 +142,6 @@ Closed for the HtmlForgeX bridge (`HtmlForgeX.CanopyX`, 2026-09-30):
 Left open by that work:
 
 - Page chrome (header, toolbar slots, side panel) stays with the host; for HtmlForgeX documents it belongs to the `HtmlForgeX.CanopyX` bridge, which supplies shared `--hfx-*` design roles.
-- Right-to-left layout: row positions, the pinned tree column, and the detail body use physical left offsets.
 - The streamed writer holds one whole child list in memory until its last node is read; a flat list of millions of top-level rows needs pages that are written as they fill.
 - On the packed catalog at 4x, "identity gateway" (a service far down a region of 1,000) stays at about 210 ms on a busy machine, over the 200 ms margin and under the 250 ms budget. A trace (Edge, 4x): the search is 70 to 80 ms (19 index files; inserting their script elements alone costs about 17 ms), attaching the region's 1,000 services from one 229 KB pack about 25 ms, the forced layout of the rows in view about 20 ms, and the paint and commit 30 to 40 ms. What is left is the search (it ranks five times `maxResults` candidates and reads the entry files of all of them) and the size of the list a hit sits in; the path itself already loads in one round and renders once.
 - The pages of a list larger than the file budget, and the top-level pages, that lie between a list's first page and the one that holds a hit still load one after another.
@@ -230,7 +229,7 @@ The following assessment uses the current CanopyX source and the primary referen
 | Wide tables | Row virtualization and grouped headers; all visible columns are mounted | Frozen summary rows and measured need for column virtualization | C |
 | Live data | In-place transactions, stable sort prompts, change cues and revision-aware polling | Qualify sustained updates in a real reporting consumer | Adoption |
 | Analytical interaction | Row selection, rectangular ranges, range copy/paste and a host-governed fill handle | Scoped status summaries and pivot UI for a measured consumer need | C |
-| Editing and reordering records | Typed flat-grid editors, validation, change marks, undo/redo, row/batch commit proposals and tree proposal hooks | Flat-row/context actions and host-governed record reordering | D |
+| Editing and reordering records | Typed flat-grid editors, validation, change marks, undo/redo, row/batch commit proposals, flat-grid row actions and tree proposal hooks | Host-governed record reordering | D |
 | Host integration | Typed .NET and TypeScript rows, page/fragment writers, JavaScript grid entry point and local inventory bridge proof | A documented typed HtmlForgeX table migration surface, maintained examples and consumer-specific replacement gates | Adoption |
 
 ### Stage A: Finish Everyday Table Interaction
@@ -301,7 +300,8 @@ Gate: produce a measured wide/live inventory demonstration. Record DOM/cache bou
 
 Consumers: a later HtmlForgeX editable inventory or administrative explorer that actually needs governed changes. Product adoption requires its own later scope; existing tree editing is not proof of flat-grid editing.
 
-- [x] Flat cell editors: the editing part (docs/editing.md) has typed editors, validation, cancellation, saving states, an accessible error surface and host-returned canonical cells and revisions. CanopyX raises intent; the host authorizes and executes changes. Row/context actions on flat grids remain open.
+- [x] Flat cell editors: the editing part (docs/editing.md) has typed editors, validation, cancellation, saving states, an accessible error surface and host-returned canonical cells and revisions. CanopyX raises intent; the host authorizes and executes changes.
+- [x] Flat-grid row actions (docs/row-actions.md): an actions column with state-dependent buttons, a More menu, locked rows and host proposals through `onRowAction`.
 - Paste and fill into editable ranges, validation, undo and redo are implemented by the editing and range parts. Batch commit reports partial failure and conflicts per row (`gridCommit`); audit, conflict resolution and write transactions stay host-owned.
 - [ ] Add flat-record reordering by drag and keyboard only for a named host workflow, raising proposals to the host like tree moves. Preserve current sort order and reject stale or unauthorized writes.
 - [ ] Evaluate formula/computed columns and merged body cells only after a consumer and public-contract design justify them. Automatic fill already uses the host-governed editing path.
@@ -314,7 +314,7 @@ Consumers: every CanopyX host, especially standalone .NET/JavaScript users and t
 
 - [ ] Investigate the retained roughly 55 Hz Edge scrolling failures with a concrete environment hypothesis. Keep every domain/round/outlier, browser/cadence/asset provenance and the unchanged 6% target. Extend proof to search/sort/state/selection/export latency and browser memory where new work affects them; do not replace a failed run with a favorable refresh-rate sample.
 - [ ] Screen-reader speech checks: backlog by owner decision. The automated ARIA/axe (every example, desktop and phone, light and dark), keyboard, zoom reflow, forced-colors, reduced-motion and target-size checks are in place (`docs/accessibility.md`). Keep logical row/column counts and focus observable with virtualization, loading, pinned content and details. Automated accessibility checks alone do not establish speech behavior.
-- [ ] Right-to-left for grids and trees: backlog. Flows and the calendar support it.
+- [ ] Right-to-left for grids and trees: trees and flat grids mirror (columns, pins, indentation, expanders, the arrow keys, column resizing and cell focus scrolling; `rtl-tree.html`, `rtl-grid.html`, `rtl.spec.mjs`). Still left-to-right: the shadow edges of pinned grid columns and the grid's `cx-scroll-left`/`cx-scroll-right` state, the Graphite chrome's header dividers, column-group and band resize and move keys, cell-range scrolling, and the board, plan, pivot and reporting surfaces. Flows, the calendar and the matrix support it.
 - [ ] Exercise request failure/timeout/cancellation, stale revisions, invalid state, source count changes, empty datasets, multiple grids, tab/hidden-container sizing and disposal. Export and selection must preserve accepted-query identity through these transitions.
 - [ ] Publish a documented HtmlForgeX grid builder and migration map for existing table authoring calls, after owner acceptance and package readiness. The bridge remains thin; database work belongs to DbaClientX, Office formats to OfficeIMO, report layout/forms/details to HtmlForgeX, and charts/static visual blocks to ChartForgeX.
 - [ ] A representative interaction matrix of supported combinations and limitations (canopyx.dev already has the runnable gallery). Include paged/continuous, inline/hosted, light/dark, narrow/wide and offline/HTTP modes without multiplying unsupported configuration paths.

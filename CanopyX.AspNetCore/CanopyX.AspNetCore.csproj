@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PackageVersion>0.4.5</PackageVersion>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -12,10 +13,10 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX.AspNetCore</PackageId>
-    <Version>0.4.0</Version>
+    <Version>0.4.5</Version>
     <Authors>Evotec</Authors>
     <Description>Minimal-API endpoints for the CanopyX remote grid protocol: query, value-list, summary, streamed export and commit routes over IQueryable or a custom data provider, with a separate write policy, plus the browser source script.</Description>
-    <PackageReleaseNotes>Reporting grids gain optional ChartForgeX charts, linked filters, chart-cell presenters and semantic pivot selection. Filtered pivots export to Excel and PDF through OfficeIMO, preserving typed values, outlines and repeated print headers.</PackageReleaseNotes>
+    <PackageReleaseNotes>Automatic columns remeasure after web fonts load. Binary versions follow the published package version automatically, and release archives include signed copied dependencies.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>data-grid;server-side;aspnetcore;minimal-api;paging;filtering;export;canopyx</PackageTags>

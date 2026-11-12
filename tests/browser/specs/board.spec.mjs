@@ -38,6 +38,10 @@ async function board(page, settings = {}) {
       const rows = view.rows; window.hostRows = rows; window.hostRevision = "board-snapshot"; delete view.rows; view.source = { kind: "host" }; window.boardRequests = [];
       opts.source = { query(query) { window.boardRequests.push(query); return { protocol: "canopyx/2", type: "gridPage", view: view.id,
         revision: window.hostRevision, offset: query.offset, total: rows.length, matched: rows.length, items: rows.slice(query.offset, query.offset + query.limit) }; } };
+      if (options.hostWriter) opts.editing = { commit: batch => {
+        for (const change of batch.rows) Object.assign(rows.find(row => row.id === change.id).cells, change.values);
+        return { protocol: "canopyx/2", type: "gridCommitResult", view: view.id, rows: batch.rows.map(row => ({ id: row.id, status: "saved" })) };
+      } };
     }
     if (options.rejectWriter) opts.editing = { commit: batch => ({ protocol: "canopyx/2", type: "gridCommitResult", view: view.id,
       rows: batch.rows.map(row => ({ id: row.id, status: "error", error: "Host refused the change" })) }) };
@@ -67,8 +71,25 @@ test("board keyboard move is a governed edit and announces its result", async ({
   await card(page, "r1").focus(); await page.keyboard.press("Alt+ArrowRight");
   await expect(lane(page, "In progress").locator('[data-cx-board-record="r1"]')).toBeVisible();
   await expect(page.locator(".cx-live")).toContainText("Task 1 moved to In progress");
-  await expect.poll(() => page.evaluate(() => window.boardApi.view.rows.find(row => row.id === "r1").cells.status.value ?? window.boardApi.view.rows.find(row => row.id === "r1").cells.status)).toBe("doing");
+  // The saved cell keeps the lane's value and shows the lane's label, not the raw value.
+  await expect.poll(() => page.evaluate(() => window.boardApi.view.rows.find(row => row.id === "r1").cells.status)).toEqual({ value: "doing", text: "In progress" });
   await expect(card(page, "r1")).toBeFocused();
+});
+
+test("board keyboard moves follow the reading direction in a right-to-left board", async ({ page }) => {
+  await board(page, { accept: true });
+  await page.evaluate(() => { document.querySelector("[data-canopyx-host]").dir = "rtl"; });
+  await card(page, "r1").focus(); await page.keyboard.press("Alt+ArrowLeft");
+  await expect(lane(page, "In progress").locator('[data-cx-board-record="r1"]')).toBeVisible();
+});
+
+test("hosted board move reloads its records once", async ({ page }) => {
+  await board(page, { hosted: true, accept: true, hostWriter: true });
+  const before = await page.evaluate(() => window.boardRequests.length);
+  await card(page, "r1").locator(".cx-board-move").selectOption('"done"');
+  await expect(lane(page, "Complete").locator('[data-cx-board-record="r1"]')).toBeVisible();
+  await expect(page.locator(".cx-live")).toContainText("Task 1 moved to Complete");
+  expect(await page.evaluate(() => window.boardRequests.length) - before).toBe(1);
 });
 
 test("board work limits include records hidden by search", async ({ page }) => {

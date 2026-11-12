@@ -4,18 +4,20 @@
 .cnx-hero,
 .cnx-bench { width: min(100% - 2 * clamp(16px, 3.5vw, 48px), var(--cnx-wide)); margin-inline: auto; }
 
-/* Hero */
+/* Hero: the promise runs across the page, then the lede and its actions sit beside the install card, both from one top line. */
 .cnx-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr);
-  gap: clamp(28px, 5vw, 72px);
-  align-items: end;
+  grid-template-areas: "title title" "lede side" "actions side";
+  grid-template-rows: auto auto 1fr;
+  column-gap: clamp(28px, 5vw, 72px);
   padding-block: clamp(40px, 6vw, 80px) clamp(28px, 4vw, 44px);
 }
-.cnx-hero__title { max-width: 14ch; font-size: clamp(2.5rem, 1.4rem + 3.8vw, 4.25rem); line-height: 1.02; }
-.cnx-hero__lede { margin-top: 18px; max-width: 58ch; color: var(--cnx-ink-2); font-size: clamp(1.0625rem, 1rem + .25vw, 1.1875rem); line-height: 1.6; }
-.cnx-hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
-.cnx-hero__side { display: grid; gap: 16px; }
+.cnx-hero__copy { display: contents; }
+.cnx-hero__title { grid-area: title; max-width: 20ch; font-size: clamp(2.5rem, 1.4rem + 3.8vw, 4.25rem); line-height: 1.02; }
+.cnx-hero__lede { grid-area: lede; margin-top: 22px; max-width: 58ch; color: var(--cnx-ink-2); font-size: clamp(1.0625rem, 1rem + .25vw, 1.1875rem); line-height: 1.6; }
+.cnx-hero__actions { grid-area: actions; align-self: start; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.cnx-hero__side { grid-area: side; align-self: start; display: grid; gap: 16px; margin-top: 26px; }
 .cnx-hero__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; margin: 0; padding: 0; list-style: none; color: var(--cnx-ink-2); font-size: .875rem; }
 .cnx-hero__facts li { display: flex; align-items: baseline; gap: 8px; }
 .cnx-hero__facts li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 2px; background: var(--cnx-accent); transform: translateY(-1px); }
@@ -77,6 +79,31 @@
 .cnx-demo { position: absolute; inset: 0; }
 .cnx-demo iframe { display: block; width: 100%; height: 100%; border: 0; background: var(--cnx-card); }
 .cnx-demo--email { overflow: auto; background: var(--cnx-card-alt); }
+
+/* A live view lets the page scroll past it until the reader clicks, taps or tabs into it; leaving it hands scrolling back. */
+.cnx-guard { position: absolute; inset: 0; z-index: 1; display: flex; align-items: flex-end; justify-content: center; padding: 16px; cursor: pointer; }
+.cnx-guard[hidden] { display: none; }
+.cnx-guard__hint {
+  padding: 6px 12px;
+  border: 1px solid var(--cnx-line-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cnx-card) 92%, transparent);
+  box-shadow: var(--cnx-shadow);
+  color: var(--cnx-ink-2);
+  font-size: .8125rem;
+  font-weight: 620;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.cnx-guard:hover .cnx-guard__hint { opacity: 1; }
+/* Touch needs no hint: a swipe scrolls the page and a tap goes straight to the view. */
+@media (hover: none) { .cnx-guard__hint { display: none; } }
+@media (prefers-reduced-motion: reduce) { .cnx-guard__hint { transition: none; } }
+
+/* A row of tabs that scrolls sideways fades at the edge that has more tabs beyond it. */
+.cnx-bench__tabs[data-more~="end"] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+.cnx-bench__tabs[data-more~="start"] { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); }
+.cnx-bench__tabs[data-more="start end"] { -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
 
 /* The code column takes the demo's height and scrolls inside it instead of stretching the panel. */
 .cnx-bench__code { display: flex; min-width: 0; min-height: 0; contain: size; background: var(--cnx-code-bg); }
@@ -167,7 +194,9 @@
   .cnx-bench__code .cnx-viewcode pre { max-height: 420px; }
 }
 @media (max-width: 1080px) {
-  .cnx-hero { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .cnx-hero { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "lede" "actions" "side"; grid-template-rows: none; }
+  .cnx-hero__title { max-width: 14ch; }
+  .cnx-hero__side { margin-top: 32px; }
   .cnx-shared__list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cnx-delivery__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cnx-delivery__item:nth-child(3) { border-left: 0; }
@@ -181,6 +210,9 @@
   .cnx-packages__row > span + span { box-shadow: none; padding-top: 0; }
 }
 @media (max-width: 640px) {
+  /* Phones: the stage runs to the screen edges, so the view's own frame is the only one, and the tab row scrolls from edge to edge. */
+  .cnx-bench__panel { margin-inline: calc(-1 * clamp(16px, 3.5vw, 48px)); border-inline: 0; border-radius: 0; box-shadow: none; }
+  .cnx-bench__tabs { margin-inline: calc(-1 * clamp(16px, 3.5vw, 48px)); padding-inline: clamp(16px, 3.5vw, 48px); scroll-padding-inline: clamp(16px, 3.5vw, 48px); }
   .cnx-bench__screen { height: 540px; }
   .cnx-bench__title span { display: none; }
   .cnx-hero__facts { grid-template-columns: minmax(0, 1fr); }

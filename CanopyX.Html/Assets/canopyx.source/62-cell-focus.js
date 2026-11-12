@@ -33,6 +33,16 @@
     return controls;
   }
 
+  /**
+   * Scrolls an element sideways so a box shows between the viewport x positions lo and hi. A box wider than the band
+   * shows its start: its left edge, or its right edge right to left. Changing scrollLeft by a distance moves the content
+   * by that distance in either direction, so the same arithmetic holds where scrollLeft is negative (right to left).
+   */
+  function revealSpan(scroller, box, lo, hi, rtl) {
+    if (rtl ? box.right > hi : box.left < lo) scroller.scrollLeft += rtl ? box.right - hi : box.left - lo;
+    else if (rtl ? box.left < lo : box.right > hi) scroller.scrollLeft += rtl ? Math.max(box.left - lo, box.right - hi) : Math.min(box.right - hi, box.left - lo);
+  }
+
   /** Takes the controls of a cell out of the Tab order; cell navigation reaches them instead. */
   function quietControls(cell) {
     cell.querySelectorAll(CELL_CONTROLS).forEach((control) => {
@@ -97,11 +107,13 @@
         // Clear of the pinned columns at both edges (the pinned tree column, and data-cx-pin cells); a pinned cell is in view.
         const pins = cell.dataset.cxPin ? [] : [...cell.parentNode.children].filter(item => item !== cell &&
           (item.dataset.cxPin || item === treeCell && this.host.classList.contains("cx-pin-tree")));
-        const edge = right => pins.reduce((sum, item) => sum + ((item.dataset.cxPin === "right") === right ? item.offsetWidth : 0), 0), pinned = edge(false), end = edge(true);
-        const left = grid.getBoundingClientRect().left + grid.clientLeft;
-        const box = cell.getBoundingClientRect();
-        if (box.left < left + pinned) grid.scrollLeft -= left + pinned - box.left;
-        else if (box.right > left + grid.clientWidth - end) grid.scrollLeft += Math.min(box.right - left - grid.clientWidth + end, box.left - left - pinned);
+        // Pins name the start ("left") and end ("right") edges; right to left the start edge is on the right.
+        const edge = right => pins.reduce((sum, item) => sum + ((item.dataset.cxPin === "right") === right ? item.offsetWidth : 0), 0);
+        const rtl = isRtl(grid), start = edge(false), end = edge(true);
+        // The visible band between the pins, in viewport pixels. clientLeft also covers a scrollbar on the left.
+        const lo = grid.getBoundingClientRect().left + grid.clientLeft + (rtl ? end : start);
+        const hi = lo - (rtl ? end : start) + grid.clientWidth - (rtl ? start : end);
+        revealSpan(grid, cell.getBoundingClientRect(), lo, hi, rtl);
       }
       const body = target.closest(".cx-detail-body");
       if (body && body !== target) {
@@ -127,12 +139,8 @@
     revealInCell(cell, target) {
       // Only the cells of node rows clip; a detail row's cell shows all of its body.
       if (target === cell || !cell.contains(target) || !cell.parentNode || cell.parentNode._kind !== "node") return;
-      const outer = cell.getBoundingClientRect();
-      const inner = target.getBoundingClientRect();
-      const start = outer.left + cell.clientLeft;
-      const end = start + cell.clientWidth;
-      if (inner.left < start) cell.scrollLeft -= start - inner.left;
-      else if (inner.right > end) cell.scrollLeft += Math.min(inner.right - end, inner.left - start);
+      const lo = cell.getBoundingClientRect().left + cell.clientLeft;
+      revealSpan(cell, target.getBoundingClientRect(), lo, lo + cell.clientWidth, isRtl(cell));
       if (cell.scrollLeft) this.scrolledCell = cell;
     },
 
@@ -209,7 +217,8 @@
       // On the cell itself: the control it stands for, when focus stopped there on the way to one.
       const at = control ? controls.indexOf(control) : cell._cxAt >= 0 && cell._cxAt < controls.length ? cell._cxAt : -1;
       const detail = rowEl._kind === "detail";
-      switch (e.key) {
+      // Right to left, Left moves on to the next cell and Right back towards the row (60-keyboard.js).
+      switch (inlineKey(e.key, this.grid)) {
         case "ArrowRight":
           if (at >= 0 && at < controls.length - 1) this.focusCell(w, index, at + 1);
           else if (!detail && index < cells.length - 1) this.focusCell(w, index + 1, 0);

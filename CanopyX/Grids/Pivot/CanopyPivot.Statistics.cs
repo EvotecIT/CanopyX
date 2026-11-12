@@ -10,6 +10,7 @@ public static partial class CanopyPivot {
         internal Statistics(IReadOnlyList<CanopyGridAggregate> aggregates) {
             Aggregates = aggregates; Values = new double?[aggregates.Count]; Counts = new int[aggregates.Count];
             Distinct = new HashSet<string>?[aggregates.Count]; Custom = new List<CanopyCell?>?[aggregates.Count];
+            Ranked = new List<KeyValuePair<double, long>>?[aggregates.Count]; Sorted = new bool[aggregates.Count];
         }
         internal IReadOnlyList<CanopyGridAggregate> Aggregates { get; }
         internal int Count;
@@ -17,6 +18,9 @@ public static partial class CanopyPivot {
         internal int[] Counts;
         internal HashSet<string>?[] Distinct;
         internal List<CanopyCell?>?[] Custom;
+        // A median or percentile keeps each contributed value with its count; a hosted pivot groups by the value, as for distinct counts.
+        internal List<KeyValuePair<double, long>>?[] Ranked;
+        internal bool[] Sorted;
         internal void Add(CanopyPivotContribution contribution) {
             Count = checked(Count + contribution.Count);
             for (var index = 0; index < Aggregates.Count; index++) {
@@ -24,6 +28,10 @@ public static partial class CanopyPivot {
                 Counts[index] = checked(Counts[index] + count);
                 if (aggregate.Operation == CanopyGridAggregateOperation.DistinctCount) {
                     if (contribution.Distinct[index] != null) (Distinct[index] ??= new HashSet<string>(StringComparer.Ordinal)).Add(ScalarKey(contribution.Distinct[index]));
+                } else if (aggregate.Rank.HasValue) {
+                    if (count == 0 || contribution.Distinct[index] == null) continue;
+                    (Ranked[index] ??= new List<KeyValuePair<double, long>>()).Add(new KeyValuePair<double, long>(CanopyNumericValues.ToDouble(contribution.Distinct[index]!), count));
+                    Sorted[index] = false;
                 } else if (aggregate.Operation == CanopyGridAggregateOperation.Custom) {
                     if (count == 0) continue;
                     var cells = Custom[index] ??= new List<CanopyCell?>();
@@ -39,7 +47,10 @@ public static partial class CanopyPivot {
         }
         internal double? Value(int index, Func<CanopyGridAggregate, IReadOnlyList<CanopyCell?>, double?>? custom) {
             var aggregate = Aggregates[index];
+            var ranked = Ranked[index];
+            if (ranked != null && !Sorted[index]) { ranked.Sort((left, right) => left.Key.CompareTo(right.Key)); Sorted[index] = true; }
             double? value = aggregate.Operation == CanopyGridAggregateOperation.Count ? Counts[index] :
+                aggregate.Rank.HasValue ? ranked == null ? null : CanopyPercentiles.Interpolate(ranked, aggregate.Rank.Value) :
                 aggregate.Operation == CanopyGridAggregateOperation.DistinctCount ? Distinct[index]?.Count ?? 0 :
                 aggregate.Operation == CanopyGridAggregateOperation.Custom ? custom?.Invoke(aggregate, Custom[index]?.AsReadOnly() ?? (IReadOnlyList<CanopyCell?>)Array.Empty<CanopyCell?>()) :
                 Counts[index] == 0 ? null : aggregate.Operation == CanopyGridAggregateOperation.Average ? Values[index] / Counts[index] : Values[index];

@@ -136,14 +136,25 @@ public sealed class RuntimeAssetTests {
         // Pointer selection adds a mutable option and lazy range dispatch (384-byte allowance for 277 measured bytes); the accepted-source reader stays in the optional query part.
         // Reserve 128 bytes for Boolean tree-drawer host/view validation in the shared core.
         // Includes the optional chart-cell loader and three lazy-part manifest entries.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2208);
+        // Reserve 128 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
+        // Reserve 448 bytes for right-to-left logical layout and keys, the matrix-table route in enhance and digit-aware aggregate text.
+        // Reserve 384 bytes for the row actions column shell (its part, labels and menus load only with rowActions).
+        // Reserve 384 bytes for the activity presenters' validation, column-fit rules and part entry (their painting is the lazy activity part).
+        // Reserve 64 bytes for the describeCalendarRecurrence method name that loads the recurrence part on first use.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384 + 64);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
         // Add 512 bytes for accessible phone scrolling, its scoped styles and live authored height bounds.
         // Includes chart intent, localized controls and the lazy analysis loader.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1536);
+        // Reserve 192 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
+        // Reserve 640 bytes for the same right-to-left, matrix-table and aggregate-text changes plus the phone toolbar and footer fixes.
+        // Reserve 192 bytes for the built-in median and percentile aggregates in the reporting menus and labels.
+        // Reserve 320 bytes for the same row actions column shell.
+        // Reserve 384 bytes for the same activity presenter shell.
+        // Reserve 96 bytes for stacked identifier text in two-line rows and the actions column's hidden header text.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192 + 320 + 384 + 96);
     }
 
     [Fact]
@@ -258,7 +269,8 @@ public sealed class RuntimeAssetTests {
             // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, links and search parts,
             // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the seven lazy UI parts
             // (one script and one stylesheet each).
-            Assert.Equal(30, Directory.GetFiles(directory).Length);
+            // Standalone font CSS, the two qualified faces and their two OFL notices travel with external pages.
+            Assert.Equal(35, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

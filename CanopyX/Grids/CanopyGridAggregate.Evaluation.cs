@@ -7,12 +7,14 @@ namespace CanopyX;
 public sealed partial class CanopyGridAggregate {
     /// <summary>Computes a built-in aggregate from raw cell values, ignoring display text and missing values.</summary>
     /// <param name="values">The accepted records' cells. Null cells and null raw values are missing.</param>
-    /// <returns>A count, or a numeric result; numeric operations over no values return null.</returns>
+    /// <returns>A count, or a numeric result; numeric operations over no values return null. A median or percentile interpolates
+    /// linearly between the closest ranks of the sorted values.</returns>
     /// <exception cref="InvalidOperationException">The aggregate is custom, a numeric operand is invalid, or the result exceeds the protocol's finite safe magnitude.</exception>
     public double? Evaluate(IEnumerable<CanopyCell?> values) {
         if (values == null) throw new ArgumentNullException(nameof(values));
         if (Operation == CanopyGridAggregateOperation.Custom) throw new InvalidOperationException("A named custom aggregate requires its host or plugin.");
         var distinct = Operation == CanopyGridAggregateOperation.DistinctCount ? new HashSet<string>(StringComparer.Ordinal) : null;
+        var ranked = Rank.HasValue ? new List<double>() : null;
         int count = 0;
         double sum = 0, compensation = 0, minimum = double.MaxValue, maximum = double.MinValue;
         foreach (var cell in values) {
@@ -30,11 +32,13 @@ public sealed partial class CanopyGridAggregate {
             if (!(raw is long) && !(raw is decimal) && !(raw is double)) throw new InvalidOperationException("A numeric aggregate requires numeric values.");
             var number = CanopyNumericValues.ToDouble(raw);
             if (double.IsNaN(number) || double.IsInfinity(number) || Math.Abs(number) > 9007199254740991d) throw new InvalidOperationException("Aggregate operands require finite safe numeric values.");
+            if (ranked != null) { ranked.Add(number); continue; }
             var total = sum + number;
             compensation += Math.Abs(sum) >= Math.Abs(number) ? sum - total + number : number - total + sum;
             sum = total; minimum = Math.Min(minimum, number); maximum = Math.Max(maximum, number);
         }
         double? result = Operation == CanopyGridAggregateOperation.Count ? count : distinct != null ? distinct.Count : count == 0 ? (double?)null :
+            ranked != null ? CanopyPercentiles.Interpolate(ranked, Rank!.Value) :
             Operation == CanopyGridAggregateOperation.Sum ? sum + compensation : Operation == CanopyGridAggregateOperation.Average ? (sum + compensation) / count :
             Operation == CanopyGridAggregateOperation.Minimum ? minimum : maximum;
         if (result.HasValue && (double.IsNaN(result.Value) || double.IsInfinity(result.Value) || Math.Abs(result.Value) > 9007199254740991d))

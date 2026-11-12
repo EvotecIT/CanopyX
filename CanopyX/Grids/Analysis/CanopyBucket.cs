@@ -116,11 +116,13 @@ public sealed class CanopyBucket {
         if (!Finite(key) || key != Math.Floor(key)) throw new ArgumentOutOfRangeException(nameof(key));
         culture ??= CultureInfo.InvariantCulture;
         string Number(double value) => value.ToString("G17", culture);
-        if (Kind == CanopyBucketKind.Width) return "[" + Number(Origin + key * Width) + ", " + Number(Origin + (key + 1) * Width) + ")";
+        // A range reads "-250 – 0" like the browser's label; it includes its start and stops before its end.
+        string Range(double from, double to) => Number(from) + " – " + Number(to);
+        if (Kind == CanopyBucketKind.Width) return Range(Origin + key * Width, Origin + (key + 1) * Width);
         if (Kind == CanopyBucketKind.Edges) {
             if (key < 0 || key > _edges.Length) throw new ArgumentOutOfRangeException(nameof(key));
             var index = (int)key;
-            return index == 0 ? "< " + Number(_edges[0]) : index == _edges.Length ? "≥ " + Number(_edges[index - 1]) : "[" + Number(_edges[index - 1]) + ", " + Number(_edges[index]) + ")";
+            return index == 0 ? "< " + Number(_edges[0]) : index == _edges.Length ? "≥ " + Number(_edges[index - 1]) : Range(_edges[index - 1], _edges[index]);
         }
         if (Kind == CanopyBucketKind.Hour) return ((int)key).ToString("D2", culture) + ":00";
         if (Kind == CanopyBucketKind.Weekday) return culture.DateTimeFormat.GetDayName((DayOfWeek)(((int)key + (int)FirstWeekday) % 7));

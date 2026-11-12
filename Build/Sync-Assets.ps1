@@ -300,7 +300,7 @@ function ConvertTo-Module {
     # The module uses the same implementation as the interactive classic script. Only its host, automatic
     # browser mount, and exports differ; importing it on a server neither needs a DOM nor changes global state.
     $footer = '})(typeof window !== "undefined" ? window : this);'
-    $automatic = 'const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;'
+    $automatic = 'const navigation = global.performance?.getEntriesByType?.("navigation")[0] || global.performance?.timing;'
     if (-not $Content.EndsWith($footer + "`n", [System.StringComparison]::Ordinal) -or
         ([regex]::Matches($Content, [regex]::Escape($automatic))).Count -ne 1) {
         throw 'The canonical runtime mount boundary changed; update the module assembly explicitly.'
@@ -326,7 +326,7 @@ export default CanopyX;
     if ($Grid) {
         $header = $header.Replace('!runtimeHost.CanopyX.labels.actions', '!runtimeHost.CanopyX.createDataGrid')
         $header = $header.Replace('interactive runtime or module', 'grid runtime or module')
-        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, createCalendar, createFlow, createMatrix, createDiff, createChangeList, createPropagation, enhance, grid, configure')
+        $exports = $exports.Replace('createTreeGrid, configure', 'createTreeGrid, createDataGrid, createCalendar, createFlow, createMatrix, createDiff, createChangeList, createPropagation, enhance, grid, matrix, configure')
     }
     if ($Flow) {
         # The flow module needs only an entry point that creates flows: the flow entry or a grid entry point.

@@ -68,15 +68,19 @@ UI_IMPL.accordion = (root, options = {}, signal) => {
     if (item.open === next && !(next && deferred.isDeferred(item))) return Promise.resolve(true);
     return requests(item).request({ ...item, open: next }, undefined, source);
   }
+  // Like tabs, the fragment keeps what else it holds: a plain anchor and other sets' id=value pairs stay as written.
+  const hashKey = () => encodeURIComponent(root.id) + '=';
+  const hashParts = () => location.hash.slice(1).split('&').filter(Boolean);
   function hashIds() {
-    try { return new URLSearchParams(location.hash.slice(1)).getAll(root.id); } catch { return []; }
+    const ids = [];
+    for (const part of hashParts()) if (part.startsWith(hashKey())) { try { ids.push(decodeURIComponent(part.slice(hashKey().length).replace(/\+/g, ' '))); } catch { /* A malformed pair is ignored. */ } }
+    return ids;
   }
   function writeHash() {
-    const params = new URLSearchParams(location.hash.slice(1));
-    params.delete(root.id);
-    for (const id of getOpen()) params.append(root.id, id);
-    const text = params.toString(), value = text ? '#' + text : '';
-    if (value !== location.hash) history[options.hashHistory === 'push' ? 'pushState' : 'replaceState'](null, '', value || location.pathname + location.search);
+    const parts = hashParts().filter(item => !item.startsWith(hashKey()));
+    for (const id of getOpen()) parts.push(hashKey() + encodeURIComponent(id));
+    const value = parts.length ? '#' + parts.join('&') : '';
+    if (value !== location.hash) history[options.hashHistory === 'push' ? 'pushState' : 'replaceState'](history.state, '', value || location.pathname + location.search);
   }
   function stored() {
     if (!storageKey) return null;

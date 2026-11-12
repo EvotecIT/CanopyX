@@ -21,7 +21,7 @@
       };
       const more=(value,label=grid.labels.gridShowMore)=>{
         const button=add(label,"cx-link cx-presenter-expand","button");button.type="button";
-        button.setAttribute("aria-haspopup","dialog");button.setAttribute("aria-label",fill(grid.labels.gridExpandCell,{column:column.title}));
+        button.setAttribute("aria-haspopup","dialog");button.setAttribute("aria-label",label+", "+fill(grid.labels.gridExpandCell,{column:column.title}));
         button.addEventListener("click",()=>grid.showReportingText(column,value,button,row.id,options.mono));return button;
       };
       if (GRID_CHART_CELL_KINDS.includes(options.kind)) {
@@ -29,6 +29,9 @@
         else { add(text); grid.loadChartCells(); }
       } else if (GRID_HISTORY_KINDS.includes(options.kind)) {
         if(GRID_HISTORY_IMPL.render)GRID_HISTORY_IMPL.render(grid,column,options,cell,element,text);else grid.loadHistory();
+      } else if (GRID_ACTIVITY_KINDS.includes(options.kind)) {
+        // Relative times and logs paint through the activity part (36-grid-presenter-activity.js).
+        if(GRID_ACTIVITY.render)GRID_ACTIVITY.render(grid,column,options,row,cell,element,text,add,record||complete);else{add(text);grid.loadActivity();}
       } else if (options.kind==="structured") {
         // Lists, objects and collections summarise through the record panel part (52-grid-record-part.js).
         if(RECORD_IMPL.summary)RECORD_IMPL.summary(grid,column,options,row,element,text);else{add(text);grid.loadRecordPanel();}
@@ -54,8 +57,11 @@
         // Quiet values are plain text (muted unless quietStyle is "plain"); in an enum they keep the pills' inline start.
         if(options.quietTones?.includes(tone)) add(text,(options.quietStyle==="plain"?"cx-presenter-text":"p-muted")+(options.kind==="enum"?" p-inset":""));
         else if(options.kind==="state") {
-          const state=add("","p-state"+(tone==="success"?" quiet":""));const dot=h("span","p-dot "+(tone==="success"?"quiet":tone));
-          toneColors(dot,toneOf(tone));state.append(dot,document.createTextNode(text));
+          // A dot (or the value's glyph) before the text, which carries the meaning; style "pill" sets both in a tone pill.
+          const pill=options.style==="pill",glyph=Object.hasOwn(options.icons||{},String(raw))&&options.icons[String(raw)];
+          const state=add("",pill?"p-pill p-status":"p-state"+(tone==="success"?" quiet":"")),mark=h("span",glyph?"p-glyph":"p-dot "+(pill?"":tone==="success"?"quiet":tone));
+          if(pill)applyTone(state,"p-pill p-status "+tone,toneOf(tone));else if(glyph)applyTone(mark,"p-glyph",toneOf(tone));else toneColors(mark,toneOf(tone));
+          if(glyph)setText(mark,glyph);mark.setAttribute("aria-hidden","true");state.append(mark,document.createTextNode(text));
         } else {const pill=add(text,"p-pill "+tone);applyTone(pill,pill.className,toneOf(tone));}
       } else if(options.kind==="change") {
         const delta=cellValue(row.cells[options.deltaColumn]);
@@ -68,9 +74,10 @@
         track.setAttribute("aria-valuemax",String(maximum));track.setAttribute("aria-valuenow",String(Math.min(maximum,Math.max(0,raw))));track.setAttribute("aria-valuetext",text);
         bar.style.width=Math.min(100,Math.max(0,raw/maximum*100))+"%";toneColors(bar,toneOf(tone));track.appendChild(bar);box.append(track,document.createTextNode(text));
       } else if(options.kind==="identifier") {
-        add(text,options.mono?"p-mono":"cx-presenter-text");
         const secondary=options.secondaryColumn?cellText(row.cells[options.secondaryColumn],grid.columns.find(item=>item.id===options.secondaryColumn),grid.fmt):object&&cell.secondary;
-        if(secondary)add(secondary,"p-sub");
+        // The drawer, and two-line rows of a column that asks with stack, put the secondary text under the value.
+        const stack=secondary&&(record||options.stack&&(complete||grid.autoRows))&&add("","p-stack");
+        for(const item of [add(text,options.mono?"p-mono":"cx-presenter-text"),secondary&&add(secondary,"p-sub")])if(item&&stack)stack.appendChild(item);
       } else if(options.kind==="tags"||options.kind==="list") {
         const values=text.split(options.separator).map(item=>item.trim()).filter(Boolean),limit=options.kind==="tags"?3:options.limit||3;
         const preview=add("","cx-tag-list");element.classList.add("cx-list-cell");

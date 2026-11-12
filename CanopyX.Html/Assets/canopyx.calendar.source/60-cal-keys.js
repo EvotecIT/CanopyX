@@ -3,7 +3,35 @@
   // repaint (new data, a resize, live changes) puts focus back on the same day, slot or event. Keys follow each view's grid
   // (arrows, Page Up and Down for the period, Home and End); Enter goes into a day or opens an event, Escape comes back out.
   // Selecting a day or a range of slots reports canopyx:linkchange with the range, so another view can follow it.
+  const CAL_LABEL_CONTEXT = new WeakMap();
+  // Clipped subtitles are not speech targets. Plan milestones deliberately let their labels overflow the event box.
+  function calVisibleLabel(element, clip) {
+    if (element.nodeType === 3) return element.nodeValue;
+    if (element.nodeType !== 1) return "";
+    if (element.tagName === "BR") return " ";
+    const box = element.getBoundingClientRect(), style = getComputedStyle(element), clipped = style.overflow !== "visible";
+    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0" || clipped && (!box.width || !box.height)) return "";
+    if (clip && (box.right <= clip.left || box.left >= clip.right || box.bottom <= clip.top || box.top >= clip.bottom)) return "";
+    if (clipped) clip = clip ? { left: Math.max(box.left, clip.left), right: Math.min(box.right, clip.right),
+      top: Math.max(box.top, clip.top), bottom: Math.min(box.bottom, clip.bottom) } : box;
+    return [...element.childNodes].map(child => calVisibleLabel(child, clip)).join("");
+  }
   Object.assign(DataGrid.prototype, {
+    // Read all painted text before changing names to avoid a layout per event. Full date/event context remains available.
+    calLabelContent(container = this.calRoot) {
+      if (container === this.calRoot) {
+        cancelAnimationFrame(this.calLabelFrame); this.calLabelFrame = 0;
+        this.calLabelObserver?.takeRecords();
+      }
+      const labels = [...container.querySelectorAll("[tabindex][aria-label],button[aria-label]")].map(element =>
+        ({ element, visible: calVisibleLabel(element).trim().replace(/\s+/g, " "), label: element.getAttribute("aria-label") }));
+      for (const { element, visible, label } of labels) {
+        const previous = CAL_LABEL_CONTEXT.get(element), context = previous?.name === label ? previous.context : label;
+        const name = visible && !context.toLocaleLowerCase().includes(visible.toLocaleLowerCase()) ? visible + ", " + context : context;
+        if (name !== label) element.setAttribute("aria-label", name);
+        CAL_LABEL_CONTEXT.set(element, { context, name });
+      }
+    },
     calPaint(options = {}) {
       if (!this.calBody || this.destroyed) return;
       this.calDisposeEventRenderers();
@@ -24,6 +52,7 @@
       else if (view === "agenda") this.calPaintAgenda();
       else if (view === "year") this.calPaintYear();
       else this.calPaintTimeline(options);
+      if (!this.cal.dayNotes) this.calLabelContent();
       const restored = scroll && !options.resize && this.calRestoreScroll(scroll);
       if (!restored && view === "agenda") this.calScrollAgenda();
       this.calMarkSelection();

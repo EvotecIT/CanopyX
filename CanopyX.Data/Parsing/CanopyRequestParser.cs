@@ -294,6 +294,7 @@ public static partial class CanopyRequestParser {
         if (op == CanopyGridFilterOperator.In && count > limits.MaxInValues && count <= 1000) throw CanopyRequestException.Limit("The membership test has too many values.");
         if (nullTest ? count != 0 : op == CanopyGridFilterOperator.In ? count < 1 || count > 1000 : count != 1)
             throw CanopyRequestException.Operand("Null tests take no values, membership takes 1 to 1,000, and other operators take one.");
+        if ((budget.Values += count) > limits.MaxFilterValues) throw CanopyRequestException.Limit("The filter has too many values.");
         var operands = new List<object>(count);
         foreach (var value in values.EnumerateArray()) {
             var operand = bucket == null ? Operand(value, column, limits) : value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number) && CanopyBucket.Finite(number) ? (object)number : throw CanopyRequestException.Operand("A bucket operand must be a finite number.");
@@ -412,5 +413,6 @@ public static partial class CanopyRequestParser {
     private sealed class Budget {
         internal int Terms;
         internal int Groups;
+        internal int Values;
     }
 }

@@ -1,6 +1,6 @@
 # Security
 
-This page describes how CanopyX behaves under a strict Content Security Policy and Trusted Types, how it keeps host strings from becoming markup, what a host is responsible for when it hands CanopyX markup of its own, and how exports avoid spreadsheet formula injection.
+This page describes how CanopyX behaves under a strict Content Security Policy and Trusted Types, how it keeps host strings from becoming markup, what a host is responsible for when it hands CanopyX markup of its own, how exports avoid spreadsheet formula injection, and how the .NET remote endpoints keep a caller's commits inside what it may read.
 
 The browser tests `tests/browser/specs/csp.spec.mjs` and `tests/browser/specs/xss.spec.mjs` cover each section, and `CanopyX.Tests/Html/ContentSecurityTests.cs` covers the C# writers.
 
@@ -9,8 +9,10 @@ The browser tests `tests/browser/specs/csp.spec.mjs` and `tests/browser/specs/xs
 CanopyX works under a policy without `'unsafe-inline'` or `'unsafe-eval'`:
 
 ```text
-Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; object-src 'none'; base-uri 'none'
+Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'
 ```
+
+Standalone pages bundle Archivo and JetBrains Mono. External assets load fonts from the same origin; single-file pages embed the font bytes as data URLs, so their policy includes `font-src data:`. Hosted fragments use the host's font faces and do not add font declarations.
 
 The runtime never evaluates strings: there is no `eval`, no `Function` constructor and no string `setTimeout`. It sets dynamic styles (widths, positions, heights, the print outline's indent) through the style object (`element.style.width = …`), which a policy allows, and never writes a `style` attribute through markup or `setAttribute`.
 
@@ -46,7 +48,7 @@ A nonce is new for every response. Write the markup per response with the respon
 ```csharp
 var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(18));
 response.Headers["Content-Security-Policy"] =
-    $"default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; object-src 'none'; base-uri 'none'";
+    $"default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'";
 var html = view.ToHtmlPage(new CanopyHtmlOptions { Nonce = nonce });
 ```
 
@@ -57,8 +59,12 @@ Fragments that share a `CanopyHtmlDocument` carry each part once; pass the same 
 For a hosted grid, give its endpoint configuration script the same nonce before the grid mounts:
 
 ```csharp
-var source = CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/hosts", nonce);
+var page = view.ToHtmlPage(new CanopyHtmlOptions {
+    Nonce = nonce, HeadHtml = CanopyRemoteScript.ElementWithNonce(map.Schema, "/api/hosts", nonce) });
 ```
+
+`HeadHtml` is written as given, after the runtime, so every element in it needs the response's nonce and none of it may come
+from report data.
 
 `CanopyRemoteScript.Script(...)` returns the same script body for a host that writes its own nonced element.
 
@@ -128,3 +134,12 @@ A sanitiser that returns a `DocumentFragment` or another node is inserted as it 
 **File names.** A download is saved under a basename: path separators, reserved characters (`\ / : * ? " < > |`) and control characters become `_`, and a leading dot or space is replaced. A reporting export's `fileName` option is refused unless it is already a safe basename of at most 100 characters.
 
 **Format providers** (`registerExportFormat`) are host code: CanopyX hands them the captured rows and saves the file they return under a basename. A provider that builds HTML, XLSX or PDF output escapes the values for its own format.
+
+## Remote writes
+
+A remote grid's commit route (`CanopyX.AspNetCore`) requires a named `WriteAuthorizationPolicy` on top of the read
+authorization. Authorization decides *who* may write; the writer's scope decides *which records*. Map the reference
+writer with `options.UseQueryableWriter(...)`: its scope is the grid's own query callback, so a commit can change only
+records the caller can read, and a row outside it answers as a missing record. `CanopyQueryableWriter<T>` refuses to be
+created without `Scope` unless `AllowUnscoped` says every caller may change every record its store holds. See
+[remote-dotnet.md](remote-dotnet.md#saving-edits).

@@ -51,7 +51,7 @@ public sealed class HandlerAndExportTests {
     [InlineData(ProviderKind.Linq)]
     public async Task Export_Scopes_SelectTheirRecords(ProviderKind kind) {
         var handler = new Harness(Hosts, kind).Handler;
-        var selected = await Csv(handler, "{\"scope\":\"selected\",\"revision\":\"r1\",\"query\":" + Query + ",\"selection\":[\"2\",\"3\"],\"columns\":[\"name\"]}");
+        var selected = await Csv(handler, "{\"scope\":\"selected\",\"revision\":\"r1\",\"query\":" + Query + ",\"selection\":[\"2\",\"3\",\"2\"],\"columns\":[\"name\"]}");
         Assert.Equal("Name\r\n\"beta, \"\"quoted\"\"\"\r\ngamma\r\n", selected);
         var everyMatch = await Csv(handler, "{\"scope\":\"selected\",\"revision\":\"r1\",\"query\":" + Query + ",\"selection\":[],\"columns\":[\"name\"]," +
             "\"querySelection\":{\"kind\":\"query\",\"revision\":\"r1\",\"query\":" + Query + ",\"excludedIds\":[\"1\"]}}");

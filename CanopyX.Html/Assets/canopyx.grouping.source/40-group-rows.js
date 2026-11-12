@@ -121,14 +121,16 @@
       const previous = target.querySelector(":scope > .cx-hidden-aggregates");
       if (!parts.length) { previous?.remove(); return; }
       const extra = previous || h("button", "cx-grid-group-aggregates cx-hidden-aggregates"); if (!previous) extra.type = "button";
-      extra.setAttribute("aria-haspopup", "dialog"); if (extra.textContent !== parts.join(" · ")) setText(extra, parts.join(" · "));
+      extra.setAttribute("aria-haspopup", "dialog"); if (extra.textContent !== parts.join(" · ")) reportingAggregateSpans(extra, parts);
       extra._cxAggregateText = { title, text: details.join("\n"), bindings, values }; extra.title = details.join("\n");
-      extra.setAttribute("aria-label", details.join(", "));
-      if (!previous) { target.appendChild(extra); extra.addEventListener("click", event => {
+      extra.setAttribute("aria-label", parts.join(" · ") + ", " + details.join(", "));
+      if (!previous) { target.append(" ", extra); extra.addEventListener("click", event => {
         event.stopPropagation(); const current = extra._cxAggregateText;
         this.showAggregateMenu({ id: current.bindings[0].column, title: current.title }, current.bindings, current.values, extra, current.text).catch(error => this.emit("error", { error }));
       });
       }
+      const primary = cell.querySelector(":scope > .cx-aggregate-button");
+      if (primary) cell.setAttribute("aria-label", primary.textContent + " " + extra.textContent + ", " + primary.getAttribute("aria-label"));
       cell.title = (cell.title ? cell.title + " · " : "") + parts.join(" · ");
     },
     syncSummaryControls() {

@@ -53,7 +53,7 @@ public sealed class BucketTests {
         Assert.Equal(-1, width.Key(-5d)); Assert.Equal(0, width.Key(5d)); Assert.Equal(1, width.Key(15d));
         var edges = CanopyBucket.ExplicitEdges(-10, 0, 100);
         Assert.Equal(0, edges.Key(-11d)); Assert.Equal(1, edges.Key(-10d)); Assert.Equal(2, edges.Key(0d)); Assert.Equal(3, edges.Key(100d));
-        Assert.Equal("[0, 100)", edges.Label(2)); Assert.Null(edges.Key(null)); Assert.Null(edges.Key(double.NaN));
+        Assert.Equal("0 – 100", edges.Label(2)); Assert.Null(edges.Key(null)); Assert.Null(edges.Key(double.NaN));
         Assert.Throws<ArgumentException>(() => CanopyBucket.ExplicitEdges(1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => CanopyBucket.FixedWidth(0));
     }

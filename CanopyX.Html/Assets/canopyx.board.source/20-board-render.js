@@ -67,10 +67,10 @@
       const { card, title } = boardCardTemplate.call(this, row, text, values);
       title.addEventListener("click", () => this.openRecord(row.id).catch(error => this.emit("error", { error })));
       if (settings.editable) {
-        const options = board.lanes.map(target => ({ key: target.key, label: target.label, disabled: target.key !== lane.key && !this.boardCanMove(row, target) }));
+        const options = board.lanes.filter(target => target.key !== lane.key).map(target => ({ key: target.key, label: target.label, disabled: !this.boardCanMove(row, target) }));
         const disabled = board.pending.has(row.id) || this.editReadOnly || !!this.edit && !this.canEditCell(row, settings.column);
-        const move = boardMoveTemplate(board.labels.boardMove + ": " + text, options, lane.key, disabled, card);
-        move.addEventListener("change", () => { const key = move.value; move.value = lane.key; this.boardMove(row.id, key); });
+        const move = boardMoveTemplate(board.labels.boardMove + ": " + text, options, board.labels.boardMove, disabled, card);
+        move.addEventListener("change", () => { const key = move.value; move.value = ""; this.boardMove(row.id, key); });
         card.draggable = !move.disabled;
         card.addEventListener("dragstart", event => { board.drag = row; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", row.id); });
         card.addEventListener("dragend", () => { board.drag = null; for (const node of this.boardFrame.querySelectorAll(".cx-board-drop")) node.classList.remove("cx-board-drop"); });
@@ -78,7 +78,9 @@
       card.addEventListener("keydown", event => {
         if (event.target !== card) return;
         if (event.altKey && ["ArrowLeft", "ArrowRight"].includes(event.key)) {
-          event.preventDefault(); const target = board.lanes[board.lanes.indexOf(lane) + (event.key === "ArrowLeft" ? -1 : 1)]; if (target) this.boardMove(row.id, target.key);
+          // Lanes follow the reading direction, so Alt+Left is the next lane in a right-to-left board.
+          const back = (event.key === "ArrowLeft") !== (getComputedStyle(this.boardFrame).direction === "rtl");
+          event.preventDefault(); const target = board.lanes[board.lanes.indexOf(lane) + (back ? -1 : 1)]; if (target) this.boardMove(row.id, target.key);
         } else if (["ArrowUp", "ArrowDown"].includes(event.key)) {
           event.preventDefault(); const target = lane.rows[lane.rows.indexOf(row) + (event.key === "ArrowUp" ? -1 : 1)]; if (target) this.boardFocus(target.id);
         } else if (event.key === "Enter") { event.preventDefault(); this.openRecord(row.id).catch(error => this.emit("error", { error })); }

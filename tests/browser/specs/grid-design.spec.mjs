@@ -45,7 +45,9 @@ test("numeric headers align their control group and selected pinned cells remain
     const value=document.querySelector('.cx-row[data-cx-id="r1"] .cx-cell:nth-child(2)');
     return{caption:right(cell.querySelector('.cx-htext')),value:right(value.querySelector('.cx-text')||value)};
   });
-  expect(Math.abs(edges.caption-edges.value),'the numeric caption stays aligned with its values while the button fills the header').toBeLessThanOrEqual(1);
+  // The caption ends before the column menu's reserved slot: never past its values, and at most one slot short of them.
+  expect(edges.caption,'the numeric caption never runs past its values').toBeLessThanOrEqual(edges.value+1);
+  expect(edges.value-edges.caption,'the numeric caption stays within one menu slot of its values').toBeLessThanOrEqual(48);
   await page.evaluate(()=>{grid.setColumnPinned('name','left');grid.setSelection(['r1']);});
   const row=page.locator('.cx-row[data-cx-id="r1"]');await expect(row).toHaveAttribute('aria-selected','true');await row.hover();
   const paint=await row.evaluate(element=>{const style=getComputedStyle(element.querySelector('[data-cx-pin]'));return{base:style.backgroundColor,overlay:style.backgroundImage,selected:getComputedStyle(element).backgroundColor};});

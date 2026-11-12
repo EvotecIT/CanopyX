@@ -3,7 +3,7 @@
     const fields = board.settings.fields || board.grid.columns.filter(column => !column.hidden && ![board.settings.column, board.settings.titleColumn, board.settings.swimlaneColumn].includes(column.id)).slice(0, 2).map(column => column.id);
     const { card } = boardCardTemplate.call(board.grid, { id: "measure" }, "Measure", fields.slice(0, 2).map(() => ({ title: "M", text: "M" })));
     const group = h("h4", "cx-board-swimlane");
-    if (board.settings.editable) boardMoveTemplate("", [{ key: "", label: "M" }], "", true, card);
+    if (board.settings.editable) boardMoveTemplate("", [{ key: "m", label: "M" }], board.labels.boardMove, true, card);
     for (const probe of [card, group]) { probe.style.visibility = "hidden"; probe.setAttribute("aria-hidden", "true"); }
     frame.append(card, group);
     const cardHeight = card.getBoundingClientRect().height + Number.parseFloat(getComputedStyle(card).marginBottom);
@@ -42,8 +42,10 @@
       return { card, title };
   }
   function boardMoveTemplate(label, options, value, disabled, card) {
-        const move = h("select", "cx-select cx-board-move"); move.setAttribute("aria-label", label);
+        // A quiet "Move to…" menu: the card already sits in its lane, so the menu offers only the other lanes.
+        const move = h("select", "cx-board-move"), prompt = h("option"), footer = h("div", "cx-board-foot"); move.setAttribute("aria-label", label);
+        prompt.value = ""; prompt.hidden = true; setText(prompt, value); move.appendChild(prompt);
         for (const target of options) { const option = h("option"); option.value = target.key; option.disabled = target.disabled; setText(option, target.label); move.appendChild(option); }
-        move.value = value; move.disabled = disabled; card.appendChild(move);
+        move.value = ""; move.disabled = disabled; footer.appendChild(move); card.appendChild(footer);
         return move;
   }

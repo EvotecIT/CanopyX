@@ -103,17 +103,23 @@
       let query = this.queryForChange(true);
       for (const { facet, choice } of pending.values()) query = facetQuery(query, facet, choice);
       // setQuery reports its own failures (the error event); the result count is announced after a choice applies.
-      return this.setQuery(query).then(() => this.facetAnnounce(), () => {});
+      return this.facetSetQuery(query);
     },
     facetClearAll() {
       clearTimeout(this.facetTimer); this.facetPending = null;
       let query = this.queryForChange(true);
       for (const facet of this.facetColumns) query = facetQuery(query, facet, facet.kind === "list" ? [] : { low: null, high: null });
-      return this.setQuery(query).then(() => this.facetAnnounce(), () => {});
+      return this.facetSetQuery(query);
+    },
+    /** Applies a facet query and announces its result, unless a newer query replaced it before it settled. */
+    facetSetQuery(query) {
+      const result = this.setQuery(query), epoch = this.queryEpoch;
+      return result.then(() => { if (epoch === this.queryEpoch) this.facetAnnounce(); }, () => {});
     },
     facetAnnounce() {
-      const numbers = numberFormat(this.lang);
-      setText(this.facetLive, ""); setText(this.facetLive, fill(this.labels.gridFacetResult, { count: numbers.format(this.snapshot?.matched ?? 0) }));
+      // A source that does not report its matched count gets no count announcement rather than a wrong "0".
+      const matched = this.snapshot?.matched;
+      setText(this.facetLive, ""); if (typeof matched === "number") setText(this.facetLive, fill(this.labels.gridFacetResult, { count: numberFormat(this.lang).format(matched) }));
     },
     /**
      * Counts every facet (or the given ones, as a hosted list's search does) again for the accepted query. Each facet has its
@@ -174,7 +180,11 @@
       const panel = this.facetPanel, options = this.facetOptions;
       if (!panel || this.facetSheet) return;
       if (options.position === "toolbar" && !options.target) {
-        panel.hidden = true; this.facetSheetButton.hidden = this.opts.toolbar !== false; return;
+        // On a phone the row of facet menus folds into the one sheet button, whose sheet holds every facet.
+        const folded = this.opts.toolbar === false || this.host.clientWidth <= 640;
+        panel.hidden = true; this.facetSheetButton.hidden = !folded;
+        for (const control of this.facetToolbarControls || []) { if (folded) control.details.open = false; control.details.hidden = folded; }
+        return;
       }
       const width = (this.facetFrame || this.host).clientWidth, fits = options.target ? true : options.position === "side" ? width >= options.width + 480 : width > 640;
       this.facetFits = fits;
@@ -209,9 +219,13 @@
       const clear = this.facetClear, clearHome = clear.parentNode, clearNext = clear.nextSibling;
       done.classList.add("cx-btn"); head.append(title, clear, done); sheet.append(head, panel);
       panel.hidden = false; panel.classList.remove("cx-facets-closed"); panel.classList.add("cx-facets-in-sheet");
+      // Toolbar facets lend their sections to the sheet and take them back when it closes.
+      const borrowed = this.facetToolbarControls || [], list = panel.querySelector(".cx-facets-list");
+      for (const control of borrowed) list.appendChild(control.section.section);
       document.body.appendChild(sheet); this.facetTheme.refresh();
       sheet.addEventListener("close", () => {
         if (this.facetPanel !== panel) { sheet.remove(); return; }   // The grid was destroyed meanwhile; the panel is gone.
+        for (const control of borrowed) control.panel.appendChild(control.section.section);
         panel.classList.remove("cx-facets-in-sheet"); home?.insertBefore(panel, next); this.facetTheme.refresh(); clearHome.insertBefore(clear, clearNext);
         sheet.remove(); this.facetSheet = null; this.facetFit();
         if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });

@@ -33,10 +33,10 @@
     border: 0;
     background: transparent;
     color: var(--hfx-color-text);
-    font-family: var(--hfx-font-sans);
+    font-family: var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);
     font-size: var(--hfx-type-body-size);
     font-weight: var(--hfx-weight-semibold);
-    line-height: var(--hfx-type-body-line);
+    line-height: var(--hfx-type-body-line-height,var(--hfx-type-body-line));
     text-align: start;
     cursor: pointer;
   }

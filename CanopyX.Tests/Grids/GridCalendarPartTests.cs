@@ -30,8 +30,8 @@ public sealed class GridCalendarPartTests {
         Assert.DoesNotContain("function calIcsParse(", part.Script);
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         // Multi-resource projection, JSON feeds and assignment-aware focus stay in this optional part, with the legend that folds
-        // its switches into a menu and the hooks of the shared-screen part. It measures 42,240 bytes; keep it bounded at 42 KiB.
-        Assert.True(ComponentGzip(part.Script) <= 42 * 1024, "The calendar part is " + ComponentGzip(part.Script) + " bytes gzip; the guard is 42 KiB for resource projection, feeds, focus and the folding legend.");
+        // its switches into a menu and the hooks of the shared-screen part. Title-first month chips, a "+N more" list that Tab can leave and the describeCalendarRecurrence stub bring it to 43,246 bytes; keep it bounded at 42 KiB + 256.
+        Assert.True(ComponentGzip(part.Script) <= 42 * 1024 + 256, "The calendar part is " + ComponentGzip(part.Script) + " bytes gzip; the guard is 42 KiB + 256 for resource projection, feeds, focus and the folding legend.");
         Assert.True(ComponentGzip(part.Style!) <= 6400, "The calendar stylesheet is " + ComponentGzip(part.Style!) + " bytes gzip; the guard is 6,400 (5,522 measured + 15%).");
 
         var plain = Grid();
@@ -46,7 +46,9 @@ public sealed class GridCalendarPartTests {
     }
 
     [Theory]
-    [InlineData("calendar-recurrence", "calendar recurrence", "function calExpand(", 3800)]
+    // Expansion and the sentences that describe a rule, with their English words, weekday phrases, the details line and
+    // describeCalendarRecurrence, measure 5,661 bytes.
+    [InlineData("calendar-recurrence", "calendar recurrence", "function calExpand(", 6000)]
     // Current repaired parts: 12,196 and 8,209 bytes gzip, with about 15% headroom.
     // Minute fields, explicit scope, EXDATE removal, shared-resource context and the phone sheet measure 14,374 bytes.
     [InlineData("calendar-edit", "calendar editing", "calCreateForm(proposal", 14848)]

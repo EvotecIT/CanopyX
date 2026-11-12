@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using CanopyX.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -26,9 +27,35 @@ public sealed class CanopyRemoteEndpointOptions {
     /// <summary>Gets or sets the writer that saves commits, created per request; null maps no commit route.</summary>
     /// <remarks>
     /// With a writer, <c>POST commit</c> answers <c>gridCommit</c> documents. It requires <see cref="WriteAuthorizationPolicy"/>
-    /// on top of the read authorization of the group, so writers must also be readers.
+    /// on top of the read authorization of the group, so writers must also be readers. Return a new writer per request: the
+    /// endpoint disposes a disposable writer when the response completes. Over an <c>IQueryable</c>,
+    /// <see cref="UseQueryableWriter{T}"/> is shorter and scopes writes to the grid's query.
     /// </remarks>
     public Func<HttpContext, ICanopyDataWriter>? Writer { get; set; }
+
+    /// <summary>Saves commits with a <see cref="CanopyQueryableWriter{T}"/> whose <see cref="CanopyQueryableWriterOptions{T}.Scope"/>
+    /// is the grid's own query callback, so a commit changes only records the caller can read.</summary>
+    /// <typeparam name="T">The record type of the grid's query.</typeparam>
+    /// <param name="store">Returns the unit of work of a request, for example an EF Core adapter over the request's
+    /// <c>DbContext</c>. The endpoint disposes a disposable store when the response completes.</param>
+    /// <param name="configure">Adjusts the writer per request: revision, saving step, inserts, logging. It must leave
+    /// <see cref="CanopyQueryableWriterOptions{T}.Scope"/> alone; set <see cref="Writer"/> for a scope other than the grid's query.</param>
+    /// <remarks>Only the <c>MapCanopyRemote</c> overloads that take an <see cref="System.Linq.IQueryable{T}"/> callback accept it,
+    /// and <see cref="Writer"/> must stay null. The commit route still requires <see cref="WriteAuthorizationPolicy"/>.</remarks>
+    public void UseQueryableWriter<T>(Func<HttpContext, ICanopyWriteStore<T>> store, Action<HttpContext, CanopyQueryableWriterOptions<T>>? configure = null) where T : class {
+        if (store == null) throw new ArgumentNullException(nameof(store));
+        QueryableWriter = new Func<CanopyColumnMap<T>, Func<HttpContext, IQueryable<T>>, Func<HttpContext, ICanopyDataWriter>>((map, query) => http => {
+            var options = new CanopyQueryableWriterOptions<T>();
+            configure?.Invoke(http, options);
+            if (options.Scope != null || options.AllowUnscoped)
+                throw new InvalidOperationException("UseQueryableWriter scopes writes by the grid's query; set Writer to choose another scope.");
+            options.Scope = () => query(http);
+            return new CanopyQueryableWriter<T>(map, CanopyRemoteEndpointExtensions.Owned(http, store(http)), options);
+        });
+    }
+
+    /// <summary>The writer <see cref="UseQueryableWriter{T}"/> binds to the grid's map and query callback.</summary>
+    internal Delegate? QueryableWriter { get; private set; }
 
     /// <summary>Gets or sets the authorization policy the commit route requires, distinct from the read policy.</summary>
     /// <remarks>Mapping a writer without a write policy fails unless <see cref="AllowAnonymousWrites"/> is set: the default
@@ -45,6 +72,7 @@ public sealed class CanopyRemoteEndpointOptions {
     /// bodies bounded by <see cref="CanopyRemoteLimits.MaxRecordRequestBytes"/>. The
     /// provider must find records only among those the caller may read, as the query callback does: the
     /// <c>MapCanopyRemote</c> overload that takes a <see cref="CanopyRecordMap{T}"/> sets this to the grid's own query callback.
+    /// Return a new provider per request: the endpoint disposes a disposable one when the response completes.
     /// </remarks>
     public Func<HttpContext, ICanopyRecordProvider>? Records { get; set; }
 

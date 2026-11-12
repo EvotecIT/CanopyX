@@ -15,12 +15,13 @@ public sealed class CanopyRemoteLimits {
     private int _maxFilterTerms = 64;
     private int _maxFilterGroups = 64;
     private int _maxInValues = 1000;
+    private int _maxFilterValues = 1000;
     private int _maxValueListSize = 200;
     private int _maxSearchLength = 1024;
     private int _maxSearchTerms = 16;
     private int _maxOperandLength = 4096;
     private int _maxRequestBytes = 1048576;
-    private int _maxSelectedIds = 10000;
+    private int _maxSelectedIds = 1000;
     private int _maxGroups = 10000;
     private int _maxCommitRows = 100;
     private int _maxCommitTextLength = 65536;
@@ -50,6 +51,12 @@ public sealed class CanopyRemoteLimits {
     /// <summary>Gets or sets the most operands of one membership (<c>in</c>) predicate, from 1 to 1,000. Default 1,000.</summary>
     public int MaxInValues { get => _maxInValues; set => _maxInValues = Check(value, 1, 1000, nameof(MaxInValues)); }
 
+    /// <summary>Gets or sets the most operands in one query's filter, across all its predicates, from 1 to 64,000. Default 1,000.</summary>
+    /// <remarks>Each operand is a query parameter, or one element of a parameterized list that some LINQ providers expand into
+    /// parameters of their own. The default keeps a query, together with <see cref="MaxSelectedIds"/>, within SQL Server's
+    /// 2,100 parameters per command; raise both when your provider sends a list as one parameter.</remarks>
+    public int MaxFilterValues { get => _maxFilterValues; set => _maxFilterValues = Check(value, 1, 64000, nameof(MaxFilterValues)); }
+
     /// <summary>Gets or sets the most buckets one value list may return, from 1 to 200. Default 200.</summary>
     public int MaxValueListSize { get => _maxValueListSize; set => _maxValueListSize = Check(value, 1, 200, nameof(MaxValueListSize)); }
 
@@ -67,7 +74,8 @@ public sealed class CanopyRemoteLimits {
     /// <remarks>Decoded query parameter keys and values share the same UTF-8 byte budget.</remarks>
     public int MaxRequestBytes { get => _maxRequestBytes; set => _maxRequestBytes = Check(value, 1024, 16777216, nameof(MaxRequestBytes)); }
 
-    /// <summary>Gets or sets the most explicit record identities in a selected export or exclusion list, from 1 to 10,000. Default 10,000.</summary>
+    /// <summary>Gets or sets the most explicit record identities in a selected export or exclusion list, from 1 to 10,000. Default 1,000.</summary>
+    /// <remarks>Identities reach the store as one list parameter, which some LINQ providers expand into a parameter per identity; see <see cref="MaxFilterValues"/>.</remarks>
     public int MaxSelectedIds { get => _maxSelectedIds; set => _maxSelectedIds = Check(value, 1, 10000, nameof(MaxSelectedIds)); }
 
     /// <summary>Gets or sets the most groups one grouped summary may return, across all its levels, from 1 to 10,000. Default 10,000.</summary>

@@ -205,12 +205,15 @@ internal static partial class CanopyHtmlWriter {
     private static string Head(CanopyRuntime runtime, CanopyHtmlOptions options) {
         // With a nonce, every element a strict Content Security Policy checks carries it (docs/security.md).
         var nonce = CanopyContentSecurity.Attribute(options.Nonce);
+        var host = string.IsNullOrEmpty(options.HeadHtml) ? string.Empty : "\n" + options.HeadHtml;
         if (options.AssetMode == CanopyAssetMode.External) {
-            return "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming, runtime)) + "\"" + nonce + ">\n"
-                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming, runtime)) + "\"" + nonce + " defer></script>";
+            return CanopyHtmlAssets.FontHead(options)
+                + "<link rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetStyleFileName(options.AssetNaming, runtime)) + "\"" + nonce + ">\n"
+                + "<script src=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + CanopyHtmlAssets.GetScriptFileName(options.AssetNaming, runtime)) + "\"" + nonce + " defer></script>" + host;
         }
 
-        return "<style" + nonce + ">\n" + CanopyHtmlAssets.GetStyle(runtime) + "</style>\n<script" + nonce + ">\n" + CanopyHtmlAssets.GetScript(runtime) + "</script>";
+        return CanopyHtmlAssets.FontHead(options) + "<style" + nonce + ">\n"
+            + CanopyHtmlAssets.GetStyle(runtime) + "</style>\n<script" + nonce + ">\n" + CanopyHtmlAssets.GetScript(runtime) + "</script>" + host;
     }
 
     /// <summary>The <c>dir</c> attribute of a direction, with its leading space; empty for <see cref="CanopyTextDirection.Auto"/>.</summary>

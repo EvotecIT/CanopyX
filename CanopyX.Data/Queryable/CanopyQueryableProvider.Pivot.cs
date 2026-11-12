@@ -13,11 +13,12 @@ public sealed partial class CanopyQueryableProvider<T> : ICanopyPivotProvider {
         Own(request.Query);
         var definition = request.Definition;
         var levels = definition.Rows.Concat(definition.Columns).Select(level => new CanopySummaryLevel(Schema.GetColumn(level.Column), level.Descending, bucket: level.Bucket)).ToList();
-        // Distinct aggregate inputs remain grouping dimensions. Prefix/Other totals union their keys rather than summing distinct counts.
+        // Distinct, median and percentile inputs remain grouping dimensions. Prefix/Other totals union distinct keys rather than
+        // summing distinct counts, and rank the grouped values by their counts, within the 100,000-contribution bound.
         var distinctPositions = new int[request.Aggregates.Count];
         for (var index = 0; index < distinctPositions.Length; index++) {
             distinctPositions[index] = -1;
-            if (request.Aggregates[index].Operation != CanopyGridAggregateOperation.DistinctCount) continue;
+            if (request.Aggregates[index].Operation != CanopyGridAggregateOperation.DistinctCount && !request.Aggregates[index].Ranked) continue;
             distinctPositions[index] = levels.FindIndex(level => level.Bucket == null && level.Column.Id == request.Aggregates[index].Column.Id);
             if (distinctPositions[index] >= 0) continue;
             distinctPositions[index] = levels.Count; levels.Add(new CanopySummaryLevel(request.Aggregates[index].Column, false));

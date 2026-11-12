@@ -19,7 +19,7 @@ public static partial class CanopyStaticHtml {
         var total = path.Chains.Sum(chain => chain.Hops.Count);
         var captured = new List<IReadOnlyList<string>>();
         var html = new StringBuilder();
-        html.Append("<div style=\"font-family:Segoe UI,Arial,sans-serif;color:").Append(settings.Theme.Text)
+        html.Append("<div style=\"font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;color:").Append(settings.Theme.Text)
             .Append(";background:").Append(settings.Theme.Surface).Append(";overflow-wrap:anywhere;\">");
         var caption = settings.Caption ?? view.Label;
         if (caption.Length > 0) html.Append("<h2 style=\"font-size:18px;margin:0 0 12px;\">").Append(Encode(caption)).Append("</h2>");

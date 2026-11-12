@@ -1,7 +1,23 @@
 # Versions, compatibility and deprecation
 
 CanopyX ships four NuGet packages (`CanopyX`, `CanopyX.Html`, `CanopyX.Data`, `CanopyX.AspNetCore`) and one npm package
-(`@evotecit/canopyx`). They share one version number and are released together.
+(`@evotecit/canopyx`). The four NuGet packages use one aligned SDK version. The npm publisher selects its own next patch
+version after the matching `main` quality run passes, so its version can differ from the SDK version. Both release paths
+select the next version automatically.
+
+## Matching an npm version to a NuGet version
+
+There is no fixed mapping between the two numbers: CanopyX.Html 0.3.3 and @evotecit/canopyx 0.3.18 can carry the same runtime,
+or not. Compare what they ship instead:
+
+- **Runtime content.** `CanopyHtmlAssets.ScriptHash` is the first 16 hex digits of the SHA-256 of the embedded `canopyx.js`.
+  Hash the package's `CanopyX.Html/Assets/canopyx.js` the same way; equal hashes mean the same runtime. Each lazy part's
+  `version` in `canopyx-parts.json` (`CanopyHtmlAssets.GetPart(name).Version` in .NET) is its own content version, so a part
+  such as `ui-overlays` can be compared on its own.
+- **Source commit.** Every npm release has an `npm-v<version>` tag on the commit it was built from
+  ([Automatic npm releases](release.md#automatic-npm-releases)). A NuGet release's version is committed to `main` after
+  publication, so the commit that sets `<Version>` in `CanopyX.Html.csproj` is the NuGet side. The later of the two commits
+  holds everything the earlier one has.
 
 ## What a version number promises
 

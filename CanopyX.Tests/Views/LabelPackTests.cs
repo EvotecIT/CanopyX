@@ -23,7 +23,15 @@ public sealed class LabelPackTests {
             Assert.Equal(source[property.Name]![language]!.GetValue<string>(), text);
             Assert.False(string.IsNullOrWhiteSpace(text));
             string[] Placeholders(string value) => Regex.Matches(value, @"\{\w+\}").Select(match => match.Value).Distinct().OrderBy(value => value).ToArray();
-            Assert.Equal(Placeholders((string)property.GetValue(english)!), Placeholders(text));
+            var expected = Placeholders((string)property.GetValue(english)!);
+            // Weekday labels hold one phrase or seven (Monday to Sunday), month labels one or twelve; a phrase may write the name
+            // out instead of {day} or {month}.
+            var size = expected.Contains("{day}") ? 7 : expected.Contains("{month}") ? 12 : 0;
+            if (size > 0) {
+                Assert.Contains(text.Split('|').Length, new[] { 1, size });
+                Assert.All(text.Split('|'), phrase => Assert.False(string.IsNullOrWhiteSpace(phrase)));
+                Assert.All(Placeholders(text), placeholder => Assert.Equal(size == 7 ? "{day}" : "{month}", placeholder));
+            } else Assert.Equal(expected, Placeholders(text));
         }
         var view = new CanopyTreeView("translated", "Host data") { Labels = labels, Search = new CanopySearchOptions() };
         view.Columns.Add(new CanopyColumn("done", "Host column"));

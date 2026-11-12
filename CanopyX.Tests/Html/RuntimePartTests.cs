@@ -15,7 +15,7 @@ public sealed class RuntimePartTests {
     [Fact]
     public void Parts_FollowTheBuildListInOrder() {
         Assert.Equal(PartManifestFile.Read().Select(part => part.Name), CanopyHtmlAssets.Parts.Select(part => part.Name));
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "chart-renderer", "chart-cells", "charts", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "calendar-screen", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "activity", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "matrix-table", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "chart-renderer", "chart-cells", "charts", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "calendar-screen", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare", "row-actions" }, CanopyHtmlAssets.Parts.Select(part => part.Name));
         Assert.Same(CanopyHtmlAssets.GetPart("export"), CanopyHtmlAssets.Parts[10]);
         Assert.Throws<ArgumentException>(() => CanopyHtmlAssets.GetPart("missing"));
     }
@@ -46,7 +46,7 @@ public sealed class RuntimePartTests {
         Assert.Equal(new[] { "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent" },
             CanopyHtmlAssets.GetParts(CanopyRuntime.Flow).Select(part => part.Name));
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "chart-renderer", "chart-cells", "charts", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "calendar-screen", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare" }, CanopyHtmlAssets.GetParts(runtime).Select(part => part.Name));
+            Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "activity", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "matrix-table", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "chart-renderer", "chart-cells", "charts", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "calendar-screen", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare", "row-actions" }, CanopyHtmlAssets.GetParts(runtime).Select(part => part.Name));
         }
     }
 
@@ -133,7 +133,10 @@ public sealed class RuntimePartTests {
                 var main = CanopyHtmlAssets.WriteTo(directory, naming, runtime);
                 var expected = CanopyHtmlAssets.GetParts(runtime).SelectMany(part => new[] { part.GetScriptFileName(naming), part.GetStyleFileName(naming) })
                     .Where(name => name != null).Concat(main.Select(Path.GetFileName)).OrderBy(name => name, StringComparer.Ordinal);
-                Assert.Equal(expected, Directory.GetFiles(directory).Select(Path.GetFileName).OrderBy(name => name, StringComparer.Ordinal));
+                var actual = Directory.GetFiles(directory).Select(Path.GetFileName).ToArray();
+                var fonts = actual.Where(name => Regex.IsMatch(name!, @"^(?:(?:Archivo|JetBrainsMono)(?:\.[a-f0-9]{16})?\.woff2|OFL-(?:Archivo|JetBrainsMono)\.txt|canopyx-fonts(?:\.[a-f0-9]{16})?\.css)$")).ToArray();
+                Assert.Equal(5, fonts.Length);
+                Assert.Equal(expected, actual.Except(fonts).OrderBy(name => name, StringComparer.Ordinal));
                 foreach (var part in CanopyHtmlAssets.GetParts(runtime)) Assert.Equal(part.Script, File.ReadAllText(Path.Combine(directory, part.GetScriptFileName(naming))));
             } finally {
                 Directory.Delete(directory, true);
@@ -151,8 +154,9 @@ public sealed class RuntimePartTests {
     }
 
     [Fact]
-    public void EmbeddedAssets_AreTheEntryPointsThePartsAndTheManifestOnly() {
-        var expected = new HashSet<string>(StringComparer.Ordinal) { "page.html", "canopyx-parts.json" };
+    public void EmbeddedAssets_AreTheEntryPointsPartsManifestAndStandaloneFonts() {
+        var expected = new HashSet<string>(StringComparer.Ordinal) { "page.html", "canopyx-parts.json",
+            "Fonts.Archivo.woff2", "Fonts.JetBrainsMono.woff2", "Fonts.OFL-Archivo.txt", "Fonts.OFL-JetBrainsMono.txt", "Fonts.canopyx-fonts.css" };
         foreach (var runtime in AllRuntimes) { expected.Add(CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.Plain, runtime)); expected.Add(CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.Plain, runtime)); }
         foreach (var part in CanopyHtmlAssets.Parts) { expected.Add(part.ScriptFileName); if (part.StyleFileName != null) expected.Add(part.StyleFileName); }
         var embedded = typeof(CanopyHtmlAssets).Assembly.GetManifestResourceNames().Where(name => name.StartsWith("CanopyX.Html.Assets.", StringComparison.Ordinal))

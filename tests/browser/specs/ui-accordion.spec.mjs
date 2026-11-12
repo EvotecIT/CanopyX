@@ -89,6 +89,13 @@ test('open sections come back from the address before remembered state, and both
   await expect(page.getByRole('button', { name: 'Audit' })).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('a hash accordion keeps a plain anchor and the page history state', async ({ page }) => {
+  await openUi(page, accordion('help', 'data-hash="true"'));
+  await page.evaluate(() => history.replaceState({ host: 1 }, '', '#section-2'));
+  await usage(page).click();
+  expect(await page.evaluate(() => [location.hash, history.state])).toEqual(['#section-2&help=usage', { host: 1 }]);
+});
+
 test('each section of a multiple accordion loads on its own, and closing aborts only its own loader', async ({ page }) => {
   const deferred = [{ id: 'first', label: 'First', body: '<template><p>First body</p></template>' }, { id: 'second', label: 'Second', body: '<template><p>Second body</p></template>' }];
   await openUi(page, accordion('help', '', deferred), `

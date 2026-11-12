@@ -103,7 +103,7 @@
       button.type = "button"; button.className = "site-bar"; button.dataset.site = site; button.setAttribute("aria-pressed", "false");
       button.setAttribute("aria-label", site + ": " + ids.length + " services");
       name.textContent = site; track.className = "site-track"; fill.style.width = Math.round(ids.length / most * 100) + "%"; count.className = "site-count"; count.textContent = ids.length;
-      track.appendChild(fill); button.append(name, track, count); item.appendChild(button); list.appendChild(item);
+      track.appendChild(fill); button.append(name, track, " ", count); item.appendChild(button); list.appendChild(item);
       button.addEventListener("click", () => run(pick(picked === site ? null : site)));
     }
     // A pick a newer pick replaced resolves false; a failure says what went wrong instead of staying silent.

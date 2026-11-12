@@ -100,7 +100,6 @@
         queueMicrotask(() => this.destroyed || this.applyWidths());
       }
       FIT.applyWidths.call(this, this.fitWidths(cols, width));
-      if (this.headRow.matches(":hover")) this.syncColumnMenuRoom?.();
       // A column resize can introduce a classic horizontal scrollbar without changing the observed border box.
       this.fitHeight();
     },
@@ -111,7 +110,8 @@
       const compact = !phone && shown.some(c => gridLevel(c) > 1);
       this.host.classList.toggle("cx-narrow", compact);
       const key = this.pendingQuery ? this.fitKey : this.queryEpoch + ":" + phone + compact;
-      if (key !== this.fitKey || !this.fitCh) {
+      // A pending query retains the accepted key, while font or density refreshes can invalidate its measurements.
+      if (key !== this.fitKey || !this.fitCh || !this.fitFont) {
         this.fitKey = key; this.fitFont = null;
         for (const column of this.columns) column.need = this.measureGridColumn(column).width;
       }
@@ -136,7 +136,7 @@
         const style = getComputedStyle(this.grid), head = this.headCells?.[0] && getComputedStyle(this.headCells[0]), family = " " + style.fontFamily;
         // The formatting extension also reads the base/cue/header/padding positions in this array.
         this.fitFont = [style.fontWeight + " " + style.fontSize + family, "700 12.5px" + family, (head ? head.fontWeight + " " + head.fontSize : "700 13px") + family,
-          parseFloat(head?.paddingRight) || 12];
+          parseFloat(head?.paddingInlineStart) || 12];
         // Monospace identifiers and their secondary text are drawn in their own fonts, so they are measured in them.
         this.fitFont.push(gridClassFont(this.grid, "p-mono"), gridClassFont(this.grid, "p-sub"), gridClassFont(this.grid, "p-pill", this.fitPill = {}), gridClassFont(this.grid, "cx-sort-priority"));
         this.fitNumericVariant = gridNumericVariant(this.grid);
@@ -144,10 +144,11 @@
       }
       const [, , headFont, pad, mono, sub, pillFont, priorityFont] = this.fitFont, first = column === FIT.visibleColumns.call(this)[0], options = gridOptions(column), kind = options.kind;
       const text = (value, font = this.fitFont[0], numeric = true) => { context.font = font; return gridMeasureText(context, value, numeric ? this.fitNumericVariant : "normal"); };
-      // Reorder glyphs keep their native advance and padding. Column menus overlay the title and cost no fit width.
+      // Reorder glyphs keep their native advance and padding. A column menu replaces the trailing padding with the room
+      // canopyx.css reserves for its 24 px (phone: 44 px) button, so the menu never covers the caption.
       const move = this.view.reporting?.columnReorder ? Math.max(32, Math.ceil(text("⋮⋮", headFont, false)) + 8) : 0, target = this.host.clientWidth <= 640 ? 44 : 24;
-      const sort = query?.sort.findIndex(sort => sort.column === column.id) ?? -1;
-      const chrome = 2 * pad + 8 + move + (sort < 0 ? 0 : 22 + (query.sort.length > 1 ? text(sort + 1, priorityFont, false) + 4 : 0)) +
+      const sort = query?.sort.findIndex(sort => sort.column === column.id) ?? -1, end = this.tools.columnMenus === false ? pad : target > 24 ? 56 : 32;
+      const chrome = pad + end + 8 + move + (sort < 0 ? 0 : 22 + (query.sort.length > 1 ? text(sort + 1, priorityFont, false) + 4 : 0)) +
         (gridColumnFiltered(query, column.id) ? target : 0) + (first && this.selectionControls ? target + 2 : 0);
       const title = text(column.title, headFont, false), head = Math.ceil(Math.max(24, title) + chrome);
       const words = column.title.trim().split(/\s+/);
@@ -155,11 +156,10 @@
       for (let split = 1; split < words.length; split++) balanced = Math.min(balanced,
         Math.max(text(words.slice(0, split).join(" "), headFont, false), text(words.slice(split).join(" "), headFont, false)));
       column.headWrapNeed = Math.ceil(Math.max(24, balanced) + chrome);
-      // Neither the caption nor body measurements reserve space for the overlaid menu.
       let values = 0, sampled = 0;
       // Presenter-aware estimates of rendered values, without touching the DOM.
       // Wrapping and complete-text columns keep a declared width: they show more lines or a "show more" control instead.
-      const none = column.autoSize === "none" || column.pref && (column.wrap || ["longText", "tags", "list"].includes(kind));
+      const none = column.autoSize === "none" || column.pref && (column.wrap || ["longText", "tags", "list", "log"].includes(kind));
       if (!none && column.autoSize !== "header") for (const row of this.rowCache.values()) {
         if (sampled === 200) break;
         const cell = row.h.cells[column.id], value = cellText(cell, column, this.fmt) || "—", series = gridSeries(cell).length;
@@ -170,13 +170,13 @@
             text(changeCellText(change.after, spec, this.fmt)) + 12)); sampled++; continue;
         }
         const tone = columnValueTone(column, cell) || gridPresenterTone(options, cellValue(cell), isCellObject(cell) && cell.tone), quiet = options.quietTones?.includes(tone);
-        const secondary = kind === "identifier" && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);
+        const secondary = (kind === "identifier" || kind === "relativeTime") && (options.secondaryColumn ? cellText(row.h.cells[options.secondaryColumn], this.columns.find(item => item.id === options.secondaryColumn), this.fmt) : isCellObject(cell) && cell.secondary);
         const atomic = kind === "enum" || kind === "state";
         // All enum tones use the same pill font and chrome; state presenters retain dots.
-        const pill = kind === "enum" && !quiet;
+        const pill = (kind === "enum" || options.style === "pill") && !quiet;
         const atomicWidth = atomic ? text(value, pill ? pillFont : undefined) +
-          (pill ? this.fitPill.extra + this.fitPill.spacing * Array.from(value).length : quiet && kind === "enum" ? 16 : quiet ? 0 : kind === "state" && tone !== "success" ? 15 : 13) : 0;
-        values = Math.max(values, atomic ? atomicWidth : kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 :
+          (pill ? this.fitPill.extra + this.fitPill.spacing * Array.from(value).length + (kind === "state" ? 12 : 0) : quiet && kind === "enum" ? 16 : quiet ? 0 : kind === "state" && tone !== "success" ? 15 : 13) : 0;
+        values = Math.max(values, atomic ? atomicWidth : kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 : kind === "relativeTime" ? text("12 min. ago") + (secondary ? 6 + text(secondary, sub) : 0) :
           Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value)) +
           (kind === "progress" ? 80 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }

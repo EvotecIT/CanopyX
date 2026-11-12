@@ -40,7 +40,9 @@ test("bounded regex search reuses the condition grammar and rejects overlong inp
   expect(kit.gridMatchesSearch({ cells: { name: "prefix Item 42" } }, terms, columns)).toBe(false);
   expect(kit.gridMatchesSearch({ cells: { name: { value: "Hidden", searchText: "Item 42" } } }, terms, columns)).toBe(true);
   for (const pattern of ["(a+)+$", "a|b", "a*", "a".repeat(257)]) expect(() => kit.gridSearchTerms(pattern, "regex")).toThrow();
-  expect(() => kit.gridMatchesSearch({ cells: { name: "x".repeat(4097) } }, terms, columns)).toThrow("4,096");
+  // An over-long cell is a non-match, as on the server, and another cell of the row can still match.
+  expect(kit.gridMatchesSearch({ cells: { name: "item 1" + "0".repeat(4091) } }, terms, columns)).toBe(false);
+  expect(kit.gridMatchesSearch({ cells: { name: "x".repeat(4097), code: "Item 7" } }, terms, [{ id: "name" }, { id: "code" }])).toBe(true);
   now = 51;
   expect(() => kit.gridMatchesSearch({ cells: { name: "Item 42" } }, terms, columns)).toThrow("50 ms");
   expect(kit.gridMatchesSearch({ cells: { name: "anything" } }, kit.gridSearchTerms("", "regex"), columns)).toBe(true);

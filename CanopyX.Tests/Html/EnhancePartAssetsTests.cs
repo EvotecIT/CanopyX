@@ -38,7 +38,8 @@ public sealed class EnhancePartAssetsTests {
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             var script = CanopyHtmlAssets.GetScript(runtime);
             Assert.DoesNotContain("function enhanceReadTable(", script);
-            Assert.Contains("enhance:gridEnhancer(true),grid:gridEnhancer(false)", script);
+            // A table marked data-view="matrix" goes to the matrix-table part instead.
+            Assert.Contains("enhance:(target,options)=>matrixTable(target)?enhanceMatrix(target,options):gridEnhancer(true)(target,options),grid:gridEnhancer(false)", script);
         }
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid }) Assert.DoesNotContain("gridEnhancer", CanopyHtmlAssets.GetScript(runtime));
         var grid = new CanopyDataGridView("grid", "Grid") { Presentation = CanopyGridPresentation.Paged };

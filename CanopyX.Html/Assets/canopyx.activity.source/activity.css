@@ -1,0 +1,21 @@
+/* Relative times: the time, an optional secondary text beside it, or under it in two-line rows. */
+:is(.cx-data-grid,.cx-grid-overlay) .p-when { display:inline-flex;align-items:baseline;min-width:0;max-width:100%;white-space:nowrap; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-when-text { flex:none; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-when .p-sub { min-width:0;overflow:hidden;text-overflow:ellipsis; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-when.p-stack { line-height:var(--hfx-type-caption-line-height); }
+
+/* Logs: monospace lines with a muted time and a level in its tone. Long messages wrap under their own column. */
+:is(.cx-data-grid,.cx-grid-overlay) .p-log { min-width:0;max-width:100%;font-family:var(--hfx-font-mono,"JetBrains Mono",ui-monospace,monospace);font-size:var(--hfx-type-caption-size);line-height:var(--hfx-type-body-line-height); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-lines { display:grid;grid-template-columns:minmax(0,1fr);gap:var(--hfx-border-width); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-line { display:flex;gap:var(--hfx-space-2);align-items:baseline;min-width:0; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-time { flex:none;color:var(--hfx-color-text-muted);font-variant-numeric:tabular-nums; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-level { flex:none;min-width:5ch;font-weight:var(--hfx-weight-semibold);text-transform:uppercase;color:var(--hfx-color-text-secondary); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-level.cx-tone-muted { color:var(--hfx-color-text-muted); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-message { min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--hfx-color-text); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-tools { display:flex;align-items:center;gap:var(--hfx-space-2);margin-top:var(--hfx-space-1);font-family:var(--hfx-font-sans,inherit); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-copy { display:inline-flex;align-items:center;gap:var(--hfx-space-1); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-copy svg { width:calc(var(--hfx-space-3) + var(--hfx-space-0-5));height:calc(var(--hfx-space-3) + var(--hfx-space-0-5)); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-preview { display:flex;align-items:center;gap:var(--hfx-space-2); }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-preview .p-log-line { flex:1 1 auto;overflow:hidden; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-preview .p-log-message { white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+:is(.cx-data-grid,.cx-grid-overlay) .p-log-more { flex:none;font-family:var(--hfx-font-sans,inherit); }

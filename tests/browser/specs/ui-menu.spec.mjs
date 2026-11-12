@@ -25,8 +25,10 @@ window.menu = CanopyX.menu(document.querySelector('#actions'), { onSelect: item 
 } });`;
 
 async function stopClock(page) {
-  await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
-  await page.clock.pauseAt(new Date('2026-10-23T12:00:01Z'));
+  const start = new Date('2026-10-23T12:00:00Z');
+  await page.clock.install({ time: start });
+  // Browser IPC can outlast one second; pause before the test budget can expire.
+  await page.clock.pauseAt(new Date(start.getTime() + test.info().timeout));
 }
 
 test('menu trigger keys, wrapping, disabled focus and typeahead follow APG', async ({ page }) => {
@@ -272,7 +274,7 @@ test('shared phone picker keeps badges and radios and delegates selection to its
   const locked = page.getByRole('menuitemradio', { name: 'Locked', exact: true });
   await locked.focus(); await page.keyboard.press('Enter'); await expect(locked).toBeFocused();
   await page.getByRole('menuitemradio', { name: 'Checks 3' }).click();
-  await expect(picker.getByRole('button')).toHaveAttribute('aria-label', 'Section Checks 3');
+  await expect(picker.getByRole('button')).toHaveAccessibleName('Section Checks 3');
   await expect(picker.locator('.cx-picker-badge')).toHaveText('3');
   await expect(page.getByRole('tabpanel', { name: 'Checks' })).toBeVisible();
 });

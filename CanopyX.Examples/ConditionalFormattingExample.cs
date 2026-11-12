@@ -74,6 +74,6 @@ internal static class ConditionalFormattingExample {
         using var template = typeof(ConditionalFormattingExample).Assembly.GetManifestResourceStream("CanopyX.Examples.Templates.conditional-formatting-static.html")!;
         using var reader = new StreamReader(template);
         File.WriteAllText(Path.Combine(output, "conditional-formatting-static.html"),
-            reader.ReadToEnd().Replace("{{content}}", fallback));
+            reader.ReadToEnd().Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{content}}", fallback));
     }
 }

@@ -29,7 +29,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check coverage selection
-        run: node --test .github/scripts/quality-plan.test.mjs
+        run: node --test .github/scripts/quality-plan.test.mjs tests/browser/tools/shards.test.mjs
       - name: Detect changed paths and select matrix
         id: plan
         env:
@@ -40,7 +40,7 @@ jobs:
   platform-gates:
     # Preserve required contexts, including an explicitly selected documentation-only skip.
     name: Build, test, examples, browser tests, pack (${{ matrix.platform }})
-    needs: [changes, build-test-pack]
+    needs: [changes, build-test-pack, browser-coverage]
     if: always()
     runs-on: ubuntu-24.04
     strategy:
@@ -53,6 +53,7 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           BUILD_REQUIRED: ${{ needs.changes.outputs.build }}
           MATRIX_RESULT: ${{ needs.build-test-pack.result }}
+          COVERAGE_RESULT: ${{ needs.browser-coverage.result }}
         run: |
           if ($env:CHANGES_RESULT -ne 'success') { throw "Coverage selection did not pass: $env:CHANGES_RESULT" }
           if ($env:BUILD_REQUIRED -eq 'false' -and $env:MATRIX_RESULT -eq 'skipped') {
@@ -60,14 +61,17 @@ jobs:
             exit 0
           }
           if ($env:MATRIX_RESULT -ne 'success') { throw "The browser/platform matrix did not pass: $env:MATRIX_RESULT" }
+          if ($env:COVERAGE_RESULT -ne 'success') { throw "Browser shard coverage did not pass: $env:COVERAGE_RESULT" }
 
   build-test-pack:
-    # PRs cover all Linux engines, Windows Chromium and macOS WebKit; main pushes and manual runs keep the full matrix.
-    # The Chromium job of each selected platform
-    # also packs; the Windows Chromium job also checks the visual baselines (tests/browser/playwright.config.mjs).
-    name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }}${{ matrix.shard && format(', shard {0}/2', matrix.shard) || '' }})
+    # Main pushes and manual runs keep the full matrix. PRs that touch the browser runtime or shared build inputs cover
+    # all Linux engines, Windows Chromium and macOS WebKit; other code PRs cover Chromium on Linux and Windows
+    # (.github/scripts/quality-plan.mjs). Every lane runs in shards. The first job of each platform also runs the .NET
+    # suites and engine-independent checks, the first Chromium job of each platform also packs, and the Windows
+    # Chromium shards also check the visual baselines (tests/browser/playwright.config.mjs).
+    name: Build, test, examples, browser tests, pack (${{ matrix.platform.name }}, ${{ matrix.engine }}, shard ${{ matrix.shard }}/${{ matrix.shards }})
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 135
+    timeout-minutes: 60
     needs: changes
     if: needs.changes.outputs.build == 'true'
     strategy:
@@ -78,12 +82,22 @@ jobs:
       DOTNET_NOLOGO: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
       CANOPYX_TEST_BROWSERS: ${{ matrix.engine }}
-      CANOPYX_TEST_SHARD: ${{ matrix.shard && format('{0}/2', matrix.shard) || '' }}
+      CANOPYX_TEST_SHARD: ${{ format('{0}/{1}', matrix.shard, matrix.shards) }}
+      CANOPYX_SUITES: ${{ matrix.suites && '1' || '0' }}
+      CANOPYX_PACK: ${{ matrix.pack && '1' || '0' }}
       CANOPYX_TEST_WORKERS: "3"
       CANOPYX_BENCHMARKS: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      # Hosted Windows runners keep the default NuGet cache on the slower C: drive.
+      - name: Use the runner temp drive for NuGet
+        if: runner.os == 'Windows' && runner.environment == 'github-hosted'
+        shell: pwsh
+        run: |
+          "NUGET_PACKAGES=$env:RUNNER_TEMP\nuget\packages" >> $env:GITHUB_ENV
+          "NUGET_HTTP_CACHE_PATH=$env:RUNNER_TEMP\nuget\http-cache" >> $env:GITHUB_ENV
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
@@ -97,7 +111,30 @@ jobs:
           # The small test dependency set does not need a restored npm cache.
           package-manager-cache: false
 
+      # Linux installs the browser's OS packages through apt, and the Azure mirror sometimes crawls through those
+      # downloads for most of an hour (8.5, 15, 31 and 52 minutes in recent runs). Keep the downloaded packages in a
+      # cache per engine and runner image so later jobs install them without the mirror.
+      - name: Keep apt packages for the browser cache
+        id: apt
+        if: runner.os == 'Linux'
+        run: |
+          # The runner image's zz-retries file sets one retry; a later file name wins.
+          mkdir -p "$HOME/apt-archives/partial"
+          printf '%s\n' "Dir::Cache::Archives \"$HOME/apt-archives/\";" 'APT::Keep-Downloaded-Packages "true";' \
+            'Acquire::Retries "5";' 'Acquire::http::Timeout "15";' | sudo tee /etc/apt/apt.conf.d/zzz-canopyx-ci
+          echo "image=$ImageOS-$ImageVersion" >> "$GITHUB_OUTPUT"
+
+      - name: Restore browser apt packages
+        id: apt-cache
+        if: runner.os == 'Linux'
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/apt-archives/*.deb
+          key: browser-apt-${{ matrix.engine }}-${{ steps.apt.outputs.image }}-${{ hashFiles('tests/browser/package-lock.json') }}
+          restore-keys: browser-apt-${{ matrix.engine }}-
+
       - name: Install browser test dependencies
+        timeout-minutes: 20
         working-directory: tests/browser
         shell: pwsh
         env:
@@ -110,21 +147,26 @@ jobs:
           dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- $env:CANOPYX_TEST_BROWSERS
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Save browser apt packages
+        if: runner.os == 'Linux' && steps.apt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/apt-archives/*.deb
+          key: ${{ steps.apt-cache.outputs.cache-primary-key }}
+
       - name: Run quality loop
         shell: pwsh
         run: |
           # Files run on three workers; tests within each file retain their execution order.
-          # Keep the existing deadline to catch a stalled suite.
+          # A shard's browser tests take about a quarter of an hour; the deadline catches a stalled suite.
           # Performance measurements run only by explicit opt-in.
-          $seconds = 7200
-          if ($env:CANOPYX_TEST_BROWSERS -eq 'chromium') {
-            ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds $seconds
-          } else {
-            ./Build.ps1 -Configuration Release -BrowserTestTimeoutSeconds $seconds -SkipPack
-          }
+          $options = @{ Configuration = 'Release'; BrowserTestTimeoutSeconds = 2700 }
+          if ($env:CANOPYX_SUITES -ne '1') { $options.SkipTests = $true }
+          if ($env:CANOPYX_PACK -ne '1') { $options.SkipPack = $true }
+          ./Build.ps1 @options
 
       - name: Upload packages
-        if: matrix.engine == 'chromium'
+        if: matrix.pack
         uses: actions/upload-artifact@v7
         with:
           name: canopyx-packages-${{ matrix.platform.name }}
@@ -134,7 +176,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload example pages
-        if: always() && matrix.engine == 'chromium'
+        if: always() && matrix.pack
         uses: actions/upload-artifact@v7
         with:
           name: canopyx-examples-${{ matrix.platform.name }}
@@ -143,13 +185,44 @@ jobs:
             CanopyX.Examples/bin/Release/net10.0/output/outline.html
           if-no-files-found: warn
 
+      # The coverage job checks that the shards of each lane ran every listed test exactly once.
+      - name: Upload browser shard record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: canopyx-browser-shard-${{ matrix.platform.name }}-${{ matrix.engine }}-${{ matrix.shard }}
+          path: tests/browser/shard-results/shard.json
+          if-no-files-found: ignore
+          retention-days: 7
+
       # On failure the report holds the traces, and for the visual baselines the expected, actual and diff images.
       - name: Upload browser test report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: canopyx-playwright-report-${{ matrix.platform.name }}-${{ matrix.engine }}-${{ matrix.shard || 'full' }}
+          name: canopyx-playwright-report-${{ matrix.platform.name }}-${{ matrix.engine }}-${{ matrix.shard }}
           path: |
             tests/browser/playwright-report
             tests/browser/test-results
           if-no-files-found: ignore
+
+  browser-coverage:
+    name: Browser shard coverage
+    needs: [changes, build-test-pack]
+    if: always() && needs.changes.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Download shard records
+        uses: actions/download-artifact@v8
+        with:
+          pattern: canopyx-browser-shard-*
+          path: shard-records
+      - name: Check that every listed test ran exactly once
+        env:
+          MATRIX: ${{ needs.changes.outputs.matrix }}
+        run: node .github/scripts/browser-coverage.mjs shard-records

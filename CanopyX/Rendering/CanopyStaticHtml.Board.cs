@@ -20,7 +20,7 @@ public static partial class CanopyStaticHtml {
         var cardOptions = BoardCardOptions(settings);
         var html = new StringBuilder();
         var theme = settings.Theme;
-        var style = "font-family:Segoe UI,Arial,sans-serif;color:" + theme.Text + ";background:" + theme.Surface + ";";
+        var style = "font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;color:" + theme.Text + ";background:" + theme.Surface + ";";
         html.Append("<div style=\"").Append(style).Append("\">");
         var caption = settings.Caption ?? view.Label;
         if (caption.Length > 0) html.Append("<h2 style=\"font-size:18px;margin:0 0 12px;\">").Append(BoardEncode(caption)).Append("</h2>");

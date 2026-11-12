@@ -38,6 +38,19 @@ const invalidTuple: GridTupleFilter = { columns: [tupleField], values: [[1]],
   // @ts-expect-error Exclusion is a boolean; operands retain their scalar types.
   exclude: "true" };
 void invalidTuple;
+import type { GridRowActionsDefinition, GridRowActionProposal, GridRowActionOutcome } from "@evotecit/canopyx/grid";
+const rowActions: GridRowActionsDefinition = { inline: 1, reveal: "hover", actions: [
+  { id: "run", label: "Run", icon: "play", tone: "primary", when: { operator: "and", filters: [{ column: "state", operator: "ne", values: ["Running"] }], groups: [] } },
+  { id: "delete", label: "Delete", icon: "delete", tone: "danger", disabledReason: "Pause it first.", refresh: true }] };
+const actionApi = createDataGrid(document.createElement("div"), { view: { ...calculationView, id: "actions", rowActions },
+  onRowAction: async (proposal: GridRowActionProposal, request) => request.signal.aborted ? false : { accepted: proposal.action === "run", message: "Refused." },
+  isRowActionEnabled: (row, action) => action.id !== "delete" || row.id !== "r1" });
+const requested: Promise<string | null> = actionApi.requestRowAction("r1", "run", { reason: "shortcut" }).then(result => result.accepted ? null : result.message);
+const cancelledAction: boolean = actionApi.cancelRowAction();
+const outcome = (event: CustomEvent<GridRowActionOutcome>): string | null => event.detail.message;
+// @ts-expect-error Row action icons come from the built-in set.
+const unknownIcon: GridRowActionsDefinition = { actions: [{ id: "x", label: "X", icon: "rocket" }] };
+void requested; void cancelledAction; void outcome; void unknownIcon;
 import polish, { staticLabels as polishStatic } from "@evotecit/canopyx/locales/pl";
 import german from "@evotecit/canopyx/locales/de";
 import spanish from "@evotecit/canopyx/locales/es";
@@ -824,7 +837,7 @@ void badCalendar;
 const wrongColumn: GridCalendarDefinition<ShiftRow> = { start: "opened" };
 void wrongColumn;
 // Runtime grouping, plugin aggregates and detail rows on the reporting runtime.
-ReportingRuntime.use({ name: "median-aggregate", aggregates: { median: { label: "med {value}", compute: values => values.length ? Number(values[0]) : null } },
+ReportingRuntime.use({ name: "mode-aggregate", aggregates: { mode: { label: "mode {value}", compute: values => values.length ? Number(values[0]) : null } },
   detailRenderers: { "order-note": (row, element, context) => { element.textContent = row.id; context.onDispose(() => undefined); } } });
 const groupedApi = ReportingRuntime.createDataGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "grid", id: "orders", label: "Orders",
   source: { kind: "inline" }, rows: [{ id: "o1", cells: { region: "North", amount: 10 }, detail: { type: "properties", items: [{ name: "Owner", value: "Ops" }] } }],
@@ -832,7 +845,7 @@ const groupedApi = ReportingRuntime.createDataGrid(document.createElement("div")
   columns: [{ id: "region", title: "Region", kind: "text", sortable: true }, { id: "amount", title: "Amount", kind: "number", sortable: true }],
   reporting: { groupBy: [{ column: "region", direction: "asc" }], groupable: true, detail: { print: false },
     aggregates: [{ id: "total", column: "amount", operation: "sum", label: "Total" }, { id: "distinct", column: "region", operation: "distinctCount", label: "Regions" },
-      { id: "median", column: "amount", operation: "median", label: "Median" }] } },
+      { id: "mode", column: "amount", operation: "mode", label: "Mode" }, { id: "p95", column: "amount", operation: "percentile", percentile: 95, label: "P95" }] } },
   detail: { hasDetail: row => !!row.detail, export: row => ({ type: "html", html: row.id }) } });
 const levels: readonly GroupLevel[] = groupedApi.getGroupBy?.() ?? [];
 void groupedApi.setGroupBy?.([...levels, { column: "amount", direction: "desc", aggregate: "total" }]);
@@ -879,7 +892,7 @@ const recordGrid = ReportingRuntime.createDataGrid(document.createElement("div")
       fields: { contacts: { records: { columns: [{ id: "role", title: "Role" }], rows: [{ id: "o", cells: { role: "Owner" } }], total: 3, target: { view: "people", column: "role" } } },
         trend: { value: 3, series: [{ period: "2026-01", value: 3 }] } } }],
     record: recordPanel },
-  loadRecord, recordActions: [{ label: "Open", run: () => undefined }], onOpenAll: event => event.ids.length > 0, onRecordPrint: event => void event.element });
+  loadRecord, recordActions: [{ label: "Open", run: () => undefined }, { label: "Delete", prominent: true, tone: "danger", run: () => undefined }], onOpenAll: event => event.ids.length > 0, onRecordPrint: event => void event.element });
 void recordGrid.openRecord("c1", { tab: "overview" });
 const recordTree = createTreeGrid(document.createElement("div"), { view: { protocol: "canopyx/2", type: "view", id: "tree", label: "Tree", rowHeight: 28, pageSize: 100, selection: "single",
   columns: [{ id: "name", title: "Name", width: 200, kind: "text" }, { id: "state", title: "State", width: 120, kind: "text", section: "Health", drawer: true }], source: { kind: "inline" },
@@ -1007,12 +1020,21 @@ const uiTabs: UiTabsController = tabs("#sections", {
   renderIcon: name => { const span = document.createElement("span"); span.textContent = name; return span; }
 });
 void uiTabs.ready.then(controller => controller.select("activity"));
+void uiTabs.setBadge("activity", 14); void uiTabs.setBadge(0, null);
 stepper("#setup", { validate: step => step.id === "review" ? true : ["Choose a workspace."], onFinish: () => {} });
 const disposeMenu = contextMenu(".record", (_event, element) => [{ id: element.id, label: "Open record" }], {
   onSelect: (item, _event, _element, detail) => { const id: string = detail.id; void id; void item.checked; }
 });
 void disposeMenu.ready.then(() => disposeMenu());
 void GridRuntime.drawer("#details").ready;
+// One drawer shows record after record: content, loader, address and position on each opening.
+const evidence = GridRuntime.drawer("#evidence", { records: direction => { void direction; }, history: { url: "?record=1", base: "/" } });
+void evidence.open({ returnFocus: document.body, position: { current: 1, total: 3 }, history: { url: "?record=1", push: false },
+  loader: async signal => (await fetch("/evidence/1", { signal })).text() });
+void evidence.setContent(document.createElement("p"));
+void Promise.resolve(evidence.refresh()).then(loaded => { const done: boolean = loaded; void done; });
+// @ts-expect-error A position needs its total.
+void evidence.open({ position: { current: 1 } });
 void ReportingRuntime.dialog("#confirm").ready;
 
 // View proposals carry the same analysis contracts while retaining an explicit preview/apply boundary.

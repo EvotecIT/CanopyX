@@ -13,14 +13,30 @@
       const dispose = () => { observer.disconnect(); cancelAnimationFrame(frame); };
       signal?.addEventListener("abort", dispose, { once: true }); return dispose;
     },
-    theme(host, element) {
-      const previous = new Map([...element.style].map(name => [name, element.style.getPropertyValue(name)]));
-      overlayTheme(host, element);
-      for (const [name, value] of previous) if (name.startsWith("--hfx-") || name.startsWith("--cx-")) element.style.setProperty(name, value);
-      const written = new Map([...element.style].map(name => [name, element.style.getPropertyValue(name)]));
-      return () => { for (const [name, value] of written) if (element.style.getPropertyValue(name) === value) {
-        if (previous.has(name)) element.style.setProperty(name, previous.get(name)); else element.style.removeProperty(name);
-      } };
+    theme(host, element, changed) {
+      const attributes = ["data-hfx-style", "data-hfx-mode", "data-hfx-density"];
+      const styles = () => new Map([...element.style].filter(name => name.startsWith("--hfx-") || name.startsWith("--cx-") || name === "color-scheme")
+        .map(name => [name, [element.style.getPropertyValue(name), element.style.getPropertyPriority(name)]]));
+      const attrs = () => new Map(attributes.map(name => [name, element.getAttribute(name)]));
+      let previous = new Map(), written = new Map(), previousAttrs = new Map(), writtenAttrs = new Map();
+      const restore = () => {
+        for (const [name, [value, priority]] of written) if (element.style.getPropertyValue(name) === value && element.style.getPropertyPriority(name) === priority) {
+          const original = previous.get(name);
+          if (original) element.style.setProperty(name, ...original); else element.style.removeProperty(name);
+        }
+        for (const [name, value] of writtenAttrs) if (element.getAttribute(name) === value) {
+          const original = previousAttrs.get(name);
+          if (original === null) element.removeAttribute(name); else element.setAttribute(name, original);
+        }
+      };
+      const watch = watchOverlayTheme(host, element, undefined, () => {
+        restore(); previous = styles(); previousAttrs = attrs();
+        overlayTheme(host, element);
+        for (const [name, value] of previous) element.style.setProperty(name, ...value);
+        for (const [name, value] of previousAttrs) if (value !== null) element.setAttribute(name, value);
+        written = styles(); writtenAttrs = attrs(); changed?.();
+      });
+      return () => { watch(); restore(); };
     },
     position(element, anchor, placement = "bottom-start", point) {
       const viewport = global.visualViewport, width = viewport?.width || document.documentElement.clientWidth, height = viewport?.height || global.innerHeight;

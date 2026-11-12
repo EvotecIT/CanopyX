@@ -156,8 +156,8 @@
           cell.setAttribute("aria-sort", sorts.length === 1 ? sorts[index].direction === "asc" ? "ascending" : "descending" : "other");
           cell.setAttribute("data-cx-sort", sorts[index].direction); cell.setAttribute("data-cx-sort-priority", String(index + 1));
           button.setAttribute("data-cx-sort-priority", String(index + 1));
-          if (sorts.length > 1) { const priority = h("sup", "cx-sort-priority"); setText(priority, String(index + 1)); button.appendChild(priority); }
-          button.setAttribute("aria-label", cell.getAttribute("aria-label") + ", " + sorts[index].direction + (sorts.length > 1 ? ", " + (index + 1) : "") + (fixedText ? ". " + cell.title : ""));
+          if (sorts.length > 1) { const priority = h("sup", "cx-sort-priority"); setText(priority, String(index + 1)); button.append(" ", priority); }
+          button.setAttribute("aria-label", cell.getAttribute("aria-label") + (sorts.length > 1 ? ", " + (index + 1) : "") + ", " + sorts[index].direction + (fixedText ? ". " + cell.title : ""));
         }
       }
       this.buildHeaderSelection?.();

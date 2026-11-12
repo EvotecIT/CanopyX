@@ -3,8 +3,9 @@ import { openUi } from './ui-support.mjs';
 
 test.use({ viewport: { width: 1280, height: 900 } });
 test.beforeEach(async ({ page }) => {
-  await page.clock.install({ time: new Date('2026-10-23T12:00:00Z') });
-  await page.clock.pauseAt(new Date('2026-10-23T12:00:01Z'));
+  const start = new Date('2026-10-23T12:00:00Z');
+  await page.clock.install({ time: start });
+  await page.clock.pauseAt(new Date(start.getTime() + test.info().timeout));
 });
 
 // The optional attributes are the CanopyTabsAutoProgress builder contract.

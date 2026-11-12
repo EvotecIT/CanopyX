@@ -19,6 +19,10 @@ public sealed class CanopyCommitMessages {
     /// <summary>Gets or sets the message for a fractional or out-of-range value of a whole-number field.</summary>
     public string WholeNumber { get; set; } = "{column} must be a whole number in range.";
 
+    /// <summary>Gets or sets the message for a number the stored field cannot hold, such as one beyond the range of a
+    /// <see cref="float"/> or <see cref="decimal"/> member.</summary>
+    public string OutOfRange { get; set; } = "{column} is outside the range this field can store.";
+
     /// <summary>Gets or sets the message for a value that is not a date and time with a time zone.</summary>
     public string Date { get; set; } = "{column} must be a valid date.";
 

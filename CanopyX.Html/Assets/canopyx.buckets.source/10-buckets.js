@@ -40,8 +40,10 @@
   }
   function bucketLabel(spec, key, language) {
     const number = new Intl.NumberFormat(language, { maximumFractionDigits: 15 }), first = spec.firstWeekday ?? 1;
-    if (spec.kind === "width") return "[" + number.format((spec.origin ?? 0) + key * spec.width) + ", " + number.format((spec.origin ?? 0) + (key + 1) * spec.width) + ")";
-    if (spec.kind === "edges") return key === 0 ? "< " + number.format(spec.edges[0]) : key === spec.edges.length ? "≥ " + number.format(spec.edges[key - 1]) : "[" + number.format(spec.edges[key - 1]) + ", " + number.format(spec.edges[key]) + ")";
+    // Numeric ranges read as "-250 – 0" and "750 – 1,000"; each includes its start and stops before its end.
+    const range = (from, to) => number.format(from) + " – " + number.format(to);
+    if (spec.kind === "width") return range((spec.origin ?? 0) + key * spec.width, (spec.origin ?? 0) + (key + 1) * spec.width);
+    if (spec.kind === "edges") return key === 0 ? "< " + number.format(spec.edges[0]) : key === spec.edges.length ? "≥ " + number.format(spec.edges[key - 1]) : range(spec.edges[key - 1], spec.edges[key]);
     if (spec.kind === "hour") return String(key).padStart(2, "0") + ":00";
     if (spec.kind === "weekday") return new Intl.DateTimeFormat(language, { weekday: "long", timeZone: "UTC" }).format(bucketDate(2026, 1, 4 + (key + first) % 7));
     if (spec.kind === "year") return String(key);

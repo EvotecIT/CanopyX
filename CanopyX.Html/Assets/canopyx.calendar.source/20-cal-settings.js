@@ -71,11 +71,7 @@
       if (!hours || typeof hours !== "object" || Object.keys(hours).some(key => !["days", "start", "end"].includes(key))) calInvalid("calendar workingHours takes days, start and end.");
       settings.working = { ...calTimeRange(hours, "calendar workingHours"), days: calDays(hours.days === undefined ? [1, 2, 3, 4, 5] : hours.days, "calendar workingHours days") };
     } else settings.working = null;
-    for (const name of ["nowIndicator"]) if (input[name] !== undefined && typeof input[name] !== "boolean") calInvalid("calendar " + name + " is a boolean.");
-    settings.now = input.nowIndicator !== false;
     settings.eventLimit = input.eventLimit === undefined || input.eventLimit === "auto" ? "auto" : integer("eventLimit", 1, 20, 3);
-    settings.eventStyle = input.eventStyle === undefined ? "quiet" : input.eventStyle;
-    if (!["quiet", "strong"].includes(settings.eventStyle)) calInvalid("calendar eventStyle is quiet or strong.");
     settings.zoneName = input.timeZone === undefined ? grid.local ? "local" : "utc" : input.timeZone;
     if (typeof settings.zoneName !== "string" || !calZone(settings.zoneName)) calInvalid("calendar timeZone is utc, local or a time zone the browser knows.");
     settings.zoneFixed = input.timeZone !== undefined;
@@ -92,7 +88,7 @@
     settings.capacity = calCapacity(input.capacity);
     settings.ranges = calRanges(input.ranges);
     settings.availability = calAvailability(input.availability);
-    calSettingsMore(input, column, settings);
+    calSettingsMore(input, column, settings, integer);
     DataGrid.prototype.calKit.calScreenSettings?.(input, settings);
     return settings;
   }

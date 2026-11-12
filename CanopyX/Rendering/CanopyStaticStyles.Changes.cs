@@ -4,8 +4,8 @@ internal sealed partial class CanopyStaticStyles {
     /// <summary>A comparison heading outside the table carries its own theme text as well as its surface.</summary>
     internal string ComparisonHeading => Caption + Declare("color", _text);
 
-    /// <summary>Code: a monospace stack every mail client has.</summary>
-    internal const string Mono = "font-family:Consolas,'Cascadia Mono','Courier New',monospace;";
+    /// <summary>Code uses the shared mono face when available, with a mail-safe generic fallback.</summary>
+    internal const string Mono = "font-family:'JetBrains Mono',monospace;";
 
     /// <summary>A diff line's background: a light tint of danger for removed lines and of success for added ones; none for unchanged lines.</summary>
     internal string DiffLine(CanopyDiffLineKind kind) => kind == CanopyDiffLineKind.Context ? string.Empty : Declare("background", Mix(DiffInk(kind), 9, _surface));

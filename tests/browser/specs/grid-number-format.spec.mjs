@@ -25,12 +25,36 @@ test("finite number helper retains integer precision above the fixed-point spell
   const source = fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx.source/01-number-format.js"), "utf8");
   const values = await page.evaluate(source => {
     const format = new Function(source + ";return numberText;")();
-    return [1e21 + 1e6, -(1e21 + 1e6), Number.MAX_VALUE].map(value => format(value, "en", { minimumFractionDigits: 2, maximumFractionDigits: 2, suffix: "%" }));
+    return [1e21 + 1e6, -(1e21 + 1e6), Number.MAX_VALUE].map(value => format(value, "en", { minimumFractionDigits: 2, maximumFractionDigits: 2, suffix: "%" }))
+      .concat([-0.0004, -0, -0.0005].map(value => format(value, "en")));
   }, source);
   expect(values[0]).toBe("1,000,000,000,000,001,048,576.00%");
   expect(values[1]).toBe("-1,000,000,000,000,001,048,576.00%");
   const maximum = BigInt(Number.MAX_VALUE).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   expect(values[2]).toBe(maximum + ".00%");
+  // Without a declared format a value that rounds to zero has no sign; one that does not keeps it.
+  expect(values.slice(3)).toEqual(["0", "0", "-0.001"]);
+});
+
+test("aggregates of a progress column without a declared format read as a share of its maximum", async ({ page }) => {
+  const view = definition();
+  view.columns.splice(1, 0, { id: "category", title: "Category", kind: "text", width: 140, sortable: true });
+  delete view.columns[2].format;
+  view.columns.push({ id: "patch", title: "Patch level", kind: "number", width: 220, presenter: { kind: "progress" } });
+  view.reporting = { grouping: { column: "category", direction: "asc" }, aggregates: [
+    { id: "sum", column: "amount", operation: "sum", label: "Total amount" },
+    { id: "minimum", column: "amount", operation: "minimum", label: "Lowest amount" },
+    { id: "average", column: "amount", operation: "average", label: "Average amount" },
+    { id: "patch", column: "patch", operation: "average", label: "Average patch level" }
+  ] };
+  view.rows = [[355, 88], [362, 67], [1, 70]].map(([amount, patch], i) => ({ id: "r" + i,
+    cells: { name: "Item " + i, category: i < 2 ? "A" : "B", amount, patch: { value: patch, text: patch + "%" } } }));
+  await open(page, view);
+  const first = page.locator(".cx-grid-group").first().locator(".cx-aggregate");
+  await expect(first.nth(0)).toHaveText("Sum 717 · Min 355 · Avg 358.5");
+  await expect(first.nth(1)).toHaveText("Avg 77.5%");
+  await expect(first.nth(1)).toHaveAttribute("title", "Average patch level · Avg: 77.5%");
+  await expect(page.locator(".cx-summary-row .cx-aggregate").first()).toHaveText("Sum 718 · Min 1 · Avg 239.33");
 });
 
 test("explicit formats preserve binary64 rounding, signs, host text and captured raw exports", async ({ page }) => {
@@ -128,15 +152,17 @@ test("aggregate overrides and count defaults use the current shared heading and 
     { id: "average", column: "amount", operation: "average", label: "Average amount", format: { minimumFractionDigits: 2, maximumFractionDigits: 2, prefix: "$" } },
     { id: "count", column: "amount", operation: "count", label: "Amounts present" },
     { id: "distinct", column: "amount", operation: "distinctCount", label: "Distinct amounts" },
-    { id: "median", column: "amount", operation: "median", label: "Median amount", format: { maximumFractionDigits: 1, suffix: " ms" } }
+    { id: "median", column: "amount", operation: "median", label: "Median amount", format: { maximumFractionDigits: 1, suffix: " ms" } },
+    { id: "p90", column: "amount", operation: "percentile", percentile: 90, label: "Slow amount" }
   ] };
   view.rows = [10, 20, null, 2, 4, null].map((amount, i) => ({ id: "r" + i, cells: { name: "Item " + i, category: i < 3 ? "A" : "B", amount } }));
-  await open(page, view, `CanopyX.use({name:'format-median',aggregates:{median:{label:'med {value}',compute(values){values=[...values].sort((a,b)=>a-b);const middle=values.length>>1;return !values.length?null:values.length%2?values[middle]:(values[middle-1]+values[middle])/2;}}}});`);
+  await open(page, view);
   const first = page.locator(".cx-grid-group").first().locator(".cx-aggregate");
   await expect(first).toContainText("Sum 30%"); await expect(first).toContainText("Avg $15.00");
   await expect(first).toContainText("Count 2"); await expect(first).toContainText("Distinct 2");
-  await expect(first).toContainText("Med 15 ms");
-  await expect(first).toHaveAttribute("title", /Total amount · Sum: 30%.*Average amount · Avg: \$15.00.*Amounts present · Count: 2.*Distinct amounts · Distinct: 2.*Median amount · Med: 15 ms/);
+  // Built-in medians and percentiles use the aggregate's format, or else the column's: P90 of 10 and 20 is 19.
+  await expect(first).toContainText("Median 15 ms"); await expect(first).toContainText("P90 19%");
+  await expect(first).toHaveAttribute("title", /Total amount · Sum: 30%.*Average amount · Avg: \$15.00.*Amounts present · Count: 2.*Distinct amounts · Distinct: 2.*Median amount · Median: 15 ms.*Slow amount · P90: 19%/);
   await page.evaluate(api + ".setSelection(['r0','r1'])");
   await expect(page.locator(".cx-grid-status .agg")).toHaveText("Amount: 30%");
   await expect(page.locator(".cx-grid-status .agg span")).toHaveAttribute("title", /Average: 15%/);
@@ -169,11 +195,11 @@ test("aggregate overrides and count defaults use the current shared heading and 
   const dialog = page.locator(".cx-reporting-text");
   await expect(dialog.getByRole("button", { name: "Apply", exact: true })).toBeInViewport();
   await expect(dialog).toContainText("Average amount · Avg: $15.00");
-  await expect(dialog).toContainText("Median amount · Med: 15 ms");
+  await expect(dialog).toContainText("Median amount · Median: 15 ms");
   if (process.env.CANOPYX_EVIDENCE && testInfo.project.name === "chromium") for (const theme of ["light", "dark"]) {
     await page.keyboard.press("Escape");
     await page.locator("[data-canopyx-host]").evaluate((element, theme) => element.dataset.cxTheme = theme, theme);
-    await phone.click(); await expect(dialog).toContainText("Median amount · Med: 15 ms");
+    await phone.click(); await expect(dialog).toContainText("Median amount · Median: 15 ms");
     await nextFrames(page);
     await page.screenshot({ path: path.join(process.env.CANOPYX_EVIDENCE, "number-formats-dialog-390-" + theme + ".png"), fullPage: true });
   }

@@ -38,7 +38,7 @@ test.describe("linked views", () => {
     const services = view(page, "linked-services");
     const chip = services.locator(".cx-link-chip");
     await expect(chip).toHaveText("Filtered by Site picker: Berlin ×");
-    await expect(chip).toHaveAccessibleName("Remove the filter from Site picker: Berlin");
+    await expect(chip).toHaveAccessibleName("Filtered by Site picker: Berlin, Remove the filter from Site picker: Berlin");
     await expect(services.locator(".cx-grid-result-count")).toContainText("12 of 40");
     const sites = await api(page, "linked-services", "(api, element) => [...element.querySelectorAll('.cx-row[data-cx-id]')].map(row => row.children[1].textContent)");
     expect(new Set(sites)).toEqual(new Set(["Berlin"]));

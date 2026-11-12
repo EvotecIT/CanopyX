@@ -61,9 +61,11 @@
       const x0 = e.clientX;
       const w0 = column.width;
       const pointer = e.pointerId;
+      // Right to left, a column's end edge is on its left: dragging it left widens the column.
+      const sign = isRtl(this.grid) ? -1 : 1;
       const move = (ev) => {
         if (ev.pointerId !== pointer) return;
-        column.width = columnWidth(column, w0 + ev.clientX - x0);
+        column.width = columnWidth(column, w0 + sign * (ev.clientX - x0));
         this.applyWidths();
       };
       const stop = () => {

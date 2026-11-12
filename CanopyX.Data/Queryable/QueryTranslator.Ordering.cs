@@ -95,7 +95,7 @@ internal sealed partial class QueryTranslator<T> {
             if (ordering != null && ordering.Categories.Count > 0) {
                 var folded = ordering.Order == CanopyGridTextOrder.FoldedOrdinal || ordering.Order == CanopyGridTextOrder.FoldedNatural;
                 var comparison = folded ? CanopyTextComparison.Lowercase : CanopyTextComparison.Collation;
-                var subject = ExpressionTools.Fold(value, comparison);
+                var subject = FoldText(value, comparison);
                 yield return (Rank(value, ordering.Categories.Select(category => (Expression)Expression.Equal(subject,
                     ExpressionTools.Parameter(ExpressionTools.FoldOperand(category, comparison), typeof(string)))).ToList()), key.Descending, null);
             }

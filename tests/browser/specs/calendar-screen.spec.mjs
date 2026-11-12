@@ -45,7 +45,7 @@ test.describe("calendar shared screens", () => {
     await open(page, "merge.html", screenPage({ events, sources: PEOPLE, date: "2026-10-16", view: "day", firstDay: 1, details: "popover", links: true, merge: { tone: "info" } }));
     const merged = page.locator(".cx-cal-ev.cx-cal-merged");
     await expect(merged).toHaveCount(1);
-    await expect(merged).toHaveAttribute("aria-label", "Swimming, 4:00 PM – 5:00 PM, Shared by Anna, Tom");
+    await expect(merged).toHaveAccessibleName("TO 4:00 PM Swimming, Swimming, 4:00 PM – 5:00 PM, Shared by Anna, Tom");
     await expect(merged.locator(".cx-cal-faces > .cx-cal-face")).toHaveCount(2);
     await expect(merged.locator(".cx-cal-face").first().locator("img")).toHaveCount(1);
     await expect(merged.locator(".cx-cal-face").nth(1)).toHaveText("TO");
@@ -75,7 +75,7 @@ test.describe("calendar shared screens", () => {
     // A hidden owner leaves the event to the others.
     await page.locator('[data-cx-source="tom"]').click();
     await expect(page.locator(".cx-cal-ev.cx-cal-merged")).toHaveCount(0);
-    await expect(page.locator('.cx-cal-ev[data-cx-record="a1"]')).toHaveAttribute("aria-label", "Swimming, 4:00 PM – 5:00 PM");
+    await expect(page.locator('.cx-cal-ev[data-cx-record="a1"]')).toHaveAccessibleName("4:00 PM Swimming, Swimming, 4:00 PM – 5:00 PM");
     // The test page leaves out the linked views part; nothing else may fail.
     expect((await page.evaluate(() => window.errors)).filter(message => !message.includes("linked views"))).toEqual([]);
   });

@@ -102,7 +102,7 @@
           clear.focus({ preventScroll: true });
           if (this.searchInput) this.searchInput.value = ""; apply({ search: "", filters: [], filterGroup: undefined, tupleFilters: undefined });
         });
-        clear.classList.add("cx-link"); clear.setAttribute("aria-label", this.labels.gridClearQuery);
+        clear.classList.add("cx-link"); clear.setAttribute("aria-label", this.labels.gridClearAll + ", " + this.labels.gridClearQuery);
         clear.setAttribute("data-cx-condition", "clear"); this.queryChips.appendChild(clear);
       }
       if (focused) {

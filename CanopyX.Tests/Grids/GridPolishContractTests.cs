@@ -77,12 +77,12 @@ public sealed class GridPolishContractTests {
         Assert.Equal(expected, new CanopyGridRegexSearch(pattern).IsMatch(input));
 
     [Fact]
-    public void RegexSearch_RejectsUnsafePatternsOversizedInputAndQueriesWithoutOptIn() {
+    public void RegexSearch_RejectsUnsafePatternsAndQueriesWithoutOptInAndSkipsOversizedInput() {
         foreach (var pattern in new[] { "(a+)+$", "a|b", "a*", new string('x', 257) })
             Assert.Throws<InvalidOperationException>(() => new CanopyGridRegexSearch(pattern));
         var matcher = new CanopyGridRegexSearch("x");
         Assert.True(matcher.IsMatch(new string('x', 4096)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => matcher.IsMatch(new string('x', 4097)));
+        Assert.False(matcher.IsMatch(new string('x', 4097)));
         var view = View();
         var query = new CanopyGridQuery(view.Id) { SearchMode = CanopyGridSearchMode.Regex, Search = "x" };
         Assert.Throws<InvalidOperationException>(() => query.ToJson(view));

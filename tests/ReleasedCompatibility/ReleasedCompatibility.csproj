@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Compile the host against the released binaries. Tests supply the current runtime assemblies. -->
-    <PackageReference Include="CanopyX" Version="[0.3.2]" PrivateAssets="all" ExcludeAssets="runtime" />
-    <PackageReference Include="CanopyX.Data" Version="[0.3.2]" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="CanopyX" Version="[0.3.5]" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="CanopyX.Data" Version="[0.3.5]" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 </Project>

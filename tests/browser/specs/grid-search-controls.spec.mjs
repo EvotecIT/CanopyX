@@ -59,7 +59,7 @@ test("accepted chips and counts survive pending or failed host queries and clear
   await expect(page.locator(".cx-grid-result-count")).toHaveText("1 of 2 rows");
   await page.clock.install();
   await page.getByRole("searchbox").fill("Queued");
-  await page.getByRole("button", { name: "Clear search and filters", exact: true }).click();
+  await page.getByRole("button", { name: "Clear all, Clear search and filters", exact: true }).click();
   expect(await page.evaluate(() => requests.at(-1).search)).toBe("");
   expect(await page.evaluate(() => requests.at(-1).filters)).toEqual([]);
   expect(await page.evaluate(() => requests.at(-1).filterGroup || null)).toBeNull();
@@ -82,7 +82,7 @@ for (const activation of ["pointer", "unfocused"]) test(`removing a chip by ${ac
   expect(await page.evaluate(controller + ".getQuery().filters")).toEqual([]);
   expect(await page.evaluate(controller + ".getQuery().search")).toBe("Alpha");
   expect(await page.evaluate(controller + ".getQuery().filterGroup.operator")).toBe("or");
-  await expect(page.getByRole("button", { name: "Clear search and filters", exact: true })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Clear all, Clear search and filters", exact: true })).toBeFocused();
   const activate = async button => {
     if (activation === "pointer") await button.click();
     else await button.evaluate(element => { document.activeElement.blur(); element.click(); });

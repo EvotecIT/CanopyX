@@ -119,8 +119,11 @@ the rest a count; a cell's own text wins. The part loads with the grid's first q
 
 A `CanopyRecordList` holds rows with their own columns (`Columns`, `Rows`), or tree nodes (`Roots`). In the panel it is a
 nested CanopyX grid with its own sorting, search (above eight rows) and paging (`PageLength`, default 10 a page); a tree
-collection, or any collection on a tree-only runtime, is a nested tree. On phones collections are cards, and in print plain
-tables with every row. Rows keep the order they come in.
+collection, or any collection on a tree-only runtime, is a nested tree. A list keeps every column in its table while the
+drawer has room for them (about 112 pixels a column, at least 360); in a drawer narrower than that, such as a phone's sheet,
+it shows as cards. In print collections are plain tables with every row. Rows keep the order they come in. A field titled
+like its section shows no second title under the section's heading (a property keeps it for screen readers, and a nested
+table keeps it as its name).
 
 - `Total` says how many records the whole collection has when `Rows` holds the first ones. With a record source the panel
   offers **Load more**, which asks for the field's next `PageSize` rows (default 50) with a `gridRecordQuery` that names the
@@ -192,6 +195,18 @@ api, payload, signal }) }`. An Excel export of one record belongs in an export p
 An action's optional `visible` predicate follows the selected record and loaded payload on each paint. `prominent` accepts
 the same predicate when the host chooses a primary action per record. Both receive the action context; hidden actions
 are checked again before execution. These presentation choices do not replace the host's permission check.
+
+A prominent action is also a button in the drawer's footer. `tone` styles it, with the row actions' tones: `primary` (the
+default), `neutral` for a secondary button, or `danger`, which follows the other buttons at the far end of the footer and is
+marked in the menu too.
+
+```js
+CanopyX.configure("jobs", { recordActions: [
+  { label: "Run now", prominent: true, run: context => scheduler.run(context.record.id) },
+  { label: "Edit", prominent: true, tone: "neutral", run: context => openEditor(context.record.id) },
+  { label: "Delete", prominent: true, tone: "danger", run: context => scheduler.remove(context.record.id) }
+] });
+```
 After a host action changes details without changing the grid row, call `openRecord(id, { reload: true })` to reload that
 record's details. Other records keep their cached payloads.
 

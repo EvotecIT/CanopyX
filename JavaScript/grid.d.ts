@@ -1,6 +1,8 @@
 import type { GridPathDefinition } from "./path.js";
 export * from "./path.js";
 import type { GridStackDefinition } from "./stack.js";
+import type { GridRowActionsDefinition, GridRowActionOptions, GridRowActionApi } from "./row-actions.js";
+export * from "./row-actions.js";
 export * from "./stack.js";
 export * from "./time-slider.js";
 import CanopyX from "./index.js";
@@ -185,17 +187,24 @@ export type GridPresenter =
   | { readonly kind: "boolean"; readonly inverted?: boolean }
   | { readonly kind: "list"; readonly separator: string; readonly limit: number }
   | { readonly kind: "longText"; readonly mono?: boolean }
-  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain text instead of a chip or dot. */ readonly quietTones?: readonly string[]; /** Quiet values muted (default) or in the normal text colour. */ readonly quietStyle?: "muted" | "plain" }
+  | { readonly kind: "enum" | "state"; readonly tones?: Readonly<Record<string,string>>; /** Tones shown as plain text instead of a chip or dot. */ readonly quietTones?: readonly string[]; /** Quiet values muted (default) or in the normal text colour. */ readonly quietStyle?: "muted" | "plain";
+    /** State only: "pill" sets the dot and text in a tone pill. */ readonly style?: "dot" | "pill"; /** State only: decorative glyphs (1-32 code units) shown instead of the dot, by raw value. */ readonly icons?: Readonly<Record<string,string>> }
   | { readonly kind: "change"; readonly deltaColumn: string; readonly higherIsGood?: boolean }
   | { readonly kind: "change"; readonly beforeAfter: true }
   | { readonly kind: "statusStrip" | "missing" }
   | ({ readonly kind: "sparklineBars" | "sparklineLine" } & GridHistoryPresentation)
+  /** A run history: one slot per recent period, a faint baseline without a run, danger runs at least two thirds tall. */
+  | ({ readonly kind: "sparklineBars"; readonly slots: boolean } & GridHistoryPresentation)
   | { readonly kind: "sparklineArea" | "sparklineColumns" | "sparklineWinLoss" }
   | { readonly kind: "bullet"; readonly target: number }
-  | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean }
+  | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean; readonly stack?: boolean }
   | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 }
   /** A structured value's summary: a count (countText with {count}), chips (limit) or the first item and +N. The record panel shows it whole. */
-  | { readonly kind: "structured"; readonly display?: "count" | "chips" | "first"; readonly limit?: number; readonly countText?: string };
+  | { readonly kind: "structured"; readonly display?: "count" | "chips" | "first"; readonly limit?: number; readonly countText?: string }
+  /** A datetime column relative to now ("in 3 hr.", "27 sec. ago"), kept current; the exact time is the tooltip. */
+  | { readonly kind: "relativeTime"; readonly secondaryColumn?: string }
+  /** Monospace log lines from the cell's events or its text lines (split reads "time level message"), level tones, copy and lines (1-500, default 10) before Show all. */
+  | { readonly kind: "log"; readonly lines?: number; readonly split?: boolean; readonly tones?: Readonly<Record<string,string>> };
 /** Ascending inclusive upper bounds; unmatched values use cell tones. */
 export interface GridThreshold { readonly upperBound: number; readonly tone: string; }
 /** Both shared scale bounds must be supplied together; otherwise each cell scales independently. */
@@ -474,6 +483,8 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   /** Lane cards with the grid's search, facets, saved views and record panel; loaded as an optional part. */
   path?: GridPathDefinition;
   stack?: GridStackDefinition;
+  /** The grid's own actions column: buttons and a More menu that raise host proposals (row-actions.d.ts). */
+  rowActions?: GridRowActionsDefinition;
   board?: GridBoardDefinition;
   /** Dependencies, baseline and governed proposals on the calendar's resource timeline. */
   plan?: GridPlanDefinition;
@@ -571,7 +582,7 @@ export interface GridSource<Row extends GridRow = GridRow> extends GridFacetSour
   position?(query: GridQuery, id: string, options: { signal: AbortSignal }): number | PromiseLike<number>;
 }
 /** Built-in operations, or the name of a custom aggregate a plugin registers (inline data) or the host source computes. */
-export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | (string & {});
+export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "maximum" | "distinctCount" | "median" | "percentile" | (string & {});
 /** Declarative defaults selected by *, #columnId, .classToken or index:N (zero based). */
 export type GridColumnDefaults = Pick<GridColumn, "className" | "alignment" | "sortable" | "filterable" | "hidden" | "orderData" | "orderSequence" | "sortComparator"> & { readonly targets: readonly string[] };
 export interface GridFooter {
@@ -584,6 +595,9 @@ export interface GridAggregate {
   /** The label is shown beside the value in group headings and the query totals row. */
   readonly id: string; readonly column: string; readonly label: string;
   readonly operation: GridAggregateOperation;
+  /** The percentile of a "percentile" aggregate, greater than 0 and less than 100 (95 for P95); median is the 50th. Both
+   * interpolate linearly between the closest ranks of the sorted values (Excel PERCENTILE.INC, NumPy's default). */
+  readonly percentile?: number;
   /** Explicit value format; otherwise the column format applies, except that count and distinctCount use whole numbers. */
   readonly format?: GridNumberFormat;
 }
@@ -841,7 +855,7 @@ export interface GridViewStore<Q extends AcceptedGridQuery = GridQuery> {
   load(event: { key: string; view: string; signal: AbortSignal }): GridViewSettings<Q> | null | PromiseLike<GridViewSettings<Q> | null>;
   save(event: { key: string; view: string; settings: GridViewSettings<Q>; signal: AbortSignal }): void | PromiseLike<void>;
 }
-interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> {
+interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridRowActionOptions<Q> {
   /** False hides the whole toolbar so a host can compose controls around the same grid controller; an object switches
    * single controls off (overriding the view's toolbar switches). Switched-off controls are not built. */
   toolbar?: boolean | GridToolbarOptions;
@@ -969,7 +983,7 @@ export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQue
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */
-export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridPivotApi, GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi, GridViewIntentApi<Q> {
+export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> extends GridPivotApi, GridEditingApi, LinkedView, ViewModeMethods, GridColumnGroupApi, GridCellRangeApi, GridLiveApi<Row, Q>, GridFacetPanelApi, GridCalendarApi, GridViewIntentApi<Q>, GridRowActionApi {
   readonly element: HTMLElement;
   readonly view: GridView<Row>;
   readonly ready: Promise<Q>;
@@ -1129,13 +1143,13 @@ export function mount(root?: ParentNode): Array<TreeGrid | DataGrid<AcceptedGrid
 import type { createFlow, FlowApi, FlowOptions } from "./flow.js";
 export { createFlow } from "./flow.js";
 export type { FlowDocument, FlowField, FlowStep, FlowSection, FlowOption, FlowCondition, FlowValidation, FlowValue, FlowSubmission, FlowSubmitDetail, FlowAnswer, FlowHooks, FlowOptions, FlowApi, FlowState, FlowValidationResult } from "./flow.js";
-import type { createMatrix, MatrixOptions, MatrixApi } from "./matrix.js";
-export { createMatrix } from "./matrix.js";
-export type { MatrixDocument, MatrixAxis, MatrixItem, MatrixAttribute, MatrixState, MatrixSort, MatrixNote, MatrixQueryState, MatrixStateInput, MatrixCellDetail, MatrixOptions, MatrixApi } from "./matrix.js";
+import type { createMatrix, matrix, MatrixOptions, MatrixApi } from "./matrix.js";
+export { createMatrix, matrix } from "./matrix.js";
+export type { MatrixDocument, MatrixAxis, MatrixItem, MatrixAttribute, MatrixState, MatrixSort, MatrixNote, MatrixQueryState, MatrixStateInput, MatrixCellDetail, MatrixOptions, MatrixApi, MatrixTableOptions, EnhancedMatrix } from "./matrix.js";
 import type { createDiff, createChangeList, createPropagation, DiffOptions, DiffApi, ChangeListOptions, ChangeListApi, PropagationOptions, PropagationApi } from "./changes.js";
 export { createDiff, createChangeList, createPropagation } from "./changes.js";
 export type { ChangeNote, DiffHunk, DiffBody, DiffDocument, DiffOptions, DiffApi, ChangeVersion, ChangeItem, ChangeAction, ChangeListDocument, ChangeListState, ChangeActionDetail, ChangeExportDetail, ChangeListOptions, ChangeListApi, PropagationState, PropagationDocument, PropagationOptions, PropagationApi } from "./changes.js";
-declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; createDiff: typeof createDiff; createChangeList: typeof createChangeList; createPropagation: typeof createPropagation; enhance: typeof enhance; grid: typeof grid; configure: typeof configure; mount: typeof mount };
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; createDiff: typeof createDiff; createChangeList: typeof createChangeList; createPropagation: typeof createPropagation; enhance: typeof enhance; grid: typeof grid; matrix: typeof matrix; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;
 
 /** Chart analysis reads accepted data through the normal grid capture contracts. */

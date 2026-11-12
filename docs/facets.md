@@ -104,7 +104,7 @@ changing those columns too, so its controls are disabled until that group change
 
 The panel and the grid's element share a frame (`cx-facet-frame`) that takes the grid element's place; destroying the grid
 puts the element back. With `target`, the panel renders into that element and the grid's element stays where it is.
-Toolbar facets use the same value lists and conditions in compact toolbar menus; the active condition chips and Clear all remain available. A grid with its toolbar disabled offers the facet sheet instead.
+Toolbar facets use the same value lists and conditions in compact toolbar menus; the active condition chips and Clear all remain available. A grid with its toolbar disabled, or one 640 pixels wide or less, offers the facet sheet instead, so a phone shows one button rather than a row of menus.
 
 A side panel needs room for itself and 480 pixels of grid; a top panel needs more than 640 pixels. Where it does not fit, the
 panel leaves the page and a **Filter by** button (with the number of active facets) in the toolbar opens it as a full-screen

@@ -10,11 +10,14 @@
     gridExpandLevel: "Expand level {level}", gridCollapseLevel: "Collapse level {level}", gridGroupMove: "Alt+Left and Alt+Right move this level",
     gridGroupSortBy: "Sort groups by", gridGroupSortValue: "by value", gridGroupSortAggregate: "by {aggregate}", gridSelectGroup: "Select the records of {group}",
     gridAggregateCount: "count {value}", gridAggregateSum: "sum {value}", gridAggregateAverage: "avg {value}", gridAggregateMinimum: "min {value}",
-    gridAggregateMaximum: "max {value}", gridAggregateDistinct: "distinct {value}", gridShowDetail: "Show details", gridHideDetail: "Hide details", gridDetailOf: "Details of {record}",
+    gridAggregateMaximum: "max {value}", gridAggregateMedian: "median {value}", gridAggregatePercentile: "p{percentile} {value}", gridAggregateDistinct: "distinct {value}", gridShowDetail: "Show details", gridHideDetail: "Hide details", gridDetailOf: "Details of {record}",
     gridDetailFailed: "Details could not load: {error}"
   }));
-  const GROUP_LEVELS = 4, GROUP_OPERATIONS = ["count", "sum", "average", "minimum", "maximum", "distinctCount"];
-  const GROUP_NUMERIC = ["sum", "average", "minimum", "maximum"], GRID_ROWS = { base: {} };
+  const GROUP_LEVELS = 4, GROUP_OPERATIONS = ["count", "sum", "average", "minimum", "maximum", "distinctCount", "median", "percentile"];
+  const GROUP_NUMERIC = ["sum", "average", "minimum", "maximum", "median", "percentile"], GRID_ROWS = { base: {} };
+  // A percentile aggregate names its percentile (0 < p < 100); no other aggregate carries one.
+  const reportingPercentileValid = aggregate => aggregate.operation === "percentile" ?
+    typeof aggregate.percentile === "number" && aggregate.percentile > 0 && aggregate.percentile < 100 : aggregate.percentile === undefined;
   const reportingDynamicGroups = view => view.reporting?.groupBy !== undefined || !!view.reporting?.groupable;
   function reportingSummaryEnabled(view) { return !!view.reporting?.grouping || reportingDynamicGroups(view) || !!view.reporting?.aggregates?.length; }
   const reportingRowsUsed = grid => reportingSummaryEnabled(grid.view) || !!grid.view.reporting?.detail || !!grid.opts.detail;
@@ -52,7 +55,7 @@
       // A name outside the built-in operations is a custom aggregate: a plugin computes it for inline data, a host source its own.
       const custom = !GROUP_OPERATIONS.includes(aggregate.operation);
       if (!column || ids.has(aggregate.id) || typeof aggregate.operation !== "string" || custom && !/^[a-z][a-zA-Z\d]{0,31}$/.test(aggregate.operation) ||
-          GROUP_NUMERIC.includes(aggregate.operation) && column.kind !== "number" || typeof aggregate.label !== "string" ||
+          GROUP_NUMERIC.includes(aggregate.operation) && column.kind !== "number" || !reportingPercentileValid(aggregate) || typeof aggregate.label !== "string" ||
           !aggregate.label.trim() || aggregate.label.length > 512) throw new Error("CanopyX: invalid aggregate binding.");
       if (aggregate.format !== undefined) gridNumberFormat(aggregate.format);
       ids.add(aggregate.id);
@@ -136,7 +139,7 @@
   const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, GRID_OPTIONS, GRID_OPTION_GRIDS, h, setText, fill, numberFormat,
     formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridIdOrder, gridQueryRows, gridButton, gridDecorateButton,
     gridCellRenderer, gridPresenterTone, GRID_TONE_RANK, validateGridRows, validateGridPage, checkDocument, requireIdentifier, validStructuralCount, PROTOCOL,
-    gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, disposeRowHostCells, quietControls, TreeGrid, GRID_BUCKETS, gridBucketDefinition }));
+    gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, reportingAggregateSpans, disposeRowHostCells, quietControls, TreeGrid, GRID_BUCKETS, gridBucketDefinition }));
   GRID_ROWS.base.requestPage = DataGrid.prototype.requestPage;
   Object.assign(DataGrid.prototype, {
     loadRows() {

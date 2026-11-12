@@ -67,7 +67,7 @@ test("multi-field chips name fields, honor explicit captions and remove the whol
   await page.evaluate(() => api.setExternalFilter("chart", [{ field:"site", values:["Berlin"] }, { field:"kind", values:["Feature"], sourceLabel:"Release chart" }]));
   const chip = page.locator('.cx-link-chip');
   await expect(chip).toHaveText("Filtered by Release chart: Site: Berlin · Kind: Feature ×");
-  await expect(chip).toHaveAccessibleName("Remove the filter from Release chart: Site: Berlin · Kind: Feature");
+  await expect(chip).toHaveAccessibleName("Filtered by Release chart: Site: Berlin · Kind: Feature, Remove the filter from Release chart: Site: Berlin · Kind: Feature");
   await page.evaluate(() => api.setExternalFilter("chart", [{ field:"site", values:["Berlin"], label:"Region: Berlin", sourceLabel:"Release chart" }, { field:"kind", values:["Feature"] }]));
   await expect(chip).toHaveText("Filtered by Release chart: Region: Berlin · Kind: Feature ×");
   await chip.focus(); await page.keyboard.press("Enter");

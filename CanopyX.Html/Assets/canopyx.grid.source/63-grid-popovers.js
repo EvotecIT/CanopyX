@@ -14,15 +14,6 @@
     return result;
   }
   Object.assign(DataGrid.prototype,{
-    syncColumnMenuRoom(){
-      for(const cell of this.headCells){
-        const menu=cell.querySelector(".cx-grid-column-menu"),text=cell.querySelector(".cx-htext");
-        if(!menu||!text)continue;
-        const range=document.createRange();range.selectNodeContents(text);
-        const box=menu.getBoundingClientRect(),caption=range.getBoundingClientRect();
-        cell.classList.toggle("cx-menu-room",cell.matches(":dir(rtl)")?caption.left>=box.right+1:caption.right<=box.left-1);
-      }
-    },
     resolveColumnAnchor(id,anchor,position=false){
       const visible=element=>element?.isConnected&&element.getClientRects().length>0&&getComputedStyle(element).visibility==="visible";
       const key=CSS.escape(id||""),headerOrigin=!anchor||this.headRow.contains(anchor)||anchor.hasAttribute("data-cx-column-menu")||anchor.hasAttribute("data-cx-filter-column");
@@ -44,7 +35,6 @@
     },
     buildColumnMenus(){
       this.headerMenusLifetime?.abort();this.headerMenusLifetime=new AbortController();const signal=this.headerMenusLifetime.signal;
-      this.headRow.addEventListener("pointerenter",()=>this.syncColumnMenuRoom(),{signal});
       const clearTouch=()=>this.headCells.forEach(cell=>cell.classList.remove("cx-menu-touched"));
       document.addEventListener("pointerdown",clearTouch,{capture:true,signal});
       for(const cell of this.headCells){

@@ -205,6 +205,11 @@
         const create = flow ? FLOW_API.createFlow : matrix ? MATRIX_API.createMatrix : change ? change : view && view.type === "grid" && typeof createDataGrid === "function" ? createDataGrid : createTreeGrid;
         const api = create(host, Object.assign({}, view && configured.get(view.id), flow ? { flow: view } : { view }));
         created.push(api);
+        // Until the view has loaded its parts and first rows, the host is busy and its stylesheet draws placeholder rows.
+        if (!host.hasAttribute("data-cx-ready")) {
+          const done = () => host.removeAttribute("aria-busy");
+          host.setAttribute("aria-busy", "true"); api.ready.then(done, done);
+        }
         api.ready.catch((err) => {
           // Grid query failures keep their retryable loading/error surface and accepted snapshot.
           if (view.type !== "grid" && !matrix && !change && activeGrids.get(host) === api && host.canopyx === api) showError(host, err, api, view);
@@ -241,8 +246,10 @@
   // Fragments are mounted once the document is parsed. A deferred runtime script runs just before that moment, and
   // the host's own deferred scripts, which may call configure, run after it: so wait for DOMContentLoaded whenever it
   // has not been dispatched yet, and mount at once only when the runtime is added to a page that is already loaded.
-  const navigation = global.performance && performance.getEntriesByType ? performance.getEntriesByType("navigation")[0] : null;
-  if (document.readyState === "loading" || (document.readyState === "interactive" && navigation && navigation.domContentLoadedEventStart === 0)) {
+  // Firefox may expose the navigation entry only after deferred scripts finish. Its document timing is available earlier.
+  // Prefer the modern entry when available: Firefox can disable legacy document timing independently.
+  const navigation = global.performance?.getEntriesByType?.("navigation")[0] || global.performance?.timing;
+  if (document.readyState === "loading" || (document.readyState === "interactive" && navigation?.domContentLoadedEventStart === 0)) {
     document.addEventListener("DOMContentLoaded", () => mount(document, true));
   } else {
     mount(document, true);

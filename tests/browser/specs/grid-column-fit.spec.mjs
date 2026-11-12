@@ -155,14 +155,17 @@ test("maximum widths leave spare room and responsive hiding retains the last use
   await expect(page.locator('.cx-row').first()).toBeVisible();
 });
 
-test("number headers align with their values and never truncate", async ({ page }) => {
+test("number headers end at their content edge, before the menu's room, and never truncate", async ({ page }) => {
   await mount(page, products(), { width: 1100 });
   const edges = await page.evaluate(() => {
-    const label = document.querySelector('.cx-hcell[data-cx-column="price"] .cx-htext, .cx-hcell[data-cx-column="price"] .cx-sort');
-    const value = document.querySelector('.cx-row [aria-colindex="5"] .cx-text');
-    return [label.getBoundingClientRect().right, value.getBoundingClientRect().right];
+    const cell = document.querySelector('.cx-hcell[data-cx-column="price"]'), label = cell.querySelector('.cx-htext'), range = document.createRange();
+    range.selectNodeContents(label);
+    return { caption: range.getBoundingClientRect().right, content: (cell.querySelector('.cx-sort') || label).getBoundingClientRect().right,
+      menu: cell.querySelector('.cx-grid-column-menu').getBoundingClientRect().left, clipped: label.scrollWidth > label.clientWidth + 1 };
   });
-  expect(Math.abs(edges[0] - edges[1])).toBeLessThanOrEqual(2);
+  expect(Math.abs(edges.caption - edges.content)).toBeLessThanOrEqual(2);
+  expect(edges.content).toBeLessThanOrEqual(edges.menu);
+  expect(edges.clipped).toBe(false);
 });
 
 test("a grid whose rows fit is as tall as its rows; long lists keep the bounded height", async ({ page }) => {
@@ -268,6 +271,11 @@ test("a log keeps long messages readable and the phone layout keeps essential co
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).toHaveText(/^\+\d+ columns?$/);
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-phone-fields')).toContainText("Category:");
   await expect(page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields')).not.toHaveAttribute("title", /Category/);
+  // The disclosure follows the context value from the content start instead of floating to the row's far edge.
+  expect(await page.locator('.cx-row[data-cx-id="r0"] .cx-hidden-fields').evaluate(button => {
+    const value = button.previousElementSibling.getBoundingClientRect(), own = button.getBoundingClientRect();
+    return Math.round(own.left - value.right);
+  })).toBeLessThanOrEqual(12);
 });
 
 test("a row tone stays quiet unless the host asks for row accents", async ({ page }) => {

@@ -161,4 +161,6 @@ column live in the header's own ⋮ menu.
 
 ## Limitations
 
-The grid has no right-to-left layout yet; pinning and the shadow edges assume left-to-right documents.
+Right to left, pins mirror: `left` and `right` name the start and end edges, so a column pinned `left` stays at the
+right edge (see [Right to left](accessibility.md#right-to-left)). The shadow edges of pinned columns still assume
+left-to-right documents.

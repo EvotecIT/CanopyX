@@ -1,6 +1,6 @@
 /* Graphite chrome shared by flat grids and trees: the card,toolbar,search,menus,header and cells. Buttons,fields,chips
    and badges are the shared controls (canopyx.source/controls.css). */
-.cx-tree-tools{border:var(--cx-size-1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));border-radius:var(--hfx-radius-container,var(--hfx-radius-lg,10px));overflow:hidden;font:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem))/1.4 var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);}
+.cx-tree-tools{border:var(--cx-size-1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));border-radius:var(--hfx-radius-container,var(--hfx-radius-lg,10px));overflow:hidden;font:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem))/1.4 var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);}
 .cx-page > .cx-tree-tools,.cx-page > .cx-main > .cx-tree-tools{padding:0;}
 body .cx-host.cx-tree-tools{padding:0;}
 .cx-tree-tools [hidden]{display:none!important;}
@@ -11,7 +11,7 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-tree-tools .cx-search-input{flex:1;min-width:0;width:100%;max-width:none;min-height:0;height:100%;border:0;padding:0;border-radius:0;background:transparent;}
 .cx-tree-tools .cx-search:focus-within{outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));outline-offset:var(--hfx-focus-offset,2px);}
 .cx-tree-tools .cx-search .cx-search-input:focus-visible{outline:0;}
-.cx-tree-tools .cx-search kbd{font:var(--cx-size-11px) var(--hfx-font-mono,"Cascadia Mono","Cascadia Code",Consolas,"SFMono-Regular",Menlo,monospace);border:var(--cx-size-1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));padding:0 var(--cx-size-5px);}
+.cx-tree-tools .cx-search kbd{font:var(--cx-size-11px) var(--hfx-font-mono,"JetBrains Mono",monospace);border:var(--cx-size-1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));padding:0 var(--cx-size-5px);}
 .cx-tree-tools .cx-columns > summary::after{display:none;}
 .cx-spacer{flex:1;}
 .cx-sep{width:var(--cx-size-1px);height:var(--cx-size-20px);background:var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));}
@@ -40,7 +40,7 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-export-formats,.cx-export-actions{display:flex;flex-direction:column;gap:var(--hfx-space-0-5,2px);}
 .cx-export-actions{border-top:var(--hfx-border-width,1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));padding-top:var(--hfx-space-2,0.5rem);margin-top:var(--hfx-space-1,0.25rem);}
 .cx-tree-tools .cx-export-choice{width:100%;height:auto;min-height:var(--hfx-control-height-lg,calc(44px - var(--cx-compact,0) * 8px));justify-content:flex-start;text-align:left;padding:var(--hfx-space-2,0.5rem) var(--hfx-space-2,0.5rem);gap:var(--hfx-space-3,0.75rem);border:0;background:transparent;white-space:normal;}
-.cx-export-icon{flex:none;display:grid;place-items:center;box-sizing:border-box;width:calc(var(--hfx-icon-md,16px)*2.5);height:var(--hfx-menu-item-height,calc(32px - var(--cx-compact,0) * 4px));padding:var(--hfx-space-1,0.25rem);border:var(--hfx-border-width,1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));font:var(--hfx-weight-semibold,600) var(--hfx-type-caption-size,0.75rem) var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);}
+.cx-export-icon{flex:none;display:grid;place-items:center;box-sizing:border-box;width:calc(var(--hfx-icon-md,16px)*2.5);height:var(--hfx-menu-item-height,calc(32px - var(--cx-compact,0) * 4px));padding:var(--hfx-space-1,0.25rem);border:var(--hfx-border-width,1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));font:var(--hfx-weight-semibold,600) var(--hfx-type-caption-size,0.75rem) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);}
 .cx-export-actions .cx-export-icon{font-size:var(--hfx-icon-md,16px);}
 .cx-export-choice-text{display:flex;flex-direction:column;min-width:0;gap:var(--hfx-space-1,0.25rem);}
 .cx-export-choice-title{font-weight:var(--hfx-weight-semibold,600);}
@@ -51,6 +51,8 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-tree-tools .cx-grid-overflow .cx-grid-panel > .cx-button{width:100%;justify-content:start;border:0;border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));}
 .cx-tree-tools.cx-phone .cx-toolbar{gap:var(--cx-size-6px);}
 .cx-tree-tools.cx-phone .cx-search{max-width:none;flex-basis:100%;height:var(--cx-size-44px);}
+.cx-tree-tools.cx-phone .cx-grid-filters > summary{min-width:calc(var(--hfx-space-6,2rem) + var(--hfx-space-3,0.75rem));justify-content:center;gap:var(--hfx-space-1,0.25rem);padding-inline:var(--hfx-space-3,0.75rem);font-size:0;}
+.cx-tree-tools.cx-phone .cx-grid-filters > summary .badge{font-size:calc(var(--hfx-type-caption-size,0.75rem) - var(--hfx-space-0-5,2px) / 2);}
 .cx-tree-tools.cx-phone .cx-spacer,.cx-tree-tools.cx-phone .cx-sep{display:none;}
 .cx-tree-tools.cx-phone .cx-grid-columns > summary{width:var(--cx-size-44px);font-size:0;padding:0;}
 .cx-tree-tools.cx-phone .cx-grid-columns > summary .cx-ico{width:var(--cx-size-16px);height:var(--cx-size-16px);}
@@ -58,6 +60,12 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-tree-tools.cx-phone .cx-grid-panel{position:fixed!important;inset:auto 0 0!important;width:100%!important;max-width:100%!important;max-height:var(--cx-size-85vh)!important;overflow:auto;border-radius:var(--hfx-radius-overlay,var(--hfx-radius-lg,10px));z-index:30;}
 .cx-tree-tools.cx-phone .cx-grid-panel::before{content:"";display:block;width:var(--cx-size-32px);height:var(--cx-size-4px);border-radius:var(--hfx-radius-pill,999px);background:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));margin:0 auto var(--cx-size-8px);}
 .cx-tree-tools.cx-phone .cx-grid-panel:has(> [open])::before{display:none;}
+.cx-tree-tools.cx-phone .cx-grid-panel::backdrop{background:var(--hfx-color-overlay,light-dark(rgba(22,24,28,0.42),rgba(0,0,0,0.66)));}
+.cx-tree-tools.cx-phone .cx-grid-panel .cx-grid-panel::backdrop{background:transparent;}
+@media (prefers-reduced-motion:no-preference){
+.cx-tree-tools.cx-phone .cx-grid-panel::backdrop{transition:opacity var(--hfx-motion-duration-base,200ms) var(--hfx-motion-easing-standard,cubic-bezier(.2,0,0,1));}
+@starting-style{.cx-tree-tools.cx-phone .cx-grid-panel:popover-open::backdrop{opacity:0;}}
+}
 .cx-tree-tools.cx-phone .cx-hrow{height:var(--cx-size-44px);}
 .cx-tree-tools.cx-phone .cx-hidden-fields::after{content:"";position:absolute;inset:calc(-1 * var(--cx-size-10px)) calc(-1 * var(--cx-size-8px));}
 .cx-grid-column-choice:hover{background:var(--hfx-color-hover,light-dark(#f5f5f5,#232529));}
@@ -89,7 +97,7 @@ body .cx-host.cx-tree-tools{padding:0;}
 .cx-drawer[data-phone="true"] dd{margin-block-end:var(--hfx-space-2,0.5rem);}
 .cx-drawer[data-phone="true"] .cx-button{min-block-size:calc(var(--hfx-space-1,0.25rem)*11);min-inline-size:calc(var(--hfx-space-1,0.25rem)*11);}
 }
-.cx-grid-overlay{color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));font:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem))/1.45 var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);}
+.cx-grid-overlay{color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));font:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem))/1.45 var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);}
 body .cx-host.cx-grid-overlay:not(.cx-drawer){height:auto;min-height:0;padding:0;}
 .cx-grid-overlay [hidden]{display:none!important;}
 .cx-tree-tools.cx-pin-tree .cx-row > .cx-cell.cx-tree:first-child{position:sticky;}
@@ -99,7 +107,7 @@ body .cx-host.cx-grid-overlay:not(.cx-drawer){height:auto;min-height:0;padding:0
 .cx-tree-tools .cx-hcell[aria-sort="ascending"] .cx-sort::after{content:"↑";font-size:var(--cx-size-14px);color:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));}
 .cx-tree-tools .cx-hcell[aria-sort="descending"] .cx-sort::after{content:"↓";font-size:var(--cx-size-14px);color:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));}
 .cx-tree-tools .cx-switch{font-size:var(--cx-size-14px);color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));white-space:nowrap;}
-.cx-tree-tools .cx-hidden-fields{color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));font:var(--cx-size-12d5px) var(--hfx-font-sans,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif);border:0;background:transparent;padding:0;flex:none;height:auto;min-height:var(--cx-size-24px);min-width:var(--cx-size-24px);margin-left:var(--cx-size-4px);position:relative;}
+.cx-tree-tools .cx-hidden-fields{color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));font:var(--cx-size-12d5px) var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);border:0;background:transparent;padding:0;flex:none;height:auto;min-height:var(--cx-size-24px);min-width:var(--cx-size-24px);margin-inline-start:var(--hfx-space-1,0.25rem);position:relative;}
 .cx-tree-tools.cx-drawer :focus-visible{outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));outline-offset:var(--hfx-focus-offset,2px);}
 .cx-tree-tools.cx-drawer [data-cx-pointer-focus]:focus-visible{outline:none;}
 .cx-tree-tools.cx-drawer .p-sub{margin-inline-start:var(--cx-size-6px);color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));font-size:var(--cx-size-12d5px);}

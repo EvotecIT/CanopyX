@@ -182,6 +182,33 @@ test("prominent record action stays visible and projected headings are plain tex
   await expect.poll(() => page.evaluate(() => window.renewal)).toBe("c001");
 });
 
+test("footer actions take their tone, and a danger action follows the others at the far end", async ({ page }) => {
+  const view = definition();
+  const script = `<script>
+CanopyX.configure("certificates", { recordActions: [
+  { label: "Revoke", prominent: true, tone: "danger", run: () => {} },
+  { label: "Renew", prominent: true, run: () => {} },
+  { label: "Reassign", prominent: true, tone: "neutral", run: () => {} },
+  { label: "Shout", prominent: true, tone: "loud", run: () => {} }] });
+</script>`;
+  await page.route("http://canopyx.test/records.html", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace('<body class="cx-page">', '<body class="cx-page">' + script) }));
+  await page.goto("http://canopyx.test/records.html");
+  await page.evaluate(api + ".ready");
+  await page.evaluate(api + ".openDetails('c001')");
+  const footer = drawer(page).locator(".cx-record-footer");
+  await expect(footer.getByRole("button")).toHaveText(["Renew", "Reassign", "Revoke"]);
+  expect(await footer.getByRole("button").evaluateAll(buttons => buttons.map(button => button.className.match(/cx-record-(primary|secondary|danger)/)[0])))
+    .toEqual(["cx-record-primary", "cx-record-secondary", "cx-record-danger"]);
+  // Apart: the danger action ends the footer, with free space before it.
+  expect(await footer.evaluate(element => {
+    const [renew, reassign, revoke] = [...element.querySelectorAll("button")].map(button => button.getBoundingClientRect()), box = element.getBoundingClientRect();
+    return revoke.left - reassign.right > 48 && Math.abs(box.right - parseFloat(getComputedStyle(element).paddingRight) - revoke.right) < 1 && renew.left < reassign.left;
+  })).toBe(true);
+  await drawer(page).getByRole("button", { name: "Record actions" }).click();
+  await expect(drawer(page).getByRole("menuitem", { name: "Revoke" })).toHaveAttribute("data-tone", "danger");
+  await expect(drawer(page).getByRole("menuitem", { name: "Shout" })).toHaveCount(0);
+});
+
 test("a pending record action cannot run twice through the menu and footer", async ({ page }) => {
   await openWithPlugin(page, definition(), { prominent: true, run: async () => {
     window.actionCalls.renewal++;

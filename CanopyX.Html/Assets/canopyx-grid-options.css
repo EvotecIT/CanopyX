@@ -8,3 +8,5 @@
 .cx-data-grid .cx-footer-cell{display:block;position:relative;flex-shrink:0;box-sizing:border-box;min-height:var(--cx-row-h);height:auto;padding:var(--cx-size-7px) var(--cx-size-10px);white-space:normal;overflow-wrap:anywhere;font-weight:var(--hfx-table-header-weight,var(--hfx-weight-semibold,600));border-inline-end:var(--cx-size-1px) solid var(--hfx-color-surface-line,var(--hfx-color-border,light-dark(#e2e4e7,#272a30)))}
 .cx-data-grid .cx-footer-cell[data-cx-pin]{position:sticky;background:var(--hfx-color-surface-card,var(--hfx-color-surface,light-dark(#ffffff,#16181c)))}
 .cx-data-grid .cx-footer-hidden{display:block;margin-block-start:var(--cx-size-4px);font-weight:normal;color:var(--hfx-color-text-secondary,var(--hfx-color-text-muted,light-dark(#626770,#8f949d)));text-align:start}
+.cx-data-grid.cx-phone .cx-footer-cell:has(+ .cx-footer-fill){flex-grow:1;border-inline-end:0;}
+.cx-data-grid.cx-phone .cx-footer-fill{display:none;}

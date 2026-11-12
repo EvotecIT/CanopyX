@@ -6,6 +6,8 @@
     editCalendarOccurrence() { return Promise.resolve(false); },
     /** Puts back the configured view, date, zoom and sources (the calendar-screen part). */
     resetCalendar() { return this.calLoadPart("calendar-screen").then(() => this.resetCalendar()); },
+    /** A recurrence rule as the calendar's sentence (the calendar-recurrence part). */
+    describeCalendarRecurrence(...args) { return this.calLoadPart("calendar-recurrence").then(() => this.describeCalendarRecurrence(...args)); },
     calParts() {
       const input = this.view.calendar || {}, ranges = Array.isArray(input.ranges) ? input.ranges : [], sources = Array.isArray(input.sources) ? input.sources : [];
       const ics = sources.some(source => source && source.ics !== undefined), needs = [];

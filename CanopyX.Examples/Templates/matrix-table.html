@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CanopyX matrix from a table</title>
+<link rel="stylesheet" href="enhance-assets/canopyx-grid.css">
+<style>{{example-style}}
+#controls[hidden] { display: none; }
+#services { overflow-x: auto; }
+#services th { white-space: nowrap; }
+#picked { min-height: 1.5em; margin-top: 12px; }
+</style>
+</head>
+<body class="cx-example">
+<main>
+<a class="example-back" href="index.html">CanopyX examples</a>
+<h1>A matrix from a server table</h1>
+<p>The server writes the services by server as a plain table: row and column headers, a symbol and a state in every cell, and a link per probe that is the page without script. One call reads the states, the sites, the tiers and the links back from the table and turns it into the matrix, with groups, facets, search, only problems and the keyboard.</p>
+<p>Click a cell: the page receives it (<code>details: "host"</code>) with its row, column and link. Without that option the cell follows its link, as it does in the table. Use the button to put the table back.</p>
+<div class="action-controls" id="controls" hidden><button type="button" id="toggle" disabled>Show the table</button></div>
+<div id="services">
+{{table}}
+</div>
+<p id="picked" role="status"></p>
+<script src="enhance-assets/canopyx-grid.js"></script>
+<script>
+const theme = new URLSearchParams(location.search).get("theme") === "dark" ? "dark" : "light";
+const toggle = document.getElementById("toggle"), picked = document.getElementById("picked");
+document.getElementById("controls").hidden = false;
+let matrix = null;
+// The page shows what was clicked; the link stays the way to open it.
+function pick(detail) {
+  const view = matrix.view, row = view.rows.items.find(item => item.id === detail.row), column = view.columns.items.find(item => item.id === detail.column);
+  const state = view.states.find(item => item.id === detail.state), link = document.createElement("a");
+  picked.textContent = (row ? row.label : detail.rowGroup) + " · " + (column ? column.label : detail.columnGroup) + ": " + (state ? state.label : "No data") + (detail.text ? " (" + detail.text + ")" : "") + " ";
+  if (detail.href) { link.href = detail.href; link.textContent = "Open the probe"; picked.appendChild(link); }
+}
+function enhance() {
+  toggle.disabled = true;
+  return CanopyX.enhance("#services table", { details: "host", theme, onCell: pick }).then(api => {
+    matrix = window.exampleMatrix = api; toggle.textContent = "Show the table"; toggle.disabled = false;
+  });
+}
+toggle.addEventListener("click", () => {
+  if (!matrix) { enhance(); return; }
+  matrix.destroy(); matrix = window.exampleMatrix = null; picked.textContent = "";
+  toggle.textContent = "Show the matrix";
+});
+enhance();
+</script>
+</main>
+</body>
+</html>

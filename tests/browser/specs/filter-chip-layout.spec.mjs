@@ -55,7 +55,7 @@ for (const width of [1440, 390]) for (const dark of [false, true]) {
           const chip = page.locator(`#${id} .cx-link-chip`);
           await expect(chip).toHaveText("Filtered by Observed time: " + label + " ×");
           await expect(chip).toHaveAttribute("title", "Filtered by Observed time: " + described);
-          await expect(chip).toHaveAccessibleName("Remove the filter from Observed time: " + described);
+          await expect(chip).toHaveAccessibleName("Filtered by Observed time: " + label + ", Remove the filter from Observed time: " + described);
         }
         const filters = await page.evaluate(() => [chipViews.linkedGrid.getExternalFilters(), chipViews.linkedTree.getExternalFilters()]);
         for (const [filter] of filters) { expect(filter.range).toEqual(bounds); expect(filter.label).toBe(label); }
@@ -108,7 +108,7 @@ for (const width of [1440, 390]) for (const dark of [false, true]) {
       const chip = page.locator(`#${id} .cx-link-chip`);
       await expect(chip).toHaveText(linkedText + " ×");
       await expect(chip).toHaveAttribute("title", linkedText);
-      await expect(chip).toHaveAccessibleName("Remove the filter from Observed time: " + range.join(" – "));
+      await expect(chip).toHaveAccessibleName(linkedText + ", Remove the filter from Observed time: " + range.join(" – "));
     }
     const search = page.locator('#query-grid [data-cx-condition="search"]');
     await expect(search).toHaveAttribute("title", input);

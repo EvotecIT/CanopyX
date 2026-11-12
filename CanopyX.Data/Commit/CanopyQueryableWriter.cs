@@ -14,7 +14,8 @@ namespace CanopyX.Data;
 /// <para>
 /// It writes only columns the view declares editable and the map maps to a member of the record itself (<c>x =&gt; x.Cores</c>);
 /// creating it fails when an editable column maps a navigation chain, the record key, or a member marked as a concurrency
-/// token. For each row it checks that the record lies in <see cref="CanopyQueryableWriterOptions{T}.Scope"/> (the records
+/// token, and when the options set neither <see cref="CanopyQueryableWriterOptions{T}.Scope"/> nor
+/// <see cref="CanopyQueryableWriterOptions{T}.AllowUnscoped"/>. For each row it checks that the record lies in the scope (the records
 /// this caller may read), loads it by the map's key, compares the original values with the stored ones (a difference is a
 /// conflict and nothing is written), converts and applies the new values, runs
 /// <see cref="CanopyQueryableWriterOptions{T}.Saving"/> and saves, in a transaction per row or one for the batch.
@@ -57,12 +58,14 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
     /// <summary>Creates a writer.</summary>
     /// <param name="map">The column allow-list; its editable columns must map members of the record.</param>
     /// <param name="store">The unit of work of this request.</param>
-    /// <param name="options">Scope, transactions, revision, hooks and messages; null uses the defaults.</param>
-    /// <exception cref="ArgumentException">An editable mapped column cannot be written, or maps the key or a concurrency token.</exception>
-    public CanopyQueryableWriter(CanopyColumnMap<T> map, ICanopyWriteStore<T> store, CanopyQueryableWriterOptions<T>? options = null) {
+    /// <param name="options">Scope, transactions, revision, hooks and messages. It must set
+    /// <see cref="CanopyQueryableWriterOptions{T}.Scope"/>, or <see cref="CanopyQueryableWriterOptions{T}.AllowUnscoped"/>.</param>
+    /// <exception cref="ArgumentException">An editable mapped column cannot be written, or maps the key or a concurrency token;
+    /// or the options set neither a scope nor <see cref="CanopyQueryableWriterOptions{T}.AllowUnscoped"/>.</exception>
+    public CanopyQueryableWriter(CanopyColumnMap<T> map, ICanopyWriteStore<T> store, CanopyQueryableWriterOptions<T> options) {
         _map = map ?? throw new ArgumentNullException(nameof(map));
         _store = store ?? throw new ArgumentNullException(nameof(store));
-        _options = options ?? new CanopyQueryableWriterOptions<T>();
+        _options = options ?? throw new ArgumentNullException(nameof(options));
         var keyMember = Member(map.KeyExpression!);
         foreach (var column in map.Schema.EditableColumns) {
             var writer = MemberWriter<T>.Create(map.Get(column.Id).Value, out var reason)
@@ -75,6 +78,8 @@ public sealed class CanopyQueryableWriter<T> : ICanopyInsertWriter where T : cla
         }
         _key = new Rebinder(map.KeyExpression!.Parameters[0], _row).Visit(map.KeyExpression.Body)!;
         _readKey = Expression.Lambda<Func<T, object?>>(Expression.Convert(_key, typeof(object)), _row).Compile();
+        if (_options.Scope == null && !_options.AllowUnscoped)
+            throw new ArgumentException("Set Scope to the records this caller may read (the grid's query), or AllowUnscoped when every caller may change every record the store holds.", nameof(options));
     }
 
     private CanopyCommitMessages Messages => _options.Messages ?? DefaultMessages;

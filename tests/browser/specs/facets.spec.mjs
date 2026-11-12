@@ -47,6 +47,26 @@ test.describe("facet panel", () => {
     await expect.poll(() => api(page, "api => [api.getQuery().filters.length, !!api.getQuery().filterGroup, api.getQuery().search]")).toEqual([0, false, "sign"]);
   });
 
+  test("a source without a matched count announces no result count after a choice", async ({ page }) => {
+    // A cursor source may leave matched unknown; the panel must not announce that as "0 matching rows".
+    const view = { protocol: "canopyx/2", type: "grid", id: "unknown", label: "Unknown count", rowHeight: 34, pageSize: 2, pageLength: 2, presentation: "paged",
+      selection: "none", columns: [{ id: "name", title: "Name", kind: "text" }, { id: "site", title: "Site", kind: "text" }],
+      source: { kind: "host", navigation: "cursor" }, reporting: { facetColumns: ["site"] }, facets: { columns: ["site"] } };
+    await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view).replace("</head>", `<script>
+      window.choices = 0; const items = [{ id: "u1", cells: { name: "One", site: "Oslo" } }, { id: "u2", cells: { name: "Two", site: "Oslo" } }];
+      CanopyX.configure("unknown", { source: {
+        query(query) { if (query.filters.length) window.choices++; return { protocol: "canopyx/2", type: "gridCursorPage", view: "unknown", revision: "r1", offset: 0, total: null, matched: null, nextCursor: "next", items }; },
+        facet(request) { return { protocol: "canopyx/2", type: "gridFacetPage", view: "unknown", revision: "r1", column: request.column, search: request.search,
+          includeCurrentFilter: request.includeCurrentFilter, matched: 2, totalValues: 1, truncated: false, items: [{ value: "Oslo", count: 2 }] }; } } });
+      </script></head>`) }));
+    await page.goto("https://canopyx.test/");
+    await page.waitForSelector(".cx-facet .cx-facet-val");
+    await facet(page, "site").getByRole("checkbox", { name: /^Oslo/ }).check();
+    await expect.poll(() => page.evaluate(() => window.choices)).toBeGreaterThan(0);
+    await expect.poll(() => api(page, "api => api.getQuery().filters.length")).toBe(1);
+    await nextFrames(page);
+    await expect(page.locator(".cx-facets p.cx-sr-only").first()).toHaveText("");
+  });
   test("ranges draw a histogram and filter by From and To or a bar", async ({ page }) => {
     await open(page);
     const age = facet(page, "age");
@@ -231,15 +251,24 @@ test.describe("facet panel", () => {
     await expect.poll(() => api(page, "api => api.getQuery().filters")).toEqual([]);
   });
 
-  test("toolbar facets remain usable on a phone", async ({ page }) => {
+  test("toolbar facets fold into one titled sheet on a phone", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: inlinePage({ columns: ["city", "team"], position: "toolbar" }) }));
     await page.goto("https://canopyx.test/"); await page.waitForSelector("[data-cx-ready]");
-    const team = page.locator(".cx-grid-facet").filter({ hasText: "Team" });
-    await team.locator("summary").click(); await team.getByRole("checkbox", { name: /^Red,/ }).check();
+    await expect(page.locator(".cx-grid-facet")).toHaveCount(2);
+    await expect(page.locator(".cx-grid-facet:visible")).toHaveCount(0);
+    const open = page.getByRole("button", { name: "Refine" });
+    await open.click();
+    const sheet = page.getByRole("dialog", { name: "Refine" });
+    await expect(sheet.getByRole("heading", { name: "Refine" })).toBeVisible();
+    await sheet.locator('.cx-facet[data-cx-facet="team"]').getByRole("checkbox", { name: /^Red,/ }).check();
     await expect.poll(() => api(page, "api => api.getPaging().matched")).toBe(20);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    await page.keyboard.press("Escape"); await expect(team.locator("summary")).toBeFocused();
+    await page.keyboard.press("Escape"); await expect(sheet).toHaveCount(0); await expect(open).toBeFocused();
+    // The sections go back to their toolbar menus, which return at a wider width.
+    await page.setViewportSize({ width: 1024, height: 844 });
+    await expect(page.locator(".cx-grid-facet:visible")).toHaveCount(2);
+    await expect(page.locator('.cx-grid-facet .cx-facet[data-cx-facet="team"]')).toHaveCount(1);
   });
 
   test("an inline list's search filters as it draws, and clearing it brings every value back", async ({ page }) => {

@@ -174,7 +174,9 @@ test("phone drawer reserves a full title row and aligns section text with fields
   expect(layout.titleWidth).toBeGreaterThan(300); expect(layout.actionTop).toBeGreaterThanOrEqual(layout.titleBottom);
   expect(Math.abs(layout.headingX-layout.fieldX), JSON.stringify(layout)).toBeLessThanOrEqual(1);
   const buttons=await drawer.locator('[data-cx-part="header"] button').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).map(node=>{const box=node.getBoundingClientRect();return {left:box.left,right:box.right};}));
-  expect(buttons[0].left).toBeLessThan(45);expect(buttons.at(-1).right-buttons[0].left).toBeLessThan(220);
+  // The record actions stay together at the start of the row; Close sits at the far end on phones.
+  const edge=await drawer.evaluate(node=>node.getBoundingClientRect().right), group=buttons.slice(0,-1);
+  expect(buttons[0].left).toBeLessThan(45);expect(group.at(-1).right-group[0].left).toBeLessThan(220);expect(edge-buttons.at(-1).right).toBeLessThan(45);
 });
 
 for (const width of [1440,390]) test("grid selection header exposes its commands at " + width, async ({ page }) => {

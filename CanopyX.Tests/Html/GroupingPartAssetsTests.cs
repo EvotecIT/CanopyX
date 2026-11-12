@@ -12,7 +12,8 @@ public sealed class GroupingPartAssetsTests {
         var grouping = CanopyHtmlAssets.GetPart("grouping");
         Assert.True(Gzip(detail.Script) + Gzip(detail.Style!) <= 9728, "The detail rows part is " + (Gzip(detail.Script) + Gzip(detail.Style!)) + " bytes gzip; the guard is 9.5 KiB.");
         // Bucket controls and correlated criteria add 1.1 KiB to main's component; shared defaults are measured separately.
-        Assert.True(Gzip(grouping.Script) + Gzip(grouping.Style!) <= 14336, "The grouping component is " + (Gzip(grouping.Script) + Gzip(grouping.Style!)) + " bytes gzip; the guard is 14 KiB, including bucket choices and correlated criteria.");
+        // 256 bytes of the guard cover the built-in median and percentile aggregates.
+        Assert.True(Gzip(grouping.Script) + Gzip(grouping.Style!) <= 14592, "The grouping component is " + (Gzip(grouping.Script) + Gzip(grouping.Style!)) + " bytes gzip; the guard is 14.25 KiB, including bucket choices, correlated criteria, medians and percentiles.");
         Assert.Equal(new[] { "detail-rows" }, grouping.Requires);
         Assert.Empty(detail.Requires);
         Assert.True(grouping.IsShippedWith(CanopyRuntime.ReportingGrid) && !grouping.IsShippedWith(CanopyRuntime.TreeGrid));

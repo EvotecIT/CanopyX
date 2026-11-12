@@ -200,9 +200,9 @@ test("the chart palette retains the revised categorical order in light and dark 
     const css = getComputedStyle(element);
     return Array.from({ length: 6 }, (_, index) => css.getPropertyValue("--hfx-color-series-" + (index + 1)).trim());
   });
-  expect(await palette()).toEqual(["#2a78d6", "#046d5f", "#7b61e8", "#c24fa8", "#5b7f00", "#1d4f9e"]);
+  expect(await palette()).toEqual(["#2171ce", "#19695d", "#7459e0", "#b7459e", "#5a7c0d", "#1d4f9e"]);
   await page.evaluate(() => document.documentElement.dataset.hfxMode = "dark");
-  expect(await palette()).toEqual(["#3987e5", "#117d6d", "#8a74ee", "#c9579f", "#6f9120", "#7b9be8"]);
+  expect(await palette()).toEqual(["#509efe", "#429484", "#9681fc", "#ce5ca4", "#6f9120", "#7b9be8"]);
 });
 
 test("all five host styles switch modes without leaking another style's roles", async ({ page }) => {

@@ -33,16 +33,16 @@ const ids = page => page.locator(".cx-row[data-cx-id]").evaluateAll(rows => rows
 
 test("footer page and full matching totals follow paging and filtering", async ({ page }) => {
   const requests = await mount(page, view({ footers }));
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 30");
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 100");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 100");
   expect(requests).toContain("canopyx-grid-options.js");
   await page.evaluate(() => api.nextPage());
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 70");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 70");
   await page.evaluate(() => api.setQuery({ filters: [{ column: "amount", operator: "ge", values: [20] }] }));
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 90");
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 50");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 90");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 50");
   await page.evaluate(() => api.setQuery({ search: "No match" }));
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: —");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum —");
 });
 
 test("page footers follow aggregate group ordering", async ({ page }) => {
@@ -52,11 +52,11 @@ test("page footers follow aggregate group ordering", async ({ page }) => {
   await mount(page, definition, "", "canopyx-reporting");
   await page.evaluate(() => api.setGroupBy([{ column: "name", direction: "desc", aggregate: "sum" }]));
   await expect.poll(() => ids(page)).toEqual(["c", "d"]);
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 30");
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 33");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 33");
   await page.evaluate(() => api.nextPage());
   await expect.poll(() => ids(page)).toEqual(["a", "b"]);
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 3");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 3");
 });
 
 test("column defaults use selectors and preserve explicit settings in headers cells and footers", async ({ page }) => {
@@ -99,7 +99,12 @@ test("fixed pre-sort leaves user priorities independent and footer bands fill th
     await page.setViewportSize({ width, height: 900 });
     await expect.poll(() => page.locator('.cx-footer-row').evaluateAll(rows => rows.every(row => row.getBoundingClientRect().width >= row.closest('.cx-grid').clientWidth - 1))).toBe(true);
     await expect(page.locator('.cx-footer-fill')).toHaveCount(2);
-    await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 100");
+    await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 100");
+    // The last visible cell reaches the row's end, so a phone shows no empty divided column after the totals.
+    if (width === 390) await expect.poll(() => page.locator('.cx-footer-row').evaluateAll(rows => rows.map(row => {
+      const cells = row.querySelectorAll(".cx-footer-cell"), last = cells[cells.length - 1].getBoundingClientRect();
+      return Math.round(row.getBoundingClientRect().right - last.right);
+    }))).toEqual([0, 0]);
   }
 });
 
@@ -109,7 +114,7 @@ test("plugin filter comparator and aggregate hooks run against raw complete data
   definition.columns[1].sortComparator = "reverse";
   await mount(page, definition, `CanopyX.use({name:"math",filterOperators:{multiple:(value,values)=>value%values[0]===0},sortComparators:{reverse:(a,b)=>b-a},aggregates:{spread:values=>Math.max(...values)-Math.min(...values)}})`);
   await expect.poll(() => ids(page)).toEqual(["d", "b"]);
-  await expect(page.locator('[data-cx-footer="spread"]')).toContainText("Sum: 20");
+  await expect(page.locator('[data-cx-footer="spread"]')).toContainText("Sum 20");
 });
 
 test("grouped rows preserve custom filters and alternate-field comparators", async ({ page }) => {
@@ -120,14 +125,32 @@ test("grouped rows preserve custom filters and alternate-field comparators", asy
   definition.columns[1].orderData = ["rank"];
   await mount(page, definition, `CanopyX.use({name:"group-math",filterOperators:{multiple:(value,values)=>value%values[0]===0},sortComparators:{reverse:(a,b)=>b-a}})`, "canopyx-reporting");
   await expect.poll(() => ids(page)).toEqual(["d", "b"]);
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 60");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 60");
 });
 
 test("hosted totals use explicit page values and never cached partial records", async ({ page }) => {
   const definition = view({ source: { kind: "host" }, footers }); delete definition.rows;
   await mount(page, definition, `window.options={source:{query:query=>({protocol:"canopyx/2",type:"gridPage",view:"inventory",revision:"r1",offset:query.offset,total:4,matched:4,items:[{id:"a",cells:{name:"Alpha",amount:10,rank:3}},{id:"b",cells:{name:"Beta",amount:20,rank:1}}],footerValues:{all:{sum:100}}})}}`);
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 100");
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 100");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 30");
+});
+
+test("a phone toolbar shows Filters as a compact control in line with the other toolbar controls", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await mount(page, view({ footers }));
+  const filters = page.locator(".cx-grid-filters > summary"), columns = page.locator(".cx-grid-columns > summary");
+  await expect(filters).toHaveAccessibleName(/Filters/);
+  const [own, other] = [await filters.boundingBox(), await columns.boundingBox()];
+  expect(Math.abs(own.y - other.y)).toBeLessThan(2);
+  expect(Math.abs(own.height - other.height)).toBeLessThan(2);
+  expect(own.width).toBeLessThan(60);
+});
+test("footer totals name their row group and missing hosted totals from the label set", async ({ page }) => {
+  const definition = view({ source: { kind: "host" }, footers }); delete definition.rows;
+  await mount(page, definition, `window.options={labels:{gridFooterTotals:"Sumy w stopce",gridFooterUnavailable:"Niedostępne"},source:{query:query=>({protocol:"canopyx/2",type:"gridPage",view:"inventory",revision:"r1",offset:query.offset,total:4,matched:4,items:[{id:"a",cells:{name:"Alpha",amount:10,rank:3}},{id:"b",cells:{name:"Beta",amount:20,rank:1}}]})}}`);
+  await expect(page.getByRole("rowgroup", { name: "Sumy w stopce", exact: true })).toHaveCount(1);
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum Niedostępne");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 30");
 });
 
 test("hosted reporting summaries accept distinct footer aggregate bindings", async ({ page }) => {
@@ -138,7 +161,7 @@ test("hosted reporting summaries accept distinct footer aggregate bindings", asy
     query:q=>({protocol:"canopyx/2",type:"gridPage",view:"inventory",revision:"r1",offset:q.offset,total:2,matched:2,items:[{id:"a",cells:{name:"One group",amount:10}},{id:"b",cells:{name:"One group",amount:20}}],footerValues:{all:{records:2}}}),
     summary:q=>({protocol:"canopyx/2",type:"gridSummary",view:"inventory",revision:"r1",query:q,matched:2,aggregates:{sum:30,records:2},groups:[{key:"one",value:"One group",offset:0,count:2,aggregates:{sum:30,records:2}}]})}}`, "canopyx-reporting");
   expect(await page.evaluate(() => window.failure)).toBeUndefined();
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Records: 2");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Records 2");
   expect(await page.evaluate(() => api.getSummary().aggregates)).toEqual({ sum: 30, records: 2 });
 });
 
@@ -158,7 +181,7 @@ test("inline reporting summaries include distinct footer aggregate bindings", as
   const summary = await page.evaluate(() => api.getSummary());
   expect(summary.aggregates).toEqual({ sum: 100, records: 4 });
   expect(summary.groups[0].aggregates).toEqual(summary.aggregates);
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Records: 4");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Records 4");
 });
 
 for (const grouped of [false, true]) test("fixed pre-sort uses raw keys with alternate fields " + grouped, async ({ page }) => {
@@ -173,25 +196,25 @@ for (const grouped of [false, true]) test("fixed pre-sort uses raw keys with alt
 test("footer windows follow initial and saved nonzero page offsets", async ({ page }) => {
   await mount(page, view({ footers, query: { offset: 2 } }));
   await expect.poll(() => ids(page)).toEqual(["c", "d"]);
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 70");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 70");
   await page.evaluate(() => api.saveView("Second page"));
   await page.evaluate(() => api.previousPage());
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 30");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 30");
   await page.evaluate(() => api.applySavedView("Second page"));
   await expect.poll(() => ids(page)).toEqual(["c", "d"]);
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 70");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 70");
 });
 
 test("rejected host pages preserve accepted footer totals across layout renders", async ({ page }) => {
   const definition = view({ source: { kind: "host" }, footers }); delete definition.rows;
   await mount(page, definition, `window.badPage=false;window.options={source:{query:q=>({protocol:"canopyx/2",type:"gridPage",view:"inventory",revision:"r1",offset:q.offset,total:2,matched:2,
     items:[{id:"a",cells:{name:"Alpha",amount:10}},{id:badPage?"a":"b",cells:{name:"Beta",amount:20}}],footerValues:{all:{sum:badPage?999:30}}})}}`);
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 30");
   const rejected = await page.evaluate(async () => { badPage=true; try { await api.reload(); return false; } catch { return true; } });
   expect(rejected).toBe(true);
   await page.evaluate(() => api.setColumnVisible("rank", true));
   await expect.poll(() => ids(page)).toEqual(["a", "b"]);
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 30");
 });
 
 test("footer and summary sums preserve cancellation residuals", async ({ page }) => {
@@ -200,8 +223,8 @@ test("footer and summary sums preserve cancellation residuals", async ({ page })
     reporting: { aggregates: [sum, average] } });
   definition.rows = [9007199254740991, 0.5, -9007199254740991].map((amount, i) => ({ id: String(i), cells: { name: "Value " + i, amount } }));
   await mount(page, definition, "", "canopyx-reporting");
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 0.5");
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Average: 0.167");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 0.5");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Average 0.167");
   expect(await page.evaluate(() => api.getSummary().aggregates)).toEqual({ sum: 0.5, average: 0.5 / 3 });
 });
 
@@ -244,7 +267,7 @@ test("query hooks stay scoped to each grid and reject invalid hook results", asy
 test("hosted missing totals stay unavailable while page totals remain visible", async ({ page }) => {
   const definition = view({ source: { kind: "host" }, footers }); delete definition.rows;
   await mount(page, definition, `window.options={source:{query:query=>({protocol:"canopyx/2",type:"gridPage",view:"inventory",revision:"r1",offset:query.offset,total:4,matched:4,items:[{id:"a",cells:{name:"Alpha",amount:10,rank:3}},{id:"b",cells:{name:"Beta",amount:20,rank:1}}]})}}`);
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: Unavailable");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum Unavailable");
   await expect(page.locator('[data-cx-footer="page"]')).toBeVisible();
 });
 
@@ -254,9 +277,9 @@ test("host page footer requests cover the visible page when transport and visibl
     windows.push([query.offset,query.limit]);const items=[10,20,30,40].slice(query.offset,query.offset+query.limit).map((amount,i)=>({id:String(query.offset+i),cells:{name:"Record "+(query.offset+i),amount,rank:i}}));
     return {protocol:"canopyx/2",type:"gridPage",view:"inventory",revision:"r1",offset:query.offset,total:4,matched:4,items,footerValues:{page:{sum:items.reduce((total,row)=>total+row.cells.amount,0)},all:{sum:100}}}
   }}}`);
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 60");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 60");
   await page.evaluate(() => api.nextPage());
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 40");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 40");
   expect(await page.evaluate(() => windows)).toEqual([[0, 3], [3, 3]]);
 });
 
@@ -286,7 +309,7 @@ test("explicit null and empty column options clear inherited defaults", async ({
 test("footer cells retain explicit column and scope associations alongside grouped summaries", async ({ page }) => {
   await mount(page, view({ footers, reporting: { grouping: { column: "name", direction: "asc" }, aggregates: [sum] } }), "", "canopyx-reporting");
   const cells = page.locator('[data-cx-footer="all"] [role="gridcell"]');
-  await expect(cells.last()).toHaveAccessibleName("Amount All matching records Sum: 100");
+  await expect(cells.last()).toHaveAccessibleName("Amount All matching records Sum 100");
   const indices = await page.locator('.cx-summary-row,.cx-footer-row').evaluateAll(rows => rows.map(row => Number(row.getAttribute("aria-rowindex"))));
   expect(new Set(indices).size).toBe(indices.length);
   const overlap = await page.evaluate(() => {
@@ -296,7 +319,7 @@ test("footer cells retain explicit column and scope associations alongside group
   expect(overlap).toBe(false);
   await page.evaluate(() => api.setColumnVisible("name", false));
   await expect(cells).toHaveCount(1);
-  await expect(cells).toHaveAccessibleName("Amount All matching records Sum: 100");
+  await expect(cells).toHaveAccessibleName("Amount All matching records Sum 100");
 });
 
 test("compact footer totals wait for the complete row dataset", async ({ page }) => {
@@ -314,16 +337,16 @@ test("compact footer totals wait for the complete row dataset", async ({ page })
     await expect(page.locator('.cx-footers')).toHaveCount(0);
   } finally { release(); }
   await mounting;
-  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum: 100");
-  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum: 30");
+  await expect(page.locator('[data-cx-footer="all"]')).toContainText("Sum 100");
+  await expect(page.locator('[data-cx-footer="page"]')).toContainText("Sum 30");
 });
 
 test("compact layouts retain totals of columns that are out of view", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await mount(page, view({ footers }));
   await page.evaluate(() => api.setColumnVisible("amount", false));
-  await expect(page.locator('[data-cx-footer="all"] .cx-footer-hidden')).toHaveText("Amount — Sum: 100");
-  await expect(page.locator('[data-cx-footer="page"] .cx-footer-hidden')).toHaveText("Amount — Sum: 30");
+  await expect(page.locator('[data-cx-footer="all"] .cx-footer-hidden')).toHaveText("Amount, Sum 100");
+  await expect(page.locator('[data-cx-footer="page"] .cx-footer-hidden')).toHaveText("Amount, Sum 30");
   await page.evaluate(() => api.nextPage());
-  await expect(page.locator('[data-cx-footer="page"] .cx-footer-hidden')).toHaveText("Amount — Sum: 70");
+  await expect(page.locator('[data-cx-footer="page"] .cx-footer-hidden')).toHaveText("Amount, Sum 70");
 });

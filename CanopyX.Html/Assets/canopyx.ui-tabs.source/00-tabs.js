@@ -72,13 +72,18 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
     to.panel.animate([{ opacity: 0, transform: slide ? 'translateX(calc(' + distance + ' * ' + sign + '))' : 'none' },
       { opacity: 1, transform: 'none' }], { duration: ms || 0, easing });
   }
+  // The fragment keeps what else it holds: a plain anchor (#section-2) and other tab sets' id=value pairs stay as written.
+  const hashKey = () => encodeURIComponent(root.id) + '=';
+  const hashParts = () => location.hash.slice(1).split('&').filter(Boolean);
   function hashId() {
-    try { return new URLSearchParams(location.hash.slice(1)).get(root.id); } catch { return null; }
+    const part = hashParts().find(item => item.startsWith(hashKey()));
+    try { return part ? decodeURIComponent(part.slice(hashKey().length).replace(/\+/g, ' ')) : null; } catch { return null; }
   }
   function writeHash(id) {
-    const params = new URLSearchParams(location.hash.slice(1)); params.set(root.id, id);
-    const hash = '#' + params.toString();
-    if (hash !== location.hash) history[options.hashHistory === 'push' ? 'pushState' : 'replaceState'](null, '', hash);
+    const parts = hashParts(), at = parts.findIndex(item => item.startsWith(hashKey())), value = hashKey() + encodeURIComponent(id);
+    if (at < 0) parts.push(value); else parts[at] = value;
+    const hash = '#' + parts.join('&');
+    if (hash !== location.hash) history[options.hashHistory === 'push' ? 'pushState' : 'replaceState'](history.state, '', hash);
   }
   function refresh() {
     if (destroyed) return;
@@ -138,6 +143,22 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
   if (options.hash) window.addEventListener('hashchange', () => {
     const target = n.resolve(items, hashId()); if (target && target !== current) select(target.id, 'hash');
   }, { signal: life.signal });
+  // A tab's badge, in the tab and its panel heading: text, a count in the page's number format, or null to remove it. The
+  // badge is part of the tab's name, so a count reads "Running 3"; More and the phone picker show the new badge too.
+  function setBadge(value, badge) {
+    const target = !destroyed && n.resolve(items, value);
+    if (!target) return false;
+    if (badge != null && typeof badge !== 'string' && !Number.isFinite(badge)) throw new TypeError('CanopyX: a tab badge is text, a number or null.');
+    const text = typeof badge === 'number' ? new Intl.NumberFormat(document.documentElement.lang || undefined).format(badge) : badge || '';
+    for (const owner of [target.element, target.panel?.querySelector('.cx-tabpanel-heading')].filter(Boolean)) {
+      let element = owner.querySelector('.cx-tab-badge');
+      if (!text) { if (element?.previousSibling?.nodeType === 3) element.previousSibling.remove(); element?.remove(); continue; }
+      if (!element) { element = h('span', 'cx-tab-badge'); element.dataset.cxPart = 'badge'; owner.append(' ', element); }
+      setText(element, text);
+    }
+    target.badge = text || undefined; layout?.update(items, current);
+    return true;
+  }
   function destroy() {
     if (destroyed) return;
     destroyed = true; life.abort(); auto?.destroy(); layout?.destroy(); deferred.destroy();
@@ -155,5 +176,5 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
   auto = UI_TOOLS.tabsAuto(root, list, options, labels, life, () => ({ items, current }),
     id => select(id, 'auto'), () => selection.cancel(), ready);
   signal?.addEventListener('abort', destroy, { once: true });
-  return { select, next: () => step(1), back: () => step(-1), getSelected: () => current?.id ?? null, refresh, preparePrint: () => deferred.preparePrint(), destroy, ready };
+  return { select, next: () => step(1), back: () => step(-1), getSelected: () => current?.id ?? null, refresh, setBadge, preparePrint: () => deferred.preparePrint(), destroy, ready };
 };

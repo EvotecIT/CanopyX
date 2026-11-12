@@ -53,7 +53,7 @@ for (const [language,labels,staticLabels] of packs) {
     const flow = manifest.parts.filter(part=>part.name==='flow'||part.name.startsWith('flow-'))
       .map(part=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',part.script),'utf8')).join('\n');
     const formatting = ['formatting','format-editor'].map(part=>fs.readFileSync(path.join(repo,`CanopyX.Html/Assets/canopyx-${part}.js`),'utf8')).join('\n');
-    const calendar = ['canopyx-calendar.js','canopyx-calendar-screen.js'].map(file=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',file),'utf8')).join('\n');
+    const calendar = ['canopyx-calendar.js','canopyx-calendar-screen.js','canopyx-calendar-recurrence.js'].map(file=>fs.readFileSync(path.join(repo,'CanopyX.Html/Assets',file),'utf8')).join('\n');
     const matrix = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-matrix.js'),'utf8');
     const changes = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-changes.js'),'utf8');
     const board = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-board.js'),'utf8');
@@ -63,10 +63,11 @@ for (const [language,labels,staticLabels] of packs) {
     const time = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-time-slider.js'),'utf8');
     const compare = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-compare.js'),'utf8');
     const viewIntents = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-view-intents.js'),'utf8');
+    const rowActions = fs.readFileSync(path.join(repo,'CanopyX.Html/Assets/canopyx-row-actions.js'),'utf8');
     expect(partNames.length).toBeGreaterThan(0);
     for (const name of partNames) {
-      if (!uiNames.has(name)) expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change|compare|viewIntent|board|plan|path|stack|time)[A-Z]/);
-      const definitions = uiNames.has(name)?overlays:/^compare/.test(name)?compare:/^viewIntent/.test(name)?viewIntents:/^path/.test(name)?pathView:/^stack/.test(name)?stack:/^time/.test(name)?time:/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:/^board/.test(name)?board:/^plan/.test(name)?plan:editing;
+      if (!uiNames.has(name)) expect(name).toMatch(/^(gridEdit|format|calendar|flow|matrix|change|compare|viewIntent|rowAction|board|plan|path|stack|time)[A-Z]/);
+      const definitions = uiNames.has(name)?overlays:/^compare/.test(name)?compare:/^viewIntent/.test(name)?viewIntents:/^rowAction/.test(name)?rowActions:/^path/.test(name)?pathView:/^stack/.test(name)?stack:/^time/.test(name)?time:/^format/.test(name)?formatting:/^calendar/.test(name)?calendar:/^flow/.test(name)?flow:/^matrix/.test(name)?matrix:/^change/.test(name)?changes:/^board/.test(name)?board:/^plan/.test(name)?plan:editing;
       expect(new RegExp('\\b'+name+':\\s?"').test(definitions), `${language}: lazy part defines ${name}`).toBe(true);
     }
     expect(await page.evaluate(code=>CanopyXLocales[code],language)).toEqual({labels,staticLabels});

@@ -79,19 +79,33 @@
         // Only the month (its rows and "+N more" follow the height) and a phone switch rebuild; other views follow by CSS.
         if (switched || this.calView === "month" || this.calTimeWindow || this.view.plan && this.calView === "timeline" && Math.abs((this.planFitWidth||0)-this.tlMain.clientWidth)>1) this.calPaint({ keep: true, resize: true });
         else if (this.calView === "timeline") this.tlPaintLanes?.();
-        else if (this.calScroller?.isConnected) this.calGrid.querySelector(".cx-cal-thead").style.paddingInlineEnd = Math.max(0, this.calScroller.offsetWidth - this.calScroller.clientWidth) + "px";
+        else {
+          if (this.calScroller?.isConnected) this.calGrid.querySelector(".cx-cal-thead").style.paddingInlineEnd = Math.max(0, this.calScroller.offsetWidth - this.calScroller.clientWidth) + "px";
+          this.calLabelContent();
+        }
       };
       const observer = new ResizeObserver(() => { if (!resizeFrame) resizeFrame = requestAnimationFrame(resize); });
       observer.observe(root);
+      // Host renderers can update retained content. Coalesce reads and ignore our own aria-label writes.
+      const labels = this.calLabelObserver = new MutationObserver(records => {
+        if (!this.destroyed && !this.calLabelFrame && records.some(record => record.attributeName !== "aria-label")) this.calLabelFrame = requestAnimationFrame(() => {
+          this.calLabelFrame = 0;
+          if (!this.destroyed && root.isConnected) this.calLabelContent();
+        });
+      });
+      labels.observe(root, { subtree: true, childList: true, characterData: true, attributes: true });
       host.classList.toggle("cx-cal-phone", this.calPhone);
       const timer = setInterval(() => { if (!this.destroyed && this.cal.now) this.calTick?.(); }, 60000);
       // Print: the month shows every event, the time grid every hour, and the timeline writes its static copy.
       const print = on => { if (this.destroyed || !this.calRange) return; this.calPrinting = on; host.classList.toggle("cx-cal-printing", on); this.tlPrint?.(on); if (this.calView !== "timeline") this.calPaint({ keep: true, resize: true }); };
       global.addEventListener("beforeprint", () => print(true), { signal }); global.addEventListener("afterprint", () => print(false), { signal });
       signal.addEventListener("abort", () => {
-        observer.disconnect(); cancelAnimationFrame(resizeFrame); clearInterval(timer); clearTimeout(this.calAnnounceTimer); this.calPrevLifetime?.abort();
+        observer.disconnect(); labels.disconnect(); this.calLabelObserver = null;
+        cancelAnimationFrame(resizeFrame); cancelAnimationFrame(this.calLabelFrame); this.calLabelFrame = 0;
+        clearInterval(timer); clearTimeout(this.calAnnounceTimer); this.calPrevLifetime?.abort();
         this.calCancelGesture?.(); this.calDragEnd?.(null, true); this.calStopMoving?.(); if (this.calDropDrag) this.calDropClear?.();
         this.calDisposeEventRenderers();
+        this.calCloseMore(false);
         this.calMenuBinding?.(); this.calMenuBinding = null;
         root.remove(); host.classList.remove("cx-calendar", "cx-cal-phone", "cx-cal-bare", "cx-cal-rtl", ...CAL_TOOLBAR.map(item => "cx-cal-no-" + item)); this.calHideHover(); this.calCloseDetails(false); this.calCloseCreate?.(false); this.calCloseAsk?.(null); this.calCloseOccurrence?.(false); host.removeAttribute("data-cx-event-style"); host.removeAttribute("data-cx-calendar-ready");
       }, { once: true });

@@ -74,7 +74,7 @@ public static partial class CanopyStaticHtml {
                     || paint?.Tone.Name != null || paint?.Css?.ContainsKey("color") == true || outcome?.Row?.Css?.ContainsKey("color") == true;
                 html.Append(" style=\"").Append(inheritsColor ? "color:inherit;" : styles.Link).Append("\">");
             }
-            if (template != null || !AppendComparisonCell(html, text, view, row, column, cell))
+            if (template != null || !AppendComparisonCell(html, text, view, row, column, cell) && !AppendPresenterBlock(html, column, cell, displayed, text))
                 AppendVisibleText(html, displayed, text);
             if (link) html.Append("</a>");
             if (template == null && cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);

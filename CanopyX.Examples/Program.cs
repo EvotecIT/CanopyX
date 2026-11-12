@@ -46,6 +46,7 @@ if (args.Contains("--ui-primitives")) {
     return;
 }
 var clock = Stopwatch.StartNew();
+if (args.Contains("--fonts")) { FontDeliveryExample.Write(output); return; }
 if (args.Contains("--shared-tokens")) {
     SharedTokensExample.Write(output);
     return;
@@ -84,12 +85,14 @@ if (searchBench) {
 }
 
 if (args.Contains("--grid-footers")) { GridFootersExample.Write(output); return; }
+if (args.Contains("--scheduler-console")) { SchedulerConsoleExample.Write(output); return; }
 
 var smallTree = new SyntheticFileTree();
 var inline = ExampleViews.FileShares("files-inline", smallTree.Build(shares: 4, departments: 5, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 240));
 inline.SaveHtmlPage(Path.Combine(output, "inline.html"), new CanopyHtmlOptions { Title = "CanopyX inline file shares" });
 Report($"inline.html: {smallTree.NodeCount:N0} nodes");
 InventoryGridExample.Write(output);
+FontDeliveryExample.Write(output);
 SharedTokensExample.Write(output);
 ThemeProofExample.Write(output);
 OrdinalGridExample.Write(output);
@@ -112,7 +115,10 @@ GridPolishExample.Write(output);
 OfficeExportExample.Write(output);
 GraphiteGridExample.Write(output);
 ServiceStatusExample.Write(output);
+ScheduledJobsExample.Write(output);
+SchedulerConsoleExample.Write(output);
 WideTreeExample.Write(output);
+RtlExample.Write(output);
 RunsGridExample.Write(output);
 RunsBoardExample.Write(output);
 ScoresGridExample.Write(output);
@@ -141,6 +147,7 @@ BoardExample.Write(output);
 PlanExample.Write(output);
 PathExample.Write(output);
 StackExample.Write(output);
+RowActionsExample.Write(output);
 TimeSliderExample.Write(output);
 CalendarCertificatesExample.Write(output);
 CalendarLinkedExample.Write(output);
@@ -230,7 +237,7 @@ static bool FlagLarge(CanopyX.CanopyNode node) {
 static void Report(FormattableString message) => Console.WriteLine(message.ToString(CultureInfo.InvariantCulture));
 
 static void WriteTemplate(string name, string path, string content, CanopyRuntime runtime = CanopyRuntime.TreeGrid) {
-    File.WriteAllText(path, ReadTemplate(name).Replace("{{content}}", content)
+    File.WriteAllText(path, ReadTemplate(name).Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{content}}", content)
         .Replace("{{example-style}}", ReadTemplate("examples.css"))
         .Replace("{{style}}", CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.ContentHash, runtime))
         .Replace("{{script}}", CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, runtime)), new UTF8Encoding(false));

@@ -9,11 +9,13 @@
       cols.forEach((column) => setText(head.appendChild(h("th")), column.title));
       table.appendChild(h("thead")).appendChild(head);
       table.appendChild(body);
+      // Email clients and Word ignore logical properties, so the indent is a physical side chosen by the tree's direction.
+      const side = getComputedStyle(this.grid).direction === "rtl" ? "paddingRight" : "paddingLeft";
       this.rows.forEach((w) => {
         if (w.status) {
           return;
         }
-        const tr = body.appendChild(h("tr")), indent = (td) => { td.style.paddingLeft = ((w.level - 1) * 14 + 4) + "px"; return td; };
+        const tr = body.appendChild(h("tr")), indent = (td) => { td.style[side] = ((w.level - 1) * 14 + 4) + "px"; return td; };
         if (w.h.detail) {
           // The print copy shows a detail's html as text (renderDetail's plain mode).
           const td = indent(tr.appendChild(h("td")));

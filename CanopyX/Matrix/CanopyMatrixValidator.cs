@@ -46,6 +46,7 @@ internal static class CanopyMatrixValidator {
                 throw new InvalidOperationException("A cell value is a finite number within the safe-integer magnitude.");
             Text(cell.Text, "A cell's text", 64, true);
             Text(cell.Title, "A cell's title", 1000, true);
+            if (cell.Href != null && !SafeHref(cell.Href)) throw new InvalidOperationException("The link of the cell of '" + cell.Row + "' and '" + cell.Column + "' is not an http, https, mailto or relative address.");
             if (cell.Details.Count > 16) throw new InvalidOperationException("A cell lists at most 16 details.");
             foreach (var detail in cell.Details) {
                 Text(detail.Key, "A detail label", 200, false);

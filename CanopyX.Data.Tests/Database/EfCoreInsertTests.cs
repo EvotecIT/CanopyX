@@ -16,7 +16,7 @@ public sealed class EfCoreInsertTests : IDisposable {
     private (CanopyRemoteHandler Handler, FleetDb Db) Handler(Action<CanopyQueryableWriterOptions<Host>, FleetDb>? configure = null, Func<FleetDb, ICanopyWriteStore<Host>>? store = null) {
         var map = Fleet.Map(Fleet.EditableView());
         var db = _sqlite.Create();
-        var options = new CanopyQueryableWriterOptions<Host> { NewRecord = _ => new Host { OwnerId = 1 } };
+        var options = new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true, NewRecord = _ => new Host { OwnerId = 1 } };
         configure?.Invoke(options, db);
         var writeStore = store?.Invoke(db) ?? new EfCoreWriteStore<Host>(db);
         var writer = new CanopyQueryableWriter<Host>(map, writeStore, options);

@@ -43,14 +43,18 @@ public static class CanopyRemoteEndpointExtensions {
     /// <param name="pattern">The route prefix, for example <c>/api/hosts</c>.</param>
     /// <param name="query">Returns the base query for a request, already restricted to what the caller may see.</param>
     /// <param name="map">The column allow-list.</param>
-    /// <param name="configure">Adjusts limits, export formats and query options.</param>
+    /// <param name="configure">Adjusts limits, export formats, query options and the writer.</param>
     /// <returns>The route group, for authorization and other conventions.</returns>
+    /// <exception cref="InvalidOperationException">The view allows regex search, which a query provider cannot translate, or
+    /// the writer is configured twice or for another record type.</exception>
     public static RouteGroupBuilder MapCanopyRemote<T>(this IEndpointRouteBuilder endpoints, string pattern, Func<HttpContext, IQueryable<T>> query,
         CanopyColumnMap<T> map, Action<CanopyRemoteEndpointOptions>? configure = null) {
         if (query == null) throw new ArgumentNullException(nameof(query));
         if (map == null) throw new ArgumentNullException(nameof(map));
+        RefuseRegexSearch(map.Schema);
         var options = new CanopyRemoteEndpointOptions();
         configure?.Invoke(options);
+        BindQueryableWriter(options, map, query);
         var queryOptions = options.Query;
         return Map(endpoints, pattern, map.Schema, context => new CanopyQueryableProvider<T>(() => query(context), map, queryOptions), options);
     }
@@ -64,17 +68,20 @@ public static class CanopyRemoteEndpointExtensions {
     /// lookups compose on it too, so a record outside the caller's scope is not found.</param>
     /// <param name="records">The record allow-list; its <see cref="CanopyRecordMap{T}.Columns"/> is the column allow-list of the
     /// grid routes.</param>
-    /// <param name="configure">Adjusts limits, export formats, query options and the record read check.</param>
+    /// <param name="configure">Adjusts limits, export formats, query options, the writer and the record read check.</param>
     /// <returns>The route group, for authorization and other conventions.</returns>
-    /// <exception cref="InvalidOperationException"><paramref name="configure"/> also sets <see cref="CanopyRemoteEndpointOptions.Records"/>.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="configure"/> also sets <see cref="CanopyRemoteEndpointOptions.Records"/>;
+    /// the view allows regex search, which a query provider cannot translate; or the writer is configured twice or for another record type.</exception>
     public static RouteGroupBuilder MapCanopyRemote<T>(this IEndpointRouteBuilder endpoints, string pattern, Func<HttpContext, IQueryable<T>> query,
         CanopyRecordMap<T> records, Action<CanopyRemoteEndpointOptions>? configure = null) {
         if (query == null) throw new ArgumentNullException(nameof(query));
         if (records == null) throw new ArgumentNullException(nameof(records));
         var map = records.Columns;
+        RefuseRegexSearch(map.Schema);
         var options = new CanopyRemoteEndpointOptions();
         configure?.Invoke(options);
         if (options.Records != null) throw new InvalidOperationException("The record map already supplies the record provider; do not set Records as well.");
+        BindQueryableWriter(options, map, query);
         var queryOptions = options.Query;
         _ = records.Schema;
         options.Records = context => new CanopyQueryableRecordProvider<T>(() => query(context), records, queryOptions);
@@ -85,15 +92,42 @@ public static class CanopyRemoteEndpointExtensions {
     /// <param name="endpoints">The route builder.</param>
     /// <param name="pattern">The route prefix.</param>
     /// <param name="schema">The column allow-list.</param>
-    /// <param name="provider">Returns the provider for a request.</param>
+    /// <param name="provider">Returns a new provider for each request. The endpoint disposes a provider that is
+    /// <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/> when the response completes, so do not return a shared
+    /// disposable instance.</param>
     /// <param name="configure">Adjusts limits and export formats.</param>
     /// <returns>The route group, for authorization and other conventions.</returns>
+    /// <exception cref="InvalidOperationException"><see cref="CanopyRemoteEndpointOptions.UseQueryableWriter{T}"/> was used: it
+    /// needs the query callback of an <see cref="IQueryable{T}"/> overload.</exception>
     public static RouteGroupBuilder MapCanopyRemote(this IEndpointRouteBuilder endpoints, string pattern, CanopyDataSchema schema,
         Func<HttpContext, ICanopyDataProvider> provider, Action<CanopyRemoteEndpointOptions>? configure = null) {
         if (provider == null) throw new ArgumentNullException(nameof(provider));
         var options = new CanopyRemoteEndpointOptions();
         configure?.Invoke(options);
+        if (options.QueryableWriter != null)
+            throw new InvalidOperationException("UseQueryableWriter scopes writes by the grid's query callback; use an IQueryable overload of MapCanopyRemote, or set Writer.");
         return Map(endpoints, pattern, schema, provider, options);
+    }
+
+    /// <summary>Regex quick search runs in memory only; a query callback is translated, so it could never answer one.</summary>
+    private static void RefuseRegexSearch(CanopyDataSchema schema) {
+        if (schema.AllowRegexSearch)
+            throw new InvalidOperationException("The view allows regex search, which a query provider cannot translate. Turn AllowRegexSearch off, or serve the grid with a provider that implements it (CanopyInMemoryProvider<T> or your own).");
+    }
+
+    private static void BindQueryableWriter<T>(CanopyRemoteEndpointOptions options, CanopyColumnMap<T> map, Func<HttpContext, IQueryable<T>> query) {
+        if (options.QueryableWriter == null) return;
+        if (options.Writer != null) throw new InvalidOperationException("Set either Writer or UseQueryableWriter, not both.");
+        if (!(options.QueryableWriter is Func<CanopyColumnMap<T>, Func<HttpContext, IQueryable<T>>, Func<HttpContext, ICanopyDataWriter>> bind))
+            throw new InvalidOperationException("UseQueryableWriter names another record type than the grid's query.");
+        options.Writer = bind(map, query);
+    }
+
+    /// <summary>Instances a per-request factory creates belong to the request: they are disposed when the response completes.</summary>
+    internal static TInstance Owned<TInstance>(HttpContext context, TInstance instance) where TInstance : class {
+        if (instance is IAsyncDisposable asynchronous) context.Response.RegisterForDisposeAsync(asynchronous);
+        else if (instance is IDisposable disposable) context.Response.RegisterForDispose(disposable);
+        return instance;
     }
 
     private static RouteGroupBuilder Map(IEndpointRouteBuilder endpoints, string pattern, CanopyDataSchema schema, Func<HttpContext, ICanopyDataProvider> provider,
@@ -108,12 +142,15 @@ public static class CanopyRemoteEndpointExtensions {
             var logger = endpoints.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger("CanopyX.AspNetCore");
             if (logger != null) options.Remote.WriterProblem = problem => logger.LogWarning("A CanopyX commit answer was corrected: {Problem}", problem);
         }
+        var createProvider = provider;
+        provider = context => Owned(context, createProvider(context));
         var group = endpoints.MapGroup(pattern);
         if (!options.AllowAnonymous) {
             if (options.AuthorizationPolicy == null) group.RequireAuthorization(); else group.RequireAuthorization(options.AuthorizationPolicy);
         }
         if (options.Writer != null) {
-            var writer = options.Writer;
+            var createWriter = options.Writer;
+            Func<HttpContext, ICanopyDataWriter> writer = context => Owned(context, createWriter(context));
             var anonymousWrites = options.AllowAnonymousWrites;
             var commit = group.MapPost("/commit", (RequestDelegate)(context => {
                 // AllowAnonymous on the group (or the route) makes authorization skip the write policy; writes then refuse
@@ -125,7 +162,8 @@ public static class CanopyRemoteEndpointExtensions {
             if (writePolicy != null) commit.RequireAuthorization(writePolicy);
         }
         if (options.Records != null) {
-            var records = options.Records;
+            var createRecords = options.Records;
+            Func<HttpContext, ICanopyRecordProvider> records = context => Owned(context, createRecords(context));
             var canRead = options.CanReadRecordField;
             Task Record(HttpContext context) {
                 Func<string, bool>? check = canRead == null ? null : id => canRead(context, id);

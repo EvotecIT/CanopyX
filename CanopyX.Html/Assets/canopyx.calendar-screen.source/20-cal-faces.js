@@ -68,9 +68,9 @@
         const group = h("span", "cx-cal-faces");
         if (faces.length > 1) group.dataset.cxMore = "+" + (faces.length - 1);
         group.setAttribute("aria-hidden", "true");
-        for (const item of faces.slice(0, faces.length > CAL_FACES_SHOWN ? CAL_FACES_SHOWN - 1 : CAL_FACES_SHOWN)) group.appendChild(calFaceElement(item.face, item.label, item.color));
+        for (const item of faces.slice(0, faces.length > CAL_FACES_SHOWN ? CAL_FACES_SHOWN - 1 : CAL_FACES_SHOWN)) group.append(calFaceElement(item.face, item.label, item.color), " ");
         if (faces.length > CAL_FACES_SHOWN) { const more = h("span", "cx-cal-face cx-cal-face-more"); setText(more, "+" + (faces.length - CAL_FACES_SHOWN + 1)); group.appendChild(more); }
-        element.prepend(group); element.classList.add("cx-cal-faced");
+        element.prepend(group, " "); element.classList.add("cx-cal-faced");
       }
       this.calMarkPast(element);
       return element;

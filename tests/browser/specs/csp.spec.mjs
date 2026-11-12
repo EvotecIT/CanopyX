@@ -14,8 +14,8 @@ const PLACEHOLDER = "CANOPYXNONCE";
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json" };
 // The policy in the brief, and a stricter one without 'self', under which every inserted element needs the nonce.
 const POLICIES = {
-  "self and nonce": nonce => `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'; object-src 'none'; base-uri 'none'`,
-  "nonce only": nonce => `default-src 'self'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; object-src 'none'; base-uri 'none'`
+  "self and nonce": nonce => `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'`,
+  "nonce only": nonce => `default-src 'self'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; font-src 'self' data:; object-src 'none'; base-uri 'none'`
 };
 const TRUSTED_TYPES = nonce => POLICIES["nonce only"](nonce) + "; require-trusted-types-for 'script'; trusted-types canopyx";
 
@@ -86,6 +86,32 @@ async function exerciseGrid(page, root = page.locator(".cx-data-grid").first()) 
   const csv = await root.evaluate(element => element.closest("[data-canopyx-host]").canopyx.toCsv({ scope: "filtered" }));
   expect(csv.split("\r\n")[0]).toContain("Record");
 }
+
+for (const nonceOwner of ['runtime', 'setNonce']) test(`grid print applies its stylesheet with an unnonced font link and ${nonceOwner}`, async ({ page }) => {
+  const nonce = 'canopy-print-nonce';
+  await page.addInitScript(() => { window.print = () => {
+    window.parent.printedStyle = {
+      nonce: document.querySelector('style').nonce,
+      display: getComputedStyle(document.querySelector('.cx-print-cards')).display,
+      fontNonce: document.querySelector('link[data-font-source]').nonce
+    };
+  }; });
+  const report = await serve(page, () => POLICIES['self and nonce'](nonce), {
+    transform: html => nonceOwner === 'runtime' ? html.replace('<script src=', `<script nonce="${nonce}" src=`) : html
+  });
+  await page.goto(ORIGIN + '/fonts/hashed.html');
+  await page.waitForSelector('[data-cx-ready]');
+  if (nonceOwner === 'setNonce') await page.evaluate(nonce => CanopyX.setNonce(nonce), nonce);
+  await page.evaluate(async () => {
+    const host = document.querySelector('[data-canopyx-host]'), original = host.canopyx, view = structuredClone(original.view);
+    view.layout = { mode: 'cards' }; original.destroy(); host.replaceChildren();
+    const grid = CanopyX.createDataGrid(host, { view }); await grid.ready;
+    await grid.print({ scope: 'all' });
+  });
+  expect(await page.evaluate(() => window.printedStyle)).toEqual({ nonce, display: 'grid', fontNonce: '' });
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expectClean(page, report);
+});
 
 for (const [label, policy] of Object.entries(POLICIES)) {
   test.describe(`under a strict policy (${label})`, () => {

@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <PackageVersion>0.4.5</PackageVersion>
     <TargetFrameworks>net472;netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -16,10 +17,10 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>CanopyX.Html</PackageId>
-    <Version>0.4.0</Version>
+    <Version>0.4.5</Version>
     <Authors>Evotec</Authors>
     <Description>Self-contained tree and flat-grid browser runtimes with virtual rows, typed query controls, saved views, scoped exports, host data sources, and theme CSS, plus page, fragment, tree bundle, and asset writers.</Description>
-    <PackageReleaseNotes>Reporting grids gain optional ChartForgeX charts, linked filters, chart-cell presenters and semantic pivot selection. Filtered pivots export to Excel and PDF through OfficeIMO, preserving typed values, outlines and repeated print headers.</PackageReleaseNotes>
+    <PackageReleaseNotes>Automatic columns remeasure after web fonts load. Binary versions follow the published package version automatically, and release archives include signed copied dependencies.</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>tree-grid;treegrid;treeview;data-grid;virtualization;lazy-loading;data-views;html;javascript;reports;zero-dependency;aot;trimming</PackageTags>
@@ -50,5 +51,7 @@
     <!-- Every runtime entry point, every part of Build/parts.json and the part manifest; the label packs ship as .NET factories. -->
     <EmbeddedResource Include="Assets\canopyx.js;Assets\canopyx.css;Assets\canopyx-*.js;Assets\canopyx-*.css;Assets\canopyx-parts.json" Exclude="Assets\canopyx-labels-*.js" LogicalName="CanopyX.Html.Assets.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Assets\page.html" LogicalName="CanopyX.Html.Assets.page.html" />
+    <EmbeddedResource Include="Assets\Fonts\*.woff2;Assets\Fonts\*.css;Assets\Fonts\OFL-*.txt" LogicalName="CanopyX.Html.Assets.Fonts.%(Filename)%(Extension)" />
+    <None Update="Assets\Fonts\OFL-*.txt;Assets\Fonts\font-sources.json" Pack="true" PackagePath="licenses\fonts" />
   </ItemGroup>
 </Project>

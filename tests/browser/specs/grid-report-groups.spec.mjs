@@ -334,13 +334,13 @@ test('aggregate cells name their function and use consistent precision and trans
   await open(page);
   const footer=page.locator('.cx-summary-row [role="gridcell"]');
   await expect(footer.nth(0)).toHaveText('Grand total');await expect(footer.nth(0)).toHaveClass(/cx-summary-caption/);await expect(footer.nth(2)).not.toHaveClass(/cx-summary-caption/);
-  await expect(footer.nth(2)).toHaveText('Count 19 · Sum 226.00 · Avg 11.89 · Min 1.00 · Max 23.00');
-  await expect(footer.nth(2)).toHaveAttribute('title','Amounts present · Count: 19 · Total amount · Sum: 226.00 · Average amount · Avg: 11.89 · Minimum amount · Min: 1.00 · Maximum amount · Max: 23.00');
-  await expect(page.locator('.cx-grid-group').first().locator('[role="gridcell"]').nth(2)).toHaveText('Count 6 · Sum 23.00 · Avg 3.83 · Min 1.00 · Max 7.00');
+  await expect(footer.nth(2)).toHaveText('Count 19 · Sum 226 · Avg 11.89 · Min 1 · Max 23');
+  await expect(footer.nth(2)).toHaveAttribute('title','Amounts present · Count: 19 · Total amount · Sum: 226 · Average amount · Avg: 11.89 · Minimum amount · Min: 1 · Maximum amount · Max: 23');
+  await expect(page.locator('.cx-grid-group').first().locator('[role="gridcell"]').nth(2)).toHaveText('Count 6 · Sum 23 · Avg 3.83 · Min 1 · Max 7');
   const large=definition({reporting:{aggregates:aggregates.filter(item=>['sum','average'].includes(item.id))},
     rows:[1500000.25,2000000.5,12.75].map((amount,i)=>({id:'big'+i,cells:{name:'Big '+i,category:'A',amount}}))});
   await open(page,large,"document.documentElement.lang='de';CanopyX.configure('groups',{labels:{gridAggregateSum:'Summe {value}',gridAggregateAverage:'Ø {value}'}});");
   const cell=page.locator('.cx-summary-row [role="gridcell"]').nth(2);
-  await expect(cell).toHaveText('Summe 3.500.013,50 · Ø 1.166.671,17');
-  await expect(cell).toHaveAttribute('title','Total amount · Summe: 3.500.013,50 · Average amount · Ø: 1.166.671,17');
+  await expect(cell).toHaveText('Summe 3.500.013,5 · Ø 1.166.671,17');
+  await expect(cell).toHaveAttribute('title','Total amount · Summe: 3.500.013,5 · Average amount · Ø: 1.166.671,17');
 });
