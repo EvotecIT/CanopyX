@@ -143,7 +143,8 @@ public sealed class RuntimeAssetTests {
         // Reserve 64 bytes for the describeCalendarRecurrence method name that loads the recurrence part on first use.
         // Reserve 224 bytes for the no-matches reasons that name the search, the filters or both, the Clear search label,
         // the deprecated reason label older documents still carry, and the summary focus kept across the empty state.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384 + 64 + 224);
+        // Reserve 96 bytes for measuring purely numeric runs from cached single-glyph widths.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384 + 64 + 224 + 96);
     }
 
     [Fact]
@@ -157,7 +158,8 @@ public sealed class RuntimeAssetTests {
         // Reserve 384 bytes for the same activity presenter shell.
         // Reserve 96 bytes for stacked identifier text in two-line rows and the actions column's hidden header text.
         // Reserve 192 bytes for the same no-matches reasons, Clear search label, deprecated label and summary focus.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192 + 320 + 384 + 96 + 192);
+        // Reserve 96 bytes for the same numeric-run measurement.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192 + 320 + 384 + 96 + 192 + 96);
     }
 
     [Fact]
