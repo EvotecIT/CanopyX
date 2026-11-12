@@ -65,8 +65,13 @@
         catch (error) { this.emit("error", { error }); element.textContent = ""; }
       }
       const time = h("span", "cx-cal-ev-time"), title = h("span", "cx-cal-ev-title");
-      if (!event.allDay && kind !== "bar" && kind !== "lane") { setText(time, kind === "item" ? this.calTimeText(event, day) : this.calFmt.time(event.start)); element.append(time, " "); }
-      setText(title, event.title); element.appendChild(title);
+      setText(title, event.title);
+      // A month line leads with its title and follows it with a compact start time.
+      if (kind === "chip") { element.appendChild(title); if (!event.allDay) { setText(time, this.calFmt.shortTime(event.start)); element.append(" ", time); } }
+      else {
+        if (!event.allDay && kind !== "bar" && kind !== "lane") { setText(time, kind === "item" ? this.calTimeText(event, day) : this.calFmt.time(event.start)); element.append(time, " "); }
+        element.appendChild(title);
+      }
       if (assignments.length > 1) { const shared = h("span", "cx-cal-shared"); setText(shared, calCount(this, this.calLabels.calendarSharedResources, assignments.length, { resources: this.calLabels.calendarResources.toLocaleLowerCase(this.lang) })); shared.setAttribute("aria-hidden", "true"); element.append(" ", shared); }
       if (kind === "block" || kind === "item" || kind === "lane") {
         if (event.subtitle) { const subtitle = h("span", "cx-cal-ev-sub"); setText(subtitle, event.subtitle); element.append(" ", subtitle); }
@@ -147,9 +152,10 @@
         const items = [...list.children], at = items.indexOf(document.activeElement);
         if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); this.calCloseMore(true); }
         else if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); items[Math.max(0, Math.min(items.length - 1, at + (event.key === "ArrowDown" ? 1 : -1)))]?.focus(); }
-        else if (event.key === "Tab") { event.preventDefault(); (document.activeElement === close ? items[0] : close).focus(); }
-      });
-      panel.addEventListener("click", event => {
+        // The list is not modal: Tab moves between Close and the events as the page order has them, and Tab out of the
+        // list closes it, back on "+N more".
+        else if (event.key === "Tab" && (event.shiftKey ? document.activeElement === close : at >= 0)) { event.preventDefault(); this.calCloseMore(true); }
+      });      panel.addEventListener("click", event => {
         const element = event.target.closest(".cx-cal-ev");
         if (element) this.calOpenEvent(element._calEvent, event.detail === 0, element).catch(error => this.emit("error", { error }));
       });
@@ -161,9 +167,9 @@
     calCloseMore(restore) {
       const panel = this.calMore;
       if (!panel) return;
-      this.calMore = null; document.removeEventListener("pointerdown", this.calMoreOutside, true);
-      panel.remove();
-      if (restore && panel._calAnchor?.isConnected) panel._calAnchor.focus({ preventScroll: true });
+      this.calMore = null; document.removeEventListener("pointerdown", this.calMoreOutside, true); this.calMoreOutside = null;
+      const anchor = panel._calAnchor; panel._calAnchor = null; panel.remove();
+      if (restore && anchor?.isConnected) anchor.focus({ preventScroll: true });
     },
 
     /** Marks the events whose records another view highlights (linked views), and announces how many. */

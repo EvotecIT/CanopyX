@@ -5,4 +5,6 @@
     createDataGrid, h, setText, gridQueryRows, gridCompare, gridResultShape, isIdentifier, GRID_REPORTING, loadPart, GRID_PAGER }));
   // The enhance part loads the pager part itself, after a table has left the page, so the pager stylesheet does not restyle it.
   const gridEnhancer = table => (target, options) => loadPart(GRID_ENHANCE).then(() => GRID_ENHANCE_IMPL.create(target, options, table));
-  const GRID_API = { createDataGrid, createCalendar, enhance: gridEnhancer(true), grid: gridEnhancer(false) };
+  // A table marked data-view="matrix" becomes a matrix instead (53-matrix-shell.js).
+  const GRID_API = { createDataGrid, createCalendar, enhance: (target, options) => matrixTable(target) ? enhanceMatrix(target, options) : gridEnhancer(true)(target, options),
+    grid: gridEnhancer(false) };

@@ -67,8 +67,8 @@ app.MapCanopyRemote("/api/machines", http => http.RequestServices.GetRequiredSer
 
 // 4. The page: the grid plus the script that points its source at the endpoints.
 app.MapGet("/machines", () => Results.Content(
-    view.ToHtmlPage(new CanopyHtmlOptions { Title = "Machines" })
-        .Replace("</head>", CanopyRemoteScript.Element(map.Schema, "/api/machines") + "</head>"), "text/html"));
+    view.ToHtmlPage(new CanopyHtmlOptions { Title = "Machines", HeadHtml = CanopyRemoteScript.Element(map.Schema, "/api/machines") }),
+    "text/html"));
 ```
 
 For a page with a nonce-based Content Security Policy, pass the response's nonce to both `CanopyHtmlOptions.Nonce`
@@ -145,12 +145,15 @@ and export to the server without changing what readers see:
 | `POST {pattern}/range` | `gridRangeQuery` document | `gridRangePage` (400 `unsupported` when the provider has no range capability) |
 | `POST {pattern}/export/{format}` | the grid's export request (`scope`, `query`, `revision`, `selection`, `querySelection`, `columns`, `values`, …) | the file, streamed |
 | `GET {pattern}/view` | | the `grid` definition document |
-| `POST {pattern}/commit` (with `options.Writer`) | `gridCommit` document | `gridCommitResult` |
+| `POST {pattern}/commit` (with `options.UseQueryableWriter` or `options.Writer`) | `gridCommit` document | `gridCommitResult` |
 | `POST {pattern}/record` (with a record map or `options.Records`) | `gridRecordQuery` document | `gridRecord` (404 `recordNotFound` when the caller has no such record) |
 
 The GET form is off by default because query strings reach access logs, proxies and referrers. POST bodies must be `application/json` (or `+json`); other content types get 415, which also means cross-origin pages
 cannot post without passing a CORS preflight. Responses carry `Cache-Control: no-store` and `X-Content-Type-Options: nosniff`.
 Every handler observes `HttpContext.RequestAborted`; the token flows into the provider and the database command.
+Factories run per request (`provider`, `options.Writer`, `options.Records`, and the store of `UseQueryableWriter`): the
+endpoint disposes an instance that is `IDisposable` or `IAsyncDisposable` when the response completes, so return a new
+instance each time rather than a shared disposable one.
 
 Outside ASP.NET Core, use `CanopyRemoteHandler` directly: `QueryAsync(json)`, `FacetAsync(json)`, `SummaryAsync(json)`, `RangeAsync(json)`,
 `PrepareExportAsync(json, format)`, with a writer (`new CanopyRemoteHandler(schema, provider, options, writer)`)
@@ -201,7 +204,7 @@ returned by the column descriptors do not change the endpoint contract; create a
 | Text comparison | | Case-insensitive; see [Text, numbers and dates](#text-numbers-and-dates). |
 | Quick search | `search`, `searchMode` | Substring and all-words (quoted phrases) over the searchable columns. |
 | Value lists | `gridFacetQuery` → `gridFacetPage` | Full: case-insensitive buckets, counts over the complete query, value search, `includeCurrentFilter: false` projection, deterministic order, ≤ 200 buckets. |
-| Grouping and aggregates | `source.summary` → `gridSummary` | Full: a fixed grouping or up to four runtime `groupBy` levels (ordered by value or by an aggregate), nested groups with absolute ranges and keys unique across levels, `count`/`distinctCount`/`sum`/`average`/`minimum`/`maximum`; pages and exports read group by group. Custom aggregates need a provider of your own (see [Grouping levels](#grouping-levels)). |
+| Grouping and aggregates | `source.summary` → `gridSummary` | Full: a fixed grouping or up to four runtime `groupBy` levels (ordered by value or by an aggregate), nested groups with absolute ranges and keys unique across levels, `count`/`distinctCount`/`sum`/`average`/`minimum`/`maximum`; pages and exports read group by group. `median`/`percentile` in memory and in pivots only. Custom aggregates need a provider of your own (see [Grouping levels](#grouping-levels)). |
 | Editing | `gridCommit` → `gridCommitResult` | Full with a writer: editable columns only, values checked again with the view's validation, rows saved independently (or all or nothing), conflicts from original values, the new revision (see [Saving edits](#saving-edits)). |
 | Record details | `gridRecordQuery` → `gridRecord` | Full with a record map or provider: record fields, columns' drawer values (`cells`), the row, collections that page with totals, timelines, change lists and links to related records (see [Record details](#record-details)). |
 | Range queries | `gridRangeQuery` → `gridRangePage` | Full with the built-in providers: the records that overlap a UTC window after the query's criteria, recurring series, resource restriction, start order, `matched` and `truncated` (see [Range queries](#range-queries)). |
@@ -220,7 +223,7 @@ the empty string is a value, and dates compare as UTC instants at millisecond pr
 LINQ to objects implement them exactly (`CanopyTextFolding` is the shared folding). Databases get the closest translation:
 
 - **Text.** `CanopyQueryOptions.TextComparison`: `Lowercase` (the default for database providers) compares `LOWER(column)`
-  with the lowercased operand, which folds ASCII on SQLite and as far as the database's `LOWER` goes elsewhere; `Collation`
+  with the operand lowered invariantly (in memory the column is lowered invariantly too), which folds ASCII on SQLite and as far as the database's `LOWER` goes elsewhere; `Collation`
   leaves case to a case-insensitive column collation and keeps index seeks; `Canonical` is the exact in-memory rule.
   Wildcard characters (`%`, `_`, `[`) in operands match literally: operands are parameters to `Contains`/`StartsWith`,
   which the LINQ provider escapes.
@@ -246,7 +249,9 @@ LINQ to objects implement them exactly (`CanopyTextFolding` is the shared foldin
   On .NET Framework, request readers normalize exactly representable decimal JSON spellings before converting them;
   number texts outside decimal's precision or range retain the platform JSON parser's rounding.
 - **Dates** become half-open bounds: `eq t` is `t ≤ v < t + 1 ms`, `gt t` is `v ≥ t + 1 ms`. Store UTC; `DateTime` values
-  without a kind are read as UTC. In-memory ordering compares UTC milliseconds and breaks ties by record identity.
+  without a kind are read as UTC. In memory, a `DateTime` of kind `Local` is filtered, sorted and grouped as the UTC instant
+  its cell shows; databases do not keep the kind, so a store that holds local times is compared as if they were UTC.
+  In-memory ordering compares UTC milliseconds and breaks ties by record identity.
   Database ordering requires an explicit `SortBy` mapping whose values have the same ordering and ties, usually an indexed
   UTC millisecond key. Mapping the timestamp itself is appropriate only when the store guarantees whole milliseconds.
   Without that mapping, date sorts return `unsupported` before querying or preparing an export. No client-side full-table sort is used.
@@ -291,6 +296,19 @@ view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("os"));
   database; dates at protocol precision in memory). Custom aggregate operations (a `CanopyGridAggregate` with an operation
   name) reach a provider as `CanopySummaryAggregate.CustomOperation`; the built-in providers answer `unsupported`, so a
   view with a custom aggregate needs an `ICanopyDataProvider` that computes it.
+- **Medians and percentiles.** `median` and `percentile` (`CanopyGridAggregate.AtPercentile`) interpolate linearly
+  between the closest ranks, as [Grouping](grouping.md#aggregates) describes. A rank needs every value of a group, which
+  LINQ cannot translate portably and which CanopyX never reads by materialising a query:
+
+  | Provider | Groups, totals and footers | Pivots |
+  | --- | --- | --- |
+  | `CanopyInMemoryProvider<T>` | computed | computed |
+  | `CanopyQueryableProvider<T>` | `unsupported` (400) | computed: the store groups by the value, within the 100,000-contribution bound (`limitExceeded` beyond) |
+  | your `ICanopyDataProvider` | computes them (`PERCENTILE_CONT(p / 100) WITHIN GROUP (ORDER BY …)` matches) | through `ICanopyPivotProvider` |
+
+  Over a translated query, a view with a median or percentile answers summary requests `unsupported` and shows
+  all-records footers as unavailable; implement `SummarizeAsync` in a provider of your own (for example with the
+  database's `PERCENTILE_CONT`) to serve them. Read `CanopySummaryAggregate.Percentile` (null for a median, the 50th).
 - **Echo.** The summary includes a complete normalized `gridQuery`, even when a direct handler request contains only
   its revision. The offset is zero; the accepted limit, search, predicate shape and operands are retained, and the
   effective grouping levels lead the sort. For code-built requests, an unused summary limit outside 1–10,000 is echoed
@@ -319,12 +337,13 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 | `MaxFilterTerms` (flat and nested predicates) | 64 | 64 |
 | `MaxFilterGroups` | 64 | 64 |
 | `MaxInValues` | 1,000 | 1,000 |
+| `MaxFilterValues` (operands of all predicates in one query) | 1,000 | 64,000 |
 | `MaxValueListSize` | 200 | 200 |
 | `MaxSearchLength` | 1,024 | 16,384 |
 | `MaxSearchTerms` (all-words search; repeated words count once) | 16 | — |
 | `MaxOperandLength` | 4,096 | — |
 | `MaxRequestBytes` | 1 MiB | — (JSON nesting is also capped at 64) |
-| `MaxSelectedIds` (selected exports, exclusions) | 10,000 | 10,000 |
+| `MaxSelectedIds` (selected exports, exclusions) | 1,000 | 10,000 |
 | `MaxGroups` (across all grouping levels) | 10,000 | 10,000 |
 | `MaxCommitRows` | 100 | — |
 | `MaxCommitTextLength` (one written text value) | 65,536 | — |
@@ -336,6 +355,9 @@ Every request passes through `CanopyRequestParser` before a provider sees it:
 | `MaxRecordRequestBytes` (one record request body, within `MaxRequestBytes`) | 16 KiB | — |
 | `MaxRangeRows` (records of one range answer; a larger request `limit` is lowered to it) | 5,000 | 10,000 |
 
+- **Regex quick search** runs in memory only. `MapCanopyRemote` refuses an `IQueryable` callback for a view with
+  `AllowRegexSearch`, and a regex query that still reaches `CanopyQueryableProvider<T>` answers `unsupported`. In memory, a
+  pattern that exceeds its 100 ms evaluation budget answers `limitExceeded`.
 - **Typed errors.** Rejections throw `CanopyRequestException` and answer `{ "error": code, "message": text }` with status 400
   (409 for `staleRevision`, 404 for `recordNotFound`, 413 for an oversized body, 415 for a non-JSON body). Codes: `invalidJson`, `invalidDocument`,
   `unknownColumn`, `invalidSort`, `columnNotFilterable`, `invalidOperator`, `invalidOperand`, `limitExceeded`,
@@ -413,7 +435,7 @@ Contract details:
   `TotalValues` counted after value search.
 - **Summaries.** Return every group of the first level (any order; the endpoint orders them and assigns ranges) with its
   count and the declared aggregates, and inside each group of an outer level the groups of the next level
-  (`new CanopySummaryGroup(value, count, aggregates, innerGroups)`); `count` and `distinctCount` count nonmissing values,
+  (`new CanopySummaryGroup(value, count, aggregates, innerGroups)`); `count` and `distinctCount` count nonmissing values, `median` and `percentile` interpolate between ranks,
   the others are null for a group without values. Group by every prefix of the levels (one `GROUP BY` per level, or a rollup).
 - **Rows.** Build `CanopyGridRow`s; `CanopyDataValues.ToCell` converts store values to protocol cells and `FormatId` formats keys.
 - **Unsupported capabilities** throw `CanopyRequestException(CanopyRequestError.Unsupported, …)`.
@@ -547,14 +569,12 @@ app.MapCanopyRemote("/api/machines", Readable, map, options => {
     options.Query.Revision = store.GetRevisionAsync;
     options.AuthorizationPolicy = "Inventory.Read";
     options.WriteAuthorizationPolicy = "Inventory.Write";           // required with a writer, on top of the read policy
-    options.Writer = http => {
+    // The writer's scope is Readable: a commit changes only records the caller can read.
+    options.UseQueryableWriter(http => new EfCoreWriteStore<Machine>(http.RequestServices.GetRequiredService<FleetDb>()), (http, writer) => {
         var db = http.RequestServices.GetRequiredService<FleetDb>();
-        return new CanopyQueryableWriter<Machine>(map, new EfCoreWriteStore<Machine>(db), new CanopyQueryableWriterOptions<Machine> {
-            Scope = () => Readable(http),                           // a commit changes only records the caller can read
-            Revision = store.GetRevisionAsync,
-            Saving = async (context, token) => { await store.BumpRevisionAsync(db, token); return null; } // inside the row's transaction
-        });
-    };
+        writer.Revision = store.GetRevisionAsync;
+        writer.Saving = async (context, token) => { await store.BumpRevisionAsync(db, token); return null; }; // inside the row's transaction
+    });
 });
 ```
 
@@ -595,9 +615,10 @@ writer is not called and every row answers as not saved; the invalid rows retain
 - It writes only editable columns mapped to a member of the record itself (`x => x.Cores`); creating it fails when an
   editable column maps a navigation chain such as `x => x.Team!.Name`, the record key, or a member marked
   `[ConcurrencyCheck]` or `[Timestamp]` (tokens configured fluently are not visible to it: keep those columns read-only).
-- **Scope.** It changes any record `ICanopyWriteStore<T>.Records` returns. Set `Options.Scope` to the endpoint's query
-  callback, as above, so that a row whose record the caller cannot read answers as missing and is not written; or
-  restrict `Records` itself.
+- **Scope.** A row whose record lies outside `Options.Scope` answers as missing and is not written. `UseQueryableWriter`
+  sets the scope to the endpoint's query callback, as above. A writer you create yourself needs `Scope`, or
+  `AllowUnscoped = true` when every caller may change every record `ICanopyWriteStore<T>.Records` returns (for example
+  because `Records` itself is restricted); creating it with neither fails.
 - Per row it loads the record by the map's key and compares each changed column's original value with the stored one at
   protocol precision: a difference is a `conflict` and nothing is written. A record that no longer exists is a conflict
   too. With a revision source (`Options.Revision`, read inside the row's transaction), the comparison is skipped while the
@@ -607,7 +628,8 @@ writer is not called and every row answers as not saved; the invalid rows retain
   Give the record a concurrency token (EF Core `IsRowVersion()` or `IsConcurrencyToken()`); the store then refuses a save
   over a newer version and the row answers a conflict.
 - It converts values to the member types: whole numbers in range for integer members, enumeration members by their raw
-  text (`[EnumMember]` value or name), null only for nullable members; a value a member cannot hold answers a cell error.
+  text (`[EnumMember]` value or name), null only for nullable members; a value a member cannot hold, such as a number
+  beyond a `float` or `decimal` member's range (`CommitMessages.OutOfRange`), answers a cell error.
 - It runs `Saving` (stamp an audit column, change the revision, or refuse the row with a message) and saves. A store
   exception stops its row only: the row answers "The row could not be saved." (the exception goes to `Failed` for
   logging), or a conflict when the store reports a concurrency failure (EF Core's `DbUpdateConcurrencyException` for
@@ -696,7 +718,7 @@ app.MapCanopyRemote("/api/machines", Readable, records, options => {
 });
 
 // 4. The page script: a record schema wires the grid source's record hook to the route.
-html = html.Replace("</head>", CanopyRemoteScript.Element(records.Schema, "/api/machines") + "</head>");
+var html = view.ToHtmlPage(new CanopyHtmlOptions { HeadHtml = CanopyRemoteScript.Element(records.Schema, "/api/machines") });
 ```
 
 **Mapping.** Every mapped field must be a record panel field of the view (`CanopyRecordPanel.Fields`), every drawer value a
@@ -850,9 +872,11 @@ Notes:
   host-normalized text with suitable indexes, or a host provider that groups and counts indexed canonical keys in the store.
   Nonempty numeric value-list search also transfers every distinct numeric group to search its canonical text; retained
   values/counts stay proportional to the requested limit. Empty numeric search retains the database-limited prefix path.
-- **Large parameter lists.** Selected exports send up to 10,000 identities and a membership filter up to 1,000 values as
-  one parameterized collection. On SQL Server, whose limit is 2,100 parameters per command, configure EF Core to send
-  parameterized collections as one JSON parameter, or lower `MaxSelectedIds` and `MaxInValues`.
+- **Large parameter lists.** A selected export sends its identities, and each membership filter its values, as one
+  parameterized collection. Some providers expand a collection into a parameter per element (EF Core can, depending on
+  version and configuration), and SQL Server allows 2,100 parameters per command. The defaults (`MaxFilterValues` and
+  `MaxSelectedIds` at 1,000 each) keep a query within that limit. When your provider sends a collection as one parameter
+  (EF Core's JSON or `OPENJSON` translation), you can raise them up to 64,000 operands and 10,000 identities.
 - **Grouped views** read the group counts with each page request (one grouped scan per level over each prefix of the
   grouping columns, with the aggregate a level orders by; summaries and pages build the same group tree, so they agree
   also under case-insensitive collations) and then fetch the window: up to eight innermost groups slice by slice through

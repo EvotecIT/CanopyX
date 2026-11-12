@@ -21,7 +21,7 @@ public sealed class IntegerIdentityTests {
         var ids = (await provider.QueryAsync(query, default)).Rows.Select(row => row.Id).ToArray();
         Assert.Equal(keys.Select(key => Convert.ToString(key, System.Globalization.CultureInfo.InvariantCulture)), ids);
         Assert.Equal(keys.Length, ids.Distinct(StringComparer.Ordinal).Count());
-        var writer = new CanopyQueryableWriter<Record<TKey>>(map, new Store<TKey>(rows));
+        var writer = new CanopyQueryableWriter<Record<TKey>>(map, new Store<TKey>(rows), new CanopyQueryableWriterOptions<Record<TKey>> { AllowUnscoped = true });
         foreach (var id in ids) {
             Assert.Equal(id, Assert.Single((await provider.QueryAsync(query.WithIdentities(new[] { id }, null), default)).Rows).Id);
             Assert.DoesNotContain((await provider.QueryAsync(query.WithIdentities(null, new[] { id }), default)).Rows, row => row.Id == id);

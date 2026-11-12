@@ -126,6 +126,9 @@ for (const [width, file, theme] of [[1440, "data-views.html", "light"], [390, "d
       await expect(drawer).toHaveCount(0);
       await expect(row(page, "b").locator(".cx-phone-field del")).toHaveText("Paused");
       await expect(row(page, "b").locator(".cx-phone-field ins")).toHaveText("Active");
+      // A narrow phone field wraps between values, never inside a word.
+      for (const value of ["del", "ins"]) expect(await row(page, "b").locator(".cx-phone-field " + value).evaluate(element =>
+        element.getClientRects().length === 1 && element.getBoundingClientRect().height < parseFloat(getComputedStyle(element).lineHeight) * 1.5)).toBe(true);
     }
     const toggle = summary.getByRole("switch", { name: "Changed only" });
     await expect(toggle).not.toBeChecked();

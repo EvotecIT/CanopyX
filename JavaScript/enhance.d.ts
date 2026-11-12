@@ -196,7 +196,7 @@ export interface EnhancedGrid<R = any> extends Omit<DataGrid, "addRows" | "remov
   removeRows(ids: readonly string[]): Promise<GridQuery>;
 }
 
-/** Turns an existing table into a grid, keeping the table as the script-free fallback; destroy() puts it back. */
+/** Turns an existing table into a grid, keeping the table as the script-free fallback; destroy() puts it back. A table marked data-view="matrix" becomes a matrix instead (matrix in matrix.d.ts). */
 export function enhance(table: HTMLTableElement | string, options?: GridInitOptions<string[]>): Promise<EnhancedGrid<string[]>>;
 /** Builds a grid in an element from records or a URL source; given a table, it enhances it. */
 export function grid<R = any>(element: HTMLElement | string, options: GridInitOptions<R>): Promise<EnhancedGrid<R>>;

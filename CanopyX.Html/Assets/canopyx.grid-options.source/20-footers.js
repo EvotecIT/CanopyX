@@ -14,7 +14,8 @@
         const column = grid.view.columns.find(column => column.id === aggregate.column), custom = !GROUP_OPERATIONS.includes(aggregate.operation);
         if (!column || aggregates.has(aggregate.id) || typeof aggregate.label !== "string" || !aggregate.label.trim() || aggregate.label.length > 512 ||
             typeof aggregate.operation !== "string" || !/^[a-z][a-zA-Z\d]{0,31}$/.test(aggregate.operation) ||
-            ["sum", "average", "minimum", "maximum"].includes(aggregate.operation) && column.kind !== "number" ||
+            ["sum", "average", "minimum", "maximum", "median", "percentile"].includes(aggregate.operation) && column.kind !== "number" ||
+            (aggregate.operation === "percentile" ? !(typeof aggregate.percentile === "number" && aggregate.percentile > 0 && aggregate.percentile < 100) : aggregate.percentile !== undefined) ||
             custom && grid.view.source.kind === "inline" && !grid.groupAggregates.has(aggregate.operation))
           throw new Error("CanopyX: invalid footer aggregate or missing custom aggregate plugin.");
         aggregates.add(aggregate.id);
@@ -73,10 +74,13 @@
     if (this.view.footers?.length && this.acceptedQuery && this.footerCandidate &&
         this.footerCandidate.page.revision === this.snapshot.revision && this.footerCandidate.query.offset === this.acceptedQuery.offset && gridResultShape(this.footerCandidate.query) === gridResultShape(this.acceptedQuery)) renderFooters(this);
   };
-  function footerAggregateText(grid, footer, aggregate) {
+  // An aggregate reads as its label and value ("Average 98.0%"), as group rows do; the aggregates of a hidden column follow
+  // its title ("Duration, average 18.1 s, median 6.1 s").
+  function footerAggregateText(grid, footer, aggregate, inline = false) {
     const column = grid.view.columns.find(column => column.id === aggregate.column), value = grid.footerCandidate.values[footer.id][aggregate.id];
     const format = aggregate.format || (groupCounting(aggregate.operation) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : column.format);
-    return aggregate.label + ": " + (value === undefined ? "Unavailable" : value === null ? "—" : numberText(value, grid.lang, format));
+    const label = inline ? aggregate.label : aggregate.label.charAt(0).toLocaleUpperCase(grid.lang) + aggregate.label.slice(1);
+    return [label + " ", value === undefined ? grid.labels.gridFooterUnavailable : value === null ? "—" : numberText(value, grid.lang, format)];
   }
   function renderFooters(grid) {
     const key = JSON.stringify([grid.acceptedQuery, grid.footerCandidate.values, grid.cols.map(column => [column.id, column.renderWidth ?? column.width, column.effectivePin, column.pinOffset])]);
@@ -87,7 +91,7 @@
     if (grid.footerKey === key) return;
     grid.footerKey = key;
     const root = grid.footerRoot ||= grid.grid.appendChild(h("div", "cx-footers"));
-    root.setAttribute("role", "rowgroup"); root.setAttribute("aria-label", "Footer totals"); root.replaceChildren();
+    root.setAttribute("role", "rowgroup"); root.setAttribute("aria-label", grid.labels.gridFooterTotals); root.replaceChildren();
     for (const [footerIndex, footer] of grid.view.footers.entries()) {
       const row = h("div", "cx-footer-row"); row.setAttribute("role", "row"); row.setAttribute("data-cx-footer", footer.id); row.setAttribute("aria-rowindex", String(bodyCount + footerIndex + 1));
       row.style.width = grid.rowWidth + "px"; row.style.minWidth = "100%";
@@ -100,23 +104,24 @@
         cell.style.textAlign = column.alignment || (column.kind === "number" ? "end" : "start");
         const parts = footer.aggregates.filter(aggregate => aggregate.column === column.id).map(aggregate => footerAggregateText(grid, footer, aggregate));
         const text = h("span"); text.id = grid.id + "-footer-value-" + footerIndex + "-" + columnIndex;
-        parts.forEach((part, index) => {
+        parts.forEach(([kind, shown], index) => {
           if (index) text.appendChild(document.createTextNode(" · "));
-          const lead = h("span", "cx-footer-kind"), value = h("strong"), at = part.indexOf(": ");
-          setText(lead, part.slice(0, at + 2)); setText(value, part.slice(at + 2)); text.append(lead, value);
+          const lead = h("span", "cx-footer-kind"), value = h("strong");
+          setText(lead, kind); setText(value, shown); text.append(lead, value);
         }); cell.appendChild(text);
-        let extra;
+        let extra, hidden = [];
         if (columnIndex === 0) {
-          const hidden = footer.aggregates.filter(aggregate => !grid.cols.some(column => column.id === aggregate.column));
+          hidden = [...new Set(footer.aggregates.map(aggregate => aggregate.column))].filter(id => !grid.cols.some(column => column.id === id)).map(id => grid.view.columns.find(column => column.id === id).title + ", " +
+            footer.aggregates.filter(aggregate => aggregate.column === id).map(aggregate => footerAggregateText(grid, footer, aggregate, true).join("")).join(", "));
           if (hidden.length) {
             extra = h("span", "cx-footer-hidden"); extra.id = text.id + "-hidden";
-            setText(extra, hidden.map(aggregate => grid.view.columns.find(column => column.id === aggregate.column).title + " — " + footerAggregateText(grid, footer, aggregate)).join(" · "));
+            setText(extra, hidden.join(" · "));
             cell.append(" ", extra);
           }
         }
         cell.setAttribute("aria-colindex", String(columnIndex + 1));
         cell.setAttribute("aria-labelledby", grid.headCells[columnIndex].id + " " + label.id + " " + text.id + (extra ? " " + extra.id : ""));
-        cell.title = [footer.label, ...parts].join(" — ");
+        cell.title = [footer.label, [...parts.map(part => part.join("")), ...hidden].join(" · ")].filter(Boolean).join(": ");
         row.appendChild(cell);
       }
       const filler = h("div", "cx-footer-fill"); filler.setAttribute("aria-hidden", "true"); row.appendChild(filler);

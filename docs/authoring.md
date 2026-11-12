@@ -97,20 +97,28 @@ inventory.Rows.Add(row);
 inventory.SaveHtmlPage("inventory.html");
 ```
 
-For typed records, declare selectors once and reuse the mapper for inline rows or hosted result pages:
+For typed records there are two routes, both returning a `CanopyDataGridView<T>` ([typed grids](typed-grids.md)):
 
 ```csharp
-var mapper = new CanopyGridMapper<FileRecord>(record => record.Id)
-    .AddColumn(new CanopyColumn("name", "Name") { Sortable = true }, record => record.Name)
-    .AddColumn(new CanopyColumn("size", "Size") {
-        Kind = CanopyColumnKind.Number,
-        Sizing = CanopyColumnSizing.Preferred(140)
-    }, record => new CanopyCell(record.Bytes) { Text = record.DisplaySize });
-var inventory = mapper.CreateView("inventory", "Inventory", records);
-inventory.SaveHtmlPage("inventory.html");
+// Every public property becomes a column; [CanopyKey], [CanopyColumn] and [CanopyIgnore] adjust them.
+CanopyDataGridView.From(records, x => x.Id).SaveHtmlPage("inventory.html");
+
+// Or declare each column from its member, with any column setting.
+var inventory = new CanopyDataGridView<FileRecord>("inventory", "Inventory", record => record.Id);
+inventory.Column(x => x.Name, configure: column => column.Sortable = true);
+inventory.Column(x => x.Bytes, "Size", column => column.Sizing = CanopyColumnSizing.Preferred(140),
+    cell: bytes => new CanopyCell(bytes) { Text = bytes / 1024 + " KiB" });
+inventory.AddRows(records).SaveHtmlPage("inventory.html");
 ```
 
-`FileRecord` and `records` are host-owned. The mapper uses selectors rather than reflection and validates the resulting view. Column definitions remain mutable and are reused by its views. Its optional `configure` callback sets reporting or source options before validation. `MapRow(record)` supplies the same mapping to a hosted page. To take columns from member expressions instead (`grid.Column(x => x.Owner)`), use `CanopyDataGridView<T>` ([typed grids](typed-grids.md)).
+`FileRecord` and `records` are host-owned. `inventory.Row(record)` writes the same cells into a hosted result page, and
+`inventory.View` holds every other grid setting. `CanopyDataGridView.From(dataTable)` and `CanopyDataGridView.From(rows, "Name")`
+over dictionaries (a `Dictionary<string, object?>` or a PowerShell hashtable per row) build the same grid from untyped data.
+
+Migration: `CanopyGridMapper<T>` is removed. `new CanopyGridMapper<T>(key).AddColumn(new CanopyColumn(id, title) { … }, selector)`
+becomes `new CanopyDataGridView<T>(id, label, key)` with `Column(id, selector, title, column => { … })` per column; `MapRow`
+becomes `Row`, and `CreateView(id, label, records, configure)` becomes `AddRows(records)` followed by settings on `View`. A
+selector that returns a `CanopyCell` writes a text column; set `column.Kind` in `configure` for numbers and dates.
 
 Choose `CanopyGridSource.Inline()`, `HostedOffset()` or `HostedCursor()` through `view.Source`. Cursor sources select paged presentation and reject continuous presentation. Call `view.Validate()` to check a definition before writing it. `CanopyStaticHtml.RenderGrid(view, cursorPage)` accepts a cursor snapshot, including unknown totals, for script-free fallback.
 
@@ -221,6 +229,8 @@ Set `CanopyDataGridView.StatusBar = true` / `statusBar: true` for matching and s
 Safe cell presenters can be declared on any flat-grid column. For example, `new CanopyColumn("state", "State") { Presenter = CanopyGridPresenter.State() }` uses each cell's host-supplied tone. JavaScript uses `presenter: { kind: "state" }`. The existing reporting configuration remains supported:
 
 Graphite adds enum pills, quiet healthy states, directional deltas, period strips, bar and line sparklines, identifiers with secondary text, tags and missing-value dashes. History metadata lives in `CanopyCell.Series` / `cell.series`; the cell's raw value retains its search, sorting and export meaning. [The protocol reference](data-protocol.md#safe-cell-presenters) describes thresholds and shared scales. The generated `graphite-grid.html` and dark variant show the presenters together, including 90 daily periods and clamped text.
+
+Scheduler-style views have four more. `CanopyGridPresenter.State(tones).WithPill()` sets a dot and the text in a tone pill ("● Active"), and `WithIcons(...)` swaps the dot for a glyph on the values it names (a lock for "Read-only"); the mark is decorative and the text carries the meaning. `SparklineBars().WithSlots()` turns a bar history into a run history: one slot per period, a faint baseline where no run happened, failed (danger) runs taller, height by duration. `RelativeTime(secondaryColumn)` shows a date column as "in 3 hr." or "27 sec. ago" in the page language, with the exact time in the grid's time zone as its tooltip; one timer per grid keeps the visible cells current, pauses while the page is hidden and stops with the grid. `Log(lines, split, levelTones)` shows monospace lines of time, level and message from the cell's `Events` (or its text lines), previews the first line in fixed-height rows and shows bounded lines with Show all and Copy in rows that size to content and in the record drawer. Static output shows the exact time, the mark before the state text and the log as a preformatted block. The generated `scheduled-jobs.html` shows them together.
 
 ```csharp
 view.GetColumn("name").Presenter = CanopyGridPresenter.Link("address", newWindow: true);
@@ -516,6 +526,11 @@ const releaseOptions = CanopyX.configure("files", { renderers: { owner: drawOwne
 ```
 
 With `CanopyHtmlOptions.AutoMount = false` the fragment waits until the host calls `CanopyX.mount()`.
+
+A complete page from `ToHtmlPage` or `SaveHtmlPage` carries such a script, or host styles, in `CanopyHtmlOptions.HeadHtml`: it is
+written as given at the end of the page's `head`, after the inline runtime, so `CanopyX.configure` is available to it. With
+external assets the runtime script is deferred; configure from a `DOMContentLoaded` listener there. Put only host-authored
+markup in it, with the response's `Nonce` on its elements under a Content Security Policy.
 
 Repeated creation on a live host returns its existing grid. Call `grid.destroy()` before creating a replacement. Destruction releases loaded rows, selection, caches, and the row pool. A caller-held retired API retains its view metadata; the host no longer exposes the destroyed grid.
 

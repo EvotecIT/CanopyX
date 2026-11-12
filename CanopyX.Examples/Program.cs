@@ -85,6 +85,7 @@ if (searchBench) {
 }
 
 if (args.Contains("--grid-footers")) { GridFootersExample.Write(output); return; }
+if (args.Contains("--scheduler-console")) { SchedulerConsoleExample.Write(output); return; }
 
 var smallTree = new SyntheticFileTree();
 var inline = ExampleViews.FileShares("files-inline", smallTree.Build(shares: 4, departments: 5, projects: 3, minFiles: 3, maxFiles: 9, longListFiles: 240));
@@ -114,7 +115,10 @@ GridPolishExample.Write(output);
 OfficeExportExample.Write(output);
 GraphiteGridExample.Write(output);
 ServiceStatusExample.Write(output);
+ScheduledJobsExample.Write(output);
+SchedulerConsoleExample.Write(output);
 WideTreeExample.Write(output);
+RtlExample.Write(output);
 RunsGridExample.Write(output);
 RunsBoardExample.Write(output);
 ScoresGridExample.Write(output);
@@ -143,6 +147,7 @@ BoardExample.Write(output);
 PlanExample.Write(output);
 PathExample.Write(output);
 StackExample.Write(output);
+RowActionsExample.Write(output);
 TimeSliderExample.Write(output);
 CalendarCertificatesExample.Write(output);
 CalendarLinkedExample.Write(output);

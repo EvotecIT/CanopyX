@@ -23,11 +23,15 @@
       if (lifetime.signal.aborted) return;
       lifetime.abort(); instance?.destroy?.(); registrations.delete(kind);
     } };
-    for (const name of ["select", "getSelected", "refresh", "preparePrint", "open", "close", "next", "back", "skip", "finish", "setStepState", "getState", "toggle", "getOpen", "filter"]) api[name] = (...args) => {
+    for (const name of ["select", "getSelected", "refresh", "setBadge", "preparePrint", "open", "close", "setContent", "next", "back", "skip", "finish", "setStepState", "getState", "toggle", "getOpen", "filter"]) api[name] = (...args) => {
       if (lifetime.signal.aborted) throw new Error("CanopyX: UI component destroyed.");
       return instance ? instance[name]?.(...args) : ready.then(() => instance[name]?.(...args));
     };
-    api.ready.catch(error => { if (error.name !== "AbortError") root.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true })); });
+    api.ready.catch(error => {
+      // A component whose part did not load, or did not start, is not kept: a later call for this element tries again.
+      if (!instance && registrations.get(kind) === api) { registrations.delete(kind); lifetime.abort(); }
+      if (error.name !== "AbortError") root.dispatchEvent(new CustomEvent("canopyx:error", { detail: { error }, bubbles: true }));
+    });
     registrations.set(kind, Object.freeze(api));
     return api;
   }

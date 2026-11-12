@@ -68,6 +68,8 @@ public sealed partial class CanopyLabels {
         labels.GridBucketEdges = "Bornes des intervalles";
         labels.GridBucketOrigin = "Origine des intervalles";
         labels.GridBucketInvalid = "Saisissez des paramètres d’intervalle valides.";
+        labels.GridAggregateMedian = "médiane {value}";
+        labels.GridAggregatePercentile = "p{percentile} {value}";
         return labels;
     }
 }

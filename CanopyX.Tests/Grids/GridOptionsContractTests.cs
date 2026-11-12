@@ -187,7 +187,7 @@ public sealed class GridOptionsContractTests {
         var sum = new CanopyGridAggregate("sum", "amount", CanopyGridAggregateOperation.Sum, "Sum");
         Assert.Equal(0.5, sum.Evaluate(new[] { new CanopyCell(9007199254740991d), new CanopyCell(0.5), new CanopyCell(-9007199254740991d) }));
         Assert.Throws<InvalidOperationException>(() => sum.Evaluate(new[] { new CanopyCell(9007199254740991d), new CanopyCell(9007199254740991d) }));
-        var custom = new CanopyGridAggregate("custom", "amount", "median", "Median");
+        var custom = new CanopyGridAggregate("custom", "amount", "mode", "Mode");
         Assert.Throws<InvalidOperationException>(() => custom.Evaluate(new[] { new CanopyCell(2) }));
     }
 

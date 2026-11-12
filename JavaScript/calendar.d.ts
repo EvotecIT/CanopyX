@@ -413,4 +413,10 @@ export interface GridCalendarApi {
   setCalendarSource(id: string, visible?: boolean): boolean | Promise<boolean>;
   /** Puts back the configured view, date, zoom and sources (the Reset button of reset: true). */
   resetCalendar(): Promise<GridCalendarState>;
+  /**
+   * The sentence the calendar shows for a recurrence rule, in the grid's language and labels; the rule text when the sentences
+   * cannot say it. start is a Date or an ISO date-time with a zone (yyyy-MM-dd when allDay); exceptions is EXDATE text.
+   * Rejects a rule outside the supported RRULE subset.
+   */
+  describeCalendarRecurrence(rule: string, start: Date | string, options?: { allDay?: boolean; exceptions?: string }): Promise<string>;
 }

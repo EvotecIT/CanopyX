@@ -106,7 +106,6 @@
       "api": "CanopyDatasetComparer",
       "body": "Two snapshots matched by key: what was added, removed and changed, with before and after in each cell.",
       "src": "/live/compare.html",
-      "srcDark": "/live/compare-dark.html",
       "docs": "https://github.com/EvotecIT/CanopyX/blob/main/docs/dataset-compare.md"
     },
     {

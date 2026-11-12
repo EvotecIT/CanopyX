@@ -83,4 +83,9 @@
     host.canopyx = api;
     return api;
   }
-  const MATRIX_API = { createMatrix };
+  // CanopyX.matrix(table, options), and CanopyX.enhance on a table marked data-view="matrix", read a server-rendered table into
+  // a matrix document with the matrix-table part and mount the matrix in its place (docs/matrix.md#a-table-from-the-server).
+  const MATRIX_TABLE_IMPL = {}, MATRIX_TABLE = definePart(MatrixHost, "matrix-table", "matrix table", () => ({ MATRIX_TABLE_IMPL, MATRIX_IMPL, createMatrix, h, PROTOCOL }));
+  const matrixTable = target => (typeof target === "string" ? document.querySelector(target) : target)?.matches?.('table[data-view="matrix"]');
+  const enhanceMatrix = (target, options) => Promise.all([loadPart(MATRIX_TABLE), loadPart(MATRIX_PART)]).then(() => MATRIX_TABLE_IMPL.create(target, options || {}));
+  const MATRIX_API = { createMatrix, matrix: enhanceMatrix };

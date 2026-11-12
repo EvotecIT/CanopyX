@@ -10,7 +10,7 @@ public sealed class CanopyGridRegexSearch {
     /// <summary>The maximum pattern length, in UTF-16 code units.</summary>
     public const int MaximumPatternLength = 256;
 
-    /// <summary>The maximum searchable cell input length, in UTF-16 code units. Longer inputs are rejected, never truncated.</summary>
+    /// <summary>The maximum searchable cell input length, in UTF-16 code units. Longer inputs never match, and are never truncated.</summary>
     public const int MaximumInputLength = 4096;
 
     /// <summary>Compiles a bounded pattern. Native evaluation additionally has a 100 ms match timeout.</summary>
@@ -25,13 +25,13 @@ public sealed class CanopyGridRegexSearch {
 
     /// <summary>Tests a non-null raw/search-text cell value without accent folding. Empty input is permitted.</summary>
     /// <param name="text">The searchable cell input.</param>
-    /// <returns>Whether the pattern matches any part of the input.</returns>
+    /// <returns>Whether the pattern matches any part of the input; false for input longer than <see cref="MaximumInputLength"/>.</returns>
     /// <exception cref="ArgumentNullException">The input is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">The input is longer than 4,096 UTF-16 code units.</exception>
     /// <exception cref="System.Text.RegularExpressions.RegexMatchTimeoutException">The native 100 ms match limit is exceeded.</exception>
     public bool IsMatch(string text) {
         if (text == null) throw new ArgumentNullException(nameof(text));
-        if (text.Length > MaximumInputLength) throw new ArgumentOutOfRangeException(nameof(text), "Regex search cell input exceeds 4,096 characters.");
+        // One long cell (a description or a log line) must not make the whole search fail; it simply does not match.
+        if (text.Length > MaximumInputLength) return false;
         return _pattern.IsMatch(text);
     }
 }

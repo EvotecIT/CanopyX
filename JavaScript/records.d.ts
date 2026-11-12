@@ -123,6 +123,8 @@ export interface RecordAction {
   readonly visible?: boolean | ((context: RecordActionContext) => boolean);
   /** Also renders this action as a visible footer button. Menu access is retained. */
   readonly prominent?: boolean | ((context: RecordActionContext) => boolean);
+  /** The footer button's style: primary (default), neutral (a secondary button) or danger, which stands apart at the footer's end and is marked in the menu. */
+  readonly tone?: "primary" | "neutral" | "danger";
   readonly label: string;
   run(context: RecordActionContext): void | PromiseLike<void>;
 }

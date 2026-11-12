@@ -17,7 +17,7 @@ public sealed class EfCoreCommitTests : IDisposable {
     private (CanopyRemoteHandler Handler, FleetDb Db) Handler(Action<CanopyQueryableWriterOptions<Host>>? configure = null, CanopyDataGridView? view = null, bool log = false) {
         var map = Fleet.Map(view ?? Fleet.EditableView());
         var db = _sqlite.Create(log);
-        var options = new CanopyQueryableWriterOptions<Host> {
+        var options = new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true,
             Revision = _ => new ValueTask<string>("r" + _revision),
             // Every saved row changes the dataset revision, inside its transaction.
             Saving = (_, _) => { _revision++; return new ValueTask<string?>((string?)null); }
@@ -202,7 +202,7 @@ public sealed class EfCoreCommitTests : IDisposable {
         var view = Fleet.EditableView();
         view.Columns.First(column => column.Id == "owner").Editable = true;
         using var db = _sqlite.Create();
-        var error = Assert.Throws<ArgumentException>(() => new CanopyQueryableWriter<Host>(Fleet.Map(view), new EfCoreWriteStore<Host>(db)));
+        var error = Assert.Throws<ArgumentException>(() => new CanopyQueryableWriter<Host>(Fleet.Map(view), new EfCoreWriteStore<Host>(db), new CanopyQueryableWriterOptions<Host> { AllowUnscoped = true }));
         Assert.Contains("owner", error.Message);
     }
 }

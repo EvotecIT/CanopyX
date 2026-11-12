@@ -41,5 +41,9 @@ public enum CanopyGridPresenterKind {
     /// <summary>An optional ChartForgeX sign history.</summary>
     SparklineWinLoss,
     /// <summary>A numeric measure against an authored target.</summary>
-    Bullet
+    Bullet,
+    /// <summary>A date as "in 3 hr." or "27 sec. ago" that keeps itself current, with the exact time as its tooltip.</summary>
+    RelativeTime,
+    /// <summary>Monospace log lines (time, level and message) with level tones, a copy control and bounded lines.</summary>
+    Log
 }

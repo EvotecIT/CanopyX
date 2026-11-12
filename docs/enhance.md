@@ -36,6 +36,8 @@ There is no build step: the runtime and its part files are served side by side, 
 
 The table stays in the page source, so readers without script, search engines and print-to-file tools see the table itself. The grid takes its place in the document, and `destroy()` puts the same table element back, unchanged.
 
+A table marked `data-view="matrix"` becomes a [status matrix](matrix.md#a-table-from-the-server) instead: `CanopyX.enhance` hands it to `CanopyX.matrix`, which reads states, items and cell links from the table and loads the `matrix-table` and `matrix` parts rather than these.
+
 ## What a table gives the grid
 
 | Table | Grid |

@@ -42,6 +42,9 @@ internal sealed class CanopyRecurrenceExclusions {
         return result;
     }
 
+    /// <summary>How many moments and days the exceptions remove.</summary>
+    internal int Count => _instants.Count + _dates.Count;
+
     /// <summary>Whether an occurrence that starts at <paramref name="occurrence"/>, on <paramref name="date"/> in the series' zone, is excluded.</summary>
     internal bool Removes(DateTimeOffset occurrence, DateTime date) => _instants.Contains(occurrence.UtcTicks) || _dates.Contains(date);
 

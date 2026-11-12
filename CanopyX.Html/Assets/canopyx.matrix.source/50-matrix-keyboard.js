@@ -98,7 +98,7 @@
       if (toggle && toggle._group) { this.toggleGroup(toggle._group.axis, toggle._group.key); return; }
       if (event.target.closest("a")) return;
       const target = this.cellAt(event);
-      if (target) { this.focus = { row: target._r, column: target._c }; this.render(); const cell = this.focusElement(target._r, target._c); cell?.focus({ preventScroll: true }); this.openCell(cell || target); }
+      if (target) { this.focus = { row: target._r, column: target._c }; this.render(); const cell = this.focusElement(target._r, target._c); cell?.focus({ preventScroll: true }); this.openCell(cell || target, event); }
     },
     activate(element) {
       if (!element) return;

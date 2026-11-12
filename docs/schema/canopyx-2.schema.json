@@ -121,8 +121,7 @@
       "properties": {
         "id": { "$ref": "#/$defs/matrixId" }, "label": { "$ref": "#/$defs/matrixText" },
         "secondary": { "$ref": "#/$defs/matrixText" },
-        "href": { "type": "string", "minLength": 1, "maxLength": 2048,
-          "pattern": "^(?!//)(?!.*[\\u0000-\\u0020\\u007f\\\\])(?:(?:[Hh][Tt][Tt][Pp][Ss]?|[Mm][Aa][Ii][Ll][Tt][Oo]):|[^:]*[/?#]|[^:]*$)" },
+        "href": { "$ref": "#/$defs/matrixHref" },
         "values": { "type": "object", "propertyNames": { "$ref": "#/$defs/matrixId" }, "additionalProperties": { "$ref": "#/$defs/matrixValue" } }
       }
     },
@@ -145,8 +144,10 @@
         "symbol": { "enum": ["check", "cross", "warning", "info", "dot", "dash", "question", "clock", "pause"] }, "attention": { "type": "boolean" }
       }
     },
+    "matrixHref": { "type": "string", "minLength": 1, "maxLength": 2048,
+      "pattern": "^(?!//)(?!.*[\\u0000-\\u0020\\u007f\\\\])(?:(?:[Hh][Tt][Tt][Pp][Ss]?|[Mm][Aa][Ii][Ll][Tt][Oo]):|[^:]*[/?#]|[^:]*$)" },
     "matrixNote": {
-      "type": "array", "minItems": 3, "maxItems": 6, "items": false,
+      "type": "array", "minItems": 3, "maxItems": 7, "items": false,
       "prefixItems": [
         { "type": "integer", "minimum": 0, "maximum": 9999 }, { "type": "integer", "minimum": 0, "maximum": 9999 },
         { "type": ["number", "null"], "minimum": -9007199254740991, "maximum": 9007199254740991 },
@@ -155,7 +156,8 @@
         { "type": ["array", "null"], "maxItems": 16, "items": {
           "type": "array", "minItems": 2, "maxItems": 2, "items": false,
           "prefixItems": [{ "$ref": "#/$defs/matrixText" }, { "type": "string", "maxLength": 1000 }]
-        } }
+        } },
+        { "anyOf": [{ "$ref": "#/$defs/matrixHref" }, { "type": "null" }] }
       ]
     },
     "matrix": {
@@ -876,6 +878,7 @@
         "calendar": { "$ref": "#/$defs/gridCalendar" },
         "path": { "$ref": "#/$defs/gridPath" },
         "stack": { "$ref": "#/$defs/gridStack" },
+        "rowActions": { "$ref": "#/$defs/rowActionColumn" },
         "board": { "$ref": "#/$defs/gridBoard" },
         "plan": { "$ref": "#/$defs/gridPlan" },
         "highlightRules": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/gridHighlightRule" } },
@@ -1485,10 +1488,12 @@
     "gridAggregate": {
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
       "properties": { "id": { "$ref": "#/$defs/identifier" }, "column": { "$ref": "#/$defs/identifier" },
-        "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
+        "operation": { "anyOf": [{ "enum": ["count", "sum", "average", "minimum", "maximum", "distinctCount", "median", "percentile"] }, { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,31}$", "description": "A custom aggregate a browser plugin computes for inline data and a host source for its own." }] },
+        "percentile": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 100, "description": "The percentile of a percentile aggregate (95 for P95), interpolated linearly between the closest ranks." },
         "label": { "type": "string", "minLength": 1, "maxLength": 512 },
         "showAs": { "$ref": "#/$defs/gridShowAs" },
-        "format": { "$ref": "#/$defs/gridNumberFormat", "description": "Explicit value format; otherwise the column format applies, except that counts default to whole numbers." } }
+        "format": { "$ref": "#/$defs/gridNumberFormat", "description": "Explicit value format; otherwise the column format applies, except that counts default to whole numbers." } },
+      "if": { "properties": { "operation": { "const": "percentile" } } }, "then": { "required": ["percentile"] }, "else": { "not": { "required": ["percentile"] } }
     },
     "gridShowAs": { "enum": ["value", "percentGrandTotal", "percentParent", "percentColumn", "percentRow", "runningTotal", "rank", "difference", "percentChange"] },
     "gridNumberFormat": {
@@ -1717,6 +1722,9 @@
             },
             "quietTones": { "$ref": "#/$defs/quietTones" },
             "quietStyle": { "enum": ["muted", "plain"] },
+            "style": { "enum": ["dot", "pill"], "description": "pill sets the dot (or glyph) and text in a tone pill." },
+            "icons": { "type": "object", "maxProperties": 512, "propertyNames": { "type": "string", "maxLength": 4096 },
+              "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 32 }, "description": "Decorative glyphs shown instead of the dot, by exact raw value." },
             "tones": {
               "type": "object",
               "maxProperties": 512,
@@ -1771,6 +1779,7 @@
             "kind": {
               "const": "sparklineBars"
             },
+            "slots": { "type": "boolean", "description": "One slot per recent period: a faint baseline without a run, danger runs at least two thirds tall." },
             "thresholds": {
               "type": "array",
               "maxItems": 32,
@@ -1916,6 +1925,9 @@
             },
             "mono": {
               "type": "boolean"
+            },
+            "stack": {
+              "type": "boolean"
             }
           }
         },
@@ -1958,6 +1970,19 @@
           "properties": {
             "kind": { "const": "structured" }, "display": { "enum": ["count", "chips", "first"] },
             "limit": { "type": "integer", "minimum": 1, "maximum": 16 }, "countText": { "type": "string", "maxLength": 256, "pattern": "\\{count\\}" }
+          }
+        },
+        {
+          "type": "object", "required": ["kind"], "additionalProperties": false,
+          "description": "A date column shown relative to now (\"in 3 hr.\", \"27 sec. ago\"), kept current, with the exact time as its tooltip.",
+          "properties": { "kind": { "const": "relativeTime" }, "secondaryColumn": { "$ref": "#/$defs/identifier" } }
+        },
+        {
+          "type": "object", "required": ["kind"], "additionalProperties": false,
+          "description": "Monospace log lines from a timeline value or the lines of a text value, with level tones, copy and bounded lines.",
+          "properties": {
+            "kind": { "const": "log" }, "lines": { "type": "integer", "minimum": 1, "maximum": 500 }, "split": { "type": "boolean" },
+            "tones": { "type": "object", "maxProperties": 512, "propertyNames": { "type": "string", "maxLength": 4096 }, "additionalProperties": { "$ref": "#/$defs/tone" } }
           }
         }
       ]
@@ -2791,6 +2816,14 @@
         "gridLiveOrderChanged": { "type": "string" },
         "gridLiveOrderHint": { "type": "string" },
         "gridLiveRecordRemoved": { "type": "string" },
+        "rowActionColumn": { "type": "string" },
+        "rowActionMore": { "type": "string" },
+        "rowActionLocked": { "type": "string" },
+        "rowActionDismiss": { "type": "string" },
+        "rowActionPending": { "type": "string" },
+        "rowActionDone": { "type": "string" },
+        "rowActionRejected": { "type": "string" },
+        "rowActionFailed": { "type": "string" },
         "gridLiveRefresh": { "type": "string" },
         "gridLiveResort": { "type": "string" },
         "gridLiveSorted": { "type": "string" },
@@ -2811,6 +2844,8 @@
         "gridShowMore": { "type": "string" },
         "gridNoData": { "type": "string" },
         "gridPeriodRange": { "type": "string" },
+        "gridFooterTotals": { "type": "string" },
+        "gridFooterUnavailable": { "type": "string" },
         "gridHealthy": { "type": "string" },
         "searchPlaceholder": { "$ref": "#/$defs/accessibleLabel" },
             "searchResults": { "$ref": "#/$defs/accessibleLabel" },
@@ -3005,6 +3040,8 @@
             "gridAggregateAverage": { "$ref": "#/$defs/accessibleLabel" },
             "gridAggregateMinimum": { "$ref": "#/$defs/accessibleLabel" },
             "gridAggregateMaximum": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregateMedian": { "$ref": "#/$defs/accessibleLabel" },
+            "gridAggregatePercentile": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupBy": { "$ref": "#/$defs/accessibleLabel" },
             "gridUngroup": { "$ref": "#/$defs/accessibleLabel" },
             "gridGroupDrop": { "$ref": "#/$defs/accessibleLabel" },
@@ -3155,6 +3192,14 @@
             "calendarReset": { "type": "string" },
             "calendarSharedBy": { "type": "string" },
             "calendarSourcesShown": { "type": "string" },
+            "calendarRecurrenceDaily": { "type": "string" }, "calendarRecurrenceDailyInterval": { "type": "string" }, "calendarRecurrenceWeekly": { "type": "string" }, "calendarRecurrenceWeeklyInterval": { "type": "string" },
+            "calendarRecurrenceMonthly": { "type": "string" }, "calendarRecurrenceMonthlyInterval": { "type": "string" }, "calendarRecurrenceYearly": { "type": "string" }, "calendarRecurrenceYearlyInterval": { "type": "string" },
+            "calendarRecurrenceOn": { "type": "string" }, "calendarRecurrenceOnDay": { "type": "string" }, "calendarRecurrenceEvery": { "type": "string" }, "calendarRecurrenceEveryDay": { "type": "string" },
+            "calendarRecurrenceWeekdays": { "type": "string" }, "calendarRecurrenceWeekends": { "type": "string" }, "calendarRecurrenceDayRange": { "type": "string" }, "calendarRecurrenceRangeDay": { "type": "string" },
+            "calendarRecurrenceList": { "type": "string" }, "calendarRecurrenceMonthDays": { "type": "string" }, "calendarRecurrenceLastDay": { "type": "string" },
+            "calendarRecurrenceFirstWeekday": { "type": "string" }, "calendarRecurrenceSecondWeekday": { "type": "string" }, "calendarRecurrenceThirdWeekday": { "type": "string" }, "calendarRecurrenceFourthWeekday": { "type": "string" },
+            "calendarRecurrenceFifthWeekday": { "type": "string" }, "calendarRecurrenceLastWeekday": { "type": "string" }, "calendarRecurrenceInMonth": { "type": "string" }, "calendarRecurrenceOnDate": { "type": "string" }, "calendarRecurrenceAt": { "type": "string" },
+            "calendarRecurrenceTimes": { "type": "string" }, "calendarRecurrenceUntil": { "type": "string" }, "calendarRecurrenceExcept": { "type": "string" },
             "pathEmpty": { "type": "string" },
             "pathSource": { "type": "string" },
             "pathTarget": { "type": "string" },
@@ -3579,6 +3624,38 @@
         }
       },
       "description": "Explicit host-provided chains over stable inline records. At most 10,000 total hop occurrences; every reference must exist."
+    },
+    "rowActionColumn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actions"],
+      "description": "The grid's own actions column at the end edge (docs/row-actions.md): buttons that raise host proposals through onRowAction. Sources, exports, the record drawer and the static renderer leave it out; no declared column may use the id cx-row-actions.",
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S", "description": "Column header and button group name. Default the rowActionColumn label." },
+        "inline": { "type": "integer", "minimum": 0, "maximum": 4, "description": "Actions shown as buttons; the rest go into the More menu. When only one would be left over it shows inline instead. Default 2." },
+        "reveal": { "enum": ["always", "hover"], "description": "hover shows the buttons on the hovered, focused, selected or busy row; touch screens and the keyboard reach them on every row. Default always." },
+        "pin": { "enum": ["right", "none"], "description": "right keeps the column at the end edge while the grid scrolls sideways. Default right." },
+        "lockedWhen": { "$ref": "#/$defs/gridFormatCondition", "description": "Rows that show a lock and no actions." },
+        "lockedLabel": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "\\S", "description": "The lock's accessible name. Default the rowActionLocked label." },
+        "actions": {
+          "type": "array", "minItems": 1, "maxItems": 16,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "$ref": "#/$defs/identifier", "description": "Unique among the grid's row actions; the proposal's action." },
+              "label": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S", "description": "The button's accessible name and the menu entry's text." },
+              "icon": { "enum": ["check", "play", "pause", "stop", "retry", "edit", "delete", "copy", "open", "close", "download"], "description": "Default check." },
+              "tone": { "enum": ["neutral", "primary", "danger"], "description": "Default neutral." },
+              "when": { "$ref": "#/$defs/gridFormatCondition", "description": "Rows that offer the action. Absent offers it on every row that is not locked." },
+              "disabledWhen": { "$ref": "#/$defs/gridFormatCondition", "description": "Rows on which the action shows but cannot run." },
+              "disabledReason": { "type": "string", "minLength": 1, "maxLength": 500, "pattern": "\\S", "description": "The disabled button's description." },
+              "refresh": { "type": "boolean", "description": "After the host accepts, a live grid runs refreshRows() and any other grid reloads its accepted query. Default false." }
+            }
+          }
+        }
+      }
     },
     "gridStack": {
       "type": "object",

@@ -27,11 +27,17 @@ public static partial class CanopyStaticHtml {
             aggregate.Operation == CanopyGridAggregateOperation.Average ? labels.GridAggregateAverage :
             aggregate.Operation == CanopyGridAggregateOperation.Minimum ? labels.GridAggregateMinimum :
             aggregate.Operation == CanopyGridAggregateOperation.Maximum ? labels.GridAggregateMaximum :
-            aggregate.Operation == CanopyGridAggregateOperation.DistinctCount ? labels.GridAggregateDistinct : aggregate.CustomOperation ?? aggregate.Operation.ToString();
-        operation = operation.Replace("{value}", "").Trim();
+            aggregate.Operation == CanopyGridAggregateOperation.DistinctCount ? labels.GridAggregateDistinct :
+            aggregate.Operation == CanopyGridAggregateOperation.Median ? labels.GridAggregateMedian :
+            aggregate.Operation == CanopyGridAggregateOperation.Percentile ? labels.GridAggregatePercentile : aggregate.CustomOperation ?? aggregate.Operation.ToString();
+        operation = PercentileText(operation, aggregate).Replace("{value}", "").Trim();
         if (operation.Length == 0) operation = aggregate.CustomOperation ?? aggregate.Operation.ToString();
         return aggregate.Label + " · " + char.ToUpper(operation[0], CultureInfo.InvariantCulture) + operation.Substring(1);
     }
+
+    // A percentile label names its percentile with invariant digits ("p95", "p99.9"), as the browser does.
+    private static string PercentileText(string template, CanopyGridAggregate aggregate) => aggregate.Percentile.HasValue ?
+        template.Replace("{percentile}", aggregate.Percentile.Value.ToString("R", CultureInfo.InvariantCulture)) : template;
 
     private static string AggregateText(CanopyDataGridView view, CanopyGridAggregate aggregate, double? value, CanopyShowAs mode, CultureInfo culture) {
         if (!value.HasValue) return string.Empty;

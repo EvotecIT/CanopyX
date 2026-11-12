@@ -66,12 +66,12 @@ Require(CanopyStaticHtml.RenderGrid(reporting).Contains("Item 2", StringComparis
 var printedGrid = CanopyStaticHtml.RenderGridWithResult(reporting);
 Require(printedGrid.Rows.Count == 1 && printedGrid.Rows[0][0] == "Item 2" && printedGrid.TotalRows == 1 && !printedGrid.HasUnknownTotal,
     "the package lost exact flat-grid print metadata");
-var mapper = new CanopyGridMapper<string>(value => value).AddColumn(new CanopyColumn("name", "Name") {
-    Sizing = CanopyColumnSizing.Flex(1, 100, 320), Presenter = CanopyGridPresenter.State()
-}, value => value);
-var cursor = mapper.CreateView("cursor", "Cursor records", configure: grid => grid.Source = CanopyGridSource.HostedCursor());
+var typed = new CanopyDataGridView<string>("cursor", "Cursor records", value => value);
+typed.Column("name", value => value, "Name", column => { column.Sizing = CanopyColumnSizing.Flex(1, 100, 320); column.Presenter = CanopyGridPresenter.State(); });
+CanopyDataGridView cursor = typed;
+cursor.Source = CanopyGridSource.HostedCursor();
 cursor.Validate();
-var cursorPage = new CanopyGridCursorPage(cursor.Id, "snapshot", 0); cursorPage.Rows.Add(mapper.MapRow("Accepted"));
+var cursorPage = new CanopyGridCursorPage(cursor.Id, "snapshot", 0); cursorPage.Rows.Add(typed.Row("Accepted"));
 Require(CanopyStaticHtml.RenderGrid(cursor, cursorPage).Contains("Accepted", StringComparison.Ordinal), "the package lost cursor snapshot rendering or typed mapping");
 var printedCursor = CanopyStaticHtml.RenderGridWithResult(cursor, cursorPage);
 Require(printedCursor.Rows[0][0] == "Accepted" && printedCursor.TotalRows == 1 && printedCursor.HasUnknownTotal,

@@ -9,6 +9,7 @@
     { "page": "export-formats-tree", "title": "Custom export formats", "body": "The page registers its own export writers; the tree runs them on its visible, selected or all rows." }
   ],
   "inventory": [
+    { "page": "scheduler-console", "title": "Scheduler console", "body": "An operations screen: summary cards filter the jobs, rows carry run-history slots and actions, a drawer shows each job, and a live run history ends in medians and P95." },
     { "page": "orders-by-region", "title": "Grouping and aggregates", "body": "Orders grouped by region and status with sum, average, count and distinct-count in the headings and totals; each order expands into a nested grid of its lines." },
     { "page": "editing", "title": "Editing", "body": "Every editor type, validation from C# and from the page, read-only rows, undo and redo, and a batch save that the service answers per row." },
     { "page": "conditional-formatting", "title": "Conditional formatting", "body": "Row highlights, tones, a data bar on CPU, a colour scale on latency, threshold bands and a stale cue, with the legend and the rule editor." },
@@ -49,6 +50,9 @@
   ],
   "changes": [
     { "page": "changes-diff-large", "title": "A 20,000-line diff", "body": "One large file's diff with windowed rows, folded regions and word marks, still quick to scroll." }
+  ],
+  "compare": [
+    { "page": "data-views", "title": "Review, then explore", "body": "The same comparison with a read-only view proposal the host supplies: active items by location, or units by location and stage." }
   ],
   "time": [
     { "page": "time-propagation", "title": "Rollout propagation", "body": "The same three snapshots as a propagation view: which services have the update, since when, and how long the rest have waited." }

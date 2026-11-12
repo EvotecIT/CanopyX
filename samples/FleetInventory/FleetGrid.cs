@@ -82,11 +82,10 @@ public static class FleetGrid {
 
     /// <summary>A complete page: the grid with the reporting runtime inline, plus the script that connects it to its endpoints.</summary>
     public static string Page(CanopyDataGridView view, CanopyDataSchema schema, string endpoint, CanopyTheme theme, string? note = null, CanopyRecordSchema? records = null) {
-        var html = view.ToHtmlPage(new CanopyHtmlOptions { Title = "Fleet inventory: " + view.Label, Theme = theme });
         // A grid with a record schema loads each machine's details from the record route when its drawer opens.
         var format = ("csv", "CSV from server (all matching rows)");
         var script = records != null ? CanopyRemoteScript.Element(records, endpoint, format) : CanopyRemoteScript.Element(schema, endpoint, format);
-        html = html.Replace("</head>", script + "</head>");
+        var html = view.ToHtmlPage(new CanopyHtmlOptions { Title = "Fleet inventory: " + view.Label, Theme = theme, HeadHtml = script });
         return note == null ? html : html.Replace("<main class=\"cx-main\">", "<main class=\"cx-main\">" + note);
     }
 }

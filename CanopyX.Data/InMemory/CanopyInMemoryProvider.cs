@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -216,8 +217,7 @@ public sealed partial class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICa
     private static double? Aggregate(CanopySummaryAggregate aggregate, IReadOnlyList<Record> records, CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
         Supported(aggregate);
-        var definition = new CanopyGridAggregate(aggregate.Id, aggregate.Column.Id, aggregate.Operation, aggregate.Id);
-        return definition.Evaluate(records.Select(record => {
+        return aggregate.Definition().Evaluate(records.Select(record => {
             cancellationToken.ThrowIfCancellationRequested();
             return CanopyDataValues.ToCell(record.Values[aggregate.Column.Ordinal]);
         }));
@@ -292,9 +292,11 @@ public sealed partial class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICa
                     cancellationToken.ThrowIfCancellationRequested();
                     var text = CanopyDataValues.ToSearchText(SearchValue(record, column)) ?? string.Empty;
                     var started = Stopwatch.GetTimestamp();
-                    var matched = pattern.IsMatch(text);
+                    bool matched;
+                    try { matched = pattern.IsMatch(text); }
+                    catch (RegexMatchTimeoutException) { throw RegexBudget(); }
                     regexTicks += Stopwatch.GetTimestamp() - started;
-                    if (regexTicks > Stopwatch.Frequency / 10) throw new TimeoutException("Regex search exceeded its 100 ms evaluation budget.");
+                    if (regexTicks > Stopwatch.Frequency / 10) throw RegexBudget();
                     return matched;
                 })) &&
                 terms.All(term => Schema.SearchColumns.Any(column => {
@@ -303,6 +305,8 @@ public sealed partial class CanopyInMemoryProvider<T> : ICanopyDataProvider, ICa
                 })) && (request.Filter == null || Matches(record, request.Filter, cancellationToken)) && request.TupleFilters.All(tuple => tuple.Matches(column => record.Values[column.Ordinal]));
         }).ToList();
     }
+
+    private static CanopyRequestException RegexBudget() => CanopyRequestException.Limit("The search pattern took too long to evaluate; narrow it or filter first.");
 
     private static void RejectCustomFilters(CanopyFilterNode? node) {
         if (node is CanopyFilterCondition condition && condition.Operator == CanopyGridFilterOperator.Custom)

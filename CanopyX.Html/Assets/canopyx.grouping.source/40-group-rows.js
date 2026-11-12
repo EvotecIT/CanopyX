@@ -121,7 +121,7 @@
       const previous = target.querySelector(":scope > .cx-hidden-aggregates");
       if (!parts.length) { previous?.remove(); return; }
       const extra = previous || h("button", "cx-grid-group-aggregates cx-hidden-aggregates"); if (!previous) extra.type = "button";
-      extra.setAttribute("aria-haspopup", "dialog"); if (extra.textContent !== parts.join(" · ")) setText(extra, parts.join(" · "));
+      extra.setAttribute("aria-haspopup", "dialog"); if (extra.textContent !== parts.join(" · ")) reportingAggregateSpans(extra, parts);
       extra._cxAggregateText = { title, text: details.join("\n"), bindings, values }; extra.title = details.join("\n");
       extra.setAttribute("aria-label", parts.join(" · ") + ", " + details.join(", "));
       if (!previous) { target.append(" ", extra); extra.addEventListener("click", event => {

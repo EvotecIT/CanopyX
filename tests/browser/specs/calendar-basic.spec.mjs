@@ -372,6 +372,41 @@ test.describe("builder options", () => {
     await expect(page.locator(".cx-grid-export")).toBeVisible();
     await expect(page.locator(".cx-grid-overflow")).toHaveCount(0);
   });
+
+  test("a series says how it repeats in its details and its accessible name, in the page's language", async ({ page }) => {
+    const series = { id: "s", title: "Standup", start: "2026-10-12T09:00:00Z", end: "2026-10-12T09:15:00Z", recurrence: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", exceptions: "2026-10-14" };
+    const open = () => page.locator('.cx-cal-ev[data-cx-record="s"]').first();
+    await openBuilt(page, "series.html", calendarPage({ events: [series], date: "2026-10-16", timeZone: "utc", view: "week" }));
+    // The sentence writes the time as the event shows it.
+    const time = (await open().locator(".cx-cal-ev-time").textContent()).trim();
+    const sentence = "On weekdays, at " + time + ", except 1 date";
+    await expect(open()).toHaveAttribute("aria-label", new RegExp(sentence.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"));
+    await open().click();
+    await expect(page.getByRole("dialog", { name: "Standup" }).locator(".cx-cal-det-repeat")).toHaveText(sentence);
+    await capture(page, "calendar-series-description");
+
+    // The Polish pack's calendar words, passed as a host passes its translation.
+    const labels = Object.fromEntries(Object.entries((await import("../../../JavaScript/locales/pl.mjs")).labels).filter(([name]) => name.startsWith("calendar")));
+    await openBuilt(page, "series-pl.html", calendarPage({ events: [series], date: "2026-10-16", timeZone: "utc", view: "week", labels }, { lang: "pl" }));
+    const polishTime = (await open().locator(".cx-cal-ev-time").textContent()).trim();
+    await open().click();
+    await expect(page.locator(".cx-cal-details .cx-cal-det-repeat")).toHaveText("W dni robocze, o " + polishTime + ", z wyjątkiem 1 daty");
+  });
+
+  test("describeCalendarRecurrence loads the recurrence part on first use and says a rule in the grid's language", async ({ page }) => {
+    const labels = Object.fromEntries(Object.entries((await import("../../../JavaScript/locales/pl.mjs")).labels).filter(([name]) => name.startsWith("calendar")));
+    await openBuilt(page, "describe-pl.html", calendarPage({ events: EVENTS, date: "2026-10-16", timeZone: "utc", labels }, { lang: "pl" }));
+    // No event repeats, so the part is not in until the method asks for it.
+    expect(await page.evaluate(() => typeof window.api.calSeriesText)).toBe("undefined");
+    const said = await calApi(page, `api => Promise.all([
+      api.describeCalendarRecurrence("FREQ=MONTHLY;BYDAY=-1WE", "2026-10-28T09:00:00Z"),
+      api.describeCalendarRecurrence("FREQ=WEEKLY;BYDAY=TU,TH", "2026-10-20", { allDay: true, exceptions: "2026-10-22" }),
+      api.describeCalendarRecurrence("FREQ=MONTHLY;BYDAY=MO", "2026-10-19T09:00:00Z"),
+      api.describeCalendarRecurrence("FREQ=HOURLY", "2026-10-19T09:00:00Z").then(() => "resolved", error => error.message)])`);
+    expect(said[0]).toMatch(/^Co miesiąc, w ostatnią środę, o 0?9:00$/);
+    expect(said.slice(1, 3)).toEqual(["We wtorki i w czwartki, z wyjątkiem 1 daty", "FREQ=MONTHLY;BYDAY=MO"]);
+    expect(said[3]).toContain("FREQ is DAILY, WEEKLY, MONTHLY or YEARLY");
+  });
 });
 
 test.describe("review guards", () => {

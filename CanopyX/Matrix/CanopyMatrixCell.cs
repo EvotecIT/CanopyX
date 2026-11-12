@@ -33,6 +33,13 @@ public sealed class CanopyMatrixCell {
     /// <summary>Gets or sets a longer explanation for the tooltip and the details dialog. At most 1,000 characters.</summary>
     public string? Title { get; set; }
 
+    /// <summary>
+    /// Gets or sets where the cell links to: an http, https or mailto address, or a relative one. The browser follows it when the
+    /// reader opens the cell (the details dialog is for cells without one), unless the host handles <c>canopyx:matrixCell</c> or
+    /// <see cref="CanopyMatrix.Details"/> is <see cref="CanopyMatrixDetails.Host"/>; the static table writes it as a link.
+    /// </summary>
+    public string? Href { get; set; }
+
     /// <summary>Gets label and value pairs the details dialog lists, at most 16.</summary>
     public IList<KeyValuePair<string, string>> Details { get; } = new List<KeyValuePair<string, string>>();
 

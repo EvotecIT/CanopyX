@@ -35,6 +35,48 @@ A grid can be written from your own record type, in C# and in TypeScript, so tha
 cell of the wrong type is caught by the compiler instead of in the browser. The untyped API stays as it is: typed grids are
 a layer over it, and every typed grid is also an ordinary grid.
 
+## C#: one call from records
+
+`CanopyDataGridView.From` derives a column from every public property and writes the records as rows:
+
+```csharp
+CanopyDataGridView.From(servers, x => x.HostName).SaveHtmlPage("servers.html");
+
+public sealed class Server {
+    [CanopyKey] public string HostName { get; set; } = "";
+    [CanopyColumn(Title = "Disk", Format = "N0", Order = 1)] public long DiskBytes { get; set; }
+    [CanopyColumn(Hidden = true)] public Guid AssetId { get; set; }
+    [CanopyIgnore] public string Secret { get; set; } = "";
+    public DateTime LastSeenUtc { get; set; }
+}
+```
+
+Properties of text, number, boolean, date, time, enumeration and `Guid` types become columns in declaration order, with the
+same ids, titles and kinds as `Column(x => x.Member)`. `[CanopyColumn]` sets a title, an `Order` (default 0; ties keep
+declaration order), `Hidden`, or a .NET `Format` string that writes the display text with the invariant culture while the
+raw value still sorts, filters and exports; on a property of another type it includes that property as text. `[CanopyIgnore]`
+leaves a property out. The key is the selector you pass, a name (`From(servers, "HostName")`), the `[CanopyKey]` property, or
+else each record's position (`CanopyGridRowIdentity.Ordinal`). The grid's id and label default to the type name
+(`server`, "Server"); pass `id:` and `label:` to set them. Settings such as facets or reporting go on `grid.View` afterwards.
+
+Untyped sources take the same route:
+
+| Source | Call | Columns and key |
+| --- | --- | --- |
+| `DataTable` | `CanopyDataGridView.From(table, "Id")` | One per data column, titled by its caption (or its name as words), typed by its data type. The key defaults to a single-column primary key; deleted rows are skipped and `DBNull` is an empty cell. |
+| Dictionaries | `CanopyDataGridView.From(rows, "Name")` | Rows such as `Dictionary<string, object?>`, `Hashtable` or `[ordered]` PowerShell hashtables. One column per key in the order keys first appear, keeping the key as its id; its kind follows the values, and a key with mixed kinds is text. |
+
+PowerShell does not infer the record type, so name it, and type the array to match:
+
+```powershell
+[System.Collections.IDictionary[]]$rows = Get-Service | Select-Object Name, Status, StartType | ForEach-Object {
+    $row = [ordered]@{}; foreach ($property in $_.PSObject.Properties) { $row[$property.Name] = $property.Value }; $row }
+$grid = [CanopyX.CanopyDataGridView]::From[System.Collections.IDictionary]($rows, 'Name')
+[CanopyX.Html.CanopyHtmlExtensions]::SaveHtmlPage($grid.View, 'services.html')
+```
+
+A `DataTable` needs nothing more: `[CanopyX.CanopyDataGridView]::From($table, 'Id')`.
+
 ## C#: columns from members
 
 `CanopyDataGridView<T>` takes columns from member expressions and rows from `IEnumerable<T>`:
@@ -66,9 +108,9 @@ grid.AddRows(servers).View.SaveHtmlPage("servers.html");
 
 A renamed or removed member fails the build. A member chain must start at the record (`x => x.Owner.Team`); any other expression
 needs an explicit id. Ids keep acronyms readable (`URL` is `url`, `IPAddress` is `ipAddress`), and two paths that would share an
-id (`Owner.Team` and `OwnerTeam`) are refused: give one an explicit id. `CanopyGridMapper<T>` remains for columns you declare
-yourself with a selector per column; it validates the view as it creates it, while a typed grid's view is validated when it
-is written. Values are read through the compiled member expressions (interpreted under native AOT).
+id (`Owner.Team` and `OwnerTeam`) are refused: give one an explicit id. The view is validated when it is written (or by
+`grid.View.Validate()`). Values are read through the compiled member expressions (interpreted under native AOT).
+`CanopyGridMapper<T>` is removed: see the migration note in [authoring](authoring.md#flat-data-grid).
 
 Explicit conversions keep their C# behavior: `grid.Column("load", x => (double)x.Cores)` writes a double, and a checked
 conversion reports overflow when a row is read. The result type determines the column kind; boxing a member as `object`

@@ -47,6 +47,8 @@
     "./export.js": "./CanopyX.Html/Assets/canopyx-export.js",
     "./office-export.js": "./CanopyX.Html/Assets/canopyx-office-export.js",
     "./history.js": "./CanopyX.Html/Assets/canopyx-history.js",
+    "./activity.js": "./CanopyX.Html/Assets/canopyx-activity.js",
+    "./activity.css": "./CanopyX.Html/Assets/canopyx-activity.css",
     "./grid-options.js": "./CanopyX.Html/Assets/canopyx-grid-options.js",
     "./grid-options.css": "./CanopyX.Html/Assets/canopyx-grid-options.css",
     "./pager.js": "./CanopyX.Html/Assets/canopyx-pager.js",
@@ -59,6 +61,7 @@
     "./flow.css": "./CanopyX.Html/Assets/canopyx-flow.css",
     "./matrix.js": "./CanopyX.Html/Assets/canopyx-matrix.js",
     "./matrix.css": "./CanopyX.Html/Assets/canopyx-matrix.css",
+    "./matrix-table.js": "./CanopyX.Html/Assets/canopyx-matrix-table.js",
     "./changes.js": "./CanopyX.Html/Assets/canopyx-changes.js",
     "./changes.css": "./CanopyX.Html/Assets/canopyx-changes.css",
     "./editing.js": "./CanopyX.Html/Assets/canopyx-editing.js",
@@ -166,7 +169,9 @@
     "./stack.js": "./CanopyX.Html/Assets/canopyx-stack.js",
     "./stack.css": "./CanopyX.Html/Assets/canopyx-stack.css",
     "./time-slider.js": "./CanopyX.Html/Assets/canopyx-time-slider.js",
-    "./time-slider.css": "./CanopyX.Html/Assets/canopyx-time-slider.css"
+    "./time-slider.css": "./CanopyX.Html/Assets/canopyx-time-slider.css",
+    "./row-actions.js": "./CanopyX.Html/Assets/canopyx-row-actions.js",
+    "./row-actions.css": "./CanopyX.Html/Assets/canopyx-row-actions.css"
   },
   "files": [
     "CanopyX.Html/Assets/Fonts/",
@@ -200,6 +205,8 @@
     "CanopyX.Html/Assets/canopyx-filter-editor.css",
     "CanopyX.Html/Assets/canopyx-export.js",
     "CanopyX.Html/Assets/canopyx-history.js",
+    "CanopyX.Html/Assets/canopyx-activity.js",
+    "CanopyX.Html/Assets/canopyx-activity.css",
     "CanopyX.Html/Assets/canopyx-grid-options.js",
     "CanopyX.Html/Assets/canopyx-grid-options.css",
     "CanopyX.Html/Assets/canopyx-pager.js",
@@ -217,6 +224,7 @@
     "CanopyX.Html/Assets/canopyx-flow-*.css",
     "CanopyX.Html/Assets/canopyx-matrix.js",
     "CanopyX.Html/Assets/canopyx-matrix.css",
+    "CanopyX.Html/Assets/canopyx-matrix-table.js",
     "CanopyX.Html/Assets/canopyx-changes.js",
     "CanopyX.Html/Assets/canopyx-changes.css",
     "CanopyX.Html/Assets/canopyx-editing.js",
@@ -299,7 +307,10 @@
     "JavaScript/stack.d.ts",
     "CanopyX.Html/Assets/canopyx-time-slider.js",
     "CanopyX.Html/Assets/canopyx-time-slider.css",
-    "JavaScript/time-slider.d.ts"
+    "JavaScript/time-slider.d.ts",
+    "CanopyX.Html/Assets/canopyx-row-actions.js",
+    "CanopyX.Html/Assets/canopyx-row-actions.css",
+    "JavaScript/row-actions.d.ts"
   ],
   "keywords": ["forms", "wizard", "treegrid", "treeview", "data-grid", "data-table", "virtualization", "accessibility", "lazy-loading", "html-reports"],
   "engines": { "node": ">=18" }

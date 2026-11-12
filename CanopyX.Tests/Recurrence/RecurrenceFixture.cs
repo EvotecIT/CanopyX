@@ -4,19 +4,25 @@ using System.Text;
 namespace CanopyX.Tests.Recurrence;
 
 /// <summary>
-/// Reads tests/fixtures/recurrence-cases.json, the recurrence cases the C# expansion and the browser runtime both check, without a
+/// Reads tests/fixtures/recurrence-cases.json and recurrence-descriptions.json, the expansion and description cases C# and the browser runtime both check, without a
 /// JSON library (net472 has none), and finds the cases' time zones on every framework.
 /// </summary>
 /// <remarks>This file compiles into CanopyX.Tests (net10.0) and CanopyX.Tests.NetFramework (net472).</remarks>
 internal static class RecurrenceFixture {
-    private static readonly Lazy<List<Dictionary<string, object?>>> AllCases = new Lazy<List<Dictionary<string, object?>>>(() => {
-        var text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "recurrence-cases.json"), Encoding.UTF8);
+    private static readonly Lazy<List<Dictionary<string, object?>>> AllCases = new Lazy<List<Dictionary<string, object?>>>(() => Load("recurrence-cases.json"));
+    private static readonly Lazy<List<Dictionary<string, object?>>> AllDescriptions = new Lazy<List<Dictionary<string, object?>>>(() => Load("recurrence-descriptions.json"));
+
+    internal static IReadOnlyList<Dictionary<string, object?>> Cases => AllCases.Value;
+
+    /// <summary>tests/fixtures/recurrence-descriptions.json: rules, starts and cultures with the sentences both sides write.</summary>
+    internal static IReadOnlyList<Dictionary<string, object?>> Descriptions => AllDescriptions.Value;
+
+    private static List<Dictionary<string, object?>> Load(string file) {
+        var text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", file), Encoding.UTF8);
         var position = 0;
         var cases = (List<object?>)Read(text, ref position)!;
         return cases.Cast<Dictionary<string, object?>>().ToList();
-    });
-
-    internal static IReadOnlyList<Dictionary<string, object?>> Cases => AllCases.Value;
+    }
 
     internal static Dictionary<string, object?> Case(string name) => Cases.Single(item => (string)item["name"]! == name);
 

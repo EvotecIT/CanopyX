@@ -81,11 +81,15 @@ test.describe("calendar views", () => {
     });
   }
 
-  test("the month folds a busy day into +N more, whose list takes focus and gives it back", async ({ page }) => {
+  test("the month folds a busy day into +N more, whose list takes focus and gives it back", async ({ page, browserName }) => {
+    // WebKit on macOS moves to buttons with Alt+Tab, as Safari does without Full Keyboard Access.
+    const tab = process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab";
     await openCalendar(page, "calendar.html");
     const cell = page.locator('.cx-cal-day[data-cx-day="' + day("2026-10-20") + '"]');
     const more = cell.locator(".cx-cal-more-btn");
     await expect(more).toHaveText(/^\+\d+ more$/);
+    // A month line leads with its title; the compact start time follows it.
+    await expect(cell.locator(".cx-cal-ev-chip").first()).toHaveText(/^[A-Za-z].* \d{1,2}(:\d\d)?[ap]m\s*$/);
     // The day's accessible name counts every event on it, including bars that start on an earlier day.
     const total = Number((await cell.getAttribute("aria-label")).match(/(\d+) events$/)[1]);
     await more.click();
@@ -103,6 +107,15 @@ test.describe("calendar views", () => {
     const bar = page.locator('.cx-cal-ev-bar[aria-label^="Storage array migration"]');
     await expect(bar).toHaveCount(1);
     expect(await bar.getAttribute("style")).toContain("--s: 4");
+    // The list is not modal: Shift+Tab reaches Close, and Tab past the events leaves the list on "+N more".
+    await more.press("Enter");
+    await page.keyboard.press("Shift+" + tab);
+    await expect(list.locator(".cx-cal-more-close")).toBeFocused();
+    await page.keyboard.press(tab);
+    await expect(list.locator(".cx-cal-ev").first()).toBeFocused();
+    await page.keyboard.press(tab);
+    await expect(list).toHaveCount(0);
+    await expect(more).toBeFocused();
   });
 
   test("the month's keyboard walks days, periods and into a day's events", async ({ page }) => {

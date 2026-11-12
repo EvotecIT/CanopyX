@@ -25,31 +25,80 @@ const button = (page, id = "c1") => header(page, id).locator('.cx-grid-column-me
 const geometry = page => page.locator('.cx-grid').evaluate(grid => ({ width: grid.clientWidth, scroll: grid.scrollWidth,
   columns: [...grid.querySelectorAll('.cx-hcell')].map(cell => cell.getBoundingClientRect().width) }));
 
-test('row hover reveals menus only beside complete captions and own hover uses an opaque chip', async ({ page }) => {
+// Whether a header's visible menu button intersects its sort button (which holds the sort arrow) or the caption text the
+// label shows (text past an ellipsis is clipped by the label's box).
+const menuCover = cell => {
+  const control = cell.querySelector('.cx-grid-column-menu'), menu = control.getBoundingClientRect(), label = cell.querySelector('.cx-htext');
+  const range = document.createRange(), shown = label.getBoundingClientRect(); range.selectNodeContents(label);
+  const hit = rect => rect.width > 0 && rect.height > 0 && Math.min(rect.right, menu.right) - Math.max(rect.left, menu.left) > .5 && Math.min(rect.bottom, menu.bottom) - Math.max(rect.top, menu.top) > .5;
+  const visible = rect => DOMRect.fromRect({ x: Math.max(rect.left, shown.left), y: Math.max(rect.top, shown.top),
+    width: Math.min(rect.right, shown.right) - Math.max(rect.left, shown.left), height: Math.min(rect.bottom, shown.bottom) - Math.max(rect.top, shown.top) });
+  return { opacity: getComputedStyle(control).opacity, sort: hit(cell.querySelector('.cx-sort').getBoundingClientRect()),
+    caption: [...range.getClientRects()].map(visible).some(hit), sorted: cell.dataset.cxSort };
+};
+const narrowView = () => {
+  const definition = makeView();
+  definition.columns = definition.columns.slice(0, 4);
+  Object.assign(definition.columns[1], { title: 'Primary owner', width: 96, fixed: true });
+  Object.assign(definition.columns[2], { title: 'Latency', kind: 'number', width: 88, fixed: true });
+  definition.rows.forEach(row => { row.cells.c1 = 'owner'; row.cells.c2 = 12; });
+  return definition;
+};
+async function openNarrow(page, dir) {
+  const html = viewPage(narrowView()).replace(/<html(?=[\s>])/, `<html dir="${dir}"`);
+  await page.route('http://canopyx.test/narrow', route => route.fulfill({ contentType: 'text/html', body: html }));
+  await page.goto('http://canopyx.test/narrow');
+  await page.waitForSelector('[data-cx-ready]');
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => document.querySelector('[data-canopyx-host]').canopyx.setQuery({ sort: [{ column: 'c2', direction: 'asc' }, { column: 'c1', direction: 'desc' }] }));
+  await expect(header(page, 'c2')).toHaveAttribute('data-cx-sort', 'asc');
+}
+
+for (const dir of ['ltr', 'rtl']) test(`a visible column menu never covers the caption or sort arrow in narrow columns (${dir})`, async ({ browser, browserName }) => {
+  const desktop = await browser.newContext({ viewport: { width: 1100, height: 700 } });
+  try {
+    const page = await desktop.newPage(); await openNarrow(page, dir);
+    for (const id of ['c1', 'c2']) {
+      await header(page, id).hover();
+      await expect(button(page, id)).toHaveCSS('opacity', '1');
+      expect(await header(page, id).evaluate(menuCover), `${id} on hover`).toMatchObject({ opacity: '1', sort: false, caption: false });
+      await page.mouse.move(0, 0);
+      await button(page, id).focus();
+      await expect(button(page, id)).toHaveCSS('opacity', '1');
+      expect(await header(page, id).evaluate(menuCover), `${id} with keyboard focus`).toMatchObject({ opacity: '1', sort: false, caption: false });
+    }
+    expect(await header(page, 'c2').locator('.cx-htext').evaluate(el => getComputedStyle(el).textAlign)).toBe('end');
+  } finally { await desktop.close(); }
+  // Playwright does not emulate touch contexts in Firefox.
+  if (browserName === 'firefox') return;
+  const phone = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  try {
+    const page = await phone.newPage(); await openNarrow(page, dir);
+    for (const id of ['c1', 'c2']) {
+      // A released touch on the header shows its menu; a tap would also click the header and cycle its sort.
+      await header(page, id).dispatchEvent('pointerdown', { pointerId: 5, pointerType: 'touch', isPrimary: true, button: 0 });
+      await header(page, id).dispatchEvent('pointerup', { pointerId: 5, pointerType: 'touch' });
+      await expect(button(page, id)).toHaveCSS('opacity', '1');
+      expect(await header(page, id).evaluate(menuCover), `${id} after a touch`).toMatchObject({ opacity: '1', sort: false, caption: false, sorted: id === 'c2' ? 'asc' : 'desc' });
+      expect((await button(page, id).boundingBox()).width).toBeGreaterThanOrEqual(44);
+    }
+  } finally { await phone.close(); }
+});
+
+test('row hover reveals every menu at rest and own hover uses an opaque chip', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const definition = makeView();
   Object.assign(definition.columns[1], { title: 'Latency', kind: 'number', width: 80, maxWidth: 80, autoSize: 'none' });
   definition.rows.forEach(row => Object.keys(row.cells).forEach(id => row.cells[id] = '1'));
   definition.rows.forEach(row => row.cells.c1 = 12);
-  definition.toolbar.columnMenus = false;
   await open(page, { definition }); const baseline = await geometry(page);
-  definition.toolbar.columnMenus = true;
-  await open(page, { definition });
-  expect(await geometry(page)).toEqual(baseline);
   expect(baseline.columns).toHaveLength(12);
   expect(baseline.scroll).toBeLessThanOrEqual(baseline.width);
   await header(page, 'c0').hover();
   await expect(button(page, 'c0')).toHaveCSS('opacity', '1');
-  const revealed = await page.locator('.cx-hcell').evaluateAll(cells => cells.slice(1).map(cell => {
-    const menu=cell.querySelector('.cx-grid-column-menu'), box=menu.getBoundingClientRect(), range=document.createRange();
-    range.selectNodeContents(cell.querySelector('.cx-htext'));
-    return { opacity:getComputedStyle(menu).opacity, overlap:[...range.getClientRects()].some(rect=>rect.right>box.left-1) };
-  }));
-  expect(revealed.some(item=>item.overlap), 'the fixture includes narrow captions').toBe(true);
-  for(const item of revealed) expect(item.opacity).toBe(item.overlap ? '0' : '0.4');
+  const revealed = await page.locator('.cx-hcell').evaluateAll(cells => cells.slice(1).map(cell => getComputedStyle(cell.querySelector('.cx-grid-column-menu')).opacity));
+  expect(revealed).toEqual(Array(11).fill('0.4'));
   await expect(button(page,'c0')).toHaveCSS('background-color', await header(page,'c0').evaluate(cell=>getComputedStyle(cell).backgroundColor));
-  expect(await button(page,'c0').evaluate(el=>getComputedStyle(el,'::before').backgroundImage)).toContain('linear-gradient');
-  expect(await header(page,'c1').locator('.cx-htext').evaluate(el=>getComputedStyle(el).maskImage)).toBe('none');
   expect(await geometry(page)).toEqual(baseline);
   await page.mouse.move(0, 0);
   await expect(button(page,'c1')).toHaveCSS('opacity','0');
@@ -135,7 +184,8 @@ test('sorted and filtered narrow headers reserve state width and keep complete c
   }
 });
 
-test('twelve columns fit at 1440 and overlaid menus stay accessible without adding body chrome', async ({ page }) => {
+// The nine-digit values set these widths, so the menus' reserved header room must not move any column.
+test('twelve columns fit at 1440 and column menus stay accessible without changing fitted widths', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await open(page, { menus: false });
   const baseline = await geometry(page);
@@ -222,7 +272,7 @@ for (const dark of [false, true]) test(`pinned cells are opaque and show an edge
   }
 });
 
-test('a touch tap reaches the overlaid column menu at phone width', async ({ browser, browserName }) => {
+test('a touch tap reaches the column menu at phone width', async ({ browser, browserName }) => {
   test.skip(browserName === 'firefox', 'Playwright does not emulate touch contexts in Firefox');
   const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
   try {

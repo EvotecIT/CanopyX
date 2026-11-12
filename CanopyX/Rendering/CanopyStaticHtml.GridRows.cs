@@ -63,7 +63,7 @@ public static partial class CanopyStaticHtml {
                 row.Cells.TryGetValue(id, out var value);
                 return value?.DisplayText(view.GetColumn(id), view.Labels) ?? string.Empty;
             });
-            if (template != null || !AppendComparisonCell(html, text, view, row, column, cell))
+            if (template != null || !AppendComparisonCell(html, text, view, row, column, cell) && !AppendPresenterBlock(html, column, cell, displayed, text))
                 AppendVisibleText(html, displayed, text);
             if (template == null && cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
             if (paint?.BarValue == false) html.Append("</span>");

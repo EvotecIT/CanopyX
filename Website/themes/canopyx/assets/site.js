@@ -414,4 +414,60 @@
       show(current());
     }
   });
+
+  // The home stages hold views that scroll by themselves (a tree of 113,550 nodes), so the wheel or a swipe over one keeps
+  // scrolling the page until the reader engages with it: a click or tap, or keyboard focus moving into its frame. Moving the
+  // mouse away, tapping elsewhere or scrolling the stage out of view hands scrolling back to the page. The cover is pointer
+  // only; keyboard users reach the frame with Tab as before.
+  document.querySelectorAll('[data-cnx-guard] .cnx-bench__screen').forEach(function (screen) {
+    var guard = document.createElement('div');
+    guard.className = 'cnx-guard';
+    guard.setAttribute('aria-hidden', 'true');
+    guard.innerHTML = '<span class="cnx-guard__hint">Click to explore</span>';
+    screen.appendChild(guard);
+    var frame = function () { return screen.querySelector('[role="tabpanel"]:not([hidden]) iframe'); };
+    var engage = function () { guard.hidden = true; };
+    var release = function () { guard.hidden = false; };
+    // The click that engages also reaches what is under it, so a tap on a row or a button acts at once.
+    guard.addEventListener('click', function (event) {
+      engage();
+      var current = frame();
+      if (!current) return;
+      current.focus();
+      try {
+        var box = current.getBoundingClientRect();
+        var target = current.contentDocument.elementFromPoint(event.clientX - box.left, event.clientY - box.top);
+        if (target) { if (target.focus) target.focus({ preventScroll: true }); target.click(); }
+      } catch (e) { /* frame not ready */ }
+    });
+    screen.addEventListener('pointerleave', function (event) {
+      if (event.pointerType === 'mouse') release();
+    });
+    document.addEventListener('pointerdown', function (event) { if (!screen.contains(event.target)) release(); });
+    document.addEventListener('focusin', function (event) { if (!screen.contains(event.target)) release(); });
+    window.addEventListener('blur', function () {
+      setTimeout(function () { if (screen.contains(document.activeElement)) engage(); }, 0);
+    });
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) release();
+      }).observe(screen);
+    }
+  });
+
+  // Tab rows that scroll sideways say which edge has more tabs beyond it, so a cut-off label reads as "more this way".
+  document.querySelectorAll('.cnx-bench__tabs').forEach(function (row) {
+    var mark = function () {
+      var more = [];
+      if (row.scrollLeft > 2) more.push('start');
+      if (row.scrollLeft + row.clientWidth < row.scrollWidth - 2) more.push('end');
+      if (more.length) row.setAttribute('data-more', more.join(' ')); else row.removeAttribute('data-more');
+    };
+    row.addEventListener('scroll', mark, { passive: true });
+    window.addEventListener('resize', mark);
+    row.addEventListener('focusin', function (event) {
+      if (event.target.scrollIntoView) event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+    mark();
+  });
 })();

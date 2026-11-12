@@ -98,8 +98,18 @@ internal sealed class MemberWriter<T> {
         }
         if (value is double number) {
             if (t == typeof(double)) { converted = number; return null; }
-            if (t == typeof(float)) { converted = (float)number; return null; }
-            if (t == typeof(decimal)) { converted = (decimal)number; return null; }
+            if (t == typeof(float)) {
+                var single = (float)number;
+                if (float.IsInfinity(single) || double.IsInfinity(number) || double.IsNaN(number)) return messages.OutOfRange;
+                converted = single;
+                return null;
+            }
+            if (t == typeof(decimal)) {
+                // 2^96: every smaller double converts to decimal; this and larger ones overflow.
+                if (double.IsInfinity(number) || double.IsNaN(number) || Math.Abs(number) >= 79228162514264337593543950336d) return messages.OutOfRange;
+                converted = (decimal)number;
+                return null;
+            }
             if (!ValueShapes.IsInteger(t)) return messages.Type;
             var (minimum, maximum) = ValueShapes.Range(t);
             if (number != Math.Floor(number) || number < minimum || number > maximum) return messages.WholeNumber;

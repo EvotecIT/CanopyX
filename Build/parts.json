@@ -338,12 +338,17 @@
         "GRID_HISTORY_IMPL",
         "GRID_CHART_CELL_KINDS",
         "GRID_CHART_CELLS",
-        "RECORD_IMPL"
+        "RECORD_IMPL",
+        "DataGrid",
+        "definePart",
+        "loadPart",
+        "formatValue"
       ],
       "scripts": [
+        "CanopyX.Html/Assets/canopyx.grid.source/36-grid-presenter-activity.js",
         "CanopyX.Html/Assets/canopyx.grid.source/36-grid-presenter-cells.js"
       ],
-      "end": "GRID_PRESENTER_IMPL.create = gridRenderPresenter;"
+      "end": "GRID_PRESENTER_IMPL.create = gridRenderPresenter; GRID_PRESENTER_IMPL.ready = gridPresenterReady;"
     },
     {
       "name": "filter-editor",
@@ -526,6 +531,42 @@
       "end": "GRID_HISTORY_IMPL.render = gridRenderHistory;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/37-grid-history.js"
+      ]
+    },
+    {
+      "name": "activity",
+      "label": "relative time and log cells",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "presenters": [
+        "relativeTime",
+        "log"
+      ],
+      "key": "GRID_ACTIVITY",
+      "context": [
+        "GRID_ACTIVITY",
+        "h",
+        "setText",
+        "fill",
+        "cellValue",
+        "cellText",
+        "formatValue",
+        "isCellObject",
+        "gridPresenterTone",
+        "toneOf",
+        "applyTone",
+        "gridIcon"
+      ],
+      "end": "GRID_ACTIVITY.render = gridRenderActivity;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.activity.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.activity.source/activity.css"
       ]
     },
     {
@@ -1182,6 +1223,26 @@
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.matrix.source/matrix.css"
+      ]
+    },
+    {
+      "name": "matrix-table",
+      "label": "matrix table",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [],
+      "key": "MATRIX_TABLE_IMPL",
+      "context": [
+        "MATRIX_TABLE_IMPL",
+        "MATRIX_IMPL",
+        "createMatrix",
+        "h",
+        "PROTOCOL"
+      ],
+      "end": "MATRIX_TABLE_IMPL.create = matrixTableCreate;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.matrix-table.source"
       ]
     },
     {
@@ -1870,6 +1931,7 @@
         "reportingDynamicGroups",
         "GROUP_OPERATIONS",
         "reportingAggregateParts",
+        "reportingAggregateSpans",
         "disposeRowHostCells",
         "quietControls",
         "TreeGrid",
@@ -2169,7 +2231,7 @@
         "loadPart",
         "PROTOCOL"
       ],
-      "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid, calSameOrigin, calSafeTone, calInvalid };",
+      "end": "DataGrid.prototype.calKit = { CAL_DAY, CAL_HOUR, CAL_MINUTE, CAL_GUTTER, CAL_SLOT_PX, calAddMonths, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calMonthStart, calWeekStart, calZone, calInstant, calIso, calParseDay, calDayText, calLanes, calColumns, calBase, calOverlaps, calInAllDayRow, calDayGrid, calSameOrigin, calSafeTone, calInvalid };",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar.source"
       ],
@@ -2196,8 +2258,8 @@
       "context": [
         "DataGrid"
       ],
-      "start": "const { CAL_DAY, CAL_MINUTE, calDayNumber, calDayParts, calDow, calMonthDays, calParseDay } = DataGrid.prototype.calKit;",
-      "end": "Object.assign(DataGrid.prototype.calKit, { calRule, calExpand, calSeriesEnd, calExceptions, CAL_WEEKDAYS });",
+      "start": "const { CAL_DAY, CAL_MINUTE, calCount, calDayNumber, calDayParts, calDow, calMonthDays, calParseDay, calZone, calInstant } = DataGrid.prototype.calKit;",
+      "end": "Object.assign(DataGrid.prototype.calKit, { calRule, calExpand, calSeriesEnd, calExceptions, calDescribe, CAL_WEEKDAYS });",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.calendar-recurrence.source"
       ]
@@ -2367,7 +2429,7 @@
         "gridResultShape",
         "GRID_REPORTING"
       ],
-      "start": "const GROUP_OPERATIONS = [\"count\", \"sum\", \"average\", \"minimum\", \"maximum\", \"distinctCount\"];\nconst reportingGroupKey = value => JSON.stringify([typeof value, value]);",
+      "start": "const GROUP_OPERATIONS = [\"count\", \"sum\", \"average\", \"minimum\", \"maximum\", \"distinctCount\", \"median\", \"percentile\"];\nconst reportingGroupKey = value => JSON.stringify([typeof value, value]);",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.aggregates.source",
         "CanopyX.Html/Assets/canopyx.grid-options.source"
@@ -2602,6 +2664,47 @@
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.compare.source/compare.css"
+      ]
+    },
+    {
+      "name": "row-actions",
+      "label": "row actions",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "rowActions"
+      ],
+      "requires": [
+        "ui-menu"
+      ],
+      "key": "DataGrid.prototype",
+      "context": [
+        "DataGrid",
+        "UI_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "gridFreeze",
+        "gridIcon",
+        "svgIcon",
+        "cellValue",
+        "foldText",
+        "boundedPattern",
+        "wildcardMatch",
+        "requireIdentifier",
+        "gridQueryStart",
+        "MAX_PROTOCOL_INTEGER"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.formatting.source/10-format-conditions.js",
+        "CanopyX.Html/Assets/canopyx.row-actions.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.row-actions.source/row-actions.css"
       ]
     }
   ]

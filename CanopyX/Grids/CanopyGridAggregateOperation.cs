@@ -16,5 +16,10 @@ public enum CanopyGridAggregateOperation {
     DistinctCount,
     /// <summary>A named custom aggregate (<see cref="CanopyGridAggregate.CustomOperation"/>): a browser plugin computes it for inline
     /// data and a host source computes it for its own; the value is a finite number or null.</summary>
-    Custom
+    Custom,
+    /// <summary>The middle finite numeric value: the 50th percentile, interpolated as <see cref="Percentile"/> is. An empty input produces null.</summary>
+    Median,
+    /// <summary>The value at <see cref="CanopyGridAggregate.Percentile"/> percent of the sorted finite numeric values, interpolated
+    /// linearly between the closest ranks (Excel PERCENTILE.INC, NumPy's default). An empty input produces null.</summary>
+    Percentile
 }

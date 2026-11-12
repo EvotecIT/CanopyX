@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" style="color-scheme:{{theme}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduler console</title>
+<style>{{style}}</style>
+<script>{{script}}</script>
+<style id="sc-host-style">
+/* Host chrome: the page header, summary cards and live bars belong to the page, not to CanopyX. */
+.sc-page { box-sizing: border-box; margin: 0; min-height: 100vh; background: var(--hfx-color-surface-page); color: var(--hfx-color-text);
+  font: 14px/1.5 var(--hfx-font-sans); -webkit-font-smoothing: antialiased; }
+.sc-page *, .sc-page *::before, .sc-page *::after { box-sizing: border-box; }
+.sc-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: var(--hfx-space-4); min-height: 60px; padding: 10px clamp(16px, 3vw, 32px);
+  border-bottom: 1px solid var(--hfx-color-border); background: var(--hfx-color-surface); }
+.sc-brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 650; font-size: 15px; letter-spacing: -.01em; }
+.sc-mark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--hfx-color-text); color: var(--hfx-color-surface); }
+.sc-mark svg { width: 18px; height: 18px; }
+.sc-brand small { color: var(--hfx-color-text-muted); font-weight: 450; font-size: 13px; }
+.sc-state { display: inline-flex; align-items: center; gap: 7px; height: 26px; margin: 0; padding: 0 11px 0 9px; border-radius: var(--hfx-radius-pill);
+  background: var(--hfx-color-status-good-bg); color: var(--hfx-color-status-good-fg); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.sc-state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+.sc-header-end { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
+.sc-icon-btn { display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--hfx-color-border); border-radius: var(--hfx-radius-control);
+  background: var(--hfx-color-surface); color: var(--hfx-color-text-secondary); cursor: pointer; }
+.sc-icon-btn:hover { background: var(--hfx-color-hover); color: var(--hfx-color-text); }
+.sc-icon-btn svg { width: 18px; height: 18px; }
+.sc-icon-btn .sc-sun, .sc-page[data-sc-dark] .sc-icon-btn .sc-moon { display: none; }
+.sc-page[data-sc-dark] .sc-icon-btn .sc-sun { display: block; }
+.sc-main { max-width: 1440px; margin: 0 auto; padding: 24px clamp(16px, 3vw, 32px) 40px; }
+.sc-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 18px; }
+.sc-title h1 { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 650; letter-spacing: -.02em; }
+.sc-title p { margin: 0; color: var(--hfx-color-text-muted); font-size: 13px; }
+.sc-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin: 0 0 22px; padding: 0; border: 0; }
+.sc-card { display: grid; gap: 2px; align-content: start; min-width: 0; padding: 14px 16px 13px; border: 1px solid var(--hfx-color-border); border-radius: var(--hfx-radius-lg);
+  background: var(--hfx-color-surface); color: inherit; font: inherit; text-align: start; cursor: pointer;
+  transition: border-color var(--hfx-motion-duration-fast) var(--hfx-motion-easing-standard), background-color var(--hfx-motion-duration-fast) var(--hfx-motion-easing-standard); }
+.sc-card:hover { border-color: var(--hfx-color-border-strong); }
+.sc-card:focus-visible, .sc-icon-btn:focus-visible, .sc-chip:focus-visible, .sc-ghost:focus-visible { outline: 2px solid var(--hfx-color-focus-ring); outline-offset: 2px; }
+.sc-card[aria-pressed="true"] { border-color: var(--hfx-color-accent); background: color-mix(in srgb, var(--hfx-color-accent) 6%, var(--hfx-color-surface));
+  box-shadow: inset 0 0 0 1px var(--hfx-color-accent); }
+.sc-card-label { display: flex; align-items: center; gap: 7px; overflow: hidden; color: var(--hfx-color-text-secondary); font-size: 13px; font-weight: 500; white-space: nowrap; text-overflow: ellipsis; }
+.sc-card-value { font-size: 28px; line-height: 1.15; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.sc-card-note { overflow: hidden; color: var(--hfx-color-text-muted); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.sc-tone { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.sc-tone-info { background: var(--hfx-color-status-info-fg); }
+.sc-tone-warn { background: var(--hfx-color-status-warn-fg); }
+.sc-tone-bad { background: var(--hfx-color-status-bad-fg); }
+.sc-tone-neutral { background: var(--hfx-color-status-neutral-fg); }
+.sc-panel { border: 1px solid var(--hfx-color-border); border-radius: var(--hfx-radius-lg); background: var(--hfx-color-surface); padding: 6px 16px 16px; }
+.sc-panel [data-hfx-part="panel"] { padding-top: 14px; }
+.sc-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; }
+.sc-live { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--hfx-color-text-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.sc-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--hfx-color-status-good-fg); }
+.sc-bar[data-sc-paused] .sc-live-dot { background: var(--hfx-color-status-neutral-fg); }
+.sc-bar .sc-ghost { margin-inline-start: auto; }
+.sc-chip, .sc-ghost { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border: 1px solid var(--hfx-color-border-strong); border-radius: var(--hfx-radius-pill);
+  background: var(--hfx-color-surface); color: var(--hfx-color-text-secondary); font: 500 13px/1 var(--hfx-font-sans); cursor: pointer; }
+.sc-ghost { border-radius: var(--hfx-radius-control); }
+.sc-chip:hover, .sc-ghost:hover { background: var(--hfx-color-hover); color: var(--hfx-color-text); }
+.sc-chip[aria-pressed="true"] { border-color: var(--hfx-color-accent); background: var(--hfx-color-accent-subtle); color: var(--hfx-color-accent-text); }
+.sc-chip[aria-pressed="true"]::before { content: "✓"; font-size: 12px; }
+/* The record drawer's job data reads as configuration: monospace keys. */
+.cx-drawer [data-cx-field="data"] dl dt { font-family: var(--hfx-font-mono); font-size: 12.5px; }
+@media (max-width: 1100px) { .sc-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .sc-header { gap: 10px; min-height: 56px; }
+  .sc-brand small, .sc-state-text { display: none; }
+  .sc-state { padding: 0 9px; }
+  .sc-main { padding-top: 18px; }
+  .sc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .sc-card { padding: 12px 13px 11px; }
+  .sc-card-value { font-size: 24px; }
+  .sc-panel { padding: 0; border: 0; background: none; }
+}
+@media (prefers-reduced-motion: reduce) { .sc-card { transition: none; } }
+</style>
+</head>
+<body class="sc-page">
+{{ui-parts}}
+<header class="sc-header">
+<div class="sc-brand"><span class="sc-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg></span>
+<span>Cronwell <small>Scheduler</small></span></div>
+<p class="sc-state" title="The scheduler is running and accepting triggers"><span class="sc-state-text">Running</span><span class="cx-sr-only"> (scheduler state)</span></p>
+<div class="sc-header-end">
+{{flow}}
+<button type="button" class="sc-icon-btn" id="sc-theme" aria-pressed="false" aria-label="Dark theme"><svg class="sc-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="sc-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+</div>
+</header>
+<main class="sc-main">
+<div class="sc-title"><h1>Scheduled jobs</h1><p>Production · 4 workers · times in UTC</p></div>
+<fieldset class="sc-stats"><legend class="cx-sr-only">Show jobs by state</legend>
+{{cards}}
+</fieldset>
+<section class="sc-panel" aria-label="Jobs, running jobs and run history">
+{{tabs}}
+</section>
+</main>
+<script type="application/json" id="sc-data">{{host-data}}</script>
+<script>
+(() => {
+  // The page's mock scheduler. It owns the jobs and their runs: it answers every proposal the views raise (row actions,
+  // record actions, the New job form), computes statuses, counts and run outcomes, and pushes the results into the views
+  // through their live data API. #instant answers at once for tests.
+  const DATA = JSON.parse(document.getElementById("sc-data").textContent);
+  const LATENCY = location.hash.includes("instant") ? 0 : 650;
+  const jobs = new Map(DATA.jobs.map(job => [job.id, { ...job, nextAt: job.next ? Date.parse(job.next) : null }]));
+  const running = new Map();
+  const api = id => document.getElementById(id)?.canopyx;
+  const value = cell => cell && typeof cell === "object" ? cell.value : cell;
+  const iso = time => new Date(time).toISOString().replace(/\.\d{3}Z$/, "Z");
+  const wait = (signal, ms = LATENCY) => new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason);
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => { clearTimeout(timer); reject(signal.reason); }, { once: true });
+  });
+  // A small seeded generator, so a run's log reads the same every time it opens.
+  const seeded = seed => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  let runNumber = 0, livePaused = false, lastUpdate = Date.now();
+  const nextRunId = () => "R-" + (++runNumber);
+  const worker = () => "worker-" + (1 + Math.floor(Math.random() * 4));
+  const refusals = {
+    "run:int-sftp": "The partner's SFTP server refused the sign-in. Update the credentials before running the job again.",
+    "rerun:int-sftp": "The partner's SFTP server refused the sign-in. Update the credentials before running the job again.",
+    "delete:catalog-prices": "Search ranking reads the price index. Remove that dependency before deleting the job."
+  };
+
+  // ---------- theme ----------
+  const themeButton = document.getElementById("sc-theme");
+  function setTheme(theme) {
+    document.documentElement.style.colorScheme = theme;
+    document.body.toggleAttribute("data-sc-dark", theme === "dark");
+    document.querySelectorAll("[data-cx-theme]").forEach(host => host.setAttribute("data-cx-theme", theme));
+    themeButton.setAttribute("aria-pressed", String(theme === "dark"));
+  }
+  themeButton.addEventListener("click", () => setTheme(themeButton.getAttribute("aria-pressed") === "true" ? "light" : "dark"));
+  // A host page that frames the console (the website) sets the scheme itself; the button follows it.
+  new MutationObserver(() => {
+    const dark = document.documentElement.style.colorScheme === "dark";
+    document.body.toggleAttribute("data-sc-dark", dark); themeButton.setAttribute("aria-pressed", String(dark));
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["style"] });
+  const asked = new URLSearchParams(location.search).get("theme");
+  setTheme(asked === "dark" || asked === "light" ? asked : getComputedStyle(document.documentElement).colorScheme.includes("dark") ? "dark" : "light");
+
+  // ---------- counts: the summary cards and the tab badges ----------
+  function counts() {
+    const list = [...jobs.values()], by = status => list.filter(job => job.status === status).length;
+    return { all: list.length, running: by("Running"), paused: by("Paused"), failed: list.filter(job => job.failed24 > 0).length, readonly: by("Read-only"), errors: by("Error") };
+  }
+  const sections = CanopyX.tabs("#sc-sections");
+  function refreshCounts() {
+    const now = counts();
+    for (const [id, count] of Object.entries(now)) { const element = document.querySelector('[data-sc-count="' + id + '"]'); if (element) element.textContent = count; }
+    sections.setBadge("jobs", now.all); sections.setBadge("running", running.size);
+  }
+
+  // ---------- the summary cards filter the jobs grid ----------
+  const filters = {
+    all: null,
+    running: { field: "status", values: ["Running"] },
+    paused: { field: "status", values: ["Paused"] },
+    failed: { field: "failed24", range: [1, null], label: "A failed run in 24 h" },
+    readonly: { field: "status", values: ["Read-only"] },
+    errors: { field: "status", values: ["Error"] }
+  };
+  const cards = [...document.querySelectorAll("[data-sc-card]")];
+  const pressCard = id => cards.forEach(card => card.setAttribute("aria-pressed", String(card.dataset.scCard === id)));
+  for (const card of cards) card.addEventListener("click", async () => {
+    const id = card.dataset.scCard, active = card.getAttribute("aria-pressed") === "true" && id !== "all" ? "all" : id;
+    pressCard(active);
+    await sections.select("jobs");
+    const filter = filters[active];
+    await api("sc-jobs").setExternalFilter("summary", filter && { ...filter, sourceLabel: "Summary" });
+  });
+
+  // ---------- runs: start, progress, finish ----------
+  function slotsAfter(job, outcome, seconds, at) {
+    const row = api("sc-jobs")?.getRow?.(job.id) || api("sc-jobs")?.view.rows.find(item => item.id === job.id);
+    const cell = row?.cells.runs, series = (cell?.series || []).slice(-13);
+    series.push({ period: new Date(at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }),
+      value: seconds, state: outcome, tone: outcome === "Failed" ? "danger" : "success" });
+    const done = series.filter(item => item.state), ok = done.filter(item => item.state === "Succeeded").length;
+    return { value: ok + " of " + done.length + " recent runs succeeded", series };
+  }
+  function nextCell(job) {
+    return job.nextAt && job.status !== "Paused" ? { value: iso(job.nextAt), secondary: job.schedule } : { value: null, text: job.status === "Paused" ? "Paused" : null, secondary: job.schedule };
+  }
+  function runRow(job, outcome, trigger, started, seconds, id = nextRunId()) {
+    return { id, cells: { id, job: { value: job.name, secondary: job.group }, group: job.group, outcome, trigger, started: iso(started),
+      duration: seconds, worker: worker(), ok: outcome === "Succeeded" ? 100 : 0, failed: outcome === "Failed" ? 1 : 0 } };
+  }
+  function startRun(job, trigger) {
+    const started = Date.now(), seconds = Math.min(Math.max(job.seconds, 6), 16), history = runRow(job, "Running", trigger, started, null);
+    running.set(job.id, { job, trigger, started, t0: started, seconds, history: history.id, before: job.status });
+    job.status = "Running";
+    api("sc-jobs").updateRows([{ id: job.id, cells: { status: "Running" } }]);
+    api("sc-running").addRows([{ id: "run-" + job.id, cells: { name: { value: job.name, secondary: job.group }, started: iso(started), progress: 0, step: "Starting", worker: history.cells.worker } }]);
+    api("sc-history").addRows([history]);
+    refreshCounts();
+  }
+  function finishRun(entry) {
+    // The demo shortens the run on screen; the recorded duration is the job's usual one.
+    const { job } = entry, seconds = Math.round(job.seconds * (0.8 + Math.random() * 0.4) * 10) / 10;
+    // A manual run of a job in error succeeds and clears the error; otherwise the job's usual failure rate decides.
+    const outcome = entry.before !== "Error" && Math.random() < job.failRate * 4 ? "Failed" : "Succeeded";
+    running.delete(job.id);
+    if (outcome === "Failed") job.failed24++;
+    if (job.status === "Running") job.status = outcome === "Failed" && entry.before === "Error" ? "Error" : entry.before === "Error" || entry.before === "Running" ? "Scheduled" : entry.before;
+    api("sc-running").removeRows(["run-" + job.id]);
+    // Runs that were already going when the page opened join the history when they finish.
+    if (entry.history) api("sc-history").updateRows([{ id: entry.history, cells: { outcome, duration: seconds, ok: outcome === "Succeeded" ? 100 : 0, failed: outcome === "Failed" ? 1 : 0 } }]);
+    else api("sc-history").addRows([runRow(job, outcome, entry.trigger, entry.started, seconds)]);
+    if (jobs.has(job.id)) api("sc-jobs").updateRows([{ id: job.id, cells: { status: job.status, runs: slotsAfter(job, outcome, seconds, entry.started), failed24: job.failed24, next: nextCell(job) } }]);
+    refreshCounts();
+  }
+  function tickRunning() {
+    if (livePaused || !running.size) return;
+    const now = Date.now(), updates = [];
+    for (const entry of [...running.values()]) {
+      const progress = Math.min(100, Math.round((now - entry.t0) / (entry.seconds * 1000) * 100));
+      if (progress >= 100) finishRun(entry);
+      else updates.push({ id: "run-" + entry.job.id, cells: { progress, step: "Batch " + Math.min(8, 1 + Math.floor(progress / 12.5)) + " of 8" } });
+    }
+    if (updates.length) api("sc-running").updateRows(updates);
+  }
+
+  // ---------- proposals from the jobs grid and its record drawer ----------
+  async function decide(action, id, signal) {
+    await wait(signal);
+    const job = jobs.get(id);
+    if (!job) return { accepted: false, message: "That job no longer exists." };
+    if (refusals[action + ":" + id]) return { accepted: false, message: refusals[action + ":" + id] };
+    if (job.status === "Read-only") return { accepted: false, message: "The platform manages this job; it cannot be changed here." };
+    switch (action) {
+      case "run": case "rerun": startRun(job, action === "rerun" ? "Manual, custom data" : "Manual"); break;
+      case "pause": job.status = "Paused"; break;
+      case "resume": {
+        job.status = "Scheduled";
+        if (!job.nextAt || job.nextAt < Date.now()) job.nextAt = Date.now() + (job.every || 60) * 60000;
+        break;
+      }
+      case "edit": openEditor(job); return true;
+      case "delete": jobs.delete(id); await api("sc-jobs").removeRows([id]); refreshCounts(); return true;
+      default: return false;
+    }
+    if (action === "pause" || action === "resume") api("sc-jobs").updateRows([{ id, cells: { status: job.status, next: nextCell(job) } }]);
+    refreshCounts();
+    return true;
+  }
+  // Record actions go through the same proposal path as the row buttons; a refusal's message shows in the drawer.
+  const status = context => value(context.record.cells?.status);
+  const propose = action => async context => {
+    const result = await api("sc-jobs").requestRowAction(context.record.id, action);
+    if (!result.accepted) throw new Error(result.message || "The scheduler did not carry this out.");
+  };
+  CanopyX.configure("sc-jobs", {
+    onRowAction: (proposal, request) => decide(proposal.action, proposal.id, request.signal),
+    recordActions: [
+      { label: "Run now", prominent: true, visible: context => !["Running", "Paused", "Read-only"].includes(status(context)), run: propose("run") },
+      { label: "Resume", prominent: true, visible: context => status(context) === "Paused", run: propose("resume") },
+      { label: "Pause", visible: context => ["Scheduled", "Running", "Error"].includes(status(context)), run: propose("pause") },
+      { label: "Edit", prominent: true, tone: "neutral", visible: context => status(context) !== "Read-only", run: propose("edit") },
+      { label: "Delete", prominent: true, tone: "danger", visible: context => !["Running", "Read-only"].includes(status(context)), run: propose("delete") }
+    ]
+  });
+
+  // ---------- the run history: run again, logs and live refresh ----------
+  const byName = name => [...jobs.values()].find(job => job.name === name);
+  CanopyX.configure("sc-history", {
+    async onRowAction(proposal, request) {
+      await wait(request.signal);
+      const job = byName(value(proposal.row.cells.job));
+      if (!job) return { accepted: false, message: "That job was deleted." };
+      if (job.status === "Read-only") return { accepted: false, message: "The platform runs this job on its own schedule." };
+      if (job.status === "Paused") return { accepted: false, message: "Resume " + job.name + " before running it again." };
+      if (running.has(job.id)) return { accepted: false, message: job.name + " is already running." };
+      startRun(job, "Manual");
+      return true;
+    },
+    detail: {
+      grid(row) {
+        const declared = api("sc-history").view.reporting.detail.view;
+        return { view: { ...declared, rows: [{ id: "log", cells: { log: runLog(row) } }] } };
+      }
+    },
+    live: { load: pollRuns }
+  });
+  function runLog(row) {
+    const cells = row.cells, job = byName(value(cells.job)), outcome = value(cells.outcome), started = Date.parse(value(cells.started));
+    const random = seeded(Number(String(row.id).replace(/\D/g, "")) || 7), lines = [], seconds = value(cells.duration);
+    let at = started;
+    const line = (kind, summary, step = 0.4 + random() * 2) => { lines.push({ time: iso(at), kind, summary }); at += step * 1000; };
+    line("INFO", "Run " + row.id + " started on " + value(cells.worker) + " (" + String(value(cells.trigger)).toLowerCase() + ")");
+    line("DEBUG", "Loaded job data, configuration revision " + (400 + Math.floor(random() * 90)));
+    const type = job?.type || "Script", target = job?.target || "the target";
+    if (type === "HTTP request") line("INFO", "Calling " + target);
+    else if (type === "Data sync") line("INFO", "Reading changes from " + target);
+    else if (type === "Export") line("INFO", "Writing the file for " + target);
+    else line("INFO", "Running " + target);
+    const items = 200 + Math.floor(random() * 9000);
+    line("INFO", "Processed " + items.toLocaleString("en-US") + " items in " + (2 + Math.floor(random() * 6)) + " batches");
+    if (random() < 0.25) line("WARN", "Batch 2 took longer than its 30 s target; continuing with fewer workers");
+    if (outcome === "Running") line("INFO", "Still running…", 0);
+    else if (outcome === "Failed") {
+      const reasons = {
+        "HTTP request": "The endpoint answered 503 Service Unavailable after 3 attempts",
+        "Data sync": "The target rejected 12 records: duplicate key on customer_id",
+        "Export": "The upload to " + target + " failed: connection reset by peer",
+        "Script": "The script exited with code 1: lock file is held by another process"
+      };
+      line("ERROR", reasons[type] || reasons.Script);
+      line("INFO", value(cells.trigger) === "Retry" || job?.status === "Error" ? "Retries exhausted; the owner was notified" : "Retry scheduled in 2 min", 0);
+    } else line("INFO", "Completed in " + (seconds ?? 0).toFixed(1) + " s", 0);
+    return { value: lines.map(item => item.kind + " " + item.summary).join("\n"), events: lines };
+  }
+  // A poll asks the scheduler for runs that happened since the last one: each due job runs once, catching up at most one run.
+  async function pollRuns() {
+    const now = Date.now(), add = [], updates = [];
+    for (const job of jobs.values()) {
+      if (!job.nextAt || job.nextAt > now || job.status === "Paused" || job.status === "Running") continue;
+      const failed = Math.random() < job.failRate * 3 || job.status === "Error" && Math.random() < 0.7;
+      const seconds = Math.round(job.seconds * (0.7 + Math.random() * 0.6) * 10) / 10, outcome = failed ? "Failed" : "Succeeded";
+      add.push(runRow(job, outcome, "Schedule", Math.max(job.nextAt, now - 9000), seconds));
+      if (failed) job.failed24++;
+      const step = (job.every || 1440) * 60000;
+      job.nextAt = job.nextAt + step > now ? job.nextAt + step : now + step;
+      updates.push({ id: job.id, cells: { runs: slotsAfter(job, outcome, seconds, now), failed24: job.failed24, next: nextCell(job) } });
+    }
+    if (updates.length) api("sc-jobs").updateRows(updates);
+    return add.length ? { add } : undefined;
+  }
+
+  // ---------- live bars: one pause for every automatic update on the page ----------
+  const bars = [...document.querySelectorAll("[data-sc-bar]")];
+  let poller = null;
+  function paintBars() {
+    const time = new Date(lastUpdate).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "UTC" }) + " UTC";
+    for (const bar of bars) {
+      bar.toggleAttribute("data-sc-paused", livePaused);
+      bar.querySelector("[data-sc-live-text]").textContent = livePaused ? "Updates paused · last updated " + time : "Refreshes every 10 seconds · updated " + time;
+      const button = bar.querySelector("[data-sc-pause]");
+      button.setAttribute("aria-pressed", String(livePaused)); button.textContent = livePaused ? "Resume updates" : "Pause updates";
+    }
+  }
+  for (const bar of bars) bar.querySelector("[data-sc-pause]").addEventListener("click", () => {
+    livePaused = !livePaused;
+    if (livePaused) poller?.pause(); else poller?.resume();
+    paintBars();
+  });
+
+  // The history shows the last 24 hours by default: an external filter the reader can remove from its chip.
+  const windowButton = document.querySelector("[data-sc-window]");
+  async function applyWindow(on) {
+    windowButton.setAttribute("aria-pressed", String(on));
+    await api("sc-history").setExternalFilter("window", on ? { field: "started", range: [iso(Date.now() - 86400000), null], label: "Last 24 h", sourceLabel: "Time window" } : null);
+  }
+  windowButton.addEventListener("click", () => applyWindow(windowButton.getAttribute("aria-pressed") !== "true"));
+
+  // ---------- New job and Edit: the flow in a drawer ----------
+  let editing = null;
+  const typeIds = { "HTTP request": "http", Script: "script", "Data sync": "sync", Export: "export" };
+  const typeNames = Object.fromEntries(Object.entries(typeIds).map(([name, id]) => [id, name]));
+  async function openEditor(job) {
+    const flow = api("sc-new-job");
+    await flow.ready;
+    editing = job.id;
+    flow.reset();
+    flow.setValues({ type: typeIds[job.type] || "script", name: job.name, group: job.group });
+    flow.open();
+  }
+  document.addEventListener("canopyx:flowSubmit", event => {
+    const values = event.detail.values, id = editing;
+    event.detail.respondWith(wait(null).then(() => {
+      const duplicate = [...jobs.values()].find(job => job.name.toLowerCase() === String(values.name).trim().toLowerCase() && job.id !== id);
+      if (duplicate) return { status: "error", message: "A job with this name already exists.", fieldErrors: { name: "Choose another name; " + duplicate.name + " is taken." } };
+      const first = values.triggers?.[0] || {}, every = first.repeat === "interval" ? Math.max(1, Number(first.minutes) || 15) : null;
+      const schedule = every ? "Every " + every + " minutes" : ({ daily: "Every day", weekdays: "Every weekday", weekly: "Every week" }[first.repeat] || "Every day") + (first.at ? " at " + first.at : "");
+      if (id && jobs.has(id)) {
+        const job = jobs.get(id);
+        Object.assign(job, { name: values.name.trim(), group: values.group, type: typeNames[values.type], schedule });
+        api("sc-jobs").updateRows([{ id, cells: { name: { value: job.name, secondary: job.group }, group: job.group, type: job.type, next: nextCell(job) } }]);
+        editing = null;
+        return { status: "saved", message: "Saved the changes to " + job.name + "." };
+      }
+      // The first run: in N minutes, or the next time the clock reads the trigger's time in UTC.
+      const [hour, minute] = String(first.at || "04:00").split(":").map(Number), today = new Date();
+      let firstRun = every ? Date.now() + every * 60000 : Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hour, minute);
+      if (firstRun <= Date.now()) firstRun += 86400000;
+      const job = { id: "job-" + Date.now().toString(36), name: values.name.trim(), group: values.group, type: typeNames[values.type], status: "Scheduled",
+        every, seconds: 6, failRate: 0.01, failed24: 0, schedule, target: "the new target", nextAt: firstRun };
+      jobs.set(job.id, job);
+      api("sc-jobs").addRows([{ id: job.id, cells: { name: { value: job.name, secondary: job.group }, group: job.group, type: job.type, status: job.status,
+        runs: { value: "No runs yet", series: Array.from({ length: 14 }, () => ({ period: "No run" })) }, next: nextCell(job), failed24: 0 },
+        fields: { about: values.description || null, owner: "You", retries: values.retries + " attempts, backoff from " + values.backoff } }]);
+      refreshCounts();
+      return { status: "saved", message: job.name + " is scheduled. Its first run is " + (every ? "in " + every + " minutes" : "at its first trigger") + "." };
+    }));
+  });
+  document.addEventListener("canopyx:flowSubmitted", () => { editing = null; });
+
+  // ---------- start ----------
+  document.addEventListener("DOMContentLoaded", async () => {
+    const history = api("sc-history");
+    await history.ready;
+    runNumber = Math.max(...history.view.rows.map(row => Number(String(row.id).slice(2)) || 0), 48100);
+    for (const row of api("sc-running").view.rows) {
+      const job = jobs.get(String(row.id).slice(4));
+      // Runs already going finish over the next few minutes, from where the page shows them.
+      const progress = Number(value(row.cells.progress)) || 0, seconds = 150 + Math.round(Math.random() * 150);
+      if (job) running.set(job.id, { job, trigger: "Schedule", started: Date.parse(value(row.cells.started)), t0: Date.now() - progress / 100 * seconds * 1000, seconds, history: null, before: "Running" });
+    }
+    await applyWindow(true);
+    poller = await history.poll({ intervalMs: 10000, onRefresh() { lastUpdate = Date.now(); paintBars(); if (windowButton.getAttribute("aria-pressed") === "true") applyWindow(true); } });
+    setInterval(tickRunning, 1000);
+    for (const name of ["sc-jobs"]) document.getElementById(name).addEventListener("canopyx:externalfilter", event => { if (event.detail.reason === "user") pressCard("all"); });
+    document.getElementById("sc-history").addEventListener("canopyx:externalfilter", event => {
+      if (event.detail.reason === "user" && !event.detail.filters.some(filter => filter.source === "window")) windowButton.setAttribute("aria-pressed", "false");
+    });
+    paintBars();
+  });
+})();
+</script>
+</body>
+</html>

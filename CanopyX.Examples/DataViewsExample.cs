@@ -7,13 +7,17 @@ namespace CanopyX.Examples;
 
 /// <summary>Keyed inventory versions and a host-supplied, read-only view proposal, with invented data.</summary>
 internal static class DataViewsExample {
-    internal static void Write(string output) {
+    /// <summary>The two inventory snapshots compared by key: the view this page reviews, and the one the site shows on its own.</summary>
+    internal static CanopyDataGridView Comparison() {
         var before = new[] { Row("a", "Atlas", "North", "Active", 24), Row("b", "Birch", "South", "Paused", 8),
             Row("c", "Cedar", "North", "Active", 12), Row("d", "Delta", "West", "Active", 40) };
-        var after = new[] { Row("a", "Atlas", "North", "Active", 32), Row("b", "Birch", "South", "Active", 8),
-            Row("c", "Cedar", "North", "Active", 12), Row("e", "Elm", "West", "Paused", 16) };
-        var comparison = CanopyDatasetComparer.Compare(before, after, new[] { "name", "location", "stage", "units" });
-        var compare = comparison.ToView("inventory-compare", "Inventory changes", Columns());
+        var comparison = CanopyDatasetComparer.Compare(before, Current(), new[] { "name", "location", "stage", "units" });
+        return comparison.ToView("inventory-compare", "Inventory changes", Columns());
+    }
+
+    internal static void Write(string output) {
+        var after = Current();
+        var compare = Comparison();
         var ask = new CanopyDataGridView("inventory-intent", "Explore the current inventory") {
             ViewIntents = true, Reporting = new CanopyGridReporting { Groupable = true, Pivotable = true }
         };
@@ -38,6 +42,9 @@ internal static class DataViewsExample {
                 "<body style=\"font-family:Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;margin:16px;background:" + background + "\">" + staticHtml + "</body></html>", new UTF8Encoding(false));
         }
     }
+
+    private static CanopyGridRow[] Current() => new[] { Row("a", "Atlas", "North", "Active", 32), Row("b", "Birch", "South", "Active", 8),
+        Row("c", "Cedar", "North", "Active", 12), Row("e", "Elm", "West", "Paused", 16) };
 
     private static CanopyColumn[] Columns() => new[] {
         new CanopyColumn("name", "Item") { RowHeader = true, AlwaysVisible = true, Sortable = true },

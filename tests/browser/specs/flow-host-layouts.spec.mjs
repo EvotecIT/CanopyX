@@ -24,12 +24,29 @@ test("a task list opens on its hub with the host's states, and Save and return b
   await expect(stepTitle(page)).toHaveText("Tasks");
   await expect(task(page, "mail")).toHaveAttribute("data-cx-state", "complete");
   await expect(task(page, "mail").locator("button")).toBeFocused();
+  // The bar beside the progress line follows the required tasks; it is decoration, the line is what is read.
+  await expect(page.locator(".cx-flow-hub-progress")).toHaveText("1 of 3 tasks complete");
+  await expect(page.locator(".cx-flow-hub-bar")).toHaveAttribute("style", "--cx-flow-done: 33%;");
+  await expect(page.locator(".cx-flow-hub-bar")).toHaveAttribute("aria-hidden", "true");
   // Returning to the hub starts the example's 150 ms status refresh. Complete that host answer
   // before testing a later explicit override; either operation may legitimately replace an earlier state.
   await page.clock.runFor(200);
   await flowCall(page, "setStepState", "licence", { state: "complete", summary: "Activated" });
   await expect(task(page, "licence")).toHaveAttribute("data-cx-state", "complete");
   await expect(task(page, "licence").locator(".cx-flow-task-summary")).toHaveText("Activated");
+});
+
+test("a task reached with the keyboard stays clear of the sticky action bar", async ({ page, browserName }) => {
+  await page.setViewportSize({ width: 600, height: 420 });
+  await openFlow(page, "flow-setup-tasks.html");
+  await task(page, "schedules").locator("button").focus();
+  await page.evaluate(() => scrollTo(0, 0));
+  // WebKit on macOS reaches buttons with Alt+Tab, as Safari does without Full Keyboard Access.
+  await page.keyboard.press(process.platform === "darwin" && browserName === "webkit" ? "Alt+Tab" : "Tab");
+  const open = task(page, "branding").locator("button");
+  await expect(open).toBeFocused();
+  const [button, bar] = await Promise.all([open.boundingBox(), page.locator(".cx-flow-actions").boundingBox()]);
+  expect(button.y + button.height).toBeLessThanOrEqual(bar.y);
 });
 
 test("a host section loads its fields for the chosen engine and swaps them when the engine changes", async ({ page }) => {

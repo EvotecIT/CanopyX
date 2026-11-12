@@ -91,7 +91,8 @@ public sealed partial class CanopyGridPresenter {
         CanopyGridPresenterKind.Identifier => "identifier", CanopyGridPresenterKind.Tags => "tags",
         CanopyGridPresenterKind.SparklineArea => "sparklineArea", CanopyGridPresenterKind.SparklineColumns => "sparklineColumns",
         CanopyGridPresenterKind.SparklineWinLoss => "sparklineWinLoss", CanopyGridPresenterKind.Bullet => "bullet",
-        CanopyGridPresenterKind.Structured => "structured", _ => "missing"
+        CanopyGridPresenterKind.Structured => "structured", CanopyGridPresenterKind.RelativeTime => "relativeTime",
+        CanopyGridPresenterKind.Log => "log", _ => "missing"
     };
 
     internal void WriteJson(CanopyJsonWriter writer) {
@@ -104,6 +105,7 @@ public sealed partial class CanopyGridPresenter {
         if (Separator != null) writer.Property("separator", Separator).Property("limit", Limit);
         WriteDesignJson(writer);
         WriteStructuredJson(writer);
+        WriteActivityJson(writer);
         writer.EndObject();
     }
 }

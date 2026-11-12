@@ -138,6 +138,26 @@ test("a fragment marked manual waits for the host to mount it", async ({ page })
   await expect(row(page, "r2").locator('[aria-colindex="2"]')).toHaveText("state: late");
 });
 
+test("an empty host shows placeholder rows until its view has loaded, then drops them and its busy state", async ({ page }) => {
+  await open(page, { manual: true, script: "" });
+  const state = () => page.evaluate(() => {
+    const host = document.querySelector("[data-canopyx-host]"), grid = host.querySelector(".cx-grid");
+    return { busy: host.getAttribute("aria-busy"), host: getComputedStyle(host).backgroundImage !== "none", grid: !!grid && getComputedStyle(grid).backgroundImage !== "none" };
+  });
+  // A manual fragment is the host's to fill; one the runtime will mount draws its placeholder before the runtime runs.
+  expect(await state()).toEqual({ busy: null, host: false, grid: false });
+  await page.evaluate(() => document.querySelector("[data-canopyx-host]").removeAttribute("data-cx-mount"));
+  expect(await state()).toEqual({ busy: null, host: true, grid: false });
+  const mounted = await page.evaluate(() => {
+    const host = document.querySelector("[data-canopyx-host]"), [api] = CanopyX.mount();
+    const during = { busy: host.getAttribute("aria-busy"), host: getComputedStyle(host).backgroundImage !== "none",
+      grid: getComputedStyle(host.querySelector(".cx-grid")).backgroundImage !== "none" };
+    return api.ready.then(() => during);
+  });
+  expect(mounted).toEqual({ busy: "true", host: false, grid: true });
+  expect(await state()).toEqual({ busy: null, host: false, grid: false });
+});
+
 test("the host's link scheme is written on selection and opened on load and on change", async ({ page }) => {
   await open(page, { hash: "#record/r1/rev/2" });
   await expect(row(page, "r1/rev/2")).toHaveAttribute("aria-selected", "true");

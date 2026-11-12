@@ -161,6 +161,12 @@ test('two hash tab sets preserve each other and respond to hashchange', async ({
   await expect(page.locator('#other-panel-checks')).toBeVisible();
 });
 
+test('a hash tab set keeps a plain anchor and the page history state', async ({ page }) => {
+  await openUi(page, tabs(), `history.replaceState({ host: 1 }, '', '#section-2'); ${initTabs('{ hash: true }')}`);
+  await page.locator('#sections-tab-audit').click();
+  expect(await page.evaluate(() => [location.hash, history.state])).toEqual(['#section-2&sections=audit', { host: 1 }]);
+});
+
 test('tabs collapse only at measured overflow with resize hysteresis and focus return', async ({ page }) => {
   await openUi(page, `<div id="container" style="width:620px">${tabs()}</div>`, initTabs('{}'));
   const list = page.getByRole('tablist'); await expect(list).toBeVisible();
@@ -211,6 +217,22 @@ test('tabs collapse on container resize and the picker retains badges', async ({
   await page.evaluate(() => { document.querySelector('#container').style.width = '900px'; });
   await expect(page.getByRole('tab', { name: 'Checks 3' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('tablist')).toBeVisible();
+});
+
+test('setBadge changes a tab badge, its name and the picker, and removes it', async ({ page }) => {
+  await openUi(page, `<div id="container" style="width:900px">${tabs()}</div>`, initTabs('{}'));
+  expect(await page.evaluate(() => tabs.setBadge('checks', 1234))).toBe(true);
+  await expect(page.getByRole('tab', { name: 'Checks 1,234' })).toBeVisible();
+  await expect(page.locator('#sections-panel-checks .cx-tab-badge')).toHaveText('1,234');
+  expect(await page.evaluate(() => tabs.setBadge('audit', 'New'))).toBe(true);
+  await expect(page.getByRole('tab', { name: 'Audit New' })).toBeVisible();
+  expect(await page.evaluate(() => tabs.setBadge('checks', null))).toBe(true);
+  await expect(page.getByRole('tab', { name: 'Checks', exact: true })).toBeVisible();
+  await expect(page.locator('#sections [data-tab-id="checks"] .cx-tab-badge')).toHaveCount(0);
+  expect(await page.evaluate(() => tabs.setBadge('missing', 1))).toBe(false);
+  await page.evaluate(() => { document.querySelector('#container').style.width = '260px'; });
+  await page.locator('.cx-tabs-phone-picker').getByRole('button').click();
+  await expect(page.getByRole('menuitemradio', { name: /Audit.*New/ })).toBeVisible();
 });
 
 test('overflow menu can select a hidden tab while pills wrap without a menu', async ({ page }) => {

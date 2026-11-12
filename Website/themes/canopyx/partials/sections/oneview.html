@@ -1,7 +1,7 @@
 {{~ ## The first stage of the home page: one set of records in four views, so the claim is seen before it is read.
      Copy and pages come from data/home.json, the count from data/demos.json. ## ~}}
 {{~ one = data.home.oneview ~}}
-<section class="cnx-bench cnx-oneview" data-cnx-stage aria-labelledby="cnx-oneview-title">
+<section class="cnx-bench cnx-oneview" data-cnx-stage data-cnx-guard aria-labelledby="cnx-oneview-title">
   <h2 id="cnx-oneview-title" class="cnx-oneview__title">{{ one.title }}</h2>
   <div class="cnx-bench__tabs" role="tablist" aria-label="{{ one.title }}">
     {{~ for t in one.tabs ~}}

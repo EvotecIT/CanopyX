@@ -71,7 +71,8 @@ test("pivot captures retain the complete frozen table across presentation change
   expect(result.first).toEqual(result.second); expect(result.first).toHaveLength(result.request.recordCount);
   expect(result.request.locale).toBe("de-DE"); expect(result.request.timeZone).toBe("utc"); expect(result.cancellation).toBe("AbortError"); expect(result.frozen).toBe(true);
   const total = result.request.columns.find(column => column.grandTotal && column.aggregate === "total"), grand = result.first.find(row => row.grandTotal);
-  expect(grand.cells[total.id].text).toBe(new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(grand.cells[total.id].value));
+  // An unformatted total shows the digits it needs (up to two), the same as the grid shows it.
+  expect(grand.cells[total.id].text).toBe(new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(grand.cells[total.id].value));
   await page.evaluate(api + ".setPivot({rows:[{column:'region',direction:'asc'},{column:'status',direction:'asc'}],columns:[{column:'items',direction:'asc'}],values:['total']})");
   const bounded = await page.evaluate(api + ".materializeExport({scope:'filtered',pivot:true,maxRows:1}).then(()=>null,error=>error.message)");
   expect(bounded).toMatch(/row bound/);

@@ -146,6 +146,16 @@ public sealed class CanopyHtmlOptions {
     public string? Title { get; set; }
 
     /// <summary>
+    /// Gets or sets markup a page writes at the end of its <c>head</c>, after the runtime's stylesheet and script: host styles,
+    /// a <c>meta</c> element, or a script that calls <c>CanopyX.configure(viewId, options)</c>. It is written as given, not
+    /// encoded, so it must come from the host, never from report data; under a Content Security Policy, give its elements the
+    /// same <see cref="Nonce"/>. With <see cref="CanopyAssetMode.External"/> the runtime script is deferred, so an inline script
+    /// here runs before it: wait for <c>DOMContentLoaded</c>, or set <see cref="AutoMount"/> to false and mount from that script.
+    /// Fragments ignore it.
+    /// </summary>
+    public string? HeadHtml { get; set; }
+
+    /// <summary>
     /// Gets or sets the text direction: a page writes it as the <c>dir</c> attribute of its <c>html</c> element, a fragment on its
     /// host element. Defaults to <see cref="CanopyTextDirection.Auto"/>, which writes none.
     /// </summary>

@@ -1,14 +1,21 @@
   // ---------- aggregates: built-in operations, plugin aggregates and compact labelled values ----------
-  // count and distinctCount read any column; sum, average, minimum and maximum read number columns. Any other operation is
-  // a custom aggregate: a plugin registers it ({ aggregates: { median: { label, compute(values, context) } } }) and computes
-  // it for inline data; a host source returns its own value. Values are finite numbers within the safe-integer magnitude, or
-  // null for an empty input. A plugin aggregate's label is a {value} template ("med {value}"), shown as the built-in labels are.
+  // count and distinctCount read any column; sum, average, minimum, maximum, median and percentile read number columns. Any
+  // other operation is a custom aggregate: a plugin registers it ({ aggregates: { mode: { label, compute(values, context) } } })
+  // and computes it for inline data; a host source returns its own value. Values are finite numbers within the safe-integer
+  // magnitude, or null for an empty input. A plugin aggregate's label is a {value} template ("mode {value}"), shown as the
+  // built-in labels are.
   const groupCounting = operation => operation === "count" || operation === "distinctCount";
+  // The median and percentile method C# shares (CanopyPercentiles): rank (n - 1) * p / 100 of the ascending values, interpolated
+  // linearly between the closest ranks, as Excel PERCENTILE.INC and NumPy's default do.
+  function groupPercentile(values, percentile) {
+    const sorted = Float64Array.from(values).sort(), rank = (sorted.length - 1) * percentile / 100, lower = Math.floor(rank), fraction = rank - lower;
+    return !sorted.length ? null : fraction ? sorted[lower] + (sorted[lower + 1] - sorted[lower]) * fraction : sorted[lower];
+  }
   function groupSummaryAggregates(view) {
     const bindings = new Map();
     const add = aggregate => {
       const existing = bindings.get(aggregate.id);
-      if (existing && (existing.column !== aggregate.column || existing.operation !== aggregate.operation))
+      if (existing && (existing.column !== aggregate.column || existing.operation !== aggregate.operation || existing.percentile !== aggregate.percentile))
         throw new Error("CanopyX: an aggregate identity must use the same column and operation.");
       if (!existing) bindings.set(aggregate.id, aggregate);
     };
@@ -32,9 +39,11 @@
   }
   function groupAggregateValue(grid, aggregate, rows, first, last) {
     const column = grid.view.columns.find(item => item.id === aggregate.column), operation = aggregate.operation;
-    if (!GROUP_OPERATIONS.includes(operation)) {
+    const ranked = operation === "median" ? 50 : operation === "percentile" && aggregate.percentile;
+    if (ranked || !GROUP_OPERATIONS.includes(operation)) {
       const values = [];
       for (let i = first; i < last; i++) { const value = gridScalar(rows[i].cells[column.id], column); if (value !== null) values.push(value); }
+      if (ranked) return groupPercentile(values, ranked);
       const value = grid.groupAggregates.get(operation).compute(Object.freeze(values), Object.freeze({ column: column.id, aggregate: aggregate.id }));
       if (value !== null && (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER))
         throw new Error("CanopyX: custom aggregate '" + operation + "' returned a value that is not a finite number or null.");

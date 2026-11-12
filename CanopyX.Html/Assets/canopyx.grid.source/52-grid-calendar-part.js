@@ -14,7 +14,7 @@
   // Shared screens: faces, merged events, faded past events, day notes, fitted day counts and the Reset button.
   definePart(DataGrid, "calendar-screen", "calendar shared screens", () => ({ DataGrid, h, setText, fill, gridButton, gridFreeze, toneVariable }));
   const GRID_CALENDAR_API = ["getCalendar", "setCalendarView", "setCalendarDate", "setCalendarZoom", "calendarStep", "calendarToday", "getCalendarEvents",
-    "exportCalendar", "openCalendarEvent", "editCalendarOccurrence", "clearCalendarSelection", "setCalendarSource", "resetCalendar"];
+    "exportCalendar", "openCalendarEvent", "editCalendarOccurrence", "clearCalendarSelection", "setCalendarSource", "resetCalendar", "describeCalendarRecurrence"];
   for (const name of GRID_CALENDAR_API) DataGrid.prototype[name] = function (...args) { return this.loadCalendar().then(() => this[name](...args)); };
   DataGrid.prototype.loadCalendar = function () {
     return this.calLoad ||= loadPart(GRID_CALENDAR).then(() => this.destroyed || this.calParts()).then(() => this.destroyed || this.startCalendar()).catch(error => { this.calLoad = null; this.emit("error", { error }); throw error; });

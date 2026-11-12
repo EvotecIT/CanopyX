@@ -167,7 +167,7 @@
 <template data-gallery-fragment="dialog-body"><label class="gallery-field" for="dialog-name">Display name<input id="dialog-name" value="Research workspace" required maxlength="80" autocomplete="off"></label></template>
 <template data-gallery-fragment="dialog-footer"><button type="button" data-cx-cancel>Cancel</button><button type="button" id="save-workspace" class="gallery-primary">Save changes</button></template>
 <template data-gallery-fragment="alert-footer"><button type="button" data-cx-cancel>Keep workspace</button><button type="button" id="confirm-archive" class="gallery-danger" data-danger="true">Archive workspace</button></template>
-<template data-gallery-fragment="drawer-body"><h3 id="drawer-record-name">Workspace overview</h3><p><span class="gallery-status">Ready</span></p><dl class="gallery-summary"><dt>Owner</dt><dd id="drawer-record-owner">Platform team</dd><dt>Record</dt><dd id="drawer-record-position">1 of 3</dd><dt>Description</dt><dd id="drawer-record-description">A summary of shared files and recent activity.</dd></dl><div class="gallery-actions"><button type="button" id="previous-record">Previous record</button><button type="button" id="next-record">Next record</button></div></template>
+<template data-gallery-fragment="drawer-body"><h3 id="drawer-record-name">Workspace overview</h3><p><span class="gallery-status">Ready</span></p><dl class="gallery-summary"><dt>Owner</dt><dd id="drawer-record-owner">Platform team</dd><dt>Description</dt><dd id="drawer-record-description">A summary of shared files and recent activity.</dd></dl></template>
 <template data-gallery-fragment="drawer-footer"><button type="button" data-cx-close>Close</button><button type="button" id="choose-record" class="gallery-primary">Use this record</button></template>
 <template data-gallery-fragment="popover-body"><label class="gallery-field" for="record-status">Record status<select id="record-status"><option value="all">All records</option><option value="ready">Ready</option><option value="review">Needs review</option></select></label></template>
 <template data-gallery-fragment="popover-footer"><button type="button" id="reset-filter">Reset</button><button type="button" id="apply-filter" class="gallery-primary">Apply</button></template>
@@ -261,11 +261,12 @@
   ];
   let recordIndex = 0;
   function moveRecord(direction) {
-    recordIndex = (recordIndex + direction + records.length) % records.length;
+    recordIndex = Math.min(records.length - 1, Math.max(0, recordIndex + direction));
     const item = records[recordIndex];
     byId('drawer-record-name').textContent = item.name; byId('drawer-record-owner').textContent = item.owner;
-    byId('drawer-record-description').textContent = item.description; byId('drawer-record-position').textContent = (recordIndex + 1) + ' of ' + records.length;
+    byId('drawer-record-description').textContent = item.description;
     byId('record-summary').textContent = item.name; record('Record selected: ' + item.name);
+    drawer.open({ position: { current: recordIndex + 1, total: records.length } });
   }
   const drawer = bind('drawer', 'record-details', { records: moveRecord, container: document.documentElement });
   const popover = bind('popover', 'view-options'); bind('tooltip', 'shortcut-help');
@@ -275,8 +276,8 @@
     const message = item.id === 'show-link' ? 'Example link: ' + location.href : item.label + (detail.checked === undefined ? '' : detail.checked ? ' enabled' : ' disabled');
     byId('menu-result').textContent = message; record('Menu: ' + message);
   } });
-  byId('previous-record').addEventListener('click', () => moveRecord(-1));
-  byId('next-record').addEventListener('click', () => moveRecord(1));
+  // The drawer draws Previous, Next and the position itself; opening it again while open only updates them.
+  byId('record-details').addEventListener('cx-drawer:open', () => drawer.open({ position: { current: recordIndex + 1, total: records.length } }));
   byId('choose-record').addEventListener('click', () => { record('Using record: ' + records[recordIndex].name); drawer.close(); });
   byId('save-workspace').addEventListener('click', () => {
     const field = byId('dialog-name');

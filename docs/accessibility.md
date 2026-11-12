@@ -37,6 +37,17 @@ A view is one Tab stop: focus is a roving `tabindex` on rows, and Tab leaves the
 
 Controls that use the arrow keys themselves (text boxes, lists, radio buttons, tabs) keep them: the arrows stop at their cell, Enter goes into the control and Escape comes back out. Menus open from their button with Enter, Space or Down, move with the arrow keys, Home and End, and close with Escape, returning focus to their button. One CanopyX menu is open at a time.
 
+### Right to left
+
+A tree or flat grid inside `dir="rtl"` (on the page, the host or any ancestor, or `CanopyHtmlOptions.Direction`) mirrors. The view reads its direction from the grid's computed `direction`, so the stylesheet can set it too.
+
+- The columns run from right to left. The tree column, and columns pinned `left`, stay at the right edge; columns pinned `right` stay at the left edge. `left` and `right` name the start and end edges of the line.
+- Indentation grows to the left, and a closed expander points left.
+- Left and Right swap in the table above: Left expands a row, enters it and moves to the next cell; Right collapses a row, goes to the parent and moves back towards the row. A focused column resize grip sits on the column's left edge, so Left widens the column.
+- Moving focus between cells scrolls the grid sideways so the cell clears the pinned columns. A right-to-left `scrollLeft` is 0 at the start and negative towards the end in current browsers.
+
+`rtl-tree.html` and `rtl-grid.html` in the examples show both views with Hebrew labels; `rtl.spec.mjs` covers the layout, the keys and the focus scrolling.
+
 ## Display modes
 
 ### Forced colours (Windows high contrast)
@@ -69,7 +80,7 @@ Known exception: column resize grips are narrow drag handles. The same width cha
 | --- | --- | --- |
 | axe-core over every example | `tests/browser/specs/axe-examples.spec.mjs` | Every generated example page at 1440 x 900 and at 390 x 844 with touch, in light and dark (pages with a dark twin in their own theme, pages that follow the system in both), against the WCAG 2.0, 2.1 and 2.2 A and AA rules and best practices. Serious and critical violations fail; moderate and minor ones are attached to the report. |
 | axe-core on open states | `tests/browser/specs/accessibility.spec.mjs` | No violations of any impact with folders, details and selection open, the column chooser open, search results showing, and a filtered tree, in light and dark. |
-| Keyboard | `accessibility.spec.mjs`, `cell-navigation.spec.mjs`, `keyboard-regressions.spec.mjs`, `menu-closing.spec.mjs` and the grid specs | The row and cell focus model, type-ahead, Tab leaving the grid, menus, and DOM order while scrolling. |
+| Keyboard | `accessibility.spec.mjs`, `cell-navigation.spec.mjs`, `keyboard-regressions.spec.mjs`, `menu-closing.spec.mjs`, `rtl.spec.mjs` and the grid specs | The row and cell focus model, type-ahead, Tab leaving the grid, menus, DOM order while scrolling, and the mirrored keys right to left. |
 | Forced colours | `tests/browser/specs/accessibility-modes.spec.mjs` | With forced colours emulated in light and dark, on a tree, a flat grid and a reporting grid: selected rows resolve to `Highlight` and `HighlightText` with all their text in `HighlightText`, focus outlines are solid and at least 2 pixels, menus have edges and focused items an outline, pills and badges keep an outline, status dots stay visible, and the record drawer keeps its edge and focus outline. |
 | Reduced motion | `accessibility-modes.spec.mjs` | With reduced motion emulated, no element of a view, menu or drawer has a running animation or a transition longer than zero. |
 | Reflow | `accessibility-modes.spec.mjs` | At 640 x 512 and 320 x 256: no sideways page scrolling, no toolbar control outside the window, every control of the Columns menu reachable, and the record drawer inside the window and closable. |

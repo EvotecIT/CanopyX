@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "39804c2061ff6d0b",
+      "version": "9d4e8e8a90ffe27a",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -71,7 +71,7 @@
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "d97c13adf5742644",
+      "version": "5f829d64d561fc04",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [
@@ -105,7 +105,7 @@
     {
       "name": "ui-accordion",
       "label": "UI accordion",
-      "version": "2dcae6b70bbee048",
+      "version": "a1e96f0e827d731c",
       "script": "canopyx-ui-accordion.js",
       "style": "canopyx-ui-accordion.css",
       "runtimes": [
@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "7c74d03d3e20bbc9",
+      "version": "0341595c709f974f",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -138,7 +138,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "de8ca287bd36b2e0",
+      "version": "6ce031472945ca7c",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -153,7 +153,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "d1a4d4c07d406855",
+      "version": "3439da61f003dd0c",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -204,7 +204,7 @@
     {
       "name": "history",
       "label": "history presenters",
-      "version": "7d9901d2fe04df72",
+      "version": "7579c88fab0bdd06",
       "script": "canopyx-history.js",
       "runtimes": [
         "grid"
@@ -216,6 +216,23 @@
         "statusStrip",
         "sparklineBars",
         "sparklineLine"
+      ]
+    },
+    {
+      "name": "activity",
+      "label": "relative time and log cells",
+      "version": "50d97496d9b56edc",
+      "script": "canopyx-activity.js",
+      "style": "canopyx-activity.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "presenters": [
+        "relativeTime",
+        "log"
       ]
     },
     {
@@ -459,7 +476,7 @@
     {
       "name": "flow-tasks",
       "label": "flow task lists",
-      "version": "8a4437f5216ac3ee",
+      "version": "629600774c4ced8f",
       "script": "canopyx-flow-tasks.js",
       "style": "canopyx-flow-tasks.css",
       "runtimes": [
@@ -580,7 +597,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "909b40e6945c88cd",
+      "version": "78e37b0564b48e92",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -589,6 +606,16 @@
       "views": [
         "matrix"
       ]
+    },
+    {
+      "name": "matrix-table",
+      "label": "matrix table",
+      "version": "446348827a78daa0",
+      "script": "canopyx-matrix-table.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": []
     },
     {
       "name": "changes",
@@ -626,7 +653,7 @@
     {
       "name": "column-groups",
       "label": "column groups",
-      "version": "91abd99e8ff95b58",
+      "version": "4bcde7623dafd9d4",
       "script": "canopyx-column-groups.js",
       "style": "canopyx-column-groups.css",
       "runtimes": [
@@ -739,7 +766,7 @@
     {
       "name": "detail-rows",
       "label": "detail rows",
-      "version": "1892f1fd9d035c0f",
+      "version": "e1f13a4ef0b9b15f",
       "script": "canopyx-detail-rows.js",
       "style": "canopyx-detail-rows.css",
       "runtimes": [
@@ -757,7 +784,7 @@
     {
       "name": "calculations",
       "label": "calculated columns",
-      "version": "071421edfaa0704b",
+      "version": "b5261d723b5a9445",
       "script": "canopyx-calculations.js",
       "style": "canopyx-calculations.css",
       "runtimes": [
@@ -864,7 +891,7 @@
     {
       "name": "buckets",
       "label": "date and range buckets",
-      "version": "cc69c8336c15df83",
+      "version": "234183bf88b589ca",
       "script": "canopyx-buckets.js",
       "runtimes": [
         "grid"
@@ -879,7 +906,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "7180f72b083df0b7",
+      "version": "79eb97f84d8f969c",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -934,7 +961,7 @@
     {
       "name": "facets",
       "label": "facet panel",
-      "version": "9502ac7664410602",
+      "version": "2218022f7b96706d",
       "script": "canopyx-facets.js",
       "style": "canopyx-facets.css",
       "runtimes": [
@@ -966,7 +993,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "42af6ec5267dc088",
+      "version": "084744f94aac19a9",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -987,7 +1014,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "961e92374a7ee2e5",
+      "version": "0b2bfccfedebe53a",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1006,7 +1033,7 @@
     {
       "name": "calendar-recurrence",
       "label": "calendar recurrence",
-      "version": "64bcc24d785bd1af",
+      "version": "4060a0a04ea457cd",
       "script": "canopyx-calendar-recurrence.js",
       "runtimes": [
         "grid"
@@ -1099,7 +1126,7 @@
     {
       "name": "grid-options",
       "label": "grid footer and query extensions",
-      "version": "80a20e04b5c76c33",
+      "version": "845d8c1fed0736e0",
       "script": "canopyx-grid-options.js",
       "style": "canopyx-grid-options.css",
       "runtimes": [
@@ -1115,7 +1142,7 @@
     {
       "name": "board",
       "label": "board view",
-      "version": "8a08962fded201f6",
+      "version": "7c31cbc229d6a0b7",
       "script": "canopyx-board.js",
       "style": "canopyx-board.css",
       "runtimes": [
@@ -1131,7 +1158,7 @@
     {
       "name": "plan",
       "label": "plan view",
-      "version": "f24e87cbfe9e25a4",
+      "version": "1cf8dd03f52c4bc1",
       "script": "canopyx-plan.js",
       "style": "canopyx-plan.css",
       "runtimes": [
@@ -1215,7 +1242,7 @@
     {
       "name": "compare",
       "label": "dataset comparison",
-      "version": "46245b96483e9c30",
+      "version": "2aee327cf55d6ab1",
       "script": "canopyx-compare.js",
       "style": "canopyx-compare.css",
       "runtimes": [
@@ -1229,6 +1256,25 @@
       ],
       "requires": [
         "presenters"
+      ]
+    },
+    {
+      "name": "row-actions",
+      "label": "row actions",
+      "version": "2ccf491daa583c92",
+      "script": "canopyx-row-actions.js",
+      "style": "canopyx-row-actions.css",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "rowActions"
+      ],
+      "requires": [
+        "ui-menu"
       ]
     }
   ]
