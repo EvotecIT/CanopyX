@@ -2471,6 +2471,7 @@ CanopyX.CanopyLabels.System.String GridClearColumnFilter { get; set; }
 CanopyX.CanopyLabels.System.String GridClearDefaultView { get; set; }
 CanopyX.CanopyLabels.System.String GridClearFilters { get; set; }
 CanopyX.CanopyLabels.System.String GridClearQuery { get; set; }
+CanopyX.CanopyLabels.System.String GridClearSearch { get; set; }
 CanopyX.CanopyLabels.System.String GridClearSelection { get; set; }
 CanopyX.CanopyLabels.System.String GridClearSort { get; set; }
 CanopyX.CanopyLabels.System.String GridCloseCell { get; set; }
@@ -2638,7 +2639,9 @@ CanopyX.CanopyLabels.System.String GridNoData { get; set; }
 CanopyX.CanopyLabels.System.String GridNoDefaultView { get; set; }
 CanopyX.CanopyLabels.System.String GridNoExportColumns { get; set; }
 CanopyX.CanopyLabels.System.String GridNoMatches { get; set; }
-CanopyX.CanopyLabels.System.String GridNoMatchesReason { get; set; }
+CanopyX.CanopyLabels.System.String GridNoMatchesFilters { get; set; }
+CanopyX.CanopyLabels.System.String GridNoMatchesSearch { get; set; }
+CanopyX.CanopyLabels.System.String GridNoMatchesSearchFilters { get; set; }
 CanopyX.CanopyLabels.System.String GridOfThese { get; set; }
 CanopyX.CanopyLabels.System.String GridOfTheseAreTrue { get; set; }
 CanopyX.CanopyLabels.System.String GridOperator { get; set; }

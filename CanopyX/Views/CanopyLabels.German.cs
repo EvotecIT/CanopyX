@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete German labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels German() => WithGermanUi(WithGermanRowActions(WithGermanForest(WithGermanDataViews(WithGermanChanges(WithGermanCalendar(WithGermanBoardPlan(WithGermanAnalysis(new CanopyLabels {
+    public static CanopyLabels German() => WithGermanUi(WithGermanRowActions(WithGermanGridStates(WithGermanForest(WithGermanDataViews(WithGermanChanges(WithGermanCalendar(WithGermanBoardPlan(WithGermanAnalysis(new CanopyLabels {
         GridNoExportColumns = "Keine sichtbare Spalte unterstützt den Export.",
         GridDownloadXlsx = "Excel-Arbeitsmappe (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -88,7 +88,6 @@ public sealed partial class CanopyLabels {
         GridEmpty = "Keine {noun}",
         GridEmptyReason = "Es gibt keine Datensätze zum Anzeigen.",
         GridNoMatches = "Keine passenden {noun}",
-        GridNoMatchesReason = "Suche: {search}. Aktive Filter: {count}.",
         GridRetry = "Erneut versuchen",
         GridLoadFailed = "Datensätze konnten nicht geladen werden",
         GridAll = "Alle",
@@ -717,5 +716,5 @@ public sealed partial class CanopyLabels {
         MatrixState = "Zustand",
         MatrixAllClear = "Nichts erfordert Aufmerksamkeit",
         MatrixShowMore = "Mehr anzeigen",
-    }))))))));
+    })))))))));
 }

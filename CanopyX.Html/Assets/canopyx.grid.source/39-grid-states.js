@@ -20,13 +20,22 @@
         const retry=gridDecorateButton(gridButton(this.labels.gridRetry,()=>this.retry().catch(()=>{})),"retry",true);retry.classList.add("cx-grid-retry");
         this.notice.append(message,retry);this.notice.hidden=false;setText(this.live,this.labels.gridLoadFailed+" "+text);return;
       }
-      if(this.snapshot&&(this.cursor?this.cursorWindow.end===this.pageOffset:this.snapshot.matched===0)){
-        const query=this.acceptedQuery,active=!!query.search||gridFilterCount(query)>0,title=h("h4"),reason=h("p"),actions=h("div","acts");
+      const empty=!!this.snapshot&&(this.cursor?this.cursorWindow.end===this.pageOffset:this.snapshot.matched===0),query=this.acceptedQuery,filters=gridFilterCount(query),active=empty&&(!!query?.search||filters>0);
+      // The empty state's button clears the query, so the query summary hides its own Clear all link while it shows.
+      this.gridNoMatchesShown=active;const summaryClear=this.queryChips?.querySelector('[data-cx-condition="clear"]');if(summaryClear)summaryClear.hidden=active;
+      if(empty){
+        const title=h("h4"),reason=h("p"),actions=h("div","acts");
         this.host.classList.add("cx-grid-awaiting");this.notice.classList.add("cx-state");this.host.insertBefore(this.notice,this.grid.nextSibling);title.setAttribute("aria-level","2");setText(title,fill(active?this.labels.gridNoMatches:this.labels.gridEmpty,{noun:this.noun}));
-        setText(reason,active?fill(this.labels.gridNoMatchesReason,{search:query.search||"—",count:gridFilterCount(query)}):this.view.emptyReason||this.labels.gridEmptyReason);
-        if(active)actions.appendChild(gridButton(this.labels.gridClearAll,()=>this.setQuery(gridQueryStart(this.queryForChange(true),{search:"",filters:[],filterGroup:undefined,tupleFilters:undefined})).catch(()=>{})));
+        setText(reason,active?this.gridNoMatchesReason(query.search,filters):this.view.emptyReason||this.labels.gridEmptyReason);
+        if(active)actions.appendChild(gridButton(filters?this.labels.gridClearAll:this.labels.gridClearSearch,()=>this.setQuery(gridQueryStart(this.queryForChange(true),{search:"",filters:[],filterGroup:undefined,tupleFilters:undefined})).catch(()=>{})));
         this.notice.append(title,reason,actions);this.notice.hidden=false;setText(this.live,title.textContent+" "+reason.textContent);
       }else if(text){setText(this.notice,text);this.notice.hidden=false;}
+    },
+    /** Why no rows match: the search, the active filters, or both; filter counts use the page language's plural forms. */
+    gridNoMatchesReason(search,filters){
+      if(!filters)return fill(this.labels.gridNoMatchesSearch,{noun:this.noun,search});
+      const template=search?this.labels.gridNoMatchesSearchFilters:this.labels.gridNoMatchesFilters;
+      return fill(plural(template,filters,this.lang),{noun:this.noun,search,count:numberFormat(this.lang).format(filters)});
     },
     paintGridSkeleton(element,row){
       if(row.status!=="loading"){element._skeleton?.remove();element._skeleton=null;return;}

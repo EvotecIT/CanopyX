@@ -3,7 +3,7 @@ namespace CanopyX;
 
 public sealed partial class CanopyLabels {
     /// <summary>Creates complete Polish labels. Each call returns an independent, editable pack.</summary>
-    public static CanopyLabels Polish() => WithPolishUi(WithPolishRowActions(WithPolishForest(WithPolishDataViews(WithPolishChanges(WithPolishCalendar(WithPolishBoardPlan(WithPolishAnalysis(new CanopyLabels {
+    public static CanopyLabels Polish() => WithPolishUi(WithPolishRowActions(WithPolishGridStates(WithPolishForest(WithPolishDataViews(WithPolishChanges(WithPolishCalendar(WithPolishBoardPlan(WithPolishAnalysis(new CanopyLabels {
         GridNoExportColumns = "Żadna widoczna kolumna nie obsługuje eksportu.",
         GridDownloadXlsx = "Skoroszyt Excel (.xlsx)",
         GridDownloadPdf = "PDF",
@@ -88,7 +88,6 @@ public sealed partial class CanopyLabels {
         GridEmpty = "Brak: {noun}",
         GridEmptyReason = "Nie ma rekordów do wyświetlenia.",
         GridNoMatches = "Brak pasujących: {noun}",
-        GridNoMatchesReason = "Wyszukiwanie: {search}. Aktywne filtry: {count}.",
         GridRetry = "Ponów",
         GridLoadFailed = "Nie udało się wczytać rekordów",
         GridAll = "Wszystkie",
@@ -717,5 +716,5 @@ public sealed partial class CanopyLabels {
         MatrixState = "Stan",
         MatrixAllClear = "Nic nie wymaga uwagi",
         MatrixShowMore = "Pokaż więcej",
-    }))))))));
+    })))))))));
 }

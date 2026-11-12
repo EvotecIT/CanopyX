@@ -82,7 +82,7 @@ for (const filtered of [false, true]) for (const height of [220, 520]) {
     const view = { protocol: "canopyx/2", type: "grid", id: "empty-settles", label: "Records", pageSize: 50,
       selection: "multiple", search: true, source: { kind: "inline" },
       emptyReason: "This data view has no records to display. Import or connect records before using the table. The explanation remains fully readable in a narrow panel.",
-      labels: { gridNoMatchesReason: "Search: {search}. Active filters: {count}. The current filters do not match any records in this data view. Clear the filters to restore every available record." },
+      labels: { gridNoMatchesFilters: "No {noun} match the {count} active filters. The current filters do not match any records in this data view. Clear the filters to restore every available record." },
       columns: [{ id: "name", title: "Last delivery status", kind: "text", width: 100, fixed: true }, { id: "site", title: "Email preview", kind: "text", width: 100, fixed: true }],
       rows: filtered ? [{ id: "one", cells: { name: "Alpha", site: "Berlin" } }] : [] };
     await serveGrid(page, { view, height });
