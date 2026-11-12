@@ -88,6 +88,7 @@ public sealed partial class CanopyLabels {
         GridEmpty = "Nessun elemento: {noun}",
         GridEmptyReason = "Non ci sono record da visualizzare.",
         GridNoMatches = "Nessuna corrispondenza: {noun}",
+        GridNoMatchesReason = "Ricerca: {search}. Filtri attivi: {count}.",
         GridRetry = "Riprova",
         GridLoadFailed = "Impossibile caricare i record",
         GridAll = "Tutti",

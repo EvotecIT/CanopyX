@@ -88,6 +88,7 @@ public sealed partial class CanopyLabels {
         GridEmpty = "Brak: {noun}",
         GridEmptyReason = "Nie ma rekordów do wyświetlenia.",
         GridNoMatches = "Brak pasujących: {noun}",
+        GridNoMatchesReason = "Wyszukiwanie: {search}. Aktywne filtry: {count}.",
         GridRetry = "Ponów",
         GridLoadFailed = "Nie udało się wczytać rekordów",
         GridAll = "Wszystkie",

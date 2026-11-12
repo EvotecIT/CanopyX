@@ -94,6 +94,7 @@ public sealed partial class CanopyLabels {
         [nameof(GridEmpty)] = "No {noun}",
         [nameof(GridEmptyReason)] = "There are no records to display.",
         [nameof(GridNoMatches)] = "No matching {noun}",
+        [nameof(GridNoMatchesReason)] = "Search: {search}. Active filters: {count}.",
         [nameof(GridRetry)] = "Retry",
         [nameof(GridLoadFailed)] = "Could not load records",
         [nameof(GridAll)] = "All",

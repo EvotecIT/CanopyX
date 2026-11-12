@@ -1857,6 +1857,13 @@
     "Aucune correspondance : {noun}",
     "Nessuna corrispondenza: {noun}"
   ],
+  "GridNoMatchesReason": [
+    "Wyszukiwanie: {search}. Aktywne filtry: {count}.",
+    "Suche: {search}. Aktive Filter: {count}.",
+    "Búsqueda: {search}. Filtros activos: {count}.",
+    "Recherche : {search}. Filtres actifs : {count}.",
+    "Ricerca: {search}. Filtri attivi: {count}."
+  ],
   "GridNoMatchesSearch": [
     "Brak {noun} pasujących do „{search}”.",
     "Keine {noun} passen zu „{search}“.",
@@ -1866,14 +1873,14 @@
   ],
   "GridNoMatchesSearchFilters": [
     "[one]Brak {noun} pasujących do „{search}” przy {count} filtrze.[other]Brak {noun} pasujących do „{search}” przy {count} filtrach.",
-    "[one]Keine {noun} passen zu „{search}“ und {count} aktiven Filter.[other]Keine {noun} passen zu „{search}“ und {count} aktiven Filtern.",
+    "[one]Keine {noun} passen zu „{search}“ und {count} aktivem Filter.[other]Keine {noun} passen zu „{search}“ und {count} aktiven Filtern.",
     "[one]Sin {noun} que coincidan con «{search}» y {count} filtro activo.[other]Sin {noun} que coincidan con «{search}» y {count} filtros activos.",
     "[one]Aucune correspondance pour « {search} » avec {count} filtre : {noun}.[other]Aucune correspondance pour « {search} » avec {count} filtres : {noun}.",
     "[one]Nessuna corrispondenza per «{search}» con {count} filtro: {noun}.[other]Nessuna corrispondenza per «{search}» con {count} filtri: {noun}."
   ],
   "GridNoMatchesFilters": [
     "[one]Brak {noun} pasujących do {count} aktywnego filtra.[other]Brak {noun} pasujących do {count} aktywnych filtrów.",
-    "[one]Keine {noun} passen zu {count} aktiven Filter.[other]Keine {noun} passen zu den {count} aktiven Filtern.",
+    "[one]Keine {noun} passen zu {count} aktivem Filter.[other]Keine {noun} passen zu den {count} aktiven Filtern.",
     "[one]Sin {noun} que coincidan con {count} filtro activo.[other]Sin {noun} que coincidan con los {count} filtros activos.",
     "[one]Aucune correspondance avec {count} filtre actif : {noun}.[other]Aucune correspondance avec les {count} filtres actifs : {noun}.",
     "[one]Nessuna corrispondenza con {count} filtro attivo: {noun}.[other]Nessuna corrispondenza con i {count} filtri attivi: {noun}."

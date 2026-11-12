@@ -97,6 +97,8 @@ public sealed partial class CanopyLabels {
     public string GridEmptyReason { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the no matches label.</summary>
     public string GridNoMatches { get => Get(); set => Set(value); }
+    /// <summary>Deprecated and no longer shown: the empty state uses <see cref="GridNoMatchesSearch"/>, <see cref="GridNoMatchesSearchFilters"/> or <see cref="GridNoMatchesFilters"/>. It stays so existing documents and packs that carry it still load.</summary>
+    public string GridNoMatchesReason { get => Get(); set => Set(value); }
     /// <summary>Gets or sets why no rows match when only a search is active, with <c>{noun}</c> and <c>{search}</c>. Default "No {noun} match “{search}”.".</summary>
     public string GridNoMatchesSearch { get => Get(); set => Set(value); }
     /// <summary>Gets or sets why no rows match a search and filters, with <c>{noun}</c>, <c>{search}</c> and the filter <c>{count}</c>; it can give plural forms.</summary>

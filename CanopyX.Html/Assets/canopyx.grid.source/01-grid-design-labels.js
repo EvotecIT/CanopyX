@@ -71,6 +71,8 @@ gridFacetSearch: "Search values",
     gridEmpty: "No {noun}",
     gridEmptyReason: "There are no records to display.",
     gridNoMatches: "No matching {noun}",
+    // Deprecated and no longer shown; kept so documents that carry it still load.
+    gridNoMatchesReason: "Search: {search}. Active filters: {count}.",
     gridNoMatchesSearch: "No {noun} match “{search}”.",
     gridNoMatchesSearchFilters: "[one]No {noun} match “{search}” with {count} filter.[other]No {noun} match “{search}” with {count} filters.",
     gridNoMatchesFilters: "[one]No {noun} match the {count} active filter.[other]No {noun} match the {count} active filters.",

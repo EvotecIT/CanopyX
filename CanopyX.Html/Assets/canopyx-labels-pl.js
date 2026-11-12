@@ -85,6 +85,7 @@ const labels = Object.freeze({
   gridEmpty: "Brak: {noun}",
   gridEmptyReason: "Nie ma rekordów do wyświetlenia.",
   gridNoMatches: "Brak pasujących: {noun}",
+  gridNoMatchesReason: "Wyszukiwanie: {search}. Aktywne filtry: {count}.",
   gridRetry: "Ponów",
   gridLoadFailed: "Nie udało się wczytać rekordów",
   gridAll: "Wszystkie",

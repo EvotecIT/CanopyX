@@ -2833,6 +2833,7 @@
         "gridEmpty": { "type": "string" },
         "gridEmptyReason": { "type": "string" },
         "gridNoMatches": { "type": "string" },
+        "gridNoMatchesReason": { "type": "string", "deprecated": true, "description": "Deprecated and no longer shown; accepted so older documents still validate." },
         "gridNoMatchesSearch": { "type": "string" },
         "gridNoMatchesSearchFilters": { "type": "string" },
         "gridNoMatchesFilters": { "type": "string" },

@@ -88,6 +88,7 @@ public sealed partial class CanopyLabels {
         GridEmpty = "Aucun élément : {noun}",
         GridEmptyReason = "Aucun enregistrement à afficher.",
         GridNoMatches = "Aucune correspondance : {noun}",
+        GridNoMatchesReason = "Recherche : {search}. Filtres actifs : {count}.",
         GridRetry = "Réessayer",
         GridLoadFailed = "Impossible de charger les enregistrements",
         GridAll = "Tout",

@@ -2640,6 +2640,7 @@ CanopyX.CanopyLabels.System.String GridNoDefaultView { get; set; }
 CanopyX.CanopyLabels.System.String GridNoExportColumns { get; set; }
 CanopyX.CanopyLabels.System.String GridNoMatches { get; set; }
 CanopyX.CanopyLabels.System.String GridNoMatchesFilters { get; set; }
+CanopyX.CanopyLabels.System.String GridNoMatchesReason { get; set; }
 CanopyX.CanopyLabels.System.String GridNoMatchesSearch { get; set; }
 CanopyX.CanopyLabels.System.String GridNoMatchesSearchFilters { get; set; }
 CanopyX.CanopyLabels.System.String GridOfThese { get; set; }

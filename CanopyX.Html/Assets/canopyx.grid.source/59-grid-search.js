@@ -55,8 +55,10 @@
 
     syncQuerySummary() {
       if (!this.acceptedQuery || !this.querySummary) return;
-      const query = this.acceptedQuery, active = document.activeElement, focused = this.queryChips.contains(active);
-      const key = focused && active.getAttribute("data-cx-condition");
+      // A query flow passes the summary focus it saw before its notice could hide the focused control.
+      const saved = this.querySummaryFocus; this.querySummaryFocus = null;
+      const query = this.acceptedQuery, active = document.activeElement, inside = this.queryChips.contains(active);
+      const focused = inside || saved != null, key = inside ? active.getAttribute("data-cx-condition") : saved;
       const numbers = numberFormat(this.lang);
       this.querySummary.hidden = !query.search && !gridFilterCount(query);
       this.syncGridChrome();

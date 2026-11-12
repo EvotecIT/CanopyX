@@ -127,6 +127,8 @@
         this.grid.setAttribute("aria-rowcount", page.matched === null ? "-1" : String(page.matched + 1 + (this.headDepth || 0)));
         this.grid.tabIndex = hasRows ? -1 : 0;
         this.syncScrollRange(this.paged ? 0 : query.offset * this.rowH); this.buildHeader(); this.syncColumnControls();
+        // The empty state can hide the focused Clear all link. Keep its summary focus for the rebuild below.
+        const summaryFocus = this.queryChips?.contains(document.activeElement) ? document.activeElement.getAttribute("data-cx-condition") : null;
         this.setNotice(hasRows ? "" : this.labels.searchNoResults, false); this.grid.setAttribute("aria-busy", "false");
         if (hadFocus || this.focusOrigin) {
           this.focused = [...this.rowCache.values()].find(row => row.key === previousId) || this.rowCache.get(this.cursor ? page.offset : query.offset) || null;
@@ -142,7 +144,7 @@
           this.searchInput.maxLength = query.searchMode === "regex" ? 256 : 524288;
           this.searchInput.setCustomValidity("");
         }
-        this.syncQuerySummary();
+        this.querySummaryFocus = summaryFocus; this.syncQuerySummary();
         this.syncPager();
         // Fit the final empty notice and query controls even when row count stays zero.
         this.fitHeight();
