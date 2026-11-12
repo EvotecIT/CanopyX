@@ -9,27 +9,27 @@ function tabs(id = 'sections', extra = '', entries = [
   { id: 'overview', label: 'Overview' }, { id: 'checks', label: 'Checks', badge: '3' },
   { id: 'locked', label: 'Locked', disabled: true }, { id: 'audit', label: 'Audit' }
 ]) {
-  return `<div id="${id}" class="cx-tabs cx-tabs--underline" data-cx-tabs data-hfx-part="tabs" data-print="all" ${extra}>
+  return `<div id="${id}" class="cx-tabs cx-tabs--underline" data-cx-tabs data-cx-part="tabs" data-print="all" ${extra}>
     <div class="cx-tablist" role="tablist" aria-label="Sections" aria-orientation="horizontal">${entries.map((item, index) => `
-      <button type="button" class="cx-tab" role="tab" data-hfx-part="tab" id="${id}-tab-${item.id}" data-tab-id="${item.id}"
+      <button type="button" class="cx-tab" role="tab" data-cx-part="tab" id="${id}-tab-${item.id}" data-tab-id="${item.id}"
         aria-controls="${id}-panel-${item.id}" aria-selected="${index === 0}" tabindex="${index === 0 ? 0 : -1}" ${item.disabled ? 'aria-disabled="true"' : ''}>
-        <span class="cx-tab-label">${item.label}</span>${item.badge ? `<span class="cx-tab-badge" data-hfx-part="badge">${item.badge}</span>` : ''}</button>`).join('')}
-    </div>${entries.map(item => `<section id="${id}-panel-${item.id}" class="cx-tabpanel" data-hfx-part="tabpanel" role="tabpanel" aria-labelledby="${id}-tab-${item.id}" tabindex="0">
-      <h3 class="cx-tabpanel-heading" data-hfx-part="title">${item.label}</h3>${item.body || `<p>${item.label} content</p>`}</section>`).join('')}</div>`;
+        <span class="cx-tab-label">${item.label}</span>${item.badge ? `<span class="cx-tab-badge" data-cx-part="badge">${item.badge}</span>` : ''}</button>`).join('')}
+    </div>${entries.map(item => `<section id="${id}-panel-${item.id}" class="cx-tabpanel" data-cx-part="tabpanel" role="tabpanel" aria-labelledby="${id}-tab-${item.id}" tabindex="0">
+      <h3 class="cx-tabpanel-heading" data-cx-part="title">${item.label}</h3>${item.body || `<p>${item.label} content</p>`}</section>`).join('')}</div>`;
 }
 
 function stepper(extra = '') {
   const entries = [{ id: 'scope', label: 'Scope' }, { id: 'details', label: 'Details', optional: true }, { id: 'review', label: 'Review' }];
   return `<div id="wizard" class="cx-stepper-host" data-cx-stepper data-linear="true" data-mode="interactive" ${extra}>
     <ol class="cx-stepper cx-stepper--horizontal" aria-label="Setup">${entries.map((item, index) => `
-      <li id="wizard-step-${item.id}" class="cx-step" data-hfx-part="step" data-step-id="${item.id}" data-optional="${!!item.optional}" data-visited="false"
+      <li id="wizard-step-${item.id}" class="cx-step" data-cx-part="step" data-step-id="${item.id}" data-optional="${!!item.optional}" data-visited="false"
         data-state="${index ? 'upcoming' : 'current'}" ${index ? '' : 'aria-current="step"'}>
-        <span class="cx-step-marker" data-hfx-part="step-marker" aria-hidden="true">${index + 1}</span><span class="cx-step-label">${item.label}</span>
+        <span class="cx-step-marker" data-cx-part="step-marker" aria-hidden="true">${index + 1}</span><span class="cx-step-label">${item.label}</span>
         <span class="cx-visually-hidden">Step ${index + 1}</span></li>`).join('')}</ol>
-    ${entries.map(item => `<section id="wizard-panel-${item.id}" class="cx-step-panel" data-hfx-part="step-panel" aria-labelledby="wizard-heading-${item.id}">
-      <h3 id="wizard-heading-${item.id}" data-hfx-part="title" tabindex="-1">${item.label}</h3>
+    ${entries.map(item => `<section id="wizard-panel-${item.id}" class="cx-step-panel" data-cx-part="step-panel" aria-labelledby="wizard-heading-${item.id}">
+      <h3 id="wizard-heading-${item.id}" data-cx-part="title" tabindex="-1">${item.label}</h3>
       ${item.id === 'scope' ? '<label>Tenant<input id="tenant" required aria-describedby="tenant-help"></label><p id="tenant-help">Choose a tenant</p>' : `<p>${item.label} content</p>`}</section>`).join('')}
-    <div class="cx-stepper-footer" data-hfx-part="footer"><span class="cx-step-position">Step 1 of 3</span><button type="button" data-cx-stepper-action="next">Next</button></div>
+    <div class="cx-stepper-footer" data-cx-part="footer"><span class="cx-step-position">Step 1 of 3</span><button type="button" data-cx-stepper-action="next">Next</button></div>
     <div class="cx-visually-hidden" aria-live="polite" aria-atomic="true">Step 1 of 3: Scope</div></div>`;
 }
 
@@ -106,6 +106,33 @@ test('sync event cancellation and async cancellation return focus to the selecte
   });
   expect(await page.evaluate(() => cancelled)).toBe(false);
   await expect(page.getByRole('tabpanel', { name: 'Overview' })).toBeVisible();
+});
+
+test('nested templates belong to their child component rather than the containing tab', async ({ page }) => {
+  await openUi(page, tabs('sections', '', [
+    { id: 'overview', label: 'Overview' },
+    { id: 'checks', label: 'Checks', body: '<div id="child-component"><p>Child heading</p><template><p>Deferred child evidence</p></template></div>' }
+  ]), initTabs('{}'));
+  await page.getByRole('tab', { name: 'Checks', exact: true }).click();
+  await expect(page.locator('#child-component')).toBeVisible();
+  await expect(page.getByText('Child heading', { exact: true })).toBeVisible();
+  expect(await page.locator('#child-component template').evaluate(template => template.content.textContent)).toContain('Deferred child evidence');
+  await expect(page.getByText('Deferred child evidence', { exact: true })).toHaveCount(0);
+});
+
+test('shared loaders own live and printable bodies without an explicit deferred flag', async ({ page }) => {
+  await openUi(page, tabs('sections', '', [
+    { id: 'overview', label: 'Overview' },
+    { id: 'checks', label: 'Checks', body: '<div><template><p>Child template</p></template></div>' }
+  ]), initTabs(`{ loader: async item => {
+    (window.sharedLoads ||= []).push(item.id); return '<p>Loaded ' + item.id + '</p>';
+  } }`));
+  await expect(page.getByText('Loaded overview', { exact: true })).toBeVisible();
+  await page.evaluate(() => tabs.preparePrint());
+  expect(await page.evaluate(() => sharedLoads)).toEqual(['overview', 'checks']);
+  await expect(page.locator('#sections-panel-checks .cx-navigation-print')).toContainText('Loaded checks');
+  await page.getByRole('tab', { name: 'Checks', exact: true }).click();
+  await expect(page.getByText('Loaded checks', { exact: true })).toBeVisible();
 });
 
 test('deferred templates keep live content across revisits and loaders retry failures', async ({ page }) => {
@@ -357,7 +384,7 @@ test('phone stepper uses the shared picker with locked steps and progress', asyn
   await page.getByRole('button', { name: 'Next', exact: true }).click();
   await page.evaluate(() => { document.querySelector('#container').style.width = '390px'; });
   await expect(page.locator('ol.cx-stepper')).toBeHidden();
-  await page.locator('.cx-stepper-phone [data-hfx-part="picker"]').getByRole('button').click();
+  await page.locator('.cx-stepper-phone [data-cx-part="picker"]').getByRole('button').click();
   await expect(page.getByRole('menuitemradio', { name: /Review/ })).toHaveAttribute('aria-disabled', 'true');
   await page.getByRole('menuitemradio', { name: /Scope/ }).click();
   await expect(page.locator('#wizard-panel-scope')).toBeVisible();

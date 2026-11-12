@@ -209,7 +209,7 @@ test("the cell menu copies, pastes, selects all and clears; the keyboard opens i
   await bodyCell(page, 1, 4).click({ button: "right" });
   const menu = page.getByRole("menu", { name: "Cell actions" });
   await expect(menu).toBeVisible();
-  await expect(menu).toHaveAttribute("data-hfx-part", "menu");
+  await expect(menu).toHaveAttribute("data-cx-part", "menu");
   expect(await menu.locator("[role=menuitem]").allTextContents()).toEqual(["Copy cells", "Copy cells with headers", "Paste", "Select all cells", "Clear cell selection"]);
   expect(await ranges(page)).toHaveLength(1);
   await page.keyboard.press("Enter");

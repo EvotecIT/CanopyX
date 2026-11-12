@@ -153,7 +153,7 @@ UI_IMPL.tabs = (root, options = {}, signal) => {
     for (const owner of [target.element, target.panel?.querySelector('.cx-tabpanel-heading')].filter(Boolean)) {
       let element = owner.querySelector('.cx-tab-badge');
       if (!text) { if (element?.previousSibling?.nodeType === 3) element.previousSibling.remove(); element?.remove(); continue; }
-      if (!element) { element = h('span', 'cx-tab-badge'); element.dataset.hfxPart = 'badge'; owner.append(' ', element); }
+      if (!element) { element = h('span', 'cx-tab-badge'); element.dataset.cxPart = 'badge'; owner.append(' ', element); }
       setText(element, text);
     }
     target.badge = text || undefined; layout?.update(items, current);

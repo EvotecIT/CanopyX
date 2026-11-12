@@ -121,9 +121,9 @@ test('the phone gallery uses the shared pickers and exposes its drawer as a shee
   await page.locator('#record-details').evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {}))));
   expect(await page.locator('#record-details').evaluate(el => el.matches(':modal'))).toBe(true);
   const spacing = await page.locator('#record-details').evaluate(el => {
-    const title = el.querySelector('[data-hfx-part="title"]').getBoundingClientRect();
-    const body = el.querySelector('[data-hfx-part="body"]');
-    const header = el.querySelector('[data-hfx-part="header"]');
+    const title = el.querySelector('[data-cx-part="title"]').getBoundingClientRect();
+    const body = el.querySelector('[data-cx-part="body"]');
+    const header = el.querySelector('[data-cx-part="header"]');
     return { gap: body.firstElementChild.getBoundingClientRect().top - title.bottom,
       header: [header.getBoundingClientRect().height, getComputedStyle(header).paddingBlock, getComputedStyle(header).minBlockSize],
       body: [getComputedStyle(body).paddingBlockStart, getComputedStyle(body.firstElementChild).marginBlockStart] };

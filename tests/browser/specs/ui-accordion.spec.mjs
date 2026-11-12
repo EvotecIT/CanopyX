@@ -12,7 +12,7 @@ function accordion(id = 'help', extra = '', entries = [
   { id: 'locked', label: 'Locked', disabled: true }, { id: 'audit', label: 'Audit' }
 ]) {
   return `<div id="${id}" class="cx-accordion cx-accordion--default" data-cx-accordion ${extra}>${entries.map(item => `
-    <section class="cx-accordion-item" data-hfx-part="accordion-item">
+    <section class="cx-accordion-item" data-cx-part="accordion-item">
       <div class="cx-accordion-header"><h3 class="cx-accordion-heading"><button type="button" class="cx-accordion-trigger" id="${id}-trigger-${item.id}"
         data-accordion-id="${item.id}" aria-controls="${id}-panel-${item.id}" aria-expanded="${!!item.open}" ${item.disabled ? 'aria-disabled="true"' : ''}>
         <span class="cx-accordion-label">${item.label}</span>${item.badge ? `<span class="cx-accordion-badge">${item.badge}</span>` : ''}

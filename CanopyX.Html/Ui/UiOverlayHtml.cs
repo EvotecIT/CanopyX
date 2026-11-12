@@ -38,8 +38,8 @@ internal static class UiOverlayHtml {
         UiHtml.Attribute(html, "id", id);
         UiHtml.Attribute(html, "class", "cx-" + kind);
         UiHtml.Attribute(html, "data-cx-" + kind, string.Empty);
-        UiHtml.Attribute(html, "data-hfx-part", kind);
-        UiHtml.Attribute(html, "data-hfx-variant", variant);
+        UiHtml.Attribute(html, "data-cx-part", kind);
+        UiHtml.Attribute(html, "data-cx-variant", variant);
         UiHtml.Attribute(html, "data-state", "closed");
         UiHtml.Attribute(html, "data-cx-trigger", triggerId);
         UiHtml.Attribute(html, "role", alert ? "alertdialog" : "dialog");
@@ -50,7 +50,7 @@ internal static class UiOverlayHtml {
 
     internal static string Finish(StringBuilder html, string tag, string kind, string id, string title,
         string? description, string contentHtml, string? footerHtml, string? closeLabel) {
-        html.Append("><header class=\"cx-").Append(kind).Append("-header\" data-hfx-part=\"header\"><h2 data-hfx-part=\"title\"");
+        html.Append("><header class=\"cx-").Append(kind).Append("-header\" data-cx-part=\"header\"><h2 data-cx-part=\"title\"");
         UiHtml.Attribute(html, "id", id + "-title");
         html.Append('>').Append(UiHtml.Encode(title)).Append("</h2>");
         if (closeLabel != null) {
@@ -60,7 +60,7 @@ internal static class UiOverlayHtml {
             UiHtml.Attribute(html, "aria-label", closeLabel);
             html.Append('>').Append(UiHtml.Encode(closeLabel)).Append("</button>");
         }
-        html.Append("</header><div class=\"cx-").Append(kind).Append("-body\" data-hfx-part=\"body\"");
+        html.Append("</header><div class=\"cx-").Append(kind).Append("-body\" data-cx-part=\"body\"");
         UiHtml.Attribute(html, "id", id + "-body");
         html.Append('>');
         if (description != null) {
@@ -70,7 +70,7 @@ internal static class UiOverlayHtml {
         }
         html.Append(contentHtml).Append("</div>");
         if (footerHtml != null) html.Append("<footer class=\"cx-").Append(kind)
-            .Append("-footer\" data-hfx-part=\"footer\">").Append(footerHtml).Append("</footer>");
+            .Append("-footer\" data-cx-part=\"footer\">").Append(footerHtml).Append("</footer>");
         return html.Append("</").Append(tag).Append('>').ToString();
     }
 

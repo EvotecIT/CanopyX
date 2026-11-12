@@ -22,7 +22,7 @@
     for(const name of (this.opts.overlayClass||"").split(/\s+/).filter(Boolean))dialog.classList.add(name);
     // Renderers and drawer hooks read the host theme before the first paint, while the dialog is still closed.
     const restoreTheme=UI_TOOLS.theme(this.host,dialog);
-    dialog.dataset.hfxPart="drawer";dialog.dataset.side="end";head.dataset.hfxPart="header";title.dataset.hfxPart="title";body.dataset.hfxPart="body";
+    dialog.dataset.cxPart="drawer";dialog.dataset.side="end";head.dataset.cxPart="header";title.dataset.cxPart="title";body.dataset.cxPart="body";
     title.id=this.id+"-record-title";title.tabIndex=-1;title.setAttribute("aria-level","2");dialog.setAttribute("aria-labelledby",title.id);
     const previous=gridDecorateButton(gridButton("",()=>navigate(-1)),"up",true),next=gridDecorateButton(gridButton("",()=>navigate(1)),"down",true),close=gridDecorateButton(gridButton("",()=>dialog._cxOverlay.close()),"close",true);
     previous.setAttribute("aria-label",this.labels.gridPreviousRecord);next.setAttribute("aria-label",this.labels.gridNextRecord);close.setAttribute("aria-label",this.labels.gridCloseRecord);

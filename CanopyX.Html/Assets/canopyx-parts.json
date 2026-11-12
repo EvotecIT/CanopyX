@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "9d4e8e8a90ffe27a",
+      "version": "4e4d89f1c857c507",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -16,7 +16,7 @@
     {
       "name": "ui-menu",
       "label": "UI menu",
-      "version": "c4f0fca7c76607b4",
+      "version": "43b41667eab858d0",
       "script": "canopyx-ui-menu.js",
       "style": "canopyx-ui-menu.css",
       "runtimes": [
@@ -39,7 +39,7 @@
     {
       "name": "ui-picker",
       "label": "UI picker",
-      "version": "41b99f30a881ba20",
+      "version": "50bed077c17b82a4",
       "script": "canopyx-ui-picker.js",
       "style": "canopyx-ui-picker.css",
       "runtimes": [
@@ -55,7 +55,7 @@
     {
       "name": "ui-navigation",
       "label": "UI navigation",
-      "version": "0e3fed3d150a9da0",
+      "version": "7abd2c6c16ccac21",
       "script": "canopyx-ui-navigation.js",
       "style": "canopyx-ui-navigation.css",
       "runtimes": [
@@ -71,7 +71,7 @@
     {
       "name": "ui-tabs",
       "label": "UI tabs",
-      "version": "5f829d64d561fc04",
+      "version": "8bcecfec3ee481b2",
       "script": "canopyx-ui-tabs.js",
       "style": "canopyx-ui-tabs.css",
       "runtimes": [
@@ -88,7 +88,7 @@
     {
       "name": "ui-stepper",
       "label": "UI stepper",
-      "version": "3215ba65fac39e46",
+      "version": "5dde9026b4f7d58d",
       "script": "canopyx-ui-stepper.js",
       "style": "canopyx-ui-stepper.css",
       "runtimes": [
@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "0341595c709f974f",
+      "version": "8a5f0513d2d2da2f",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -153,7 +153,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "3439da61f003dd0c",
+      "version": "b315fbe7cab80f11",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -993,7 +993,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "084744f94aac19a9",
+      "version": "7973d67ba6a080aa",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [

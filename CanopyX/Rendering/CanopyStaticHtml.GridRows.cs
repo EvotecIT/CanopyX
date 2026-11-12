@@ -63,8 +63,20 @@ public static partial class CanopyStaticHtml {
                 row.Cells.TryGetValue(id, out var value);
                 return value?.DisplayText(view.GetColumn(id), view.Labels) ?? string.Empty;
             });
+            var presenter = column.Presenter;
+            row.Cells.TryGetValue(presenter?.HrefColumn ?? column.Id, out var linkCell);
+            var url = linkCell?.Value as string;
+            var link = template == null && presenter?.Kind == CanopyGridPresenterKind.Link && IsSafeReportUrl(url);
+            if (link) {
+                html.Append("<a href=\"").Append(Encode(url!)).Append('"');
+                if (presenter!.NewWindow) html.Append(" target=\"_blank\" rel=\"noopener noreferrer\"");
+                var inheritsColor = styles.ToneColor(tone).Length != 0 || styles.ToneColor(rowTone).Length != 0
+                    || paint?.Tone.Name != null || paint?.Css?.ContainsKey("color") == true || outcome?.Row?.Css?.ContainsKey("color") == true;
+                html.Append(" style=\"").Append(inheritsColor ? "color:inherit;" : styles.Link).Append("\">");
+            }
             if (template != null || !AppendComparisonCell(html, text, view, row, column, cell) && !AppendPresenterBlock(html, column, cell, displayed, text))
                 AppendVisibleText(html, displayed, text);
+            if (link) html.Append("</a>");
             if (template == null && cell != null && cell.HasBadges) AppendBadges(html, cell.Badges, styles, text);
             if (paint?.BarValue == false) html.Append("</span>");
             AppendFormatAfter(html, paint, outcome?.Row, first, styles, text);

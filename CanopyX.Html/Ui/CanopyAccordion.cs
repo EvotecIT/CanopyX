@@ -48,8 +48,8 @@ public sealed class CanopyAccordion {
             throw new ArgumentException("A single-open accordion can start with one open section.");
         var html = new StringBuilder("<div");
         UiHtml.Attribute(html, "id", Id);
-        html.Append(" class=\"cx-accordion cx-accordion--").Append(UiHtml.Token(Options.Style)).Append("\" data-cx-accordion data-hfx-part=\"accordion\"");
-        UiHtml.Attribute(html, "data-hfx-variant", Options.Variant);
+        html.Append(" class=\"cx-accordion cx-accordion--").Append(UiHtml.Token(Options.Style)).Append("\" data-cx-accordion data-cx-part=\"accordion\"");
+        UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         UiHtml.Attribute(html, "data-multiple", UiHtml.Bool(Options.Multiple));
         UiHtml.Attribute(html, "data-indicator", UiHtml.Token(Options.Indicator));
         UiHtml.Attribute(html, "data-indicator-position", UiHtml.Token(Options.IndicatorPosition));
@@ -66,11 +66,11 @@ public sealed class CanopyAccordion {
     }
 
     private void Section(StringBuilder html, CanopyAccordionItem item) {
-        html.Append("<section class=\"cx-accordion-item\" data-hfx-part=\"accordion-item\"");
+        html.Append("<section class=\"cx-accordion-item\" data-cx-part=\"accordion-item\"");
         UiHtml.Attribute(html, "data-state", item.Disabled ? "disabled" : item.Open ? "open" : null);
         if (item.CopyTitle ?? Options.CopyTitle) UiHtml.Attribute(html, "data-copy-title", "true");
-        html.Append("><div class=\"cx-accordion-header\" data-hfx-part=\"header\"><h").Append(Options.HeadingLevel).Append(" class=\"cx-accordion-heading\" data-hfx-part=\"title\">");
-        html.Append("<button type=\"button\" class=\"cx-accordion-trigger\" data-hfx-part=\"trigger\"");
+        html.Append("><div class=\"cx-accordion-header\" data-cx-part=\"header\"><h").Append(Options.HeadingLevel).Append(" class=\"cx-accordion-heading\" data-cx-part=\"title\">");
+        html.Append("<button type=\"button\" class=\"cx-accordion-trigger\" data-cx-part=\"trigger\"");
         UiHtml.Attribute(html, "id", TriggerId(item));
         UiHtml.Attribute(html, "data-accordion-id", item.Id);
         UiHtml.Attribute(html, "aria-controls", PanelId(item));
@@ -85,8 +85,8 @@ public sealed class CanopyAccordion {
         UiHtml.Span(html, "cx-accordion-label", item.Label);
         if (item.Badge != null) UiHtml.Span(html, "cx-accordion-badge", item.Badge, "badge");
         html.Append("<span class=\"cx-accordion-indicator\" aria-hidden=\"true\"></span></button></h").Append(Options.HeadingLevel).Append('>');
-        if (item.ActionsHtml != null) html.Append("<div class=\"cx-accordion-actions\" data-hfx-part=\"actions\">").Append(item.ActionsHtml).Append("</div>");
-        html.Append("</div><div class=\"cx-accordion-panel\" data-hfx-part=\"panel\"");
+        if (item.ActionsHtml != null) html.Append("<div class=\"cx-accordion-actions\" data-cx-part=\"actions\">").Append(item.ActionsHtml).Append("</div>");
+        html.Append("</div><div class=\"cx-accordion-panel\" data-cx-part=\"panel\"");
         UiHtml.Attribute(html, "id", PanelId(item));
         if (Items.Count <= MaxRegions) UiHtml.Attribute(html, "role", "region");
         UiHtml.Attribute(html, "aria-labelledby", TriggerId(item));
