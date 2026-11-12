@@ -55,8 +55,10 @@
 
     syncQuerySummary() {
       if (!this.acceptedQuery || !this.querySummary) return;
-      const query = this.acceptedQuery, active = document.activeElement, focused = this.queryChips.contains(active);
-      const key = focused && active.getAttribute("data-cx-condition");
+      // A query flow passes the summary focus it saw before its notice could hide the focused control.
+      const saved = this.querySummaryFocus; this.querySummaryFocus = null;
+      const query = this.acceptedQuery, active = document.activeElement, inside = this.queryChips.contains(active);
+      const focused = inside || saved != null, key = inside ? active.getAttribute("data-cx-condition") : saved;
       const numbers = numberFormat(this.lang);
       this.querySummary.hidden = !query.search && !gridFilterCount(query);
       this.syncGridChrome();
@@ -103,11 +105,12 @@
           if (this.searchInput) this.searchInput.value = ""; apply({ search: "", filters: [], filterGroup: undefined, tupleFilters: undefined });
         });
         clear.classList.add("cx-link"); clear.setAttribute("aria-label", this.labels.gridClearAll + ", " + this.labels.gridClearQuery);
-        clear.setAttribute("data-cx-condition", "clear"); this.queryChips.appendChild(clear);
+        clear.setAttribute("data-cx-condition", "clear"); clear.hidden = !!this.gridNoMatchesShown; this.queryChips.appendChild(clear);
       }
       if (focused) {
-        const target = [...this.queryChips.children].find(button => button.getAttribute("data-cx-condition") === key);
-        (target || this.queryChips.lastElementChild || this.searchInput || this.grid).focus({ preventScroll: true });
+        const shown = [...this.queryChips.children].filter(button => !button.hidden);
+        const target = shown.find(button => button.getAttribute("data-cx-condition") === key);
+        (target || shown[shown.length - 1] || this.searchInput || this.grid).focus({ preventScroll: true });
       }
       // Header menus are rebuilt before this summary changes the header's position. Anchor to its final layout.
       this.gridPopover?.position();

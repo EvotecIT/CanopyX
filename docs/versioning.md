@@ -72,6 +72,8 @@ needs the treatment below.
 Labels, view document fields and runtime options follow the same rule. A label key or document field is never reused with
 another meaning.
 
+A runtime accepts only the label keys it knows, so a document that carries labels added in a later release needs that release's runtime. Pages written by `CanopyX.Html` embed the matching runtime, so this matters only for a host that loads newer documents into an older, separately deployed runtime; update the runtime together with the writer.
+
 ## Supported toolchains
 
 `CanopyX`, `CanopyX.Html` and `CanopyX.Data` target .NET Framework 4.7.2, .NET Standard 2.0, .NET 8 and .NET 10;

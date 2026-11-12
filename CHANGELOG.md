@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A grid left without rows by a search or filters says why in plain words ("No services match “disk” with 2 filters."), its button reads Clear search when only a search is active, and the query summary no longer shows a second Clear all beside it. The new labels are `GridNoMatchesSearch`, `GridNoMatchesSearchFilters`, `GridNoMatchesFilters` (the last two take `{count}` and plural forms) and `GridClearSearch`. `GridNoMatchesReason` / `gridNoMatchesReason` is deprecated: it is no longer shown, but documents and packs that carry it still validate and load, so nothing needs migrating. Documents that carry the new labels need this release's runtime (see [versioning](docs/versioning.md)).
 - Breaking: `requestRowAction` resolves `{ accepted, reason, message }`, as `canopyx:rowAction` reports it, so a caller can show the host's refusal message. Migration: replace `if (await grid.requestRowAction(id, action))` with `if ((await grid.requestRowAction(id, action)).accepted)`; the object is always truthy.
 - Add `tone` to record actions: a prominent action's footer button is `primary` (default), `neutral` (secondary) or `danger`, which stands apart at the footer's end and is marked in the menu.
 - Add `setBadge(id, badge)` to tabs, for counts that change while the page is open.

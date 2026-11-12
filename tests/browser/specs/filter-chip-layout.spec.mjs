@@ -124,7 +124,10 @@ for (const width of [1440, 390]) for (const dark of [false, true]) {
     await search.focus();
     await page.keyboard.press("Enter");
     await expect(search).toHaveCount(0);
-    await expect(page.locator('#query-grid [data-cx-condition="clear"]')).toBeFocused();
+    // No row matches the remaining condition, so the empty state offers Clear all and the summary hides its own link.
+    await expect(page.locator("#query-grid .cx-state")).toBeVisible();
+    await expect(page.locator('#query-grid [data-cx-condition="clear"]')).toBeHidden();
+    await expect(page.locator('#query-grid [data-cx-condition="filter-0"]')).toBeFocused();
     await page.locator('#query-grid [data-cx-condition="filter-0"]').click();
     await expect(page.locator("#query-grid .cx-grid-chip")).toHaveCount(0);
     await expect(page.locator('#query-grid input[type="search"]')).toBeFocused();

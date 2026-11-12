@@ -730,6 +730,7 @@ public sealed partial class CanopyLabels {
         AddAnalysisDefaults(defaults);
         AddDataViewsDefaults(defaults);
         AddRowActionsDefaults(defaults);
+        AddGridStatesDefaults(defaults);
         return WithForestDefaults(WithBoardPlanDefaults(defaults));
     }
 }

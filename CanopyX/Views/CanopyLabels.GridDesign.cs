@@ -35,6 +35,8 @@ public sealed partial class CanopyLabels {
     public string GridDone { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the clear all label.</summary>
     public string GridClearAll { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the empty state's button that clears a search when no filters are active. Default "Clear search".</summary>
+    public string GridClearSearch { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the rows label.</summary>
     public string GridRows { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the result noun label.</summary>
@@ -95,8 +97,14 @@ public sealed partial class CanopyLabels {
     public string GridEmptyReason { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the no matches label.</summary>
     public string GridNoMatches { get => Get(); set => Set(value); }
-    /// <summary>Gets or sets the no matches reason label.</summary>
+    /// <summary>Deprecated and no longer shown: the empty state uses <see cref="GridNoMatchesSearch"/>, <see cref="GridNoMatchesSearchFilters"/> or <see cref="GridNoMatchesFilters"/>. It stays so existing documents and packs that carry it still load.</summary>
     public string GridNoMatchesReason { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets why no rows match when only a search is active, with <c>{noun}</c> and <c>{search}</c>. Default "No {noun} match “{search}”.".</summary>
+    public string GridNoMatchesSearch { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets why no rows match a search and filters, with <c>{noun}</c>, <c>{search}</c> and the filter <c>{count}</c>; it can give plural forms.</summary>
+    public string GridNoMatchesSearchFilters { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets why no rows match when only filters are active, with <c>{noun}</c> and the filter <c>{count}</c>; it can give plural forms.</summary>
+    public string GridNoMatchesFilters { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the retry label.</summary>
     public string GridRetry { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the load failed label.</summary>
