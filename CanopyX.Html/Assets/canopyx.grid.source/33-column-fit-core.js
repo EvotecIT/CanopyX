@@ -69,7 +69,12 @@
     }
     const advances = variants.get(variant), digits = /[0-9]/.test(text) ? advances.numeric : advances.plain;
     if (!digits) return measured;
-    let width = measured;
+    // The advances replace each glyph's own width, so they start from the unkerned run: proportional pairs such as ",1"
+    // kern on canvas, while tabular glyphs keep fixed advances (fifteen ones and four commas: 4.8 px narrower otherwise).
+    const kerning = context.fontKerning;
+    context.fontKerning = "none";
+    let width = context.measureText(text).width;
+    context.fontKerning = kerning;
     for (let index = 0; index < text.length; index++) {
       width += digits.get(text.charCodeAt(index)) || 0;
     }

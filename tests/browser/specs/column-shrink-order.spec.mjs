@@ -69,3 +69,25 @@ for (const font of ["system", "bundled Inter"]) for (const [name, view] of [["fl
     expect(await page.locator(".cx-grid").evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(name === "tree");
   });
 }
+
+// Inter kerns proportional ",1" pairs on canvas; the tabular digits the cell draws do not kern, so the measured value
+// must not keep that kerning (it left this number 2.2 px short of its 151.2 px).
+test("a tree number column fits its whole tabular value once the font is ready", async ({ page }) => {
+  await pinTestFont(page);
+  const view = { protocol: "canopyx/2", type: "view", id: "tabular", label: "Totals", selection: "single", source: { kind: "inline" },
+    columns: [{ id: "name", title: "Name" }, { id: "amount", title: "Value", kind: "number" }, { id: "note", title: "Note", kind: "text" }],
+    roots: [{ id: "r0", label: "Total", cells: { amount: 111111111111111, note: "Audited" } }] };
+  await page.route("https://canopyx.test/", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("https://canopyx.test/");
+  await page.waitForSelector("[data-cx-ready]");
+  expect((await testFontState(page)).atMount).toBe("loaded");
+  const cell = page.locator('.cx-row[data-cx-id] .cx-cell[aria-colindex="2"]');
+  await expect(cell).toHaveText("111,111,111,111,111");
+  const room = await cell.evaluate(element => {
+    const style = getComputedStyle(element), range = document.createRange();
+    range.selectNodeContents(element.querySelector(".cx-text"));
+    return { text: range.getBoundingClientRect().width, room: element.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight), variant: style.fontVariantNumeric };
+  });
+  expect(room.variant).toBe("tabular-nums");
+  expect(room.text, JSON.stringify(room)).toBeLessThanOrEqual(room.room);
+});
