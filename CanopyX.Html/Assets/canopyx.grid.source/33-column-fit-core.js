@@ -19,7 +19,7 @@
   // punctuation (including date hyphens and spaces). Some engines shape these only within a numeric run, so one native
   // batch per effective font/variant captures numeric and plain advances. Row samples still use canvas, and fonts without
   // different advances keep its ordinary fast path.
-  const COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_NUMERIC = /[0-9\s.,:;+\-−/()\[\]]/;
+  const COLUMN_NUMERIC_CHARS = "0123456789 .,:;+-−/()[]\u00a0\u202f", COLUMN_HAS_NUMERIC = /[0-9\s.,:;+\-−/()\[\]]/, COLUMN_ONLY_NUMERIC = /^[0-9\s.,:;+\-−/()\[\]]+$/;
   function gridNumericVariant(grid) {
     let sample = grid.querySelector(".cx-cell"), owned = !sample;
     if (owned) { sample = document.createElement("span"); sample.className = "cx-cell"; sample.style.display = "none"; grid.appendChild(sample); }
@@ -65,16 +65,23 @@
         }
       }
       probe.remove();
-      variants.set(variant, { numeric: numeric.size ? numeric : null, plain: plain.size ? plain : null });
+      variants.set(variant, { numeric: numeric.size ? numeric : null, plain: plain.size ? plain : null, glyphs: new Map() });
     }
     const advances = variants.get(variant), digits = /[0-9]/.test(text) ? advances.numeric : advances.plain;
     if (!digits) return measured;
-    // The advances replace each glyph's own width, so they start from the unkerned run: proportional pairs such as ",1"
-    // kern on canvas, while tabular glyphs keep fixed advances (fifteen ones and four commas: 4.8 px narrower otherwise).
-    const kerning = context.fontKerning;
-    context.fontKerning = "none";
-    let width = context.measureText(text).width;
-    context.fontKerning = kerning;
+    // A number made only of digits and separators renders with fixed tabular advances that never kern, but a whole-string
+    // canvas measurement kerns proportional pairs such as ",1" (fifteen ones and four commas measured 4.8 px narrower).
+    // Such a run is summed from single glyphs, which no engine kerns; text with letters keeps its kerned measurement.
+    let width = measured;
+    if (COLUMN_ONLY_NUMERIC.test(text)) {
+      width = 0;
+      for (let index = 0; index < text.length; index++) {
+        const code = text.charCodeAt(index);
+        let glyph = advances.glyphs.get(code);
+        if (glyph === undefined) advances.glyphs.set(code, glyph = context.measureText(text[index]).width);
+        width += glyph;
+      }
+    }
     for (let index = 0; index < text.length; index++) {
       width += digits.get(text.charCodeAt(index)) || 0;
     }
