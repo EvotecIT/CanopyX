@@ -1,73 +1,124 @@
-# Agent Guidance
+# CanopyX
 
-CanopyX is a generic, dependency-free engine for large interactive data views. The tree grid is the first view; a data grid and a 2D matrix come later. The C# side owns view definitions, the `canopyx/2` data protocol, the bundle writer, and the static fallback renderer. The browser runtime renders the views. Keep changes generic, testable, and usable by any host.
+Generic, dependency-free engine for large interactive data views: tree grid,
+data grid, matrix, pivot, calendar, board, plan, flow and related views. The
+C# side owns view definitions, the `canopyx/2` data protocol, the bundle
+writer and the static fallback renderer. The browser runtime renders the views.
+It ships as NuGet packages and as the `@evotecit/canopyx` npm package.
 
-## Boundaries
+## Layout
 
-- CanopyX knows nothing about Active Directory, PKI, TestimoX, ADPlayground, CertNoob, or any other product. Products map their own data into nodes, cells, badges, flags, and rollup values; CanopyX never computes domain facts.
-- Keep `CanopyX` free of runtime package dependencies. `CanopyX.Html` depends only on `CanopyX`. `CanopyX.Data` depends only on `CanopyX` (plus `System.Text.Json` and `Microsoft.Bcl.AsyncInterfaces` on `net472` and `netstandard2.0`); `CanopyX.AspNetCore` adds only the ASP.NET Core shared framework. EF Core and database drivers stay in hosts and samples.
-- CanopyX never performs writes. Future context actions call hooks that the host provides and governs. `CanopyX.Data` saves grid commits only through a writer the host maps (`ICanopyDataWriter`, or `CanopyQueryableWriter<T>` over the host's own `ICanopyWriteStore<T>`), behind a write policy the host names.
-- Keep the static fallback renderer script-free and inline-style friendly so the output survives email clients, print, and Word.
-- Static non-interactive tables, lists, and KPI cards belong to `ChartForgeX.VisualBlocks`. Charts come from ChartForgeX. Do not rebuild either here.
-- HtmlForgeX hosts CanopyX through its own `HtmlForgeX.CanopyX` bridge. Do not reference HtmlForgeX from this repository.
-- Database paging belongs to DbaClientX, reached through a host bridge. CanopyX takes no DbaClientX dependency.
-- Add a package or feature only when a real consumer needs it. `TODO.md` names the consumer for every milestone.
+- `CanopyX/`: core model, protocol and bundle writer.
+- `CanopyX.Html/`: HTML rendering and the browser runtime under `Assets/`.
+- `CanopyX.Data/`: host data sources, paging and grid commits.
+  `CanopyX.AspNetCore/`: ASP.NET Core endpoints.
+- `CanopyX.Tests/`, `CanopyX.Data.Tests/`, `CanopyX.Tests.NetFramework/`
+  (`net472` contract tests, run on Windows).
+- `CanopyX.Examples/`: example pages; `samples/FleetInventory/`: a host sample.
+- `tests/browser/`: Node + Playwright tests and benchmarks. `tests/BrowserInstall/`
+  installs browsers. `tests/exports/`, `tests/ReleasedCompatibility/`,
+  `tests/fixtures/`, `tests/conformance/`: export, compatibility and shared data checks.
+- `JavaScript/`: TypeScript declarations and locale modules for the npm package.
+- `api/`: public API baselines. `docs/`: reference (`architecture.md`,
+  `data-protocol.md`, `testing.md`, `versioning.md`) and `docs/schema/`.
+- `Build/`: asset assembly, label and design-token sync, packaging.
+- `Website/`: canopyx.dev. It has its own `Website/AGENTS.md`.
 
-## Browser Runtime
-
-- Optional tree interaction parts live in `CanopyX.Html/Assets/canopyx.interactive.source`. The assembly script combines them with the core into the interactive entry point; keep ordinary views within the core asset budget.
-- Keep the runtime as plain modern JavaScript source parts in `CanopyX.Html/Assets/canopyx.source/NN-name.js`. `Build/Sync-Assets.ps1` assembles them into `canopyx.js`, without their whole-line comments (keep code off the lines of a `/* */` comment); never edit the assembled file by hand.
-- No TypeScript, bundler, or npm step in the library build. JSDoc types are fine. Node and Playwright are used only under `tests/browser`.
-- Edit the stylesheets in `CanopyX.Html/Assets/canopyx.source/` (`base.css` for the theme tokens and host basics, `canopyx.css` for the tree); `Build/Sync-Assets.ps1` assembles them into `canopyx.css`. Do not edit the assembled stylesheet by hand.
-- Keep each runtime source part under 350 lines and split parts by responsibility.
-- Theme through CSS custom properties with a small set of base colours; derive hover, selection, and muted colours with `color-mix()`.
-- Keep the ARIA tree grid contract, the keyboard model, and the DOM order of virtual rows intact. Add or update a browser test when changing any of them.
-
-## Change Expectations
-
-- A protocol change updates `docs/data-protocol.md`, `docs/schema/canopyx-2.schema.json`, and the schema contract tests together. Additive optional fields stay in `canopyx/2`; anything that breaks an existing reader needs a new protocol version.
-- Add or update contract tests for new behavior. Test the protocol, bundle layout, static output, and browser behavior that hosts rely on, not incidental structure.
-- Add or update generated examples when a change affects visible output.
-- Performance changes need measured before/after numbers at normal speed and at a 4x CPU slowdown from `tests/browser/bench`.
-- Keep elapsed time, relative speed, long-task, observed heap and allocation measurements out of ordinary correctness CI. Browser measurements use `@benchmark`; .NET measurements use `Category=Benchmark`. Preserve deterministic data, request, DOM, cancellation and lifecycle contracts in the normal suite; see `docs/testing.md` for opt-in commands.
-- Preserve `net472`, `netstandard2.0`, `net8.0`, and `net10.0` support in `CanopyX` and `CanopyX.Html`.
-- One public type per file. XML documentation on every public API. Keep production C# files under 800 lines (`Build.ps1` enforces it) and split by responsibility before a file gets close.
-- Do not add `NoWarn` suppressions.
-- Breaking C# API changes are allowed before 1.0 when they produce a cleaner design. Prefer a short migration note over a compatibility layer.
-
-## Documentation
-
-- Keep `README.md` readable as the product and developer entry point.
-- Keep durable technical reference in focused files under `docs/` (`architecture.md`, `data-protocol.md`).
-- Keep active future work in `TODO.md`.
-- Do not create extra roadmap, handoff, or "next work" documents.
-- Remove stale "next" language once the described work has landed.
-
-## Validation
-
-Resolve shared procedure links against `CODEX_HOME` (default `~/.codex`). Before new or changed tests, use the
-[test-audit authoring gate](skills/test-audit/SKILL.md#authoring-gate) and
-[contract-focused proof guidance](skills/contract-focused-tests/SKILL.md). Deliberate pruning uses
-[campaign mode](skills/test-audit/CAMPAIGN.md); campaign coverage stays local and is never a CI or merge gate.
-Apply the [anti-baggage rules](skills/maintainable-code-structure/SKILL.md#anti-baggage) to the final diff.
-
-Run the repository quality loop before trusting packaging, asset, or visual changes:
+## Build and test
 
 ```powershell
-./Build.ps1 -Configuration Release
+./Build.ps1 -Configuration Release              # full quality loop: build, tests, examples, browser tests, packs
+./Build.ps1 -Configuration Release -SkipPack    # same without packaging
+dotnet test ./CanopyX.sln -c Release --filter "Category!=Benchmark"   # C#-only loop
+./Build/Sync-Assets.ps1                         # reassemble runtime assets after editing source parts
 ```
 
-Use the faster loop for C#-only changes:
+Browser tests, once per machine:
 
 ```powershell
-dotnet test .\CanopyX.sln -c Release --filter "Category!=Benchmark"
+cd tests/browser
+npm ci
+dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium   # add firefox webkit for other engines
+npm test
 ```
 
-After editing runtime source parts, reassemble the runtime, then rebuild so the embedded runtime and the example pages are fresh. The quality loop runs the browser tests against the regenerated examples (run `npm ci` and `dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium` in `tests/browser` once first, adding `firefox webkit` for the other engines). HtmlTinkerX owns browser installation and repair; don't run Playwright's own `install` command, because a failed download can remove browsers from the shared cache:
+Targets: `CanopyX`, `CanopyX.Html` and `CanopyX.Data` build `net472`,
+`netstandard2.0`, `net8.0` and `net10.0`; keep all four. `CanopyX.AspNetCore`
+builds `net8.0` and `net10.0`.
 
-```powershell
-./Build/Sync-Assets.ps1
-./Build.ps1 -Configuration Release -SkipPack
-```
+Release-only: `Build/Build-Project.ps1` (NuGet via `Build/project.build.json`)
+and the `publish-npm.yml` workflow.
 
-`CANOPYX_TEST_OUTPUT_DIR` can place browser artifacts outside the checkout; the quality loop uses the same directory for independent Office artifact validation. `CANOPYX_TEST_WORKERS` overrides the local worker count when the machine has room for it.
+## Generated files
+
+- `CanopyX.Html/Assets/canopyx.js`, `canopyx.css` and every
+  `canopyx-<name>.js`/`.css` are assembled from `canopyx.source/` and
+  `canopyx.<name>.source/` part folders by `Build/Sync-Assets.ps1`
+  (`Build/parts.json` lists the lazy parts). Edit the parts, never the
+  assembled files. Whole-line comments are stripped, so keep code off the lines
+  of a `/* */` comment. `Build.ps1` runs `Sync-Assets.ps1 -Check`.
+- Locale labels: `CanopyX/Views/CanopyLabels.<Language>*.cs`,
+  `JavaScript/locales/*.mjs` and `canopyx-labels-*.js` come from
+  `CanopyX/Views/Locales/labels.json` and `CanopyLabels.Defaults*.cs` via
+  `Build/Sync-Labels.ps1` (run by `Sync-Assets.ps1`).
+- `api/*.txt`: .NET API baselines checked by the tests; rewrite with
+  `CANOPYX_API_UPDATE=1` after an intended change. `api/canopyx.d.ts.txt`:
+  `node tools/api-report.mjs --update` in `tests/browser`. Follow
+  `docs/versioning.md`.
+- `Build/design-token-source.json` comes from `Build/Sync-DesignTokens.mjs`;
+  `Build/Lint-DesignTokens.mjs` keeps its baseline shrinking only.
+- `CanopyX/Validation/CanopyPattern.CaseData.cs` comes from
+  `Build/Update-PatternCaseData.ps1` (manual, needs Unicode data files).
+
+## Conventions
+
+- CanopyX knows nothing about any consuming product. Hosts map their data
+  into nodes, cells, badges, flags and rollups; CanopyX never computes domain facts.
+- `CanopyX` has no runtime package dependencies. `CanopyX.Html` depends only on
+  `CanopyX`. `CanopyX.Data` depends only on `CanopyX` (plus `System.Text.Json`
+  and `Microsoft.Bcl.AsyncInterfaces` on `net472`/`netstandard2.0`).
+  `CanopyX.AspNetCore` adds only the ASP.NET Core shared framework. EF Core and
+  database drivers stay in hosts and samples.
+- CanopyX never writes data. Grid commits go only through a host-mapped writer
+  (`ICanopyDataWriter`, or `CanopyQueryableWriter<T>` over the host's
+  `ICanopyWriteStore<T>`) behind a host-named write policy.
+- Keep the static fallback renderer script-free and inline-style friendly so
+  output survives email, print and Word.
+- Don't rebuild static tables, KPI cards or charts here (ChartForgeX owns
+  them), don't reference HtmlForgeX (it hosts CanopyX through its own bridge),
+  and don't take a DbaClientX dependency.
+- Runtime: plain modern JavaScript, JSDoc types allowed. No TypeScript,
+  bundler or npm step in the library build. Keep each source part under 350
+  lines, split by responsibility. Theme through CSS custom properties and
+  derive hover, selection and muted colours with `color-mix()`.
+- Keep the ARIA tree grid contract, keyboard model and virtual row DOM order.
+  Change them only with a browser test.
+- A protocol change updates `docs/data-protocol.md`,
+  `docs/schema/canopyx-2.schema.json` and the schema contract tests together.
+  Additive optional fields stay in `canopyx/2`; breaking changes need a new version.
+- C#: one public type per file, XML docs on every public API, production files
+  under 800 lines (`Build.ps1` enforces it), no `NoWarn` suppressions.
+  Breaking API changes are fine before 1.0; prefer a short migration note over
+  a compatibility layer.
+- Add a package or feature only for a real consumer; `TODO.md` names it.
+  Keep active future work in `TODO.md` and reference in `docs/`. Don't add
+  roadmap or handoff documents.
+- Commit titles are plain imperative sentences.
+
+## Gotchas
+
+- Benchmarks are opt-in: browser cases carry `@benchmark`
+  (`npm run test:benchmarks`, or `CANOPYX_BENCHMARKS=1`), .NET cases use
+  `Category=Benchmark`. Keep timing and memory measurements out of correctness
+  tests. Performance changes need before/after numbers at normal speed and 4x
+  CPU slowdown from `tests/browser/bench`.
+- Install browsers through `tests/BrowserInstall`, never Playwright's own
+  `install` command; a failed download can remove browsers from the shared cache.
+- `CANOPYX_TEST_OUTPUT_DIR` moves browser artifacts out of the checkout;
+  `CANOPYX_TEST_WORKERS` changes the local worker count; `CANOPYX_TEST_SHARD=2/4
+  node tools/shards.mjs` runs one CI shard.
+- Visual baselines (`tests/browser/specs/__screenshots__/`) run only on
+  Windows Chromium by default (`CANOPYX_VISUAL=0`/`1` overrides). Update them
+  with `npm run test:visual:update` only for an intended visual change.
+- After editing runtime parts, run `Sync-Assets.ps1` and rebuild so the
+  embedded runtime and example pages are fresh before browser tests.
