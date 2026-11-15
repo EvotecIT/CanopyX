@@ -131,6 +131,27 @@ test("with the more menu off, phone layouts keep Views and Export usable in the 
   }
 });
 
+test("a narrow grid on a wide screen keeps Export in the toolbar, and Views while it fits", async ({ page }) => {
+  await openGrid(page, reporting(), { wrap: "width:520px" });
+  await expect(page.locator(".cx-host")).toHaveClass(/cx-phone/);
+  for (const kind of ["views", "export"]) await expect(page.locator(".cx-toolbar > .cx-grid-" + kind + " > summary")).toBeVisible();
+  await page.locator(".frame").evaluate(frame => { frame.style.width = "240px"; }); await nextFrames(page);
+  await expect(page.locator(".cx-grid-overflow .cx-grid-views")).toHaveCount(1);
+  await expect(page.locator(".cx-toolbar > .cx-grid-export > summary")).toBeVisible();
+});
+
+test("resizing a narrow grid keeps an open Views menu open and in place", async ({ page }) => {
+  await openGrid(page, reporting(), { wrap: "width:520px" });
+  const views = page.locator(".cx-toolbar > .cx-grid-views");
+  await views.locator(":scope > summary").click();
+  await expect(views).toHaveAttribute("open", "");
+  for (const width of ["500px", "470px", "520px"]) {
+    await page.locator(".frame").evaluate((frame, value) => { frame.style.width = value; }, width); await nextFrames(page);
+    await expect(views).toHaveAttribute("open", "");
+    await expect(page.locator(".cx-toolbar > .cx-grid-views")).toHaveCount(1);
+  }
+});
+
 test("a menu open across the phone breakpoint closes instead of leaving the top layer", async ({ page }) => {
   await openGrid(page, reporting());
   await page.locator(".cx-grid-views > summary").click();

@@ -114,13 +114,35 @@
       if (this.savedViews.has(selected)) this.savedChoice.value = selected;
     },
 
-    // On phones Views and Export move into the more menu. A moved menu closes first: moving a shown popover takes it out
-    // of the top layer while it stays open.
-    placeMenus(phone) {
-      if (this.overflow) for (const selector of [".cx-grid-views", ".cx-grid-export"]) {
-        const item = this.toolbar.querySelector(selector); if (!item) continue; item.open = false;
-        if (phone) this.overflow.panel.appendChild(item);
+    // On a phone Views and Export move into the more menu. A grid that is only narrow (a card or a split panel on a wider
+    // screen) keeps Export in the toolbar, and Views too while the controls fit on one line. The menus are placed when the
+    // layout changes (wide, narrow, phone) or a narrow grid's width moves into another 80-pixel band, not on every resize,
+    // and a narrow grid never moves a menu that is open. A moved menu closes first: moving a shown popover takes it out of
+    // the top layer while it stays open.
+    placeMenus(phone, width = this.host.clientWidth) {
+      if (!this.overflow) return;
+      const handset = phone && (globalThis.innerWidth || 0) <= 640, layout = !phone ? "wide" : handset ? "phone" : "narrow";
+      const band = layout === "narrow" ? Math.floor(width / 80) : 0;
+      if (this.menuLayout === layout && this.menuBand === band) return;
+      const menus = [".cx-grid-views", ".cx-grid-export"].map(selector => [selector, this.toolbar.querySelector(selector)]).filter(([, item]) => item);
+      // A narrow grid keeps an open menu where it is; the next width change that finds it closed places it.
+      if (layout === "narrow" && this.menuLayout === "narrow" && menus.some(([, item]) => item.open)) return;
+      this.menuLayout = layout; this.menuBand = band;
+      const place = (selector, item, inMenu) => {
+        if ((item.parentElement === this.overflow.panel) === inMenu) return;
+        item.open = false;
+        if (inMenu) this.overflow.panel.appendChild(item);
         else this.toolbar.insertBefore(item, selector === ".cx-grid-views" ? this.slots?.afterViews || this.spacer : this.overflow.details);
-      }
+      };
+      for (const [selector, item] of menus) place(selector, item, handset);
+      if (layout === "narrow") for (const [selector, item] of menus) if (selector === ".cx-grid-views" && this.toolbarWraps()) place(selector, item, true);
+    },
+    // The controls of the toolbar (not the search, which takes its own line on a phone) need a second line. A toolbar that
+    // is not laid out (a hidden tab) never wraps; the next resize places its menus.
+    toolbarWraps() {
+      const controls = [...this.toolbar.children].filter(node => !node.matches(".cx-search, .cx-spacer, .cx-sep") && node.getClientRects().length);
+      if (controls.length < 2) return false;
+      const first = controls[0].getBoundingClientRect();
+      return controls.some(node => node.getBoundingClientRect().top >= first.bottom - 1);
     }
   };

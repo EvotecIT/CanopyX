@@ -51,9 +51,9 @@
       this.syncGridStatus?.();
     },
     updateGridPhone() {
-      const phone = this.host.clientWidth <= 640, mode = this.layoutMode || "fit", autoRows = mode !== "cards" && (this.authoredAutoRows || phone && mode === "fit");
+      const width = this.host.clientWidth, phone = width <= 640, mode = this.layoutMode || "fit", autoRows = mode !== "cards" && (this.authoredAutoRows || phone && mode === "fit");
       this.host.classList.toggle("cx-phone", phone);
-      if (phone === this.phone && autoRows === this.autoRows) return;
+      if (phone === this.phone && autoRows === this.autoRows) { if (phone) this.placeMenus(true, width); return; }
       const anchor = this.gridRowAnchor();
       const changedRows = autoRows !== this.autoRows;
       this.phone = phone;this.autoRows = autoRows;
@@ -64,7 +64,7 @@
         this.syncScrollRange(this.rowTop(anchor.index) + Math.min(anchor.offset, this.rowH - 1));
       }
       this.version++;this.scheduleRender();
-      this.placeMenus(phone);
+      this.placeMenus(phone, width);
       this.syncPinnedShadows();
     },
     syncPinnedShadows() {
