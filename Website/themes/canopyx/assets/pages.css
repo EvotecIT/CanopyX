@@ -111,3 +111,11 @@
 .cnx-page--wide .cnx-prose, .cnx-page--wide .markdown-body { max-width: none; }
 .cnx-page--wide .markdown-body > :not(.cnx-showcase) { max-width: 70ch; }
 .cnx-showcase iframe { display: block; width: 100%; height: clamp(600px, 84vh, 1000px); border: 0; background: var(--cnx-card); }
+
+/* What's new: a before and an after render of one view, stacked, each in a frame that follows the site theme. */
+.cnx-compare { display: grid; gap: 12px; margin: 1.6em 0; }
+.cnx-compare .cnx-frame { box-shadow: none; }
+.cnx-compare .cnx-frame__bar { min-height: 36px; padding-block: 4px; }
+.cnx-compare img { display: block; width: 100%; height: auto; }
+.cnx-compare .cnx-frame:last-of-type .cnx-frame__title { color: var(--cnx-accent); }
+.cnx-compare figcaption { color: var(--cnx-ink-3); font-size: .875rem; line-height: 1.45; }

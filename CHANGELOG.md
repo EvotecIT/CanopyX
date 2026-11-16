@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+<!-- RELEASE-TODO(version): rename "Unreleased" to the NuGet and npm versions being published, for example "0.5.0 (NuGet) / 0.5.0 (npm)", and keep a new empty "Unreleased" above it. -->
+<!-- RELEASE-TODO(office-export): add a bullet when CanopyX loads its Office export from the shared OfficeIMO core (officeimo.min.js plus the CanopyX adapter), with the office-export part size before and after (507,686 / 132,608 bytes gzip before). -->
+<!-- RELEASE-TODO(scale): add bullets for the large-directory work (grids and trees at 50 to 500,000 users and 100 to 200 domain controllers) with measured load and scroll numbers. -->
+
+- Ship every runtime entry point and lazy part minified. `canopyx-grid.js` goes from 131,018 to 116,200 bytes gzip (−11.3%), `canopyx-reporting.js` from 157,784 to 139,492 (−11.6%), `canopyx.js` from 56,483 to 49,296 (−12.7%) and `canopyx-ui.js` from 4,722 to 4,175 (−11.6%); all lazy parts together go from 741,513 to 675,827 bytes gzip. Statements, strings, property names, public exports, the `.d.ts` surface, CSP nonces, Trusted Types and `file://` pages are unchanged, and the header comment and third-party notices are kept. Consumers still embed the checked-in assets with no npm step; editing runtime sources now needs Node.js to sync the assets.
+- Show only the tag chips that fit whole in a tags cell and count the rest in `+N` ("Primary +4" instead of "Primary Seco +2"). A single tag wider than its column ends with an ellipsis, and resizing the column chooses the chips again.
+- Keep headers of up to 24 characters on one line in the column's base width ("History bars" no longer wraps at 1440 px); flex and long text columns give way first. A column menu no longer changes fitted widths.
+- Line up the select-all header label with the row labels beside their checkboxes, on desktop and on phones.
+
 - A grid left without rows by a search or filters says why in plain words ("No services match “disk” with 2 filters."), its button reads Clear search when only a search is active, and the query summary no longer shows a second Clear all beside it. The new labels are `GridNoMatchesSearch`, `GridNoMatchesSearchFilters`, `GridNoMatchesFilters` (the last two take `{count}` and plural forms) and `GridClearSearch`. `GridNoMatchesReason` / `gridNoMatchesReason` is deprecated: it is no longer shown, but documents and packs that carry it still validate and load, so nothing needs migrating. Documents that carry the new labels need this release's runtime (see [versioning](docs/versioning.md)).
 - Breaking: `requestRowAction` resolves `{ accepted, reason, message }`, as `canopyx:rowAction` reports it, so a caller can show the host's refusal message. Migration: replace `if (await grid.requestRowAction(id, action))` with `if ((await grid.requestRowAction(id, action)).accepted)`; the object is always truthy.
 - Add `tone` to record actions: a prominent action's footer button is `primary` (default), `neutral` (secondary) or `danger`, which stands apart at the footer's end and is marked in the menu.
