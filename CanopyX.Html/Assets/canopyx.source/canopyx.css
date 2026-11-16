@@ -22,6 +22,8 @@
 .cx-result-context { grid-column:1 / -1;font-size:.85em;color:var(--hfx-color-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cx-switch { display:inline-flex;align-items:center;gap:calc(var(--hfx-space-1)*1.75);min-height:calc(var(--hfx-space-1)*8.5);cursor:pointer;}
 .cx-switch input { accent-color:var(--hfx-color-accent);width:var(--hfx-space-4);height:var(--hfx-space-4);margin:0;}
+.cx-switch-dot { color:var(--hfx-color-text-muted);}
+.cx-switch-count { color:var(--hfx-color-text-muted);font-variant-numeric:tabular-nums;}
 .cx-columns { position:relative;}
 .cx-columns:not([open]) > .cx-columns-list { display:none; }
 .cx-columns > summary { display:flex;align-items:center;cursor:pointer;list-style:none;}

@@ -2523,7 +2523,8 @@
         "label": { "$ref": "#/$defs/accessibleLabel" },
         "flag": { "$ref": "#/$defs/nonEmptyString" },
         "ancestorFlag": { "$ref": "#/$defs/nonEmptyString" },
-        "hidden": { "description": "The toolbar draws no switch; the host controls the filter.", "type": "boolean" }
+        "hidden": { "description": "The toolbar draws no switch; the host controls the filter.", "type": "boolean" },
+        "count": { "description": "Matching nodes shown beside the switch label; inline trees count them when it is absent.", "type": "integer", "minimum": 0, "maximum": 2147483647 }
       }
     },
     "searchHit": {
@@ -2953,6 +2954,8 @@
             "gridExpandCell": { "$ref": "#/$defs/accessibleLabel" },
             "gridCloseCell": { "$ref": "#/$defs/accessibleLabel" },
             "gridCloseRecord": { "$ref": "#/$defs/accessibleLabel" },
+            "gridCopyDetails": { "$ref": "#/$defs/accessibleLabel" },
+            "gridDetailsCopied": { "$ref": "#/$defs/accessibleLabel" },
             "gridMoveColumn": { "$ref": "#/$defs/accessibleLabel" },
             "gridResizeHelp": { "$ref": "#/$defs/accessibleLabel" },
             "gridFitColumn": { "$ref": "#/$defs/accessibleLabel" },

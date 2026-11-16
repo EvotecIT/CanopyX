@@ -82,11 +82,13 @@ test("a gzip bundle loads its rows from sidecar files on file://", async ({ page
   expect(errors).toEqual([]);
 });
 
-test("the first windows of ordered rows paint before the last chunk arrives; other queries wait for it", async ({ page }) => {
-  const view = compactView({ columns: ["name", "size"], count: 300, ordered: true, base: "data/", chunks: 3 });
+const sidecar = (index) => "(self.CanopyXSidecar = self.CanopyXSidecar || []).push([\"compact\",\"rows/" + index + "\",String.raw`" + JSON.stringify(chunk(index * 100, index * 100 + 100)) + "`]);";
+// A reporting grid that readers can group, but that totals and groups nothing yet, shows its first windows early too.
+for (const [name, extra] of [["", undefined], [" (a groupable reporting grid)", { reporting: { groupable: true, responsive: true } }]])
+test("the first windows of ordered rows paint before the last chunk arrives; other queries wait for it" + name, async ({ page }) => {
+  const view = compactView({ columns: ["name", "size"], count: 300, ordered: true, base: "data/", chunks: 3 }, extra);
   let release;
   const held = new Promise((resolve) => { release = resolve; });
-  const sidecar = (index) => "(self.CanopyXSidecar = self.CanopyXSidecar || []).push([\"compact\",\"rows/" + index + "\",String.raw`" + JSON.stringify(chunk(index * 100, index * 100 + 100)) + "`]);";
   await page.route("http://canopyx.test/**", async (route) => {
     const file = new URL(route.request().url()).pathname;
     if (file === "/") return route.fulfill({ contentType: "text/html", body: viewPage(view) });
@@ -110,6 +112,27 @@ test("the first windows of ordered rows paint before the last chunk arrives; oth
   await nextFrames(page);
   // size = index % 97: the largest values (96) are rows 96 and 193 and 290, in identity order.
   expect((await ids(page)).slice(0, 3)).toEqual(["r00096", "r00193", "r00290"]);
+});
+
+test("a reporting grid with totals waits for every chunk before its first rows", async ({ page }) => {
+  const view = compactView({ columns: ["name", "size"], count: 300, ordered: true, base: "data/", chunks: 3 },
+    { reporting: { aggregates: [{ id: "total", column: "size", label: "Total", operation: "sum" }] } });
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  await page.route("http://canopyx.test/**", async (route) => {
+    const file = new URL(route.request().url()).pathname;
+    if (file === "/") return route.fulfill({ contentType: "text/html", body: viewPage(view) });
+    const index = Number(/rows\/(\d)\.js$/.exec(file)?.[1]);
+    if (index === 2) await held;
+    return route.fulfill({ contentType: "text/javascript", body: sidecar(index) });
+  });
+  await page.goto("http://canopyx.test/", { waitUntil: "domcontentloaded" });
+  await page.waitForFunction(() => document.querySelector("[data-canopyx-host]")?.canopyx?.view.rows.length === 200);
+  await page.waitForTimeout(150);
+  expect(await page.locator(".cx-row[data-cx-id]").count()).toBe(0);
+  release();
+  await page.waitForSelector(".cx-row[data-cx-id]");
+  expect((await ids(page))[0]).toBe("r00000");
 });
 test("a failed row data file can be retried and decodes from the start", async ({ page }) => {
   const view = compactView({ columns: ["name", "size"], count: 200, ordered: true, base: "data/", chunks: 2 }, { search: false });

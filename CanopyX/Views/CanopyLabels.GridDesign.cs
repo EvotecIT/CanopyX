@@ -3,6 +3,10 @@ namespace CanopyX;
 public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the accessible label of the record drawer's close button.</summary>
     public string GridCloseRecord { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the label of the record drawer's button that copies the record as plain text.</summary>
+    public string GridCopyDetails { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the announcement after the record drawer copied the record.</summary>
+    public string GridDetailsCopied { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the {count} groups label.</summary>
     public string GridGroupCount { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the of these label.</summary>

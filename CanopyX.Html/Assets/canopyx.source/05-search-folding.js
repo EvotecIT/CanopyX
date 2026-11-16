@@ -26,10 +26,12 @@
     return code < 128 && !((code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122));
   }
 
+  // One pattern object for every call: a literal in the function would allocate a new one for each cell searched.
+  const NON_ASCII = /[^\0-\x7f]/;
   function foldText(text) {
     const source = String(text == null ? "" : text);
     // ASCII folds exactly as toLowerCase does; only other code units need the table.
-    if (!/[^\0-\x7f]/.test(source)) return source.toLowerCase();
+    if (!NON_ASCII.test(source)) return source.toLowerCase();
     let out = "";
     for (let i = 0; i < source.length; i++) {
       out += foldUnit(source.charAt(i));

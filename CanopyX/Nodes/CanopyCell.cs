@@ -16,9 +16,27 @@ namespace CanopyX;
 /// </remarks>
 public sealed partial class CanopyCell {
     private readonly object? _value;
-    private List<CanopyBadge>? _badges;
-    private List<CanopyCellPeriod>? _series;
-    private object? _sortKey;
+    // Everything but the value lives in one block made on first use, so a plain cell is a value and one reference. A report of
+    // 500,000 rows by 20 columns holds ten million cells; this keeps each at 32 bytes instead of about 130.
+    private CellExtras? _extras;
+
+    private sealed class CellExtras {
+        internal string? Text, SearchText, Title, Secondary;
+        internal CanopyTone Tone;
+        internal object? SortKey;
+        internal List<CanopyBadge>? Badges;
+        internal List<CanopyCellPeriod>? Series;
+        internal List<CanopyCell>? Items;
+        internal List<CanopyCellField>? Fields;
+        internal List<CanopyRecordEvent>? Events;
+        internal List<CanopyFieldChange>? Changes;
+        internal CanopyRecordList? Records;
+        internal CanopyRecordRef? Ref;
+    }
+
+    private CellExtras Extras => _extras ??= new CellExtras();
+    private List<CanopyBadge>? BadgeList => _extras?.Badges;
+    private List<CanopyCellPeriod>? SeriesList => _extras?.Series;
 
     /// <summary>Creates an empty cell, useful for a cell that shows only badges or display text.</summary>
     public CanopyCell() {
@@ -73,23 +91,23 @@ public sealed partial class CanopyCell {
     public object? Value => _value;
 
     /// <summary>Gets or sets the text shown instead of the formatted value.</summary>
-    public string? Text { get; set; }
+    public string? Text { get => _extras?.Text; set { if (value != null || _extras != null) Extras.Text = value; } }
 
     /// <summary>Gets or sets alternate search text for flat grids, independently of display, sorting and export values.</summary>
     /// <remarks>Null searches the raw value. Empty text deliberately excludes this cell's value from text search. Tree search indexes retain their existing contract.</remarks>
-    public string? SearchText { get; set; }
+    public string? SearchText { get => _extras?.SearchText; set { if (value != null || _extras != null) Extras.SearchText = value; } }
 
     /// <summary>Gets or sets an optional tooltip.</summary>
-    public string? Title { get; set; }
+    public string? Title { get => _extras?.Title; set { if (value != null || _extras != null) Extras.Title = value; } }
 
     /// <summary>Gets or sets optional secondary identifier text, independent of raw query values.</summary>
-    public string? Secondary { get; set; }
+    public string? Secondary { get => _extras?.Secondary; set { if (value != null || _extras != null) Extras.Secondary = value; } }
 
     /// <summary>Gets up to 4096 ordered visual history periods for strip and sparkline presenters.</summary>
-    public IList<CanopyCellPeriod> Series => _series ??= new List<CanopyCellPeriod>();
+    public IList<CanopyCellPeriod> Series => Extras.Series ??= new List<CanopyCellPeriod>();
 
     /// <summary>Gets or sets the semantic colour of the cell text.</summary>
-    public CanopyTone Tone { get; set; }
+    public CanopyTone Tone { get => _extras?.Tone ?? CanopyTone.None; set { if (value != CanopyTone.None || _extras != null) Extras.Tone = value; } }
 
     /// <summary>
     /// Gets or sets the key this cell sorts by when it differs from its value:
@@ -99,8 +117,8 @@ public sealed partial class CanopyCell {
     /// </summary>
     /// <exception cref="ArgumentException">The key is not text, a finite number or a date.</exception>
     public object? SortKey {
-        get => _sortKey;
-        set => _sortKey = value switch {
+        get => _extras?.SortKey;
+        set => SetSortKey(value switch {
             double real when double.IsNaN(real) || double.IsInfinity(real) => throw new ArgumentException("A sort key number must be finite.", nameof(value)),
             null or string or long or double or decimal => value,
             int number => (long)number,
@@ -108,11 +126,13 @@ public sealed partial class CanopyCell {
             DateTime date => date.Kind == DateTimeKind.Local ? date.ToUniversalTime() : DateTime.SpecifyKind(date, DateTimeKind.Utc),
             DateTimeOffset offset => offset.UtcDateTime,
             _ => throw new ArgumentException("A sort key is text, a number or a date.", nameof(value))
-        };
+        });
     }
 
+    private void SetSortKey(object? key) { if (key != null || _extras != null) Extras.SortKey = key; }
+
     /// <summary>Gets the badges shown after the cell text.</summary>
-    public IList<CanopyBadge> Badges => _badges ??= new List<CanopyBadge>();
+    public IList<CanopyBadge> Badges => Extras.Badges ??= new List<CanopyBadge>();
 
     /// <summary>Converts text to a cell.</summary>
     /// <param name="value">The text.</param>
@@ -192,7 +212,7 @@ public sealed partial class CanopyCell {
     }
 
     /// <summary>Gets whether <see cref="Badges"/> holds at least one badge, without creating the collection.</summary>
-    public bool HasBadges => _badges != null && _badges.Count > 0;
+    public bool HasBadges => BadgeList is { Count: > 0 };
 
     /// <summary>A date in UTC as the label shows it: the first <c>{time}</c> becomes the date, as in the browser.</summary>
     private static string Utc(CanopyLabels labels, DateTime date) {
@@ -227,9 +247,9 @@ public sealed partial class CanopyCell {
     internal void ValidateShape(int structureDepth = 0) {
         ValidateStructure(structureDepth);
         if (Secondary != null && Secondary.Length > 4096) throw new InvalidOperationException("Secondary cell text is limited to 4096 code units.");
-        if (_series != null && (_series.Count > 4096 || _series.Exists(point => point == null))) throw new InvalidOperationException("Cell history supports at most 4096 non-null periods.");
-        if (_sortKey is string key && key.Length > 4096) throw new InvalidOperationException("A sort key is limited to 4096 code units.");
-        switch (_sortKey) {
+        if (SeriesList != null && (SeriesList.Count > 4096 || SeriesList.Exists(point => point == null))) throw new InvalidOperationException("Cell history supports at most 4096 non-null periods.");
+        if (SortKey is string key && key.Length > 4096) throw new InvalidOperationException("A sort key is limited to 4096 code units.");
+        switch (SortKey) {
             case long whole: CanopyJsonWriter.RequireSafeMagnitude((decimal)whole); break;
             case decimal exact: CanopyJsonWriter.RequireSafeMagnitude(exact); break;
             case double real: CanopyJsonWriter.RequireSafeMagnitude(real); break;
@@ -239,8 +259,8 @@ public sealed partial class CanopyCell {
             case decimal exact: CanopyJsonWriter.RequireSafeMagnitude(exact); break;
             case double real: CanopyJsonWriter.RequireSafeMagnitude(real); break;
         }
-        if (_badges != null) {
-            foreach (var badge in _badges) {
+        if (BadgeList != null) {
+            foreach (var badge in BadgeList) {
                 if (badge == null) throw new InvalidOperationException("A cell cannot contain a null badge.");
             }
         }
@@ -248,8 +268,8 @@ public sealed partial class CanopyCell {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         ValidateShape();
-        var simple = Text == null && SearchText == null && Title == null && Secondary == null && (_series == null || _series.Count == 0) && Tone == CanopyTone.None && !HasBadges &&
-            _sortKey == null && !IsStructured && Ref == null;
+        var simple = Text == null && SearchText == null && Title == null && Secondary == null && (SeriesList == null || SeriesList.Count == 0) && Tone == CanopyTone.None && !HasBadges &&
+            SortKey == null && !IsStructured && Ref == null;
         if (simple) {
             WriteValue(writer);
             return;
@@ -265,17 +285,17 @@ public sealed partial class CanopyCell {
         writer.OptionalProperty("searchText", SearchText);
         writer.OptionalProperty("title", Title);
         writer.OptionalProperty("secondary", Secondary);
-        if (_series != null && _series.Count > 0) { writer.Name("series").BeginArray(); foreach (var point in _series) point.WriteJson(writer); writer.EndArray(); }
+        if (SeriesList != null && SeriesList.Count > 0) { writer.Name("series").BeginArray(); foreach (var point in SeriesList) point.WriteJson(writer); writer.EndArray(); }
         writer.OptionalProperty("tone", Tone.Name);
-        if (_sortKey != null) {
+        if (SortKey != null) {
             writer.Name("sort");
             // Date keys always carry milliseconds, so their text sorts in time order within a second too.
-            if (_sortKey is DateTime date) writer.String(date.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture));
-            else WriteScalar(writer, _sortKey);
+            if (SortKey is DateTime date) writer.String(date.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture));
+            else WriteScalar(writer, SortKey);
         }
         if (HasBadges) {
             writer.Name("badges").BeginArray();
-            foreach (var badge in _badges!) {
+            foreach (var badge in BadgeList!) {
                 (badge ?? throw new InvalidOperationException("A cell cannot contain a null badge.")).WriteJson(writer);
             }
 

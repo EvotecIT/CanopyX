@@ -10,10 +10,10 @@ public sealed partial class CanopyCell {
     /// <summary>The deepest nesting of structured values: an object in a collection in an object, and so on.</summary>
     public const int MaxStructureDepth = 8;
 
-    private List<CanopyCell>? _items;
-    private List<CanopyCellField>? _fields;
-    private List<CanopyRecordEvent>? _events;
-    private List<CanopyFieldChange>? _changes;
+    private List<CanopyCell>? ItemList => _extras?.Items;
+    private List<CanopyCellField>? FieldList => _extras?.Fields;
+    private List<CanopyRecordEvent>? EventList => _extras?.Events;
+    private List<CanopyFieldChange>? ChangeList => _extras?.Changes;
 
     /// <summary>Gets the items of a list value: text, numbers or dates, each with its own tone, tooltip or link.</summary>
     /// <remarks>
@@ -21,25 +21,25 @@ public sealed partial class CanopyCell {
     /// sorting, filters and exports read <see cref="Value"/>: <see cref="List(IEnumerable{CanopyCell}, string)"/> sets it to the items
     /// joined. A cell holds at most one structured value: items, fields, records, events or changes.
     /// </remarks>
-    public IList<CanopyCell> Items => _items ??= new List<CanopyCell>();
+    public IList<CanopyCell> Items => Extras.Items ??= new List<CanopyCell>();
 
     /// <summary>Gets the named values of an object value, shown as a nested property list.</summary>
-    public IList<CanopyCellField> Fields => _fields ??= new List<CanopyCellField>();
+    public IList<CanopyCellField> Fields => Extras.Fields ??= new List<CanopyCellField>();
 
     /// <summary>Gets or sets a collection of records: a nested grid or tree in the record panel.</summary>
-    public CanopyRecordList? Records { get; set; }
+    public CanopyRecordList? Records { get => _extras?.Records; set { if (value != null || _extras != null) Extras.Records = value; } }
 
     /// <summary>Gets the events of a timeline value, in the order given (newest first is usual).</summary>
-    public IList<CanopyRecordEvent> Events => _events ??= new List<CanopyRecordEvent>();
+    public IList<CanopyRecordEvent> Events => Extras.Events ??= new List<CanopyRecordEvent>();
 
     /// <summary>Gets the before and after values of a change list.</summary>
-    public IList<CanopyFieldChange> Changes => _changes ??= new List<CanopyFieldChange>();
+    public IList<CanopyFieldChange> Changes => Extras.Changes ??= new List<CanopyFieldChange>();
 
     /// <summary>Gets or sets a record this value links to: the record panel shows it as a link that opens that record.</summary>
-    public CanopyRecordRef? Ref { get; set; }
+    public CanopyRecordRef? Ref { get => _extras?.Ref; set { if (value != null || _extras != null) Extras.Ref = value; } }
 
     /// <summary>Gets whether the cell holds a structured value: items, fields, records, events or changes.</summary>
-    public bool IsStructured => _items?.Count > 0 || _fields?.Count > 0 || Records != null || _events?.Count > 0 || _changes?.Count > 0;
+    public bool IsStructured => ItemList?.Count > 0 || FieldList?.Count > 0 || Records != null || EventList?.Count > 0 || ChangeList?.Count > 0;
 
     /// <summary>Creates a list value whose raw value is the items' text joined, so search, filters, sorting and exports read it.</summary>
     /// <param name="items">The items.</param>
@@ -49,7 +49,7 @@ public sealed partial class CanopyCell {
     public static CanopyCell List(IEnumerable<CanopyCell> items, string separator = ", ") {
         var list = (items ?? throw new ArgumentNullException(nameof(items))).ToList();
         var cell = new CanopyCell(list.Count == 0 ? null : string.Join(separator ?? ", ", list.Select(ItemText)));
-        cell._items = list;
+        cell.Extras.Items = list;
         return cell;
     }
 
@@ -69,7 +69,7 @@ public sealed partial class CanopyCell {
     /// <returns>The cell, without a raw value; set <see cref="Text"/> or create the cell with a value to give a grid column one.</returns>
     public static CanopyCell Object(params CanopyCellField[] fields) {
         var cell = new CanopyCell();
-        cell._fields = new List<CanopyCellField>(fields ?? throw new ArgumentNullException(nameof(fields)));
+        cell.Extras.Fields = new List<CanopyCellField>(fields ?? throw new ArgumentNullException(nameof(fields)));
         return cell;
     }
 
@@ -83,7 +83,7 @@ public sealed partial class CanopyCell {
     /// <returns>The cell.</returns>
     public static CanopyCell Timeline(IEnumerable<CanopyRecordEvent> events) {
         var cell = new CanopyCell();
-        cell._events = new List<CanopyRecordEvent>(events ?? throw new ArgumentNullException(nameof(events)));
+        cell.Extras.Events = new List<CanopyRecordEvent>(events ?? throw new ArgumentNullException(nameof(events)));
         return cell;
     }
 
@@ -92,7 +92,7 @@ public sealed partial class CanopyCell {
     /// <returns>The cell.</returns>
     public static CanopyCell Diff(IEnumerable<CanopyFieldChange> changes) {
         var cell = new CanopyCell();
-        cell._changes = new List<CanopyFieldChange>(changes ?? throw new ArgumentNullException(nameof(changes)));
+        cell.Extras.Changes = new List<CanopyFieldChange>(changes ?? throw new ArgumentNullException(nameof(changes)));
         return cell;
     }
 
@@ -106,21 +106,21 @@ public sealed partial class CanopyCell {
     /// <summary>Checks the structured value and returns its nesting depth.</summary>
     internal int ValidateStructure(int depth) {
         if (depth > MaxStructureDepth) throw new InvalidOperationException("Structured values nest at most " + MaxStructureDepth + " levels.");
-        var kinds = (_items?.Count > 0 ? 1 : 0) + (_fields?.Count > 0 ? 1 : 0) + (Records != null ? 1 : 0) + (_events?.Count > 0 ? 1 : 0) + (_changes?.Count > 0 ? 1 : 0);
+        var kinds = (ItemList?.Count > 0 ? 1 : 0) + (FieldList?.Count > 0 ? 1 : 0) + (Records != null ? 1 : 0) + (EventList?.Count > 0 ? 1 : 0) + (ChangeList?.Count > 0 ? 1 : 0);
         if (kinds > 1) throw new InvalidOperationException("A cell holds one structured value: items, fields, records, events or changes.");
-        if (_items?.Count > 4096 || _fields?.Count > 512 || _events?.Count > 10000 || _changes?.Count > 512) throw new InvalidOperationException("A structured value exceeds its item bound (4,096 items, 512 fields or changes, 10,000 events).");
+        if (ItemList?.Count > 4096 || FieldList?.Count > 512 || EventList?.Count > 10000 || ChangeList?.Count > 512) throw new InvalidOperationException("A structured value exceeds its item bound (4,096 items, 512 fields or changes, 10,000 events).");
         Ref?.Validate();
-        if (_items != null) foreach (var item in _items) {
+        if (ItemList != null) foreach (var item in ItemList) {
             if (item == null) throw new InvalidOperationException("A list cannot contain a null item.");
             if (item.IsStructured) throw new InvalidOperationException("List items are values; use fields or records for nested structures.");
             item.ValidateStructure(depth + 1);
         }
-        if (_fields != null) foreach (var field in _fields) (field ?? throw new InvalidOperationException("An object cannot contain a null field.")).Value?.ValidateStructure(depth + 1);
-        if (_changes != null) foreach (var change in _changes) {
+        if (FieldList != null) foreach (var field in FieldList) (field ?? throw new InvalidOperationException("An object cannot contain a null field.")).Value?.ValidateStructure(depth + 1);
+        if (ChangeList != null) foreach (var change in ChangeList) {
             if (change == null) throw new InvalidOperationException("A change list cannot contain a null change.");
             change.Before?.ValidateStructure(depth + 1); change.After?.ValidateStructure(depth + 1);
         }
-        if (_events != null) foreach (var item in _events) {
+        if (EventList != null) foreach (var item in EventList) {
             if (item == null) throw new InvalidOperationException("A timeline cannot contain a null event.");
             foreach (var change in item.Changes) {
                 if (change == null) throw new InvalidOperationException("An event cannot contain a null change.");
@@ -132,24 +132,24 @@ public sealed partial class CanopyCell {
     }
 
     private void WriteStructure(CanopyJsonWriter writer) {
-        if (_items?.Count > 0) {
+        if (ItemList?.Count > 0) {
             writer.Name("items").BeginArray();
-            foreach (var item in _items) item.WriteJson(writer);
+            foreach (var item in ItemList) item.WriteJson(writer);
             writer.EndArray();
-        } else if (_fields?.Count > 0) {
+        } else if (FieldList?.Count > 0) {
             writer.Name("fields").BeginArray();
-            foreach (var field in _fields) field.WriteJson(writer);
+            foreach (var field in FieldList) field.WriteJson(writer);
             writer.EndArray();
         } else if (Records != null) {
             writer.Name("records");
             Records.WriteJson(writer);
-        } else if (_events?.Count > 0) {
+        } else if (EventList?.Count > 0) {
             writer.Name("events").BeginArray();
-            foreach (var item in _events) item.WriteJson(writer);
+            foreach (var item in EventList) item.WriteJson(writer);
             writer.EndArray();
-        } else if (_changes?.Count > 0) {
+        } else if (ChangeList?.Count > 0) {
             writer.Name("changes").BeginArray();
-            foreach (var change in _changes) change.WriteJson(writer);
+            foreach (var change in ChangeList) change.WriteJson(writer);
             writer.EndArray();
         }
         if (Ref != null) { writer.Name("ref"); Ref.WriteJson(writer); }

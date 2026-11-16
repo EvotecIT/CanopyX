@@ -258,6 +258,8 @@ public sealed partial class CanopyLabels {
         GridCancelExport = "Annulla esportazione",
         GridPrint = "Stampa",
         GridCloseRecord = "Chiudi",
+        GridCopyDetails = "Copia dettagli",
+        GridDetailsCopied = "Dettagli copiati",
         GridContains = "contiene",
         GridStartsWith = "inizia con",
         GridIn = "è uno tra",

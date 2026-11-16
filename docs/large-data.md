@@ -105,7 +105,7 @@ A fragment never writes its rows twice: the configuration (or the row data chunk
 These apply without any option:
 
 - A view the runtime parsed from the page is used as it is; only a view a host script passes to `createDataGrid` is copied first. A large inline dataset is parsed once instead of twice.
-- Sorting reads each row's sort keys once per sort instead of in every comparison (a date key parses its text), which makes the first sort of a large dataset many times faster.
+- Sorting reads each row's sort keys once per sort instead of in every comparison (a date key parses its text), which makes the first sort of a large dataset many times faster. Groupable grids and grids with plugins sort the same way; only a column with a plugin comparator or alternate sort fields compares rows.
 - Search and filters fold ASCII text with the engine's own lowercase conversion, and use the full folding table only for other characters.
 - Rows are virtual: a million rows never become a million elements, and logical heights above the browser's limit use a bounded scrollbar. Columns are not virtualised; every visible column of the rows in view is drawn, which is cheap for the column counts of reports.
 
@@ -154,6 +154,114 @@ Mounting when visible moves the cost of a hidden section to the moment it is ope
 What does not change: trees, a report that mounts every view at load and hosted grids take the same time as before. Measured in alternating rounds on the same machine (5 runs each, CPU slowed four times), the inline tree of 101,010 nodes showed its first rows in 2,123 and 2,039 ms before and 2,085 and 2,260 ms after, the tree bundle in 845 and 692 ms before and 761 and 464 ms after, and the report that mounts every view in 3,831 and 3,723 ms before and 3,826 and 3,312 ms after. Timings on a shared workstation drift by tens of percent over hours, so compare within one run.
 
 Search still scans every row: a quick search over a million rows takes about 1.4 s at normal speed. For datasets beyond that, a hosted source answers each query from the host.
+
+## Directory-sized reports
+
+The scale benchmark writes pages shaped like directory reports through the regular writers and their default choices, at
+50, 500, 5,000, 50,000 and 500,000 rows or nodes: a user inventory (20 columns, readers can group it) as a single file and as a
+bundle, a computer inventory (14 columns), wide user inventories (100 and 150 columns, at 5,000 and 50,000 rows), a group
+membership tree as a single file and as a bundle, a policy by server matrix (up to 5,000 by 200, the matrix's cell limit) and a
+change list (one change per ten objects, up to its 10,000 items). It measures each in a fresh Chromium (1440 x 900), median of
+three runs: the bytes of the page and its files, *first rows* (navigation start to the frame after the view shows a row), *all
+rows* (compact row data decoded), the longest main-thread task until then, sorting by a date column, filtering, grouping (a
+tree: opening its largest group, up to 5,000 members), a quick search, the frame rate while wheel-scrolling for about two
+seconds, and the JavaScript heap after load.
+
+At 50 and 500 every view shows its first rows within about 0.1 s and answers every operation within 0.05 s. The tables below
+are the larger tiers on an Apple M5 Max, in milliseconds unless stated; `a → b` is before → after the changes that came with the
+benchmark (keys read once per sort in groupable grids, first rows before every chunk in reporting grids that total nothing),
+shown where they differ by more than 15%.
+
+**5,000 rows or nodes**
+
+| View | Size | First rows | All rows | Longest task | Sort | Filter | Group / expand | Search | Scroll fps | Heap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| users-5000 | 3.8 MB | 122 | 116 | 70 | 27 | 32 | 42 | 43 | 60 | 6 MB |
+| users-5000-bundle | 4.6 MB | 129 | 125 | 0 | 27 | 32 | 44 | 44 | 61 | 6 MB |
+| computers-5000 | 2.9 MB | 119 | 102 | 0 | 28 | 32 | 32 | 32 | 60 | 5 MB |
+| users-wide100-5000 | 11.7 MB | 287 | 264 | 181 | 101 | 85 | 151 | 148 | 50 | 9 MB |
+| users-wide150-5000 | 16.8 MB | 417 | 381 | 287 | 125 | 128 | 227 | 224 | 41 | 24 MB |
+| groups-5000 | 1.1 MB | 80 | 62 | 0 | 32 | – | 6 → 30 | 31 | 60 | 3 MB |
+| groups-5000-bundle | 2.0 MB | 65 | 48 | 0 | 33 | – | 18 | 31 | 60 | 2 MB |
+| matrix-5000 | 812 KB | 66 | 54 | 0 | 32 | 33 | – | 33 | 60 | 2 MB |
+| changes-5000 | 841 KB | 74 | 61 | 0 | – | 31 | – | 33 | 60 | 2 MB |
+
+**50,000 rows or nodes**
+
+| View | Size | First rows | All rows | Longest task | Sort | Filter | Group / expand | Search | Scroll fps | Heap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| users-50000 | 4.8 MB | 264 → 152 | 249 | 0 | 170 → 46 | 31 | 70 | 77 | 61 | 39 MB |
+| users-50000-bundle | 6.6 MB | 235 → 152 | 234 | 0 | 170 → 45 | 30 | 69 | 76 | 61 | 39 MB |
+| computers-50000 | 3.7 MB | 194 → 121 | 192 | 0 | 158 → 37 | 25 | 51 | 59 | 55 | 22 MB |
+| users-wide100-50000 | 22.0 MB | 855 → 348 | 793 | 89 → 141 | 259 → 123 | 107 | 210 | 259 | 46 | 185 MB |
+| users-wide150-50000 | 32.1 MB | 1,204 → 473 | 1,085 | 133 → 204 | 300 → 164 | 150 | 291 | 330 | 41 | 192 MB |
+| groups-50000 | 6.5 MB | 97 | 95 | 0 | 48 | – | 24 | 49 | 60 | 9 MB |
+| groups-50000-bundle | 9.9 MB | 80 | 52 | 0 | 34 | – | 18 | 30 | 60 | 2 MB |
+| matrix-50000 | 1.0 MB | 75 | 61 | 0 | 30 | 32 | – | 33 | 60 | 3 MB |
+| changes-50000 | 1.4 MB | 80 | 66 | 0 | – | 32 | – | 32 | 60 | 4 MB |
+
+**500,000 rows or nodes**
+
+| View | Size | First rows | All rows | Longest task | Sort | Filter | Group / expand | Search | Scroll fps | Heap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| users-500000 | 39.8 MB | 1,515 → 222 | 1,438 | 0 | 2,410 → 301 | 87 | 370 | 438 | 60 | 370 MB |
+| users-500000-bundle | 41.6 MB | 1,597 → 132 | 1,397 | 0 | 2,582 → 296 | 90 | 360 | 432 | 61 | 370 MB |
+| computers-500000 | 27.9 MB | 1,165 → 148 | 1,013 | 0 | 2,458 → 263 | 73 | 236 | 300 | 61 | 200 MB |
+| groups-500000 | 60.7 MB | 363 | 351 | 200 | 56 | – | 14 | 189 → 159 | 60 | 67 MB |
+| groups-500000-bundle | 87.1 MB | 65 | 46 | 0 | 34 | – | 19 | 30 | 60 | 2 MB |
+| matrix-500000 | 1.9 MB | 86 | 72 | 0 | 30 | 32 | – | 34 | 60 | 5 MB |
+| changes-500000 | 2.1 MB | 100 | 91 | 0 | – | 31 | – | 33 | 61 | 6 MB |
+
+**50,000 rows, 4x CPU**
+
+| View | Size | First rows | All rows | Longest task | Sort | Filter | Group / expand | Search | Scroll fps | Heap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| users-50000 | 4.8 MB | 1,216 → 597 | 1,015 | 175 | 850 → 182 | 126 | 292 | 323 | 41 | 39 MB |
+| users-wide150-50000 | 32.1 MB | 5,623 → 2,081 | 5,572 → 4,690 | 606 → 959 | 1,391 → 704 | 635 | 1,243 | 1,441 | 20 | 192 MB |
+
+**500,000 rows or nodes, 4x CPU**
+
+| View | Size | First rows | All rows | Longest task | Sort | Filter | Group / expand | Search | Scroll fps | Heap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| users-500000 | 39.8 MB | 7,718 → 833 | 7,704 → 6,061 | 171 | 11,465 → 1,279 | 489 → 385 | 1,645 | 1,853 | 49 | 370 MB |
+| users-500000-bundle | 41.6 MB | 8,152 → 629 | 8,132 → 6,236 | 178 | 11,453 → 1,309 | 376 | 1,624 | 1,856 | 52 | 370 MB |
+| computers-500000 | 27.9 MB | 5,837 → 669 | 5,826 → 4,502 | 145 → 118 | 10,757 → 1,085 | 319 | 823 → 971 | 1,258 | 58 | 200 MB |
+| groups-500000 | 60.7 MB | 1,583 | 1,566 | 920 | 238 | – | 34 | 604 | 60 | 67 MB |
+| groups-500000-bundle | 87.1 MB | 215 | 202 | 0 | 59 | – | 35 | 54 | 60 | 2 MB |
+| matrix-500000 | 1.9 MB | 357 | 317 | 169 | 119 | 119 | – | 108 | 60 | 5 MB |
+| changes-500000 | 2.1 MB | 357 | 308 | 143 | – | 94 | – | 74 | 61 | 6 MB |
+
+What these numbers mean for a report:
+
+- **Flat grids hold 500,000 rows in one file.** The writer's default (compressed row data above 25,000 rows) keeps a 500,000-row
+  user inventory at 40 MB; its first rows show in 0.1 to 0.2 s (0.6 to 0.8 s at 4x), the rest decodes in short tasks, and sort,
+  filter, group and search take 0.1 to 0.4 s (0.4 to 1.9 s at 4x). The browser holds about 370 MB. A grid bundle is not lighter:
+  it reads every row too, so it helps only where one file is not allowed. Beyond this, or for data that changes, use a hosted
+  source, which pages on the host.
+- **Trees bundle well.** A 500,000-node tree is 61 MB inline and shows its first rows in 0.4 s (1.6 s at 4x, with a 0.9 s task
+  while it parses); as a bundle it shows them in 0.07 s (0.2 s at 4x) and holds 2 MB, because branches load when they open. Up to
+  about 50,000 nodes the inline page is as quick.
+- **Matrices and change lists stay small.** Their limits (`CanopyMatrix.MaxCells`, `CanopyChangeList.MaxItems`) bound them, and
+  every tier stays under 0.4 s at 4x.
+- **Wide grids scroll slower, not stall.** 100 columns scroll at 46 to 57 fps and 150 columns at about 41 (20 at 4x), without
+  frames over 50 ms at normal speed. Flat grids draw every visible column of the rows in view; column windowing
+  ([TODO](../TODO.md)) is the next step if a report needs more than about 100 visible columns.
+- **No worker.** Sorting, filtering, grouping and searching stay on the main thread: at 500,000 rows they take 0.1 to 0.4 s at
+  normal speed. A worker would need its own copy of the rows (another 370 MB at that size), and pages opened from `file://` or
+  under a strict Content Security Policy can start one only from a blob.
+- **The .NET model.** A plain cell takes 32 bytes in .NET (its text, tooltip, tone, badges, sort key and structured value take
+  room only once set), so a 500,000 by 20 grid model is about 1.4 GB and writing it adds about 1 GB of short-lived strings.
+
+```powershell
+dotnet run --project CanopyX.Examples -c Release -- D:\Scratch\scale --scale                 # every tier, about 420 MB
+cd tests/browser
+node bench/scale-benchmark.mjs --fixtures D:\Scratch\scale\scale --runs 3 --label after
+node bench/scale-benchmark.mjs --fixtures D:\Scratch\scale\scale --runs 1 --cpu 4 --cases users-500000,groups-500000
+```
+
+`--tiers 50000,500000` limits the tiers the examples app writes; `--cases` picks pages by name. The opt-in
+`scale-performance.spec.mjs` keeps budgets for a 500,000-row groupable grid (sort 1.5 s, filter 1 s, group and search 2 s, at
+normal speed in Chromium), and the `Benchmark` category checks the size of a plain cell.
 
 ## Opt-in load benchmarks
 

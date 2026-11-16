@@ -28,7 +28,7 @@ internal static class SampleDocuments {
         view.Icons["folder"] = FolderIcon;
         view.Labels.Columns = "Kolumny";
         view.Labels.ShowMore = "Pokaż więcej ({loaded} z {total})";
-        view.Filters.Add(new CanopyFilter("changed", "Only changed", "changed") { AncestorFlag = "changed-below" });
+        view.Filters.Add(new CanopyFilter("changed", "Only changed", "changed") { AncestorFlag = "changed-below", Count = 12 });
         view.Filters.Add(new CanopyFilter("changed-30d", "Changed in 30 days", "changed-30d") { Hidden = true });
 
         var share = new CanopyNode("share", @"\\files\projects") { Kind = "share", Icon = "folder", Group = true, Expanded = true };

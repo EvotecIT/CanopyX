@@ -119,6 +119,18 @@
     };
     return [[labels.recordSection, labels.recordField, labels.recordValue], ...rows].map(row => row.map(quote).join(",")).join("\r\n");
   }
+  // Copy details: the record as "Field: value" lines under their sections, every tab included, for a ticket.
+  RECORD_IMPL.text = (view, dialog) => {
+    const { items } = recordData(view, dialog), lines = [recordTitle(dialog)], subtitle = dialog.querySelector(".cx-drawer-h p");
+    if (subtitle && !subtitle.hidden && subtitle.textContent.trim()) lines.push(subtitle.textContent.trim());
+    let section = null;
+    for (const item of items) {
+      if (item.section && item.section !== section) { section = item.section; lines.push("", section); }
+      const text = recordFlat(item.cell, item.field, view.fmt).replace(/\s*\n\s*/g, "; ").trim();
+      lines.push(item.field.title + ": " + (text || "—"));
+    }
+    return lines.join("\n");
+  };
   function recordDownload(view, dialog, format) {
     const text = recordExport(view, dialog, format), record = dialog._cxRecord;
     const blob = new Blob([format === "csv" ? "﻿" + text : text], { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" });
