@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { exampleUrl, nextFrames, repo } from "./support.mjs";
+import { exampleUrl, nextFrames, repo, readablePart } from "./support.mjs";
 import { instrumentMatrixPaint, matrixPixelSample, withMatrixPaintDiagnostics } from "./matrix-paint-diagnostics.mjs";
 
 const asset = name => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets", name), "utf8");
@@ -15,7 +15,8 @@ function matrixDoc(extra = {}) {
   return Object.assign(JSON.parse(fs.readFileSync(path.join(repo, "tests/fixtures/matrix-small.json"), "utf8")), extra);
 }async function mountMatrix(page, view, { width = 1200, height = 520, dir = "ltr", lang = "en", options = "", script = "", diagnosePaint = false } = {}) {
   const json = JSON.stringify(view).replace(/</g, "\\u003c");
-  const matrixRuntime = diagnosePaint ? instrumentMatrixPaint(asset("canopyx-matrix.js")) : asset("canopyx-matrix.js");
+  // The paint diagnostics instrument the part's internals, so they load its readable build.
+  const matrixRuntime = diagnosePaint ? instrumentMatrixPaint(readablePart("matrix")) : asset("canopyx-matrix.js");
   const body = "<!DOCTYPE html><html lang=\"" + lang + "\" dir=\"" + dir + "\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Matrix</title><style>" +
     asset("canopyx-grid.css") + asset("canopyx-matrix.css") + "</style><script>" + asset("canopyx-grid.js") + "\n" + matrixRuntime + "\n" + (diagnosePaint ? "window.matrixPixelSample=" + matrixPixelSample.toString() + ";" : "") + script + "</script></head>" +
     "<body style=\"margin:0;padding:16px\"><div id=\"frame\" style=\"width:" + width + "px;max-width:100%\"><div id=\"host\" style=\"height:" + height + "px\"></div></div>" +

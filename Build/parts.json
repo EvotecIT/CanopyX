@@ -342,7 +342,9 @@
         "DataGrid",
         "definePart",
         "loadPart",
-        "formatValue"
+        "formatValue",
+        "gridClassFont",
+        "gridMeasureText"
       ],
       "scripts": [
         "CanopyX.Html/Assets/canopyx.grid.source/36-grid-presenter-activity.js",

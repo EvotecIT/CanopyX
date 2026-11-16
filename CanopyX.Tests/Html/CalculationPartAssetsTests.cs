@@ -9,7 +9,7 @@ public sealed class CalculationPartAssetsTests {
         var view = View();
         Assert.DoesNotContain(CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "calculations");
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            var script = CanopyHtmlAssets.GetScript(runtime);
+            var script = ReadableAssets.Script(runtime);
             Assert.DoesNotContain("function calculationParse(", script);
             Assert.DoesNotContain("class CalculationFailure", script);
         }

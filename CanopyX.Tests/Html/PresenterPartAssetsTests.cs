@@ -18,11 +18,11 @@ public sealed class PresenterPartAssetsTests {
     public void DeclarativePainterIsVersionedBoundedAndCarriedByWrappedViews() {
         var part = CanopyHtmlAssets.GetPart("presenters");
         Assert.Matches("^[a-f0-9]{16}$", part.Version);
-        Assert.Contains("function gridRenderPresenter", part.Script);
+        Assert.Contains("function gridRenderPresenter", ReadableAssets.Part(part.Name));
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             var script = CanopyHtmlAssets.GetScript(runtime);
-            Assert.DoesNotContain("function gridRenderPresenter", script);
+            Assert.DoesNotContain("function gridRenderPresenter", ReadableAssets.Script(runtime));
             Assert.Contains(part.HashedScriptFileName, script);
         }
         using var bytes = new MemoryStream();

@@ -18,6 +18,10 @@ for (const width of [1440, 390]) test(`header selection matches row checkbox geo
   const positions = await page.locator(".cx-grid-row-select:not(.cx-grid-group-select)").evaluateAll(inputs => inputs
     .filter(input => input.getClientRects().length).map(input => input.getBoundingClientRect().left));
   for (const left of positions) expect(left).toBeCloseTo(actual.x, 0);
+  // The header label lines up with the row labels beside their checkboxes.
+  const label = await page.locator(".cx-hcell").first().locator(".cx-sort,.cx-htext").first().boundingBox();
+  const text = await row.evaluate(input => input.nextElementSibling.getBoundingClientRect().left);
+  expect(label.x).toBeCloseTo(text, 0);
   expect(await row.evaluate(element => getComputedStyle(element).appearance)).toBe("none");
   await header.click();
   await expect(page.locator(".cx-header-selection")).toHaveAttribute("open", "");

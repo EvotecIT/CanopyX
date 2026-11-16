@@ -1,0 +1,9 @@
+{
+  "name": "canopyx-asset-build",
+  "private": true,
+  "type": "module",
+  "description": "Build-time tools for Build/Sync-Assets.ps1. Nothing here ships in the packages.",
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

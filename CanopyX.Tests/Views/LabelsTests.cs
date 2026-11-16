@@ -1,6 +1,8 @@
 using System.Text.Json.Nodes;
 using CanopyX.Rendering;
 
+using CanopyX.Tests.Html;
+
 namespace CanopyX.Tests.Views;
 
 /// <summary>
@@ -228,7 +230,7 @@ public sealed class LabelsTests {
 
     /// <summary>The English labels a runtime defines, by name.</summary>
     private static Dictionary<string, string?> RuntimeLabels(CanopyX.Html.CanopyRuntime runtime) {
-        var blocks = System.Text.RegularExpressions.Regex.Matches(CanopyX.Html.CanopyHtmlAssets.GetScript(runtime),
+        var blocks = System.Text.RegularExpressions.Regex.Matches(ReadableAssets.Script(runtime),
             @"DEFAULT_LABELS\s*=\s*Object\.freeze\((?:Object\.assign\(\{\},\s*DEFAULT_LABELS,\s*)?\{(?<body>[\s\S]*?)\}\)?\);");
         return blocks.SelectMany(block => System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value,
                 "(\\w+):\\s*(\"(?:[^\"\\\\]|\\\\.)*\")"))
@@ -237,14 +239,14 @@ public sealed class LabelsTests {
 
     // The labels a part brings with its English texts: its constant (EDIT_LABELS, CALENDAR_LABELS) of name: "text" pairs.
     private static Dictionary<string, string?> PartLabels(string part, string constant) {
-        var block = System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part).Script, "const " + constant + "=\\{(?<body>(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\"}])*)\\}");
+        var block = System.Text.RegularExpressions.Regex.Match(ReadableAssets.Part(part), "const " + constant + "=\\{(?<body>(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\"}])*)\\}");
         return System.Text.RegularExpressions.Regex.Matches(block.Groups["body"].Value, "(\\w+):(\"(?:[^\"\\\\]|\\\\.)*\")")
             .ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
     }
     /// <summary>The English format* labels of the formatting part and the rule editor part, by name.</summary>
     private static Dictionary<string, string?> FormattingPartLabels() =>
         new[] { ("formatting", "FORMAT_LABELS"), ("format-editor", "FORMAT_EDITOR_LABELS") }.SelectMany(part => System.Text.RegularExpressions.Regex.Matches(
-            System.Text.RegularExpressions.Regex.Match(CanopyX.Html.CanopyHtmlAssets.GetPart(part.Item1).Script, "const " + part.Item2 + "=\\{(?<body>(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\"}])*)\\}").Groups["body"].Value,
+            System.Text.RegularExpressions.Regex.Match(ReadableAssets.Part(part.Item1), "const " + part.Item2 + "=\\{(?<body>(?:\"(?:[^\"\\\\]|\\\\.)*\"|[^\"}])*)\\}").Groups["body"].Value,
             "(\\w+):(\"(?:[^\"\\\\]|\\\\.)*\")")).ToDictionary(match => match.Groups[1].Value, match => System.Text.Json.JsonSerializer.Deserialize<string>(match.Groups[2].Value));
 
     private static List<string> RuntimeLabelNames(CanopyX.Html.CanopyRuntime runtime) => RuntimeLabels(runtime).Keys.OrderBy(name => name, StringComparer.Ordinal).ToList();

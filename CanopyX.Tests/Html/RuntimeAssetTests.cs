@@ -17,53 +17,11 @@ public sealed class RuntimeAssetTests {
     [InlineData(CanopyRuntime.Flow)]
     [InlineData(CanopyRuntime.Ui)]
     public void Script_MatchesItsSourceParts(CanopyRuntime runtime) {
-        var root = RepositoryPaths.Root;
-        var files = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
-            .OrderBy(Path.GetFileName, StringComparer.Ordinal).ToArray();
-        // The grid entry points carry the flow shell (createFlow loads the flow parts); the flow entry point takes the core's small
-        // shared parts by name, the grid's pure helpers, the part loader and the same shell, without any grid or tree code.
-        var flowShell = Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.flow-entry.source", "50-flow-shell.js");
-        var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
-        if (runtime == CanopyRuntime.Flow) {
-            files = new[] { "canopyx.flow-entry.source/00-flow-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-number-format.js", "canopyx.source/01-trust.js", "canopyx.source/02-design-tokens.js",
-                "canopyx.source/05-patterns.js", "canopyx.source/05-search-folding.js", "canopyx.grid.source/00-grid-pure.js", "canopyx.source/82-parts.js",
-                "canopyx.flow-entry.source/50-flow-shell.js", "canopyx.flow-entry.source/90-flow-boot.js" }
-                .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
-        } else if (runtime == CanopyRuntime.Ui) {
-            files = new[] { "canopyx.ui-entry.source/00-ui-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-trust.js", "canopyx.source/02-design-tokens.js",
-                "canopyx.source/82-parts.js", "canopyx.source/85-ui.js", "canopyx.ui-entry.source/90-ui-boot.js" }
-                .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
-        } else if (runtime != CanopyRuntime.TreeGrid) {
-            var extensions = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid
-                ? Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.grid.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal)
-                : Enumerable.Empty<string>();
-            files = files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") < 0)
-                .Concat(extensions)
-                .Concat(Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.interactive.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal))
-                .Concat(runtime == CanopyRuntime.ReportingGrid
-                    ? Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.reporting.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal)
-                    : Enumerable.Empty<string>())
-                .Concat(grid ? new[] { flowShell } : Enumerable.Empty<string>())
-                .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
-        }
-        // Entry points leave out every script a lazy part owns (Build/parts.json lists it and not as shared).
-        var owned = PartManifestFile.OwnedScripts();
-        files = files.Where(file => !owned.Contains(Path.GetFullPath(file))).ToArray();
-        // Tree-only core parts (the tree menus' labels) are defined again by the grid parts, so grid runtimes leave them out.
-        var treeOnlyParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "tree-only-parts.json")))!;
-        var treeOnlyPaths = treeOnlyParts.Select(part => Path.GetFullPath(Path.Combine(root, part))).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        if (grid) files = files.Where(file => !treeOnlyPaths.Contains(Path.GetFullPath(file))).ToArray();
         var script = CanopyHtmlAssets.GetScript(runtime);
-        var parts = files
-            .Select(part => Normalize(File.ReadAllText(part)).TrimEnd('\n'))
-            .ToArray();
-
-        var expected = WithoutCommentLines(string.Join("\n", parts) + "\n");
-        const string marker = "__CANOPYX_FOLD_PAIRS__";
+        Assert.True(EntryScriptFiles(runtime).Length >= 3, "The runtime should be split into source parts.");
         // The UI entry point has no search, so it carries no folding table.
         if (runtime != CanopyRuntime.Ui) {
-            Assert.Contains(marker, expected);
-            var tableSource = File.ReadAllText(Path.Combine(root, "CanopyX", "Search", "CanopySearchFoldingTable.cs"));
+            var tableSource = File.ReadAllText(Path.Combine(RepositoryPaths.Root, "CanopyX", "Search", "CanopySearchFoldingTable.cs"));
             var start = tableSource.IndexOf("internal const string LowercasePairs =", StringComparison.Ordinal);
             Assert.True(start >= 0, "The canonical search folding table is missing.");
             var end = tableSource.IndexOf(';', start);
@@ -71,21 +29,27 @@ public sealed class RuntimeAssetTests {
             var pieces = Regex.Matches(tableSource.Substring(start, end - start), "\"([A-Za-z0-9+/=]+)\"");
             var encoded = string.Concat(pieces.Cast<Match>().Select(match => match.Groups[1].Value));
             Assert.NotEmpty(encoded);
-            var actual = Regex.Match(script, "const EXTRA_FOLD_PAIRS\\s*=\\s*\"([0-9a-z.,-]+)\";");
-            Assert.True(actual.Success, "The browser folding table is missing.");
-            var compact = actual.Groups[1].Value;
-            Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(compact));
-            expected = expected.Replace(marker, compact);
+            Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(ShippedFoldingTable(script)));
         }
-        // The entry point reads the manifest of the parts it knows: name -> [version, hashed script, hashed stylesheet].
-        const string partsMarker = "__CX_PARTS__";
-        Assert.Contains(partsMarker, expected);
-        expected = expected.Replace(partsMarker, "{" + string.Join(",", CanopyHtmlAssets.GetParts(runtime).Select(part => "\"" + part.Name + "\":[" +
-            string.Join(",", new[] { part.Version, part.HashedScriptFileName, part.HashedStyleFileName }.Where(value => value != null).Select(value => "\"" + value + "\"")) + "]")) + "}");
-        expected = CompressScriptSpacing(SharedTokenAssets.Expand(expected));
+        // Build/Sync-Assets.ps1 minifies the assembled script last (Build/minify.mjs) and records the hashes of its input and of
+        // the file it wrote in Build/minified.json; both must match, so the shipped script comes from these sources.
+        using var minified = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "Build", "minified.json")));
+        var record = minified.RootElement.GetProperty("CanopyX.Html/Assets/" + CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.Plain, runtime));
+        Assert.True(record.GetProperty("input").GetString() == AssetHash(ReadableAssets.Script(runtime)), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
+        Assert.True(record.GetProperty("output").GetString() == AssetHash(Normalize(script)), "Runtime script differs from its minified build. Run Build/Sync-Assets.ps1.");
+    }
 
-        Assert.True(parts.Length >= 3, "The runtime should be split into source parts.");
-        Assert.True(expected == Normalize(script), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
+    /// <summary>The content hash Build/Sync-Assets.ps1 records (Get-AssetHash): SHA-256 of the UTF-8 text, 16 hex digits.</summary>
+    private static string AssetHash(string content) {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(content))).ToLowerInvariant().Substring(0, 16);
+    }
+
+    /// <summary>The compact folding table in a shipped (minified) script, found by its alphabet and length rather than its name.</summary>
+    internal static string ShippedFoldingTable(string script) {
+        var actual = Regex.Match(script, "=\"([0-9a-z.,-]{200,})\"");
+        Assert.True(actual.Success, "The browser folding table is missing.");
+        return actual.Groups[1].Value;
     }
 
     [Theory]
@@ -121,45 +85,26 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void Assets_StayWithinTheCompressedBudget() {
-        // Localized vertical export chrome adds room outside the separate shared-token allowance.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.TreeGrid, 60928);
+        // The entry points ship minified (Build/minify.mjs). Measured 53,790 bytes, with about 3% headroom.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.TreeGrid, 54 * 1024 + 512);
     }
 
     [Fact]
     public void InteractiveAssets_StayWithinTheirCompressedBudget() {
-        // Interactive components retain their separate shared-token allowance.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.InteractiveTreeGrid, 71168);
+        // Measured 60,489 bytes minified, with about 3% headroom.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.InteractiveTreeGrid, 61 * 1024);
     }
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // Pointer selection adds a mutable option and lazy range dispatch (384-byte allowance for 277 measured bytes); the accepted-source reader stays in the optional query part.
-        // Reserve 128 bytes for Boolean tree-drawer host/view validation in the shared core.
-        // Includes the optional chart-cell loader and three lazy-part manifest entries.
-        // Reserve 128 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
-        // Reserve 448 bytes for right-to-left logical layout and keys, the matrix-table route in enhance and digit-aware aggregate text.
-        // Reserve 384 bytes for the row actions column shell (its part, labels and menus load only with rowActions).
-        // Reserve 384 bytes for the activity presenters' validation, column-fit rules and part entry (their painting is the lazy activity part).
-        // Reserve 64 bytes for the describeCalendarRecurrence method name that loads the recurrence part on first use.
-        // Reserve 224 bytes for the no-matches reasons that name the search, the filters or both, the Clear search label,
-        // the deprecated reason label older documents still carry, and the summary focus kept across the empty state.
-        // Reserve 96 bytes for measuring purely numeric runs from cached single-glyph widths.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384 + 64 + 224 + 96);
+        // Measured 125,815 bytes minified, with about 2.5% headroom.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 126 * 1024);
     }
 
     [Fact]
     public void ReportingAssets_StayWithinTheirSeparateCompressedBudget() {
-        // Add 512 bytes for accessible phone scrolling, its scoped styles and live authored height bounds.
-        // Includes chart intent, localized controls and the lazy analysis loader.
-        // Reserve 192 bytes for the busy mounting host and its placeholder rows while parts and first rows load.
-        // Reserve 640 bytes for the same right-to-left, matrix-table and aggregate-text changes plus the phone toolbar and footer fixes.
-        // Reserve 192 bytes for the built-in median and percentile aggregates in the reporting menus and labels.
-        // Reserve 320 bytes for the same row actions column shell.
-        // Reserve 384 bytes for the same activity presenter shell.
-        // Reserve 96 bytes for stacked identifier text in two-line rows and the actions column's hidden header text.
-        // Reserve 192 bytes for the same no-matches reasons, Clear search label, deprecated label and summary focus.
-        // Reserve 96 bytes for the same numeric-run measurement.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 160 * 1024 + 1728 + 640 + 192 + 320 + 384 + 96 + 192 + 96);
+        // Measured 149,773 bytes minified, with about 2.5% headroom.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.ReportingGrid, 150 * 1024);
     }
 
     [Fact]
@@ -182,7 +127,7 @@ public sealed class RuntimeAssetTests {
         var script = CanopyHtmlAssets.GetScript(runtime);
         var style = CanopyHtmlAssets.GetStyle(runtime);
         var overhead = SharedTokenAssets.Gzip(script) + SharedTokenAssets.Gzip(style)
-            - SharedTokenAssets.Gzip(SharedTokenAssets.WithoutFallbackPayload(script))
+            - SharedTokenAssets.ComponentScriptGzip(runtime)
             - SharedTokenAssets.Gzip(SharedTokenAssets.WithoutFallbackPayload(style));
         Assert.True(overhead <= SharedTokenAssets.Allowance,
             runtime + " use-site defaults add " + overhead + " bytes gzip; the separate shared-token allowance is 6 KiB.");
@@ -310,8 +255,49 @@ public sealed class RuntimeAssetTests {
         Assert.Single(lines, line => line.TrimStart().StartsWith("/*", StringComparison.Ordinal));
     }
 
+    /// <summary>The source scripts an entry point carries, in assembly order (Build/Sync-Assets.ps1).</summary>
+    internal static string[] EntryScriptFiles(CanopyRuntime runtime) {
+        var root = RepositoryPaths.Root;
+        var files = Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.source"), "*.js")
+            .OrderBy(Path.GetFileName, StringComparer.Ordinal).ToArray();
+        // The grid entry points carry the flow shell (createFlow loads the flow parts); the flow entry point takes the core's small
+        // shared parts by name, the grid's pure helpers, the part loader and the same shell, without any grid or tree code.
+        var flowShell = Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.flow-entry.source", "50-flow-shell.js");
+        var grid = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid;
+        if (runtime == CanopyRuntime.Flow) {
+            files = new[] { "canopyx.flow-entry.source/00-flow-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-number-format.js", "canopyx.source/01-trust.js", "canopyx.source/02-design-tokens.js",
+                "canopyx.source/05-patterns.js", "canopyx.source/05-search-folding.js", "canopyx.grid.source/00-grid-pure.js", "canopyx.source/82-parts.js",
+                "canopyx.flow-entry.source/50-flow-shell.js", "canopyx.flow-entry.source/90-flow-boot.js" }
+                .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
+        } else if (runtime == CanopyRuntime.Ui) {
+            files = new[] { "canopyx.ui-entry.source/00-ui-entry.js", "canopyx.source/01-fill.js", "canopyx.source/01-trust.js", "canopyx.source/02-design-tokens.js",
+                "canopyx.source/82-parts.js", "canopyx.source/85-ui.js", "canopyx.ui-entry.source/90-ui-boot.js" }
+                .Select(name => Path.Combine(root, "CanopyX.Html", "Assets", name.Replace('/', Path.DirectorySeparatorChar))).ToArray();
+        } else if (runtime != CanopyRuntime.TreeGrid) {
+            var extensions = runtime == CanopyRuntime.DataGrid || runtime == CanopyRuntime.ReportingGrid
+                ? Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.grid.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal)
+                : Enumerable.Empty<string>();
+            files = files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") < 0)
+                .Concat(extensions)
+                .Concat(Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.interactive.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal))
+                .Concat(runtime == CanopyRuntime.ReportingGrid
+                    ? Directory.EnumerateFiles(Path.Combine(root, "CanopyX.Html", "Assets", "canopyx.reporting.source"), "*.js").OrderBy(Path.GetFileName, StringComparer.Ordinal)
+                    : Enumerable.Empty<string>())
+                .Concat(grid ? new[] { flowShell } : Enumerable.Empty<string>())
+                .Concat(files.Where(file => string.CompareOrdinal(Path.GetFileName(file), "90-") >= 0)).ToArray();
+        }
+        // Entry points leave out every script a lazy part owns (Build/parts.json lists it and not as shared).
+        var owned = PartManifestFile.OwnedScripts();
+        files = files.Where(file => !owned.Contains(Path.GetFullPath(file))).ToArray();
+        // Tree-only core parts (the tree menus' labels) are defined again by the grid parts, so grid runtimes leave them out.
+        var treeOnlyParts = System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(root, "Build", "tree-only-parts.json")))!;
+        var treeOnlyPaths = treeOnlyParts.Select(part => Path.GetFullPath(Path.Combine(root, part))).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (grid) files = files.Where(file => !treeOnlyPaths.Contains(Path.GetFullPath(file))).ToArray();
+        return files;
+    }
+
     /// <summary>The asset assembly removes empty and comment lines, preserving the opening header.</summary>
-    private static string WithoutCommentLines(string content) {
+    internal static string WithoutCommentLines(string content) {
         var kept = new List<string>();
         var inBlock = false;
         var header = content.StartsWith("/*", StringComparison.Ordinal);

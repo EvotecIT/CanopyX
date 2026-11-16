@@ -8,11 +8,16 @@ import { repo, runtimeAssets } from "./support.mjs";
 test("the runtime folds every code unit like the shared table", async ({ page }) => {
   const table = JSON.parse(fs.readFileSync(path.join(repo, "tests/fixtures/search-folding.json"), "utf8")).folds;
   expect(table.length).toBeGreaterThan(1000);
-  // The folding code is private to the runtime, so the test runs that section of the shipped script on its own.
+  // The folding code is private to the runtime and ships minified, so the test runs its source part on its own with the
+  // table the shipped script carries (found by its alphabet and length).
   const { script } = runtimeAssets();
-  const start = script.indexOf("const EXTRA_FOLD_PAIRS");
-  const end = script.indexOf("function foldUnit");
-  expect(start).toBeGreaterThan(0);
+  const shipped = /="([0-9a-z.,-]{200,})"/.exec(script);
+  expect(shipped).not.toBeNull();
+  const part = fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx.source/05-search-folding.js"), "utf8")
+    .replace("__CANOPYX_FOLD_PAIRS__", shipped[1]);
+  const start = part.indexOf("const EXTRA_FOLD_PAIRS");
+  const end = part.indexOf("function foldUnit");
+  expect(start).toBeGreaterThanOrEqual(0);
   expect(end).toBeGreaterThan(start);
   await page.setContent("<!DOCTYPE html><title>Folding</title>");
   const mismatches = await page.evaluate(({ source, folds }) => {
@@ -26,6 +31,6 @@ test("the runtime folds every code unit like the shared table", async ({ page })
       }
     }
     return out;
-  }, { source: script.slice(start, end), folds: table });
+  }, { source: part.slice(start, end), folds: table });
   expect(mismatches).toEqual([]);
 });

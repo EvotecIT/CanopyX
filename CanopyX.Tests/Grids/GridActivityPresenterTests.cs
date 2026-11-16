@@ -2,6 +2,8 @@ using CanopyX.Rendering;
 using CanopyX.Tests.Protocol;
 using System.Text.Json;
 
+using CanopyX.Tests.Html;
+
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridActivityPresenterTests {
@@ -60,9 +62,9 @@ public sealed class GridActivityPresenterTests {
     [Fact]
     public void ActivityPart_IsBoundedOutsideTheEntryPointsAndCarriedByViewsThatUseIt() {
         var part = CanopyX.Html.CanopyHtmlAssets.GetPart("activity");
-        Assert.Contains("function gridRenderActivity", part.Script);
+        Assert.Contains("function gridRenderActivity", ReadableAssets.Part(part.Name));
         foreach (var runtime in new[] { CanopyX.Html.CanopyRuntime.DataGrid, CanopyX.Html.CanopyRuntime.ReportingGrid })
-            Assert.DoesNotContain("function gridRenderActivity", CanopyX.Html.CanopyHtmlAssets.GetScript(runtime));
+            Assert.DoesNotContain("function gridRenderActivity", ReadableAssets.Script(runtime));
         Assert.True(SharedGzip(part.Script) + SharedGzip(part.Style!) <= 4096, "The activity part exceeds 4 KiB gzip.");
         Assert.Contains(part, CanopyX.Html.CanopyHtmlAssets.GetRequiredParts(Jobs()));
         var plain = new CanopyDataGridView("plain", "Plain") { Columns = { new CanopyColumn("state", "State") { Presenter = CanopyGridPresenter.State().WithPill() } } };

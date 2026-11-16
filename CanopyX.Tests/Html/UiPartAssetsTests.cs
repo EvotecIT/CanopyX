@@ -101,8 +101,8 @@ public sealed class UiPartAssetsTests {
     [Fact]
     public void UiEntryPoint_IsSlimAndKnowsOnlyTheUiParts() {
         // #127: a content page must not pay for the 57 KB tree runtime to reach a 20 KB overlay part.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Ui, 6 * 1024);
-        var script = CanopyHtmlAssets.GetScript(CanopyRuntime.Ui);
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Ui, 5 * 1024);
+        var script = ReadableAssets.Script(CanopyRuntime.Ui);
         foreach (var marker in new[] { "createTreeGrid", "createDataGrid", "createFlow", "class TreeGrid", "class DataGrid" }) Assert.DoesNotContain(marker, script);
         Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion" },
             CanopyHtmlAssets.GetParts(CanopyRuntime.Ui).Select(part => part.Name));
@@ -124,6 +124,6 @@ public sealed class UiPartAssetsTests {
         Assert.DoesNotContain("application/x-canopyx-ui-", fragment);
         // Flow's slim entry point neither ships nor advertises the standalone UI parts.
         Assert.DoesNotContain(CanopyHtmlAssets.GetParts(CanopyRuntime.Flow), part => part.Name.StartsWith("ui-", StringComparison.Ordinal));
-        Assert.DoesNotContain("canopyx-ui-", CanopyHtmlAssets.GetScript(CanopyRuntime.Flow));
+        Assert.DoesNotContain("canopyx-ui-", ReadableAssets.Script(CanopyRuntime.Flow));
     }
 }

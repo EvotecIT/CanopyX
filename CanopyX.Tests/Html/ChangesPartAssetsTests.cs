@@ -21,12 +21,12 @@ public sealed class ChangesPartAssetsTests {
     [Fact]
     public void GridEntryPoints_CarryTheShellAndNotTheViews() {
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            var script = CanopyHtmlAssets.GetScript(runtime);
+            var script = ReadableAssets.Script(runtime);
             Assert.Contains("createChangeList", script);
             Assert.DoesNotContain("class DiffView", script);
         }
 
-        Assert.DoesNotContain("createChangeList", CanopyHtmlAssets.GetScript(CanopyRuntime.TreeGrid));
+        Assert.DoesNotContain("createChangeList", ReadableAssets.Script(CanopyRuntime.TreeGrid));
     }
 
     [Fact]

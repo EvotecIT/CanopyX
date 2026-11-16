@@ -15,13 +15,13 @@ public sealed class FormattingPartAssetsTests {
             var script = CanopyHtmlAssets.GetScript(runtime);
             Assert.Contains(formatting.HashedScriptFileName, script);
             Assert.Contains(editor.HashedScriptFileName, script);
-            Assert.DoesNotContain("function formatCompile", script);
-            Assert.DoesNotContain("formatConditionBuilder", script);
+            Assert.DoesNotContain("function formatCompile", ReadableAssets.Script(runtime));
+            Assert.DoesNotContain("formatConditionBuilder", ReadableAssets.Script(runtime));
             Assert.True(formatting.IsShippedWith(runtime) && editor.IsShippedWith(runtime));
         }
         Assert.False(formatting.IsShippedWith(CanopyRuntime.TreeGrid));
-        Assert.Contains("function formatCompile", formatting.Script);
-        Assert.Contains("formatConditionBuilder", editor.Script);
+        Assert.Contains("function formatCompile", ReadableAssets.Part(formatting.Name));
+        Assert.Contains("formatConditionBuilder", ReadableAssets.Part(editor.Name));
         foreach (var part in new[] { formatting, editor }) {
             Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("</style", part.Style!, StringComparison.OrdinalIgnoreCase);

@@ -41,7 +41,8 @@
     fitSize(column, level) {
       if (column.fixed || column.sized) return columnWidth(column, column.width);
       const need = column.need ?? column.width, content = column.autoSize === "header" ? need : column.contentNeed ?? need;
-      const header = column.headWrapNeed || 0;
+      // A short header keeps one line in the base width; long text and flex columns give way first, and only then does it wrap.
+      const header = Math.max(column.headWrapNeed || 0, level === undefined && column.title.length <= 24 && column.headLineNeed || 0);
       // Disclosed text can give up a modest share before the grid resorts to sideways scrolling.
       let width = Math.max(level === undefined ? need : content, header, level === undefined ? column.pref || 0 : 0);
       if (level === 0 && this.desktopHiddenFields && gridLevel(column) && gridTextual(column)) width = Math.max(column.minW, width * .8);
@@ -100,6 +101,10 @@
         queueMicrotask(() => this.destroyed || this.applyWidths());
       }
       FIT.applyWidths.call(this, this.fitWidths(cols, width));
+      // Tag and list cells choose their chips by the column's width (36-grid-presenter-cells.js), so a new width repaints the rows.
+      if (cols.some(column => ["tags", "list"].includes(gridOptions(column).kind) && column.chipWidth !== (column.chipWidth = column.renderWidth) && this.rendered?.size)) {
+        this.version++; this.scheduleRender();
+      }
       // A column resize can introduce a classic horizontal scrollbar without changing the observed border box.
       this.fitHeight();
     },
@@ -156,6 +161,8 @@
       for (let split = 1; split < words.length; split++) balanced = Math.min(balanced,
         Math.max(text(words.slice(0, split).join(" "), headFont, false), text(words.slice(split).join(" "), headFont, false)));
       column.headWrapNeed = Math.ceil(Math.max(24, balanced) + chrome);
+      // The one-line width always counts a column menu's room, so turning the menus on or off leaves the fitted widths alone.
+      column.headLineNeed = Math.ceil(head - end + (target > 24 ? 56 : 32));
       let values = 0, sampled = 0;
       // Presenter-aware estimates of rendered values, without touching the DOM.
       // Wrapping and complete-text columns keep a declared width: they show more lines or a "show more" control instead.

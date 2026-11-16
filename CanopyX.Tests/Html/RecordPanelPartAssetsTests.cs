@@ -21,8 +21,8 @@ public sealed class RecordPanelPartAssetsTests {
         Assert.Equal(new[] { "ui-menu" }, part.Requires);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid })
             Assert.True(part.IsShippedWith(runtime), "The record panel part ships with " + runtime + ".");
-        Assert.Contains("RECORD_IMPL.paint", part.Script);
-        Assert.DoesNotContain("RECORD_IMPL.paint =", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid));
+        Assert.Contains("RECORD_IMPL.paint", ReadableAssets.Part(part.Name));
+        Assert.DoesNotContain("RECORD_IMPL.paint =", ReadableAssets.Script(CanopyRuntime.ReportingGrid));
     }
 
     [Fact]
