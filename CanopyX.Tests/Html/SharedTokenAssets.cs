@@ -51,12 +51,19 @@ internal static class SharedTokenAssets {
 
     internal static void AssertRuntimeBudget(CanopyRuntime runtime, int componentBudget) {
         var compressed = Gzip(CanopyHtmlAssets.GetScript(runtime)) + Gzip(CanopyHtmlAssets.GetStyle(runtime));
-        var component = Gzip(WithoutFallbackPayload(CanopyHtmlAssets.GetScript(runtime))) + Gzip(WithoutFallbackPayload(CanopyHtmlAssets.GetStyle(runtime)));
+        var component = ComponentScriptGzip(runtime) + Gzip(WithoutFallbackPayload(CanopyHtmlAssets.GetStyle(runtime)));
         Assert.True(component <= componentBudget, runtime + " component assets are " + component + " bytes gzip; their unchanged limit is " + componentBudget + ".");
         Assert.True(compressed <= componentBudget + Allowance,
             runtime + " assets are " + compressed + " bytes gzip; the component budget is " + componentBudget +
             " bytes plus the separately guarded shared-token allowance of " + Allowance + " bytes.");
     }
+
+    /// <summary>
+    /// An entry point's script without the shared-token payload, minified as it ships. The payload is removed from the
+    /// readable script, where its source text can be found, and the rest goes through the same minifier.
+    /// </summary>
+    internal static long ComponentScriptGzip(CanopyRuntime runtime) =>
+        Gzip(RuntimeMinifier.Minify((WithoutFallbackPayload(ReadableAssets.Script(runtime)), false))[0]);
 
     /// <summary>Removes use-site defaults, including nested functions, to measure their actual gzip cost in shipped assets.</summary>
     internal static string WithoutFallbackPayload(string asset) {

@@ -244,3 +244,25 @@ export function searchIndex(hits) {
   }
   return { search: { entryCount: entries.length, entryFiles: entries.length ? [0] : [], kinds, shards }, docs };
 }
+
+// The shipped parts are minified (Build/minify.mjs), so their local names are short. A test that instruments a part's
+// internals loads this readable build of it instead: the same sources, registration and version Build/Sync-Assets.ps1
+// writes, with the shared-token defaults inserted, before minification.
+export function readablePart(name) {
+  const list = JSON.parse(fs.readFileSync(path.join(repo, "Build/parts.json"), "utf8")).parts, part = list.find(item => item.name === name);
+  const { version } = JSON.parse(fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-parts.json"), "utf8")).parts.find(item => item.name === name);
+  const fallbacks = JSON.parse(fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/Shared/canopyx-fallbacks.json"), "utf8"));
+  const roles = JSON.parse(fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/Shared/canopyx-role-aliases.json"), "utf8"));
+  const files = part.scripts.flatMap(item => {
+    const full = path.join(repo, item);
+    return fs.statSync(full).isDirectory() ? fs.readdirSync(full).filter(file => file.endsWith(".js")).sort().map(file => path.join(full, file)) : [full];
+  });
+  const body = files.map(file => fs.readFileSync(file, "utf8")).join("\n").replace(/var\((--hfx-[a-z0-9-]+)\)/g, (match, token) => {
+    const value = "var(" + token + "," + fallbacks[token] + ")";
+    return roles[token] ? "var(" + roles[token] + "," + value + ")" : value;
+  });
+  const key = "context." + part.key, requires = part.requires ? ", requires:" + JSON.stringify(part.requires) : "";
+  return "(function(global) {\n\"use strict\";\nconst installed = new WeakSet();\nconst part = {version:\"" + version + "\"" + requires + ", install(context) {\n" +
+    "if (installed.has(" + key + ")) return;\nconst {" + part.context.join(",") + "} = context;\n" + (part.start ? part.start + "\n" : "") + body + "\n" +
+    (part.end ? part.end + "\n" : "") + "installed.add(" + key + ");\n}};\n(global.CanopyXParts ||= []).push([\"" + name + "\", part]);\n})(typeof window !== \"undefined\" ? window : globalThis);\n";
+}

@@ -341,38 +341,9 @@ export default CanopyX;
         $header = $header.Replace('interactive runtime or module before the core script', 'UI, tree or grid runtime, or this module, before the core script')
         $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'registerPart, setNonce')
     }
-    $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
-}
-
-function Compress-ScriptSpacing {
-    param([string] $Content)
-
-    # Preserve ASI boundaries and quoted literals. A slash may start a regex, comment or division: keep its suffix
-    # and the following newline. Join only after delimiters that cannot end an ASI statement, or before a closer.
-    $literal = '("(?:\\.|[^"\\])*"|''(?:\\.|[^''\\])*''|/.*)'
-    $output = [System.Text.StringBuilder]::new()
-    $previous = ''
-    $slash = $false
-    foreach ($line in $Content.Split("`n")) {
-        $pieces = [regex]::Split($line, $literal)
-        for ($i = 0; $i -lt $pieces.Length; $i += 2) {
-            $pieces[$i] = [regex]::Replace($pieces[$i], '\s*([=(){},;\[\]<>!&|?:%*^])\s*', '$1')
-            # A spaced + or - joins its operands unless a neighbour is another + or -, which would form ++ or --.
-            $pieces[$i] = [regex]::Replace($pieces[$i], '(?<![+\-\s])\s+([+\-])\s+(?![+\-\s])', '$1')
-            # A closing brace ends the statement before it; dropping a needed empty statement would not parse.
-            $pieces[$i] = $pieces[$i].Replace(';}', '}')
-        }
-        $compact = $pieces -join ''
-        if ($output.Length -and ($slash -or ($previous -notmatch '[;,{(\[]$' -and $compact -notmatch '^[)}\]]'))) {
-            [void]$output.Append("`n")
-        } elseif ($output.Length -and $compact.StartsWith('}', [StringComparison]::Ordinal) -and $previous.EndsWith(';', [StringComparison]::Ordinal)) {
-            [void]$output.Remove($output.Length - 1, 1)
-        }
-        [void]$output.Append($compact)
-        $previous = $compact
-        $slash = @($pieces | Where-Object { $_.StartsWith('/') }).Count -gt 0
-    }
-    $output.ToString()
+    # The comment that names the file stays first, above the module's own header.
+    $leading = [regex]::Match($Content, '^/\*[\s\S]*?\*/\n').Value
+    $leading + $header.Replace("`r`n", "`n") + "`n" + $Content.Substring($leading.Length) + $exports.Replace("`r`n", "`n") + "`n"
 }
 
 function Compress-StyleSpacing {
@@ -392,6 +363,29 @@ function Compress-StyleSpacing {
     $lines -join "`n"
 }
 
+# Local names are shortened and whitespace dropped by esbuild (Build/minify.mjs), pinned in Build/package.json and restored
+# here on first use. Jobs go in one batch per call so a sync starts Node twice: once for the parts, once for the entry points.
+function Invoke-Minify([object[]] $Jobs) {
+    if (-not $Jobs.Count) { return @() }
+    $tools = $PSScriptRoot
+    $pinned = (Get-Content -LiteralPath (Join-Path $tools 'package.json') -Raw | ConvertFrom-Json).devDependencies.esbuild
+    $installed = Join-Path $tools 'node_modules/esbuild/package.json'
+    if (-not (Test-Path -LiteralPath $installed) -or (Get-Content -LiteralPath $installed -Raw | ConvertFrom-Json).version -ne $pinned) {
+        if (-not (Get-Command npm -CommandType Application -ErrorAction SilentlyContinue)) { throw 'The asset build needs Node.js and npm to minify the runtime (Build/package.json).' }
+        Push-Location $tools
+        try { & npm ci --no-audit --no-fund --silent; if ($LASTEXITCODE) { throw "npm ci failed in $tools." } } finally { Pop-Location }
+    }
+    $work = Join-Path ([IO.Path]::GetTempPath()) ('canopyx-minify-' + [Guid]::NewGuid().ToString('n'))
+    [void](New-Item -ItemType Directory -Path $work)
+    try {
+        $inputPath = Join-Path $work 'in.json'; $outputPath = Join-Path $work 'out.json'
+        [IO.File]::WriteAllText($inputPath, (ConvertTo-Json -InputObject @($Jobs) -Depth 3 -Compress), [Text.UTF8Encoding]::new($false))
+        & node (Join-Path $tools 'minify.mjs') $inputPath $outputPath
+        if ($LASTEXITCODE) { throw 'Minifying the runtime scripts failed.' }
+        @([IO.File]::ReadAllText($outputPath) | ConvertFrom-Json -NoEnumerate)
+    } finally { Remove-Item -LiteralPath $work -Recurse -Force }
+}
+
 function Get-AssetHash([string] $Content) {
     $sha = [Security.Cryptography.SHA256]::Create()
     try { ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($Content)))).Replace('-', '').ToLowerInvariant().Substring(0, 16) }
@@ -401,7 +395,7 @@ function Get-AssetHash([string] $Content) {
 # Each part becomes canopyx-<name>.js (and .css): its scripts in the listed order inside a registration that destructures the
 # context the runtime hands its install function. The version hashes the complete generated install definition and style, so a runtime only
 # installs the part of its own build. Entry points read the manifest of the parts they know (__CX_PARTS__).
-$partBuilds = foreach ($part in $partList) {
+$partSources = foreach ($part in $partList) {
     $scriptPaths = @($part.scripts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
     $body = Add-TokenFallbacks (Join-AssetSource -SourcePath $scriptPaths[0] -ExtensionPath @($scriptPaths | Select-Object -Skip 1) -PartSource)
     $style = ''
@@ -418,7 +412,11 @@ $partBuilds = foreach ($part in $partList) {
         "if (installed.has($key)) return;`nconst {$($part.context -join ',')} = context;`n" + $(if ($part.start) { $part.start + "`n" } else { '' })
     $footer = $(if ($part.end) { $part.end + "`n" } else { '' }) + "installed.add($key);`n}};`n" +
         "(global.CanopyXParts ||= []).push([`"$($part.name)`", part]);`n})(typeof window !== `"undefined`" ? window : globalThis);`n"
-    $script = Compress-ScriptSpacing ($header.Replace("`r`n", "`n") + $body + $footer.Replace("`r`n", "`n"))
+    [pscustomobject]@{ Part = $part; Script = $header.Replace("`r`n", "`n") + $body + $footer.Replace("`r`n", "`n"); Style = $style }
+}
+$partScripts = Invoke-Minify @($partSources | ForEach-Object { @{ code = $_.Script; module = $false } })
+$partBuilds = for ($index = 0; $index -lt $partSources.Count; $index++) {
+    $part = $partSources[$index].Part; $style = $partSources[$index].Style; $script = $partScripts[$index]
     if ($part.notice) {
         $notice = [IO.File]::ReadAllText((Join-Path $root $part.notice)).Replace("`r`n", "`n").TrimEnd()
         $script = "/*`n" + $notice + "`n*/`n" + $script
@@ -472,11 +470,17 @@ foreach ($asset in $assets) {
     $generated = (Add-TokenFallbacks $generated).Replace('__CX_STATUS_FALLBACKS__', $statusFallbackJson)
     foreach ($marker in $printDefaults.Keys) { $generated = $generated.Replace($marker, $printDefaults[$marker]) }
     if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) -Flow:($asset.Kind -eq 'flow') -Ui:($asset.Kind -eq 'ui') }
-    if ($asset.Folding) { $generated = Compress-ScriptSpacing -Content $generated }
     if (-not $asset.Generated -and $asset.Target.EndsWith('.css')) {
         $generated = Compress-StyleSpacing -Content $generated
     }
-
+    $asset.Output = $generated
+}
+$entryScripts = @($assets | Where-Object { $_.Folding })
+$minified = Invoke-Minify @($entryScripts | ForEach-Object { @{ code = $_.Output; module = [bool]$_.Module } })
+for ($index = 0; $index -lt $entryScripts.Count; $index++) { $entryScripts[$index].Output = $minified[$index] }
+foreach ($asset in $assets) {
+    $targetPath = Join-Path $root $asset.Target
+    $generated = $asset.Output
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }
         if ($current -ne $generated) {

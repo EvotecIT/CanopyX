@@ -31,8 +31,8 @@ public sealed class ExportPartAssetsTests {
             var part = Path.GetFileName(path);
             Assert.True(File.Exists(path), "Missing export part " + part);
             var signature = File.ReadAllLines(path).Select(line => line.Trim()).First(line => line.StartsWith("Object.assign(", StringComparison.Ordinal) || line.StartsWith("function ", StringComparison.Ordinal) || line.StartsWith("DataGrid.prototype.", StringComparison.Ordinal) || line.StartsWith("EXPORT_IMPL.", StringComparison.Ordinal));
-            Assert.Contains(signature.Replace(" ", string.Empty), CanopyHtmlAssets.ExportScript.Replace(" ", string.Empty));
-            Assert.DoesNotContain(signature.Replace(" ", string.Empty), CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid).Replace(" ", string.Empty));
+            Assert.Contains(signature.Replace(" ", string.Empty), ReadableAssets.Part("export").Replace(" ", string.Empty));
+            Assert.DoesNotContain(signature.Replace(" ", string.Empty), ReadableAssets.Script(CanopyRuntime.DataGrid).Replace(" ", string.Empty));
         }
         // Tree captures ship in the tree tools part and their writers in the export part, which trees load on first use.
         Assert.Contains("treeRows", CanopyHtmlAssets.TreeToolsScript);
@@ -41,7 +41,7 @@ public sealed class ExportPartAssetsTests {
         Assert.Contains(CanopyHtmlAssets.HashedExportScriptFileName, CanopyHtmlAssets.GetScript(CanopyRuntime.TreeGrid));
         Assert.DoesNotContain("function saveExport", CanopyHtmlAssets.TreeToolsScript);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid })
-            Assert.DoesNotContain("treeRows", CanopyHtmlAssets.GetScript(runtime));
+            Assert.DoesNotContain("treeRows", ReadableAssets.Script(runtime));
     }
 
     [Theory]

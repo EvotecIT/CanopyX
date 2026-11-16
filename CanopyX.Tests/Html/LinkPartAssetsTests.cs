@@ -17,11 +17,11 @@ public sealed class LinkPartAssetsTests {
             var script = CanopyHtmlAssets.GetScript(runtime);
             Assert.Contains(part.HashedScriptFileName, script);
             // The entry points carry the method stubs and labels; the filtering, chips, highlights and events stay in the part.
-            Assert.Contains("setExternalFilter", script);
-            Assert.DoesNotContain("function linkFilter(", script);
+            Assert.Contains("setExternalFilter", ReadableAssets.Script(runtime));
+            Assert.DoesNotContain("function linkFilter(", ReadableAssets.Script(runtime));
             Assert.DoesNotContain("cx-link-chip", CanopyHtmlAssets.GetStyle(runtime));
         }
-        Assert.Contains("function linkFilter(", part.Script);
+        Assert.Contains("function linkFilter(", ReadableAssets.Part(part.Name));
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain('\r', part.Script);
         // Combined roadmap integration: its size plus about 15%.

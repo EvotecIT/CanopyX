@@ -14,10 +14,10 @@ public sealed class EnhancePartAssetsTests {
     public void PagerPart_IsBoundedStyledAndOutsideTheEntryPoints() {
         var part = CanopyHtmlAssets.GetPart("pager");
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }, part.Runtimes);
-        Assert.Contains("function pagerWindow(", part.Script);
+        Assert.Contains("function pagerWindow(", ReadableAssets.Part(part.Name));
         Assert.Contains(".cx-pages", part.Style);
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            var script = CanopyHtmlAssets.GetScript(runtime);
+            var script = ReadableAssets.Script(runtime);
             Assert.DoesNotContain("function pagerWindow(", script);
             Assert.Contains("GRID_PAGER=definePart(DataGrid,\"pager\"", script);
         }
@@ -32,16 +32,16 @@ public sealed class EnhancePartAssetsTests {
         // It loads the pager part itself once a table has left the page, and styles the kept caption and footer in place.
         Assert.Empty(part.Requires);
         Assert.Null(part.Style);
-        Assert.Contains("await loadPart(GRID_PAGER)", part.Script);
+        Assert.Contains("await loadPart(GRID_PAGER)", ReadableAssets.Part(part.Name));
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }, part.Runtimes);
-        Assert.Contains("function enhanceReadTable(", part.Script);
+        Assert.Contains("function enhanceReadTable(", ReadableAssets.Part(part.Name));
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            var script = CanopyHtmlAssets.GetScript(runtime);
+            var script = ReadableAssets.Script(runtime);
             Assert.DoesNotContain("function enhanceReadTable(", script);
             // A table marked data-view="matrix" goes to the matrix-table part instead.
             Assert.Contains("enhance:(target,options)=>matrixTable(target)?enhanceMatrix(target,options):gridEnhancer(true)(target,options),grid:gridEnhancer(false)", script);
         }
-        foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid }) Assert.DoesNotContain("gridEnhancer", CanopyHtmlAssets.GetScript(runtime));
+        foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid }) Assert.DoesNotContain("gridEnhancer", ReadableAssets.Script(runtime));
         var grid = new CanopyDataGridView("grid", "Grid") { Presentation = CanopyGridPresentation.Paged };
         grid.Columns.Add(new CanopyColumn("name", "Name"));
         grid.Pager.PageNumbers = 7;

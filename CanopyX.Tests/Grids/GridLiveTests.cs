@@ -4,6 +4,8 @@ using System.Text.Json.Nodes;
 using CanopyX.Html;
 using CanopyX.Tests.Protocol;
 
+using CanopyX.Tests.Html;
+
 namespace CanopyX.Tests.Grids;
 
 /// <summary>Live data: the view's live settings, the gridTransaction document and the live part.</summary>
@@ -87,13 +89,13 @@ public sealed class GridLiveTests {
         Assert.False(part.IsShippedWith(CanopyRuntime.TreeGrid));
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             Assert.True(part.IsShippedWith(runtime));
-            var script = CanopyHtmlAssets.GetScript(runtime);
+            var script = ReadableAssets.Script(runtime);
             // The entry points carry the method stubs and labels; transactions, the order, the prompt and polling stay in the part.
             Assert.Contains("applyTransaction", script);
             Assert.DoesNotContain("function liveTransaction(", script);
             Assert.DoesNotContain("cx-live-bar", CanopyHtmlAssets.GetStyle(runtime));
         }
-        Assert.Contains("function liveTransaction(", part.Script);
+        Assert.Contains("function liveTransaction(", ReadableAssets.Part(part.Name));
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         // The new part's size plus about 15%.
         Assert.True(ComponentGzip(part.Script) <= 12288, "The live part is " + ComponentGzip(part.Script) + " bytes gzip; the guard is 12 KiB.");

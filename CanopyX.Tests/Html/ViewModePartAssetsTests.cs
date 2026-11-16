@@ -13,11 +13,11 @@ public sealed class ViewModePartAssetsTests {
     [InlineData("layouts", "function cardGeometry", 9)]
     public void Part_IsBoundedAndOutsideTheEntryPoints(string name, string marker, double guardKiB) {
         var part = CanopyHtmlAssets.GetPart(name);
-        Assert.Contains(marker, part.Script);
+        Assert.Contains(marker, ReadableAssets.Part(name));
         Assert.NotNull(part.Style);
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             Assert.True(part.IsShippedWith(runtime));
-            Assert.DoesNotContain(marker, CanopyHtmlAssets.GetScript(runtime));
+            Assert.DoesNotContain(marker, ReadableAssets.Script(runtime));
             Assert.Contains(part.HashedScriptFileName, CanopyHtmlAssets.GetScript(runtime));
         }
         var size = Gzip(part.Script) + Gzip(part.Style!);

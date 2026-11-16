@@ -81,8 +81,9 @@
       } else if(options.kind==="tags"||options.kind==="list") {
         const values=text.split(options.separator).map(item=>item.trim()).filter(Boolean),limit=options.kind==="tags"?3:options.limit||3;
         const preview=add("","cx-tag-list");element.classList.add("cx-list-cell");
-        for(const value of values.slice(0,limit)){const tag=h("span","p-tag");setText(tag,value);preview.appendChild(tag);}
-        if(values.length>limit||options.kind==="list")more(text,values.length>limit?"+"+(values.length-limit):grid.labels.gridShowMore);
+        const shown=record||complete||column.wrap||grid.layoutMode==="cards"?Math.min(limit,values.length):gridTagsThatFit(grid,column,values.slice(0,limit),values.length,options.kind==="list");
+        for(const value of values.slice(0,shown)){const tag=h("span","p-tag");setText(tag,value);preview.appendChild(tag);}
+        if(values.length>shown||options.kind==="list")more(text,values.length>shown?"+"+(values.length-shown):grid.labels.gridShowMore);
       } else if(options.kind==="longText") {
         if(column.wrap){
           add(text,"cx-wrapped-text"+(options.mono?" p-mono":""));
@@ -96,4 +97,22 @@
       if(object)for(const badge of cell.badges||[])element.appendChild(badgeElement(badge));
       return true;
     };
+  }
+  // How many whole chips fit the column beside the "+N" control, measured on a canvas in the chip and cell fonts.
+  // The first chip always shows; when its text alone is too wide, it ends with an ellipsis (canopyx.css).
+  function gridTagsThatFit(grid,column,values,total,list) {
+    if(!values.length||!grid.grid.isConnected)return values.length;
+    let fonts=grid.fitTagFonts;
+    if(!fonts||fonts.key!==grid.fitFont){const chip={},control={};fonts=grid.fitTagFonts={key:grid.fitFont,chip:gridClassFont(grid.grid,"p-tag",chip),control:gridClassFont(grid.grid,"cx-presenter-expand",control),extra:chip.extra,min:control.extra};}
+    const context=grid.fitTagContext||=document.createElement("canvas").getContext("2d");
+    if(!context)return values.length;
+    const reserve=label=>{context.font=fonts.control;return Math.max(fonts.min,gridMeasureText(context,label))+6;};
+    let room=(column.renderWidth||column.width)-2*(grid.fitFont?.[3]??12)-1,shown=0;
+    for(const value of values){
+      context.font=fonts.chip;
+      const chip=gridMeasureText(context,value)+fonts.extra+4,rest=total-shown-1;
+      if(shown&&chip+(rest>0?reserve("+"+rest):list?reserve(grid.labels.gridShowMore):0)>room)break;
+      room-=chip;shown++;
+    }
+    return shown;
   }

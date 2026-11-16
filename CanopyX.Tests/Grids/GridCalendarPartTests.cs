@@ -2,6 +2,8 @@ using System.IO.Compression;
 using System.Text;
 using CanopyX.Html;
 
+using CanopyX.Tests.Html;
+
 namespace CanopyX.Tests.Grids;
 
 /// <summary>The calendar and timeline parts: versions, size guards, what the entry points keep and which views carry them.</summary>
@@ -15,19 +17,19 @@ public sealed class GridCalendarPartTests {
         Assert.False(part.IsShippedWith(CanopyRuntime.TreeGrid));
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             Assert.True(part.IsShippedWith(runtime));
-            var script = CanopyHtmlAssets.GetScript(runtime);
+            var script = ReadableAssets.Script(runtime);
             // The entry points carry the method stubs; views, recurrence, editing and export stay in the part.
             Assert.Contains("setCalendarView", script);
             Assert.DoesNotContain("function calSettings(", script);
             Assert.DoesNotContain("function calExpand(", script);
             Assert.DoesNotContain("cx-cal-month", CanopyHtmlAssets.GetStyle(runtime));
         }
-        Assert.Contains("function calSettings(", part.Script);
-        Assert.Contains("const CALENDAR_LABELS={", part.Script);
+        Assert.Contains("function calSettings(", ReadableAssets.Part(part.Name));
+        Assert.Contains("const CALENDAR_LABELS={", ReadableAssets.Part(part.Name));
         // What a basic calendar does not use lives in parts of its own.
-        Assert.DoesNotContain("function calExpand(", part.Script);
-        Assert.DoesNotContain("calCreateForm(proposal", part.Script);
-        Assert.DoesNotContain("function calIcsParse(", part.Script);
+        Assert.DoesNotContain("function calExpand(", ReadableAssets.Part(part.Name));
+        Assert.DoesNotContain("calCreateForm(proposal", ReadableAssets.Part(part.Name));
+        Assert.DoesNotContain("function calIcsParse(", ReadableAssets.Part(part.Name));
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         // Multi-resource projection, JSON feeds and assignment-aware focus stay in this optional part, with the legend that folds
         // its switches into a menu and the hooks of the shared-screen part. Title-first month chips, a "+N more" list that Tab can leave and the describeCalendarRecurrence stub bring it to 43,246 bytes; keep it bounded at 42 KiB + 256.
@@ -60,8 +62,8 @@ public sealed class GridCalendarPartTests {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Equal(label, part.Label);
         Assert.Matches("^[a-f0-9]{16}$", part.Version);
-        Assert.Contains(marker, part.Script);
-        Assert.DoesNotContain(marker, CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid));
+        Assert.Contains(marker, ReadableAssets.Part(name));
+        Assert.DoesNotContain(marker, ReadableAssets.Script(CanopyRuntime.DataGrid));
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         Assert.True(ComponentGzip(part.Script) <= guard, "The " + name + " part is " + ComponentGzip(part.Script) + " bytes gzip; the guard is " + guard + " (measured + 15%).");
         Assert.Equal(styleGuard > 0, part.Style != null);
@@ -117,9 +119,9 @@ public sealed class GridCalendarPartTests {
         Assert.NotNull(part.Style);
         Assert.False(part.IsShippedWith(CanopyRuntime.TreeGrid));
         Assert.True(part.IsShippedWith(CanopyRuntime.DataGrid));
-        Assert.Contains("function tlAxis(", part.Script);
-        Assert.DoesNotContain("function tlAxis(", CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid));
-        Assert.DoesNotContain("function tlAxis(", CanopyHtmlAssets.GetPart("calendar").Script);
+        Assert.Contains("function tlAxis(", ReadableAssets.Part(part.Name));
+        Assert.DoesNotContain("function tlAxis(", ReadableAssets.Script(CanopyRuntime.DataGrid));
+        Assert.DoesNotContain("function tlAxis(", ReadableAssets.Part("calendar"));
         // Resource-column virtualization belongs to this optional resource part, keeping basic calendars within their existing guard.
         Assert.True(ComponentGzip(part.Script) <= 13824, "The timeline part is " + ComponentGzip(part.Script) + " bytes gzip; the guard is 13.5 KiB (11,930 measured with the column window plus headroom).");
         Assert.True(ComponentGzip(part.Style!) <= 2256, "The timeline stylesheet is " + ComponentGzip(part.Style!) + " bytes gzip; the guard is 2,256 (1,962 measured + 15%).");

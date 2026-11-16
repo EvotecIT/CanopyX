@@ -24,8 +24,8 @@ public sealed class GroupingPartAssetsTests {
         var reporting = CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid);
         Assert.DoesNotContain("function groupSummaryResult(", reporting);
         Assert.DoesNotContain("prepareRowProjection(){", reporting);
-        Assert.Contains("function groupSummaryResult(", CanopyHtmlAssets.GetPart("grouping").Script);
-        Assert.Contains("prepareRowProjection(){", CanopyHtmlAssets.GetPart("detail-rows").Script);
+        Assert.Contains("function groupSummaryResult(", ReadableAssets.Part("grouping"));
+        Assert.Contains("prepareRowProjection(){", ReadableAssets.Part("detail-rows"));
     }
 
     [Fact]

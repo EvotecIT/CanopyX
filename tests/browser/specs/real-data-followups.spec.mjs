@@ -304,7 +304,7 @@ test("a tree loads the export part on first use and offers its Export menu", asy
     window.__canopyxParts = [];
     new MutationObserver(records => {
       for (const record of records) for (const node of record.addedNodes) {
-        const match = node.nodeName === "SCRIPT" && !node.type && /\.push\(\["([a-z-]+)",part\]\)/.exec(node.textContent || "");
+        const match = node.nodeName === "SCRIPT" && !node.type && /\.push\(\["([a-z-]+)",[\w$]+\]\)/.exec(node.textContent || "");
         if (match) window.__canopyxParts.push(match[1]);
       }
     }).observe(document, { childList: true, subtree: true });

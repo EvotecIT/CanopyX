@@ -20,7 +20,7 @@ public sealed class OfficeExportPartAssetsTests {
         }
         Assert.True(output.Length <= 132 * 1024, "The optional OfficeIMO 0.1.5 pivot writer exceeds its 132 KiB gzip budget.");
         foreach (var runtime in new[] { CanopyRuntime.TreeGrid, CanopyRuntime.InteractiveTreeGrid, CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            Assert.DoesNotContain("OfficeIMO.exportCanopy", CanopyHtmlAssets.GetScript(runtime));
+            Assert.DoesNotContain("OfficeIMO.exportCanopy", ReadableAssets.Script(runtime));
             Assert.Contains(part.HashedScriptFileName, CanopyHtmlAssets.GetScript(runtime));
         }
     }

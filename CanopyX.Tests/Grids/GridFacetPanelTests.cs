@@ -4,6 +4,8 @@ using System.Text.Json.Nodes;
 using CanopyX.Html;
 using CanopyX.Tests.Protocol;
 
+using CanopyX.Tests.Html;
+
 namespace CanopyX.Tests.Grids;
 
 /// <summary>The facet panel: its view settings, their checks, and the facets part.</summary>
@@ -86,11 +88,11 @@ public sealed class GridFacetPanelTests {
         Assert.False(part.IsShippedWith(CanopyRuntime.TreeGrid));
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             Assert.True(part.IsShippedWith(runtime));
-            Assert.Contains("setFacetPanelOpen", CanopyHtmlAssets.GetScript(runtime));
-            Assert.DoesNotContain("function facetOptions(", CanopyHtmlAssets.GetScript(runtime));
+            Assert.Contains("setFacetPanelOpen", ReadableAssets.Script(runtime));
+            Assert.DoesNotContain("function facetOptions(", ReadableAssets.Script(runtime));
             Assert.DoesNotContain("cx-facet-frame", CanopyHtmlAssets.GetStyle(runtime));
         }
-        Assert.Contains("function facetOptions(", part.Script);
+        Assert.Contains("function facetOptions(", ReadableAssets.Part(part.Name));
         Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
         // The new part's size plus about 15%.
         Assert.True(ComponentGzip(part.Script) <= 11264, "The facets part is " + ComponentGzip(part.Script) + " bytes gzip; the guard is 11 KiB (about 9.2 KiB plus headroom).");

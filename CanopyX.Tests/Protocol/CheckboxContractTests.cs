@@ -2,6 +2,8 @@ using System.Text.Json.Nodes;
 using CanopyX.Html;
 using CanopyX.Rendering;
 
+using CanopyX.Tests.Html;
+
 namespace CanopyX.Tests.Protocol;
 
 public sealed class CheckboxContractTests {
@@ -91,7 +93,8 @@ public sealed class CheckboxContractTests {
         var page = view.ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = naming });
         Assert.Contains(CanopyHtmlAssets.GetScriptFileName(naming, CanopyRuntime.InteractiveTreeGrid), page);
         Assert.Contains(CanopyHtmlAssets.GetStyleFileName(naming, CanopyRuntime.InteractiveTreeGrid), page);
-        Assert.Contains("class CheckIntents", view.ToHtmlPage());
+        Assert.Contains("class CheckIntents", ReadableAssets.Script(CanopyRuntime.InteractiveTreeGrid));
+        Assert.Contains(CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid).TrimEnd('\n'), view.ToHtmlPage());
         Assert.DoesNotContain("</script", CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid), StringComparison.OrdinalIgnoreCase);
     }
 

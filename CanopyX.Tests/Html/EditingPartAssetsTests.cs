@@ -22,19 +22,19 @@ public sealed class EditingPartAssetsTests {
     [Fact]
     public void GridEntryPoints_KeepOnlyTheHooks() {
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
-            var script = CanopyHtmlAssets.GetScript(runtime);
+            var script = ReadableAssets.Script(runtime);
             Assert.Contains("\"editing\",\"editing\"", script);
             Assert.DoesNotContain("function editSpec(", script);
             Assert.DoesNotContain("const EDIT_EDITORS", script);
         }
-        Assert.Contains("function editSpec(", CanopyHtmlAssets.GetPart("editing").Script);
+        Assert.Contains("function editSpec(", ReadableAssets.Part("editing"));
         // The typed editors and the lookup combobox moved to the forms part, which grid editing and flows share.
-        Assert.DoesNotContain("const EDIT_EDITORS", CanopyHtmlAssets.GetPart("editing").Script);
-        Assert.DoesNotContain("function editLookupEditor(", CanopyHtmlAssets.GetPart("editing").Script);
-        Assert.Contains("const EDIT_EDITORS", CanopyHtmlAssets.GetPart("forms").Script);
-        Assert.Contains("function editLookupEditor(", CanopyHtmlAssets.GetPart("forms").Script);
+        Assert.DoesNotContain("const EDIT_EDITORS", ReadableAssets.Part("editing"));
+        Assert.DoesNotContain("function editLookupEditor(", ReadableAssets.Part("editing"));
+        Assert.Contains("const EDIT_EDITORS", ReadableAssets.Part("forms"));
+        Assert.Contains("function editLookupEditor(", ReadableAssets.Part("forms"));
         // Tree entry points know nothing of flat-grid editing.
-        Assert.DoesNotContain("\"editing\":[", CanopyHtmlAssets.GetScript(CanopyRuntime.InteractiveTreeGrid));
+        Assert.DoesNotContain("\"editing\":[", ReadableAssets.Script(CanopyRuntime.InteractiveTreeGrid));
     }
 
     [Fact]
