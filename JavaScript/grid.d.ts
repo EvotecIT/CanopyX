@@ -773,7 +773,7 @@ export interface GridExportOptions {
   columns?: string[];
   values?: GridExportRequest["values"];
   signal?: AbortSignal;
-  /** Client CSV defaults to 50000; clipboard to 10000; print to 1000 (maximum 10000). Larger results use a host hook. */
+  /** toCsv defaults to 50000; clipboard to 10000; print to 1000 (maximum 10000). exportAs("csv") has no row limit; larger results can also use a host hook. */
   maxRows?: number;
   /** Reporting runtime only. A safe basename up to 100 UTF-16 units; hosts append their format extension. */
   fileName?: string;

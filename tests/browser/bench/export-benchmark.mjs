@@ -21,6 +21,8 @@ const option = (name, fallback) => { const index = args.indexOf("--" + name); re
 const tiers = option("rows", "50,500,5000,50000,500000").split(",").map(Number);
 const formats = option("formats", "csv,xlsx,pdf").split(",");
 const cpu = Number(option("cpu", "1")), cancel = args.includes("--cancel"), bundle = args.includes("--bundle"), textCsv = args.includes("--text-csv");
+// toCsv takes no progress callback on ordinary grids and trees have no toCsv, so text CSV cannot cancel or run on the bundle.
+if (textCsv && (cancel || bundle)) throw new Error("--text-csv measures a flat grid's toCsv; it cannot be combined with --cancel or --bundle.");
 const examples = process.env.CANOPYX_EXAMPLES ? path.resolve(process.env.CANOPYX_EXAMPLES) : path.join(repo, "CanopyX.Examples/bin/Release/net10.0/output");
 const out = path.resolve(option("out", path.join(here, "..", "bench-results", bundle ? "export-bundle.json" : "export.json")));
 const asset = name => fs.readFileSync(path.join(repo, "CanopyX.Html/Assets", name), "utf8");

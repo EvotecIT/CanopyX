@@ -74,7 +74,8 @@
       const maxRows = options.maxRows ?? 50000;
       if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is 1 to 1000000.");
       if (capture.request.recordCount > maxRows) throw new Error("CanopyX: client row limit exceeded.");
-      let count = 0;
+      // One deadline covers writing and decoding the text.
+      let count = 0; const deadline = Date.now() + exportTimeout(this, options);
       const limited = { request: capture.request, rows: async function* (more) {
         count = 0;
         for await (const row of capture.rows(more)) { if (++count > maxRows) throw new Error("CanopyX: client row limit exceeded."); yield row; }
@@ -83,6 +84,7 @@
       const text = await blob.text();
       // Cancellation or destruction while the text decodes still rejects, as it does while records are read.
       gridOperationActive(this, options.signal);
+      if (Date.now() > deadline) throw new Error("CanopyX: export timed out.");
       // The reporting runtime's capture reports reading progress; the finished text is its ready phase.
       GRID_REPORTING.exportReady?.(this, capture, count, options.signal);
       return text;
