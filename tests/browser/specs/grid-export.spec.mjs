@@ -189,3 +189,12 @@ test("toCsv rejects a cancellation that arrives while the finished text decodes"
   });
   expect(result).toBe('AbortError');
 });
+test("toCsv times out when decoding the finished text outlasts the export deadline",async({page})=>{
+  await open(page);
+  const result=await page.evaluate(async()=>{
+    const grid=document.querySelector('[data-canopyx-host]').canopyx,decode=Blob.prototype.text;
+    Blob.prototype.text=function(){return new Promise(()=>{});};
+    try{return await grid.toCsv({scope:'all',timeoutMs:300}).then(()=>'resolved',error=>error.message);}finally{Blob.prototype.text=decode;}
+  });
+  expect(result).toBe('CanopyX: export timed out.');
+});

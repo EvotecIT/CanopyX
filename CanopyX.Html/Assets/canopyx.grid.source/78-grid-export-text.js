@@ -81,7 +81,14 @@
         for await (const row of capture.rows(more)) { if (++count > maxRows) throw new Error("CanopyX: client row limit exceeded."); yield row; }
       } };
       const { blob } = await EXPORT_IMPL.run(this, "csv", { signal: options.signal, timeoutMs: options.timeoutMs, download: false }, limited, EXPORT_IMPL.csvFormat(this));
-      const text = await blob.text();
+      // Decoding races the rest of the deadline, cancellation and grid destruction.
+      const signal = AbortSignal.any([this.lifetime.signal, options.signal].filter(Boolean));
+      const text = await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("CanopyX: export timed out.")), Math.max(0, deadline - Date.now()));
+        const abort = () => reject(new DOMException("Export cancelled.", "AbortError"));
+        signal.addEventListener("abort", abort, { once: true }); if (signal.aborted) abort();
+        blob.text().then(resolve, reject).finally(() => { clearTimeout(timer); signal.removeEventListener("abort", abort); });
+      });
       // Cancellation or destruction while the text decodes still rejects, as it does while records are read.
       gridOperationActive(this, options.signal);
       if (Date.now() > deadline) throw new Error("CanopyX: export timed out.");
