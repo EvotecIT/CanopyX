@@ -46,7 +46,7 @@ public sealed class OfficeExportPartAssetsTests {
     [Fact]
     public void VendoredBundles_MatchTheirRecordedHashes() {
         var folder = Path.Combine(RepositoryPaths.Root, "ThirdParty", "OfficeIMO");
-        var recorded = Regex.Matches(File.ReadAllText(Path.Combine(folder, "README.md")), @"^\| `(?<file>[^`]+\.js)` \| `(?<hash>[a-f0-9]{64})` \|$", RegexOptions.Multiline)
+        var recorded = Regex.Matches(File.ReadAllText(Path.Combine(folder, "README.md")), @"^\| `(?<file>[^`]+\.js)` \| `(?<hash>[a-f0-9]{64})` \|\r?$", RegexOptions.Multiline)
             .ToDictionary(match => match.Groups["file"].Value, match => match.Groups["hash"].Value);
         Assert.Equal(Directory.GetFiles(folder, "*.js").Select(Path.GetFileName).OrderBy(name => name, StringComparer.Ordinal), recorded.Keys.OrderBy(name => name, StringComparer.Ordinal));
         foreach (var (file, hash) in recorded) {
