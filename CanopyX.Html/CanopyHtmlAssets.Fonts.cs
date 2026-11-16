@@ -16,13 +16,24 @@ public static partial class CanopyHtmlAssets {
 
     /// <summary>Gets the document-level font style or stylesheet link, also used by the grid print document.</summary>
     /// <param name="options">Asset naming, base URL, delivery mode and nonce. Null embeds the fonts.</param>
-    /// <returns>One head element marked as a reusable font source. Include it once per document.</returns>
+    /// <returns>The head element marked as a reusable font source, after preload links for the font files when they are
+    /// external. Include it once per document.</returns>
+    /// <remarks>
+    /// External font files are preloaded so they arrive before the first rows are measured and drawn: a face that arrives
+    /// while a large view decodes and lays out its rows costs another layout, and WebKit could stop responding when it
+    /// came in during that work.
+    /// </remarks>
     public static string FontHead(CanopyHtmlOptions? options = null) {
         options ??= new CanopyHtmlOptions();
         var nonce = CanopyContentSecurity.Attribute(options.Nonce);
-        return options.AssetMode == CanopyAssetMode.External
-            ? "<link data-font-source rel=\"stylesheet\" href=\"" + WebUtility.HtmlEncode(options.AssetBaseUrl + GetFontStyleFileName(options.AssetNaming)) + "\"" + nonce + ">\n"
-            : "<style data-font-source" + nonce + ">\n" + FontStyle + "</style>\n";
+        if (options.AssetMode != CanopyAssetMode.External) return "<style data-font-source" + nonce + ">\n" + FontStyle + "</style>\n";
+        var head = new StringBuilder();
+        foreach (var name in FontNames) {
+            var file = FontFileName(name, options.AssetNaming, CanopyHtmlResources.ReadBytes("Fonts." + name + ".woff2"));
+            head.Append("<link rel=\"preload\" href=\"").Append(WebUtility.HtmlEncode(options.AssetBaseUrl + file)).Append("\" as=\"font\" type=\"font/woff2\" crossorigin").Append(nonce).Append(">\n");
+        }
+        return head.Append("<link data-font-source rel=\"stylesheet\" href=\"").Append(WebUtility.HtmlEncode(options.AssetBaseUrl + GetFontStyleFileName(options.AssetNaming)))
+            .Append('"').Append(nonce).Append(">\n").ToString();
     }
 
     // Only full standalone pages include these faces. Fragment hosts supply their own shared faces.

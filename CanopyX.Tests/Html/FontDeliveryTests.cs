@@ -27,12 +27,17 @@ public sealed class FontDeliveryTests {
             var page = Grid().ToHtmlPage(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = naming });
             var fontCss = Regex.Match(page, "href=\"assets/(canopyx-fonts[^\"]*\\.css)\"").Groups[1].Value;
             Assert.NotEmpty(fontCss);
+            // The font files are preloaded before the stylesheet asks for them, so they arrive before the first rows are drawn.
+            var preloaded = Regex.Matches(page, "<link rel=\"preload\" href=\"assets/([^\"]+\\.woff2)\" as=\"font\" type=\"font/woff2\" crossorigin>").Select(match => match.Groups[1].Value).ToArray();
+            Assert.True(page.IndexOf("rel=\"preload\"", StringComparison.Ordinal) < page.IndexOf("data-font-source", StringComparison.Ordinal));
             var css = File.ReadAllText(Path.Combine(directory, fontCss));
             Assert.DoesNotContain("local(", css);
             var files = Regex.Matches(css, "url\\(\"([^\"]+)\"\\)").Select(match => match.Groups[1].Value).ToArray();
             Assert.Equal(2, files.Length);
+            Assert.Equal(2, preloaded.Length);
             foreach (var (name, hash) in Fonts) {
                 var file = Assert.Single(files, file => file.StartsWith(name + ".", StringComparison.Ordinal));
+                Assert.Contains(file, preloaded);
                 Assert.Equal(hash, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Path.Combine(directory, file)))).ToLowerInvariant());
                 Assert.Contains("SIL OPEN FONT LICENSE", File.ReadAllText(Path.Combine(directory, "OFL-" + name + ".txt")));
             }
