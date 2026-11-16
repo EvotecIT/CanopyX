@@ -96,6 +96,11 @@ public sealed partial class CanopyGridPresenter {
         if (secondaryColumn != null) CanopyIdentifiers.Require(secondaryColumn, nameof(secondaryColumn));
         return new CanopyGridPresenter(CanopyGridPresenterKind.Identifier) { SecondaryColumn = secondaryColumn, Mono = mono, Stack = stack };
     }
+    /// <summary>Creates primary and optional secondary identifier text, beside the value.</summary>
+    /// <remarks>Keeps assemblies built against CanopyX 0.4.5 and earlier, which call this two-parameter form, binding.</remarks>
+    /// <param name="secondaryColumn">Optional declared column supplying secondary text; otherwise uses cell metadata.</param>
+    /// <param name="mono">Whether the primary text is monospace.</param>
+    public static CanopyGridPresenter Identifier(string? secondaryColumn, bool mono) => Identifier(secondaryColumn, mono, stack: false);
     /// <summary>Creates at most three outlined tags with a complete-text control.</summary>
     /// <param name="separator">Nonempty literal separator, at most sixteen code units.</param>
     public static CanopyGridPresenter Tags(string separator = ",") {
