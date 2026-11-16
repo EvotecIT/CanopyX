@@ -118,9 +118,14 @@
     // screen) keeps Export in the toolbar, and Views too while the controls fit on one line. The menus are placed when the
     // layout changes (wide, narrow, phone) or a narrow grid's width moves into another 80-pixel band, not on every resize,
     // and a narrow grid never moves a menu that is open. A moved menu closes first: moving a shown popover takes it out of
-    // the top layer while it stays open.
+    // the top layer while it stays open. A narrow grid whose width stays put (a fixed card) is placed again when the window
+    // crosses the phone width; the listener ends with the grid.
     placeMenus(phone, width = this.host.clientWidth) {
       if (!this.overflow) return;
+      if (!this.handsetQuery && this.lifetime && globalThis.matchMedia) {
+        this.handsetQuery = matchMedia("(max-width: 640px)");
+        this.handsetQuery.addEventListener?.("change", () => this.phone && this.placeMenus(true), { signal: this.lifetime.signal });
+      }
       const handset = phone && (globalThis.innerWidth || 0) <= 640, layout = !phone ? "wide" : handset ? "phone" : "narrow";
       const band = layout === "narrow" ? Math.floor(width / 80) : 0;
       if (this.menuLayout === layout && this.menuBand === band) return;
@@ -137,10 +142,11 @@
       for (const [selector, item] of menus) place(selector, item, handset);
       if (layout === "narrow") for (const [selector, item] of menus) if (selector === ".cx-grid-views" && this.toolbarWraps()) place(selector, item, true);
     },
-    // The controls of the toolbar (not the search, which takes its own line on a phone) need a second line. A toolbar that
-    // is not laid out (a hidden tab) never wraps; the next resize places its menus.
+    // The controls of the toolbar, slotted host controls included, need a second line. The search may take a line of its
+    // own. A toolbar that is not laid out (a hidden tab) never wraps; the next resize places its menus.
     toolbarWraps() {
-      const controls = [...this.toolbar.children].filter(node => !node.matches(".cx-search, .cx-spacer, .cx-sep") && node.getClientRects().length);
+      const controls = [...this.toolbar.children].flatMap(node => node.matches(".cx-toolbar-slot") ? [...node.children] : [node])
+        .filter(node => !node.matches(".cx-search, .cx-spacer, .cx-sep") && node.getClientRects().length);
       if (controls.length < 2) return false;
       const first = controls[0].getBoundingClientRect();
       return controls.some(node => node.getBoundingClientRect().top >= first.bottom - 1);

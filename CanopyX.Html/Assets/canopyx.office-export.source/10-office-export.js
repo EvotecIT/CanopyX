@@ -5,14 +5,15 @@
   // level stay visible in a proportional document font. The writer needs a revision string; an inline tree has none.
   const TREE_INDENT = "    ", TREE_OUTLINE_LEVELS = 7;
   function treeDocument(capture, levels) {
-    const request = capture.request, first = request.columns[0].id;
+    // Only text is indented: a raw number or timestamp keeps its exact value so the writer can still type it.
+    const request = capture.request, first = request.columns[0].id, text = request.columns[0].kind === "text";
     return Object.freeze({ request: Object.freeze({ ...request, revision: request.revision ?? "inline" }), rows: async function* (options) {
       levels.length = 0;
       for await (const row of capture.rows(options)) {
         levels.push(row.level);
         const indent = TREE_INDENT.repeat(Math.max(0, row.level - 1)), cell = row.cells[first];
         yield !indent || !cell ? row : Object.freeze({ ...row, cells: Object.freeze({ ...row.cells, [first]: Object.freeze({ ...cell,
-          text: indent + cell.text, ...(typeof cell.value === "string" ? { value: indent + cell.value } : {}) }) }) });
+          text: indent + cell.text, ...(text && typeof cell.value === "string" ? { value: indent + cell.value } : {}) }) }) });
       }
     } });
   }
