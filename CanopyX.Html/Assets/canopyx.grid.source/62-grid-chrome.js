@@ -39,7 +39,10 @@
       if (!this.selectionBar) return;
       const count = this.querySelection ? this.querySelection.matched === null ? null : Math.max(0,this.querySelection.matched - this.selectionExcluded.size) : this.selected.size;
       const selected = count === null || count > 0;
+      // The selection bar shares the toolbar, so a narrow toolbar checks again whether Views still fits when it comes or goes.
+      const toggled = this.selectionBar.hidden === selected;
       this.selectionBar.hidden = !selected; this.toolbarSeparator.hidden = !selected;
+      if (toggled && this.menuLayout === "narrow") { this.menuBand = -1; this.placeMenus(true); }
       this.host.classList.toggle("cx-has-selection", selected);
       gridCountLabel(this.selectedCount,count===null?this.labels.gridSelectionQueryUnknown:this.labels.gridSelectionCount,{count:numberFormat(this.lang).format(count),excluded:String(this.selectionExcluded?.size||0)});
       const filterSummary = this.toolbar.querySelector(".cx-grid-filters > summary"), active = gridFilterCount(this.acceptedQuery);

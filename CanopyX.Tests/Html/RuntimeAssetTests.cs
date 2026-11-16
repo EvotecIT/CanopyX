@@ -144,8 +144,8 @@ public sealed class RuntimeAssetTests {
         // Reserve 224 bytes for the no-matches reasons that name the search, the filters or both, the Clear search label,
         // the deprecated reason label older documents still carry, and the summary focus kept across the empty state.
         // Reserve 96 bytes for measuring purely numeric runs from cached single-glyph widths.
-        // Reserve 448 bytes for narrow toolbars that keep Export (and Views while it fits) and are placed again when the window crosses the phone width.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384 + 64 + 224 + 96 + 448);
+        // Reserve 512 bytes for narrow toolbars that keep Export (and Views while it fits) and are placed again when the window crosses the phone width or the selection bar comes or goes.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 133 * 1024 + 2336 + 448 + 384 + 384 + 64 + 224 + 96 + 512);
     }
 
     [Fact]
