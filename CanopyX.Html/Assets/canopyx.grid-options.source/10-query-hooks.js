@@ -26,7 +26,14 @@
       if (typeof result !== "boolean") throw new Error("CanopyX: filter hooks return a boolean.");
       return result;
     };
-    return gridQueryRows(view, query, columns, compare === null ? null : GRID_OPTIONS.compare(view, query, columns, compare), matches, true);
+    // Only a sorted column with a plugin comparator or alternate sort fields needs the hooked comparison; otherwise the
+    // built-in order reads each row's keys once instead of in every comparison (a date key parses its text).
+    return gridQueryRows(view, query, columns, compare === null ? null : GRID_OPTIONS.hooked(view, query.sort, columns) ? GRID_OPTIONS.compare(view, query, columns, compare) : compare, matches, true);
+  };
+  GRID_OPTIONS.hooked = (view, sorts, columns) => {
+    const { comparators } = GRID_OPTION_GRIDS.get(view);
+    return sorts.some(sort => { const column = columns.get(sort.column);
+      return !!comparators[column.sortComparator] || !!column.orderData?.length && !view.preSort?.some(key => key.column === column.id); });
   };
   GRID_OPTIONS.compare = (view, query, columns, compare) => {
     const { grid, comparators } = GRID_OPTION_GRIDS.get(view);

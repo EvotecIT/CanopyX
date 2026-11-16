@@ -814,6 +814,8 @@
     "Fermer le texte complet",
     "Chiudi il testo completo"
   ],
+  "GridCopyDetails": ["Kopiuj szczegóły", "Details kopieren", "Copiar detalles", "Copier les détails", "Copia dettagli"],
+  "GridDetailsCopied": ["Skopiowano szczegóły", "Details kopiert", "Detalles copiados", "Détails copiés", "Dettagli copiati"],
   "GridCloseRecord": [
     "Zamknij",
     "Schließen",

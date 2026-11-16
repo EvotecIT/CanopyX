@@ -392,7 +392,9 @@ See [column-groups.md](column-groups.md) and [cell-ranges.md](cell-ranges.md).
 
 ## Tree Grid Features
 
-Trees have the flat grid's toolbar: the search box and filter switches on the left, then **Columns** (show, hide and
+Trees have the flat grid's toolbar: the search box and filter switches on the left (each with the number of nodes it
+matches, "Has risks · 1": an inline tree counts them, `CanopyFilter.Count` gives the number for a tree that loads on
+demand; see [filter semantics](data-protocol.md#filter-semantics)), then **Columns** (show, hide and
 reorder; the tree column stays first and shown), **Views** (named session views and Reset view, with `StateKey`), and on
 the right **Export** (Visible rows, Selected rows or All rows as CSV or a registered format, with progress, Cancel export
 and status) and the **⋯** menu (host `actions` run with the selected nodes, and Print). On phones Views and Export move

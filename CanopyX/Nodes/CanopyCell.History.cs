@@ -17,7 +17,7 @@ public sealed partial class CanopyCell {
     public static CanopyCell StatusHistory(IEnumerable<CanopyCellPeriod> periods, string? state = null) {
         var list = History(periods);
         var cell = new CanopyCell(state ?? (list.Count > 0 ? list[list.Count - 1].State : null));
-        cell._series = list;
+        cell.Extras.Series = list;
         return cell;
     }
 
@@ -36,12 +36,12 @@ public sealed partial class CanopyCell {
         double? latest = value;
         for (var index = list.Count - 1; latest == null && index >= 0; index--) latest = list[index].Value;
         var cell = latest.HasValue ? new CanopyCell(latest.Value) : new CanopyCell();
-        cell._series = list;
+        cell.Extras.Series = list;
         return cell;
     }
 
     /// <summary>Whether the cell holds history periods, without creating the list.</summary>
-    internal bool HasSeries => _series != null && _series.Count > 0;
+    internal bool HasSeries => SeriesList != null && SeriesList.Count > 0;
 
     internal static List<CanopyCellPeriod> History(IEnumerable<CanopyCellPeriod> periods) {
         if (periods == null) throw new ArgumentNullException(nameof(periods));
