@@ -22,13 +22,15 @@ test('delivery metadata, locale and complete snapshot are captured before later 
     const progress=[],options={scope:'filtered',columns:['amount','name'],locale:'de-DE',timeZone:'utc',fileName:'October inventory',onProgress:p=>progress.push(p)};
     const operation=grid.materializeExport(options);options.columns=['when'];options.fileName='changed';options.maxRows=1;options.onProgress=()=>{};
     await grid.setQuery({search:'Current'});grid.setTimeZone('local');const snapshot=await operation;
-    const text=await grid.toCsv({scope:'all',columns:['amount'],locale:'de-DE',timeZone:'utc'});
-    return {snapshot,progress,text,frozen:Object.isFrozen(snapshot)&&Object.isFrozen(snapshot.rows)&&Object.isFrozen(snapshot.rows[0].cells)};
+    const csvProgress=[],text=await grid.toCsv({scope:'all',columns:['amount'],locale:'de-DE',timeZone:'utc',onProgress:p=>csvProgress.push(p.phase)});
+    return {snapshot,progress,csvProgress,text,frozen:Object.isFrozen(snapshot)&&Object.isFrozen(snapshot.rows)&&Object.isFrozen(snapshot.rows[0].cells)};
   });
   expect(result.snapshot.rows).toHaveLength(68);expect(result.snapshot.rows[0].id).toBe('r135');
   expect(result.snapshot.request).toMatchObject({fileName:'October inventory',locale:'de-DE',timeZone:'utc',query:{search:'Archive'}});
   expect(result.snapshot.request.columns.map(c=>c.id)).toEqual(['amount','name']);expect(result.frozen).toBe(true);
   expect(result.progress).toEqual([{phase:'reading',completed:0,total:68},{phase:'generating',completed:68,total:68},{phase:'ready',completed:68,total:68}]);
+  // CSV text ends with one ready report, as the other deliveries do.
+  expect(result.csvProgress.at(-1)).toBe('ready');expect(result.csvProgress.filter(phase=>phase==='ready')).toHaveLength(1);
   expect(result.text).toContain('"136,5"');
 });
 

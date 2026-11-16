@@ -74,12 +74,16 @@
       const maxRows = options.maxRows ?? 50000;
       if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is 1 to 1000000.");
       if (capture.request.recordCount > maxRows) throw new Error("CanopyX: client row limit exceeded.");
+      let count = 0;
       const limited = { request: capture.request, rows: async function* (more) {
-        let count = 0;
+        count = 0;
         for await (const row of capture.rows(more)) { if (++count > maxRows) throw new Error("CanopyX: client row limit exceeded."); yield row; }
       } };
       const { blob } = await EXPORT_IMPL.run(this, "csv", { signal: options.signal, timeoutMs: options.timeoutMs, download: false }, limited, EXPORT_IMPL.csvFormat(this));
-      return blob.text();
+      const text = await blob.text();
+      // The reporting runtime's capture reports reading progress; the finished text is its ready phase.
+      GRID_REPORTING.exportReady?.(this, capture, count, options.signal);
+      return text;
     },
 
     async copy(capture, options) {
