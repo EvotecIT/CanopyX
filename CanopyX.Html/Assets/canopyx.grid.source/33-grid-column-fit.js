@@ -161,7 +161,8 @@
       for (let split = 1; split < words.length; split++) balanced = Math.min(balanced,
         Math.max(text(words.slice(0, split).join(" "), headFont, false), text(words.slice(split).join(" "), headFont, false)));
       column.headWrapNeed = Math.ceil(Math.max(24, balanced) + chrome);
-      column.headLineNeed = head;
+      // The one-line width always counts a column menu's room, so turning the menus on or off leaves the fitted widths alone.
+      column.headLineNeed = Math.ceil(head - end + (target > 24 ? 56 : 32));
       let values = 0, sampled = 0;
       // Presenter-aware estimates of rendered values, without touching the DOM.
       // Wrapping and complete-text columns keep a declared width: they show more lines or a "show more" control instead.
