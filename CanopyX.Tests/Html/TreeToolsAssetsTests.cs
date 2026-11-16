@@ -21,7 +21,8 @@ public sealed class TreeToolsAssetsTests {
         var size = Gzip(CanopyHtmlAssets.TreeToolsScript) + Gzip(CanopyHtmlAssets.TreeToolsStyle);
         // Combined roadmap integration: its size plus about 15%.
         // 256 bytes cover the record drawer's heading hierarchy and phone action styles, which the tree tools share.
-        Assert.True(size <= 19712, "The tree tools part is " + size + " bytes gzip; the guard is 19 KiB + 256.");
+        // 448 bytes cover narrow toolbars keeping Export and the tree's outlined, indented Office exports.
+        Assert.True(size <= 20160, "The tree tools part is " + size + " bytes gzip; the guard is 19 KiB + 704.");
         // The shared chrome in this copy targets tree hosts only, so a flat grid's own rules keep their order on a mixed page.
         Assert.DoesNotContain(".cx-chrome", CanopyHtmlAssets.TreeToolsStyle);
         Assert.Contains(".cx-tree-tools", CanopyHtmlAssets.TreeToolsStyle);

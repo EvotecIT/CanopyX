@@ -42,6 +42,9 @@
       this.selectionBar.hidden = !selected; this.toolbarSeparator.hidden = !selected;
       this.host.classList.toggle("cx-has-selection", selected);
       gridCountLabel(this.selectedCount,count===null?this.labels.gridSelectionQueryUnknown:this.labels.gridSelectionCount,{count:numberFormat(this.lang).format(count),excluded:String(this.selectionExcluded?.size||0)});
+      // The selection bar shares the toolbar and its count changes its width, so a narrow toolbar checks again whether
+      // Views still fits once the bar and its count are up to date.
+      if (this.menuLayout === "narrow") { this.menuBand = -1; this.placeMenus(true); }
       const filterSummary = this.toolbar.querySelector(".cx-grid-filters > summary"), active = gridFilterCount(this.acceptedQuery);
       if (filterSummary) {
         filterSummary.classList.toggle("active", !!active); filterSummary.querySelector(".badge")?.remove();
@@ -51,9 +54,9 @@
       this.syncGridStatus?.();
     },
     updateGridPhone() {
-      const phone = this.host.clientWidth <= 640, mode = this.layoutMode || "fit", autoRows = mode !== "cards" && (this.authoredAutoRows || phone && mode === "fit");
+      const width = this.host.clientWidth, phone = width <= 640, mode = this.layoutMode || "fit", autoRows = mode !== "cards" && (this.authoredAutoRows || phone && mode === "fit");
       this.host.classList.toggle("cx-phone", phone);
-      if (phone === this.phone && autoRows === this.autoRows) return;
+      if (phone === this.phone && autoRows === this.autoRows) { if (phone) this.placeMenus(true, width); return; }
       const anchor = this.gridRowAnchor();
       const changedRows = autoRows !== this.autoRows;
       this.phone = phone;this.autoRows = autoRows;
@@ -64,7 +67,7 @@
         this.syncScrollRange(this.rowTop(anchor.index) + Math.min(anchor.offset, this.rowH - 1));
       }
       this.version++;this.scheduleRender();
-      this.placeMenus(phone);
+      this.placeMenus(phone, width);
       this.syncPinnedShadows();
     },
     syncPinnedShadows() {
