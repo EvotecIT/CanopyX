@@ -76,13 +76,14 @@
       if (row) { row.querySelector(".cx-grid-column-handle").hidden = true; row.querySelector("input").disabled = true; }
     },
 
-    // At 640 pixels and below the toolbar takes the phone layout: Views and Export move into the more menu. Rows are painted
+    // At 640 pixels and below the toolbar takes the phone layout: Views and Export move into the more menu on a phone; a
+    // narrow tree on a wider screen keeps Export, and Views while the toolbar has room (57-toolbar-panels.js). Rows are painted
     // again only when the "+N" button of the hidden fields (48-tree-details.js) comes or goes, so host cells keep their state.
     syncPhone() {
-      const phone = this.host.clientWidth <= 640;
-      if (phone === this.phone) return;
+      const width = this.host.clientWidth, phone = width <= 640;
+      if (phone === this.phone) { if (phone) this.placeMenus(true, width); return; }
       if (this.hiddenFieldCount()) this.version++;
-      this.phone = phone; this.host.classList.toggle("cx-phone", phone); this.placeMenus(phone);
+      this.phone = phone; this.host.classList.toggle("cx-phone", phone); this.placeMenus(phone, width);
     }
   });
   // An actions menu that opens closes the other CanopyX menus, as a toolbar menu does.

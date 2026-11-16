@@ -398,7 +398,7 @@ demand; see [filter semantics](data-protocol.md#filter-semantics)), then **Colum
 reorder; the tree column stays first and shown), **Views** (named session views and Reset view, with `StateKey`), and on
 the right **Export** (Visible rows, Selected rows or All rows as CSV or a registered format, with progress, Cancel export
 and status) and the **⋯** menu (host `actions` run with the selected nodes, and Print). On phones Views and Export move
-into ⋯, as on flat grids. Columns size to their content: the tree column measures each visible row with its indent,
+into ⋯, as on flat grids; a narrow tree on a wider screen keeps Export, and Views while the toolbar fits on one line. Columns size to their content: the tree column measures each visible row with its indent,
 expander, icon and badges, stays pinned while the others scroll and takes spare width; priorities hide optional columns
 first. A tree with few visible rows is only as tall as its rows (`AutoHeight`), and grows to the host height when expanded.
 The controls, fitting and exports come from the tree tools part every tree runtime loads (`canopyx-tree-tools.js` and
