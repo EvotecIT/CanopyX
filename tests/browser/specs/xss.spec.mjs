@@ -115,12 +115,12 @@ test("grid cells, titles, pills, tags and tooltips stay text, and links only use
 });
 
 test("CSV and clipboard fields that could start a spreadsheet formula are escaped", async ({ page }) => {
-  const notes = ["=1+1", "+SUM(A1)", "-2+3", "@cmd", "\tTAB", "\rCR", "  =padded", "＝1+1", "＋1", "－1", "＠1", "plain", "a=b"];
+  const notes = ["=1+1", "+SUM(A1)", "-2+3", "@cmd", "\tTAB", "\rCR", "  =padded", "\u00a0=nbsp", "＝1+1", "＋1", "－1", "＠1", "plain", "a=b"];
   await open(page, gridView(notes.map((note, i) => ({ id: "r" + String(i).padStart(2, "0"), cells: { name: "n" + i, state: "ok", tags: "t", note, amount: -i, href: "" } }))));
   const csv = await page.evaluate(() => document.querySelector(".cx-host").canopyx.toCsv({ scope: "filtered", columns: ["name", "state", "tags", "note", "amount"] }));
   const records = csv.trim().split("\r\n").slice(1).map(line => line.match(/("(?:[^"]|"")*"|[^,]*)(?:,|$)/g).map(field => field.replace(/,$/, "")));
   const field = text => text.startsWith('"') ? text.slice(1, -1).replace(/""/g, '"') : text;
-  expect(records.map(record => field(record[3]))).toEqual(["'=1+1", "'+SUM(A1)", "'-2+3", "'@cmd", "'\tTAB", "'\rCR", "'  =padded", "'＝1+1", "'＋1", "'－1", "'＠1", "plain", "a=b"]);
+  expect(records.map(record => field(record[3]))).toEqual(["'=1+1", "'+SUM(A1)", "'-2+3", "'@cmd", "'\tTAB", "'\rCR", "'  =padded", "'\u00a0=nbsp", "'＝1+1", "'＋1", "'－1", "'＠1", "plain", "a=b"]);
   // Formatted text of a negative number is text too; zero is not touched.
   expect(records.map(record => record[4])).toEqual(notes.map((_, i) => i ? "'-" + i : "0"));
   // The clipboard copy (tab separated) escapes the same fields.

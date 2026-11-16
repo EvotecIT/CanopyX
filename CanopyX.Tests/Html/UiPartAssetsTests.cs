@@ -51,7 +51,7 @@ public sealed class UiPartAssetsTests {
         grid.Toolbar.ColumnMenus = false;
 
         // A plain grid has no range or calendar feature that would independently require the menu.
-        Assert.Equal(new[] { "ui-overlays", "presenters", "filter-editor", "export" },
+        Assert.Equal(new[] { "ui-overlays", "presenters", "filter-editor", "export", "csv-export" },
             CanopyHtmlAssets.GetRequiredParts(grid).Select(part => part.Name));
         var fragment = grid.ToHtmlFragment();
         Assert.Contains(CanopyHtmlAssets.GetPart("ui-overlays").Markup, fragment);
@@ -73,7 +73,7 @@ public sealed class UiPartAssetsTests {
         }
 
         Assert.Equal(new[] { "ui-overlays" }, CanopyHtmlAssets.GetPart("ui-menu").Requires);
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "tree-tools", "export" },
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "tree-tools", "export", "csv-export" },
             CanopyHtmlAssets.GetRequiredParts(tree).Select(part => part.Name));
         var fragment = tree.ToHtmlFragment();
         var overlays = CanopyHtmlAssets.GetPart("ui-overlays").Markup;
@@ -93,7 +93,7 @@ public sealed class UiPartAssetsTests {
         var tree = new CanopyTreeView("tree", "Tree") { Checkboxes = CanopyCheckboxMode.Independent };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
         Assert.Equal(CanopyRuntime.InteractiveTreeGrid, CanopyHtmlAssets.GetRuntime(tree));
-        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export" },
+        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export" },
             CanopyHtmlAssets.GetRequiredParts(tree).Select(part => part.Name));
         Assert.DoesNotContain("application/x-canopyx-ui-menu", tree.ToHtmlFragment());
     }

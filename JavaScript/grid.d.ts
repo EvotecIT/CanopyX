@@ -1085,11 +1085,12 @@ export interface DataGrid<Q extends AcceptedGridQuery = GridQuery, Row extends G
   /** The loaded records among ids, as copies of { id, cells }; a record that is not loaded now is left out. Never fetches. */
   getLoadedRows(ids: readonly string[]): { id: string; cells: Record<string, Cell> }[];
   prepareExport(options: GridExportOptions): GridExport<Q>;
+  /** CSV text from OfficeIMO's CSV writer, held in memory: maxRows (default 50,000) bounds it. exportAs("csv") streams a file instead. */
   toCsv(options: GridExportOptions): Promise<string>;
   copy(options: GridExportOptions): Promise<string>;
   /** Runs onExport under the export safety timeout (timeoutMs, else exportTimeoutMs); page reads keep requestTimeoutMs. */
   exportToHost(format: string, options: GridExportOptions & { timeoutMs?: number }): Promise<void>;
-  /** Captures now (invalid capture options throw synchronously), then runs a registered or configured export format (the same writers the Export menu lists) and downloads its file. */
+  /** Captures now (invalid capture options throw synchronously), then runs a registered or configured export format (the same writers the Export menu lists), or the built-in "csv", and downloads its file. */
   exportAs(format: string, options: Omit<GridExportOptions, "onProgress" | "maxRows"> & ExportFormatOptions): Promise<ExportFormatResult>;
   /** Reporting runtime only, with reporting.chartable. Opens the chart dialog over accepted data and loads the optional renderer on first use. */
   openChart?(options?: GridChartOptions): Promise<void>;

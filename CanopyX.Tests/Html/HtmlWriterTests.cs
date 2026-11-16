@@ -50,10 +50,10 @@ public sealed class HtmlWriterTests {
         Assert.Equal(view.ToJson(), ConfigOf(html));
         Assert.DoesNotContain("<style", html);
         // FullView has deep links but no context actions, drag/drop or editable columns: the configuration, overlays and
-        // tree tools (two payloads each), export and links (one each) make seven script elements.
-        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "links" }, CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name));
-        Assert.Equal(7, Regex.Matches(html, "<script").Count);
-        Assert.EndsWith(CanopyHtmlAssets.GetPart("ui-overlays").Markup + CanopyHtmlAssets.TreeToolsMarkup + CanopyHtmlAssets.ExportMarkup + CanopyHtmlAssets.GetPart("links").Markup, html);
+        // tree tools (two payloads each), export, CSV export and links (one each) make eight script elements.
+        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export", "links" }, CanopyHtmlAssets.GetRequiredParts(view).Select(part => part.Name));
+        Assert.Equal(8, Regex.Matches(html, "<script").Count);
+        Assert.EndsWith(CanopyHtmlAssets.GetPart("ui-overlays").Markup + CanopyHtmlAssets.TreeToolsMarkup + CanopyHtmlAssets.ExportMarkup + CanopyHtmlAssets.GetPart("csv-export").Markup + CanopyHtmlAssets.GetPart("links").Markup, html);
         Assert.DoesNotContain(CanopyHtmlAssets.TreeToolsMarkup, view.ToHtmlFragment(new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External }));
     }
 

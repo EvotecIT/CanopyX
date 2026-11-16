@@ -69,7 +69,18 @@
       return lines.join("\r\n") + "\r\n";
     },
 
-    toCsv(capture, options) { return this.exportText(capture, options.maxRows, ",", options.signal); },
+    // CSV text from OfficeIMO's writer. The text is held in memory, so the row limit stays; the Export menu downloads without one.
+    async toCsv(capture, options) {
+      const maxRows = options.maxRows ?? 50000;
+      if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is 1 to 1000000.");
+      if (capture.request.recordCount > maxRows) throw new Error("CanopyX: client row limit exceeded.");
+      const limited = { request: capture.request, rows: async function* (more) {
+        let count = 0;
+        for await (const row of capture.rows(more)) { if (++count > maxRows) throw new Error("CanopyX: client row limit exceeded."); yield row; }
+      } };
+      const { blob } = await EXPORT_IMPL.run(this, "csv", { signal: options.signal, timeoutMs: options.timeoutMs, download: false }, limited, EXPORT_IMPL.csvFormat(this));
+      return blob.text();
+    },
 
     async copy(capture, options) {
       const text = await this.exportText(capture, options.maxRows === undefined ? 10000 : options.maxRows, "\t", options.signal);
