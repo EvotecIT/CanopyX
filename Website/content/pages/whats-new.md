@@ -2,7 +2,7 @@
 title: What's new in CanopyX
 description: What the next CanopyX release changes: a smaller runtime, tidier grids, one-call typed grids, an accordion and a slim UI entry point.
 slug: whats-new
-meta.seo_title: What's new in CanopyX
+meta.seo_title: What's new in CanopyX | Release highlights
 ---
 
 <!-- RELEASE-TODO(version): on release day, replace "the next release" in this intro and the heading below with the NuGet and npm versions, and link the GitHub release. -->
