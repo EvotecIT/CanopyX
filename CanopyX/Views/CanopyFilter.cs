@@ -55,9 +55,26 @@ public sealed class CanopyFilter {
     /// </summary>
     public bool Hidden { get; set; }
 
+    /// <summary>
+    /// Gets or sets the number of nodes that match, shown beside the switch label ("Has risks · 1"). An inline tree counts
+    /// the nodes carrying <see cref="Flag"/> itself, so leave it unset there unless the host counts differently; a tree whose
+    /// nodes load on demand (a bundle or a hosted source) shows a count only when the host sets one.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int? Count {
+        get => _count;
+        set {
+            if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), "Filter count cannot be negative.");
+            _count = value;
+        }
+    }
+
+    private int? _count;
+
     internal void WriteJson(CanopyJsonWriter writer, bool hidden) {
         writer.BeginObject().Property("id", Id).Property("label", Label).Property("flag", Flag);
         writer.OptionalProperty("ancestorFlag", string.IsNullOrEmpty(AncestorFlag) ? null : AncestorFlag);
+        writer.OptionalProperty("count", Count);
         if (hidden) {
             writer.Property("hidden", true);
         }

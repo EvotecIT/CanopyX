@@ -264,6 +264,8 @@ public sealed partial class CanopyLabels {
         [nameof(GridCancelExport)] = "Cancel export",
         [nameof(GridPrint)] = "Print",
         [nameof(GridCloseRecord)] = "Close",
+        [nameof(GridCopyDetails)] = "Copy details",
+        [nameof(GridDetailsCopied)] = "Details copied",
         [nameof(GridContains)] = "contains",
         [nameof(GridStartsWith)] = "starts with",
         [nameof(GridIn)] = "is any of",

@@ -124,7 +124,7 @@
     let shape = null, ordered = null;
     // The source keeps its other hooks (facets); only its record query learns the levels.
     base.query = function (query, options) {
-      if (!query.groupBy) return plain.call(base, query, options);
+      if (!query.groupBy?.length) return plain.call(base, query, options);
       if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
       if (gridResultShape(query) !== shape) { ordered = GRID_ROWS.order(view, query); shape = gridResultShape(query); }
       return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: gridInlineRevision(view), offset: query.offset,
@@ -137,7 +137,7 @@
   const DETAIL_ROWS = definePart(DataGrid, "detail-rows", "detail rows", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, h, setText, fill, gridButton, gridFreeze,
     cellText, formatting, labelsFor, requireIdentifier, GridRowOffsets, TreeGrid, createDataGrid, createTreeGrid, disposeRowHostCells, OWN_ARROWS, hostHtml }));
   const GROUPING = definePart(DataGrid, "grouping", "row grouping", () => ({ DataGrid, GRID_ROWS, GRID_REPORTING, GRID_OPTIONS, GRID_OPTION_GRIDS, h, setText, fill, numberFormat,
-    formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridIdOrder, gridQueryRows, gridButton, gridDecorateButton,
+    formatValue, cellValue, cellText, isCellObject, gridScalar, gridQuery, gridFreeze, gridOrder, gridIdOrder, gridQueryRows, gridSortScalar, gridKeyCompare, gridCompare, gridButton, gridDecorateButton,
     gridCellRenderer, gridPresenterTone, GRID_TONE_RANK, validateGridRows, validateGridPage, checkDocument, requireIdentifier, validStructuralCount, PROTOCOL,
     gridOperationActive, reportingGroupKey, reportingGroupCompare, reportingSummaryEnabled, reportingDynamicGroups, GROUP_OPERATIONS, reportingAggregateParts, reportingAggregateSpans, disposeRowHostCells, quietControls, TreeGrid, GRID_BUCKETS, gridBucketDefinition }));
   GRID_ROWS.base.requestPage = DataGrid.prototype.requestPage;

@@ -181,6 +181,12 @@ that record with its drawer open. It works offline in a single-file report, beca
 
 ## Record actions
 
+Every record drawer, plain or with a record panel, has a **Copy details** button in its head beside the previous and next
+buttons. It copies the record as plain text for a ticket or a chat: the title and subtitle, then one `Field: value` line per
+field under its section's name, structured values flattened to one line, an empty field as `—`. A record panel copies every
+field of every tab, also those on tabs not shown. The button announces "Details copied"; its labels are `GridCopyDetails`
+and `GridDetailsCopied`.
+
 The head's actions menu (an ARIA menu button) has **Copy link**, **Copy values** (tab-separated) and **Copy as JSON**,
 **Export CSV** and **Export JSON** (one file for the record, every field with its section, empty ones too; CSV is protected
 against spreadsheet formulas) and **Print record**. `CanopyRecordPanel.Actions` switches the built-in actions off.

@@ -255,6 +255,8 @@ const labels = Object.freeze({
   gridCancelExport: "Cancelar exportación",
   gridPrint: "Imprimir",
   gridCloseRecord: "Cerrar",
+  gridCopyDetails: "Copiar detalles",
+  gridDetailsCopied: "Detalles copiados",
   gridContains: "contiene",
   gridStartsWith: "empieza por",
   gridIn: "es uno de estos valores",

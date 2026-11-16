@@ -59,7 +59,7 @@
       const button = (icon, label, run) => { const item = gridDecorateButton(gridButton("", run), icon, true); item.classList.add("icon"); item.setAttribute("aria-label", labels[label]); return item; };
       const step = position => { paint(position); focusDrawerTitle(title); };
       const previous = button("up", "gridPreviousRecord", () => step(index - 1)), next = button("down", "gridNextRecord", () => step(index + 1));
-      head.append(h("div"), previous, next, button("close", "gridCloseRecord", () => dialog._cxOverlay.close()));
+      head.append(h("div"), ...drawerCopyButton(this, dialog), previous, next, button("close", "gridCloseRecord", () => dialog._cxOverlay.close()));
       head.firstChild.appendChild(title); dialog.append(head, body);
       let shown = loose, paints = null;
       const paint = position => {

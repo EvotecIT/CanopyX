@@ -15,5 +15,6 @@
     gridExportCsvHint: "Plain text values (.csv)", gridExportCopy: "Copy to clipboard",
     gridExportProgress: "{completed} of {total} records", gridExportReading: "{completed} records", gridExportCancelled: "Export cancelled",
     gridCancelExport: "Cancel export", gridMore: "More", gridPrint: "Print", gridDetails: "Record details", gridDetailsSection: "Details",
-    gridPreviousRecord: "Previous record", gridNextRecord: "Next record", gridCloseRecord: "Close"
+    gridPreviousRecord: "Previous record", gridNextRecord: "Next record", gridCloseRecord: "Close",
+    gridCopyDetails: "Copy details", gridDetailsCopied: "Details copied"
   }));

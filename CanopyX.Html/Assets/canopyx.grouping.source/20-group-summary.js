@@ -70,23 +70,33 @@
   const GROUP_GRIDS = new WeakMap();
   GRID_ROWS.order = (view, query) => {
     const grid = GROUP_GRIDS.get(view), columns = new Map(view.columns.map(column => [column.id, column])), levels = query.groupBy;
-    const baseCompare = GRID_REPORTING.compare(view), compare = GRID_OPTION_GRIDS.has(view) ? GRID_OPTIONS.compare(view, query, columns, baseCompare) : baseCompare;
     const rest = query.sort.filter(sort => !levels.some(level => level.column === sort.column));
-    const within = (a, b) => { for (const sort of rest) { const result = compare(a, b, columns.get(sort.column), sort.direction); if (result) return result; } return gridIdOrder(a.id, b.id); };
-    const arrange = (rows, depth) => {
-      if (depth === levels.length) return rows.sort(within);
+    const baseCompare = GRID_REPORTING.compare(view), hooked = GRID_OPTION_GRIDS.has(view) && GRID_OPTIONS.hooked(view, rest, columns);
+    const compare = hooked ? GRID_OPTIONS.compare(view, query, columns, baseCompare) : baseCompare;
+    const rows = gridQueryRows(view, query, columns, null);
+    // The built-in order reads each row's sort keys once, not in every comparison (a date key parses its text); a plugin
+    // comparator, alternate sort fields or a text ordering policy compare rows.
+    const sorts = rest.map(sort => [columns.get(sort.column), sort.direction]), keyed = compare === gridCompare;
+    const keys = keyed ? sorts.map(([column]) => rows.map(row => gridSortScalar(row.cells[column.id], column))) : null;
+    const within = keyed ? (a, b) => {
+      for (let s = 0; s < sorts.length; s++) { const result = gridKeyCompare(keys[s][a], keys[s][b], sorts[s][0], sorts[s][1]); if (result) return result; }
+      return gridIdOrder(rows[a].id, rows[b].id);
+    } : (a, b) => { for (const [column, direction] of sorts) { const result = compare(rows[a], rows[b], column, direction); if (result) return result; } return gridIdOrder(rows[a].id, rows[b].id); };
+    // Groups and sorts work on row positions; the rows come back in that order at the end.
+    const arrange = (list, depth) => {
+      if (depth === levels.length) return list.sort(within);
       const level = levels[depth], column = columns.get(level.column), buckets = new Map();
-      for (const row of rows) {
-        const key = reportingGroupKey(groupBucketValue(level, column, row.cells[column.id]));
+      for (const index of list) {
+        const key = reportingGroupKey(groupBucketValue(level, column, rows[index].cells[column.id]));
         if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key).push(row);
+        buckets.get(key).push(index);
       }
-      const groups = [...buckets.values()].map(list => ({ list, value: groupBucketValue(level, column, list[0].cells[column.id]),
-        aggregates: level.aggregate ? { [level.aggregate]: groupAggregateValue(grid, view.reporting.aggregates.find(item => item.id === level.aggregate), list, 0, list.length) } : {} }));
+      const groups = [...buckets.values()].map(members => ({ members, value: groupBucketValue(level, column, rows[members[0]].cells[column.id]),
+        aggregates: level.aggregate ? { [level.aggregate]: groupAggregateValue(grid, view.reporting.aggregates.find(item => item.id === level.aggregate), members.map(index => rows[index]), 0, members.length) } : {} }));
       groups.sort(groupOrder(view, level));
-      return groups.flatMap(group => arrange(group.list, depth + 1));
+      return groups.flatMap(group => arrange(group.members, depth + 1));
     };
-    return arrange(gridQueryRows(view, query, columns, null), 0);
+    return arrange(rows.map((row, index) => index), 0).map(index => rows[index]);
   };
   GRID_OPTIONS.groupRows = GRID_ROWS.order;
   // An inner key extends its outer key; one that would pass 4,096 code units becomes a stable digest of the same text.
