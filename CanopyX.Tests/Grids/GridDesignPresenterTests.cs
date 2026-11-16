@@ -5,6 +5,16 @@ using System.Text.Json;
 namespace CanopyX.Tests.Grids;
 
 public sealed class GridDesignPresenterTests {
+    [Fact]
+    public void Identifier_KeepsTheTwoParameterFormThatEarlierAdaptersBindTo() {
+        // Adapters compiled against 0.4.5 (HtmlForgeX 2.7.0) call Identifier(string, bool); removing it breaks them at run time.
+        var method = typeof(CanopyGridPresenter).GetMethod(nameof(CanopyGridPresenter.Identifier), new[] { typeof(string), typeof(bool) });
+        Assert.NotNull(method);
+        var presenter = (CanopyGridPresenter)method!.Invoke(null, new object?[] { "owner", true })!;
+        Assert.Equal("owner", presenter.SecondaryColumn); Assert.True(presenter.Mono); Assert.False(presenter.Stack);
+        Assert.True(CanopyGridPresenter.Identifier(mono: true).Mono);
+    }
+
     [Theory]
     [InlineData(double.NaN)]
     [InlineData(double.PositiveInfinity)]
