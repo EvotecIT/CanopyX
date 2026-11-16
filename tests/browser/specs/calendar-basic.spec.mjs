@@ -72,11 +72,12 @@ test.describe("basic calendars", () => {
 
   test("a basic page carries only the core calendar part; the scheduler page carries editing and iCalendar too", () => {
     const basic = fs.readFileSync(path.join(examples, "calendar-basic.html"), "utf8"), scheduler = fs.readFileSync(path.join(examples, "calendar-scheduler.html"), "utf8");
-    expect(basic).toContain("calPaintMonth");
-    expect(basic).not.toContain("calCreateForm(proposal");
-    expect(basic).not.toContain("function calIcsParse");
-    expect(scheduler).toContain("calCreateForm(proposal");
-    expect(scheduler).toContain("function calIcsParse");
+    const payload = name => 'type="application/x-canopyx-' + name + '"';
+    expect(basic).toContain(payload("calendar"));
+    expect(basic).not.toContain(payload("calendar-edit"));
+    expect(basic).not.toContain(payload("calendar-ics"));
+    expect(scheduler).toContain(payload("calendar-edit"));
+    expect(scheduler).toContain(payload("calendar-ics"));
   });
 });
 

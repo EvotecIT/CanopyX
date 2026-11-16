@@ -13,12 +13,12 @@ public sealed class ColumnGroupsPartAssetsTests {
     public void Part_IsVersionedInlineSafeBoundedAndOutsideTheEntryPoints(string name, string marker, int budget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.Matches("^[a-f0-9]{16}$", part.Version);
-        Assert.Contains(marker, part.Script);
+        Assert.Contains(marker, ReadableAssets.Part(name));
         Assert.NotNull(part.Style);
         foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) {
             var script = CanopyHtmlAssets.GetScript(runtime);
             Assert.Contains(part.Version, script);
-            Assert.DoesNotContain(marker, script);
+            Assert.DoesNotContain(marker, ReadableAssets.Script(runtime));
             Assert.Contains(part, CanopyHtmlAssets.GetParts(runtime));
         }
         Assert.DoesNotContain(part, CanopyHtmlAssets.GetParts(CanopyRuntime.TreeGrid));

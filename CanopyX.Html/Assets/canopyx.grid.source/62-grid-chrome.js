@@ -39,13 +39,12 @@
       if (!this.selectionBar) return;
       const count = this.querySelection ? this.querySelection.matched === null ? null : Math.max(0,this.querySelection.matched - this.selectionExcluded.size) : this.selected.size;
       const selected = count === null || count > 0;
-      // The selection bar shares the toolbar (and hides some controls while shown), so once it has come or gone a narrow
-      // toolbar checks again whether Views still fits.
-      const toggled = this.selectionBar.hidden === selected;
       this.selectionBar.hidden = !selected; this.toolbarSeparator.hidden = !selected;
       this.host.classList.toggle("cx-has-selection", selected);
       gridCountLabel(this.selectedCount,count===null?this.labels.gridSelectionQueryUnknown:this.labels.gridSelectionCount,{count:numberFormat(this.lang).format(count),excluded:String(this.selectionExcluded?.size||0)});
-      if (toggled && this.menuLayout === "narrow") { this.menuBand = -1; this.placeMenus(true); }
+      // The selection bar shares the toolbar and its count changes its width, so a narrow toolbar checks again whether
+      // Views still fits once the bar and its count are up to date.
+      if (this.menuLayout === "narrow") { this.menuBand = -1; this.placeMenus(true); }
       const filterSummary = this.toolbar.querySelector(".cx-grid-filters > summary"), active = gridFilterCount(this.acceptedQuery);
       if (filterSummary) {
         filterSummary.classList.toggle("active", !!active); filterSummary.querySelector(".badge")?.remove();

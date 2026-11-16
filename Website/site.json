@@ -218,6 +218,12 @@
         ]
       },
       {
+        "Match": "/whats-new/**",
+        "Bundles": [
+          "pages"
+        ]
+      },
+      {
         "Match": "/compare/**",
         "Bundles": [
           "pages"
@@ -440,6 +446,10 @@
             "Title": "npm package",
             "Url": "https://www.npmjs.com/package/@evotecit/canopyx",
             "External": true
+          },
+          {
+            "Title": "What's new",
+            "Url": "/whats-new/"
           },
           {
             "Title": "Data protocol",

@@ -13,9 +13,9 @@ public sealed class HistoryPartAssetsTests {
             var script = CanopyHtmlAssets.GetScript(runtime);
             Assert.Contains(CanopyHtmlAssets.HistoryVersion, script);
             Assert.Contains(CanopyHtmlAssets.HashedHistoryScriptFileName, script);
-            Assert.DoesNotContain("function gridRenderHistory", script);
+            Assert.DoesNotContain("function gridRenderHistory", ReadableAssets.Script(runtime));
         }
-        Assert.Contains("function gridRenderHistory", CanopyHtmlAssets.HistoryScript);
+        Assert.Contains("function gridRenderHistory", ReadableAssets.Part("history"));
         Assert.DoesNotContain("</script", CanopyHtmlAssets.HistoryScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain('\r', CanopyHtmlAssets.HistoryScript);
         // Combined roadmap integration: its size plus about 15%.

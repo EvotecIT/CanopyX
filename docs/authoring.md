@@ -58,7 +58,7 @@ A released consumer references the packages. A consumer that needs work that is 
 
 - Reference `CanopyX.Html/CanopyX.Html.csproj` with a `ProjectReference`; it brings `CanopyX/CanopyX.csproj` with it. A consumer that needs only the model, the bundle writer, and the static outline references `CanopyX/CanopyX.csproj` alone. These two projects are the whole product: `Build/project.build.json` names them in `ExpectedVersionMap` and excludes the examples and test projects, which a consumer never builds.
 - Check out the whole repository, not one project folder. `CanopyX.Html` compiles three shared files from `CanopyX/Bundles`, and both projects take their version from `Directory.Build.props` in the repository root.
-- The build needs the .NET 10 SDK, because both projects also target `net10.0`. Nothing else has to run before the consumer's build: the runtime a consumer embeds, `CanopyX.Html/Assets/canopyx.js`, is checked in assembled, and there is no npm step. (`Build/Sync-Assets.ps1` reassembles it for someone who edits CanopyX itself.)
+- The build needs the .NET 10 SDK, because both projects also target `net10.0`. Nothing else has to run before the consumer's build: the runtime a consumer embeds, `CanopyX.Html/Assets/canopyx.js`, is checked in assembled, and there is no npm step. (`Build/Sync-Assets.ps1` reassembles it for someone who edits CanopyX itself. Minifying a changed script needs Node.js, and the script restores the pinned esbuild in `Build/node_modules`; checking the assets does not.)
 - Keep the project reference behind a switch that names the checkout, and the package reference for every other build. A root that is set but wrong fails the build instead of silently taking the package:
 
 ```xml

@@ -58,6 +58,35 @@ test('ordinary column presenters preserve raw exports, long strip periods and ac
   await expect(page.getByRole('dialog').locator('dd[data-cx-field="notes"]')).toHaveText(base.rows[0].cells.notes);
   await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);
 });
+test('tag chips show whole or join the count, and a short header keeps one line beside a flexible column',async({page})=>{
+  await page.setViewportSize({width:1440,height:900});
+  const view={...base,columns:[{id:'name',title:'Name',kind:'text',width:160},{id:'bars',title:'History bars',kind:'text',width:100,presenter:{kind:'sparklineBars'}},
+    {id:'tags',title:'Tags',kind:'text',width:150,fixed:true,presenter:{kind:'tags',separator:','}},{id:'wide',title:'Wide tag',kind:'text',width:90,fixed:true,presenter:{kind:'tags',separator:','}},
+    {id:'notes',title:'Notes',kind:'text',width:600,flex:1}],
+    rows:[{id:'one',cells:{name:'alpha',bars:{value:'Samples',series:periods.slice(0,12).map((point,i)=>({...point,value:i}))},tags:'Primary,Secondary,Review,Archive,Legal',wide:'Exceptionally long single tag',notes:'Note'}}]};
+  await open(page,'light',view);
+  const row=page.locator('.cx-row[data-cx-id="one"]'),tags=row.locator('[aria-colindex="3"]');
+  // Every chip in the column shows whole; the ones that do not fit count in "+N", which stays inside the cell after the chips.
+  await expect(tags.getByRole('button',{name:'Tags: show complete text'})).toHaveText(/^\+\d$/);
+  const shown=await tags.evaluate(cell=>{const box=cell.getBoundingClientRect(),count=cell.querySelector('.cx-presenter-expand').getBoundingClientRect();
+    const chips=[...cell.querySelectorAll('.p-tag')];
+    return {count:chips.length,whole:chips.every(item=>item.scrollWidth<=item.clientWidth),label:cell.querySelector('.cx-presenter-expand').textContent,
+      inside:count.right<=box.right+0.5,after:count.left>=chips.at(-1).getBoundingClientRect().right};});
+  expect(shown.count).toBeGreaterThan(0);expect(shown.count).toBeLessThan(3);expect(shown.whole).toBe(true);
+  expect(shown.label).toBe('+'+(5-shown.count));expect(shown.inside).toBe(true);expect(shown.after).toBe(true);
+  // A single tag wider than its column ends with an ellipsis inside the cell.
+  const wide=row.locator('[aria-colindex="4"] .p-tag');await expect(wide).toHaveCount(1);
+  expect(await wide.evaluate(item=>getComputedStyle(item).textOverflow)).toBe('ellipsis');
+  const wideCell=await row.locator('[aria-colindex="4"]').boundingBox(),wideBox=await wide.boundingBox();
+  expect(wideBox.x+wideBox.width).toBeLessThanOrEqual(wideCell.x+wideCell.width);
+  // Resizing the column chooses the chips again: wider shows the three a tags cell previews, narrower counts them again.
+  await page.evaluate(()=>grid.setColumnWidth('tags',420));
+  await expect(tags.locator('.p-tag')).toHaveCount(3);await expect(tags.getByRole('button',{name:'Tags: show complete text'})).toHaveText('+2');
+  await page.evaluate(()=>grid.setColumnWidth('tags',150));
+  await expect(tags.locator('.p-tag')).toHaveCount(shown.count);
+  const header=page.locator('[role="columnheader"][data-cx-column="bars"] .cx-htext,[role="columnheader"][data-cx-column="bars"] .cx-sort').first();
+  expect(await header.evaluate(item=>Math.round(item.getBoundingClientRect().height/parseFloat(getComputedStyle(item).lineHeight)))).toBe(1);
+});
 for(const theme of ['light','dark'])test('Graphite presenter contrast and semantics pass axe in '+theme,async({page})=>{
   await open(page,theme);expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
 });

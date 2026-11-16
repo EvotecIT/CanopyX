@@ -298,7 +298,7 @@ test.describe("calendar shared screens", () => {
   }
 
   test("a page without shared-screen settings does not carry the part", () => {
-    expect(fs.readFileSync(path.join(examples, "calendar-basic.html"), "utf8")).not.toContain("function calScreenSettings(");
-    expect(fs.readFileSync(path.join(examples, "calendar-family.html"), "utf8")).toContain("function calScreenSettings(");
+    expect(fs.readFileSync(path.join(examples, "calendar-basic.html"), "utf8")).not.toContain('type="application/x-canopyx-calendar-screen"');
+    expect(fs.readFileSync(path.join(examples, "calendar-family.html"), "utf8")).toContain('type="application/x-canopyx-calendar-screen"');
   });
 });

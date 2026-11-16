@@ -15,8 +15,10 @@ const wire = name => name[0].toLowerCase()+name.slice(1);
 // The C# UI partial declares the exact optional UI names; the overlay part owns their English defaults.
 const uiNames = new Set([...fs.readFileSync(path.join(repo,'CanopyX/Views/CanopyLabels.Ui.cs'),'utf8')
   .matchAll(/public string (\w+)\s*\{/g)].map(match=>wire(match[1])));
+// The shipped part is minified, so its UI_LABELS constant is found by its keys: the object literal that names the UI labels.
 function uiDefaults(source) {
-  const definition = source.match(/\bconst\s+UI_LABELS\s*=\s*\{([\s\S]*?)\};/);
+  const definition = source.match(/\bconst\s+UI_LABELS\s*=\s*\{([\s\S]*?)\};/) ||
+    [...source.matchAll(/=\{((?:[\w$]+:"(?:[^"\\]|\\.)*",?)+)\}/g)].find(match => [...match[1].matchAll(/([\w$]+):"/g)].every(key => uiNames.has(key[1])));
   if (!definition) throw new Error('The UI overlay part must declare UI_LABELS defaults.');
   return Object.fromEntries([...definition[1].matchAll(/\b(\w+):\s*("(?:[^"\\]|\\.)*")/g)]
     .map(match=>[match[1],JSON.parse(match[2])]));

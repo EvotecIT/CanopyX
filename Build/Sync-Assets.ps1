@@ -341,7 +341,9 @@ export default CanopyX;
         $header = $header.Replace('interactive runtime or module before the core script', 'UI, tree or grid runtime, or this module, before the core script')
         $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'registerPart, setNonce')
     }
-    $header.Replace("`r`n", "`n") + "`n" + $Content + $exports.Replace("`r`n", "`n") + "`n"
+    # The comment that names the file stays first, above the module's own header.
+    $leading = [regex]::Match($Content, '^/\*[\s\S]*?\*/\n').Value
+    $leading + $header.Replace("`r`n", "`n") + "`n" + $Content.Substring($leading.Length) + $exports.Replace("`r`n", "`n") + "`n"
 }
 
 function Compress-ScriptSpacing {
@@ -392,6 +394,55 @@ function Compress-StyleSpacing {
     $lines -join "`n"
 }
 
+# Local names are shortened and whitespace dropped by esbuild (Build/minify.mjs), pinned in Build/package.json and restored
+# here on first use. Build/minified.json records, for every minified file, the hash of its input (the assembled script with
+# compressed spacing) and of the file written from it. A script whose input and file still match is reused as it is, so
+# checking the assets, and syncing after an edit that leaves the scripts alone, needs no Node.js. Jobs that do need the
+# minifier go in one batch per call: one for the parts, one for the entry points.
+$minifiedPath = Join-Path $PSScriptRoot 'minified.json'
+$minifiedBefore = if (Test-Path -LiteralPath $minifiedPath) { Get-Content -LiteralPath $minifiedPath -Raw | ConvertFrom-Json -AsHashtable } else { @{} }
+$minifiedAfter = [ordered]@{}
+function Invoke-Minify([object[]] $Jobs) {
+    if (-not $Jobs.Count) { return @() }
+    $results = [object[]]::new($Jobs.Count)
+    $pending = [Collections.Generic.List[int]]::new()
+    for ($index = 0; $index -lt $Jobs.Count; $index++) {
+        $job = $Jobs[$index]; $job.Input = Get-AssetHash $job.Code
+        $recorded = $minifiedBefore[$job.Target]; $file = Join-Path $root $job.Target
+        if ($recorded -and $recorded.input -eq $job.Input -and (Test-Path -LiteralPath $file)) {
+            $current = [IO.File]::ReadAllText($file).Replace("`r`n", "`n")
+            if ((Get-AssetHash $current) -eq $recorded.output) { $results[$index] = [pscustomobject]@{ Code = $current; Reused = $true }; continue }
+        }
+        if ($Check) { throw "Generated asset is out of date: $($job.Target). Run Build/Sync-Assets.ps1." }
+        $pending.Add($index)
+    }
+    if ($pending.Count) {
+        $tools = $PSScriptRoot
+        $pinned = (Get-Content -LiteralPath (Join-Path $tools 'package.json') -Raw | ConvertFrom-Json).devDependencies.esbuild
+        $installed = Join-Path $tools 'node_modules/esbuild/package.json'
+        if (-not (Test-Path -LiteralPath $installed) -or (Get-Content -LiteralPath $installed -Raw | ConvertFrom-Json).version -ne $pinned) {
+            if (-not (Get-Command npm -CommandType Application -ErrorAction SilentlyContinue)) { throw 'Minifying the changed runtime scripts needs Node.js and npm (Build/package.json).' }
+            Push-Location $tools
+            try { & npm ci --no-audit --no-fund --silent; if ($LASTEXITCODE) { throw "npm ci failed in $tools." } } finally { Pop-Location }
+        }
+        $work = Join-Path ([IO.Path]::GetTempPath()) ('canopyx-minify-' + [Guid]::NewGuid().ToString('n'))
+        [void](New-Item -ItemType Directory -Path $work)
+        try {
+            $inputPath = Join-Path $work 'in.json'; $outputPath = Join-Path $work 'out.json'
+            $batch = @($pending | ForEach-Object { @{ code = $Jobs[$_].Code; module = [bool]$Jobs[$_].Module } })
+            [IO.File]::WriteAllText($inputPath, (ConvertTo-Json -InputObject $batch -Depth 3 -Compress), [Text.UTF8Encoding]::new($false))
+            & node (Join-Path $tools 'minify.mjs') $inputPath $outputPath
+            if ($LASTEXITCODE) { throw 'Minifying the runtime scripts failed.' }
+            $outputs = [IO.File]::ReadAllText($outputPath) | ConvertFrom-Json -NoEnumerate
+            for ($at = 0; $at -lt $pending.Count; $at++) { $results[$pending[$at]] = [pscustomobject]@{ Code = $outputs[$at]; Reused = $false } }
+        } finally { Remove-Item -LiteralPath $work -Recurse -Force }
+    }
+    $results
+}
+function Register-Minified([string] $Target, [string] $InputHash, [string] $Content) {
+    $minifiedAfter[$Target] = [ordered]@{ input = $InputHash; output = (Get-AssetHash $Content) }
+}
+
 function Get-AssetHash([string] $Content) {
     $sha = [Security.Cryptography.SHA256]::Create()
     try { ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($Content)))).Replace('-', '').ToLowerInvariant().Substring(0, 16) }
@@ -401,7 +452,7 @@ function Get-AssetHash([string] $Content) {
 # Each part becomes canopyx-<name>.js (and .css): its scripts in the listed order inside a registration that destructures the
 # context the runtime hands its install function. The version hashes the complete generated install definition and style, so a runtime only
 # installs the part of its own build. Entry points read the manifest of the parts they know (__CX_PARTS__).
-$partBuilds = foreach ($part in $partList) {
+$partSources = foreach ($part in $partList) {
     $scriptPaths = @($part.scripts | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $root $_)) })
     $body = Add-TokenFallbacks (Join-AssetSource -SourcePath $scriptPaths[0] -ExtensionPath @($scriptPaths | Select-Object -Skip 1) -PartSource)
     $style = ''
@@ -418,13 +469,26 @@ $partBuilds = foreach ($part in $partList) {
         "if (installed.has($key)) return;`nconst {$($part.context -join ',')} = context;`n" + $(if ($part.start) { $part.start + "`n" } else { '' })
     $footer = $(if ($part.end) { $part.end + "`n" } else { '' }) + "installed.add($key);`n}};`n" +
         "(global.CanopyXParts ||= []).push([`"$($part.name)`", part]);`n})(typeof window !== `"undefined`" ? window : globalThis);`n"
-    $script = Compress-ScriptSpacing ($header.Replace("`r`n", "`n") + $body + $footer.Replace("`r`n", "`n"))
-    if ($part.notice) {
+    [pscustomobject]@{ Part = $part; Script = $header.Replace("`r`n", "`n") + $body + $footer.Replace("`r`n", "`n"); Style = $style }
+}
+$partJobs = @($partSources | ForEach-Object { @{ Target = 'CanopyX.Html/Assets/canopyx-' + $_.Part.name + '.js'; Code = Compress-ScriptSpacing $_.Script } })
+$partScripts = Invoke-Minify $partJobs
+$previousParts = @{}
+$partsIndexPath = Join-Path $root 'CanopyX.Html/Assets/canopyx-parts.json'
+if (Test-Path -LiteralPath $partsIndexPath) { foreach ($entry in (Get-Content -LiteralPath $partsIndexPath -Raw | ConvertFrom-Json).parts) { $previousParts[$entry.name] = $entry.version } }
+$partBuilds = for ($index = 0; $index -lt $partSources.Count; $index++) {
+    $part = $partSources[$index].Part; $style = $partSources[$index].Style; $script = $partScripts[$index].Code
+    if ($partScripts[$index].Reused) {
+        # The written part carries its notice and version; the version is computed again below, since the style may have changed.
+        $script = $script.Replace('version:"' + $previousParts[$part.name] + '"', 'version:"__CX_PART_VERSION__"')
+    } elseif ($part.notice) {
         $notice = [IO.File]::ReadAllText((Join-Path $root $part.notice)).Replace("`r`n", "`n").TrimEnd()
         $script = "/*`n" + $notice + "`n*/`n" + $script
     }
+    if (-not $script.Contains('version:"__CX_PART_VERSION__"')) { throw "The version of part '$($part.name)' is missing." }
     $version = Get-AssetHash ($script + $style)
     $script = $script.Replace('__CX_PART_VERSION__', $version)
+    Register-Minified $partJobs[$index].Target $partJobs[$index].Input $script
     [pscustomobject]@{
         Part = $part; Version = $version; Script = $script; Style = $style
         ScriptName = 'canopyx-' + $part.name + '.' + (Get-AssetHash $script) + '.js'
@@ -472,11 +536,25 @@ foreach ($asset in $assets) {
     $generated = (Add-TokenFallbacks $generated).Replace('__CX_STATUS_FALLBACKS__', $statusFallbackJson)
     foreach ($marker in $printDefaults.Keys) { $generated = $generated.Replace($marker, $printDefaults[$marker]) }
     if ($asset.Module) { $generated = ConvertTo-Module -Content $generated -Grid:([bool]$asset.Grid) -Flow:($asset.Kind -eq 'flow') -Ui:($asset.Kind -eq 'ui') }
-    if ($asset.Folding) { $generated = Compress-ScriptSpacing -Content $generated }
     if (-not $asset.Generated -and $asset.Target.EndsWith('.css')) {
         $generated = Compress-StyleSpacing -Content $generated
     }
-
+    $asset.Output = $generated
+}
+$entryScripts = @($assets | Where-Object { $_.Folding })
+$entryJobs = @($entryScripts | ForEach-Object { @{ Target = $_.Target; Code = Compress-ScriptSpacing $_.Output; Module = [bool]$_.Module } })
+$minified = Invoke-Minify $entryJobs
+for ($index = 0; $index -lt $entryScripts.Count; $index++) {
+    $entryScripts[$index].Output = $minified[$index].Code
+    Register-Minified $entryJobs[$index].Target $entryJobs[$index].Input $minified[$index].Code
+}
+$sortedMinified = [ordered]@{}
+$minifiedTargets = [string[]]@($minifiedAfter.Keys); [Array]::Sort($minifiedTargets, [StringComparer]::Ordinal)
+foreach ($target in $minifiedTargets) { $sortedMinified[$target] = $minifiedAfter[$target] }
+$assets += @{ Target = 'Build/minified.json'; Output = (ConvertTo-Json -InputObject $sortedMinified -Depth 3).Replace("`r`n", "`n") + "`n" }
+foreach ($asset in $assets) {
+    $targetPath = Join-Path $root $asset.Target
+    $generated = $asset.Output
     if ($Check) {
         $current = if (Test-Path $targetPath) { [System.IO.File]::ReadAllText($targetPath).Replace("`r`n", "`n").Replace("`r", "`n") } else { '' }
         if ($current -ne $generated) {

@@ -28,8 +28,8 @@ public sealed class RuntimePartTests {
             Assert.Matches("^canopyx-" + part.Name + "\\.[a-f0-9]{16}\\.js$", part.HashedScriptFileName);
             Assert.Equal(part.Style == null, part.StyleFileName == null);
             // The script registers its code under its name with its version, before or after the runtime runs.
-            Assert.Contains("const part={version:\"" + part.Version + "\"", part.Script);
-            Assert.EndsWith("(global.CanopyXParts||=[]).push([\"" + part.Name + "\",part])})(typeof window!==\"undefined\"?window:globalThis);", part.Script);
+            Assert.Contains("={version:\"" + part.Version + "\"", part.Script);
+            Assert.Matches("\\.CanopyXParts\\|\\|=\\[\\]\\)\\.push\\(\\[\"" + Regex.Escape(part.Name) + "\",[\\w$]+\\]\\)\\}\\)\\(typeof window!==\"undefined\"\\?window:globalThis\\);\\n?$", part.Script);
             Assert.DoesNotContain("</script", part.Script, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain('\r', part.Script);
             foreach (var runtime in AllRuntimes) {
@@ -54,15 +54,15 @@ public sealed class RuntimePartTests {
     public void MovedCode_LeavesTheEntryPointsForItsParts() {
         // The sidecar index search and the deep links load when a view needs them; the entry points keep their loaders.
         foreach (var runtime in AllRuntimes) {
-            var script = CanopyHtmlAssets.GetScript(runtime);
+            var script = ReadableAssets.Script(runtime);
             Assert.DoesNotContain("function entryFile(", script);
             Assert.DoesNotContain("writeDeepLink(w,revision=this.selectionRevision)", script);
             Assert.Contains("function registerPart(", script);
             // The flow and UI entry points have no trees, so they have no sidecar search to check.
             Assert.Equal(runtime != CanopyRuntime.Flow && runtime != CanopyRuntime.Ui, script.Contains("function checkSearchIndex(", StringComparison.Ordinal));
         }
-        Assert.Contains("function entryFile(", CanopyHtmlAssets.GetPart("search").Script);
-        Assert.Contains("writeDeepLink(w,revision=this.selectionRevision)", CanopyHtmlAssets.GetPart("links").Script);
+        Assert.Contains("function entryFile(", ReadableAssets.Part("search"));
+        Assert.Contains("writeDeepLink(w,revision=this.selectionRevision)", ReadableAssets.Part("links"));
         // Combined roadmap integration: its size plus about 15%.
         Assert.True(Gzip(CanopyHtmlAssets.GetPart("search").Script) <= 3584, "The search part exceeds its 3.5 KiB guard.");
         Assert.True(Gzip(CanopyHtmlAssets.GetPart("links").Script) <= 1536, "The links part exceeds its 1.5 KiB guard.");

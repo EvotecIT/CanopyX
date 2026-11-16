@@ -71,22 +71,21 @@ public sealed class FlowPartAssetsTests {
 
     [Fact]
     public void FlowEntryPoint_IsBounded() {
-        // Flow wave F1: 8,342 bytes plus about 15%, rounded up to KiB.
-        // Includes the shared controls (canopyx.source/controls.css) the flow moves onto.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Flow, 12 * 1024);
+        // Measured 10,561 bytes minified with the shared controls (canopyx.source/controls.css), with about 6% headroom.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Flow, 11 * 1024);
         Assert.DoesNotContain("</script", CanopyHtmlAssets.GetScript(CanopyRuntime.Flow), StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("</style", CanopyHtmlAssets.GetStyle(CanopyRuntime.Flow), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void FlowEntryPoint_CarriesNoGridOrTreeCode() {
-        var script = CanopyHtmlAssets.GetScript(CanopyRuntime.Flow);
+        var script = ReadableAssets.Script(CanopyRuntime.Flow);
         foreach (var marker in new[] { "createDataGrid", "createTreeGrid", "class TreeGrid", "class DataGrid", "function editSpec(", "const EDIT_EDITORS" })
             Assert.DoesNotContain(marker, script);
         Assert.Contains("createFlow", script);
         Assert.Contains("function registerPart(", script);
         // The grid entry points host flows too: they create them and load the same parts.
-        foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) Assert.Contains("createFlow", CanopyHtmlAssets.GetScript(runtime));
+        foreach (var runtime in new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }) Assert.Contains("createFlow", ReadableAssets.Script(runtime));
     }
 
     [Fact]

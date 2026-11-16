@@ -12,8 +12,8 @@ public sealed class FlowHtmlTests {
         Assert.Equal("canopyx-flow-entry.js", CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.Plain, CanopyRuntime.Flow));
         Assert.Equal("canopyx-flow-entry.css", CanopyHtmlAssets.GetStyleFileName(CanopyAssetNaming.Plain, CanopyRuntime.Flow));
         Assert.Matches("^canopyx-flow-entry\\.[a-f0-9]{16}\\.js$", CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.ContentHash, CanopyRuntime.Flow));
-        Assert.Contains("createFlow", CanopyHtmlAssets.GetScript(CanopyRuntime.Flow));
-        Assert.DoesNotContain("createDataGrid", CanopyHtmlAssets.GetScript(CanopyRuntime.Flow));
+        Assert.Contains("createFlow", ReadableAssets.Script(CanopyRuntime.Flow));
+        Assert.DoesNotContain("createDataGrid", ReadableAssets.Script(CanopyRuntime.Flow));
         Assert.Throws<ArgumentNullException>(() => CanopyHtmlAssets.GetRuntime((CanopyFlow)null!));
     }
 
