@@ -25,10 +25,11 @@ using CanopyX.Rendering;
 // --search-pack <bytes> packs the search index of every bundle into files of up to that size (default 64 KiB; 0 writes
 // each index file on its own), and --child-pack <bytes> packs the children pages into files of up to that size
 // (default 128 KiB).
+// With --scale it writes the scale benchmark pages instead (scale/, see ScaleExample); --tiers 50,500 limits the sizes.
 // Usage: CanopyX.Examples [output folder] [--search-bench | --pack-bench [--services <n>] [--in-memory]] [--search-pack <bytes>] [--child-pack <bytes>]
 var searchBench = args.Contains("--search-bench");
 var packBench = args.Contains("--pack-bench");
-var valueOptions = new[] { "--services", "--search-pack", "--child-pack" };
+var valueOptions = new[] { "--services", "--search-pack", "--child-pack", "--tiers" };
 int? Number(string name) {
     var at = Array.IndexOf(args, name);
     return at >= 0 && at + 1 < args.Length ? int.Parse(args[at + 1], CultureInfo.InvariantCulture) : null;
@@ -52,6 +53,11 @@ if (args.Contains("--shared-tokens")) {
     return;
 }
 if (args.Contains("--column-bands")) { ColumnBandsExample.Write(output); return; }
+if (args.Contains("--scale")) {
+    var tierList = args.SkipWhile(arg => arg != "--tiers").Skip(1).FirstOrDefault();
+    ScaleExample.Write(output, tierList?.Split(',').Select(value => int.Parse(value, CultureInfo.InvariantCulture)).ToArray());
+    return;
+}
 
 if (packBench) {
     var catalog = PackBenchTree.View();
