@@ -1,8 +1,8 @@
 // Export benchmark: writes CSV, XLSX and PDF from a flat grid of N directory-style records (a host source that pages rows on
 // demand, so the grid holds no copy of them) through exportAs, the path the Export menu uses. Each run gets a fresh browser.
 // It reports the time to the finished Blob, the file size, the JavaScript heap peak (sampled every 10 ms, so a sample
-// cannot land inside a long task), the longest main-thread gap seen by a 10 ms timer, long tasks (over 50 ms), progress
-// reports, and, with --cancel, how long a cancelled export takes to settle once it has read a fifth of the rows.
+// cannot land inside a long task), the longest main-thread gap seen by a 10 ms timer (the longest time the page could not
+// respond), progress reports, and, with --cancel, how long a cancelled export takes to settle once it has read a fifth of the rows.
 //
 //   node bench/export-benchmark.mjs [--rows 50,500,5000,50000,500000] [--formats csv,xlsx,pdf] [--cpu 1] [--cancel] [--out file.json]
 //   node bench/export-benchmark.mjs --bundle [--formats csv,xlsx,pdf]   (the largest generated bundle example, all nodes)
@@ -53,9 +53,6 @@ function page(rows) {
 // Runs in the page: samples the heap and timer gaps, then exports (or cancels after a fifth of the records).
 async function measure({ format, cancelAt, tree, textCsv }) {
   const host = document.querySelector("[data-canopyx-host]"), grid = host.canopyx;
-  if (tree) grid.opts.exportFormats = ["xlsx", "pdf"];
-  const longTasks = []; const observer = new PerformanceObserver(list => { for (const entry of list.getEntries()) longTasks.push(entry.duration); });
-  observer.observe({ type: "longtask" });
   let peak = performance.memory.usedJSHeapSize, last = performance.now(), gap = 0;
   const base = peak, timer = setInterval(() => { const now = performance.now(); gap = Math.max(gap, now - last); last = now; peak = Math.max(peak, performance.memory.usedJSHeapSize); }, 10);
   const controller = new AbortController(); let progress = 0, completed = 0, cancelledAt = null;
@@ -64,14 +61,14 @@ async function measure({ format, cancelAt, tree, textCsv }) {
     progress++; completed = value.completed;
     if (cancelAt && cancelledAt === null && value.completed >= cancelAt) { cancelledAt = performance.now(); controller.abort(); }
   };
-  const result = await (format === "csv" && textCsv ? grid.toCsv({ scope: "all", maxRows: 1000000, signal: controller.signal, onProgress }).then(text => ({ blob: new Blob([text]), diagnostics: [] })) :
+  const result = await (format === "csv" && textCsv ? grid.toCsv({ scope: "all", maxRows: 1000000, signal: controller.signal }).then(text => ({ blob: new Blob([text]), diagnostics: [] })) :
     grid.exportAs(format, { scope: "all", download: false, timeoutMs: 3600000, signal: controller.signal, onProgress }))
     .then(value => ({ bytes: value.blob.size, diagnostics: value.diagnostics.length }), error => ({ error: error.name + ": " + error.message }));
-  const ended = performance.now();
-  clearInterval(timer); observer.disconnect();
+  // The interval from the last tick to the end counts too: a writer that never yields leaves the timer silent throughout.
+  const ended = performance.now(); gap = Math.max(gap, ended - last); peak = Math.max(peak, performance.memory.usedJSHeapSize);
+  clearInterval(timer);
   return { ...result, ms: Math.round(ended - started), settleMs: cancelledAt === null ? null : Math.round(ended - cancelledAt), progress, completed,
-    heapBaseMB: +(base / 1048576).toFixed(1), heapPeakMB: +(peak / 1048576).toFixed(1), maxGapMs: Math.round(gap),
-    longTasks: longTasks.length, longestTaskMs: Math.round(Math.max(0, ...longTasks)) };
+    heapBaseMB: +(base / 1048576).toFixed(1), heapPeakMB: +(peak / 1048576).toFixed(1), maxGapMs: Math.round(gap) };
 }
 
 async function once(target, format, options) {
@@ -83,11 +80,15 @@ async function once(target, format, options) {
     if (target.html) {
       await tab.route("http://canopyx.test/export", route => route.fulfill({ contentType: "text/html", body: target.html }));
       await tab.goto("http://canopyx.test/export");
-    } else await tab.goto(target.url);
+    } else {
+      // The bundle tree declares no Office formats; offer them before it mounts, as a host would with CanopyX.configure.
+      await tab.addInitScript(id => { let value; Object.defineProperty(window, "CanopyX", { configurable: true, get: () => value,
+        set(next) { value = next; next?.configure?.(id, { exportFormats: ["xlsx", "pdf"] }); } }); }, target.id);
+      await tab.goto(target.url);
+    }
     await tab.waitForSelector("[data-cx-ready]", { timeout: 300000, state: "attached" }).catch(error => { throw new Error("Not ready: " + errors.join("; ") + " " + error.message); });
     // The lazy writer parts load before the clock starts, so the numbers measure writing only.
     await tab.evaluate(async ({ format, textCsv }) => { const grid = document.querySelector("[data-canopyx-host]").canopyx;
-      if (grid.opts && !grid.view.exportFormats) grid.opts.exportFormats = ["xlsx", "pdf"];
       // An empty selection loads the writer and writes a file with headings only.
       const warm = { scope: "selected", maxRows: 1 };
       await (format === "csv" && textCsv ? grid.toCsv(warm) : grid.exportAs(format, { ...warm, download: false })).catch(() => {});
@@ -101,13 +102,13 @@ const results = [];
 const row = (label, format, result) => {
   results.push({ label, format, ...result });
   console.log([label.padEnd(10), format.padEnd(5), result.error || (result.ms + " ms").padStart(10), result.bytes ? (result.bytes / 1048576).toFixed(1).padStart(7) + " MB" : "",
-    "heap " + result.heapBaseMB + "→" + result.heapPeakMB + " MB", "gap " + result.maxGapMs + " ms", "long " + result.longTasks + "/" + result.longestTaskMs + " ms",
+    "heap " + result.heapBaseMB + "→" + result.heapPeakMB + " MB", "gap " + result.maxGapMs + " ms",
     "progress " + result.progress, result.settleMs === null ? "" : "cancel settled in " + result.settleMs + " ms at " + result.completed].join("  "));
 };
 console.log("Chromium, " + os.cpus()[0].model + ", CPU slowdown " + cpu + "x");
 if (bundle) {
   const url = pathToFileURL(path.join(examples, "bundle/index.html")).href;
-  for (const format of formats) row("bundle", format, await once({ url }, format, { tree: true }));
+  for (const format of formats) row("bundle", format, await once({ url, id: "files" }, format, {}));
 } else {
   for (const rows of tiers) for (const format of formats) {
     row(String(rows), format, await once({ html: page(rows) }, format, {}));
