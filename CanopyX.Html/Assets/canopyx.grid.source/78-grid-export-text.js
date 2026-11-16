@@ -81,6 +81,8 @@
       } };
       const { blob } = await EXPORT_IMPL.run(this, "csv", { signal: options.signal, timeoutMs: options.timeoutMs, download: false }, limited, EXPORT_IMPL.csvFormat(this));
       const text = await blob.text();
+      // Cancellation or destruction while the text decodes still rejects, as it does while records are read.
+      gridOperationActive(this, options.signal);
       // The reporting runtime's capture reports reading progress; the finished text is its ready phase.
       GRID_REPORTING.exportReady?.(this, capture, count, options.signal);
       return text;
