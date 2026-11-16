@@ -102,7 +102,7 @@
       }
       FIT.applyWidths.call(this, this.fitWidths(cols, width));
       // Tag and list cells choose their chips by the column's width (36-grid-presenter-cells.js), so a new width repaints the rows.
-      if (cols.some(column => ["tags", "list"].includes(gridOptions(column).kind) && column.chipWidth !== (column.chipWidth = column.renderWidth))) {
+      if (cols.some(column => ["tags", "list"].includes(gridOptions(column).kind) && column.chipWidth !== (column.chipWidth = column.renderWidth) && this.rendered?.size)) {
         this.version++; this.scheduleRender();
       }
       // A column resize can introduce a classic horizontal scrollbar without changing the observed border box.
