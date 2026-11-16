@@ -15,7 +15,8 @@ public sealed partial class CanopyLabels {
         nameof(GridSelectedRows), nameof(GridAllRows), nameof(GridDownloadCsv), nameof(GridDownloadXlsx), nameof(GridDownloadPdf), nameof(GridCopy), nameof(GridExportProgress),
         nameof(GridExportWorkbookHint), nameof(GridExportPdfHint), nameof(GridExportCsvHint), nameof(GridExportCopy), nameof(GridRows), nameof(GridUnknownCount),
         nameof(GridExportReading), nameof(GridExportCancelled), nameof(GridCancelExport), nameof(GridMore), nameof(GridPrint),
-        nameof(GridDetails), nameof(GridDetailsSection), nameof(GridPreviousRecord), nameof(GridNextRecord), nameof(GridCloseRecord)
+        nameof(GridDetails), nameof(GridDetailsSection), nameof(GridPreviousRecord), nameof(GridNextRecord), nameof(GridCloseRecord),
+        nameof(GridCopyDetails), nameof(GridDetailsCopied)
     };
 
     /// <summary>

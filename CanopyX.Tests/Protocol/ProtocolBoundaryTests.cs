@@ -22,6 +22,9 @@ public sealed class ProtocolBoundaryTests {
         Assert.Throws<ArgumentException>(() => new CanopyTreeView("view", " \t"));
         Assert.Throws<ArgumentException>(() => new CanopyColumn("name", " "));
         Assert.Throws<ArgumentException>(() => new CanopyFilter("filter", " ", "flag"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyFilter("filter", "Filter", "flag") { Count = -1 });
+        Assert.Contains("\"count\":12", SampleDocuments.FullView().ToJson(), StringComparison.Ordinal);
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(SampleDocuments.FullView().ToJson(), v => v["filters"]![0]!["count"] = -1)).IsValid);
         Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(SampleDocuments.FullView().ToJson(), v => v["label"] = " ")).IsValid);
         var page = new CanopyPage(null);
         var node = new CanopyNode("node", "Node"); node.Cells[""] = "Value"; page.Items.Add(node);

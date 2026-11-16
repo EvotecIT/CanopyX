@@ -65,7 +65,7 @@ dotnet test ./CanopyX.Tests/CanopyX.Tests.csproj -c Release --filter "Category=B
 
 ## Compare performance
 
-The existing scripts under `tests/browser/bench` provide raw samples and broader normal/4x comparisons: `scroll-benchmark.mjs`, `search-benchmark.mjs`, `expand-benchmark.mjs` and `load-benchmark.mjs`. Their headers document inputs and output paths; [large-data.md](large-data.md#reproducing-the-measurements) describes large fixture generation. Use a task-owned folder under the configured scratch root for substantial fixture, trace and report output.
+The existing scripts under `tests/browser/bench` provide raw samples and broader normal/4x comparisons: `scroll-benchmark.mjs`, `search-benchmark.mjs`, `expand-benchmark.mjs`, `load-benchmark.mjs` and `scale-benchmark.mjs` (directory-shaped views at 50 to 500,000 rows, [large-data.md](large-data.md#directory-sized-reports)). Their headers document inputs and output paths; [large-data.md](large-data.md#reproducing-the-measurements) describes large fixture generation. Use a task-owned folder under the configured scratch root for substantial fixture, trace and report output.
 
 Compare equivalent inputs and work on the same host, record browser/runtime versions and host load, and retain every sample, failure and slower result. Validate that expected rows, hits and paths were produced before interpreting timing. The load benchmark records failed rows in its JSON report, so inspect those failures even when its process exits successfully. Keep performance reports outside required correctness aggregators.
 

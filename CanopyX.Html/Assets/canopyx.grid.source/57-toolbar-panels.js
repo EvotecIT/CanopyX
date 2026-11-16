@@ -152,3 +152,34 @@
       return controls.some(node => node.getBoundingClientRect().top >= first.bottom - 1);
     }
   };
+
+  // "Copy details" in a record drawer's head copies the record as plain text for a ticket: the title and subtitle, then
+  // "Field: value" lines under their section names. Plain drawers read each field as its cell's text; the record panel
+  // part writes its own fields, every tab and section included (RECORD_IMPL.text).
+  function drawerCopyButton(view, dialog) {
+    const label = view.labels.gridCopyDetails, status = h("span", "cx-sr-only");
+    status.setAttribute("role", "status");
+    const button = gridDecorateButton(gridButton("", async () => {
+      try {
+        if (!global.navigator.clipboard?.writeText) throw new Error("CanopyX: the clipboard is not available.");
+        await global.navigator.clipboard.writeText(drawerText(view, dialog));
+        setText(status, view.labels.gridDetailsCopied); setTimeout(() => setText(status, ""), 3000);
+      } catch (error) { view.emit("error", { error }); }
+    }), "copy", true);
+    button.classList.add("icon", "cx-drawer-copy"); button.setAttribute("aria-label", label); button.title = label;
+    return [button, status];
+  }
+  function drawerText(view, dialog) {
+    const record = dialog._cxRecord, clean = text => String(text ?? "").replace(/\s+/g, " ").trim();
+    if (RECORD_IMPL.text && view.recordNeeded(record)) return RECORD_IMPL.text(view, dialog);
+    const lines = [clean(dialog.querySelector(".cx-drawer-h h4")?.textContent)], subtitle = dialog.querySelector(".cx-drawer-h p");
+    if (subtitle && !subtitle.hidden && clean(subtitle.textContent)) lines.push(clean(subtitle.textContent));
+    for (const element of dialog.querySelectorAll(".cx-drawer-body .cx-drawer-s, .cx-drawer-body dd[data-cx-field]")) {
+      if (element.closest(".cx-drawer") !== dialog) continue;
+      if (element.classList.contains("cx-drawer-s")) { lines.push("", clean(element.textContent)); continue; }
+      const id = element.getAttribute("data-cx-field"), column = view.columns.find(item => item.id === id), cell = record?.cells?.[id];
+      const text = column && cell != null && !column.presenter && !column.render ? clean(cellText(cell, column, view.fmt)) : clean(element.textContent);
+      lines.push(clean(element.previousElementSibling?.textContent) + ": " + (text || "—"));
+    }
+    return lines.join("\n");
+  }

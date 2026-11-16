@@ -5,6 +5,7 @@
       const bar = this.toolbar, tools = this.tools;
       if (this.view.search && this.source.canSearch && tools.search !== false) this.buildSearch(bar, this.view.search);
       // A hidden filter has no switch here: the host draws the control and calls setFilterActive.
+      const counts = tools.filters !== false ? this.filterCounts() : null;
       if (tools.filters !== false) (this.view.filters || []).forEach((filter) => {
         if (filter.hidden) return;
         const label = h("label", "cx-switch");
@@ -17,12 +18,45 @@
         });
         label.appendChild(input);
         label.appendChild(document.createTextNode(filter.label));
+        // The number of matching nodes follows the label: "Has risks · 1". The dot is decoration; the count is read.
+        const count = counts.get(filter.id);
+        if (count != null) {
+          const dot = h("span", "cx-switch-dot"), number = h("span", "cx-switch-count");
+          dot.setAttribute("aria-hidden", "true"); dot.textContent = "·";
+          number.textContent = numberFormat(this.lang).format(count);
+          label.append(dot, number);
+        }
         bar.appendChild(label);
       });
       this.syncToolbar();
       // The Columns, Views, Export and more menus, column fitting and auto height come from the tree tools part. A tree
       // whose part cannot load or install keeps its search and filter switches and reports the error.
       this.toolsReady = loadPart(TREE_TOOLS).then(() => this.destroyed || this.installTools()).catch(error => this.emit("error", { error }));
+    },
+
+    /**
+     * The count each filter switch shows: the filter's own count when the host set one, else, for an inline tree, the
+     * nodes whose flags carry the filter's flag, over every node in one walk. A tree that loads nodes on demand has no
+     * complete count of its own, so its switches show only host counts.
+     */
+    filterCounts() {
+      const counts = new Map(), pending = new Map();
+      for (const filter of this.view.filters || []) {
+        if (filter.hidden) continue;
+        if (Number.isSafeInteger(filter.count) && filter.count >= 0) counts.set(filter.id, filter.count);
+        else if (filter.flag) pending.set(filter.id, filter.flag);
+      }
+      if (!pending.size || this.source.kind !== "inline" || !Array.isArray(this.view.roots)) return counts;
+      const flags = new Map();
+      for (const flag of pending.values()) flags.set(flag, 0);
+      const stack = this.view.roots.slice();
+      while (stack.length) {
+        const node = stack.pop();
+        if (node.flags) for (const flag of node.flags) if (flags.has(flag)) flags.set(flag, flags.get(flag) + 1);
+        if (node.children) for (const child of node.children) stack.push(child);
+      }
+      for (const [id, flag] of pending) counts.set(id, flags.get(flag));
+      return counts;
     },
 
     syncToolbar() { this.toolbar.hidden = !this.toolbar.firstChild || this.opts.toolbar === false; },

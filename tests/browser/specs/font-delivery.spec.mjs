@@ -3,7 +3,7 @@ import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { examples, nextFrames } from './support.mjs';
 
-async function openFonts(page, mode, fontGate) {
+async function openFonts(page, mode, fontGate, { preload = true } = {}) {
   await page.route('http://canopyx.test/**', async route => {
     const relative = new URL(route.request().url()).pathname.slice(1);
     const file = path.join(examples, 'fonts', relative);
@@ -11,7 +11,9 @@ async function openFonts(page, mode, fontGate) {
     if (path.extname(file) === '.woff2' && fontGate) await fontGate;
     const type = path.extname(file) === '.woff2' ? 'font/woff2' : path.extname(file) === '.css' ? 'text/css' :
       path.extname(file) === '.js' ? 'text/javascript' : 'text/html';
-    return route.fulfill({ contentType: type, body: fs.readFileSync(file) });
+    const body = fs.readFileSync(file);
+    // Without the preload links the print document fetches its own font payload instead of reusing the page's.
+    return route.fulfill({ contentType: type, body: type === 'text/html' && !preload ? body.toString('utf8').replace(/<link rel="preload"[^>]*>\n?/g, '') : body });
   });
   await page.goto(`http://canopyx.test/${mode}.html`, { waitUntil: 'domcontentloaded' });
   await page.evaluate(async () => {
@@ -110,7 +112,7 @@ test('a failed print font payload rejects without printing or retaining its ifra
   await page.addInitScript(() => { window.print = () => {
     window.parent.printedFontErrors = [...document.fonts].filter(face => face.status === 'error').map(face => face.family);
   }; });
-  await openFonts(page, 'hashed');
+  await openFonts(page, 'hashed', undefined, { preload: false });
   const requests = [];
   await page.route('**/*.woff2', async route => {
     if (route.request().frame() === page.mainFrame()) return route.fallback();

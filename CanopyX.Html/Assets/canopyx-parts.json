@@ -121,7 +121,7 @@
     {
       "name": "tree-tools",
       "label": "tree tools",
-      "version": "ca2ea43a41723986",
+      "version": "164a6aa927770ab5",
       "script": "canopyx-tree-tools.js",
       "style": "canopyx-tree-tools.css",
       "runtimes": [
@@ -153,7 +153,7 @@
     {
       "name": "filter-editor",
       "label": "filter editor",
-      "version": "2e803200660695d2",
+      "version": "aaa767dae4a87b7d",
       "script": "canopyx-filter-editor.js",
       "style": "canopyx-filter-editor.css",
       "runtimes": [
@@ -264,7 +264,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "ef8922e41c14e235",
+      "version": "bd51c7af7b207a6e",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -906,7 +906,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "ef08a981a1821e91",
+      "version": "d76e64ce620e2419",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -993,7 +993,7 @@
     {
       "name": "record-panel",
       "label": "record panel",
-      "version": "d91cf427966a8627",
+      "version": "c9b1e0d7330ca097",
       "script": "canopyx-record-panel.js",
       "style": "canopyx-record-panel.css",
       "runtimes": [
@@ -1126,7 +1126,7 @@
     {
       "name": "grid-options",
       "label": "grid footer and query extensions",
-      "version": "d2852d0f7020be74",
+      "version": "f11ce2c5f45763b8",
       "script": "canopyx-grid-options.js",
       "style": "canopyx-grid-options.css",
       "runtimes": [

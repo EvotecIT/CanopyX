@@ -863,6 +863,7 @@ CanopyX.CanopyFieldChange.System.String Name { get; }
 CanopyX.CanopyFilter : sealed class
 CanopyX.CanopyFilter..ctor(System.String id, System.String label, System.String flag)
 CanopyX.CanopyFilter.System.Boolean Hidden { get; set; }
+CanopyX.CanopyFilter.System.Nullable<System.Int32> Count { get; set; }
 CanopyX.CanopyFilter.System.String Flag { get; }
 CanopyX.CanopyFilter.System.String Id { get; }
 CanopyX.CanopyFilter.System.String Label { get; }
@@ -2489,6 +2490,7 @@ CanopyX.CanopyLabels.System.String GridContains { get; set; }
 CanopyX.CanopyLabels.System.String GridCopy { get; set; }
 CanopyX.CanopyLabels.System.String GridCopyCells { get; set; }
 CanopyX.CanopyLabels.System.String GridCopyCellsWithHeaders { get; set; }
+CanopyX.CanopyLabels.System.String GridCopyDetails { get; set; }
 CanopyX.CanopyLabels.System.String GridCursorRange { get; set; }
 CanopyX.CanopyLabels.System.String GridDateRange { get; set; }
 CanopyX.CanopyLabels.System.String GridDeepFilters { get; set; }
@@ -2500,6 +2502,7 @@ CanopyX.CanopyLabels.System.String GridDeleteFilterGroup { get; set; }
 CanopyX.CanopyLabels.System.String GridDetailFailed { get; set; }
 CanopyX.CanopyLabels.System.String GridDetailOf { get; set; }
 CanopyX.CanopyLabels.System.String GridDetails { get; set; }
+CanopyX.CanopyLabels.System.String GridDetailsCopied { get; set; }
 CanopyX.CanopyLabels.System.String GridDetailsSection { get; set; }
 CanopyX.CanopyLabels.System.String GridDone { get; set; }
 CanopyX.CanopyLabels.System.String GridDownloadCsv { get; set; }

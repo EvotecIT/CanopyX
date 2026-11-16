@@ -172,6 +172,8 @@ export interface CanopyFilter {
   flag: string;
   ancestorFlag?: string;
   hidden?: boolean;
+  /** Matching nodes shown beside the switch label; an inline tree counts the nodes with the flag when it is absent. */
+  count?: number;
 }
 export interface ContextAction { id: string; label: string; }
 export interface CheckIntent { readonly path: readonly string[]; readonly checked: boolean; }
@@ -217,7 +219,7 @@ export type LabelName =
   | "markMove" | "moveHere" | "moveBefore" | "moveAfter" | "cancelMove"
   | "gridFilters" | "gridColumn" | "gridOperator" | "gridValue" | "gridValueType" | "gridText" | "gridBoolean" | "gridAddFilter" | "gridRemoveFilter" | "gridApply" | "gridClearFilters" | "gridMoveEarlier" | "gridMoveLater" | "gridViews" | "gridViewName" | "gridSaveView" | "gridRemoveView" | "gridResetView" | "gridChooseView" | "gridInvalidFilter" | "gridContains" | "gridStartsWith" | "gridIn" | "gridIsNull" | "gridIsNotNull"
   | "gridBetween" | "gridRangeEnd" | "gridInvalidRange" | "gridSuggestedCategory" | "gridChooseCategory" | "gridBooleanValue" | "gridTrue" | "gridFalse" | "gridHeaderFilter"
-  | "gridExpandCell" | "gridCloseCell" | "gridCloseRecord" | "gridMoveColumn" | "gridResizeHelp" | "gridColumnMoved" | "gridFitColumn" | "gridFitAllColumns"
+  | "gridExpandCell" | "gridCloseCell" | "gridCloseRecord" | "gridCopyDetails" | "gridDetailsCopied" | "gridMoveColumn" | "gridResizeHelp" | "gridColumnMoved" | "gridFitColumn" | "gridFitAllColumns"
   | "gridPinColumn" | "gridPinNone" | "gridPinLeft" | "gridPinRight" | "gridResponsiveHidden"
   | "gridFindColumn" | "gridShowAllColumns" | "gridResetColumns" | "gridReorderColumn" | "gridPinnedLeft" | "gridPinnedRight"
   | "gridFilterGroupTitle" | "gridFilterMatch" | "gridFilterAll" | "gridFilterAny" | "gridAddFilterGroup" | "gridDeleteFilterGroup"
