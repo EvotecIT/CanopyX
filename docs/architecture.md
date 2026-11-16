@@ -34,8 +34,10 @@ the viewport is measurable. The `contained-grids.html` example exercises these l
 The assembler minifies every entry point and part script with esbuild (`Build/minify.mjs`): local names are shortened and
 whitespace is dropped. Only those two passes run, so statements, strings and property names stay as written, and the public
 API, the `.d.ts` surface, CSP nonces and Trusted Types behave as before. esbuild is a build-time tool pinned in
-`Build/package.json`; `Build/Sync-Assets.ps1` restores it with `npm ci` on first use, so editing the runtime needs Node.js.
-Consumers still embed the checked-in assets and run no npm step. Source parts remain readable, and tests that check where
+`Build/package.json`. `Build/minified.json` records the hash of each script's input and of the file written from it, so
+`Build/Sync-Assets.ps1 -Check`, the .NET tests and a sync after a stylesheet edit need no Node.js; only a changed script
+is minified again, after the script restores esbuild with `npm ci`. Consumers still embed the checked-in assets and run no
+npm step. Source parts remain readable, and tests that check where
 code lives read the same sources before minification (`CanopyX.Tests/Html/ReadableAssets.cs`). Stylesheets lose the
 whitespace around braces and after semicolons, commas and declaration colons outside quoted text.
 

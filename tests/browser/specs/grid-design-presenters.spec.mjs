@@ -78,6 +78,11 @@ test('tag chips show whole or join the count, and a short header keeps one line 
   expect(await wide.evaluate(item=>getComputedStyle(item).textOverflow)).toBe('ellipsis');
   const wideCell=await row.locator('[aria-colindex="4"]').boundingBox(),wideBox=await wide.boundingBox();
   expect(wideBox.x+wideBox.width).toBeLessThanOrEqual(wideCell.x+wideCell.width);
+  // Resizing the column chooses the chips again: wider shows the three a tags cell previews, narrower counts them again.
+  await page.evaluate(()=>grid.setColumnWidth('tags',420));
+  await expect(tags.locator('.p-tag')).toHaveCount(3);await expect(tags.getByRole('button',{name:'Tags: show complete text'})).toHaveText('+2');
+  await page.evaluate(()=>grid.setColumnWidth('tags',150));
+  await expect(tags.locator('.p-tag')).toHaveCount(chips.length);
   const header=page.locator('[role="columnheader"][data-cx-column="bars"] .cx-htext,[role="columnheader"][data-cx-column="bars"] .cx-sort').first();
   expect(await header.evaluate(item=>Math.round(item.getBoundingClientRect().height/parseFloat(getComputedStyle(item).lineHeight)))).toBe(1);
 });

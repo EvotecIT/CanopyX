@@ -31,8 +31,18 @@ public sealed class RuntimeAssetTests {
             Assert.NotEmpty(encoded);
             Assert.Equal(Convert.FromBase64String(encoded), ExpandFoldingTable(ShippedFoldingTable(script)));
         }
-        // Build/Sync-Assets.ps1 minifies the assembled script last (Build/minify.mjs).
-        Assert.True(RuntimeMinifier.Minify((ReadableAssets.Script(runtime), false))[0] == Normalize(script), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
+        // Build/Sync-Assets.ps1 minifies the assembled script last (Build/minify.mjs) and records the hashes of its input and of
+        // the file it wrote in Build/minified.json; both must match, so the shipped script comes from these sources.
+        using var minified = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(RepositoryPaths.Root, "Build", "minified.json")));
+        var record = minified.RootElement.GetProperty("CanopyX.Html/Assets/" + CanopyHtmlAssets.GetScriptFileName(CanopyAssetNaming.Plain, runtime));
+        Assert.True(record.GetProperty("input").GetString() == AssetHash(ReadableAssets.Script(runtime)), "Runtime script is out of date. Run Build/Sync-Assets.ps1.");
+        Assert.True(record.GetProperty("output").GetString() == AssetHash(Normalize(script)), "Runtime script differs from its minified build. Run Build/Sync-Assets.ps1.");
+    }
+
+    /// <summary>The content hash Build/Sync-Assets.ps1 records (Get-AssetHash): SHA-256 of the UTF-8 text, 16 hex digits.</summary>
+    private static string AssetHash(string content) {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(content))).ToLowerInvariant().Substring(0, 16);
     }
 
     /// <summary>The compact folding table in a shipped (minified) script, found by its alphabet and length rather than its name.</summary>

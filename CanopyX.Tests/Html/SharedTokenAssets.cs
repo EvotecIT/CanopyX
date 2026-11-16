@@ -59,11 +59,13 @@ internal static class SharedTokenAssets {
     }
 
     /// <summary>
-    /// An entry point's script without the shared-token payload, minified as it ships. The payload is removed from the
-    /// readable script, where its source text can be found, and the rest goes through the same minifier.
+    /// An entry point's shipped script without the shared-token payload. The payload's source text can be found only in the
+    /// readable script, so its gzip cost is measured there and taken from the shipped (minified) size.
     /// </summary>
-    internal static long ComponentScriptGzip(CanopyRuntime runtime) =>
-        Gzip(RuntimeMinifier.Minify((WithoutFallbackPayload(ReadableAssets.Script(runtime)), false))[0]);
+    internal static long ComponentScriptGzip(CanopyRuntime runtime) {
+        var readable = ReadableAssets.Script(runtime);
+        return Gzip(CanopyHtmlAssets.GetScript(runtime)) - (Gzip(readable) - Gzip(WithoutFallbackPayload(readable)));
+    }
 
     /// <summary>Removes use-site defaults, including nested functions, to measure their actual gzip cost in shipped assets.</summary>
     internal static string WithoutFallbackPayload(string asset) {
