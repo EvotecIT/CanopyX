@@ -1,6 +1,8 @@
   // OfficeIMO owns document construction and capture-to-document mapping. This part only connects delivery contracts.
   const officeWrite = global.OfficeIMO.exportCanopy;
   EXPORT_IMPL.office = (capture, context) => {
+    // A tree whose source has no dataset revision captures null; OfficeIMO's capture contract takes a string.
+    if (capture.request.revision == null) capture = { request: Object.freeze({ ...capture.request, revision: "" }), rows: capture.rows };
     return officeWrite(capture, context.format, {
       signal: context.signal, about: context.includeMetadata, onProgress: progress => context.progress(progress.rows),
       // A paged PDF preserves captured values and links; native workbook rules have no PDF equivalent. Accept only that

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { repo, openGridControl } from "./support.mjs";
+import { repo, openGridControl, viewPage } from "./support.mjs";
 import { definition, open } from "./grid-grouping-fixtures.mjs";
 
 const office = () => readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-office-export.js"), "utf8");
@@ -94,4 +94,23 @@ test("default-width text date and number columns produce a complete PDF through 
   await info.attach("default-widths-pdf", { path: file });
   await info.attach("default-widths-contract", { path: contract, contentType: "application/json" });
   expect(errors).toEqual([]);
+});
+
+test("a tree without a dataset revision writes XLSX and PDF", async ({ page }) => {
+  const view = { protocol: "canopyx/2", type: "view", id: "outline", label: "Outline", source: { kind: "inline" }, exportFormats: ["xlsx", "pdf"],
+    columns: [{ id: "name", title: "Name", kind: "text" }, { id: "size", title: "Size", kind: "number" }],
+    roots: [{ id: "a", label: "Alpha", cells: { size: 1 }, children: [{ id: "a1", label: "Alpha one", cells: { size: 2 } }] }, { id: "b", label: "Beta", cells: { size: 3 } }] };
+  await page.route("http://canopyx.test/tree", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("http://canopyx.test/tree"); await page.waitForSelector("[data-cx-ready]");
+  await page.addScriptTag({ content: office() });
+  const result = await page.evaluate(async () => {
+    const tree = document.querySelector("[data-canopyx-host]").canopyx; await tree.ready;
+    const revision = tree.prepareExport({ scope: "all" }).request.revision;
+    const files = await Promise.all(["xlsx", "pdf"].map(async format =>
+      [...new Uint8Array(await (await tree.exportAs(format, { scope: "all", download: false })).blob.arrayBuffer())].slice(0, 5)));
+    return { revision, files };
+  });
+  expect(result.revision).toBeNull();
+  expect(Buffer.from(result.files[0].slice(0, 2)).toString()).toBe("PK");
+  expect(Buffer.from(result.files[1]).toString()).toBe("%PDF-");
 });
