@@ -1686,6 +1686,7 @@ CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Change(System.Str
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Enum(System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyTone>? tones = null)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Icon(System.String glyph)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Identifier(System.String? secondaryColumn = null, System.Boolean mono = False, System.Boolean stack = False)
+CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Identifier(System.String? secondaryColumn, System.Boolean mono)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Link(System.String? hrefColumn = null, System.Boolean newWindow = False)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter List(System.String separator = ",", System.Int32 limit = 3)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Log(System.Int32 lines = 10, System.Boolean split = False, System.Collections.Generic.IDictionary<System.String, CanopyX.CanopyTone>? levelTones = null)
