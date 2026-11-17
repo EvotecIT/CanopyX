@@ -76,7 +76,7 @@ test('tag chips show whole or join the count, and a short header keeps one line 
   expect(shown.label).toBe('+'+(5-shown.count));expect(shown.inside).toBe(true);expect(shown.after).toBe(true);
   // A single tag wider than its column ends with an ellipsis inside the cell.
   const wide=row.locator('[aria-colindex="4"] .p-tag');await expect(wide).toHaveCount(1);
-  expect(await wide.evaluate(item=>getComputedStyle(item).textOverflow)).toBe('ellipsis');
+  await expect(wide).toHaveCSS('text-overflow','ellipsis');
   const wideCell=await row.locator('[aria-colindex="4"]').boundingBox(),wideBox=await wide.boundingBox();
   expect(wideBox.x+wideBox.width).toBeLessThanOrEqual(wideCell.x+wideCell.width);
   // Resizing the column chooses the chips again: wider shows the three a tags cell previews, narrower counts them again.
