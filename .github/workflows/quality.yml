@@ -205,6 +205,7 @@ jobs:
             tests/browser/playwright-report
             tests/browser/test-results
           if-no-files-found: ignore
+          retention-days: 1
 
   browser-coverage:
     name: Browser shard coverage
