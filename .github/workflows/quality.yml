@@ -151,6 +151,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- $env:CANOPYX_TEST_BROWSERS
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $runtimeDirectory = dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release --no-build -- --runtime-directory $env:CANOPYX_TEST_BROWSERS
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (@($runtimeDirectory).Count -ne 1 -or -not (Test-Path -LiteralPath $runtimeDirectory -PathType Container)) {
+            throw "BrowserInstall did not return a verified runtime directory."
+          }
+          "PLAYWRIGHT_BROWSERS_PATH=$runtimeDirectory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Save browser apt packages
         if: runner.os == 'Linux' && steps.apt-cache.outputs.cache-hit != 'true'

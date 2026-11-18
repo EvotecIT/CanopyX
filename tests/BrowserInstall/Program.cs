@@ -7,7 +7,9 @@ if (args.FirstOrDefault() == "--readme-images") {
 }
 
 // HtmlTinkerX owns browser installation and repair. This test-only executable selects the engines used by CI.
-var engines = args.Select(name => name switch {
+var printRuntimeDirectory = args.FirstOrDefault() == "--runtime-directory";
+var engineNames = printRuntimeDirectory ? args.Skip(1) : args;
+var engines = engineNames.Select(name => name switch {
     "chromium" => HtmlBrowserEngine.Chromium,
     "firefox" => HtmlBrowserEngine.Firefox,
     "webkit" => HtmlBrowserEngine.WebKit,
@@ -18,6 +20,11 @@ using var package = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.
 var expected = package.RootElement.GetProperty("devDependencies").GetProperty("@playwright/test").GetString();
 var installed = typeof(Microsoft.Playwright.Playwright).Assembly.GetName().Version!.ToString(3);
 if (installed != expected) throw new InvalidOperationException($"HtmlTinkerX installs Playwright {installed}; browser tests require {expected}. Update their versions together.");
+if (printRuntimeDirectory) {
+    if (engines.Length != 1) throw new ArgumentException("--runtime-directory requires one browser engine.");
+    Console.WriteLine(HtmlBrowser.GetBrowserRuntimeDirectory(engines[0]));
+    return;
+}
 foreach (var engine in engines) {
     Console.WriteLine("Ensuring " + engine + " through HtmlTinkerX.");
     await HtmlBrowser.EnsureInstalledAsync(engine);

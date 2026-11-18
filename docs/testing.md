@@ -36,12 +36,17 @@ For a C# correctness change, the shorter command is:
 dotnet test ./CanopyX.sln -c Release --filter "Category!=Benchmark"
 ```
 
-The default browser command also excludes benchmark cases:
+The default browser command runs Chromium correctness tests. From a fresh shell, install the selected engine through HtmlTinkerX and pass its verified runtime directory to Node:
 
 ```powershell
 cd tests/browser
+npm ci
+dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release -- chromium
+$env:PLAYWRIGHT_BROWSERS_PATH = dotnet run --project ../BrowserInstall/BrowserInstall.csproj -c Release --no-build -- --runtime-directory chromium
 npm test
 ```
+
+For another engine, select it in both BrowserInstall calls and set `CANOPYX_TEST_BROWSERS` to the same engine before running npm. GitHub Actions sets the verified path for each engine's job.
 
 ## Run measurements explicitly
 
