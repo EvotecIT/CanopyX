@@ -46,6 +46,7 @@
     "./filter-editor.css": "./CanopyX.Html/Assets/canopyx-filter-editor.css",
     "./export.js": "./CanopyX.Html/Assets/canopyx-export.js",
     "./office-export.js": "./CanopyX.Html/Assets/canopyx-office-export.js",
+    "./csv-export.js": "./CanopyX.Html/Assets/canopyx-csv-export.js",
     "./history.js": "./CanopyX.Html/Assets/canopyx-history.js",
     "./activity.js": "./CanopyX.Html/Assets/canopyx-activity.js",
     "./activity.css": "./CanopyX.Html/Assets/canopyx-activity.css",
@@ -176,6 +177,7 @@
   "files": [
     "CanopyX.Html/Assets/Fonts/",
     "CanopyX.Html/Assets/canopyx-office-export.js",
+    "CanopyX.Html/Assets/canopyx-csv-export.js",
     "ThirdParty/OfficeIMO/LICENSE",
     "ThirdParty/OfficeIMO/README.md",
     "ThirdParty/ChartForgeX/LICENSE",

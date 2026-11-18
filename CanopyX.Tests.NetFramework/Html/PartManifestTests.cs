@@ -8,7 +8,7 @@ public sealed class PartManifestTests {
     [Fact]
     public void Parts_AreReadFromTheEmbeddedManifestOnNetFramework() {
         var names = CanopyHtmlAssets.Parts.Select(part => part.Name).ToArray();
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "presenters", "filter-editor", "export", "office-export", "history", "activity", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "matrix-table", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "chart-renderer", "chart-cells", "charts", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "calendar-screen", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare", "row-actions" }, names);
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "tree-tools", "presenters", "filter-editor", "export", "office-export", "csv-export", "history", "activity", "pager", "enhance", "data", "forms", "flow", "flow-host", "flow-checks", "flow-options", "flow-pick", "flow-records", "flow-drafts", "flow-preview", "flow-command", "flow-tasks", "flow-dialog", "flow-links", "flow-endpoint", "flow-facts", "flow-consent", "matrix", "matrix-table", "changes", "editing", "column-groups", "cell-range", "links", "search", "formatting", "format-editor", "link", "detail-rows", "calculations", "chart-renderer", "chart-cells", "charts", "pivot", "values", "buckets", "grouping", "highlight", "layouts", "facets", "live", "record-panel", "calendar", "calendar-recurrence", "calendar-edit", "calendar-ics", "calendar-screen", "timeline", "grid-options", "board", "plan", "path", "stack", "time-slider", "view-intents", "compare", "row-actions" }, names);
         foreach (var part in CanopyHtmlAssets.Parts) {
             Assert.Matches("^[a-f0-9]{16}$", part.Version);
             Assert.Contains("version:\"" + part.Version + "\"", part.Script);
@@ -16,7 +16,7 @@ public sealed class PartManifestTests {
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid }, CanopyHtmlAssets.GetPart("history").Runtimes);
         var tree = new CanopyTreeView("tree", "Tree") { DeepLink = true };
         tree.Columns.Add(new CanopyColumn("name", "Name"));
-        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "links" }, CanopyHtmlAssets.GetRequiredParts(tree).Select(part => part.Name).ToArray());
+        Assert.Equal(new[] { "ui-overlays", "tree-tools", "export", "csv-export", "links" }, CanopyHtmlAssets.GetRequiredParts(tree).Select(part => part.Name).ToArray());
         Assert.Equal(new[] { CanopyRuntime.DataGrid, CanopyRuntime.ReportingGrid, CanopyRuntime.Flow }, CanopyHtmlAssets.GetPart("flow").Runtimes);
     }
 

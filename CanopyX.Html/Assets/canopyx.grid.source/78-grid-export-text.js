@@ -69,7 +69,33 @@
       return lines.join("\r\n") + "\r\n";
     },
 
-    toCsv(capture, options) { return this.exportText(capture, options.maxRows, ",", options.signal); },
+    // CSV text from OfficeIMO's writer. The text is held in memory, so the row limit stays; the Export menu downloads without one.
+    async toCsv(capture, options) {
+      const maxRows = options.maxRows ?? 50000;
+      if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 1000000) throw new Error("CanopyX: export row limit is 1 to 1000000.");
+      if (capture.request.recordCount > maxRows) throw new Error("CanopyX: client row limit exceeded.");
+      // One deadline covers writing and decoding the text.
+      let count = 0; const deadline = Date.now() + exportTimeout(this, options);
+      const limited = { request: capture.request, rows: async function* (more) {
+        count = 0;
+        for await (const row of capture.rows(more)) { if (++count > maxRows) throw new Error("CanopyX: client row limit exceeded."); yield row; }
+      } };
+      const { blob } = await EXPORT_IMPL.run(this, "csv", { signal: options.signal, timeoutMs: options.timeoutMs, download: false }, limited, EXPORT_IMPL.csvFormat(this));
+      // Decoding races the rest of the deadline, cancellation and grid destruction.
+      const signal = AbortSignal.any([this.lifetime.signal, options.signal].filter(Boolean));
+      const text = await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("CanopyX: export timed out.")), Math.max(0, deadline - Date.now()));
+        const abort = () => reject(new DOMException("Export cancelled.", "AbortError"));
+        signal.addEventListener("abort", abort, { once: true }); if (signal.aborted) abort();
+        blob.text().then(resolve, reject).finally(() => { clearTimeout(timer); signal.removeEventListener("abort", abort); });
+      });
+      // Cancellation or destruction while the text decodes still rejects, as it does while records are read.
+      gridOperationActive(this, options.signal);
+      if (Date.now() > deadline) throw new Error("CanopyX: export timed out.");
+      // The reporting runtime's capture reports reading progress; the finished text is its ready phase.
+      GRID_REPORTING.exportReady?.(this, capture, count, options.signal);
+      return text;
+    },
 
     async copy(capture, options) {
       const text = await this.exportText(capture, options.maxRows === undefined ? 10000 : options.maxRows, "\t", options.signal);

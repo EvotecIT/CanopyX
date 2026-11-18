@@ -189,7 +189,7 @@ view.GetColumn("status").Ordering = new CanopyGridOrdering(CanopyGridTextOrder.F
 
 The columns identify declared sortable text fields. Complete-page writers select `CanopyRuntime.ReportingGrid` automatically. JavaScript hosts import from `@evotecit/canopyx/reporting` with its matching `reporting.css`, and supply `reporting: { ordering: { name: { text: "foldedNatural" } } }` in the grid definition. Host query engines can reuse `CanopyGridOrdering`; sorting precedes result windows and export order remains the accepted query order. See the [protocol's ordering and precision rules](data-protocol.md#flat-grid-documents) for categories, missing values, exact text representations and UTC millisecond dates.
 
-The export menu distinguishes filtered results, selected records and all results. Exports use the accepted query, stable record IDs and ordered columns, independently of the virtual rows on screen. `await api.toCsv({ scope: "filtered" })` produces CSV; `await api.copy({ scope: "selected" })` copies tab-separated records with spreadsheet formula protection. Client exports have explicit row limits. For larger Office files, configure `onExport` and call `api.exportToHost("xlsx", { scope: "all" })`; the host owns authorization, document generation and delivery.
+The export menu distinguishes filtered results, selected records and all results. Exports use the accepted query, stable record IDs and ordered columns, independently of the virtual rows on screen. `await api.toCsv({ scope: "filtered" })` produces CSV text and `await api.exportAs("csv", { scope: "all" })` streams a CSV file; `await api.copy({ scope: "selected" })` copies tab-separated records with spreadsheet formula protection. Client exports have explicit row limits. For larger Office files, configure `onExport` and call `api.exportToHost("xlsx", { scope: "all" })`; the host owns authorization, document generation and delivery.
 
 `api.refresh()` repaints accepted data. `await api.reload()` requests a fresh source revision using the accepted filters and ordering and restarts at the first page; a failed request keeps the last accepted query and rows. A prepared export remains bound to its original revision.
 
@@ -256,7 +256,10 @@ with the same filtered/selected/all scope picker, progress meter and Cancel expo
 values; an explicit `values` option still takes precedence. The `office-export.html` gallery example combines grouped costs,
 number and date formats, pinned columns, links and formatting rules.
 
-The document engines stay outside the base runtimes. They load from `canopyx-office-export.js` on the first Office export.
+The document engines stay outside the base runtimes. They load from `canopyx-office-export.js` (OfficeIMO's shared writer core
+and its CanopyX adapter) on the first Office export. CSV uses OfficeIMO's smaller CSV writer from `canopyx-csv-export.js`, which
+every grid and tree page carries beside the export part. Menu exports stream records into the file, so CSV, Excel and PDF have no
+client row limit; `toCsv` keeps its 50,000-row default because it returns a string.
 The C# writers include an inert payload only for views that opt in, so single-file exports work offline. JavaScript hosts serve
 that companion beside the runtime, or embed the matching payload. A host or page registration with the same format id takes
 precedence over the built-in writer.
@@ -305,7 +308,7 @@ Page reads keep their own `requestTimeoutMs` deadline. The writer runs under a s
 
 Tree grids list the same formats in their own Export menu, after Download CSV, with the scopes Visible rows, Selected rows and All rows. Hosts capture with `api.prepareExport({ scope: "visible" })` (the rows the reader can see), `{ scope: "selected" }` (the loaded selected nodes in tree order, including collapsed branches) or `{ scope: "all" }` (every node in sort order: the whole inline tree, or the loaded nodes of a lazy source). Each record carries `level` (1 for a root) and `path` (the id path ending with its own id) beside its cells, so a writer can indent or add Level and Path columns; the built-in CSV indents the tree column by level. `api.exportAs("xlsx", { scope: "visible" })` runs the same writers. Every tree runtime has tree exports once the tree is ready (captures come with the tree tools part, the menu body and writers with the export part on first use); `CanopyTreeView.ExportFormats` chooses which registered formats the menu offers. A host that drew its own export buttons above a tree can drop them and use the tree's Export menu.
 
-The Export menu body, CSV, copy and the writers ship in `canopyx-export.js`, loaded on first use (the menu, an export method, Ctrl/Command+C or reading a capture). The .NET page, fragment and asset writers include it automatically; JavaScript hosts serve it beside every runtime or module (trees load it as flat grids do), also when the Export menu is switched off.
+The Export menu body, copy and the writers ship in `canopyx-export.js`, loaded on first use (the menu, an export method, Ctrl/Command+C or reading a capture). The CSV writer ships in `canopyx-csv-export.js`, loaded on the first CSV. The .NET page, fragment and asset writers include both automatically; JavaScript hosts serve both beside every runtime or module, or embed their matching payloads (trees load them as flat grids do), also when the Export menu is switched off.
 
 ### Toolbar controls, slots and menu entries
 
