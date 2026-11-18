@@ -462,7 +462,7 @@ test("a writer that returns a File names the download", async ({ page }) => {
 });
 
 test("trees on a grid runtime and export methods load the export part on demand", async ({ page }) => {
-  const script = read("canopyx-grid.js"), style = read("canopyx-grid.css"), assets = partFixture("tree-tools", "export"), loads = [];
+  const script = read("canopyx-grid.js"), style = read("canopyx-grid.css"), assets = partFixture("tree-tools", "export", "csv-export"), loads = [];
   const fragment = view => '<div class="cx-host" data-canopyx-host><script type="application/json" class="cx-config">' + JSON.stringify(view) + "</script></div>";
   await page.route("http://canopyx.test/**", route => {
     const file = new URL(route.request().url()).pathname.split("/").at(-1); loads.push(file);
@@ -472,7 +472,7 @@ test("trees on a grid runtime and export methods load the export part on demand"
     return route.fulfill(assets.files.get(file) || { status: 404, body: "" });
   });
   await page.goto("http://canopyx.test/page"); await page.waitForFunction(() => document.querySelectorAll("[data-cx-ready]").length === 2);
-  const parts = () => loads.filter(file => file.startsWith("canopyx-export"));
+  const parts = () => loads.filter(file => /^canopyx-(csv-)?export/.test(file));
   expect(parts()).toEqual([]);
   const result = await page.evaluate(async () => {
     CanopyX.registerExportFormat({ id: "lines", label: "Lines", extension: "txt", async write(capture) { const ids = []; for await (const row of capture.rows()) ids.push(row.id); return new Blob([ids.join(",")]); } });
@@ -482,5 +482,6 @@ test("trees on a grid runtime and export methods load the export part on demand"
     return { tree: await exported.blob.text(), rows: csv.trim().split("\r\n").length };
   });
   expect(result).toEqual({ tree: "a,a1,a2,b", rows: 81 });
-  expect(parts()).toEqual(["canopyx-export.js"]);
+  // CSV loads OfficeIMO's CSV writer only when a CSV is written.
+  expect(parts()).toEqual(["canopyx-export.js", "canopyx-csv-export.js"]);
 });

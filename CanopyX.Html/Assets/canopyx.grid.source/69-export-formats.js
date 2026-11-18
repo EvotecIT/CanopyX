@@ -7,6 +7,10 @@
   }
   const OFFICE_EXPORT_PART = { name: "office-export", label: "Office export writers", parts: {}, context: () => ({ EXPORT_IMPL }) };
   const officeExportWrite = (capture, context) => loadPart(OFFICE_EXPORT_PART).then(() => EXPORT_IMPL.office(capture, context));
+  // CSV files come from OfficeIMO's CSV writer in the lazy csv-export part. The format is built in: "csv" is not a registrable id.
+  const CSV_EXPORT_PART = { name: "csv-export", label: "CSV export writer", parts: {}, context: () => ({ EXPORT_IMPL }) };
+  EXPORT_IMPL.csvFormat = grid => Object.freeze({ id: "csv", label: grid.labels.gridDownloadCsv, extension: "csv", mime: "text/csv;charset=utf-8", showInMenu: false,
+    write: (capture, context) => loadPart(CSV_EXPORT_PART).then(() => EXPORT_IMPL.csv(capture, context, grid.columns[0]?.id)) });
   function officeExportFormats(grid) {
     return [{ id: "xlsx", label: grid.labels.gridDownloadXlsx, extension: "xlsx", values: "raw",
       mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", write: officeExportWrite },

@@ -1,6 +1,9 @@
   // ---------- captured delivery metadata and bounded read-only host snapshots ----------
   const DELIVERY_PREPARE = DataGrid.prototype.prepareExport, DELIVERY_TEXT = DataGrid.prototype.exportText,
     DELIVERY_API = GRID_REPORTING.api, DELIVERY_CALLBACKS = new WeakMap(), DELIVERY_PRINT = DataGrid.prototype.print;
+  // CSV text (toCsv) is written by OfficeIMO in the export part, which reports its completion through this hook.
+  GRID_REPORTING.exportReady = (grid, exported, count, signal) =>
+    reportingExportProgress(grid, exported.request, DELIVERY_CALLBACKS.get(exported), signal)("ready", count);
   function reportingExportTotal(request) {
     return request.recordCount;
   }

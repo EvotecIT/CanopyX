@@ -69,7 +69,7 @@ public sealed class TreeToolsAssetsTests {
         Assert.Single(Regex.Matches(page, "application/x-canopyx-tree-tools-style"));
         Assert.Contains("x-canopyx-tree-tools", fragments[0]);
         Assert.All(fragments.Skip(1), fragment => Assert.DoesNotContain("x-canopyx-tree-tools", fragment));
-        Assert.Equal(new[] { "ui-overlays@" + CanopyHtmlAssets.GetPart("ui-overlays").Version, "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion, "export@" + CanopyHtmlAssets.ExportVersion }, document.EmbeddedParts);
+        Assert.Equal(new[] { "ui-overlays@" + CanopyHtmlAssets.GetPart("ui-overlays").Version, "tree-tools@" + CanopyHtmlAssets.TreeToolsVersion, "export@" + CanopyHtmlAssets.ExportVersion, "csv-export@" + CanopyHtmlAssets.GetPart("csv-export").Version }, document.EmbeddedParts);
         Assert.Single(Regex.Matches(page, "application/x-canopyx-ui-overlays\""));
         Assert.Single(Regex.Matches(page, "application/x-canopyx-ui-overlays-style\""));
         Assert.Single(Regex.Matches(page, "application/x-canopyx-export"));

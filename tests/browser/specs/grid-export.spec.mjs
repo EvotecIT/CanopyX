@@ -180,3 +180,21 @@ test("pending query details gestures report errors without uncaught browser exce
   await expect.poll(() => page.evaluate(() => window.detailErrors.length)).toBe(2);
   expect(errors).toEqual([]);
 });
+test("toCsv rejects a cancellation that arrives while the finished text decodes",async({page})=>{
+  await open(page);
+  const result=await page.evaluate(async()=>{
+    const grid=document.querySelector('[data-canopyx-host]').canopyx,controller=new AbortController(),decode=Blob.prototype.text;
+    Blob.prototype.text=function(){controller.abort();return decode.call(this);};
+    try{return await grid.toCsv({scope:'all',signal:controller.signal}).then(()=>'resolved',error=>error.name);}finally{Blob.prototype.text=decode;}
+  });
+  expect(result).toBe('AbortError');
+});
+test("toCsv times out when decoding the finished text outlasts the export deadline",async({page})=>{
+  await open(page);
+  const result=await page.evaluate(async()=>{
+    const grid=document.querySelector('[data-canopyx-host]').canopyx,decode=Blob.prototype.text;
+    Blob.prototype.text=function(){return new Promise(()=>{});};
+    try{return await grid.toCsv({scope:'all',timeoutMs:300}).then(()=>'resolved',error=>error.message);}finally{Blob.prototype.text=decode;}
+  });
+  expect(result).toBe('CanopyX: export timed out.');
+});

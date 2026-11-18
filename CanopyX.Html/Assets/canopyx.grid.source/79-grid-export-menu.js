@@ -78,11 +78,8 @@
         }
       });
     };
-    const csv = gridButton(labels.gridDownloadCsv, () => panel.cxRun(async (options, onProgress) => {
-      const exported = this.prepareExport(traced(options, onProgress));
-      const text = await this.exportText(exported, 50000, ",", options.signal); gridOperationActive(this, options.signal);
-      saveExport(new Blob([text], { type: "text/csv;charset=utf-8" }), (exported.request.fileName || this.view.id.replace(/[^a-z0-9_-]/gi, "_")) + ".csv");
-    }));
+    // CSV streams through the same writer run as the format providers, so it has no client row limit.
+    const csv = gridButton(labels.gridDownloadCsv, () => panel.cxRun((options, onProgress) => this.exportAs("csv", { ...options, onProgress })));
     decorate(csv, labels.gridDownloadCsv, labels.gridExportCsvHint, "CSV");
     const copy = this.copy ? decorate(gridButton(labels.gridCopy, () => panel.cxRun((options, onProgress) => this.copy(traced(options, onProgress)))),
       labels.gridExportCopy, null, "⧉") : h("span");

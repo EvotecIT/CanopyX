@@ -3,8 +3,8 @@
 ## Unreleased
 
 <!-- RELEASE-TODO(version): rename "Unreleased" to the NuGet and npm versions being published, for example "0.5.0 (NuGet) / 0.5.0 (npm)", and keep a new empty "Unreleased" above it. -->
-<!-- RELEASE-TODO(office-export): add a bullet when CanopyX loads its Office export from the shared OfficeIMO core (officeimo.min.js plus the CanopyX adapter), with the office-export part size before and after (507,686 / 132,608 bytes gzip before). -->
 
+- Write Excel, PDF and CSV exports with OfficeIMO's shared writer core. `canopyx-office-export.js` now carries OfficeIMO's core and its thin CanopyX adapter in place of the single-file integration, and the built-in CSV comes from OfficeIMO's CSV writer in the new lazy `canopyx-csv-export.js` part, which hosts serve beside `canopyx-export.js`. `exportAs("csv")` streams CSV with progress and cancellation and has no client row limit; the Export menu uses it, so menu CSV downloads are no longer limited to 50,000 rows. `toCsv` keeps its row limit.
 - Sort large inline grids about ten times faster: a groupable or plugin-enabled grid compared rows by reading and parsing their cells in every comparison, and now reads each row's sort keys once, as plain grids did. A 500,000-row user inventory sorts by a date column in about 0.3 s instead of 2.5 s; grouping inside sorted groups gains the same way. Plugin comparators and alternate sort fields still compare rows.
 - Show the first rows of a reporting grid with compact row data before every chunk is decoded, unless it totals, groups or pivots. A 500,000-row groupable inventory paints its first rows in about 0.1 s instead of 1.5 s.
 - Keep plain cells small in .NET: a cell with only a value now takes 32 bytes instead of about 130, its text, tooltip, tone, badges, sort key and structured value taking room only once set. A 500,000 by 20 grid model drops from 2.4 GB to 1.4 GB and builds in half the time.

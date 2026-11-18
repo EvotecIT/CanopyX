@@ -43,7 +43,7 @@ public sealed class RecordPanelPartAssetsTests {
         Assert.Contains("record-panel", Names(grid));
         grid.GetColumn("names").Presenter = null;
         grid.Record = new CanopyRecordPanel();
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "record-panel" }, Names(grid));
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "csv-export", "record-panel" }, Names(grid));
         // Record fields with history presenters bring the history part; a tree collection brings the tree tools.
         grid.Record.Fields.Add(new CanopyColumn("trend", "Trend") { Kind = CanopyColumnKind.Number, Presenter = CanopyGridPresenter.SparklineBars() });
         Assert.Contains("history", Names(grid));

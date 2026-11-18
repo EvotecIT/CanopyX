@@ -501,8 +501,30 @@
         "EXPORT_IMPL"
       ],
       "scripts": [
-        "ThirdParty/OfficeIMO/officeimo-canopyx.js",
+        "ThirdParty/OfficeIMO/officeimo.min.js",
+        "ThirdParty/OfficeIMO/officeimo-canopyx-adapter.min.js",
         "CanopyX.Html/Assets/canopyx.office-export.source"
+      ]
+    },
+    {
+      "name": "csv-export",
+      "notice": "ThirdParty/OfficeIMO/LICENSE",
+      "label": "CSV export writer",
+      "runtimes": [
+        "tree",
+        "grid"
+      ],
+      "views": [
+        "tree",
+        "grid"
+      ],
+      "key": "EXPORT_IMPL",
+      "context": [
+        "EXPORT_IMPL"
+      ],
+      "scripts": [
+        "ThirdParty/OfficeIMO/officeimo-csv.min.js",
+        "CanopyX.Html/Assets/canopyx.csv-export.source"
       ]
     },
     {
