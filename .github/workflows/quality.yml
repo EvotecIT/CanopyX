@@ -6,6 +6,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      retain_outputs:
+        description: Retain built packages and example pages for one day
+        type: boolean
+        default: false
 
 # A unique group for every non-PR run also protects queued main pushes from replacement.
 concurrency:
@@ -166,7 +171,7 @@ jobs:
           ./Build.ps1 @options
 
       - name: Upload packages
-        if: matrix.pack
+        if: matrix.pack && github.event_name == 'workflow_dispatch' && inputs.retain_outputs
         uses: actions/upload-artifact@v7
         with:
           name: canopyx-packages-${{ matrix.platform.name }}
@@ -174,9 +179,10 @@ jobs:
             artifacts/packages/Release/*.nupkg
             artifacts/packages/Release/*.snupkg
           if-no-files-found: error
+          retention-days: 1
 
       - name: Upload example pages
-        if: always() && matrix.pack
+        if: ${{ !cancelled() && matrix.pack && github.event_name == 'workflow_dispatch' && inputs.retain_outputs }}
         uses: actions/upload-artifact@v7
         with:
           name: canopyx-examples-${{ matrix.platform.name }}
@@ -184,6 +190,7 @@ jobs:
             CanopyX.Examples/bin/Release/net10.0/output/inline.html
             CanopyX.Examples/bin/Release/net10.0/output/outline.html
           if-no-files-found: warn
+          retention-days: 1
 
       # The coverage job checks that the shards of each lane ran every listed test exactly once.
       - name: Upload browser shard record
