@@ -200,7 +200,7 @@ jobs:
           name: canopyx-browser-shard-${{ matrix.platform.name }}-${{ matrix.engine }}-${{ matrix.shard }}
           path: tests/browser/shard-results/shard.json
           if-no-files-found: ignore
-          retention-days: 1
+          retention-days: 7
 
       # On failure the report holds the traces, and for the visual baselines the expected, actual and diff images.
       - name: Upload browser test report
