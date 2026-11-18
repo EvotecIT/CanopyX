@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
-import { viewPage, nextFrames, runtimeAssets, openGridControl, openExample, repo } from "./support.mjs";
+import { viewPage, nextFrames, runtimeAssets, openGridControl, openExample, repo, trackDownloadNames } from "./support.mjs";
 import { readAsset as read, assetHash as hash, partFixture } from "./part-fixture-support.mjs";
 
 // Export format providers: registered writers listed in the grid's own Export menu, with its scope picker, progress,
@@ -455,9 +455,12 @@ test("the export formats example lists its page writers in the menu and exports 
 
 test("a writer that returns a File names the download", async ({ page }) => {
   await open(page, definition(), "CanopyX.registerExportFormat({id:'named',label:'Download named',extension:'txt',write:()=>new File(['named'],'Quarterly report.txt',{type:'text/plain'})});");
+  const requestedNames = await trackDownloadNames(page);
   await openGridControl(page, "export");
   const download = page.waitForEvent("download"); await page.getByRole("button", { name: "Download named", exact: true }).click();
-  expect((await download).suggestedFilename()).toBe("Quarterly report.txt");
+  const file = await download;
+  expect(await requestedNames()).toEqual(["Quarterly report.txt"]);
+  expect(fs.readFileSync(await file.path(), "utf8")).toBe("named");
   expect(await page.evaluate(async api => (await eval(api).exportAs("named", { scope: "all", download: false })).fileName, api)).toBe("Quarterly report.txt");
 });
 

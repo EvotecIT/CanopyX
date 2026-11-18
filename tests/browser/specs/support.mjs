@@ -30,6 +30,19 @@ export async function trackScriptLoads(page) {
   return () => page.evaluate(() => window.__canopyxScriptLoads.splice(0));
 }
 
+/** Records the requested filename at the anchor click before the browser applies its own naming rules. */
+export async function trackDownloadNames(page) {
+  await page.evaluate(() => {
+    window.__canopyxDownloadNames = [];
+    const click = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () {
+      if (this.download) window.__canopyxDownloadNames.push(this.download);
+      return click.call(this);
+    };
+  });
+  return () => page.evaluate(() => window.__canopyxDownloadNames.slice());
+}
+
 export function nextFrames(page) {
   return page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }

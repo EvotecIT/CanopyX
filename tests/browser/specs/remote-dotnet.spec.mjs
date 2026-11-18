@@ -4,7 +4,7 @@ import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-import { repo, openGridControl, nextFrames } from "./support.mjs";
+import { repo, openGridControl, nextFrames, trackDownloadNames } from "./support.mjs";
 
 // End to end against the real fleet sample: ASP.NET Core endpoints from CanopyX.AspNetCore over EF Core and SQLite.
 // The solution build produces the sample; set CANOPYX_REMOTE_SAMPLE to its FleetInventory.dll to use another build.
@@ -142,6 +142,7 @@ test("exports every matching row through the server CSV format", async ({ page }
 
 test("host exports reject unavailable formats before requesting or downloading another format", async ({ page }) => {
   await open(page);
+  const requestedNames = await trackDownloadNames(page);
   const requests = [], downloads = [];
   page.on("request", request => { if (request.url().includes("/export/")) requests.push(request.url()); });
   page.on("download", download => downloads.push(download.suggestedFilename()));
@@ -154,11 +155,12 @@ test("host exports reject unavailable formats before requesting or downloading a
   expect(errors).toEqual([expect.stringMatching(/unknown.*format/i), expect.stringMatching(/unknown.*format/i)]);
   expect(requests).toEqual([]);
   expect(downloads).toEqual([]);
+  expect(await requestedNames()).toEqual([]);
 
   const download = page.waitForEvent("download");
   await page.evaluate(api => eval(api).exportToHost("csv", { scope: "all", fileName: "Host export" }), api);
   const file = await download;
-  expect(file.suggestedFilename()).toBe("Host export.csv");
+  expect(await requestedNames()).toEqual(["Host export.csv"]);
   expect(requests.map(url => new URL(url).pathname)).toEqual(["/api/machines/export/csv"]);
   const lines = fs.readFileSync(await file.path(), "utf8").replace(/^﻿/, "").trimEnd().split("\r\n");
   expect(lines).toHaveLength(rows + 1);
@@ -170,21 +172,14 @@ test("remote exports keep the server-declared Unicode download filename", async 
     const response = await route.fetch();
     await route.fulfill({ response, headers: { ...response.headers(), "content-disposition": "attachment; filename*=UTF-8''Fleet%20%C5%81%C3%B3d%C5%BA.txt" } });
   });
-  await page.evaluate(() => {
-    window.downloadNames = [];
-    const click = HTMLAnchorElement.prototype.click;
-    HTMLAnchorElement.prototype.click = function () {
-      if (this.download) window.downloadNames.push(this.download);
-      return click.call(this);
-    };
-  });
+  const requestedNames = await trackDownloadNames(page);
   await openGridControl(page, "export");
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "CSV from server (all matching rows)", exact: true }).click();
   const file = await download;
-  // Keep exact server decoding at the browser handoff; macOS may decompose accents in its native download name.
-  expect(await page.evaluate(() => window.downloadNames)).toEqual(["Fleet Łódź.txt"]);
-  expect(file.suggestedFilename().normalize("NFC")).toBe("Fleet Łódź.txt");
+  expect(await requestedNames()).toEqual(["Fleet Łódź.txt"]);
+  const lines = fs.readFileSync(await file.path(), "utf8").replace(/^﻿/, "").trimEnd().split("\r\n");
+  expect(lines[0]).toBe("Machine,Site,Operating system,Model,Cores,Memory (GB),Online,Last seen,Team");
 });
 
 test("grouped pages follow the server summary's group ranges", async ({ page }) => {
