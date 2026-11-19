@@ -1028,7 +1028,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "8f5cf04f14b6a277",
+      "version": "9a7fa6499bb322cd",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1275,7 +1275,7 @@
     {
       "name": "row-actions",
       "label": "row actions",
-      "version": "357807347245cbf6",
+      "version": "0a90d09b9e871e86",
       "script": "canopyx-row-actions.js",
       "style": "canopyx-row-actions.css",
       "runtimes": [

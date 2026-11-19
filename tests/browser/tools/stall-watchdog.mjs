@@ -3,7 +3,7 @@
 // returns holds the whole run until the CI job's deadline. That has happened with WebKit on Windows, at the end of a
 // run or when a worker restarts for a spec file with its own launch options: every test had reported, nothing else did.
 // When the command prints nothing for the stall limit (several test timeouts), the watchdog lists the Playwright browser
-// processes started since the run began and, on Windows, stops them, which lets the pending close finish; the results
+// processes of the run and, on Windows, stops them, which lets the pending close finish; the results
 // already reported stand. If the run stays silent for another stall period, the watchdog ends it and reports a failure.
 import { spawn, spawnSync } from "node:child_process";
 import os from "node:os";
@@ -25,13 +25,24 @@ export function stallLimit(env = process.env) {
   return Number(text) * 1000;
 }
 
-function browserProcesses(root, since, stop) {
-  if (process.platform === "win32") {
+// The run's own browsers: Playwright browser processes in the watched process tree, and helpers whose parent has already
+// exited (they can no longer be traced to a run) that started after this run began. Browsers of a concurrent run stay.
+/** The PowerShell that lists (and with stop, stops) the run's browser processes on Windows. */
+export function windowsBrowserScript(root, rootPid, since, stop) {
     const quote = text => "'" + text.replace(/'/g, "''") + "'";
-    const script = `$since = [datetime]::Parse(${quote(since.toISOString())}).ToLocalTime(); ` +
-      `$found = Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith(${quote(root + path.sep)}, 'OrdinalIgnoreCase') -and $_.CreationDate -ge $since }; ` +
-      `$found | ForEach-Object { '{0} (parent {1}) {2}' -f $_.ProcessId, $_.ParentProcessId, $_.ExecutablePath }; ` +
+    const script = `$since = [datetime]::Parse(${quote(since.toISOString())}).ToLocalTime(); $all = @(Get-CimInstance Win32_Process); ` +
+      "$alive = @{}; foreach ($p in $all) { $alive[[int]$p.ProcessId] = $true }; " +
+      `$tree = @{ ${rootPid} = $true }; do { $added = $false; foreach ($p in $all) { if (-not $tree[[int]$p.ProcessId] -and $tree[[int]$p.ParentProcessId]) { $tree[[int]$p.ProcessId] = $true; $added = $true } } } while ($added); ` +
+      `$found = $all | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith(${quote(root + path.sep)}, 'OrdinalIgnoreCase') -and ` +
+      "($tree[[int]$_.ProcessId] -or (-not $alive[[int]$_.ParentProcessId] -and $_.CreationDate -ge $since)) }; " +
+      "$found | ForEach-Object { '{0} (parent {1}) {2}' -f $_.ProcessId, $_.ParentProcessId, $_.ExecutablePath }; " +
       (stop ? "$found | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" : "");
+    return script;
+}
+
+function browserProcesses(root, rootPid, since, stop) {
+  if (process.platform === "win32") {
+    const script = windowsBrowserScript(root, rootPid, since, stop);
     const result = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8", windowsHide: true });
     return (result.stdout || "") + (result.stderr || "");
   }
@@ -56,7 +67,7 @@ export function runWatched(command, args, options = {}) {
     stalls++;
     const seconds = Math.round(limit / 1000);
     if (stalls === 1) {
-      const listed = browserProcesses(root, started, process.platform === "win32").trim();
+      const listed = browserProcesses(root, child.pid, started, process.platform === "win32").trim();
       log(`::warning::Browser tests printed nothing for ${seconds} s. Playwright browser processes started by this run:` +
         `\n${listed || "(none)"}\n${process.platform === "win32" ? "Stopped them so a pending browser close can finish." : ""}`);
       arm();

@@ -9,7 +9,8 @@ test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 // Headless Chromium otherwise adds --hide-scrollbars, which would leave the classic-gutter contract unexercised.
 // Other launch options mean another worker and browser, so lanes without Chromium (one engine per CI lane) keep theirs.
-if ((process.env.CANOPYX_TEST_BROWSERS || "chromium").includes("chromium") || process.env.CANOPYX_TEST_BROWSERS === "all") {
+const engines = (process.env.CANOPYX_TEST_BROWSERS || "chromium").trim();
+if (engines === "all" || engines.includes("chromium")) {
   test.use({ launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] } });
 }
 

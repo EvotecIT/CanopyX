@@ -130,5 +130,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   fs.writeFileSync(path.join(output, "shard.json"), JSON.stringify(record));
   const problems = shardProblems(record.assigned, record.selected, record.results);
   for (const problem of problems.slice(0, 50)) console.error(`Shard coverage: ${problem}`);
-  process.exit(status || (problems.length ? 1 : 0));
+  // A natural exit lets the forwarded Playwright output drain first.
+  process.exitCode = status || (problems.length ? 1 : 0);
 }

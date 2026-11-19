@@ -75,7 +75,8 @@
         // would close a "+N more" list or menu the reader has already opened.
         const [width, height] = this.calPaintedSize || [0, 0];
         const phone = host.clientWidth <= 640, changed = phone !== this.calPhone || Math.abs(root.clientWidth - width) > 1 || Math.abs(this.calBody.clientHeight - height) > 1;
-        this.calPaintedSize = [root.clientWidth, this.calBody.clientHeight];
+        // A change too small to act on keeps the baseline, so small steps still add up to a repaint.
+        if (changed) this.calPaintedSize = [root.clientWidth, this.calBody.clientHeight];
         const switched = phone !== this.calPhone;
         if (switched) { this.calPhone = phone; host.classList.toggle("cx-cal-phone", phone); this.calSyncBar(false); }
         if (!changed || !this.calRange) return;

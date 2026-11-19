@@ -72,7 +72,7 @@
       if (state.locked) return "locked";
       return JSON.stringify([row.id, state.inline.map(({ action, disabled, reason }) =>
         [action.id, action.label, action.icon, action.tone, disabled, reason, pending === action, result?.action === action ? result.message : null]),
-      state.more.length, state.more.some(entry => entry.action === pending)]);
+      state.more.map(({ action, disabled }) => [action.id, action.label, action.icon, action.tone, disabled]), state.more.some(entry => entry.action === pending)]);
     },
     paintRowActions(row, cell) {
       if (!this.rowActions) return false;
