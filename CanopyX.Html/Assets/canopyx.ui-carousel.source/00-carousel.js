@@ -25,6 +25,8 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   const attribute = (element, name, value) => { restore.push([element, name, element.getAttribute(name)]); element.setAttribute(name, value); };
   attribute(root, 'aria-roledescription', labels.carouselRole);
   for (const [name, value] of [['data-transition', fade ? 'fade' : 'slide'], ['data-controls', place], ['data-indicators', dots], ['data-captions', captions]]) attribute(root, name, value);
+  // Slides stack and fade only while the runtime runs; written markup and a destroyed carousel keep every slide readable.
+  if (fade) attribute(root, 'data-cx-fading', 'true');
   if (!root.hasAttribute('aria-label') && !root.hasAttribute('aria-labelledby')) attribute(root, 'aria-label', labels.carouselRole);
   const controls = h('div', 'cx-carousel-controls'), previous = h('button', 'cx-carousel-step'), next = h('button', 'cx-carousel-step');
   const picker = h('div', 'cx-carousel-picker'), play = interval ? h('button', 'cx-carousel-play') : null;

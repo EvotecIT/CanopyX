@@ -209,3 +209,13 @@ test('hidden indicators leave the buttons and keys, and the bar can sit above th
   await page.keyboard.press('End');
   expect((await state(page)).index).toBe(3);
 });
+
+test('a fading carousel without its runtime, or after destroy, keeps every slide readable', async ({ page }) => {
+  await openUi(page, carousel('data-transition="fade"').replace(' data-cx-carousel', '') + carousel('data-transition="fade"').replace('id="news"', 'id="live"'));
+  const unmounted = page.locator('section:not(#live) .cx-carousel-track > *');
+  for (let at = 0; at < 4; at++) await expect(unmounted.nth(at)).toBeVisible();
+  const live = page.locator('#live .cx-carousel-track > *');
+  await expect(live.nth(1)).toBeHidden();
+  await page.evaluate(() => CanopyX.carousel('#live').destroy());
+  for (let at = 0; at < 4; at++) await expect(live.nth(at)).toBeVisible();
+});
