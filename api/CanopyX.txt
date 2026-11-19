@@ -395,6 +395,7 @@ CanopyX.CanopyCell.System.Collections.Generic.IList<CanopyX.CanopyFieldChange> C
 CanopyX.CanopyCell.System.Collections.Generic.IList<CanopyX.CanopyRecordEvent> Events { get; }
 CanopyX.CanopyCell.System.Object? SortKey { get; set; }
 CanopyX.CanopyCell.System.Object? Value { get; }
+CanopyX.CanopyCell.System.String? Html { get; set; }
 CanopyX.CanopyCell.System.String? SearchText { get; set; }
 CanopyX.CanopyCell.System.String? Secondary { get; set; }
 CanopyX.CanopyCell.System.String? Text { get; set; }
@@ -402,6 +403,7 @@ CanopyX.CanopyCell.System.String? Title { get; set; }
 CanopyX.CanopyCell.const System.Int32 MaxStructureDepth = 8
 CanopyX.CanopyCell.static CanopyX.CanopyCell Collection(CanopyX.CanopyRecordList records)
 CanopyX.CanopyCell.static CanopyX.CanopyCell Diff(System.Collections.Generic.IEnumerable<CanopyX.CanopyFieldChange> changes)
+CanopyX.CanopyCell.static CanopyX.CanopyCell FromHtml(System.String html, System.String? text = null)
 CanopyX.CanopyCell.static CanopyX.CanopyCell Link(System.String text, System.String id, System.String? view = null)
 CanopyX.CanopyCell.static CanopyX.CanopyCell List(System.Collections.Generic.IEnumerable<CanopyX.CanopyCell> items, System.String separator = ", ")
 CanopyX.CanopyCell.static CanopyX.CanopyCell List(params System.String[] items)
@@ -1564,6 +1566,7 @@ CanopyX.CanopyGridFilterOperator.const CanopyX.CanopyGridFilterOperator StartsWi
 CanopyX.CanopyGridFooter : sealed class
 CanopyX.CanopyGridFooter..ctor(System.String id, System.String label, CanopyX.CanopyGridFooterScope scope = All)
 CanopyX.CanopyGridFooter.CanopyX.CanopyGridFooterScope Scope { get; }
+CanopyX.CanopyGridFooter.System.Collections.Generic.IDictionary<System.String, System.String> Cells { get; }
 CanopyX.CanopyGridFooter.System.Collections.Generic.IList<CanopyX.CanopyGridAggregate> Aggregates { get; }
 CanopyX.CanopyGridFooter.System.String Id { get; }
 CanopyX.CanopyGridFooter.System.String Label { get; }
@@ -1591,6 +1594,7 @@ CanopyX.CanopyGridGrouping..ctor(System.String column, System.Boolean descending
 CanopyX.CanopyGridGrouping.System.Boolean Descending { get; }
 CanopyX.CanopyGridGrouping.System.Collections.Generic.IComparer<CanopyX.CanopyCell> CreateComparer(CanopyX.CanopyDataGridView view)
 CanopyX.CanopyGridGrouping.System.String Column { get; }
+CanopyX.CanopyGridGrouping.System.String? FooterTemplate { get; set; }
 CanopyX.CanopyGridGrouping.System.String? HeaderTemplate { get; set; }
 CanopyX.CanopyGridHighlightRule : sealed class
 CanopyX.CanopyGridHighlightRule..ctor(CanopyX.CanopyGridFilter condition, CanopyX.CanopyTone tone = null, System.String? className = null, CanopyX.CanopyGridHighlightTarget target = Row)
@@ -1887,6 +1891,9 @@ CanopyX.CanopyGridSort.System.String Column { get; }
 CanopyX.CanopyGridSource : sealed class
 CanopyX.CanopyGridSource.CanopyX.CanopyGridNavigation Navigation { get; }
 CanopyX.CanopyGridSource.CanopyX.CanopyGridSourceKind Kind { get; }
+CanopyX.CanopyGridSource.System.Nullable<System.TimeSpan> Refresh { get; }
+CanopyX.CanopyGridSource.System.String? Url { get; }
+CanopyX.CanopyGridSource.static CanopyX.CanopyGridSource FromUrl(System.String url, System.Nullable<System.TimeSpan> refresh = null)
 CanopyX.CanopyGridSource.static CanopyX.CanopyGridSource HostedCursor()
 CanopyX.CanopyGridSource.static CanopyX.CanopyGridSource HostedOffset()
 CanopyX.CanopyGridSource.static CanopyX.CanopyGridSource Inline()

@@ -201,7 +201,9 @@
         if (slot.highlighted) { slot.cls = null; slot.highlighted = false; }
         const column=this.cols[i],cell=row.h.cells[column.id];
         this.paintSlot(slot, row.h, column, this.columnIndex[i], row);
-        if(!column.render&&!slot.text.data&&!(isCellObject(cell)&&cellValue(cell)==null&&cell.text==="")){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
+        // A rich cell shows its sanitised markup instead of its text; a column's presenter or renderer takes precedence.
+        const rich=!column.render&&gridPaintRich(this,slot,cell);
+        if(!column.render&&!rich&&!slot.text.data&&!(isCellObject(cell)&&cellValue(cell)==null&&cell.text==="")){slot.text.data="—";slot.cell.classList.add("p-missing");slot.missing=true;}
         else if(slot.missing){slot.cell.classList.remove("p-missing");slot.missing=false;}
         if(this.phone||this.desktopHiddenFields||slot.hiddenFields||slot.phonePrimary)this.paintHiddenFields?.(slot,row.h,column,this.columnIndex[i]);
       }

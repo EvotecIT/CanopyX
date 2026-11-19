@@ -25,6 +25,22 @@ Consumers: standalone .NET authors, the HtmlForgeX tree/grid bridge, and OfficeI
 
 Gate: the local source and packed artifacts agree on the public API and runtime; representative hosts retain identities, query scope, cancellation and presentation without rebuilding those contracts. The final tree-scrolling measurements pass the existing 4x budget. NVDA and Narrator are omitted from this release qualification by maintainer decision; spoken announcements remain unverified.
 
+## HtmlForgeX v3: DataTables and FullCalendar Replacement
+
+Consumer: HtmlForgeX v3, which replaces DataTables and FullCalendar with CanopyX. These are the grid and calendar features its
+existing tables and calendars use that CanopyX did not have. The DataTables alphabet filter and custom SearchBuilder operators
+are dropped by the consumer and are not planned.
+
+- [x] Rich cells: a cell's `html`, sanitised to an allowed subset and built as elements, in place of trusted DataTables cells.
+- [x] Free-text footer cells beside or instead of footer aggregates.
+- [x] Group footer rows from a fixed grouping's `footerTemplate`, in place of a DataTables `endRender` script.
+- [x] Rows read from a JSON address for static pages, with an optional refresh, separate from the hosted protocol.
+- [ ] Calendar events with their own colour, background and text colour.
+- [ ] A URL per calendar event.
+- [ ] An event-click hook that C#-written pages can use.
+
+Gate: each feature is declared from C# and JavaScript, validated by the schema, and covered by deterministic browser tests.
+
 ## 0.1 Tree Grid, Read-Only
 
 ### Tree Explorer Completion

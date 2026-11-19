@@ -25,11 +25,20 @@ public sealed class CanopyGridFooter {
     public CanopyGridFooterScope Scope { get; }
     /// <summary>Gets the aggregate descriptors; a column may show more than one labelled value.</summary>
     public IList<CanopyGridAggregate> Aggregates { get; } = new List<CanopyGridAggregate>();
+    /// <summary>Gets free text shown under declared columns, keyed by column identity: plain text of 1 to 512 characters, never markup.</summary>
+    /// <remarks>A footer needs at least one aggregate or one text cell. Text shows before the column's aggregates.</remarks>
+    public IDictionary<string, string> Cells { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("label", Label).Property("scope", Scope == CanopyGridFooterScope.Page ? "page" : "all");
         writer.Name("aggregates").BeginArray();
         foreach (var aggregate in Aggregates) aggregate.WriteJson(writer);
-        writer.EndArray().EndObject();
+        writer.EndArray();
+        if (Cells.Count > 0) {
+            writer.Name("cells").BeginObject();
+            foreach (var cell in Cells) writer.Property(cell.Key, cell.Value);
+            writer.EndObject();
+        }
+        writer.EndObject();
     }
 }

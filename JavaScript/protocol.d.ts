@@ -13,6 +13,9 @@ import type { StructuredCell, RecordPanelDefinition } from "./records.js";
 export interface CanopyCell extends StructuredCell {
   value?: CellValue;
   text?: string;
+  /** Markup a flat grid shows sanitised in place of the text (at most 65,536 code units); value and text still drive search,
+   * sorting, filters, copy and exports. Only allowed elements, attributes and styles are built; nothing else reaches the page. */
+  html?: string;
   /** Alternate flat-grid search text, independent of display, typed queries and export. */
   searchText?: string;
   title?: string;

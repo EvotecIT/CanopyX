@@ -6,7 +6,10 @@
     for (const footer of footers) {
       requireIdentifier(footer?.id, "footer ID");
       if (ids.has(footer.id) || typeof footer.label !== "string" || !footer.label.trim() || footer.label.length > 512 ||
-          !["page", "all"].includes(footer.scope) || !Array.isArray(footer.aggregates) || !footer.aggregates.length || footer.aggregates.length > 32)
+          !["page", "all"].includes(footer.scope) || !Array.isArray(footer.aggregates) || footer.aggregates.length > 32 ||
+          footer.cells !== undefined && (!footer.cells || typeof footer.cells !== "object" || Array.isArray(footer.cells) || !Object.keys(footer.cells).length ||
+            Object.entries(footer.cells).some(([id, text]) => !grid.view.columns.some(column => column.id === id) || typeof text !== "string" || !text.trim() || text.length > 512)) ||
+          !footer.aggregates.length && !footer.cells)
         throw new Error("CanopyX: invalid footer row.");
       ids.add(footer.id); const aggregates = new Set();
       for (const aggregate of footer.aggregates) {
@@ -103,9 +106,13 @@
         grid.applyColumnPin(cell, column);
         cell.style.textAlign = column.alignment || (column.kind === "number" ? "end" : "start");
         const parts = footer.aggregates.filter(aggregate => aggregate.column === column.id).map(aggregate => footerAggregateText(grid, footer, aggregate));
+        // A text cell is the host's own words for this column ("Total", "See notes"), shown before its aggregates.
+        const own = footer.cells && Object.hasOwn(footer.cells, column.id) ? footer.cells[column.id] : null;
+        if (own !== null) parts.unshift(["", own]);
         const text = h("span"); text.id = grid.id + "-footer-value-" + footerIndex + "-" + columnIndex;
         parts.forEach(([kind, shown], index) => {
           if (index) text.appendChild(document.createTextNode(" · "));
+          if (!kind) { const own = h("span", "cx-footer-text"); setText(own, shown); text.append(own); return; }
           const lead = h("span", "cx-footer-kind"), value = h("strong");
           setText(lead, kind); setText(value, shown); text.append(lead, value);
         }); cell.appendChild(text);

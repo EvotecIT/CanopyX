@@ -126,7 +126,8 @@
         const projected = this.liveProjected(), before = this.view.rows;
         let { result, changed } = this.liveApplyRows(queue, !projected);
         if (changed.size || result.removed.length) {
-          if (!this.opts.source) this.source = inlineGridSource(this.view);
+          if (this.view.source.url) this.source.invalidate();
+          else if (!this.opts.source) this.source = inlineGridSource(this.view);
           this.liveOrderSource = this.source;
           if (projected) {
             this.liveProjection ||= { rows: new Map(before.map(row => [row.id, row])), source };
