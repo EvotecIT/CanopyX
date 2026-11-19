@@ -68,7 +68,8 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   // The slides that fit: a slide and its gap make one step, and the last slide needs no gap after it.
   function measure() {
     // The gap is measured between two slides as laid out, so percentage and calc() gaps count as the pixels they use.
-    const width = track.clientWidth, first = slides[0]?.getBoundingClientRect(), second = slides[1]?.getBoundingClientRect(), slide = first?.width || width;
+    // Every width comes from the layout boxes, so a scaled ancestor shrinks them all alike.
+    const width = track.getBoundingClientRect().width, first = slides[0]?.getBoundingClientRect(), second = slides[1]?.getBoundingClientRect(), slide = first?.width || width;
     const gap = second ? Math.max(0, Math.abs(second.left - first.left) - slide) : 0;
     visible = Math.max(1, Math.min(slides.length, Math.floor((width + gap) / Math.max(1, slide + gap) + 0.01)));
   }
@@ -159,7 +160,7 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   document.addEventListener('visibilitychange', schedule, { signal });
   reduced.addEventListener('change', () => { if (reduced.matches) stop(); else paint(); }, { signal });
   // Below 40rem the stylesheet shows one slide; a track that keeps its width across that line still needs measuring again.
-  matchMedia('(max-width: 40rem)').addEventListener('change', () => requestAnimationFrame(() => { measure(); paint(); scrollTo(index); }), { signal });
+  matchMedia('(max-width: 40rem)').addEventListener('change', () => requestAnimationFrame(() => { if (!signal?.aborted) { measure(); paint(); scrollTo(index); } }), { signal });
   UI_TOOLS.observe(track, () => { measure(); paint(); scrollTo(index); }, signal);
   signal?.addEventListener('abort', () => {
     clearTimeout(timer); cancelAnimationFrame(frame); controls.remove(); root.style.removeProperty('--cx-carousel-per-view');
