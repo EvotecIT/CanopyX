@@ -328,6 +328,16 @@ CanopyX.Html.Ui.CanopyGalleryOptions..ctor()
 CanopyX.Html.Ui.CanopyGalleryOptions.System.Boolean Loop { get; set; }
 CanopyX.Html.Ui.CanopyGalleryOptions.System.Boolean ShowCaptions { get; set; }
 CanopyX.Html.Ui.CanopyGalleryOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyMaskedInput : sealed class
+CanopyX.Html.Ui.CanopyMaskedInput..ctor(System.String id, System.String name, System.String label, System.String mask)
+CanopyX.Html.Ui.CanopyMaskedInput.System.Boolean Required { get; set; }
+CanopyX.Html.Ui.CanopyMaskedInput.System.String Id { get; }
+CanopyX.Html.Ui.CanopyMaskedInput.System.String Label { get; }
+CanopyX.Html.Ui.CanopyMaskedInput.System.String Mask { get; }
+CanopyX.Html.Ui.CanopyMaskedInput.System.String Name { get; }
+CanopyX.Html.Ui.CanopyMaskedInput.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyMaskedInput.System.String? Placeholder { get; set; }
+CanopyX.Html.Ui.CanopyMaskedInput.System.String? Value { get; set; }
 CanopyX.Html.Ui.CanopyMenu : sealed class
 CanopyX.Html.Ui.CanopyMenu..ctor(System.String id, CanopyX.Html.Ui.CanopyMenuOptions? options = null)
 CanopyX.Html.Ui.CanopyMenu.CanopyX.Html.Ui.CanopyMenuOptions Options { get; }
@@ -404,6 +414,21 @@ CanopyX.Html.Ui.CanopyRatingOptions.System.Boolean Required { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.Int32 Max { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.Nullable<System.Int32> Value { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopySignature : sealed class
+CanopyX.Html.Ui.CanopySignature..ctor(System.String id, System.String label, CanopyX.Html.Ui.CanopySignatureOptions? options = null)
+CanopyX.Html.Ui.CanopySignature.CanopyX.Html.Ui.CanopySignatureOptions Options { get; }
+CanopyX.Html.Ui.CanopySignature.System.String Id { get; }
+CanopyX.Html.Ui.CanopySignature.System.String Label { get; }
+CanopyX.Html.Ui.CanopySignature.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopySignatureOptions : sealed class
+CanopyX.Html.Ui.CanopySignatureOptions..ctor()
+CanopyX.Html.Ui.CanopySignatureOptions.System.Boolean Colours { get; set; }
+CanopyX.Html.Ui.CanopySignatureOptions.System.Boolean ReadOnly { get; set; }
+CanopyX.Html.Ui.CanopySignatureOptions.System.Boolean SubmitPng { get; set; }
+CanopyX.Html.Ui.CanopySignatureOptions.System.String? Background { get; set; }
+CanopyX.Html.Ui.CanopySignatureOptions.System.String? DownloadName { get; set; }
+CanopyX.Html.Ui.CanopySignatureOptions.System.String? Ink { get; set; }
+CanopyX.Html.Ui.CanopySignatureOptions.System.String? Name { get; set; }
 CanopyX.Html.Ui.CanopyStep : sealed class
 CanopyX.Html.Ui.CanopyStep..ctor(System.String id, System.String label)
 CanopyX.Html.Ui.CanopyStep.CanopyX.Html.Ui.CanopyStepState State { get; set; }
