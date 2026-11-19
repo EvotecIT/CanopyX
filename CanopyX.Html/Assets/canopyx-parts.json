@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "1444eb82c443bc82",
+      "version": "f2e642b1e5286e68",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -116,6 +116,38 @@
       "views": [],
       "requires": [
         "ui-navigation"
+      ]
+    },
+    {
+      "name": "ui-toasts",
+      "label": "UI toasts",
+      "version": "97035404d3efa028",
+      "script": "canopyx-ui-toasts.js",
+      "style": "canopyx-ui-toasts.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
+      "name": "ui-lightbox",
+      "label": "UI lightbox",
+      "version": "47e92896bcfec3e0",
+      "script": "canopyx-ui-lightbox.js",
+      "style": "canopyx-ui-lightbox.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
       ]
     },
     {
@@ -663,7 +695,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "9da658187e66cff4",
+      "version": "aa72655ea53398fc",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -1080,7 +1112,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "7affbd50c26df699",
+      "version": "9a7fa6499bb322cd",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1327,7 +1359,7 @@
     {
       "name": "row-actions",
       "label": "row actions",
-      "version": "80d6f05ae179f50c",
+      "version": "0a90d09b9e871e86",
       "script": "canopyx-row-actions.js",
       "style": "canopyx-row-actions.css",
       "runtimes": [

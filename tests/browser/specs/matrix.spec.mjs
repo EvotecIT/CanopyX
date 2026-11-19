@@ -184,7 +184,11 @@ test("search, facet values and only problems filter both axes, and the totals fo
   await expect(page.locator(".cx-mx-empty")).toHaveText("No rows or columns match.");
 });
 
-test("hide empty drops the rows and columns without data, keeps the partners of a search, and empty cells show a faint dot", async ({ page }) => {
+test("hide empty drops the rows and columns without data, keeps the partners of a search, and empty cells show a faint dot", async ({ page }, testInfo) => {
+  await withMatrixPaintDiagnostics(page, testInfo, () => hideEmptyAndFaintDot(page));
+});
+
+async function hideEmptyAndFaintDot(page) {
   await mountMatrix(page, matrixDoc());
   // A cell without data draws a small dot at its centre and nothing at its edge.
   const empty = () => page.evaluate(() => {
@@ -213,6 +217,21 @@ test("hide empty drops the rows and columns without data, keeps the partners of 
   await mountMatrix(page, matrixDoc({ hideEmpty: true }));
   await expect(toggle).toBeChecked();
   expect(await rowLabels(page)).toHaveLength(5);
+}
+
+test("tiles whose canvas context comes back blank are drawn again", async ({ page }) => {
+  await mountMatrix(page, matrixDoc());
+  const inked = () => page.evaluate(() => [...document.querySelectorAll(".cx-mx-canvas")].map(canvas => {
+    const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+    let count = 0; for (let index = 3; index < data.length; index += 4) if (data[index]) count++;
+    return count;
+  }));
+  const before = await inked();
+  expect(before.every(count => count > 0)).toBe(true);
+  // A restored context starts blank; the browser says so with contextrestored on that canvas.
+  await page.evaluate(() => { for (const canvas of document.querySelectorAll(".cx-mx-canvas")) canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+    document.querySelector(".cx-mx-canvas").dispatchEvent(new Event("contextrestored")); });
+  await expect.poll(inked).toEqual(before);
 });
 
 test("a matrix whose rows fit is as tall as they are, and a long one fills its host and scrolls", async ({ page }) => {
