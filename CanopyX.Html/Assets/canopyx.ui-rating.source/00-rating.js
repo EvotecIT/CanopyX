@@ -43,8 +43,8 @@ UI_IMPL.rating = (root, options = {}, signal) => {
     if (changed && notify) {
       options.onChange?.(value);
       UI_TOOLS.emit(root, 'rating', 'change', { value, source });
-      // Forms and frameworks that listen for input events see the change too, including a clear.
-      if (source !== 'api') root.dispatchEvent(new Event('input', { bubbles: true }));
+      // A clear leaves no checked radio to fire the browser's own input event, so forms and frameworks get one from the group.
+      if (source !== 'api' && value === null) root.dispatchEvent(new Event('input', { bubbles: true }));
     }
     return changed;
   }
