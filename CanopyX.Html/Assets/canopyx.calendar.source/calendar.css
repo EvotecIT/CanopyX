@@ -44,8 +44,11 @@
 .cx-cal-ev[data-cx-linked="true"] { outline:var(--cx-size-2px) dashed var(--hfx-color-status-info-fg);outline-offset:var(--hfx-focus-offset); }
 [data-cx-event-style="strong"] .cx-cal-ev:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) { background:var(--cx-ev-fill,var(--cx-ev));color:var(--cx-ev-fg,var(--hfx-color-accent-contrast));box-shadow:none; }
 /* An event's own text colour belongs on its own fill: bars, blocks and lanes, not month or agenda lines without one. */
-.cx-cal-ev[data-cx-ink]:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) { color:var(--cx-ev-fg); }
-.cx-cal-ev[data-cx-ink]:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) :is(.cx-cal-ev-time,.cx-cal-ev-sub,.cx-cal-ico) { color:inherit;opacity:.85; }
+/* Forced colours keep the system's text colours. */
+@media not (forced-colors:active) {
+  .cx-cal-ev[data-cx-ink]:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) { color:var(--cx-ev-fg); }
+  .cx-cal-ev[data-cx-ink]:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) :is(.cx-cal-ev-time,.cx-cal-ev-sub,.cx-cal-ico) { color:inherit;opacity:.85; }
+}
 [data-cx-event-style="strong"] .cx-cal-ev:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) :is(.cx-cal-ev-time,.cx-cal-ev-sub,.cx-cal-ico) { color:inherit;opacity:.88; }
 
 /* Month: weekday headers, then week rows of day cells; events sit over the days they cover. */

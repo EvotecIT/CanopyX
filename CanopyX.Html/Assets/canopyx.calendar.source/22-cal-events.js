@@ -13,11 +13,16 @@
   const CAL_COLOR = /^(?:#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})|(?:rgba?|hsla?)\([\d\s.,%/+-]{1,64}(?:deg)?[\d\s.,%/+-]{0,32}\)|[a-z]{3,24})$/i;
   /** A colour of an event, or null. */
   function calColor(value) { const text = typeof value === "string" ? value.trim() : ""; return CAL_COLOR.test(text) && (typeof CSS === "undefined" || !CSS.supports || CSS.supports("color", text)) ? text : null; }
-  /** An event's address: http(s), mailto or relative, or null. Control characters, backslashes and other schemes never link. */
+  /** An event's address: http(s), mailto or relative, or null. A relative address of a report opened from disk resolves to a
+   * file beside it. Control characters, backslashes, //host and other schemes never link. */
   function calEventUrl(value) {
     if (typeof value !== "string" || !value.trim() || value.length > 2048 || /[\u0000-\u001f\u007f\\]/.test(value)) return null;
-    try { const url = new URL(value.trim(), document.baseURI); return ["http:", "https:", "mailto:"].includes(url.protocol) && (/^\s*(?:https?:|mailto:)/i.test(value) || !/^\s*[a-z][a-z\d+.-]*:/i.test(value)) ? url.href : null; }
-    catch (_) { return null; }
+    const text = value.trim(), scheme = /^[a-z][a-z\d+.-]*:/i.test(text);
+    try {
+      const url = new URL(text, document.baseURI);
+      if (scheme) return /^(?:https?|mailto):/i.test(text) && ["http:", "https:", "mailto:"].includes(url.protocol) ? url.href : null;
+      return !text.startsWith("//") && ["http:", "https:", "file:"].includes(url.protocol) ? url.href : null;
+    } catch (_) { return null; }
   }
   /** A tone name the theme can resolve, or null: never text that would reach a CSS value unchecked. */
   function calSafeTone(tone) { return typeof tone === "string" && CAL_TONE_NAME.test(tone) && !tone.endsWith("-bg") ? tone : null; }
@@ -53,8 +58,9 @@
         tone: ownTone || (fields ? null : calTone(cal.status, cells)) || calSourceTone(cal, fields ? row.external : read(cal.source)),
         source: fields ? row.external : cal.source ? calResourceOf(read(cal.source)) : null, external: !!fields, toneFromStatus: !ownTone && !fields,
         resource: calResourceOf(value("resource")), resourceIds: calResourceIds(value("resourceIds")),
-        // The event's own colour wins over its source's; a background colour alone also colours its bar and dot.
-        color: calColor(value("color")) || cal.sources?.find(source => source.id === (fields ? row.external : read(cal.source)))?.color, fill: calColor(value("backgroundColor")),
+        // The event's own colour, then its own background (which also colours its bar and dot), then its source's colour.
+        fill: calColor(value("backgroundColor")),
+        color: calColor(value("color")) || (calColor(value("backgroundColor")) ? null : cal.sources?.find(source => source.id === (fields ? row.external : read(cal.source)))?.color),
         ink: calColor(value("textColor")), url: calEventUrl(value("url")),
         background: cal.display ? String(read(cal.display) || "").toLowerCase() === "background" : false, rule: null, ruleError: null,
         seriesZone: allDay ? CAL_UTC() : fields?.seriesZone ? calZone(fields.seriesZone) : view.calSeriesZone,

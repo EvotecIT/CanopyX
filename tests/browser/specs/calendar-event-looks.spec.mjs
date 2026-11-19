@@ -106,3 +106,26 @@ test("a calendar written from C# takes its colours and addresses, and CanopyX.co
   expect((await popup).url()).toBe("https://releases.example.test/2026-q4");
   expect(await page.evaluate(() => window.clicks)).toEqual(["ticket", "release"]);
 });
+
+test("an event's own background outranks its source's colour, and relative addresses work in a report opened from disk", async ({ page }) => {
+  const fs = await import("node:fs"), path = await import("node:path"), { pathToFileURL } = await import("node:url");
+  const folder = test.info().outputPath("disk"); fs.mkdirSync(folder, { recursive: true });
+  const file = path.join(folder, "calendar.html");
+  fs.writeFileSync(file, calendarPage({ events: [
+    { id: "sourced", title: "Sourced", start: "2026-10-16T09:00:00Z", end: "2026-10-16T10:00:00Z", source: "team", backgroundColor: "#bbf7d0", url: "notes/sourced.html" },
+    { id: "plain", title: "Plain", start: "2026-10-16T11:00:00Z", end: "2026-10-16T12:00:00Z", source: "team" }],
+    sources: [{ id: "team", label: "Team", color: "#dc2626" }], date: "2026-10-16", view: "week" }));
+  await page.goto(pathToFileURL(file).href);
+  await page.waitForSelector("[data-cx-calendar-ready]");
+  expect(await look(page, "sourced")).toMatchObject({ accent: "#bbf7d0", background: "rgb(187, 247, 208)" });
+  expect((await look(page, "plain")).accent).toBe("#dc2626");
+  const events = await page.evaluate(() => window.api.getCalendarEvents());
+  expect(events.find(item => item.id === "sourced").url).toBe(pathToFileURL(path.join(folder, "notes", "sourced.html")).href);
+});
+
+test("forced colours keep the system text colour on events with their own text colour", async ({ page }) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await openBuilt(page, "forced.html", calendarPage({ events: EVENTS, date: "2026-10-16", view: "week" }));
+  const text = await event(page, "own").evaluate(element => getComputedStyle(element).color);
+  expect(text).not.toBe("rgb(19, 78, 74)");
+});

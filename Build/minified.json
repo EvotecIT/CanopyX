@@ -32,8 +32,8 @@
     "output": "44603cb4ad38065c"
   },
   "CanopyX.Html/Assets/canopyx-calendar.js": {
-    "input": "6b6f6439c6fa9b68",
-    "output": "a1d65c71559e326b"
+    "input": "fb0dd9315b8dab72",
+    "output": "e6d507a9467cd4fe"
   },
   "CanopyX.Html/Assets/canopyx-cell-range.js": {
     "input": "63bf0a7df0dc7f6b",
@@ -176,16 +176,16 @@
     "output": "98ab7f3c776c3848"
   },
   "CanopyX.Html/Assets/canopyx-grid-module.mjs": {
-    "input": "77e23840b68b6c8a",
-    "output": "596c50124187e2a7"
+    "input": "d0101acaa567a67f",
+    "output": "438388e60ae04bcd"
   },
   "CanopyX.Html/Assets/canopyx-grid-options.js": {
     "input": "60115a714392401a",
     "output": "04f5cdcf1eeaeddf"
   },
   "CanopyX.Html/Assets/canopyx-grid.js": {
-    "input": "e8bb72070b8cd991",
-    "output": "1a7dd82d40ac9f62"
+    "input": "15c673e21b70864d",
+    "output": "3a85959bc002fb5a"
   },
   "CanopyX.Html/Assets/canopyx-grouping.js": {
     "input": "60402587c6f3991b",
@@ -260,12 +260,12 @@
     "output": "a6c0ad3ed6883aaa"
   },
   "CanopyX.Html/Assets/canopyx-reporting-module.mjs": {
-    "input": "95f81a19c5493a21",
-    "output": "4a6dd8b951b122a3"
+    "input": "2919ff3516d4d3ee",
+    "output": "53a568ee0df9155b"
   },
   "CanopyX.Html/Assets/canopyx-reporting.js": {
-    "input": "3023db014d6bec5e",
-    "output": "7eaec23d6c1f6944"
+    "input": "9248097081b6be95",
+    "output": "c50757d64487fea9"
   },
   "CanopyX.Html/Assets/canopyx-row-actions.js": {
     "input": "b80a6fb57db6869f",

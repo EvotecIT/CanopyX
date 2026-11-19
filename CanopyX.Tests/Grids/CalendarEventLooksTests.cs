@@ -75,6 +75,7 @@ public sealed class CalendarEventLooksTests {
     [InlineData("data:text/html,x", false)]
     [InlineData("file:///c:/x", false)]
     [InlineData("a\\b", false)]
+    [InlineData("//evil.test/x", false)]
     [InlineData("a\nb", false)]
     public void Addresses_AcceptHttpMailtoAndRelativeOnly(string value, bool accepted) {
         if (accepted) Assert.Equal(value, new CanopyCalendarEvent("x", Start) { Url = value }.Url);

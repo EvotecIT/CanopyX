@@ -48,11 +48,12 @@ public sealed partial class CanopyCalendar {
     /// <summary>Whether a value is a colour a calendar event accepts.</summary>
     internal static bool IsColor(string value) => value != null && ColorPattern.IsMatch(value.Trim());
 
-    /// <summary>Whether a value is an event address the calendar opens: http(s), mailto or relative, without control characters or backslashes.</summary>
+    /// <summary>Whether a value is an event address the calendar opens: http(s), mailto or relative, without control characters, backslashes or a //host form.</summary>
     internal static bool IsEventUrl(string value) {
         if (value == null || value.Trim().Length == 0 || value.Length > 2048 || value.IndexOf('\\') >= 0) return false;
         foreach (var character in value) if (char.IsControl(character)) return false;
         var trimmed = value.Trim();
+        if (trimmed.StartsWith("//", StringComparison.Ordinal)) return false;
         var colon = trimmed.IndexOf(':');
         var separator = trimmed.IndexOfAny(new[] { '/', '?', '#' });
         if (colon < 0 || separator >= 0 && separator < colon) return true;

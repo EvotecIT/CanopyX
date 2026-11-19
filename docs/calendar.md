@@ -242,7 +242,8 @@ against the background; the calendar does not adjust it.
 
 `url` gives an event an address: activating it (a click, Enter or Space, or the menu's Open) opens the address instead of the
 event's details, in the page itself or, with `urlTarget: "blank"`, in a new window without an opener. Only `http:`, `https:`,
-`mailto:` and relative addresses open; any other address, `javascript:` among them, is no address and the details open as usual.
+`mailto:` and relative addresses open (a report opened from disk resolves a relative address to a file beside it); any other
+address, `javascript:` and `//host` forms among them, is no address and the details open as usual.
 
 Every activation first raises the cancelable `canopyx:eventClick` on the calendar's host element and calls the
 `onEventClick(detail)` option; `detail` is `{ event, url, keyboard, occurrence }`, where `event` is the occurrence as
