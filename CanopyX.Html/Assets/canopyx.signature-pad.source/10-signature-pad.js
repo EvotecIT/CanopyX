@@ -114,15 +114,23 @@
       setText(mode, typing ? labels.draw : labels.type);
       mode.hidden = readOnly;
     }
+    // The last accepted drawing, typed text and colour, restored when a later change cannot be published.
+    let kept;
+    const keep = () => { kept = { strokes: strokes.slice(), typed: typedInput.value, ink }; };
+    keep();
     function commit() {
       const typed = typing ? typedInput.value.trim() : "";
       // Strokes keep the coordinates they were drawn at: a pad that has since narrowed (a rotated phone) exports wide enough for all of them.
       const reach = strokes.reduce((most, stroke) => stroke.reduce((far, point) => Math.max(far, point.x), most), 0);
       const next = typed || strokes.length ? signatureValue(Math.max(width, Math.ceil(reach) + 8), strokes, typed, ink || "#000", background) : null;
-      // A value the pad could not load back (too large, or an image the browser could not export) is never published: the stroke
-      // that made it is taken back, and a typed name keeps the earlier value. The stored picture stays until a replacement is accepted.
-      if (next && !signatureFits(next)) { if (strokes.length) strokes.pop(); paint(); return; }
-      stored = null; value = next;
+      // A value the pad could not load back (too large, or an image the browser could not export) is never published: the strokes,
+      // typed text and colour go back to the last accepted answer, so the pad shows what the form holds. A stored picture stays too.
+      if (next && !signatureFits(next)) {
+        strokes = kept.strokes.slice(); typedInput.value = kept.typed; ink = kept.ink;
+        if (colourInput) colourInput.value = /^#[0-9a-f]{6}$/i.test(ink || "") ? ink : "#000000";
+        paint(); return;
+      }
+      stored = null; value = next; keep();
       paint(); settings.onChange?.(value);
     }
     // The pointer is read in the pad's own drawing units, so a scaled ancestor does not move the ink away from the pointer.
@@ -153,7 +161,7 @@
     signal?.addEventListener("abort", () => resize.disconnect(), { once: true });
     return {
       element: group, pad, focus: () => (typing ? typedInput : mode.hidden ? pad : mode).focus(), getValue: () => value,
-      setValue: next => { if (next !== null && !signatureFits(next)) throw new Error("CanopyX: a signature is { svg, png }."); strokes = []; current = null; typing = false; typedField.hidden = true; typedInput.value = ""; value = next; show(next); paint(); },
+      setValue: next => { if (next !== null && !signatureFits(next)) throw new Error("CanopyX: a signature is { svg, png }."); strokes = []; current = null; typing = false; typedField.hidden = true; typedInput.value = ""; value = next; show(next); keep(); paint(); },
       clear: () => { strokes = []; current = null; typedInput.value = ""; commit(); },
       destroy: () => { resize.disconnect(); strokes = []; }
     };

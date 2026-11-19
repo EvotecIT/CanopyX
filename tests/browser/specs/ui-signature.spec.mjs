@@ -125,6 +125,32 @@ test('a typed name whose picture the browser cannot export is not published', as
   expect(await page.evaluate(() => CanopyX.signature('#sign').getState().value)).toBeNull();
 });
 
+test('a refused change brings back the accepted text and strokes, so the pad shows what the form holds', async ({ page }) => {
+  await openUi(page, '<form id="form"><div id="sign" data-cx-signature data-name="signature" data-colours="true"></div></form>');
+  const submitted = () => page.evaluate(() => new FormData(document.getElementById('form')).get('signature'));
+  const box = await page.getByRole('img', { name: 'Signature pad' }).boundingBox();
+  await page.mouse.move(box.x + 20, box.y + 40); await page.mouse.down();
+  await page.mouse.move(box.x + 120, box.y + 60, { steps: 3 }); await page.mouse.up();
+  await page.mouse.move(box.x + 20, box.y + 100); await page.mouse.down();
+  await page.mouse.move(box.x + 120, box.y + 110, { steps: 3 }); await page.mouse.up();
+  const drawn = await submitted();
+  expect(drawn).toContain('<path');
+  // From here every export fails, as a canvas past the browser's size limit would.
+  await page.evaluate(() => { HTMLCanvasElement.prototype.toDataURL = () => 'data:,'; });
+  await page.getByLabel('Pen colour').evaluate(input => { input.value = '#b91c1c'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  expect(await submitted()).toBe(drawn);
+  expect(await page.getByLabel('Pen colour').inputValue()).toBe('#000000');
+  await page.getByRole('button', { name: 'Undo' }).click();
+  expect(await submitted()).toBe(drawn);
+  await page.evaluate(() => { HTMLCanvasElement.prototype.toDataURL = function () { return 'data:image/png;base64,AA'; }; });
+  await page.getByRole('button', { name: 'Type instead' }).click();
+  await page.keyboard.type('Ali');
+  await page.evaluate(() => { HTMLCanvasElement.prototype.toDataURL = () => 'data:,'; });
+  await page.keyboard.type('cia');
+  await expect(page.getByRole('textbox', { name: /name/i })).toHaveValue('Ali');
+  expect(await submitted()).toContain('Ali');
+});
+
 test('destroy removes the hidden input the signature made and keeps a host input', async ({ page }) => {
   await openUi(page, '<form id="form"><div id="made" data-name="made"></div><div id="own" data-name="own"><input type="hidden" name="own" value="kept"></div></form>');
   await page.evaluate(async () => { for (const id of ['#made', '#own']) await CanopyX.signature(id).ready; CanopyX.signature('#made').destroy(); CanopyX.signature('#own').destroy(); });
