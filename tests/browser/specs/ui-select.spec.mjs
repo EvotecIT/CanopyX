@@ -431,3 +431,15 @@ test('host records set the disabled state of values the page already selected', 
   });
   expect(submitted).toEqual(['old']);
 });
+
+test('a form reset ends an open search, and a link inside the label keeps its own action', async ({ page }) => {
+  await openUi(page, select('', false, ['pl']).replace('<label for="country">Country</label>', '<label for="country">Country <a href="#help" id="help">help</a></label>'));
+  await combo(page).fill('ger');
+  await expect(combo(page)).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => document.getElementById('form').reset());
+  await expect(combo(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(combo(page)).toHaveValue('Poland');
+  await page.locator('#help').click();
+  await expect(page).toHaveURL(/#help$/);
+  await expect(combo(page)).not.toBeFocused();
+});

@@ -42,7 +42,12 @@ UI_IMPL.select = (root, options = {}, signal) => {
   signal?.addEventListener('abort', () => watcher.disconnect(), { once: true });
   // The select's aria-labelledby or its label (for= or wrapping) names the combobox; aria-label on the select or the label option work too.
   const label = native.labels?.[0], named = native.getAttribute('aria-labelledby');
-  if (label) { label.id ||= id + '-label'; label.addEventListener('click', event => { event.preventDefault(); input.focus(); }, { signal }); }
+  if (label) { label.id ||= id + '-label'; label.addEventListener('click', event => {
+    // A link or control inside the label keeps its own action, such as a help link.
+    const inner = event.target.closest?.('a[href],button,input,select,textarea,summary,[contenteditable],[tabindex]');
+    if (inner && inner !== label && label.contains(inner)) return;
+    event.preventDefault(); input.focus();
+  }, { signal }); }
   if (named || label) input.setAttribute('aria-labelledby', named || label.id);
   else if (native.getAttribute('aria-label') || options.label) input.setAttribute('aria-label', options.label || native.getAttribute('aria-label'));
   toggle.type = 'button'; toggle.tabIndex = -1; toggle.setAttribute('aria-hidden', 'true'); toggle.disabled = native.disabled; toggle.dataset.cxPart = 'toggle';
@@ -212,7 +217,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
   native.form?.addEventListener('reset', event => setTimeout(() => {
     if (signal?.aborted || event.defaultPrevented) return;
     if (startsEmpty && ![...native.options].some(item => item.defaultSelected)) native.selectedIndex = -1;
-    chosen = written(); writeNative(); paintChosen();
+    // A reset ends any search in progress, so the field shows the restored value and a pending load cannot answer the old query.
+    hide(); chosen = written(); writeNative(); paintChosen();
   }), { signal });
   signal?.addEventListener('abort', () => {
     clearTimeout(timer); loader?.cancel(); hide(); field.remove(); status.remove(); popup.remove();
