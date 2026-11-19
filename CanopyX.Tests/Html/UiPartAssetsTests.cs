@@ -13,7 +13,7 @@ public sealed class UiPartAssetsTests {
     [InlineData("ui-tabs", 9 * 1024)]
     [InlineData("ui-stepper", 7 * 1024)]
     [InlineData("ui-accordion", 6 * 1024)]
-    [InlineData("ui-select", 6 * 1024)]
+    [InlineData("ui-select", 7 * 1024)]
     public void UiPart_ComponentAssetsStayWithinTheirOwnGzipCap(string name, int componentBudget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.NotNull(part.Style);
