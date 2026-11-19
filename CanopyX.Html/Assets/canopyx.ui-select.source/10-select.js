@@ -75,7 +75,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
       chip.dataset.cxPart = 'chip'; chip.append(...selectContent(option, renderIcon, false));
       remove.type = 'button'; remove.tabIndex = -1; remove.setAttribute('aria-label', fill(labels.selectRemove, { label: option.label }));
       remove.disabled = native.disabled;
-      remove.addEventListener('click', event => { event.stopPropagation(); chosen.delete(option.value); sync('chip'); input.focus(); });
+      remove.addEventListener('click', event => { event.stopPropagation(); if (native.matches(':disabled')) return; chosen.delete(option.value); sync('chip'); input.focus(); });
       chip.append(remove); return chip;
     }) : []));
     if (!multiple && !open) input.value = chosen.values().next().value?.label ?? '';
@@ -155,6 +155,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
   }
   function choose(at, source) {
     const option = shown[at];
+    // A disabled fieldset around the select disables it without a change to the select itself; a choice then only closes the list.
+    if (native.matches(':disabled')) { hide(); return; }
     if (!option || option.disabled) return;
     if (multiple && chosen.has(option.value)) { if (!option.created) chosen.delete(option.value); }
     else if (multiple && chosen.size >= max) return;

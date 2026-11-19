@@ -360,3 +360,15 @@ test('disabling a multiple select disables its chips, and closing it clears the 
   await page.evaluate(() => { document.getElementById('country').disabled = false; });
   await expect(page.getByRole('button', { name: /Poland/ })).toBeEnabled();
 });
+
+test('a disabled fieldset around an open select refuses the choice and closes the list', async ({ page }) => {
+  await openUi(page, select().replace('<label for="country">', '<fieldset id="set"><label for="country">').replace('</select></div>', '</select></div></fieldset>'));
+  await combo(page).click();
+  const poland = options(page).filter({ hasText: 'Poland' });
+  await expect(poland).toBeVisible();
+  await page.evaluate(() => { document.getElementById('set').disabled = true; });
+  // A click that reaches a row of the list after the fieldset was disabled.
+  await page.evaluate(() => [...document.querySelectorAll('#picker [role="option"]')].find(row => row.textContent.includes('Poland')).click());
+  expect(await submitted(page)).toEqual([]);
+  await expect(page.getByRole('listbox', { name: 'Country' })).toBeHidden();
+});
