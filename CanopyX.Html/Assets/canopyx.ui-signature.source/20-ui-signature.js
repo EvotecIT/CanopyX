@@ -21,8 +21,9 @@ UI_IMPL.signature = (root, options = {}, signal) => {
   root.append(pad.element); write(pad.getValue());
   // A form reset brings back the signature the pad started with; the hidden input's value is not reset by the browser.
   const initial = pad.getValue(), form = hidden?.form || root.closest('form');
-  form?.addEventListener('reset', () => setTimeout(() => {
-    if (signal?.aborted) return;
+  form?.addEventListener('reset', event => setTimeout(() => {
+    // A host that cancels the reset keeps the form as it is, the signature too.
+    if (signal?.aborted || event.defaultPrevented) return;
     pad.setValue(initial); write(initial); options.onChange?.(initial); UI_TOOLS.emit(root, 'signature', 'change', { value: initial });
   }), { signal });
   signal?.addEventListener('abort', () => { pad.destroy(); pad.element.remove(); }, { once: true });

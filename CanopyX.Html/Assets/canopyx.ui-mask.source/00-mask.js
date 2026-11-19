@@ -92,7 +92,7 @@ UI_IMPL.mask = (root, options = {}, signal) => {
     apply(event);
   }, { signal });
   // A form reset restores the default value after its reset event, so the mask reads the input once the reset is done.
-  input.form?.addEventListener('reset', () => setTimeout(() => { if (!signal?.aborted) apply(new Event('reset')); }), { signal });
+  input.form?.addEventListener('reset', event => setTimeout(() => { if (!signal?.aborted && !event.defaultPrevented) apply(new Event('reset')); }), { signal });
   apply();
   signal?.addEventListener('abort', () => {
     for (const [name, attribute] of [['inputMode', 'inputmode'], ['maxLength', 'maxlength'], ['placeholder', 'placeholder']])

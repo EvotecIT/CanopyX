@@ -49,11 +49,15 @@ test('a stored signature fills the hidden input, survives a pen colour change an
   expect(await submitted()).toBe('');
 });
 
-test('a form reset brings back the starting signature and clears a typed one', async ({ page }) => {
+test('a form reset brings back the starting signature, and a cancelled one keeps it', async ({ page }) => {
   await openUi(page, '<form id="form"><div id="sign" data-cx-signature data-name="signature"></div><button type="reset">Reset</button></form>');
   await page.getByRole('button', { name: 'Type instead' }).click();
   await page.keyboard.type('Ada Lovelace');
   const submitted = () => page.evaluate(() => new FormData(document.getElementById('form')).get('signature'));
+  expect(await submitted()).toContain('<svg ');
+  await page.evaluate(() => document.getElementById('form').addEventListener('reset', event => event.preventDefault(), { once: true }));
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await page.evaluate(() => new Promise(resolve => setTimeout(resolve)));
   expect(await submitted()).toContain('<svg ');
   await page.getByRole('button', { name: 'Reset' }).click();
   await expect.poll(submitted).toBe('');

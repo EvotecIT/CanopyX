@@ -153,7 +153,7 @@
     {
       "name": "ui-mask",
       "label": "UI mask",
-      "version": "d3d3cdb894c087d4",
+      "version": "daa47b2bd6b3b049",
       "script": "canopyx-ui-mask.js",
       "runtimes": [
         "tree",
@@ -168,7 +168,7 @@
     {
       "name": "ui-signature",
       "label": "UI signature",
-      "version": "f14c9b13309086d3",
+      "version": "886d1c5128984bcf",
       "script": "canopyx-ui-signature.js",
       "style": "canopyx-ui-signature.css",
       "runtimes": [
