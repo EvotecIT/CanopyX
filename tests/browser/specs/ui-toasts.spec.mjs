@@ -178,3 +178,12 @@ test('rewriting the open attribute of an open modal does not move the region to 
   await page.evaluate(() => CanopyX.notify({ message: 'Again', timeout: 0 }));
   await expect(page.locator('#b .cx-toasts')).toHaveCount(1);
 });
+
+test('notify skips a region inside a closed dialog and keeps using the region it used', async ({ page }) => {
+  await openUi(page, '<dialog id="settings"><section id="inside" data-cx-toasts></section></dialog><section id="page" data-cx-toasts></section>');
+  await page.evaluate(() => CanopyX.notify({ id: 'saved', message: 'Saved', timeout: 0 }));
+  await expect(page.locator('#page .cx-toast')).toHaveCount(1);
+  await expect(page.locator('#inside .cx-toast')).toHaveCount(0);
+  await page.evaluate(() => CanopyX.notify({ id: 'saved', message: 'Saved again', timeout: 0 }));
+  await expect(page.locator('#page .cx-toast')).toHaveText(/Saved again/);
+});

@@ -36,8 +36,9 @@ tone such as `CanopyTone.Named("high")` takes its colour from `--hfx-color-statu
 
 ## Show toasts from JavaScript
 
-`CanopyX.notify(toast)` shows a toast in the page's first `[data-cx-toasts]` region and creates one at the end of the body
-when the page has none. It resolves to the toast's id.
+`CanopyX.notify(toast)` shows a toast in the region it used last, or else in the page's first `[data-cx-toasts]` region
+that is not inside a closed dialog or hidden content, and creates one at the end of the body when there is none. It
+resolves to the toast's id.
 
 ```javascript
 await CanopyX.notify({ tone: 'success', title: 'Saved', message: 'Service settings were stored.' });

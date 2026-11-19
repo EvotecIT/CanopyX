@@ -61,9 +61,14 @@
     return mounted;
   }
   /** Shows a toast in the page's notification region, creating one at the end of the body when the page has none. */
+  // The region notify used last keeps its toasts even while a modal that holds it is briefly out of the page; otherwise the first
+  // region a reader can see, never one inside a closed dialog or hidden content, else a new one at the end of the body.
+  let notifyRoot = null;
   function notify(options) {
-    let root = document.querySelector("[data-cx-toasts]");
+    const usable = region => !region.closest("dialog:not([open]),[hidden]");
+    let root = notifyRoot && uiInstances.get(notifyRoot)?.has("toasts") ? notifyRoot : [...document.querySelectorAll("[data-cx-toasts]")].find(usable);
     if (!root) { root = h("section"); root.setAttribute("data-cx-toasts", ""); document.body.appendChild(root); }
+    notifyRoot = root;
     const api = createUi("toasts", root);
     return api.ready.then(() => api.show(options));
   }
