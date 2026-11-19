@@ -125,6 +125,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
   }
   function place() {
     popup.style.minInlineSize = field.getBoundingClientRect().width + 'px';
+    // A short screen or an open on-screen keyboard leaves less room than the list's usual height; the list then fits what is visible.
+    popup.style.setProperty('--cx-ui-select-room', (visualViewport?.height ?? innerHeight) + 'px');
     UI_TOOLS.position(popup, field, 'bottom-start');
   }
   /** Filters the options for the typed text, or asks the host; tags mode offers the text itself as a new value. */
@@ -198,6 +200,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
   root.addEventListener('focusout', event => { if (!root.contains(event.relatedTarget)) hide(); }, { signal });
   document.addEventListener('pointerdown', event => { if (open && !root.contains(event.target)) hide(); }, { signal, capture: true });
   addEventListener('resize', () => open && place(), { signal });
+  visualViewport?.addEventListener('resize', () => open && place(), { signal });
   document.addEventListener('scroll', () => open && place(), { signal, capture: true });
   // A single select written without a chosen option starts empty; after a reset the browser would select the first option,
   // perhaps one the reader loaded or created, so the empty start is restored.

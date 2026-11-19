@@ -372,3 +372,17 @@ test('a disabled fieldset around an open select refuses the choice and closes th
   expect(await submitted(page)).toEqual([]);
   await expect(page.getByRole('listbox', { name: 'Country' })).toBeHidden();
 });
+
+test('on a short screen the list fits the visible height, so its last option can be scrolled into view', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 160 });
+  const many = Array.from({ length: 30 }, (_, at) => `<option value="v${at}">Value ${at + 1}</option>`).join('');
+  await openUi(page, `<label for="long">Long</label><div class="cx-select" data-cx-select><select id="long" name="long">${many}</select></div>`);
+  await page.getByRole('combobox', { name: 'Long' }).click();
+  const list = page.getByRole('listbox', { name: 'Long' });
+  await expect(list).toBeVisible();
+  const box = await page.locator('.cx-select-popup').boundingBox();
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(160);
+  await list.getByRole('option', { name: 'Value 30' }).scrollIntoViewIfNeeded();
+  await expect(list.getByRole('option', { name: 'Value 30' })).toBeInViewport();
+});
