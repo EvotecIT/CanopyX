@@ -168,3 +168,13 @@ test('an update keeps focus on the same control, and the region follows the moda
   await expect(page.locator('main > .cx-toasts')).toHaveCount(1);
   await expect(toast(page)).toHaveCount(1);
 });
+
+test('rewriting the open attribute of an open modal does not move the region to it', async ({ page }) => {
+  await openUi(page, region() + '<dialog id="a"><p>A</p></dialog><dialog id="b"><p>B</p></dialog>');
+  await page.evaluate(() => CanopyX.notify({ message: 'Kept', timeout: 0 }));
+  await page.evaluate(() => { document.getElementById('a').showModal(); document.getElementById('b').showModal(); });
+  await expect(page.locator('#b .cx-toasts')).toHaveCount(1);
+  await page.evaluate(() => document.getElementById('a').setAttribute('open', ''));
+  await page.evaluate(() => CanopyX.notify({ message: 'Again', timeout: 0 }));
+  await expect(page.locator('#b .cx-toasts')).toHaveCount(1);
+});

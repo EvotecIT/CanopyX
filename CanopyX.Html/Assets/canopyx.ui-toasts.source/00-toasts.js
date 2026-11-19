@@ -133,7 +133,8 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
 
   // Shown above an open modal dialog: everything outside the topmost one is inert, so the region joins it while it is open.
   function place() {
-    // The topmost modal is the one opened last, whatever its place in the page.
+    // The topmost modal is the one opened last, whatever its place in the page. Modals already open when the region starts have no
+    // opening order the page can read, so they count in document order.
     for (const dialog of [...modals]) if (!dialog.isConnected || !dialog.open || !dialog.matches(':modal')) modals.delete(dialog);
     for (const dialog of document.querySelectorAll('dialog[open]')) if (dialog.matches(':modal') && !modals.has(dialog) && !root.contains(dialog)) modals.add(dialog);
     const target = [...modals].at(-1) || home;
@@ -202,13 +203,14 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
   // A modal dialog removed from the page takes the region with it; the region goes back home with its toasts.
   const modals = new Set();
   const dialogs = new MutationObserver(records => {
+    // Only an opening (no open attribute before) moves a modal to the top; rewriting the attribute of an open one keeps its place.
     for (const record of records) if (record.type === 'attributes' && record.target.localName === 'dialog') {
-      modals.delete(record.target);
-      if (record.target.open && record.target.matches(':modal') && !root.contains(record.target)) modals.add(record.target);
+      if (!record.target.open) modals.delete(record.target);
+      else if (record.oldValue === null && record.target.matches(':modal') && !root.contains(record.target)) { modals.delete(record.target); modals.add(record.target); }
     }
     if (toasts.size && (!root.isConnected || records.some(record => record.target.localName === 'dialog'))) place();
   });
-  dialogs.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+  dialogs.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeOldValue: true, attributeFilter: ['open'] });
   document.addEventListener('close', () => queueMicrotask(place), { capture: true, signal });
   signal?.addEventListener('abort', () => {
     dialogs.disconnect(); toasts.forEach(disarm); toasts.clear(); queue.length = 0; list.replaceChildren(); more.remove(); polite.remove(); assertive.remove();
