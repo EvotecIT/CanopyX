@@ -38,15 +38,21 @@ public sealed class CanopyGallery {
             if (item.Width <= 0 || item.Height <= 0) throw new ArgumentOutOfRangeException(nameof(item.Width), "Thumbnail sizes are positive.");
             var template = Id + "-item-" + UiHtml.Number(index);
             // The link's fragment is percent-encoded; the runtime decodes it back to the template's identity.
-            var href = item.Type == CanopyGalleryItemType.Content ? "#" + Uri.EscapeDataString(template) : Address(item.Href);
+            var href = item.Type == CanopyGalleryItemType.Content ? "#" + Uri.EscapeDataString(template) : Address(YouTubeLink(item));
             if (item.Type == CanopyGalleryItemType.Content) {
                 if (string.IsNullOrWhiteSpace(item.ContentHtml)) throw new ArgumentException("A content item needs ContentHtml.");
                 templates.Append("<template id=\"").Append(UiHtml.Encode(template)).Append("\">").Append(item.ContentHtml).Append("</template>");
             }
-            var thumbnail = item.ThumbnailHref != null ? Address(item.ThumbnailHref) : item.Type == CanopyGalleryItemType.Image ? href : null;
+            var video = item.Type == CanopyGalleryItemType.Video || item.Type == CanopyGalleryItemType.YouTube;
+            if (!video && (item.Poster != null || item.Autoplay)) throw new ArgumentException("Only video items have a poster or autoplay.");
+            var poster = item.Poster == null ? null : Address(item.Poster);
+            var thumbnail = item.ThumbnailHref != null ? Address(item.ThumbnailHref) : item.Type == CanopyGalleryItemType.Image ? href : poster;
             html.Append("<li class=\"cx-gallery-item\"><figure><a class=\"cx-gallery-link\" data-lightbox-item");
             UiHtml.Attribute(html, "href", href);
-            if (item.Type != CanopyGalleryItemType.Image) UiHtml.Attribute(html, "data-lightbox-type", UiHtml.Token(item.Type));
+            if (item.Type != CanopyGalleryItemType.Image)
+                UiHtml.Attribute(html, "data-lightbox-type", item.Type == CanopyGalleryItemType.YouTube ? "youtube" : UiHtml.Token(item.Type));
+            if (poster != null) UiHtml.Attribute(html, "data-poster", poster);
+            if (item.Autoplay) UiHtml.Attribute(html, "data-autoplay", "true");
             if (item.Caption != null) UiHtml.Attribute(html, "data-caption", item.Caption);
             html.Append('>');
             if (thumbnail == null) html.Append("<span class=\"cx-gallery-label\">").Append(UiHtml.Encode(item.Alt)).Append("</span>");
@@ -65,6 +71,13 @@ public sealed class CanopyGallery {
         return html.Append("</ul>").Append(templates).Append("</div>").ToString();
     }
 
+    // A bare YouTube id becomes its watch address, so the link also works when it opens without the viewer.
+    private static string YouTubeLink(CanopyGalleryItem item) {
+        if (item.Type != CanopyGalleryItemType.YouTube || item.Href.Length != 11) return item.Href;
+        foreach (var c in item.Href) if (!(c is >= 'a' and <= 'z' || c is >= 'A' and <= 'Z' || c is >= '0' and <= '9' || c == '-' || c == '_')) return item.Href;
+        return "https://www.youtube.com/watch?v=" + item.Href;
+    }
+
     // Links open their items without the runtime too, so a script address would run on a click.
     private static string Address(string value) {
         // Browsers drop tabs and line breaks inside addresses ("java\tscript:"), so control characters are refused outright.
@@ -72,8 +85,9 @@ public sealed class CanopyGallery {
         var scheme = value.TrimStart();
         foreach (var refused in new[] { "javascript:", "vbscript:" })
             if (scheme.StartsWith(refused, StringComparison.OrdinalIgnoreCase)) throw new ArgumentException("A gallery address cannot be a script.");
-        if (scheme.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && !scheme.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("A gallery data address must be an image.");
+        if (scheme.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && !scheme.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase)
+            && !scheme.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("A gallery data address must be an image or a video.");
         return value;
     }
 }

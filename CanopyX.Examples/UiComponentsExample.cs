@@ -44,6 +44,9 @@ internal static class UiComponentsExample {
             gallery.Items.Add(new CanopyGalleryItem(Image(name, colour, 1600, 1000), name) { ThumbnailHref = Image(name, colour, 320, 200), Caption = caption, Width = 320, Height = 200 });
         gallery.Items.Add(new CanopyGalleryItem("inventory", "Inventory summary") { Type = CanopyGalleryItemType.Content, Caption = "Inventory summary",
             ContentHtml = "<h3>Inventory summary</h3><ul><li>12 servers</li><li>4 switches</li><li>2 cooling units</li></ul>" });
+        // The YouTube item needs the network; every other item works from the file alone.
+        gallery.Items.Add(new CanopyGalleryItem("https://www.youtube.com/watch?v=aqz-KE-bpKQ", "Big Buck Bunny on YouTube") { Type = CanopyGalleryItemType.YouTube,
+            ThumbnailHref = Image("Video", "#444c58", 320, 200), Caption = "Video from YouTube", Width = 320, Height = 200 });
         body.Append("<section class=\"card\" aria-labelledby=\"gallery-title\"><h2 id=\"gallery-title\">Gallery and lightbox</h2>");
         body.Append("<p>Open a picture, then use the arrow keys, Home and End, + and − to zoom, 0 to fit and Escape to close. A swipe moves between items on a phone.</p>");
         body.Append(gallery.ToHtmlFragment()).Append("</section>");

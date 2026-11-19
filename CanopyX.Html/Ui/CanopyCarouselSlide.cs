@@ -11,4 +11,6 @@ public sealed class CanopyCarouselSlide {
     public string ContentHtml { get; }
     /// <summary>Gets or sets the plain text name of the slide and its picker button. Null uses the localized "Slide 2 of 5".</summary>
     public string? Label { get; set; }
+    /// <summary>Gets or sets a plain text caption shown over the slide or under it (<see cref="CanopyCarouselOptions.Captions"/>), also without the runtime.</summary>
+    public string? Caption { get; set; }
 }

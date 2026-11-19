@@ -15,7 +15,7 @@ public sealed class UiPartAssetsTests {
     [InlineData("ui-accordion", 6 * 1024)]
     [InlineData("ui-toasts", 6 * 1024)]
     [InlineData("ui-lightbox", 6 * 1024)]
-    [InlineData("ui-carousel", 4 * 1024)]
+    [InlineData("ui-carousel", 5 * 1024)]
     [InlineData("ui-rating", 3 * 1024)]
     [InlineData("ui-select", 7 * 1024)]
     public void UiPart_ComponentAssetsStayWithinTheirOwnGzipCap(string name, int componentBudget) {
