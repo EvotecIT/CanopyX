@@ -22,6 +22,14 @@ public sealed partial class CanopyLabels {
         labels.LightboxZoomOut = "Pomniejsz";
         labels.LightboxZoomReset = "Dopasuj do ekranu";
         labels.LightboxError = "Nie udało się wczytać tego elementu";
+        labels.CarouselRole = "karuzela";
+        labels.CarouselSlideRole = "slajd";
+        labels.CarouselSlide = "Slajd {current} z {total}";
+        labels.CarouselPrevious = "Poprzedni slajd";
+        labels.CarouselNext = "Następny slajd";
+        labels.CarouselPicker = "Wybierz slajd";
+        labels.CarouselMotionDisabled = "Automatyczne slajdy są wyłączone przez ograniczenie ruchu";
+        labels.RatingValue = "{value} z {max}";
         labels.TabsMore = "Więcej";
         labels.TabsMoreSelected = "Więcej: {label}";
         labels.TabsScrollPrevious = "Poprzednie karty";

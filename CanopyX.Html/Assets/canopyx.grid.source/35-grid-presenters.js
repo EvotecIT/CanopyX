@@ -4,7 +4,7 @@
   }));
   const GRID_PRESENTERS_BUILD = DataGrid.prototype.build;
   function gridPresenter(options, column, columns) {
-    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "sparklineArea", "sparklineColumns", "sparklineWinLoss", "bullet", "identifier", "tags", "missing", "structured", "relativeTime", "log"];
+    const kinds = ["link", "icon", "progress", "boolean", "list", "longText", "enum", "state", "change", "statusStrip", "sparklineBars", "sparklineLine", "sparklineArea", "sparklineColumns", "sparklineWinLoss", "bullet", "identifier", "tags", "missing", "structured", "relativeTime", "log", "rating"];
     const invalid = () => { throw new Error("CanopyX: invalid grid presenter or raw column binding."); };
     if (!options || typeof options !== "object" || Array.isArray(options) || !kinds.includes(options.kind)) invalid();
     // Kind-specific options: relative times read dates, logs text; a state pill, its glyphs, bar slots and log line bounds.
@@ -14,7 +14,8 @@
     only("split", "log", value => typeof value === "boolean"); only("lines", "log", value => Number.isInteger(value) && value > 0 && value <= 500);
     only("icons", "state", value => value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length <= 512 &&
       Object.entries(value).every(([key, glyph]) => key.length <= 4096 && typeof glyph === "string" && glyph.trim() && glyph.length <= 32));
-    if ((options.kind==="progress" || options.kind==="change" && !options.beforeAfter) && column.kind!=="number" ||
+    if ((options.kind==="progress" || options.kind==="rating" || options.kind==="change" && !options.beforeAfter) && column.kind!=="number" ||
+        options.kind==="rating" && (!Number.isInteger(options.maximum) || options.maximum<2 || options.maximum>10) ||
         ["boolean","list","tags","link"].includes(options.kind) && column.kind!=="text") invalid();
     if (["sparklineArea","sparklineColumns","sparklineWinLoss","bullet"].includes(options.kind) && column.kind !== "number" ||
         options.kind === "bullet" && (typeof options.target !== "number" || !Number.isFinite(options.target) || Math.abs(options.target) > Number.MAX_SAFE_INTEGER)) invalid();

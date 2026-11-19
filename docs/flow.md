@@ -170,7 +170,7 @@ Every field has `id` (unique in the flow), `type` and `label`, and optionally:
 
 | `type` | Value | Notes |
 | --- | --- | --- |
-| `text` | string | Grid editor. `validation`: `minLength`, `maxLength`, `pattern`, `message`. |
+| `text` | string | Grid editor. `validation`: `minLength`, `maxLength`, `pattern`, `message`, and `format` (an IP or MAC address, a GUID, a phone number, a date or time as text, …); `mask`: a hint of the shape such as `AAA-0000`. See [input formats](flow-inputs.md#text-formats). |
 | `number` | number | Grid editor: reads numbers as the page language writes them. `step`; `validation`: `min`, `max`. |
 | `date` | `yyyy-MM-dd` | Grid editor. |
 | `datetime` | ISO 8601 UTC | Grid editor, in the flow's time zone. `validation`: `min`, `max` as ISO moments. |
@@ -183,6 +183,8 @@ Every field has `id` (unique in the flow), `type` and `label`, and optionally:
 | `textarea` | string | `rows` (2 to 20, default 4). Same text checks as `text`. |
 | `list` | array of strings | One value per row with Add and Remove; pasted lines become rows. `validation`: `minItems`, `maxItems` (at most 1,000), `item` (`email`, `host`, `ip`, `cidr`, `url`), `itemPattern`. |
 | `secret` | never in values | A masked input with a reveal button (`reveal: false` leaves it out). `keepWhenBlank` (default true when `storedSecrets` lists it); `validation`: `minLength`, `maxLength`, `pattern`. See [Secrets](#secrets). |
+| `signature` | `{ svg, png }` | A pad to draw on, or a typed name; Undo and Clear. No default or parameter. See [signatures](flow-inputs.md#signatures). |
+| `rating` | whole number, 1 to `scale` | Stars over native radio buttons. `scale`: 2 to 10 stars (default 5). An optional rating clears when the reader chooses its value again or presses Delete; the review page says "4 of 5" (`flowRatingValue`). C#: `step.Rating(id, label, f => f.Scale(4))`. |
 | `duration` | ISO 8601 duration (`PT15M`) | A number and a unit. `units`: some of `seconds`, `minutes`, `hours`, `days` (default minutes, hours, days); `validation`: `min`, `max` as durations. |
 | `records` | array of rows | A small table of typed rows with Add and Remove ([records fields](#records-fields)). `columns`; `validation`: `minItems`, `maxItems`. |
 | `custom` | the editor's | `editor` names an editor a plugin or the host registers (`editors`, as in [grid editing](editing.md#custom-editors)). |

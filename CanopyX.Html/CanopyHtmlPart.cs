@@ -34,7 +34,7 @@ public sealed class CanopyHtmlPart {
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "officeExport",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs", "calendarScreens",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations", "charts", "rowActions", "richCells", "urlRows"
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowSignature", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations", "charts", "rowActions", "richCells", "urlRows"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -156,6 +156,7 @@ public sealed class CanopyHtmlPart {
             "flowHostOptions" => fields.Any(field => field.OptionsSource == CanopyFlowOptionsSource.Host || field.DependsOnIds.Count > 0) || steps.Any(step => step.Sections.Any(section => section != null && section.IsFromHost)),
             "flowPick" => steps.Any(step => step.Picker != null),
             "flowRecords" => fields.Any(field => field.Kind == CanopyFlowFieldKind.Records),
+            "flowSignature" => fields.Any(field => field.Kind == CanopyFlowFieldKind.Signature),
             "flowDrafts" => flow.Draft != CanopyFlowDraftStore.None || flow.Presets.Count > 0,
             "flowPreview" => review?.ShowsPreview == true || flow.Endpoint != null && (flow.Endpoint.Routes & CanopyFlowRoutes.Preview) != 0,
             "flowCommand" => flow.Command != null,

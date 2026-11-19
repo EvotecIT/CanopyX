@@ -144,8 +144,8 @@ public sealed partial class CanopyGridPresenter {
     internal void Validate(CanopyColumn column, IList<CanopyColumn> columns) {
         if (UsesChartRenderer && column.Kind != CanopyColumnKind.Number)
             throw new InvalidOperationException("Chart cells require numeric raw values.");
-        if ((Kind == CanopyGridPresenterKind.Progress || Kind == CanopyGridPresenterKind.Change && !BeforeAfterValues) && column.Kind != CanopyColumnKind.Number)
-            throw new InvalidOperationException("Progress and change presenters require numeric raw values.");
+        if ((Kind == CanopyGridPresenterKind.Progress || Kind == CanopyGridPresenterKind.Rating || Kind == CanopyGridPresenterKind.Change && !BeforeAfterValues) && column.Kind != CanopyColumnKind.Number)
+            throw new InvalidOperationException("Progress, rating and change presenters require numeric raw values.");
         if ((Kind == CanopyGridPresenterKind.Boolean || Kind == CanopyGridPresenterKind.List || Kind == CanopyGridPresenterKind.Tags || Kind == CanopyGridPresenterKind.Link) && column.Kind != CanopyColumnKind.Text)
             throw new InvalidOperationException("This presenter requires text or boolean raw values.");
         if (Kind == CanopyGridPresenterKind.RelativeTime && column.Kind != CanopyColumnKind.DateTime || Kind == CanopyGridPresenterKind.Log && column.Kind != CanopyColumnKind.Text)
