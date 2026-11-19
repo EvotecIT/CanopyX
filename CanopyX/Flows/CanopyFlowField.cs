@@ -15,6 +15,7 @@ namespace CanopyX;
 public sealed partial class CanopyFlowField {
     private int? _rowCount;
     private double? _numberStep;
+    private int? _ratingScale;
     private int? _minItems;
     private int? _maxItems;
 
@@ -113,6 +114,13 @@ public sealed partial class CanopyFlowField {
         get => _numberStep;
         set => _numberStep = value.HasValue && (double.IsNaN(value.Value) || double.IsInfinity(value.Value) || value.Value <= 0 || value.Value > 9007199254740991d)
             ? throw new ArgumentOutOfRangeException(nameof(value), value, "A step must be a positive finite number.") : value;
+    }
+
+    /// <summary>Gets or sets the number of stars a rating field offers, 2 to 10; null offers 5.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The number is outside 2 to 10.</exception>
+    public int? RatingScale {
+        get => _ratingScale;
+        set => _ratingScale = value < 2 || value > 10 ? throw new ArgumentOutOfRangeException(nameof(value), value, "A rating offers 2 to 10 stars.") : value;
     }
 
     /// <summary>Gets or sets whether a blank secret keeps the stored value; null keeps it when <see cref="CanopyFlow.StoredSecrets"/> lists the field.</summary>
@@ -262,6 +270,12 @@ public sealed partial class CanopyFlowField {
     /// <returns>The field.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The step is not a positive finite number.</exception>
     public CanopyFlowField Step(double step) { NumberStep = step; return this; }
+
+    /// <summary>Sets the number of stars of a rating field (<see cref="RatingScale"/>).</summary>
+    /// <param name="stars">2 to 10.</param>
+    /// <returns>The field.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The number is outside 2 to 10.</exception>
+    public CanopyFlowField Scale(int stars) { RatingScale = stars; return this; }
 
     /// <summary>Adds an option.</summary>
     /// <param name="value">The value: text, a number or true or false.</param>

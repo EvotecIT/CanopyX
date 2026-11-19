@@ -1,0 +1,22 @@
+@layer hfx.components {
+  .cx-rating { --cx-rating-color:var(--hfx-color-status-warn-fg);display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-1) var(--hfx-space-3);min-inline-size:0;margin:0;padding:0;border:0;font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);color:var(--hfx-color-text); }
+  .cx-rating > legend { float:inline-start;margin-inline-end:var(--hfx-space-3);padding:0;font-size:var(--hfx-type-small-size);font-weight:var(--hfx-weight-medium); }
+  .cx-rating-options { display:inline-flex; }
+  .cx-rating-option { position:relative;display:inline-grid;place-items:center;inline-size:var(--hfx-control-height-sm);block-size:var(--hfx-control-height-sm);color:var(--hfx-color-border-strong);cursor:pointer; }
+  .cx-rating-option > input { position:absolute;inset:0;margin:0;opacity:0;cursor:inherit; }
+  .cx-rating-option > .cx-rating-text { position:absolute;inline-size:var(--hfx-border-width);block-size:var(--hfx-border-width);overflow:hidden;clip-path:inset(50%);white-space:nowrap; }
+  .cx-rating-option::before { content:"\2605" / "";font-size:var(--hfx-icon-lg);line-height:1; }
+  .cx-rating-option[data-filled="true"] { color:var(--cx-rating-color); }
+  /* Without the runtime the chosen star still shows; the runtime then fills every star up to it. */
+  .cx-rating-option:has(> input:checked) { color:var(--cx-rating-color); }
+  .cx-rating-option[data-preview="true"] { color:color-mix(in srgb,var(--cx-rating-color) 70%,var(--hfx-color-surface)); }
+  .cx-rating-option:has(> input:focus-visible) { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(var(--hfx-focus-width) * -1);border-radius:var(--hfx-radius-control); }
+  .cx-rating-option:has(> input:disabled) { color:var(--hfx-color-text-disabled);cursor:default; }
+  /* A disabled rating still shows its value: chosen stars keep a quieter rating colour. */
+  .cx-rating-option[data-filled="true"]:has(> input:disabled),.cx-rating-option:has(> input:disabled:checked) { color:color-mix(in srgb,var(--cx-rating-color) 60%,var(--hfx-color-text-disabled)); }
+  .cx-rating-display { display:inline-flex;align-items:center;gap:var(--hfx-space-1);white-space:nowrap; }
+  .cx-rating-on { color:var(--hfx-color-status-warn-fg); }
+  .cx-rating-off { color:var(--hfx-color-border-strong); }
+  @media (max-width: 40rem) { .cx-rating-option { inline-size:calc(var(--hfx-space-5) + var(--hfx-space-6));block-size:calc(var(--hfx-space-5) + var(--hfx-space-6)); } }
+  @media (forced-colors:active) { .cx-rating-option[data-filled="true"],.cx-rating-on { color:Highlight; } .cx-rating-option,.cx-rating-off { color:GrayText; } }
+}

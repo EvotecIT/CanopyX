@@ -26,6 +26,8 @@ public sealed partial class CanopyLabels {
     public string FlowNotProvided { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the mark after an optional field's label. Default "(optional)".</summary>
     public string FlowOptional { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets a rating answer and the name of each star, with <c>{value}</c> and <c>{max}</c>. Default "{value} of {max}".</summary>
+    public string FlowRatingValue { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the state of an optional step in the rail. Default "Optional".</summary>
     public string FlowStepOptional { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the state of a complete step. Default "Complete".</summary>

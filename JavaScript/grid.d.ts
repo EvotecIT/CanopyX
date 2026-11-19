@@ -197,6 +197,8 @@ export type GridPresenter =
   | ({ readonly kind: "sparklineBars"; readonly slots: boolean } & GridHistoryPresentation)
   | { readonly kind: "sparklineArea" | "sparklineColumns" | "sparklineWinLoss" }
   | { readonly kind: "bullet"; readonly target: number }
+  /** Read-only stars: the number rounded to whole filled stars of maximum (2 to 10). */
+  | { readonly kind: "rating"; readonly maximum: number }
   | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean; readonly stack?: boolean }
   | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 }
   /** A structured value's summary: a count (countText with {count}), chips (limit) or the first item and +N. The record panel shows it whole. */

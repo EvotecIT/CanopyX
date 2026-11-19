@@ -22,6 +22,14 @@ public sealed partial class CanopyLabels {
         labels.LightboxZoomOut = "Zoom arrière";
         labels.LightboxZoomReset = "Ajuster à l’écran";
         labels.LightboxError = "Impossible de charger cet élément";
+        labels.CarouselRole = "carrousel";
+        labels.CarouselSlideRole = "diapositive";
+        labels.CarouselSlide = "Diapositive {current} sur {total}";
+        labels.CarouselPrevious = "Diapositive précédente";
+        labels.CarouselNext = "Diapositive suivante";
+        labels.CarouselPicker = "Choisir une diapositive";
+        labels.CarouselMotionDisabled = "Les diapositives automatiques sont désactivées par la réduction des animations";
+        labels.RatingValue = "{value} sur {max}";
         labels.TabsMore = "Plus";
         labels.TabsMoreSelected = "Plus : {label}";
         labels.TabsScrollPrevious = "Onglets précédents";

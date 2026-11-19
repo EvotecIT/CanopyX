@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "be2cbaedcf235917",
+      "version": "f2e642b1e5286e68",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -151,6 +151,38 @@
       ]
     },
     {
+      "name": "ui-carousel",
+      "label": "UI carousel",
+      "version": "d3e1cba343cb3d2c",
+      "script": "canopyx-ui-carousel.js",
+      "style": "canopyx-ui-carousel.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
+      "name": "ui-rating",
+      "label": "UI rating",
+      "version": "56c368e3815425c7",
+      "script": "canopyx-ui-rating.js",
+      "style": "canopyx-ui-rating.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
       "name": "tree-tools",
       "label": "tree tools",
       "version": "7f5d2cd00dff0af7",
@@ -170,7 +202,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "8d102706756d1a10",
+      "version": "261a5f7060502de9",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -341,7 +373,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "b125842892c18f54",
+      "version": "97370f21d337eb4a",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -399,7 +431,7 @@
     {
       "name": "flow-options",
       "label": "flow host options",
-      "version": "f73f6445cc002ddd",
+      "version": "f3506e3b0b844fd5",
       "script": "canopyx-flow-options.js",
       "runtimes": [
         "grid",
@@ -643,7 +675,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "9da658187e66cff4",
+      "version": "aa72655ea53398fc",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -1060,7 +1092,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "7affbd50c26df699",
+      "version": "9a7fa6499bb322cd",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1307,7 +1339,7 @@
     {
       "name": "row-actions",
       "label": "row actions",
-      "version": "80d6f05ae179f50c",
+      "version": "0a90d09b9e871e86",
       "script": "canopyx-row-actions.js",
       "style": "canopyx-row-actions.css",
       "runtimes": [

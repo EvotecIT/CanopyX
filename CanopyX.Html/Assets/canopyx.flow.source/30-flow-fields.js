@@ -97,6 +97,7 @@
       case "list": return flowListInput(context, field, view.labels);
       case "secret": return flowSecretInput(context, field, view.labels, view.keeps(field));
       case "duration": return flowDurationInput(context, field, view.labels);
+      case "rating": return flowRatingInput(context, field, view.labels);
       case "records": case "pick": return flowHost(field.type).input(context, field, view);
       case "custom": {
         const editor = view.editors[field.raw.editor];
@@ -127,6 +128,7 @@
       case "date": return flowDate(view, value + "T00:00:00Z", { dateStyle: "medium", timeZone: "UTC" });
       case "datetime": return flowDate(view, value, { dateStyle: "medium", timeStyle: "short", timeZone: view.model.local ? undefined : "UTC" }) + (view.model.local ? "" : " UTC");
       case "duration": return flowWords(view, flowSeconds(value), field.units[0]);
+      case "rating": return fill(labels.flowRatingValue, { value: numberFormat(view.lang, 0, 0).format(value), max: numberFormat(view.lang, 0, 0).format(field.scale) });
       default: return String(value);
     }
   }

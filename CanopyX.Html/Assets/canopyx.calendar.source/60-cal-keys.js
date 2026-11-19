@@ -56,6 +56,7 @@
       const restored = scroll && !options.resize && this.calRestoreScroll(scroll);
       if (!restored && view === "agenda") this.calScrollAgenda();
       this.calMarkSelection();
+      this.calPaintedSize = [this.calRoot.clientWidth, this.calBody.clientHeight];
       this.calRestoreFocus(owned);
       if (resourceControl) { const target = this.calBody.querySelector(resourceControl); (target?.disabled ? this.calBody.querySelector(".cx-cal-rpick-select") : target)?.focus({ preventScroll: true }); }
     },

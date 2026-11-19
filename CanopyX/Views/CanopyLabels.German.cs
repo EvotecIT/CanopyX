@@ -551,6 +551,7 @@ public sealed partial class CanopyLabels {
         FlowChangeField = "{field} ändern",
         FlowNotProvided = "Nicht angegeben",
         FlowOptional = "(optional)",
+        FlowRatingValue = "{value} von {max}",
         FlowStepOptional = "Optional",
         FlowStepComplete = "Erledigt",
         FlowStepCurrent = "Aktueller Schritt",
