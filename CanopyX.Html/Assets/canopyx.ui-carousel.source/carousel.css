@@ -1,7 +1,18 @@
 @layer hfx.components {
-  .cx-carousel { --cx-carousel-gap:var(--hfx-space-3);display:flex;flex-direction:column-reverse;gap:var(--hfx-space-2);min-inline-size:0;font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);color:var(--hfx-color-text); }
+  .cx-carousel { --cx-carousel-gap:var(--hfx-space-3);display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;min-inline-size:0;font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);color:var(--hfx-color-text); }
   .cx-carousel,.cx-carousel * { box-sizing:border-box; }
   .cx-carousel-viewport { min-inline-size:0; }
+  /* Rows: the bar above, the picker above, the slides, the picker below, the bar below. Side buttons sit beside the slides. */
+  .cx-carousel > * { grid-column:1 / -1; }
+  .cx-carousel > :is(.cx-carousel-viewport,.cx-carousel-track) { grid-row:3; }
+  .cx-carousel > .cx-carousel-controls { grid-row:5;margin-block-start:var(--hfx-space-2); }
+  .cx-carousel[data-controls="above"] > .cx-carousel-controls { grid-row:1;margin-block:0 var(--hfx-space-2); }
+  .cx-carousel > .cx-carousel-picker { grid-row:4;margin-block-start:var(--hfx-space-2); }
+  .cx-carousel[data-indicators="above"] > .cx-carousel-picker { grid-row:2;margin-block:0 var(--hfx-space-2); }
+  .cx-carousel[data-controls="sides"] > :is(.cx-carousel-viewport,.cx-carousel-track) { grid-column:2; }
+  .cx-carousel > .cx-carousel-step { grid-row:3;grid-column:1;margin-inline-end:var(--hfx-space-2); }
+  .cx-carousel > .cx-carousel-step[data-cx-part="next"] { grid-column:3;margin-inline:var(--hfx-space-2) 0; }
+  .cx-carousel :is(.cx-carousel-step,.cx-carousel-picker)[hidden] { display:none; }
   .cx-carousel-track {
     display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - var(--cx-carousel-gap) * (var(--cx-carousel-per-view,1) - 1)) / var(--cx-carousel-per-view,1));gap:var(--cx-carousel-gap);
     margin:0;padding:0;list-style:none;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:inline mandatory;scrollbar-width:none;
@@ -9,6 +20,13 @@
   .cx-carousel-track::-webkit-scrollbar { display:none; }
   .cx-carousel-slide { min-inline-size:0;scroll-snap-align:start;overflow:hidden;border-radius:var(--hfx-radius-container); }
   .cx-carousel-slide > img { display:block;inline-size:100%;block-size:auto; }
+  .cx-carousel-slide { position:relative; }
+  .cx-carousel-caption { margin:0;padding:var(--hfx-space-2) var(--hfx-space-3);font-size:var(--hfx-type-caption-size);color:var(--hfx-color-text-muted); }
+  .cx-carousel:not([data-captions="below"]) .cx-carousel-caption { position:absolute;inset-inline:0;inset-block-end:0;color:var(--hfx-color-text);background:color-mix(in srgb,var(--hfx-color-surface) 85%,transparent); }
+  /* A fading carousel stacks its slides in one cell and swaps them by opacity; swipes come from pointer events. */
+  .cx-carousel[data-transition="fade"] .cx-carousel-track { grid-template-areas:"slide";grid-template-columns:minmax(0,1fr);grid-auto-flow:row;overflow:hidden;scroll-snap-type:none;touch-action:pan-y; }
+  .cx-carousel[data-transition="fade"] .cx-carousel-slide { grid-area:slide;opacity:0;visibility:hidden; }
+  .cx-carousel[data-transition="fade"] .cx-carousel-slide[data-state="visible"] { opacity:1;visibility:visible; }
   .cx-carousel-controls { display:flex;align-items:center;justify-content:center;gap:var(--hfx-space-2); }
   .cx-carousel-controls[hidden] { display:none; }
   .cx-carousel-step,.cx-carousel-play { display:inline-grid;place-items:center;inline-size:var(--hfx-control-height-sm);block-size:var(--hfx-control-height-sm);padding:0;border:var(--hfx-border-width) solid var(--hfx-color-border-control);border-radius:var(--hfx-radius-pill);color:var(--hfx-color-text);background:var(--hfx-color-surface);font-size:0;cursor:pointer; }
@@ -29,10 +47,14 @@
     .cx-carousel { --cx-carousel-per-view:1!important; }
     .cx-carousel-step,.cx-carousel-play,.cx-carousel-dot { inline-size:calc(var(--hfx-space-5) + var(--hfx-space-6));block-size:calc(var(--hfx-space-5) + var(--hfx-space-6)); }
   }
-  @media (prefers-reduced-motion:no-preference) { .cx-carousel-track { scroll-behavior:smooth; } }
+  @media (prefers-reduced-motion:no-preference) {
+    .cx-carousel-track { scroll-behavior:smooth; }
+    .cx-carousel[data-transition="fade"] .cx-carousel-slide { transition:opacity var(--hfx-motion-duration-slow) var(--hfx-motion-easing-standard),visibility var(--hfx-motion-duration-slow); }
+  }
   @media (forced-colors:active) { .cx-carousel-dot[aria-current="true"]::before { background:Highlight;border-color:Highlight; } }
   @media print {
-    .cx-carousel-controls { display:none; }
+    .cx-carousel-controls,.cx-carousel > .cx-carousel-step,.cx-carousel > .cx-carousel-picker { display:none; }
+    .cx-carousel[data-transition="fade"] .cx-carousel-slide { opacity:1;visibility:visible; }
     .cx-carousel-track { display:block;overflow:visible; }
     .cx-carousel-slide { break-inside:avoid;margin-block-end:var(--cx-carousel-gap); }
   }

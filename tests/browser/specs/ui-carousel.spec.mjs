@@ -163,3 +163,49 @@ test('a scaled ancestor shrinks the track and the slides alike', async ({ page }
   expect(await page.evaluate(() => { const track = document.querySelector('.cx-carousel-track'), slide = document.querySelectorAll('.cx-carousel-slide')[2];
     return Math.abs(slide.getBoundingClientRect().left - track.getBoundingClientRect().left) < 1; })).toBe(true);
 });
+
+test('a fading carousel stacks its slides, swaps them on a choice or a swipe, and refuses several per view', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openUi(page, carousel('data-transition="fade"'));
+  const boxes = await page.locator('.cx-carousel-slide').evaluateAll(slides => slides.map(slide => Math.round(slide.getBoundingClientRect().left)));
+  expect(new Set(boxes).size).toBe(1);
+  await expect(slide(page, 1)).toBeVisible();
+  await expect(slide(page, 2)).toBeHidden();
+  await page.getByRole('button', { name: 'Next slide' }).click();
+  await expect(slide(page, 2)).toBeVisible();
+  await expect(slide(page, 1)).toBeHidden();
+  const box = await page.locator('.cx-carousel-track').boundingBox();
+  await page.mouse.move(box.x + box.width - 20, box.y + 20); await page.mouse.down();
+  await page.mouse.move(box.x + 20, box.y + 20, { steps: 4 }); await page.mouse.up();
+  expect((await state(page)).index).toBe(2);
+  const refused = await page.evaluate(() => CanopyX.carousel(document.body.appendChild(Object.assign(document.createElement('section'), { innerHTML: '<div class="cx-carousel-track"><div>a</div></div>' })),
+    { transition: 'fade', perView: 2 }).ready.then(() => 'ready', error => error.message));
+  expect(refused).toBe('CanopyX: a fading carousel shows one slide at a time.');
+});
+
+test('controls sit beside the slides, the picker on its own line, and captions under or over their slide', async ({ page }) => {
+  await openUi(page, carousel('data-controls="sides" data-indicators="above" data-captions="below"').replace('<h3>Note 1</h3>', '<h3>Note 1</h3><p class="cx-carousel-caption">First caption</p>'));
+  const track = await page.locator('.cx-carousel-track').boundingBox();
+  const previous = await page.getByRole('button', { name: 'Previous slide' }).boundingBox();
+  const next = await page.getByRole('button', { name: 'Next slide' }).boundingBox();
+  const picker = await page.getByRole('group', { name: 'Choose a slide' }).boundingBox();
+  expect(previous.x + previous.width).toBeLessThanOrEqual(track.x);
+  expect(next.x).toBeGreaterThanOrEqual(track.x + track.width);
+  expect(picker.y + picker.height).toBeLessThanOrEqual(track.y);
+  await expect(page.locator('.cx-carousel-controls')).toBeHidden();
+  const caption = page.getByText('First caption');
+  expect(await caption.evaluate(element => getComputedStyle(element).position)).toBe('static');
+  await page.evaluate(() => { CanopyX.carousel('#news').destroy(); document.getElementById('news').dataset.captions = 'overlay'; });
+  expect(await caption.evaluate(element => getComputedStyle(element).position)).toBe('absolute');
+  await expect(page.getByRole('button', { name: 'Previous slide' })).toHaveCount(0);
+});
+
+test('hidden indicators leave the buttons and keys, and the bar can sit above the slides', async ({ page }) => {
+  await openUi(page, carousel('data-indicators="hidden" data-controls="above"'));
+  await expect(page.getByRole('group', { name: 'Choose a slide' })).toBeHidden();
+  const bar = await page.locator('.cx-carousel-controls').boundingBox(), track = await page.locator('.cx-carousel-track').boundingBox();
+  expect(bar.y + bar.height).toBeLessThanOrEqual(track.y);
+  await page.locator('.cx-carousel-track').focus();
+  await page.keyboard.press('End');
+  expect((await state(page)).index).toBe(3);
+});

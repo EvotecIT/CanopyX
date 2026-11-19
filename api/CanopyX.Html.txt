@@ -225,8 +225,24 @@ CanopyX.Html.Ui.CanopyCarousel.System.Collections.Generic.IList<CanopyX.Html.Ui.
 CanopyX.Html.Ui.CanopyCarousel.System.String Id { get; }
 CanopyX.Html.Ui.CanopyCarousel.System.String Label { get; }
 CanopyX.Html.Ui.CanopyCarousel.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyCarouselCaptionPosition : enum System.Int32
+CanopyX.Html.Ui.CanopyCarouselCaptionPosition.const CanopyX.Html.Ui.CanopyCarouselCaptionPosition Below = 1
+CanopyX.Html.Ui.CanopyCarouselCaptionPosition.const CanopyX.Html.Ui.CanopyCarouselCaptionPosition Overlay = 0
+CanopyX.Html.Ui.CanopyCarouselControlPosition : enum System.Int32
+CanopyX.Html.Ui.CanopyCarouselControlPosition.const CanopyX.Html.Ui.CanopyCarouselControlPosition Above = 1
+CanopyX.Html.Ui.CanopyCarouselControlPosition.const CanopyX.Html.Ui.CanopyCarouselControlPosition Below = 0
+CanopyX.Html.Ui.CanopyCarouselControlPosition.const CanopyX.Html.Ui.CanopyCarouselControlPosition Sides = 2
+CanopyX.Html.Ui.CanopyCarouselIndicatorPosition : enum System.Int32
+CanopyX.Html.Ui.CanopyCarouselIndicatorPosition.const CanopyX.Html.Ui.CanopyCarouselIndicatorPosition Above = 1
+CanopyX.Html.Ui.CanopyCarouselIndicatorPosition.const CanopyX.Html.Ui.CanopyCarouselIndicatorPosition Below = 2
+CanopyX.Html.Ui.CanopyCarouselIndicatorPosition.const CanopyX.Html.Ui.CanopyCarouselIndicatorPosition Hidden = 3
+CanopyX.Html.Ui.CanopyCarouselIndicatorPosition.const CanopyX.Html.Ui.CanopyCarouselIndicatorPosition WithControls = 0
 CanopyX.Html.Ui.CanopyCarouselOptions : sealed class
 CanopyX.Html.Ui.CanopyCarouselOptions..ctor()
+CanopyX.Html.Ui.CanopyCarouselOptions.CanopyX.Html.Ui.CanopyCarouselCaptionPosition Captions { get; set; }
+CanopyX.Html.Ui.CanopyCarouselOptions.CanopyX.Html.Ui.CanopyCarouselControlPosition Controls { get; set; }
+CanopyX.Html.Ui.CanopyCarouselOptions.CanopyX.Html.Ui.CanopyCarouselIndicatorPosition Indicators { get; set; }
+CanopyX.Html.Ui.CanopyCarouselOptions.CanopyX.Html.Ui.CanopyCarouselTransition Transition { get; set; }
 CanopyX.Html.Ui.CanopyCarouselOptions.System.Boolean Loop { get; set; }
 CanopyX.Html.Ui.CanopyCarouselOptions.System.Int32 PerView { get; set; }
 CanopyX.Html.Ui.CanopyCarouselOptions.System.Int32 SelectedIndex { get; set; }
@@ -235,7 +251,11 @@ CanopyX.Html.Ui.CanopyCarouselOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopyCarouselSlide : sealed class
 CanopyX.Html.Ui.CanopyCarouselSlide..ctor(System.String contentHtml)
 CanopyX.Html.Ui.CanopyCarouselSlide.System.String ContentHtml { get; }
+CanopyX.Html.Ui.CanopyCarouselSlide.System.String? Caption { get; set; }
 CanopyX.Html.Ui.CanopyCarouselSlide.System.String? Label { get; set; }
+CanopyX.Html.Ui.CanopyCarouselTransition : enum System.Int32
+CanopyX.Html.Ui.CanopyCarouselTransition.const CanopyX.Html.Ui.CanopyCarouselTransition Fade = 1
+CanopyX.Html.Ui.CanopyCarouselTransition.const CanopyX.Html.Ui.CanopyCarouselTransition Slide = 0
 CanopyX.Html.Ui.CanopyDialog : sealed class
 CanopyX.Html.Ui.CanopyDialog..ctor(System.String id, System.String title, CanopyX.Html.Ui.CanopyDialogOptions? options = null)
 CanopyX.Html.Ui.CanopyDialog.CanopyX.Html.Ui.CanopyDialogOptions Options { get; }

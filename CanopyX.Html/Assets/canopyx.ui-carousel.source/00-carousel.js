@@ -9,6 +9,14 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   if (!Number.isFinite(interval) || interval < 0) throw new Error('CanopyX: the carousel autoplay interval must be positive milliseconds.');
   const perView = Number(options.perView ?? data.perView ?? 1);
   if (!Number.isInteger(perView) || perView < 1 || perView > 6) throw new Error('CanopyX: a carousel shows 1 to 6 slides at once.');
+  const pick = (name, allowed) => {
+    const value = options[name] ?? data[name] ?? allowed[0];
+    if (!allowed.includes(value)) throw new Error('CanopyX: the carousel ' + name + ' option is one of ' + allowed.join(', ') + '.');
+    return value;
+  };
+  const fade = pick('transition', ['slide', 'fade']) === 'fade', place = pick('controls', ['below', 'above', 'sides']);
+  const dots = pick('indicators', ['controls', 'below', 'above', 'hidden']), captions = pick('captions', ['overlay', 'below']);
+  if (fade && perView !== 1) throw new Error('CanopyX: a fading carousel shows one slide at a time.');
   const viewport = root.querySelector(':scope > .cx-carousel-viewport') || root;
   const track = viewport.querySelector(':scope > .cx-carousel-track');
   if (!track) throw new Error('CanopyX: a carousel needs a .cx-carousel-track list of slides.');
@@ -16,6 +24,7 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   const restore = [];
   const attribute = (element, name, value) => { restore.push([element, name, element.getAttribute(name)]); element.setAttribute(name, value); };
   attribute(root, 'aria-roledescription', labels.carouselRole);
+  for (const [name, value] of [['data-transition', fade ? 'fade' : 'slide'], ['data-controls', place], ['data-indicators', dots], ['data-captions', captions]]) attribute(root, name, value);
   if (!root.hasAttribute('aria-label') && !root.hasAttribute('aria-labelledby')) attribute(root, 'aria-label', labels.carouselRole);
   const controls = h('div', 'cx-carousel-controls'), previous = h('button', 'cx-carousel-step'), next = h('button', 'cx-carousel-step');
   const picker = h('div', 'cx-carousel-picker'), play = interval ? h('button', 'cx-carousel-play') : null;
@@ -24,8 +33,14 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
     button.type = 'button'; button.dataset.cxPart = part; button.setAttribute('aria-label', label); button.title = label;
   }
   if (play) { play.type = 'button'; play.dataset.cxPart = 'play'; }
-  controls.append(...[play, previous, picker, next].filter(Boolean));
-  root.insertBefore(controls, viewport === root ? track : viewport);
+  // Placement: the bar holds what is not placed elsewhere; side buttons and a separate picker are the carousel's own children,
+  // which the stylesheet lays out around the slides.
+  const main = viewport === root ? track : viewport;
+  controls.append(...[play, place === 'sides' ? null : previous, dots === 'controls' ? picker : null, place === 'sides' ? null : next].filter(Boolean));
+  root.insertBefore(controls, main);
+  if (place === 'sides') { root.insertBefore(previous, main); main.after(next); }
+  if (dots === 'above' || dots === 'below') root.insertBefore(picker, main);
+  picker.hidden = dots === 'hidden';
   // While slides move by themselves the viewport is not announced; otherwise each new slide is.
   attribute(viewport, 'aria-live', 'polite');
   // The track scrolls, so it takes focus: the arrow keys then move between slides even when no slide holds a control.
@@ -84,7 +99,9 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
       dot.hidden = at > last();
     });
     previous.disabled = !loop && index <= 0; next.disabled = !loop && index >= last();
-    controls.hidden = slides.length <= visible;
+    controls.hidden = previous.hidden = next.hidden = slides.length <= visible || !controls.children.length;
+    if (place === 'sides') previous.hidden = next.hidden = slides.length <= visible;
+    if (dots !== 'hidden') picker.hidden = slides.length <= visible;
     // Slides that move by themselves are not announced; once they stop, each slide the reader moves to is.
     viewport.setAttribute('aria-live', playing ? 'off' : 'polite');
     if (play) {
@@ -97,7 +114,7 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   /** Scrolls the track so a slide sits at its start, as the stylesheet's scroll-behavior says: smoothly, or instantly under reduced motion. */
   function scrollTo(at) {
     const slide = slides[at];
-    if (!slide) return;
+    if (!slide || fade) return;
     const start = track.getBoundingClientRect(), box = slide.getBoundingClientRect();
     // The boxes include ancestor transforms; scrolling takes layout pixels, so a scaled ancestor's factor is taken out.
     const scale = start.width / (track.offsetWidth || start.width || 1) || 1;
@@ -141,6 +158,15 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   const start = () => { if (!interval || reduced.matches) return false; playing = true; paint(); schedule(); return true; };
   const stop = () => { playing = false; clearTimeout(timer); timer = 0; paint(); return true; };
 
+  // A fading track does not scroll, so a horizontal swipe moves between slides instead.
+  let swipe = null;
+  if (fade) {
+    track.addEventListener('pointerdown', event => { swipe = event.isPrimary && !event.target.closest('input,select,textarea,button,a[href],label,video,audio,iframe') ? event.clientX : null; }, { signal });
+    track.addEventListener('pointerup', event => {
+      const moved = swipe === null ? 0 : event.clientX - swipe; swipe = null;
+      if (Math.abs(moved) > 40) select(index + ((moved < 0) !== rtl() ? 1 : -1), 'swipe');
+    }, { signal });
+  }
   previous.addEventListener('click', () => select(index - 1, 'button'), { signal });
   next.addEventListener('click', () => select(index + 1, 'button'), { signal });
   play?.addEventListener('click', () => playing ? stop() : start(), { signal });
@@ -165,7 +191,7 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   matchMedia('(max-width: 40rem)').addEventListener('change', () => requestAnimationFrame(() => { if (!signal?.aborted) { measure(); paint(); scrollTo(index); } }), { signal });
   UI_TOOLS.observe(track, () => { measure(); paint(); scrollTo(index); }, signal);
   signal?.addEventListener('abort', () => {
-    clearTimeout(timer); cancelAnimationFrame(frame); controls.remove(); root.style.removeProperty('--cx-carousel-per-view');
+    clearTimeout(timer); cancelAnimationFrame(frame); controls.remove(); previous.remove(); next.remove(); picker.remove(); root.style.removeProperty('--cx-carousel-per-view');
     for (const slide of slides) release(slide);
     for (const [element, name, value] of restore.reverse()) if (value === null) element.removeAttribute(name); else element.setAttribute(name, value);
   }, { once: true });

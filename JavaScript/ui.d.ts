@@ -411,6 +411,14 @@ export interface UiCarouselOptions {
   selected?: number;
   /** Off unless given: slides move every interval milliseconds, with a Pause button, pausing on hover and focus, never under reduced motion. */
   autoplay?: false | { interval: number; start?: boolean };
+  /** "fade" stacks the slides and fades between them, one per view. Defaults to "slide". */
+  transition?: "slide" | "fade";
+  /** Where Previous and Next sit. Defaults to "below". */
+  controls?: "below" | "above" | "sides";
+  /** Where the slide picker sits, or "hidden". Defaults to "controls" (between Previous and Next). */
+  indicators?: "controls" | "above" | "below" | "hidden";
+  /** Where .cx-carousel-caption paragraphs in slides show. Defaults to "overlay". */
+  captions?: "overlay" | "below";
   labels?: UiLabels;
 }
 export interface UiCarouselController extends UiController {

@@ -31,6 +31,8 @@ public sealed class CanopyCarousel {
         if (Slides.Count == 0) throw new ArgumentException("A carousel requires at least one slide.");
         if (Options.PerView < 1 || Options.PerView > 6) throw new ArgumentOutOfRangeException(nameof(Options.PerView), "A carousel shows 1 to 6 slides at once.");
         UiHtml.Index(Options.SelectedIndex, Slides.Count);
+        UiHtml.EnumValue(Options.Transition); UiHtml.EnumValue(Options.Controls); UiHtml.EnumValue(Options.Indicators); UiHtml.EnumValue(Options.Captions);
+        if (Options.Transition == CanopyCarouselTransition.Fade && Options.PerView != 1) throw new ArgumentException("A fading carousel shows one slide at a time.");
         if (Options.AutoplayInterval <= 0) throw new ArgumentOutOfRangeException(nameof(Options.AutoplayInterval), "The interval must be positive milliseconds.");
         var html = new StringBuilder("<section");
         UiHtml.Attribute(html, "id", Id);
@@ -41,12 +43,18 @@ public sealed class CanopyCarousel {
         if (Options.Loop) UiHtml.Attribute(html, "data-loop", "true");
         if (Options.SelectedIndex != 0) UiHtml.Attribute(html, "data-selected", UiHtml.Number(Options.SelectedIndex));
         if (Options.AutoplayInterval != null) UiHtml.Attribute(html, "data-autoplay-interval", UiHtml.Number(Options.AutoplayInterval.Value));
+        if (Options.Transition != CanopyCarouselTransition.Slide) UiHtml.Attribute(html, "data-transition", UiHtml.Token(Options.Transition));
+        if (Options.Controls != CanopyCarouselControlPosition.Below) UiHtml.Attribute(html, "data-controls", UiHtml.Token(Options.Controls));
+        if (Options.Indicators != CanopyCarouselIndicatorPosition.WithControls) UiHtml.Attribute(html, "data-indicators", UiHtml.Token(Options.Indicators));
+        if (Options.Captions != CanopyCarouselCaptionPosition.Overlay) UiHtml.Attribute(html, "data-captions", UiHtml.Token(Options.Captions));
         html.Append("><div class=\"cx-carousel-viewport\" data-cx-part=\"viewport\"><div class=\"cx-carousel-track\" data-cx-part=\"track\">");
         foreach (var slide in Slides) {
             if (slide == null) throw new ArgumentException("Slides cannot contain null entries.");
             html.Append("<div class=\"cx-carousel-slide\"");
             if (slide.Label != null) UiHtml.Attribute(html, "data-label", UiHtml.Text(slide.Label, nameof(slide.Label)));
-            html.Append('>').Append(slide.ContentHtml).Append("</div>");
+            html.Append('>').Append(slide.ContentHtml);
+            if (slide.Caption != null) html.Append("<p class=\"cx-carousel-caption\">").Append(UiHtml.Encode(UiHtml.Text(slide.Caption, nameof(slide.Caption)))).Append("</p>");
+            html.Append("</div>");
         }
         return html.Append("</div></div></section>").ToString();
     }
