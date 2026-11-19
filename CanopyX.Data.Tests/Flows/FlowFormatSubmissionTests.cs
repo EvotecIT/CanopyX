@@ -21,14 +21,14 @@ public sealed class FlowFormatSubmissionTests {
     [Fact]
     public void SharedCases_PassAndFailAsInTheBrowser() {
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "flow-formats.json")));
-        var cases = document.RootElement.EnumerateObject().Where(entry => !entry.Name.StartsWith('$')).ToList();
+        var cases = document.RootElement.EnumerateObject().Where(entry => !entry.Name.StartsWith("$", StringComparison.Ordinal)).ToList();
         Assert.Equal(Formats.Keys.OrderBy(name => name), cases.Select(entry => entry.Name).OrderBy(name => name));
         foreach (var entry in cases) {
             var flow = Flow(Formats[entry.Name]);
             foreach (var valid in entry.Value.GetProperty("valid").EnumerateArray().Select(item => item.GetString()!))
                 Assert.Equal(valid, CanopyFlowSubmission.Parse(flow, Proposal(valid)).Values["answer"]);
             foreach (var invalid in entry.Value.GetProperty("invalid").EnumerateArray().Select(item => item.GetString()!)) {
-                var error = Assert.Throws<CanopyFlowSubmissionException>(() => CanopyFlowSubmission.Parse(flow, Proposal(invalid)));
+                var error = Assert.Throws<CanopyFlowSubmissionException>(() => { CanopyFlowSubmission.Parse(flow, Proposal(invalid)); });
                 Assert.StartsWith("Answer must look like ", error.FieldErrors["answer"]);
             }
         }
