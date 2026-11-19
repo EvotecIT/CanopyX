@@ -33,9 +33,11 @@ UI_IMPL.select = (root, options = {}, signal) => {
   const validation = ['aria-invalid', 'aria-describedby', 'aria-errormessage', 'aria-required'], copyValidation = () => {
     for (const name of validation) { const value = native.getAttribute(name); if (value === null) input.removeAttribute(name); else input.setAttribute(name, value); }
     if (native.required) input.setAttribute('aria-required', 'true');
+    // A host that enables or disables the select later changes the combobox with it.
+    input.disabled = toggle.disabled = native.disabled; if (native.disabled && open) hide();
   };
   copyValidation();
-  const watcher = new MutationObserver(copyValidation); watcher.observe(native, { attributes: true, attributeFilter: [...validation, 'required'] });
+  const watcher = new MutationObserver(copyValidation); watcher.observe(native, { attributes: true, attributeFilter: [...validation, 'required', 'disabled'] });
   signal?.addEventListener('abort', () => watcher.disconnect(), { once: true });
   // The select's aria-labelledby or its label (for= or wrapping) names the combobox; aria-label on the select or the label option work too.
   const label = native.labels?.[0], named = native.getAttribute('aria-labelledby');

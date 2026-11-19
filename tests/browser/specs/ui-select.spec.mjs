@@ -327,3 +327,15 @@ test('a disabled selected option stays disabled, and a reset empties a select th
   expect(await page.evaluate(() => new FormData(document.getElementById('form')).getAll('user'))).toEqual([]);
   await expect(owner).toHaveValue('');
 });
+
+test('the combobox follows the native select when the host enables or disables it', async ({ page }) => {
+  await openUi(page, select().replace('<select id="country" name="country"', '<select id="country" name="country" disabled'));
+  await expect(combo(page)).toBeDisabled();
+  await page.evaluate(() => { document.getElementById('country').disabled = false; });
+  await expect(combo(page)).toBeEnabled();
+  await combo(page).click();
+  await expect(options(page).first()).toBeVisible();
+  await page.evaluate(() => { document.getElementById('country').disabled = true; });
+  await expect(combo(page)).toBeDisabled();
+  await expect(page.getByRole('listbox', { name: 'Country' })).toBeHidden();
+});
