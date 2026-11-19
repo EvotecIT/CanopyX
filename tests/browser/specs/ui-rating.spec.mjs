@@ -60,3 +60,16 @@ test('an empty element gets its radio group in the page language', async ({ page
   await page.evaluate(() => CanopyX.rating('#stars').destroy());
   await expect(page.getByRole('radio')).toHaveCount(0);
 });
+
+test('a form reset brings the stars back to the written value, and a generated fieldset gets its legend', async ({ page }) => {
+  await openUi(page, rating('', 2));
+  await page.locator('.cx-rating-option').nth(3).click();
+  await page.mouse.move(800, 500);
+  await expect(filled(page)).toHaveCount(4);
+  await page.evaluate(() => document.getElementById('survey').reset());
+  await expect(filled(page)).toHaveCount(2);
+  expect(await page.evaluate(() => CanopyX.rating('#quality').getState().value)).toBe(2);
+  await openUi(page, '<fieldset id="blank"></fieldset>');
+  await page.evaluate(() => CanopyX.rating('#blank', { label: 'Ease of setup' }).ready);
+  await expect(page.getByRole('group', { name: 'Ease of setup' })).toBeVisible();
+});

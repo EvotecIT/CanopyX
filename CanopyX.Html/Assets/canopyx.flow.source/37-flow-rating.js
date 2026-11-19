@@ -16,7 +16,8 @@
     group.addEventListener("pointerdown", event => { const input = event.target.closest("label")?.querySelector("input"); pressed = input && input.checked ? input : null; });
     group.addEventListener("click", event => {
       if (!inputs.includes(event.target)) return;
-      if (pressed === event.target && !field.required) { pressed = null; event.preventDefault(); clear(); return; }
+      // The click finishes as usual, then the clear unchecks the star; cancelling it would check the radio again.
+      if (pressed === event.target && !field.required) { pressed = null; clear(); return; }
       pressed = null;
     });
     group.addEventListener("change", event => { if (inputs.includes(event.target)) { value = Number(event.target.value); paint(); } });

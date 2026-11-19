@@ -121,7 +121,7 @@
     {
       "name": "ui-carousel",
       "label": "UI carousel",
-      "version": "4c2cc623d2e5171d",
+      "version": "bfafadc458c26548",
       "script": "canopyx-ui-carousel.js",
       "style": "canopyx-ui-carousel.css",
       "runtimes": [
@@ -137,7 +137,7 @@
     {
       "name": "ui-rating",
       "label": "UI rating",
-      "version": "6d201864e33135d6",
+      "version": "9fe616247498c680",
       "script": "canopyx-ui-rating.js",
       "style": "canopyx-ui-rating.css",
       "runtimes": [
@@ -170,7 +170,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "2691b129ec889d1b",
+      "version": "261a5f7060502de9",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -341,7 +341,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "cdc2adb38641a522",
+      "version": "71f394c39fd5ab52",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -399,7 +399,7 @@
     {
       "name": "flow-options",
       "label": "flow host options",
-      "version": "f73f6445cc002ddd",
+      "version": "f3506e3b0b844fd5",
       "script": "canopyx-flow-options.js",
       "runtimes": [
         "grid",

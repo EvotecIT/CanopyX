@@ -105,3 +105,30 @@ test('destroy restores the slides and removes the controls', async ({ page }) =>
   await expect(page.locator('.cx-carousel-controls')).toHaveCount(0);
   expect(await page.locator('.cx-carousel-slide').nth(2).evaluate(element => [element.inert, element.getAttribute('role'), element.getAttribute('aria-label')])).toEqual([false, null, null]);
 });
+
+test('six slides per view fit six with their gaps, so the last view stays reachable', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 740, height: 600 });
+  await openUi(page, '<div style="inline-size:700px">' + carousel('data-per-view="6"', 8) + '</div>');
+  expect(await page.evaluate(() => CanopyX.carousel('#news').getState())).toMatchObject({ visible: 6, total: 8 });
+  await page.getByRole('button', { name: 'Next slide' }).click();
+  await page.getByRole('button', { name: 'Next slide' }).click();
+  expect((await page.evaluate(() => CanopyX.carousel('#news').getState())).index).toBe(2);
+});
+
+test('stopping autoplay turns announcements back on, and refresh releases slides the host removed', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, carousel('data-autoplay-interval="3000"'));
+  const viewport = page.locator('.cx-carousel-viewport');
+  await expect(viewport).toHaveAttribute('aria-live', 'off');
+  await page.evaluate(() => CanopyX.carousel('#news').pause());
+  await expect(viewport).toHaveAttribute('aria-live', 'polite');
+  const moved = await page.evaluate(() => {
+    const slide = document.querySelectorAll('.cx-carousel-slide')[3];
+    document.body.append(slide); CanopyX.carousel('#news').refresh();
+    return [slide.inert, slide.getAttribute('role'), slide.getAttribute('aria-roledescription'), slide.dataset.state ?? null];
+  });
+  expect(moved).toEqual([false, null, null, null]);
+  expect((await page.evaluate(() => CanopyX.carousel('#news').getState())).total).toBe(3);
+});

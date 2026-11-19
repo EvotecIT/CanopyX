@@ -27,7 +27,7 @@ public static partial class CanopyStaticHtml {
             var rating = Convert.ToDouble(number, CultureInfo.InvariantCulture);
             // Stars as characters read in email and print; the number follows for anyone who cannot see them.
             var maximum = (int)presenter.Maximum; var filled = (int)Math.Round(Math.Min(maximum, Math.Max(0, rating)), MidpointRounding.AwayFromZero);
-            return new string('★', filled) + new string('☆', maximum - filled) + " " + text + " / " + maximum.ToString(CultureInfo.InvariantCulture);
+            return new string('★', filled) + new string('☆', maximum - filled) + " " + rating.ToString("0.##", CultureInfo.InvariantCulture) + " / " + maximum.ToString(CultureInfo.InvariantCulture);
         }
         if (presenter?.Kind == CanopyGridPresenterKind.Identifier || presenter?.Kind == CanopyGridPresenterKind.RelativeTime) {
             var secondary = cell?.Secondary;
