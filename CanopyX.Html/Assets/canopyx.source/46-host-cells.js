@@ -92,6 +92,11 @@
   Object.assign(TreeGrid.prototype, {
     /** Runs the renderer of a column for one cell and returns "host", "decorated", or "default" (see above). */
     paintHostSlot(slot, node, column, index, w) {
+      // A grid-owned column can name what its cell shows. While that stays the same the cell and its controls stay too,
+      // so a click that straddles a repaint (a live update, a facet count) still reaches the button it pressed.
+      const key = column.hostRenderer === false && column.renderKey ? column.renderKey(node) : undefined;
+      if (key !== undefined && slot.mode === "host" && slot.renderKey === key && slot.content.isConnected) return "host";
+      slot.renderKey = undefined;
       const tree = slot.content !== slot.cell;
       const previous = slot.content;
       const fresh = tree ? h("span", "cx-content") : this.newCell(this.cols.indexOf(column), column.renderWidth || column.width, column.kind);
@@ -128,6 +133,7 @@
       slot.title = null;
       slot.badges = [];
       slot.mode = drawn ? "host" : untouched ? "default" : "decorated";
+      if (drawn) slot.renderKey = key;
       if (!untouched) {
         // The grid is one Tab stop; the host's controls in the cell are reached with cell navigation.
         quietControls(fresh);

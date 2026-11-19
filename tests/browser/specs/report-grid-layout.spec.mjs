@@ -8,7 +8,11 @@ import { reportLayoutView, mountReportLayout, layoutGeometry } from "./report-gr
 test.beforeEach(async ({ page }) => { await pinTestFont(page); });
 
 // Headless Chromium otherwise adds --hide-scrollbars, which would leave the classic-gutter contract unexercised.
-test.use({ launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] } });
+// Other launch options mean another worker and browser, so lanes without Chromium (one engine per CI lane) keep theirs.
+const engines = (process.env.CANOPYX_TEST_BROWSERS || "chromium").trim();
+if (engines === "all" || engines.includes("chromium")) {
+  test.use({ launchOptions: { ignoreDefaultArgs: ["--hide-scrollbars"] } });
+}
 
 async function settled(page) { await nextFrames(page); await nextFrames(page); }
 async function rowsFit(page) {
