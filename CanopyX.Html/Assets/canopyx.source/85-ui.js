@@ -67,7 +67,9 @@
   function notify(options) {
     // Not rendered: inside a closed dialog, hidden content or anything a stylesheet hides.
     const usable = region => !region.closest("dialog:not([open]),[hidden]") && region.checkVisibility?.() !== false;
-    let root = notifyRoot && uiInstances.get(notifyRoot)?.has("toasts") && (!notifyRoot.isConnected || usable(notifyRoot)) ? notifyRoot : [...document.querySelectorAll("[data-cx-toasts]")].find(usable);
+    // A region out of the page is reused only while its home is still in the page; a removed container takes it for good.
+    const recoverable = region => region.isConnected ? usable(region) : !!UI_TOOLS.toastHomes?.get(region)?.isConnected;
+    let root = notifyRoot && uiInstances.get(notifyRoot)?.has("toasts") && recoverable(notifyRoot) ? notifyRoot : [...document.querySelectorAll("[data-cx-toasts]")].find(usable);
     if (!root) { root = h("section"); root.setAttribute("data-cx-toasts", ""); document.body.appendChild(root); }
     notifyRoot = root;
     const api = createUi("toasts", root);
