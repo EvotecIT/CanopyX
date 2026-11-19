@@ -4004,6 +4004,16 @@
     "(facoltativo)"
   ],
   "FlowRatingValue": ["{value} z {max}", "{value} von {max}", "{value} de {max}", "{value} sur {max}", "{value} su {max}"],
+  "FlowFormatExample": ["Na przykład: {example}", "Zum Beispiel: {example}", "Por ejemplo: {example}", "Par exemple : {example}", "Ad esempio: {example}"],
+  "FlowFormatInvalid": ["Pole {field} musi wyglądać jak {example}.", "{field} muss wie {example} aussehen.", "{field} debe tener la forma {example}.", "{field} doit ressembler à {example}.", "{field} deve avere la forma {example}."],
+  "FlowFormatMask": ["Format: {mask}", "Format: {mask}", "Formato: {mask}", "Format : {mask}", "Formato: {mask}"],
+  "FlowSignaturePad": ["Pole podpisu", "Unterschriftenfeld", "Área de firma", "Zone de signature", "Area della firma"],
+  "FlowSignatureClear": ["Wyczyść", "Löschen", "Borrar", "Effacer", "Cancella"],
+  "FlowSignatureUndo": ["Cofnij", "Rückgängig", "Deshacer", "Annuler", "Annulla"],
+  "FlowSignatureType": ["Wpisz zamiast tego", "Stattdessen tippen", "Escribir en su lugar", "Saisir à la place", "Digita invece"],
+  "FlowSignatureDraw": ["Narysuj zamiast tego", "Stattdessen zeichnen", "Dibujar en su lugar", "Dessiner à la place", "Disegna invece"],
+  "FlowSignatureTyped": ["Wpisz imię i nazwisko", "Vollständigen Namen eingeben", "Escriba su nombre completo", "Saisissez votre nom complet", "Digita il tuo nome completo"],
+  "FlowSigned": ["Podpisano", "Unterschrieben", "Firmado", "Signé", "Firmato"],
   "FlowStepOptional": [
     "Opcjonalny",
     "Optional",

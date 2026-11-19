@@ -272,12 +272,24 @@ internal static class CanopyFlowValues {
             }
             case CanopyFlowFieldKind.Records:
                 return CanopyFlowRecordValues.Canonical(field, value, out error);
+            case CanopyFlowFieldKind.Signature:
+                return CanonicalSignature(value, out error);
             case CanopyFlowFieldKind.Pick:
                 return CanopyFlowRecordValues.CanonicalPick(value, out error);
             default:
                 error = "cannot carry a value: secrets reach the host only through the submit handler.";
                 return null;
         }
+    }
+
+    /// <summary>A signature: exactly an SVG document and a PNG data URI, together at most 1,000,000 characters.</summary>
+    private static object? CanonicalSignature(object value, out string? error) {
+        error = "must be { svg, png }: an SVG document and a PNG data URI.";
+        if (!(value is IDictionary<string, object?> map) || map.Count != 2 || !map.TryGetValue("svg", out var svg) || !map.TryGetValue("png", out var png)) return null;
+        if (!(svg is string drawing) || !(png is string image) || drawing.Length + image.Length > 1000000) return null;
+        if (!drawing.StartsWith("<svg ", StringComparison.Ordinal) || !drawing.EndsWith("</svg>", StringComparison.Ordinal) || !image.StartsWith("data:image/png;base64,", StringComparison.Ordinal)) return null;
+        error = null;
+        return new Dictionary<string, object?>(StringComparer.Ordinal) { ["svg"] = drawing, ["png"] = image };
     }
 
     private static bool IsOption(CanopyFlowField field, object value) {

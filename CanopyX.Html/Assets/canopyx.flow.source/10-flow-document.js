@@ -5,7 +5,7 @@
   const FLOW_NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
   // A field type's value kind for the shared checks (forms part): numbers, date-and-time moments, lists, durations or text.
   const FLOW_KINDS = { text: "text", number: "number", date: "text", datetime: "datetime", time: "text", select: "text", toggle: "text", lookup: "text",
-    choice: "text", multiChoice: "list", textarea: "text", list: "list", secret: "text", duration: "duration", custom: "text", records: "records", pick: "pick", rating: "number" };
+    choice: "text", multiChoice: "list", textarea: "text", list: "list", secret: "text", duration: "duration", custom: "text", records: "records", pick: "pick", rating: "number", signature: "signature" };
   const FLOW_UNITS = { seconds: 1, minutes: 60, hours: 3600, days: 86400 };
   const flowFail = problem => { throw new Error("CanopyX: " + problem + "."); };
   const flowIs = value => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -64,6 +64,7 @@
       case "list": return Array.isArray(value) && value.length <= 1000 && value.every(item => typeof item === "string");
       case "duration": return flowSeconds(value) !== null;
       case "rating": return Number.isInteger(value) && value >= 1 && value <= field.scale;
+      case "signature": return flowHost("signature").fits(field, value);
       case "secret": return false;
       case "pick": case "records": return flowHost(field.type).fits(field, value);
       case "custom": return flowScalar(value) || Array.isArray(value) && value.length <= 1000 && value.every(flowScalar);
@@ -72,8 +73,8 @@
   }
 
   const FLOW_FIELD_KEYS = ["id", "type", "label", "help", "placeholder", "required", "readOnly", "default", "when", "width", "parameter", "path", "sensitive",
-    "validation", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "editor", "source", "dependsOn", "columns", "scale"];
-  const FLOW_RULE_KEYS = ["min", "max", "minLength", "maxLength", "pattern", "message", "minItems", "maxItems", "item", "itemPattern"];
+    "validation", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "editor", "source", "dependsOn", "columns", "scale", "mask"];
+  const FLOW_RULE_KEYS = ["min", "max", "minLength", "maxLength", "pattern", "message", "minItems", "maxItems", "item", "itemPattern", "format"];
 
   function flowField(raw, step, section, model) {
     flowKeys(raw, FLOW_FIELD_KEYS, "A flow field");
@@ -100,6 +101,11 @@
     if (raw.step !== undefined && type !== "number") bad("has a step but is not a number");
     if (raw.scale !== undefined && (type !== "rating" || !Number.isInteger(raw.scale) || raw.scale < 2 || raw.scale > 10)) bad("needs a scale of 2 to 10 stars, as a rating only");
     field.scale = raw.scale ?? 5;
+    // A text field's format (an IP address, a GUID, …) and its mask hint; FLOW_FORMATS (55-flow-validate.js) checks the answer.
+    if (rules.format !== undefined && (type !== "text" || !Object.hasOwn(FLOW_FORMATS, rules.format))) bad("has an unknown format, or a format but is not a text field");
+    if (raw.mask !== undefined && (type !== "text" || typeof raw.mask !== "string" || !/\S/.test(raw.mask) || raw.mask.length > 64)) bad("needs a mask of at most 64 characters, as a text field only");
+    if (type === "signature" && (raw.parameter !== undefined || raw.default !== undefined)) bad("is a signature, which has no parameter and no default");
+    field.format = rules.format ?? null; field.mask = raw.mask ?? null;
     if (raw.placeholder !== undefined && !["text", "number", "lookup", "textarea", "list"].includes(type)) bad("has a placeholder, which text, number, lookup, text area and list fields take");
     // Options: the choices of select, choice and multiple choice fields, and a lookup's fixed suggestions. With source "host"
     // the host's options hook supplies them (as the reader reaches the field, and again when a field it depends on changes).

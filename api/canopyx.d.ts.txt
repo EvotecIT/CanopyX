@@ -957,13 +957,17 @@ import type{
   CanopyPlugin
 }
 from "./plugins.js";
-export type FlowValue=string|number|boolean|null|readonly(string|number|boolean)[]|readonly FlowRecordRow[]|readonly FlowPickedRecord[];
+export interface FlowSignature{
+  readonly svg:string;
+  readonly png:string
+}
+export type FlowValue=string|number|boolean|null|readonly(string|number|boolean)[]|readonly FlowRecordRow[]|readonly FlowPickedRecord[]|FlowSignature;
 export type FlowRecordRow=Readonly<Record<string,string|number|boolean|null>>;
 export interface FlowPickedRecord{
   readonly id:string;
   readonly label:string
 }
-export type FlowFieldType="text"|"number"|"date"|"datetime"|"time"|"select"|"toggle"|"lookup"|"choice"|"multiChoice"|"textarea"|"list"|"secret"|"duration"|"records"|"custom"|"rating";
+export type FlowFieldType="text"|"number"|"date"|"datetime"|"time"|"select"|"toggle"|"lookup"|"choice"|"multiChoice"|"textarea"|"list"|"secret"|"duration"|"records"|"custom"|"rating"|"signature";
 export type FlowOperator="eq"|"ne"|"gt"|"ge"|"lt"|"le"|"contains"|"notContains"|"startsWith"|"endsWith"|"matches"|"notMatches"|"in"|"notIn"|"between"|"isNull"|"isNotNull";
 export interface FlowCondition{
   operator:"and"|"or"|"none";
@@ -989,6 +993,7 @@ export interface FlowValidation{
   maxItems?:number;
   item?:"email"|"host"|"ip"|"cidr"|"url";
   itemPattern?:string;
+  format?:"email"|"host"|"ip"|"ipv4"|"ipv6"|"cidr"|"url"|"mac"|"guid"|"phone"|"date"|"time"|"dateTime";
 }
 export interface FlowField{
   id:string;
@@ -1012,6 +1017,7 @@ export interface FlowField{
   rows?:number;
   step?:number;
   scale?:number;
+  mask?:string;
   keepWhenBlank?:boolean;
   reveal?:boolean;
   units?:readonly("seconds"|"minutes"|"hours"|"days")[];

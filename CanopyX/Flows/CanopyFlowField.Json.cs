@@ -12,7 +12,7 @@ public sealed partial class CanopyFlowField {
         ("toggle", CanopyFlowFieldKind.Toggle), ("lookup", CanopyFlowFieldKind.Lookup), ("choice", CanopyFlowFieldKind.Choice),
         ("multiChoice", CanopyFlowFieldKind.MultiChoice), ("textarea", CanopyFlowFieldKind.TextArea), ("list", CanopyFlowFieldKind.List),
         ("secret", CanopyFlowFieldKind.Secret), ("duration", CanopyFlowFieldKind.Duration), ("custom", CanopyFlowFieldKind.Custom),
-        ("records", CanopyFlowFieldKind.Records), ("pick", CanopyFlowFieldKind.Pick), ("rating", CanopyFlowFieldKind.Rating)
+        ("records", CanopyFlowFieldKind.Records), ("pick", CanopyFlowFieldKind.Pick), ("rating", CanopyFlowFieldKind.Rating), ("signature", CanopyFlowFieldKind.Signature)
     };
 
     private static readonly (string Wire, CanopyFlowItemRule Value)[] RuleNames = {
@@ -27,10 +27,10 @@ public sealed partial class CanopyFlowField {
 
     private static readonly string[] Properties = {
         "id", "type", "editor", "label", "help", "placeholder", "required", "readOnly", "sensitive", "default", "width", "parameter",
-        "path", "when", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "validation", "source", "dependsOn", "columns", "scale"
+        "path", "when", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "validation", "source", "dependsOn", "columns", "scale", "mask"
     };
 
-    private static readonly string[] ValidationProperties = { "min", "max", "minLength", "maxLength", "pattern", "message", "minItems", "maxItems", "item", "itemPattern" };
+    private static readonly string[] ValidationProperties = { "min", "max", "minLength", "maxLength", "pattern", "message", "minItems", "maxItems", "item", "itemPattern", "format" };
 
     internal string WireType => Name(KindNames, Kind);
 
@@ -67,6 +67,10 @@ public sealed partial class CanopyFlowField {
         if (RowCount.HasValue && Kind != CanopyFlowFieldKind.TextArea) throw new InvalidOperationException(what + ": rows apply to text area fields.");
         if (NumberStep.HasValue && Kind != CanopyFlowFieldKind.Number) throw new InvalidOperationException(what + ": a step applies to number fields.");
         if (RatingScale.HasValue && Kind != CanopyFlowFieldKind.Rating) throw new InvalidOperationException(what + ": a scale applies to rating fields.");
+        if (!Enum.IsDefined(typeof(CanopyFlowTextFormat), TextFormat)) throw new InvalidOperationException(what + " has an unknown format.");
+        if ((TextFormat != CanopyFlowTextFormat.None || InputMask != null) && Kind != CanopyFlowFieldKind.Text) throw new InvalidOperationException(what + ": a format and a mask apply to text fields.");
+        CanopyFlowValues.CheckText(InputMask, what + " (mask)", 64);
+        if (Kind == CanopyFlowFieldKind.Signature && (ParameterName != null || DefaultValue != null)) throw new InvalidOperationException(what + ": a signature field has no parameter and no default.");
         if ((KeepsWhenBlank.HasValue || ShowsReveal.HasValue) && Kind != CanopyFlowFieldKind.Secret) throw new InvalidOperationException(what + ": keep-when-blank and reveal apply to secret fields.");
         ValidateDuration(what);
         if (Kind == CanopyFlowFieldKind.Custom) {
@@ -138,7 +142,7 @@ public sealed partial class CanopyFlowField {
 
     private bool HasValidation => Validation.Minimum.HasValue || Validation.Maximum.HasValue || Validation.Earliest.HasValue || Validation.Latest.HasValue ||
         Validation.MinLength.HasValue || Validation.MaxLength.HasValue || Validation.Pattern != null || Validation.Message != null || MinItems.HasValue ||
-        MaxItems.HasValue || ItemRule != CanopyFlowItemRule.None || ListItemPattern != null || MinimumDuration.HasValue || MaximumDuration.HasValue;
+        MaxItems.HasValue || ItemRule != CanopyFlowItemRule.None || ListItemPattern != null || MinimumDuration.HasValue || MaximumDuration.HasValue || TextFormat != CanopyFlowTextFormat.None;
 
     /// <summary>Writes the field; a pick step's field leaves out its type, which the step gives.</summary>
     internal void WriteJson(CanopyJsonWriter writer, bool pick = false) {
@@ -177,7 +181,7 @@ public sealed partial class CanopyFlowField {
         if (Display != CanopyFlowChoiceDisplay.Auto) writer.Property("display", Display == CanopyFlowChoiceDisplay.Cards ? "cards" : "list");
         writer.OptionalProperty("onText", OnText).OptionalProperty("offText", OffText).OptionalProperty("rows", RowCount);
         if (NumberStep.HasValue) writer.Name("step").Number(NumberStep.Value);
-        writer.OptionalProperty("scale", RatingScale);
+        writer.OptionalProperty("scale", RatingScale).OptionalProperty("mask", InputMask);
         if (KeepsWhenBlank.HasValue) writer.Property("keepWhenBlank", KeepsWhenBlank.Value);
         if (ShowsReveal.HasValue) writer.Property("reveal", ShowsReveal.Value);
         if (DurationUnits.Count > 0) {
@@ -201,6 +205,7 @@ public sealed partial class CanopyFlowField {
         writer.OptionalProperty("minLength", Validation.MinLength).OptionalProperty("maxLength", Validation.MaxLength).OptionalProperty("pattern", Validation.Pattern)
             .OptionalProperty("message", Validation.Message).OptionalProperty("minItems", MinItems).OptionalProperty("maxItems", MaxItems);
         if (ItemRule != CanopyFlowItemRule.None) writer.Property("item", Name(RuleNames, ItemRule));
+        if (TextFormat != CanopyFlowTextFormat.None) writer.Property("format", CanopyFlowTextFormats.Wire(TextFormat));
         writer.OptionalProperty("itemPattern", ListItemPattern);
         writer.EndObject();
     }
@@ -224,7 +229,8 @@ public sealed partial class CanopyFlowField {
             OnText = CanopyFlowContract.Text(map, "onText", what),
             OffText = CanopyFlowContract.Text(map, "offText", what),
             KeepsWhenBlank = CanopyFlowContract.Boolean(map, "keepWhenBlank", what),
-            ShowsReveal = CanopyFlowContract.Boolean(map, "reveal", what)
+            ShowsReveal = CanopyFlowContract.Boolean(map, "reveal", what),
+            InputMask = CanopyFlowContract.Text(map, "mask", what)
         };
         if (map.TryGetValue("default", out var value)) {
             if (value == null && (kind == CanopyFlowFieldKind.List || kind == CanopyFlowFieldKind.MultiChoice || kind == CanopyFlowFieldKind.Records || kind == CanopyFlowFieldKind.Pick))
@@ -290,6 +296,8 @@ public sealed partial class CanopyFlowField {
         var rule = CanopyFlowContract.Text(map, "item", what);
         if (rule != null) ItemRule = CanopyFlowContract.Choose(rule, what, "item", RuleNames);
         ListItemPattern = CanopyFlowContract.Text(map, "itemPattern", what);
+        var format = CanopyFlowContract.Text(map, "format", what);
+        if (format != null) TextFormat = CanopyFlowContract.Choose(format, what, "format", CanopyFlowTextFormats.Names);
     }
 
     /// <summary>Runs setters that check their ranges, turning their argument errors into contract errors.</summary>

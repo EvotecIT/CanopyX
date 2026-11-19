@@ -54,5 +54,8 @@ public enum CanopyFlowFieldKind {
     Pick,
 
     /// <summary>Stars: a whole number from 1 to the field's <see cref="CanopyFlowField.RatingScale"/> (5 unless set).</summary>
-    Rating
+    Rating,
+
+    /// <summary>A drawn or typed signature: <c>{ "svg": "&lt;svg …", "png": "data:image/png;base64,…" }</c>.</summary>
+    Signature
 }
