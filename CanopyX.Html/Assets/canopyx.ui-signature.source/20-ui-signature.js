@@ -7,17 +7,18 @@ UI_IMPL.signature = (root, options = {}, signal) => {
   if (!['svg', 'png'].includes(format)) throw new Error('CanopyX: a signature submits svg or png.');
   let hidden = null;
   if (name) { hidden = root.querySelector('input[type="hidden"][name="' + CSS.escape(name) + '"]') || root.appendChild(Object.assign(h('input'), { type: 'hidden', name })); }
+  const write = value => { if (hidden) hidden.value = value ? value[format] : ''; };
   root.classList.add('cx-signature-host'); root.dataset.cxPart = 'signature-host';
   const pad = signaturePad({ signal, readOnly: options.readOnly ?? data.readonly === 'true', value: options.value, ink: options.ink ?? data.ink, background: options.background ?? data.background,
     colours: options.colours ?? data.colours === 'true', download: options.download ?? (data.download === 'true' || data.download || false),
     labels: { pad: options.label ?? data.label ?? labels.signaturePad, undo: labels.signatureUndo, clear: labels.signatureClear, type: labels.signatureType, draw: labels.signatureDraw,
       typed: labels.signatureTyped, colour: labels.signatureColour, png: labels.signatureDownloadPng, svg: labels.signatureDownloadSvg },
     onChange: value => {
-      if (hidden) hidden.value = value ? value[format] : '';
+      write(value);
       options.onChange?.(value);
       UI_TOOLS.emit(root, 'signature', 'change', { value });
     } });
-  root.append(pad.element);
+  root.append(pad.element); write(pad.getValue());
   signal?.addEventListener('abort', () => { pad.destroy(); pad.element.remove(); }, { once: true });
-  return { getState: () => ({ value: pad.getValue() }), clear: () => pad.clear(), select: value => pad.setValue(value), focus: pad.focus };
+  return { getState: () => ({ value: pad.getValue() }), clear: () => pad.clear(), select: value => { pad.setValue(value); write(pad.getValue()); }, focus: pad.focus };
 };

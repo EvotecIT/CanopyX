@@ -33,3 +33,18 @@ test('the typed alternative and Clear work by keyboard, and a PNG form value is 
   await page.getByRole('button', { name: 'Clear' }).click();
   expect(await page.evaluate(() => new FormData(document.getElementById('form')).get('signature'))).toBe('');
 });
+
+test('a stored signature fills the hidden input, survives a pen colour change and is replaced by select', async ({ page }) => {
+  const picture = svg => ({ svg, png: 'data:image/png;base64,iVBORw0KGgo=' });
+  await openUi(page, '<form id="form"><div id="sign" data-name="signature" data-colours="true"></div></form>');
+  await page.evaluate(stored => { window.pad = CanopyX.signature('#sign', { value: stored }); }, picture('<svg id="a"></svg>'));
+  await page.evaluate(() => window.pad.ready);
+  const submitted = () => page.evaluate(() => new FormData(document.getElementById('form')).get('signature'));
+  expect(await submitted()).toBe('<svg id="a"></svg>');
+  await page.getByLabel('Pen colour').evaluate(input => { input.value = '#b91c1c'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  expect(await page.evaluate(() => window.pad.getState().value.svg)).toBe('<svg id="a"></svg>');
+  await page.evaluate(stored => window.pad.select(stored), picture('<svg id="b"></svg>'));
+  expect(await submitted()).toBe('<svg id="b"></svg>');
+  await page.evaluate(() => window.pad.select(null));
+  expect(await submitted()).toBe('');
+});

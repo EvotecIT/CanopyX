@@ -74,7 +74,8 @@
       const field = h("label", "cx-signature-colour"), text = h("span", "cx-visually-hidden");
       colourInput = h("input"); colourInput.type = "color"; colourInput.dataset.cxPart = "colour"; setText(text, labels.colour);
       colourInput.value = /^#[0-9a-f]{6}$/i.test(ink || "") ? ink : "#000000"; colourInput.title = labels.colour;
-      colourInput.addEventListener("input", () => { ink = colourInput.value; commit(); }, { signal });
+      // A stored picture has no strokes to recolour, so it stays as it is until the reader draws or types.
+      colourInput.addEventListener("input", () => { ink = colourInput.value; if (strokes.length || (typing && typedInput.value.trim())) commit(); else paint(); }, { signal });
       field.append(text, colourInput); tools.append(field);
     }
     if (settings.download) {

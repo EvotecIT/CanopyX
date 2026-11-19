@@ -121,7 +121,7 @@
     {
       "name": "ui-mask",
       "label": "UI mask",
-      "version": "981044bab2756dba",
+      "version": "6d54ba754fe00cd0",
       "script": "canopyx-ui-mask.js",
       "runtimes": [
         "tree",
@@ -136,7 +136,7 @@
     {
       "name": "ui-signature",
       "label": "UI signature",
-      "version": "713b0737bcc0e055",
+      "version": "c8b35213a3ac39a7",
       "script": "canopyx-ui-signature.js",
       "style": "canopyx-ui-signature.css",
       "runtimes": [
@@ -491,7 +491,7 @@
     {
       "name": "flow-signature",
       "label": "flow signature",
-      "version": "68dd5388279de869",
+      "version": "54372a7dda4ba15d",
       "script": "canopyx-flow-signature.js",
       "style": "canopyx-flow-signature.css",
       "runtimes": [

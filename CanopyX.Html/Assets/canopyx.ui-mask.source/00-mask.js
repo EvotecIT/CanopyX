@@ -19,10 +19,13 @@ function maskTokens(pattern) {
   if (!tokens.some(token => token.slot)) throw new Error('CanopyX: a mask needs at least one slot (0, a, A, h or *).');
   return tokens;
 }
-/** Fits typed characters to the mask: { text, raw, complete }. Literal characters the reader typed are skipped. */
+/** Fits typed characters to the mask: { text, raw, complete }. A typed character equal to the next literal is that literal, so
+ * formatted text formats to itself even when a literal could also fill the slot after it (\1000 keeps 1234); other literals
+ * the reader typed are skipped. */
 function maskApply(tokens, input) {
   let text = '', raw = '', pending = '', at = 0;
   for (const char of input) {
+    if (tokens[at]?.literal === char) { pending += char; at++; continue; }
     while (at < tokens.length && tokens[at].literal !== undefined) { pending += tokens[at].literal; at++; }
     if (at >= tokens.length) break;
     if (!tokens[at].test.test(char)) continue;

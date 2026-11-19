@@ -57,3 +57,14 @@ test('host masks report changes, refuse a mask without slots, and destroy restor
   });
   expect(result).toEqual({ value: '#ff00aa', events: ['#ff00aa'], refused: 'CanopyX: a mask needs at least one slot (0, a, A, h or *).', maxLength: null });
 });
+
+test('a literal that could also fill the next slot formats to itself', async ({ page }) => {
+  await openUi(page, field('+\\1 000'));
+  await input(page).pressSequentially('234');
+  await expect(input(page)).toHaveValue('+1 234');
+  await input(page).press('End');
+  await input(page).press('Backspace');
+  await input(page).pressSequentially('5');
+  await expect(input(page)).toHaveValue('+1 235');
+  expect(await page.evaluate(() => CanopyX.mask('#f').getState())).toEqual({ text: '+1 235', raw: '235', complete: true });
+});
