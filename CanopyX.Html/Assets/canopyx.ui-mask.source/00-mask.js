@@ -33,7 +33,10 @@ function maskApply(tokens, input) {
     const upper = tokens[at].upper ? char.toLocaleUpperCase() : char, value = upper.length === char.length ? upper : char;
     text += pending + value; raw += value; pending = ''; at++;
   }
-  return { text, raw, complete: !tokens.slice(at).some(token => token.slot) };
+  const complete = !tokens.slice(at).some(token => token.slot);
+  // Once every slot is filled the literals after the last one close the value, so (000) completes as (123).
+  if (complete && raw) text += tokens.slice(at - (pending ? [...pending].length : 0)).map(token => token.literal).join('');
+  return { text, raw, complete };
 }
 /** IPv4: digits and dots, a dot added after a third digit, octets above 255 refused, four octets at most. */
 function maskIpv4(input) {
@@ -80,16 +83,19 @@ UI_IMPL.mask = (root, options = {}, signal) => {
   }
   input.addEventListener('input', event => { if (!event.isComposing) apply(event); }, { signal });
   input.addEventListener('compositionend', apply, { signal });
-  // Delete before a separator would only remove what formatting puts back, so it removes the next typed character instead.
+  // Delete or Backspace next to separators would only remove what formatting puts back, so they also remove the typed
+  // character beyond them. The edit is announced with an input event, as the browser's own edit would be.
+  const literal = at => ipv4 ? input.value[at] === '.' : tokens[at]?.literal !== undefined && tokens[at].literal === input.value[at];
   input.addEventListener('beforeinput', event => {
-    const value = input.value, at = input.selectionStart;
-    if (event.inputType !== 'deleteContentForward' || at === null || at !== input.selectionEnd) return;
-    let end = at;
-    while (end < value.length && (ipv4 ? value[end] === '.' : tokens[end]?.literal === value[end])) end++;
-    if (end === at || end >= value.length) return;
+    const value = input.value, at = input.selectionStart, forward = event.inputType === 'deleteContentForward';
+    if (!forward && event.inputType !== 'deleteContentBackward' || at === null || at !== input.selectionEnd) return;
+    let edge = forward ? at : at - 1;
+    while (edge >= 0 && edge < value.length && literal(edge)) edge += forward ? 1 : -1;
+    if (edge === (forward ? at : at - 1) || edge < 0 || edge >= value.length) return;
     event.preventDefault();
-    input.value = value.slice(0, at) + value.slice(end + 1); input.setSelectionRange(at, at);
-    apply(event);
+    const [from, to] = forward ? [at, edge + 1] : [edge, at];
+    input.value = value.slice(0, from) + value.slice(to); input.setSelectionRange(from, from);
+    input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: event.inputType }));
   }, { signal });
   // A form reset restores the default value after its reset event, so the mask reads the input once the reset is done.
   input.form?.addEventListener('reset', event => setTimeout(() => { if (!signal?.aborted && !event.defaultPrevented) apply(new Event('reset')); }), { signal });

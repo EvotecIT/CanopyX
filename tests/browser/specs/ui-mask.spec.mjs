@@ -95,3 +95,18 @@ test('Delete before a separator removes the next typed character', async ({ page
   await page.keyboard.press('Delete');
   await expect(input(page)).toHaveValue('12');
 });
+
+test('a mask that ends in literals closes the value, Backspace removes them with the last digit, and edits fire input events', async ({ page }) => {
+  await openUi(page, field('(000)'));
+  await page.evaluate(() => { window.inputs = []; document.getElementById('f').addEventListener('input', event => window.inputs.push(event.target.value)); });
+  await input(page).pressSequentially('123');
+  await expect(input(page)).toHaveValue('(123)');
+  expect(await page.evaluate(() => CanopyX.mask('#f').getState())).toEqual({ text: '(123)', raw: '123', complete: true });
+  await page.keyboard.press('Backspace');
+  await expect(input(page)).toHaveValue('(12');
+  await input(page).pressSequentially('3');
+  await input(page).evaluate(element => element.setSelectionRange(3, 3));
+  await page.keyboard.press('Delete');
+  await expect(input(page)).toHaveValue('(12');
+  expect(await page.evaluate(() => window.inputs.at(-1))).toBe('(12');
+});

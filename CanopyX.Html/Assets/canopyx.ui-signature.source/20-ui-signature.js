@@ -6,7 +6,10 @@ UI_IMPL.signature = (root, options = {}, signal) => {
   const name = options.name ?? data.name, format = options.format ?? data.format ?? 'svg';
   if (!['svg', 'png'].includes(format)) throw new Error('CanopyX: a signature submits svg or png.');
   let hidden = null;
-  if (name) { hidden = root.querySelector('input[type="hidden"][name="' + CSS.escape(name) + '"]') || root.appendChild(Object.assign(h('input'), { type: 'hidden', name })); }
+  if (name) hidden = root.querySelector('input[type="hidden"][name="' + CSS.escape(name) + '"]');
+  // An input the signature made leaves with it, so a destroyed pad submits nothing; a host's own input stays.
+  const made = !!name && !hidden;
+  if (made) hidden = root.appendChild(Object.assign(h('input'), { type: 'hidden', name }));
   const write = value => { if (hidden) hidden.value = value ? value[format] : ''; };
   root.classList.add('cx-signature-host'); root.dataset.cxPart = 'signature-host';
   const pad = signaturePad({ signal, readOnly: options.readOnly ?? data.readonly === 'true', value: options.value, ink: options.ink ?? data.ink, background: options.background ?? data.background,
@@ -26,6 +29,6 @@ UI_IMPL.signature = (root, options = {}, signal) => {
     if (signal?.aborted || event.defaultPrevented) return;
     pad.setValue(initial); write(initial); options.onChange?.(initial); UI_TOOLS.emit(root, 'signature', 'change', { value: initial });
   }), { signal });
-  signal?.addEventListener('abort', () => { pad.destroy(); pad.element.remove(); }, { once: true });
+  signal?.addEventListener('abort', () => { pad.destroy(); pad.element.remove(); if (made) hidden.remove(); }, { once: true });
   return { getState: () => ({ value: pad.getValue() }), clear: () => pad.clear(), select: value => { pad.setValue(value); write(pad.getValue()); }, focus: pad.focus };
 };

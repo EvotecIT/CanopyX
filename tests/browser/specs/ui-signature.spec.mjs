@@ -63,3 +63,9 @@ test('a form reset brings back the starting signature, and a cancelled one keeps
   await expect.poll(submitted).toBe('');
   expect(await page.evaluate(() => CanopyX.signature('#sign').getState().value)).toBeNull();
 });
+
+test('destroy removes the hidden input the signature made and keeps a host input', async ({ page }) => {
+  await openUi(page, '<form id="form"><div id="made" data-name="made"></div><div id="own" data-name="own"><input type="hidden" name="own" value="kept"></div></form>');
+  await page.evaluate(async () => { for (const id of ['#made', '#own']) await CanopyX.signature(id).ready; CanopyX.signature('#made').destroy(); CanopyX.signature('#own').destroy(); });
+  expect(await page.evaluate(() => [...new FormData(document.getElementById('form')).keys()])).toEqual(['own']);
+});
