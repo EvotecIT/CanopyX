@@ -148,7 +148,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
       return;
     }
     const folded = selectFold(text.trim());
-    offer(all.filter(option => option.value !== '' && (!folded || selectFold(option.label).includes(folded) || selectFold(option.description).includes(folded))));
+    // An empty value is a single select's placeholder; in a multiple select it is a real choice.
+    offer(all.filter(option => (multiple || option.value !== '') && (!folded || selectFold(option.label).includes(folded) || selectFold(option.description).includes(folded))));
   }
   function choose(at, source) {
     const option = shown[at];

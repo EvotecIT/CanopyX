@@ -21,7 +21,7 @@ function selectOption(raw) {
 }
 const selectReadNative = select => [...select.options].map(selectNativeOption);
 function selectNativeOption(item) {
-  return selectOption({ value: item.value, label: item.textContent.trim(), disabled: item.matches(':disabled'), description: item.dataset.description,
+  return selectOption({ value: item.value, label: item.label.trim(), disabled: item.matches(':disabled'), description: item.dataset.description,
     badge: item.dataset.badge, tone: item.dataset.tone, icon: item.dataset.icon, avatar: item.dataset.avatar, flag: item.dataset.flag,
     group: item.parentElement?.localName === 'optgroup' ? item.parentElement.label : undefined });
 }

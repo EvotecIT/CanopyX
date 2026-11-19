@@ -339,3 +339,13 @@ test('the combobox follows the native select when the host enables or disables i
   await expect(combo(page)).toBeDisabled();
   await expect(page.getByRole('listbox', { name: 'Country' })).toBeHidden();
 });
+
+test('options named by their label attribute keep that name, and an empty value is a choice in a multiple select', async ({ page }) => {
+  await openUi(page, '<form id="form"><label for="country">Country</label><div id="picker" data-cx-select><select id="country" name="country" multiple>' +
+    '<option value="">Unassigned</option><option value="us" label="United States"></option></select></div></form>');
+  await combo(page).fill('united');
+  await expect(options(page)).toHaveText(['United States']);
+  await combo(page).fill('unass');
+  await options(page).filter({ hasText: 'Unassigned' }).click();
+  expect(await submitted(page)).toEqual(['']);
+});
