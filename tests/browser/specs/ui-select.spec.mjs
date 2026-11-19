@@ -275,3 +275,34 @@ test('clearing a select without a placeholder submits nothing, a tag never repla
   await page.evaluate(() => document.getElementById('country').focus());
   await expect(combo(page)).toBeFocused();
 });
+
+test('validation state moves to the combobox, refreshed labels reach the field, and a host option enables its disabled native twin', async ({ page }) => {
+  await openUi(page, '<form id="form"><label for="country">Country</label><div id="picker"><select id="country" name="country" required aria-invalid="true" aria-describedby="country-error">' +
+    '<option value="">Choose…</option><option value="pl" selected>Poland</option><option value="x" disabled>Atlantis</option></select></div><p id="country-error">Pick a country</p></form>');
+  await page.evaluate(() => { window.hostOptions = [{ value: 'pl', label: 'Poland' }, { value: 'x', label: 'Available' }]; window.picker = CanopyX.select('#picker', { options: window.hostOptions }); return window.picker.ready; });
+  await expect(combo(page)).toHaveAttribute('aria-invalid', 'true');
+  await expect(combo(page)).toHaveAttribute('aria-required', 'true');
+  await expect(combo(page)).toHaveAccessibleDescription('Pick a country');
+  await page.evaluate(() => document.getElementById('country').removeAttribute('aria-invalid'));
+  await expect(combo(page)).not.toHaveAttribute('aria-invalid');
+  await page.evaluate(() => { window.hostOptions[0].label = 'Polska'; window.picker.refresh(); });
+  await expect(combo(page)).toHaveValue('Polska');
+  await combo(page).fill('avail');
+  await options(page).filter({ hasText: 'Available' }).click();
+  expect(await submitted(page)).toEqual(['x']);
+});
+
+test('a tag the loader does not know can be found and chosen again', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, '<label for="tag">Tags</label><div id="tags"><select id="tag" name="tag" multiple></select></div>');
+  await page.evaluate(() => CanopyX.select('#tags', { tags: true, load: async () => [] }).ready);
+  const tagsBox = page.getByRole('combobox', { name: 'Tags' });
+  await tagsBox.fill('Iceland');
+  await page.clock.runFor(300);
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: /Iceland/ }).click();
+  await tagsBox.fill('Ice');
+  await page.clock.runFor(300);
+  await expect(page.getByRole('option', { name: 'Iceland' })).toBeVisible();
+});

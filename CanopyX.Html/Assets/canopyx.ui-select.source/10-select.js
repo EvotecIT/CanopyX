@@ -29,6 +29,14 @@ UI_IMPL.select = (root, options = {}, signal) => {
   input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', search ? 'list' : 'none'); input.setAttribute('aria-expanded', 'false'); input.setAttribute('aria-controls', id + '-list');
   input.readOnly = !search; input.disabled = native.disabled;
   const placeholder = options.placeholder ?? data.placeholder; if (placeholder) input.placeholder = placeholder;
+  // The hidden select's validation state and messages belong to the combobox now, also when the host changes them later.
+  const validation = ['aria-invalid', 'aria-describedby', 'aria-errormessage', 'aria-required'], copyValidation = () => {
+    for (const name of validation) { const value = native.getAttribute(name); if (value === null) input.removeAttribute(name); else input.setAttribute(name, value); }
+    if (native.required) input.setAttribute('aria-required', 'true');
+  };
+  copyValidation();
+  const watcher = new MutationObserver(copyValidation); watcher.observe(native, { attributes: true, attributeFilter: [...validation, 'required'] });
+  signal?.addEventListener('abort', () => watcher.disconnect(), { once: true });
   // The select's aria-labelledby or its label (for= or wrapping) names the combobox; aria-label on the select or the label option work too.
   const label = native.labels?.[0], named = native.getAttribute('aria-labelledby');
   if (label) { label.id ||= id + '-label'; label.addEventListener('click', event => { event.preventDefault(); input.focus(); }, { signal }); }
@@ -47,7 +55,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
     for (const option of chosen.values()) if (![...native.options].some(item => item.value === option.value)) {
       const item = new Option(option.label, option.value); native.add(item);
     }
-    for (const item of native.options) item.selected = chosen.has(item.value);
+    // A host option that is enabled also enables a disabled native option with its value, so the form submits what the field shows.
+    for (const item of native.options) { item.selected = chosen.has(item.value); if (item.selected && item.disabled) item.disabled = false; }
     // An empty single select with no placeholder option is cleared outright, or the browser would select its first option again.
     if (!multiple && !chosen.size) { if (native.options[0]?.value === '') native.options[0].selected = true; else native.selectedIndex = -1; }
     paintChosen();
@@ -130,7 +139,9 @@ UI_IMPL.select = (root, options = {}, signal) => {
       shown = []; paintList(labels.stateLoading); show();
       timer = setTimeout(() => loader.fetch(text.trim()).then(items => {
         for (const item of items) if (!all.some(option => option.value === item.value)) all.push(item);
-        offer(items);
+        // Tags the reader created stay choices even when the host does not know them.
+        const fold = selectFold(text.trim());
+        offer([...items, ...all.filter(option => option.local && selectFold(option.label).includes(fold) && !items.some(item => item.value === option.value))]);
       }, error => { if (error?.name !== 'AbortError') { shown = []; paintList(error?.message || labels.stateDetails); } }), Number(options.delay ?? 250));
       return;
     }
@@ -144,7 +155,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
     else if (multiple && chosen.size >= max) return;
     else {
       const made = option.created ? selectOption({ value: option.value, label: option.value }) : option;
-      if (option.created && !all.some(entry => entry.value === made.value)) all.push(made);
+      if (option.created && !all.some(entry => entry.value === made.value)) { made.local = true; all.push(made); }
       if (!multiple) chosen.clear(); chosen.set(made.value, made);
     }
     sync(source);
@@ -195,7 +206,15 @@ UI_IMPL.select = (root, options = {}, signal) => {
     },
     clear: () => { chosen.clear(); sync('api'); return true; },
     open: () => { input.focus(); filter('', true); return true; }, close: () => { hide(); return true; },
-    refresh: () => { all = options.options ? options.options.map(selectOption) : selectReadNative(native); const size = chosen.size; for (const value of [...chosen.keys()]) if (!all.some(option => option.value === value)) chosen.delete(value); chosen.size < size ? sync('api') : paintChosen(); if (open) filter(query, true); },
+    refresh: () => {
+      const local = all.filter(option => option.local);
+      all = options.options ? options.options.map(selectOption) : selectReadNative(native);
+      for (const option of local) { const found = all.find(entry => entry.value === option.value); if (found) found.local = true; else all.push(option); }
+      // Kept values take their refreshed records, so a changed label shows in the field and the chips too.
+      const size = chosen.size;
+      for (const value of [...chosen.keys()]) { const option = all.find(entry => entry.value === value); if (option) chosen.set(value, option); else chosen.delete(value); }
+      chosen.size < size ? sync('api') : paintChosen(); if (open) filter(query, true);
+    },
     getState: () => ({ value: multiple ? [...chosen.keys()] : [...chosen.keys()][0] ?? null, open, query })
   };
 };
