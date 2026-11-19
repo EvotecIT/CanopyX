@@ -219,3 +219,13 @@ test('a fading carousel without its runtime, or after destroy, keeps every slide
   await page.evaluate(() => CanopyX.carousel('#live').destroy());
   for (let at = 0; at < 4; at++) await expect(live.nth(at)).toBeVisible();
 });
+
+test('dragging an image slide of a fading carousel moves to the next slide', async ({ page }) => {
+  const picture = fill => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="300"><rect width="100%" height="100%" fill="${fill}"/></svg>`);
+  await openUi(page, `<section id="news" class="cx-carousel" data-cx-carousel data-transition="fade" aria-label="Photos"><div class="cx-carousel-track">
+    <div><img alt="Red" src="${picture('red')}"></div><div><img alt="Green" src="${picture('green')}"></div></div></section>`);
+  const box = await page.getByRole('img', { name: 'Red' }).boundingBox();
+  await page.mouse.move(box.x + box.width - 40, box.y + 40); await page.mouse.down();
+  await page.mouse.move(box.x + 40, box.y + 40, { steps: 6 }); await page.mouse.up();
+  expect((await state(page)).index).toBe(1);
+});

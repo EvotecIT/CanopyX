@@ -88,7 +88,7 @@
     {
       "name": "ui-stepper",
       "label": "UI stepper",
-      "version": "fd3fa165ccca1c9d",
+      "version": "138278402cf489dc",
       "script": "canopyx-ui-stepper.js",
       "style": "canopyx-ui-stepper.css",
       "runtimes": [
@@ -153,7 +153,7 @@
     {
       "name": "ui-carousel",
       "label": "UI carousel",
-      "version": "f2b7587d44c499b0",
+      "version": "15b11bc72ec2c351",
       "script": "canopyx-ui-carousel.js",
       "style": "canopyx-ui-carousel.css",
       "runtimes": [

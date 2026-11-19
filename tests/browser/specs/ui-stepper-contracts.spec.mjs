@@ -229,6 +229,10 @@ test('in the inline vertical layout the top toolbar moves with the open panel an
   await bar.locator('[data-cx-stepper-action="next"]').click();
   await expect(page.locator('#wizard-panel-optional')).toBeVisible();
   expect(await order('wizard-panel-optional')).toEqual([true, true]);
+  // The toolbar sits in the content column, aligned with the panel rather than the step markers.
+  const [barBox, panelBox] = [await bar.boundingBox(), await page.locator('#wizard-panel-optional').boundingBox()];
+  expect(Math.abs(barBox.x - panelBox.x)).toBeLessThan(2);
+  expect(barBox.y + barBox.height).toBeLessThanOrEqual(panelBox.y + 1);
   await page.evaluate(() => window.wizard.destroy());
   expect(await page.evaluate(() => document.querySelector('.cx-stepper-footer[data-placement="top"]').previousElementSibling?.localName)).toBe('ol');
 });

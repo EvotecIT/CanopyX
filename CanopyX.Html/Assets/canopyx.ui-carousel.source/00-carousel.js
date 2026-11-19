@@ -164,6 +164,8 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   let swipe = null;
   if (fade) {
     track.addEventListener('pointerdown', event => { swipe = event.isPrimary && !event.target.closest('input,select,textarea,button,a[href],label,video,audio,iframe') ? event.clientX : null; }, { signal });
+    // Images are draggable by default; a native drag would take the pointer away before the release.
+    track.addEventListener('dragstart', event => event.preventDefault(), { signal });
     track.addEventListener('pointerup', event => {
       const moved = swipe === null ? 0 : event.clientX - swipe; swipe = null;
       if (Math.abs(moved) > 40) select(index + ((moved < 0) !== rtl() ? 1 : -1), 'swipe');
