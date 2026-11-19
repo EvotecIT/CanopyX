@@ -97,7 +97,9 @@
     function commit() {
       const typed = typing ? typedInput.value.trim() : "";
       stored = null;
-      value = typed || strokes.length ? signatureValue(width, strokes, typed) : null;
+      // Strokes keep the coordinates they were drawn at: a pad that has since narrowed (a rotated phone) exports wide enough for all of them.
+      const reach = strokes.reduce((most, stroke) => stroke.reduce((far, point) => Math.max(far, point.x), most), 0);
+      value = typed || strokes.length ? signatureValue(Math.max(width, Math.ceil(reach) + 8), strokes, typed) : null;
       paint(); changed();
     }
     const point = event => { const rect = pad.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };

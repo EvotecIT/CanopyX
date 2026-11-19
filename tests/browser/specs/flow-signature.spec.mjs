@@ -79,3 +79,14 @@ test('a long typed name shrinks to fit a narrow pad in the SVG and the PNG', asy
     context.font = "italic " + size + "px 'Segoe Script','Brush Script MT','Snell Roundhand',cursive"; return context.measureText(text).width; }, ['Maximilian Alexander von Hohenzollern-Sigmaringen', size]);
   expect(drawn).toBeLessThanOrEqual(width - 32 + 1);
 });
+
+test('strokes drawn on a wide pad stay whole after the pad narrows', async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 700 });
+  await open(page);
+  await stroke(page, [[20, 80], [300, 60], [600, 90]]);
+  await page.setViewportSize({ width: 360, height: 700 });
+  await expect.poll(() => page.getByRole('img', { name: 'Signature pad' }).evaluate(pad => pad.getBoundingClientRect().width)).toBeLessThan(400);
+  await stroke(page, [[20, 120], [100, 120]]);
+  const width = Number(/width="(\d+)"/.exec((await value(page)).svg)[1]);
+  expect(width).toBeGreaterThanOrEqual(600);
+});
