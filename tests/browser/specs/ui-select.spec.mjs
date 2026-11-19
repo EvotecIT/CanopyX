@@ -422,3 +422,12 @@ test('refresh carries a kept value the host disables or enables to the native se
   expect(await refresh(true)).toEqual([]);
   expect(await refresh(false)).toEqual(['ops']);
 });
+
+test('host records set the disabled state of values the page already selected', async ({ page }) => {
+  await openUi(page, '<form id="hosted"><label for="team">Team</label><div id="teams"><select id="team" name="team" multiple><option value="ops" selected>Ops</option><option value="old" selected disabled>Old</option></select></div></form>');
+  const submitted = await page.evaluate(async () => {
+    await CanopyX.select('#teams', { options: [{ value: 'ops', label: 'Ops', disabled: true }, { value: 'old', label: 'Old' }] }).ready;
+    return new FormData(document.getElementById('hosted')).getAll('team');
+  });
+  expect(submitted).toEqual(['old']);
+});

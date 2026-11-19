@@ -212,13 +212,14 @@ UI_IMPL.select = (root, options = {}, signal) => {
   native.form?.addEventListener('reset', event => setTimeout(() => {
     if (signal?.aborted || event.defaultPrevented) return;
     if (startsEmpty && ![...native.options].some(item => item.defaultSelected)) native.selectedIndex = -1;
-    chosen = written(); paintChosen();
+    chosen = written(); writeNative(); paintChosen();
   }), { signal });
   signal?.addEventListener('abort', () => {
     clearTimeout(timer); loader?.cancel(); hide(); field.remove(); status.remove(); popup.remove();
     native.classList.remove('cx-select-native'); native.removeAttribute('tabindex'); native.removeAttribute('aria-hidden');
   }, { once: true });
-  paintChosen();
+  // The host's records decide from the start which chosen values are disabled, without a change notification.
+  writeNative(); paintChosen();
   return {
     select: value => {
       chosen.clear();
