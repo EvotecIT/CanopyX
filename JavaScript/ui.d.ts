@@ -450,6 +450,47 @@ export interface UiSelectController extends UiController {
   getState(): UiResult<{ value: string | string[] | null; open: boolean; query: string }>;
 }
 
+export interface UiCarouselOptions {
+  /** Slides shown at once, 1 to 6; narrow screens show one. */
+  perView?: number;
+  /** Moving past the last slide returns to the first. Defaults to false. */
+  loop?: boolean;
+  /** The zero-based slide shown first. */
+  selected?: number;
+  /** Off unless given: slides move every interval milliseconds, with a Pause button, pausing on hover and focus, never under reduced motion. */
+  autoplay?: false | { interval: number; start?: boolean };
+  labels?: UiLabels;
+}
+export interface UiCarouselController extends UiController {
+  select(index: number): UiResult<boolean>;
+  next(): UiResult<boolean>;
+  back(): UiResult<boolean>;
+  play(): UiResult<boolean>;
+  pause(): UiResult<boolean>;
+  /** Reads the slides again after the host changed them. */
+  refresh(): UiResult<void>;
+  getState(): UiResult<{ index: number; total: number; visible: number; playing: boolean }>;
+}
+
+export interface UiRatingOptions {
+  /** Steps, 2 to 10; read from data-max, else 5. */
+  max?: number;
+  value?: number | null;
+  /** Choosing the current value again, or Delete, clears it. Defaults to true. */
+  clearable?: boolean;
+  /** For an empty element: the radio group's form name and accessible name. */
+  name?: string;
+  label?: string;
+  onChange?: (value: number | null) => void;
+  labels?: UiLabels;
+}
+export interface UiRatingController extends UiController {
+  /** Sets the value (null clears a clearable rating); returns whether it changed. */
+  select(value: number | null): UiResult<boolean>;
+  clear(): UiResult<boolean>;
+  getState(): UiResult<{ value: number | null; max: number }>;
+}
+
 /** Mounts declarative UI under root (including root). Report/static steppers need no controller and are skipped. */
 export function mountUi(root?: ParentNode): UiController[];
 /** Delegates a selector, or binds one element. Inputs, links, selected text and Shift+right-click keep their native menu. */
@@ -465,6 +506,10 @@ export function toasts(target: UiTarget, options?: UiToastsOptions): UiToastsCon
 export function notify(toast: UiToastOptions | string): Promise<string>;
 /** A gallery viewer over [data-lightbox-item] links, or over items the host passes. */
 export function lightbox(target: UiTarget, options?: UiLightboxOptions): UiLightboxController;
+/** Slides of any content over a .cx-carousel-track list. */
+export function carousel(target: UiTarget, options?: UiCarouselOptions): UiCarouselController;
+/** Stars over a native radio group, or a group it builds in an empty element. */
+export function rating(target: UiTarget, options?: UiRatingOptions): UiRatingController;
 /** A searchable combobox over an element holding a native <select>. */
 export function select(target: UiTarget, options?: UiSelectOptions): UiSelectController;
 export function dialog(target: UiTarget, options?: UiDialogOptions): UiDialogController;
@@ -483,6 +528,8 @@ export interface UiApi {
   accordion: typeof accordion;
   toasts: typeof toasts;
   lightbox: typeof lightbox;
+  carousel: typeof carousel;
+  rating: typeof rating;
   select: typeof select;
   dialog: typeof dialog;
   drawer: typeof drawer;

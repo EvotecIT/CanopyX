@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "df2f9462b850e2a9",
+      "version": "41cb2e90ed6c3448",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -151,6 +151,38 @@
       ]
     },
     {
+      "name": "ui-carousel",
+      "label": "UI carousel",
+      "version": "a52252af703d2021",
+      "script": "canopyx-ui-carousel.js",
+      "style": "canopyx-ui-carousel.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
+      "name": "ui-rating",
+      "label": "UI rating",
+      "version": "c149235f3e3f9768",
+      "script": "canopyx-ui-rating.js",
+      "style": "canopyx-ui-rating.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
       "name": "ui-select",
       "label": "UI select",
       "version": "356a551bd20ce028",
@@ -186,7 +218,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "8d102706756d1a10",
+      "version": "261a5f7060502de9",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -357,7 +389,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "b125842892c18f54",
+      "version": "71f394c39fd5ab52",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -415,7 +447,7 @@
     {
       "name": "flow-options",
       "label": "flow host options",
-      "version": "f73f6445cc002ddd",
+      "version": "f3506e3b0b844fd5",
       "script": "canopyx-flow-options.js",
       "runtimes": [
         "grid",
@@ -468,6 +500,26 @@
       ],
       "features": [
         "flowRecords"
+      ],
+      "requires": [
+        "flow"
+      ]
+    },
+    {
+      "name": "flow-signature",
+      "label": "flow signature",
+      "version": "cefefe8d1f547678",
+      "script": "canopyx-flow-signature.js",
+      "style": "canopyx-flow-signature.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowSignature"
       ],
       "requires": [
         "flow"

@@ -3,7 +3,9 @@
 import type { CanopyPlugin } from "./plugins.js";
 
 /** A value a field holds: text, a number, a boolean, a list of values, rows of a records field, picked records, or nothing. Secrets never have one. */
-export type FlowValue = string | number | boolean | null | readonly (string | number | boolean)[] | readonly FlowRecordRow[] | readonly FlowPickedRecord[];
+/** A signature field's answer: the drawing or typed name as an SVG document and as a PNG data URI. */
+export interface FlowSignature { readonly svg: string; readonly png: string }
+export type FlowValue = string | number | boolean | null | readonly (string | number | boolean)[] | readonly FlowRecordRow[] | readonly FlowPickedRecord[] | FlowSignature;
 
 /** A row of a records field: a cell per column. */
 export type FlowRecordRow = Readonly<Record<string, string | number | boolean | null>>;
@@ -13,7 +15,7 @@ export interface FlowPickedRecord { readonly id: string; readonly label: string 
 
 /** The field types: the shared grid editors, the types flows add, and custom editors. */
 export type FlowFieldType = "text" | "number" | "date" | "datetime" | "time" | "select" | "toggle" | "lookup" | "choice" | "multiChoice"
-  | "textarea" | "list" | "secret" | "duration" | "records" | "custom";
+  | "textarea" | "list" | "secret" | "duration" | "records" | "custom" | "rating" | "signature";
 
 /** A condition operator, from the filter builder's grammar. */
 export type FlowOperator = "eq" | "ne" | "gt" | "ge" | "lt" | "le" | "contains" | "notContains" | "startsWith" | "endsWith" | "matches" | "notMatches"
@@ -50,6 +52,8 @@ export interface FlowValidation {
   maxItems?: number;
   item?: "email" | "host" | "ip" | "cidr" | "url";
   itemPattern?: string;
+  /** Text fields: the shape the answer must have; the hint shows an example and the server checks it too. */
+  format?: "email" | "host" | "ip" | "ipv4" | "ipv6" | "cidr" | "url" | "mac" | "guid" | "phone" | "date" | "time" | "dateTime";
 }
 
 /** A field of a flow step. */
@@ -76,6 +80,10 @@ export interface FlowField {
   offText?: string;
   rows?: number;
   step?: number;
+  /** Rating fields: the number of stars, 2 to 10 (default 5). The value is a whole number from 1 to it. */
+  scale?: number;
+  /** Text fields: a hint of the expected shape, such as "AAA-0000", shown under the label; pair it with validation.pattern. */
+  mask?: string;
   /** Secrets: a blank answer keeps the stored value. */
   keepWhenBlank?: boolean;
   /** Secrets: false hides the reveal button. */

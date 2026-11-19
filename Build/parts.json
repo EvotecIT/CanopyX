@@ -279,6 +279,66 @@
       ]
     },
     {
+      "name": "ui-carousel",
+      "label": "UI carousel",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-carousel.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-carousel.source/carousel.css"
+      ]
+    },
+    {
+      "name": "ui-rating",
+      "label": "UI rating",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-rating.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-rating.source/rating.css"
+      ]
+    },
+    {
       "name": "ui-select",
       "label": "UI select",
       "runtimes": [
@@ -1005,6 +1065,40 @@
       ],
       "styles": [
         "CanopyX.Html/Assets/canopyx.flow-records.source/flow-records.css"
+      ]
+    },
+    {
+      "name": "flow-signature",
+      "label": "flow signature",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowSignature"
+      ],
+      "key": "FLOW_IMPL",
+      "requires": [
+        "flow"
+      ],
+      "context": [
+        "FLOW_IMPL",
+        "FORMS_IMPL",
+        "h",
+        "setText",
+        "fill",
+        "plural",
+        "numberFormat"
+      ],
+      "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.flow-signature.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.flow-signature.source/flow-signature.css"
       ]
     },
     {

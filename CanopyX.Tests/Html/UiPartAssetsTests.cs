@@ -15,6 +15,8 @@ public sealed class UiPartAssetsTests {
     [InlineData("ui-accordion", 6 * 1024)]
     [InlineData("ui-toasts", 6 * 1024)]
     [InlineData("ui-lightbox", 6 * 1024)]
+    [InlineData("ui-carousel", 4 * 1024)]
+    [InlineData("ui-rating", 3 * 1024)]
     [InlineData("ui-select", 7 * 1024)]
     public void UiPart_ComponentAssetsStayWithinTheirOwnGzipCap(string name, int componentBudget) {
         var part = CanopyHtmlAssets.GetPart(name);
@@ -107,14 +109,16 @@ public sealed class UiPartAssetsTests {
         SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Ui, 5 * 1024);
         var script = ReadableAssets.Script(CanopyRuntime.Ui);
         foreach (var marker in new[] { "createTreeGrid", "createDataGrid", "createFlow", "class TreeGrid", "class DataGrid" }) Assert.DoesNotContain(marker, script);
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "ui-toasts", "ui-lightbox", "ui-select" },
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "ui-toasts", "ui-lightbox", "ui-carousel", "ui-rating", "ui-select" },
             CanopyHtmlAssets.GetParts(CanopyRuntime.Ui).Select(part => part.Name));
     }
 
     [Fact]
-    public void ToastsAndLightbox_NeedOnlyTheOverlays() {
+    public void ToastsLightboxCarouselAndRating_NeedOnlyTheOverlays() {
         Assert.Equal(new[] { "ui-overlays" }, CanopyHtmlAssets.GetPart("ui-toasts").Requires);
         Assert.Equal(new[] { "ui-overlays" }, CanopyHtmlAssets.GetPart("ui-lightbox").Requires);
+        Assert.Equal(new[] { "ui-overlays" }, CanopyHtmlAssets.GetPart("ui-carousel").Requires);
+        Assert.Equal(new[] { "ui-overlays" }, CanopyHtmlAssets.GetPart("ui-rating").Requires);
     }
 
     [Fact]

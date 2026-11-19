@@ -1,0 +1,11 @@
+.cx-flow-signature{display:grid;gap:var(--hfx-space-2,0.5rem);max-inline-size:100%;}
+.cx-flow-signature-pad{
+display:block;inline-size:100%;
+block-size:160px;
+border:var(--hfx-border-width,1px) dashed var(--hfx-color-border-strong,light-dark(#cdd0d5,#363a42));border-radius:var(--hfx-radius-control,var(--hfx-radius-md,6px));color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));background:var(--hfx-color-surface-card,var(--hfx-color-surface,light-dark(#ffffff,#16181c)));touch-action:none;cursor:crosshair;
+}
+.cx-flow-signature-typed{display:grid;gap:var(--hfx-space-1,0.25rem);font-size:var(--hfx-type-small-size,0.8125rem);}
+.cx-flow-signature-typed[hidden]{display:none;}
+.cx-flow-signature-tools{display:flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-2,0.5rem);}
+.cx-flow-invalid .cx-flow-signature-pad{border-color:var(--hfx-color-status-bad-border,light-dark(#eeacac,#814345));}
+@media (forced-colors:active){.cx-flow-signature-pad{border-color:CanvasText;}}

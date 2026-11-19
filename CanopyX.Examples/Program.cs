@@ -45,6 +45,7 @@ Directory.CreateDirectory(output);
 if (args.Contains("--ui-primitives")) {
     await UiPrimitivesExample.RunAsync(output);
     UiComponentsExample.Write(output);
+    UiCarouselRatingExample.Write(output);
     UiSelectExample.Write(output);
     return;
 }
@@ -214,6 +215,8 @@ WriteTemplate("interactions.html", Path.Combine(output, "interactions.html"),
     InteractionView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }), CanopyRuntime.InteractiveTreeGrid);
 await UiPrimitivesExample.RunAsync(output);
 UiComponentsExample.Write(output);
+UiCarouselRatingExample.Write(output);
+FlowInputsExample.Write(output);
 UiSelectExample.Write(output);
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");

@@ -97,6 +97,8 @@
       case "list": return flowListInput(context, field, view.labels);
       case "secret": return flowSecretInput(context, field, view.labels, view.keeps(field));
       case "duration": return flowDurationInput(context, field, view.labels);
+      case "rating": return flowRatingInput(context, field, view.labels);
+      case "signature": return flowHost("signature").input(context, field, view);
       case "records": case "pick": return flowHost(field.type).input(context, field, view);
       case "custom": {
         const editor = view.editors[field.raw.editor];
@@ -108,6 +110,12 @@
         // The shared editors fit grid cells; in a flow they take the form's control style, and read-only fields stay shown.
         control.classList.add("cx-flow-input");
         if (field.readOnly) { control.disabled = control.tagName === "SELECT" || control.type === "checkbox"; control.readOnly = true; }
+        // A format or mask names the expected shape under the label; the input stops guessing words and capitals for it.
+        if (field.format || field.mask) {
+          instance.hint = field.mask ? fill(view.labels.flowFormatMask, { mask: field.mask }) : fill(view.labels.flowFormatExample, { example: FLOW_FORMAT_EXAMPLES[field.format] });
+          Object.assign(control, { spellcheck: false, autocomplete: "off", inputMode: field.format === "phone" ? "tel" : field.format === "email" ? "email" : field.format === "url" ? "url" : "text" });
+          control.setAttribute("autocapitalize", "off");
+        }
         return instance;
       }
     }
@@ -127,6 +135,8 @@
       case "date": return flowDate(view, value + "T00:00:00Z", { dateStyle: "medium", timeZone: "UTC" });
       case "datetime": return flowDate(view, value, { dateStyle: "medium", timeStyle: "short", timeZone: view.model.local ? undefined : "UTC" }) + (view.model.local ? "" : " UTC");
       case "duration": return flowWords(view, flowSeconds(value), field.units[0]);
+      case "signature": return flowHost("signature").display(view, value);
+      case "rating": return fill(labels.flowRatingValue, { value: numberFormat(view.lang, 0, 0).format(value), max: numberFormat(view.lang, 0, 0).format(field.scale) });
       default: return String(value);
     }
   }

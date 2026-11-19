@@ -22,6 +22,14 @@ public sealed partial class CanopyLabels {
         labels.LightboxZoomOut = "Verkleinern";
         labels.LightboxZoomReset = "An Bildschirm anpassen";
         labels.LightboxError = "Dieses Element konnte nicht geladen werden";
+        labels.CarouselRole = "Karussell";
+        labels.CarouselSlideRole = "Folie";
+        labels.CarouselSlide = "Folie {current} von {total}";
+        labels.CarouselPrevious = "Vorherige Folie";
+        labels.CarouselNext = "Nächste Folie";
+        labels.CarouselPicker = "Folie wählen";
+        labels.CarouselMotionDisabled = "Automatische Folien sind wegen reduzierter Bewegung deaktiviert";
+        labels.RatingValue = "{value} von {max}";
         labels.SelectNoMatches = "Keine Treffer";
         labels.SelectResults = "Ergebnisse: {count}";
         labels.SelectCreate = "„{text}“ hinzufügen";

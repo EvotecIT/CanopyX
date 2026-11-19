@@ -218,6 +218,24 @@ CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle 
 CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Flush = 1
 CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Section = 3
 CanopyX.Html.Ui.CanopyAccordionStyle.const CanopyX.Html.Ui.CanopyAccordionStyle Separated = 2
+CanopyX.Html.Ui.CanopyCarousel : sealed class
+CanopyX.Html.Ui.CanopyCarousel..ctor(System.String id, System.String label, CanopyX.Html.Ui.CanopyCarouselOptions? options = null)
+CanopyX.Html.Ui.CanopyCarousel.CanopyX.Html.Ui.CanopyCarouselOptions Options { get; }
+CanopyX.Html.Ui.CanopyCarousel.System.Collections.Generic.IList<CanopyX.Html.Ui.CanopyCarouselSlide> Slides { get; }
+CanopyX.Html.Ui.CanopyCarousel.System.String Id { get; }
+CanopyX.Html.Ui.CanopyCarousel.System.String Label { get; }
+CanopyX.Html.Ui.CanopyCarousel.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyCarouselOptions : sealed class
+CanopyX.Html.Ui.CanopyCarouselOptions..ctor()
+CanopyX.Html.Ui.CanopyCarouselOptions.System.Boolean Loop { get; set; }
+CanopyX.Html.Ui.CanopyCarouselOptions.System.Int32 PerView { get; set; }
+CanopyX.Html.Ui.CanopyCarouselOptions.System.Int32 SelectedIndex { get; set; }
+CanopyX.Html.Ui.CanopyCarouselOptions.System.Nullable<System.Int32> AutoplayInterval { get; set; }
+CanopyX.Html.Ui.CanopyCarouselOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyCarouselSlide : sealed class
+CanopyX.Html.Ui.CanopyCarouselSlide..ctor(System.String contentHtml)
+CanopyX.Html.Ui.CanopyCarouselSlide.System.String ContentHtml { get; }
+CanopyX.Html.Ui.CanopyCarouselSlide.System.String? Label { get; set; }
 CanopyX.Html.Ui.CanopyDialog : sealed class
 CanopyX.Html.Ui.CanopyDialog..ctor(System.String id, System.String title, CanopyX.Html.Ui.CanopyDialogOptions? options = null)
 CanopyX.Html.Ui.CanopyDialog.CanopyX.Html.Ui.CanopyDialogOptions Options { get; }
@@ -345,6 +363,23 @@ CanopyX.Html.Ui.CanopyPopoverOptions..ctor()
 CanopyX.Html.Ui.CanopyPopoverOptions.CanopyX.Html.Ui.CanopyOverlayPlacement Placement { get; set; }
 CanopyX.Html.Ui.CanopyPopoverOptions.System.String? TriggerId { get; set; }
 CanopyX.Html.Ui.CanopyPopoverOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyRating : sealed class
+CanopyX.Html.Ui.CanopyRating..ctor(System.String id, System.String name, System.String label, CanopyX.Html.Ui.CanopyRatingOptions? options = null)
+CanopyX.Html.Ui.CanopyRating.CanopyX.Html.Ui.CanopyRatingOptions Options { get; }
+CanopyX.Html.Ui.CanopyRating.System.String Id { get; }
+CanopyX.Html.Ui.CanopyRating.System.String Label { get; }
+CanopyX.Html.Ui.CanopyRating.System.String Name { get; }
+CanopyX.Html.Ui.CanopyRating.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopyRating.static System.String Display(System.Double value, System.Int32 max = 5, CanopyX.CanopyLabels? labels = null)
+CanopyX.Html.Ui.CanopyRatingOptions : sealed class
+CanopyX.Html.Ui.CanopyRatingOptions..ctor()
+CanopyX.Html.Ui.CanopyRatingOptions.CanopyX.CanopyLabels? Labels { get; set; }
+CanopyX.Html.Ui.CanopyRatingOptions.System.Boolean Clearable { get; set; }
+CanopyX.Html.Ui.CanopyRatingOptions.System.Boolean Disabled { get; set; }
+CanopyX.Html.Ui.CanopyRatingOptions.System.Boolean Required { get; set; }
+CanopyX.Html.Ui.CanopyRatingOptions.System.Int32 Max { get; set; }
+CanopyX.Html.Ui.CanopyRatingOptions.System.Nullable<System.Int32> Value { get; set; }
+CanopyX.Html.Ui.CanopyRatingOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopySelect : sealed class
 CanopyX.Html.Ui.CanopySelect..ctor(System.String id, System.String name, System.String label, CanopyX.Html.Ui.CanopySelectOptions? options = null)
 CanopyX.Html.Ui.CanopySelect.CanopyX.Html.Ui.CanopySelectOptions Options { get; }
