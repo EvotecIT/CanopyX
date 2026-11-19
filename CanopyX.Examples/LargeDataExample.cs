@@ -30,10 +30,13 @@ internal static class LargeDataExample {
             RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.Objects } });
         var bundle = grid.SaveHtmlBundle(Path.Combine(folder, "bundle"), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "100,000 assets, bundle",
             RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
-        // The same grid at 500 rows, as compressed row data: the accessibility sweep checks this page in every run, while the
-        // 100,000-row page is scanned only in the explicit scale runs.
-        Inventory("inventory", "Asset inventory", 500, 20261015).SaveHtmlPage(Path.Combine(folder, "grid-compact.html"), new CanopyHtmlOptions {
+        // The same grid at 500 rows, as compressed row data in the page and in a bundle's sidecar files: the accessibility sweep
+        // checks these pages in every run, while the 100,000-row pages are scanned only in the explicit scale runs.
+        var small = Inventory("inventory", "Asset inventory", 500, 20261015);
+        small.SaveHtmlPage(Path.Combine(folder, "grid-compact.html"), new CanopyHtmlOptions {
             Title = "500 assets, compressed row data", RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
+        small.SaveHtmlBundle(Path.Combine(folder, "bundle-compact"), new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "500 assets, bundle",
+            RowData = new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip } });
         WriteReport(Path.Combine(folder, "report.html"));
         Console.WriteLine($"large/: 100,000-row grid pages ({new FileInfo(Path.Combine(folder, "grid-100k.html")).Length / 1048576.0:N1} MB automatic, " +
             $"{new FileInfo(Path.Combine(folder, "grid-100k-objects.html")).Length / 1048576.0:N1} MB objects), bundle data {bundle.TotalBytes / 1048576.0:N1} MB in {bundle.FileCount} files, " +

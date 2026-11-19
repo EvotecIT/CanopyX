@@ -31,9 +31,10 @@ function pages() {
 // Each page is scanned in its own browser contexts, so the pages can run on any worker or shard.
 test.describe.configure({ mode: "parallel" });
 
-// The 100,000-row page takes minutes to scan in some engines, so it is a scale case: it runs with the explicit benchmark
-// selection (docs/testing.md). large/grid-compact.html is the same grid at 500 rows, as compressed row data, in every run.
-const SCALE_PAGES = new Set(["large/grid-100k.html"]);
+// Pages with 100,000 rows can take minutes to scan in some engines, so they are scale cases: they run with the explicit
+// benchmark selection (docs/testing.md). The same grid at 500 rows, as compressed row data in the page and in a bundle
+// (large/grid-compact.html, large/bundle-compact/), is scanned in every run; row objects are covered by the other grid pages.
+const SCALE_PAGES = new Set(["large/grid-100k.html", "large/grid-100k-objects.html", "large/bundle/index.html"]);
 
 const all = pages();
 for (const name of all) {
