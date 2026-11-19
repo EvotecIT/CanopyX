@@ -30,6 +30,15 @@ public sealed partial class CanopyLabels {
         labels.CarouselPicker = "Scegli una diapositiva";
         labels.CarouselMotionDisabled = "Le diapositive automatiche sono disattivate dalla riduzione del movimento";
         labels.RatingValue = "{value} su {max}";
+        labels.SignaturePad = "Area della firma";
+        labels.SignatureUndo = "Annulla";
+        labels.SignatureClear = "Cancella";
+        labels.SignatureType = "Digita invece";
+        labels.SignatureDraw = "Disegna invece";
+        labels.SignatureTyped = "Digita il tuo nome completo";
+        labels.SignatureColour = "Colore della penna";
+        labels.SignatureDownloadPng = "Scarica PNG";
+        labels.SignatureDownloadSvg = "Scarica SVG";
         labels.SelectNoMatches = "Nessuna corrispondenza";
         labels.SelectResults = "Risultati: {count}";
         labels.SelectCreate = "Aggiungi «{text}»";

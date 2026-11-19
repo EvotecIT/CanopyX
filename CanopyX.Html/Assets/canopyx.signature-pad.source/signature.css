@@ -1,0 +1,15 @@
+@layer hfx.components {
+  .cx-signature { display:grid;gap:var(--hfx-space-2);max-inline-size:100%; }
+  .cx-signature-pad {
+    display:block;inline-size:100%;
+    /* lint-allow layout: the pad's drawing height, matched by SIGNATURE_HEIGHT */
+    block-size:160px;
+    border:var(--hfx-border-width) dashed var(--hfx-color-border-strong);border-radius:var(--hfx-radius-control);color:var(--hfx-color-text);background:var(--hfx-color-surface);touch-action:none;cursor:crosshair;
+  }
+  .cx-signature-typed { display:grid;gap:var(--hfx-space-1);font-size:var(--hfx-type-small-size); }
+  .cx-signature-typed[hidden] { display:none; }
+  .cx-signature-tools { display:flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-2); }
+  .cx-signature-colour { display:inline-flex; }
+  .cx-signature-colour input { inline-size:var(--hfx-control-height-sm);block-size:var(--hfx-control-height-sm);padding:0;border:var(--hfx-border-width) solid var(--hfx-color-border-control);border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface);cursor:pointer; }
+  @media (forced-colors:active) { .cx-signature-pad { border-color:CanvasText; } }
+}

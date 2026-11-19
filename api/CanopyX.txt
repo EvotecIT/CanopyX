@@ -2971,6 +2971,15 @@ CanopyX.CanopyLabels.System.String SelectRemove { get; set; }
 CanopyX.CanopyLabels.System.String SelectResults { get; set; }
 CanopyX.CanopyLabels.System.String ShowMore { get; set; }
 CanopyX.CanopyLabels.System.String ShowMoreUnknownTotal { get; set; }
+CanopyX.CanopyLabels.System.String SignatureClear { get; set; }
+CanopyX.CanopyLabels.System.String SignatureColour { get; set; }
+CanopyX.CanopyLabels.System.String SignatureDownloadPng { get; set; }
+CanopyX.CanopyLabels.System.String SignatureDownloadSvg { get; set; }
+CanopyX.CanopyLabels.System.String SignatureDraw { get; set; }
+CanopyX.CanopyLabels.System.String SignaturePad { get; set; }
+CanopyX.CanopyLabels.System.String SignatureType { get; set; }
+CanopyX.CanopyLabels.System.String SignatureTyped { get; set; }
+CanopyX.CanopyLabels.System.String SignatureUndo { get; set; }
 CanopyX.CanopyLabels.System.String StackEmpty { get; set; }
 CanopyX.CanopyLabels.System.String StackEnforced { get; set; }
 CanopyX.CanopyLabels.System.String StackFiltered { get; set; }

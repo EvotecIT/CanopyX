@@ -30,6 +30,15 @@ public sealed partial class CanopyLabels {
         labels.CarouselPicker = "Folie wählen";
         labels.CarouselMotionDisabled = "Automatische Folien sind wegen reduzierter Bewegung deaktiviert";
         labels.RatingValue = "{value} von {max}";
+        labels.SignaturePad = "Unterschriftenfeld";
+        labels.SignatureUndo = "Rückgängig";
+        labels.SignatureClear = "Löschen";
+        labels.SignatureType = "Stattdessen tippen";
+        labels.SignatureDraw = "Stattdessen zeichnen";
+        labels.SignatureTyped = "Vollständigen Namen eingeben";
+        labels.SignatureColour = "Stiftfarbe";
+        labels.SignatureDownloadPng = "PNG herunterladen";
+        labels.SignatureDownloadSvg = "SVG herunterladen";
         labels.SelectNoMatches = "Keine Treffer";
         labels.SelectResults = "Ergebnisse: {count}";
         labels.SelectCreate = "„{text}“ hinzufügen";

@@ -82,6 +82,32 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets a rating as words, with <c>{value}</c> and <c>{max}</c>. Default "{value} of {max}".</summary>
     public string RatingValue { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the accessible name of the area a signature is drawn on. Default "Signature pad".</summary>
+    public string SignaturePad { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that removes the last stroke of a signature. Default "Undo".</summary>
+    public string SignatureUndo { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that removes a signature. Default "Clear".</summary>
+    public string SignatureClear { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that switches a signature to a typed name. Default "Type instead".</summary>
+    public string SignatureType { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that switches a typed signature back to drawing. Default "Draw instead".</summary>
+    public string SignatureDraw { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the label of the field a typed signature uses. Default "Type your full name".</summary>
+    public string SignatureTyped { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the pen colour button. Default "Pen colour".</summary>
+    public string SignatureColour { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that saves the signature as a PNG image. Default "Download PNG".</summary>
+    public string SignatureDownloadPng { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that saves the signature as an SVG image. Default "Download SVG".</summary>
+    public string SignatureDownloadSvg { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the line in a select's list when no option matches the typed text. Default "No matches".</summary>
     public string SelectNoMatches { get => Get(); set => Set(value); }
 

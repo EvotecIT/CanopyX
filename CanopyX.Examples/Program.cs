@@ -46,6 +46,7 @@ if (args.Contains("--ui-primitives")) {
     await UiPrimitivesExample.RunAsync(output);
     UiComponentsExample.Write(output);
     UiCarouselRatingExample.Write(output);
+    UiInputsExample.Write(output);
     UiSelectExample.Write(output);
     return;
 }
@@ -216,6 +217,7 @@ WriteTemplate("interactions.html", Path.Combine(output, "interactions.html"),
 await UiPrimitivesExample.RunAsync(output);
 UiComponentsExample.Write(output);
 UiCarouselRatingExample.Write(output);
+UiInputsExample.Write(output);
 FlowInputsExample.Write(output);
 UiSelectExample.Write(output);
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
