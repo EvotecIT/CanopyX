@@ -290,7 +290,7 @@ under 250 ms at 4x CPU, and the `Benchmark` category checks the size of a plain 
 
 Timing targets help compare qualified runs on a known host. The deterministic size budgets of the runtime entry points (gzip) remain required, and the row data part has a 2.5 KiB guard (about 2 KiB).
 
-The examples it opens are written by `CanopyX.Examples` into `large/`: `grid-100k.html` (the default format, which chooses compressed row data for 100,000 rows), `grid-100k-objects.html` (row objects, asked for explicitly), `bundle/` (gzip row data in sidecar files) and `report.html` (24 grids that mount when visible). `large-data.spec.mjs` checks their behaviour: mounting on view, tab, print and request; identical results from compact and object rows, and the format the default chose; first windows before the last chunk; and failures for invalid row data.
+The examples it opens are written by `CanopyX.Examples` into `large/`: `grid-100k.html` (the default format, which chooses compressed row data for 100,000 rows), `grid-100k-objects.html` (row objects, asked for explicitly), `grid-compact.html` (the same grid at 500 rows as compressed row data, for the accessibility sweep), `bundle/` (gzip row data in sidecar files) and `report.html` (24 grids that mount when visible). `large-data.spec.mjs` checks their behaviour: mounting on view, tab, print and request; identical results from compact and object rows, and the format the default chose; first windows before the last chunk; and failures for invalid row data.
 
 ## Reproducing the measurements
 
