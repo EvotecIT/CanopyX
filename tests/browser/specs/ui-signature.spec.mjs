@@ -48,3 +48,14 @@ test('a stored signature fills the hidden input, survives a pen colour change an
   await page.evaluate(() => window.pad.select(null));
   expect(await submitted()).toBe('');
 });
+
+test('a form reset brings back the starting signature and clears a typed one', async ({ page }) => {
+  await openUi(page, '<form id="form"><div id="sign" data-cx-signature data-name="signature"></div><button type="reset">Reset</button></form>');
+  await page.getByRole('button', { name: 'Type instead' }).click();
+  await page.keyboard.type('Ada Lovelace');
+  const submitted = () => page.evaluate(() => new FormData(document.getElementById('form')).get('signature'));
+  expect(await submitted()).toContain('<svg ');
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await expect.poll(submitted).toBe('');
+  expect(await page.evaluate(() => CanopyX.signature('#sign').getState().value)).toBeNull();
+});
