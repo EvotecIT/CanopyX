@@ -86,6 +86,30 @@ public sealed class CanopyCalendarEvent {
     /// <summary>Gets or sets the event's tone; <see cref="CanopyTone.None"/> (the default) uses the calendar's.</summary>
     public CanopyTone Tone { get; set; }
 
+    /// <summary>Gets or sets the event's own colour: a hex colour, an <c>rgb()</c>/<c>hsl()</c> colour or a CSS colour name; null for its tone's.</summary>
+    /// <exception cref="ArgumentException">The value is not such a colour.</exception>
+    public string? Color { get => _color; set => _color = Colour(value); }
+
+    /// <summary>Gets or sets the event's background colour (same forms as <see cref="Color"/>); null for the default.</summary>
+    /// <exception cref="ArgumentException">The value is not a colour.</exception>
+    public string? BackgroundColor { get => _backgroundColor; set => _backgroundColor = Colour(value); }
+
+    /// <summary>Gets or sets the event's text colour (same forms as <see cref="Color"/>); null for the default.</summary>
+    /// <exception cref="ArgumentException">The value is not a colour.</exception>
+    public string? TextColor { get => _textColor; set => _textColor = Colour(value); }
+
+    /// <summary>Gets or sets the address activating the event opens instead of its details: http(s), mailto or relative. Null for none.</summary>
+    /// <exception cref="ArgumentException">The address has another scheme, control characters or backslashes, or is over 2,048 characters.</exception>
+    public string? Url {
+        get => _url;
+        set => _url = value == null || CanopyCalendar.IsEventUrl(value) ? value : throw new ArgumentException("An event address is an http(s), mailto or relative address of at most 2,048 characters.", nameof(value));
+    }
+
+    private string? _color, _backgroundColor, _textColor, _url;
+
+    private static string? Colour(string? value) => value == null || CanopyCalendar.IsColor(value) ? value?.Trim()
+        : throw new ArgumentException("A colour is a hex colour, an rgb() or hsl() colour, or a CSS colour name.", nameof(value));
+
     /// <summary>Gets or sets the event's resource id, a node id of the calendar's resources; null for none.</summary>
     /// <exception cref="ArgumentException">The id is empty.</exception>
     public string? Resource {

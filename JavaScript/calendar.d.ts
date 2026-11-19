@@ -197,6 +197,15 @@ export interface GridCalendarDefinition<Row extends GridRow = GridRow> {
   print?: boolean;
   /** A text column with each event's location (details; merged copies match on it). */
   location?: GridColumnId<Row>;
+  /** Text columns of each event's own colour (bar, dot and strong fill), background colour and text colour: hex, rgb()/hsl() or a
+   * CSS colour name; other values are ignored. The event's colour wins over its tone and its source's colour. */
+  color?: GridColumnId<Row>;
+  backgroundColor?: GridColumnId<Row>;
+  textColor?: GridColumnId<Row>;
+  /** A text column with each event's address (http(s), mailto or relative): activating the event opens it instead of its details. */
+  url?: GridColumnId<Row>;
+  /** Where event addresses open: the page itself (default) or a new window without an opener. */
+  urlTarget?: "self" | "blank";
   /** Copies of one event in several sources (same title, start, end, all-day flag and location) draw once; tone colours them. */
   merge?: boolean | { tone?: string };
   /** How strongly finished events fade in week, day, N-day, list and agenda views, 0.1..0.9. */
@@ -234,6 +243,21 @@ export interface GridCalendarEvent {
   readonly external?: boolean;
   /** The sources of a merged event, in source order (merge). */
   readonly owners?: readonly string[];
+  /** The event's address and colours, or null. */
+  readonly url?: string | null;
+  readonly color?: string | null;
+  readonly backgroundColor?: string | null;
+  readonly textColor?: string | null;
+}
+
+/** canopyx:eventClick and onEventClick: an event was activated (click, Enter or Space, or the menu's Open). Cancelling it, or
+ * returning false, keeps the calendar from opening the event's address or details. */
+export interface GridEventClick {
+  readonly event: GridCalendarEvent;
+  readonly url: string | null;
+  readonly keyboard: boolean;
+  /** The occurrence's start for an instance of a series, or null. */
+  readonly occurrence: string | null;
 }
 
 /** The template hook: draws an event's content into a fresh element; return true to own it. Text is the host's to escape. */
@@ -305,6 +329,12 @@ export interface CalendarEventInput {
   source?: string;
   /** Where it takes place (details); merged copies of one event match on it. */
   location?: string;
+  /** The event's own colour, background colour and text colour: hex, rgb()/hsl() or a CSS colour name. */
+  color?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  /** An address activating the event opens instead of its details (http(s), mailto or relative). */
+  url?: string;
 }
 /** The options of CanopyX.createCalendar: a preset's defaults, each overridden by its own option. */
 export interface CalendarOptions {
@@ -335,6 +365,8 @@ export interface CalendarOptions {
   live?: boolean | GridLiveDefinition;
   facets?: readonly string[] | GridFacetPanelDefinition;
   links?: boolean;
+  /** Where event addresses open: the page itself (default) or a new window. */
+  urlTarget?: "self" | "blank";
   /** Any other calendar key, applied last; its functions (render, menu, occurrence) are the host's calendar hooks. */
   calendar?: Omit<Partial<GridCalendarDefinition>, "menu" | "occurrence"> & Omit<GridCalendarOptions, "menu" | "occurrence"> &
     { menu?: boolean | GridCalendarOptions["menu"]; occurrence?: GridCalendarDefinition["occurrence"] | GridCalendarOptions["occurrence"] };

@@ -232,7 +232,8 @@
     /** The occurrences shown, as plain copies: id, record id, start and end (ISO), all-day, title and resource. */
     getCalendarEvents() {
       return gridFreeze(this.calEvents.map(event => gridFreeze({ id: event.id, record: event.key, start: calIso(event.start), end: calIso(event.end), allDay: event.allDay,
-        title: event.title, resource: event.resource, resourceIds: this.calEventResources(event), recurring: event.recurring, background: event.background, source: event.base.source, external: event.base.external })));
+        title: event.title, resource: event.resource, resourceIds: this.calEventResources(event), recurring: event.recurring, background: event.background, source: event.base.source, external: event.base.external,
+        url: event.url || null, color: event.color || null, backgroundColor: event.fill || null, textColor: event.ink || null })));
     },
 
     /**

@@ -34,10 +34,12 @@
     standard: { toolbar: ["search", "filters", "export"], details: "popover", print: true, views: ["month", "week", "day", "days", "agenda", "year"] },
     scheduler: { toolbar: ["search", "filters", "views", "export"], details: "drawer", print: true, editable: true, create: true, views: ["month", "week", "day", "agenda"] }
   };
-  const CAL_FIELDS = ["allDay", "description", "location", "tone", "resource", "resourceIds", "recurrence", "exceptions", "series", "recurrenceId", "source"];
-  const CAL_TITLES = { allDay: "All day", description: "Description", location: "Location", tone: "Tone", resource: "Resource", resourceIds: "Resources", series: "Series", recurrenceId: "Original start", recurrence: "Repeats", exceptions: "Exceptions", source: "Source" };
+  const CAL_FIELDS = ["allDay", "description", "location", "tone", "resource", "resourceIds", "recurrence", "exceptions", "series", "recurrenceId", "source",
+    "color", "backgroundColor", "textColor", "url"];
+  const CAL_TITLES = { allDay: "All day", description: "Description", location: "Location", tone: "Tone", resource: "Resource", resourceIds: "Resources", series: "Series", recurrenceId: "Original start", recurrence: "Repeats", exceptions: "Exceptions", source: "Source",
+    color: "Colour", backgroundColor: "Background", textColor: "Text colour", url: "Address" };
   const CAL_OWN = new Set(["events", "preset", "id", "label", "views", "view", "date", "timeZone", "firstDay", "toolbar", "details", "editable", "create", "drop",
-    "resources", "timeline", "live", "facets", "drawer", "export", "print", "sources", "calendar", "links"]);
+    "resources", "timeline", "live", "facets", "drawer", "export", "print", "sources", "calendar", "links", "urlTarget"]);
   const calPad = (value, size = 2) => String(value).padStart(size, "0");
   /** An event's start or end as the grid writes it: an all-day value is the date it names in the reader's own calendar. */
   function calInstantText(value, field, allDay) {
@@ -89,7 +91,7 @@
     if (Array.isArray(toolbar) && !toolbar.length) toolbar = false;
     const calendar = { start: "start", end: "end", title: "title", views: pick("views"), toolbar, details: options.drawer === true ? "drawer" : options.drawer === false ? "popover" : pick("details") };
     for (const field of CAL_FIELDS) if (used.has(field)) calendar[field] = field;
-    for (const name of ["view", "date", "timeZone", "firstDay", "sources"]) if (options[name] !== undefined) calendar[name] = options[name];
+    for (const name of ["view", "date", "timeZone", "firstDay", "sources", "urlTarget"]) if (options[name] !== undefined) calendar[name] = options[name];
     if (editable) calendar.editable = typeof pick("editable") === "object" ? pick("editable") : true;
     if (create) calendar.create = create;
     if (drop) calendar.drop = true;

@@ -33,7 +33,7 @@ export * from "./column-groups.js";
 export * from "./cell-ranges.js";
 import type { GridLiveDefinition, GridLiveOptions, GridLiveApi, GridLiveResult } from "./live.js";
 import type { GridFacetPanelDefinition, GridFacetPanelOptions, GridFacetPanelApi } from "./facets.js";
-import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, GridCalendarState, GridCalendarSavedState, GridOccurrenceChange, GridRangeSource, GridEventCreate, GridEventReceive, CalendarOptions } from "./calendar.js";
+import type { GridCalendarDefinition, GridCalendarOptions, GridCalendarApi, GridCalendarState, GridCalendarSavedState, GridOccurrenceChange, GridRangeSource, GridEventCreate, GridEventReceive, GridEventClick, CalendarOptions } from "./calendar.js";
 export * from "./facets.js";
 export * from "./calendar.js";
 export * from "./live.js";
@@ -960,6 +960,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
   calendar?: GridCalendarOptions;
   /** After the calendar painted a view or range; canopyx:calendar carries the same detail. */
   onCalendar?: (event: GridCalendarState) => void;
+  /** When an event is activated, before its address or details open; returning false (or cancelling canopyx:eventClick) keeps them closed. */
+  onEventClick?: (event: GridEventClick) => boolean | void;
   /** Before one occurrence of a series moves; returning false (or cancelling canopyx:occurrenceChange) keeps the series. */
   onOccurrenceChange?: (event: GridOccurrenceChange) => boolean | void;
   /** Before the calendar proposes a new event; returning false (or cancelling canopyx:eventCreate) lets the host open its own form. */

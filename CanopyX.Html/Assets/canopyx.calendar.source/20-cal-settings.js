@@ -10,7 +10,8 @@
     "seriesEnd", "view", "views", "date", "days", "firstDay", "hiddenDays", "slotMinutes", "minTime", "maxTime", "scrollTime", "workingHours", "nowIndicator",
     "eventLimit", "eventStyle", "timeZone", "editable", "resources", "zoom", "zooms", "capacity", "ranges", "availability", "limit", "phone",
     "toolbar", "details", "description", "tone", "source", "sources", "create", "drop", "occurrence", "weekNumbers", "navLinks", "validRange", "fixedWeeks",
-    "outsideDays", "span", "menu", "hover", "yearEvents", "agendaSpan", "months", "print", "location", ...CAL_SCREEN]);
+    "outsideDays", "span", "menu", "hover", "yearEvents", "agendaSpan", "months", "print", "location",
+    "color", "backgroundColor", "textColor", "url", "urlTarget", ...CAL_SCREEN]);
   const CAL_TONE = /^[a-z][a-z0-9-]{0,31}$/;
 
   function calInvalid(message) { throw new Error("CanopyX: " + message); }
@@ -41,7 +42,10 @@
       title: column("title") || grid.columns.find(item => item.rowHeader) || grid.columns.find(item => !item.hidden), subtitle: column("subtitle"),
       resource: column("resource", ["text"]), resourceIds: column("resourceIds", ["text"]), status: column("status"), recurrence: column("recurrence", ["text"]), exceptions: column("exceptions", ["text"]),
       series: column("series", ["text"]), recurrenceId: column("recurrenceId", ["datetime"]), display: column("display", ["text"]), seriesEnd: column("seriesEnd", ["datetime"]),
-      location: column("location", ["text"])
+      location: column("location", ["text"]),
+      // Per-event colours and an address, read from text columns; a value that is not a colour or a safe address is ignored.
+      color: column("color", ["text"]), backgroundColor: column("backgroundColor", ["text"]), textColor: column("textColor", ["text"]), url: column("url", ["text"]),
+      urlTarget: input.urlTarget === undefined ? "self" : ["self", "blank"].includes(input.urlTarget) ? input.urlTarget : calInvalid("calendar urlTarget is self or blank.")
     };
     if (!settings.series !== !settings.recurrenceId) calInvalid("calendar series and recurrenceId come together.");
     const views = input.views === undefined ? ["month", "week", "day", "agenda"].concat(input.resources ? ["timeline"] : []) : input.views;

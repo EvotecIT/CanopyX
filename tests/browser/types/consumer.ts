@@ -816,7 +816,7 @@ const rangeSource = { query: () => { throw new Error("unused"); }, range: (reque
   ({ protocol: "canopyx/2", type: "gridRangePage", view: request.view, revision: "r1", from: request.from, to: request.to, matched: 0, truncated: false, items: [] }) };
 void rangeSource;
 // A basic calendar from events, the presets and the opt-in options, the hooks, inserts and the sources API.
-import { createCalendar, type CalendarEventInput, type GridCalendarMenuContext, type GridEventCreate } from "@evotecit/canopyx/grid";
+import { createCalendar, type CalendarEventInput, type CalendarOptions, type GridCalendarMenuContext, type GridEventClick, type GridEventCreate } from "@evotecit/canopyx/grid";
 const basicEvents: CalendarEventInput[] = [{ title: "Planning", start: new Date(), end: "2026-10-16T10:00:00Z", tone: "info" }, { id: "trip", title: "Trip", start: "2026-10-20" }];
 const basicCalendar = createCalendar(document.createElement("div"), { events: basicEvents, preset: "basic", views: ["month", "mini", "weekList", "dayList", "months"],
   sources: [{ id: "team", label: "Team", tone: "info" }, { id: "ext", label: "Company", ics: "holidays.ics", hidden: true }],
@@ -1063,3 +1063,9 @@ const pinnedBand: GridColumnBandDefinition = { id: "identity", title: "Identity"
 // @ts-expect-error Presentation bands cannot set pins on nested groups either.
 const nestedPinnedBand: GridColumnBandDefinition = { id: "identity", title: "Identity", groups: [{ id: "child", title: "Child", columns: ["name"], pinned: "right" }] };
 void presentationBand; void pinnedBand; void nestedPinnedBand;
+
+// Calendar events with their own colours and an address, and the event-click hook.
+const lookedEvents: CalendarEventInput[] = [{ title: "Change", start: "2026-10-16T09:00:00Z", color: "#0f766e", backgroundColor: "#ccfbf1", textColor: "#134e4a", url: "/changes/1" }];
+const clickHook = (detail: GridEventClick): boolean => detail.url === null || detail.event.color !== undefined;
+const clicked: CalendarOptions = { events: lookedEvents, urlTarget: "blank", onEventClick: clickHook };
+void clicked;

@@ -158,7 +158,8 @@
           if (options.dots && totals[col]) {
             const dots = h("span", "cx-cal-dots"); dots.setAttribute("aria-hidden", "true");
             for (const item of placed.filter(entry => entry.from <= col && entry.to >= col).slice(0, 3)) {
-              const dot = h("i"); if (item.event.tone) dot.style.setProperty("--cx-ev", toneVariable(item.event.tone, false, "var(--hfx-color-accent)")); dots.appendChild(dot);
+              const dot = h("i"); if (item.event.tone) dot.style.setProperty("--cx-ev", toneVariable(item.event.tone, false, "var(--hfx-color-accent)"));
+              if (item.event.color || item.event.fill) dot.style.setProperty("--cx-ev", item.event.color || item.event.fill); dots.appendChild(dot);
             }
             cell.appendChild(dots);
           } else if (hidden > 0) {
