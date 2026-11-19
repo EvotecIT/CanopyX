@@ -49,7 +49,7 @@ test('a stored signature fills the hidden input, survives a pen colour change an
   expect(await submitted()).toBe('');
 });
 
-test('select during a stroke cancels it, so releasing the pointer keeps the selected value', async ({ page }) => {
+test('select or clear during a stroke cancels it, so releasing the pointer keeps the new value', async ({ page }) => {
   await openUi(page, '<form id="form"><div id="sign" data-name="signature"></div></form>');
   await page.evaluate(() => { window.pad = CanopyX.signature('#sign'); return window.pad.ready; });
   const box = await page.getByRole('img', { name: 'Signature pad' }).boundingBox();
@@ -60,6 +60,11 @@ test('select during a stroke cancels it, so releasing the pointer keeps the sele
   await page.mouse.up();
   expect(await page.evaluate(async () => (await window.pad.getState()).value)).toBeNull();
   expect(await page.evaluate(() => new FormData(document.getElementById('form')).get('signature'))).toBe('');
+  await page.mouse.move(box.x + 20, box.y + 20); await page.mouse.down();
+  await page.mouse.move(box.x + 80, box.y + 40, { steps: 3 });
+  await page.evaluate(() => window.pad.clear());
+  await page.mouse.up();
+  expect(await page.evaluate(async () => (await window.pad.getState()).value)).toBeNull();
 });
 
 test('a form reset brings back the starting signature, and a cancelled one keeps it', async ({ page }) => {
