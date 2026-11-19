@@ -53,7 +53,7 @@ test('a reader who cannot draw types their name, and the review page says it is 
 });
 
 test('a stored signature shows until it is cleared, and the document refuses a default or a parameter', async ({ page }) => {
-  const stored = { svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>', png: 'data:image/png;base64,iVBORw0KGgo=' };
+  const stored = { svg: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>', png: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' };
   await openFieldFlow(page, signature(), { parts: ['flow-signature'], extra: { initial: { signature: stored } } });
   expect(await value(page)).toEqual(stored);
   await expect(page.getByRole('button', { name: 'Clear' })).toBeEnabled();

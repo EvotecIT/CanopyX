@@ -279,6 +279,64 @@
       ]
     },
     {
+      "name": "ui-mask",
+      "label": "UI mask",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-mask.source"
+      ]
+    },
+    {
+      "name": "ui-signature",
+      "label": "UI signature",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.signature-pad.source/10-signature-pad.js",
+        "CanopyX.Html/Assets/canopyx.ui-signature.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.signature-pad.source/signature.css"
+      ]
+    },
+    {
       "name": "ui-carousel",
       "label": "UI carousel",
       "runtimes": [
@@ -1065,9 +1123,11 @@
       ],
       "start": "const { FlowView, FLOW_HOST, FLOW_LABELS, flowFail, flowIs, flowKeys, flowName, flowString, flowFlag, flowScalar, flowFits, flowField, flowOptions, flowCondition, flowRefs, flowTest, flowCopy, flowSameValue, flowEmpty, flowNormal, flowDate, flowFieldView } = FLOW_IMPL.core; const { EDIT_EDITORS, formRuleSpec, formCheck } = FORMS_IMPL;",
       "scripts": [
+        "CanopyX.Html/Assets/canopyx.signature-pad.source/10-signature-pad.js",
         "CanopyX.Html/Assets/canopyx.flow-signature.source"
       ],
       "styles": [
+        "CanopyX.Html/Assets/canopyx.signature-pad.source/signature.css",
         "CanopyX.Html/Assets/canopyx.flow-signature.source/flow-signature.css"
       ]
     },

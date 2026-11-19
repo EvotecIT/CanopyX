@@ -1,12 +1,1 @@
-.cx-flow-signature { display:grid;gap:var(--hfx-space-2);max-inline-size:100%; }
-.cx-flow-signature-pad {
-  display:block;inline-size:100%;
-  /* lint-allow layout: the pad's drawing height, matched by SIGNATURE_HEIGHT */
-  block-size:160px;
-  border:var(--hfx-border-width) dashed var(--hfx-color-border-strong);border-radius:var(--hfx-radius-control);color:var(--hfx-color-text);background:var(--hfx-color-surface);touch-action:none;cursor:crosshair;
-}
-.cx-flow-signature-typed { display:grid;gap:var(--hfx-space-1);font-size:var(--hfx-type-small-size); }
-.cx-flow-signature-typed[hidden] { display:none; }
-.cx-flow-signature-tools { display:flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-2); }
-.cx-flow-invalid .cx-flow-signature-pad { border-color:var(--hfx-color-status-bad-border); }
-@media (forced-colors:active) { .cx-flow-signature-pad { border-color:CanvasText; } }
+.cx-flow-invalid .cx-signature-pad { border-color:var(--hfx-color-status-bad-border); }

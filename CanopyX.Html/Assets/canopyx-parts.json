@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "f2e642b1e5286e68",
+      "version": "2724bf93056d4db1",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -140,6 +140,37 @@
       "version": "57fcced732d5bb37",
       "script": "canopyx-ui-lightbox.js",
       "style": "canopyx-ui-lightbox.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
+      "name": "ui-mask",
+      "label": "UI mask",
+      "version": "436e0af17d2d3a2f",
+      "script": "canopyx-ui-mask.js",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
+      "name": "ui-signature",
+      "label": "UI signature",
+      "version": "2e390825c396e436",
+      "script": "canopyx-ui-signature.js",
+      "style": "canopyx-ui-signature.css",
       "runtimes": [
         "tree",
         "grid",
@@ -492,7 +523,7 @@
     {
       "name": "flow-signature",
       "label": "flow signature",
-      "version": "cefefe8d1f547678",
+      "version": "a5cdec96ceebc68d",
       "script": "canopyx-flow-signature.js",
       "style": "canopyx-flow-signature.css",
       "runtimes": [
