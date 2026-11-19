@@ -180,3 +180,28 @@ test('focus stays in the viewer when a zoom button disables, and dragging a slid
   await page.mouse.move(slider.x + slider.width - 5, slider.y + slider.height / 2, { steps: 5 }); await page.mouse.up();
   await expect(viewer(page)).toHaveAccessibleName('Form');
 });
+
+test('video items play with a poster, autoplay muted, stop when left, and YouTube embeds without cookies', async ({ page }) => {
+  await page.route('https://www.youtube-nocookie.com/**', route => route.fulfill({ contentType: 'text/html', body: '<p>Player</p>' }));
+  await page.route('**/clip.mp4', route => route.fulfill({ status: 404 }));
+  await openUi(page, `<div class="cx-gallery" data-cx-lightbox><ul class="cx-gallery-list">
+    <li><a data-lightbox-item href="clip.mp4" data-lightbox-type="video" data-poster="${image('gray')}" data-autoplay="true" data-caption="Rack tour">Rack tour</a></li>
+    <li><a data-lightbox-item href="https://youtu.be/aqz-KE-bpKQ?t=5" data-lightbox-type="youtube" data-caption="Keynote">Keynote</a></li>
+    <li><a data-lightbox-item href="aqz-KE-bpKQ" data-lightbox-type="youtube" data-autoplay="true">Bare id</a></li></ul></div>`);
+  await page.getByRole('link', { name: 'Rack tour' }).click();
+  const video = viewer(page).locator('video');
+  await expect(video).toHaveAttribute('aria-label', 'Rack tour');
+  expect(await video.evaluate(element => [element.controls, element.muted, element.autoplay, element.poster.startsWith('data:image/svg')])).toEqual([true, true, true, true]);
+  await expect(viewer(page).getByRole('button', { name: 'Zoom in' })).toBeHidden();
+  await page.evaluate(() => { window.left = document.querySelector('.cx-lightbox video'); });
+  await page.keyboard.press('ArrowRight');
+  const frame = viewer(page).locator('iframe');
+  await expect(frame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ?rel=0');
+  await expect(frame).toHaveAttribute('title', 'Keynote');
+  expect(await page.evaluate(() => [window.left.paused, window.left.hasAttribute('src')])).toEqual([true, false]);
+  await page.keyboard.press('ArrowRight');
+  await expect(frame).toHaveAttribute('src', 'https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ?rel=0&autoplay=1&mute=1');
+  const refused = await page.evaluate(() => CanopyX.lightbox(document.body.appendChild(document.createElement('div')),
+    { items: [{ type: 'youtube', src: 'https://example.com/watch?v=aqz-KE-bpKQ' }] }).ready.then(() => 'ready', error => error.message));
+  expect(refused).toBe('CanopyX: lightbox item 0 is not a YouTube address.');
+});

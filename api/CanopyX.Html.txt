@@ -270,17 +270,21 @@ CanopyX.Html.Ui.CanopyGallery.System.String ToHtmlFragment()
 CanopyX.Html.Ui.CanopyGalleryItem : sealed class
 CanopyX.Html.Ui.CanopyGalleryItem..ctor(System.String href, System.String alt)
 CanopyX.Html.Ui.CanopyGalleryItem.CanopyX.Html.Ui.CanopyGalleryItemType Type { get; set; }
+CanopyX.Html.Ui.CanopyGalleryItem.System.Boolean Autoplay { get; set; }
 CanopyX.Html.Ui.CanopyGalleryItem.System.Nullable<System.Int32> Height { get; set; }
 CanopyX.Html.Ui.CanopyGalleryItem.System.Nullable<System.Int32> Width { get; set; }
 CanopyX.Html.Ui.CanopyGalleryItem.System.String Alt { get; }
 CanopyX.Html.Ui.CanopyGalleryItem.System.String Href { get; }
 CanopyX.Html.Ui.CanopyGalleryItem.System.String? Caption { get; set; }
 CanopyX.Html.Ui.CanopyGalleryItem.System.String? ContentHtml { get; set; }
+CanopyX.Html.Ui.CanopyGalleryItem.System.String? Poster { get; set; }
 CanopyX.Html.Ui.CanopyGalleryItem.System.String? ThumbnailHref { get; set; }
 CanopyX.Html.Ui.CanopyGalleryItemType : enum System.Int32
 CanopyX.Html.Ui.CanopyGalleryItemType.const CanopyX.Html.Ui.CanopyGalleryItemType Content = 2
 CanopyX.Html.Ui.CanopyGalleryItemType.const CanopyX.Html.Ui.CanopyGalleryItemType Frame = 1
 CanopyX.Html.Ui.CanopyGalleryItemType.const CanopyX.Html.Ui.CanopyGalleryItemType Image = 0
+CanopyX.Html.Ui.CanopyGalleryItemType.const CanopyX.Html.Ui.CanopyGalleryItemType Video = 3
+CanopyX.Html.Ui.CanopyGalleryItemType.const CanopyX.Html.Ui.CanopyGalleryItemType YouTube = 4
 CanopyX.Html.Ui.CanopyGalleryOptions : sealed class
 CanopyX.Html.Ui.CanopyGalleryOptions..ctor()
 CanopyX.Html.Ui.CanopyGalleryOptions.System.Boolean Loop { get; set; }

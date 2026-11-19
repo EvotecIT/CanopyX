@@ -82,5 +82,19 @@ public sealed class UiNoticeBuilderTests {
         var data = new CanopyGallery("g");
         data.Items.Add(new CanopyGalleryItem("data:image/png;base64,AAAA", "Inline"));
         Assert.Contains("src=\"data:image/png;base64,AAAA\"", data.ToHtmlFragment());
+        var poster = new CanopyGallery("g") { Items = { new CanopyGalleryItem("a.png", "A") { Poster = "p.png" } } };
+        Assert.Throws<ArgumentException>(() => poster.ToHtmlFragment());
+        var unsafePoster = new CanopyGallery("g") { Items = { new CanopyGalleryItem("a.mp4", "A") { Type = CanopyGalleryItemType.Video, Poster = "javascript:x" } } };
+        Assert.Throws<ArgumentException>(() => unsafePoster.ToHtmlFragment());
+    }
+
+    [Fact]
+    public void Gallery_VideoItemsCarryTheirPosterAndAutoplay() {
+        var gallery = new CanopyGallery("clips");
+        gallery.Items.Add(new CanopyGalleryItem("media/tour.mp4", "Rack tour") { Type = CanopyGalleryItemType.Video, Poster = "media/tour.jpg", Autoplay = true });
+        gallery.Items.Add(new CanopyGalleryItem("https://youtu.be/aqz-KE-bpKQ", "Keynote") { Type = CanopyGalleryItemType.YouTube, ThumbnailHref = "keynote.jpg" });
+        var html = gallery.ToHtmlFragment();
+        Assert.Contains("href=\"media/tour.mp4\" data-lightbox-type=\"video\" data-poster=\"media/tour.jpg\" data-autoplay=\"true\"><img loading=\"lazy\" decoding=\"async\" src=\"media/tour.jpg\" alt=\"Rack tour\">", html);
+        Assert.Contains("href=\"https://youtu.be/aqz-KE-bpKQ\" data-lightbox-type=\"youtube\"><img loading=\"lazy\" decoding=\"async\" src=\"keynote.jpg\"", html);
     }
 }

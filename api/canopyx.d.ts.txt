@@ -4176,8 +4176,10 @@ export interface UiToastsController extends UiController{
 }
 export interface UiLightboxItem{
   id?:string;
-  type?:"image"|"frame"|"content";
+  type?:"image"|"frame"|"content"|"video"|"youtube";
   src?:string;
+  poster?:string;
+  autoplay?:boolean;
   alt?:string;
   caption?:string;
   content?:Node|string|(() => Node|string|null);
