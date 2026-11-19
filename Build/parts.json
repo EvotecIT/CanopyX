@@ -844,7 +844,7 @@
       "context": [
         "GRID_DATA_IMPL",
         "PROTOCOL",
-        "validateGridRows",
+        "validateGridRows", "gridYield",
         "repairGridCell",
         "inlineGridSource",
         "loadSidecar",
