@@ -306,3 +306,24 @@ test('a tag the loader does not know can be found and chosen again', async ({ pa
   await page.clock.runFor(300);
   await expect(page.getByRole('option', { name: 'Iceland' })).toBeVisible();
 });
+
+test('a disabled selected option stays disabled, and a reset empties a select that started without options', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, '<form id="form">' + select('', true).replace('<form id="form">', '').replace('</form>', '').replace('<option value="fr" data-flag="fr" disabled>', '<option value="fr" data-flag="fr" disabled selected>') +
+    '<label for="user">Owner</label><div id="owner"><select id="user" name="user"></select></div></form>');
+  await combo(page).click();
+  await options(page).filter({ hasText: 'Poland' }).click();
+  expect(await page.evaluate(() => document.querySelector('#country option[value="fr"]').disabled)).toBe(true);
+  expect(await submitted(page)).toEqual(['pl']);
+  await page.evaluate(() => CanopyX.select('#owner', { tags: true, load: async () => [{ value: 'ada', label: 'Ada Lovelace' }] }).ready);
+  const owner = page.getByRole('combobox', { name: 'Owner' });
+  await owner.fill('ada');
+  await page.clock.runFor(300);
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => document.getElementById('user').value)).toBe('ada');
+  await page.evaluate(() => document.getElementById('form').reset());
+  await page.clock.runFor(10);
+  expect(await page.evaluate(() => new FormData(document.getElementById('form')).getAll('user'))).toEqual([]);
+  await expect(owner).toHaveValue('');
+});

@@ -56,7 +56,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
       const item = new Option(option.label, option.value); native.add(item);
     }
     // A host option that is enabled also enables a disabled native option with its value, so the form submits what the field shows.
-    for (const item of native.options) { item.selected = chosen.has(item.value); if (item.selected && item.disabled) item.disabled = false; }
+    for (const item of native.options) { item.selected = chosen.has(item.value); if (item.selected && item.disabled && chosen.get(item.value).disabled === false) item.disabled = false; }
     // An empty single select with no placeholder option is cleared outright, or the browser would select its first option again.
     if (!multiple && !chosen.size) { if (native.options[0]?.value === '') native.options[0].selected = true; else native.selectedIndex = -1; }
     paintChosen();
@@ -192,7 +192,14 @@ UI_IMPL.select = (root, options = {}, signal) => {
   document.addEventListener('pointerdown', event => { if (open && !root.contains(event.target)) hide(); }, { signal, capture: true });
   addEventListener('resize', () => open && place(), { signal });
   document.addEventListener('scroll', () => open && place(), { signal, capture: true });
-  native.form?.addEventListener('reset', () => setTimeout(() => { if (signal?.aborted) return; chosen = written(); paintChosen(); }), { signal });
+  // A single select written without a chosen option starts empty; after a reset the browser would select the first option,
+  // perhaps one the reader loaded or created, so the empty start is restored.
+  const startsEmpty = !multiple && ![...native.options].some(item => item.defaultSelected) && native.options[0]?.value !== '' && !chosen.size;
+  native.form?.addEventListener('reset', event => setTimeout(() => {
+    if (signal?.aborted || event.defaultPrevented) return;
+    if (startsEmpty && ![...native.options].some(item => item.defaultSelected)) native.selectedIndex = -1;
+    chosen = written(); paintChosen();
+  }), { signal });
   signal?.addEventListener('abort', () => {
     clearTimeout(timer); loader?.cancel(); hide(); field.remove(); status.remove(); popup.remove();
     native.classList.remove('cx-select-native'); native.removeAttribute('tabindex'); native.removeAttribute('aria-hidden');
