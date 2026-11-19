@@ -121,7 +121,7 @@
     {
       "name": "ui-toasts",
       "label": "UI toasts",
-      "version": "c64e3aeb94b9dc6a",
+      "version": "df4a698c03472d84",
       "script": "canopyx-ui-toasts.js",
       "style": "canopyx-ui-toasts.css",
       "runtimes": [

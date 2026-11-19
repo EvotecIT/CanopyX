@@ -55,5 +55,5 @@ background:var(--hfx-color-surface-raised,light-dark(#ffffff,#1e2126));box-shado
 @keyframes cx-toast-in{from{opacity:0;translate:0 var(--hfx-space-2,0.5rem);}}
 }
 @media (forced-colors:active){.cx-toast{border-inline-start-color:CanvasText;}.cx-toast-icon{forced-color-adjust:none;color:Canvas;background:CanvasText;}}
-@media print{.cx-toasts{position:static;inline-size:auto;translate:none;}.cx-toast{box-shadow:none;break-inside:avoid;}.cx-toast-close,.cx-toasts-more{display:none;}}
+@media print{.cx-toasts{position:static;inline-size:auto;translate:none;}.cx-toasts-list{max-block-size:none;overflow:visible;}.cx-toast{box-shadow:none;break-inside:avoid;}.cx-toast-close,.cx-toasts-more{display:none;}}
 }

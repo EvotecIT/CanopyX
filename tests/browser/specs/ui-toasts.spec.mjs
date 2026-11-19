@@ -153,3 +153,18 @@ test('an update that changes only the content is announced again, and generated 
   await page.evaluate(() => { const region = CanopyX.toasts('#notices'); region.show({ id: 'job', content: '<b>Step 1</b>', timeout: 0 }); region.show({ id: 'job', content: '<b>Step 2</b>', timeout: 0 }); });
   await expect(announcer(page).locator('p').last()).toHaveText('Information: Step 2');
 });
+
+test('an update keeps focus on the same control, and the region follows the modal opened last and comes back when it is removed', async ({ page }) => {
+  await openUi(page, region() + '<dialog id="a"><p>A</p></dialog><dialog id="b"><p>B</p></dialog>');
+  await page.evaluate(() => CanopyX.notify({ id: 'job', message: 'Step 1', actions: [{ id: 'stop', label: 'Stop', close: false }] }));
+  await page.getByRole('button', { name: 'Stop' }).focus();
+  await page.evaluate(() => CanopyX.notify({ id: 'job', message: 'Step 2', actions: [{ id: 'stop', label: 'Stop', close: false }] }));
+  await expect(page.getByRole('button', { name: 'Stop' })).toBeFocused();
+  await page.evaluate(() => { document.getElementById('b').showModal(); document.getElementById('a').showModal(); });
+  await expect(page.locator('#a .cx-toasts')).toHaveCount(1);
+  await page.evaluate(() => { document.getElementById('a').remove(); });
+  await expect(page.locator('#b .cx-toasts')).toHaveCount(1);
+  await page.evaluate(() => { document.getElementById('b').remove(); });
+  await expect(page.locator('main > .cx-toasts')).toHaveCount(1);
+  await expect(toast(page)).toHaveCount(1);
+});

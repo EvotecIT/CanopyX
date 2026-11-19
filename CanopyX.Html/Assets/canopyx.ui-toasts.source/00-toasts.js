@@ -89,6 +89,9 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
 
   function paint(toast) {
     const { spec, element } = toast, known = Object.hasOwn(TOAST_ROLES, spec.tone);
+    // An update repaints the toast; focus on one of its controls moves to the same control in the new paint.
+    const active = element.contains(document.activeElement) ? document.activeElement : null;
+    const focusKey = active && (active.dataset.actionId ? '[data-action-id="' + CSS.escape(active.dataset.actionId) + '"]' : active.dataset.cxPart ? '[data-cx-part="' + active.dataset.cxPart + '"]' : null);
     element.dataset.tone = spec.tone;
     // A host tone reads its colour from the theme, as tones in cells and badges do.
     if (known) element.style.removeProperty('--cx-toast-tone');
@@ -120,6 +123,7 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
       parts.push(dismiss);
     }
     element.replaceChildren(...parts);
+    if (active) (focusKey && element.querySelector(focusKey) || element.querySelector('button,a[href]'))?.focus({ preventScroll: true });
   }
   function select(toast, action, event) {
     if (!UI_TOOLS.emit(root, 'toasts', 'action', { id: toast.spec.id, action: action.id }, true)) { event.preventDefault(); return; }
@@ -129,8 +133,10 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
 
   // Shown above an open modal dialog: everything outside the topmost one is inert, so the region joins it while it is open.
   function place() {
-    const modal = [...document.querySelectorAll('dialog[open]')].filter(dialog => dialog.matches(':modal') && !root.contains(dialog)).at(-1);
-    const target = modal || home;
+    // The topmost modal is the one opened last, whatever its place in the page.
+    for (const dialog of [...modals]) if (!dialog.isConnected || !dialog.open || !dialog.matches(':modal')) modals.delete(dialog);
+    for (const dialog of document.querySelectorAll('dialog[open]')) if (dialog.matches(':modal') && !modals.has(dialog) && !root.contains(dialog)) modals.add(dialog);
+    const target = [...modals].at(-1) || home;
     if (target && root.parentNode !== target) target.insertBefore(root, target === home && homeNext?.parentNode === home ? homeNext : null);
   }
   function flush() {
@@ -193,8 +199,16 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
   }, { signal });
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); else resume(); }, { signal });
   // A modal dialog opening makes the region inert, and one closing leaves it inside a hidden element: either way it moves.
-  const dialogs = new MutationObserver(records => { if (toasts.size && records.some(record => record.target.localName === 'dialog')) place(); });
-  dialogs.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['open'] });
+  // A modal dialog removed from the page takes the region with it; the region goes back home with its toasts.
+  const modals = new Set();
+  const dialogs = new MutationObserver(records => {
+    for (const record of records) if (record.type === 'attributes' && record.target.localName === 'dialog') {
+      modals.delete(record.target);
+      if (record.target.open && record.target.matches(':modal') && !root.contains(record.target)) modals.add(record.target);
+    }
+    if (toasts.size && (!root.isConnected || records.some(record => record.target.localName === 'dialog'))) place();
+  });
+  dialogs.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
   document.addEventListener('close', () => queueMicrotask(place), { capture: true, signal });
   signal?.addEventListener('abort', () => {
     dialogs.disconnect(); toasts.forEach(disarm); toasts.clear(); queue.length = 0; list.replaceChildren(); more.remove(); polite.remove(); assertive.remove();
