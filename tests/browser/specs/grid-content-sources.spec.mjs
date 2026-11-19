@@ -232,22 +232,36 @@ test("an edited cell drops its old markup, and a refresh after the edit still re
   await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(3);
 });
 
+// A paused clock moves only when a test advances it: drawing waits for those steps, and no deadline or interval fires on its own.
+async function pauseClock(page) {
+  const start = new Date("2026-11-01T00:00:00Z");
+  await page.clock.install({ time: start });
+  await page.clock.pauseAt(new Date(start.getTime() + 1000));
+}
+const drawn = (page, check) => expect.poll(async () => { await page.clock.runFor(16); return check(); }, { intervals: [0] }).toBe(true);
+const rowIds = page => page.locator(".cx-row[data-cx-id]").evaluateAll(rows => rows.map(row => row.dataset.cxId).join());
+
 test("a refresh while a search is still being typed keeps the typed search", async ({ page }) => {
-  await page.clock.install();
-  let version = 1;
-  await page.route("http://canopyx.test/data/users.json", route => route.fulfill({ contentType: "application/json",
-    body: JSON.stringify(Array.from({ length: version + 1 }, (_, i) => ({ id: "u" + i, cells: { name: "User " + i + (i === version ? " new" : ""), state: "On" } }))) }));
+  await pauseClock(page);
+  let reads = 0, release;
+  const held = new Promise(resolve => { release = resolve; });
+  await page.route("http://canopyx.test/data/users.json", async route => {
+    const version = ++reads;
+    // The refresh's read waits until the search has been typed.
+    if (version === 2) await held;
+    await route.fulfill({ contentType: "application/json",
+      body: JSON.stringify(Array.from({ length: version + 1 }, (_, i) => ({ id: "u" + i, cells: { name: "User " + i + (i === version ? " new" : ""), state: "On" } }))) });
+  });
   await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html",
     body: viewPage({ ...fromAddress({ refreshSeconds: 30 }), searchDelayMs: 1000 }) }));
   await page.goto("http://canopyx.test/rich");
-  await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(2);
-  await page.clock.runFor(29500);
-  version = 2;
-  // The search waits a second before it runs; the refresh comes half a second after typing.
+  await drawn(page, async () => await rowIds(page) === "u0,u1");
+  await page.clock.runFor(30000);
+  await expect.poll(() => reads).toBe(2);
+  // The search waits a second before it runs; the clock stands still, so the refresh answers first.
   await page.getByRole("searchbox").fill("new");
-  await page.clock.runFor(600);
-  await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(1);
-  await expect(page.locator(".cx-row[data-cx-id]")).toHaveAttribute("data-cx-id", "u2");
+  release();
+  await drawn(page, async () => await rowIds(page) === "u2");
   await expect(page.getByRole("searchbox")).toHaveValue("new");
 });
 
@@ -305,6 +319,7 @@ test("a refresh keeps the reader's page and starts a new revision of the rows", 
 });
 
 test("a read that does not answer within the request deadline fails, and Retry reads again", async ({ page }) => {
+  await pauseClock(page);
   let reads = 0;
   await page.route("http://canopyx.test/data/users.json", route => {
     reads++;
@@ -314,9 +329,11 @@ test("a read that does not answer within the request deadline fails, and Retry r
   const html = viewPage(fromAddress()).replace("</head>", "<script>CanopyX.configure('remote', { requestTimeoutMs: 400 });</script></head>");
   await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html", body: html }));
   await page.goto("http://canopyx.test/rich");
-  await expect(page.locator("[data-canopyx-host]")).toContainText(/did not arrive|time/i);
+  await drawn(page, async () => /did not arrive|time/i.test(await page.locator("[data-canopyx-host]").textContent()));
   await page.getByRole("button", { name: /retry|try again/i }).first().click();
-  await expect(page.locator('.cx-row[data-cx-id="a"]')).toBeVisible();
+  // The clock stands still until the second read has answered and its rows are taken, so its deadline cannot pass first.
+  await expect.poll(() => page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.view.rows.length)).toBe(1);
+  await drawn(page, async () => await rowIds(page) === "a");
   expect(reads).toBe(2);
 });
 
