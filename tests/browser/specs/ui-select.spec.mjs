@@ -443,3 +443,13 @@ test('a form reset ends an open search, and a link inside the label keeps its ow
   await expect(page).toHaveURL(/#help$/);
   await expect(combo(page)).not.toBeFocused();
 });
+
+test('an enabled host option is submitted even when its native twin sits in a disabled group', async ({ page }) => {
+  await openUi(page, '<form id="hosted"><label for="team">Team</label><div id="teams"><select id="team" name="team"><optgroup label="Closed" disabled><option value="x">X</option></optgroup></select></div></form>');
+  const submitted = await page.evaluate(async () => {
+    const control = CanopyX.select('#teams', { options: [{ value: 'x', label: 'Available' }] });
+    await control.ready; await control.select('x');
+    return new FormData(document.getElementById('hosted')).getAll('team');
+  });
+  expect(submitted).toEqual(['x']);
+});

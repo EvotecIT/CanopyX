@@ -73,7 +73,12 @@ UI_IMPL.select = (root, options = {}, signal) => {
       const item = new Option(option.label, option.value); item.disabled = !!option.disabled; native.add(item);
     }
     // A chosen option's native twin takes the host's disabled state, so the form submits only what the field offers as enabled.
-    for (const item of native.options) { const record = chosen.get(item.value); item.selected = !!record; if (record && item.matches(':disabled') !== record.disabled) item.disabled = record.disabled; }
+    for (const item of [...native.options]) {
+      const record = chosen.get(item.value); item.selected = !!record;
+      if (record && item.matches(':disabled') !== record.disabled) item.disabled = record.disabled;
+      // A disabled group still disables an enabled option inside it, so the option moves out of the group to be submitted.
+      if (record && !record.disabled && item.matches(':disabled')) { native.appendChild(item); item.selected = true; }
+    }
     // An empty single select with no placeholder option is cleared outright, or the browser would select its first option again.
     if (!multiple && !chosen.size) { if (native.options[0]?.value === '') native.options[0].selected = true; else native.selectedIndex = -1; }
   }
