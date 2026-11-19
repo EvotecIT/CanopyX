@@ -26,18 +26,20 @@ export function stallLimit(env = process.env) {
 }
 
 // The run's own browsers: Playwright browser processes in the watched process tree, and helpers whose parent has already
-// exited (they can no longer be traced to a run) that started after this run began. Browsers of a concurrent run stay.
+// exited (they can no longer be traced to a run) that started after this run began, with their own children. A parent
+// counts as alive only if it started before its child, since Windows reuses process ids. Browsers of a concurrent run stay.
 /** The PowerShell that lists (and with stop, stops) the run's browser processes on Windows. */
 export function windowsBrowserScript(root, rootPid, since, stop) {
-    const quote = text => "'" + text.replace(/'/g, "''") + "'";
-    const script = `$since = [datetime]::Parse(${quote(since.toISOString())}).ToLocalTime(); $all = @(Get-CimInstance Win32_Process); ` +
-      "$alive = @{}; foreach ($p in $all) { $alive[[int]$p.ProcessId] = $true }; " +
-      `$tree = @{ ${rootPid} = $true }; do { $added = $false; foreach ($p in $all) { if (-not $tree[[int]$p.ProcessId] -and $tree[[int]$p.ParentProcessId]) { $tree[[int]$p.ProcessId] = $true; $added = $true } } } while ($added); ` +
-      `$found = $all | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith(${quote(root + path.sep)}, 'OrdinalIgnoreCase') -and ` +
-      "($tree[[int]$_.ProcessId] -or (-not $alive[[int]$_.ParentProcessId] -and $_.CreationDate -ge $since)) }; " +
-      "$found | ForEach-Object { '{0} (parent {1}) {2}' -f $_.ProcessId, $_.ParentProcessId, $_.ExecutablePath }; " +
-      (stop ? "$found | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" : "");
-    return script;
+  const quote = text => "'" + text.replace(/'/g, "''") + "'";
+  return `$since = [datetime]::Parse(${quote(since.toISOString())}).ToLocalTime(); $all = @(Get-CimInstance Win32_Process); ` +
+    `$prefix = ${quote(root + path.sep)}; $started = @{}; foreach ($p in $all) { $started[[int]$p.ProcessId] = $p.CreationDate }; ` +
+    "$browser = { param($p) $p.ExecutablePath -and $p.ExecutablePath.StartsWith($prefix, 'OrdinalIgnoreCase') }; " +
+    "$orphan = { param($p) $parent = $started[[int]$p.ParentProcessId]; -not $parent -or $parent -gt $p.CreationDate }; " +
+    `$tree = @{ ${rootPid} = $true }; foreach ($p in $all) { if ((& $browser $p) -and $p.CreationDate -ge $since -and (& $orphan $p)) { $tree[[int]$p.ProcessId] = $true } }; ` +
+    "do { $added = $false; foreach ($p in $all) { if (-not $tree[[int]$p.ProcessId] -and $tree[[int]$p.ParentProcessId] -and -not (& $orphan $p)) { $tree[[int]$p.ProcessId] = $true; $added = $true } } } while ($added); " +
+    "$found = $all | Where-Object { $tree[[int]$_.ProcessId] -and (& $browser $_) }; " +
+    "$found | ForEach-Object { '{0} (parent {1}) {2}' -f $_.ProcessId, $_.ParentProcessId, $_.ExecutablePath }; " +
+    (stop ? "$found | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" : "");
 }
 
 function browserProcesses(root, rootPid, since, stop) {
