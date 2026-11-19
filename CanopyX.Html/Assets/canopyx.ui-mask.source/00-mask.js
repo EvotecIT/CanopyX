@@ -80,6 +80,17 @@ UI_IMPL.mask = (root, options = {}, signal) => {
   }
   input.addEventListener('input', event => { if (!event.isComposing) apply(event); }, { signal });
   input.addEventListener('compositionend', apply, { signal });
+  // Delete before a separator would only remove what formatting puts back, so it removes the next typed character instead.
+  input.addEventListener('beforeinput', event => {
+    const value = input.value, at = input.selectionStart;
+    if (event.inputType !== 'deleteContentForward' || at === null || at !== input.selectionEnd) return;
+    let end = at;
+    while (end < value.length && (ipv4 ? value[end] === '.' : tokens[end]?.literal === value[end])) end++;
+    if (end === at || end >= value.length) return;
+    event.preventDefault();
+    input.value = value.slice(0, at) + value.slice(end + 1); input.setSelectionRange(at, at);
+    apply(event);
+  }, { signal });
   // A form reset restores the default value after its reset event, so the mask reads the input once the reset is done.
   input.form?.addEventListener('reset', () => setTimeout(() => { if (!signal?.aborted) apply(new Event('reset')); }), { signal });
   apply();

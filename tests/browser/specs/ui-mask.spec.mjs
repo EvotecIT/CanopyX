@@ -84,3 +84,14 @@ test('a paste with spaces still fits, capitals that expand keep one slot, and a 
   await expect(input(page)).toHaveAttribute('data-complete', 'false');
   expect(await page.evaluate(() => CanopyX.mask('#f').getState())).toEqual({ text: '', raw: '', complete: false });
 });
+
+test('Delete before a separator removes the next typed character', async ({ page }) => {
+  await openUi(page, field('00:00'));
+  await input(page).pressSequentially('1234');
+  await input(page).evaluate(element => element.setSelectionRange(2, 2));
+  await page.keyboard.press('Delete');
+  await expect(input(page)).toHaveValue('12:4');
+  expect(await input(page).evaluate(element => element.selectionStart)).toBe(2);
+  await page.keyboard.press('Delete');
+  await expect(input(page)).toHaveValue('12');
+});
