@@ -1,0 +1,59 @@
+@layer hfx.components {
+  .cx-gallery {
+    /* lint-allow layout: smallest thumbnail column */
+    --cx-gallery-thumb:9rem;
+  }
+  .cx-gallery-list { display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cx-gallery-thumb),1fr));gap:var(--hfx-space-3);margin:0;padding:0;list-style:none; }
+  .cx-gallery-item,.cx-gallery-item > figure { margin:0;min-inline-size:0; }
+  .cx-gallery-link { display:block;overflow:hidden;border-radius:var(--hfx-radius-md);background:var(--hfx-color-surface-sunken); }
+  .cx-gallery-link:focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
+  .cx-gallery-link img { display:block;inline-size:100%;block-size:auto;aspect-ratio:4 / 3;object-fit:cover; }
+  .cx-gallery-label { display:grid;place-items:center;aspect-ratio:4 / 3;padding:var(--hfx-space-3);color:var(--hfx-color-accent-text);font-weight:var(--hfx-weight-medium);text-align:center; }
+  .cx-gallery-item figcaption { margin-block-start:var(--hfx-space-1);color:var(--hfx-color-text-secondary);font-size:var(--hfx-type-small-size);line-height:var(--hfx-type-small-line-height,var(--hfx-type-small-line)); }
+  .cx-dialog.cx-lightbox[open] { display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;inline-size:calc(100% - var(--hfx-space-4) * 2);block-size:calc(var(--cx-ui-viewport-block) - var(--hfx-space-4) * 2);max-block-size:none;padding:0; }
+  .cx-lightbox::backdrop { background:var(--hfx-color-overlay); }
+  .cx-lightbox-header { display:flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-2) var(--hfx-space-3);padding:var(--hfx-space-2) var(--hfx-space-2) var(--hfx-space-2) var(--hfx-space-4);border-block-end:var(--hfx-border-width) solid var(--hfx-color-border); }
+  /* lint-allow layout: title basis before the tools wrap */
+  .cx-lightbox-title { flex:1 1 12rem;min-inline-size:0;margin:0;overflow:hidden;font-size:var(--hfx-type-body-size);font-weight:var(--hfx-weight-semibold);text-overflow:ellipsis;white-space:nowrap; }
+  .cx-lightbox-position,.cx-lightbox-zoom { color:var(--hfx-color-text-muted);font-size:var(--hfx-type-small-size);font-variant-numeric:tabular-nums;white-space:nowrap; }
+  .cx-lightbox-zoom { min-inline-size:var(--hfx-space-6);text-align:center; }
+  .cx-lightbox-tools { display:flex;align-items:center;gap:var(--hfx-space-1); }
+  .cx-lightbox-tools[hidden] { display:none; }
+  .cx-lightbox-button { display:inline-grid;place-items:center;inline-size:var(--hfx-control-height-sm);block-size:var(--hfx-control-height-sm);padding:0;border:var(--hfx-border-width) solid transparent;border-radius:var(--hfx-radius-control);color:var(--hfx-color-text);background:transparent;font-size:0;cursor:pointer; }
+  .cx-lightbox-button:hover:not(:disabled) { background:var(--hfx-color-hover); }
+  .cx-lightbox-button:disabled { color:var(--hfx-color-text-disabled);cursor:default; }
+  .cx-lightbox-button::before { font-size:var(--hfx-icon-md);line-height:1; }
+  .cx-lightbox-button[data-cx-part="zoom-in"]::before { content:"+" / ""; }
+  .cx-lightbox-button[data-cx-part="zoom-out"]::before { content:"\2212" / ""; }
+  .cx-lightbox-button[data-cx-part="zoom-reset"]::before { content:"\2922" / ""; }
+  .cx-lightbox-button.cx-overlay-close::before { content:"\00d7" / "";font-size:var(--hfx-icon-lg); }
+  .cx-lightbox-body { position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;min-block-size:0;background:var(--hfx-color-surface-sunken); }
+  .cx-lightbox-stage { grid-column:2;display:grid;place-items:center;block-size:100%;min-block-size:0;overflow:auto;overscroll-behavior:contain;touch-action:pan-y pinch-zoom; }
+  .cx-lightbox[data-zoomed="true"] .cx-lightbox-stage { place-items:start;touch-action:auto;cursor:grab; }
+  .cx-lightbox[data-panning="true"] .cx-lightbox-stage { cursor:grabbing; }
+  .cx-lightbox-stage:focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(var(--hfx-focus-width) * -1); }
+  .cx-lightbox-image { display:block;max-inline-size:100%;max-block-size:100%;object-fit:contain;user-select:none; }
+  .cx-lightbox[data-zoomed="true"] .cx-lightbox-image { max-inline-size:none;max-block-size:none;margin:auto; }
+  .cx-lightbox-frame { inline-size:100%;block-size:100%;border:0;background:var(--hfx-color-surface); }
+  .cx-lightbox-content { align-self:stretch;justify-self:stretch;padding:var(--hfx-space-4);overflow:auto;color:var(--hfx-color-text);background:var(--hfx-color-surface); }
+  .cx-lightbox-step { block-size:var(--hfx-control-height-lg);margin-inline:var(--hfx-space-1); }
+  .cx-lightbox-step[hidden] { display:none; }
+  .cx-lightbox-step::before { content:"";inline-size:var(--hfx-space-2);block-size:var(--hfx-space-2);border:solid;border-width:var(--hfx-indicator-width) var(--hfx-indicator-width) 0 0;font-size:inherit;rotate:-135deg; }
+  .cx-lightbox-step[data-cx-part="next"]::before { rotate:45deg; }
+  .cx-lightbox-step:dir(rtl)::before { scale:-1 1; }
+  .cx-lightbox-caption { margin:0;padding:var(--hfx-space-2) var(--hfx-space-4);border-block-start:var(--hfx-border-width) solid var(--hfx-color-border);color:var(--hfx-color-text-secondary);font-size:var(--hfx-type-small-size); }
+  .cx-lightbox-caption[hidden],.cx-lightbox-status:empty { display:none; }
+  .cx-lightbox-status { margin:var(--hfx-space-2) var(--hfx-space-4);color:var(--hfx-color-text-muted);font-size:var(--hfx-type-small-size); }
+  @media (max-width: 40rem) {
+    .cx-dialog.cx-lightbox[open] { inline-size:100%;block-size:var(--cx-ui-viewport-block);border-radius:var(--hfx-radius-none); }
+    .cx-lightbox-body { grid-template-columns:minmax(0,1fr); }
+    .cx-lightbox-stage { grid-column:1;grid-row:1; }
+    .cx-lightbox { --cx-ui-touch-target:calc(var(--hfx-space-5) + var(--hfx-space-6)); }
+    .cx-lightbox-step { position:absolute;inset-block-end:var(--hfx-space-2);border-color:var(--hfx-color-border);background:var(--hfx-color-surface-raised); }
+    .cx-lightbox-step[data-cx-part="previous"] { inset-inline-start:var(--hfx-space-2); }
+    .cx-lightbox-step[data-cx-part="next"] { inset-inline-end:var(--hfx-space-2); }
+    .cx-lightbox-button { inline-size:var(--cx-ui-touch-target);block-size:var(--cx-ui-touch-target); }
+  }
+  @media (forced-colors:active) { .cx-lightbox-button { border-color:ButtonText; } }
+  @media print { .cx-lightbox { display:none!important; } .cx-gallery-link img { aspect-ratio:auto; } }
+}

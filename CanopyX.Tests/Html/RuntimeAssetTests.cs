@@ -217,10 +217,10 @@ public sealed class RuntimeAssetTests {
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
             // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, CSV export, links and search parts,
-            // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the eight lazy UI parts
+            // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the ten lazy UI parts
             // (one script and one stylesheet each).
             // Standalone font CSS, the two qualified faces and their two OFL notices travel with external pages.
-            Assert.Equal(38, Directory.GetFiles(directory).Length);
+            Assert.Equal(42, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

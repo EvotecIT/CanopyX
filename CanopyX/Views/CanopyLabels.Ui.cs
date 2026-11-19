@@ -14,6 +14,51 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the accessible name of the copy button after a section title was copied. Default "Copied".</summary>
     public string AccordionCopied { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the accessible name of the notification region. Default "Notifications".</summary>
+    public string ToastRegion { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the button that dismisses a toast. Default "Dismiss".</summary>
+    public string ToastClose { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the line under the visible toasts that counts the waiting ones, with <c>{count}</c>. Default "{count} more".</summary>
+    public string ToastQueued { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the tone a screen reader hears before an info toast. Default "Information".</summary>
+    public string ToastInfo { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the tone a screen reader hears before a success toast. Default "Success".</summary>
+    public string ToastSuccess { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the tone a screen reader hears before a warning toast. Default "Warning".</summary>
+    public string ToastWarning { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the tone a screen reader hears before a danger toast. Default "Error".</summary>
+    public string ToastDanger { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the tone a screen reader hears before a neutral, muted or host-toned toast. Default "Notice".</summary>
+    public string ToastNeutral { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the viewer's title when an item has no caption or alternative text. Default "Gallery".</summary>
+    public string LightboxTitle { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the viewer's previous item button. Default "Previous".</summary>
+    public string LightboxPrevious { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the viewer's next item button. Default "Next".</summary>
+    public string LightboxNext { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the viewer's zoom in button. Default "Zoom in".</summary>
+    public string LightboxZoomIn { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the viewer's zoom out button. Default "Zoom out".</summary>
+    public string LightboxZoomOut { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the button that fits a zoomed image to the viewer. Default "Fit to screen".</summary>
+    public string LightboxZoomReset { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the message shown when an item does not load. Default "This item could not be loaded".</summary>
+    public string LightboxError { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the line in a select's list when no option matches the typed text. Default "No matches".</summary>
     public string SelectNoMatches { get => Get(); set => Set(value); }
 

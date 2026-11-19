@@ -329,6 +329,76 @@ export interface UiContextMenuDisposer {
   readonly ready: Promise<void>;
 }
 
+/** Tone names shared with cells and badges; a host tone reads its colour from --hfx-color-status-<name>-fg. */
+export type UiToastTone = "neutral" | "info" | "success" | "warning" | "danger" | "muted" | (string & {});
+/** A toast action: a host callback, or a link (which suits a server-pushed toast). Selecting it closes the toast unless close is false. */
+export interface UiToastAction {
+  id?: string;
+  label: string;
+  href?: string;
+  onSelect?: (detail: { id: string; action: string; event: MouseEvent }) => void;
+  close?: boolean;
+}
+/** A toast. Showing an id that is already shown or queued updates that toast in place and restarts its timeout. */
+export interface UiToastOptions {
+  id?: string;
+  tone?: UiToastTone;
+  title?: string;
+  /** Plain text; required unless content is given. */
+  message?: string;
+  /** A Node, or trusted host HTML, shown instead of the message. */
+  content?: Node | string;
+  /** Milliseconds before it closes; 0 keeps it. Defaults to the region's timeout, or 0 for danger and toasts with actions. */
+  timeout?: number;
+  actions?: readonly UiToastAction[];
+  /** Defaults to true: a Dismiss button, and Escape inside the toast. */
+  dismissible?: boolean;
+  onClose?: (detail: { id: string; reason: "timeout" | "close" | "action" | "api" | "clear" }) => void;
+}
+export type UiToastPosition = "top-start" | "top-center" | "top-end" | "bottom-start" | "bottom-center" | "bottom-end";
+export interface UiToastsOptions {
+  /** Defaults to bottom-end. */
+  position?: UiToastPosition;
+  /** Toasts shown at once, 1 to 10; the rest wait in order. Defaults to 3. */
+  max?: number;
+  /** The default timeout in milliseconds, 0 to 600000. Defaults to 5000. */
+  timeout?: number;
+  labels?: UiLabels;
+}
+export interface UiToastsController extends UiController {
+  /** Shows or updates a toast and returns its id. */
+  show(toast: UiToastOptions | string): UiResult<string>;
+  close(id: string): UiResult<boolean>;
+  clear(): UiResult<void>;
+  getState(): UiResult<{ visible: string[]; queued: string[] }>;
+}
+
+/** An item a lightbox shows: an image, a frame (a page, video or PDF) or content (a Node, trusted host HTML or a function returning one). */
+export interface UiLightboxItem {
+  id?: string;
+  type?: "image" | "frame" | "content";
+  src?: string;
+  alt?: string;
+  caption?: string;
+  content?: Node | string | (() => Node | string | null);
+}
+export interface UiLightboxOptions {
+  /** Items to show instead of the root's [data-lightbox-item] links. */
+  items?: readonly UiLightboxItem[];
+  /** Moving past the last item returns to the first. Defaults to false. */
+  loop?: boolean;
+  labels?: UiLabels;
+}
+export interface UiLightboxController extends UiController {
+  /** Opens the viewer at an index or item id. */
+  open(item?: number | string, options?: { returnFocus?: HTMLElement }): UiResult<boolean>;
+  close(): UiResult<boolean>;
+  next(): UiResult<boolean>;
+  back(): UiResult<boolean>;
+  /** Sets the zoom of the current image, 1 (fitted) to 4, and returns the zoom applied. */
+  zoom(level: number): UiResult<number>;
+  getState(): UiResult<{ open: boolean; index: number; total: number; zoom: number }>;
+}
 /** A select option. Pictures are an icon name for renderIcon, an image address or a two-letter country code drawn as a flag. */
 export interface UiSelectOption {
   value: string;
@@ -389,6 +459,12 @@ export function contextMenu(target: UiTarget,
 export function tabs(target: UiTarget, options?: UiTabsOptions): UiTabsController;
 export function stepper(target: UiTarget, options?: UiStepperOptions): UiStepperController;
 export function accordion(target: UiTarget, options?: UiAccordionOptions): UiAccordionController;
+/** A notification region over [data-cx-toasts] markup or an empty element. */
+export function toasts(target: UiTarget, options?: UiToastsOptions): UiToastsController;
+/** Shows a toast in the page's first [data-cx-toasts] region, creating one at the end of the body when there is none. Resolves to its id. */
+export function notify(toast: UiToastOptions | string): Promise<string>;
+/** A gallery viewer over [data-lightbox-item] links, or over items the host passes. */
+export function lightbox(target: UiTarget, options?: UiLightboxOptions): UiLightboxController;
 /** A searchable combobox over an element holding a native <select>. */
 export function select(target: UiTarget, options?: UiSelectOptions): UiSelectController;
 export function dialog(target: UiTarget, options?: UiDialogOptions): UiDialogController;
@@ -401,9 +477,12 @@ export function menu(target: UiTarget, options?: UiMenuOptions): UiMenuControlle
 export interface UiApi {
   mountUi: typeof mountUi;
   contextMenu: typeof contextMenu;
+  notify: typeof notify;
   tabs: typeof tabs;
   stepper: typeof stepper;
   accordion: typeof accordion;
+  toasts: typeof toasts;
+  lightbox: typeof lightbox;
   select: typeof select;
   dialog: typeof dialog;
   drawer: typeof drawer;
