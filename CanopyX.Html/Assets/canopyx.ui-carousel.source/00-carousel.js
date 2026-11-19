@@ -168,7 +168,9 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
     // Images are draggable by default; a native drag would take the pointer away before the release.
     track.addEventListener('dragstart', event => event.preventDefault(), { signal });
     track.addEventListener('pointerup', event => {
-      const moved = swipe === null ? 0 : event.clientX - swipe; swipe = null;
+      // A mouse drag that selected slide text was a selection, not a swipe.
+      const selection = event.pointerType === 'mouse' ? getSelection() : null, selecting = selection && !selection.isCollapsed && track.contains(selection.anchorNode);
+      const moved = swipe === null || selecting ? 0 : event.clientX - swipe; swipe = null;
       if (Math.abs(moved) > 40) select(index + ((moved < 0) !== rtl() ? 1 : -1), 'swipe');
     }, { signal });
   }

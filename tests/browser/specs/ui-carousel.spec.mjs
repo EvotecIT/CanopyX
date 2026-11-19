@@ -199,9 +199,17 @@ test('a fading carousel stacks its slides, swaps them on a choice or a swipe, an
   await page.getByRole('button', { name: 'Next slide' }).click();
   await expect(slide(page, 2)).toBeVisible();
   await expect(slide(page, 1)).toBeHidden();
-  const box = await page.locator('.cx-carousel-track').boundingBox();
-  await page.mouse.move(box.x + box.width - 20, box.y + 20); await page.mouse.down();
-  await page.mouse.move(box.x + 20, box.y + 20, { steps: 4 }); await page.mouse.up();
+  // A mouse drag across slide text selects it and stays on the slide; a touch swipe moves on.
+  const heading = await page.getByRole('heading', { name: 'Note 2' }).boundingBox();
+  const text = await page.getByRole('heading', { name: 'Note 2' }).evaluate(element => { const range = document.createRange(); range.selectNodeContents(element); return range.getBoundingClientRect().left; });
+  await page.mouse.move(heading.x + heading.width - 10, heading.y + heading.height / 2); await page.mouse.down();
+  await page.mouse.move(text + 1, heading.y + heading.height / 2, { steps: 4 }); await page.mouse.up();
+  expect(await page.evaluate(() => getSelection().toString())).toContain('Note');
+  expect((await state(page)).index).toBe(1);
+  await page.locator('.cx-carousel-slide').nth(1).evaluate(slide => {
+    const box = slide.getBoundingClientRect(), at = (type, x) => slide.dispatchEvent(new PointerEvent(type, { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: x, clientY: box.top + 10 }));
+    at('pointerdown', box.right - 20); at('pointerup', box.left + 20);
+  });
   expect((await state(page)).index).toBe(2);
   const refused = await page.evaluate(() => CanopyX.carousel(document.body.appendChild(Object.assign(document.createElement('section'), { innerHTML: '<div class="cx-carousel-track"><div>a</div></div>' })),
     { transition: 'fade', perView: 2 }).ready.then(() => 'ready', error => error.message));
@@ -233,6 +241,16 @@ test('hidden indicators leave the buttons and keys, and the bar can sit above th
   await page.locator('.cx-carousel-track').focus();
   await page.keyboard.press('End');
   expect((await state(page)).index).toBe(3);
+});
+
+test('a fading carousel leaves a carousel inside its slide with its own sliding layout', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const inner = `<section id="inner" class="cx-carousel" data-cx-carousel data-per-view="2" aria-label="Inner"><div class="cx-carousel-viewport"><div class="cx-carousel-track">
+    <div>Inner 1</div><div>Inner 2</div><div>Inner 3</div></div></div></section>`;
+  await openUi(page, carousel('data-transition="fade"').replace('<h3>Note 1</h3>', '<h3>Note 1</h3>' + inner));
+  await expect(page.getByText('Inner 2')).toBeVisible();
+  const lefts = await page.locator('#inner .cx-carousel-slide').evaluateAll(slides => slides.slice(0, 2).map(slide => Math.round(slide.getBoundingClientRect().left)));
+  expect(lefts[1]).toBeGreaterThan(lefts[0]);
 });
 
 test('a fading carousel without its runtime, or after destroy, keeps every slide readable', async ({ page }) => {
