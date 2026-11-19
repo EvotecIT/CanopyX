@@ -3,7 +3,7 @@
   "AccordionNoMatches": ["Brak pasujących sekcji", "Keine passenden Abschnitte", "No hay secciones coincidentes", "Aucune section correspondante", "Nessuna sezione corrispondente"],
   "AccordionCopyTitle": ["Kopiuj tytuł", "Titel kopieren", "Copiar título", "Copier le titre", "Copia titolo"],
   "AccordionCopied": ["Skopiowano", "Kopiert", "Copiado", "Copié", "Copiato"],
-  "ToastsRegion": ["Powiadomienia", "Benachrichtigungen", "Notificaciones", "Notifications", "Notifiche"],
+  "ToastRegion": ["Powiadomienia", "Benachrichtigungen", "Notificaciones", "Notifications", "Notifiche"],
   "ToastClose": ["Zamknij", "Schließen", "Descartar", "Fermer", "Chiudi"],
   "ToastQueued": ["Jeszcze {count}", "{count} weitere", "{count} más", "{count} de plus", "Altre {count}"],
   "ToastInfo": ["Informacja", "Information", "Información", "Information", "Informazione"],

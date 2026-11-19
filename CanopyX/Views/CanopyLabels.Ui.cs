@@ -15,7 +15,7 @@ public sealed partial class CanopyLabels {
     public string AccordionCopied { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the accessible name of the notification region. Default "Notifications".</summary>
-    public string ToastsRegion { get => Get(); set => Set(value); }
+    public string ToastRegion { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the accessible name of the button that dismisses a toast. Default "Dismiss".</summary>
     public string ToastClose { get => Get(); set => Set(value); }

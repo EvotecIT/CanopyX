@@ -2605,7 +2605,7 @@
             "accordionNoMatches": { "type": "string" },
             "accordionCopyTitle": { "type": "string" },
             "accordionCopied": { "type": "string" },
-            "toastsRegion": { "type": "string" },
+            "toastRegion": { "type": "string" },
             "toastClose": { "type": "string" },
             "toastQueued": { "type": "string" },
             "toastInfo": { "type": "string" },

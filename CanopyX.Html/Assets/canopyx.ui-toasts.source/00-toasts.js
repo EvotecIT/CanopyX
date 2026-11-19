@@ -19,13 +19,16 @@ function toastText(value, what, max, required) {
 }
 
 /** Checks and normalises what show() receives: a message, or { id, tone, title, message, content, timeout, actions, dismissible }. */
-function toastSpec(input, settings) {
+function toastSpec(input, settings, taken = () => false) {
   const raw = typeof input === 'string' ? { message: input } : input;
   if (!raw || typeof raw !== 'object') throw new Error('CanopyX: show() needs a message or toast options.');
   const tone = raw.tone ?? 'info', actions = raw.actions ?? [];
   if (typeof tone !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(tone) || tone.endsWith('-bg')) throw new Error('CanopyX: unknown toast tone.');
   if (!Array.isArray(actions) || actions.length > 3) throw new Error('CanopyX: a toast has at most three actions.');
-  const spec = { id: toastText(raw.id, 'id', 128) ?? 'cx-toast-' + ++toastSequence, tone, title: toastText(raw.title, 'title', 200),
+  let id = toastText(raw.id, 'id', 128);
+  // A generated id never takes one the host uses, shown, queued or about to be read from the page.
+  while (id === null) { const next = 'cx-toast-' + ++toastSequence; if (!taken(next)) id = next; }
+  const spec = { id, tone, title: toastText(raw.title, 'title', 200),
     message: toastText(raw.message, 'message', 2000, raw.content == null), content: raw.content ?? null, dismissible: raw.dismissible !== false,
     onClose: typeof raw.onClose === 'function' ? raw.onClose : null,
     actions: actions.map((action, index) => {
@@ -44,7 +47,7 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
   const settings = { position: options.position ?? data.position ?? 'bottom-end', max: toastNumber(options.max ?? data.max, 3, 'max', 1, 10),
     timeout: toastNumber(options.timeout ?? data.timeout, 5000, 'timeout', 0, 600000) };
   if (!TOAST_POSITIONS.includes(settings.position)) throw new Error('CanopyX: unknown toast position.');
-  const home = root.parentNode, homeNext = root.nextSibling, toasts = new Map(), queue = [];
+  const home = root.parentNode, homeNext = root.nextSibling, toasts = new Map(), queue = [], reserved = new Set();
   const list = root.querySelector(':scope > .cx-toasts-list') || root.appendChild(h('ol', 'cx-toasts-list'));
   const more = h('p', 'cx-toasts-more'), polite = h('div', 'cx-visually-hidden'), assertive = h('div', 'cx-visually-hidden');
   // Toasts written into the page (the .NET builder's) are read, then shown through the queue like any other.
@@ -53,7 +56,7 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
     message: item.querySelector('.cx-toast-message')?.textContent ?? '' }));
   list.replaceChildren();
   root.classList.add('cx-toasts'); root.dataset.position = settings.position; root.dataset.cxPart = 'toasts';
-  if (!root.hasAttribute('aria-label') && !root.hasAttribute('aria-labelledby')) { root.setAttribute('aria-label', labels.toastsRegion); root.dataset.cxLabelled = 'true'; }
+  if (!root.hasAttribute('aria-label') && !root.hasAttribute('aria-labelledby')) { root.setAttribute('aria-label', labels.toastRegion); root.dataset.cxLabelled = 'true'; }
   if (!root.hasAttribute('role') && root.localName !== 'section') { root.setAttribute('role', 'region'); root.dataset.cxRole = 'true'; }
   more.hidden = true; more.dataset.cxPart = 'more';
   polite.setAttribute('aria-live', 'polite'); assertive.setAttribute('aria-live', 'assertive');
@@ -64,9 +67,11 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
   // The tone in words, so a reader who does not see the colour hears it; host tones read as a notice.
   const toneLabel = tone => labels[{ info: 'toastInfo', success: 'toastSuccess', warning: 'toastWarning', danger: 'toastDanger' }[tone] || 'toastNeutral'];
 
-  function announce(spec) {
-    const live = spec.tone === 'danger' ? assertive : polite, line = h('p');
-    setText(line, [toneLabel(spec.tone), spec.title, spec.message ?? spec.content?.textContent].filter(Boolean).join(': '));
+  // What a toast says: its tone in words, title and the rendered message, so HTML content is read as its text.
+  const words = toast => [toneLabel(toast.spec.tone), toast.spec.title, toast.element.querySelector('.cx-toast-message')?.textContent.trim()].filter(Boolean).join(': ');
+  function announce(toast) {
+    const live = toast.spec.tone === 'danger' ? assertive : polite, line = h('p');
+    setText(line, words(toast));
     // A new paragraph is an addition, so the same text said twice is announced twice; a few lines are kept for readers catching up.
     live.append(line); while (live.children.length > 3) live.firstElementChild.remove();
   }
@@ -132,7 +137,7 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
     place();
     while (queue.length && list.children.length < settings.max) {
       const toast = queue.shift();
-      list.append(toast.element); announce(toast.spec); arm(toast);
+      list.append(toast.element); announce(toast); arm(toast);
       UI_TOOLS.emit(root, 'toasts', 'show', { id: toast.spec.id });
     }
     list.hidden = !list.children.length;
@@ -142,12 +147,12 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
 
   function show(input) {
     if (signal?.aborted) throw new Error('CanopyX: UI component destroyed.');
-    const spec = toastSpec(input, settings), current = toasts.get(spec.id);
+    const spec = toastSpec(input, settings, id => toasts.has(id) || reserved.has(id)), current = toasts.get(spec.id);
     if (current) {
       // The same id updates the toast: its text, tone and actions change and its timeout starts again.
-      const said = current.spec.message !== spec.message || current.spec.title !== spec.title || current.spec.tone !== spec.tone;
+      const before = words(current);
       disarm(current); current.spec = spec; current.remaining = spec.timeout; paint(current);
-      if (current.element.isConnected) { if (said) announce(spec); arm(current); }
+      if (current.element.isConnected) { if (words(current) !== before) announce(current); arm(current); }
       return spec.id;
     }
     const element = h('li', 'cx-toast');
@@ -169,6 +174,8 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
     if (focused) {
       const next = list.children[Math.min(at, list.children.length - 1)];
       (next?.querySelector('button,a[href]') || (outside?.isConnected ? outside : null))?.focus({ preventScroll: true });
+      // Not every engine sends focusout for a removed element: the region is unpaused once focus has left it.
+      if (!root.contains(document.activeElement)) { focus = false; resume(); }
     }
     try { toast.spec.onClose?.({ id, reason }); } finally { UI_TOOLS.emit(root, 'toasts', 'close', { id, reason }); }
     if (!toasts.size) place();
@@ -185,15 +192,18 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
     if (event.key === 'Escape' && item && toasts.get(item.dataset.toastId)?.spec.dismissible) { event.preventDefault(); event.stopPropagation(); close(item.dataset.toastId, 'close'); }
   }, { signal });
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); else resume(); }, { signal });
-  // A modal dialog closing leaves the region inside a hidden element; it goes back home.
+  // A modal dialog opening makes the region inert, and one closing leaves it inside a hidden element: either way it moves.
+  const dialogs = new MutationObserver(records => { if (toasts.size && records.some(record => record.target.localName === 'dialog')) place(); });
+  dialogs.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['open'] });
   document.addEventListener('close', () => queueMicrotask(place), { capture: true, signal });
   signal?.addEventListener('abort', () => {
-    toasts.forEach(disarm); toasts.clear(); queue.length = 0; list.replaceChildren(); more.remove(); polite.remove(); assertive.remove();
+    dialogs.disconnect(); toasts.forEach(disarm); toasts.clear(); queue.length = 0; list.replaceChildren(); more.remove(); polite.remove(); assertive.remove();
     if (root.dataset.cxLabelled) { root.removeAttribute('aria-label'); delete root.dataset.cxLabelled; }
     if (root.dataset.cxRole) { root.removeAttribute('role'); delete root.dataset.cxRole; }
     if (home && root.parentNode !== home) home.insertBefore(root, homeNext?.parentNode === home ? homeNext : null);
   }, { once: true });
   list.hidden = true;
-  for (const spec of written) show(spec);
+  for (const id of written.map(item => item.id).filter(Boolean)) reserved.add(id);
+  for (const spec of written) { reserved.delete(spec.id); show(spec); }
   return { show, close, clear, getState: () => ({ visible: [...list.children].map(item => item.dataset.toastId), queued: queue.map(toast => toast.spec.id) }) };
 };

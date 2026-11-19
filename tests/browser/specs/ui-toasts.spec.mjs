@@ -136,3 +136,20 @@ test('a phone keeps toasts inside the screen with room to tap Dismiss', async ({
   const close = await page.getByRole('button', { name: 'Dismiss' }).boundingBox();
   expect(close.height).toBeGreaterThanOrEqual(32);
 });
+
+test('a visible toast joins a modal dialog that opens after it, and HTML content is announced as its text', async ({ page }) => {
+  await openUi(page, region() + '<dialog id="modal"><button id="inside">Inside</button></dialog>');
+  await page.evaluate(() => CanopyX.notify({ tone: 'danger', content: '<strong>Backup failed</strong> on <em>srv01</em>' }));
+  await expect(announcer(page, 'assertive').locator('p')).toHaveText('Error: Backup failed on srv01');
+  await page.evaluate(() => document.getElementById('modal').showModal());
+  await expect(page.locator('#modal .cx-toasts')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Dismiss' }).click();
+  await expect(toast(page)).toHaveCount(0);
+});
+
+test('an update that changes only the content is announced again, and generated ids skip the ones the page wrote', async ({ page }) => {
+  await openUi(page, region('', '<li class="cx-toast"><p class="cx-toast-message">First</p></li><li class="cx-toast" data-toast-id="cx-toast-1"><p class="cx-toast-message">Second</p></li>'));
+  expect(await page.evaluate(() => CanopyX.toasts('#notices').getState().visible.length)).toBe(2);
+  await page.evaluate(() => { const region = CanopyX.toasts('#notices'); region.show({ id: 'job', content: '<b>Step 1</b>', timeout: 0 }); region.show({ id: 'job', content: '<b>Step 2</b>', timeout: 0 }); });
+  await expect(announcer(page).locator('p').last()).toHaveText('Information: Step 2');
+});

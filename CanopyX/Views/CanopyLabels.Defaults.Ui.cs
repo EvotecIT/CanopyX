@@ -8,7 +8,7 @@ public sealed partial class CanopyLabels {
         foreach (var entry in new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(AccordionSearch)] = "Filter sections", [nameof(AccordionNoMatches)] = "No matching sections",
         [nameof(AccordionCopyTitle)] = "Copy title", [nameof(AccordionCopied)] = "Copied",
-        [nameof(ToastsRegion)] = "Notifications", [nameof(ToastClose)] = "Dismiss",
+        [nameof(ToastRegion)] = "Notifications", [nameof(ToastClose)] = "Dismiss",
         [nameof(ToastQueued)] = "{count} more", [nameof(ToastInfo)] = "Information",
         [nameof(ToastSuccess)] = "Success", [nameof(ToastWarning)] = "Warning",
         [nameof(ToastDanger)] = "Error", [nameof(ToastNeutral)] = "Notice",

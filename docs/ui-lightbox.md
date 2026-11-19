@@ -22,9 +22,10 @@ gallery.Items.Add(new CanopyGalleryItem("inventory", "Inventory summary") {
 string fragment = gallery.ToHtmlFragment();
 ```
 
-Each thumbnail is a link to its item, so without the runtime a click still opens the image or document. A content item
-travels in a `<template>` beside the gallery. The builder encodes addresses and text and refuses script addresses and data
-addresses that are not images. Images can be files beside the report or `data:image/` addresses, which keep a report to one file.
+Each image or frame thumbnail is a link to its item, so without the runtime a click still opens the image or document. A
+content item travels in a `<template>` beside the gallery and needs the runtime to show; give a static report a frame or image
+item when it must open without scripts. The builder encodes addresses and text and refuses script addresses, addresses with control characters, and
+data addresses that are not images; the runtime refuses script addresses in items too. Images can be files beside the report or `data:image/` addresses, which keep a report to one file.
 
 `Width` and `Height` reserve a thumbnail's space before it loads. An item without a thumbnail (a frame or content item)
 shows its alternative text as a link.

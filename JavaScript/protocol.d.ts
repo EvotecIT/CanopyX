@@ -280,7 +280,7 @@ export type LabelName =
   | "calendarLane" | "calendarHighlighted"
   /** Standalone UI primitives; their English defaults load with the optional UI parts. */
   | "accordionSearch" | "accordionNoMatches" | "accordionCopyTitle" | "accordionCopied"
-  | "toastsRegion" | "toastClose" | "toastQueued" | "toastInfo" | "toastSuccess" | "toastWarning" | "toastDanger" | "toastNeutral" | "lightboxTitle" | "lightboxPrevious" | "lightboxNext" | "lightboxZoomIn" | "lightboxZoomOut" | "lightboxZoomReset" | "lightboxError"
+  | "toastRegion" | "toastClose" | "toastQueued" | "toastInfo" | "toastSuccess" | "toastWarning" | "toastDanger" | "toastNeutral" | "lightboxTitle" | "lightboxPrevious" | "lightboxNext" | "lightboxZoomIn" | "lightboxZoomOut" | "lightboxZoomReset" | "lightboxError"
   | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"

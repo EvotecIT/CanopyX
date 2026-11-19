@@ -986,7 +986,7 @@ const labels = Object.freeze({
   accordionNoMatches: "Aucune section correspondante",
   accordionCopyTitle: "Copier le titre",
   accordionCopied: "Copié",
-  toastsRegion: "Notifications",
+  toastRegion: "Notifications",
   toastClose: "Fermer",
   toastQueued: "{count} de plus",
   toastInfo: "Information",

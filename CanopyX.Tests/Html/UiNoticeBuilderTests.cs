@@ -32,6 +32,15 @@ public sealed class UiNoticeBuilderTests {
         var late = new CanopyToasts("a");
         late.Items.Add(new CanopyToast("Late") { Timeout = 600001 });
         Assert.Throws<ArgumentOutOfRangeException>(() => late.ToHtmlFragment());
+        // The runtime's limits: a toast the builder writes always shows.
+        foreach (var toast in new[] { new CanopyToast(new string('m', 2001)), new CanopyToast("M") { Title = new string('t', 201) }, new CanopyToast("M") { Id = new string('i', 129) } }) {
+            var region = new CanopyToasts("a");
+            region.Items.Add(toast);
+            Assert.Throws<ArgumentOutOfRangeException>(() => region.ToHtmlFragment());
+        }
+        var longest = new CanopyToasts("a");
+        longest.Items.Add(new CanopyToast(new string('m', 2000)) { Title = new string('t', 200), Id = new string('i', 128) });
+        Assert.Contains(new string('m', 2000), longest.ToHtmlFragment());
     }
 
     [Fact]
@@ -49,12 +58,16 @@ public sealed class UiNoticeBuilderTests {
         Assert.Contains("<a class=\"cx-gallery-link\" data-lightbox-item href=\"images/rack-a.jpg\" data-caption=\"After &lt;the&gt; move\"><img loading=\"lazy\" decoding=\"async\" src=\"images/rack-a-small.jpg\" alt=\"Rack &quot;A&quot;\" width=\"320\" height=\"240\"></a><figcaption>After &lt;the&gt; move</figcaption>", html);
         Assert.Contains("<a class=\"cx-gallery-link\" data-lightbox-item href=\"manual.pdf\" data-lightbox-type=\"frame\"><span class=\"cx-gallery-label\">Manual</span></a>", html);
         Assert.Contains("href=\"#photos-item-2\" data-lightbox-type=\"content\"", html);
+        // The fragment is percent-encoded and the template keeps the raw identity the runtime decodes it to.
+        var odd = new CanopyGallery("g%20x") { Items = { new CanopyGalleryItem("x", "X") { Type = CanopyGalleryItemType.Content, ContentHtml = "<p>x</p>" } } }.ToHtmlFragment();
+        Assert.Contains("href=\"#g%2520x-item-0\"", odd);
+        Assert.Contains("<template id=\"g%20x-item-0\">", odd);
         Assert.EndsWith("</ul><template id=\"photos-item-2\"><h3>Inventory</h3></template></div>", html);
     }
 
     [Fact]
     public void Gallery_RefusesScriptAddressesAndEmptyContent() {
-        foreach (var address in new[] { "javascript:alert(1)", " JavaScript:alert(1)", "vbscript:x", "data:text/html,<script>x</script>" }) {
+        foreach (var address in new[] { "javascript:alert(1)", " JavaScript:alert(1)", "java\tscript:alert(1)", "java\nscript:x", "vbscript:x", "data:text/html,<script>x</script>" }) {
             var gallery = new CanopyGallery("g");
             gallery.Items.Add(new CanopyGalleryItem(address, "Bad"));
             Assert.Throws<ArgumentException>(() => gallery.ToHtmlFragment());

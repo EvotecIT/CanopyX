@@ -2,6 +2,8 @@
   .cx-toasts {
     /* lint-allow layout: notification column width */
     --cx-ui-toast-width:22.5rem;
+    /* lint-allow layout: the visible viewport the column fits in */
+    --cx-ui-toast-viewport:100dvh;
     position:fixed;z-index:var(--hfx-z-tooltip);display:flex;flex-direction:column;gap:var(--hfx-space-2);inline-size:min(var(--cx-ui-toast-width),calc(100% - var(--hfx-space-4) * 2));
     margin:0;padding:0;pointer-events:none;font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);font-size:var(--hfx-control-font-size);color:var(--hfx-color-text);
   }
@@ -12,7 +14,7 @@
   .cx-toasts[data-position$="-end"] { inset-inline-end:var(--hfx-space-4); }
   .cx-toasts[data-position$="-center"] { inset-inline-start:50%;translate:-50% 0; }
   .cx-toasts[data-position$="-center"]:dir(rtl) { translate:50% 0; }
-  .cx-toasts-list { display:flex;flex-direction:column;gap:var(--hfx-space-2);margin:0;padding:0;list-style:none; }
+  .cx-toasts-list { display:flex;flex-direction:column;gap:var(--hfx-space-2);margin:0;padding:0;list-style:none;max-block-size:calc(var(--cx-ui-toast-viewport) - var(--hfx-space-4) * 3 - var(--hfx-control-height-sm));overflow-y:auto;overscroll-behavior:contain; }
   .cx-toasts-list[hidden],.cx-toasts-more[hidden] { display:none; }
   .cx-toast {
     --cx-toast-tone:var(--hfx-color-status-info-fg);
@@ -47,7 +49,7 @@
     .cx-toasts { inset-inline:var(--hfx-space-2);inline-size:auto;translate:none; }
     .cx-toasts[data-position^="top"] { inset-block-start:var(--hfx-space-2); }
     .cx-toasts[data-position^="bottom"] { inset-block-end:var(--hfx-space-2); }
-    .cx-toasts[data-position$="-center"]:dir(rtl) { translate:none; }
+    .cx-toasts[data-position$="-center"],.cx-toasts[data-position$="-center"]:dir(rtl) { inset-inline:var(--hfx-space-2);translate:none; }
     .cx-toast-close,.cx-toast-action { min-inline-size:calc(var(--hfx-space-5) + var(--hfx-space-6));min-block-size:calc(var(--hfx-space-5) + var(--hfx-space-6)); }
   }
   @media (prefers-reduced-motion:no-preference) {

@@ -2963,9 +2963,9 @@ CanopyX.CanopyLabels.System.String ToastDanger { get; set; }
 CanopyX.CanopyLabels.System.String ToastInfo { get; set; }
 CanopyX.CanopyLabels.System.String ToastNeutral { get; set; }
 CanopyX.CanopyLabels.System.String ToastQueued { get; set; }
+CanopyX.CanopyLabels.System.String ToastRegion { get; set; }
 CanopyX.CanopyLabels.System.String ToastSuccess { get; set; }
 CanopyX.CanopyLabels.System.String ToastWarning { get; set; }
-CanopyX.CanopyLabels.System.String ToastsRegion { get; set; }
 CanopyX.CanopyLabels.System.String UnknownTotal { get; set; }
 CanopyX.CanopyLabels.System.String UtcTime { get; set; }
 CanopyX.CanopyLabels.System.String ViewIntentAllRows { get; set; }

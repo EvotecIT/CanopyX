@@ -118,3 +118,31 @@ test('a phone shows the viewer full screen with large step buttons', async ({ pa
   const next = await viewer(page).getByRole('button', { name: 'Next' }).boundingBox();
   expect(next.height).toBeGreaterThanOrEqual(40);
 });
+
+test('keys typed into host content stay with it, and opening another item moves the focus return', async ({ page }) => {
+  await openUi(page, '<div id="viewer"></div><button id="first">First</button><button id="second">Second</button>');
+  await page.evaluate(() => {
+    const field = document.createElement('label'); field.innerHTML = 'Count <input id="count">';
+    window.viewer = CanopyX.lightbox('#viewer', { items: [{ content: field, caption: 'Form' }, { content: 'Other', caption: 'Other' }] });
+    return window.viewer.ready.then(() => window.viewer.open(0, { returnFocus: document.getElementById('first') }));
+  });
+  await page.locator('#count').fill('');
+  await page.locator('#count').pressSequentially('10-2+0=');
+  await expect(page.locator('#count')).toHaveValue('10-2+0=');
+  await page.keyboard.press('ArrowRight');
+  await expect(viewer(page)).toHaveAccessibleName('Form');
+  await page.evaluate(() => window.viewer.open(1, { returnFocus: document.getElementById('second') }));
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#second')).toBeFocused();
+});
+
+test('script addresses are refused in items however they are written', async ({ page }) => {
+  await openUi(page, '<div id="viewer"></div>');
+  const errors = await page.evaluate(() => ['javascript:alert(1)', ' JavaScript:alert(1)', 'java\tscript:alert(1)', 'vbscript:x'].map(src => {
+    try { CanopyX.lightbox(document.body.appendChild(document.createElement('div')), { items: [{ type: 'frame', src }] }); return 'ok'; } catch (error) { return error.message; }
+  }));
+  const settled = await page.evaluate(async () => Promise.all(['javascript:alert(1)', ' JavaScript:alert(1)', 'java\tscript:alert(1)', 'vbscript:x'].map(src =>
+    CanopyX.lightbox(document.body.appendChild(document.createElement('div')), { items: [{ type: 'frame', src }] }).ready.then(() => 'ready', error => error.message))));
+  expect(errors).toEqual(['ok', 'ok', 'ok', 'ok']);
+  expect(new Set(settled)).toEqual(new Set(['CanopyX: lightbox item 0 has a script address.']));
+});

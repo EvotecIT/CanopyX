@@ -1,6 +1,7 @@
 @layer hfx.components{
 .cx-toasts{
 --cx-ui-toast-width:22.5rem;
+--cx-ui-toast-viewport:100dvh;
 position:fixed;z-index:var(--hfx-z-tooltip,1300);display:flex;flex-direction:column;gap:var(--hfx-space-2,0.5rem);inline-size:min(var(--cx-ui-toast-width),calc(100% - var(--hfx-space-4,1rem) * 2));
 margin:0;padding:0;pointer-events:none;font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);font-size:var(--hfx-control-font-size,calc(var(--hfx-type-body-size,0.875rem) - var(--cx-compact,0) * .0625rem));color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));
 }
@@ -11,7 +12,7 @@ margin:0;padding:0;pointer-events:none;font-family:var(--hfx-font-sans,Archivo,"
 .cx-toasts[data-position$="-end"]{inset-inline-end:var(--hfx-space-4,1rem);}
 .cx-toasts[data-position$="-center"]{inset-inline-start:50%;translate:-50% 0;}
 .cx-toasts[data-position$="-center"]:dir(rtl){translate:50% 0;}
-.cx-toasts-list{display:flex;flex-direction:column;gap:var(--hfx-space-2,0.5rem);margin:0;padding:0;list-style:none;}
+.cx-toasts-list{display:flex;flex-direction:column;gap:var(--hfx-space-2,0.5rem);margin:0;padding:0;list-style:none;max-block-size:calc(var(--cx-ui-toast-viewport) - var(--hfx-space-4,1rem) * 3 - var(--hfx-control-height-sm,calc(28px - var(--cx-compact,0) * 4px)));overflow-y:auto;overscroll-behavior:contain;}
 .cx-toasts-list[hidden],.cx-toasts-more[hidden]{display:none;}
 .cx-toast{
 --cx-toast-tone:var(--hfx-color-status-info-fg,light-dark(#2b5fc0,#74a2f7));
@@ -46,7 +47,7 @@ background:var(--hfx-color-surface-raised,light-dark(#ffffff,#1e2126));box-shado
 .cx-toasts{inset-inline:var(--hfx-space-2,0.5rem);inline-size:auto;translate:none;}
 .cx-toasts[data-position^="top"]{inset-block-start:var(--hfx-space-2,0.5rem);}
 .cx-toasts[data-position^="bottom"]{inset-block-end:var(--hfx-space-2,0.5rem);}
-.cx-toasts[data-position$="-center"]:dir(rtl){translate:none;}
+.cx-toasts[data-position$="-center"],.cx-toasts[data-position$="-center"]:dir(rtl){inset-inline:var(--hfx-space-2,0.5rem);translate:none;}
 .cx-toast-close,.cx-toast-action{min-inline-size:calc(var(--hfx-space-5,1.5rem) + var(--hfx-space-6,2rem));min-block-size:calc(var(--hfx-space-5,1.5rem) + var(--hfx-space-6,2rem));}
 }
 @media (prefers-reduced-motion:no-preference){

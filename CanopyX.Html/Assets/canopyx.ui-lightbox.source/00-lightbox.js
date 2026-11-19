@@ -3,12 +3,15 @@
 // or frames. The viewer moves with the arrow keys, swipes, Home and End; zooms with + and -, 0, double-click and its buttons;
 // and pans a zoomed image by scrolling or dragging. Without the runtime, each link still opens its item.
 const LIGHTBOX_ZOOMS = [1, 1.5, 2, 3, 4];
+// Browsers drop tabs and line breaks from addresses and ignore leading spaces, so a scheme is read as they read it.
+const lightboxScript = src => /^(?:javascript|vbscript):/i.test(String(src).replace(/[\u0000-\u0020\u007f]/g, ''));
 
 function lightboxItem(raw, index) {
   if (!raw || typeof raw !== 'object') throw new Error('CanopyX: a lightbox item needs a src or content.');
   const type = raw.type ?? (raw.content !== undefined ? 'content' : 'image');
   if (!['image', 'content', 'frame'].includes(type)) throw new Error('CanopyX: unknown lightbox item type.');
   if (type !== 'content' && (typeof raw.src !== 'string' || !raw.src)) throw new Error('CanopyX: lightbox item ' + index + ' needs a src.');
+  if (type !== 'content' && lightboxScript(raw.src)) throw new Error('CanopyX: lightbox item ' + index + ' has a script address.');
   return { id: raw.id == null ? String(index) : String(raw.id), type, src: raw.src ?? null, alt: raw.alt ?? '', caption: raw.caption ?? '',
     content: raw.content, trigger: raw.trigger ?? null };
 }
@@ -126,7 +129,10 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
     list = items();
     const at = typeof target === 'number' ? target : list.findIndex(item => item.id === String(target));
     if (at < 0 || at >= list.length) throw new Error('CanopyX: the lightbox has no item ' + target + '.');
-    if (!overlay.opened && !overlay.open({ modal: true, returnFocus: settings.returnFocus || list[at].trigger || document.activeElement })) return false;
+    const returnFocus = settings.returnFocus || list[at].trigger;
+    // An open viewer that shows another item returns focus to that item's control when it closes.
+    if (overlay.opened) overlay.setReturnFocus(returnFocus);
+    else if (!overlay.open({ modal: true, returnFocus: returnFocus || document.activeElement })) return false;
     return show(at, settings.source || 'api');
   }
   function move(direction) {
@@ -142,11 +148,12 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
     open(links().indexOf(link), { returnFocus: link, source: 'link' });
   }, { signal });
   dialog.addEventListener('keydown', event => {
-    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+    // Keys typed into a field, an editable element or a frame belong to them, shortcuts included.
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.target.closest('iframe,input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
     const back = rtl() ? 'ArrowRight' : 'ArrowLeft', forward = rtl() ? 'ArrowLeft' : 'ArrowRight';
     const keys = { '+': () => zoom(step(1)), '=': () => zoom(step(1)), '-': () => zoom(step(-1)), '0': () => zoom(1) };
     // While zoomed the arrows pan the stage; the Previous and Next buttons still move.
-    if (scale <= 1 && !event.target.closest('iframe,input,textarea,select,[contenteditable]')) Object.assign(keys, { [back]: () => move(-1), [forward]: () => move(1),
+    if (scale <= 1) Object.assign(keys, { [back]: () => move(-1), [forward]: () => move(1),
       Home: () => show(0, 'navigation'), End: () => show(list.length - 1, 'navigation') });
     if (!keys[event.key]) return;
     event.preventDefault(); keys[event.key]();

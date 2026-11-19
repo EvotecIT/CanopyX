@@ -7,7 +7,7 @@ public sealed partial class CanopyLabels {
         labels.AccordionNoMatches = "Aucune section correspondante";
         labels.AccordionCopyTitle = "Copier le titre";
         labels.AccordionCopied = "Copié";
-        labels.ToastsRegion = "Notifications";
+        labels.ToastRegion = "Notifications";
         labels.ToastClose = "Fermer";
         labels.ToastQueued = "{count} de plus";
         labels.ToastInfo = "Information";

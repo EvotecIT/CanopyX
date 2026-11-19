@@ -7,11 +7,11 @@ public sealed class CanopyToast {
         Message = UiHtml.Text(message, nameof(message));
     }
 
-    /// <summary>Gets the plain text message.</summary>
+    /// <summary>Gets the plain text message, at most 2,000 characters.</summary>
     public string Message { get; }
-    /// <summary>Gets or sets an identity unique in the region, so script can update or close the toast. Null generates one at runtime.</summary>
+    /// <summary>Gets or sets an identity unique in the region, at most 128 characters, so script can update or close the toast. Null generates one at runtime.</summary>
     public string? Id { get; set; }
-    /// <summary>Gets or sets the plain text title shown above the message.</summary>
+    /// <summary>Gets or sets the plain text title shown above the message, at most 200 characters.</summary>
     public string? Title { get; set; }
     /// <summary>Gets or sets the tone. <see cref="CanopyTone.None"/> shows an informational toast.</summary>
     public CanopyTone Tone { get; set; }

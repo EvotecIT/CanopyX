@@ -42,6 +42,10 @@ public sealed class CanopyToasts {
         foreach (var toast in Items) {
             if (toast == null) throw new ArgumentException("Items cannot contain null entries.");
             if (toast.Id != null) UiHtml.Unique(ids, toast.Id);
+            // The runtime reads these toasts back with the limits it applies to script, so a written toast always shows.
+            Limit(toast.Id, 128, nameof(toast.Id));
+            Limit(toast.Title, 200, nameof(toast.Title));
+            Limit(toast.Message, 2000, nameof(toast.Message));
             if (toast.Timeout != null) Timeout(toast.Timeout.Value, nameof(toast.Timeout));
             html.Append("<li class=\"cx-toast\" data-cx-part=\"toast\"");
             UiHtml.Attribute(html, "data-toast-id", toast.Id);
@@ -52,6 +56,10 @@ public sealed class CanopyToasts {
             html.Append("<p class=\"cx-toast-message\">").Append(UiHtml.Encode(toast.Message)).Append("</p></li>");
         }
         return html.Append("</ol></section>").ToString();
+    }
+
+    private static void Limit(string? value, int max, string name) {
+        if (value != null && value.Length > max) throw new ArgumentOutOfRangeException(name, "A toast " + name.ToLowerInvariant() + " has at most " + max + " characters.");
     }
 
     private static void Timeout(int value, string name) {

@@ -112,7 +112,7 @@ document.addEventListener('canopyx:flowSubmitted', event => {
 
 ## Labels, direction and phones
 
-The built-in locale packs translate `toastsRegion`, `toastClose`, `toastQueued` and the tone words `toastInfo`, `toastSuccess`,
+The built-in locale packs translate `toastRegion`, `toastClose`, `toastQueued` and the tone words `toastInfo`, `toastSuccess`,
 `toastWarning`, `toastDanger` and `toastNeutral` (host tones read as a notice). Pass `labels` to the region to override them.
 
 Positions use logical sides, so `bottom-end` sits on the left in a right-to-left page. Below 40rem the region spans the

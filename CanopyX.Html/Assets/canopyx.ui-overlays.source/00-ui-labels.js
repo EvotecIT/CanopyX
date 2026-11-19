@@ -4,7 +4,7 @@
     tabsScrollPrevious: "Previous tabs", tabsScrollNext: "Next tabs", tabsSection: "Section",
     tabsPosition: "{current} of {total}", tabsPause: "Pause", tabsPlay: "Play",
     tabsMotionDisabled: "Automatic tabs are disabled by reduced motion",
-    toastsRegion: "Notifications", toastClose: "Dismiss", toastQueued: "{count} more", toastInfo: "Information", toastSuccess: "Success",
+    toastRegion: "Notifications", toastClose: "Dismiss", toastQueued: "{count} more", toastInfo: "Information", toastSuccess: "Success",
     toastWarning: "Warning", toastDanger: "Error", toastNeutral: "Notice",
     lightboxTitle: "Gallery", lightboxPrevious: "Previous", lightboxNext: "Next", lightboxZoomIn: "Zoom in", lightboxZoomOut: "Zoom out",
     lightboxZoomReset: "Fit to screen", lightboxError: "This item could not be loaded",

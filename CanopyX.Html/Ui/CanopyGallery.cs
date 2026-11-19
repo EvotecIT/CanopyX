@@ -36,10 +36,12 @@ public sealed class CanopyGallery {
             var item = Items[index] ?? throw new ArgumentException("Items cannot contain null entries.");
             UiHtml.EnumValue(item.Type);
             if (item.Width <= 0 || item.Height <= 0) throw new ArgumentOutOfRangeException(nameof(item.Width), "Thumbnail sizes are positive.");
-            var href = item.Type == CanopyGalleryItemType.Content ? "#" + Id + "-item-" + UiHtml.Number(index) : Address(item.Href);
+            var template = Id + "-item-" + UiHtml.Number(index);
+            // The link's fragment is percent-encoded; the runtime decodes it back to the template's identity.
+            var href = item.Type == CanopyGalleryItemType.Content ? "#" + Uri.EscapeDataString(template) : Address(item.Href);
             if (item.Type == CanopyGalleryItemType.Content) {
                 if (string.IsNullOrWhiteSpace(item.ContentHtml)) throw new ArgumentException("A content item needs ContentHtml.");
-                templates.Append("<template id=\"").Append(UiHtml.Encode(href.Substring(1))).Append("\">").Append(item.ContentHtml).Append("</template>");
+                templates.Append("<template id=\"").Append(UiHtml.Encode(template)).Append("\">").Append(item.ContentHtml).Append("</template>");
             }
             var thumbnail = item.ThumbnailHref != null ? Address(item.ThumbnailHref) : item.Type == CanopyGalleryItemType.Image ? href : null;
             html.Append("<li class=\"cx-gallery-item\"><figure><a class=\"cx-gallery-link\" data-lightbox-item");
@@ -65,6 +67,8 @@ public sealed class CanopyGallery {
 
     // Links open their items without the runtime too, so a script address would run on a click.
     private static string Address(string value) {
+        // Browsers drop tabs and line breaks inside addresses ("java\tscript:"), so control characters are refused outright.
+        foreach (var c in value) if (c < ' ' || c == '\u007f') throw new ArgumentException("A gallery address cannot contain control characters.");
         var scheme = value.TrimStart();
         foreach (var refused in new[] { "javascript:", "vbscript:" })
             if (scheme.StartsWith(refused, StringComparison.OrdinalIgnoreCase)) throw new ArgumentException("A gallery address cannot be a script.");
