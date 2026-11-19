@@ -135,6 +135,14 @@ public abstract class CanopyFlowFieldContainer<TContainer> where TContainer : Ca
     /// <exception cref="ArgumentException"><paramref name="id"/> is not a valid id.</exception>
     public TContainer Rating(string id, string label, Action<CanopyFlowField>? configure = null) => Add(id, CanopyFlowFieldKind.Rating, label, configure);
 
+    /// <summary>Adds a signature field: a pad to draw on, or a typed name, answered as an SVG document and a PNG image.</summary>
+    /// <param name="id">The field id, unique in the flow.</param>
+    /// <param name="label">The label.</param>
+    /// <param name="configure">Sets the field's other settings, or null.</param>
+    /// <returns>This step or section.</returns>
+    /// <exception cref="ArgumentException"><paramref name="id"/> is not a valid id.</exception>
+    public TContainer Signature(string id, string label, Action<CanopyFlowField>? configure = null) => Add(id, CanopyFlowFieldKind.Signature, label, configure);
+
     /// <summary>Adds a records field: rows of typed cells, edited as a small table; add its columns in <paramref name="configure"/>.</summary>
     /// <param name="id">The field id, unique in the flow.</param>
     /// <param name="label">The label.</param>

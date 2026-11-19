@@ -24,6 +24,8 @@ internal static class CanopyFlowFieldRules {
     internal static string? Problem(CanopyFlowField field, object? value, CanopyLabels labels) {
         var title = field.Label;
         switch (field.Kind) {
+            case CanopyFlowFieldKind.Signature:
+                return field.IsRequired && value == null ? Say(field.Validation, labels.GridEditRequired, title) : null;
             case CanopyFlowFieldKind.Toggle:
                 return field.IsRequired && !(value is bool on && on) ? Say(field.Validation, labels.GridEditRequired, title) : null;
             case CanopyFlowFieldKind.Records:
@@ -40,7 +42,7 @@ internal static class CanopyFlowFieldRules {
                 return null;
             }
             default:
-                return Scalar(field.Validation, field.Kind, field.NumberStep, value, title, labels) ?? DisabledChoice(field, value, labels);
+                return Scalar(field.Validation, field.Kind, field.NumberStep, value, title, labels) ?? Format(field, value, labels) ?? DisabledChoice(field, value, labels);
         }
     }
 
@@ -127,6 +129,12 @@ internal static class CanopyFlowFieldRules {
         }
 
         return null;
+    }
+
+    /// <summary>A text answer that does not have the field's format, as the browser words it.</summary>
+    private static string? Format(CanopyFlowField field, object? value, CanopyLabels labels) {
+        if (field.TextFormat == CanopyFlowTextFormat.None || !(value is string text) || text.Length == 0 || CanopyFlowTextFormats.Fits(field.TextFormat, text)) return null;
+        return field.Validation.Message ?? Fill(labels.FlowFormatInvalid, ("field", field.Label), ("example", CanopyFlowTextFormats.Example(field.TextFormat)));
     }
 
     /// <summary>The built-in item rules, as FLOW_ITEM_RULES checks them.</summary>

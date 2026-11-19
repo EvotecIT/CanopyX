@@ -123,6 +123,13 @@ public sealed partial class CanopyFlowField {
         set => _ratingScale = value < 2 || value > 10 ? throw new ArgumentOutOfRangeException(nameof(value), value, "A rating offers 2 to 10 stars.") : value;
     }
 
+    /// <summary>Gets or sets the shape a text field's answer must have, such as an IP address or a GUID.</summary>
+    public CanopyFlowTextFormat TextFormat { get; set; }
+
+    /// <summary>Gets or sets a short hint of a text field's expected shape, such as "AAA-0000", shown under its label. Pair it with
+    /// <see cref="Pattern"/> for a custom format; the hint never changes what the reader types.</summary>
+    public string? InputMask { get; set; }
+
     /// <summary>Gets or sets whether a blank secret keeps the stored value; null keeps it when <see cref="CanopyFlow.StoredSecrets"/> lists the field.</summary>
     public bool? KeepsWhenBlank { get; set; }
 
@@ -276,6 +283,16 @@ public sealed partial class CanopyFlowField {
     /// <returns>The field.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The number is outside 2 to 10.</exception>
     public CanopyFlowField Scale(int stars) { RatingScale = stars; return this; }
+
+    /// <summary>Sets the shape a text field's answer must have (<see cref="TextFormat"/>); its hint shows an example.</summary>
+    /// <param name="format">The format.</param>
+    /// <returns>The field.</returns>
+    public CanopyFlowField Format(CanopyFlowTextFormat format) { TextFormat = format; return this; }
+
+    /// <summary>Sets a hint of a text field's expected shape (<see cref="InputMask"/>), usually beside a <see cref="Pattern"/>.</summary>
+    /// <param name="mask">Up to 64 characters, such as "AAA-0000".</param>
+    /// <returns>The field.</returns>
+    public CanopyFlowField Mask(string mask) { InputMask = mask; return this; }
 
     /// <summary>Adds an option.</summary>
     /// <param name="value">The value: text, a number or true or false.</param>

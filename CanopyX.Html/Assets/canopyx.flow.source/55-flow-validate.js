@@ -9,6 +9,19 @@
     cidr: value => { const [address, prefix, extra] = value.split("/"); return extra === undefined && /^\d{1,3}$/.test(prefix || "") && (flowIPv4(address) && Number(prefix) <= 32 || flowIPv6(address) && Number(prefix) <= 128); },
     url: value => { try { const url = new URL(value); return url.protocol === "https:" || url.protocol === "http:"; } catch (error) { return false; } }
   };
+  // Text field formats (docs/flow.md#fields): the item rules, plus addresses, identifiers, phone numbers, dates and times written
+  // as text. CanopyFlowTextFormats checks them alike on the server (tests/fixtures/flow-formats.json).
+  const FLOW_FORMATS = Object.assign({}, FLOW_ITEM_RULES, {
+    ipv4: value => flowIPv4(value), ipv6: value => flowIPv6(value),
+    mac: value => /^(?:[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}|[0-9A-Fa-f]{2}(?:-[0-9A-Fa-f]{2}){5}|[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4})$/.test(value),
+    guid: value => /^(?:\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$/.test(value),
+    phone: value => { const digits = value.replace(/[^0-9]/g, "").length; return /^\+?[0-9 ().-]{6,32}$/.test(value) && digits >= 6 && digits <= 15; },
+    date: value => flowFits({ type: "date" }, value),
+    time: value => /^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$/.test(value),
+    dateTime: value => { const match = /^([0-9]{4}-[0-9]{2}-[0-9]{2})[T ]((?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?)$/.exec(value); return !!match && flowFits({ type: "date" }, match[1]); }
+  });
+  const FLOW_FORMAT_EXAMPLES = { email: "name@example.com", host: "mail.example.com", ip: "192.168.1.10", ipv4: "192.168.1.10", ipv6: "2001:db8::1", cidr: "10.0.0.0/24",
+    url: "https://example.com", mac: "00:1A:2B:3C:4D:5E", guid: "3f2504e0-4f89-11d3-9a0c-0305e82c3301", phone: "+1 555 0100", date: "2026-11-19", time: "14:30", dateTime: "2026-11-19 14:30" };
   function flowIPv4(value) { return /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/.test(value); }
   function flowIPv6(value) { if (!/^[0-9A-Fa-f:.]{2,45}$/.test(value) || !value.includes(":")) return false; try { return new URL("http://[" + value + "]/").hostname.length > 2; } catch (error) { return false; } }
 
@@ -23,7 +36,7 @@
         return formCheck(field.spec, value, "text", title, labels, String);
       }
       const value = this.values.get(field.id) ?? null;
-      if (field.type === "toggle") return field.required && value !== true ? fill(labels.gridEditRequired, { column: title }) : null;
+      if (field.type === "toggle" || field.type === "signature") return field.required && (field.type === "signature" ? value === null : value !== true) ? fill(labels.gridEditRequired, { column: title }) : null;
       if (field.kind === "records") return flowHost("records").problem(this, field, value || []);
       if (field.kind === "list" || field.kind === "pick") {
         const items = value || [], rules = field.items;
@@ -39,7 +52,9 @@
       }
       if (field.kind === "duration") return formCheck(field.spec, value === null ? null : flowSeconds(value), "number", title, labels, seconds => flowWords(this, seconds));
       const shown = bound => field.type === "datetime" ? flowDisplay(this, field, bound) : typeof bound === "number" ? numberFormat(this.lang, 0, 20).format(bound) : String(bound);
-      return formCheck(field.spec, value, field.kind === "number" || field.kind === "datetime" ? field.kind : "text", title, labels, shown);
+      const problem = formCheck(field.spec, value, field.kind === "number" || field.kind === "datetime" ? field.kind : "text", title, labels, shown);
+      if (problem || !field.format || typeof value !== "string" || !value || FLOW_FORMATS[field.format](value)) return problem;
+      return field.spec.rules.message || fill(labels.flowFormatInvalid, { field: title, example: FLOW_FORMAT_EXAMPLES[field.format] });
     },
 
     /** A field's problem with the host's validator: a message or null. Secrets never reach host validators. */

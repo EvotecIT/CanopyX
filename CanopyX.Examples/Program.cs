@@ -215,6 +215,7 @@ WriteTemplate("interactions.html", Path.Combine(output, "interactions.html"),
 await UiPrimitivesExample.RunAsync(output);
 UiComponentsExample.Write(output);
 UiCarouselRatingExample.Write(output);
+FlowInputsExample.Write(output);
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 
