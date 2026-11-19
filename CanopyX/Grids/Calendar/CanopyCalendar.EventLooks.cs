@@ -75,7 +75,8 @@ public sealed partial class CanopyCalendar {
         if (!match.Success) return false;
         foreach (var group in new[] { match.Groups[2], match.Groups[3], match.Groups[4], match.Groups[5] }) {
             if (!group.Success) continue;
-            var number = group.Value.TrimEnd('%').Replace("deg", string.Empty);
+            var number = group.Value.TrimEnd('%');
+            if (number.EndsWith("deg", StringComparison.OrdinalIgnoreCase)) number = number.Substring(0, number.Length - 3);
             if (!double.TryParse(number, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _)) return false;
         }
         return true;

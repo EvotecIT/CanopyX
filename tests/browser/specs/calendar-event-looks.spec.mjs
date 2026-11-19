@@ -123,11 +123,19 @@ test("an event's own background outranks its source's colour, and relative addre
   expect(events.find(item => item.id === "sourced").url).toBe(pathToFileURL(path.join(folder, "notes", "sourced.html")).href);
 });
 
-test("forced colours keep the system text colour on events with their own text colour", async ({ page }) => {
+test("forced colours keep the system text colour on events with their own text colour, and their own fill off hover", async ({ page }) => {
   await page.emulateMedia({ forcedColors: "active" });
-  await openBuilt(page, "forced.html", calendarPage({ events: EVENTS, date: "2026-10-16", view: "week" }));
+  const events = [...EVENTS, { id: "dark", title: "Dark fill", start: "2026-10-16T15:00:00Z", end: "2026-10-16T16:00:00Z", backgroundColor: "#000000" }];
+  await openBuilt(page, "forced.html", calendarPage({ events, date: "2026-10-16", view: "week" }));
   const text = await event(page, "own").evaluate(element => getComputedStyle(element).color);
   expect(text).not.toBe("rgb(19, 78, 74)");
+  // A black fill on hover would hide the system's dark text; the hovered event stays light.
+  await event(page, "dark").hover();
+  const green = await event(page, "dark").evaluate(element => {
+    const value = getComputedStyle(element).backgroundColor, numbers = (value.match(/[\d.]+/g) || []).map(Number);
+    return value.startsWith("color(") ? numbers[1] * 255 : numbers[1];
+  });
+  expect(green).toBeGreaterThan(128);
 });
 
 test("a hook under calendar options cancels like the grid option, and hovering keeps an event's own fill", async ({ page }) => {

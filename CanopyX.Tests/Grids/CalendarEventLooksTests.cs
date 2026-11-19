@@ -49,6 +49,7 @@ public sealed class CalendarEventLooksTests {
     [InlineData("#AABBCCDD")]
     [InlineData("rgb(1, 2, 3)")]
     [InlineData("hsl(120deg 50% 40% / 0.5)")]
+    [InlineData("hsl(120DEG 50% 40%)")]
     [InlineData("rebeccapurple")]
     public void Colours_AcceptHexFunctionalAndNamedColours(string value) {
         Assert.Equal(value, new CanopyCalendarEvent("x", Start) { Color = value }.Color);
