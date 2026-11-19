@@ -12,6 +12,8 @@
   .cx-rating-option[data-preview="true"] { color:color-mix(in srgb,var(--cx-rating-color) 70%,var(--hfx-color-surface)); }
   .cx-rating-option:has(> input:focus-visible) { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(var(--hfx-focus-width) * -1);border-radius:var(--hfx-radius-control); }
   .cx-rating-option:has(> input:disabled) { color:var(--hfx-color-text-disabled);cursor:default; }
+  /* A disabled rating still shows its value: chosen stars keep a quieter rating colour. */
+  .cx-rating-option[data-filled="true"]:has(> input:disabled),.cx-rating-option:has(> input:disabled:checked) { color:color-mix(in srgb,var(--cx-rating-color) 60%,var(--hfx-color-text-disabled)); }
   .cx-rating-display { display:inline-flex;align-items:center;gap:var(--hfx-space-1);white-space:nowrap; }
   .cx-rating-on { color:var(--hfx-color-status-warn-fg); }
   .cx-rating-off { color:var(--hfx-color-border-strong); }

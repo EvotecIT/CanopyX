@@ -156,6 +156,8 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   root.addEventListener('focusout', event => { if (!root.contains(event.relatedTarget)) { focus = false; schedule(); } }, { signal });
   document.addEventListener('visibilitychange', schedule, { signal });
   reduced.addEventListener('change', () => { if (reduced.matches) stop(); else paint(); }, { signal });
+  // Below 40rem the stylesheet shows one slide; a track that keeps its width across that line still needs measuring again.
+  matchMedia('(max-width: 40rem)').addEventListener('change', () => requestAnimationFrame(() => { measure(); paint(); scrollTo(index); }), { signal });
   UI_TOOLS.observe(track, () => { measure(); paint(); scrollTo(index); }, signal);
   signal?.addEventListener('abort', () => {
     clearTimeout(timer); cancelAnimationFrame(frame); controls.remove(); root.style.removeProperty('--cx-carousel-per-view');
