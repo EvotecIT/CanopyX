@@ -48,6 +48,8 @@ UI_IMPL.toasts = (root, options = {}, signal) => {
     timeout: toastNumber(options.timeout ?? data.timeout, 5000, 'timeout', 0, 600000) };
   if (!TOAST_POSITIONS.includes(settings.position)) throw new Error('CanopyX: unknown toast position.');
   const home = root.parentNode, homeNext = root.nextSibling, toasts = new Map(), queue = [], reserved = new Set();
+  // notify() reuses a region that is out of the page only while it can still go back home.
+  (UI_TOOLS.toastHomes ||= new WeakMap()).set(root, home);
   const list = root.querySelector(':scope > .cx-toasts-list') || root.appendChild(h('ol', 'cx-toasts-list'));
   const more = h('p', 'cx-toasts-more'), polite = h('div', 'cx-visually-hidden'), assertive = h('div', 'cx-visually-hidden');
   // Toasts written into the page (the .NET builder's) are read, then shown through the queue like any other.

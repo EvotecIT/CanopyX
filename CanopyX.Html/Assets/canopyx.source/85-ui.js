@@ -1,7 +1,9 @@
   // Standalone UI uses the same versioned, nonce-aware parts loader as data views and plugins.
   function UiHost() {}
   const UI_IMPL = {}, UI_TOOLS = {}, uiInstances = new WeakMap();
-  const UI_KINDS = { tabs: "ui-tabs", stepper: "ui-stepper", accordion: "ui-accordion", toasts: "ui-toasts", lightbox: "ui-lightbox", mask: "ui-mask", signature: "ui-signature", carousel: "ui-carousel", rating: "ui-rating", menu: "ui-menu", dialog: "ui-overlays", drawer: "ui-overlays", popover: "ui-overlays", tooltip: "ui-overlays" };
+  // Each kind loads the part named after it; the overlay kinds listed after menu share ui-overlays.
+  const UI_KINDS = {};
+  for (const kind of "tabs stepper accordion toasts lightbox mask signature carousel rating menu dialog drawer popover tooltip".split(" ")) UI_KINDS[kind] = UI_KINDS.menu ? "ui-overlays" : "ui-" + kind;
   const uiContext = () => ({ UI_IMPL, UI_TOOLS, h, setText, fill, watchTheme, overlayTheme, watchOverlayTheme, hostHtml });
   for (const name of Object.keys(PARTS).filter(part => part.startsWith("ui-"))) SHARED_PARTS[name] = definePart(UiHost, name, name.replace("ui-", "UI "), uiContext);
 
@@ -67,7 +69,9 @@
   function notify(options) {
     // Not rendered: inside a closed dialog, hidden content or anything a stylesheet hides.
     const usable = region => !region.closest("dialog:not([open]),[hidden]") && region.checkVisibility?.() !== false;
-    let root = notifyRoot && uiInstances.get(notifyRoot)?.has("toasts") && (!notifyRoot.isConnected || usable(notifyRoot)) ? notifyRoot : [...document.querySelectorAll("[data-cx-toasts]")].find(usable);
+    // A region out of the page is reused only while its home is still in the page; a removed container takes it for good.
+    const recoverable = region => region.isConnected ? usable(region) : !!UI_TOOLS.toastHomes?.get(region)?.isConnected;
+    let root = notifyRoot && uiInstances.get(notifyRoot)?.has("toasts") && recoverable(notifyRoot) ? notifyRoot : [...document.querySelectorAll("[data-cx-toasts]")].find(usable);
     if (!root) { root = h("section"); root.setAttribute("data-cx-toasts", ""); document.body.appendChild(root); }
     notifyRoot = root;
     const api = createUi("toasts", root);

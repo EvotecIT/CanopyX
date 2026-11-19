@@ -159,6 +159,8 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   root.addEventListener('pointerleave', () => { hover = false; schedule(); }, { signal });
   root.addEventListener('focusin', () => { focus = true; schedule(); }, { signal });
   root.addEventListener('focusout', event => { if (!root.contains(event.relatedTarget)) { focus = false; schedule(); } }, { signal });
+  // A carousel enhanced under the pointer or around the focused element starts paused, as if those events had just arrived.
+  hover = root.matches(':hover'); focus = root.contains(document.activeElement);
   document.addEventListener('visibilitychange', schedule, { signal });
   reduced.addEventListener('change', () => { if (reduced.matches) stop(); else paint(); }, { signal });
   // Below 40rem the stylesheet shows one slide; a track that keeps its width across that line still needs measuring again.

@@ -85,6 +85,8 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
   }
   function paintZoom() {
     const image = media?.localName === 'img' && !status.dataset.error;
+    // Hiding the zoom tools would drop a focused zoom button out of the viewer, so the viewer takes focus first.
+    if (!image && tools.contains(document.activeElement)) dialog.focus({ preventScroll: true });
     tools.hidden = !image;
     setText(level, percent(scale));
     const focused = [zoomOut, zoomIn, reset].find(button => button === document.activeElement);
@@ -125,6 +127,8 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
       if (value == null) fail(); else UI_TOOLS.content(media, value);
     }
     media.dataset.cxPart = 'media';
+    // Focus inside the item being replaced would fall to the page, and the keys would stop reaching the viewer.
+    if (stage.contains(document.activeElement)) dialog.focus({ preventScroll: true });
     stage.replaceChildren(media); stage.scrollTop = stage.scrollLeft = 0;
     paintZoom();
     // The neighbours load ahead, so moving through a gallery does not wait.

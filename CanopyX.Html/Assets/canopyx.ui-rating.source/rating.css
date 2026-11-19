@@ -7,13 +7,13 @@
   .cx-rating-option > .cx-rating-text { position:absolute;inline-size:var(--hfx-border-width);block-size:var(--hfx-border-width);overflow:hidden;clip-path:inset(50%);white-space:nowrap; }
   .cx-rating-option::before { content:"\2605" / "";font-size:var(--hfx-icon-lg);line-height:1; }
   .cx-rating-option[data-filled="true"] { color:var(--cx-rating-color); }
-  /* Without the runtime the chosen star still shows; the runtime then fills every star up to it. */
-  .cx-rating-option:has(> input:checked) { color:var(--cx-rating-color); }
+  /* Without the runtime the chosen star still shows; the runtime then fills every star up to it, and a hover preview wins. */
+  .cx-rating-option:not([data-filled]):has(> input:checked) { color:var(--cx-rating-color); }
   .cx-rating-option[data-preview="true"] { color:color-mix(in srgb,var(--cx-rating-color) 70%,var(--hfx-color-surface)); }
   .cx-rating-option:has(> input:focus-visible) { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(var(--hfx-focus-width) * -1);border-radius:var(--hfx-radius-control); }
   .cx-rating-option:has(> input:disabled) { color:var(--hfx-color-text-disabled);cursor:default; }
   /* A disabled rating still shows its value: chosen stars keep a quieter rating colour. */
-  .cx-rating-option[data-filled="true"]:has(> input:disabled),.cx-rating-option:has(> input:disabled:checked) { color:color-mix(in srgb,var(--cx-rating-color) 60%,var(--hfx-color-text-disabled)); }
+  .cx-rating-option[data-filled="true"]:has(> input:disabled),.cx-rating-option:not([data-filled]):has(> input:disabled:checked) { color:color-mix(in srgb,var(--cx-rating-color) 60%,var(--hfx-color-text-disabled)); }
   .cx-rating-display { display:inline-flex;align-items:center;gap:var(--hfx-space-1);white-space:nowrap; }
   .cx-rating-on { color:var(--hfx-color-status-warn-fg); }
   .cx-rating-off { color:var(--hfx-color-border-strong); }
