@@ -115,6 +115,16 @@ test('a form reset brings back the starting signature, and a cancelled one keeps
   await expect.poll(submitted).toBe('');
 });
 
+test('a typed name whose picture the browser cannot export is not published', async ({ page }) => {
+  await openUi(page, '<form id="form"><div id="sign" data-cx-signature data-name="signature"></div></form>');
+  // A canvas past the browser's size limit exports "data:,"; the stub makes every export do that.
+  await page.evaluate(() => { HTMLCanvasElement.prototype.toDataURL = () => 'data:,'; });
+  await page.getByRole('button', { name: 'Type instead' }).click();
+  await page.keyboard.type('Ada');
+  expect(await page.evaluate(() => new FormData(document.getElementById('form')).get('signature'))).toBe('');
+  expect(await page.evaluate(() => CanopyX.signature('#sign').getState().value)).toBeNull();
+});
+
 test('destroy removes the hidden input the signature made and keeps a host input', async ({ page }) => {
   await openUi(page, '<form id="form"><div id="made" data-name="made"></div><div id="own" data-name="own"><input type="hidden" name="own" value="kept"></div></form>');
   await page.evaluate(async () => { for (const id of ['#made', '#own']) await CanopyX.signature(id).ready; CanopyX.signature('#made').destroy(); CanopyX.signature('#own').destroy(); });

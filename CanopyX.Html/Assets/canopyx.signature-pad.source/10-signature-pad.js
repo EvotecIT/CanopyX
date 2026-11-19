@@ -119,9 +119,9 @@
       // Strokes keep the coordinates they were drawn at: a pad that has since narrowed (a rotated phone) exports wide enough for all of them.
       const reach = strokes.reduce((most, stroke) => stroke.reduce((far, point) => Math.max(far, point.x), most), 0);
       const next = typed || strokes.length ? signatureValue(Math.max(width, Math.ceil(reach) + 8), strokes, typed, ink || "#000", background) : null;
-      // A value the pad could not load back is never published: the stroke that made it too large is taken back.
-      // The stored picture stays until a replacement is accepted, so a refused stroke leaves the earlier signature showing.
-      if (next && !signatureFits(next) && strokes.length) { strokes.pop(); paint(); return; }
+      // A value the pad could not load back (too large, or an image the browser could not export) is never published: the stroke
+      // that made it is taken back, and a typed name keeps the earlier value. The stored picture stays until a replacement is accepted.
+      if (next && !signatureFits(next)) { if (strokes.length) strokes.pop(); paint(); return; }
       stored = null; value = next;
       paint(); settings.onChange?.(value);
     }
