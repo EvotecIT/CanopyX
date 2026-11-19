@@ -164,7 +164,9 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   // A fading track does not scroll, so a horizontal swipe moves between slides instead.
   let swipe = null;
   if (fade) {
-    track.addEventListener('pointerdown', event => { swipe = event.isPrimary && !event.target.closest('input,select,textarea,button,a[href],label,video,audio,iframe') ? event.clientX : null; }, { signal });
+    // A swipe inside a carousel nested in a slide belongs to that carousel.
+    const own = event => event.target.closest?.('.cx-carousel-track') === track;
+    track.addEventListener('pointerdown', event => { swipe = event.isPrimary && own(event) && !event.target.closest('input,select,textarea,button,a[href],label,video,audio,iframe') ? event.clientX : null; }, { signal });
     // Images are draggable by default; a native drag would take the pointer away before the release.
     track.addEventListener('dragstart', event => event.preventDefault(), { signal });
     track.addEventListener('pointerup', event => {

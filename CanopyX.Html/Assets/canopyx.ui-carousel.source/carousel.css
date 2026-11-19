@@ -22,7 +22,8 @@
   .cx-carousel-slide > img { display:block;inline-size:100%;block-size:auto; }
   .cx-carousel-slide { position:relative; }
   .cx-carousel-caption { margin:0;padding:var(--hfx-space-2) var(--hfx-space-3);font-size:var(--hfx-type-caption-size);color:var(--hfx-color-text-muted); }
-  .cx-carousel:not([data-captions="below"]) .cx-carousel-caption { position:absolute;inset-inline:0;inset-block-end:0;color:var(--hfx-color-text);background:color-mix(in srgb,var(--hfx-color-surface) 85%,transparent); }
+  /* Only this carousel's own slides: a carousel inside a slide keeps its own caption placement. */
+  :is(.cx-carousel:not([data-captions="below"]),.cx-carousel:not([data-captions="below"]) > .cx-carousel-viewport) > .cx-carousel-track > * > .cx-carousel-caption { position:absolute;inset-inline:0;inset-block-end:0;color:var(--hfx-color-text);background:color-mix(in srgb,var(--hfx-color-surface) 85%,transparent); }
   /* A running fading carousel stacks its own slides in one cell and swaps them by opacity (a carousel inside a slide keeps its
      own layout); swipes come from pointer events. */
   :is(.cx-carousel[data-cx-fading],.cx-carousel[data-cx-fading] > .cx-carousel-viewport) > .cx-carousel-track { grid-template-areas:"slide";grid-template-columns:minmax(0,1fr);grid-auto-flow:row;overflow:hidden;scroll-snap-type:none;touch-action:pan-y; }

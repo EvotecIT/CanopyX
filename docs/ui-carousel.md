@@ -16,7 +16,7 @@ string fragment = highlights.ToHtmlFragment();
 ```
 
 Slide content is trusted host HTML. `Label` names a slide and its picker button; without it the slide reads as "Slide 2 of 5".
-`Caption` adds a plain text caption, written as a `.cx-carousel-caption` paragraph inside the slide, so it shows without the
+`Caption` adds a plain text caption, written as a `.cx-carousel-caption` paragraph directly inside the slide, so it shows without the
 runtime too; host markup can carry the same paragraph.
 Without the runtime the slides read one after another under the carousel's name.
 

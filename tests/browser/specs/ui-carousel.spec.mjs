@@ -253,6 +253,19 @@ test('a fading carousel leaves a carousel inside its slide with its own sliding 
   expect(lefts[1]).toBeGreaterThan(lefts[0]);
 });
 
+test('a swipe and caption placement inside a nested fading carousel belong to that carousel', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const inner = `<section id="inner" class="cx-carousel" data-cx-carousel data-transition="fade" data-captions="below" aria-label="Inner"><div class="cx-carousel-viewport"><div class="cx-carousel-track">
+    <div><p>Inner 1</p><p class="cx-carousel-caption">Inner caption</p></div><div><p>Inner 2</p></div></div></div></section>`;
+  await openUi(page, carousel('data-transition="fade"').replace('<h3>Note 1</h3>', '<h3>Note 1</h3>' + inner));
+  expect(await page.getByText('Inner caption').evaluate(element => getComputedStyle(element).position)).toBe('static');
+  await page.locator('#inner .cx-carousel-slide').first().evaluate(slide => {
+    const box = slide.getBoundingClientRect(), at = (type, x) => slide.dispatchEvent(new PointerEvent(type, { bubbles: true, isPrimary: true, pointerType: 'touch', clientX: x, clientY: box.top + 5 }));
+    at('pointerdown', box.right - 10); at('pointerup', box.left + 10);
+  });
+  expect(await page.evaluate(async () => [(await CanopyX.carousel('#inner').getState()).index, (await CanopyX.carousel('#news').getState()).index])).toEqual([1, 0]);
+});
+
 test('a fading carousel without its runtime, or after destroy, keeps every slide readable', async ({ page }) => {
   await openUi(page, carousel('data-transition="fade"').replace(' data-cx-carousel', '') + carousel('data-transition="fade"').replace('id="news"', 'id="live"'));
   const unmounted = page.locator('section:not(#live) .cx-carousel-track > *');
