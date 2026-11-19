@@ -76,8 +76,8 @@
     "output": "31ef53779b28e41f"
   },
   "CanopyX.Html/Assets/canopyx-editing.js": {
-    "input": "23afb2c2ca435c12",
-    "output": "6980571945b3604d"
+    "input": "a309786b0338517d",
+    "output": "81ef1b7a678abe4a"
   },
   "CanopyX.Html/Assets/canopyx-enhance.js": {
     "input": "a3b4be5ec19a43a6",
@@ -180,16 +180,16 @@
     "output": "98ab7f3c776c3848"
   },
   "CanopyX.Html/Assets/canopyx-grid-module.mjs": {
-    "input": "cda4139b5d2cb846",
-    "output": "2ec65125f4cd69af"
+    "input": "73a59506f3cd668e",
+    "output": "38c741b69590c075"
   },
   "CanopyX.Html/Assets/canopyx-grid-options.js": {
     "input": "0939d01d2c2a0247",
     "output": "ba04aacaa8e27768"
   },
   "CanopyX.Html/Assets/canopyx-grid.js": {
-    "input": "b69501c3518a1990",
-    "output": "522ac12a6595b76c"
+    "input": "96f416d8e0ce72be",
+    "output": "1017c88cd031cb99"
   },
   "CanopyX.Html/Assets/canopyx-grouping.js": {
     "input": "f99736049f32db7e",
@@ -220,8 +220,8 @@
     "output": "57f3752fee880303"
   },
   "CanopyX.Html/Assets/canopyx-live.js": {
-    "input": "69b36ad7009cf5a6",
-    "output": "12b1de8238f35c41"
+    "input": "406c47d86b7d8f03",
+    "output": "e5738d57d186fabf"
   },
   "CanopyX.Html/Assets/canopyx-matrix-table.js": {
     "input": "446348827a78daa0",
@@ -264,12 +264,12 @@
     "output": "a6c0ad3ed6883aaa"
   },
   "CanopyX.Html/Assets/canopyx-reporting-module.mjs": {
-    "input": "ae0c5bb211fc4fc1",
-    "output": "301638f62523e2de"
+    "input": "3356082742f8ed15",
+    "output": "8c0d8e60001c2b51"
   },
   "CanopyX.Html/Assets/canopyx-reporting.js": {
-    "input": "401139dcab87b520",
-    "output": "8561ba23f8ab3caf"
+    "input": "d86fe76a0a6fea3d",
+    "output": "9f72e2b35d4b0186"
   },
   "CanopyX.Html/Assets/canopyx-rich-cells.js": {
     "input": "6bd79e413bb1ebe0",
@@ -352,8 +352,8 @@
     "output": "408a161879dbcbc0"
   },
   "CanopyX.Html/Assets/canopyx-url-rows.js": {
-    "input": "1b33b070dd9e124d",
-    "output": "111bf8b14c09c409"
+    "input": "2071feb83a544ae0",
+    "output": "4d98d9c2866ead71"
   },
   "CanopyX.Html/Assets/canopyx-values.js": {
     "input": "e0cf425592705e02",

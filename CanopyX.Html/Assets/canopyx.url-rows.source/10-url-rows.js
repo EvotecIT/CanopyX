@@ -41,7 +41,9 @@
         // The grouping part keeps the summary of a query and revision; the rows changed under the same revision.
         grid.summaryCandidate = null;
         // The reader's query and page run again over the new rows; setQuery keeps the page within the new count.
-        grid.setQuery({ ...grid.acceptedQuery, offset: grid.paged ? grid.pageOffset : 0, revision: undefined })
+        // A search still being typed is kept, and starts at the first page.
+        const query = grid.queryForChange(true), queued = query.search !== grid.acceptedQuery.search;
+        grid.setQuery({ ...query, offset: grid.paged && !queued ? grid.pageOffset : 0, revision: undefined })
           .catch(error => { if (error?.name !== "AbortError") grid.emit("error", { error }); });
       }, error => { if (error?.name !== "AbortError" && !grid.destroyed) grid.emit("error", { error }); }).finally(() => { refreshing = false; });
     };
@@ -56,6 +58,7 @@
     return {
       query: (query, options) => ready().then(() => inner.query(query, options)),
       facet: (request, options) => ready().then(() => inner.facet(request, options)),
+      invalidate: () => { if (inner) accept(view.rows); },
       position: (query, id) => inner ? inner.position(query, id) : -1,
       row: id => inner ? inner.row(id) : null
     };

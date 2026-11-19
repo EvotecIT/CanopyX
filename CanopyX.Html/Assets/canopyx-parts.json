@@ -370,7 +370,7 @@
     {
       "name": "url-rows",
       "label": "rows from an address",
-      "version": "fa39ee7c0fa09fc7",
+      "version": "0524287da837c03e",
       "script": "canopyx-url-rows.js",
       "runtimes": [
         "grid"
@@ -761,7 +761,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "1c20df7d896bb9ba",
+      "version": "f69e5b07c0e8d559",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -1105,7 +1105,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "1808047711c0f3bb",
+      "version": "f61aa7e0856d0e57",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

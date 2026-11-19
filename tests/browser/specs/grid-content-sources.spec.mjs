@@ -3,6 +3,7 @@
 // under columns; a fixed grouping's footer template closes each group; an inline grid may read its rows from a JSON address.
 import { test, expect } from "@playwright/test";
 import { viewPage, nextFrames } from "./support.mjs";
+import { serveGrid } from "./editing-support.mjs";
 
 async function open(page, view) {
   page.pageErrors = [];
@@ -206,6 +207,48 @@ test("a refresh interval reads the rows again and keeps the reader's search", as
   await page.clock.runFor(30000);
   await expect(page.locator(".cx-row[data-cx-id]")).toHaveAttribute("data-cx-id", "u2");
   expect(await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().search)).toBe("new");
+});
+
+test("an edited cell drops its old markup, and a refresh after the edit still reads the address", async ({ page }) => {
+  await page.clock.install();
+  let version = 1;
+  const remote = fromAddress({ refreshSeconds: 30 });
+  remote.columns[1].editable = true;
+  // Each changed row is saved as it is left, with no service answer of its own.
+  await serveGrid(page, { view: remote, script: "CanopyX.configure(\"remote\", { onRowCommit: () => ({ status: \"saved\" }) });",
+    routes: { "/data/users.json": route => route.fulfill({ contentType: "application/json",
+      body: JSON.stringify(Array.from({ length: version + 1 }, (_, i) => ({ id: "u" + i, cells: { name: "User " + i, state: { value: "On", html: "<b>On</b>" } } }))) }) } });
+  await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(2);
+  const state = page.locator('.cx-row[data-cx-id="u0"] .cx-cell').nth(1);
+  await expect(state.locator(".cx-rich b")).toHaveText("On");
+  await state.click(); await page.keyboard.press("F2");
+  await state.locator("input.cx-editor").fill("Paused");
+  await page.keyboard.press("Enter");
+  await expect(state).toHaveText("Paused");
+  await expect(state).not.toHaveClass(/cx-dirty/);
+  await expect(state.locator(".cx-rich")).toHaveCount(0);
+  version = 2;
+  await page.clock.runFor(30000);
+  await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(3);
+});
+
+test("a refresh while a search is still being typed keeps the typed search", async ({ page }) => {
+  await page.clock.install();
+  let version = 1;
+  await page.route("http://canopyx.test/data/users.json", route => route.fulfill({ contentType: "application/json",
+    body: JSON.stringify(Array.from({ length: version + 1 }, (_, i) => ({ id: "u" + i, cells: { name: "User " + i + (i === version ? " new" : ""), state: "On" } }))) }));
+  await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html",
+    body: viewPage({ ...fromAddress({ refreshSeconds: 30 }), searchDelayMs: 1000 }) }));
+  await page.goto("http://canopyx.test/rich");
+  await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(2);
+  await page.clock.runFor(29500);
+  version = 2;
+  // The search waits a second before it runs; the refresh comes half a second after typing.
+  await page.getByRole("searchbox").fill("new");
+  await page.clock.runFor(600);
+  await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(1);
+  await expect(page.locator(".cx-row[data-cx-id]")).toHaveAttribute("data-cx-id", "u2");
+  await expect(page.getByRole("searchbox")).toHaveValue("new");
 });
 
 test("a large row set from an address searches in slices, and its facets count the rows that were read", async ({ page }) => {

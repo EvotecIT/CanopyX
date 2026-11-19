@@ -37,12 +37,12 @@
       lookup: lookup && Object.freeze({ column: lookup.column ?? id, limit: lookup.limit ?? 20, minLength: lookup.minLength ?? 1 }), pattern, rules: checks });
   }
 
-  // The cell that shows a new value. An object cell keeps its tone, badges and title, and drops text that described the old
+  // The cell that shows a new value. An object cell keeps its tone, badges and title, and drops text and markup that described the old
   // value; a select or lookup label becomes the cell's text.
   function editCell(original, value, text) {
     if (!isCellObject(original) && text === undefined) return value;
     const cell = isCellObject(original) ? { ...original } : {};
-    delete cell.text; delete cell.searchText; delete cell.sort; delete cell.secondary;
+    delete cell.text; delete cell.html; delete cell.searchText; delete cell.sort; delete cell.secondary;
     cell.value = value;
     if (text !== undefined) cell.text = text;
     return cell;

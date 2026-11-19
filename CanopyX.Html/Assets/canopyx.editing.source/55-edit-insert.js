@@ -40,7 +40,7 @@
     /** Rows came or went: the local source forgets its result, as editAccept does for saved values (compact data keeps its decoder). */
     editRowsChanged() {
       if (this.enhanceStore) this.enhanceStore.version++;
-      else if (this.view.rowData && this.source.invalidate) this.source.invalidate();
+      else if (this.view.rowData || this.view.source.url) this.source.invalidate?.();
       else this.source = inlineGridSource(this.view);
     },
     editNewId() {

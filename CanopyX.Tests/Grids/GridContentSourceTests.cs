@@ -118,6 +118,15 @@ public sealed class GridContentSourceTests {
         var view = View(); view.Source = CanopyGridSource.FromUrl("data/orders.json", TimeSpan.FromMinutes(2));
         var json = view.ToJson();
         ProtocolSchema.AssertValid(json, "rows from an address");
+        // The browser reads the rows, so the document may leave them out, but never carries rows of its own or compact row data.
+        ProtocolSchema.AssertValid(ProtocolSchema.Mutate(json, node => node.Remove("rows")), "rows from an address without a rows list");
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, node => node["rows"] = JsonNode("[{\"id\":\"a\",\"cells\":{}}]"))).IsValid);
+        void Compact(System.Text.Json.Nodes.JsonObject node) {
+            node.Remove("rows");
+            node["rowData"] = JsonNode("{\"version\":1,\"columns\":[\"" + node["columns"]![0]!["id"] + "\"],\"count\":0,\"chunks\":0}");
+        }
+        ProtocolSchema.AssertValid(ProtocolSchema.Mutate(json, node => { Compact(node); ((System.Text.Json.Nodes.JsonObject)node["source"]!).Remove("url"); ((System.Text.Json.Nodes.JsonObject)node["source"]!).Remove("refreshSeconds"); }), "compact rows without an address");
+        Assert.False(ProtocolSchema.Evaluate(ProtocolSchema.Mutate(json, Compact)).IsValid);
         using var document = JsonDocument.Parse(json);
         var source = document.RootElement.GetProperty("source");
         Assert.Equal("inline", source.GetProperty("kind").GetString());

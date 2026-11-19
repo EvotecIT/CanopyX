@@ -917,7 +917,9 @@
       },
       "if": { "properties": {
  "source": { "properties": { "kind": { "const": "inline" } } } } },
-      "then": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] },
+      "then": { "if": { "properties": { "source": { "required": ["url"] } } },
+        "then": { "not": { "required": ["rowData"] }, "properties": { "rows": { "maxItems": 0 } } },
+        "else": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] } },
       "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
       "allOf": [{
         "not": {"anyOf": [{"required": ["board", "path"]}, {"required": ["board", "stack"]}, {"required": ["board", "calendar"]}, {"required": ["path", "stack"]}, {"required": ["path", "calendar"]}, {"required": ["stack", "calendar"]}]}

@@ -13,7 +13,9 @@
     const reader = () => inner ||= loadPart(GRID_URL_ROWS).then(() => loaded = GRID_URL_IMPL.source(grid, source)).catch(error => { inner = null; throw error; });
     const source = { reset: () => { inner = null; loaded = null; }, query: (query, options) => reader().then(rows => rows.query(query, options)),
       // Record deep links and related records look rows up in what was read.
-      position: (query, id) => loaded ? loaded.position(query, id) : -1, row: id => loaded ? loaded.row(id) : null };
+      position: (query, id) => loaded ? loaded.position(query, id) : -1, row: id => loaded ? loaded.row(id) : null,
+      // Edits and live changes rewrite the rows that were read; the reader answers over them and keeps its refresh.
+      invalidate: () => loaded?.invalidate() };
     // A reporting grid's opted-in facets count the rows that were read.
     if (grid.view.reporting?.facetColumns?.length) source.facet = (request, options) => reader().then(rows => rows.facet(request, options));
     return source;
