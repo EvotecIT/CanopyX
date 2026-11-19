@@ -52,7 +52,8 @@
 
   // An ASCII term searches the raw text with a case-insensitive pattern instead of folding a copy of every cell. Folding
   // lowercases ASCII, which the i flag matches, and maps a few other characters onto ASCII letters (the Kelvin sign to
-  // "k"); the pattern lists those beside the letter, so it finds exactly what folding would. Other terms fold the cells.
+  // "k"); the pattern lists those beside the letter, so it finds exactly what folding would. Other terms, and terms long
+  // enough to strain the pattern engine, fold the cells.
   const GRID_ASCII = /^[\0-\x7f]*$/, GRID_TERM_PATTERNS = new Map();
   let gridFoldsToAscii = null;
   function gridTermPattern(term) {
@@ -60,7 +61,7 @@
     if (pattern !== undefined) return pattern;
     if (GRID_TERM_PATTERNS.size >= 64) GRID_TERM_PATTERNS.clear();
     pattern = null;
-    if (GRID_ASCII.test(term)) {
+    if (term.length <= 256 && GRID_ASCII.test(term)) {
       if (!gridFoldsToAscii) {
         gridFoldsToAscii = new Map();
         for (let code = 128; code < 65536; code++) {

@@ -32,6 +32,8 @@ test("an ASCII term finds what folding finds: case, the Kelvin sign and numbers,
   expect(await matches(page, "kelvin")).toEqual(["kelvin-sign", "upper"]);
   expect(await matches(page, "23")).toEqual(["number"]);
   expect(await matches(page, "b[c]-(")).toEqual(["symbols"]);
+  // A term too long for a pattern still searches.
+  expect(await matches(page, "a".repeat(40000))).toEqual([]);
   // A term that is not ASCII folds the cells, as before.
   expect(await matches(page, "k\u00c9l")).toEqual(["accent"]);
 });
