@@ -29,7 +29,8 @@ function maskApply(tokens, input) {
     while (at < tokens.length && tokens[at].literal !== undefined) { pending += tokens[at].literal; at++; }
     if (at >= tokens.length) break;
     if (!tokens[at].test.test(char)) continue;
-    const value = tokens[at].upper ? char.toLocaleUpperCase() : char;
+    // A letter whose capital is several letters (ß is SS) keeps its own form, so one slot always holds one character.
+    const upper = tokens[at].upper ? char.toLocaleUpperCase() : char, value = upper.length === char.length ? upper : char;
     text += pending + value; raw += value; pending = ''; at++;
   }
   return { text, raw, complete: !tokens.slice(at).some(token => token.slot) };
@@ -58,8 +59,9 @@ UI_IMPL.mask = (root, options = {}, signal) => {
   const ipv4 = spec === 'ipv4', tokens = ipv4 ? null : maskTokens(MASK_PRESETS[spec] ?? spec);
   const format = text => ipv4 ? maskIpv4(text) : maskApply(tokens, text);
   const before = { inputMode: input.getAttribute('inputmode'), maxLength: input.getAttribute('maxlength'), placeholder: input.getAttribute('placeholder') };
-  if (!before.inputMode && (ipv4 || tokens.every(token => token.literal !== undefined || token.slot === '0'))) input.inputMode = 'numeric';
-  if (!ipv4) input.maxLength = tokens.length; else input.maxLength = 15;
+  // IPv4 needs the dot key, which the decimal keyboard has. The mask caps the length itself rather than with maxlength, which
+  // would cut a pasted value before the separators and spaces in it are dropped.
+  if (!before.inputMode && (ipv4 || tokens.every(token => token.literal !== undefined || token.slot === '0'))) input.inputMode = ipv4 ? 'decimal' : 'numeric';
   if (!before.placeholder && (options.placeholder ?? input.dataset.maskPlaceholder) !== undefined) input.placeholder = options.placeholder ?? input.dataset.maskPlaceholder;
   input.dataset.cxPart = input.dataset.cxPart || 'masked';
   let state = format(input.value);
@@ -78,6 +80,8 @@ UI_IMPL.mask = (root, options = {}, signal) => {
   }
   input.addEventListener('input', event => { if (!event.isComposing) apply(event); }, { signal });
   input.addEventListener('compositionend', apply, { signal });
+  // A form reset restores the default value after its reset event, so the mask reads the input once the reset is done.
+  input.form?.addEventListener('reset', () => setTimeout(() => { if (!signal?.aborted) apply(new Event('reset')); }), { signal });
   apply();
   signal?.addEventListener('abort', () => {
     for (const [name, attribute] of [['inputMode', 'inputmode'], ['maxLength', 'maxlength'], ['placeholder', 'placeholder']])

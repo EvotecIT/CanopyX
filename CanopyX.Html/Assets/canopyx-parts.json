@@ -153,7 +153,7 @@
     {
       "name": "ui-mask",
       "label": "UI mask",
-      "version": "6d54ba754fe00cd0",
+      "version": "b0d743365bd05fa7",
       "script": "canopyx-ui-mask.js",
       "runtimes": [
         "tree",

@@ -46,7 +46,8 @@ code.getState();   // { text: '#ff00aa', raw: 'ff00aa', complete: true }
 
 Separators are added just before the next position is filled, so Backspace removes a separator together with what follows it
 instead of fighting it. Pasted text is fitted the same way, and the caret stays after the same characters. Digit-only masks set
-`inputmode="numeric"`, and the mask caps `maxlength`. The input carries `data-complete="true"` once every position is filled,
+`inputmode="numeric"` (IPv4 sets `decimal`, which has the dot key), and the mask caps the length itself, so a pasted
+`12 - 345` still fits `00-000`. A form reset is picked up once the browser restores the default value. The input carries `data-complete="true"` once every position is filled,
 and fires `cx-mask:change` with `{ text, raw, complete }`.
 
 A mask shapes what the reader types; it does not validate meaning (a date mask accepts 2026-13-40). Check the value as well,

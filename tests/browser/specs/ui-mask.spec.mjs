@@ -39,7 +39,7 @@ test('the ipv4 preset adds dots after three digits and refuses octets above 255'
   await input(page).fill('');
   await input(page).pressSequentially('256.1.1.1.9');
   // 256 is too big for one octet, so 6 starts the next; a fifth octet is refused and the last one stops at three digits.
-  await expect(input(page)).toHaveValue('25.6.1.119');
+  await expect(input(page)).toHaveValue('25.6.1.119');  await expect(input(page)).toHaveAttribute('inputmode', 'decimal');
 });
 
 test('host masks report changes, refuse a mask without slots, and destroy restores the input', async ({ page }) => {
@@ -67,4 +67,20 @@ test('a literal that could also fill the next slot formats to itself', async ({ 
   await input(page).pressSequentially('5');
   await expect(input(page)).toHaveValue('+1 235');
   expect(await page.evaluate(() => CanopyX.mask('#f').getState())).toEqual({ text: '+1 235', raw: '235', complete: true });
+});
+
+test('a paste with spaces still fits, capitals that expand keep one slot, and a form reset clears the state', async ({ page }) => {
+  await openUi(page, '<form id="form">' + field('postcode') + '<label for="code">Code</label><input id="code" data-cx-mask="AAA"><button type="reset">Reset</button></form>');
+  await input(page).focus();
+  await page.evaluate(() => document.execCommand('insertText', false, '12 - 345'));
+  await expect(input(page)).toHaveValue('12-345');
+  const code = page.getByRole('textbox', { name: 'Code' });
+  await code.pressSequentially('ßab');
+  await expect(code).toHaveValue('ßAB');
+  await page.evaluate(async () => { const mask = CanopyX.mask('#code'); await mask.ready; await mask.refresh(); });
+  await expect(code).toHaveValue('ßAB');
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await expect(input(page)).toHaveValue('');
+  await expect(input(page)).toHaveAttribute('data-complete', 'false');
+  expect(await page.evaluate(() => CanopyX.mask('#f').getState())).toEqual({ text: '', raw: '', complete: false });
 });
