@@ -349,3 +349,14 @@ test('options named by their label attribute keep that name, and an empty value 
   await options(page).filter({ hasText: 'Unassigned' }).click();
   expect(await submitted(page)).toEqual(['']);
 });
+
+test('disabling a multiple select disables its chips, and closing it clears the search text', async ({ page }) => {
+  await openUi(page, select('', true, ['pl']));
+  await combo(page).fill('ger');
+  await page.keyboard.press('Escape');
+  await expect(combo(page)).toHaveValue('');
+  await page.evaluate(() => { document.getElementById('country').disabled = true; });
+  await expect(page.getByRole('button', { name: /Poland/ })).toBeDisabled();
+  await page.evaluate(() => { document.getElementById('country').disabled = false; });
+  await expect(page.getByRole('button', { name: /Poland/ })).toBeEnabled();
+});

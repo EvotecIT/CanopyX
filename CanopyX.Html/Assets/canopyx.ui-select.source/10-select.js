@@ -35,6 +35,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
     if (native.required) input.setAttribute('aria-required', 'true');
     // A host that enables or disables the select later changes the combobox with it.
     input.disabled = toggle.disabled = native.disabled; if (native.disabled && open) hide();
+    for (const remove of chips.querySelectorAll('.cx-select-remove')) remove.disabled = native.disabled;
   };
   copyValidation();
   const watcher = new MutationObserver(copyValidation); watcher.observe(native, { attributes: true, attributeFilter: [...validation, 'required', 'disabled'] });
@@ -118,7 +119,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
       input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); delete root.dataset.state;
     }
     if (keep) return;
-    if (!multiple) input.value = chosen.values().next().value?.label ?? '';
+    // Closing ends the search: a single select shows its value again, a multiple select an empty field.
+    input.value = multiple ? '' : chosen.values().next().value?.label ?? '';
     query = '';
   }
   function place() {
