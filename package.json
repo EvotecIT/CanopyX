@@ -130,6 +130,10 @@
     "./ui-stepper.css": "./CanopyX.Html/Assets/canopyx-ui-stepper.css",
     "./ui-accordion.js": "./CanopyX.Html/Assets/canopyx-ui-accordion.js",
     "./ui-accordion.css": "./CanopyX.Html/Assets/canopyx-ui-accordion.css",
+    "./ui-toasts.js": "./CanopyX.Html/Assets/canopyx-ui-toasts.js",
+    "./ui-toasts.css": "./CanopyX.Html/Assets/canopyx-ui-toasts.css",
+    "./ui-lightbox.js": "./CanopyX.Html/Assets/canopyx-ui-lightbox.js",
+    "./ui-lightbox.css": "./CanopyX.Html/Assets/canopyx-ui-lightbox.css",
     "./ui": {
       "types": "./JavaScript/ui.d.ts",
       "import": "./CanopyX.Html/Assets/canopyx-ui-module.mjs"
@@ -294,6 +298,10 @@
     "CanopyX.Html/Assets/canopyx-ui-stepper.css",
     "CanopyX.Html/Assets/canopyx-ui-accordion.js",
     "CanopyX.Html/Assets/canopyx-ui-accordion.css",
+    "CanopyX.Html/Assets/canopyx-ui-toasts.js",
+    "CanopyX.Html/Assets/canopyx-ui-toasts.css",
+    "CanopyX.Html/Assets/canopyx-ui-lightbox.js",
+    "CanopyX.Html/Assets/canopyx-ui-lightbox.css",
     "CanopyX.Html/Assets/canopyx-ui.js",
     "CanopyX.Html/Assets/canopyx-ui.css",
     "CanopyX.Html/Assets/canopyx-ui-module.mjs",

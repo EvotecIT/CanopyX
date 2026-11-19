@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "22a1544f006746bf",
+      "version": "be2cbaedcf235917",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -116,6 +116,38 @@
       "views": [],
       "requires": [
         "ui-navigation"
+      ]
+    },
+    {
+      "name": "ui-toasts",
+      "label": "UI toasts",
+      "version": "9921e252bb1114bb",
+      "script": "canopyx-ui-toasts.js",
+      "style": "canopyx-ui-toasts.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
+      "name": "ui-lightbox",
+      "label": "UI lightbox",
+      "version": "f1eafe75c9d05ad9",
+      "script": "canopyx-ui-lightbox.js",
+      "style": "canopyx-ui-lightbox.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
       ]
     },
     {
