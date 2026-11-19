@@ -1031,6 +1031,7 @@ CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Range(System.Nullable<System.Tim
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField ReadOnly()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Required()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Rows(System.Int32 count)
+CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Scale(System.Int32 stars)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Sensitive()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField States(System.String on, System.String off)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Step(System.Double step)
@@ -1052,6 +1053,7 @@ CanopyX.CanopyFlowField.System.Nullable<System.Boolean> ShowsReveal { get; set; 
 CanopyX.CanopyFlowField.System.Nullable<System.Double> NumberStep { get; set; }
 CanopyX.CanopyFlowField.System.Nullable<System.Int32> MaxItems { get; set; }
 CanopyX.CanopyFlowField.System.Nullable<System.Int32> MinItems { get; set; }
+CanopyX.CanopyFlowField.System.Nullable<System.Int32> RatingScale { get; set; }
 CanopyX.CanopyFlowField.System.Nullable<System.Int32> RowCount { get; set; }
 CanopyX.CanopyFlowField.System.Nullable<System.TimeSpan> MaximumDuration { get; set; }
 CanopyX.CanopyFlowField.System.Nullable<System.TimeSpan> MinimumDuration { get; set; }
@@ -1077,6 +1079,7 @@ CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer List(System.String id, S
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Lookup(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer MultiChoice(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Number(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
+CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Rating(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Records(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Secret(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Select(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
@@ -1095,6 +1098,7 @@ CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Lookup = 7
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind MultiChoice = 9
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Number = 1
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Pick = 16
+CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Rating = 17
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Records = 15
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Secret = 12
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Select = 5
@@ -1695,6 +1699,7 @@ CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter LongText(System.B
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Missing()
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Progress(System.Double maximum = 100)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Progress(System.Double maximum, System.Collections.Generic.IEnumerable<CanopyX.CanopyGridThreshold> thresholds)
+CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter Rating(System.Int32 maximum = 5)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter RelativeTime(System.String? secondaryColumn = null)
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter SparklineArea()
 CanopyX.CanopyGridPresenter.static CanopyX.CanopyGridPresenter SparklineBars(System.Collections.Generic.IEnumerable<CanopyX.CanopyGridThreshold>? thresholds = null, System.Nullable<System.Double> minimum = null, System.Nullable<System.Double> maximum = null, System.Boolean higherIsGood = False, System.Boolean markLast = False)
@@ -1718,6 +1723,7 @@ CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Log = 21
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind LongText = 5
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Missing = 14
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Progress = 2
+CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind Rating = 22
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind RelativeTime = 20
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind SparklineArea = 16
 CanopyX.CanopyGridPresenterKind.const CanopyX.CanopyGridPresenterKind SparklineBars = 10
@@ -2098,6 +2104,13 @@ CanopyX.CanopyLabels.System.String CalendarZoomQuarter { get; set; }
 CanopyX.CanopyLabels.System.String CalendarZoomWeek { get; set; }
 CanopyX.CanopyLabels.System.String CancelEdit { get; set; }
 CanopyX.CanopyLabels.System.String CancelMove { get; set; }
+CanopyX.CanopyLabels.System.String CarouselMotionDisabled { get; set; }
+CanopyX.CanopyLabels.System.String CarouselNext { get; set; }
+CanopyX.CanopyLabels.System.String CarouselPicker { get; set; }
+CanopyX.CanopyLabels.System.String CarouselPrevious { get; set; }
+CanopyX.CanopyLabels.System.String CarouselRole { get; set; }
+CanopyX.CanopyLabels.System.String CarouselSlide { get; set; }
+CanopyX.CanopyLabels.System.String CarouselSlideRole { get; set; }
 CanopyX.CanopyLabels.System.String ChangeActions { get; set; }
 CanopyX.CanopyLabels.System.String ChangeAdded { get; set; }
 CanopyX.CanopyLabels.System.String ChangeAfter { get; set; }
@@ -2274,6 +2287,7 @@ CanopyX.CanopyLabels.System.String FlowPreviewFailed { get; set; }
 CanopyX.CanopyLabels.System.String FlowPreviewLoading { get; set; }
 CanopyX.CanopyLabels.System.String FlowPreviewNone { get; set; }
 CanopyX.CanopyLabels.System.String FlowProgress { get; set; }
+CanopyX.CanopyLabels.System.String FlowRatingValue { get; set; }
 CanopyX.CanopyLabels.System.String FlowReady { get; set; }
 CanopyX.CanopyLabels.System.String FlowRecordActions { get; set; }
 CanopyX.CanopyLabels.System.String FlowRecordAdd { get; set; }
@@ -2859,6 +2873,7 @@ CanopyX.CanopyLabels.System.String PlanOverlapConflict { get; set; }
 CanopyX.CanopyLabels.System.String PlanPending { get; set; }
 CanopyX.CanopyLabels.System.String PlanProposal { get; set; }
 CanopyX.CanopyLabels.System.String QueryFailed { get; set; }
+CanopyX.CanopyLabels.System.String RatingValue { get; set; }
 CanopyX.CanopyLabels.System.String RecordActions { get; set; }
 CanopyX.CanopyLabels.System.String RecordAdded { get; set; }
 CanopyX.CanopyLabels.System.String RecordAfter { get; set; }

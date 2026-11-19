@@ -14,7 +14,7 @@ internal sealed class CanopyFlowSubmissionReader {
     private static readonly CanopyFlowFieldKind[] DynamicKinds = {
         CanopyFlowFieldKind.Text, CanopyFlowFieldKind.Number, CanopyFlowFieldKind.Date, CanopyFlowFieldKind.DateTime, CanopyFlowFieldKind.Time,
         CanopyFlowFieldKind.Select, CanopyFlowFieldKind.Toggle, CanopyFlowFieldKind.Lookup, CanopyFlowFieldKind.Choice, CanopyFlowFieldKind.MultiChoice,
-        CanopyFlowFieldKind.TextArea, CanopyFlowFieldKind.List, CanopyFlowFieldKind.Duration
+        CanopyFlowFieldKind.TextArea, CanopyFlowFieldKind.List, CanopyFlowFieldKind.Duration, CanopyFlowFieldKind.Rating
     };
 
     private readonly CanopyFlow _flow;

@@ -73,6 +73,11 @@
         track.setAttribute("role","progressbar");track.setAttribute("aria-label",column.title);track.setAttribute("aria-valuemin","0");
         track.setAttribute("aria-valuemax",String(maximum));track.setAttribute("aria-valuenow",String(Math.min(maximum,Math.max(0,raw))));track.setAttribute("aria-valuetext",text);
         bar.style.width=Math.min(100,Math.max(0,raw/maximum*100))+"%";toneColors(bar,toneOf(tone));track.appendChild(bar);box.append(track,document.createTextNode(text));
+      } else if(options.kind==="rating"&&typeof raw==="number") {
+        // Whole stars for the value, empty ones to the maximum; the picture reads as the value out of the maximum.
+        const maximum=options.maximum,filled=Math.round(Math.min(maximum,Math.max(0,raw))),stars=add("","p-rating"),on=h("span","on"),off=h("span","off");
+        stars.setAttribute("role","img");stars.setAttribute("aria-label",text+" / "+numberFormat(grid.lang).format(maximum));
+        setText(on,"★".repeat(filled));setText(off,"☆".repeat(maximum-filled));stars.append(on,off);
       } else if(options.kind==="identifier") {
         const secondary=options.secondaryColumn?cellText(row.cells[options.secondaryColumn],grid.columns.find(item=>item.id===options.secondaryColumn),grid.fmt):object&&cell.secondary;
         // The drawer, and two-line rows of a column that asks with stack, put the secondary text under the value.

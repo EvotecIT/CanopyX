@@ -7,6 +7,14 @@ public sealed partial class CanopyLabels {
         labels.AccordionNoMatches = "Aucune section correspondante";
         labels.AccordionCopyTitle = "Copier le titre";
         labels.AccordionCopied = "Copié";
+        labels.CarouselRole = "carrousel";
+        labels.CarouselSlideRole = "diapositive";
+        labels.CarouselSlide = "Diapositive {current} sur {total}";
+        labels.CarouselPrevious = "Diapositive précédente";
+        labels.CarouselNext = "Diapositive suivante";
+        labels.CarouselPicker = "Choisir une diapositive";
+        labels.CarouselMotionDisabled = "Les diapositives automatiques sont désactivées par la réduction des animations";
+        labels.RatingValue = "{value} sur {max}";
         labels.TabsMore = "Plus";
         labels.TabsMoreSelected = "Plus : {label}";
         labels.TabsScrollPrevious = "Onglets précédents";

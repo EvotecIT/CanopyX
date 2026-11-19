@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "22a1544f006746bf",
+      "version": "1444eb82c443bc82",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -119,6 +119,38 @@
       ]
     },
     {
+      "name": "ui-carousel",
+      "label": "UI carousel",
+      "version": "4c2cc623d2e5171d",
+      "script": "canopyx-ui-carousel.js",
+      "style": "canopyx-ui-carousel.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
+      "name": "ui-rating",
+      "label": "UI rating",
+      "version": "6d201864e33135d6",
+      "script": "canopyx-ui-rating.js",
+      "style": "canopyx-ui-rating.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
+      ]
+    },
+    {
       "name": "tree-tools",
       "label": "tree tools",
       "version": "7f5d2cd00dff0af7",
@@ -138,7 +170,7 @@
     {
       "name": "presenters",
       "label": "cell presenters",
-      "version": "8d102706756d1a10",
+      "version": "2691b129ec889d1b",
       "script": "canopyx-presenters.js",
       "runtimes": [
         "grid"
@@ -309,7 +341,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "b125842892c18f54",
+      "version": "35c7b020c2c2ad74",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [

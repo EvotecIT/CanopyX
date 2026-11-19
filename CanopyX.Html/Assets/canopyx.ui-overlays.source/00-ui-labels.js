@@ -4,6 +4,7 @@
     tabsScrollPrevious: "Previous tabs", tabsScrollNext: "Next tabs", tabsSection: "Section",
     tabsPosition: "{current} of {total}", tabsPause: "Pause", tabsPlay: "Play",
     tabsMotionDisabled: "Automatic tabs are disabled by reduced motion",
+    carouselRole: "carousel", carouselSlideRole: "slide", carouselSlide: "Slide {current} of {total}", carouselPrevious: "Previous slide", carouselNext: "Next slide", carouselPicker: "Choose a slide", carouselMotionDisabled: "Automatic slides are disabled by reduced motion", ratingValue: "{value} of {max}",
     accordionSearch: "Filter sections", accordionNoMatches: "No matching sections", accordionCopyTitle: "Copy title", accordionCopied: "Copied",
     stepperStepOf: "Step {current} of {total}", stepperBack: "Back", stepperNext: "Next", stepperFinish: "Finish",
     stepperSkip: "Skip", stepperSaveDraft: "Save draft", stepperAllSteps: "All steps", stepperOptional: "Optional",

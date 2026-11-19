@@ -5,7 +5,7 @@
   const FLOW_NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
   // A field type's value kind for the shared checks (forms part): numbers, date-and-time moments, lists, durations or text.
   const FLOW_KINDS = { text: "text", number: "number", date: "text", datetime: "datetime", time: "text", select: "text", toggle: "text", lookup: "text",
-    choice: "text", multiChoice: "list", textarea: "text", list: "list", secret: "text", duration: "duration", custom: "text", records: "records", pick: "pick" };
+    choice: "text", multiChoice: "list", textarea: "text", list: "list", secret: "text", duration: "duration", custom: "text", records: "records", pick: "pick", rating: "number" };
   const FLOW_UNITS = { seconds: 1, minutes: 60, hours: 3600, days: 86400 };
   const flowFail = problem => { throw new Error("CanopyX: " + problem + "."); };
   const flowIs = value => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -63,6 +63,7 @@
       case "multiChoice": return Array.isArray(value) && value.every(listed) && new Set(value).size === value.length;
       case "list": return Array.isArray(value) && value.length <= 1000 && value.every(item => typeof item === "string");
       case "duration": return flowSeconds(value) !== null;
+      case "rating": return Number.isInteger(value) && value >= 1 && value <= field.scale;
       case "secret": return false;
       case "pick": case "records": return flowHost(field.type).fits(field, value);
       case "custom": return flowScalar(value) || Array.isArray(value) && value.length <= 1000 && value.every(flowScalar);
@@ -71,7 +72,7 @@
   }
 
   const FLOW_FIELD_KEYS = ["id", "type", "label", "help", "placeholder", "required", "readOnly", "default", "when", "width", "parameter", "path", "sensitive",
-    "validation", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "editor", "source", "dependsOn", "columns"];
+    "validation", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "editor", "source", "dependsOn", "columns", "scale"];
   const FLOW_RULE_KEYS = ["min", "max", "minLength", "maxLength", "pattern", "message", "minItems", "maxItems", "item", "itemPattern"];
 
   function flowField(raw, step, section, model) {
@@ -97,6 +98,8 @@
     if (raw.display !== undefined && (type !== "choice" || !["cards", "list"].includes(raw.display))) bad("has an unknown display");
     if (raw.editor !== undefined ? type !== "custom" || typeof raw.editor !== "string" || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(raw.editor) : type === "custom") bad("needs an editor name as a custom field only");
     if (raw.step !== undefined && type !== "number") bad("has a step but is not a number");
+    if (raw.scale !== undefined && (type !== "rating" || !Number.isInteger(raw.scale) || raw.scale < 2 || raw.scale > 10)) bad("needs a scale of 2 to 10 stars, as a rating only");
+    field.scale = raw.scale ?? 5;
     if (raw.placeholder !== undefined && !["text", "number", "lookup", "textarea", "list"].includes(type)) bad("has a placeholder, which text, number, lookup, text area and list fields take");
     // Options: the choices of select, choice and multiple choice fields, and a lookup's fixed suggestions. With source "host"
     // the host's options hook supplies them (as the reader reaches the field, and again when a field it depends on changes).

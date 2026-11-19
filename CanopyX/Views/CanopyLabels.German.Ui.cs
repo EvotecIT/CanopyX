@@ -7,6 +7,14 @@ public sealed partial class CanopyLabels {
         labels.AccordionNoMatches = "Keine passenden Abschnitte";
         labels.AccordionCopyTitle = "Titel kopieren";
         labels.AccordionCopied = "Kopiert";
+        labels.CarouselRole = "Karussell";
+        labels.CarouselSlideRole = "Folie";
+        labels.CarouselSlide = "Folie {current} von {total}";
+        labels.CarouselPrevious = "Vorherige Folie";
+        labels.CarouselNext = "Nächste Folie";
+        labels.CarouselPicker = "Folie wählen";
+        labels.CarouselMotionDisabled = "Automatische Folien sind wegen reduzierter Bewegung deaktiviert";
+        labels.RatingValue = "{value} von {max}";
         labels.TabsMore = "Mehr";
         labels.TabsMoreSelected = "Mehr: {label}";
         labels.TabsScrollPrevious = "Vorherige Tabs";

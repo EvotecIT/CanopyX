@@ -14,6 +14,30 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the accessible name of the copy button after a section title was copied. Default "Copied".</summary>
     public string AccordionCopied { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the role a screen reader announces for a carousel. Default "carousel".</summary>
+    public string CarouselRole { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the role a screen reader announces for a carousel slide. Default "slide".</summary>
+    public string CarouselSlideRole { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the name of a slide and of its picker button, with <c>{current}</c> and <c>{total}</c>. Default "Slide {current} of {total}".</summary>
+    public string CarouselSlide { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the carousel's previous button. Default "Previous slide".</summary>
+    public string CarouselPrevious { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the carousel's next button. Default "Next slide".</summary>
+    public string CarouselNext { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the group of slide buttons. Default "Choose a slide".</summary>
+    public string CarouselPicker { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the play button's name while reduced motion keeps slides still. Default "Automatic slides are disabled by reduced motion".</summary>
+    public string CarouselMotionDisabled { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets a rating as words, with <c>{value}</c> and <c>{max}</c>. Default "{value} of {max}".</summary>
+    public string RatingValue { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the button that lists tabs hidden by overflow. Default "More".</summary>
     public string TabsMore { get => Get(); set => Set(value); }
 

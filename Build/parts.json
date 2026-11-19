@@ -219,6 +219,66 @@
       ]
     },
     {
+      "name": "ui-carousel",
+      "label": "UI carousel",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-carousel.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-carousel.source/carousel.css"
+      ]
+    },
+    {
+      "name": "ui-rating",
+      "label": "UI rating",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-rating.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-rating.source/rating.css"
+      ]
+    },
+    {
       "name": "tree-tools",
       "label": "tree tools",
       "runtimes": [

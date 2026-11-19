@@ -23,6 +23,12 @@ public static partial class CanopyStaticHtml {
         if (cell?.Value == null && cell?.Text == string.Empty) return string.Empty;
         if (string.IsNullOrEmpty(text)) return "—";
         if (presenter?.Kind == CanopyGridPresenterKind.Boolean && cell?.Value is bool flag) return flag ? "✓" : "—";
+        if (presenter?.Kind == CanopyGridPresenterKind.Rating && CanopyGridValues.Normalize(cell?.Value) is object number && (number is long || number is decimal || number is double)) {
+            var rating = Convert.ToDouble(number, CultureInfo.InvariantCulture);
+            // Stars as characters read in email and print; the number follows for anyone who cannot see them.
+            var maximum = (int)presenter.Maximum; var filled = (int)Math.Round(Math.Min(maximum, Math.Max(0, rating)), MidpointRounding.AwayFromZero);
+            return new string('★', filled) + new string('☆', maximum - filled) + " " + text + " / " + maximum.ToString(CultureInfo.InvariantCulture);
+        }
         if (presenter?.Kind == CanopyGridPresenterKind.Identifier || presenter?.Kind == CanopyGridPresenterKind.RelativeTime) {
             var secondary = cell?.Secondary;
             if (presenter.SecondaryColumn != null && row.Cells.TryGetValue(presenter.SecondaryColumn, out var other)) {

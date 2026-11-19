@@ -3,6 +3,14 @@
   "AccordionNoMatches": ["Brak pasujących sekcji", "Keine passenden Abschnitte", "No hay secciones coincidentes", "Aucune section correspondante", "Nessuna sezione corrispondente"],
   "AccordionCopyTitle": ["Kopiuj tytuł", "Titel kopieren", "Copiar título", "Copier le titre", "Copia titolo"],
   "AccordionCopied": ["Skopiowano", "Kopiert", "Copiado", "Copié", "Copiato"],
+  "CarouselRole": ["karuzela", "Karussell", "carrusel", "carrousel", "carosello"],
+  "CarouselSlideRole": ["slajd", "Folie", "diapositiva", "diapositive", "diapositiva"],
+  "CarouselSlide": ["Slajd {current} z {total}", "Folie {current} von {total}", "Diapositiva {current} de {total}", "Diapositive {current} sur {total}", "Diapositiva {current} di {total}"],
+  "CarouselPrevious": ["Poprzedni slajd", "Vorherige Folie", "Diapositiva anterior", "Diapositive précédente", "Diapositiva precedente"],
+  "CarouselNext": ["Następny slajd", "Nächste Folie", "Diapositiva siguiente", "Diapositive suivante", "Diapositiva successiva"],
+  "CarouselPicker": ["Wybierz slajd", "Folie wählen", "Elegir una diapositiva", "Choisir une diapositive", "Scegli una diapositiva"],
+  "CarouselMotionDisabled": ["Automatyczne slajdy są wyłączone przez ograniczenie ruchu", "Automatische Folien sind wegen reduzierter Bewegung deaktiviert", "Las diapositivas automáticas están desactivadas por la reducción de movimiento", "Les diapositives automatiques sont désactivées par la réduction des animations", "Le diapositive automatiche sono disattivate dalla riduzione del movimento"],
+  "RatingValue": ["{value} z {max}", "{value} von {max}", "{value} de {max}", "{value} sur {max}", "{value} su {max}"],
   "CalendarEditOccurrence": [
     "Edytuj to wystąpienie",
     "Dieses Vorkommen bearbeiten",
@@ -3980,6 +3988,7 @@
     "(facultatif)",
     "(facoltativo)"
   ],
+  "FlowRatingValue": ["{value} z {max}", "{value} von {max}", "{value} de {max}", "{value} sur {max}", "{value} su {max}"],
   "FlowStepOptional": [
     "Opcjonalny",
     "Optional",

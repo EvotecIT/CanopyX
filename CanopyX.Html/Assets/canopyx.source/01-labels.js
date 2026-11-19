@@ -24,7 +24,7 @@
       Object.keys(source).forEach((name) => {
         // Parts that carry the English defaults of their own labels: forms and editing (gridEdit…), conditional formatting (format…),
         // the calendar (calendar…), flows (flow…), the matrix (matrix…), the change views (change…), row actions (rowAction…) and standalone UI, so a whole label pack applies to any view.
-        if (!Object.hasOwn(DEFAULT_LABELS, name) && !/^(?:gridEdit|format|calendar|flow|matrix|change|board|plan|path|stack|time|compare|viewIntent|rowAction|tabs|stepper|accordion|dialog|drawer|state)[A-Z]\w{0,63}$/.test(name)) throw new Error("CanopyX: there is no label '" + name + "'.");
+        if (!Object.hasOwn(DEFAULT_LABELS, name) && !/^(?:gridEdit|format|calendar|flow|matrix|change|board|plan|path|stack|time|compare|viewIntent|rowAction|tabs|stepper|accordion|rating|carousel|dialog|drawer|state)[A-Z]\w{0,63}$/.test(name)) throw new Error("CanopyX: there is no label '" + name + "'.");
         if (typeof source[name] !== "string" || !/\S/.test(source[name])) throw new Error("CanopyX: label '" + name + "' must be a string with visible text.");
         if ((name === "utcTime" || name === "localTime") && source[name].indexOf("{time}") < 0) throw new Error("CanopyX: label '" + name + "' must hold {time}.");
         labels[name] = source[name];
