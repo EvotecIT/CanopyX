@@ -52,6 +52,21 @@ test('hover previews the stars without choosing, and the controller sets and cle
   expect(await page.evaluate(() => { try { CanopyX.rating('#quality').select(9); } catch (error) { return error.message; } })).toBe('CanopyX: a rating value is a whole number from 1 to 5.');
 });
 
+test('one choice or clear reaches form input listeners once, and a hover preview wins over the checked star', async ({ page }) => {
+  await openUi(page, rating('', 5));
+  await page.evaluate(() => { window.inputs = 0; document.getElementById('survey').addEventListener('input', () => window.inputs++); });
+  await page.locator('.cx-rating-option').nth(3).click();
+  expect(await page.evaluate(() => window.inputs)).toBe(1);
+  await page.locator('.cx-rating-option').nth(3).click();
+  expect(await value(page)).toBeNull();
+  expect(await page.evaluate(() => window.inputs)).toBe(2);
+  await page.locator('.cx-rating-option').nth(4).click();
+  await page.getByText('2 of 5').hover({ force: true });
+  await expect(page.locator('.cx-rating-option[data-preview="true"]')).toHaveCount(2);
+  const color = at => page.locator('.cx-rating-option').nth(at).evaluate(option => getComputedStyle(option).color);
+  expect(await color(4)).toBe(await color(2));
+});
+
 test('an empty element gets its radio group in the page language', async ({ page }) => {
   await openUi(page, '<div id="stars"></div>');
   await page.evaluate(() => CanopyX.rating('#stars', { max: 3, name: 'stars', label: 'Ease of setup', value: 2, labels: { ratingValue: '{value} / {max}' } }).ready);
