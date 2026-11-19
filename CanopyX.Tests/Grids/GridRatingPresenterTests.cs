@@ -18,6 +18,10 @@ public sealed class GridRatingPresenterTests {
         Assert.Equal(4, presenter.GetProperty("maximum").GetDouble());
         var html = System.Net.WebUtility.HtmlDecode(CanopyStaticHtml.RenderGrid(view));
         Assert.Contains("★★★☆ 3 / 4", html);
+        // The column's number format writes the number; the raw value counts the stars.
+        view.GetColumn("score").Format = CanopyGridNumberFormat.Fixed(3);
+        row.Cells["score"] = 2.123;
+        Assert.Contains("★★☆☆ 2.123 / 4", System.Net.WebUtility.HtmlDecode(CanopyStaticHtml.RenderGrid(view)));
     }
 
     [Fact]

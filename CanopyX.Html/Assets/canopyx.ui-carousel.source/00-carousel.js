@@ -67,7 +67,9 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   }
   // The slides that fit: a slide and its gap make one step, and the last slide needs no gap after it.
   function measure() {
-    const width = track.clientWidth, slide = slides[0]?.getBoundingClientRect().width || width, gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+    // The gap is measured between two slides as laid out, so percentage and calc() gaps count as the pixels they use.
+    const width = track.clientWidth, first = slides[0]?.getBoundingClientRect(), second = slides[1]?.getBoundingClientRect(), slide = first?.width || width;
+    const gap = second ? Math.max(0, Math.abs(second.left - first.left) - slide) : 0;
     visible = Math.max(1, Math.min(slides.length, Math.floor((width + gap) / Math.max(1, slide + gap) + 0.01)));
   }
   function paint() {

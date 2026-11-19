@@ -143,3 +143,11 @@ test('a track that keeps its width across the phone breakpoint is measured again
   await expect.poll(async () => (await page.evaluate(() => CanopyX.carousel('#news').getState())).visible).toBe(1);
   await expect(page.getByRole('button', { name: 'Next slide' })).toBeVisible();
 });
+
+test('a percentage gap counts as the pixels it uses when slides are measured', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 900, height: 600 });
+  await openUi(page, '<div style="inline-size:700px">' + carousel('data-per-view="6" style="--cx-carousel-gap:10%"', 8) + '</div>');
+  expect((await page.evaluate(() => CanopyX.carousel('#news').getState())).visible).toBe(6);
+  await expect(page.getByRole('button', { name: 'Next slide' })).toBeVisible();
+});
