@@ -8,6 +8,8 @@ public sealed partial class CanopyLabels {
         foreach (var entry in new Dictionary<string, string>(StringComparer.Ordinal) {
         [nameof(AccordionSearch)] = "Filter sections", [nameof(AccordionNoMatches)] = "No matching sections",
         [nameof(AccordionCopyTitle)] = "Copy title", [nameof(AccordionCopied)] = "Copied",
+        [nameof(SelectNoMatches)] = "No matches", [nameof(SelectResults)] = "Results: {count}",
+        [nameof(SelectCreate)] = "Add “{text}”", [nameof(SelectRemove)] = "Remove {label}",
         [nameof(TabsMore)] = "More", [nameof(TabsMoreSelected)] = "More: {label}",
         [nameof(TabsScrollPrevious)] = "Previous tabs", [nameof(TabsScrollNext)] = "Next tabs",
         [nameof(TabsSection)] = "Section", [nameof(TabsPosition)] = "{current} of {total}",

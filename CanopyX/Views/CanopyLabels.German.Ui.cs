@@ -7,6 +7,10 @@ public sealed partial class CanopyLabels {
         labels.AccordionNoMatches = "Keine passenden Abschnitte";
         labels.AccordionCopyTitle = "Titel kopieren";
         labels.AccordionCopied = "Kopiert";
+        labels.SelectNoMatches = "Keine Treffer";
+        labels.SelectResults = "Ergebnisse: {count}";
+        labels.SelectCreate = "„{text}“ hinzufügen";
+        labels.SelectRemove = "{label} entfernen";
         labels.TabsMore = "Mehr";
         labels.TabsMoreSelected = "Mehr: {label}";
         labels.TabsScrollPrevious = "Vorherige Tabs";

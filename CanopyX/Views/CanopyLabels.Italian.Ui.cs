@@ -7,6 +7,10 @@ public sealed partial class CanopyLabels {
         labels.AccordionNoMatches = "Nessuna sezione corrispondente";
         labels.AccordionCopyTitle = "Copia titolo";
         labels.AccordionCopied = "Copiato";
+        labels.SelectNoMatches = "Nessuna corrispondenza";
+        labels.SelectResults = "Risultati: {count}";
+        labels.SelectCreate = "Aggiungi «{text}»";
+        labels.SelectRemove = "Rimuovi {label}";
         labels.TabsMore = "Altro";
         labels.TabsMoreSelected = "Altro: {label}";
         labels.TabsScrollPrevious = "Schede precedenti";

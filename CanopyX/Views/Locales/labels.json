@@ -3,6 +3,10 @@
   "AccordionNoMatches": ["Brak pasujących sekcji", "Keine passenden Abschnitte", "No hay secciones coincidentes", "Aucune section correspondante", "Nessuna sezione corrispondente"],
   "AccordionCopyTitle": ["Kopiuj tytuł", "Titel kopieren", "Copiar título", "Copier le titre", "Copia titolo"],
   "AccordionCopied": ["Skopiowano", "Kopiert", "Copiado", "Copié", "Copiato"],
+  "SelectNoMatches": ["Brak dopasowań", "Keine Treffer", "Sin coincidencias", "Aucun résultat", "Nessuna corrispondenza"],
+  "SelectResults": ["Wyniki: {count}", "Ergebnisse: {count}", "Resultados: {count}", "Résultats : {count}", "Risultati: {count}"],
+  "SelectCreate": ["Dodaj „{text}”", "„{text}“ hinzufügen", "Añadir «{text}»", "Ajouter « {text} »", "Aggiungi «{text}»"],
+  "SelectRemove": ["Usuń {label}", "{label} entfernen", "Quitar {label}", "Retirer {label}", "Rimuovi {label}"],
   "CalendarEditOccurrence": [
     "Edytuj to wystąpienie",
     "Dieses Vorkommen bearbeiten",

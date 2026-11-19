@@ -100,7 +100,8 @@ public sealed class LabelsTests {
         // Matrix and change view labels likewise: their documents carry them (MatrixTests, TextDiffTests).
         bool IsMatrixLabel(string name) => name.StartsWith("Matrix", StringComparison.Ordinal) || name.StartsWith("Change", StringComparison.Ordinal) || name.StartsWith("Time", StringComparison.Ordinal);
         bool IsUiLabel(string name) => name.StartsWith("Accordion", StringComparison.Ordinal) || name.StartsWith("Tabs", StringComparison.Ordinal) || name.StartsWith("Stepper", StringComparison.Ordinal) ||
-            name.StartsWith("Dialog", StringComparison.Ordinal) || name.StartsWith("Drawer", StringComparison.Ordinal) || name.StartsWith("State", StringComparison.Ordinal);
+            name.StartsWith("Dialog", StringComparison.Ordinal) || name.StartsWith("Drawer", StringComparison.Ordinal) || name.StartsWith("State", StringComparison.Ordinal) ||
+            name.StartsWith("Select", StringComparison.Ordinal);
         var browser = properties.Where(property => !outlineOnly.Contains(property.Name) && !IsFlowLabel(property.Name) && !IsMatrixLabel(property.Name) && !IsUiLabel(property.Name)).ToList();
         Assert.Equal(browser.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), written);
 

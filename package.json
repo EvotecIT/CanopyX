@@ -130,6 +130,8 @@
     "./ui-stepper.css": "./CanopyX.Html/Assets/canopyx-ui-stepper.css",
     "./ui-accordion.js": "./CanopyX.Html/Assets/canopyx-ui-accordion.js",
     "./ui-accordion.css": "./CanopyX.Html/Assets/canopyx-ui-accordion.css",
+    "./ui-select.js": "./CanopyX.Html/Assets/canopyx-ui-select.js",
+    "./ui-select.css": "./CanopyX.Html/Assets/canopyx-ui-select.css",
     "./ui": {
       "types": "./JavaScript/ui.d.ts",
       "import": "./CanopyX.Html/Assets/canopyx-ui-module.mjs"
@@ -294,6 +296,8 @@
     "CanopyX.Html/Assets/canopyx-ui-stepper.css",
     "CanopyX.Html/Assets/canopyx-ui-accordion.js",
     "CanopyX.Html/Assets/canopyx-ui-accordion.css",
+    "CanopyX.Html/Assets/canopyx-ui-select.js",
+    "CanopyX.Html/Assets/canopyx-ui-select.css",
     "CanopyX.Html/Assets/canopyx-ui.js",
     "CanopyX.Html/Assets/canopyx-ui.css",
     "CanopyX.Html/Assets/canopyx-ui-module.mjs",

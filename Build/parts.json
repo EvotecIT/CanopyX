@@ -219,6 +219,36 @@
       ]
     },
     {
+      "name": "ui-select",
+      "label": "UI select",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-select.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-select.source/select.css"
+      ]
+    },
+    {
       "name": "tree-tools",
       "label": "tree tools",
       "runtimes": [

@@ -7,6 +7,10 @@ public sealed partial class CanopyLabels {
         labels.AccordionNoMatches = "Brak pasujących sekcji";
         labels.AccordionCopyTitle = "Kopiuj tytuł";
         labels.AccordionCopied = "Skopiowano";
+        labels.SelectNoMatches = "Brak dopasowań";
+        labels.SelectResults = "Wyniki: {count}";
+        labels.SelectCreate = "Dodaj „{text}”";
+        labels.SelectRemove = "Usuń {label}";
         labels.TabsMore = "Więcej";
         labels.TabsMoreSelected = "Więcej: {label}";
         labels.TabsScrollPrevious = "Poprzednie karty";

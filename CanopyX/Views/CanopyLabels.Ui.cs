@@ -14,6 +14,18 @@ public sealed partial class CanopyLabels {
     /// <summary>Gets or sets the accessible name of the copy button after a section title was copied. Default "Copied".</summary>
     public string AccordionCopied { get => Get(); set => Set(value); }
 
+    /// <summary>Gets or sets the line in a select's list when no option matches the typed text. Default "No matches".</summary>
+    public string SelectNoMatches { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets what a screen reader hears after the options are filtered, with <c>{count}</c>. Default "Results: {count}".</summary>
+    public string SelectResults { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the option that creates a new value in a tags select, with <c>{text}</c>. Default "Add “{text}”".</summary>
+    public string SelectCreate { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the button that removes a chosen value, with <c>{label}</c>. Default "Remove {label}".</summary>
+    public string SelectRemove { get => Get(); set => Set(value); }
+
     /// <summary>Gets or sets the button that lists tabs hidden by overflow. Default "More".</summary>
     public string TabsMore { get => Get(); set => Set(value); }
 

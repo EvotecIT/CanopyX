@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "22a1544f006746bf",
+      "version": "53c14b223bbff492",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -116,6 +116,22 @@
       "views": [],
       "requires": [
         "ui-navigation"
+      ]
+    },
+    {
+      "name": "ui-select",
+      "label": "UI select",
+      "version": "30f29e0b11f9c719",
+      "script": "canopyx-ui-select.js",
+      "style": "canopyx-ui-select.css",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "requires": [
+        "ui-overlays"
       ]
     },
     {
