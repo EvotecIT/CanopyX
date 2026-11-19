@@ -116,13 +116,13 @@
     }
     function commit() {
       const typed = typing ? typedInput.value.trim() : "";
-      stored = null;
       // Strokes keep the coordinates they were drawn at: a pad that has since narrowed (a rotated phone) exports wide enough for all of them.
       const reach = strokes.reduce((most, stroke) => stroke.reduce((far, point) => Math.max(far, point.x), most), 0);
       const next = typed || strokes.length ? signatureValue(Math.max(width, Math.ceil(reach) + 8), strokes, typed, ink || "#000", background) : null;
       // A value the pad could not load back is never published: the stroke that made it too large is taken back.
+      // The stored picture stays until a replacement is accepted, so a refused stroke leaves the earlier signature showing.
       if (next && !signatureFits(next) && strokes.length) { strokes.pop(); paint(); return; }
-      value = next;
+      stored = null; value = next;
       paint(); settings.onChange?.(value);
     }
     // The pointer is read in the pad's own drawing units, so a scaled ancestor does not move the ink away from the pointer.

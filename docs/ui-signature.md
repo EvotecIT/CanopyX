@@ -16,8 +16,13 @@ string fragment = new CanopySignature("approval", "Signature of the change owner
 }).ToHtmlFragment();
 ```
 
+The page mounts that markup by itself, with the settings it carries. Listen for its change event and reach it through the
+controller; options passed to `CanopyX.signature()` apply only to an element the page has not mounted (one without
+`data-cx-signature`), such as an empty `<div>` the host fills.
+
 ```javascript
-const pad = CanopyX.signature('#approval', { onChange: value => save(value?.svg) });
+document.getElementById('approval').addEventListener('cx-signature:change', event => save(event.detail.value?.svg));
+const pad = CanopyX.signature('#approval');
 await pad.ready;
 pad.getState();   // { value: { svg: '<svg …>', png: 'data:image/png;base64,…' } }
 pad.clear();

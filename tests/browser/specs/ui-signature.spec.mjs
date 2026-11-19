@@ -35,14 +35,18 @@ test('the typed alternative and Clear work by keyboard, and a PNG form value is 
 });
 
 test('a stored signature fills the hidden input, survives a pen colour change and is replaced by select', async ({ page }) => {
-  const picture = svg => ({ svg, png: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' });
+  const picture = svg => ({ svg, png: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAoCAYAAAC7HLUcAAAAbUlEQVR42u3TQREAAAjDsKmZf0F4AQNIyCMGetdMu8AvIoBBwCBgEDAIGAQMAgYBg4BBAIOAQcAgYBAwCBgEDAIGAYOAQYQAg4BBwCBgEDAIGAQMAgYBgwAGAYOAQcAgYBAwCBgEDAIGAYMAnwPZW0auqC3XMwAAAABJRU5ErkJggg==' });
   await openUi(page, '<form id="form"><div id="sign" data-name="signature" data-colours="true"></div></form>');
   await page.evaluate(stored => { window.pad = CanopyX.signature('#sign', { value: stored }); }, picture('<svg id="a"></svg>'));
   await page.evaluate(() => window.pad.ready);
   const submitted = () => page.evaluate(() => new FormData(document.getElementById('form')).get('signature'));
   expect(await submitted()).toBe('<svg id="a"></svg>');
+  // The stored picture (a red block, drawn at half its pixel size like an exported PNG) is drawn, and still drawn after the colour changes.
+  const centre = () => page.locator('#sign canvas').evaluate(canvas => [...canvas.getContext('2d').getImageData(20 * (devicePixelRatio || 1), canvas.height / 2, 1, 1).data]);
+  await expect.poll(centre).toEqual([220, 38, 38, 255]);
   await page.getByLabel('Pen colour').evaluate(input => { input.value = '#b91c1c'; input.dispatchEvent(new Event('input', { bubbles: true })); });
   expect(await page.evaluate(() => window.pad.getState().value.svg)).toBe('<svg id="a"></svg>');
+  expect(await centre()).toEqual([220, 38, 38, 255]);
   await page.evaluate(stored => window.pad.select(stored), picture('<svg id="b"></svg>'));
   expect(await submitted()).toBe('<svg id="b"></svg>');
   await page.evaluate(() => window.pad.select(null));
@@ -106,6 +110,9 @@ test('a form reset brings back the starting signature, and a cancelled one keeps
   await page.evaluate(() => { document.getElementById('form').reset(); CanopyX.signature('#sign').select({ svg: '<svg id="kept"></svg>', png: 'data:image/png;base64,AA' }); });
   await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 0)));
   expect(await submitted()).toBe('<svg id="kept"></svg>');
+  // A select() the pad refuses leaves the queued reset in charge.
+  await page.evaluate(() => { document.getElementById('form').reset(); try { CanopyX.signature('#sign').select({}); } catch { } });
+  await expect.poll(submitted).toBe('');
 });
 
 test('destroy removes the hidden input the signature made and keeps a host input', async ({ page }) => {

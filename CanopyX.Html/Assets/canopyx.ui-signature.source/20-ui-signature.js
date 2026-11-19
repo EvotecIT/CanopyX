@@ -32,5 +32,5 @@ UI_IMPL.signature = (root, options = {}, signal) => {
     pad.setValue(initial); write(initial); options.onChange?.(initial); UI_TOOLS.emit(root, 'signature', 'change', { value: initial });
   }); }, { signal });
   signal?.addEventListener('abort', () => { pad.destroy(); pad.element.remove(); if (made) hidden.remove(); }, { once: true });
-  return { getState: () => ({ value: pad.getValue() }), clear: () => { revision++; pad.clear(); }, select: value => { revision++; pad.setValue(value); write(pad.getValue()); }, focus: pad.focus };
+  return { getState: () => ({ value: pad.getValue() }), clear: () => { pad.clear(); revision++; }, select: value => { pad.setValue(value); revision++; write(pad.getValue()); }, focus: pad.focus };
 };
