@@ -4,7 +4,6 @@
   // milliseconds that yield to the page between them, so input and paint keep their turn also on a slow CPU, and join the
   // grid together once the chunk is valid; a gzip chunk is base64 text inflated with DecompressionStream.
   const ROW_SCRIPTS = ':scope>script[type="application/x-canopyx-rows"]', ROW_SLICE = 256, ROW_SLICE_MS = 8;
-  const nextTask = () => globalThis.scheduler?.yield ? scheduler.yield() : new Promise(resolve => setTimeout(resolve));
 
   async function inflateRows(text) {
     if (typeof DecompressionStream !== "function") throw new Error("CanopyX: this browser cannot read compressed row data.");
@@ -100,7 +99,7 @@
           }
           for (const row of decoded) accepted.push(row);
           if (performance.now() - started > ROW_SLICE_MS) {
-            await nextTask(); active();
+            await gridYield(); active();
             started = performance.now();
           }
         }
@@ -109,7 +108,7 @@
         if (rows.length > data.count) break;
         files[index] = null;
         advance(); waitForChunk();
-        await nextTask();
+        await gridYield();
       }
       active();
       if (rows.length !== data.count) throw new Error("CanopyX: row data holds " + rows.length + " rows, not " + data.count + ".");

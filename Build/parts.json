@@ -219,6 +219,66 @@
       ]
     },
     {
+      "name": "ui-toasts",
+      "label": "UI toasts",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-toasts.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-toasts.source/toasts.css"
+      ]
+    },
+    {
+      "name": "ui-lightbox",
+      "label": "UI lightbox",
+      "runtimes": [
+        "tree",
+        "grid",
+        "ui"
+      ],
+      "views": [],
+      "key": "UI_IMPL",
+      "requires": [
+        "ui-overlays"
+      ],
+      "context": [
+        "UI_IMPL",
+        "UI_TOOLS",
+        "h",
+        "setText",
+        "fill",
+        "watchOverlayTheme",
+        "overlayTheme",
+        "hostHtml"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.ui-lightbox.source"
+      ],
+      "styles": [
+        "CanopyX.Html/Assets/canopyx.ui-lightbox.source/lightbox.css"
+      ]
+    },
+    {
       "name": "tree-tools",
       "label": "tree tools",
       "runtimes": [
@@ -666,7 +726,7 @@
       "context": [
         "GRID_DATA_IMPL",
         "PROTOCOL",
-        "validateGridRows",
+        "validateGridRows", "gridYield",
         "repairGridCell",
         "inlineGridSource",
         "loadSidecar",
