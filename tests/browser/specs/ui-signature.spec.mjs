@@ -158,6 +158,20 @@ test('focus() reaches a read-only pad without adding it to the Tab order', async
   expect(await page.getByRole('img', { name: 'Signature pad' }).getAttribute('tabindex')).toBe('-1');
 });
 
+test('a replacement stroke over a stored signature that would be too large keeps the stored picture and value', async ({ page }) => {
+  await openUi(page, '<form id="form"><div id="sign" data-name="signature"></div></form>');
+  await page.evaluate(png => { window.pad = CanopyX.signature('#sign', { value: { svg: '<svg id="stored"></svg>', png } }); return window.pad.ready; }, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAoCAYAAAC7HLUcAAAAbUlEQVR42u3TQREAAAjDsKmZf0F4AQNIyCMGetdMu8AvIoBBwCBgEDAIGAQMAgYBg4BBAIOAQcAgYBAwCBgEDAIGAYOAQYQAg4BBwCBgEDAIGAQMAgYBgwAGAYOAQcAgYBAwCBgEDAIGAYMAnwPZW0auqC3XMwAAAABJRU5ErkJggg==');
+  const centre = () => page.locator('#sign canvas').evaluate(canvas => [...canvas.getContext('2d').getImageData(20 * (devicePixelRatio || 1), canvas.height / 2, 1, 1).data]);
+  await expect.poll(centre).toEqual([220, 38, 38, 255]);
+  // The export comes back larger than a signature may be, as a very long drawing would.
+  await page.evaluate(() => { HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,' + 'A'.repeat(1000001); });
+  const box = await page.getByRole('img', { name: 'Signature pad' }).boundingBox();
+  await page.mouse.move(box.x + 150, box.y + 40); await page.mouse.down();
+  await page.mouse.move(box.x + 250, box.y + 60, { steps: 3 }); await page.mouse.up();
+  expect(await page.evaluate(() => new FormData(document.getElementById('form')).get('signature'))).toBe('<svg id="stored"></svg>');
+  expect(await centre()).toEqual([220, 38, 38, 255]);
+});
+
 test('destroy removes the hidden input the signature made and keeps a host input', async ({ page }) => {
   await openUi(page, '<form id="form"><div id="made" data-name="made"></div><div id="own" data-name="own"><input type="hidden" name="own" value="kept"></div></form>');
   await page.evaluate(async () => { for (const id of ['#made', '#own']) await CanopyX.signature(id).ready; CanopyX.signature('#made').destroy(); CanopyX.signature('#own').destroy(); });
