@@ -147,6 +147,23 @@ test("a pending proposal keeps its row busy, leaves other rows free and settles 
   expect(await page.evaluate(() => window.outcomes.map(item => [item.proposal.id, item.accepted, item.message]))).toEqual([["b", false, "Beta is locked by another user."]]);
 });
 
+test("a click that straddles a live repaint still raises its proposal, and a changed state repaints the buttons", async ({ page }) => {
+  await controlled(page);
+  const pressed = await action(page, "a", "start").elementHandle();
+  // A live update between pointer down and up keeps the pressed button, so the click still reaches it.
+  await page.evaluate(() => document.addEventListener("pointerdown", () => window.grid.updateRows([{ id: "a", cells: { name: "Alpha 2" } }]), { capture: true, once: true }));
+  await action(page, "a", "start").click();
+  await expect.poll(() => page.evaluate(() => window.calls.map(call => [call.proposal.id, call.proposal.action]))).toEqual([["a", "start"]]);
+  await expect(page.locator('[data-cx-id="a"]')).toContainText("Alpha 2");
+  // A change to what the cell shows (busy, then disabled) still repaints it.
+  await expect(action(page, "a", "start")).toHaveAttribute("aria-busy", "true");
+  expect(await pressed.evaluate(element => element.isConnected)).toBe(false);
+  await page.evaluate(() => window.answer(true));
+  await expect(action(page, "a", "start")).not.toHaveAttribute("aria-busy", "true");
+  await page.evaluate(() => window.grid.updateRows([{ id: "a", cells: { state: "busy" } }]));
+  await expect(action(page, "a", "start")).toHaveAttribute("aria-disabled", "true");
+});
+
 test("the API resolves with acceptance, a failure is reported and cancellation aborts the host's signal", async ({ page }) => {
   await controlled(page);
   const accepted = page.evaluate(() => window.grid.requestRowAction("a", "edit", { reason: "shortcut" }));

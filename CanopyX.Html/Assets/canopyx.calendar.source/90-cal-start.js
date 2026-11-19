@@ -64,15 +64,18 @@
         this.calBody.addEventListener("pointercancel", event => this.calDragEnd(event, true), { signal });
         this.calBody.addEventListener("lostpointercapture", event => { if (this.calDrag?.id === event.pointerId && !this.calDrag.started) this.calDrag = null; }, { signal });
       }
-      let width = 0, height = 0, resizeFrame = 0;
+      let resizeFrame = 0;
       const resize = () => {
         resizeFrame = 0;
         if (this.destroyed || !root.clientWidth) return;
         // Month repaint replaces day controls. Keep a held target until its release can deliver the click.
         if (root.querySelector(":active")) { resizeFrame = requestAnimationFrame(resize); return; }
         this.updateGridPhone(); this.calFitLegend();
+        // Compared with the size of the last paint: the first observation after mount is not a resize, and repainting then
+        // would close a "+N more" list or menu the reader has already opened.
+        const [width, height] = this.calPaintedSize || [0, 0];
         const phone = host.clientWidth <= 640, changed = phone !== this.calPhone || Math.abs(root.clientWidth - width) > 1 || Math.abs(this.calBody.clientHeight - height) > 1;
-        width = root.clientWidth; height = this.calBody.clientHeight;
+        this.calPaintedSize = [root.clientWidth, this.calBody.clientHeight];
         const switched = phone !== this.calPhone;
         if (switched) { this.calPhone = phone; host.classList.toggle("cx-cal-phone", phone); this.calSyncBar(false); }
         if (!changed || !this.calRange) return;

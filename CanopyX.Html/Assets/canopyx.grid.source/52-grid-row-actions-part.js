@@ -11,7 +11,7 @@
     const spec = grid.view.rowActions, total = spec.actions?.length || 0, inline = spec.inline ?? 2;
     return { id: "cx-row-actions", title: spec.label || grid.labels.rowActionColumn || "Actions", kind: "text", width: 16 + 30 * Math.max(1, Math.min(total, inline + (total > inline + 1))),
       fixed: true, alwaysVisible: true, exportable: false, filterable: false, drawer: false, pin: spec.pin || "right", rowActions: true, hostRenderer: false,
-      render: (row, element) => !!grid.paintRowActions?.(row, element) };
+      render: (row, element) => !!grid.paintRowActions?.(row, element), renderKey: row => grid.rowActionKey?.(row) };
   }
   Object.assign(DataGrid.prototype, {
     loadRowActions() { return this.rowActionLoad ||= loadPart(GRID_ROW_ACTIONS).then(() => this.destroyed || this.startRowActions()).catch(error => { this.rowActionLoad = null; throw error; }); },

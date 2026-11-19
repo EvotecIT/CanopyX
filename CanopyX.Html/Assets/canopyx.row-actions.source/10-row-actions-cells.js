@@ -64,9 +64,20 @@
       this.rowActionAnchor = button;
       if (!this.rowActionMenu.open(null, element, { keyboard: true })) this.rowActionAnchor = null;
     },
+    /** What a row's actions cell shows; the grid keeps the cell and its buttons while this stays the same. */
+    rowActionKey(row) {
+      if (!this.rowActions) return undefined;
+      const state = this.rowActionState(row), result = this.rowActionResults.get(row.id), pending = state.pending?.action;
+      this.rowActionLast = { row, state };
+      if (state.locked) return "locked";
+      return JSON.stringify([row.id, state.inline.map(({ action, disabled, reason }) =>
+        [action.id, action.label, action.icon, action.tone, disabled, reason, pending === action, result?.action === action ? result.message : null]),
+      state.more.length, state.more.some(entry => entry.action === pending)]);
+    },
     paintRowActions(row, cell) {
       if (!this.rowActions) return false;
-      const state = this.rowActionState(row), labels = this.rowActionText, group = h("div", "cx-ra");
+      const last = this.rowActionLast, state = last?.row === row ? last.state : this.rowActionState(row), labels = this.rowActionText, group = h("div", "cx-ra");
+      this.rowActionLast = null;
       cell.classList.add("cx-row-actions-cell"); cell.appendChild(group);
       if (state.locked) {
         const lock = h("span", "cx-ra-lock"), label = this.rowActions.lockedLabel || labels.rowActionLocked;
