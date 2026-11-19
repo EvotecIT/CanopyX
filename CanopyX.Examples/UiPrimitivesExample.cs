@@ -47,7 +47,7 @@ internal static class UiPrimitivesExample {
 
     // Use the shared token export, like SharedTokensExample, rather than defining
     // a separate example palette. Host theme tokens override these fallbacks.
-    private static string ApplyTokenFallbacks(string template) {
+    internal static string ApplyTokenFallbacks(string template) {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates.token-fallbacks.json")
             ?? throw new InvalidOperationException("The shared token fallback export must be embedded in the examples assembly.");
         var values = JsonSerializer.Deserialize<Dictionary<string, string>>(stream)!;
