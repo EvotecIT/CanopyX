@@ -104,7 +104,8 @@
       if (pad.width !== Math.round(width * ratio)) { pad.width = Math.round(width * ratio); pad.height = Math.round(SIGNATURE_HEIGHT * ratio); }
       const draw = pad.getContext("2d");
       draw.setTransform(ratio, 0, 0, ratio, 0, 0); draw.clearRect(0, 0, width, SIGNATURE_HEIGHT);
-      if (stored && !strokes.length && !typing) draw.drawImage(stored, 0, 0, Math.min(width, stored.naturalWidth / 2 || width), SIGNATURE_HEIGHT);
+      // A replacement stroke in progress draws over a blank pad, so the reader sees where they sign before releasing the pointer.
+      if (stored && !strokes.length && !current && !typing) draw.drawImage(stored, 0, 0, Math.min(width, stored.naturalWidth / 2 || width), SIGNATURE_HEIGHT);
       else signatureDraw(draw, current ? [...strokes, current] : strokes, typing ? typedInput.value.trim() : "", shownInk(), width);
       undo.disabled = readOnly || typing || !strokes.length;
       clear.disabled = readOnly || !value;
