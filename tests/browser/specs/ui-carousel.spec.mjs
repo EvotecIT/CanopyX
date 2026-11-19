@@ -157,4 +157,9 @@ test('a scaled ancestor shrinks the track and the slides alike', async ({ page }
   await page.setViewportSize({ width: 900, height: 600 });
   await openUi(page, '<div style="inline-size:700px;transform:scale(.5);transform-origin:0 0">' + carousel('data-per-view="6"', 8) + '</div>');
   expect((await page.evaluate(() => CanopyX.carousel('#news').getState())).visible).toBe(6);
+  // Moving scrolls the track by layout pixels, so the chosen slide lines up with the start.
+  await page.getByRole('button', { name: 'Next slide' }).click();
+  await page.getByRole('button', { name: 'Next slide' }).click();
+  expect(await page.evaluate(() => { const track = document.querySelector('.cx-carousel-track'), slide = document.querySelectorAll('.cx-carousel-slide')[2];
+    return Math.abs(slide.getBoundingClientRect().left - track.getBoundingClientRect().left) < 1; })).toBe(true);
 });
