@@ -121,7 +121,7 @@
     {
       "name": "ui-toasts",
       "label": "UI toasts",
-      "version": "97035404d3efa028",
+      "version": "9921e252bb1114bb",
       "script": "canopyx-ui-toasts.js",
       "style": "canopyx-ui-toasts.css",
       "runtimes": [
@@ -137,7 +137,7 @@
     {
       "name": "ui-lightbox",
       "label": "UI lightbox",
-      "version": "d769c65711dc02c2",
+      "version": "57fcced732d5bb37",
       "script": "canopyx-ui-lightbox.js",
       "style": "canopyx-ui-lightbox.css",
       "runtimes": [
@@ -153,7 +153,7 @@
     {
       "name": "ui-carousel",
       "label": "UI carousel",
-      "version": "15b11bc72ec2c351",
+      "version": "5f0a25402f450908",
       "script": "canopyx-ui-carousel.js",
       "style": "canopyx-ui-carousel.css",
       "runtimes": [
@@ -169,7 +169,7 @@
     {
       "name": "ui-rating",
       "label": "UI rating",
-      "version": "56c368e3815425c7",
+      "version": "c149235f3e3f9768",
       "script": "canopyx-ui-rating.js",
       "style": "canopyx-ui-rating.css",
       "runtimes": [

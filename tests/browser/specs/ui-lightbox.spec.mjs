@@ -205,3 +205,28 @@ test('video items play with a poster, autoplay muted, stop when left, and YouTub
     { items: [{ type: 'youtube', src: 'https://example.com/watch?v=aqz-KE-bpKQ' }] }).ready.then(() => 'ready', error => error.message));
   expect(refused).toBe('CanopyX: lightbox item 0 is not a YouTube address.');
 });
+
+test('moving away from content that holds focus keeps focus in the viewer', async ({ page }) => {
+  await openUi(page, '<div id="viewer"></div>');
+  await page.evaluate(() => {
+    window.viewer = CanopyX.lightbox('#viewer', { items: [{ content: '<button type="button">Details</button>', caption: 'One' }, { content: 'Two', caption: 'Two' }, { content: 'Three', caption: 'Three' }] });
+    return window.viewer.ready.then(() => window.viewer.open(0));
+  });
+  await viewer(page).getByRole('button', { name: 'Details' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(viewer(page)).toHaveAccessibleName('Two');
+  await expect(viewer(page)).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(viewer(page)).toHaveAccessibleName('Three');
+});
+
+test('moving from a fitted image to content while Zoom in has focus keeps focus in the viewer', async ({ page }) => {
+  await openUi(page, gallery());
+  await page.getByRole('link', { name: 'Cooling unit' }).click();
+  await viewer(page).getByRole('button', { name: 'Zoom in' }).focus();
+  await page.keyboard.press('End');
+  await expect(viewer(page).getByRole('heading', { name: 'Inventory' })).toBeVisible();
+  await expect(viewer(page)).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(viewer(page)).toHaveAccessibleName('Rack A after the move');
+});

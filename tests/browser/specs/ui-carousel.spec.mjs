@@ -92,6 +92,19 @@ test('autoplay is off by default, and when asked for it pauses on hover and focu
   await expect(page.locator('#auto').getByRole('button', { name: 'Play' })).toBeVisible();
 });
 
+test('a carousel enhanced around the focused element starts with autoplay paused', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, carousel().replace(' data-cx-carousel', ''));
+  await page.getByRole('link', { name: 'Read note 1' }).focus();
+  expect(await page.evaluate(async () => (await CanopyX.carousel('#news', { autoplay: { interval: 3000 } }).getState()).playing)).toBe(true);
+  await page.clock.runFor(9000);
+  expect((await state(page)).index).toBe(0);
+  await page.locator('#after').focus();
+  await page.clock.runFor(3000);
+  expect((await state(page)).index).toBe(1);
+});
+
 test('reduced motion keeps an autoplaying carousel still and says why', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openUi(page, carousel('data-autoplay-interval="2000"'));
