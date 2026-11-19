@@ -202,3 +202,11 @@ test('notify skips a region a stylesheet hides', async ({ page }) => {
   await expect(page.locator('#shown .cx-toast')).toHaveCount(1);
   await expect(page.locator('#hidden .cx-toast')).toHaveCount(0);
 });
+
+test('notify leaves a region whose panel was removed from the page', async ({ page }) => {
+  await openUi(page, '<div id="host"><div id="panel"><section id="first" data-cx-toasts></section></div></div><section id="second" data-cx-toasts></section>');
+  await page.evaluate(() => CanopyX.notify({ message: 'One', timeout: 0 }));
+  await expect(page.locator('#first .cx-toast')).toHaveCount(1);
+  await page.evaluate(() => { document.getElementById('host').remove(); return CanopyX.notify({ message: 'Two', timeout: 0 }); });
+  await expect(page.locator('#second .cx-toast')).toHaveCount(1);
+});

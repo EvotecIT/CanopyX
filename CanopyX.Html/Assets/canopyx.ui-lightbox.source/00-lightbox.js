@@ -85,6 +85,8 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
   }
   function paintZoom() {
     const image = media?.localName === 'img' && !status.dataset.error;
+    // Hiding the zoom tools would drop a focused zoom button out of the viewer, so the viewer takes focus first.
+    if (!image && tools.contains(document.activeElement)) dialog.focus({ preventScroll: true });
     tools.hidden = !image;
     setText(level, percent(scale));
     const focused = [zoomOut, zoomIn, reset].find(button => button === document.activeElement);
