@@ -65,6 +65,21 @@ test('a stored signature shows until it is cleared, and the document refuses a d
   expect(errors).toEqual(['CanopyX: field a is a signature, which has no parameter and no default.', 'CanopyX: field a is a signature, which has no parameter and no default.']);
 });
 
+test('a replacement stroke over a stored signature shows while it is drawn', async ({ page }) => {
+  const blank = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  await openFieldFlow(page, signature(), { parts: ['flow-signature'], extra: { initial: { signature: { svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>', png: blank } } } });
+  const pad = page.getByRole('img', { name: 'Signature pad' });
+  const box = await pad.boundingBox();
+  await page.mouse.move(box.x + 20, box.y + 60); await page.mouse.down();
+  await page.mouse.move(box.x + 200, box.y + 60, { steps: 6 });
+  const inked = await pad.evaluate(canvas => {
+    const ratio = canvas.width / canvas.getBoundingClientRect().width, row = canvas.getContext('2d').getImageData(0, Math.round(60 * ratio) - 2, canvas.width, 5).data;
+    return row.some((value, at) => at % 4 === 3 && value > 0);
+  });
+  await page.mouse.up();
+  expect(inked).toBe(true);
+});
+
 test('a long typed name shrinks to fit a narrow pad in the SVG and the PNG', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 700 });
   await open(page);
