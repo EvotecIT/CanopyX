@@ -13,7 +13,7 @@
   const FLOW_PART = definePart(FlowHost, "flow", "flow view", () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, foldText, boundedPattern, numberFormat, gridFreeze }));
   // The host-connected features ship in parts of their own, each loaded only for a flow that uses it (Build/parts.json).
   const FLOW_FEATURES = {};
-  for (const name of ["host", "checks", "options", "pick", "records", "drafts", "preview", "command", "tasks", "dialog", "links", "endpoint", "consent", "facts"])
+  for (const name of ["host", "checks", "options", "pick", "records", "signature", "drafts", "preview", "command", "tasks", "dialog", "links", "endpoint", "consent", "facts"])
     FLOW_FEATURES[name] = definePart(FlowHost, "flow-" + name, "flow " + name, () => ({ FLOW_IMPL, FORMS_IMPL, h, setText, fill, plural, numberFormat, FLOW_VIEWS }));
   // Grid editing requires the same forms part: one definition, one load, one install.
   if (typeof DataGrid === "function") DataGrid.prototype.parts.forms = FORMS_PART;
@@ -35,7 +35,7 @@
       add("facts", step.facts !== undefined); add("checks", step.checks !== undefined); add("pick", step.type === "pick"); add("preview", step.preview === true); add("consent", has(step, "confirm", "acknowledge"));
       for (const block of [step, ...list(step.sections)]) {
         if (block !== step) add("options", has(block, "source", "dependsOn"));
-        for (const field of object(block) ? list(block.fields) : []) { add("options", has(field, "dependsOn") || has(field, "source") && field.source !== "document"); add("records", object(field) && field.type === "records"); }
+        for (const field of object(block) ? list(block.fields) : []) { add("options", has(field, "dependsOn") || has(field, "source") && field.source !== "document"); add("records", object(field) && field.type === "records"); add("signature", object(field) && field.type === "signature"); }
       }
     }
     hooks = object(hooks) ? hooks : {};

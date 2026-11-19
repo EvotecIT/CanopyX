@@ -341,7 +341,7 @@
     {
       "name": "flow",
       "label": "flow view",
-      "version": "35c7b020c2c2ad74",
+      "version": "cdc2adb38641a522",
       "script": "canopyx-flow.js",
       "style": "canopyx-flow.css",
       "runtimes": [
@@ -452,6 +452,26 @@
       ],
       "features": [
         "flowRecords"
+      ],
+      "requires": [
+        "flow"
+      ]
+    },
+    {
+      "name": "flow-signature",
+      "label": "flow signature",
+      "version": "e7a2e2551b9b6e3c",
+      "script": "canopyx-flow-signature.js",
+      "style": "canopyx-flow-signature.css",
+      "runtimes": [
+        "grid",
+        "flow"
+      ],
+      "views": [
+        "flow"
+      ],
+      "features": [
+        "flowSignature"
       ],
       "requires": [
         "flow"

@@ -1010,6 +1010,7 @@ CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Column(System.String id, System.
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Count(System.Nullable<System.Int32> min, System.Nullable<System.Int32> max)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Default(System.Object value)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField DependsOn(params System.String[] fieldIds)
+CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Format(CanopyX.CanopyFlowTextFormat format)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField FromHost()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Half()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Help(System.String text)
@@ -1017,6 +1018,7 @@ CanopyX.CanopyFlowField.CanopyX.CanopyFlowField ItemPattern(System.String patter
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Items(CanopyX.CanopyFlowItemRule rule)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField KeepWhenBlank(System.Boolean keep = True)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Length(System.Nullable<System.Int32> min, System.Nullable<System.Int32> max)
+CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Mask(System.String mask)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Message(System.String text)
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField NoReveal()
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowField Option(CanopyX.CanopyFlowOption option)
@@ -1041,6 +1043,7 @@ CanopyX.CanopyFlowField.CanopyX.CanopyFlowFieldKind Kind { get; }
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowFieldWidth Width { get; set; }
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowItemRule ItemRule { get; set; }
 CanopyX.CanopyFlowField.CanopyX.CanopyFlowOptionsSource OptionsSource { get; set; }
+CanopyX.CanopyFlowField.CanopyX.CanopyFlowTextFormat TextFormat { get; set; }
 CanopyX.CanopyFlowField.System.Boolean IsReadOnly { get; set; }
 CanopyX.CanopyFlowField.System.Boolean IsRequired { get; set; }
 CanopyX.CanopyFlowField.System.Boolean IsSensitive { get; set; }
@@ -1063,6 +1066,7 @@ CanopyX.CanopyFlowField.System.String Label { get; set; }
 CanopyX.CanopyFlowField.System.String? ConfigPath { get; set; }
 CanopyX.CanopyFlowField.System.String? EditorName { get; set; }
 CanopyX.CanopyFlowField.System.String? HelpText { get; set; }
+CanopyX.CanopyFlowField.System.String? InputMask { get; set; }
 CanopyX.CanopyFlowField.System.String? ListItemPattern { get; set; }
 CanopyX.CanopyFlowField.System.String? OffText { get; set; }
 CanopyX.CanopyFlowField.System.String? OnText { get; set; }
@@ -1083,6 +1087,7 @@ CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Rating(System.String id,
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Records(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Secret(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Select(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
+CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Signature(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Text(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer TextArea(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
 CanopyX.CanopyFlowFieldContainer<TContainer>.TContainer Time(System.String id, System.String label, System.Action<CanopyX.CanopyFlowField>? configure = null)
@@ -1102,6 +1107,7 @@ CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Rating = 17
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Records = 15
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Secret = 12
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Select = 5
+CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Signature = 18
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Text = 0
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind TextArea = 10
 CanopyX.CanopyFlowFieldKind.const CanopyX.CanopyFlowFieldKind Time = 4
@@ -1254,6 +1260,21 @@ CanopyX.CanopyFlowStepKind.const CanopyX.CanopyFlowStepKind Review = 2
 CanopyX.CanopyFlowSubmit : sealed class
 CanopyX.CanopyFlowSubmit..ctor(System.String? label = null)
 CanopyX.CanopyFlowSubmit.System.String? Label { get; set; }
+CanopyX.CanopyFlowTextFormat : enum System.Int32
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Cidr = 6
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Date = 11
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat DateTime = 13
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Email = 1
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Guid = 9
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Host = 2
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat IPv4 = 4
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat IPv6 = 5
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat IpAddress = 3
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Mac = 8
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat None = 0
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Phone = 10
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Time = 12
+CanopyX.CanopyFlowTextFormat.const CanopyX.CanopyFlowTextFormat Url = 7
 CanopyX.CanopyFormatBand : sealed class
 CanopyX.CanopyFormatBand..ctor(System.Nullable<System.Double> upperBound, CanopyX.CanopyTone tone, System.String? label = null)
 CanopyX.CanopyFormatBand.CanopyX.CanopyTone Tone { get; }
@@ -2243,6 +2264,9 @@ CanopyX.CanopyLabels.System.String FlowDurationInvalid { get; set; }
 CanopyX.CanopyLabels.System.String FlowErrorSummary { get; set; }
 CanopyX.CanopyLabels.System.String FlowFieldsFailed { get; set; }
 CanopyX.CanopyLabels.System.String FlowFieldsLoading { get; set; }
+CanopyX.CanopyLabels.System.String FlowFormatExample { get; set; }
+CanopyX.CanopyLabels.System.String FlowFormatInvalid { get; set; }
+CanopyX.CanopyLabels.System.String FlowFormatMask { get; set; }
 CanopyX.CanopyLabels.System.String FlowHours { get; set; }
 CanopyX.CanopyLabels.System.String FlowItemCidr { get; set; }
 CanopyX.CanopyLabels.System.String FlowItemEmail { get; set; }
@@ -2318,6 +2342,13 @@ CanopyX.CanopyLabels.System.String FlowSelectAll { get; set; }
 CanopyX.CanopyLabels.System.String FlowSelectNone { get; set; }
 CanopyX.CanopyLabels.System.String FlowSelectedCount { get; set; }
 CanopyX.CanopyLabels.System.String FlowShownOnce { get; set; }
+CanopyX.CanopyLabels.System.String FlowSignatureClear { get; set; }
+CanopyX.CanopyLabels.System.String FlowSignatureDraw { get; set; }
+CanopyX.CanopyLabels.System.String FlowSignaturePad { get; set; }
+CanopyX.CanopyLabels.System.String FlowSignatureType { get; set; }
+CanopyX.CanopyLabels.System.String FlowSignatureTyped { get; set; }
+CanopyX.CanopyLabels.System.String FlowSignatureUndo { get; set; }
+CanopyX.CanopyLabels.System.String FlowSigned { get; set; }
 CanopyX.CanopyLabels.System.String FlowStartAgain { get; set; }
 CanopyX.CanopyLabels.System.String FlowStartFrom { get; set; }
 CanopyX.CanopyLabels.System.String FlowStepAnnounce { get; set; }

@@ -28,6 +28,26 @@ public sealed partial class CanopyLabels {
     public string FlowOptional { get => Get(); set => Set(value); }
     /// <summary>Gets or sets a rating answer and the name of each star, with <c>{value}</c> and <c>{max}</c>. Default "{value} of {max}".</summary>
     public string FlowRatingValue { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the hint under a text field with a format, with <c>{example}</c>. Default "For example: {example}".</summary>
+    public string FlowFormatExample { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the message when a text answer does not have its field's format, with <c>{field}</c> and <c>{example}</c>. Default "{field} must look like {example}.".</summary>
+    public string FlowFormatInvalid { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the hint under a text field with a mask, with <c>{mask}</c>. Default "Format: {mask}".</summary>
+    public string FlowFormatMask { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the accessible name of the area a signature is drawn on. Default "Signature pad".</summary>
+    public string FlowSignaturePad { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the button that removes a signature. Default "Clear".</summary>
+    public string FlowSignatureClear { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the button that removes the last stroke of a signature. Default "Undo".</summary>
+    public string FlowSignatureUndo { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the button that switches a signature to a typed name. Default "Type instead".</summary>
+    public string FlowSignatureType { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the button that switches a typed signature back to drawing. Default "Draw instead".</summary>
+    public string FlowSignatureDraw { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the label of the field a typed signature uses. Default "Type your full name".</summary>
+    public string FlowSignatureTyped { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets a signature answer on the review page. Default "Signed".</summary>
+    public string FlowSigned { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the state of an optional step in the rail. Default "Optional".</summary>
     public string FlowStepOptional { get => Get(); set => Set(value); }
     /// <summary>Gets or sets the state of a complete step. Default "Complete".</summary>

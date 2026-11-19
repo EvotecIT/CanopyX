@@ -120,8 +120,8 @@
     "output": "f9606a6645defc39"
   },
   "CanopyX.Html/Assets/canopyx-flow-entry.js": {
-    "input": "d355b85283a9b172",
-    "output": "94778f9227b973e3"
+    "input": "c67a7a8fea62c102",
+    "output": "fc1d120fceed6605"
   },
   "CanopyX.Html/Assets/canopyx-flow-facts.js": {
     "input": "385b5e61ed487e16",
@@ -136,8 +136,8 @@
     "output": "0a354b6d90b396f2"
   },
   "CanopyX.Html/Assets/canopyx-flow-module.mjs": {
-    "input": "2bf0e949fbff4976",
-    "output": "ce65278c2dabde36"
+    "input": "9b796583bfb9ea43",
+    "output": "7d7d34ff8c9cb853"
   },
   "CanopyX.Html/Assets/canopyx-flow-options.js": {
     "input": "60450342239ded26",
@@ -155,13 +155,17 @@
     "input": "ebe3b15336926f01",
     "output": "dfe9674731877888"
   },
+  "CanopyX.Html/Assets/canopyx-flow-signature.js": {
+    "input": "85bda0e21cc16ee7",
+    "output": "fe978bd75b1dfd1e"
+  },
   "CanopyX.Html/Assets/canopyx-flow-tasks.js": {
     "input": "2f1cb18460a9c074",
     "output": "60e752041fe33db0"
   },
   "CanopyX.Html/Assets/canopyx-flow.js": {
-    "input": "0660671c583a975e",
-    "output": "f37ad971b0eba90d"
+    "input": "a9e804d626d5992b",
+    "output": "54801dcc3e67c5f4"
   },
   "CanopyX.Html/Assets/canopyx-format-editor.js": {
     "input": "ecc90e058cbf9791",
@@ -176,16 +180,16 @@
     "output": "98ab7f3c776c3848"
   },
   "CanopyX.Html/Assets/canopyx-grid-module.mjs": {
-    "input": "d66b18f9f5f9b136",
-    "output": "46da0e868f634347"
+    "input": "7e0a4342538e0cfe",
+    "output": "eb7800cc78227a44"
   },
   "CanopyX.Html/Assets/canopyx-grid-options.js": {
     "input": "60115a714392401a",
     "output": "04f5cdcf1eeaeddf"
   },
   "CanopyX.Html/Assets/canopyx-grid.js": {
-    "input": "d11f35651ca7fad0",
-    "output": "b61aa9506c739a37"
+    "input": "40dc3b4dfabfdc48",
+    "output": "b3f5781f1b8f77ce"
   },
   "CanopyX.Html/Assets/canopyx-grouping.js": {
     "input": "60402587c6f3991b",
@@ -260,12 +264,12 @@
     "output": "a6c0ad3ed6883aaa"
   },
   "CanopyX.Html/Assets/canopyx-reporting-module.mjs": {
-    "input": "d86bde6afcd9beaa",
-    "output": "e4800245d4fea0b0"
+    "input": "abd1cdec250faef3",
+    "output": "cc7539499dc709df"
   },
   "CanopyX.Html/Assets/canopyx-reporting.js": {
-    "input": "dd38980ea9c19f60",
-    "output": "8546c76eff6a2b1b"
+    "input": "5144f1c4bfaffa7f",
+    "output": "f433bfaeefa79ea4"
   },
   "CanopyX.Html/Assets/canopyx-row-actions.js": {
     "input": "9d8edb5244723ad2",

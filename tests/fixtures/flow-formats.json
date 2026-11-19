@@ -1,0 +1,16 @@
+{
+  "$comment": "Text field formats (docs/flow.md#fields): every valid answer passes and every invalid one fails, in the browser (55-flow-validate.js) and on the server (CanopyFlowTextFormats).",
+  "ipv4": { "valid": ["192.168.1.10", "0.0.0.0", "255.255.255.255", "10.0.0.1"], "invalid": ["256.1.1.1", "1.2.3", "01.2.3.4", "1.2.3.4.5", "::1", "a.b.c.d"] },
+  "ipv6": { "valid": ["2001:db8::1", "::1", "fe80::1ff:fe23:4567:890a", "2001:0db8:0000:0000:0000:ff00:0042:8329", "::ffff:192.168.1.1"], "invalid": ["192.168.1.1", "2001:db8:::1", "12345::1", "g::1", ":"] },
+  "ip": { "valid": ["10.1.2.3", "2001:db8::42"], "invalid": ["10.1.2", "host.example.com"] },
+  "mac": { "valid": ["00:1A:2B:3C:4D:5E", "00-1a-2b-3c-4d-5e", "001a.2b3c.4d5e"], "invalid": ["00:1A:2B:3C:4D", "00:1A-2B:3C:4D:5E", "001A2B3C4D5E", "00:1G:2B:3C:4D:5E"] },
+  "guid": { "valid": ["3f2504e0-4f89-11d3-9a0c-0305e82c3301", "{3F2504E0-4F89-11D3-9A0C-0305E82C3301}"], "invalid": ["3f2504e04f8911d39a0c0305e82c3301", "{3f2504e0-4f89-11d3-9a0c-0305e82c3301", "3f2504e0-4f89-11d3-9a0c-0305e82c330", "zf2504e0-4f89-11d3-9a0c-0305e82c3301"] },
+  "phone": { "valid": ["+1 555 0100", "(022) 123-45-67", "+48 123 456 789", "555.0100.12"], "invalid": ["12345", "+1 555 0100 ext 2", "phone", "+1234567890123456", "++48 123 456"] },
+  "date": { "valid": ["2026-11-19", "2024-02-29"], "invalid": ["2026-02-29", "2026-13-01", "19.11.2026", "2026-1-9"] },
+  "time": { "valid": ["14:30", "00:00", "23:59:59"], "invalid": ["24:00", "7:30", "14:60", "14:30:60"] },
+  "dateTime": { "valid": ["2026-11-19 14:30", "2026-11-19T14:30:05"], "invalid": ["2026-11-19", "2026-02-30 10:00", "2026-11-19 25:00", "2026-11-19T14:30Z"] },
+  "email": { "valid": ["name@example.com"], "invalid": ["name@example", "name example@x.com"] },
+  "host": { "valid": ["mail.example.com", "localhost"], "invalid": ["-bad.example.com", "a b.com"] },
+  "cidr": { "valid": ["10.0.0.0/24", "2001:db8::/32"], "invalid": ["10.0.0.0/33", "10.0.0.0"] },
+  "url": { "valid": ["https://example.com/path", "http://localhost:8080"], "invalid": ["ftp://example.com", "example.com"] }
+}
