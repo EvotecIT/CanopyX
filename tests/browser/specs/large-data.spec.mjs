@@ -67,6 +67,26 @@ test("a compact single-file grid shows what the row objects show", async ({ page
   expect(results[0]).toEqual(results[1]);
 });
 
+// Background pages throttle zero-delay timers, and some engine ports run them only when nothing else waits: decoding and a
+// sliced search must keep going without them. The page here has no scheduler.yield and no zero-delay timer ever fires.
+test("compact rows decode and a large search finishes when zero-delay timers never run", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (globalThis.scheduler) Object.defineProperty(globalThis.scheduler, "yield", { value: undefined });
+    const later = window.setTimeout;
+    window.heldTimers = 0;
+    window.setTimeout = (callback, delay, ...rest) => delay > 0 ? later(callback, delay, ...rest) : (window.heldTimers++, 0);
+  });
+  await page.goto(exampleUrl("large/grid-100k.html"));
+  await page.waitForFunction(() => document.querySelector("[data-canopyx-host]")?.canopyx?.view.rows.length === 100000);
+  const matched = await page.evaluate(async () => {
+    const api = document.querySelector("[data-canopyx-host]").canopyx;
+    await api.setQuery({ search: "kestrel quartz", filters: [{ column: "status", operator: "eq", values: ["Faulty"] }] });
+    return Number(document.querySelector(".cx-grid").getAttribute("aria-rowcount")) - 1;
+  });
+  expect(matched).toBeGreaterThan(0);
+  expect(matched).toBeLessThan(100000);
+});
+
 test("a gzip bundle loads its rows from sidecar files on file://", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
