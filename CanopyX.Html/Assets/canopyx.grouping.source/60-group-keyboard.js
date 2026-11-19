@@ -5,6 +5,11 @@
   Object.assign(DataGrid.prototype, {
     projectedRowKey(event, row) {
       if (!row.group) return false;
+      // A footer row has nothing to expand: the arrows, Enter and Space stay on it.
+      if (row.footer) {
+        if (!["ArrowLeft", "ArrowRight", "Enter", " ", "F2"].includes(event.key)) return false;
+        event.preventDefault(); return true;
+      }
       const cell = event.target.closest(".cx-cell");
       if (cell && event.target === cell && ["Enter", " "].includes(event.key)) {
         if (event.key === "Enter") this.focusCell(row, this.rowCells(cell.parentElement).indexOf(cell), 0, true);

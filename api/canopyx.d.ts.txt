@@ -1674,7 +1674,7 @@ export interface GridReporting{
   readonly pivot?:GridPivotDefinition;
   readonly pivotable?:boolean;
   readonly chartable?:boolean;
-  readonly grouping?:GridSort&{readonly headerTemplate?:string};
+  readonly grouping?:GridSort&{readonly headerTemplate?:string;readonly footerTemplate?:string};
   readonly groupBy?:readonly GridGroupLevel[];
   readonly groupable?:boolean;
   readonly detail?:GridDetailDefinition;
@@ -1861,6 +1861,11 @@ export interface InlineGridView<Row extends GridRow=GridRow>extends GridDefiniti
   rows:Row[];
   rowData?:never;
 }
+export interface AddressGridView<Row extends GridRow=GridRow>extends GridDefinition<GridQuery,Row>{
+  source:{kind:"inline";navigation?:"offset";url:string;refreshSeconds?:number};
+  rows?:readonly never[];
+  rowData?:never;
+}
 export type GridCompactRow=[string|{id:string;tone?:string;className?:string},...Cell[]];
 export interface GridRowData{
   version:1;
@@ -1887,7 +1892,7 @@ export interface CursorGridView<Row extends GridRow=GridRow>extends GridDefiniti
   presentation:"paged";
   rows?:never;
 }
-export type GridView<Row extends GridRow=GridRow>=InlineGridView<Row>|CompactGridView<Row>|HostGridView<Row>|CursorGridView<Row>;
+export type GridView<Row extends GridRow=GridRow>=InlineGridView<Row>|AddressGridView<Row>|CompactGridView<Row>|HostGridView<Row>|CursorGridView<Row>;
 export interface GridPage<Row extends GridRow=GridRow>{
   readonly footerValues?:Readonly<Record<string,Readonly<Record<string,number|null>>>>;
   protocol:"canopyx/2";
@@ -1952,6 +1957,7 @@ export interface GridFooter{
   readonly label:string;
   readonly scope:"page"|"all";
   readonly aggregates:readonly GridAggregate[];
+  readonly cells?:Readonly<Record<string,string>>;
 }
 export interface GridAggregate{
   readonly showAs?:GridShowAs;
@@ -3301,6 +3307,7 @@ from "./records.js";
 export interface CanopyCell extends StructuredCell{
   value?:CellValue;
   text?:string;
+  html?:string;
   searchText?:string;
   title?:string;
   tone?:string;

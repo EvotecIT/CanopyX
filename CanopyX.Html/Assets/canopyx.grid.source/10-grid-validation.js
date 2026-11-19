@@ -81,6 +81,10 @@
       throw new Error("CanopyX: the calculated-column editor requires an inline grid.");
     if (view.source.navigation !== undefined && !["offset", "cursor"].includes(view.source.navigation))
       throw new Error("CanopyX: invalid grid source navigation.");
+    // An inline grid may read its rows from an address (52-grid-url-rows.js); its view then carries none.
+    if (view.source.url !== undefined && (view.source.kind !== "inline" || view.rowData !== undefined || view.rows?.length || !gridRowsAddress(view.source.url)) ||
+        view.source.refreshSeconds !== undefined && (view.source.url === undefined || !Number.isInteger(view.source.refreshSeconds) || view.source.refreshSeconds < 5 || view.source.refreshSeconds > 86400))
+      throw new Error("CanopyX: invalid grid source address or refresh.");
     if (view.source.navigation === "cursor" && (view.source.kind !== "host" || view.presentation !== "paged"))
       throw new Error("CanopyX: cursors need a hosted paged grid.");
     if (view.presentation !== undefined && !["continuous", "paged"].includes(view.presentation) ||
@@ -90,7 +94,7 @@
     if (view.rowData !== undefined) {
       if (view.source.kind !== "inline" || view.rows !== undefined || !validStructuralCount(view.rowData?.count)) throw new Error("CanopyX: invalid grid rowData.");
     }
-    const rows = view.rowData === undefined && view.source.kind === "inline" ? validateGridRows(view.rows, view.columns, undefined, repairGridCell) : view.rows;
+    const rows = view.rowData === undefined && view.source.kind === "inline" ? validateGridRows(view.source.url !== undefined ? view.rows || [] : view.rows, view.columns, undefined, repairGridCell) : view.rows;
     if (view.source.kind !== "inline" && view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
     return { ...view, ...(rows === undefined ? {} : { rows }), rowHeight: view.rowHeight ?? (view.density === "compact" ? 32 : 40) };

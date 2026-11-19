@@ -289,6 +289,36 @@
       ]
     },
     {
+      "name": "rich-cells",
+      "label": "rich cells",
+      "version": "3807fcacd789f4e6",
+      "script": "canopyx-rich-cells.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "richCells"
+      ]
+    },
+    {
+      "name": "url-rows",
+      "label": "rows from an address",
+      "version": "96d59e5be49bb925",
+      "script": "canopyx-url-rows.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "urlRows"
+      ]
+    },
+    {
       "name": "forms",
       "label": "forms",
       "version": "446591b028f1f5a3",
@@ -780,7 +810,7 @@
     {
       "name": "detail-rows",
       "label": "detail rows",
-      "version": "dfe6904120da2247",
+      "version": "d23bd24693268f22",
       "script": "canopyx-detail-rows.js",
       "style": "canopyx-detail-rows.css",
       "runtimes": [
@@ -920,7 +950,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "d76e64ce620e2419",
+      "version": "8ba46e2a260e9522",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -1140,7 +1170,7 @@
     {
       "name": "grid-options",
       "label": "grid footer and query extensions",
-      "version": "f11ce2c5f45763b8",
+      "version": "a855b9db8d7c54af",
       "script": "canopyx-grid-options.js",
       "style": "canopyx-grid-options.css",
       "runtimes": [

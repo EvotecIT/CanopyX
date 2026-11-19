@@ -21,7 +21,7 @@ public sealed partial class CanopyCell {
     private CellExtras? _extras;
 
     private sealed class CellExtras {
-        internal string? Text, SearchText, Title, Secondary;
+        internal string? Text, SearchText, Title, Secondary, Html;
         internal CanopyTone Tone;
         internal object? SortKey;
         internal List<CanopyBadge>? Badges;
@@ -247,6 +247,7 @@ public sealed partial class CanopyCell {
     internal void ValidateShape(int structureDepth = 0) {
         ValidateStructure(structureDepth);
         if (Secondary != null && Secondary.Length > 4096) throw new InvalidOperationException("Secondary cell text is limited to 4096 code units.");
+        if (Html != null && Html.Length > MaxHtmlLength) throw new InvalidOperationException("Cell markup is limited to 65,536 code units.");
         if (SeriesList != null && (SeriesList.Count > 4096 || SeriesList.Exists(point => point == null))) throw new InvalidOperationException("Cell history supports at most 4096 non-null periods.");
         if (SortKey is string key && key.Length > 4096) throw new InvalidOperationException("A sort key is limited to 4096 code units.");
         switch (SortKey) {
@@ -269,7 +270,7 @@ public sealed partial class CanopyCell {
     internal void WriteJson(CanopyJsonWriter writer) {
         ValidateShape();
         var simple = Text == null && SearchText == null && Title == null && Secondary == null && (SeriesList == null || SeriesList.Count == 0) && Tone == CanopyTone.None && !HasBadges &&
-            SortKey == null && !IsStructured && Ref == null;
+            SortKey == null && !IsStructured && Ref == null && Html == null;
         if (simple) {
             WriteValue(writer);
             return;
@@ -282,6 +283,7 @@ public sealed partial class CanopyCell {
         }
 
         writer.OptionalProperty("text", Text);
+        writer.OptionalProperty("html", Html);
         writer.OptionalProperty("searchText", SearchText);
         writer.OptionalProperty("title", Title);
         writer.OptionalProperty("secondary", Secondary);

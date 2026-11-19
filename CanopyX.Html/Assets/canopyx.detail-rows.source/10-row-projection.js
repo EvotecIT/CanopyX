@@ -35,7 +35,7 @@
       const previous = this.rowProjection, sameResult = previous && this.rowProjectionKey[0] === this.snapshot, top = this.logicalTop();
       const anchorIndex = sameResult && previous.rowCount() ? previous.rowAt(top) : -1;
       const anchor = anchorIndex >= 0 ? { item: previous.rowItem(anchorIndex), offset: top - previous.rowTop(anchorIndex) } : null;
-      const details = this.detailOrdinals || [], segments = [], runs = [], headers = new Map();
+      const details = this.detailOrdinals || [], segments = [], runs = [], headers = new Map(), footers = new Map();
       let count = 0;
       const run = (first, last) => {
         if (first > last) return;
@@ -50,6 +50,9 @@
           headers.set(group.key, count); segments.push({ start: count, length: 1, header: this.groupHeader(group, level, path) }); count++;
           if (this.collapsedGroups?.has(group.key)) continue;
           if (group.groups?.length) walk(group.groups, level + 1, [...path, group]); else run(first, last);
+          // A group's footer row follows its last record, on the page that holds that record.
+          const footer = group.offset + group.count - 1 <= bounds.last && this.groupFooter?.(group, level);
+          if (footer) { footers.set(group.key, count); segments.push({ start: count, length: 1, header: footer }); count++; }
         }
       };
       if (groups) walk(groups, 1, []); else run(bounds.first, bounds.last);
@@ -77,7 +80,8 @@
         },
         indexOf: row => {
           if (!row) return -1;
-          if (row.group) return this.groupHeaders?.get(row.group.key) === row ? headers.get(row.group.key) ?? -1 : -1;
+          if (row.group) return row.footer ? this.groupFooters?.get(row.group.key) === row ? footers.get(row.group.key) ?? -1 : -1 :
+            this.groupHeaders?.get(row.group.key) === row ? headers.get(row.group.key) ?? -1 : -1;
           if (row.status === "detail") {
             const index = this.detailRecords?.get(row.detailOf) === row && details.includes(row.ordinal) ? recordIndex(row.ordinal) : -1;
             return index < 0 ? -1 : index + 1;

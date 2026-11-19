@@ -238,7 +238,8 @@ export interface GridReporting {
   /** Load the optional ChartForgeX renderer when readers first chart accepted data. */
   readonly chartable?: boolean;
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
-  readonly grouping?: GridSort & { readonly headerTemplate?: string };
+  /** headerTemplate and footerTemplate are plain text with {column}, {value} and {count}; a footer row takes the group's aggregates. */
+  readonly grouping?: GridSort & { readonly headerTemplate?: string; readonly footerTemplate?: string };
   /** Initial runtime grouping levels, outermost first (at most four). Not combined with grouping. */
   readonly groupBy?: readonly GridGroupLevel[];
   /** Readers group by sortable columns from column menus, the group-by bar and dragged headers. Not combined with grouping. */
@@ -500,6 +501,11 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   query?: Q;
 }
 export interface InlineGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "inline"; navigation?: "offset" }; rows: Row[]; rowData?: never; }
+/** An inline grid that reads its rows once (or every refreshSeconds, 5 to 86,400) from an http(s) or relative JSON address: an
+ * array of rows or an object with a rows array. Its own rows stay empty. */
+export interface AddressGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> {
+  source: { kind: "inline"; navigation?: "offset"; url: string; refreshSeconds?: number }; rows?: readonly never[]; rowData?: never;
+}
 /**
  * A compact row: the row id (or `{ id, tone?, className? }`) followed by its cells in the order of `GridRowData.columns`.
  * Trailing empty cells may be left out; `null` is an empty cell.
@@ -534,7 +540,7 @@ export interface CursorGridView<Row extends GridRow = GridRow> extends GridDefin
   presentation: "paged";
   rows?: never;
 }
-export type GridView<Row extends GridRow = GridRow> = InlineGridView<Row> | CompactGridView<Row> | HostGridView<Row> | CursorGridView<Row>;
+export type GridView<Row extends GridRow = GridRow> = InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> | HostGridView<Row> | CursorGridView<Row>;
 
 /** A complete requested window from one dataset revision, with full and matching counts. */
 export interface GridPage<Row extends GridRow = GridRow> {
@@ -587,7 +593,10 @@ export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "
 export type GridColumnDefaults = Pick<GridColumn, "className" | "alignment" | "sortable" | "filterable" | "hidden" | "orderData" | "orderSequence" | "sortComparator"> & { readonly targets: readonly string[] };
 export interface GridFooter {
   readonly id: string; readonly label: string; readonly scope: "page" | "all";
+  /** Empty when the row holds only text cells. */
   readonly aggregates: readonly GridAggregate[];
+  /** Plain text under declared columns, keyed by column id (1 to 512 characters, never markup), before their aggregates. */
+  readonly cells?: Readonly<Record<string, string>>;
 }
 export interface GridAggregate {
   /** A display transformation; raw aggregates remain unchanged. */

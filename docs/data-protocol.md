@@ -163,7 +163,7 @@ Columns accept `className` (space-separated CSS class tokens), `alignment` (`sta
 
 The optional `grid-options` part implements query hooks and footer rendering. Plugins register `filterOperators` and `sortComparators` maps. A filter receives `(rawValue, operands, {column, signal})` and returns a boolean; a comparator receives `(leftSortValue, rightSortValue, {column, signal})` and returns a finite number for ascending order. Names are a lowercase letter followed by up to 31 ASCII letters or digits. Built-in filters cannot be replaced. Custom filters use one non-null operand and can occur in flat or nested filter groups. Missing sort values remain last in both directions. Hooks are scoped to the grid's resolved plugins. A host source owns its server equivalents and receives the accepted query; browser hooks never silently filter one cached server page.
 
-`footers` contains at most 16 rows with unique `id`, a plain-text `label`, `scope` (`page` or `all`) and up to 32 existing [aggregate descriptors](#flat-groups-and-complete-query-totals). `page` means the visible page of matching records; `all` means every matching record after filtering. A continuous grid has one matching result rather than visible pages, so both scopes cover it. Counts ignore missing values, numeric operations use raw number cells, empty numeric inputs yield null, and custom operations reuse the plugin `aggregates` extension point.
+`footers` contains at most 16 rows with unique `id`, a plain-text `label`, `scope` (`page` or `all`), up to 32 existing [aggregate descriptors](#flat-groups-and-complete-query-totals) and optional `cells`: plain text of 1 to 512 characters under declared columns (`{ "name": "Total" }`), shown before that column's aggregates and never read as markup. A row needs an aggregate or a text cell; a text-only row has an empty `aggregates` list (`CanopyGridFooter.Cells` in C#). `page` means the visible page of matching records; `all` means every matching record after filtering. A continuous grid has one matching result rather than visible pages, so both scopes cover it. Counts ignore missing values, numeric operations use raw number cells, empty numeric inputs yield null, and custom operations reuse the plugin `aggregates` extension point.
 
 ```js
 view.footers = [
@@ -177,6 +177,8 @@ view.footers = [
 A host `gridPage` can supply `footerValues: {rowId: {aggregateId: numberOrNull}}` for its accepted revision and window. The browser computes built-in page values only when the returned records cover that entire scope. An unavailable full-result or custom server value is shown as unavailable; cached records never stand in for a complete result. Footer rows require offset navigation. The script-free fallback renders footer text and supplied values as part of its table, using inline alignment styles.
 
 Fixed grouping accepts an optional, nonblank `headerTemplate` of at most 512 characters with `{column}`, `{value}` and `{count}` tokens. The result is plain text in browser group headings. Markup is never interpreted; unknown tokens remain literal text. The static fallback does not render group headers.
+
+A fixed grouping's optional `footerTemplate` (the same rules, `CanopyGridGrouping.FooterTemplate` in C#) adds a row after each group's last record: the template's text in the first cell and the group's aggregates under their columns, which then leave the heading. On a paged grid the row follows the record on the page that holds it, a collapsed group hides it, and the row is focusable like a heading (Enter, Space and the arrows do not collapse anything). It replaces script-built group footers such as a DataTables `endRender`; exports and the static fallback leave it out.
 
 ### Export, clipboard and record details
 
@@ -571,6 +573,10 @@ A grid row's optional `detail` is a table, properties or html payload (as on tre
 `{ "type": "tree", "roots": [...] }` for the nested tree. Detail payloads never join queries, sorting, search or record
 counts. Exports that include details add `details: true` to the request, and each exported record a `detail` table,
 properties or html payload (nested rows become a table of the nested view's visible columns).
+
+### Rows from an address
+
+An inline grid may read its rows from a JSON address instead of carrying them: `source: { kind: "inline", url, refreshSeconds? }` with an empty or absent `rows` (`CanopyGridSource.FromUrl(url, refresh)` in C#). It suits static pages that cannot host the [remote protocol](remote-dotnet.md). The address is `http:`, `https:` or relative to the page, at most 2,048 characters, without control characters, backslashes or a `//host` form; the browser reads it with same-origin credentials and `Accept: application/json`. It answers an array of rows, or an object with a `rows` array, in the view's [row format](#cell); the rows are checked and repaired like inline rows, and every query then runs on them in the browser. A failed read (an HTTP error, invalid JSON or invalid rows) fails the first query with a Retry, which reads again. `refreshSeconds` (5 to 86,400) reads the rows again while the page is visible and no query is pending, then runs the reader's query again over them. Files opened from disk cannot fetch: serve the page over HTTP. The `url-rows` part (`canopyx-url-rows.js`) carries the reader; single-file pages written by `CanopyX.Html` embed it with the `rich-cells` part, since the rows may hold markup.
 
 ### Row data
 
@@ -1128,7 +1134,7 @@ A cell is either a bare value (string, number, boolean, or null) or an object:
   with milliseconds, `yyyy-MM-ddTHH:mm:ss.fffZ`).
 - `text` replaces the formatted value. Hosts use it for units, localisation, and phrases like "not collected".
 - `tone` is a name: a lowercase letter followed by lowercase letters, digits, and hyphens, at most 32 characters, not ending in `-bg`. The theme maps tones to colours; hosts never send colours. See [Tones](#tones).
-- Every string is inserted as text, never as HTML.
+- `html` (at most 65,536 code units) is markup a flat grid shows in place of the text; see [Rich cells](#rich-cells). Every other string is inserted as text, never as HTML.
 
 A badge has `text`, an optional `tone`, and an optional `title` (tooltip).
 
@@ -1140,6 +1146,16 @@ changes? }`, at most 10,000) or `changes` (`{ name, before, after, kind? }`, at 
 list items are plain values. Any cell may carry `ref`, a link `{ id, view?, path? }` to another record of its own view or of the
 grid or tree whose view id it names (`path` is a tree record's id path). Search, sorting, filters and exports keep reading
 `value` and `text`; structured members never join queries.
+
+### Rich cells
+
+A cell object's `html` gives a flat grid a small, safe subset of HTML for badges, emphasis, line breaks and links, the kind a report used to write as trusted DataTables cells. The cell's `value` (and `text`) still drive sorting, filters, search, copy, exports and the static outline; `CanopyCell.FromHtml(html, text?)` sets the markup and uses its text content as the value. The browser parses the markup into an inert document, where scripts never run and nothing loads, and builds only what is allowed again as new elements:
+
+- Elements: `a`, `abbr`, `b`, `br`, `code`, `del`, `div`, `em`, `i`, `img`, `ins`, `kbd`, `li`, `mark`, `ol`, `p`, `s`, `small`, `span`, `strong`, `sub`, `sup`, `time`, `u`, `ul` and `wbr`, nested at most 16 levels and 2,000 nodes. Other elements keep their text; `script`, `style`, `svg`, `iframe`, `template`, form controls and similar elements go with theirs.
+- Attributes: `class` (up to 16 tokens of letters, digits, `_` and `-`), `title`, `lang` and `dir` on any of them; `href` and `target` on links, where only the [link presenter's](#safe-cell-presenters) addresses are kept and `target="_blank"` adds `rel="noopener noreferrer"`; `src`, `alt`, `width` and `height` on images, whose source is such an address or a base64 PNG, GIF, JPEG or WebP; `datetime` on `time`; `start` on `ol`. Event handlers and every other attribute are dropped.
+- Styles: `color`, `background-color`, `font-weight`, `font-style`, `text-decoration`, `white-space`, `max-width`, `overflow`, `text-overflow`, `display` and `vertical-align`, copied through the CSSOM (which a strict Content Security Policy allows) and never with `url()`, `var()` or expressions.
+
+A column's presenter or host renderer takes precedence over a cell's markup. Trees, the record drawer, the print outline and exports show the text. The sanitiser is the `rich-cells` part (`canopyx-rich-cells.js`), which loads with the first cell that has markup; until then the cell shows its text. See [security.md](security.md#rich-cells).
 
 ### Tones
 
