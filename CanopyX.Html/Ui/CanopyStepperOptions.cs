@@ -12,6 +12,11 @@ public sealed class CanopyStepperOptions {
     public bool Linear { get; set; } = true;
     /// <summary>Gets or sets whether interactive markup includes footer action buttons.</summary>
     public bool ShowFooter { get; set; }
+    /// <summary>Gets or sets where the toolbar shows when <see cref="ShowFooter"/> is set.</summary>
+    public CanopyStepperToolbarPosition ToolbarPosition { get; set; }
+    /// <summary>Gets or sets trusted HTML for extra toolbar controls, such as a Help link or a Cancel button, placed before the step actions.
+    /// Inserted without encoding or sanitization; never pass untrusted input. The host handles their clicks.</summary>
+    public string? ToolbarHtml { get; set; }
     /// <summary>Gets or sets the Back button's plain text label.</summary>
     public string BackLabel { get; set; } = "Back";
     /// <summary>Gets or sets the Next button's plain text label.</summary>

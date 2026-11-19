@@ -373,11 +373,15 @@ export interface UiToastsController extends UiController {
   getState(): UiResult<{ visible: string[]; queued: string[] }>;
 }
 
-/** An item a lightbox shows: an image, a frame (a page, video or PDF) or content (a Node, trusted host HTML or a function returning one). */
+/** An item a lightbox shows: an image, a frame (a page or PDF), a video file, a YouTube video (address or id) or content (a Node, trusted host HTML or a function returning one). */
 export interface UiLightboxItem {
   id?: string;
-  type?: "image" | "frame" | "content";
+  type?: "image" | "frame" | "content" | "video" | "youtube";
   src?: string;
+  /** The image a video shows before it plays. */
+  poster?: string;
+  /** A video or YouTube item starts playing, muted, when the viewer shows it. */
+  autoplay?: boolean;
   alt?: string;
   caption?: string;
   content?: Node | string | (() => Node | string | null);
@@ -409,6 +413,14 @@ export interface UiCarouselOptions {
   selected?: number;
   /** Off unless given: slides move every interval milliseconds, with a Pause button, pausing on hover and focus, never under reduced motion. */
   autoplay?: false | { interval: number; start?: boolean };
+  /** "fade" stacks the slides and fades between them, one per view. Defaults to "slide". */
+  transition?: "slide" | "fade";
+  /** Where Previous and Next sit. Defaults to "below". */
+  controls?: "below" | "above" | "sides";
+  /** Where the slide picker sits, or "hidden". Defaults to "controls" (between Previous and Next). */
+  indicators?: "controls" | "above" | "below" | "hidden";
+  /** Where .cx-carousel-caption paragraphs in slides show. Defaults to "overlay". */
+  captions?: "overlay" | "below";
   labels?: UiLabels;
 }
 export interface UiCarouselController extends UiController {

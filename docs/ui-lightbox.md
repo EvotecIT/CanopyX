@@ -1,7 +1,7 @@
 # Gallery and lightbox
 
-A gallery is a grid of thumbnails whose items open in a viewer: images, pages and documents in a frame, or host content such
-as a summary card. The viewer is the shared modal dialog, so it traps focus, closes with Escape, locks page scrolling and
+A gallery is a grid of thumbnails whose items open in a viewer: images, videos, YouTube videos, pages and documents in a
+frame, or host content such as a summary card. The viewer is the shared modal dialog, so it traps focus, closes with Escape, locks page scrolling and
 returns focus to the thumbnail. It ships in the lazy `ui-lightbox` part, which needs `ui-overlays`, and works in static
 reports (`file://`, a nonce-based Content Security Policy, no CDN) as well as in live hosts.
 
@@ -15,6 +15,10 @@ gallery.Items.Add(new CanopyGalleryItem("images/rack-a.jpg", "Rack A") {
     ThumbnailHref = "images/rack-a-small.jpg", Caption = "Rack A after the move", Width = 320, Height = 200
 });
 gallery.Items.Add(new CanopyGalleryItem("manual.pdf", "Installation manual") { Type = CanopyGalleryItemType.Frame });
+gallery.Items.Add(new CanopyGalleryItem("media/rack-tour.mp4", "Rack tour") {
+    Type = CanopyGalleryItemType.Video, Poster = "media/rack-tour.jpg"
+});
+gallery.Items.Add(new CanopyGalleryItem("https://youtu.be/aqz-KE-bpKQ", "Migration keynote") { Type = CanopyGalleryItemType.YouTube });
 gallery.Items.Add(new CanopyGalleryItem("inventory", "Inventory summary") {
     Type = CanopyGalleryItemType.Content, Caption = "Inventory summary",
     ContentHtml = "<h3>Inventory</h3><p>12 servers, 4 switches.</p>"  // trusted host HTML
@@ -27,13 +31,20 @@ content item travels in a `<template>` beside the gallery and needs the runtime 
 item when it must open without scripts. The builder encodes addresses and text and refuses script addresses, addresses with control characters, and
 data addresses that are not images; the runtime refuses script addresses in items too. Images can be files beside the report or `data:image/` addresses, which keep a report to one file.
 
+A video item plays in the browser's own player with its controls. `Poster` is the image shown before it plays and, without a
+`ThumbnailHref`, its thumbnail too. `Autoplay` starts the video when the viewer shows it, muted, because browsers only autoplay
+muted video; the reader turns the sound on in the player. A YouTube item takes a watch, `youtu.be`, shorts or embed address,
+or a bare video id, and plays from `youtube-nocookie.com`, which needs the network. Leaving an item or closing the viewer
+stops its video. Data addresses can also be `data:video/`.
+
 `Width` and `Height` reserve a thumbnail's space before it loads. An item without a thumbnail (a frame or content item)
 shows its alternative text as a link.
 
 ## Open the viewer from JavaScript
 
 Declarative galleries mount when the page loads. A host can bind its own markup, marking each link with
-`data-lightbox-item` (and `data-lightbox-type="frame"` or `"content"`, `data-caption`), or pass items directly:
+`data-lightbox-item` (and `data-lightbox-type="frame"`, `"content"`, `"video"` or `"youtube"`, `data-caption`, and for
+videos `data-poster` and `data-autoplay="true"`), or pass items directly:
 
 ```javascript
 const viewer = CanopyX.lightbox('#evidence', {
@@ -42,6 +53,8 @@ const viewer = CanopyX.lightbox('#evidence', {
     { src: '/shots/before.png', alt: 'Before the change', caption: 'Before' },
     { src: '/shots/after.png', alt: 'After the change', caption: 'After' },
     { type: 'frame', src: '/reports/change-42.pdf', caption: 'Change record' },
+    { type: 'video', src: '/media/tour.mp4', poster: '/media/tour.jpg', autoplay: true, caption: 'Tour' },
+    { type: 'youtube', src: 'aqz-KE-bpKQ', caption: 'Keynote' },
     { type: 'content', content: summaryNode, caption: 'Summary' }
   ]
 });
@@ -72,7 +85,7 @@ viewer fires `cx-lightbox:open` and `cx-lightbox:close`.
 
 Zoom steps through 150%, 200%, 300% and 400%. A zoomed image pans by scrolling, by dragging with the mouse, and with the arrow
 keys once the stage has focus; while it is zoomed the arrows pan instead of moving between items. Moving to another item
-resets the zoom. A frame keeps its own keys.
+resets the zoom. A frame or video keeps its own keys, and swiping over a video drives its player instead of moving items.
 
 ## Accessibility, labels and phones
 

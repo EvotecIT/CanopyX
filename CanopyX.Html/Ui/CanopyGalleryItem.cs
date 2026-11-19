@@ -16,12 +16,16 @@ public sealed class CanopyGalleryItem {
     public string Alt { get; }
     /// <summary>Gets or sets what the item opens.</summary>
     public CanopyGalleryItemType Type { get; set; }
-    /// <summary>Gets or sets the thumbnail address. Null uses <see cref="Href"/> for an image and a text link for other items.</summary>
+    /// <summary>Gets or sets the thumbnail address. Null uses <see cref="Href"/> for an image, <see cref="Poster"/> for a video and a text link for other items.</summary>
     public string? ThumbnailHref { get; set; }
     /// <summary>Gets or sets the plain text caption under the thumbnail and in the viewer.</summary>
     public string? Caption { get; set; }
     /// <summary>Gets or sets trusted HTML a content item shows, inserted without encoding or sanitization. Never pass untrusted input.</summary>
     public string? ContentHtml { get; set; }
+    /// <summary>Gets or sets the image a video item shows before it plays.</summary>
+    public string? Poster { get; set; }
+    /// <summary>Gets or sets whether a video or YouTube item starts playing, muted, when the viewer shows it.</summary>
+    public bool Autoplay { get; set; }
     /// <summary>Gets or sets the thumbnail's intrinsic width in pixels, which reserves its space before it loads.</summary>
     public int? Width { get; set; }
     /// <summary>Gets or sets the thumbnail's intrinsic height in pixels.</summary>
