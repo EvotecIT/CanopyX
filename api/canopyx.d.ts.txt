@@ -4199,23 +4199,75 @@ export interface UiLightboxController extends UiController{
   back():UiResult<boolean>;
   zoom(level:number):UiResult<number>;
   getState():UiResult<{open:boolean;index:number;total:number;zoom:number}>;
-  export interface UiCarouselOptions{perView?:number;loop?:boolean;selected?:number;autoplay?:false|{interval:number;start?:boolean};labels?:UiLabels;}export interface UiCarouselController extends UiController{select(index:number):UiResult<boolean>;next():UiResult<boolean>;back():UiResult<boolean>;play():UiResult<boolean>;pause():UiResult<boolean>;refresh():UiResult<void>;getState():UiResult<{index:number;total:number;visible:number;playing:boolean}>;}export interface UiRatingOptions{max?:number;value?:number|null;clearable?:boolean;name?:string;label?:string;onChange?:(value:number|null) => void;labels?:UiLabels;}export interface UiRatingController extends UiController{select(value:number|null):UiResult<boolean>;clear():UiResult<boolean>;getState():UiResult<{value:number|null;max:number}>;}export function mountUi(root?:ParentNode):UiController[];
-  export function contextMenu(target:UiTarget,items:readonly UiMenuItem[]|((event:MouseEvent|KeyboardEvent|PointerEvent,element:HTMLElement) => readonly UiMenuItem[]|null|undefined),options?:UiContextMenuOptions):UiContextMenuDisposer;
-  export function tabs(target:UiTarget,options?:UiTabsOptions):UiTabsController;
-  export function stepper(target:UiTarget,options?:UiStepperOptions):UiStepperController;
-  export function accordion(target:UiTarget,options?:UiAccordionOptions):UiAccordionController;
-  export function toasts(target:UiTarget,options?:UiToastsOptions):UiToastsController;
-  export function notify(toast:UiToastOptions|string):Promise<string>;
-  export function lightbox(target:UiTarget,options?:UiLightboxOptions):UiLightboxController;
-  export function carousel(target:UiTarget,options?:UiCarouselOptions):UiCarouselController;
-  export function rating(target:UiTarget,options?:UiRatingOptions):UiRatingController;
-  export function dialog(target:UiTarget,options?:UiDialogOptions):UiDialogController;
-  export function drawer(target:UiTarget,options?:UiDrawerOptions):UiDialogController;
-  export function popover(target:UiTarget,options?:UiOverlayOptions):UiOverlayController;
-  export function tooltip(target:UiTarget,options?:UiOverlayOptions):UiOverlayController;
-  export function menu(target:UiTarget,options?:UiMenuOptions):UiMenuController;
-  export interface UiApi{mountUi:typeof mountUi;contextMenu:typeof contextMenu;notify:typeof notify;tabs:typeof tabs;stepper:typeof stepper;accordion:typeof accordion;toasts:typeof toasts;lightbox:typeof lightbox;carousel:typeof carousel;rating:typeof rating;dialog:typeof dialog;drawer:typeof drawer;popover:typeof popover;tooltip:typeof tooltip;menu:typeof menu;}declare const CanopyXUi:UiApi&{registerPart(name:string,part:{version:string;requires?:string[];install(context:object):void}):void;setNonce(nonce:string):void};
-  export default CanopyXUi;
+}
+export interface UiCarouselOptions{
+  perView?:number;
+  loop?:boolean;
+  selected?:number;
+  autoplay?:false|{interval:number;start?:boolean};
+  labels?:UiLabels;
+}
+export interface UiCarouselController extends UiController{
+  select(index:number):UiResult<boolean>;
+  next():UiResult<boolean>;
+  back():UiResult<boolean>;
+  play():UiResult<boolean>;
+  pause():UiResult<boolean>;
+  refresh():UiResult<void>;
+  getState():UiResult<{index:number;total:number;visible:number;playing:boolean}>;
+}
+export interface UiRatingOptions{
+  max?:number;
+  value?:number|null;
+  clearable?:boolean;
+  name?:string;
+  label?:string;
+  onChange?:(value:number|null) => void;
+  labels?:UiLabels;
+}
+export interface UiRatingController extends UiController{
+  select(value:number|null):UiResult<boolean>;
+  clear():UiResult<boolean>;
+  getState():UiResult<{value:number|null;max:number}>;
+}
+export function mountUi(root?:ParentNode):UiController[];
+export function contextMenu(target:UiTarget,items:readonly UiMenuItem[]|((event:MouseEvent|KeyboardEvent|PointerEvent,element:HTMLElement) => readonly UiMenuItem[]|null|undefined),options?:UiContextMenuOptions):UiContextMenuDisposer;
+export function tabs(target:UiTarget,options?:UiTabsOptions):UiTabsController;
+export function stepper(target:UiTarget,options?:UiStepperOptions):UiStepperController;
+export function accordion(target:UiTarget,options?:UiAccordionOptions):UiAccordionController;
+export function toasts(target:UiTarget,options?:UiToastsOptions):UiToastsController;
+export function notify(toast:UiToastOptions|string):Promise<string>;
+export function lightbox(target:UiTarget,options?:UiLightboxOptions):UiLightboxController;
+export function carousel(target:UiTarget,options?:UiCarouselOptions):UiCarouselController;
+export function rating(target:UiTarget,options?:UiRatingOptions):UiRatingController;
+export function dialog(target:UiTarget,options?:UiDialogOptions):UiDialogController;
+export function drawer(target:UiTarget,options?:UiDrawerOptions):UiDialogController;
+export function popover(target:UiTarget,options?:UiOverlayOptions):UiOverlayController;
+export function tooltip(target:UiTarget,options?:UiOverlayOptions):UiOverlayController;
+export function menu(target:UiTarget,options?:UiMenuOptions):UiMenuController;
+export interface UiApi{
+  mountUi:typeof mountUi;
+  contextMenu:typeof contextMenu;
+  notify:typeof notify;
+  tabs:typeof tabs;
+  stepper:typeof stepper;
+  accordion:typeof accordion;
+  toasts:typeof toasts;
+  lightbox:typeof lightbox;
+  carousel:typeof carousel;
+  rating:typeof rating;
+  dialog:typeof dialog;
+  drawer:typeof drawer;
+  popover:typeof popover;
+  tooltip:typeof tooltip;
+  menu:typeof menu;
+}
+declare const CanopyXUi:UiApi&{
+  registerPart(name:string,part:{version:string;requires?:string[];install(context:object):void}):void;
+  setNonce(nonce:string):void
+}
+;
+export default CanopyXUi;
 
 // ---- JavaScript/view-intents.d.ts ----
 import type{

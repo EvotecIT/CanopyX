@@ -398,6 +398,8 @@ export interface UiLightboxController extends UiController {
   /** Sets the zoom of the current image, 1 (fitted) to 4, and returns the zoom applied. */
   zoom(level: number): UiResult<number>;
   getState(): UiResult<{ open: boolean; index: number; total: number; zoom: number }>;
+}
+
 export interface UiCarouselOptions {
   /** Slides shown at once, 1 to 6; narrow screens show one. */
   perView?: number;
