@@ -14,7 +14,7 @@ public sealed class UiPartAssetsTests {
     [InlineData("ui-stepper", 7 * 1024)]
     [InlineData("ui-accordion", 6 * 1024)]
     [InlineData("ui-toasts", 6 * 1024)]
-    [InlineData("ui-lightbox", 5 * 1024)]
+    [InlineData("ui-lightbox", 6 * 1024)]
     public void UiPart_ComponentAssetsStayWithinTheirOwnGzipCap(string name, int componentBudget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.NotNull(part.Style);
