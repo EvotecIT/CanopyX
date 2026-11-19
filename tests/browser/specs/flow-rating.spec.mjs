@@ -49,6 +49,11 @@ test('an optional rating clears when its value is chosen again or with Delete; a
   await page.locator('.cx-flow-star').nth(1).click();
   await expect(stars(page)).toHaveCount(0);
   expect(await page.evaluate(() => window.flow.getValues().quality ?? null)).toBeNull();
+  await expect(page.getByRole('radio', { name: '2 of 5' })).not.toBeChecked();
+  // The cleared star can be chosen again straight away.
+  await page.locator('.cx-flow-star').nth(1).click();
+  await expect(stars(page)).toHaveCount(2);
+  await page.locator('.cx-flow-star').nth(1).click();
   await page.locator('.cx-flow-star').nth(4).click();
   await page.getByRole('radio', { name: '5 of 5' }).focus();
   await page.keyboard.press('Delete');

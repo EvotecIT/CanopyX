@@ -27,7 +27,7 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   controls.append(...[play, previous, picker, next].filter(Boolean));
   root.insertBefore(controls, viewport === root ? track : viewport);
   // While slides move by themselves the viewport is not announced; otherwise each new slide is.
-  attribute(viewport, 'aria-live', interval ? 'off' : 'polite');
+  attribute(viewport, 'aria-live', 'polite');
   // The track scrolls, so it takes focus: the arrow keys then move between slides even when no slide holds a control.
   if (!track.hasAttribute('tabindex')) attribute(track, 'tabindex', '0');
   let slides = [], index = 0, visible = 1, playing = false, timer = 0, hover = false, focus = false, frame = 0, aim = null;
@@ -35,8 +35,20 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   const rtl = () => getComputedStyle(root).direction === 'rtl';
   const last = () => Math.max(0, slides.length - visible);
 
+  /** Gives a slide back what the carousel changed: the attributes it set, inert and its state. */
+  function release(slide) {
+    slide.inert = false; delete slide.dataset.state; delete slide.dataset.cxSlide;
+    for (const entry of restore.filter(([element]) => element === slide).reverse()) {
+      const [, name, value] = entry;
+      if (value === null) slide.removeAttribute(name); else slide.setAttribute(name, value);
+      restore.splice(restore.indexOf(entry), 1);
+    }
+  }
   function discover() {
-    slides = [...track.children].filter(item => item.nodeType === 1);
+    const next = [...track.children].filter(item => item.nodeType === 1);
+    // Slides the host took out of the track are released before the list forgets them.
+    for (const slide of slides) if (!next.includes(slide)) release(slide);
+    slides = next;
     slides.forEach((slide, at) => {
       slide.classList.add('cx-carousel-slide'); slide.dataset.cxPart = 'slide';
       if (!slide.dataset.cxSlide) {
@@ -53,9 +65,10 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
       dot.addEventListener('click', () => select(at, 'picker')); return dot;
     }));
   }
+  // The slides that fit: a slide and its gap make one step, and the last slide needs no gap after it.
   function measure() {
-    const width = track.clientWidth, slide = slides[0]?.getBoundingClientRect().width || width;
-    visible = Math.max(1, Math.min(slides.length, Math.round(width / Math.max(1, slide))));
+    const width = track.clientWidth, slide = slides[0]?.getBoundingClientRect().width || width, gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+    visible = Math.max(1, Math.min(slides.length, Math.floor((width + gap) / Math.max(1, slide + gap) + 0.01)));
   }
   function paint() {
     index = Math.max(0, Math.min(index, last()));
@@ -69,6 +82,8 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
     });
     previous.disabled = !loop && index <= 0; next.disabled = !loop && index >= last();
     controls.hidden = slides.length <= visible;
+    // Slides that move by themselves are not announced; once they stop, each slide the reader moves to is.
+    viewport.setAttribute('aria-live', playing ? 'off' : 'polite');
     if (play) {
       const off = reduced.matches;
       play.disabled = off; play.dataset.state = playing ? 'playing' : 'paused';
@@ -144,7 +159,7 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
   UI_TOOLS.observe(track, () => { measure(); paint(); scrollTo(index); }, signal);
   signal?.addEventListener('abort', () => {
     clearTimeout(timer); cancelAnimationFrame(frame); controls.remove(); root.style.removeProperty('--cx-carousel-per-view');
-    for (const slide of slides) { slide.inert = false; delete slide.dataset.state; delete slide.dataset.cxSlide; }
+    for (const slide of slides) release(slide);
     for (const [element, name, value] of restore.reverse()) if (value === null) element.removeAttribute(name); else element.setAttribute(name, value);
   }, { once: true });
   discover(); measure();

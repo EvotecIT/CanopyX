@@ -7,12 +7,13 @@ UI_IMPL.rating = (root, options = {}, signal) => {
   if (!Number.isInteger(max) || max < 2 || max > 10) throw new Error('CanopyX: a rating has 2 to 10 steps.');
   const clearable = options.clearable ?? data.clearable !== 'false';
   root.classList.add('cx-rating'); root.dataset.cxPart = 'rating';
-  let built = null, inputs = [...root.querySelectorAll('input[type="radio"]')];
+  let built = null, legend = null, inputs = [...root.querySelectorAll('input[type="radio"]')];
   // An empty element gets its group: a legend from options.label and one radio per step, named for form submission.
   if (!inputs.length) {
     const name = options.name || (root.id || 'cx-rating-' + Math.random().toString(36).slice(2)) + '-value';
     built = h('span', 'cx-rating-options');
     if (root.localName !== 'fieldset') { root.setAttribute('role', 'radiogroup'); if (options.label) root.setAttribute('aria-label', options.label); }
+    else if (options.label && !root.querySelector(':scope > legend')) { legend = h('legend'); setText(legend, options.label); root.prepend(legend); }
     for (let step = 1; step <= max; step++) {
       const option = h('label', 'cx-rating-option'), input = h('input'), text = h('span', 'cx-rating-text');
       input.type = 'radio'; input.name = name; input.value = String(step);
@@ -65,10 +66,12 @@ UI_IMPL.rating = (root, options = {}, signal) => {
   root.addEventListener('keydown', event => {
     if ((event.key === 'Delete' || event.key === 'Backspace') && clearable && inputs.includes(event.target)) { event.preventDefault(); set(null, true, 'keyboard'); event.target.focus(); }
   }, { signal });
+  // A form reset restores the radios after its reset event, without a change event: read them once it has run.
+  root.closest('form')?.addEventListener('reset', () => setTimeout(() => { if (!signal?.aborted) { value = read(); paint(); } }), { signal });
   root.addEventListener('pointerover', event => { const at = options$.findIndex(option => option.contains(event.target)); if (at >= 0 && event.pointerType === 'mouse') { preview = at + 1; paint(); } }, { signal });
   root.addEventListener('pointerleave', () => { preview = null; paint(); }, { signal });
   signal?.addEventListener('abort', () => {
-    built?.remove();
+    built?.remove(); legend?.remove();
     for (const option of options$) { delete option.dataset.filled; delete option.dataset.preview; }
     delete root.dataset.value;
   }, { once: true });

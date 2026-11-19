@@ -76,7 +76,7 @@
       } else if(options.kind==="rating"&&typeof raw==="number") {
         // Whole stars for the value, empty ones to the maximum; the picture reads as the value out of the maximum.
         const maximum=options.maximum,filled=Math.round(Math.min(maximum,Math.max(0,raw))),stars=add("","p-rating"),on=h("span","on"),off=h("span","off");
-        stars.setAttribute("role","img");stars.setAttribute("aria-label",text+" / "+numberFormat(grid.lang).format(maximum));
+        stars.setAttribute("role","img");stars.setAttribute("aria-label",numberFormat(grid.lang,0,2).format(raw)+" / "+numberFormat(grid.lang).format(maximum));
         setText(on,"★".repeat(filled));setText(off,"☆".repeat(maximum-filled));stars.append(on,off);
       } else if(options.kind==="identifier") {
         const secondary=options.secondaryColumn?cellText(row.cells[options.secondaryColumn],grid.columns.find(item=>item.id===options.secondaryColumn),grid.fmt):object&&cell.secondary;
