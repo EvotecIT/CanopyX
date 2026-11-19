@@ -96,5 +96,7 @@ public sealed class UiNoticeBuilderTests {
         var html = gallery.ToHtmlFragment();
         Assert.Contains("href=\"media/tour.mp4\" data-lightbox-type=\"video\" data-poster=\"media/tour.jpg\" data-autoplay=\"true\"><img loading=\"lazy\" decoding=\"async\" src=\"media/tour.jpg\" alt=\"Rack tour\">", html);
         Assert.Contains("href=\"https://youtu.be/aqz-KE-bpKQ\" data-lightbox-type=\"youtube\"><img loading=\"lazy\" decoding=\"async\" src=\"keynote.jpg\"", html);
+        var bare = new CanopyGallery("ids") { Items = { new CanopyGalleryItem("aqz-KE-bpKQ", "Keynote") { Type = CanopyGalleryItemType.YouTube } } }.ToHtmlFragment();
+        Assert.Contains("href=\"https://www.youtube.com/watch?v=aqz-KE-bpKQ\" data-lightbox-type=\"youtube\"", bare);
     }
 }

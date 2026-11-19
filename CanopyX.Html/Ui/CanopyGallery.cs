@@ -38,7 +38,7 @@ public sealed class CanopyGallery {
             if (item.Width <= 0 || item.Height <= 0) throw new ArgumentOutOfRangeException(nameof(item.Width), "Thumbnail sizes are positive.");
             var template = Id + "-item-" + UiHtml.Number(index);
             // The link's fragment is percent-encoded; the runtime decodes it back to the template's identity.
-            var href = item.Type == CanopyGalleryItemType.Content ? "#" + Uri.EscapeDataString(template) : Address(item.Href);
+            var href = item.Type == CanopyGalleryItemType.Content ? "#" + Uri.EscapeDataString(template) : Address(YouTubeLink(item));
             if (item.Type == CanopyGalleryItemType.Content) {
                 if (string.IsNullOrWhiteSpace(item.ContentHtml)) throw new ArgumentException("A content item needs ContentHtml.");
                 templates.Append("<template id=\"").Append(UiHtml.Encode(template)).Append("\">").Append(item.ContentHtml).Append("</template>");
@@ -69,6 +69,13 @@ public sealed class CanopyGallery {
             html.Append("</figure></li>");
         }
         return html.Append("</ul>").Append(templates).Append("</div>").ToString();
+    }
+
+    // A bare YouTube id becomes its watch address, so the link also works when it opens without the viewer.
+    private static string YouTubeLink(CanopyGalleryItem item) {
+        if (item.Type != CanopyGalleryItemType.YouTube || item.Href.Length != 11) return item.Href;
+        foreach (var c in item.Href) if (!(c is >= 'a' and <= 'z' || c is >= 'A' and <= 'Z' || c is >= '0' and <= '9' || c == '-' || c == '_')) return item.Href;
+        return "https://www.youtube.com/watch?v=" + item.Href;
     }
 
     // Links open their items without the runtime too, so a script address would run on a click.
