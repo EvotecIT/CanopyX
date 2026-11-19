@@ -56,6 +56,16 @@ public sealed partial class CanopyGridPresenter {
         return new CanopyGridPresenter(CanopyGridPresenterKind.Progress, maximum: maximum);
     }
 
+    /// <summary>Creates read-only stars for a rating: the value rounded to whole filled stars, then empty ones up to the maximum.</summary>
+    /// <param name="maximum">The number of stars, 2 to 10.</param>
+    /// <returns>The immutable descriptor.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The maximum is outside 2 to 10.</exception>
+    /// <remarks>The column keeps its numbers for sorting, filtering and exports; screen readers hear the value and the maximum.</remarks>
+    public static CanopyGridPresenter Rating(int maximum = 5) {
+        if (maximum < 2 || maximum > 10) throw new ArgumentOutOfRangeException(nameof(maximum), "A rating has 2 to 10 stars.");
+        return new CanopyGridPresenter(CanopyGridPresenterKind.Rating, maximum: maximum);
+    }
+
     /// <summary>Creates a check for true and a dash for false, with translated accessible names.</summary>
     /// <returns>The immutable descriptor.</returns>
     public static CanopyGridPresenter Boolean() => Boolean(false);
@@ -92,7 +102,7 @@ public sealed partial class CanopyGridPresenter {
         CanopyGridPresenterKind.SparklineArea => "sparklineArea", CanopyGridPresenterKind.SparklineColumns => "sparklineColumns",
         CanopyGridPresenterKind.SparklineWinLoss => "sparklineWinLoss", CanopyGridPresenterKind.Bullet => "bullet",
         CanopyGridPresenterKind.Structured => "structured", CanopyGridPresenterKind.RelativeTime => "relativeTime",
-        CanopyGridPresenterKind.Log => "log", _ => "missing"
+        CanopyGridPresenterKind.Log => "log", CanopyGridPresenterKind.Rating => "rating", _ => "missing"
     };
 
     internal void WriteJson(CanopyJsonWriter writer) {
@@ -101,7 +111,7 @@ public sealed partial class CanopyGridPresenter {
         if (HrefColumn != null) writer.Property("hrefColumn", HrefColumn);
         if (NewWindow) writer.Property("newWindow", true);
         if (Glyph != null) writer.Property("glyph", Glyph);
-        if (Kind == CanopyGridPresenterKind.Progress) writer.Name("maximum").Number(Maximum);
+        if (Kind == CanopyGridPresenterKind.Progress || Kind == CanopyGridPresenterKind.Rating) writer.Name("maximum").Number(Maximum);
         if (Separator != null) writer.Property("separator", Separator).Property("limit", Limit);
         WriteDesignJson(writer);
         WriteStructuredJson(writer);

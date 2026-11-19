@@ -17,6 +17,8 @@
       if (!["ArrowLeft", "ArrowRight", "Enter", " "].includes(event.key)) return false;
       if (event.target.closest("button,input,select") && ["Enter", " "].includes(event.key)) return true;
       event.preventDefault();
+      // A footer row has nothing to expand: the arrows, Enter and Space on the row stay on it.
+      if (row.footer) return true;
       if (this.pendingQuery) return true;
       const collapsed = this.collapsedGroups.has(row.group.key), rows = this.rowProjection;
       if (event.key === "ArrowRight" && !collapsed && this.groupTree) { const next = rows.rowItem(rows.indexOf(row) + 1); if (next) this.focusProjected(next); return true; }

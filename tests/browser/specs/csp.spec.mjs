@@ -262,6 +262,17 @@ test.describe("under require-trusted-types-for 'script'", () => {
     await expectClean(page, report);
   });
 
+  test("rich cells are sanitised and built under the policy, with the group footer rows and footer text", async ({ page }) => {
+    const report = await serve(page, TRUSTED_TYPES);
+    await open(page, "grid-content.html");
+    const host = page.locator(".cx-host").first();
+    await expect(host.locator(".cx-rich span.badge").first()).toHaveText(/Enabled|Disabled/);
+    await expect(host.locator(".cx-rich a[target=_blank][rel='noopener noreferrer']").first()).toHaveAttribute("href", /^https:\/\/example\.test\/accounts\//);
+    await expect(host.locator(".cx-grid-group-footer").first()).toContainText("accounts");
+    await expect(host.locator('[data-cx-footer="total"]')).toContainText("Logons are counted for the last 30 days.");
+    await expectClean(page, report);
+  });
+
   test("a sanitizeHtml host option that returns TrustedHTML from its own policy is written without the canopyx policy", async ({ page }) => {
     const report = await serve(page, nonce => POLICIES["nonce only"](nonce) + "; require-trusted-types-for 'script'; trusted-types canopyx host");
     // Counts the HTML the canopyx policy is asked for.

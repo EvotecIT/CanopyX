@@ -4,8 +4,12 @@ namespace CanopyX.Html.Ui;
 public enum CanopyGalleryItemType {
     /// <summary>An image at the item's address. The default.</summary>
     Image,
-    /// <summary>A page, video or document at the item's address, shown in a frame.</summary>
+    /// <summary>A page or document at the item's address, shown in a frame.</summary>
     Frame,
     /// <summary>Trusted HTML the gallery carries in a template.</summary>
-    Content
+    Content,
+    /// <summary>A video file at the item's address, played by the browser's own video player.</summary>
+    Video,
+    /// <summary>A YouTube video, given by its watch, short or embed address or its id, embedded from youtube-nocookie.com.</summary>
+    YouTube
 }

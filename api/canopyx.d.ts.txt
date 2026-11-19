@@ -977,13 +977,17 @@ import type{
   CanopyPlugin
 }
 from "./plugins.js";
-export type FlowValue=string|number|boolean|null|readonly(string|number|boolean)[]|readonly FlowRecordRow[]|readonly FlowPickedRecord[];
+export interface FlowSignature{
+  readonly svg:string;
+  readonly png:string
+}
+export type FlowValue=string|number|boolean|null|readonly(string|number|boolean)[]|readonly FlowRecordRow[]|readonly FlowPickedRecord[]|FlowSignature;
 export type FlowRecordRow=Readonly<Record<string,string|number|boolean|null>>;
 export interface FlowPickedRecord{
   readonly id:string;
   readonly label:string
 }
-export type FlowFieldType="text"|"number"|"date"|"datetime"|"time"|"select"|"toggle"|"lookup"|"choice"|"multiChoice"|"textarea"|"list"|"secret"|"duration"|"records"|"custom";
+export type FlowFieldType="text"|"number"|"date"|"datetime"|"time"|"select"|"toggle"|"lookup"|"choice"|"multiChoice"|"textarea"|"list"|"secret"|"duration"|"records"|"custom"|"rating"|"signature";
 export type FlowOperator="eq"|"ne"|"gt"|"ge"|"lt"|"le"|"contains"|"notContains"|"startsWith"|"endsWith"|"matches"|"notMatches"|"in"|"notIn"|"between"|"isNull"|"isNotNull";
 export interface FlowCondition{
   operator:"and"|"or"|"none";
@@ -1009,6 +1013,7 @@ export interface FlowValidation{
   maxItems?:number;
   item?:"email"|"host"|"ip"|"cidr"|"url";
   itemPattern?:string;
+  format?:"email"|"host"|"ip"|"ipv4"|"ipv6"|"cidr"|"url"|"mac"|"guid"|"phone"|"date"|"time"|"dateTime";
 }
 export interface FlowField{
   id:string;
@@ -1031,6 +1036,8 @@ export interface FlowField{
   offText?:string;
   rows?:number;
   step?:number;
+  scale?:number;
+  mask?:string;
   keepWhenBlank?:boolean;
   reveal?:boolean;
   units?:readonly("seconds"|"minutes"|"hours"|"days")[];
@@ -1639,6 +1646,10 @@ export type GridPresenter=|{
   readonly target:number
 }
 |{
+  readonly kind:"rating";
+  readonly maximum:number
+}
+|{
   readonly kind:"identifier";
   readonly secondaryColumn?:string;
   readonly mono?:boolean;
@@ -1694,7 +1705,7 @@ export interface GridReporting{
   readonly pivot?:GridPivotDefinition;
   readonly pivotable?:boolean;
   readonly chartable?:boolean;
-  readonly grouping?:GridSort&{readonly headerTemplate?:string};
+  readonly grouping?:GridSort&{readonly headerTemplate?:string;readonly footerTemplate?:string};
   readonly groupBy?:readonly GridGroupLevel[];
   readonly groupable?:boolean;
   readonly detail?:GridDetailDefinition;
@@ -1881,6 +1892,11 @@ export interface InlineGridView<Row extends GridRow=GridRow>extends GridDefiniti
   rows:Row[];
   rowData?:never;
 }
+export interface AddressGridView<Row extends GridRow=GridRow>extends GridDefinition<GridQuery,Row>{
+  source:{kind:"inline";navigation?:"offset";url:string;refreshSeconds?:number};
+  rows?:readonly never[];
+  rowData?:never;
+}
 export type GridCompactRow=[string|{id:string;tone?:string;className?:string},...Cell[]];
 export interface GridRowData{
   version:1;
@@ -1907,7 +1923,7 @@ export interface CursorGridView<Row extends GridRow=GridRow>extends GridDefiniti
   presentation:"paged";
   rows?:never;
 }
-export type GridView<Row extends GridRow=GridRow>=InlineGridView<Row>|CompactGridView<Row>|HostGridView<Row>|CursorGridView<Row>;
+export type GridView<Row extends GridRow=GridRow>=InlineGridView<Row>|AddressGridView<Row>|CompactGridView<Row>|HostGridView<Row>|CursorGridView<Row>;
 export interface GridPage<Row extends GridRow=GridRow>{
   readonly footerValues?:Readonly<Record<string,Readonly<Record<string,number|null>>>>;
   protocol:"canopyx/2";
@@ -1972,6 +1988,7 @@ export interface GridFooter{
   readonly label:string;
   readonly scope:"page"|"all";
   readonly aggregates:readonly GridAggregate[];
+  readonly cells?:Readonly<Record<string,string>>;
 }
 export interface GridAggregate{
   readonly showAs?:GridShowAs;
@@ -2272,8 +2289,8 @@ interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends Gri
   onPaste?:(event:GridPasteEvent) => boolean|void;
   onCellRangeChange?:(event:{ranges:readonly GridCellRange[]}) => void;
 }
-export type GridHostOptions<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>=GridHostBehavior<Q,Row>&({viewStore?:never}|{viewStore:GridViewStore<Q>;view:(Q extends GridCursorQuery?CursorGridView<Row>:InlineGridView<Row>|CompactGridView<Row>|HostGridView<Row>)&{stateKey:string;reporting:GridReporting};});
-export type GridOptions<Row extends GridRow=GridRow>=GridHostOptions<GridQuery,Row>&({view:InlineGridView<Row>|CompactGridView<Row>}|{view:HostGridView<Row>;source:GridSource<Row>});
+export type GridHostOptions<Q extends AcceptedGridQuery=GridQuery,Row extends GridRow=GridRow>=GridHostBehavior<Q,Row>&({viewStore?:never}|{viewStore:GridViewStore<Q>;view:(Q extends GridCursorQuery?CursorGridView<Row>:InlineGridView<Row>|AddressGridView<Row>|CompactGridView<Row>|HostGridView<Row>)&{stateKey:string;reporting:GridReporting};});
+export type GridOptions<Row extends GridRow=GridRow>=GridHostOptions<GridQuery,Row>&({view:InlineGridView<Row>|AddressGridView<Row>|CompactGridView<Row>}|{view:HostGridView<Row>;source:GridSource<Row>});
 export type CursorGridOptions<Row extends GridRow=GridRow>=GridHostOptions<GridCursorQuery,Row>&{
   view:CursorGridView<Row>;
   source:GridCursorSource<Row>
@@ -3322,6 +3339,7 @@ from "./records.js";
 export interface CanopyCell extends StructuredCell{
   value?:CellValue;
   text?:string;
+  html?:string;
   searchText?:string;
   title?:string;
   tone?:string;
@@ -3502,7 +3520,7 @@ export type LazyNode=NodeDefinition&{
 ;
 export type CanopyNode=LeafNode|DetailNode|InlineBranch|LazyNode;
 export type InlineNode=LeafNode|DetailNode|InlineBranch<InlineNode>;
-export type LabelName=|"gridShowAs"|"gridShowAsValue"|"gridShowAsPercentGrandTotal"|"gridShowAsPercentParent"|"gridShowAsPercentColumn"|"gridShowAsPercentRow"|"gridShowAsRunningTotal"|"gridShowAsRank"|"gridShowAsDifference"|"gridShowAsPercentChange"|"gridBucket"|"gridBucketNone"|"gridBucketDay"|"gridBucketWeek"|"gridBucketMonth"|"gridBucketQuarter"|"gridBucketYear"|"gridBucketHour"|"gridBucketWeekday"|"gridBucketWidth"|"gridBucketEdges"|"gridBucketOrigin"|"gridBucketInvalid"|"gridPaging"|"gridPageRange"|"gridPageNumber"|"gridPageLength"|"gridFirstPage"|"gridPreviousPage"|"gridNextPage"|"gridLastPage"|"gridPageInfo"|"gridPageInfoFiltered"|"gridPageButton"|"gridUnknownCount"|"gridMatchedCount"|"gridCursorRange"|"gridResultCount"|"gridRegexSearch"|"gridClearQuery"|"gridRemoveSearch"|"gridGroupedFilters"|"gridRemoveGroup"|"gridRemoveCondition"|"gridExport"|"gridFilteredResults"|"gridSelectedRows"|"gridAllResults"|"gridVisibleRows"|"gridAllRows"|"gridDownloadCsv"|"gridDownloadXlsx"|"gridDownloadPdf"|"gridCopy"|"gridDetails"|"searchPlaceholder"|"searchResults"|"searchResultCount"|"searchResultCountOfTotal"|"searchResultCountOfMany"|"searchNoResults"|"searchTooShort"|"searchWordTooShort"|"searchFailed"|"columns"|"hiddenColumns"|"visibleColumns"|"resizeColumn"|"columnWidth"|"loading"|"loadError"|"queryFailed"|"showMore"|"showMoreUnknownTotal"|"pageLoaded"|"itemsLoaded"|"yes"|"no"|"utcTime"|"localTime"|"mountError"|"actions"|"editValue"|"saveEdit"|"cancelEdit"|"invalidEdit"|"interactionPending"|"interactionRejected"|"interactionFailed"|"markMove"|"moveHere"|"moveBefore"|"moveAfter"|"cancelMove"|"gridFilters"|"gridColumn"|"gridOperator"|"gridValue"|"gridValueType"|"gridText"|"gridBoolean"|"gridAddFilter"|"gridRemoveFilter"|"gridApply"|"gridClearFilters"|"gridMoveEarlier"|"gridMoveLater"|"gridViews"|"gridViewName"|"gridSaveView"|"gridRemoveView"|"gridResetView"|"gridChooseView"|"gridInvalidFilter"|"gridContains"|"gridStartsWith"|"gridIn"|"gridIsNull"|"gridIsNotNull"|"gridBetween"|"gridRangeEnd"|"gridInvalidRange"|"gridSuggestedCategory"|"gridChooseCategory"|"gridBooleanValue"|"gridTrue"|"gridFalse"|"gridHeaderFilter"|"gridExpandCell"|"gridCloseCell"|"gridCloseRecord"|"gridCopyDetails"|"gridDetailsCopied"|"gridMoveColumn"|"gridResizeHelp"|"gridColumnMoved"|"gridFitColumn"|"gridFitAllColumns"|"gridPinColumn"|"gridPinNone"|"gridPinLeft"|"gridPinRight"|"gridResponsiveHidden"|"gridFindColumn"|"gridShowAllColumns"|"gridResetColumns"|"gridReorderColumn"|"gridPinnedLeft"|"gridPinnedRight"|"gridFilterGroupTitle"|"gridFilterMatch"|"gridFilterAll"|"gridFilterAny"|"gridAddFilterGroup"|"gridDeleteFilterGroup"|"gridFacetValues"|"gridFacetSearch"|"gridFacetIncludeCurrent"|"gridFacetLoad"|"gridFacetChoose"|"gridFacetCounts"|"gridFacetReload"|"gridRenameView"|"gridDefaultView"|"gridClearDefaultView"|"gridDefaultViewName"|"gridNoDefaultView"|"gridDefaultViewOption"|"gridSelection"|"gridSelectPage"|"gridSelectMatching"|"gridClearSelection"|"gridSelectionCount"|"gridSelectionQueryCount"|"gridSelectionQueryUnknown"|"gridSelectRecord"|"gridGroupHeading"|"gridGroupMissing"|"gridGroupExpand"|"gridGroupCollapse"|"gridSummary"|"gridGroupOrder"|"gridAggregateCount"|"gridAggregateSum"|"gridAggregateAverage"|"gridAggregateMinimum"|"gridAggregateMaximum"|"gridAggregateMedian"|"gridAggregatePercentile"|"gridGroupBy"|"gridUngroup"|"gridGroupDrop"|"gridExpandAll"|"gridCollapseAll"|"gridExpandLevel"|"gridCollapseLevel"|"gridGroupMove"|"gridGroupSortBy"|"gridGroupSortValue"|"gridGroupSortAggregate"|"gridSelectGroup"|"gridAggregateDistinct"|"gridShowDetail"|"gridHideDetail"|"gridDetailOf"|"gridDetailFailed"|"gridExportProgress"|"gridExportReading"|"gridExportCancelled"|"gridCancelExport"|"gridNoExportColumns"|"gridPrint"|"gridExportWorkbookHint"|"gridExportPdfHint"|"gridExportCsvHint"|"gridExportCopy"|"matchesHighlight"|"matchesCount"|"matchesPosition"|"matchesNone"|"matchesLoaded"|"matchesPrevious"|"matchesNext"|"matchesAnnounce"|"layoutMenu"|"layoutFit"|"layoutScroll"|"layoutCards"|"layoutDensity"|"layoutCompact"|"layoutNormal"|"layoutComfortable"|"layoutChanged"|"layoutSort"|"gridFitContent"|"gridUnpin"|"gridWhere"|"gridComplexFilter"|"gridClearColumnFilter"|"gridSelectionAggregate"|"gridConditionValue"|"gridConditionUpperValue"|"gridDeleteCondition"|"gridShowRowsWhere"|"gridOfTheseAreTrue"|"gridOfThese"|"gridGroupCount"|"gridEditCell"|"gridEditSave"|"gridEditCancel"|"gridEditDiscard"|"gridEditUndo"|"gridEditRedo"|"gridEditEdited"|"gridEditChanges"|"gridEditErrors"|"gridEditSaving"|"gridEditSaved"|"gridEditFailed"|"gridEditRequired"|"gridEditNumber"|"gridEditDate"|"gridEditMin"|"gridEditMax"|"gridEditStep"|"gridEditMinLength"|"gridEditMaxLength"|"gridEditPattern"|"gridEditChoice"|"gridEditConflict"|"gridEditRejected"|"gridEditNotSaved"|"gridEditNoMatches"|"gridEditSearching"|"gridEditUndone"|"gridEditRedone"|"gridEditNone"|"gridMore"|"gridDone"|"gridClearAll"|"gridClearSearch"|"gridRows"|"gridResultNoun"|"gridSearchNoun"|"gridChart"|"gridChartType"|"gridChartSource"|"gridChartSourceFiltered"|"gridChartSourceSelected"|"gridChartSourceRange"|"gridChartSourceGroups"|"gridChartSourcePivot"|"gridChartClearFilter"|"gridChartLoading"|"gridChartLine"|"gridChartArea"|"gridChartBar"|"gridChartColumn"|"gridChartStacked"|"gridChartWinLoss"|"gridChartBullet"|"gridColumnMenu"|"gridSortAscending"|"gridSortDescending"|"gridClearSort"|"gridFilterColumn"|"gridHideColumn"|"gridGroupedBy"|"gridRemoveGrouping"|"gridSelectAllValues"|"gridFilterValues"|"gridAddCondition"|"gridAddGroup"|"gridAnd"|"gridOr"|"gridEditAsText"|"gridFilterText"|"gridDeepFilters"|"gridToday"|"gridYesterday"|"gridLastSevenDays"|"gridLastThirtyDays"|"gridThisMonth"|"gridDateRange"|"gridEmpty"|"gridEmptyReason"|"gridNoMatches"|"gridNoMatchesReason"|"gridNoMatchesSearch"|"gridNoMatchesSearchFilters"|"gridNoMatchesFilters"|"gridRetry"|"gridLoadFailed"|"gridAll"|"gridPageOf"|"gridStatusCount"|"gridDetailsSection"|"gridPreviousRecord"|"gridNextRecord"|"gridShowMore"|"gridNoData"|"gridPeriodRange"|"gridFooterTotals"|"gridFooterUnavailable"|"gridHealthy"|"formatRules"|"formatLegend"|"formatUpTo"|"formatAbove"|"formatHiddenFlagged"|"formatRule"|"formatAddRule"|"formatEditRule"|"formatDeleteRule"|"formatMoveUp"|"formatMoveDown"|"formatEnableRule"|"formatNoRules"|"formatName"|"formatDescription"|"formatOnlyRowsWhere"|"formatEveryRow"|"formatNone"|"formatApplyTo"|"formatTargetCell"|"formatTargetRow"|"formatTargetColumns"|"formatStyle"|"formatHighlight"|"formatDataBar"|"formatColorScale"|"formatBands"|"formatTone"|"formatEmphasis"|"formatFill"|"formatTextOnly"|"formatStrong"|"formatIcon"|"formatNoIcon"|"formatAutomatic"|"formatBadge"|"formatCue"|"formatLowest"|"formatMidpoint"|"formatHighest"|"formatAddBand"|"formatRemoveBand"|"formatSave"|"formatCancel"|"formatShowLegend"|"formatInvalid"|"formatMatchCase"|"formatToneDanger"|"formatToneWarning"|"formatToneSuccess"|"formatToneInfo"|"formatToneNeutral"|"formatToneMuted"|"formatNotContains"|"formatEndsWith"|"formatNotIn"|"formatBetween"|"formatLike"|"formatMatches"|"formatOlderThan"|"formatWithinLast"|"formatNotLike"|"formatNotMatches"|"formatBetweenExclusive"|"gridCellRangeSelected"|"gridCellRangesSelected"|"gridCellRangeCleared"|"gridCopyCells"|"gridCopyCellsWithHeaders"|"gridPasteCells"|"gridSelectAllCells"|"gridCellsCopied"|"gridCellsPasted"|"gridPasteRefused"|"gridPasteReadOnly"|"gridPasteType"|"gridPasteReport"|"gridPasteCell"|"gridFillHandle"|"gridCellsFilled"|"gridCellMenu"|"gridClearCellRanges"|"linkFilteredBy"|"linkRemoveFilter"|"linkFiltered"|"linkHighlighted"|"linkHighlightedRows"|"linkCleared"|"recordBack"|"recordBackTo"|"recordTrail"|"recordShowing"|"recordTabs"|"recordSections"|"recordOtherFields"|"recordShowEmpty"|"recordHideEmpty"|"recordActions"|"recordCopyValues"|"recordCopyJson"|"recordCopyLink"|"recordCopied"|"recordPrint"|"recordExportCsv"|"recordExportJson"|"recordOpenAll"|"recordLoadMore"|"recordCount"|"recordItems"|"recordMore"|"recordShowAll"|"recordRetry"|"recordLoadFailed"|"recordUnavailable"|"recordField"|"recordValue"|"recordSection"|"recordBefore"|"recordAfter"|"recordAdded"|"recordRemoved"|"recordChanged"|"calendarEditOccurrence"|"calendarRemoveOccurrence"|"calendarOccurrenceScope"|"calendarSharedResources"|"calendarResourceWindow"|"calendarToday"|"calendarPrevious"|"calendarNext"|"calendarViews"|"calendarMonth"|"calendarWeek"|"calendarDay"|"calendarDays"|"calendarAgenda"|"calendarYear"|"calendarTimeline"|"calendarGoTo"|"calendarAllDay"|"calendarMore"|"calendarMoreLabel"|"calendarDayEvents"|"calendarNoEvents"|"calendarEvents"|"calendarShowing"|"calendarRepeats"|"calendarTruncated"|"calendarLoading"|"calendarLoadError"|"calendarNow"|"calendarZoom"|"calendarZoomHour"|"calendarZoomDay"|"calendarZoomWeek"|"calendarZoomMonth"|"calendarZoomQuarter"|"calendarResources"|"calendarCapacity"|"calendarCapacityAt"|"calendarBusy"|"calendarOverlaps"|"calendarUnavailable"|"calendarOutsideHours"|"calendarConflict"|"calendarNotAllowed"|"calendarMoved"|"calendarResized"|"calendarSeriesMoved"|"calendarSeriesTime"|"calendarMoveHelp"|"calendarEdit"|"calendarSaveFailed"|"calendarExport"|"calendarTimeRange"|"calendarSelected"|"calendarLane"|"calendarHighlighted"|"accordionSearch"|"accordionNoMatches"|"accordionCopyTitle"|"accordionCopied"|"toastRegion"|"toastClose"|"toastQueued"|"toastInfo"|"toastSuccess"|"toastWarning"|"toastDanger"|"toastNeutral"|"lightboxTitle"|"lightboxPrevious"|"lightboxNext"|"lightboxZoomIn"|"lightboxZoomOut"|"lightboxZoomReset"|"lightboxError"|"tabsMore"|"tabsMoreSelected"|"tabsScrollPrevious"|"tabsScrollNext"|"tabsSection"|"tabsPosition"|"tabsPause"|"tabsPlay"|"tabsMotionDisabled"|"stepperStepOf"|"stepperBack"|"stepperNext"|"stepperFinish"|"stepperSkip"|"stepperSaveDraft"|"stepperAllSteps"|"stepperOptional"|"stepperCompleted"|"stepperSkipped"|"stepperIssues"|"stepperIssue"|"dialogClose"|"drawerClose"|"drawerPrevious"|"drawerNext"|"stateLoading"|"stateRetry"|"stateDetails"|"boardLane"|"boardUnassigned"|"boardEmpty"|"boardWip"|"boardWipFull"|"boardMove"|"boardMoved"|"boardRejected"|"boardPending"|"boardPartial"|"boardKeys"|"planMilestone"|"planCritical"|"planBaseline"|"planDependency"|"planDependencyConflict"|"planOverlapConflict"|"planIncomplete"|"planInvalidRange"|"planInvalidResource"|"planProposal"|"planMoveHint"|"planActual"|"planPending"|"planBaselineLabel"|"planDependencies"|"planConflict"|"pathEmpty"|"pathSource"|"pathTarget"|"pathStep"|"pathCycle"|"pathForeign"|"pathDisabled"|"pathKeys"|"pathPartial"|"stackWinner"|"stackEnforced"|"stackFiltered"|"stackEmpty"|"stackOrder"|"stackTruncated"|"timePlay"|"timePause"|"timePrevious"|"timeNext"|"timePosition"|"timeFrame"|"timeReducedMotion"|"gridCalculationAdd"|"gridCalculationTitle"|"gridCalculationId"|"gridCalculationExpression"|"gridCalculationError"|"gridCalculationInvalid"|"gridCalculationHelp"|"gridCalculationNumber"|"gridCalculationDate"|"gridCalculationResultType"|"gridCalculationDivideZero"|"gridPivotFieldOptions"|"compareChanges"|"viewIntentClearSearch"|"viewIntentRemoveGrouping"|"viewIntentFlat"|"viewIntentAscending"|"viewIntentDescending"|"viewIntentNotEqual"|"viewIntentGreater"|"viewIntentAtLeast"|"viewIntentLess"|"viewIntentAtMost"|"viewIntentFilter"|"viewIntentOnly"|"viewIntentPivot"|"viewIntentAllRows"|"viewIntentTotals"|"viewIntentTuples"|"viewIntentExcludeTuples"|"viewIntentNoChanges"|"viewIntentPreview"|"viewIntentApplied"|"viewIntentSuperseded"|"viewIntentSearch"|"viewIntentSort"|"viewIntentGroup"|"viewIntentColumns"|"compareSummary"|"compareAdded"|"compareRemoved"|"compareChanged"|"compareUnchanged"|"compareOnlyChanges"|"compareColumnChanges"|"viewIntentWords"|"viewIntentSubstring";
+export type LabelName=|"gridShowAs"|"gridShowAsValue"|"gridShowAsPercentGrandTotal"|"gridShowAsPercentParent"|"gridShowAsPercentColumn"|"gridShowAsPercentRow"|"gridShowAsRunningTotal"|"gridShowAsRank"|"gridShowAsDifference"|"gridShowAsPercentChange"|"gridBucket"|"gridBucketNone"|"gridBucketDay"|"gridBucketWeek"|"gridBucketMonth"|"gridBucketQuarter"|"gridBucketYear"|"gridBucketHour"|"gridBucketWeekday"|"gridBucketWidth"|"gridBucketEdges"|"gridBucketOrigin"|"gridBucketInvalid"|"gridPaging"|"gridPageRange"|"gridPageNumber"|"gridPageLength"|"gridFirstPage"|"gridPreviousPage"|"gridNextPage"|"gridLastPage"|"gridPageInfo"|"gridPageInfoFiltered"|"gridPageButton"|"gridUnknownCount"|"gridMatchedCount"|"gridCursorRange"|"gridResultCount"|"gridRegexSearch"|"gridClearQuery"|"gridRemoveSearch"|"gridGroupedFilters"|"gridRemoveGroup"|"gridRemoveCondition"|"gridExport"|"gridFilteredResults"|"gridSelectedRows"|"gridAllResults"|"gridVisibleRows"|"gridAllRows"|"gridDownloadCsv"|"gridDownloadXlsx"|"gridDownloadPdf"|"gridCopy"|"gridDetails"|"searchPlaceholder"|"searchResults"|"searchResultCount"|"searchResultCountOfTotal"|"searchResultCountOfMany"|"searchNoResults"|"searchTooShort"|"searchWordTooShort"|"searchFailed"|"columns"|"hiddenColumns"|"visibleColumns"|"resizeColumn"|"columnWidth"|"loading"|"loadError"|"queryFailed"|"showMore"|"showMoreUnknownTotal"|"pageLoaded"|"itemsLoaded"|"yes"|"no"|"utcTime"|"localTime"|"mountError"|"actions"|"editValue"|"saveEdit"|"cancelEdit"|"invalidEdit"|"interactionPending"|"interactionRejected"|"interactionFailed"|"markMove"|"moveHere"|"moveBefore"|"moveAfter"|"cancelMove"|"gridFilters"|"gridColumn"|"gridOperator"|"gridValue"|"gridValueType"|"gridText"|"gridBoolean"|"gridAddFilter"|"gridRemoveFilter"|"gridApply"|"gridClearFilters"|"gridMoveEarlier"|"gridMoveLater"|"gridViews"|"gridViewName"|"gridSaveView"|"gridRemoveView"|"gridResetView"|"gridChooseView"|"gridInvalidFilter"|"gridContains"|"gridStartsWith"|"gridIn"|"gridIsNull"|"gridIsNotNull"|"gridBetween"|"gridRangeEnd"|"gridInvalidRange"|"gridSuggestedCategory"|"gridChooseCategory"|"gridBooleanValue"|"gridTrue"|"gridFalse"|"gridHeaderFilter"|"gridExpandCell"|"gridCloseCell"|"gridCloseRecord"|"gridCopyDetails"|"gridDetailsCopied"|"gridMoveColumn"|"gridResizeHelp"|"gridColumnMoved"|"gridFitColumn"|"gridFitAllColumns"|"gridPinColumn"|"gridPinNone"|"gridPinLeft"|"gridPinRight"|"gridResponsiveHidden"|"gridFindColumn"|"gridShowAllColumns"|"gridResetColumns"|"gridReorderColumn"|"gridPinnedLeft"|"gridPinnedRight"|"gridFilterGroupTitle"|"gridFilterMatch"|"gridFilterAll"|"gridFilterAny"|"gridAddFilterGroup"|"gridDeleteFilterGroup"|"gridFacetValues"|"gridFacetSearch"|"gridFacetIncludeCurrent"|"gridFacetLoad"|"gridFacetChoose"|"gridFacetCounts"|"gridFacetReload"|"gridRenameView"|"gridDefaultView"|"gridClearDefaultView"|"gridDefaultViewName"|"gridNoDefaultView"|"gridDefaultViewOption"|"gridSelection"|"gridSelectPage"|"gridSelectMatching"|"gridClearSelection"|"gridSelectionCount"|"gridSelectionQueryCount"|"gridSelectionQueryUnknown"|"gridSelectRecord"|"gridGroupHeading"|"gridGroupMissing"|"gridGroupExpand"|"gridGroupCollapse"|"gridSummary"|"gridGroupOrder"|"gridAggregateCount"|"gridAggregateSum"|"gridAggregateAverage"|"gridAggregateMinimum"|"gridAggregateMaximum"|"gridAggregateMedian"|"gridAggregatePercentile"|"gridGroupBy"|"gridUngroup"|"gridGroupDrop"|"gridExpandAll"|"gridCollapseAll"|"gridExpandLevel"|"gridCollapseLevel"|"gridGroupMove"|"gridGroupSortBy"|"gridGroupSortValue"|"gridGroupSortAggregate"|"gridSelectGroup"|"gridAggregateDistinct"|"gridShowDetail"|"gridHideDetail"|"gridDetailOf"|"gridDetailFailed"|"gridExportProgress"|"gridExportReading"|"gridExportCancelled"|"gridCancelExport"|"gridNoExportColumns"|"gridPrint"|"gridExportWorkbookHint"|"gridExportPdfHint"|"gridExportCsvHint"|"gridExportCopy"|"matchesHighlight"|"matchesCount"|"matchesPosition"|"matchesNone"|"matchesLoaded"|"matchesPrevious"|"matchesNext"|"matchesAnnounce"|"layoutMenu"|"layoutFit"|"layoutScroll"|"layoutCards"|"layoutDensity"|"layoutCompact"|"layoutNormal"|"layoutComfortable"|"layoutChanged"|"layoutSort"|"gridFitContent"|"gridUnpin"|"gridWhere"|"gridComplexFilter"|"gridClearColumnFilter"|"gridSelectionAggregate"|"gridConditionValue"|"gridConditionUpperValue"|"gridDeleteCondition"|"gridShowRowsWhere"|"gridOfTheseAreTrue"|"gridOfThese"|"gridGroupCount"|"gridEditCell"|"gridEditSave"|"gridEditCancel"|"gridEditDiscard"|"gridEditUndo"|"gridEditRedo"|"gridEditEdited"|"gridEditChanges"|"gridEditErrors"|"gridEditSaving"|"gridEditSaved"|"gridEditFailed"|"gridEditRequired"|"gridEditNumber"|"gridEditDate"|"gridEditMin"|"gridEditMax"|"gridEditStep"|"gridEditMinLength"|"gridEditMaxLength"|"gridEditPattern"|"gridEditChoice"|"gridEditConflict"|"gridEditRejected"|"gridEditNotSaved"|"gridEditNoMatches"|"gridEditSearching"|"gridEditUndone"|"gridEditRedone"|"gridEditNone"|"gridMore"|"gridDone"|"gridClearAll"|"gridClearSearch"|"gridRows"|"gridResultNoun"|"gridSearchNoun"|"gridChart"|"gridChartType"|"gridChartSource"|"gridChartSourceFiltered"|"gridChartSourceSelected"|"gridChartSourceRange"|"gridChartSourceGroups"|"gridChartSourcePivot"|"gridChartClearFilter"|"gridChartLoading"|"gridChartLine"|"gridChartArea"|"gridChartBar"|"gridChartColumn"|"gridChartStacked"|"gridChartWinLoss"|"gridChartBullet"|"gridColumnMenu"|"gridSortAscending"|"gridSortDescending"|"gridClearSort"|"gridFilterColumn"|"gridHideColumn"|"gridGroupedBy"|"gridRemoveGrouping"|"gridSelectAllValues"|"gridFilterValues"|"gridAddCondition"|"gridAddGroup"|"gridAnd"|"gridOr"|"gridEditAsText"|"gridFilterText"|"gridDeepFilters"|"gridToday"|"gridYesterday"|"gridLastSevenDays"|"gridLastThirtyDays"|"gridThisMonth"|"gridDateRange"|"gridEmpty"|"gridEmptyReason"|"gridNoMatches"|"gridNoMatchesReason"|"gridNoMatchesSearch"|"gridNoMatchesSearchFilters"|"gridNoMatchesFilters"|"gridRetry"|"gridLoadFailed"|"gridAll"|"gridPageOf"|"gridStatusCount"|"gridDetailsSection"|"gridPreviousRecord"|"gridNextRecord"|"gridShowMore"|"gridNoData"|"gridPeriodRange"|"gridFooterTotals"|"gridFooterUnavailable"|"gridHealthy"|"formatRules"|"formatLegend"|"formatUpTo"|"formatAbove"|"formatHiddenFlagged"|"formatRule"|"formatAddRule"|"formatEditRule"|"formatDeleteRule"|"formatMoveUp"|"formatMoveDown"|"formatEnableRule"|"formatNoRules"|"formatName"|"formatDescription"|"formatOnlyRowsWhere"|"formatEveryRow"|"formatNone"|"formatApplyTo"|"formatTargetCell"|"formatTargetRow"|"formatTargetColumns"|"formatStyle"|"formatHighlight"|"formatDataBar"|"formatColorScale"|"formatBands"|"formatTone"|"formatEmphasis"|"formatFill"|"formatTextOnly"|"formatStrong"|"formatIcon"|"formatNoIcon"|"formatAutomatic"|"formatBadge"|"formatCue"|"formatLowest"|"formatMidpoint"|"formatHighest"|"formatAddBand"|"formatRemoveBand"|"formatSave"|"formatCancel"|"formatShowLegend"|"formatInvalid"|"formatMatchCase"|"formatToneDanger"|"formatToneWarning"|"formatToneSuccess"|"formatToneInfo"|"formatToneNeutral"|"formatToneMuted"|"formatNotContains"|"formatEndsWith"|"formatNotIn"|"formatBetween"|"formatLike"|"formatMatches"|"formatOlderThan"|"formatWithinLast"|"formatNotLike"|"formatNotMatches"|"formatBetweenExclusive"|"gridCellRangeSelected"|"gridCellRangesSelected"|"gridCellRangeCleared"|"gridCopyCells"|"gridCopyCellsWithHeaders"|"gridPasteCells"|"gridSelectAllCells"|"gridCellsCopied"|"gridCellsPasted"|"gridPasteRefused"|"gridPasteReadOnly"|"gridPasteType"|"gridPasteReport"|"gridPasteCell"|"gridFillHandle"|"gridCellsFilled"|"gridCellMenu"|"gridClearCellRanges"|"linkFilteredBy"|"linkRemoveFilter"|"linkFiltered"|"linkHighlighted"|"linkHighlightedRows"|"linkCleared"|"recordBack"|"recordBackTo"|"recordTrail"|"recordShowing"|"recordTabs"|"recordSections"|"recordOtherFields"|"recordShowEmpty"|"recordHideEmpty"|"recordActions"|"recordCopyValues"|"recordCopyJson"|"recordCopyLink"|"recordCopied"|"recordPrint"|"recordExportCsv"|"recordExportJson"|"recordOpenAll"|"recordLoadMore"|"recordCount"|"recordItems"|"recordMore"|"recordShowAll"|"recordRetry"|"recordLoadFailed"|"recordUnavailable"|"recordField"|"recordValue"|"recordSection"|"recordBefore"|"recordAfter"|"recordAdded"|"recordRemoved"|"recordChanged"|"calendarEditOccurrence"|"calendarRemoveOccurrence"|"calendarOccurrenceScope"|"calendarSharedResources"|"calendarResourceWindow"|"calendarToday"|"calendarPrevious"|"calendarNext"|"calendarViews"|"calendarMonth"|"calendarWeek"|"calendarDay"|"calendarDays"|"calendarAgenda"|"calendarYear"|"calendarTimeline"|"calendarGoTo"|"calendarAllDay"|"calendarMore"|"calendarMoreLabel"|"calendarDayEvents"|"calendarNoEvents"|"calendarEvents"|"calendarShowing"|"calendarRepeats"|"calendarTruncated"|"calendarLoading"|"calendarLoadError"|"calendarNow"|"calendarZoom"|"calendarZoomHour"|"calendarZoomDay"|"calendarZoomWeek"|"calendarZoomMonth"|"calendarZoomQuarter"|"calendarResources"|"calendarCapacity"|"calendarCapacityAt"|"calendarBusy"|"calendarOverlaps"|"calendarUnavailable"|"calendarOutsideHours"|"calendarConflict"|"calendarNotAllowed"|"calendarMoved"|"calendarResized"|"calendarSeriesMoved"|"calendarSeriesTime"|"calendarMoveHelp"|"calendarEdit"|"calendarSaveFailed"|"calendarExport"|"calendarTimeRange"|"calendarSelected"|"calendarLane"|"calendarHighlighted"|"accordionSearch"|"accordionNoMatches"|"accordionCopyTitle"|"accordionCopied"|"toastRegion"|"toastClose"|"toastQueued"|"toastInfo"|"toastSuccess"|"toastWarning"|"toastDanger"|"toastNeutral"|"lightboxTitle"|"lightboxPrevious"|"lightboxNext"|"lightboxZoomIn"|"lightboxZoomOut"|"lightboxZoomReset"|"lightboxError"|"signaturePad"|"signatureUndo"|"signatureClear"|"signatureType"|"signatureDraw"|"signatureTyped"|"signatureColour"|"signatureDownloadPng"|"signatureDownloadSvg"|"carouselRole"|"carouselSlideRole"|"carouselSlide"|"carouselPrevious"|"carouselNext"|"carouselPicker"|"carouselMotionDisabled"|"ratingValue"|"tabsMore"|"tabsMoreSelected"|"tabsScrollPrevious"|"tabsScrollNext"|"tabsSection"|"tabsPosition"|"tabsPause"|"tabsPlay"|"tabsMotionDisabled"|"stepperStepOf"|"stepperBack"|"stepperNext"|"stepperFinish"|"stepperSkip"|"stepperSaveDraft"|"stepperAllSteps"|"stepperOptional"|"stepperCompleted"|"stepperSkipped"|"stepperIssues"|"stepperIssue"|"dialogClose"|"drawerClose"|"drawerPrevious"|"drawerNext"|"stateLoading"|"stateRetry"|"stateDetails"|"boardLane"|"boardUnassigned"|"boardEmpty"|"boardWip"|"boardWipFull"|"boardMove"|"boardMoved"|"boardRejected"|"boardPending"|"boardPartial"|"boardKeys"|"planMilestone"|"planCritical"|"planBaseline"|"planDependency"|"planDependencyConflict"|"planOverlapConflict"|"planIncomplete"|"planInvalidRange"|"planInvalidResource"|"planProposal"|"planMoveHint"|"planActual"|"planPending"|"planBaselineLabel"|"planDependencies"|"planConflict"|"pathEmpty"|"pathSource"|"pathTarget"|"pathStep"|"pathCycle"|"pathForeign"|"pathDisabled"|"pathKeys"|"pathPartial"|"stackWinner"|"stackEnforced"|"stackFiltered"|"stackEmpty"|"stackOrder"|"stackTruncated"|"timePlay"|"timePause"|"timePrevious"|"timeNext"|"timePosition"|"timeFrame"|"timeReducedMotion"|"gridCalculationAdd"|"gridCalculationTitle"|"gridCalculationId"|"gridCalculationExpression"|"gridCalculationError"|"gridCalculationInvalid"|"gridCalculationHelp"|"gridCalculationNumber"|"gridCalculationDate"|"gridCalculationResultType"|"gridCalculationDivideZero"|"gridPivotFieldOptions"|"compareChanges"|"viewIntentClearSearch"|"viewIntentRemoveGrouping"|"viewIntentFlat"|"viewIntentAscending"|"viewIntentDescending"|"viewIntentNotEqual"|"viewIntentGreater"|"viewIntentAtLeast"|"viewIntentLess"|"viewIntentAtMost"|"viewIntentFilter"|"viewIntentOnly"|"viewIntentPivot"|"viewIntentAllRows"|"viewIntentTotals"|"viewIntentTuples"|"viewIntentExcludeTuples"|"viewIntentNoChanges"|"viewIntentPreview"|"viewIntentApplied"|"viewIntentSuperseded"|"viewIntentSearch"|"viewIntentSort"|"viewIntentGroup"|"viewIntentColumns"|"compareSummary"|"compareAdded"|"compareRemoved"|"compareChanged"|"compareUnchanged"|"compareOnlyChanges"|"compareColumnChanges"|"viewIntentWords"|"viewIntentSubstring";
 export type CanopyLabels=Partial<Record<LabelName,string>>;
 export interface InlineSourceDefinition{
   kind:"inline";
@@ -4197,8 +4215,10 @@ export interface UiToastsController extends UiController{
 }
 export interface UiLightboxItem{
   id?:string;
-  type?:"image"|"frame"|"content";
+  type?:"image"|"frame"|"content"|"video"|"youtube";
   src?:string;
+  poster?:string;
+  autoplay?:boolean;
   alt?:string;
   caption?:string;
   content?:Node|string|(() => Node|string|null);
@@ -4216,6 +4236,73 @@ export interface UiLightboxController extends UiController{
   zoom(level:number):UiResult<number>;
   getState():UiResult<{open:boolean;index:number;total:number;zoom:number}>;
 }
+export interface UiCarouselOptions{
+  perView?:number;
+  loop?:boolean;
+  selected?:number;
+  autoplay?:false|{interval:number;start?:boolean};
+  transition?:"slide"|"fade";
+  controls?:"below"|"above"|"sides";
+  indicators?:"controls"|"above"|"below"|"hidden";
+  captions?:"overlay"|"below";
+  labels?:UiLabels;
+}
+export interface UiCarouselController extends UiController{
+  select(index:number):UiResult<boolean>;
+  next():UiResult<boolean>;
+  back():UiResult<boolean>;
+  play():UiResult<boolean>;
+  pause():UiResult<boolean>;
+  refresh():UiResult<void>;
+  getState():UiResult<{index:number;total:number;visible:number;playing:boolean}>;
+}
+export interface UiRatingOptions{
+  max?:number;
+  value?:number|null;
+  clearable?:boolean;
+  name?:string;
+  label?:string;
+  onChange?:(value:number|null) => void;
+  labels?:UiLabels;
+}
+export interface UiRatingController extends UiController{
+  select(value:number|null):UiResult<boolean>;
+  clear():UiResult<boolean>;
+  getState():UiResult<{value:number|null;max:number}>;
+}
+export interface UiMaskOptions{
+  mask?:string;
+  placeholder?:string;
+  onChange?:(state:{text:string;raw:string;complete:boolean}) => void;
+}
+export interface UiMaskController extends UiController{
+  select(value:string|null):UiResult<string>;
+  refresh():UiResult<void>;
+  getState():UiResult<{text:string;raw:string;complete:boolean}>;
+}
+export interface UiSignatureValue{
+  readonly svg:string;
+  readonly png:string
+}
+export interface UiSignatureOptions{
+  name?:string;
+  format?:"svg"|"png";
+  ink?:string;
+  background?:string;
+  colours?:boolean;
+  download?:boolean|string;
+  readOnly?:boolean;
+  value?:UiSignatureValue;
+  label?:string;
+  onChange?:(value:UiSignatureValue|null) => void;
+  labels?:UiLabels;
+}
+export interface UiSignatureController extends UiController{
+  select(value:UiSignatureValue|null):UiResult<void>;
+  clear():UiResult<void>;
+  focus():UiResult<void>;
+  getState():UiResult<{value:UiSignatureValue|null}>;
+}
 export function mountUi(root?:ParentNode):UiController[];
 export function contextMenu(target:UiTarget,items:readonly UiMenuItem[]|((event:MouseEvent|KeyboardEvent|PointerEvent,element:HTMLElement) => readonly UiMenuItem[]|null|undefined),options?:UiContextMenuOptions):UiContextMenuDisposer;
 export function tabs(target:UiTarget,options?:UiTabsOptions):UiTabsController;
@@ -4224,6 +4311,10 @@ export function accordion(target:UiTarget,options?:UiAccordionOptions):UiAccordi
 export function toasts(target:UiTarget,options?:UiToastsOptions):UiToastsController;
 export function notify(toast:UiToastOptions|string):Promise<string>;
 export function lightbox(target:UiTarget,options?:UiLightboxOptions):UiLightboxController;
+export function mask(target:UiTarget,options?:UiMaskOptions):UiMaskController;
+export function signature(target:UiTarget,options?:UiSignatureOptions):UiSignatureController;
+export function carousel(target:UiTarget,options?:UiCarouselOptions):UiCarouselController;
+export function rating(target:UiTarget,options?:UiRatingOptions):UiRatingController;
 export function dialog(target:UiTarget,options?:UiDialogOptions):UiDialogController;
 export function drawer(target:UiTarget,options?:UiDrawerOptions):UiDialogController;
 export function popover(target:UiTarget,options?:UiOverlayOptions):UiOverlayController;
@@ -4238,6 +4329,10 @@ export interface UiApi{
   accordion:typeof accordion;
   toasts:typeof toasts;
   lightbox:typeof lightbox;
+  mask:typeof mask;
+  signature:typeof signature;
+  carousel:typeof carousel;
+  rating:typeof rating;
   dialog:typeof dialog;
   drawer:typeof drawer;
   popover:typeof popover;

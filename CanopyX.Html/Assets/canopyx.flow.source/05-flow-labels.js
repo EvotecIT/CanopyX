@@ -4,7 +4,7 @@
   const FLOW_LABELS = {
     flowSteps: "Steps", flowStepOf: "Step {current} of {count}", flowStepAnnounce: "Step {current} of {count}, {title}",
     flowNext: "Next", flowBack: "Back", flowSubmit: "Submit", flowSubmitting: "Submitting…", flowReviewTitle: "Check your answers",
-    flowChange: "Change", flowChangeField: "Change {field}", flowNotProvided: "Not provided", flowOptional: "(optional)",
+    flowChange: "Change", flowChangeField: "Change {field}", flowNotProvided: "Not provided", flowOptional: "(optional)", flowRatingValue: "{value} of {max}", flowFormatExample: "For example: {example}", flowFormatInvalid: "{field} must look like {example}.", flowFormatMask: "Format: {mask}",
     flowStepOptional: "Optional", flowStepComplete: "Complete", flowStepCurrent: "Current step", flowStepErrors: "Errors: {count}",
     flowStepLocked: "Complete the earlier steps first", flowStepNotStarted: "Not started", flowErrorSummary: "Fix these before you continue",
     flowReady: "Ready to submit", flowNotReady: "Errors to fix: {count}", flowWarnings: "Warnings: {count}", flowChangesOnly: "Show changes only",

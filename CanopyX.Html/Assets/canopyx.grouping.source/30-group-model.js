@@ -41,7 +41,7 @@
       for (const aggregate of this.view.reporting.aggregates || [])
         if (!GROUP_OPERATIONS.includes(aggregate.operation) && this.view.source.kind === "inline" && !this.groupAggregates.has(aggregate.operation))
           throw new Error("CanopyX: no plugin computes the aggregate '" + aggregate.operation + "' for inline data.");
-      this.collapsedGroups ||= new Set(); this.groupHeaders = new Map();
+      this.collapsedGroups ||= new Set(); this.groupHeaders = new Map(); this.groupFooters = new Map();
       this.attachGroupControls();
     },
     // The accepted query's summary becomes the presentation's once its page is accepted.
@@ -49,10 +49,10 @@
       // A grid with detail rows only shares the prototype once another grid installed grouping.
       if (!this.groupHeaders) return;
       const query = this.acceptedQuery;
-      if (!groupNeedsSummary(this.view, query)) { if (this.summary) { this.summary = null; this.groupHeaders.clear(); } }
+      if (!groupNeedsSummary(this.view, query)) { if (this.summary) { this.summary = null; this.groupHeaders.clear(); this.groupFooters.clear(); } }
       else {
         const key = JSON.stringify(groupSummaryQuery(this.view, query, this.snapshot.revision));
-        if (this.summaryCandidate?.key === key && this.summary !== this.summaryCandidate.result) { this.summary = this.summaryCandidate.result; this.groupHeaders.clear(); }
+        if (this.summaryCandidate?.key === key && this.summary !== this.summaryCandidate.result) { this.summary = this.summaryCandidate.result; this.groupHeaders.clear(); this.groupFooters.clear(); }
       }
       this.groupLevels = this.summary ? groupLevelsOf(this.view, query) : [];
       const levelsKey = JSON.stringify(this.groupLevels);
@@ -71,6 +71,16 @@
         this.groupHeaders.set(group.key, header);
       }
       return header;
+    },
+    // A fixed grouping's footerTemplate adds a row after each group's last record; it is focusable like a heading.
+    groupFooter(group, level) {
+      if (!this.view.reporting?.grouping?.footerTemplate) return null;
+      let footer = this.groupFooters.get(group.key);
+      if (!footer) {
+        footer = { _ri: -1000000 - this.groupFooters.size, hpx: this.rowH, h: { cells: {} }, status: "group", group, level, footer: true };
+        this.groupFooters.set(group.key, footer);
+      }
+      return footer;
     },
     // A record that becomes the focus opens the collapsed groups that hide it.
     revealRecord(row) {

@@ -54,8 +54,11 @@ public partial class CanopyDataGridView {
         if (Footers.Count > 16) throw new InvalidOperationException("At most 16 footer rows are supported.");
         if (Footers.Count > 0 && Navigation == CanopyGridNavigation.Cursor) throw new InvalidOperationException("Footer rows require known-count offset navigation.");
         foreach (var footer in Footers) {
-            if (footer == null || !footerIds.Add(footer.Id) || footer.Aggregates.Count == 0 || footer.Aggregates.Count > 32)
-                throw new InvalidOperationException("Footers require unique identities and 1 to 32 aggregates.");
+            if (footer == null || !footerIds.Add(footer.Id) || footer.Aggregates.Count == 0 && footer.Cells.Count == 0 || footer.Aggregates.Count > 32)
+                throw new InvalidOperationException("Footers require unique identities, at most 32 aggregates, and an aggregate or a text cell.");
+            foreach (var cell in footer.Cells)
+                if (!Columns.Any(column => column.Id == cell.Key) || string.IsNullOrWhiteSpace(cell.Value) || cell.Value.Length > 512)
+                    throw new InvalidOperationException("Footer text cells require declared columns and plain text of 1 to 512 characters.");
             var aggregateIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var aggregate in footer.Aggregates) {
                 var column = aggregate == null ? null : Columns.FirstOrDefault(item => item.Id == aggregate.Column);

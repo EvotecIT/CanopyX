@@ -44,8 +44,9 @@
     if (grouping !== undefined && (!grouping || typeof grouping !== "object" || Array.isArray(grouping) ||
         !["asc", "desc"].includes(grouping.direction) ||
         !view.columns.some(column => column.id === grouping.column && column.sortable))) throw new Error("CanopyX: invalid grouping column or order.");
-    if (grouping?.headerTemplate !== undefined && (typeof grouping.headerTemplate !== "string" || !grouping.headerTemplate.trim() || grouping.headerTemplate.length > 512))
-      throw new Error("CanopyX: invalid group heading template.");
+    for (const name of ["headerTemplate", "footerTemplate"])
+      if (grouping?.[name] !== undefined && (typeof grouping[name] !== "string" || !grouping[name].trim() || grouping[name].length > 512))
+        throw new Error("CanopyX: invalid group " + (name === "headerTemplate" ? "heading" : "footer") + " template.");
     if (options.groupable !== undefined && typeof options.groupable !== "boolean" || grouping !== undefined && reportingDynamicGroups(view))
       throw new Error("CanopyX: a fixed grouping cannot be combined with groupBy or groupable.");
     if (!Array.isArray(aggregates) || aggregates.length > 32) throw new Error("CanopyX: at most 32 aggregates are supported.");

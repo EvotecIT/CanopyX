@@ -249,7 +249,8 @@ public sealed partial class CanopyDataGridView {
             writer.EndArray();
         }
         writer.Name("source").BeginObject().Property("kind", Source.Kind == CanopyGridSourceKind.Inline ? "inline" : "host")
-            .Property("navigation", Navigation == CanopyGridNavigation.Cursor ? "cursor" : "offset").EndObject();
+            .Property("navigation", Navigation == CanopyGridNavigation.Cursor ? "cursor" : "offset").OptionalProperty("url", Source.Url)
+            .OptionalProperty("refreshSeconds", Source.RefreshSeconds).EndObject();
         writer.OptionalProperty("stateKey", StateKey).OptionalProperty("timeZone", CanopyJsonNames.TimeZone(TimeZone));
         if (Query != null) {
             writer.Name("query");
@@ -353,6 +354,9 @@ public sealed partial class CanopyDataGridView {
             if (!IsExportFormatId(format) || !formats.Add(format)) throw new InvalidOperationException("Export formats must be unique identities of 1 to 32 lowercase letters, digits and hyphens, starting with a letter; csv is built in.");
         }
         if (Source.Kind == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
+        if (Source.Url != null && Rows.Count != 0) throw new InvalidOperationException("A grid that reads its rows from an address carries no rows of its own.");
+        if (Source.Url != null && (CalculatedColumnsEditable || System.Linq.Enumerable.Any(Columns, column => column.Calculation != null)))
+            throw new InvalidOperationException("A grid that reads its rows from an address cannot have calculated columns.");
         CanopyGridRows.Validate(Rows, columnIds, Columns, Reporting?.Detail);
         ValidateRecord();
         Query?.Validate(this);

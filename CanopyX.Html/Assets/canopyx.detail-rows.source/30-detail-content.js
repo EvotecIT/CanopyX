@@ -86,7 +86,7 @@
       const view = JSON.parse(JSON.stringify(spec ? spec.view : declared.view)), tree = view?.type === "view", payload = row.detail;
       if (!view || !["grid", "view"].includes(view.type)) throw new Error("CanopyX: a nested detail view is a grid or a tree document.");
       // A view without its own data takes the record's payload as inline data.
-      if (!source && view.source?.kind !== "host" && (tree ? !view.roots?.length : !view.rows?.length)) {
+      if (!source && view.source?.kind !== "host" && !view.source?.url && (tree ? !view.roots?.length : !view.rows?.length)) {
         if (tree ? payload?.type !== "tree" || !Array.isArray(payload.roots) : payload?.type !== "grid" || !Array.isArray(payload.rows))
           throw new Error("CanopyX: the record has no " + (tree ? "tree" : "grid") + " detail payload.");
         view.source = { kind: "inline" }; if (tree) view.roots = payload.roots; else view.rows = payload.rows;

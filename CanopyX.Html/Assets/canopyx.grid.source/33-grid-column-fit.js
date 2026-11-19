@@ -183,7 +183,7 @@
         const pill = (kind === "enum" || options.style === "pill") && !quiet;
         const atomicWidth = atomic ? text(value, pill ? pillFont : undefined) +
           (pill ? this.fitPill.extra + this.fitPill.spacing * Array.from(value).length + (kind === "state" ? 12 : 0) : quiet && kind === "enum" ? 16 : quiet ? 0 : kind === "state" && tone !== "success" ? 15 : 13) : 0;
-        values = Math.max(values, atomic ? atomicWidth : kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 : kind === "relativeTime" ? text("12 min. ago") + (secondary ? 6 + text(secondary, sub) : 0) :
+        values = Math.max(values, atomic ? atomicWidth : kind === "identifier" ? Math.min(420, text(value, options.mono ? mono : undefined, !options.mono) + (secondary ? 6 + text(secondary, sub) : 0)) : kind === "statusStrip" ? Math.min(series, 12) * 7 : kind === "sparklineBars" ? Math.min(series, 12) * 6 : kind === "sparklineLine" ? 80 : kind === "boolean" ? 16 : kind === "rating" ? text("★".repeat(options.maximum || 5)) + 2 * (options.maximum || 5) : kind === "relativeTime" ? text("12 min. ago") + (secondary ? 6 + text(secondary, sub) : 0) :
           Math.min(kind === "longText" || kind === "tags" || kind === "list" || column.wrap ? 320 : 420, text(value)) +
           (kind === "progress" ? 80 : kind === "tags" || kind === "list" ? 48 : 0)); sampled++;
       }

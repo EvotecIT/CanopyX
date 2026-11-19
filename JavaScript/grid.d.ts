@@ -197,6 +197,8 @@ export type GridPresenter =
   | ({ readonly kind: "sparklineBars"; readonly slots: boolean } & GridHistoryPresentation)
   | { readonly kind: "sparklineArea" | "sparklineColumns" | "sparklineWinLoss" }
   | { readonly kind: "bullet"; readonly target: number }
+  /** Read-only stars: the number rounded to whole filled stars of maximum (2 to 10). */
+  | { readonly kind: "rating"; readonly maximum: number }
   | { readonly kind: "identifier"; readonly secondaryColumn?: string; readonly mono?: boolean; readonly stack?: boolean }
   | { readonly kind: "tags"; readonly separator: string; readonly limit?: 3 }
   /** A structured value's summary: a count (countText with {count}), chips (limit) or the first item and +N. The record panel shows it whole. */
@@ -238,7 +240,8 @@ export interface GridReporting {
   /** Load the optional ChartForgeX renderer when readers first chart accepted data. */
   readonly chartable?: boolean;
   /** Fixed first ordering key. Group headings and collapse never change record paging/counts/exports. */
-  readonly grouping?: GridSort & { readonly headerTemplate?: string };
+  /** headerTemplate and footerTemplate are plain text with {column}, {value} and {count}; a footer row takes the group's aggregates. */
+  readonly grouping?: GridSort & { readonly headerTemplate?: string; readonly footerTemplate?: string };
   /** Initial runtime grouping levels, outermost first (at most four). Not combined with grouping. */
   readonly groupBy?: readonly GridGroupLevel[];
   /** Readers group by sortable columns from column menus, the group-by bar and dragged headers. Not combined with grouping. */
@@ -500,6 +503,11 @@ interface GridDefinition<Q extends AcceptedGridQuery = GridQuery, Row extends Gr
   query?: Q;
 }
 export interface InlineGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "inline"; navigation?: "offset" }; rows: Row[]; rowData?: never; }
+/** An inline grid that reads its rows once (or every refreshSeconds, 5 to 86,400) from an http(s) or relative JSON address: an
+ * array of rows or an object with a rows array. Its own rows stay empty. */
+export interface AddressGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> {
+  source: { kind: "inline"; navigation?: "offset"; url: string; refreshSeconds?: number }; rows?: readonly never[]; rowData?: never;
+}
 /**
  * A compact row: the row id (or `{ id, tone?, className? }`) followed by its cells in the order of `GridRowData.columns`.
  * Trailing empty cells may be left out; `null` is an empty cell.
@@ -534,7 +542,7 @@ export interface CursorGridView<Row extends GridRow = GridRow> extends GridDefin
   presentation: "paged";
   rows?: never;
 }
-export type GridView<Row extends GridRow = GridRow> = InlineGridView<Row> | CompactGridView<Row> | HostGridView<Row> | CursorGridView<Row>;
+export type GridView<Row extends GridRow = GridRow> = InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> | HostGridView<Row> | CursorGridView<Row>;
 
 /** A complete requested window from one dataset revision, with full and matching counts. */
 export interface GridPage<Row extends GridRow = GridRow> {
@@ -587,7 +595,10 @@ export type GridAggregateOperation = "count" | "sum" | "average" | "minimum" | "
 export type GridColumnDefaults = Pick<GridColumn, "className" | "alignment" | "sortable" | "filterable" | "hidden" | "orderData" | "orderSequence" | "sortComparator"> & { readonly targets: readonly string[] };
 export interface GridFooter {
   readonly id: string; readonly label: string; readonly scope: "page" | "all";
+  /** Empty when the row holds only text cells. */
   readonly aggregates: readonly GridAggregate[];
+  /** Plain text under declared columns, keyed by column id (1 to 512 characters, never markup), before their aggregates. */
+  readonly cells?: Readonly<Record<string, string>>;
 }
 export interface GridAggregate {
   /** A display transformation; raw aggregates remain unchanged. */
@@ -977,11 +988,11 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
 export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> = GridHostBehavior<Q, Row> & (
   { viewStore?: never } | {
     viewStore: GridViewStore<Q>;
-    view: (Q extends GridCursorQuery ? CursorGridView<Row> : InlineGridView<Row> | CompactGridView<Row> | HostGridView<Row>) & { stateKey: string; reporting: GridReporting };
+    view: (Q extends GridCursorQuery ? CursorGridView<Row> : InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> | HostGridView<Row>) & { stateKey: string; reporting: GridReporting };
   }
 );
 /** A flat grid's options; Row types the rows, columns, facets, events and live API (createDataGrid<Row>). */
-export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQuery, Row> & ({ view: InlineGridView<Row> | CompactGridView<Row> } | { view: HostGridView<Row>; source: GridSource<Row> });
+export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQuery, Row> & ({ view: InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> } | { view: HostGridView<Row>; source: GridSource<Row> });
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */

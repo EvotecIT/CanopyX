@@ -1,6 +1,6 @@
 # UI primitives
 
-Tabs, steppers, accordions, dialogs, drawers, popovers, tooltips, menus, [toasts](ui-toasts.md) and [galleries with a lightbox](ui-lightbox.md) work on their own or beside CanopyX data views. The runtime loads their versioned parts when a component is mounted. Serve the `canopyx-ui-*.js` and `.css` files beside the entry point, together with its other part files. `CanopyHtmlAssets.WriteTo(...)` writes that asset set from .NET.
+Tabs, steppers, accordions, dialogs, drawers, popovers, tooltips, menus, [toasts](ui-toasts.md), [galleries with a lightbox](ui-lightbox.md), [carousels](ui-carousel.md), [rating inputs](ui-rating.md), [input masks](ui-mask.md) and [signature pads](ui-signature.md) work on their own or beside CanopyX data views. The runtime loads their versioned parts when a component is mounted. Serve the `canopyx-ui-*.js` and `.css` files beside the entry point, together with its other part files. `CanopyHtmlAssets.WriteTo(...)` writes that asset set from .NET.
 
 ## Write a tab set from .NET
 
@@ -102,6 +102,8 @@ Before 1.0, replace `autoAdvance` with `autoProgress` and remove `loop`; progres
 enabled tabs. No compatibility alias is provided.
 
 `CanopyX.stepper(root, options)` adds guarded steps, optional skipping, validation, drafts and finish callbacks. A validation callback returns `false` or a list of messages to keep the current step open. Messages appear in a focused alert and are linked to invalid fields. Report and static stepper modes remain script-free. Tabs and interactive steppers share the same phone picker, preserving badges and counts. Tabs measure their labels, icons and badges before collapsing, with an eight-pixel resize margin to prevent repeated switching near the boundary. Menu overflow keeps at least three visible choices plus More while they fit. Interactive steppers use the picker below a container width of 640 px.
+
+The stepper's Back, Skip, Next and Finish toolbar sits under the panels by default. `CanopyStepperOptions.ToolbarPosition` moves it above them (`Top`) or repeats it above and below (`Both`), and `ToolbarHtml` adds trusted host controls, such as a Help link or a Cancel button, before the step actions in each toolbar (with `ShowFooter`). The host handles their clicks.
 
 ## Show sections with an accordion
 
@@ -242,7 +244,7 @@ Reduced-motion preferences make navigation transitions and overlay motion instan
 
 ## Slim entry point
 
-A content page with no grid or tree can load `canopyx-ui.js` and `canopyx-ui.css` instead of a data view entry point. `canopyx-ui.js` holds the part loader, the theme helpers and the UI factories, about 5 KB gzipped against 57 KB for `canopyx.js`, and the components load the same `canopyx-ui-*` parts beside it. It offers `mountUi`, `contextMenu`, `notify`, `tabs`, `stepper`, `accordion`, `toasts`, `lightbox`, `dialog`, `drawer`, `popover`, `tooltip`, `menu`, `registerPart` and `setNonce`.
+A content page with no grid or tree can load `canopyx-ui.js` and `canopyx-ui.css` instead of a data view entry point. `canopyx-ui.js` holds the part loader, the theme helpers and the UI factories, about 5 KB gzipped against 57 KB for `canopyx.js`, and the components load the same `canopyx-ui-*` parts beside it. It offers `mountUi`, `contextMenu`, `notify`, `tabs`, `stepper`, `accordion`, `toasts`, `lightbox`, `carousel`, `rating`, `mask`, `signature`, `dialog`, `drawer`, `popover`, `tooltip`, `menu`, `registerPart` and `setNonce`.
 
 ```html
 <link rel="stylesheet" href="assets/canopyx-ui.css">

@@ -373,11 +373,15 @@ export interface UiToastsController extends UiController {
   getState(): UiResult<{ visible: string[]; queued: string[] }>;
 }
 
-/** An item a lightbox shows: an image, a frame (a page, video or PDF) or content (a Node, trusted host HTML or a function returning one). */
+/** An item a lightbox shows: an image, a frame (a page or PDF), a video file, a YouTube video (address or id) or content (a Node, trusted host HTML or a function returning one). */
 export interface UiLightboxItem {
   id?: string;
-  type?: "image" | "frame" | "content";
+  type?: "image" | "frame" | "content" | "video" | "youtube";
   src?: string;
+  /** The image a video shows before it plays. */
+  poster?: string;
+  /** A video or YouTube item starts playing, muted, when the viewer shows it. */
+  autoplay?: boolean;
   alt?: string;
   caption?: string;
   content?: Node | string | (() => Node | string | null);
@@ -400,6 +404,94 @@ export interface UiLightboxController extends UiController {
   getState(): UiResult<{ open: boolean; index: number; total: number; zoom: number }>;
 }
 
+export interface UiCarouselOptions {
+  /** Slides shown at once, 1 to 6; narrow screens show one. */
+  perView?: number;
+  /** Moving past the last slide returns to the first. Defaults to false. */
+  loop?: boolean;
+  /** The zero-based slide shown first. */
+  selected?: number;
+  /** Off unless given: slides move every interval milliseconds, with a Pause button, pausing on hover and focus, never under reduced motion. */
+  autoplay?: false | { interval: number; start?: boolean };
+  /** "fade" stacks the slides and fades between them, one per view. Defaults to "slide". */
+  transition?: "slide" | "fade";
+  /** Where Previous and Next sit. Defaults to "below". */
+  controls?: "below" | "above" | "sides";
+  /** Where the slide picker sits, or "hidden". Defaults to "controls" (between Previous and Next). */
+  indicators?: "controls" | "above" | "below" | "hidden";
+  /** Where .cx-carousel-caption paragraphs in slides show. Defaults to "overlay". */
+  captions?: "overlay" | "below";
+  labels?: UiLabels;
+}
+export interface UiCarouselController extends UiController {
+  select(index: number): UiResult<boolean>;
+  next(): UiResult<boolean>;
+  back(): UiResult<boolean>;
+  play(): UiResult<boolean>;
+  pause(): UiResult<boolean>;
+  /** Reads the slides again after the host changed them. */
+  refresh(): UiResult<void>;
+  getState(): UiResult<{ index: number; total: number; visible: number; playing: boolean }>;
+}
+
+export interface UiRatingOptions {
+  /** Steps, 2 to 10; read from data-max, else 5. */
+  max?: number;
+  value?: number | null;
+  /** Choosing the current value again, or Delete, clears it. Defaults to true. */
+  clearable?: boolean;
+  /** For an empty element: the radio group's form name and accessible name. */
+  name?: string;
+  label?: string;
+  onChange?: (value: number | null) => void;
+  labels?: UiLabels;
+}
+export interface UiRatingController extends UiController {
+  /** Sets the value (null clears a clearable rating); returns whether it changed. */
+  select(value: number | null): UiResult<boolean>;
+  clear(): UiResult<boolean>;
+  getState(): UiResult<{ value: number | null; max: number }>;
+}
+
+export interface UiMaskOptions {
+  /** A preset (ipv4, mac, guid, date, time, time-seconds, date-time, postcode, credit-card) or a pattern: 0 digit, a letter, A upper-case letter, h hex digit, * letter or digit, \\ literal. */
+  mask?: string;
+  placeholder?: string;
+  onChange?: (state: { text: string; raw: string; complete: boolean }) => void;
+}
+export interface UiMaskController extends UiController {
+  /** Sets the value, fitted to the mask; returns the formatted text. */
+  select(value: string | null): UiResult<string>;
+  refresh(): UiResult<void>;
+  getState(): UiResult<{ text: string; raw: string; complete: boolean }>;
+}
+/** A signature: an SVG document and a PNG data URI of the same picture. */
+export interface UiSignatureValue { readonly svg: string; readonly png: string }
+export interface UiSignatureOptions {
+  /** The form field name of a hidden input holding the answer. */
+  name?: string;
+  /** What the hidden input holds. Defaults to svg. */
+  format?: "svg" | "png";
+  ink?: string;
+  background?: string;
+  /** A pen colour button. */
+  colours?: boolean;
+  /** PNG and SVG download buttons; a text names the files. */
+  download?: boolean | string;
+  readOnly?: boolean;
+  value?: UiSignatureValue;
+  /** The pad's accessible name. */
+  label?: string;
+  onChange?: (value: UiSignatureValue | null) => void;
+  labels?: UiLabels;
+}
+export interface UiSignatureController extends UiController {
+  select(value: UiSignatureValue | null): UiResult<void>;
+  clear(): UiResult<void>;
+  focus(): UiResult<void>;
+  getState(): UiResult<{ value: UiSignatureValue | null }>;
+}
+
 /** Mounts declarative UI under root (including root). Report/static steppers need no controller and are skipped. */
 export function mountUi(root?: ParentNode): UiController[];
 /** Delegates a selector, or binds one element. Inputs, links, selected text and Shift+right-click keep their native menu. */
@@ -415,6 +507,14 @@ export function toasts(target: UiTarget, options?: UiToastsOptions): UiToastsCon
 export function notify(toast: UiToastOptions | string): Promise<string>;
 /** A gallery viewer over [data-lightbox-item] links, or over items the host passes. */
 export function lightbox(target: UiTarget, options?: UiLightboxOptions): UiLightboxController;
+/** A live mask on a text input, or on the first text input inside the target. */
+export function mask(target: UiTarget, options?: UiMaskOptions): UiMaskController;
+/** A signature pad in an empty element. */
+export function signature(target: UiTarget, options?: UiSignatureOptions): UiSignatureController;
+/** Slides of any content over a .cx-carousel-track list. */
+export function carousel(target: UiTarget, options?: UiCarouselOptions): UiCarouselController;
+/** Stars over a native radio group, or a group it builds in an empty element. */
+export function rating(target: UiTarget, options?: UiRatingOptions): UiRatingController;
 export function dialog(target: UiTarget, options?: UiDialogOptions): UiDialogController;
 export function drawer(target: UiTarget, options?: UiDrawerOptions): UiDialogController;
 export function popover(target: UiTarget, options?: UiOverlayOptions): UiOverlayController;
@@ -431,6 +531,10 @@ export interface UiApi {
   accordion: typeof accordion;
   toasts: typeof toasts;
   lightbox: typeof lightbox;
+  mask: typeof mask;
+  signature: typeof signature;
+  carousel: typeof carousel;
+  rating: typeof rating;
   dialog: typeof dialog;
   drawer: typeof drawer;
   popover: typeof popover;

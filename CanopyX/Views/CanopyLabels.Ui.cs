@@ -58,6 +58,56 @@ public sealed partial class CanopyLabels {
 
     /// <summary>Gets or sets the message shown when an item does not load. Default "This item could not be loaded".</summary>
     public string LightboxError { get => Get(); set => Set(value); }
+    /// <summary>Gets or sets the role a screen reader announces for a carousel. Default "carousel".</summary>
+    public string CarouselRole { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the role a screen reader announces for a carousel slide. Default "slide".</summary>
+    public string CarouselSlideRole { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the name of a slide and of its picker button, with <c>{current}</c> and <c>{total}</c>. Default "Slide {current} of {total}".</summary>
+    public string CarouselSlide { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the carousel's previous button. Default "Previous slide".</summary>
+    public string CarouselPrevious { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the carousel's next button. Default "Next slide".</summary>
+    public string CarouselNext { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the group of slide buttons. Default "Choose a slide".</summary>
+    public string CarouselPicker { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the play button's name while reduced motion keeps slides still. Default "Automatic slides are disabled by reduced motion".</summary>
+    public string CarouselMotionDisabled { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets a rating as words, with <c>{value}</c> and <c>{max}</c>. Default "{value} of {max}".</summary>
+    public string RatingValue { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the area a signature is drawn on. Default "Signature pad".</summary>
+    public string SignaturePad { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that removes the last stroke of a signature. Default "Undo".</summary>
+    public string SignatureUndo { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that removes a signature. Default "Clear".</summary>
+    public string SignatureClear { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that switches a signature to a typed name. Default "Type instead".</summary>
+    public string SignatureType { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that switches a typed signature back to drawing. Default "Draw instead".</summary>
+    public string SignatureDraw { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the label of the field a typed signature uses. Default "Type your full name".</summary>
+    public string SignatureTyped { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the accessible name of the pen colour button. Default "Pen colour".</summary>
+    public string SignatureColour { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that saves the signature as a PNG image. Default "Download PNG".</summary>
+    public string SignatureDownloadPng { get => Get(); set => Set(value); }
+
+    /// <summary>Gets or sets the button that saves the signature as an SVG image. Default "Download SVG".</summary>
+    public string SignatureDownloadSvg { get => Get(); set => Set(value); }
 
     /// <summary>Gets or sets the button that lists tabs hidden by overflow. Default "More".</summary>
     public string TabsMore { get => Get(); set => Set(value); }

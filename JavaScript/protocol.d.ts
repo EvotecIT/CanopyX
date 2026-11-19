@@ -13,6 +13,9 @@ import type { StructuredCell, RecordPanelDefinition } from "./records.js";
 export interface CanopyCell extends StructuredCell {
   value?: CellValue;
   text?: string;
+  /** Markup a flat grid shows sanitised in place of the text (at most 65,536 code units); value and text still drive search,
+   * sorting, filters, copy and exports. Only allowed elements, attributes and styles are built; nothing else reaches the page. */
+  html?: string;
   /** Alternate flat-grid search text, independent of display, typed queries and export. */
   searchText?: string;
   title?: string;
@@ -281,6 +284,8 @@ export type LabelName =
   /** Standalone UI primitives; their English defaults load with the optional UI parts. */
   | "accordionSearch" | "accordionNoMatches" | "accordionCopyTitle" | "accordionCopied"
   | "toastRegion" | "toastClose" | "toastQueued" | "toastInfo" | "toastSuccess" | "toastWarning" | "toastDanger" | "toastNeutral" | "lightboxTitle" | "lightboxPrevious" | "lightboxNext" | "lightboxZoomIn" | "lightboxZoomOut" | "lightboxZoomReset" | "lightboxError"
+  | "signaturePad" | "signatureUndo" | "signatureClear" | "signatureType" | "signatureDraw" | "signatureTyped" | "signatureColour" | "signatureDownloadPng" | "signatureDownloadSvg"
+  | "carouselRole" | "carouselSlideRole" | "carouselSlide" | "carouselPrevious" | "carouselNext" | "carouselPicker" | "carouselMotionDisabled" | "ratingValue"
   | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"

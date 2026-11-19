@@ -111,6 +111,10 @@ Host strings are text. The runtime writes every label, cell value, column title,
 
 Links are the one place a host string becomes an address. The link presenter turns a cell into a link only for `http:`, `https:` and `mailto:` addresses, and for relative and `file:` addresses without another scheme; anything else, `javascript:`, `data:` and `vbscript:` among them, keeps its text without a link. An address with a control character (`java\nscript:`) is refused, and the scheme is checked on the parsed address, so leading spaces and mixed case (` JaVaScRiPt:`) do not hide it.
 
+## Rich cells
+
+A grid cell's `html` ([data-protocol.md](data-protocol.md#rich-cells)) is untrusted data, not host-trusted markup. The runtime never inserts it: it parses it into an inert document (under Trusted Types through the `canopyx` policy, since nothing parsed there runs or reaches the page) and builds only allowed elements, attributes and styles again with `createElement`, `setAttribute` and the CSSOM. Addresses follow the link presenter's rules, images take only ordinary addresses and raster data URLs, and event handlers, scripts, frames, SVG and `style` elements never come through. `tests/browser/specs/grid-content-sources.spec.mjs` covers it.
+
 ## Host renderers and host-trusted markup
 
 Two features hand CanopyX markup or code from the host. Both are trusted input: CanopyX cannot tell safe markup from unsafe markup, and the host is responsible for what it passes.

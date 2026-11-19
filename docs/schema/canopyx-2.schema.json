@@ -909,7 +909,10 @@
           "items": { "$ref": "#/$defs/gridColumn" },
           "contains": { "not": { "required": ["hidden"], "properties": { "hidden": { "const": true } } } }
         },
-        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] }, "navigation": { "enum": ["offset", "cursor"], "description": "Known-count offset access or paged host cursor traversal. Absent preserves offset access." } } },
+        "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] }, "navigation": { "enum": ["offset", "cursor"], "description": "Known-count offset access or paged host cursor traversal. Absent preserves offset access." },
+          "url": { "type": "string", "minLength": 1, "maxLength": 2048, "description": "An inline grid reads its rows from this http(s) or relative JSON address." },
+          "refreshSeconds": { "type": "integer", "minimum": 5, "maximum": 86400, "description": "How often the rows at url are read again." } },
+          "dependentRequired": { "refreshSeconds": ["url"] }, "if": { "required": ["url"] }, "then": { "properties": { "kind": { "const": "inline" } } } },
         "stateKey": { "type": "string" },
         "timeZone": { "enum": ["utc", "local"] },
         "labels": { "$ref": "#/$defs/view/properties/labels" },
@@ -919,7 +922,9 @@
       },
       "if": { "properties": {
  "source": { "properties": { "kind": { "const": "inline" } } } } },
-      "then": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] },
+      "then": { "if": { "properties": { "source": { "required": ["url"] } } },
+        "then": { "not": { "required": ["rowData"] }, "properties": { "rows": { "maxItems": 0 } } },
+        "else": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] } },
       "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
       "allOf": [{
         "not": {"anyOf": [{"required": ["board", "path"]}, {"required": ["board", "stack"]}, {"required": ["board", "calendar"]}, {"required": ["path", "stack"]}, {"required": ["path", "calendar"]}, {"required": ["stack", "calendar"]}]}
@@ -1089,10 +1094,13 @@
     },
     "gridFooter": {
       "type": "object", "required": ["id", "label", "scope", "aggregates"], "additionalProperties": false,
+      "anyOf": [{ "properties": { "aggregates": { "minItems": 1 } } }, { "required": ["cells"] }],
       "properties": {
         "id": { "$ref": "#/$defs/identifier" }, "label": { "type": "string", "minLength": 1, "maxLength": 512 },
         "scope": { "enum": ["page", "all"] },
-        "aggregates": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } }
+        "aggregates": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/gridAggregate" } },
+        "cells": { "type": "object", "minProperties": 1, "maxProperties": 256, "propertyNames": { "$ref": "#/$defs/identifier" },
+          "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 512 } }
       }
     },
     "gridColumnDefaults": {
@@ -1488,7 +1496,8 @@
     "gridGrouping": {
       "type": "object", "required": ["column", "direction"], "additionalProperties": false,
       "properties": {
-        "headerTemplate": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "\\S" }, "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] } }
+        "headerTemplate": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "\\S" },
+        "footerTemplate": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "\\S" }, "column": { "$ref": "#/$defs/identifier" }, "direction": { "enum": ["asc", "desc"] } }
     },
     "gridAggregate": {
       "type": "object", "required": ["id", "column", "operation", "label"], "additionalProperties": false,
@@ -1865,6 +1874,24 @@
         {
           "type": "object",
           "required": [
+            "kind",
+            "maximum"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "rating"
+            },
+            "maximum": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 10
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
             "kind"
           ],
           "additionalProperties": false,
@@ -2163,6 +2190,11 @@
             },
             "text": {
               "type": "string"
+            },
+            "html": {
+              "type": "string",
+              "maxLength": 65536,
+              "description": "Markup a flat grid shows sanitised in place of the text; value and text still drive search, sort, filters and exports."
             },
             "searchText": {
               "type": "string",
@@ -2625,6 +2657,23 @@
             "lightboxZoomOut": { "type": "string" },
             "lightboxZoomReset": { "type": "string" },
             "lightboxError": { "type": "string" },
+            "signaturePad": { "type": "string" },
+            "signatureUndo": { "type": "string" },
+            "signatureClear": { "type": "string" },
+            "signatureType": { "type": "string" },
+            "signatureDraw": { "type": "string" },
+            "signatureTyped": { "type": "string" },
+            "signatureColour": { "type": "string" },
+            "signatureDownloadPng": { "type": "string" },
+            "signatureDownloadSvg": { "type": "string" },
+            "carouselRole": { "type": "string" },
+            "carouselSlideRole": { "type": "string" },
+            "carouselSlide": { "type": "string" },
+            "carouselPrevious": { "type": "string" },
+            "carouselNext": { "type": "string" },
+            "carouselPicker": { "type": "string" },
+            "carouselMotionDisabled": { "type": "string" },
+            "ratingValue": { "type": "string" },
             "tabsMore": { "type": "string" },
             "tabsMoreSelected": { "type": "string" },
             "tabsScrollPrevious": { "type": "string" },

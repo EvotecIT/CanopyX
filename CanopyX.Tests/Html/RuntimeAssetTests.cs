@@ -97,8 +97,8 @@ public sealed class RuntimeAssetTests {
 
     [Fact]
     public void GridAssets_StayWithinTheirCompressedBudget() {
-        // Measured 125,815 bytes minified, with about 2.5% headroom.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 126 * 1024);
+        // Measured 129,093 bytes gzip with rich cells and rows from an address, with about 1.5% headroom.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.DataGrid, 128 * 1024);
     }
 
     [Fact]
@@ -217,10 +217,10 @@ public sealed class RuntimeAssetTests {
             Assert.Equal(written, File.GetLastWriteTimeUtc(files[0]));
             Assert.Equal(CanopyHtmlAssets.Style, File.ReadAllText(files[1]));
             // The runtime and its stylesheet, the tree tools part every tree loads beside them, the export, CSV export, links and search parts,
-            // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the nine lazy UI parts
+            // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the lazy UI parts
             // (one script and one stylesheet each).
             // Standalone font CSS, the two qualified faces and their two OFL notices travel with external pages.
-            Assert.Equal(40, Directory.GetFiles(directory).Length);
+            Assert.Equal(47, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

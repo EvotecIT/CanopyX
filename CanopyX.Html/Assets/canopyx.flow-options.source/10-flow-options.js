@@ -10,7 +10,7 @@
     flowFieldsFailed: "The fields could not load: {message}"
   };
   Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
-  const FLOW_DYNAMIC_TYPES = ["text", "number", "date", "datetime", "time", "select", "toggle", "lookup", "choice", "multiChoice", "textarea", "list", "duration"];
+  const FLOW_DYNAMIC_TYPES = ["text", "number", "date", "datetime", "time", "select", "toggle", "lookup", "choice", "multiChoice", "textarea", "list", "duration", "rating"];
 
   FLOW_HOST.options = {
     /** A section whose fields the host supplies (source "host"), reloaded when the fields it depends on change. */

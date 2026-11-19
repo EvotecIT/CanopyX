@@ -18,6 +18,11 @@ public sealed class CanopyGridGrouping {
     public string Column { get; }
     /// <summary>Gets or sets plain group-heading text with {value}, {column} and {count} tokens. Hosts escape the resolved text as a whole.</summary>
     public string? HeaderTemplate { get; set; }
+    /// <summary>
+    /// Gets or sets plain text for a row at the end of each group, with {value}, {column} and {count} tokens; null shows none.
+    /// With a footer row the group's aggregates show there, under their columns, instead of in its heading.
+    /// </summary>
+    public string? FooterTemplate { get; set; }
     /// <summary>Gets whether group order is descending.</summary>
     public bool Descending { get; }
     /// <summary>Creates the group-value comparer used by complete-query host ordering.</summary>
@@ -62,5 +67,5 @@ public sealed class CanopyGridGrouping {
         return number;
     }
     internal void WriteJson(CanopyJsonWriter writer) => writer.BeginObject().Property("column", Column)
-        .Property("direction", Descending ? "desc" : "asc").OptionalProperty("headerTemplate", HeaderTemplate).EndObject();
+        .Property("direction", Descending ? "desc" : "asc").OptionalProperty("headerTemplate", HeaderTemplate).OptionalProperty("footerTemplate", FooterTemplate).EndObject();
 }

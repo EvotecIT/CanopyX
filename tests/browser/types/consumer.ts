@@ -1,7 +1,7 @@
 import CanopyX, {
   createTreeGrid, sources, labels, type CanopyView, type CanopyNode, type InlineNode, type DataSource, type ViewState, type CheckState, type PageDocument
 } from "@evotecit/canopyx";
-import GridRuntime, { createDataGrid, mount as mountViews, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
+import GridRuntime, { createDataGrid, mount as mountViews, type AddressGridView, type GridSource, type HostGridView, type InlineGridView } from "@evotecit/canopyx/grid";
 import type { CursorGridView, GridCursorSource, GridCursorQuery, CompactGridView, GridCompactRow, GridFormatRule, GridExportFormat, GridGroupLevel as GroupLevel, GridGroup, GridAggregate, GridNumberFormat,
   GridColumnGroup, GridCellRange, GridPasteEvent, GridPasteResult, GridColumnGroupState } from "@evotecit/canopyx/grid";
 import { enhance, grid as gridInit, type EnhancedGrid, type GridInitOptions, type GridPager } from "@evotecit/canopyx/grid";
@@ -1069,3 +1069,12 @@ const lookedEvents: CalendarEventInput[] = [{ title: "Change", start: "2026-10-1
 const clickHook = (detail: GridEventClick): boolean => detail.url === null || detail.event.color !== undefined;
 const clicked: CalendarOptions = { events: lookedEvents, urlTarget: "blank", onEventClick: clickHook };
 void clicked;
+
+// Rich cells, footer text cells, group footer rows and rows from an address.
+const addressView: AddressGridView = { protocol: "canopyx/2", type: "grid", id: "remote", label: "Remote rows",
+  source: { kind: "inline", url: "data/users.json", refreshSeconds: 60 }, pageSize: 100, selection: "none", search: true,
+  columns: [{ id: "name", title: "Name", kind: "text" }, { id: "amount", title: "Amount", kind: "number", sortable: true }],
+  footers: [{ id: "notes", label: "Notes", scope: "all", aggregates: [], cells: { name: "Totals" } }],
+  reporting: { grouping: { column: "amount", direction: "asc", footerTemplate: "{value}: {count}" } } };
+const richRow: InlineGridView["rows"][number] = { id: "r1", cells: { name: { value: "Active", html: "<b>Active</b>" } } };
+void addressView; void richRow;

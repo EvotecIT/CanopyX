@@ -1,0 +1,22 @@
+  // ---------- rows from an address: an inline grid whose static page reads its rows as JSON (docs/data-protocol.md) ----------
+  // source.url names the address; the url-rows part reads it with the grid's first query (see that part for the rules).
+  /** An http(s) or relative address, or null: never another scheme, a host-relative //address, control characters or backslashes. */
+  function gridRowsAddress(raw) {
+    if (typeof raw !== "string" || !raw.trim() || raw.length > 2048 || /[\u0000-\u001f\u007f\\]/.test(raw) || /^\s*\/\//.test(raw)) return null;
+    try { const url = new URL(raw.trim(), document.baseURI); return /^\s*[a-z][a-z\d+.-]*:/i.test(raw) && !["http:", "https:"].includes(url.protocol) ? null : url.href; }
+    catch (_) { return null; }
+  }
+  const GRID_URL_IMPL = {}, GRID_URL_ROWS = definePart(DataGrid, "url-rows", "rows from an address",
+    () => ({ GRID_URL_IMPL, validateGridRows, repairGridCell, inlineGridSource, gridRowsAddress }));
+  function gridUrlRows(grid) {
+    let inner = null, loaded = null;
+    const reader = () => inner ||= loadPart(GRID_URL_ROWS).then(() => loaded = GRID_URL_IMPL.source(grid, source)).catch(error => { inner = null; throw error; });
+    const source = { reset: () => { inner = null; loaded = null; }, query: (query, options) => reader().then(rows => rows.query(query, options)),
+      // Record deep links and related records look rows up in what was read.
+      position: (query, id) => loaded ? loaded.position(query, id) : -1, row: id => loaded ? loaded.row(id) : null,
+      // Edits and live changes rewrite the rows that were read; the reader answers over them and keeps its refresh.
+      invalidate: () => loaded?.invalidate() };
+    // A reporting grid's opted-in facets count the rows that were read.
+    if (grid.view.reporting?.facetColumns?.length) source.facet = (request, options) => reader().then(rows => rows.facet(request, options));
+    return source;
+  }

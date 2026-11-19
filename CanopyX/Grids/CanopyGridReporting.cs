@@ -69,6 +69,9 @@ public sealed class CanopyGridReporting {
         var headerTemplate = Grouping?.HeaderTemplate;
         if (headerTemplate != null && (string.IsNullOrWhiteSpace(headerTemplate) || headerTemplate.Length > 512))
             throw new InvalidOperationException("A group header template must be nonblank and at most 512 characters.");
+        var footerTemplate = Grouping?.FooterTemplate;
+        if (footerTemplate != null && (string.IsNullOrWhiteSpace(footerTemplate) || footerTemplate.Length > 512))
+            throw new InvalidOperationException("A group footer template must be nonblank and at most 512 characters.");
         CanopyColumn? groupColumn = null;
         foreach (var column in columns) if (column.Id == Grouping?.Column) groupColumn = column;
         if (Grouping != null && (groupColumn == null || !groupColumn.Sortable))
