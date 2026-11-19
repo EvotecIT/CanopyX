@@ -68,7 +68,7 @@ UI_IMPL.rating = (root, options = {}, signal) => {
   }, { signal });
   // A form reset restores the radios after its reset event, without a change event: read them once it has run.
   root.closest('form')?.addEventListener('reset', () => setTimeout(() => { if (!signal?.aborted) { value = read(); paint(); } }), { signal });
-  root.addEventListener('pointerover', event => { const at = options$.findIndex(option => option.contains(event.target)); if (at >= 0 && event.pointerType === 'mouse') { preview = at + 1; paint(); } }, { signal });
+  root.addEventListener('pointerover', event => { const at = options$.findIndex(option => option.contains(event.target)); if (at >= 0 && event.pointerType === 'mouse' && !inputs[at].matches(':disabled')) { preview = at + 1; paint(); } }, { signal });
   root.addEventListener('pointerleave', () => { preview = null; paint(); }, { signal });
   signal?.addEventListener('abort', () => {
     built?.remove(); legend?.remove();

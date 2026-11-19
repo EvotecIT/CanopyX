@@ -151,3 +151,10 @@ test('a percentage gap counts as the pixels it uses when slides are measured', a
   expect((await page.evaluate(() => CanopyX.carousel('#news').getState())).visible).toBe(6);
   await expect(page.getByRole('button', { name: 'Next slide' })).toBeVisible();
 });
+
+test('a scaled ancestor shrinks the track and the slides alike', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 900, height: 600 });
+  await openUi(page, '<div style="inline-size:700px;transform:scale(.5);transform-origin:0 0">' + carousel('data-per-view="6"', 8) + '</div>');
+  expect((await page.evaluate(() => CanopyX.carousel('#news').getState())).visible).toBe(6);
+});

@@ -78,4 +78,7 @@ test('a disabled rating still shows its value', async ({ page }) => {
   await openUi(page, rating('disabled', 3));
   const colour = index => page.locator('.cx-rating-option').nth(index).evaluate(element => getComputedStyle(element).color);
   expect(await colour(2)).not.toBe(await colour(3));
+  // Hovering an unchosen star of a disabled rating previews nothing.
+  await page.locator('.cx-rating-option').nth(4).hover({ force: true });
+  await expect(page.locator('.cx-rating-option[data-preview="true"]')).toHaveCount(0);
 });
