@@ -41,3 +41,20 @@ test("lane coverage rejects missing shards and tests that were dropped, duplicat
   const skipped = [first, { ...second, results: second.results.map(result => ({ ...result, status: "skipped" })) }];
   assert.deepEqual(laneProblems(skipped, 2), ["shard 2: every test skipped"]);
 });
+
+test("the stall watchdog passes output through, keeps the exit status and ends a silent run", async () => {
+  const { runWatched, stallLimit, browsersRoot } = await import("./stall-watchdog.mjs");
+  const chunks = [], logs = [], output = { write: chunk => chunks.push(String(chunk)) };
+  const ok = await runWatched(process.execPath, ["-e", "console.log('ok 1'); process.exitCode = 3"], { stallMs: 2000, output, log: text => logs.push(text) });
+  assert.equal(ok, 3);
+  assert.match(chunks.join(""), /ok 1/);
+  assert.deepEqual(logs, []);
+  const silent = await runWatched(process.execPath, ["-e", "setTimeout(() => {}, 60000)"], { stallMs: 300, output, log: text => logs.push(text), browsersRoot: "/nowhere" });
+  assert.equal(silent, 1);
+  assert.match(logs[0], /printed nothing for 0 s/);
+  assert.match(logs[1], /still silent/);
+  assert.equal(stallLimit({}), 300000);
+  assert.equal(stallLimit({ CANOPYX_TEST_STALL_SECONDS: "20" }), 20000);
+  assert.throws(() => stallLimit({ CANOPYX_TEST_STALL_SECONDS: "0" }));
+  assert.equal(browsersRoot({ LOCALAPPDATA: "C:\\Users\\a\\AppData\\Local" }, "win32", "C:\\Users\\a").endsWith("ms-playwright"), true);
+});

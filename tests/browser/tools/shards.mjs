@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { runWatched } from "./stall-watchdog.mjs";
 
 const browserRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const parallelFile = /^test\.describe\.configure\(\{\s*mode:\s*"parallel"/m;
@@ -92,12 +93,11 @@ export function laneProblems(records, total) {
   return problems;
 }
 
-function playwright(args, record, quiet = false) {
+// Lists the suite quietly; the listing prints every test, so its output shows only when listing fails.
+function listTests(args, record) {
   const result = spawnSync(process.execPath, [path.join(browserRoot, "node_modules/@playwright/test/cli.js"), "test", ...args],
-    { cwd: browserRoot, stdio: quiet ? "pipe" : "inherit", encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
-      env: { ...process.env, CANOPYX_TEST_RECORD: record } });
-  // Listing prints every test; show it only when listing fails.
-  if (quiet && result.status !== 0) process.stderr.write(`${result.stdout || ""}${result.stderr || ""}${result.error || ""}\n`);
+    { cwd: browserRoot, stdio: "pipe", encoding: "utf8", maxBuffer: 64 * 1024 * 1024, env: { ...process.env, CANOPYX_TEST_RECORD: record } });
+  if (result.status !== 0) process.stderr.write(`${result.stdout || ""}${result.stderr || ""}${result.error || ""}\n`);
   return result.status ?? 1;
 }
 
@@ -109,7 +109,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   fs.mkdirSync(output, { recursive: true });
   const reporter = path.join(browserRoot, "tools/test-record-reporter.mjs");
   const listed = path.join(output, "listed.json");
-  if (playwright(["--list", "--reporter", reporter, ...extra], listed, true) !== 0) process.exit(1);
+  if (listTests(["--list", "--reporter", reporter, ...extra], listed) !== 0) process.exit(1);
   const full = JSON.parse(fs.readFileSync(listed, "utf8")).selected;
   const parallel = new Map();
   const isParallelFile = file => {
@@ -121,7 +121,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   fs.writeFileSync(testList, mine.lines.join("\n") + "\n");
   console.log(`Shard ${shard.current}/${shard.total}: ${mine.ids.length} of ${full.length} listed tests in ${mine.lines.length} test-list entries.`);
   const ran = path.join(output, "ran.json");
-  const status = mine.ids.length ? playwright(["--test-list", testList, "--add-reporter", reporter, ...extra], ran) : 1;
+  // The run is watched for a stall: a browser that never finishes closing would otherwise hold it to the job deadline.
+  const status = mine.ids.length ? await runWatched(process.execPath, [path.join(browserRoot, "node_modules/@playwright/test/cli.js"), "test",
+    "--test-list", testList, "--add-reporter", reporter, ...extra], { spawn: { cwd: browserRoot, env: { ...process.env, CANOPYX_TEST_RECORD: ran } } }) : 1;
   const run = fs.existsSync(ran) ? JSON.parse(fs.readFileSync(ran, "utf8")) : { selected: [], results: [] };
   const record = { platform: process.platform, browsers: process.env.CANOPYX_TEST_BROWSERS || "chromium", shard: shard.current,
     shards: shard.total, full, assigned: mine.ids, selected: run.selected, results: run.results };
