@@ -263,3 +263,15 @@ test('the list stays inside a phone screen and right to left keeps chips in read
   const chip = await page.locator('.cx-select-chip').boundingBox(), field = await page.locator('.cx-select-field').boundingBox();
   expect(chip.x + chip.width).toBeGreaterThan(field.x + field.width / 2);
 });
+
+test('clearing a select without a placeholder submits nothing, a tag never replaces a disabled option, and focus on the select moves to the combobox', async ({ page }) => {
+  await openUi(page, select('data-tags="true"').replace('<option value="">Choose…</option>', '').replace('<option value="us" data-flag="us"', '<option value="us" data-flag="us" selected').replace('</optgroup>\n  </select>', '<option value="x" disabled>Atlantis</option></optgroup>\n  </select>'));
+  await expect(combo(page)).toHaveValue('United States');
+  await page.evaluate(async () => { const picker = CanopyX.select('#picker'); await picker.ready; await picker.clear(); });
+  expect(await submitted(page)).toEqual([]);
+  await expect(page.locator('#country option[value="x"]')).toHaveCount(1);
+  await combo(page).fill('x');
+  await expect(options(page).filter({ hasText: 'Add' })).toHaveCount(0);
+  await page.evaluate(() => document.getElementById('country').focus());
+  await expect(combo(page)).toBeFocused();
+});

@@ -20,6 +20,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
 
   root.classList.add('cx-select'); root.dataset.cxPart = 'select'; root.dataset.multiple = String(multiple);
   native.classList.add('cx-select-native'); native.tabIndex = -1; native.setAttribute('aria-hidden', 'true');
+  // A dialog's first-field focus, or a host's focus(), reaches the hidden select; the combobox takes it instead.
+  native.addEventListener('focus', () => input.focus(), { signal });
   const field = h('div', 'cx-select-field'), chips = h('span', 'cx-select-chips'), input = h('input', 'cx-select-input'), toggle = h('button', 'cx-select-toggle');
   const popup = h('div', 'cx-select-popup'), list = h('div', 'cx-select-list'), note = h('div', 'cx-select-note'), status = h('span', 'cx-visually-hidden');
   field.dataset.cxPart = 'field'; chips.dataset.cxPart = 'chips'; popup.dataset.cxPart = 'popup'; list.dataset.cxPart = 'listbox';
@@ -46,7 +48,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
       const item = new Option(option.label, option.value); native.add(item);
     }
     for (const item of native.options) item.selected = chosen.has(item.value);
-    if (!multiple && !chosen.size && native.options[0]?.value === '') native.options[0].selected = true;
+    // An empty single select with no placeholder option is cleared outright, or the browser would select its first option again.
+    if (!multiple && !chosen.size) { if (native.options[0]?.value === '') native.options[0].selected = true; else native.selectedIndex = -1; }
     paintChosen();
     if (source === 'api' && !options.notifyApi) return;
     native.dispatchEvent(new Event('input', { bubbles: true })); native.dispatchEvent(new Event('change', { bubbles: true }));
@@ -115,7 +118,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
   function filter(text, keep) {
     query = text; clearTimeout(timer); loader?.cancel();
     const offer = items => {
-      const exact = items.some(option => selectFold(option.label) === selectFold(text.trim()) || option.value === text.trim());
+      // Every known value counts, so a tag never stands in for an existing option the filter left out, a disabled one included.
+      const exact = [...all, ...items].some(option => selectFold(option.label) === selectFold(text.trim()) || option.value === text.trim());
       shown = tags && text.trim() && !exact ? [...items, { value: text.trim(), label: fill(labels.selectCreate, { text: text.trim() }), created: true }] : items;
       active = shown.findIndex(option => !option.disabled && (!keep || chosen.has(option.value)));
       if (active < 0) active = shown.findIndex(option => !option.disabled);
