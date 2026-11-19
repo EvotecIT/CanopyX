@@ -105,6 +105,18 @@ test('a carousel enhanced around the focused element starts with autoplay paused
   expect((await state(page)).index).toBe(1);
 });
 
+test('going back before a smooth scroll starts cancels it, so the latest choice stays', async ({ page }) => {
+  await openUi(page, '<style>.cx-carousel-track { scroll-behavior: smooth !important; }</style>' + carousel());
+  const settled = await page.evaluate(async () => {
+    const control = CanopyX.carousel('#news');
+    await control.ready;
+    await control.next(); await control.back();
+    for (let frame = 0; frame < 20; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
+    return { left: Math.round(document.querySelector('#news .cx-carousel-track').scrollLeft), index: (await control.getState()).index };
+  });
+  expect(settled).toEqual({ left: 0, index: 0 });
+});
+
 test('reduced motion keeps an autoplaying carousel still and says why', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openUi(page, carousel('data-autoplay-interval="2000"'));

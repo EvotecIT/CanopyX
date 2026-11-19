@@ -102,7 +102,8 @@ UI_IMPL.carousel = (root, options = {}, signal) => {
     // The boxes include ancestor transforms; scrolling takes layout pixels, so a scaled ancestor's factor is taken out.
     const scale = start.width / (track.offsetWidth || start.width || 1) || 1;
     const offset = (rtl() ? box.right - start.right : box.left - start.left) / scale;
-    if (Math.abs(offset) < 1) return;
+    // Already aligned: a scroll still heading for another slide is stopped where it is, so the latest choice wins.
+    if (Math.abs(offset) < 1) { if (aim !== null) { aim = null; track.scrollTo({ left: track.scrollLeft, behavior: 'instant' }); } return; }
     // While the track scrolls to a chosen slide, the slides it passes are not choices; the scroll ends at the aim.
     aim = at;
     track.scrollBy({ left: offset, behavior: reduced.matches ? 'instant' : 'auto' });
