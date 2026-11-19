@@ -147,7 +147,7 @@
     signal?.addEventListener("abort", () => resize.disconnect(), { once: true });
     return {
       element: group, pad, focus: () => (typing ? typedInput : mode.hidden ? pad : mode).focus(), getValue: () => value,
-      setValue: next => { if (next !== null && !signatureFits(next)) throw new Error("CanopyX: a signature is { svg, png }."); strokes = []; typing = false; typedField.hidden = true; typedInput.value = ""; value = next; show(next); paint(); },
+      setValue: next => { if (next !== null && !signatureFits(next)) throw new Error("CanopyX: a signature is { svg, png }."); strokes = []; current = null; typing = false; typedField.hidden = true; typedInput.value = ""; value = next; show(next); paint(); },
       clear: () => { strokes = []; typedInput.value = ""; commit(); },
       destroy: () => { resize.disconnect(); strokes = []; }
     };

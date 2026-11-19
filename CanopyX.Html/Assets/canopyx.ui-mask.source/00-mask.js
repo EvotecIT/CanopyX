@@ -9,10 +9,11 @@ const MASK_SLOTS = { 0: /\d/, a: /\p{L}/u, A: /\p{L}/u, h: /[0-9a-f]/i, '*': /[\
 
 /** The mask as tokens: { slot, test, upper } or { literal }. */
 function maskTokens(pattern) {
-  const tokens = [];
-  for (let at = 0; at < pattern.length; at++) {
-    const char = pattern[at];
-    if (char === '\\' && at + 1 < pattern.length) tokens.push({ literal: pattern[++at] });
+  // One token per Unicode character, matching how typed text is read, so a literal outside the BMP (an emoji) stays whole.
+  const tokens = [], chars = [...pattern];
+  for (let at = 0; at < chars.length; at++) {
+    const char = chars[at];
+    if (char === '\\' && at + 1 < chars.length) tokens.push({ literal: chars[++at] });
     else if (Object.hasOwn(MASK_SLOTS, char)) tokens.push({ slot: char, test: MASK_SLOTS[char], upper: char === 'A' });
     else tokens.push({ literal: char });
   }
@@ -23,19 +24,19 @@ function maskTokens(pattern) {
  * formatted text formats to itself even when a literal could also fill the slot after it (\1000 keeps 1234); other literals
  * the reader typed are skipped. */
 function maskApply(tokens, input) {
-  let text = '', raw = '', pending = '', at = 0;
+  let text = '', raw = '', pending = '', waiting = 0, at = 0;
   for (const char of input) {
-    if (tokens[at]?.literal === char) { pending += char; at++; continue; }
-    while (at < tokens.length && tokens[at].literal !== undefined) { pending += tokens[at].literal; at++; }
+    if (tokens[at]?.literal === char) { pending += char; waiting++; at++; continue; }
+    while (at < tokens.length && tokens[at].literal !== undefined) { pending += tokens[at].literal; waiting++; at++; }
     if (at >= tokens.length) break;
     if (!tokens[at].test.test(char)) continue;
     // A letter whose capital is several letters (ß is SS) keeps its own form, so one slot always holds one character.
     const upper = tokens[at].upper ? char.toLocaleUpperCase() : char, value = upper.length === char.length ? upper : char;
-    text += pending + value; raw += value; pending = ''; at++;
+    text += pending + value; raw += value; pending = ''; waiting = 0; at++;
   }
   const complete = !tokens.slice(at).some(token => token.slot);
   // Once every slot is filled the literals after the last one close the value, so (000) completes as (123).
-  if (complete && raw) text += tokens.slice(at - (pending ? [...pending].length : 0)).map(token => token.literal).join('');
+  if (complete && raw) text += tokens.slice(at - waiting).map(token => token.literal).join('');
   return { text, raw, complete };
 }
 /** IPv4: digits and dots, a dot added after a third digit, octets above 255 refused, four octets at most. */

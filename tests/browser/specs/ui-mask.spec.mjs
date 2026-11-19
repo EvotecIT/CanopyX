@@ -85,6 +85,14 @@ test('a paste with spaces still fits, capitals that expand keep one slot, and a 
   expect(await page.evaluate(() => CanopyX.mask('#f').getState())).toEqual({ text: '', raw: '', complete: false });
 });
 
+test('a literal outside the basic plane stays whole when a complete value formats again', async ({ page }) => {
+  await openUi(page, field('000🔒'));
+  await input(page).pressSequentially('123');
+  await expect(input(page)).toHaveValue('123🔒');
+  expect(await page.evaluate(async () => { const mask = CanopyX.mask('#f'); await mask.refresh(); return mask.getState(); })).toEqual({ text: '123🔒', raw: '123', complete: true });
+  await expect(input(page)).toHaveValue('123🔒');
+});
+
 test('Delete before a separator removes the next typed character', async ({ page }) => {
   await openUi(page, field('00:00'));
   await input(page).pressSequentially('1234');
