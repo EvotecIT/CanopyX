@@ -180,3 +180,17 @@ test('focus stays in the viewer when a zoom button disables, and dragging a slid
   await page.mouse.move(slider.x + slider.width - 5, slider.y + slider.height / 2, { steps: 5 }); await page.mouse.up();
   await expect(viewer(page)).toHaveAccessibleName('Form');
 });
+
+test('moving away from content that holds focus keeps focus in the viewer', async ({ page }) => {
+  await openUi(page, '<div id="viewer"></div>');
+  await page.evaluate(() => {
+    window.viewer = CanopyX.lightbox('#viewer', { items: [{ content: '<button type="button">Details</button>', caption: 'One' }, { content: 'Two', caption: 'Two' }, { content: 'Three', caption: 'Three' }] });
+    return window.viewer.ready.then(() => window.viewer.open(0));
+  });
+  await viewer(page).getByRole('button', { name: 'Details' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(viewer(page)).toHaveAccessibleName('Two');
+  await expect(viewer(page)).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(viewer(page)).toHaveAccessibleName('Three');
+});

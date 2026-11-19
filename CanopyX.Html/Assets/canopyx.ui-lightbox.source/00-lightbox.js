@@ -125,6 +125,8 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
       if (value == null) fail(); else UI_TOOLS.content(media, value);
     }
     media.dataset.cxPart = 'media';
+    // Focus inside the item being replaced would fall to the page, and the keys would stop reaching the viewer.
+    if (stage.contains(document.activeElement)) dialog.focus({ preventScroll: true });
     stage.replaceChildren(media); stage.scrollTop = stage.scrollLeft = 0;
     paintZoom();
     // The neighbours load ahead, so moving through a gallery does not wait.
