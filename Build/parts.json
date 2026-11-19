@@ -887,6 +887,54 @@
       ]
     },
     {
+      "name": "rich-cells",
+      "label": "rich cells",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "richCells"
+      ],
+      "key": "GRID_RICH_IMPL",
+      "context": [
+        "GRID_RICH_IMPL",
+        "trusted",
+        "gridPresenterLink"
+      ],
+      "end": "GRID_RICH_IMPL.content = gridRichContent;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.rich-cells.source/10-rich-cells.js"
+      ]
+    },
+    {
+      "name": "url-rows",
+      "label": "rows from an address",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "urlRows"
+      ],
+      "key": "GRID_URL_IMPL",
+      "context": [
+        "GRID_URL_IMPL",
+        "validateGridRows",
+        "repairGridCell",
+        "inlineGridSource",
+        "gridRowsAddress"
+      ],
+      "end": "GRID_URL_IMPL.source = urlRowsSource;",
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.url-rows.source/10-url-rows.js"
+      ]
+    },
+    {
       "name": "forms",
       "label": "forms",
       "runtimes": [

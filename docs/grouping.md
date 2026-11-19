@@ -72,6 +72,10 @@ view.Reporting.Aggregates.Add(new CanopyGridAggregate("average", "amount", Canop
 
 At most four levels. A level's column must be sortable. A fixed grouping cannot be combined with `groupBy` or `groupable`.
 
+A fixed grouping can close each group with a footer row: `footerTemplate` (`CanopyGridGrouping.FooterTemplate`) is plain text
+with `{column}`, `{value}` and `{count}`, and the group's aggregates move from its heading to that row
+([data-protocol.md](data-protocol.md#column-defaults-ordering-hooks-and-footer-rows)).
+
 The levels belong to the query: every accepted query of such a grid carries `groupBy` (an empty list when ungrouped),
 the levels' columns lead its sort and the reader's own sorts apply inside the innermost groups. A query given without
 `groupBy` uses the declared levels; `[]` ungroups. Saved views, remembered state and shared state keep the levels;

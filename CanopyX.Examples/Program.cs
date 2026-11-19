@@ -110,6 +110,7 @@ ReportGridLayoutExample.Write(output);
 CursorGridExample.Write(output);
 ReportingGridExample.Write(output);
 GridFootersExample.Write(output);
+GridContentExample.Write(output);
 ExportFormatsExample.Write(output);
 SidecarKeysExample.Write(output);
 GroupedGridExample.Write(output);

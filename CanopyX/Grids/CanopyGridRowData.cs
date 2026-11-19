@@ -74,7 +74,7 @@ public sealed class CanopyGridRowData {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static bool ShouldWrite(CanopyDataGridView view, CanopyRowDataOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        if (view.Source.Kind != CanopyGridSourceKind.Inline) return false;
+        if (view.Source.Kind != CanopyGridSourceKind.Inline || view.Source.Url != null) return false;
         return (options?.Format ?? CanopyRowFormat.Auto) switch {
             CanopyRowFormat.Objects => false,
             CanopyRowFormat.Auto => view.Rows.Count > CanopyRowDataOptions.CompactAboveRows && !view.Rows.Any(row => row.Detail != null || row.HasFields),

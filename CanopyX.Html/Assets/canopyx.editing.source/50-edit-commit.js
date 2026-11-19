@@ -167,7 +167,7 @@
       // Both local source owners forget their previous result order. Enhanced rows retain their page-order tie break.
       if (inline) {
         if (this.enhanceStore) this.enhanceStore.version++;
-        else if (this.view.rowData) this.source.invalidate();
+        else if (this.view.rowData || this.view.source.url) this.source.invalidate?.();
         else this.source = inlineGridSource(this.view);
       }
       if (local) RECORD_IMPL.invalidate?.(this, entry.id);

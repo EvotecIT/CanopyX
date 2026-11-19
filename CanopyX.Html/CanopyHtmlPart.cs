@@ -34,7 +34,7 @@ public sealed class CanopyHtmlPart {
     private static readonly HashSet<string> KnownFeatures = new HashSet<string>(StringComparer.Ordinal) {
         "gridOptions", "pager", "editable", "rowData", "formatting", "formatEditor", "columnGroups", "rangeSelection", "grouping", "detail", "presenters", "officeExport",
         "searchHighlight", "layout", "record", "live", "facets", "calendar", "calendarResources", "calendarRecurrence", "calendarEditing", "calendarIcs", "calendarScreens",
-        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowSignature", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations", "charts", "rowActions"
+        "flowHost", "flowChecks", "flowHostOptions", "flowPick", "flowRecords", "flowSignature", "flowDrafts", "flowPreview", "flowCommand", "flowTasks", "flowDialog", "flowLinks", "flowEndpoint", "flowConsent", "flowFacts", "contextActions", "columnMenus", "board", "plan", "path", "stack", "timeSlider", "compare", "viewIntents", "buckets", "aggregateValues", "pivot", "calculations", "charts", "rowActions", "richCells", "urlRows"
     };
 
     internal CanopyHtmlPart(IReadOnlyDictionary<string, object> entry) {
@@ -192,6 +192,9 @@ public sealed class CanopyHtmlPart {
             "compare" => view.Compare != null,
             "viewIntents" => view.ViewIntents,
             "rowActions" => view.RowActions.Actions.Count > 0,
+            // Rows read from an address or answered by a host may hold markup the writer cannot see, so those grids carry it too.
+            "richCells" => view.Source.Url != null || view.Source.Kind == CanopyGridSourceKind.Host || view.Rows.Any(row => row != null && row.Cells.Values.Any(cell => cell?.Html != null)),
+            "urlRows" => view.Source.Url != null,
             "pager" => view.Presentation == CanopyGridPresentation.Paged && !view.Pager.IsDefault,
             "editable" => view.Columns.Any(column => column.Editable) || view.Calendar != null && (view.Calendar.Editing != null || view.Calendar.Create != null || view.Calendar.Drop),
             "formatting" => view.FormatRules.Count > 0 || view.Formatting != null,

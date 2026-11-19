@@ -123,6 +123,15 @@ public sealed class GridOptionsRemoteTests {
     }
 
     [Fact]
+    public async Task TextOnlyFooters_SurviveTheSchemaSnapshotAndAnswerPages() {
+        var view = View(); view.Footers.Clear();
+        var notes = new CanopyGridFooter("notes", "Notes"); notes.Cells["name"] = "Totals are on the next page"; view.Footers.Add(notes);
+        var harness = new Harness(Hosts, ProviderKind.Reference, view: view);
+        using var json = JsonDocument.Parse(await new CanopyRemoteHandler(harness.Schema, harness.Provider).QueryAsync(Query(view).ToJson(view)));
+        Assert.True(json.RootElement.GetProperty("matched").GetInt32() > 0);
+    }
+
+    [Fact]
     public async Task FooterSummary_RejectsARevisionChangeAndMismatchedMatchingCount() {
         var view = View(); var harness = new Harness(Hosts, ProviderKind.Reference, view: view);
         var revision = "r1";

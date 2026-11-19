@@ -11,6 +11,7 @@
       this.groupTree = tree; this.grid.setAttribute("role", tree ? "treegrid" : "grid"); this.version++;
     },
     fillRow(element, row) {
+      if (row.footer) return this.fillGroupFooter(element, row);
       if (!row.group) {
         element.removeAttribute("data-cx-group"); element.removeAttribute("data-cx-level");
         GROUP_ROW_BASE.call(this, element, row);
@@ -57,10 +58,11 @@
           if (!priorHeading) heading.append(text, badge);
           if (!priorButton) cell.append(button);
           this.paintGroupSelection(cell, group); if (!priorHeading) cell.append(heading); cell.title = label;
-          this.paintHiddenAggregates(heading, group.aggregates, cell, column.id, label);
+          if (!this.view.reporting.grouping?.footerTemplate) this.paintHiddenAggregates(heading, group.aggregates, cell, column.id, label);
           return;
         }
-        const aggregates = (this.view.reporting.aggregates || []).filter(item => item.column === column.id);
+        // With a footer row the group's aggregates show there instead.
+        const aggregates = this.view.reporting.grouping?.footerTemplate ? [] : (this.view.reporting.aggregates || []).filter(item => item.column === column.id);
         if (aggregates.length) this.paintAggregates(cell, column, aggregates, group.aggregates);
         else {
           cell.replaceChildren();

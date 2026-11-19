@@ -14,7 +14,7 @@
       this.selectOnClick = this.view.selectOnClick === true;
       this.host = host; this.opts = options; do { this.id = "cx" + ++instanceSeq; } while (document.getElementById(this.id));
       this.lifetime = new AbortController(); this.dataLifetime = new AbortController();
-      this.source = options.source || (this.view.source.kind === "inline" ? this.view.rowData ? rowDataSource(this) : inlineGridSource(this.view) : null);
+      this.source = options.source || (this.view.source.kind === "inline" ? this.view.source.url ? gridUrlRows(this) : this.view.rowData ? rowDataSource(this) : inlineGridSource(this.view) : null);
       if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
       this.cursor = this.view.source.navigation === "cursor";
       if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))

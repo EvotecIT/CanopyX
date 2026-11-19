@@ -20,6 +20,7 @@ public static partial class CanopyStaticHtml {
                 if (column.ClassName != null) html.Append(" class=\"").Append(Encode(column.ClassName)).Append('"');
                 html.Append('>');
                 var separator = false;
+                if (footer.Cells.TryGetValue(column.Id, out var cellText)) { html.Append(Encode(cellText)); separator = true; }
                 foreach (var aggregate in footer.Aggregates.Where(item => item.Column == column.Id)) {
                     if (separator) html.Append("<br>"); separator = true;
                     html.Append(Encode(aggregate.Label)).Append(": ");

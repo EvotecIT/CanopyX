@@ -400,6 +400,36 @@
       ]
     },
     {
+      "name": "rich-cells",
+      "label": "rich cells",
+      "version": "25c4febe28fbab65",
+      "script": "canopyx-rich-cells.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "richCells"
+      ]
+    },
+    {
+      "name": "url-rows",
+      "label": "rows from an address",
+      "version": "0524287da837c03e",
+      "script": "canopyx-url-rows.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "urlRows"
+      ]
+    },
+    {
       "name": "forms",
       "label": "forms",
       "version": "446591b028f1f5a3",
@@ -778,7 +808,7 @@
     {
       "name": "editing",
       "label": "editing",
-      "version": "1c20df7d896bb9ba",
+      "version": "f69e5b07c0e8d559",
       "script": "canopyx-editing.js",
       "style": "canopyx-editing.css",
       "runtimes": [
@@ -911,7 +941,7 @@
     {
       "name": "detail-rows",
       "label": "detail rows",
-      "version": "dfe6904120da2247",
+      "version": "2bc653a08cf7981c",
       "script": "canopyx-detail-rows.js",
       "style": "canopyx-detail-rows.css",
       "runtimes": [
@@ -1051,7 +1081,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "d76e64ce620e2419",
+      "version": "a439dd1aac95e039",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [
@@ -1122,7 +1152,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "1808047711c0f3bb",
+      "version": "f61aa7e0856d0e57",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [
@@ -1271,7 +1301,7 @@
     {
       "name": "grid-options",
       "label": "grid footer and query extensions",
-      "version": "f11ce2c5f45763b8",
+      "version": "a855b9db8d7c54af",
       "script": "canopyx-grid-options.js",
       "style": "canopyx-grid-options.css",
       "runtimes": [

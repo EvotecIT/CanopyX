@@ -34,7 +34,8 @@ for (const kind of ["number", "datetime"]) for (const strict of ["lower", "upper
     const expected = strict === "lower" ? [condition, { column: "value", operator: "le", values: [kind === "number" ? 15 : "2026-10-15T23:59:59.999Z"] }] :
       [{ column: "value", operator: "ge", values: [kind === "number" ? 5 : "2026-10-05T00:00:00.000Z"] }, condition];
     await expect.poll(() => filters(page)).toEqual(expected);
-    expect(await ids(page)).toEqual(strict === "lower" ? ["r2", "r3"] : ["r1", "r2"]);
+    // The query changes before the grid draws its answer; the rows are read once drawn, in DOM order.
+    await expect.poll(() => ids(page)).toEqual(strict === "lower" ? ["r2", "r3"] : ["r1", "r2"]);
     expect(await page.evaluate(api + ".getQuery().filters.find(filter => filter.column === 'team')")).toEqual({ column: "team", operator: "eq", values: ["Keep"] });
     expect(errors).toEqual([]);
   });
