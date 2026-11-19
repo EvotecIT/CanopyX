@@ -59,8 +59,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
       // An added option keeps the host's disabled state, so it is left out of submission like a disabled native option.
       const item = new Option(option.label, option.value); item.disabled = !!option.disabled; native.add(item);
     }
-    // A host option that is enabled also enables a disabled native option with its value, so the form submits what the field shows.
-    for (const item of native.options) { item.selected = chosen.has(item.value); if (item.selected && item.disabled && chosen.get(item.value).disabled === false) item.disabled = false; }
+    // A chosen option's native twin takes the host's disabled state, so the form submits only what the field offers as enabled.
+    for (const item of native.options) { const record = chosen.get(item.value); item.selected = !!record; if (record && item.matches(':disabled') !== record.disabled) item.disabled = record.disabled; }
     // An empty single select with no placeholder option is cleared outright, or the browser would select its first option again.
     if (!multiple && !chosen.size) { if (native.options[0]?.value === '') native.options[0].selected = true; else native.selectedIndex = -1; }
     paintChosen();
@@ -145,7 +145,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
       if (text.trim().length < minLength) { shown = []; paintList(null); hide(true); return; }
       shown = []; paintList(labels.stateLoading); show();
       timer = setTimeout(() => loader.fetch(text.trim()).then(items => {
-        for (const item of items) if (!all.some(option => option.value === item.value)) all.push(item);
+        // The latest answer wins, so a value the host renamed or disabled shows its new record when chosen later.
+        for (const item of items) { const at = all.findIndex(option => option.value === item.value); if (at < 0) all.push(item); else all[at] = item; }
         // Tags the reader created stay choices even when the host does not know them.
         const fold = selectFold(text.trim());
         offer([...items, ...all.filter(option => option.local && selectFold(option.label).includes(fold) && !items.some(item => item.value === option.value))]);

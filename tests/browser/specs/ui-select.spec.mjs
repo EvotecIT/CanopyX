@@ -388,7 +388,8 @@ test('on a short screen the list fits the visible height, so its last option can
 });
 
 test('a disabled host option chosen through select() stays disabled in the native select and is not submitted', async ({ page }) => {
-  await openUi(page, '<form id="hosted"><label for="team">Team</label><div id="teams"><select id="team" name="team" multiple><option value="ops">Ops</option></select></div></form>');
+  // The enabled native "old" option takes the host's disabled state.
+  await openUi(page, '<form id="hosted"><label for="team">Team</label><div id="teams"><select id="team" name="team" multiple><option value="ops">Ops</option><option value="old">Old</option></select></div></form>');
   const result = await page.evaluate(async () => {
     const control = CanopyX.select('#teams', { options: [{ value: 'ops', label: 'Ops' }, { value: 'old', label: 'Retired', disabled: true }] });
     await control.ready; await control.select(['ops', 'old']);
@@ -396,4 +397,20 @@ test('a disabled host option chosen through select() stays disabled in the nativ
     return { disabled: added?.disabled, submitted: new FormData(document.getElementById('hosted')).getAll('team') };
   });
   expect(result).toEqual({ disabled: true, submitted: ['ops'] });
+});
+
+test('a later loader answer replaces the record a value had before', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, '<label for="owner-input">Owner</label><div id="owners"><select id="owner-input" name="owner"></select></div>');
+  await page.evaluate(() => { window.owners = CanopyX.select('#owners', { load: async query => [{ value: 'x', label: query === 'old' ? 'Old name' : 'New name' }] }); return window.owners.ready; });
+  const box = page.getByRole('combobox', { name: 'Owner' });
+  await box.fill('old');
+  await page.clock.runFor(300);
+  await box.fill('new');
+  await page.clock.runFor(300);
+  await expect(page.getByRole('option', { name: 'New name' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => window.owners.select('x'));
+  await expect(box).toHaveValue('New name');
 });
