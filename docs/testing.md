@@ -55,7 +55,7 @@ node tools/browsers.mjs webkit --benchmarks
 
 These commands select only tagged measurements. Direct Playwright users can set `CANOPYX_BENCHMARKS=1` for the same selection. `Build.ps1` always selects correctness tests and restores any prior browser selection afterward. To inspect either selection without launching browsers, append `--list` to its browser command.
 
-The opt-in cases retain their original workload sizes, timers and numerical targets. They include cold and warm tree interactions, 10,000-row table enhancement, 4x CPU large-data loads, formatted navigation, highlighting and retained-memory probes. A failed target remains performance work to investigate; moving it out of required CI does not erase the result. Mixed suites keep separate untimed checks for page counts, complete match counts, visible navigation and destroy cleanup.
+The opt-in cases retain their original workload sizes, timers and numerical targets. They include the axe sweep of the 100,000-row grid pages, cold and warm tree interactions, 10,000-row table enhancement, 4x CPU large-data loads, formatted navigation, highlighting and retained-memory probes. A failed target remains performance work to investigate; moving it out of required CI does not erase the result. Mixed suites keep separate untimed checks for page counts, complete match counts, visible navigation and destroy cleanup.
 
 The .NET allocation measurement uses the `Benchmark` category:
 
