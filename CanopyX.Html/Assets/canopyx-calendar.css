@@ -24,6 +24,7 @@
 .cx-cal-ev{--cx-ev:var(--hfx-color-accent,light-dark(#11776f,#37c9b8));--cx-ev-bg:var(--hfx-color-accent-subtle,light-dark(#e7f1f1,#1b3435));position:relative;display:flex;align-items:center;gap:var(--cx-size-4px);min-width:0;margin:0;padding:0 var(--cx-size-6px);border:0;border-radius:var(--hfx-radius-sm,4px);background:var(--cx-ev-bg);color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));font:inherit;font-size:var(--cx-size-12d5px);line-height:var(--cx-size-18px);text-align:start;cursor:pointer;overflow:hidden;white-space:nowrap;box-shadow:inset var(--cx-size-3px) 0 0 var(--cx-ev);}
 :where(.cx-cal-rtl) .cx-cal-ev{box-shadow:inset calc(-1 * var(--cx-size-3px)) 0 0 var(--cx-ev);}
 .cx-cal-ev:hover{background:color-mix(in srgb,var(--cx-ev) 22%,var(--hfx-color-surface-card,var(--hfx-color-surface,light-dark(#ffffff,#16181c))));}
+.cx-cal-ev[data-cx-fill]:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane):hover{background:color-mix(in srgb,var(--cx-ev-fill) 88%,var(--cx-ev));}
 .cx-cal-ev:focus-visible{outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));outline-offset:var(--hfx-focus-offset,2px);z-index:6;}
 .cx-cal-ev-title{min-width:0;overflow:hidden;text-overflow:ellipsis;}
 .cx-cal-ev-time{flex:none;color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));font-variant-numeric:tabular-nums;}

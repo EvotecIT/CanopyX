@@ -129,3 +129,33 @@ test("forced colours keep the system text colour on events with their own text c
   const text = await event(page, "own").evaluate(element => getComputedStyle(element).color);
   expect(text).not.toBe("rgb(19, 78, 74)");
 });
+
+test("a hook under calendar options cancels like the grid option, and hovering keeps an event's own fill", async ({ page }) => {
+  const hooks = "{ calendar: { onEventClick: detail => { window.nested = detail.event.id; return false; } } }";
+  const events = [...EVENTS, { id: "dark", title: "Dark fill", start: "2026-10-16T15:00:00Z", end: "2026-10-16T16:00:00Z", backgroundColor: "#111827", textColor: "#ffffff" }];
+  await openBuilt(page, "nested.html", calendarPage({ events, date: "2026-10-16", view: "week" }, "", hooks));
+  await event(page, "link").click();
+  expect(await page.evaluate(() => window.nested)).toBe("link");
+  expect(page.url()).toBe("http://canopyx.test/nested.html");
+  await event(page, "dark").hover();
+  // The green channel, 0 to 255, of rgb(…) or of color(srgb …), which color-mix computes to.
+  const green = await event(page, "dark").evaluate(element => {
+    const value = getComputedStyle(element).backgroundColor, numbers = (value.match(/[\d.]+/g) || []).map(Number);
+    return value.startsWith("color(") ? numbers[1] * 255 : numbers[1];
+  });
+  // Still the event's dark fill under its white text, not the theme's pale hover tint over the surface.
+  expect(green).toBeLessThan(80);
+  expect(await event(page, "dark").evaluate(element => getComputedStyle(element).color)).toBe("rgb(255, 255, 255)");
+});
+
+test("events of a JSON feed carry their own colours and addresses", async ({ page }) => {
+  await page.route(/http:\/\/canopyx\.test\/feed\.json.*/, route => route.fulfill({ contentType: "application/json", body: JSON.stringify([
+    { id: "f1", title: "Feed change", start: "2026-10-16T15:00:00Z", end: "2026-10-16T16:00:00Z", backgroundColor: "#bfdbfe", textColor: "#1e3a8a", url: "/tickets/7" }]) }));
+  await page.route("http://canopyx.test/tickets/7", route => route.fulfill({ contentType: "text/html", body: "<title>Ticket 7</title>" }));
+  await openBuilt(page, "feed.html", calendarPage({ events: [], date: "2026-10-16", view: "week", sources: [{ id: "feed", label: "Feed", url: "/feed.json" }] }));
+  const feed = page.locator(".cx-cal-ev", { hasText: "Feed change" }).first();
+  await expect(feed).toBeVisible();
+  expect(await feed.evaluate(element => [getComputedStyle(element).backgroundColor, getComputedStyle(element).color])).toEqual(["rgb(191, 219, 254)", "rgb(30, 58, 138)"]);
+  await feed.click();
+  await expect(page).toHaveURL("http://canopyx.test/tickets/7");
+});

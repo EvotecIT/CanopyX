@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using CanopyX.Json;
 
@@ -42,11 +43,43 @@ public sealed partial class CanopyCalendar {
         Require(columns, _url, "url", CanopyColumnKind.Text);
     }
 
-    private static readonly Regex ColorPattern = new Regex(@"^(?:#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|(?:rgba?|hsla?)\([0-9\s.,%/+-]{1,64}(?:deg)?[0-9\s.,%/+-]{0,32}\)|[a-zA-Z]{3,24})$",
-        RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+    // The CSS colour names (CSS Color Module Level 4) and transparent.
+    private static readonly HashSet<string> ColorNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        "aliceblue", "antiquewhite", "aqua", "aquamarine", "azure", "beige", "bisque", "black", "blanchedalmond", "blue", "blueviolet", "brown",
+        "burlywood", "cadetblue", "chartreuse", "chocolate", "coral", "cornflowerblue", "cornsilk", "crimson", "cyan", "darkblue", "darkcyan",
+        "darkgoldenrod", "darkgray", "darkgreen", "darkgrey", "darkkhaki", "darkmagenta", "darkolivegreen", "darkorange", "darkorchid", "darkred",
+        "darksalmon", "darkseagreen", "darkslateblue", "darkslategray", "darkslategrey", "darkturquoise", "darkviolet", "deeppink", "deepskyblue",
+        "dimgray", "dimgrey", "dodgerblue", "firebrick", "floralwhite", "forestgreen", "fuchsia", "gainsboro", "ghostwhite", "gold", "goldenrod",
+        "gray", "green", "greenyellow", "grey", "honeydew", "hotpink", "indianred", "indigo", "ivory", "khaki", "lavender", "lavenderblush",
+        "lawngreen", "lemonchiffon", "lightblue", "lightcoral", "lightcyan", "lightgoldenrodyellow", "lightgray", "lightgreen", "lightgrey",
+        "lightpink", "lightsalmon", "lightseagreen", "lightskyblue", "lightslategray", "lightslategrey", "lightsteelblue", "lightyellow", "lime",
+        "limegreen", "linen", "magenta", "maroon", "mediumaquamarine", "mediumblue", "mediumorchid", "mediumpurple", "mediumseagreen",
+        "mediumslateblue", "mediumspringgreen", "mediumturquoise", "mediumvioletred", "midnightblue", "mintcream", "mistyrose", "moccasin",
+        "navajowhite", "navy", "oldlace", "olive", "olivedrab", "orange", "orangered", "orchid", "palegoldenrod", "palegreen", "paleturquoise",
+        "palevioletred", "papayawhip", "peachpuff", "peru", "pink", "plum", "powderblue", "purple", "rebeccapurple", "red", "rosybrown",
+        "royalblue", "saddlebrown", "salmon", "sandybrown", "seagreen", "seashell", "sienna", "silver", "skyblue", "slateblue", "slategray",
+        "slategrey", "snow", "springgreen", "steelblue", "tan", "teal", "thistle", "tomato", "transparent", "turquoise", "violet", "wheat",
+        "white", "whitesmoke", "yellow", "yellowgreen"
+    };
+    private static readonly Regex HexColor = new Regex("^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+    // rgb()/hsl() with three components (numbers, percentages, an angle for hue) and an optional alpha, comma or space separated.
+    private static readonly Regex FunctionColor = new Regex(@"^(rgba?|hsla?)\(\s*([+-]?[0-9.]+(?:%|deg)?)(?:\s*,\s*|\s+)([+-]?[0-9.]+%?)(?:\s*,\s*|\s+)([+-]?[0-9.]+%?)(?:\s*(?:,|/)\s*([0-9.]+%?))?\s*\)$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
 
-    /// <summary>Whether a value is a colour a calendar event accepts.</summary>
-    internal static bool IsColor(string value) => value != null && ColorPattern.IsMatch(value.Trim());
+    /// <summary>Whether a value is a colour a calendar event accepts: a hex colour, an rgb()/hsl() colour or a CSS colour name.</summary>
+    internal static bool IsColor(string value) {
+        if (value == null) return false;
+        var text = value.Trim();
+        if (HexColor.IsMatch(text) || ColorNames.Contains(text)) return true;
+        var match = FunctionColor.Match(text);
+        if (!match.Success) return false;
+        foreach (var group in new[] { match.Groups[2], match.Groups[3], match.Groups[4], match.Groups[5] }) {
+            if (!group.Success) continue;
+            var number = group.Value.TrimEnd('%').Replace("deg", string.Empty);
+            if (!double.TryParse(number, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _)) return false;
+        }
+        return true;
+    }
 
     /// <summary>Whether a value is an event address the calendar opens: http(s), mailto or relative, without control characters, backslashes or a //host form.</summary>
     internal static bool IsEventUrl(string value) {

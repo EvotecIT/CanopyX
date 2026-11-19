@@ -59,6 +59,9 @@ public sealed class CalendarEventLooksTests {
     [InlineData("var(--accent)")]
     [InlineData("url(x)")]
     [InlineData("#12")]
+    [InlineData("notacolour")]
+    [InlineData("rgb(1)")]
+    [InlineData("rgb(1, 2, x)")]
     [InlineData("")]
     public void Colours_RejectAnythingElse(string value) {
         Assert.Throws<ArgumentException>(() => new CanopyCalendarEvent("x", Start) { Color = value });

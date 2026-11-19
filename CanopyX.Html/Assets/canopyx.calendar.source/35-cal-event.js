@@ -46,7 +46,7 @@
       if (event.tone) { element.dataset.cxTone = event.tone; element.style.setProperty("--cx-ev", event.tone === "neutral" ? "var(--hfx-color-status-neutral-fg,var(--hfx-color-text-muted))" : toneVariable(event.tone, false, "var(--hfx-color-accent)")); element.style.setProperty("--cx-ev-bg", toneVariable(event.tone, true, "color-mix(in srgb,var(--cx-ev) 14%,var(--hfx-color-surface))")); }
       const accent = event.color || event.fill;
       if (accent) { element.style.setProperty("--cx-ev", accent); element.style.setProperty("--cx-ev-bg", event.fill || "color-mix(in srgb,var(--cx-ev) 14%,var(--hfx-color-surface))"); }
-      if (event.fill) element.style.setProperty("--cx-ev-fill", event.fill);
+      if (event.fill) { element.style.setProperty("--cx-ev-fill", event.fill); element.dataset.cxFill = ""; }
       if (event.ink) { element.style.setProperty("--cx-ev-fg", event.ink); element.dataset.cxInk = ""; }
       if (event.url) element.dataset.cxUrl = "";
       element.setAttribute("aria-label", this.calEventName(event));
