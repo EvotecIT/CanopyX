@@ -17,7 +17,7 @@ function lightboxItem(raw, index) {
 }
 /** Reads a gallery link: its address, type, caption (data-caption, the figure's caption or the image's alt) and alt text. */
 function lightboxLinkItem(link, index) {
-  const image = link.querySelector('img'), href = link.getAttribute('href') || link.dataset.lightboxSrc || '';
+  const image = link.querySelector('img'), href = link.getAttribute('href') || link.dataset.lightboxSrc || '', text = link.textContent.trim();
   const type = link.dataset.lightboxType || (href.startsWith('#') ? 'content' : 'image');
   const caption = link.dataset.caption ?? link.closest('figure')?.querySelector('figcaption')?.textContent.trim() ?? image?.alt ?? '';
   let content;
@@ -25,7 +25,8 @@ function lightboxLinkItem(link, index) {
     const source = document.getElementById(decodeURIComponent(href.slice(1)));
     content = () => source?.localName === 'template' ? source.content.cloneNode(true) : source?.cloneNode(true) ?? null;
   }
-  return lightboxItem({ id: link.dataset.lightboxId ?? index, type, src: type === 'content' ? null : link.href || href, alt: image?.alt || caption, caption, content, trigger: link }, index);
+  // A text-only link (a frame or content item without a thumbnail) names its item with its own text.
+  return lightboxItem({ id: link.dataset.lightboxId ?? index, type, src: type === 'content' ? null : link.href || href, alt: image?.alt || caption || text, caption, content, trigger: link }, index);
 }
 
 UI_IMPL.lightbox = (root, options = {}, signal) => {
@@ -102,7 +103,10 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
     caption.hidden = !caption.textContent;
     setText(position, list.length > 1 ? fill(labels.tabsPosition, { current: index + 1, total: list.length }) : '');
     previous.hidden = next.hidden = list.length < 2;
+    // A step button that becomes disabled while it has focus hands focus to the viewer, so the arrow keys keep working.
+    const focused = [previous, next].find(button => button === document.activeElement);
     previous.disabled = !loop && index === 0; next.disabled = !loop && index === list.length - 1;
+    if (focused?.disabled) dialog.focus({ preventScroll: true });
     if (item.type === 'image') {
       media = h('img', 'cx-lightbox-image'); media.alt = item.alt; media.decoding = 'async'; media.draggable = false;
       setText(status, labels.stateLoading);

@@ -187,3 +187,11 @@ test('notify skips a region inside a closed dialog and keeps using the region it
   await page.evaluate(() => CanopyX.notify({ id: 'saved', message: 'Saved again', timeout: 0 }));
   await expect(page.locator('#page .cx-toast')).toHaveText(/Saved again/);
 });
+
+test('notify leaves a region whose panel was hidden after it was used', async ({ page }) => {
+  await openUi(page, '<div id="panel"><section id="first" data-cx-toasts></section></div><section id="second" data-cx-toasts></section>');
+  await page.evaluate(() => CanopyX.notify({ message: 'One', timeout: 0 }));
+  await expect(page.locator('#first .cx-toast')).toHaveCount(1);
+  await page.evaluate(() => { document.getElementById('panel').hidden = true; return CanopyX.notify({ message: 'Two', timeout: 0 }); });
+  await expect(page.locator('#second .cx-toast')).toHaveCount(1);
+});

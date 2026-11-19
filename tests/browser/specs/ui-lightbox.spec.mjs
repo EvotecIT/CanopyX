@@ -146,3 +146,17 @@ test('script addresses are refused in items however they are written', async ({ 
   expect(errors).toEqual(['ok', 'ok', 'ok', 'ok']);
   expect(new Set(settled)).toEqual(new Set(['CanopyX: lightbox item 0 has a script address.']));
 });
+
+test('focus stays in the viewer when Next becomes disabled, and a text-only link names its item', async ({ page }) => {
+  await openUi(page, `<div id="docs" data-cx-lightbox><a data-lightbox-item href="about:blank" data-lightbox-type="frame"><span class="cx-gallery-label">Installation manual</span></a>
+    <a data-lightbox-item href="about:blank" data-lightbox-type="frame"><span class="cx-gallery-label">Release notes</span></a></div>`);
+  await page.getByRole('link', { name: 'Installation manual' }).click();
+  await expect(viewer(page)).toHaveAccessibleName('Installation manual');
+  await viewer(page).getByRole('button', { name: 'Next' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(viewer(page)).toHaveAccessibleName('Release notes');
+  await expect(viewer(page).locator('iframe')).toHaveAttribute('title', 'Release notes');
+  expect(await page.evaluate(() => document.querySelector('.cx-lightbox').contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('ArrowLeft');
+  await expect(viewer(page)).toHaveAccessibleName('Installation manual');
+});

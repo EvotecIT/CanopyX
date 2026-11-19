@@ -66,7 +66,7 @@
   let notifyRoot = null;
   function notify(options) {
     const usable = region => !region.closest("dialog:not([open]),[hidden]");
-    let root = notifyRoot && uiInstances.get(notifyRoot)?.has("toasts") ? notifyRoot : [...document.querySelectorAll("[data-cx-toasts]")].find(usable);
+    let root = notifyRoot && uiInstances.get(notifyRoot)?.has("toasts") && (!notifyRoot.isConnected || usable(notifyRoot)) ? notifyRoot : [...document.querySelectorAll("[data-cx-toasts]")].find(usable);
     if (!root) { root = h("section"); root.setAttribute("data-cx-toasts", ""); document.body.appendChild(root); }
     notifyRoot = root;
     const api = createUi("toasts", root);

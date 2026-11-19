@@ -137,7 +137,7 @@
     {
       "name": "ui-lightbox",
       "label": "UI lightbox",
-      "version": "e82e66961d826ed7",
+      "version": "eba7c3d7f113aa5b",
       "script": "canopyx-ui-lightbox.js",
       "style": "canopyx-ui-lightbox.css",
       "runtimes": [
