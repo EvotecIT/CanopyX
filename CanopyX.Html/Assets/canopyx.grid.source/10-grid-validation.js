@@ -85,6 +85,9 @@
     if (view.source.url !== undefined && (view.source.kind !== "inline" || view.rowData !== undefined || view.rows?.length || !gridRowsAddress(view.source.url)) ||
         view.source.refreshSeconds !== undefined && (view.source.url === undefined || !Number.isInteger(view.source.refreshSeconds) || view.source.refreshSeconds < 5 || view.source.refreshSeconds > 86400))
       throw new Error("CanopyX: invalid grid source address or refresh.");
+    // Calculated columns rebuild the inline source over its rows; rows read from an address do not support them yet.
+    if (view.source.url !== undefined && (view.calculatedColumnsEditable || view.columns.some(column => column?.calculation !== undefined)))
+      throw new Error("CanopyX: a grid that reads its rows from an address cannot have calculated columns.");
     if (view.source.navigation === "cursor" && (view.source.kind !== "host" || view.presentation !== "paged"))
       throw new Error("CanopyX: cursors need a hosted paged grid.");
     if (view.presentation !== undefined && !["continuous", "paged"].includes(view.presentation) ||

@@ -131,6 +131,12 @@ public sealed class GridContentSourceTests {
         Assert.False(single.RootElement.GetProperty("source").TryGetProperty("refreshSeconds", out _));
     }
 
+    [Fact]
+    public void RowsFromAnAddress_RefuseCalculatedColumns() {
+        var view = View(); view.Source = CanopyGridSource.FromUrl("rows.json"); view.CalculatedColumnsEditable = true;
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+    }
+
     [Theory]
     [InlineData("javascript:alert(1)")]
     [InlineData("//evil.test/rows.json")]

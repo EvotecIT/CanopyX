@@ -306,7 +306,7 @@
     {
       "name": "url-rows",
       "label": "rows from an address",
-      "version": "823319cae40a5995",
+      "version": "fa39ee7c0fa09fc7",
       "script": "canopyx-url-rows.js",
       "runtimes": [
         "grid"
@@ -828,7 +828,7 @@
     {
       "name": "calculations",
       "label": "calculated columns",
-      "version": "3944e8814d257f6b",
+      "version": "b9dd6645e82a7f30",
       "script": "canopyx-calculations.js",
       "style": "canopyx-calculations.css",
       "runtimes": [

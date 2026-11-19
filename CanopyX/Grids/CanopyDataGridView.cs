@@ -355,6 +355,8 @@ public sealed partial class CanopyDataGridView {
         }
         if (Source.Kind == CanopyGridSourceKind.Host && Rows.Count != 0) throw new InvalidOperationException("A host grid obtains its rows from the host query hook; inline rows must be empty.");
         if (Source.Url != null && Rows.Count != 0) throw new InvalidOperationException("A grid that reads its rows from an address carries no rows of its own.");
+        if (Source.Url != null && (CalculatedColumnsEditable || System.Linq.Enumerable.Any(Columns, column => column.Calculation != null)))
+            throw new InvalidOperationException("A grid that reads its rows from an address cannot have calculated columns.");
         CanopyGridRows.Validate(Rows, columnIds, Columns, Reporting?.Detail);
         ValidateRecord();
         Query?.Validate(this);

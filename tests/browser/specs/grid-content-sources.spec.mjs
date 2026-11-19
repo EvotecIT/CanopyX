@@ -71,6 +71,12 @@ test("scripts, handlers, unsafe addresses and unknown elements never reach the p
     .toEqual([[null, "http://canopyx.test/x", null], ["svg", null, null], ["photo", "https://example.test/i.png", "16"]]);
 });
 
+test("a cell with html: null keeps its other decorations", async ({ page }) => {
+  await open(page, view([{ id: "a", cells: { name: "Alpha", size: 1, state: { value: "On", html: null, title: "Kept tooltip" } } }]));
+  await expect(cell(page, "a", 1)).toHaveAttribute("title", "Kept tooltip");
+  await expect(cell(page, "a", 1).locator(".cx-rich")).toHaveCount(0);
+});
+
 test("search and sorting read the cell's value, not its markup", async ({ page }) => {
   await open(page, view([
     { id: "b", cells: { name: "Bravo", size: 2, state: { value: "Beta state", html: "<em>Beta</em> state" } } },
@@ -202,6 +208,22 @@ test("a refresh interval reads the rows again and keeps the reader's search", as
   expect(await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().search)).toBe("new");
 });
 
+test("a large row set from an address searches in slices, and its facets count the rows that were read", async ({ page }) => {
+  await page.route("http://canopyx.test/data/users.json", route => route.fulfill({ contentType: "application/json",
+    body: JSON.stringify(Array.from({ length: 25000 }, (_, i) => ({ id: "u" + String(i).padStart(5, "0"), cells: { name: (i % 5000 < 2 ? "Needle " : "Hay ") + i, state: i % 2 ? "Off" : "On" } }))) }));
+  const view = fromAddress();
+  view.reporting = { facetColumns: ["state"] };
+  await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("http://canopyx.test/rich");
+  await expect(page.locator(".cx-row[data-cx-id]").first()).toBeVisible();
+  const api = "document.querySelector('[data-canopyx-host]').canopyx";
+  await page.evaluate(`${api}.setQuery({ search: "needle" })`);
+  await expect.poll(() => page.evaluate(`${api}.getQuery().search`)).toBe("needle");
+  await expect(page.locator(".cx-row[data-cx-id]")).toHaveCount(10);
+  const facets = await page.evaluate(`${api}.getFacets("state", { includeCurrentFilter: false })`);
+  expect(facets.items.map(item => [item.value, item.count])).toEqual([["Off", 5], ["On", 5]]);
+});
+
 test("a refresh updates the totals of a grouped grid whose rows come from an address", async ({ page }) => {
   await page.clock.install();
   let amount = 5;
@@ -261,14 +283,16 @@ test("an address on a host grid, an unsafe address or rows beside an address are
     ["javascript", fromAddress({ url: "javascript:alert(1)" })],
     ["protocol-relative", fromAddress({ url: "//evil.test/rows.json" })],
     ["rows", { ...fromAddress(), rows: [{ id: "a", cells: { name: "A" } }] }],
-    ["refresh", fromAddress({ refreshSeconds: 1 })]
+    ["refresh", fromAddress({ refreshSeconds: 1 })],
+    ["calculated", { ...fromAddress(), calculatedColumnsEditable: true }]
   ]) {
     const messages = [];
     const listener = error => messages.push(error.message);
     page.on("pageerror", listener);
     await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
     await page.goto("http://canopyx.test/rich");
-    await expect.poll(async () => messages.join(" ") + " " + await page.locator("[data-canopyx-host]").textContent(), { message: label }).toContain("invalid grid source address or refresh");
+    await expect.poll(async () => messages.join(" ") + " " + await page.locator("[data-canopyx-host]").textContent(), { message: label })
+      .toMatch(label === "calculated" ? /cannot have calculated columns/ : /invalid grid source address or refresh/);
     page.off("pageerror", listener);
     await page.unroute("http://canopyx.test/rich");
   }

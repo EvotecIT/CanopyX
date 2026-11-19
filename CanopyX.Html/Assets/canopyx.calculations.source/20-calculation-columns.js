@@ -83,8 +83,7 @@
     calculationApply(grid.view);
     if (grid.view.source.kind === "inline") {
       if (grid.view.rowData && !grid.source.decoded && !grid.acceptedQuery) grid.source = rowDataSource(grid);
-      // A grid that reads its rows from an address keeps its reader; its rows use the same calculations.
-      else if (!grid.view.source.url) grid.source = inlineGridSource(grid.view);
+      else grid.source = inlineGridSource(grid.view);
     }
     grid.columnList = null; grid.columnFind = null;
   }

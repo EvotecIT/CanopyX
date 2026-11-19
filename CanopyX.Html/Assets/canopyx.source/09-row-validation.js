@@ -36,7 +36,7 @@
     if (isCellObject(cell)) {
       if (Array.isArray(cell) ||
           ["text", "searchText", "title", "tone", "secondary"].some(name => cell[name] !== undefined && typeof cell[name] !== "string") ||
-          cell.secondary !== undefined && cell.secondary.length > 4096 || cell.html !== undefined && (typeof cell.html !== "string" || cell.html.length > 65536) || cell.sort !== undefined && !(typeof cell.sort === "string" ? cell.sort.length <= 4096 : Number.isFinite(cell.sort)) || cell.series !== undefined && !gridSeriesValid(cell.series) ||
+          cell.secondary !== undefined && cell.secondary.length > 4096 || cell.html != null && (typeof cell.html !== "string" || cell.html.length > 65536) || cell.sort !== undefined && !(typeof cell.sort === "string" ? cell.sort.length <= 4096 : Number.isFinite(cell.sort)) || cell.series !== undefined && !gridSeriesValid(cell.series) ||
           cell.badges !== undefined && (!Array.isArray(cell.badges) || cell.badges.some(badge => !badge || typeof badge.text !== "string" ||
             ["tone", "title"].some(name => badge[name] !== undefined && typeof badge[name] !== "string"))))
         throw new Error("CanopyX: malformed grid cell.");

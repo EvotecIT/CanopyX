@@ -24,7 +24,9 @@
     let generation = 0, base = null;
     const accept = rows => {
       view.rows = rows; base = inlineGridSource(view); const revision = "url-" + ++generation;
-      inner = { query: (query, options) => ({ ...base.query(query, options), revision }), position: (query, id) => base.position(query, id), row: id => base.row(id) };
+      // A large search or filter answers with a promise (sliced queries), so the page is awaited before it takes the revision.
+      inner = { query: async (query, options) => ({ ...await base.query(query, options), revision }), position: (query, id) => base.position(query, id), row: id => base.row(id),
+        facet: base.facet && (async (request, options) => ({ ...await base.facet(request, options), revision })) };
       return inner;
     };
     let refreshing = false;
@@ -53,6 +55,7 @@
     }, error => { loading = null; outer.reset(); throw error; });
     return {
       query: (query, options) => ready().then(() => inner.query(query, options)),
+      facet: (request, options) => ready().then(() => inner.facet(request, options)),
       position: (query, id) => inner ? inner.position(query, id) : -1,
       row: id => inner ? inner.row(id) : null
     };
