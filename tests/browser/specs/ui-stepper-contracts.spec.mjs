@@ -200,3 +200,19 @@ test('callback and event records agree with current state across validation, loa
   expect(samples.some(sample => sample.kind === 'validate' && sample.actual[0].state === 'error')).toBe(true);
   expect(samples.find(sample => sample.kind === 'finish').actual[0]).toMatchObject({ state: 'done', visited: true });
 });
+
+test('toolbars above and under the panels stay in step and keep the host extra controls', async ({ page }) => {
+  const footer = fixture('StepperLabelsFooter'), extra = '<span class="cx-stepper-extra" data-cx-part="extra"><a href="#help">Help</a></span>';
+  const top = footer.replace('class="cx-stepper-footer"', 'class="cx-stepper-footer" data-placement="top"').replace('</span>', '</span>' + extra);
+  const html = `<style>${roles}</style><div style="width:900px">` + fixture('StepperContractMarkup').replace('</ol>', '</ol>' + top).replace('{{footer}}', footer) + '</div>';
+  await openUi(page, html, init());
+  await expect(action(page, 'next')).toHaveCount(2);
+  await page.locator('.cx-stepper-footer[data-placement="top"] [data-cx-stepper-action="next"]').click();
+  await expect(page.locator('#wizard-panel-optional')).toBeVisible();
+  await expect(action(page, 'back')).toHaveCount(2);
+  for (const bar of await page.locator('.cx-stepper-footer').all()) await expect(bar.locator('[data-cx-stepper-action="back"]')).toBeVisible();
+  // The host's link stays first, before the step actions the stepper orders.
+  expect(await page.locator('.cx-stepper-footer[data-placement="top"]').evaluate(bar => [...bar.children].map(child => child.dataset.cxStepperAction || child.className))).toEqual(
+    expect.arrayContaining(['cx-step-position', 'cx-stepper-extra']));
+  expect(await page.locator('.cx-stepper-footer[data-placement="top"] > :nth-child(2)').getAttribute('class')).toBe('cx-stepper-extra');
+});

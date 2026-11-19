@@ -105,6 +105,9 @@
     border-block-start: var(--hfx-border-width) solid var(--hfx-color-border);
   }
   .cx-step-position { margin-inline-end: auto; }
+  .cx-stepper-footer[data-placement="top"] { margin-block-end: var(--hfx-space-3); padding-block: 0 var(--hfx-space-3); border-block-start: 0; border-block-end: var(--hfx-border-width) solid var(--hfx-color-border); }
+  .cx-stepper-footer[data-placement="top"] .cx-step-position { visibility: hidden; }
+  .cx-stepper-extra { display: inline-flex; flex-wrap: wrap; gap: var(--hfx-space-2); }
   .cx-stepper-footer button, .cx-stepper-phone-back {
     min-block-size: var(--hfx-control-height-md);
     padding: var(--hfx-space-1) var(--hfx-control-padding-x);

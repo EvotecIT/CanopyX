@@ -350,6 +350,7 @@ CanopyX.Html.Ui.CanopyStepperLayout.const CanopyX.Html.Ui.CanopyStepperLayout Ve
 CanopyX.Html.Ui.CanopyStepperOptions : sealed class
 CanopyX.Html.Ui.CanopyStepperOptions..ctor()
 CanopyX.Html.Ui.CanopyStepperOptions.CanopyX.Html.Ui.CanopyStepperLayout Layout { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.CanopyX.Html.Ui.CanopyStepperToolbarPosition ToolbarPosition { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.CanopyX.Html.Ui.CanopyUiMode Mode { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.Boolean Linear { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.Boolean ShowFooter { get; set; }
@@ -359,7 +360,12 @@ CanopyX.Html.Ui.CanopyStepperOptions.System.String FinishLabel { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.String NextLabel { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.String? SaveDraftLabel { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.String? SkipLabel { get; set; }
+CanopyX.Html.Ui.CanopyStepperOptions.System.String? ToolbarHtml { get; set; }
 CanopyX.Html.Ui.CanopyStepperOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyStepperToolbarPosition : enum System.Int32
+CanopyX.Html.Ui.CanopyStepperToolbarPosition.const CanopyX.Html.Ui.CanopyStepperToolbarPosition Both = 2
+CanopyX.Html.Ui.CanopyStepperToolbarPosition.const CanopyX.Html.Ui.CanopyStepperToolbarPosition Bottom = 0
+CanopyX.Html.Ui.CanopyStepperToolbarPosition.const CanopyX.Html.Ui.CanopyStepperToolbarPosition Top = 1
 CanopyX.Html.Ui.CanopyTab : sealed class
 CanopyX.Html.Ui.CanopyTab..ctor(System.String id, System.String label)
 CanopyX.Html.Ui.CanopyTab.System.Boolean Disabled { get; set; }
