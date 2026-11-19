@@ -82,7 +82,18 @@
   // while it runs, and a newer query stops an older one between slices. Smaller sets, regex searches (they keep one 50 ms
   // budget) and grids whose options hook the query stay synchronous.
   const GRID_SLICED_ROWS = 20000, GRID_SLICE_MS = 10;
-  const gridYield = () => globalThis.scheduler?.yield ? scheduler.yield() : new Promise(resolve => setTimeout(resolve));
+  // Without scheduler.yield, a pause is a message to the page itself: browsers throttle zero-delay timers in background
+  // pages, and some ports run them only when nothing else is waiting, while messages keep their turn.
+  const gridPauses = [];
+  let gridPauseChannel = null;
+  function gridYield() {
+    if (globalThis.scheduler?.yield) return scheduler.yield();
+    if (!gridPauseChannel) {
+      gridPauseChannel = new MessageChannel();
+      gridPauseChannel.port1.onmessage = () => gridPauses.shift()?.();
+    }
+    return new Promise(resolve => { gridPauses.push(resolve); gridPauseChannel.port2.postMessage(0); });
+  }
   function gridSlicedQuery(view, query) {
     return view.rows.length > GRID_SLICED_ROWS && query.searchMode !== "regex" && !(GRID_OPTIONS.queryRows && GRID_OPTION_GRIDS.has(view)) &&
       !!(query.search || query.filters.length || query.filterGroup || query.tupleFilters?.length);
