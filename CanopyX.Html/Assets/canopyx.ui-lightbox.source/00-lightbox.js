@@ -87,7 +87,10 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
     const image = media?.localName === 'img' && !status.dataset.error;
     tools.hidden = !image;
     setText(level, percent(scale));
+    const focused = [zoomOut, zoomIn, reset].find(button => button === document.activeElement);
     zoomOut.disabled = scale <= 1; reset.disabled = scale <= 1; zoomIn.disabled = scale >= LIGHTBOX_ZOOMS.at(-1);
+    // A zoom button that becomes disabled while it has focus hands focus to the viewer, as the step buttons do.
+    if (focused?.disabled) dialog.focus({ preventScroll: true });
   }
   function fail() {
     status.dataset.error = 'true'; status.className = 'cx-lightbox-status cx-overlay-error'; setText(status, labels.lightboxError); paintZoom();
@@ -166,7 +169,8 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
   // A swipe moves between items; on a zoomed image a drag pans it instead.
   let drag = null;
   stage.addEventListener('pointerdown', event => {
-    if (event.button || media?.localName === 'iframe') return;
+    // Gestures on host controls and editable content belong to them, not to swipe navigation.
+    if (event.button || media?.localName === 'iframe' || event.target.closest('input,select,textarea,button,a[href],label,[contenteditable]:not([contenteditable="false"])')) return;
     drag = { x: event.clientX, y: event.clientY, left: stage.scrollLeft, top: stage.scrollTop, pointer: event.pointerId };
     if (scale > 1 && event.pointerType === 'mouse') { stage.setPointerCapture(event.pointerId); dialog.dataset.panning = 'true'; }
   }, { signal });

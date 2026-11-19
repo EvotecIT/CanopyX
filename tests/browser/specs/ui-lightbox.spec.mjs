@@ -160,3 +160,23 @@ test('focus stays in the viewer when Next becomes disabled, and a text-only link
   await page.keyboard.press('ArrowLeft');
   await expect(viewer(page)).toHaveAccessibleName('Installation manual');
 });
+
+test('focus stays in the viewer when a zoom button disables, and dragging a slider in content does not swipe', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openUi(page, gallery());
+  await page.getByRole('link', { name: 'Server room' }).click();
+  await expect.poll(() => viewer(page).getByRole('img', { name: 'Server room' }).evaluate(element => element.complete && element.naturalWidth)).toBe(800);
+  await page.keyboard.press('+');
+  await viewer(page).getByRole('button', { name: 'Fit to screen' }).focus();
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => document.querySelector('.cx-lightbox').contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('ArrowRight');
+  await expect(viewer(page).locator('[data-cx-part="position"]')).toHaveText('2 of 3');
+  await openUi(page, '<div id="viewer"></div>');
+  await page.evaluate(() => { const range = document.createElement('input'); range.type = 'range'; range.setAttribute('aria-label', 'Level');
+    CanopyX.lightbox('#viewer', { items: [{ content: range, caption: 'Form' }, { content: 'Other', caption: 'Other' }] }).open(0); });
+  const slider = await viewer(page).getByRole('slider', { name: 'Level' }).boundingBox();
+  await page.mouse.move(slider.x + 5, slider.y + slider.height / 2); await page.mouse.down();
+  await page.mouse.move(slider.x + slider.width - 5, slider.y + slider.height / 2, { steps: 5 }); await page.mouse.up();
+  await expect(viewer(page)).toHaveAccessibleName('Form');
+});
