@@ -34,11 +34,13 @@ public sealed class CanopyStepper {
         UiHtml.Attribute(html, "data-cx-variant", Options.Variant);
         html.Append('>');
         if (Options.Mode != CanopyUiMode.Report) Header(html);
+        var toolbars = Options.Mode == CanopyUiMode.Interactive && Options.ShowFooter;
+        if (toolbars && Options.ToolbarPosition != CanopyStepperToolbarPosition.Bottom) Footer(html, "top");
         if (Options.Mode != CanopyUiMode.Static) {
             for (var i = 0; i < Steps.Count; i++) Panel(html, Steps[i], i);
         }
         if (Options.Mode == CanopyUiMode.Interactive) {
-            if (Options.ShowFooter) Footer(html);
+            if (toolbars && Options.ToolbarPosition != CanopyStepperToolbarPosition.Top) Footer(html, null);
             html.Append("<div class=\"cx-visually-hidden\" aria-live=\"polite\" aria-atomic=\"true\">")
                 .Append(UiHtml.Encode(Position() + ": " + Steps[Options.SelectedIndex].Label)).Append("</div>");
         }
@@ -49,6 +51,7 @@ public sealed class CanopyStepper {
         UiHtml.Index(Options.SelectedIndex, Steps.Count);
         UiHtml.EnumValue(Options.Mode);
         UiHtml.EnumValue(Options.Layout);
+        UiHtml.EnumValue(Options.ToolbarPosition);
         var ids = new HashSet<string>(StringComparer.Ordinal) { Id };
         var localIds = new HashSet<string>(StringComparer.Ordinal);
         for (var i = 0; i < Steps.Count; i++) {
@@ -128,9 +131,10 @@ public sealed class CanopyStepper {
         html.Append(step.ContentHtml).Append("</section>");
     }
 
-    private void Footer(StringBuilder html) {
+    private void Footer(StringBuilder html, string? placement) {
         var step = Steps[Options.SelectedIndex];
         html.Append("<div class=\"cx-stepper-footer\" data-cx-part=\"footer\"");
+        if (placement == "top") UiHtml.Attribute(html, "data-placement", placement);
         UiHtml.Attribute(html, "data-back-label", Options.BackLabel);
         UiHtml.Attribute(html, "data-next-label", Options.NextLabel);
         UiHtml.Attribute(html, "data-finish-label", Options.FinishLabel);
@@ -140,6 +144,7 @@ public sealed class CanopyStepper {
         UiHtml.Attribute(html, "data-save-draft-label", Options.SaveDraftLabel);
         html.Append("><span class=\"cx-step-position\">")
             .Append(UiHtml.Encode(Position())).Append("</span>");
+        if (Options.ToolbarHtml != null) html.Append("<span class=\"cx-stepper-extra\" data-cx-part=\"extra\">").Append(Options.ToolbarHtml).Append("</span>");
         if (Options.SaveDraftLabel != null) Button(html, "save-draft", Options.SaveDraftLabel);
         if (step.Optional && Options.SkipLabel != null) Button(html, "skip", Options.SkipLabel);
         if (Options.SelectedIndex > 0) Button(html, "back", Options.BackLabel);

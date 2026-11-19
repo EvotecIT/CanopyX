@@ -4194,8 +4194,10 @@ export interface UiToastsController extends UiController{
 }
 export interface UiLightboxItem{
   id?:string;
-  type?:"image"|"frame"|"content";
+  type?:"image"|"frame"|"content"|"video"|"youtube";
   src?:string;
+  poster?:string;
+  autoplay?:boolean;
   alt?:string;
   caption?:string;
   content?:Node|string|(() => Node|string|null);
@@ -4218,6 +4220,10 @@ export interface UiCarouselOptions{
   loop?:boolean;
   selected?:number;
   autoplay?:false|{interval:number;start?:boolean};
+  transition?:"slide"|"fade";
+  controls?:"below"|"above"|"sides";
+  indicators?:"controls"|"above"|"below"|"hidden";
+  captions?:"overlay"|"below";
   labels?:UiLabels;
 }
 export interface UiCarouselController extends UiController{

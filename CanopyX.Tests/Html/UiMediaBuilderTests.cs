@@ -27,6 +27,19 @@ public sealed class UiMediaBuilderTests {
     }
 
     [Fact]
+    public void Carousel_WritesTransitionPlacementAndCaptionsOnlyWhenTheyDifferFromTheDefaults() {
+        var options = new CanopyCarouselOptions { Transition = CanopyCarouselTransition.Fade, Controls = CanopyCarouselControlPosition.Sides,
+            Indicators = CanopyCarouselIndicatorPosition.WithControls, Captions = CanopyCarouselCaptionPosition.Below };
+        var html = new CanopyCarousel("tour", "Tour", options) { Slides = { new CanopyCarouselSlide("<img src=\"a.png\" alt=\"\">") { Caption = "Rack <A>" } } }.ToHtmlFragment();
+        Assert.Contains("data-transition=\"fade\" data-controls=\"sides\" data-captions=\"below\">", html);
+        Assert.DoesNotContain("data-indicators", html);
+        Assert.Contains("<img src=\"a.png\" alt=\"\"><p class=\"cx-carousel-caption\">Rack &lt;A&gt;</p></div>", html);
+        var hidden = new CanopyCarousel("c", "C", new CanopyCarouselOptions { Indicators = CanopyCarouselIndicatorPosition.Hidden }) { Slides = { new CanopyCarouselSlide("a") } }.ToHtmlFragment();
+        Assert.Contains("data-indicators=\"hidden\"", hidden);
+        Assert.Throws<ArgumentException>(() => new CanopyCarousel("c", "C", new CanopyCarouselOptions { Transition = CanopyCarouselTransition.Fade, PerView = 2 }) { Slides = { new CanopyCarouselSlide("a") } }.ToHtmlFragment());
+    }
+
+    [Fact]
     public void Rating_IsARadioGroupThatSubmitsWithAForm() {
         var html = new CanopyRating("quality", "quality", "Service <quality>", new CanopyRatingOptions { Max = 3, Value = 2, Required = true, Labels = CanopyLabels.Polish() }).ToHtmlFragment();
         Assert.Equal("<fieldset id=\"quality\" class=\"cx-rating\" data-cx-rating data-cx-part=\"rating\" data-max=\"3\" data-clearable=\"false\"><legend>Service &lt;quality&gt;</legend><span class=\"cx-rating-options\">" +
