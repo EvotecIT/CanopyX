@@ -35,7 +35,7 @@ test('the typed alternative and Clear work by keyboard, and a PNG form value is 
 });
 
 test('a stored signature fills the hidden input, survives a pen colour change and is replaced by select', async ({ page }) => {
-  const picture = svg => ({ svg, png: 'data:image/png;base64,iVBORw0KGgo=' });
+  const picture = svg => ({ svg, png: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' });
   await openUi(page, '<form id="form"><div id="sign" data-name="signature" data-colours="true"></div></form>');
   await page.evaluate(stored => { window.pad = CanopyX.signature('#sign', { value: stored }); }, picture('<svg id="a"></svg>'));
   await page.evaluate(() => window.pad.ready);
@@ -65,6 +65,28 @@ test('select or clear during a stroke cancels it, so releasing the pointer keeps
   await page.evaluate(() => window.pad.clear());
   await page.mouse.up();
   expect(await page.evaluate(async () => (await window.pad.getState()).value)).toBeNull();
+  // The Clear button, pressed from the keyboard mid-stroke, cancels the stroke the same way.
+  await page.mouse.move(box.x + 20, box.y + 20); await page.mouse.down();
+  await page.mouse.move(box.x + 80, box.y + 40, { steps: 3 }); await page.mouse.up();
+  await page.mouse.move(box.x + 20, box.y + 60); await page.mouse.down();
+  await page.mouse.move(box.x + 80, box.y + 80, { steps: 3 });
+  await page.getByRole('button', { name: 'Clear' }).evaluate(button => button.click());
+  await page.mouse.up();
+  expect(await page.evaluate(async () => (await window.pad.getState()).value)).toBeNull();
+});
+
+test('a pad under a scaled ancestor keeps ink under the pointer, and a 300 pixel pad gets its full height', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openUi(page, '<div style="transform: scale(0.5); transform-origin: 0 0; width: 600px"><div id="sign"></div></div><div style="width: 300px"><div id="narrow"></div></div>');
+  await page.evaluate(() => Promise.all([(window.pad = CanopyX.signature('#sign')).ready, CanopyX.signature('#narrow').ready]));
+  const box = await page.locator('#sign canvas').boundingBox();
+  await page.mouse.move(box.x + 50, box.y + 40); await page.mouse.down();
+  await page.mouse.move(box.x + 100, box.y + 40, { steps: 3 }); await page.mouse.up();
+  const start = await page.evaluate(async () => (await window.pad.getState()).value.svg.match(/M(\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/).slice(1).map(Number));
+  // The pad's border makes its box a little larger than the drawing, so a pixel either way is fine.
+  expect(Math.abs(start[0] - 100)).toBeLessThanOrEqual(2);
+  expect(Math.abs(start[1] - 80)).toBeLessThanOrEqual(2);
+  expect(await page.locator('#narrow canvas').evaluate(canvas => canvas.height / (devicePixelRatio || 1))).toBe(160);
 });
 
 test('a form reset brings back the starting signature, and a cancelled one keeps it', async ({ page }) => {
@@ -80,6 +102,10 @@ test('a form reset brings back the starting signature, and a cancelled one keeps
   await page.getByRole('button', { name: 'Reset' }).click();
   await expect.poll(submitted).toBe('');
   expect(await page.evaluate(() => CanopyX.signature('#sign').getState().value)).toBeNull();
+  // A select() straight after form.reset() wins over the restore the reset queued.
+  await page.evaluate(() => { document.getElementById('form').reset(); CanopyX.signature('#sign').select({ svg: '<svg id="kept"></svg>', png: 'data:image/png;base64,AA' }); });
+  await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 0)));
+  expect(await submitted()).toBe('<svg id="kept"></svg>');
 });
 
 test('destroy removes the hidden input the signature made and keeps a host input', async ({ page }) => {

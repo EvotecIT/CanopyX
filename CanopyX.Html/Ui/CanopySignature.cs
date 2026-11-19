@@ -42,7 +42,7 @@ public sealed class CanopySignature {
 
     private static void Colour(string? value) {
         if (value == null) return;
-        foreach (var c in value) if (!(char.IsLetterOrDigit(c) || c == '#' || c == '(' || c == ')' || c == ',' || c == '.' || c == '%' || c == ' ' || c == '-'))
-            throw new ArgumentException("A colour is a CSS colour such as #1d4ed8 or rgb(0, 0, 0).");
+        foreach (var c in value) if (!(char.IsLetterOrDigit(c) || c == '#' || c == '(' || c == ')' || c == ',' || c == '.' || c == '%' || c == ' ' || c == '-' || c == '/'))
+            throw new ArgumentException("A colour is a CSS colour such as #1d4ed8, rgb(0, 0, 0) or rgb(0 0 0 / 50%).");
     }
 }

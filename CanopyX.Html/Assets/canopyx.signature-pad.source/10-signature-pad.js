@@ -99,9 +99,10 @@
     show(value);
 
     function paint() {
-      const rect = pad.getBoundingClientRect(), ratio = globalThis.devicePixelRatio || 1;
-      width = Math.max(1, Math.round(rect.width));
-      if (pad.width !== Math.round(width * ratio)) { pad.width = Math.round(width * ratio); pad.height = Math.round(SIGNATURE_HEIGHT * ratio); }
+      // Layout pixels, which ancestor transforms do not change; a fresh canvas is 300 by 150, so both sides are checked.
+      const ratio = globalThis.devicePixelRatio || 1;
+      width = Math.max(1, Math.round(pad.offsetWidth || pad.getBoundingClientRect().width));
+      if (pad.width !== Math.round(width * ratio) || pad.height !== Math.round(SIGNATURE_HEIGHT * ratio)) { pad.width = Math.round(width * ratio); pad.height = Math.round(SIGNATURE_HEIGHT * ratio); }
       const draw = pad.getContext("2d");
       draw.setTransform(ratio, 0, 0, ratio, 0, 0); draw.clearRect(0, 0, width, SIGNATURE_HEIGHT);
       // A replacement stroke in progress draws over a blank pad, so the reader sees where they sign before releasing the pointer.
@@ -118,10 +119,14 @@
       stored = null;
       // Strokes keep the coordinates they were drawn at: a pad that has since narrowed (a rotated phone) exports wide enough for all of them.
       const reach = strokes.reduce((most, stroke) => stroke.reduce((far, point) => Math.max(far, point.x), most), 0);
-      value = typed || strokes.length ? signatureValue(Math.max(width, Math.ceil(reach) + 8), strokes, typed, ink || "#000", background) : null;
+      const next = typed || strokes.length ? signatureValue(Math.max(width, Math.ceil(reach) + 8), strokes, typed, ink || "#000", background) : null;
+      // A value the pad could not load back is never published: the stroke that made it too large is taken back.
+      if (next && !signatureFits(next) && strokes.length) { strokes.pop(); paint(); return; }
+      value = next;
       paint(); settings.onChange?.(value);
     }
-    const point = event => { const rect = pad.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
+    // The pointer is read in the pad's own drawing units, so a scaled ancestor does not move the ink away from the pointer.
+    const point = event => { const rect = pad.getBoundingClientRect(); return { x: (event.clientX - rect.left) * width / (rect.width || width), y: (event.clientY - rect.top) * SIGNATURE_HEIGHT / (rect.height || SIGNATURE_HEIGHT) }; };
     pad.addEventListener("pointerdown", event => {
       if (readOnly || typing || event.button > 0) return;
       event.preventDefault(); pad.setPointerCapture(event.pointerId);
@@ -136,9 +141,9 @@
     pad.addEventListener("pointerup", event => { if (current?.pointer === event.pointerId) { strokes.push(current); current = null; commit(); } }, { signal });
     pad.addEventListener("pointercancel", event => { if (current?.pointer === event.pointerId) { current = null; paint(); } }, { signal });
     undo.addEventListener("click", () => { strokes.pop(); commit(); }, { signal });
-    clear.addEventListener("click", () => { strokes = []; typedInput.value = ""; commit(); (typing ? typedInput : mode).focus(); }, { signal });
+    clear.addEventListener("click", () => { strokes = []; current = null; typedInput.value = ""; commit(); (typing ? typedInput : mode).focus(); }, { signal });
     mode.addEventListener("click", () => {
-      typing = !typing; typedField.hidden = !typing; strokes = []; typedInput.value = ""; commit();
+      typing = !typing; typedField.hidden = !typing; strokes = []; current = null; typedInput.value = ""; commit();
       if (typing) typedInput.focus();
     }, { signal });
     typedInput.addEventListener("input", event => { event.stopPropagation(); commit(); }, { signal });

@@ -16,6 +16,7 @@ public sealed class UiInputBuilderTests {
     public void Signature_WritesItsSettingsAndRefusesUnsafeOnes() {
         var html = new CanopySignature("sign", "Signature of the owner", new CanopySignatureOptions { Name = "signature", SubmitPng = true, Ink = "#1d4ed8", Background = "rgb(255, 251, 230)", Colours = true, DownloadName = "contract" }).ToHtmlFragment();
         Assert.Equal("<div id=\"sign\" class=\"cx-signature-host\" data-cx-signature data-label=\"Signature of the owner\" data-name=\"signature\" data-format=\"png\" data-ink=\"#1d4ed8\" data-background=\"rgb(255, 251, 230)\" data-colours=\"true\" data-download=\"contract\"></div>", html);
+        Assert.Contains("rgb(255 255 255 / 50%)", new CanopySignature("s", "S", new CanopySignatureOptions { Background = "rgb(255 255 255 / 50%)" }).ToHtmlFragment());
         Assert.Throws<ArgumentException>(() => new CanopySignature("s", "S", new CanopySignatureOptions { Ink = "red;}" }).ToHtmlFragment());
         Assert.Throws<ArgumentException>(() => new CanopySignature("s", "S", new CanopySignatureOptions { DownloadName = "../x" }).ToHtmlFragment());
     }
