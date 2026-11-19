@@ -84,6 +84,9 @@
       const themeAttributes = ["data-theme", "data-cx-theme", "data-cx-fallback-mode", "data-hfx-style", "data-hfx-mode", "data-hfx-density", "data-bs-theme", "data-hfx-theme", "data-hfx-tokens", "class", "style"];
       for (let owner = host; owner; owner = owner.parentElement) this.themeWatch.observe(owner, { attributes: true, attributeFilter: themeAttributes });
       for (const query of ["(prefers-color-scheme: dark)", "(forced-colors: active)"]) global.matchMedia?.(query).addEventListener?.("change", restyle, { signal });
+      // A browser can drop a canvas's pixels (contextlost) and give it back blank (contextrestored): every tile and symbol
+      // is drawn again then. The event does not bubble, so the root listens while it passes down.
+      this.root.addEventListener("contextrestored", restyle, { capture: true, signal });
     }
     /** The texts that come from the document and the labels: written again when update brings another document. */
     refreshChrome() {

@@ -44,6 +44,7 @@ var output = positional.Length > 0 ? positional[0] : Path.Combine(AppContext.Bas
 Directory.CreateDirectory(output);
 if (args.Contains("--ui-primitives")) {
     await UiPrimitivesExample.RunAsync(output);
+    UiComponentsExample.Write(output);
     UiCarouselRatingExample.Write(output);
     UiInputsExample.Write(output);
     return;
@@ -213,6 +214,7 @@ WriteTemplate("checkboxes.html", Path.Combine(output, "checkboxes.html"),
 WriteTemplate("interactions.html", Path.Combine(output, "interactions.html"),
     InteractionView.Create().ToHtmlFragment(new CanopyHtmlOptions { AutoMount = false, Height = "55vh" }), CanopyRuntime.InteractiveTreeGrid);
 await UiPrimitivesExample.RunAsync(output);
+UiComponentsExample.Write(output);
 UiCarouselRatingExample.Write(output);
 UiInputsExample.Write(output);
 FlowInputsExample.Write(output);
