@@ -39,8 +39,8 @@ server if a system needs one spelling). For a picker, use the `date`, `time` and
 formats suit hosts that store dates and times as text.
 
 A custom shape is a `pattern` (the whole answer must match, as in grid editing) with a `mask`: a short hint of up to 64
-characters, shown under the label as "Format: AAA-0000". The mask is a hint only. It does not insert separators or limit
-keystrokes. `message` replaces the default message for any failed check.
+characters, shown under the label as "Format: AAA-0000". In a flow the mask is a hint only: it does not insert separators or
+limit keystrokes. For a live mask on any input outside a flow, use [input masks](ui-mask.md). `message` replaces the default message for any failed check.
 
 The shared cases in `tests/fixtures/flow-formats.json` run in the browser and on the server, so both accept and refuse the
 same answers. The labels are `flowFormatExample`, `flowFormatInvalid` and `flowFormatMask`.
@@ -66,6 +66,7 @@ flow.Step("consent", "Sign the change request", step => step
   background, as an SVG document and as a PNG at twice the pad's size. Store whichever your system needs; the server checks
   that both are there, in that form, and together under 1,000,000 characters. The review page says "Signed".
 - **Edit mode.** A stored signature (in `initial`) shows on the pad until the reader clears it or signs again.
+- The pad is the same as the standalone [signature pad](ui-signature.md), which adds colours and downloads.
 - A signature field has no default and no command parameter. It ships in the lazy `flow-signature` part, which loads only
   for flows that have one.
 

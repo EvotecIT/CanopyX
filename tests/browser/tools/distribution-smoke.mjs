@@ -58,7 +58,7 @@ try {
     import GridRuntime, { createDataGrid, createCalendar, createMatrix, createDiff, createChangeList, createPropagation, enhance, grid } from '@evotecit/canopyx/grid';
     import ReportingRuntime from '@evotecit/canopyx/reporting';
     import FlowRuntime, { createFlow } from '@evotecit/canopyx/flow';
-    import UiRuntime, { accordion, mountUi, carousel, rating } from '@evotecit/canopyx/ui';
+    import UiRuntime, { accordion, mountUi, carousel, rating, mask, signature } from '@evotecit/canopyx/ui';
     import polish, { staticLabels } from '@evotecit/canopyx/locales/pl';
     import german from '@evotecit/canopyx/locales/de';
     import spanish from '@evotecit/canopyx/locales/es';
@@ -72,7 +72,7 @@ try {
     assert.equal(createDataGrid, GridRuntime.createDataGrid); assert.equal(createCalendar, GridRuntime.createCalendar);
     assert.equal(enhance, GridRuntime.enhance); assert.equal(grid, GridRuntime.grid); assert.equal(typeof ReportingRuntime.enhance, 'function');
     assert.equal(typeof ReportingRuntime.createDataGrid, 'function');
-    assert.equal(accordion, UiRuntime.accordion); assert.equal(mountUi, UiRuntime.mountUi); assert.equal(carousel, UiRuntime.carousel); assert.equal(rating, UiRuntime.rating); assert.equal(UiRuntime.createTreeGrid, undefined);
+    assert.equal(accordion, UiRuntime.accordion); assert.equal(mask, UiRuntime.mask); assert.equal(signature, UiRuntime.signature); assert.equal(mountUi, UiRuntime.mountUi); assert.equal(carousel, UiRuntime.carousel); assert.equal(rating, UiRuntime.rating); assert.equal(UiRuntime.createTreeGrid, undefined);
     assert.equal(createFlow, FlowRuntime.createFlow); assert.equal(typeof GridRuntime.createFlow, 'function');
     assert.equal(createMatrix, GridRuntime.createMatrix); assert.equal(typeof ReportingRuntime.createMatrix, 'function');
     assert.equal(createDiff, GridRuntime.createDiff); assert.equal(createChangeList, GridRuntime.createChangeList); assert.equal(createPropagation, GridRuntime.createPropagation);

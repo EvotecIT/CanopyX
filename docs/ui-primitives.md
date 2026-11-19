@@ -1,6 +1,6 @@
 # UI primitives
 
-Tabs, steppers, accordions, dialogs, drawers, popovers, tooltips, menus, [carousels](ui-carousel.md) and [rating inputs](ui-rating.md) work on their own or beside CanopyX data views. The runtime loads their versioned parts when a component is mounted. Serve the `canopyx-ui-*.js` and `.css` files beside the entry point, together with its other part files. `CanopyHtmlAssets.WriteTo(...)` writes that asset set from .NET.
+Tabs, steppers, accordions, dialogs, drawers, popovers, tooltips, menus, [carousels](ui-carousel.md) [rating inputs](ui-rating.md), [input masks](ui-mask.md) and [signature pads](ui-signature.md) work on their own or beside CanopyX data views. The runtime loads their versioned parts when a component is mounted. Serve the `canopyx-ui-*.js` and `.css` files beside the entry point, together with its other part files. `CanopyHtmlAssets.WriteTo(...)` writes that asset set from .NET.
 
 ## Write a tab set from .NET
 
@@ -242,7 +242,7 @@ Reduced-motion preferences make navigation transitions and overlay motion instan
 
 ## Slim entry point
 
-A content page with no grid or tree can load `canopyx-ui.js` and `canopyx-ui.css` instead of a data view entry point. `canopyx-ui.js` holds the part loader, the theme helpers and the UI factories, about 5 KB gzipped against 57 KB for `canopyx.js`, and the components load the same `canopyx-ui-*` parts beside it. It offers `mountUi`, `contextMenu`, `tabs`, `stepper`, `accordion`, `carousel`, `rating`, `dialog`, `drawer`, `popover`, `tooltip`, `menu`, `registerPart` and `setNonce`.
+A content page with no grid or tree can load `canopyx-ui.js` and `canopyx-ui.css` instead of a data view entry point. `canopyx-ui.js` holds the part loader, the theme helpers and the UI factories, about 5 KB gzipped against 57 KB for `canopyx.js`, and the components load the same `canopyx-ui-*` parts beside it. It offers `mountUi`, `contextMenu`, `tabs`, `stepper`, `accordion`, `mask`, `signature`, `carousel`, `rating`, `dialog`, `drawer`, `popover`, `tooltip`, `menu`, `registerPart` and `setNonce`.
 
 ```html
 <link rel="stylesheet" href="assets/canopyx-ui.css">

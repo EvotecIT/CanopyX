@@ -280,6 +280,7 @@ export type LabelName =
   | "calendarLane" | "calendarHighlighted"
   /** Standalone UI primitives; their English defaults load with the optional UI parts. */
   | "accordionSearch" | "accordionNoMatches" | "accordionCopyTitle" | "accordionCopied"
+  | "signaturePad" | "signatureUndo" | "signatureClear" | "signatureType" | "signatureDraw" | "signatureTyped" | "signatureColour" | "signatureDownloadPng" | "signatureDownloadSvg"
   | "carouselRole" | "carouselSlideRole" | "carouselSlide" | "carouselPrevious" | "carouselNext" | "carouselPicker" | "carouselMotionDisabled" | "ratingValue"
   | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"

@@ -15,6 +15,15 @@ public sealed partial class CanopyLabels {
         labels.CarouselPicker = "Wybierz slajd";
         labels.CarouselMotionDisabled = "Automatyczne slajdy są wyłączone przez ograniczenie ruchu";
         labels.RatingValue = "{value} z {max}";
+        labels.SignaturePad = "Pole podpisu";
+        labels.SignatureUndo = "Cofnij";
+        labels.SignatureClear = "Wyczyść";
+        labels.SignatureType = "Wpisz zamiast tego";
+        labels.SignatureDraw = "Narysuj zamiast tego";
+        labels.SignatureTyped = "Wpisz imię i nazwisko";
+        labels.SignatureColour = "Kolor pióra";
+        labels.SignatureDownloadPng = "Pobierz PNG";
+        labels.SignatureDownloadSvg = "Pobierz SVG";
         labels.TabsMore = "Więcej";
         labels.TabsMoreSelected = "Więcej: {label}";
         labels.TabsScrollPrevious = "Poprzednie karty";

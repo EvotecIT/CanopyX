@@ -370,6 +370,45 @@ export interface UiRatingController extends UiController {
   getState(): UiResult<{ value: number | null; max: number }>;
 }
 
+export interface UiMaskOptions {
+  /** A preset (ipv4, mac, guid, date, time, time-seconds, date-time, postcode, credit-card) or a pattern: 0 digit, a letter, A upper-case letter, h hex digit, * letter or digit, \\ literal. */
+  mask?: string;
+  placeholder?: string;
+  onChange?: (state: { text: string; raw: string; complete: boolean }) => void;
+}
+export interface UiMaskController extends UiController {
+  /** Sets the value, fitted to the mask; returns the formatted text. */
+  select(value: string | null): UiResult<string>;
+  refresh(): UiResult<void>;
+  getState(): UiResult<{ text: string; raw: string; complete: boolean }>;
+}
+/** A signature: an SVG document and a PNG data URI of the same picture. */
+export interface UiSignatureValue { readonly svg: string; readonly png: string }
+export interface UiSignatureOptions {
+  /** The form field name of a hidden input holding the answer. */
+  name?: string;
+  /** What the hidden input holds. Defaults to svg. */
+  format?: "svg" | "png";
+  ink?: string;
+  background?: string;
+  /** A pen colour button. */
+  colours?: boolean;
+  /** PNG and SVG download buttons; a text names the files. */
+  download?: boolean | string;
+  readOnly?: boolean;
+  value?: UiSignatureValue;
+  /** The pad's accessible name. */
+  label?: string;
+  onChange?: (value: UiSignatureValue | null) => void;
+  labels?: UiLabels;
+}
+export interface UiSignatureController extends UiController {
+  select(value: UiSignatureValue | null): UiResult<void>;
+  clear(): UiResult<void>;
+  focus(): UiResult<void>;
+  getState(): UiResult<{ value: UiSignatureValue | null }>;
+}
+
 /** Mounts declarative UI under root (including root). Report/static steppers need no controller and are skipped. */
 export function mountUi(root?: ParentNode): UiController[];
 /** Delegates a selector, or binds one element. Inputs, links, selected text and Shift+right-click keep their native menu. */
@@ -379,6 +418,10 @@ export function contextMenu(target: UiTarget,
 export function tabs(target: UiTarget, options?: UiTabsOptions): UiTabsController;
 export function stepper(target: UiTarget, options?: UiStepperOptions): UiStepperController;
 export function accordion(target: UiTarget, options?: UiAccordionOptions): UiAccordionController;
+/** A live mask on a text input, or on the first text input inside the target. */
+export function mask(target: UiTarget, options?: UiMaskOptions): UiMaskController;
+/** A signature pad in an empty element. */
+export function signature(target: UiTarget, options?: UiSignatureOptions): UiSignatureController;
 /** Slides of any content over a .cx-carousel-track list. */
 export function carousel(target: UiTarget, options?: UiCarouselOptions): UiCarouselController;
 /** Stars over a native radio group, or a group it builds in an empty element. */
@@ -396,6 +439,8 @@ export interface UiApi {
   tabs: typeof tabs;
   stepper: typeof stepper;
   accordion: typeof accordion;
+  mask: typeof mask;
+  signature: typeof signature;
   carousel: typeof carousel;
   rating: typeof rating;
   dialog: typeof dialog;
