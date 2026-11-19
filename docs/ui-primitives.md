@@ -1,6 +1,6 @@
 # UI primitives
 
-Tabs, steppers, accordions, dialogs, drawers, popovers, tooltips and menus work on their own or beside CanopyX data views. The runtime loads their versioned parts when a component is mounted. Serve the `canopyx-ui-*.js` and `.css` files beside the entry point, together with its other part files. `CanopyHtmlAssets.WriteTo(...)` writes that asset set from .NET.
+Tabs, steppers, accordions, dialogs, drawers, popovers, tooltips, menus, [toasts](ui-toasts.md) and [galleries with a lightbox](ui-lightbox.md) work on their own or beside CanopyX data views. The runtime loads their versioned parts when a component is mounted. Serve the `canopyx-ui-*.js` and `.css` files beside the entry point, together with its other part files. `CanopyHtmlAssets.WriteTo(...)` writes that asset set from .NET.
 
 ## Write a tab set from .NET
 
@@ -25,7 +25,7 @@ Include the runtime and its base stylesheet once in the page that contains `frag
 
 The builders encode identities, labels, badges and accessibility references. Properties named `ContentHtml` or `FooterHtml` contain trusted host HTML; encode or sanitize untrusted content before assigning them. Without JavaScript, tab and step panels remain readable with headings. Overlay builders emit their closed content and a separate `ToTriggerHtmlFragment(label)` button.
 
-For a self-contained page, embed the required UI parts using `CanopyHtmlAssets.GetPart(name).Markup`. Include each part's `Requires` dependencies too. The `ui-primitives.html` example embeds all seven UI parts as inert payloads; they execute only when loaded by the runtime. Use `GetMarkup(nonce)` for a page protected by a nonce-based Content Security Policy.
+For a self-contained page, embed the required UI parts using `CanopyHtmlAssets.GetPart(name).Markup`. Include each part's `Requires` dependencies too. The `ui-primitives.html` example embeds the UI parts as inert payloads; they execute only when loaded by the runtime. Use `GetMarkup(nonce)` for a page protected by a nonce-based Content Security Policy.
 
 ## Configure behavior in JavaScript
 
@@ -242,7 +242,7 @@ Reduced-motion preferences make navigation transitions and overlay motion instan
 
 ## Slim entry point
 
-A content page with no grid or tree can load `canopyx-ui.js` and `canopyx-ui.css` instead of a data view entry point. `canopyx-ui.js` holds the part loader, the theme helpers and the UI factories, about 5 KB gzipped against 57 KB for `canopyx.js`, and the components load the same `canopyx-ui-*` parts beside it. It offers `mountUi`, `contextMenu`, `tabs`, `stepper`, `accordion`, `dialog`, `drawer`, `popover`, `tooltip`, `menu`, `registerPart` and `setNonce`.
+A content page with no grid or tree can load `canopyx-ui.js` and `canopyx-ui.css` instead of a data view entry point. `canopyx-ui.js` holds the part loader, the theme helpers and the UI factories, about 5 KB gzipped against 57 KB for `canopyx.js`, and the components load the same `canopyx-ui-*` parts beside it. It offers `mountUi`, `contextMenu`, `notify`, `tabs`, `stepper`, `accordion`, `toasts`, `lightbox`, `dialog`, `drawer`, `popover`, `tooltip`, `menu`, `registerPart` and `setNonce`.
 
 ```html
 <link rel="stylesheet" href="assets/canopyx-ui.css">
