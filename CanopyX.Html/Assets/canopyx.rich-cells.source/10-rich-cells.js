@@ -17,7 +17,8 @@
     let template = RICH_CACHE.get(html);
     if (!template) {
       template = document.createDocumentFragment();
-      const prepared = html.replace(/<[A-Za-z][^>]*>/g, tag => tag.replace(/([\s/])style(\s*=)/gi, "$1data-cx-style$2"));
+      const prepared = html.replace(/<[A-Za-z](?:[^>"']|"[^"]*"|'[^']*')*>/g, tag =>
+        tag.replace(/("[^"]*"|'[^']*')|([\s/])style(\s*=)/gi, (match, quoted, before, equals) => quoted ?? before + "data-cx-style" + equals));
       const parsed = new DOMParser().parseFromString(trusted("HTML", prepared), "text/html");
       gridRichCopy(parsed.body, template, 0, { nodes: 0 });
       if (RICH_CACHE.size >= 500) RICH_CACHE.delete(RICH_CACHE.keys().next().value);

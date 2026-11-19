@@ -984,11 +984,11 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
 export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery, Row extends GridRow = GridRow> = GridHostBehavior<Q, Row> & (
   { viewStore?: never } | {
     viewStore: GridViewStore<Q>;
-    view: (Q extends GridCursorQuery ? CursorGridView<Row> : InlineGridView<Row> | CompactGridView<Row> | HostGridView<Row>) & { stateKey: string; reporting: GridReporting };
+    view: (Q extends GridCursorQuery ? CursorGridView<Row> : InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> | HostGridView<Row>) & { stateKey: string; reporting: GridReporting };
   }
 );
 /** A flat grid's options; Row types the rows, columns, facets, events and live API (createDataGrid<Row>). */
-export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQuery, Row> & ({ view: InlineGridView<Row> | CompactGridView<Row> } | { view: HostGridView<Row>; source: GridSource<Row> });
+export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQuery, Row> & ({ view: InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> } | { view: HostGridView<Row>; source: GridSource<Row> });
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */

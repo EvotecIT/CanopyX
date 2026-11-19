@@ -26,8 +26,8 @@ public sealed partial class CanopyCell {
         new CanopyCell(text ?? HtmlText(html ?? throw new System.ArgumentNullException(nameof(html)))) { Html = html };
 
     private static readonly Regex HiddenElements = new Regex(@"<(script|style|template|noscript|textarea|title)\b[\s\S]*?</\1\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, System.TimeSpan.FromSeconds(1));
-    private static readonly Regex Breaks = new Regex(@"<(?:br|/p|/div|/li)\b[^>]*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, System.TimeSpan.FromSeconds(1));
-    private static readonly Regex Tags = new Regex(@"<!--[\s\S]*?-->|<[^>]*>", RegexOptions.CultureInvariant, System.TimeSpan.FromSeconds(1));
+    private static readonly Regex Breaks = new Regex(@"<(?:br|/p|/div|/li)\b(?:[^>""']|""[^""]*""|'[^']*')*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, System.TimeSpan.FromSeconds(1));
+    private static readonly Regex Tags = new Regex(@"<!--[\s\S]*?-->|</?[A-Za-z!/?](?:[^>""']|""[^""]*""|'[^']*')*>", RegexOptions.CultureInvariant, System.TimeSpan.FromSeconds(1));
 
     /// <summary>The text a reader would see of the markup, for the value of an HTML cell: tags removed, entities decoded, spaces collapsed.</summary>
     internal static string HtmlText(string html) {

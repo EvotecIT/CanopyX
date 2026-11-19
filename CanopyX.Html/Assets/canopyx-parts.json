@@ -291,7 +291,7 @@
     {
       "name": "rich-cells",
       "label": "rich cells",
-      "version": "3807fcacd789f4e6",
+      "version": "25c4febe28fbab65",
       "script": "canopyx-rich-cells.js",
       "runtimes": [
         "grid"
@@ -306,7 +306,7 @@
     {
       "name": "url-rows",
       "label": "rows from an address",
-      "version": "96d59e5be49bb925",
+      "version": "2668b518b0216677",
       "script": "canopyx-url-rows.js",
       "runtimes": [
         "grid"
@@ -810,7 +810,7 @@
     {
       "name": "detail-rows",
       "label": "detail rows",
-      "version": "d23bd24693268f22",
+      "version": "2bc653a08cf7981c",
       "script": "canopyx-detail-rows.js",
       "style": "canopyx-detail-rows.css",
       "runtimes": [
@@ -950,7 +950,7 @@
     {
       "name": "grouping",
       "label": "row grouping",
-      "version": "8ba46e2a260e9522",
+      "version": "a439dd1aac95e039",
       "script": "canopyx-grouping.js",
       "style": "canopyx-grouping.css",
       "runtimes": [

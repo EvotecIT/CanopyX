@@ -9,8 +9,10 @@
   const GRID_URL_IMPL = {}, GRID_URL_ROWS = definePart(DataGrid, "url-rows", "rows from an address",
     () => ({ GRID_URL_IMPL, validateGridRows, repairGridCell, inlineGridSource, gridQueryStart, gridRowsAddress }));
   function gridUrlRows(grid) {
-    let inner = null;
-    const source = { reset: () => { inner = null; }, query: (query, options) =>
-      (inner ||= loadPart(GRID_URL_ROWS).then(() => GRID_URL_IMPL.source(grid, source)).catch(error => { inner = null; throw error; })).then(rows => rows.query(query, options)) };
+    let inner = null, loaded = null;
+    const source = { reset: () => { inner = null; loaded = null; }, query: (query, options) =>
+      (inner ||= loadPart(GRID_URL_ROWS).then(() => loaded = GRID_URL_IMPL.source(grid, source)).catch(error => { inner = null; throw error; })).then(rows => rows.query(query, options)),
+      // Record deep links and related records look rows up in what was read.
+      position: (query, id) => loaded ? loaded.position(query, id) : -1, row: id => loaded ? loaded.row(id) : null };
     return source;
   }

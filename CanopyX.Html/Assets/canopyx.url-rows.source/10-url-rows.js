@@ -14,17 +14,23 @@
       return validateGridRows(rows, view.columns, undefined, repairGridCell);
     };
     const accept = rows => { view.rows = rows; inner = inlineGridSource(view); return inner; };
+    let refreshing = false;
     const refresh = () => {
       if (grid.destroyed) { clearInterval(timer); return; }
-      if (document.hidden || !inner || grid.pendingQuery) return;
+      // One read at a time: a slow read is not overtaken by the next tick's.
+      if (document.hidden || !inner || grid.pendingQuery || refreshing) return;
+      refreshing = true;
       read(grid.lifetime?.signal).then(rows => {
         if (grid.destroyed || grid.pendingQuery) return;
         accept(rows);
+        // The grouping part keeps the summary of a query and revision; the rows changed under the same revision.
+        grid.summaryCandidate = null;
         grid.setQuery(gridQueryStart(grid.queryForChange(true)), grid.pendingPaging && { pageLength: grid.pendingPaging.pageLength, allRows: grid.pendingPaging.allRows })
           .catch(error => { if (error?.name !== "AbortError") grid.emit("error", { error }); });
-      }, error => { if (error?.name !== "AbortError" && !grid.destroyed) grid.emit("error", { error }); });
+      }, error => { if (error?.name !== "AbortError" && !grid.destroyed) grid.emit("error", { error }); }).finally(() => { refreshing = false; });
     };
-    const ready = () => loading ||= read().then(rows => {
+    const ready = () => loading ||= read(grid.lifetime?.signal).then(rows => {
+      if (grid.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (view.source.refreshSeconds && !timer) {
         timer = setInterval(refresh, view.source.refreshSeconds * 1000);
         grid.lifetime?.signal.addEventListener("abort", () => clearInterval(timer), { once: true });

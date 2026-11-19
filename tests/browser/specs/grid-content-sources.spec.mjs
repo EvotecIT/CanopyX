@@ -22,7 +22,8 @@ const view = (rows, extra = {}) => ({ protocol: "canopyx/2", type: "grid", id: "
 
 test("allowed markup is built as elements: badges, emphasis, breaks, links and safe styles", async ({ page }) => {
   await open(page, view([
-    { id: "a", cells: { name: "Alpha", size: 1, state: { value: "Active", html: '<span class="badge bg-success" title="Since May">Active</span> <b>now</b><br><a href="https://example.test/a" target="_blank">details</a> <span style="max-width: 80px; color: rgb(200, 0, 0); background-image: url(https://evil.test/x)">red</span>' } } }
+    { id: "a", cells: { name: "Alpha", size: 1, state: { value: "Active", html: '<span class="badge bg-success" title="Since May">Active</span> <b>now</b><br><a href="https://example.test/a" target="_blank">details</a> <span style="max-width: 80px; color: rgb(200, 0, 0); background-image: url(https://evil.test/x)">red</span>' } } },
+    { id: "q", cells: { name: "Quoted", size: 2, state: { value: "q", html: '<span title="a > b" style="color: rgb(1, 2, 3)">quoted</span> <span title="Use style=color">plain</span>' } } }
   ]));
   const state = cell(page, "a", 1);
   await expect(state.locator(".cx-rich span.badge.bg-success")).toHaveText("Active");
@@ -35,6 +36,11 @@ test("allowed markup is built as elements: badges, emphasis, breaks, links and s
   await expect(link).toHaveAttribute("rel", "noopener noreferrer");
   const styled = state.locator(".cx-rich span").nth(1);
   expect(await styled.evaluate(element => [element.style.maxWidth, element.style.color, element.style.backgroundImage])).toEqual(["80px", "rgb(200, 0, 0)", ""]);
+  // A quoted > stays in its attribute and a quoted style= is text, not an attribute.
+  const quoted = cell(page, "q", 1).locator(".cx-rich span");
+  await expect(quoted.first()).toHaveText("quoted");
+  expect(await quoted.first().evaluate(element => [element.title, element.style.color])).toEqual(["a > b", "rgb(1, 2, 3)"]);
+  await expect(quoted.nth(1)).toHaveAttribute("title", "Use style=color");
   // The text the cell keeps for search, copy and exports stays hidden while the markup shows.
   await expect(state.locator(".cx-text")).toBeHidden();
   expect(page.pageErrors).toEqual([]);
@@ -131,6 +137,11 @@ test("a fixed grouping's footer template closes each group with its text and agg
   for (const key of ["Enter", " ", "ArrowLeft"]) await page.keyboard.press(key);
   await expect(page.locator('.cx-row[data-cx-id="1"]')).toBeVisible();
   await expect(east).toBeFocused();
+  // F2 enters the footer's cells, as on a heading, so its aggregate buttons stay reachable; Escape leaves them.
+  await page.keyboard.press("F2");
+  await expect.poll(() => page.evaluate(() => document.activeElement?.closest(".cx-grid-group-footer") && document.activeElement !== document.activeElement.closest(".cx-row"))).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(east).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(page.locator(".cx-row[data-cx-group]").nth(1)).toBeFocused();
   expect(page.pageErrors).toEqual([]);
@@ -187,6 +198,23 @@ test("a refresh interval reads the rows again and keeps the reader's search", as
   await page.clock.runFor(30000);
   await expect(page.locator(".cx-row[data-cx-id]")).toHaveAttribute("data-cx-id", "u2");
   expect(await page.evaluate(() => document.querySelector("[data-canopyx-host]").canopyx.getQuery().search)).toBe("new");
+});
+
+test("a refresh updates the totals of a grouped grid whose rows come from an address", async ({ page }) => {
+  await page.clock.install();
+  let amount = 5;
+  await page.route("http://canopyx.test/data/users.json", route => route.fulfill({ contentType: "application/json",
+    body: JSON.stringify([{ id: "a", cells: { name: "A", state: "On", amount } }, { id: "b", cells: { name: "B", state: "On", amount: 1 } }]) }));
+  const view = fromAddress({ refreshSeconds: 30 });
+  view.columns.push({ id: "amount", title: "Amount", kind: "number" });
+  view.columns[1].sortable = true;
+  view.reporting = { grouping: { column: "state", direction: "asc", footerTemplate: "{value}" }, aggregates: [{ id: "sum", column: "amount", operation: "sum", label: "Sum" }] };
+  await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("http://canopyx.test/rich");
+  await expect(page.locator(".cx-grid-group-footer")).toContainText("6");
+  amount = 9;
+  await page.clock.runFor(30000);
+  await expect(page.locator(".cx-grid-group-footer")).toContainText("10");
 });
 
 test("an address on a host grid, an unsafe address or rows beside an address are rejected", async ({ page }) => {

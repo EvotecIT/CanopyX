@@ -20,6 +20,20 @@ public sealed class GridContentSourceTests {
         Assert.Equal("Active now next", cell.Value);
         Assert.Equal("<span class=\"badge\">Active</span>&nbsp;<b>now</b><br>next<script>alert(1)</script><!-- note -->", cell.Html);
         Assert.Equal("Shown", CanopyCell.FromHtml("<i>x</i>", "Shown").Value);
+        // A quoted > belongs to its attribute; a bare < in text is text.
+        Assert.Equal("Details", CanopyCell.FromHtml("<span title=\"10 > 5\">Details</span>").Value);
+        Assert.Equal("1 < 2 and 3", CanopyCell.FromHtml("1 < 2 <b class='x>y'>and</b> 3").Value);
+    }
+
+    [Fact]
+    public void RowsFromAnAddress_NeverWriteCompactRowDataAndCarryTheRichCellsPart() {
+        var view = View(); view.Source = CanopyGridSource.FromUrl("rows.json");
+        Assert.False(CanopyGridRowData.ShouldWrite(view, new CanopyRowDataOptions { Format = CanopyRowFormat.CompactGzip }));
+        Assert.Contains(CanopyX.Html.CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "url-rows");
+        Assert.Contains(CanopyX.Html.CanopyHtmlAssets.GetRequiredParts(view), part => part.Name == "rich-cells");
+        var hosted = View(); hosted.Source = CanopyGridSource.HostedOffset();
+        Assert.Contains(CanopyX.Html.CanopyHtmlAssets.GetRequiredParts(hosted), part => part.Name == "rich-cells");
+        Assert.DoesNotContain(CanopyX.Html.CanopyHtmlAssets.GetRequiredParts(View()), part => part.Name == "rich-cells");
     }
 
     [Fact]
