@@ -44,13 +44,15 @@
     return cellMatches(row.cells[column.id], predicate, column);
   }
 
-  function gridQueryRows(view, query, columns, compare = gridCompare, matches = gridMatches, extended = false) {
-    GRID_CALCULATIONS.apply?.(view);
-    if (!extended && GRID_OPTIONS.queryRows && GRID_OPTION_GRIDS.has(view)) return GRID_OPTIONS.queryRows(view, query, columns, compare);
+  /** Whether a row passes a query's search and filters. */
+  function gridRowTest(view, query, columns, matches = gridMatches) {
     const terms = gridSearchTerms(query.search, query.searchMode),
       searchColumns = view.searchColumns ? view.searchColumns.map(id => columns.get(id)) : view.columns;
-    const rows = view.rows.filter(row => gridMatchesSearch(row, terms, searchColumns) &&
-      query.filters.every(predicate => matches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns, matches) && gridMatchesTuples(row, query.tupleFilters, columns));
+    return row => gridMatchesSearch(row, terms, searchColumns) &&
+      query.filters.every(predicate => matches(row, predicate, columns.get(predicate.column))) && gridMatchesGroup(row, query.filterGroup, columns, matches) && gridMatchesTuples(row, query.tupleFilters, columns);
+  }
+
+  function gridOrderRows(rows, query, columns, compare) {
     if (compare !== gridCompare || !query.sort.length) return compare ? rows.sort((a, b) => {
       for (const sort of query.sort) {
         const compared = compare(a, b, columns.get(sort.column), sort.direction);
@@ -70,20 +72,77 @@
     }).map(index => rows[index]);
   }
 
+  function gridQueryRows(view, query, columns, compare = gridCompare, matches = gridMatches, extended = false) {
+    GRID_CALCULATIONS.apply?.(view);
+    if (!extended && GRID_OPTIONS.queryRows && GRID_OPTION_GRIDS.has(view)) return GRID_OPTIONS.queryRows(view, query, columns, compare);
+    return gridOrderRows(view.rows.filter(gridRowTest(view, query, columns, matches)), query, columns, compare);
+  }
+
+  // A large inline row set searches and filters in slices that yield to the page, so typing and scrolling stay responsive
+  // while it runs, and a newer query stops an older one between slices. Smaller sets, regex searches (they keep one 50 ms
+  // budget) and grids whose options hook the query stay synchronous.
+  const GRID_SLICED_ROWS = 20000, GRID_SLICE_MS = 10;
+  const gridYield = () => globalThis.scheduler?.yield ? scheduler.yield() : new Promise(resolve => setTimeout(resolve));
+  function gridSlicedQuery(view, query) {
+    return view.rows.length > GRID_SLICED_ROWS && query.searchMode !== "regex" && !(GRID_OPTIONS.queryRows && GRID_OPTION_GRIDS.has(view)) &&
+      !!(query.search || query.filters.length || query.filterGroup || query.tupleFilters?.length);
+  }
+  async function gridQueryRowsInSlices(view, query, columns, compare = gridCompare, signal) {
+    GRID_CALCULATIONS.apply?.(view);
+    // The rows as they were when the query started: an update during a pause changes the rows, not this pass over them.
+    const test = gridRowTest(view, query, columns), source = view.rows.slice(), rows = [];
+    let started = performance.now();
+    for (let index = 0; index < source.length; index++) {
+      if ((index & 511) === 0 && performance.now() - started > GRID_SLICE_MS) {
+        await gridYield();
+        if (signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
+        started = performance.now();
+      }
+      if (test(source[index])) rows.push(source[index]);
+    }
+    return gridOrderRows(rows, query, columns, compare);
+  }
+  // A caller's share of a sliced pass: callers that ask for the same query wait for one pass, which stops when all of them
+  // have cancelled.
+  function gridAwaitPass(pass, signal) {
+    pass.waiting++;
+    return new Promise((resolve, reject) => {
+      let left = false;
+      const leave = () => { if (left) return false; left = true; pass.waiting--; signal.removeEventListener("abort", abort); return true; };
+      const abort = () => { if (leave()) { if (!pass.waiting) pass.stop(); reject(new DOMException("Grid cancelled.", "AbortError")); } };
+      signal.addEventListener("abort", abort, { once: true });
+      pass.promise.then(rows => { if (leave()) resolve(rows); }, error => { if (leave()) reject(error); });
+    });
+  }
+
   function inlineGridSource(view) {
     const columns = new Map(view.columns.map(column => [column.id, column]));
     const compare = GRID_REPORTING.compare?.(view);
+    // passes holds the sliced passes in progress by query shape; the last finished result is kept for its page requests.
     let lastShape = null, ordered = null;
+    const passes = new Map();
+    const page = (query, rows) => ({ protocol: PROTOCOL, type: "gridPage", view: view.id, revision: gridInlineRevision(view), offset: query.offset,
+      total: view.rows.length, matched: rows.length, items: rows.slice(query.offset, query.offset + query.limit) });
     return {
       query(query, options) {
         if (options.signal.aborted) throw new DOMException("Grid cancelled.", "AbortError");
         const shape = gridResultShape(query);
-        if (shape !== lastShape) {
-          ordered = gridQueryRows(view, query, columns, compare);
-          lastShape = shape;
+        if (shape === lastShape) return page(query, ordered);
+        let pass = passes.get(shape);
+        if (!pass) {
+          if (!gridSlicedQuery(view, query)) {
+            ordered = gridQueryRows(view, query, columns, compare);
+            lastShape = shape;
+            return page(query, ordered);
+          }
+          const controller = new AbortController(), current = pass = { waiting: 0 };
+          const forget = () => { if (passes.get(shape) === current) passes.delete(shape); };
+          current.stop = () => { forget(); controller.abort(); };
+          current.promise = gridQueryRowsInSlices(view, query, columns, compare, controller.signal);
+          current.promise.then(rows => { forget(); ordered = rows; lastShape = shape; }, forget);
+          passes.set(shape, current);
         }
-        return { protocol: PROTOCOL, type: "gridPage", view: view.id, revision: gridInlineRevision(view), offset: query.offset,
-          total: view.rows.length, matched: ordered.length, items: ordered.slice(query.offset, query.offset + query.limit) };
+        return gridAwaitPass(pass, options.signal).then(rows => page(query, rows));
       },
       // A record's position in a query's result (-1 outside it) and a record by id, for record deep links and related records.
       position(query, id) {
