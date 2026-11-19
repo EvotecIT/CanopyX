@@ -310,7 +310,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "bd51c7af7b207a6e",
+      "version": "451eab648369e90f",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
