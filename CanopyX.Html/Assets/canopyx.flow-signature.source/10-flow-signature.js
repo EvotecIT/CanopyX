@@ -13,7 +13,15 @@
     flowSigned: "Signed"
   };
   Object.assign(FLOW_LABELS, FLOW_PART_LABELS);
-  const SIGNATURE_HEIGHT = 160, SIGNATURE_INK = "#000", SIGNATURE_FONT = "italic 36px 'Segoe Script','Brush Script MT','Snell Roundhand',cursive";
+  const SIGNATURE_HEIGHT = 160, SIGNATURE_INK = "#000", SIGNATURE_FACE = "'Segoe Script','Brush Script MT','Snell Roundhand',cursive";
+  const signatureFont = size => "italic " + size + "px " + SIGNATURE_FACE;
+  /** The font size that fits a typed name inside the pad, 36 px at most: the preview, the SVG and the PNG all use it. */
+  function signatureSize(typed, width) {
+    const measure = h("canvas").getContext("2d");
+    measure.font = signatureFont(36);
+    const room = Math.max(1, width - 32), needed = measure.measureText(typed).width;
+    return needed > room ? Math.max(8, Math.floor(36 * room / needed)) : 36;
+  }
   const signatureNumber = value => Math.round(value * 10) / 10;
 
   /** A stroke as SVG path data: a dot for a single point, otherwise quadratic curves through the midpoints. */
@@ -32,18 +40,19 @@
 
   /** The answer of a drawing or a typed name: an SVG document and a PNG data URI of the same picture. */
   function signatureValue(width, strokes, typed) {
+    const size = typed ? signatureSize(typed, width) : 36;
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + SIGNATURE_HEIGHT + '" viewBox="0 0 ' + width + " " + SIGNATURE_HEIGHT + '">' +
-      (typed ? '<text x="16" y="' + (SIGNATURE_HEIGHT * 0.62) + '" fill="' + SIGNATURE_INK + '" font-family="\'Segoe Script\',\'Brush Script MT\',\'Snell Roundhand\',cursive" font-style="italic" font-size="36">' + signatureEscape(typed) + "</text>"
+      (typed ? '<text x="16" y="' + (SIGNATURE_HEIGHT * 0.62) + '" fill="' + SIGNATURE_INK + '" font-family="\'Segoe Script\',\'Brush Script MT\',\'Snell Roundhand\',cursive" font-style="italic" font-size="' + size + '">' + signatureEscape(typed) + "</text>"
         : '<g fill="none" stroke="' + SIGNATURE_INK + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' + strokes.map(points => '<path d="' + signaturePath(points) + '"/>').join("") + "</g>") + "</svg>";
     const canvas = h("canvas"), scale = 2, context = canvas.getContext("2d");
     canvas.width = width * scale; canvas.height = SIGNATURE_HEIGHT * scale;
     context.scale(scale, scale);
-    signatureDraw(context, strokes, typed, SIGNATURE_INK);
+    signatureDraw(context, strokes, typed, SIGNATURE_INK, width);
     return { svg, png: canvas.toDataURL("image/png") };
   }
-  function signatureDraw(context, strokes, typed, ink) {
+  function signatureDraw(context, strokes, typed, ink, width) {
     context.strokeStyle = context.fillStyle = ink; context.lineWidth = 2.5; context.lineCap = context.lineJoin = "round";
-    if (typed) { context.font = SIGNATURE_FONT; context.fillText(typed, 16, SIGNATURE_HEIGHT * 0.62); return; }
+    if (typed) { context.font = signatureFont(signatureSize(typed, width)); context.fillText(typed, 16, SIGNATURE_HEIGHT * 0.62); return; }
     for (const stroke of strokes) context.stroke(new Path2D(signaturePath(stroke)));
   }
 
@@ -79,7 +88,7 @@
       const draw = pad.getContext("2d");
       draw.setTransform(ratio, 0, 0, ratio, 0, 0); draw.clearRect(0, 0, width, SIGNATURE_HEIGHT);
       if (stored && !strokes.length && !typing) draw.drawImage(stored, 0, 0, Math.min(width, stored.naturalWidth / 2 || width), SIGNATURE_HEIGHT);
-      else signatureDraw(draw, current ? [...strokes, current] : strokes, typing ? typedInput.value.trim() : "", ink());
+      else signatureDraw(draw, current ? [...strokes, current] : strokes, typing ? typedInput.value.trim() : "", ink(), width);
       undo.disabled = context.readOnly || typing || !strokes.length;
       clear.disabled = context.readOnly || !value;
       setText(mode, typing ? labels.flowSignatureDraw : labels.flowSignatureType);

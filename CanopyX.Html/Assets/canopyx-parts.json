@@ -460,7 +460,7 @@
     {
       "name": "flow-signature",
       "label": "flow signature",
-      "version": "e7a2e2551b9b6e3c",
+      "version": "b2277549ed0bd780",
       "script": "canopyx-flow-signature.js",
       "style": "canopyx-flow-signature.css",
       "runtimes": [

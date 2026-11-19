@@ -64,3 +64,18 @@ test('a stored signature shows until it is cleared, and the document refuses a d
       .ready.then(() => 'ready', error => error.message))));
   expect(errors).toEqual(['CanopyX: field a is a signature, which has no parameter and no default.', 'CanopyX: field a is a signature, which has no parameter and no default.']);
 });
+
+test('a long typed name shrinks to fit a narrow pad in the SVG and the PNG', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 700 });
+  await open(page);
+  await page.getByRole('button', { name: 'Type instead' }).click();
+  await page.getByRole('textbox', { name: 'Type your full name' }).fill('Maximilian Alexander von Hohenzollern-Sigmaringen');
+  const typed = await value(page);
+  const size = Number(/font-size="(\d+)"/.exec(typed.svg)[1]);
+  const width = Number(/width="(\d+)"/.exec(typed.svg)[1]);
+  expect(size).toBeLessThan(36);
+  // The text, drawn at that size, fits between the 16 px margins.
+  const drawn = await page.evaluate(([text, size]) => { const context = document.createElement('canvas').getContext('2d');
+    context.font = "italic " + size + "px 'Segoe Script','Brush Script MT','Snell Roundhand',cursive"; return context.measureText(text).width; }, ['Maximilian Alexander von Hohenzollern-Sigmaringen', size]);
+  expect(drawn).toBeLessThanOrEqual(width - 32 + 1);
+});
