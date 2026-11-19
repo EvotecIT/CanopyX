@@ -33,7 +33,7 @@
     <Compile Remove="Database\**;Http\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" PrivateAssets="all" />
     <PackageReference Include="xunit" Version="2.9.3" PrivateAssets="all" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" PrivateAssets="all">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
