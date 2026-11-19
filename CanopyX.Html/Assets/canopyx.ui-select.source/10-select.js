@@ -55,6 +55,14 @@ UI_IMPL.select = (root, options = {}, signal) => {
 
   /** Writes the answer back to the native select, adding options the host loaded or the reader created. */
   function sync(source) {
+    writeNative(); paintChosen();
+    if (source === 'api' && !options.notifyApi) return;
+    native.dispatchEvent(new Event('input', { bubbles: true })); native.dispatchEvent(new Event('change', { bubbles: true }));
+    const values = [...chosen.keys()];
+    options.onChange?.(multiple ? values : values[0] ?? null);
+    UI_TOOLS.emit(root, 'select', 'change', { value: multiple ? values : values[0] ?? null, source });
+  }
+  function writeNative() {
     for (const option of chosen.values()) if (![...native.options].some(item => item.value === option.value)) {
       // An added option keeps the host's disabled state, so it is left out of submission like a disabled native option.
       const item = new Option(option.label, option.value); item.disabled = !!option.disabled; native.add(item);
@@ -63,12 +71,6 @@ UI_IMPL.select = (root, options = {}, signal) => {
     for (const item of native.options) { const record = chosen.get(item.value); item.selected = !!record; if (record && item.matches(':disabled') !== record.disabled) item.disabled = record.disabled; }
     // An empty single select with no placeholder option is cleared outright, or the browser would select its first option again.
     if (!multiple && !chosen.size) { if (native.options[0]?.value === '') native.options[0].selected = true; else native.selectedIndex = -1; }
-    paintChosen();
-    if (source === 'api' && !options.notifyApi) return;
-    native.dispatchEvent(new Event('input', { bubbles: true })); native.dispatchEvent(new Event('change', { bubbles: true }));
-    const values = [...chosen.keys()];
-    options.onChange?.(multiple ? values : values[0] ?? null);
-    UI_TOOLS.emit(root, 'select', 'change', { value: multiple ? values : values[0] ?? null, source });
   }
   function paintChosen() {
     chips.replaceChildren(...(multiple ? [...chosen.values()].map(option => {
@@ -232,7 +234,9 @@ UI_IMPL.select = (root, options = {}, signal) => {
       // Kept values take their refreshed records, so a changed label shows in the field and the chips too.
       const size = chosen.size;
       for (const value of [...chosen.keys()]) { const option = all.find(entry => entry.value === value); if (option) chosen.set(value, option); else chosen.delete(value); }
-      chosen.size < size ? sync('api') : paintChosen(); if (open) filter(query, true);
+      // An unchanged selection still writes the native select, so a kept value the host disabled or enabled submits accordingly.
+      if (chosen.size < size) sync('api'); else { writeNative(); paintChosen(); }
+      if (open) filter(query, true);
     },
     getState: () => ({ value: multiple ? [...chosen.keys()] : [...chosen.keys()][0] ?? null, open, query })
   };

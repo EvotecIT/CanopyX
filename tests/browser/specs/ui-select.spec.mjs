@@ -414,3 +414,11 @@ test('a later loader answer replaces the record a value had before', async ({ pa
   await page.evaluate(() => window.owners.select('x'));
   await expect(box).toHaveValue('New name');
 });
+
+test('refresh carries a kept value the host disables or enables to the native select', async ({ page }) => {
+  await openUi(page, '<form id="hosted"><label for="team">Team</label><div id="teams"><select id="team" name="team" multiple><option value="ops" selected>Ops</option></select></div></form>');
+  const refresh = disabled => page.evaluate(disabled => { window.teamOptions[0].disabled = disabled; window.teams.refresh(); return new FormData(document.getElementById('hosted')).getAll('team'); }, disabled);
+  await page.evaluate(() => { window.teamOptions = [{ value: 'ops', label: 'Ops' }]; window.teams = CanopyX.select('#teams', { options: window.teamOptions }); return window.teams.ready; });
+  expect(await refresh(true)).toEqual([]);
+  expect(await refresh(false)).toEqual(['ops']);
+});
