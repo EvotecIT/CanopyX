@@ -88,7 +88,7 @@
     {
       "name": "ui-stepper",
       "label": "UI stepper",
-      "version": "a1c15e9fdffab24b",
+      "version": "138278402cf489dc",
       "script": "canopyx-ui-stepper.js",
       "style": "canopyx-ui-stepper.css",
       "runtimes": [
@@ -137,7 +137,7 @@
     {
       "name": "ui-lightbox",
       "label": "UI lightbox",
-      "version": "f1eafe75c9d05ad9",
+      "version": "57fcced732d5bb37",
       "script": "canopyx-ui-lightbox.js",
       "style": "canopyx-ui-lightbox.css",
       "runtimes": [
@@ -184,7 +184,7 @@
     {
       "name": "ui-carousel",
       "label": "UI carousel",
-      "version": "a52252af703d2021",
+      "version": "e9b09c90268598a9",
       "script": "canopyx-ui-carousel.js",
       "style": "canopyx-ui-carousel.css",
       "runtimes": [

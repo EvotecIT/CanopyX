@@ -9,11 +9,13 @@ const lightboxScript = src => /^(?:javascript|vbscript):/i.test(String(src).repl
 function lightboxItem(raw, index) {
   if (!raw || typeof raw !== 'object') throw new Error('CanopyX: a lightbox item needs a src or content.');
   const type = raw.type ?? (raw.content !== undefined ? 'content' : 'image');
-  if (!['image', 'content', 'frame'].includes(type)) throw new Error('CanopyX: unknown lightbox item type.');
+  if (!['image', 'content', 'frame', 'video', 'youtube'].includes(type)) throw new Error('CanopyX: unknown lightbox item type.');
   if (type !== 'content' && (typeof raw.src !== 'string' || !raw.src)) throw new Error('CanopyX: lightbox item ' + index + ' needs a src.');
   if (type !== 'content' && lightboxScript(raw.src)) throw new Error('CanopyX: lightbox item ' + index + ' has a script address.');
+  if (type === 'youtube' && !lightboxYouTubeId(raw.src)) throw new Error('CanopyX: lightbox item ' + index + ' is not a YouTube address.');
+  if (raw.poster != null && (typeof raw.poster !== 'string' || lightboxScript(raw.poster))) throw new Error('CanopyX: lightbox item ' + index + ' has an unsafe poster.');
   return { id: raw.id == null ? String(index) : String(raw.id), type, src: raw.src ?? null, alt: raw.alt ?? '', caption: raw.caption ?? '',
-    content: raw.content, trigger: raw.trigger ?? null };
+    content: raw.content, trigger: raw.trigger ?? null, poster: raw.poster ?? null, autoplay: raw.autoplay === true };
 }
 /** Reads a gallery link: its address, type, caption (data-caption, the figure's caption or the image's alt) and alt text. */
 function lightboxLinkItem(link, index) {
@@ -26,7 +28,8 @@ function lightboxLinkItem(link, index) {
     content = () => source?.localName === 'template' ? source.content.cloneNode(true) : source?.cloneNode(true) ?? null;
   }
   // A text-only link (a frame or content item without a thumbnail) names its item with its own text.
-  return lightboxItem({ id: link.dataset.lightboxId ?? index, type, src: type === 'content' ? null : link.href || href, alt: image?.alt || caption || text, caption, content, trigger: link }, index);
+  return lightboxItem({ id: link.dataset.lightboxId ?? index, type, src: type === 'content' ? null : type === 'youtube' ? href : link.href || href, alt: image?.alt || caption || text, caption, content, trigger: link,
+    poster: link.dataset.poster || (type === 'video' ? image?.getAttribute('src') : undefined), autoplay: link.dataset.autoplay === 'true' }, index);
 }
 
 UI_IMPL.lightbox = (root, options = {}, signal) => {
@@ -101,6 +104,7 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
     if (!list.length) return false;
     index = loop ? (at + list.length) % list.length : Math.max(0, Math.min(list.length - 1, at));
     const item = list[index], current = ++generation;
+    lightboxStop(media);
     scale = 1; dialog.dataset.zoomed = 'false'; stage.tabIndex = -1; delete status.dataset.error; status.className = 'cx-lightbox-status'; setText(status, '');
     dialog.dataset.type = item.type;
     setText(title, item.caption || item.alt || labels.lightboxTitle);
@@ -118,6 +122,9 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
       media.addEventListener('load', () => { if (current === generation) { setText(status, ''); paintZoom(); } });
       media.addEventListener('error', () => { if (current === generation) fail(); });
       media.src = item.src;
+    } else if (item.type === 'video' || item.type === 'youtube') {
+      media = lightboxVideo(item, item.caption || item.alt || labels.lightboxTitle);
+      if (item.type === 'video') media.addEventListener('error', () => { if (current === generation) fail(); });
     } else if (item.type === 'frame') {
       media = h('iframe', 'cx-lightbox-frame'); media.src = item.src; media.title = item.caption || item.alt || labels.lightboxTitle;
       media.setAttribute('allowfullscreen', '');
@@ -160,7 +167,7 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
   }, { signal });
   dialog.addEventListener('keydown', event => {
     // Keys typed into a field, an editable element or a frame belong to them, shortcuts included.
-    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.target.closest('iframe,input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.target.closest('iframe,video,audio,input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
     const back = rtl() ? 'ArrowRight' : 'ArrowLeft', forward = rtl() ? 'ArrowLeft' : 'ArrowRight';
     const keys = { '+': () => zoom(step(1)), '=': () => zoom(step(1)), '-': () => zoom(step(-1)), '0': () => zoom(1) };
     // While zoomed the arrows pan the stage; the Previous and Next buttons still move.
@@ -174,7 +181,7 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
   let drag = null;
   stage.addEventListener('pointerdown', event => {
     // Gestures on host controls and editable content belong to them, not to swipe navigation.
-    if (event.button || media?.localName === 'iframe' || event.target.closest('input,select,textarea,button,a[href],label,[contenteditable]:not([contenteditable="false"])')) return;
+    if (event.button || media?.localName === 'iframe' || media?.localName === 'video' || event.target.closest('input,select,textarea,button,a[href],label,[contenteditable]:not([contenteditable="false"])')) return;
     drag = { x: event.clientX, y: event.clientY, left: stage.scrollLeft, top: stage.scrollTop, pointer: event.pointerId };
     if (scale > 1 && event.pointerType === 'mouse') { stage.setPointerCapture(event.pointerId); dialog.dataset.panning = 'true'; }
   }, { signal });
@@ -190,7 +197,7 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
   };
   stage.addEventListener('pointerup', release, { signal });
   stage.addEventListener('pointercancel', release, { signal });
-  dialog.addEventListener('cx-lightbox:close', event => { if (event.target === dialog) { generation++; stage.replaceChildren(); media = null; index = -1; } }, { signal });
+  dialog.addEventListener('cx-lightbox:close', event => { if (event.target === dialog) { generation++; lightboxStop(media); stage.replaceChildren(); media = null; index = -1; } }, { signal });
   signal?.addEventListener('abort', () => dialog.remove(), { once: true });
   return {
     open, close: () => overlay.close('api'), next: () => move(1), back: () => move(-1), zoom,

@@ -103,6 +103,8 @@ enabled tabs. No compatibility alias is provided.
 
 `CanopyX.stepper(root, options)` adds guarded steps, optional skipping, validation, drafts and finish callbacks. A validation callback returns `false` or a list of messages to keep the current step open. Messages appear in a focused alert and are linked to invalid fields. Report and static stepper modes remain script-free. Tabs and interactive steppers share the same phone picker, preserving badges and counts. Tabs measure their labels, icons and badges before collapsing, with an eight-pixel resize margin to prevent repeated switching near the boundary. Menu overflow keeps at least three visible choices plus More while they fit. Interactive steppers use the picker below a container width of 640 px.
 
+The stepper's Back, Skip, Next and Finish toolbar sits under the panels by default. `CanopyStepperOptions.ToolbarPosition` moves it above them (`Top`) or repeats it above and below (`Both`), and `ToolbarHtml` adds trusted host controls, such as a Help link or a Cancel button, before the step actions in each toolbar (with `ShowFooter`). The host handles their clicks.
+
 ## Show sections with an accordion
 
 ```csharp

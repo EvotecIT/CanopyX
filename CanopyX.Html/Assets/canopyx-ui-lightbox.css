@@ -33,6 +33,7 @@
 .cx-lightbox-image{display:block;max-inline-size:100%;max-block-size:100%;object-fit:contain;user-select:none;}
 .cx-lightbox[data-zoomed="true"] .cx-lightbox-image{max-inline-size:none;max-block-size:none;margin:auto;}
 .cx-lightbox-frame{inline-size:100%;block-size:100%;border:0;background:var(--hfx-color-surface-card,var(--hfx-color-surface,light-dark(#ffffff,#16181c)));}
+.cx-lightbox-video{display:block;max-inline-size:100%;max-block-size:100%;background:var(--hfx-color-surface-sunken,light-dark(#f7f8f9,#111317));}
 .cx-lightbox-content{align-self:stretch;justify-self:stretch;padding:var(--hfx-space-4,1rem);overflow:auto;color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));background:var(--hfx-color-surface-card,var(--hfx-color-surface,light-dark(#ffffff,#16181c)));}
 .cx-lightbox-step{block-size:var(--hfx-control-height-lg,calc(44px - var(--cx-compact,0) * 8px));margin-inline:var(--hfx-space-1,0.25rem);}
 .cx-lightbox-step[hidden]{display:none;}

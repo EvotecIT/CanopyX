@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using CanopyX.Html;
 using CanopyX.Html.Ui;
@@ -15,7 +16,12 @@ internal static class UiCarouselRatingExample {
             ("Filter counts", "Tree filter switches say how many nodes match."), ("Toasts", "Notifications queue, pause and announce themselves."), ("Ratings", "Stars as a control, a flow field and a grid column.") })
             carousel.Slides.Add(new CanopyCarouselSlide("<article class=\"slide\"><h3>" + title + "</h3><p>" + text + "</p></article>") { Label = title });
         body.Append("<section class=\"card\" aria-labelledby=\"carousel-title\"><h2 id=\"carousel-title\">Carousel</h2>");
-        body.Append("<p>Use Previous and Next, the slide buttons, the arrow keys or a swipe. Nothing moves by itself.</p>").Append(carousel.ToHtmlFragment()).Append("</section>");
+        body.Append("<p>Use Previous and Next, the slide buttons, the arrow keys or a swipe. Nothing moves by itself.</p>").Append(carousel.ToHtmlFragment());
+        var fading = new CanopyCarousel("racks", "Server room photos", new CanopyCarouselOptions { Transition = CanopyCarouselTransition.Fade, Controls = CanopyCarouselControlPosition.Sides,
+            Indicators = CanopyCarouselIndicatorPosition.Below, Captions = CanopyCarouselCaptionPosition.Below });
+        foreach (var (name, colour) in new[] { ("Rack A", "#3b6ea8"), ("Rack B", "#2f8a5b"), ("Cooling", "#a8603b") })
+            fading.Slides.Add(new CanopyCarouselSlide("<img alt=\"" + name + "\" src=\"data:image/svg+xml," + Uri.EscapeDataString("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"300\"><rect width=\"100%\" height=\"100%\" fill=\"" + colour + "\"/></svg>") + "\">") { Label = name, Caption = name + " after the move" });
+        body.Append("<h3>Fading, with buttons at the sides and captions under the photos</h3>").Append(fading.ToHtmlFragment()).Append("</section>");
 
         body.Append("<section class=\"card\" aria-labelledby=\"rating-title\"><h2 id=\"rating-title\">Rating input</h2>");
         body.Append("<p>A radio group drawn as stars: arrow keys move, choosing the same star again or Delete clears it, and it submits with the form.</p><form id=\"feedback\">");
