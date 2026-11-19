@@ -214,6 +214,9 @@ for (const [name, rowData, message] of [
   ["a script count that does not match", { columns: ["name"], count: 2, chunks: 2 }, "row data scripts"],
   ["rows out of their declared order", { columns: ["name"], count: 2, ordered: true, chunks: [[["b", "B"], ["a", "A"]]] }, "identity order"],
   ["a duplicate identity in a later chunk", { columns: ["name"], count: 2, chunks: [[["a", "A"]], [["a", "again"]]] }, "duplicate grid row ID"],
+  // A chunk decodes in slices, but its first window waits for the whole chunk, so a bad row late in it still fails.
+  ["a duplicate identity late in the first ordered chunk", { columns: ["name"], count: 20000, ordered: true,
+    chunks: [Array.from({ length: 20000 }, (_, i) => [String(i < 19999 ? i : 5), "Row " + i])] }, "duplicate grid row ID"],
   ["fewer rows than declared", { columns: ["name"], count: 3, chunks: [[["a", "A"], ["b", "B"]]] }, "not 3"],
   ["an undeclared column", { columns: ["owner"], count: 0, chunks: [] }, "invalid grid rowData"]
 ]) {
