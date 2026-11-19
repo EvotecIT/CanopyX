@@ -1,8 +1,8 @@
   // ---------- row data: compact rows in chunks (docs/data-protocol.md, "Row data") ----------
   // The chunks come from rowData.chunks (an array), from the host's application/x-canopyx-rows scripts (a count), or from
-  // sidecar files under rowData.base (a count, for bundles). A chunk's rows are expanded, validated and appended in slices
-  // of a few milliseconds that yield to the page between them, so input and paint keep their turn also on a slow CPU; a
-  // gzip chunk is base64 text inflated with DecompressionStream.
+  // sidecar files under rowData.base (a count, for bundles). A chunk's rows are expanded and validated in slices of a few
+  // milliseconds that yield to the page between them, so input and paint keep their turn also on a slow CPU, and join the
+  // grid together once the chunk is valid; a gzip chunk is base64 text inflated with DecompressionStream.
   const ROW_SCRIPTS = ':scope>script[type="application/x-canopyx-rows"]', ROW_SLICE = 256, ROW_SLICE_MS = 8;
   const nextTask = () => globalThis.scheduler?.yield ? scheduler.yield() : new Promise(resolve => setTimeout(resolve));
 
@@ -80,8 +80,10 @@
           chunk = JSON.parse(chunk);
         }
         if (!Array.isArray(chunk)) throw new Error("CanopyX: a row data chunk is not an array of rows.");
+        // A chunk's rows join only once all of them are valid, so a bad row fails the query that waits for its chunk.
         let started = performance.now();
-        for (let from = 0; from < chunk.length && rows.length <= data.count; from += ROW_SLICE) {
+        const accepted = [];
+        for (let from = 0; from < chunk.length && rows.length + accepted.length <= data.count; from += ROW_SLICE) {
           const decoded = validateGridRows(chunk.slice(from, from + ROW_SLICE).map(expand), view.columns, ids, repairGridCell);
           // Identity order puts canonical integer ids first, as numbers. Rows written by an older writer in plain code-unit
           // order are still read: from the first row out of order on, queries wait for every chunk, like unordered rows, and
@@ -96,13 +98,13 @@
             }
             previous = row.id;
           }
-          for (const row of decoded) rows.push(row);
+          for (const row of decoded) accepted.push(row);
           if (performance.now() - started > ROW_SLICE_MS) {
-            advance(); waitForChunk();
             await nextTask(); active();
             started = performance.now();
           }
         }
+        for (const row of accepted) rows.push(row);
         chunk = null;
         if (rows.length > data.count) break;
         files[index] = null;
