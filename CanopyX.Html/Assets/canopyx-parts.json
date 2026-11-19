@@ -121,7 +121,7 @@
     {
       "name": "ui-carousel",
       "label": "UI carousel",
-      "version": "bfafadc458c26548",
+      "version": "a0b2ef7f971c12e6",
       "script": "canopyx-ui-carousel.js",
       "style": "canopyx-ui-carousel.css",
       "runtimes": [
@@ -137,7 +137,7 @@
     {
       "name": "ui-rating",
       "label": "UI rating",
-      "version": "9fe616247498c680",
+      "version": "c9769bdf2f2eb22e",
       "script": "canopyx-ui-rating.js",
       "style": "canopyx-ui-rating.css",
       "runtimes": [

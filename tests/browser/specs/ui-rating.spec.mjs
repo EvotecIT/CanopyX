@@ -73,3 +73,9 @@ test('a form reset brings the stars back to the written value, and a generated f
   await page.evaluate(() => CanopyX.rating('#blank', { label: 'Ease of setup' }).ready);
   await expect(page.getByRole('group', { name: 'Ease of setup' })).toBeVisible();
 });
+
+test('a disabled rating still shows its value', async ({ page }) => {
+  await openUi(page, rating('disabled', 3));
+  const colour = index => page.locator('.cx-rating-option').nth(index).evaluate(element => getComputedStyle(element).color);
+  expect(await colour(2)).not.toBe(await colour(3));
+});

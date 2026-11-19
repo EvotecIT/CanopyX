@@ -132,3 +132,14 @@ test('stopping autoplay turns announcements back on, and refresh releases slides
   expect(moved).toEqual([false, null, null, null]);
   expect((await page.evaluate(() => CanopyX.carousel('#news').getState())).total).toBe(3);
 });
+
+test('a track that keeps its width across the phone breakpoint is measured again', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 900, height: 600 });
+  await openUi(page, '<div style="inline-size:500px">' + carousel('data-per-view="3"', 3) + '</div>');
+  expect((await page.evaluate(() => CanopyX.carousel('#news').getState())).visible).toBe(3);
+  await expect(page.locator('.cx-carousel-controls')).toBeHidden();
+  await page.setViewportSize({ width: 600, height: 600 });
+  await expect.poll(async () => (await page.evaluate(() => CanopyX.carousel('#news').getState())).visible).toBe(1);
+  await expect(page.getByRole('button', { name: 'Next slide' })).toBeVisible();
+});
