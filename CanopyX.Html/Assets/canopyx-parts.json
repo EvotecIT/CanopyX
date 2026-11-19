@@ -121,7 +121,7 @@
     {
       "name": "ui-select",
       "label": "UI select",
-      "version": "ac6c26bc7fce5488",
+      "version": "bd05afd62d869b2d",
       "script": "canopyx-ui-select.js",
       "style": "canopyx-ui-select.css",
       "runtimes": [

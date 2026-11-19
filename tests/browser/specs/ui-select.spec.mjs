@@ -42,8 +42,13 @@ test('typing filters without case or accents, the keyboard picks, and the native
   await expect(combo(page)).toHaveAttribute('aria-expanded', 'false');
   expect(await submitted(page)).toEqual(['us']);
   await combo(page).focus();
+  await page.evaluate(() => document.addEventListener('keydown', event => { window.prevented = event.defaultPrevented; }));
   await page.keyboard.press('Escape');
   expect(await submitted(page)).toEqual(['']);
+  expect(await page.evaluate(() => window.prevented)).toBe(true);
+  // A closed, empty select leaves Escape to a containing dialog or drawer.
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => window.prevented)).toBe(false);
 });
 
 test('a multiple select shows chips that Backspace and their buttons remove, and reports changes', async ({ page }) => {
@@ -59,6 +64,19 @@ test('a multiple select shows chips that Backspace and their buttons remove, and
   await page.getByRole('button', { name: 'Remove Poland' }).click();
   expect(await submitted(page)).toEqual(['de']);
   expect(await page.evaluate(() => window.changes)).toEqual(['pl+de+us:pointer', 'pl+de:keyboard', 'de:chip']);
+});
+
+test('an open list follows values changed by Backspace or the controller, and the controller respects max', async ({ page }) => {
+  await openUi(page, select('data-max="2"', true, ['pl', 'de']));
+  await combo(page).click();
+  const row = name => options(page).filter({ hasText: name });
+  await expect(row('Germany')).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Backspace');
+  await expect(row('Germany')).toHaveAttribute('aria-selected', 'false');
+  expect(await page.evaluate(() => CanopyX.select('#picker').select(['us', 'br', 'pl']))).toEqual(['us', 'br']);
+  await expect(row('Poland')).toHaveAttribute('aria-selected', 'false');
+  await expect(row('United States')).toHaveAttribute('aria-selected', 'true');
+  expect(await submitted(page)).toEqual(['us', 'br']);
 });
 
 test('tags mode creates a value from the typed text and adds it to the native select', async ({ page }) => {
@@ -87,7 +105,7 @@ test('a created tag replaces a single value and respects the limit of a multiple
 test('host options match the native selection by value, and refresh unselects a removed value', async ({ page }) => {
   const markup = selected => `<form id="form"><label for="country">Country</label><div id="picker"><select id="country" name="country">
     <option value="">Choose…</option><option value="pl"${selected ? ' selected' : ''}>Poland</option></select></div></form>`;
-  const open = () => page.evaluate(() => { window.hosted = { options: [{ value: 'de', label: 'Germany' }, { value: 'pl', label: 'Poland' }] }; return CanopyX.select('#picker', window.hosted).ready; });
+  const open = (list = [{ value: 'de', label: 'Germany' }, { value: 'pl', label: 'Poland' }]) => page.evaluate(list => { window.hosted = { options: list }; return CanopyX.select('#picker', window.hosted).ready; }, list);
   await openUi(page, markup(false));
   await open();
   await expect(combo(page)).toHaveValue('');
@@ -100,6 +118,19 @@ test('host options match the native selection by value, and refresh unselects a 
   await page.evaluate(() => { window.hosted.options.pop(); CanopyX.select('#picker').refresh(); });
   expect(await submitted(page)).toEqual(['']);
   await expect(combo(page)).toHaveValue('');
+  // Refreshing while the list is open rebuilds its rows.
+  await combo(page).click();
+  await expect(options(page)).toHaveText(['Germany']);
+  await page.evaluate(() => { window.hosted.options[0].disabled = true; window.hosted.options.push({ value: 'at', label: 'Austria' }); CanopyX.select('#picker').refresh(); });
+  await expect(options(page)).toHaveText(['Germany', 'Austria']);
+  await expect(options(page).first()).toHaveAttribute('aria-disabled', 'true');
+  await options(page).first().dispatchEvent('click');
+  expect(await submitted(page)).toEqual(['']);
+  // A selected native value the host options lack stays selected.
+  await openUi(page, markup(true));
+  await open([{ value: 'de', label: 'Germany' }]);
+  await expect(combo(page)).toHaveValue('Poland');
+  expect(await submitted(page)).toEqual(['pl']);
 });
 
 test('names come from aria-labelledby or a wrapping label, and a disabled group disables its options', async ({ page }) => {
@@ -168,6 +199,26 @@ test('a newer query drops an older answer or failure, and the popup is placed ag
   await expect(page.locator('.cx-select-note')).toBeHidden();
   const box = await page.locator('.cx-select-popup').boundingBox();
   expect(box.y + box.height).toBeLessThanOrEqual(700);
+});
+
+test('a query below the minimum closes the results and keeps the typed text', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, '<label for="user">Owner</label><div id="owner"><select id="user" name="user"></select></div>');
+  await page.evaluate(() => CanopyX.select('#owner', { minLength: 2, load: async () => [{ value: 'pl', label: 'Poland' }] }).ready);
+  const owner = page.getByRole('combobox', { name: 'Owner' });
+  await owner.fill('po');
+  await page.clock.runFor(300);
+  await page.keyboard.press('Enter');
+  await expect(owner).toHaveValue('Poland');
+  await owner.fill('po');
+  await page.clock.runFor(300);
+  await expect(owner).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('Backspace');
+  await expect(owner).toHaveValue('p');
+  await expect(owner).toHaveAttribute('aria-expanded', 'false');
+  await page.keyboard.press('Tab');
+  await expect(owner).toHaveValue('Poland');
 });
 
 test('a loader without search answers the empty query when the field opens', async ({ page }) => {

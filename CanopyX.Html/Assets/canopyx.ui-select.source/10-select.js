@@ -10,8 +10,12 @@ UI_IMPL.select = (root, options = {}, signal) => {
   const max = Number(options.max ?? data.max ?? 0) || Infinity, minLength = Number(options.minLength ?? data.minLength ?? (search && (options.load || data.source || options.source) ? 1 : 0));
   const renderIcon = options.renderIcon, loader = selectLoader(options, root), id = (native.id || 'cx-select-' + Math.random().toString(36).slice(2)) + '-combo';
   let all = options.options ? options.options.map(selectOption) : selectReadNative(native), shown = [], active = -1, open = false, timer = 0, query = '';
-  // The native select's selected values, matched by value so options.options may differ in order and content.
-  const written = () => new Map([...native.selectedOptions].map(item => all.find(option => option.value === item.value && (multiple || item.value !== ''))).filter(Boolean).map(option => [option.value, option]));
+  // The native select's selected values, matched by value so options.options may differ in order; a value they lack is kept.
+  const written = () => new Map([...native.selectedOptions].filter(item => multiple || item.value !== '').map(item => {
+    let option = all.find(entry => entry.value === item.value);
+    if (!option) all.push(option = selectNativeOption(item));
+    return [option.value, option];
+  }));
   let chosen = written();
 
   root.classList.add('cx-select'); root.dataset.cxPart = 'select'; root.dataset.multiple = String(multiple);
@@ -61,6 +65,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
     }) : []));
     if (!multiple && !open) input.value = chosen.values().next().value?.label ?? '';
     root.dataset.empty = String(!chosen.size);
+    list.querySelectorAll('[role=option]').forEach((row, at) => row.setAttribute('aria-selected', String(chosen.has(shown[at]?.value))));
     // Chips read with the field: the input describes the chosen values for screen readers.
     if (multiple) input.setAttribute('aria-description', [...chosen.values()].map(option => option.label).join(', ')); else input.removeAttribute('aria-description');
   }
@@ -91,11 +96,14 @@ UI_IMPL.select = (root, options = {}, signal) => {
     if (!open) { open = true; popup.hidden = false; popup.showPopover?.(); input.setAttribute('aria-expanded', 'true'); root.dataset.state = 'open'; }
     place(); highlight();
   }
-  function hide() {
+  /** Closes the list; keep leaves the typed text and query, as when a query falls below minLength. */
+  function hide(keep) {
     clearTimeout(timer); loader?.cancel();
-    if (!open) return;
-    open = false; if (popup.matches?.(':popover-open')) popup.hidePopover(); popup.hidden = true;
-    input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); delete root.dataset.state;
+    if (open) {
+      open = false; if (popup.matches?.(':popover-open')) popup.hidePopover(); popup.hidden = true;
+      input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); delete root.dataset.state;
+    }
+    if (keep) return;
     if (!multiple) input.value = chosen.values().next().value?.label ?? '';
     query = '';
   }
@@ -114,7 +122,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
       paintList(shown.length ? null : labels.selectNoMatches); show();
     };
     if (loader) {
-      if (text.trim().length < minLength) { shown = []; paintList(null); hide(); return; }
+      if (text.trim().length < minLength) { shown = []; paintList(null); hide(true); return; }
       shown = []; paintList(labels.stateLoading); show();
       timer = setTimeout(() => loader.fetch(text.trim()).then(items => {
         for (const item of items) if (!all.some(option => option.value === item.value)) all.push(item);
@@ -151,7 +159,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
   input.addEventListener('keydown', event => {
     if (event.isComposing) return;
     const keys = { ArrowDown: () => move(1), ArrowUp: () => move(-1), Home: () => open && move('first'), End: () => open && move('last'),
-      Enter: () => open ? active >= 0 && choose(active, 'keyboard') : move(1), Escape: () => open ? hide() : (chosen.size && !multiple ? (chosen.clear(), sync('keyboard')) : null),
+      Enter: () => open ? active >= 0 && choose(active, 'keyboard') : move(1), Escape: () => open ? hide() : chosen.size && !multiple ? (chosen.clear(), sync('keyboard')) : 'type',
       ' ': () => !search ? (open && active >= 0 ? choose(active, 'keyboard') : filter('', true)) : 'type',
       Backspace: () => multiple && !input.value && chosen.size ? (chosen.delete([...chosen.keys()].at(-1)), sync('keyboard')) : 'type' };
     if (event.key === 'Tab') { hide(); return; }
@@ -176,10 +184,14 @@ UI_IMPL.select = (root, options = {}, signal) => {
   }, { once: true });
   paintChosen();
   return {
-    select: value => { chosen.clear(); for (const item of [].concat(value ?? [])) { const option = all.find(entry => entry.value === String(item)); if (option) { chosen.set(option.value, option); if (!multiple) break; } } sync('api'); return [...chosen.keys()]; },
+    select: value => {
+      chosen.clear();
+      for (const item of [].concat(value ?? [])) { if (chosen.size >= (multiple ? max : 1)) break; const option = all.find(entry => entry.value === String(item)); if (option) chosen.set(option.value, option); }
+      sync('api'); return [...chosen.keys()];
+    },
     clear: () => { chosen.clear(); sync('api'); return true; },
     open: () => { input.focus(); filter('', true); return true; }, close: () => { hide(); return true; },
-    refresh: () => { all = options.options ? options.options.map(selectOption) : selectReadNative(native); const size = chosen.size; for (const value of [...chosen.keys()]) if (!all.some(option => option.value === value)) chosen.delete(value); chosen.size < size ? sync('api') : paintChosen(); },
+    refresh: () => { all = options.options ? options.options.map(selectOption) : selectReadNative(native); const size = chosen.size; for (const value of [...chosen.keys()]) if (!all.some(option => option.value === value)) chosen.delete(value); chosen.size < size ? sync('api') : paintChosen(); if (open) filter(query, true); },
     getState: () => ({ value: multiple ? [...chosen.keys()] : [...chosen.keys()][0] ?? null, open, query })
   };
 };

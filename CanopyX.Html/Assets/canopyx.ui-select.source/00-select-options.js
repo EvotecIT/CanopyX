@@ -19,10 +19,11 @@ function selectOption(raw) {
   if (selectFlag(raw.flag)) option.flag = raw.flag.toUpperCase();
   return option;
 }
-function selectReadNative(select) {
-  return [...select.options].map(item => selectOption({ value: item.value, label: item.textContent.trim(), disabled: item.matches(':disabled'), description: item.dataset.description,
+const selectReadNative = select => [...select.options].map(selectNativeOption);
+function selectNativeOption(item) {
+  return selectOption({ value: item.value, label: item.textContent.trim(), disabled: item.matches(':disabled'), description: item.dataset.description,
     badge: item.dataset.badge, tone: item.dataset.tone, icon: item.dataset.icon, avatar: item.dataset.avatar, flag: item.dataset.flag,
-    group: item.parentElement?.localName === 'optgroup' ? item.parentElement.label : undefined }));
+    group: item.parentElement?.localName === 'optgroup' ? item.parentElement.label : undefined });
 }
 
 /** The picture before an option's label: an avatar, a flag or an icon the host renders. */
