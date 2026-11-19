@@ -56,7 +56,8 @@ UI_IMPL.select = (root, options = {}, signal) => {
   /** Writes the answer back to the native select, adding options the host loaded or the reader created. */
   function sync(source) {
     for (const option of chosen.values()) if (![...native.options].some(item => item.value === option.value)) {
-      const item = new Option(option.label, option.value); native.add(item);
+      // An added option keeps the host's disabled state, so it is left out of submission like a disabled native option.
+      const item = new Option(option.label, option.value); item.disabled = !!option.disabled; native.add(item);
     }
     // A host option that is enabled also enables a disabled native option with its value, so the form submits what the field shows.
     for (const item of native.options) { item.selected = chosen.has(item.value); if (item.selected && item.disabled && chosen.get(item.value).disabled === false) item.disabled = false; }

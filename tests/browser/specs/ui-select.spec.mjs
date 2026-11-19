@@ -386,3 +386,14 @@ test('on a short screen the list fits the visible height, so its last option can
   await list.getByRole('option', { name: 'Value 30' }).scrollIntoViewIfNeeded();
   await expect(list.getByRole('option', { name: 'Value 30' })).toBeInViewport();
 });
+
+test('a disabled host option chosen through select() stays disabled in the native select and is not submitted', async ({ page }) => {
+  await openUi(page, '<form id="hosted"><label for="team">Team</label><div id="teams"><select id="team" name="team" multiple><option value="ops">Ops</option></select></div></form>');
+  const result = await page.evaluate(async () => {
+    const control = CanopyX.select('#teams', { options: [{ value: 'ops', label: 'Ops' }, { value: 'old', label: 'Retired', disabled: true }] });
+    await control.ready; await control.select(['ops', 'old']);
+    const added = document.querySelector('#team option[value="old"]');
+    return { disabled: added?.disabled, submitted: new FormData(document.getElementById('hosted')).getAll('team') };
+  });
+  expect(result).toEqual({ disabled: true, submitted: ['ops'] });
+});
