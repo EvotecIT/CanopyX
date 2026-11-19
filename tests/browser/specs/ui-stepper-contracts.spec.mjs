@@ -216,3 +216,19 @@ test('toolbars above and under the panels stay in step and keep the host extra c
     expect.arrayContaining(['cx-step-position', 'cx-stepper-extra']));
   expect(await page.locator('.cx-stepper-footer[data-placement="top"] > :nth-child(2)').getAttribute('class')).toBe('cx-stepper-extra');
 });
+
+test('in the inline vertical layout the top toolbar moves with the open panel and stays above it', async ({ page }) => {
+  const footer = fixture('StepperLabelsFooter'), top = footer.replace('class="cx-stepper-footer"', 'class="cx-stepper-footer" data-placement="top"');
+  const html = `<style>${roles}</style><div style="width:900px">` + fixture('StepperContractMarkup').replace('</ol>', '</ol>' + top).replace('{{footer}}', footer)
+    .replace('data-cx-stepper=""', 'data-cx-stepper="" data-vertical="inline"') + '</div>';
+  await openUi(page, html, init());
+  const bar = page.locator('.cx-stepper-footer[data-placement="top"]');
+  const order = id => page.evaluate(id => { const panel = document.getElementById(id), bar = document.querySelector('.cx-stepper-footer[data-placement="top"]');
+    return [panel.previousElementSibling === bar, !!(bar.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING)]; }, id);
+  expect(await order('wizard-panel-first')).toEqual([true, true]);
+  await bar.locator('[data-cx-stepper-action="next"]').click();
+  await expect(page.locator('#wizard-panel-optional')).toBeVisible();
+  expect(await order('wizard-panel-optional')).toEqual([true, true]);
+  await page.evaluate(() => window.wizard.destroy());
+  expect(await page.evaluate(() => document.querySelector('.cx-stepper-footer[data-placement="top"]').previousElementSibling?.localName)).toBe('ol');
+});

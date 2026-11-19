@@ -1,7 +1,7 @@
 UI_TOOLS.stepperView = (root, options, labels, life, select, back, issueCount) => {
   const n = UI_TOOLS.navigation, header = n.owned(root, 'ol.cx-stepper')[0];
   // One toolbar, or two (above and under the panels) kept in step.
-  const footers = n.owned(root, '.cx-stepper-footer'), footer = footers[0];
+  const footers = n.owned(root, '.cx-stepper-footer'), footer = footers[0], topBar = footers.find(bar => bar.dataset.placement === 'top');
   const live = n.owned(root, '[aria-live="polite"]')[0];
   const originalButtons = new Map(n.owned(root, '[data-cx-stepper-action]').map(el => [el.dataset.cxStepperAction, el.textContent]));
   const footerData = footer?.dataset || {};
@@ -39,7 +39,7 @@ UI_TOOLS.stepperView = (root, options, labels, life, select, back, issueCount) =
       button = n.button('', 'cx-step-btn');
       // Move the existing label/marker nodes; never move a vertical inline panel
       // into its header button, and never clone host interactive content.
-      Array.from(el.childNodes).filter(child => child !== item.panel).forEach(child => button.append(child)); el.prepend(button);
+      Array.from(el.childNodes).filter(child => child !== item.panel && child !== topBar).forEach(child => button.append(child)); el.prepend(button);
     } else if (!enabled && button) { button.replaceWith(...button.childNodes); button = null; }
     if (button) {
       button.dataset.cxStep = String(item.index);
@@ -76,6 +76,13 @@ UI_TOOLS.stepperView = (root, options, labels, life, select, back, issueCount) =
         if (!home.has(item.panel)) { const anchor = document.createComment('step panel'); item.panel.before(anchor); home.set(item.panel, anchor); }
         el.append(item.panel);
       } else if ((!vertical || root.dataset.vertical !== 'inline' || narrow) && home.has(item.panel)) home.get(item.panel).after(item.panel);
+      // A top toolbar follows the current panel into its step, so it stays above the content in the inline vertical layout.
+      if (item === current && topBar) {
+        if (item.panel.parentElement === el) {
+          if (!home.has(topBar)) { const anchor = document.createComment('step toolbar'); topBar.before(anchor); home.set(topBar, anchor); }
+          item.panel.before(topBar);
+        } else if (home.has(topBar)) home.get(topBar).after(topBar);
+      }
     }
   }
   function footerAction(action, visible, label) {
