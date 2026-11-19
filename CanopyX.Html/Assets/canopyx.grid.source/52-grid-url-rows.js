@@ -7,7 +7,7 @@
     catch (_) { return null; }
   }
   const GRID_URL_IMPL = {}, GRID_URL_ROWS = definePart(DataGrid, "url-rows", "rows from an address",
-    () => ({ GRID_URL_IMPL, validateGridRows, repairGridCell, inlineGridSource, gridQueryStart, gridRowsAddress }));
+    () => ({ GRID_URL_IMPL, validateGridRows, repairGridCell, inlineGridSource, gridRowsAddress }));
   function gridUrlRows(grid) {
     let inner = null, loaded = null;
     const source = { reset: () => { inner = null; loaded = null; }, query: (query, options) =>

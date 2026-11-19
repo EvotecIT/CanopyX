@@ -62,6 +62,7 @@ internal static class CanopyDataSnapshot {
         foreach (var footer in source.Footers) {
             var row = new CanopyGridFooter(footer.Id, footer.Label, footer.Scope);
             foreach (var aggregate in footer.Aggregates) row.Aggregates.Add(aggregate);
+            foreach (var cell in footer.Cells) row.Cells[cell.Key] = cell.Value;
             copy.Footers.Add(row);
         }
         return copy;

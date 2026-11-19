@@ -34,6 +34,8 @@ test("allowed markup is built as elements: badges, emphasis, breaks, links and s
   await expect(link).toHaveAttribute("href", "https://example.test/a");
   await expect(link).toHaveAttribute("target", "_blank");
   await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  // The grid stays one Tab stop: the link is reached with cell navigation, not Tab.
+  await expect(link).toHaveAttribute("tabindex", "-1");
   const styled = state.locator(".cx-rich span").nth(1);
   expect(await styled.evaluate(element => [element.style.maxWidth, element.style.color, element.style.backgroundImage])).toEqual(["80px", "rgb(200, 0, 0)", ""]);
   // A quoted > stays in its attribute and a quoted style= is text, not an attribute.
@@ -215,6 +217,42 @@ test("a refresh updates the totals of a grouped grid whose rows come from an add
   amount = 9;
   await page.clock.runFor(30000);
   await expect(page.locator(".cx-grid-group-footer")).toContainText("10");
+});
+
+test("a refresh keeps the reader's page and starts a new revision of the rows", async ({ page }) => {
+  await page.clock.install();
+  let count = 30;
+  await page.route("http://canopyx.test/data/users.json", route => route.fulfill({ contentType: "application/json",
+    body: JSON.stringify(Array.from({ length: count }, (_, i) => ({ id: "u" + String(i).padStart(3, "0"), cells: { name: "User " + i, state: "On" } }))) }));
+  const view = { ...fromAddress({ refreshSeconds: 30 }), presentation: "paged", pageLength: 10 };
+  await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html", body: viewPage(view) }));
+  await page.goto("http://canopyx.test/rich");
+  const api = "document.querySelector('[data-canopyx-host]').canopyx";
+  await expect(page.locator(".cx-row[data-cx-id]").first()).toHaveAttribute("data-cx-id", "u000");
+  await page.evaluate(`${api}.setQuery({ ...${api}.getQuery(), offset: 10 })`);
+  await expect(page.locator(".cx-row[data-cx-id]").first()).toHaveAttribute("data-cx-id", "u010");
+  expect(await page.evaluate(`${api}.getQuery().revision`)).toBe("url-1");
+  count = 35;
+  await page.clock.runFor(30000);
+  await expect.poll(() => page.evaluate(`${api}.getQuery().revision`)).toBe("url-2");
+  await expect(page.locator(".cx-row[data-cx-id]").first()).toHaveAttribute("data-cx-id", "u010");
+  expect(await page.evaluate(`${api}.getQuery().offset`)).toBe(10);
+});
+
+test("a read that does not answer within the request deadline fails, and Retry reads again", async ({ page }) => {
+  let reads = 0;
+  await page.route("http://canopyx.test/data/users.json", route => {
+    reads++;
+    if (reads === 1) return; // never answers
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify([{ id: "a", cells: { name: "Alpha", state: "On" } }]) });
+  });
+  const html = viewPage(fromAddress()).replace("</head>", "<script>CanopyX.configure('remote', { requestTimeoutMs: 400 });</script></head>");
+  await page.route("http://canopyx.test/rich", route => route.fulfill({ contentType: "text/html", body: html }));
+  await page.goto("http://canopyx.test/rich");
+  await expect(page.locator("[data-canopyx-host]")).toContainText(/did not arrive|time/i);
+  await page.getByRole("button", { name: /retry|try again/i }).first().click();
+  await expect(page.locator('.cx-row[data-cx-id="a"]')).toBeVisible();
+  expect(reads).toBe(2);
 });
 
 test("an address on a host grid, an unsafe address or rows beside an address are rejected", async ({ page }) => {

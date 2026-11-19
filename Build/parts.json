@@ -719,7 +719,6 @@
         "validateGridRows",
         "repairGridCell",
         "inlineGridSource",
-        "gridQueryStart",
         "gridRowsAddress"
       ],
       "end": "GRID_URL_IMPL.source = urlRowsSource;",

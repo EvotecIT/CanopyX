@@ -15,6 +15,8 @@
     if (html === null) { slot.textSpan.hidden = false; return false; }
     const rich = slot.rich = h("span", "cx-rich");
     rich.appendChild(GRID_RICH_IMPL.content(html));
+    // The grid is one Tab stop: links in the markup are reached with cell navigation, as host controls are.
+    quietControls(rich);
     slot.textSpan.hidden = true; slot.textSpan.after(rich);
     return true;
   }
