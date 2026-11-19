@@ -12,7 +12,7 @@ public sealed partial class CanopyFlowField {
         ("toggle", CanopyFlowFieldKind.Toggle), ("lookup", CanopyFlowFieldKind.Lookup), ("choice", CanopyFlowFieldKind.Choice),
         ("multiChoice", CanopyFlowFieldKind.MultiChoice), ("textarea", CanopyFlowFieldKind.TextArea), ("list", CanopyFlowFieldKind.List),
         ("secret", CanopyFlowFieldKind.Secret), ("duration", CanopyFlowFieldKind.Duration), ("custom", CanopyFlowFieldKind.Custom),
-        ("records", CanopyFlowFieldKind.Records), ("pick", CanopyFlowFieldKind.Pick)
+        ("records", CanopyFlowFieldKind.Records), ("pick", CanopyFlowFieldKind.Pick), ("rating", CanopyFlowFieldKind.Rating)
     };
 
     private static readonly (string Wire, CanopyFlowItemRule Value)[] RuleNames = {
@@ -27,7 +27,7 @@ public sealed partial class CanopyFlowField {
 
     private static readonly string[] Properties = {
         "id", "type", "editor", "label", "help", "placeholder", "required", "readOnly", "sensitive", "default", "width", "parameter",
-        "path", "when", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "validation", "source", "dependsOn", "columns"
+        "path", "when", "options", "display", "onText", "offText", "rows", "step", "keepWhenBlank", "reveal", "units", "validation", "source", "dependsOn", "columns", "scale"
     };
 
     private static readonly string[] ValidationProperties = { "min", "max", "minLength", "maxLength", "pattern", "message", "minItems", "maxItems", "item", "itemPattern" };
@@ -66,6 +66,7 @@ public sealed partial class CanopyFlowField {
         CanopyFlowValues.CheckText(OffText, what + " (off text)", 60);
         if (RowCount.HasValue && Kind != CanopyFlowFieldKind.TextArea) throw new InvalidOperationException(what + ": rows apply to text area fields.");
         if (NumberStep.HasValue && Kind != CanopyFlowFieldKind.Number) throw new InvalidOperationException(what + ": a step applies to number fields.");
+        if (RatingScale.HasValue && Kind != CanopyFlowFieldKind.Rating) throw new InvalidOperationException(what + ": a scale applies to rating fields.");
         if ((KeepsWhenBlank.HasValue || ShowsReveal.HasValue) && Kind != CanopyFlowFieldKind.Secret) throw new InvalidOperationException(what + ": keep-when-blank and reveal apply to secret fields.");
         ValidateDuration(what);
         if (Kind == CanopyFlowFieldKind.Custom) {
@@ -176,6 +177,7 @@ public sealed partial class CanopyFlowField {
         if (Display != CanopyFlowChoiceDisplay.Auto) writer.Property("display", Display == CanopyFlowChoiceDisplay.Cards ? "cards" : "list");
         writer.OptionalProperty("onText", OnText).OptionalProperty("offText", OffText).OptionalProperty("rows", RowCount);
         if (NumberStep.HasValue) writer.Name("step").Number(NumberStep.Value);
+        writer.OptionalProperty("scale", RatingScale);
         if (KeepsWhenBlank.HasValue) writer.Property("keepWhenBlank", KeepsWhenBlank.Value);
         if (ShowsReveal.HasValue) writer.Property("reveal", ShowsReveal.Value);
         if (DurationUnits.Count > 0) {
@@ -238,6 +240,7 @@ public sealed partial class CanopyFlowField {
         Guard(what, () => {
             field.RowCount = CanopyFlowContract.Integer(map, "rows", what);
             field.NumberStep = CanopyFlowContract.Number(map, "step", what);
+            field.RatingScale = CanopyFlowContract.Integer(map, "scale", what);
         });
         foreach (var unit in CanopyFlowContract.Items(map, "units", what, 4)) field.DurationUnits.Add(CanopyFlowContract.Choose(unit as string, what, "units", UnitNames));
         if (map.TryGetValue("validation", out var validation)) field.ReadValidation(validation, what);

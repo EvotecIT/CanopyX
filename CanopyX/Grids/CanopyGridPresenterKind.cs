@@ -45,5 +45,7 @@ public enum CanopyGridPresenterKind {
     /// <summary>A date as "in 3 hr." or "27 sec. ago" that keeps itself current, with the exact time as its tooltip.</summary>
     RelativeTime,
     /// <summary>Monospace log lines (time, level and message) with level tones, a copy control and bounded lines.</summary>
-    Log
+    Log,
+    /// <summary>Filled and empty stars for a whole-number rating out of an authored maximum, read as "4 / 5".</summary>
+    Rating
 }

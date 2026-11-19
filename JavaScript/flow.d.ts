@@ -13,7 +13,7 @@ export interface FlowPickedRecord { readonly id: string; readonly label: string 
 
 /** The field types: the shared grid editors, the types flows add, and custom editors. */
 export type FlowFieldType = "text" | "number" | "date" | "datetime" | "time" | "select" | "toggle" | "lookup" | "choice" | "multiChoice"
-  | "textarea" | "list" | "secret" | "duration" | "records" | "custom";
+  | "textarea" | "list" | "secret" | "duration" | "records" | "custom" | "rating";
 
 /** A condition operator, from the filter builder's grammar. */
 export type FlowOperator = "eq" | "ne" | "gt" | "ge" | "lt" | "le" | "contains" | "notContains" | "startsWith" | "endsWith" | "matches" | "notMatches"
@@ -76,6 +76,8 @@ export interface FlowField {
   offText?: string;
   rows?: number;
   step?: number;
+  /** Rating fields: the number of stars, 2 to 10 (default 5). The value is a whole number from 1 to it. */
+  scale?: number;
   /** Secrets: a blank answer keeps the stored value. */
   keepWhenBlank?: boolean;
   /** Secrets: false hides the reveal button. */

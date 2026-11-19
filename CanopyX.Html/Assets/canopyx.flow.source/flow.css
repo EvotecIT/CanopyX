@@ -206,3 +206,11 @@ progress.cx-flow-bar { display:block;width:100%;max-width:var(--cx-size-440px);h
   .cx-flow .cx-flow-toggle input::after { background:CanvasText; }
 }
 @media print { .cx-flow-actions,.cx-flow-rail,.cx-flow-change { display:none; } }
+.cx-flow-rating { display:inline-flex;gap:var(--hfx-space-0-5); }
+.cx-flow-star { position:relative;display:inline-grid;place-items:center;inline-size:var(--hfx-control-height-sm);block-size:var(--hfx-control-height-sm);color:var(--hfx-color-border-strong);cursor:pointer; }
+.cx-flow-star > input { position:absolute;inset:0;margin:0;opacity:0;cursor:inherit; }
+.cx-flow-star::before { content:"\2605" / "";font-size:var(--hfx-icon-lg);line-height:1; }
+.cx-flow-star.cx-flow-star-on { color:var(--hfx-color-status-warn-fg); }
+.cx-flow-star:has(> input:focus-visible) { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:calc(var(--hfx-focus-width) * -1);border-radius:var(--hfx-radius-control); }
+.cx-flow-star:has(> input:disabled) { cursor:default; }
+@media (forced-colors:active) { .cx-flow-star.cx-flow-star-on { color:Highlight; } }

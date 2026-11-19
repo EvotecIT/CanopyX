@@ -236,12 +236,13 @@ Scheduler-style views have four more. `CanopyGridPresenter.State(tones).WithPill
 view.GetColumn("name").Presenter = CanopyGridPresenter.Link("address", newWindow: true);
 view.GetColumn("status").Presenter = CanopyGridPresenter.Icon("●");
 view.GetColumn("completion").Presenter = CanopyGridPresenter.Progress(maximum: 100);
+view.GetColumn("score").Presenter = CanopyGridPresenter.Rating(maximum: 5);
 view.GetColumn("enabled").Presenter = CanopyGridPresenter.Boolean();
 view.GetColumn("owners").Presenter = CanopyGridPresenter.List(", ", limit: 2);
 view.GetColumn("notes").Presenter = CanopyGridPresenter.LongText();
 ```
 
-The referenced columns must be declared; progress uses a numeric column, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
+The referenced columns must be declared; progress and rating use numeric columns, while links, booleans and lists use text columns with typed raw cells. Links allow HTTP(S), mailto and relative offline files; invalid destinations remain text. Icons accompany text alternatives. Lists and notes open plain-text dialogs outside fixed-height rows, retaining keyboard focus and query cancellation. Custom host renderers take precedence. A rating shows the value rounded to whole filled stars, then empty ones up to its maximum (2 to 10), and reads as "4.3 / 5"; static output writes the stars and the number. These presenters preserve search, sort and export values. The generated `rich-grid.html` example shows every presenter in paged and continuous, light and dark views.
 
 ### Export formats
 

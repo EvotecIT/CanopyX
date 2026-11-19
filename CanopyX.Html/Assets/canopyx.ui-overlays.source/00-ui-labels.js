@@ -8,6 +8,7 @@
     toastWarning: "Warning", toastDanger: "Error", toastNeutral: "Notice",
     lightboxTitle: "Gallery", lightboxPrevious: "Previous", lightboxNext: "Next", lightboxZoomIn: "Zoom in", lightboxZoomOut: "Zoom out",
     lightboxZoomReset: "Fit to screen", lightboxError: "This item could not be loaded",
+    carouselRole: "carousel", carouselSlideRole: "slide", carouselSlide: "Slide {current} of {total}", carouselPrevious: "Previous slide", carouselNext: "Next slide", carouselPicker: "Choose a slide", carouselMotionDisabled: "Automatic slides are disabled by reduced motion", ratingValue: "{value} of {max}",
     accordionSearch: "Filter sections", accordionNoMatches: "No matching sections", accordionCopyTitle: "Copy title", accordionCopied: "Copied",
     stepperStepOf: "Step {current} of {total}", stepperBack: "Back", stepperNext: "Next", stepperFinish: "Finish",
     stepperSkip: "Skip", stepperSaveDraft: "Save draft", stepperAllSteps: "All steps", stepperOptional: "Optional",

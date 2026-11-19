@@ -18,6 +18,14 @@
   "LightboxZoomOut": ["Pomniejsz", "Verkleinern", "Reducir", "Zoom arrière", "Riduci"],
   "LightboxZoomReset": ["Dopasuj do ekranu", "An Bildschirm anpassen", "Ajustar a la pantalla", "Ajuster à l’écran", "Adatta allo schermo"],
   "LightboxError": ["Nie udało się wczytać tego elementu", "Dieses Element konnte nicht geladen werden", "No se pudo cargar este elemento", "Impossible de charger cet élément", "Impossibile caricare questo elemento"],
+  "CarouselRole": ["karuzela", "Karussell", "carrusel", "carrousel", "carosello"],
+  "CarouselSlideRole": ["slajd", "Folie", "diapositiva", "diapositive", "diapositiva"],
+  "CarouselSlide": ["Slajd {current} z {total}", "Folie {current} von {total}", "Diapositiva {current} de {total}", "Diapositive {current} sur {total}", "Diapositiva {current} di {total}"],
+  "CarouselPrevious": ["Poprzedni slajd", "Vorherige Folie", "Diapositiva anterior", "Diapositive précédente", "Diapositiva precedente"],
+  "CarouselNext": ["Następny slajd", "Nächste Folie", "Diapositiva siguiente", "Diapositive suivante", "Diapositiva successiva"],
+  "CarouselPicker": ["Wybierz slajd", "Folie wählen", "Elegir una diapositiva", "Choisir une diapositive", "Scegli una diapositiva"],
+  "CarouselMotionDisabled": ["Automatyczne slajdy są wyłączone przez ograniczenie ruchu", "Automatische Folien sind wegen reduzierter Bewegung deaktiviert", "Las diapositivas automáticas están desactivadas por la reducción de movimiento", "Les diapositives automatiques sont désactivées par la réduction des animations", "Le diapositive automatiche sono disattivate dalla riduzione del movimento"],
+  "RatingValue": ["{value} z {max}", "{value} von {max}", "{value} de {max}", "{value} sur {max}", "{value} su {max}"],
   "CalendarEditOccurrence": [
     "Edytuj to wystąpienie",
     "Dieses Vorkommen bearbeiten",
@@ -3995,6 +4003,7 @@
     "(facultatif)",
     "(facoltativo)"
   ],
+  "FlowRatingValue": ["{value} z {max}", "{value} von {max}", "{value} de {max}", "{value} sur {max}", "{value} su {max}"],
   "FlowStepOptional": [
     "Opcjonalny",
     "Optional",
