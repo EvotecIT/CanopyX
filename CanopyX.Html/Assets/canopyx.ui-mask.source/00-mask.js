@@ -86,16 +86,18 @@ UI_IMPL.mask = (root, options = {}, signal) => {
   input.addEventListener('compositionend', apply, { signal });
   // Delete or Backspace next to separators would only remove what formatting puts back, so they also remove the typed
   // character beyond them. The edit is announced with an input event, as the browser's own edit would be.
-  const literal = at => ipv4 ? input.value[at] === '.' : tokens[at]?.literal !== undefined && tokens[at].literal === input.value[at];
+  // Positions count Unicode characters, as the tokens do, so a literal outside the BMP (an emoji) is skipped whole.
+  const literal = (chars, at) => ipv4 ? chars[at] === '.' : tokens[at]?.literal !== undefined && tokens[at].literal === chars[at];
   input.addEventListener('beforeinput', event => {
-    const value = input.value, at = input.selectionStart, forward = event.inputType === 'deleteContentForward';
-    if (!forward && event.inputType !== 'deleteContentBackward' || at === null || at !== input.selectionEnd) return;
+    const value = input.value, caret = input.selectionStart, forward = event.inputType === 'deleteContentForward';
+    if (!forward && event.inputType !== 'deleteContentBackward' || caret === null || caret !== input.selectionEnd) return;
+    const chars = [...value], at = [...value.slice(0, caret)].length;
     let edge = forward ? at : at - 1;
-    while (edge >= 0 && edge < value.length && literal(edge)) edge += forward ? 1 : -1;
-    if (edge === (forward ? at : at - 1) || edge < 0 || edge >= value.length) return;
+    while (edge >= 0 && edge < chars.length && literal(chars, edge)) edge += forward ? 1 : -1;
+    if (edge === (forward ? at : at - 1) || edge < 0 || edge >= chars.length) return;
     event.preventDefault();
-    const [from, to] = forward ? [at, edge + 1] : [edge, at];
-    input.value = value.slice(0, from) + value.slice(to); input.setSelectionRange(from, from);
+    const [from, to] = forward ? [at, edge + 1] : [edge, at], offset = chars.slice(0, from).join('').length;
+    input.value = chars.slice(0, from).join('') + chars.slice(to).join(''); input.setSelectionRange(offset, offset);
     input.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: event.inputType }));
   }, { signal });
   // A form reset restores the default value after its reset event, so the mask reads the input once the reset is done.
