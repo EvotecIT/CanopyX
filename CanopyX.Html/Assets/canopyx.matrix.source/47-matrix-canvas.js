@@ -47,7 +47,8 @@
           if (!tile) { tile = h("canvas", "cx-mx-canvas"); tile.setAttribute("aria-hidden", "true"); }
           tile._drawn = null; tiles.set(index, tile); row.insertBefore(tile, row._total);
         }
-        if (tile._drawn !== version) { this.drawTile(tile, entry, index, ratio); tile._drawn = version; }
+        // A tile drawn while its context is lost stays undrawn, so the next render after contextrestored paints it.
+        if (tile._drawn !== version) { this.drawTile(tile, entry, index, ratio); tile._drawn = tile.getContext("2d").isContextLost?.() ? null : version; }
       }
     },
     drawTile(canvas, entry, index, ratio) {
