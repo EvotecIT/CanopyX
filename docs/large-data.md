@@ -84,7 +84,7 @@ grid.SaveHtmlPage("inventory-small.html", new CanopyHtmlOptions { RowData = new 
 - `CompactGzip` makes the file several times smaller. The browser inflates every chunk with `DecompressionStream`, which every current browser has; an older browser shows an error instead of rows.
 - A chunk that fails to load or decode fails the query that waited for it; the grid's Retry (or `retry()`) starts the decoding over. Decoding is local work, so the request deadline (`requestTimeoutMs`, 30 seconds by default for host sources) does not apply to it unless the host sets one.
 - `CanopyGridRowData` gives the same output to hosts that write pages themselves: `ToJson()` for the grid document, `GetChunk(index)` for each chunk script.
-- Decoding stays on the main thread, in short tasks. A worker would parse off the main thread, but handing a million parsed rows back to the page costs a copy of about the same size as parsing them, and pages opened from `file://` cannot start a worker from a script file (only from a blob); chunks that yield between them keep the page responsive without either cost.
+- Decoding stays on the main thread, in short tasks: within a chunk, rows are expanded and checked in slices of about 8 ms that yield to the page, so even at 4x CPU no decoding task reaches 50 ms. Repeated short texts in a column (a domain, a department, a state) share one string while the column has few distinct values, which takes about 15% off the heap of a directory-shaped grid. A worker would parse off the main thread, but handing a million parsed rows back to the page costs a copy of about the same size as parsing them, and pages opened from `file://` cannot start a worker from a script file (only from a blob); chunks that yield between them keep the page responsive without either cost.
 
 ## Grid bundles
 
@@ -106,7 +106,8 @@ These apply without any option:
 
 - A view the runtime parsed from the page is used as it is; only a view a host script passes to `createDataGrid` is copied first. A large inline dataset is parsed once instead of twice.
 - Sorting reads each row's sort keys once per sort instead of in every comparison (a date key parses its text), which makes the first sort of a large dataset many times faster. Groupable grids and grids with plugins sort the same way; only a column with a plugin comparator or alternate sort fields compares rows.
-- Search and filters fold ASCII text with the engine's own lowercase conversion, and use the full folding table only for other characters.
+- Search tests an ASCII term against the raw cell text with a case-insensitive pattern instead of folding a copy of every cell; the pattern also lists the few characters that fold onto ASCII letters, so it finds exactly what folding finds. Other terms fold the cells with the full table.
+- Over more than 20,000 inline rows, search and filters run in slices of about 10 ms that yield to the page, so typing and scrolling keep their turn, and a newer query stops an older one between slices. Regex searches keep their single 50 ms budget and stay in one pass.
 - Rows are virtual: a million rows never become a million elements, and logical heights above the browser's limit use a bounded scrollbar. Columns are not virtualised; every visible column of the rows in view is drawn, which is cheap for the column counts of reports.
 
 ## Measured numbers
@@ -153,7 +154,7 @@ Mounting when visible moves the cost of a hidden section to the moment it is ope
 
 What does not change: trees, a report that mounts every view at load and hosted grids take the same time as before. Measured in alternating rounds on the same machine (5 runs each, CPU slowed four times), the inline tree of 101,010 nodes showed its first rows in 2,123 and 2,039 ms before and 2,085 and 2,260 ms after, the tree bundle in 845 and 692 ms before and 761 and 464 ms after, and the report that mounts every view in 3,831 and 3,723 ms before and 3,826 and 3,312 ms after. Timings on a shared workstation drift by tens of percent over hours, so compare within one run.
 
-Search still scans every row: a quick search over a million rows takes about 1.4 s at normal speed. For datasets beyond that, a hosted source answers each query from the host.
+Search still scans every row, in slices that keep the page responsive. For datasets beyond that, a hosted source answers each query from the host.
 
 ## Directory-sized reports
 
@@ -231,11 +232,23 @@ shown where they differ by more than 15%.
 | matrix-500000 | 1.9 MB | 357 | 317 | 169 | 119 | 119 | – | 108 | 60 | 5 MB |
 | changes-500000 | 2.1 MB | 357 | 308 | 143 | – | 94 | – | 74 | 61 | 6 MB |
 
+Decoding in slices, sliced search and shared strings changed the 500,000-row user inventory as below (Apple M5 Max, median of
+three runs, single file / bundle; *task* is the longest main-thread task during that step):
+
+| CPU | All rows | Longest decoding task | Search | Longest search task | Filter task | Heap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1x | 1,379 → 1,496 / 1,325 → 1,403 | 0 → 0 | 429 → 256 / 423 → 249 | 425 → 0 / 418 → 0 | 79 → 0 | 370 → 314 MB |
+| 4x | 5,760 → 6,526 / 5,722 → 5,747 | 72 → 0 / 65 → 0 | 1,791 → 1,095 / 1,800 → 1,066 | 1,773 → 89 / 1,782 → 82 | 356 → 91 | 370 → 314 MB |
+
+Decoding all rows of the single file takes up to an eighth longer because it yields more often and shares strings; the bundle barely changes, and the first rows show as before.
+The tables above were measured before these changes.
+
 What these numbers mean for a report:
 
 - **Flat grids hold 500,000 rows in one file.** The writer's default (compressed row data above 25,000 rows) keeps a 500,000-row
   user inventory at 40 MB; its first rows show in 0.1 to 0.2 s (0.6 to 0.8 s at 4x), the rest decodes in short tasks, and sort,
-  filter, group and search take 0.1 to 0.4 s (0.4 to 1.9 s at 4x). The browser holds about 370 MB. A grid bundle is not lighter:
+  filter, group and search take 0.1 to 0.4 s (0.4 to 1.2 s at 4x), and search and filters never hold the page for more than
+  about 0.1 s at 4x. The browser holds about 315 MB. A grid bundle is not lighter:
   it reads every row too, so it helps only where one file is not allowed. Beyond this, or for data that changes, use a hosted
   source, which pages on the host.
 - **Trees bundle well.** A 500,000-node tree is 61 MB inline and shows its first rows in 0.4 s (1.6 s at 4x, with a 0.9 s task
@@ -261,7 +274,8 @@ node bench/scale-benchmark.mjs --fixtures D:\Scratch\scale\scale --runs 1 --cpu 
 
 `--tiers 50000,500000` limits the tiers the examples app writes; `--cases` picks pages by name. The opt-in
 `scale-performance.spec.mjs` keeps budgets for a 500,000-row groupable grid (sort 1.5 s, filter 1 s, group and search 2 s, at
-normal speed in Chromium), and the `Benchmark` category checks the size of a plain cell.
+normal speed in Chromium), `scale-responsiveness.spec.mjs` writes the 500,000-user page and keeps every decoding and search task
+under 250 ms at 4x CPU, and the `Benchmark` category checks the size of a plain cell.
 
 ## Opt-in load benchmarks
 

@@ -1,8 +1,9 @@
   // ---------- row data: compact rows in chunks (docs/data-protocol.md, "Row data") ----------
   // The chunks come from rowData.chunks (an array), from the host's application/x-canopyx-rows scripts (a count), or from
-  // sidecar files under rowData.base (a count, for bundles). Each is decoded, validated and appended in its own task, so
-  // the page stays responsive and paints between chunks; a gzip chunk is base64 text inflated with DecompressionStream.
-  const ROW_SCRIPTS = ':scope>script[type="application/x-canopyx-rows"]';
+  // sidecar files under rowData.base (a count, for bundles). A chunk's rows are expanded, validated and appended in slices
+  // of a few milliseconds that yield to the page between them, so input and paint keep their turn also on a slow CPU; a
+  // gzip chunk is base64 text inflated with DecompressionStream.
+  const ROW_SCRIPTS = ':scope>script[type="application/x-canopyx-rows"]', ROW_SLICE = 256, ROW_SLICE_MS = 8;
   const nextTask = () => globalThis.scheduler?.yield ? scheduler.yield() : new Promise(resolve => setTimeout(resolve));
 
   async function inflateRows(text) {
@@ -32,6 +33,16 @@
     const files = [];
     rows.length = 0;
     const read = index => Array.isArray(chunks) ? chunks[index] : sidecar ? files[index] ||= loadSidecar(data.base, view.id, "rows/" + index) : scripts[index].textContent;
+    // Repeated short texts (a domain, a department, a state) share one string instead of one copy per row. A column shares
+    // while it has few distinct texts and stops at the limit, so columns of unique values (names, ids) cost no lookups.
+    const shared = columns.map(() => new Map()), share = (value, c) => {
+      const seen = shared[c];
+      if (!seen || typeof value !== "string" || value.length > 64) return value;
+      const known = seen.get(value);
+      if (known !== undefined) return known;
+      if (seen.size < 1024) seen.set(value, value); else shared[c] = null;
+      return value;
+    };
     // A compact row is [id, cell, ...] in the order of rowData.columns, or [{ id, tone?, className? }, cell, ...]; trailing
     // empty cells may be left out, and null is an empty cell as in the object form.
     const expand = row => {
@@ -40,7 +51,7 @@
       for (let c = 1; c < row.length; c++) {
         if (row[c] === undefined) throw new Error("CanopyX: compact grid cells cannot be undefined; use null for an empty cell.");
         // A column named __proto__ is an own property, as JSON.parse makes it in the object form.
-        if (row[c] != null) columns[c - 1] === "__proto__" ? Object.defineProperty(cells, "__proto__", { value: row[c], enumerable: true, writable: true, configurable: true }) : cells[columns[c - 1]] = row[c];
+        if (row[c] != null) columns[c - 1] === "__proto__" ? Object.defineProperty(cells, "__proto__", { value: row[c], enumerable: true, writable: true, configurable: true }) : cells[columns[c - 1]] = share(row[c], c - 1);
       }
       if (key === null || typeof key !== "object") return { id: key, cells };
       const record = { id: key.id, cells };
@@ -69,21 +80,30 @@
           chunk = JSON.parse(chunk);
         }
         if (!Array.isArray(chunk)) throw new Error("CanopyX: a row data chunk is not an array of rows.");
-        const decoded = validateGridRows(chunk.map(expand), view.columns, ids, repairGridCell);
-        // Identity order puts canonical integer ids first, as numbers. Rows written by an older writer in plain code-unit order
-        // are still read: from the first row out of order on, queries wait for every chunk, like unordered rows, and the windows
-        // answered before it are drawn again in identity order when decoding finishes.
-        if (ordered) for (const row of decoded) {
-          if (previous !== null && gridIdOrder(previous, row.id) >= 0) {
-            if (!(previous < row.id)) throw new Error("CanopyX: row data is not in its declared identity order.");
-            ordered = false; legacyOrder = true;
-            // setQuery retires page loads; an existing pending query has already done so and must keep its own promise.
-            retirePrefix();
-            break;
+        let started = performance.now();
+        for (let from = 0; from < chunk.length && rows.length <= data.count; from += ROW_SLICE) {
+          const decoded = validateGridRows(chunk.slice(from, from + ROW_SLICE).map(expand), view.columns, ids, repairGridCell);
+          // Identity order puts canonical integer ids first, as numbers. Rows written by an older writer in plain code-unit
+          // order are still read: from the first row out of order on, queries wait for every chunk, like unordered rows, and
+          // the windows answered before it are drawn again in identity order when decoding finishes.
+          if (ordered) for (const row of decoded) {
+            if (previous !== null && gridIdOrder(previous, row.id) >= 0) {
+              if (!(previous < row.id)) throw new Error("CanopyX: row data is not in its declared identity order.");
+              ordered = false; legacyOrder = true;
+              // setQuery retires page loads; an existing pending query has already done so and must keep its own promise.
+              retirePrefix();
+              break;
+            }
+            previous = row.id;
           }
-          previous = row.id;
+          for (const row of decoded) rows.push(row);
+          if (performance.now() - started > ROW_SLICE_MS) {
+            advance(); waitForChunk();
+            await nextTask(); active();
+            started = performance.now();
+          }
         }
-        for (const row of decoded) rows.push(row);
+        chunk = null;
         if (rows.length > data.count) break;
         files[index] = null;
         advance(); waitForChunk();
@@ -92,7 +112,7 @@
       active();
       if (rows.length !== data.count) throw new Error("CanopyX: row data holds " + rows.length + " rows, not " + data.count + ".");
       // The grid's copies of chunks given in the document are released once all rows are decoded.
-      finished = true; ids.clear();
+      finished = true; ids.clear(); shared.fill(null);
       // A pending query may have expired while the final sidecar loaded. Retry the accepted query with the complete source,
       // dropping error pages too, while preserving a newer user query if one is still pending.
       if (legacyOrder) retirePrefix();

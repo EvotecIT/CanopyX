@@ -17,7 +17,8 @@
 //   bytes        the page and every file beside it
 //   firstMs      navigation start to the frame after the view reports ready and shows a row
 //   allRowsMs    a grid with row data: until every row is decoded
-//   longestMs    the longest main-thread task until then
+//   longestMs    the longest main-thread task until then; decodeLongestMs the longest after the first rows show
+//   <operation>LongestMs   the longest main-thread task while each operation below ran (searchLongestMs for search)
 //   sortMs, filterMs, groupMs, searchMs   each operation until painted (grids; trees and matrices where they have it)
 //   expandMs     trees: opening the largest group (up to 5,000 members) until painted
 //   fps, jank    frames per second and frames over 50 ms while wheel-scrolling for about two seconds
@@ -94,7 +95,7 @@ async function heap(cdp) {
   return (metrics.find((m) => m.name === "JSHeapUsedSize") || {}).value / 1048576;
 }
 
-/** Runs body(api) in the page and returns the milliseconds until the frame after it settles. */
+/** Runs body(api) in the page; the milliseconds until the frame after it settles, and its longest main-thread task. */
 function timed(page, body) {
   return page.evaluate(async (source) => {
     const host = document.querySelector("[data-cx-ready]"), api = host.canopyx;
@@ -102,7 +103,11 @@ function timed(page, body) {
     const started = performance.now();
     await run(api, host);
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    return performance.now() - started;
+    const ended = performance.now();
+    // Long tasks are reported after they end; a short wait lets the last one arrive.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const longest = window.__cxScale.long.filter(([start, duration]) => start + duration >= started && start <= ended).reduce((max, [, duration]) => Math.max(max, duration), 0);
+    return { ms: ended - started, longest };
   }, body);
 }
 
@@ -171,7 +176,10 @@ async function runOnce(item, cpu) {
     const result = await page.evaluate(() => {
       const t = window.__cxScale, until = Math.max(t.first, t.allRows);
       const tasks = t.long.filter(([start]) => start <= until);
+      // Decoding runs after the first rows show; the tasks before them are the first layout.
+      const decoding = t.long.filter(([start, d]) => start + d >= t.first && start <= t.allRows);
       return { firstMs: t.first, allRowsMs: t.allRows, longestMs: tasks.reduce((max, [, d]) => Math.max(max, d), 0), longTasks: tasks.length,
+        decodeLongestMs: decoding.reduce((max, [, d]) => Math.max(max, d), 0),
         domNodes: document.getElementsByTagName("*").length };
     });
     result.heapLoadMB = await heap(cdp);
@@ -179,7 +187,7 @@ async function runOnce(item, cpu) {
     const operations = OPERATIONS[item.kind];
     for (const [index, [key, body]] of operations.entries()) {
       if (index === (item.kind === "tree" ? 1 : 0)) Object.assign(result, await scroll(page));
-      try { result[key] = await timed(page, body); } catch (error) { result[key + "Error"] = String(error.message || error).split("\n")[0]; }
+      try { const timing = await timed(page, body); result[key] = timing.ms; result[key.replace(/Ms$/, "LongestMs")] = timing.longest; } catch (error) { result[key + "Error"] = String(error.message || error).split("\n")[0]; }
     }
     result.heapAfterMB = await heap(cdp);
     if (crashed) throw new Error("renderer crashed");
@@ -231,7 +239,7 @@ for (const tier of [...new Set(Object.values(report.cases).map((c) => c.tier))])
       if (m.failed === m.runs) { console.log("| " + name + " | " + mb(entry.bytes) + " | failed: " + m.failures.join("; ") + " | | | | | | | | |"); continue; }
       const ms = (key) => m[key + "Error"] ? "error" : m[key] == null ? "-" : f(m[key]) + " ms";
       console.log("| " + name + " | " + mb(entry.bytes) + " | " + ms("firstMs") + " | " + ms("allRowsMs") + " | " + ms("longestMs") + " | " + ms("sortMs") + " | " + ms("filterMs") + " | " +
-        (m.expandMs != null || m.expandMsError ? ms("expandMs") : ms("groupMs")) + " | " + ms("searchMs") + " | " + f(m.fps) + " (" + f(m.jank) + ") | " + f(m.heapLoadMB) + " / " + f(m.heapAfterMB) + " MB |");
+        (m.expandMs != null || m.expandMsError ? ms("expandMs") : ms("groupMs")) + " | " + ms("searchMs") + (m.searchLongestMs != null ? " (task " + f(m.searchLongestMs) + ")" : "") + " | " + f(m.fps) + " (" + f(m.jank) + ") | " + f(m.heapLoadMB) + " / " + f(m.heapAfterMB) + " MB |");
     }
   }
 }

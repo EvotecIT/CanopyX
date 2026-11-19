@@ -278,7 +278,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "bd51c7af7b207a6e",
+      "version": "4de81ab598f562e0",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"

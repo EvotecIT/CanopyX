@@ -50,15 +50,50 @@
     return [...text.matchAll(/"([^"]*)(?:"|$)|([^\s"]+)/g)].map(match => foldText(match[1] === undefined ? match[2] : match[1])).filter(Boolean);
   }
 
-  function gridMatchesSearch(row, terms, columns) {
-    return terms.every(term => columns.some(column => {
-      const cell = row.cells[column.id], text = isCellObject(cell) && cell.searchText !== undefined ? cell.searchText : cellValue(cell);
-      if (term.pattern) {
-        if (performance.now() > term.deadline) throw new Error("CanopyX: regex search exceeded its 50 ms evaluation budget.");
-        const input = text == null ? "" : String(text);
-        // Like the .NET providers, a cell over 4,096 code units never matches; the row can still match on its other cells.
-        return input.length <= 4096 && term.pattern.test(input);
+  // An ASCII term searches the raw text with a case-insensitive pattern instead of folding a copy of every cell. Folding
+  // lowercases ASCII, which the i flag matches, and maps a few other characters onto ASCII letters (the Kelvin sign to
+  // "k"); the pattern lists those beside the letter, so it finds exactly what folding would. Other terms fold the cells.
+  const GRID_ASCII = /^[\0-\x7f]*$/, GRID_TERM_PATTERNS = new Map();
+  let gridFoldsToAscii = null;
+  function gridTermPattern(term) {
+    let pattern = GRID_TERM_PATTERNS.get(term);
+    if (pattern !== undefined) return pattern;
+    if (GRID_TERM_PATTERNS.size >= 64) GRID_TERM_PATTERNS.clear();
+    pattern = null;
+    if (GRID_ASCII.test(term)) {
+      if (!gridFoldsToAscii) {
+        gridFoldsToAscii = new Map();
+        for (let code = 128; code < 65536; code++) {
+          const folded = foldText(String.fromCharCode(code)).charCodeAt(0);
+          if (folded < 128) gridFoldsToAscii.set(folded, (gridFoldsToAscii.get(folded) || "") + "\\u" + code.toString(16).padStart(4, "0"));
+        }
       }
-      return foldText(text).includes(term);
-    }));
+      let source = "";
+      for (const char of term) {
+        const others = gridFoldsToAscii.get(char.charCodeAt(0)), escaped = /[.*+?^${}()|[\]\\\/-]/.test(char) ? "\\" + char : char;
+        source += others ? "[" + escaped + others + "]" : escaped;
+      }
+      pattern = new RegExp(source, "i");
+    }
+    GRID_TERM_PATTERNS.set(term, pattern);
+    return pattern;
   }
+
+  function gridMatchesSearch(row, terms, columns) {
+    for (const term of terms) {
+      const ascii = term.pattern ? null : gridTermPattern(term);
+      let found = false;
+      for (let index = 0; index < columns.length && !found; index++) {
+        const cell = row.cells[columns[index].id], text = isCellObject(cell) && cell.searchText !== undefined ? cell.searchText : cellValue(cell);
+        if (term.pattern) {
+          if (performance.now() > term.deadline) throw new Error("CanopyX: regex search exceeded its 50 ms evaluation budget.");
+          const input = text == null ? "" : String(text);
+          // Like the .NET providers, a cell over 4,096 code units never matches; the row can still match on its other cells.
+          found = input.length <= 4096 && term.pattern.test(input);
+        } else if (text != null) found = ascii ? ascii.test(typeof text === "string" ? text : String(text)) : foldText(text).includes(term);
+      }
+      if (!found) return false;
+    }
+    return true;
+  }
+
