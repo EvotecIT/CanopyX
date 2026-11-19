@@ -64,6 +64,8 @@
     let ink = signatureColour(settings.ink, null), background = signatureColour(settings.background, null);
     group.setAttribute("role", "group"); group.dataset.cxPart = "signature";
     pad.setAttribute("role", "img"); pad.setAttribute("aria-label", labels.pad); pad.dataset.cxPart = "signature-pad";
+    // A read-only pad has no controls, so focus() lands on the picture itself; it stays out of the Tab order.
+    if (readOnly) { pad.tabIndex = -1; mode.hidden = true; }
     if (background) pad.style.background = background;
     setText(typedText, labels.typed);
     typedInput.type = "text"; typedInput.autocomplete = "name"; typedInput.maxLength = 120; typedInput.disabled = readOnly;
@@ -160,7 +162,7 @@
     resize.observe(pad);
     signal?.addEventListener("abort", () => resize.disconnect(), { once: true });
     return {
-      element: group, pad, focus: () => (typing ? typedInput : mode.hidden ? pad : mode).focus(), getValue: () => value,
+      element: group, pad, focus: () => (typing ? typedInput : readOnly ? pad : mode).focus(), getValue: () => value,
       setValue: next => { if (next !== null && !signatureFits(next)) throw new Error("CanopyX: a signature is { svg, png }."); strokes = []; current = null; typing = false; typedField.hidden = true; typedInput.value = ""; value = next; show(next); keep(); paint(); },
       clear: () => { strokes = []; current = null; typedInput.value = ""; commit(); },
       destroy: () => { resize.disconnect(); strokes = []; }

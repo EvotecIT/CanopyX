@@ -151,6 +151,13 @@ test('a refused change brings back the accepted text and strokes, so the pad sho
   expect(await submitted()).toContain('Ali');
 });
 
+test('focus() reaches a read-only pad without adding it to the Tab order', async ({ page }) => {
+  await openUi(page, '<div id="sign"></div>');
+  await page.evaluate(async () => { const pad = CanopyX.signature('#sign', { readOnly: true }); await pad.ready; await pad.focus(); });
+  await expect(page.getByRole('img', { name: 'Signature pad' })).toBeFocused();
+  expect(await page.getByRole('img', { name: 'Signature pad' }).getAttribute('tabindex')).toBe('-1');
+});
+
 test('destroy removes the hidden input the signature made and keeps a host input', async ({ page }) => {
   await openUi(page, '<form id="form"><div id="made" data-name="made"></div><div id="own" data-name="own"><input type="hidden" name="own" value="kept"></div></form>');
   await page.evaluate(async () => { for (const id of ['#made', '#own']) await CanopyX.signature(id).ready; CanopyX.signature('#made').destroy(); CanopyX.signature('#own').destroy(); });

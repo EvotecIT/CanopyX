@@ -168,7 +168,7 @@
     {
       "name": "ui-signature",
       "label": "UI signature",
-      "version": "3164baa0cb16fada",
+      "version": "2e390825c396e436",
       "script": "canopyx-ui-signature.js",
       "style": "canopyx-ui-signature.css",
       "runtimes": [
@@ -523,7 +523,7 @@
     {
       "name": "flow-signature",
       "label": "flow signature",
-      "version": "3450d6fe49bb8a1d",
+      "version": "a5cdec96ceebc68d",
       "script": "canopyx-flow-signature.js",
       "style": "canopyx-flow-signature.css",
       "runtimes": [
