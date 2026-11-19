@@ -195,3 +195,10 @@ test('notify leaves a region whose panel was hidden after it was used', async ({
   await page.evaluate(() => { document.getElementById('panel').hidden = true; return CanopyX.notify({ message: 'Two', timeout: 0 }); });
   await expect(page.locator('#second .cx-toast')).toHaveCount(1);
 });
+
+test('notify skips a region a stylesheet hides', async ({ page }) => {
+  await openUi(page, '<style>.collapsed { display: none; }</style><div class="collapsed"><section id="hidden" data-cx-toasts></section></div><section id="shown" data-cx-toasts></section>');
+  await page.evaluate(() => CanopyX.notify({ message: 'Visible', timeout: 0 }));
+  await expect(page.locator('#shown .cx-toast')).toHaveCount(1);
+  await expect(page.locator('#hidden .cx-toast')).toHaveCount(0);
+});

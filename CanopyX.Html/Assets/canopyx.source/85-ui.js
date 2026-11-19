@@ -65,7 +65,8 @@
   // region a reader can see, never one inside a closed dialog or hidden content, else a new one at the end of the body.
   let notifyRoot = null;
   function notify(options) {
-    const usable = region => !region.closest("dialog:not([open]),[hidden]");
+    // Not rendered: inside a closed dialog, hidden content or anything a stylesheet hides.
+    const usable = region => !region.closest("dialog:not([open]),[hidden]") && region.checkVisibility?.() !== false;
     let root = notifyRoot && uiInstances.get(notifyRoot)?.has("toasts") && (!notifyRoot.isConnected || usable(notifyRoot)) ? notifyRoot : [...document.querySelectorAll("[data-cx-toasts]")].find(usable);
     if (!root) { root = h("section"); root.setAttribute("data-cx-toasts", ""); document.body.appendChild(root); }
     notifyRoot = root;
