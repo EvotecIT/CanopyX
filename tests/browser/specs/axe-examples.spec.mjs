@@ -41,6 +41,8 @@ for (const name of all) {
   const twin = name.endsWith("-dark.html") || all.includes(name.replace(/\.html$/, "-dark.html"));
   const schemes = twin ? [name.endsWith("-dark.html") ? "dark" : "light"] : ["light", "dark"];
   test(`axe finds no serious or critical violations on ${name}`, SCALE_PAGES.has(name) ? { tag: "@benchmark" } : {}, async ({ browser }, testInfo) => {
+    // A scale page can take minutes per scan, and a test runs up to four scans (two widths, and both schemes without a twin).
+    if (SCALE_PAGES.has(name)) test.setTimeout(20 * 60000);
     const found = [];
     for (const [width, options] of Object.entries(VIEWPORTS)) {
       const context = await browser.newContext({ ...options, colorScheme: schemes[0] });
