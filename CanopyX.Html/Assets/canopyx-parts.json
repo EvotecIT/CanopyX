@@ -153,7 +153,7 @@
     {
       "name": "ui-carousel",
       "label": "UI carousel",
-      "version": "5f0a25402f450908",
+      "version": "73150c5ba70dcd6b",
       "script": "canopyx-ui-carousel.js",
       "style": "canopyx-ui-carousel.css",
       "runtimes": [
