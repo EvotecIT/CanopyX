@@ -27,7 +27,7 @@ public sealed class CanopySelect {
     public CanopySelectOptions Options { get; }
 
     /// <summary>Renders the label, the wrapper and the native select with encoded text.</summary>
-    /// <exception cref="ArgumentException">An option is null, a single select starts with several values, or an address is unsafe.</exception>
+    /// <exception cref="ArgumentException">An option is null, a select starts with more values than it allows, or an address is unsafe.</exception>
     /// <exception cref="ArgumentOutOfRangeException">A count is out of range.</exception>
     public string ToHtmlFragment() {
         if (Options.MinLength < 0) throw new ArgumentOutOfRangeException(nameof(Options.MinLength), "The fewest characters cannot be negative.");
@@ -36,10 +36,11 @@ public sealed class CanopySelect {
         foreach (var item in Items) {
             if (item == null) throw new ArgumentException("Items cannot contain null entries.");
             if (item.Selected) selected++;
-            if (item.Flag != null && (item.Flag.Length != 2 || !char.IsLetter(item.Flag[0]) || !char.IsLetter(item.Flag[1]))) throw new ArgumentException("A flag is a two-letter country code.");
+            if (item.Flag != null && (item.Flag.Length != 2 || !AsciiLetter(item.Flag[0]) || !AsciiLetter(item.Flag[1]))) throw new ArgumentException("A flag is a two-letter country code.");
             if (item.Avatar != null) Address(item.Avatar);
         }
         if (!Options.Multiple && selected > 1) throw new ArgumentException("A single select starts with one value at most.");
+        if (Options.Multiple && selected > Options.Max) throw new ArgumentException("A multiple select cannot start with more values than Max.");
         if (Options.Source != null) Address(Options.Source);
         var html = new StringBuilder("<label");
         UiHtml.Attribute(html, "for", Id);
@@ -83,6 +84,8 @@ public sealed class CanopySelect {
         if (group != null) html.Append("</optgroup>");
         return html.Append("</select></div>").ToString();
     }
+
+    private static bool AsciiLetter(char c) => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z';
 
     private static void Address(string value) {
         foreach (var c in value) if (c < ' ' || c == '\u007f') throw new ArgumentException("An address cannot contain control characters.");

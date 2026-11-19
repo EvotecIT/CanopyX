@@ -7,11 +7,12 @@ UI_IMPL.select = (root, options = {}, signal) => {
   const native = root.querySelector('select');
   if (!native) throw new Error('CanopyX: a select needs a <select> element.');
   const multiple = native.multiple, tags = options.tags ?? data.tags === 'true', search = tags || (options.search ?? data.search !== 'false');
-  const max = Number(options.max ?? data.max ?? 0) || Infinity, minLength = Number(options.minLength ?? data.minLength ?? (options.load || data.source || options.source ? 1 : 0));
+  const max = Number(options.max ?? data.max ?? 0) || Infinity, minLength = Number(options.minLength ?? data.minLength ?? (search && (options.load || data.source || options.source) ? 1 : 0));
   const renderIcon = options.renderIcon, loader = selectLoader(options, root), id = (native.id || 'cx-select-' + Math.random().toString(36).slice(2)) + '-combo';
   let all = options.options ? options.options.map(selectOption) : selectReadNative(native), shown = [], active = -1, open = false, timer = 0, query = '';
-  const chosen = new Map(all.filter((option, at) => native.options[at]?.selected && (multiple || option.value !== '')).map(option => [option.value, option]));
-  if (!multiple && chosen.size > 1) chosen.clear();
+  // The native select's selected values, matched by value so options.options may differ in order and content.
+  const written = () => new Map([...native.selectedOptions].map(item => all.find(option => option.value === item.value && (multiple || item.value !== ''))).filter(Boolean).map(option => [option.value, option]));
+  let chosen = written();
 
   root.classList.add('cx-select'); root.dataset.cxPart = 'select'; root.dataset.multiple = String(multiple);
   native.classList.add('cx-select-native'); native.tabIndex = -1; native.setAttribute('aria-hidden', 'true');
@@ -22,9 +23,10 @@ UI_IMPL.select = (root, options = {}, signal) => {
   input.setAttribute('role', 'combobox'); input.setAttribute('aria-autocomplete', search ? 'list' : 'none'); input.setAttribute('aria-expanded', 'false'); input.setAttribute('aria-controls', id + '-list');
   input.readOnly = !search; input.disabled = native.disabled;
   const placeholder = options.placeholder ?? data.placeholder; if (placeholder) input.placeholder = placeholder;
-  // The page's label for the select names the combobox; aria-label on the select or the label option work too.
-  const label = native.id ? document.querySelector('label[for="' + CSS.escape(native.id) + '"]') : native.closest('label');
-  if (label) { label.id ||= id + '-label'; input.setAttribute('aria-labelledby', label.id); label.addEventListener('click', event => { event.preventDefault(); input.focus(); }, { signal }); }
+  // The select's aria-labelledby or its label (for= or wrapping) names the combobox; aria-label on the select or the label option work too.
+  const label = native.labels?.[0], named = native.getAttribute('aria-labelledby');
+  if (label) { label.id ||= id + '-label'; label.addEventListener('click', event => { event.preventDefault(); input.focus(); }, { signal }); }
+  if (named || label) input.setAttribute('aria-labelledby', named || label.id);
   else if (native.getAttribute('aria-label') || options.label) input.setAttribute('aria-label', options.label || native.getAttribute('aria-label'));
   toggle.type = 'button'; toggle.tabIndex = -1; toggle.setAttribute('aria-hidden', 'true'); toggle.disabled = native.disabled; toggle.dataset.cxPart = 'toggle';
   list.id = id + '-list'; list.setAttribute('role', 'listbox'); if (multiple) list.setAttribute('aria-multiselectable', 'true');
@@ -84,8 +86,9 @@ UI_IMPL.select = (root, options = {}, signal) => {
     else input.removeAttribute('aria-activedescendant');
   }
   function show() {
-    if (open || native.disabled) return;
-    open = true; popup.hidden = false; popup.showPopover?.(); input.setAttribute('aria-expanded', 'true'); root.dataset.state = 'open';
+    if (native.disabled) return;
+    // New results change the popup's size, so an open popup is placed again.
+    if (!open) { open = true; popup.hidden = false; popup.showPopover?.(); input.setAttribute('aria-expanded', 'true'); root.dataset.state = 'open'; }
     place(); highlight();
   }
   function hide() {
@@ -102,7 +105,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
   }
   /** Filters the options for the typed text, or asks the host; tags mode offers the text itself as a new value. */
   function filter(text, keep) {
-    query = text; clearTimeout(timer);
+    query = text; clearTimeout(timer); loader?.cancel();
     const offer = items => {
       const exact = items.some(option => selectFold(option.label) === selectFold(text.trim()) || option.value === text.trim());
       shown = tags && text.trim() && !exact ? [...items, { value: text.trim(), label: fill(labels.selectCreate, { text: text.trim() }), created: true }] : items;
@@ -125,10 +128,13 @@ UI_IMPL.select = (root, options = {}, signal) => {
   function choose(at, source) {
     const option = shown[at];
     if (!option || option.disabled) return;
-    if (option.created) { const made = selectOption({ value: option.value, label: option.value }); all.push(made); chosen.set(made.value, made); }
-    else if (multiple && chosen.has(option.value)) chosen.delete(option.value);
+    if (multiple && chosen.has(option.value)) { if (!option.created) chosen.delete(option.value); }
     else if (multiple && chosen.size >= max) return;
-    else { if (!multiple) chosen.clear(); chosen.set(option.value, option); }
+    else {
+      const made = option.created ? selectOption({ value: option.value, label: option.value }) : option;
+      if (option.created && !all.some(entry => entry.value === made.value)) all.push(made);
+      if (!multiple) chosen.clear(); chosen.set(made.value, made);
+    }
     sync(source);
     if (multiple) { input.value = ''; filter('', true); } else hide();
   }
@@ -145,7 +151,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
   input.addEventListener('keydown', event => {
     if (event.isComposing) return;
     const keys = { ArrowDown: () => move(1), ArrowUp: () => move(-1), Home: () => open && move('first'), End: () => open && move('last'),
-      Enter: () => open && active >= 0 ? choose(active, 'keyboard') : show(), Escape: () => open ? hide() : (chosen.size && !multiple ? (chosen.clear(), sync('keyboard')) : null),
+      Enter: () => open ? active >= 0 && choose(active, 'keyboard') : move(1), Escape: () => open ? hide() : (chosen.size && !multiple ? (chosen.clear(), sync('keyboard')) : null),
       ' ': () => !search ? (open && active >= 0 ? choose(active, 'keyboard') : filter('', true)) : 'type',
       Backspace: () => multiple && !input.value && chosen.size ? (chosen.delete([...chosen.keys()].at(-1)), sync('keyboard')) : 'type' };
     if (event.key === 'Tab') { hide(); return; }
@@ -163,7 +169,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
   document.addEventListener('pointerdown', event => { if (open && !root.contains(event.target)) hide(); }, { signal, capture: true });
   addEventListener('resize', () => open && place(), { signal });
   document.addEventListener('scroll', () => open && place(), { signal, capture: true });
-  native.form?.addEventListener('reset', () => setTimeout(() => { if (signal?.aborted) return; chosen.clear(); all.forEach((option, at) => native.options[at]?.selected && option.value !== '' && chosen.set(option.value, option)); paintChosen(); }), { signal });
+  native.form?.addEventListener('reset', () => setTimeout(() => { if (signal?.aborted) return; chosen = written(); paintChosen(); }), { signal });
   signal?.addEventListener('abort', () => {
     clearTimeout(timer); loader?.cancel(); hide(); field.remove(); status.remove(); popup.remove();
     native.classList.remove('cx-select-native'); native.removeAttribute('tabindex'); native.removeAttribute('aria-hidden');
@@ -173,7 +179,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
     select: value => { chosen.clear(); for (const item of [].concat(value ?? [])) { const option = all.find(entry => entry.value === String(item)); if (option) { chosen.set(option.value, option); if (!multiple) break; } } sync('api'); return [...chosen.keys()]; },
     clear: () => { chosen.clear(); sync('api'); return true; },
     open: () => { input.focus(); filter('', true); return true; }, close: () => { hide(); return true; },
-    refresh: () => { all = options.options ? options.options.map(selectOption) : selectReadNative(native); for (const value of [...chosen.keys()]) if (!all.some(option => option.value === value)) chosen.delete(value); paintChosen(); },
+    refresh: () => { all = options.options ? options.options.map(selectOption) : selectReadNative(native); const size = chosen.size; for (const value of [...chosen.keys()]) if (!all.some(option => option.value === value)) chosen.delete(value); chosen.size < size ? sync('api') : paintChosen(); },
     getState: () => ({ value: multiple ? [...chosen.keys()] : [...chosen.keys()][0] ?? null, open, query })
   };
 };

@@ -26,6 +26,8 @@ public sealed class UiSelectBuilderTests {
         }
         Refused<ArgumentException>(select => { select.Items.Add(new CanopySelectOption("a", "A") { Selected = true }); select.Items.Add(new CanopySelectOption("b", "B") { Selected = true }); });
         Refused<ArgumentException>(select => select.Items.Add(new CanopySelectOption("a", "A") { Flag = "POL" }));
+        Refused<ArgumentException>(select => select.Items.Add(new CanopySelectOption("a", "A") { Flag = "日本" }));
+        Refused<ArgumentException>(select => { select.Items.Add(new CanopySelectOption("a", "A") { Selected = true }); select.Items.Add(new CanopySelectOption("b", "B") { Selected = true }); }, new CanopySelectOptions { Multiple = true, Max = 1 });
         Refused<ArgumentException>(select => select.Items.Add(new CanopySelectOption("a", "A") { Avatar = "java\tscript:alert(1)" }));
         Refused<ArgumentException>(select => { }, new CanopySelectOptions { Source = "javascript:alert(1)" });
         Refused<ArgumentOutOfRangeException>(select => { }, new CanopySelectOptions { Max = 0 });

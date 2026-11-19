@@ -20,6 +20,10 @@ const submitted = page => page.evaluate(() => new FormData(document.getElementBy
 test('typing filters without case or accents, the keyboard picks, and the native select submits the answer', async ({ page }) => {
   await openUi(page, select());
   await expect(combo(page)).toHaveAttribute('aria-expanded', 'false');
+  await combo(page).focus();
+  await page.keyboard.press('Enter');
+  await expect(options(page)).toHaveCount(5);
+  await page.keyboard.press('Escape');
   await combo(page).fill('SAO');
   await expect(options(page)).toHaveText(['Brasil · São Paulo']);
   await expect(page.getByRole('status')).toHaveText('Results: 1');
@@ -67,6 +71,48 @@ test('tags mode creates a value from the typed text and adds it to the native se
   await expect(page.locator('.cx-select-chip')).toHaveText(['Iceland']);
 });
 
+test('a created tag replaces a single value and respects the limit of a multiple select', async ({ page }) => {
+  const create = async text => { await combo(page).fill(text); await page.keyboard.press('End'); await page.keyboard.press('Enter'); };
+  await openUi(page, select('data-tags="true"'));
+  await create('Iceland');
+  await create('Norway');
+  expect(await submitted(page)).toEqual(['Norway']);
+  expect(await page.evaluate(() => CanopyX.select('#picker').getState().value)).toBe('Norway');
+  await openUi(page, select('data-tags="true" data-max="1"', true, ['pl']));
+  await create('Iceland');
+  expect(await submitted(page)).toEqual(['pl']);
+  await expect(page.locator('.cx-select-chip')).toHaveText(['🇵🇱Poland']);
+});
+
+test('host options match the native selection by value, and refresh unselects a removed value', async ({ page }) => {
+  const markup = selected => `<form id="form"><label for="country">Country</label><div id="picker"><select id="country" name="country">
+    <option value="">Choose…</option><option value="pl"${selected ? ' selected' : ''}>Poland</option></select></div></form>`;
+  const open = () => page.evaluate(() => { window.hosted = { options: [{ value: 'de', label: 'Germany' }, { value: 'pl', label: 'Poland' }] }; return CanopyX.select('#picker', window.hosted).ready; });
+  await openUi(page, markup(false));
+  await open();
+  await expect(combo(page)).toHaveValue('');
+  await openUi(page, markup(true));
+  await open();
+  await expect(combo(page)).toHaveValue('Poland');
+  await page.evaluate(() => CanopyX.select('#picker').select('de'));
+  await page.evaluate(() => document.getElementById('form').reset());
+  await expect(combo(page)).toHaveValue('Poland');
+  await page.evaluate(() => { window.hosted.options.pop(); CanopyX.select('#picker').refresh(); });
+  expect(await submitted(page)).toEqual(['']);
+  await expect(combo(page)).toHaveValue('');
+});
+
+test('names come from aria-labelledby or a wrapping label, and a disabled group disables its options', async ({ page }) => {
+  await openUi(page, `<label>Region <div data-cx-select><select id="region"><optgroup label="Closed" disabled><option value="x">Atlantis</option></optgroup>
+    <option value="y" selected>Yukon</option></select></div></label><span id="team">Owner team</span><div data-cx-select><select aria-labelledby="team"><option>Ops</option></select></div>`);
+  await expect(page.getByRole('combobox', { name: 'Owner team' })).toHaveCount(1);
+  const region = page.getByRole('combobox', { name: /^Region/ });
+  await region.click();
+  await expect(page.getByRole('option', { name: 'Atlantis' })).toHaveAttribute('aria-disabled', 'true');
+  await page.getByRole('option', { name: 'Atlantis' }).click();
+  expect(await page.evaluate(() => document.getElementById('region').value)).toBe('y');
+});
+
 test('a host loader answers each query, cancels stale ones and shows its errors', async ({ page }) => {
   await page.clock.install({ time: 0 });
   await page.clock.pauseAt(1000);
@@ -92,6 +138,46 @@ test('a host loader answers each query, cancels stale ones and shows its errors'
   await owner.fill('err');
   await page.clock.runFor(300);
   await expect(page.locator('.cx-select-note')).toHaveText('Directory unavailable');
+});
+
+test('a newer query drops an older answer or failure, and the popup is placed again when results arrive', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, '<div style="block-size:560px"></div><label for="user">Owner</label><div id="owner"><select id="user" name="user"></select></div>');
+  await page.evaluate(() => {
+    window.pending = {};
+    CanopyX.select('#owner', { load: query => new Promise((resolve, reject) => { window.pending[query] = { resolve, reject }; }) });
+  });
+  const settle = (query, how, value) => page.evaluate(async ([query, how, value]) => {
+    window.pending[query][how](how === 'reject' ? new Error(value) : value);
+    for (let step = 0; step < 10; step++) await null;
+  }, [query, how, value]);
+  const owner = page.getByRole('combobox', { name: 'Owner' });
+  const users = Array.from({ length: 12 }, (_, at) => ({ value: 'u' + at, label: 'User ' + at }));
+  await owner.fill('a');
+  await page.clock.runFor(300);
+  await owner.fill('ad');
+  await settle('a', 'resolve', users);
+  await expect(page.getByRole('option')).toHaveCount(0);
+  await page.clock.runFor(300);
+  await owner.fill('adx');
+  await page.clock.runFor(300);
+  await settle('adx', 'resolve', users);
+  await settle('ad', 'reject', 'Late failure');
+  await expect(page.getByRole('option')).toHaveCount(12);
+  await expect(page.locator('.cx-select-note')).toBeHidden();
+  const box = await page.locator('.cx-select-popup').boundingBox();
+  expect(box.y + box.height).toBeLessThanOrEqual(700);
+});
+
+test('a loader without search answers the empty query when the field opens', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, '<label for="user">Owner</label><div id="owner"><select id="user" name="user"></select></div>');
+  await page.evaluate(() => CanopyX.select('#owner', { search: false, load: async query => [{ value: 'ada', label: 'Ada ' + JSON.stringify(query) }] }).ready);
+  await page.getByRole('combobox', { name: 'Owner' }).click();
+  await page.clock.runFor(300);
+  await expect(page.getByRole('option')).toHaveText(['Ada ""']);
 });
 
 test('without search the field opens like a button and Space picks', async ({ page }) => {

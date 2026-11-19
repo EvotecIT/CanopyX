@@ -8,6 +8,7 @@ the page and holds the answer, so plain forms submit it and the page works witho
 ## Write a select from .NET
 
 ```csharp
+using CanopyX;
 using CanopyX.Html.Ui;
 
 var country = new CanopySelect("country", "country", "Country", new CanopySelectOptions { Placeholder = "Choose a country" });
@@ -29,6 +30,13 @@ refuses script and non-image data addresses and flags that are not two-letter co
 | `Placeholder`, `Required`, `Disabled` | As on a native select. |
 
 ## Control it from JavaScript
+
+`select()` picks options the native select already has (or that a load answered), so the page writes them first:
+
+```html
+<label for="owner-field">Owner</label>
+<div id="owner"><select id="owner-field" name="owner" multiple><option value="ada">Ada Lovelace</option></select></div>
+```
 
 ```javascript
 const owner = CanopyX.select('#owner', {

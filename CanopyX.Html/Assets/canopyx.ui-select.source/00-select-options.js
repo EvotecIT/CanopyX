@@ -20,7 +20,7 @@ function selectOption(raw) {
   return option;
 }
 function selectReadNative(select) {
-  return [...select.options].map(item => selectOption({ value: item.value, label: item.textContent.trim(), disabled: item.disabled, description: item.dataset.description,
+  return [...select.options].map(item => selectOption({ value: item.value, label: item.textContent.trim(), disabled: item.matches(':disabled'), description: item.dataset.description,
     badge: item.dataset.badge, tone: item.dataset.tone, icon: item.dataset.icon, avatar: item.dataset.avatar, flag: item.dataset.flag,
     group: item.parentElement?.localName === 'optgroup' ? item.parentElement.label : undefined }));
 }
@@ -49,7 +49,7 @@ function selectContent(option, renderIcon, full) {
 
 /**
  * Loads options for a query from options.load(query, signal) or a source URL (`?q=` added; the answer is a JSON array, or
- * { options: [...] }). Each request cancels the one before it; a late answer is ignored.
+ * { options: [...] }). Each request cancels the one before it; a late answer or failure is ignored.
  */
 function selectLoader(options, root) {
   const source = options.source ?? root.dataset.source ?? null;
@@ -68,7 +68,8 @@ function selectLoader(options, root) {
     async fetch(query) {
       current?.abort();
       const controller = current = new AbortController();
-      const items = await load(query, controller.signal);
+      let items;
+      try { items = await load(query, controller.signal); } catch (error) { if (!controller.signal.aborted) throw error; }
       if (controller.signal.aborted) throw new DOMException('Superseded', 'AbortError');
       current = null;
       if (!Array.isArray(items)) throw new Error('CanopyX: a select source answers a list of options.');
