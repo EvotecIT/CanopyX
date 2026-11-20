@@ -9,6 +9,21 @@
   const CAL_BASES = new WeakMap(), CAL_UTC = () => calZone("utc"), CAL_TONE_NAME = /^[a-z][a-z0-9-]{0,31}$/;
   /** The recurrence part's functions (calRule, calExpand, calSeriesEnd, calExceptions) once it is in; it loads before records are read. */
   const calRec = () => DataGrid.prototype.calKit.calRule ? DataGrid.prototype.calKit : null;
+  // A colour is a hex colour, an rgb()/hsl() colour of numbers, or a CSS colour name: never text that could reach other CSS.
+  const CAL_COLOR = /^(?:#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})|(?:rgba?|hsla?)\([\d\s.,%/+-]{1,64}(?:deg)?[\d\s.,%/+-]{0,32}\)|[a-z]{3,24})$/i;
+  /** A colour of an event, or null. */
+  function calColor(value) { const text = typeof value === "string" ? value.trim() : ""; return CAL_COLOR.test(text) && (typeof CSS === "undefined" || !CSS.supports || CSS.supports("color", text)) ? text : null; }
+  /** An event's address: http(s), mailto or relative, or null. A relative address of a report opened from disk resolves to a
+   * file beside it. Control characters, backslashes, //host and other schemes never link. */
+  function calEventUrl(value) {
+    if (typeof value !== "string" || !value.trim() || value.length > 2048 || /[\u0000-\u001f\u007f\\]/.test(value)) return null;
+    const text = value.trim(), scheme = /^[a-z][a-z\d+.-]*:/i.test(text);
+    try {
+      const url = new URL(text, document.baseURI);
+      if (scheme) return /^(?:https?|mailto):/i.test(text) && ["http:", "https:", "mailto:"].includes(url.protocol) ? url.href : null;
+      return !text.startsWith("//") && ["http:", "https:", "file:"].includes(url.protocol) ? url.href : null;
+    } catch (_) { return null; }
+  }
   /** A tone name the theme can resolve, or null: never text that would reach a CSS value unchecked. */
   function calSafeTone(tone) { return typeof tone === "string" && CAL_TONE_NAME.test(tone) && !tone.endsWith("-bg") ? tone : null; }
   /** The day an all-day value names: the date it is written with, whatever offset follows. */
@@ -42,7 +57,11 @@
         // The tone column wins, then the status tone, then the tone of the record's source.
         tone: ownTone || (fields ? null : calTone(cal.status, cells)) || calSourceTone(cal, fields ? row.external : read(cal.source)),
         source: fields ? row.external : cal.source ? calResourceOf(read(cal.source)) : null, external: !!fields, toneFromStatus: !ownTone && !fields,
-        resource: calResourceOf(value("resource")), resourceIds: calResourceIds(value("resourceIds")), color: cal.sources?.find(source => source.id === (fields ? row.external : read(cal.source)))?.color,
+        resource: calResourceOf(value("resource")), resourceIds: calResourceIds(value("resourceIds")),
+        // The event's own colour, then its own background (which also colours its bar and dot), then its source's colour.
+        fill: calColor(value("backgroundColor")),
+        color: calColor(value("color")) || (calColor(value("backgroundColor")) ? null : cal.sources?.find(source => source.id === (fields ? row.external : read(cal.source)))?.color),
+        ink: calColor(value("textColor")), url: calEventUrl(value("url")),
         background: cal.display ? String(read(cal.display) || "").toLowerCase() === "background" : false, rule: null, ruleError: null,
         seriesZone: allDay ? CAL_UTC() : fields?.seriesZone ? calZone(fields.seriesZone) : view.calSeriesZone,
         series, recurrenceId: calInstant(value("recurrenceId")), location: String(value("location") ?? "").trim() });
@@ -129,7 +148,7 @@
     const sd = zone.day(start), ed = end > start ? zone.day(end - 1) : sd;
     return { id: recurring ? base.identity + "@" + calIso(start) : base.identity, key: base.key, base, row: base.row, start, end, allDay: base.allDay,
       marker: base.marker, sd, ed, recurring, occurrence: recurring ? start : null, background: base.background, resource: base.resource,
-      title: base.title, subtitle: base.subtitle, tone: base.tone, color: base.color, resourceIds: base.resourceIds };
+      title: base.title, subtitle: base.subtitle, tone: base.tone, color: base.color, fill: base.fill, ink: base.ink, url: base.url, resourceIds: base.resourceIds };
   }
 
   /** The static background ranges (holidays, freezes, maintenance) that overlap [from, to), expanded when they recur. */

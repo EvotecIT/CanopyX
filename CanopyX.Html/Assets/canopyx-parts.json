@@ -1189,7 +1189,7 @@
     {
       "name": "calendar",
       "label": "calendar",
-      "version": "9a7fa6499bb322cd",
+      "version": "a484a0002f22ce56",
       "script": "canopyx-calendar.js",
       "style": "canopyx-calendar.css",
       "runtimes": [
@@ -1263,7 +1263,7 @@
     {
       "name": "calendar-screen",
       "label": "calendar shared screens",
-      "version": "9a76ba4c0bd20dae",
+      "version": "24372cf1cf703ff1",
       "script": "canopyx-calendar-screen.js",
       "style": "canopyx-calendar-screen.css",
       "runtimes": [

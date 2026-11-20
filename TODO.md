@@ -35,9 +35,9 @@ are dropped by the consumer and are not planned.
 - [x] Free-text footer cells beside or instead of footer aggregates.
 - [x] Group footer rows from a fixed grouping's `footerTemplate`, in place of a DataTables `endRender` script.
 - [x] Rows read from a JSON address for static pages, with an optional refresh, separate from the hosted protocol.
-- [ ] Calendar events with their own colour, background and text colour.
-- [ ] A URL per calendar event.
-- [ ] An event-click hook that C#-written pages can use.
+- [x] Calendar events with their own colour, background and text colour.
+- [x] A URL per calendar event.
+- [x] An event-click hook that C#-written pages can use.
 
 Gate: each feature is declared from C# and JavaScript, validated by the schema, and covered by deterministic browser tests.
 

@@ -150,6 +150,7 @@ QuarterlyBudgetExample.Write(output);
 ColumnBandsExample.Write(output);
 CertificateInventoryExample.Write(output);
 CalendarBasicExample.Write(output);
+CalendarEventLooksExample.Write(output);
 CalendarFamilyExample.Write(output);
 CalendarResourcesExample.Write(output);
 CalendarExample.Write(output);

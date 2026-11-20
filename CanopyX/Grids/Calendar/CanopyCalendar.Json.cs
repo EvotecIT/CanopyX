@@ -13,6 +13,7 @@ public sealed partial class CanopyCalendar {
             .OptionalProperty("recurrence", _recurrence).OptionalProperty("exceptions", _exceptions).OptionalProperty("series", _series)
             .OptionalProperty("recurrenceId", _recurrenceId).OptionalProperty("display", _display).OptionalProperty("seriesEnd", _seriesEnd)
             .OptionalProperty("description", _description).OptionalProperty("tone", _tone).OptionalProperty("source", _source).OptionalProperty("location", _location);
+        WriteEventLooks(writer);
         var offered = EffectiveViews;
         if (View.HasValue && View.Value != offered[0]) writer.Property("view", CanopyCalendarValues.Name(View.Value));
         if (Views.Count > 0 && !SameViews(Views)) {

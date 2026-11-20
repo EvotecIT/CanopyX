@@ -38,6 +38,10 @@
 .cx-cal-ev.cx-cal-past:is(.cx-cal-ev-bar,.cx-cal-ev-block,.cx-cal-ev-lane) :is(.cx-cal-ev-time,.cx-cal-ev-sub,.cx-cal-ico){color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));opacity:1;}
 .cx-cal-ev.cx-cal-past::before,.cx-cal-ev.cx-cal-past .cx-cal-face > img{opacity:var(--cx-cal-fade,.4);filter:saturate(.5);}
 .cx-cal-ev.cx-cal-past:is(:hover,:focus-visible),.cx-cal-arow:focus-within .cx-cal-ev.cx-cal-past{background:var(--cx-ev-bg);color:var(--hfx-color-text-primary,var(--hfx-color-text,light-dark(#16181c,#f2f3f5)));}
+@media not (forced-colors:active){
+.cx-cal-ev.cx-cal-past[data-cx-ink]:is(:hover,:focus-visible),.cx-cal-arow:focus-within .cx-cal-ev.cx-cal-past[data-cx-ink]{color:var(--cx-ev-fg);}
+.cx-cal-ev.cx-cal-past[data-cx-ink]:is(:hover,:focus-visible) :is(.cx-cal-ev-time,.cx-cal-ev-sub,.cx-cal-ico){color:inherit;}
+}
 .cx-cal-ev.cx-cal-past:is(:hover,:focus-visible)::before,.cx-cal-ev.cx-cal-past:is(:hover,:focus-visible) .cx-cal-face > img,.cx-cal-arow:focus-within .cx-cal-past .cx-cal-face > img{opacity:1;filter:none;}
 .cx-cal-arow:has(.cx-cal-past) > .cx-cal-atime{color:var(--hfx-color-text-secondary,light-dark(#4d525b,#b0b4bc));}
 .cx-cal-notes{display:inline-flex;flex-wrap:wrap;align-items:center;gap:var(--hfx-space-1,0.25rem);min-width:0;}

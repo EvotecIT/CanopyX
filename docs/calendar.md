@@ -63,8 +63,9 @@ fixed heights such as `600px` apply to fragments. Time slots keep their normal h
 
 That is a basic calendar: month, week, day and agenda; the calendar's own controls (Today, previous and next, the range, go to
 date, the views) and no grid toolbar; read-only; clicking an event opens a small popover with its title, time and description.
-The page loads only the core calendar part. Events may also carry `id`, `tone`, `resource`, `resourceIds`, `recurrence`, `exceptions`, `series`, `recurrenceId` and
-`source`; ids default to `e1`, `e2`, ... in order.
+The page loads only the core calendar part. Events may also carry `id`, `tone`, `resource`, `resourceIds`, `recurrence`, `exceptions`, `series`, `recurrenceId`,
+`source`, `color`, `backgroundColor`, `textColor` and `url` ([Colours, addresses and clicks](#colours-addresses-and-clicks));
+ids default to `e1`, `e2`, ... in order.
 
 ## Levels and options
 
@@ -165,6 +166,7 @@ the recurrence rule), and `Definition` holds every other setting. `CanopyCalenda
 | `yearEvents`, `agendaSpan`, `months`, `print` | The year view lists each month's events; the agenda's period (`day`, `week`, `month` or `year`); the number of stacked months (2–24, default 6); a Print button in the bar. |
 | `limit` | Most occurrences one range shows, 1–100,000 (default 20,000); more shows a notice to narrow the period or the filters. |
 | `location` | Text column with each event's location, shown in the details; merged copies match on it. |
+| `color`, `backgroundColor`, `textColor`, `url`, `urlTarget` | Text columns of each event's own colours and address, and where addresses open (`self` or `blank`); see [Colours, addresses and clicks](#colours-addresses-and-clicks). |
 | `merge`, `fadePast`, `dayNotes`, `faces`, `listDays`, `dayWidth`, `listBelow`, `reset` | [Shared screens](#shared-screens). |
 
 An unknown field, a column that does not exist or a column of the wrong kind is an error, in the browser and in the C# writer.
@@ -226,6 +228,43 @@ of iCalendar sources (`event.external` is true, and their `row` holds the file's
 record's); the accessible name stays the
 calendar's. Under a strict Content Security Policy and Trusted Types the calendar writes no HTML and needs no inline script;
 it sets positions through the CSSOM, as the grid does ([security.md](security.md)).
+
+### Colours, addresses and clicks
+
+An event can carry its own colours, as a report's calendar of changes or tickets often does. `color` is the event's accent: its
+bar, its dot in month and year views and, in the `strong` style, its fill. `backgroundColor` is its fill (alone it is the accent
+too) and `textColor` the text on that fill (bars, blocks and timeline lanes; month and agenda lines keep the theme's text,
+as they have no fill). They win over the event's tone and its source's colour. A value is a hex colour (`#0f766e`,
+`#abc`, with or without alpha), an `rgb()`/`hsl()` colour of numbers, or a CSS colour name; anything else is ignored and the
+tone applies, so a value never reaches other CSS. The calendar writes the colours through the CSSOM, which a strict Content
+Security Policy allows, and forced colours replace them with system colours. Pick a text colour with enough contrast
+against the background; the calendar does not adjust it.
+
+`url` gives an event an address: activating it (a click, Enter or Space, or the menu's Open) opens the address instead of the
+event's details, in the page itself or, with `urlTarget: "blank"`, in a new window without an opener. Only `http:`, `https:`,
+`mailto:` and relative addresses open (a report opened from disk resolves a relative address to a file beside it); any other
+address, `javascript:` and `//host` forms among them, is no address and the details open as usual.
+
+Every activation first raises the cancelable `canopyx:eventClick` on the calendar's host element and calls the
+`onEventClick(detail)` option; `detail` is `{ event, url, keyboard, occurrence }`, where `event` is the occurrence as
+`getCalendarEvents()` gives it (with its `url` and colours). Cancelling the event or returning `false` keeps the calendar from
+opening the address or the details, so a page can route the click itself. A page written from C# uses either: a listener on
+the host element, or `CanopyX.configure(viewId, { onEventClick })` in a script that runs before the page mounts its views
+(`CanopyHtmlOptions.HeadHtml`, for example).
+
+```csharp
+var calendar = new CanopyCalendar(new[] {
+    new CanopyCalendarEvent("Network change window", starts, ends) { Color = "#0f766e", BackgroundColor = "#ccfbf1", TextColor = "#134e4a" },
+    new CanopyCalendarEvent("Ticket 4821", starts, ends) { Url = "https://tickets.example.test/4821" }
+}) { OpenUrlInNewWindow = true };
+// A typed grid binds members: grid.Calendar().Start(x => x.Starts).Color(x => x.Team).Url(x => x.Link, newWindow: true);
+```
+
+```js
+CanopyX.configure("changes", { onEventClick: ({ event, url }) => url ? true : (openTicket(event.record), false) });
+```
+
+The example `calendar-event-looks.html` (CanopyX.Examples) shows coloured events and addresses.
 
 ## Keyboard and screen readers
 
@@ -643,12 +682,13 @@ and `Icon`, and `CanopyCalendarEvent.Location` write the same settings; the type
 | `getCalendar()` | `{ view, date, zoom, from, to, timeZone, events, collapsed }`. |
 | `setCalendarView(view)`, `setCalendarDate("yyyy-MM-dd")`, `setCalendarZoom(zoom)` | Change the view, the date or the timeline zoom. |
 | `calendarStep(1 \| -1)`, `calendarToday()` | Step a period, or go to today. |
-| `getCalendarEvents()` | The occurrences shown: `{ id, record, start, end, allDay, title, resource, recurring, background }`. |
+| `getCalendarEvents()` | The occurrences shown: `{ id, record, start, end, allDay, title, resource, recurring, background, url, color, backgroundColor, textColor }`. |
 | `openCalendarEvent(id)` | Opens an event's record. |
 | `exportCalendar(options)` | iCalendar text, see above. |
 | `describeCalendarRecurrence(rule, start, { allDay?, exceptions? })` | Resolves with the sentence the calendar shows for a rule ([How a series reads](#how-a-series-reads)), or the rule text when the sentences cannot say it; `start` is a `Date` or an ISO date-time with a zone (a `yyyy-MM-dd` date when all-day), read in the series zone. |
 | `clearCalendarSelection()` | Clears a selected day, range or resource. |
 | `canopyx:calendar` / `onCalendar` | After each paint of a view or range, with `getCalendar()`'s state. |
+| `canopyx:eventClick` / `onEventClick` | When an event is activated, before its address or details open; cancelable ([Colours, addresses and clicks](#colours-addresses-and-clicks)). |
 | `canopyx:occurrenceChange` / `onOccurrenceChange` | Before an occurrence of a series moves; cancelable. |
 | `setCalendarSource(id, visible?)` | Shows or hides a source's events; omitted switches it. `canopyx:calendarSource` reports `{ id, visible }`. |
 | `canopyx:eventCreate` / `onCreate` | Before a proposed new event opens the form; cancelable. |
