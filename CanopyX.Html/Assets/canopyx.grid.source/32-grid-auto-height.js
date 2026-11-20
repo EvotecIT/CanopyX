@@ -13,9 +13,12 @@
     // The host's own max-height, read before the first change, stays a bound for empty and populated results.
     // Preserve relative inline bounds; remeasure stylesheet bounds whenever the host refits.
     const grid = this.grid, style = this.host.style;
+    const empty = !this.toolbar.hidden && this.host.classList.contains("cx-grid-awaiting");
     // Only a real horizontal scrollbar consumes block space. Overlay scrollbars contribute zero, without a guessed gutter.
     // Width overflow can disappear before the occupied gutter is released during a column reset.
     const content = [...grid.children].reduce((sum, child) => {
+      // The notice keeps the grid header-only, even if the first page has already sized the virtual canvas.
+      if (empty && child === this.canvas) return sum;
       const position = getComputedStyle(child).position;
       return position === "absolute" || position === "fixed" ? sum : sum + child.getBoundingClientRect().height;
     }, grid.offsetHeight - grid.clientHeight);
@@ -43,7 +46,6 @@
     this.fitMax = resolved === "none" || /^(initial|inherit|unset|revert(-layer)?)$/.test(this.fitInline) ? resolved : this.fitInline || resolved;
     style.maxHeight = fitted;
     // Reuse the minimum's flow measurement without reserving rows in the empty state.
-    const empty = !this.toolbar.hidden && this.host.classList.contains("cx-grid-awaiting");
     const height = Math.ceil(Math.max(empty ? 0 : this.host.getBoundingClientRect().height - grid.getBoundingClientRect().height, this.minimumGridHeight(false)) + content), bound = this.fitMax;
     const value = this.rowCount() || empty ? bound === "none" ? height + "px" : "min(" + height + "px, " + bound + ")" : this.fitInline;
     // Only release a minimum that empty fitting owned; populated alternate views keep their own sizing.

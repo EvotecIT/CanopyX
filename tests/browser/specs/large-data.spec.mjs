@@ -103,6 +103,36 @@ test("a gzip bundle loads its rows from sidecar files on file://", async ({ page
 });
 
 const sidecar = (index) => "(self.CanopyXSidecar = self.CanopyXSidecar || []).push([\"compact\",\"rows/" + index + "\",String.raw`" + JSON.stringify(chunk(index * 100, index * 100 + 100)) + "`]);";
+
+test("the first row page keeps the loading grid within its viewport", async ({ page }) => {
+  const view = compactView({ columns: ["name", "size"], count: 1000, ordered: true, base: "data/", chunks: 10 });
+  let release;
+  const held = new Promise(resolve => { release = resolve; });
+  await page.route("http://canopyx.test/**", async route => {
+    const file = new URL(route.request().url()).pathname;
+    if (file === "/") return route.fulfill({ contentType: "text/html", body: viewPage(view) });
+    const index = Number(/rows\/(\d+)\.js$/.exec(file)?.[1]);
+    if (index === 0) await held;
+    return route.fulfill({ contentType: "text/javascript", body: sidecar(index) });
+  });
+  await page.goto("http://canopyx.test/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".cx-initial-skeleton")).toBeVisible();
+  await page.locator("[data-canopyx-host]").evaluate(host => {
+    const minimums = window.loadingMinimums = [];
+    // A fit can set and restore the minimum in one task, before a resize observer can see it.
+    const observer = new MutationObserver(records => {
+      for (const { oldValue } of records) minimums.push(Number(/--cx-min-h:\s*([\d.]+)px/.exec(oldValue)?.[1] || 0));
+    });
+    observer.observe(host, { attributeFilter: ["style"], attributeOldValue: true });
+  });
+  release();
+  await expect(page.locator(".cx-row[data-cx-id='r00000']")).toBeVisible();
+  await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "1001");
+  const { minimums, height } = await page.evaluate(() => ({ minimums: window.loadingMinimums, height: innerHeight }));
+  expect(minimums.length).toBeGreaterThan(0);
+  expect(Math.max(...minimums)).toBeLessThanOrEqual(height);
+});
+
 // A reporting grid that readers can group, but that totals and groups nothing yet, shows its first windows early too.
 for (const [name, extra] of [["", undefined], [" (a groupable reporting grid)", { reporting: { groupable: true, responsive: true } }]])
 test("the first windows of ordered rows paint before the last chunk arrives; other queries wait for it" + name, async ({ page }) => {
