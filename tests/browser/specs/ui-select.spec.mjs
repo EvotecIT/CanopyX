@@ -415,6 +415,23 @@ test('a later loader answer replaces the record a value had before', async ({ pa
   await expect(box).toHaveValue('New name');
 });
 
+test('a later loader answer updates a value already chosen, its chip and what the form submits', async ({ page }) => {
+  await page.clock.install({ time: 0 });
+  await page.clock.pauseAt(1000);
+  await openUi(page, '<form id="hosted"><label for="owner-input">Owner</label><div id="owners"><select id="owner-input" name="owner" multiple></select></div></form>');
+  await page.evaluate(() => { window.owners = CanopyX.select('#owners', { load: async query => [{ value: 'x', label: query === 'old' ? 'Old name' : 'New name', disabled: query !== 'old' }] }); return window.owners.ready; });
+  const box = page.getByRole('combobox', { name: 'Owner' });
+  await box.fill('old');
+  await page.clock.runFor(300);
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => new FormData(document.getElementById('hosted')).getAll('owner'))).toEqual(['x']);
+  await box.fill('new');
+  await page.clock.runFor(300);
+  await expect(page.getByRole('option', { name: 'New name' })).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.locator('#owners .cx-select-chips')).toContainText('New name');
+  expect(await page.evaluate(() => new FormData(document.getElementById('hosted')).getAll('owner'))).toEqual([]);
+});
+
 test('refresh carries a kept value the host disables or enables to the native select', async ({ page }) => {
   await openUi(page, '<form id="hosted"><label for="team">Team</label><div id="teams"><select id="team" name="team" multiple><option value="ops" selected>Ops</option></select></div></form>');
   const refresh = disabled => page.evaluate(disabled => { window.teamOptions[0].disabled = disabled; window.teams.refresh(); return new FormData(document.getElementById('hosted')).getAll('team'); }, disabled);

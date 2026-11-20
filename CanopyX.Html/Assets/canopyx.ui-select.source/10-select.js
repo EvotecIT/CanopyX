@@ -158,7 +158,13 @@ UI_IMPL.select = (root, options = {}, signal) => {
       shown = []; paintList(labels.stateLoading); show();
       timer = setTimeout(() => loader.fetch(text.trim()).then(items => {
         // The latest answer wins, so a value the host renamed or disabled shows its new record when chosen later.
-        for (const item of items) { const at = all.findIndex(option => option.value === item.value); if (at < 0) all.push(item); else all[at] = item; }
+        // A chosen value takes the new record too, so its chip and native option follow the host.
+        let held = false;
+        for (const item of items) {
+          const at = all.findIndex(option => option.value === item.value); if (at < 0) all.push(item); else all[at] = item;
+          if (chosen.has(item.value)) { chosen.set(item.value, item); held = true; }
+        }
+        if (held) { writeNative(); paintChosen(); }
         // Tags the reader created stay choices even when the host does not know them.
         const fold = selectFold(text.trim());
         offer([...items, ...all.filter(option => option.local && selectFold(option.label).includes(fold) && !items.some(item => item.value === option.value))]);
