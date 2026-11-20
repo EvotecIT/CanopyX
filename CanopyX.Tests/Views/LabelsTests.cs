@@ -102,7 +102,8 @@ public sealed class LabelsTests {
         bool IsUiLabel(string name) => name.StartsWith("Accordion", StringComparison.Ordinal) || name.StartsWith("Tabs", StringComparison.Ordinal) || name.StartsWith("Stepper", StringComparison.Ordinal) ||
             name.StartsWith("Dialog", StringComparison.Ordinal) || name.StartsWith("Drawer", StringComparison.Ordinal) || name.StartsWith("State", StringComparison.Ordinal) ||
             name.StartsWith("Toast", StringComparison.Ordinal) || name.StartsWith("Lightbox", StringComparison.Ordinal) || name.StartsWith("Signature", StringComparison.Ordinal) ||
-            name.StartsWith("Carousel", StringComparison.Ordinal) || name.StartsWith("Rating", StringComparison.Ordinal);
+            name.StartsWith("Carousel", StringComparison.Ordinal) || name.StartsWith("Rating", StringComparison.Ordinal) ||
+            name.StartsWith("Select", StringComparison.Ordinal);
         var browser = properties.Where(property => !outlineOnly.Contains(property.Name) && !IsFlowLabel(property.Name) && !IsMatrixLabel(property.Name) && !IsUiLabel(property.Name)).ToList();
         Assert.Equal(browser.Select(property => Wire(property.Name)).OrderBy(name => name, StringComparer.Ordinal), written);
 

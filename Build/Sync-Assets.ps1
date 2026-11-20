@@ -316,9 +316,9 @@ throw new Error("CanopyX: load the interactive runtime or module before the core
     $exports = @'
 const CanopyX = runtimeHost.CanopyX;
 const { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce,
-  mountUi, contextMenu, notify, tabs, stepper, accordion, toasts, lightbox, mask, signature, carousel, rating, dialog, drawer, popover, tooltip, menu } = CanopyX;
+  mountUi, contextMenu, notify, tabs, stepper, accordion, toasts, lightbox, mask, signature, carousel, rating, select, dialog, drawer, popover, tooltip, menu } = CanopyX;
 export { protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce,
-  mountUi, contextMenu, notify, tabs, stepper, accordion, toasts, lightbox, mask, signature, carousel, rating, dialog, drawer, popover, tooltip, menu };
+  mountUi, contextMenu, notify, tabs, stepper, accordion, toasts, lightbox, mask, signature, carousel, rating, select, dialog, drawer, popover, tooltip, menu };
 export default CanopyX;
 '@
     # Parts load from files beside the module (Build/parts.json), as they do beside a classic runtime script.
@@ -333,7 +333,7 @@ export default CanopyX;
         $header = $header.Replace('(runtimeHost.CanopyX.protocol !== "canopyx/2" || !runtimeHost.CanopyX.labels.actions)', '!runtimeHost.CanopyX.createFlow')
         $header = $header.Replace('interactive runtime or module before the core script', 'flow or grid runtime, or this module, before the core script')
         $exports = $exports.Replace('protocol, createTreeGrid, configure, unconfigure, mount, sources, badge, labels, registerExportFormat, use, registerPart, setNonce', 'createFlow, configure, unconfigure, mount, use, registerPart, setNonce')
-        $exports = [regex]::Replace($exports, ',\r?\n\s+mountUi, contextMenu, notify, tabs, stepper, accordion, toasts, lightbox, mask, signature, carousel, rating, dialog, drawer, popover, tooltip, menu', '')
+        $exports = [regex]::Replace($exports, ',\r?\n\s+mountUi, contextMenu, notify, tabs, stepper, accordion, toasts, lightbox, mask, signature, carousel, rating, select, dialog, drawer, popover, tooltip, menu', '')
     }
     if ($Ui) {
         # The UI module needs only an entry point with the UI factories, which every entry point except the flow entry has.

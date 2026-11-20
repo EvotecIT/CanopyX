@@ -143,6 +143,8 @@
     "./ui-carousel.css": "./CanopyX.Html/Assets/canopyx-ui-carousel.css",
     "./ui-rating.js": "./CanopyX.Html/Assets/canopyx-ui-rating.js",
     "./ui-rating.css": "./CanopyX.Html/Assets/canopyx-ui-rating.css",
+    "./ui-select.js": "./CanopyX.Html/Assets/canopyx-ui-select.js",
+    "./ui-select.css": "./CanopyX.Html/Assets/canopyx-ui-select.css",
     "./ui": {
       "types": "./JavaScript/ui.d.ts",
       "import": "./CanopyX.Html/Assets/canopyx-ui-module.mjs"
@@ -320,6 +322,8 @@
     "CanopyX.Html/Assets/canopyx-ui-carousel.css",
     "CanopyX.Html/Assets/canopyx-ui-rating.js",
     "CanopyX.Html/Assets/canopyx-ui-rating.css",
+    "CanopyX.Html/Assets/canopyx-ui-select.js",
+    "CanopyX.Html/Assets/canopyx-ui-select.css",
     "CanopyX.Html/Assets/canopyx-ui.js",
     "CanopyX.Html/Assets/canopyx-ui.css",
     "CanopyX.Html/Assets/canopyx-ui-module.mjs",

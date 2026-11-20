@@ -18,6 +18,7 @@ public sealed class UiPartAssetsTests {
     [InlineData("ui-signature", 5 * 1024)]
     [InlineData("ui-carousel", 5 * 1024)]
     [InlineData("ui-rating", 3 * 1024)]
+    [InlineData("ui-select", 7 * 1024)]
     public void UiPart_ComponentAssetsStayWithinTheirOwnGzipCap(string name, int componentBudget) {
         var part = CanopyHtmlAssets.GetPart(name);
         Assert.NotNull(part.Style);
@@ -106,10 +107,11 @@ public sealed class UiPartAssetsTests {
     [Fact]
     public void UiEntryPoint_IsSlimAndKnowsOnlyTheUiParts() {
         // #127: a content page must not pay for the 57 KB tree runtime to reach a 20 KB overlay part.
-        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Ui, 5 * 1024);
+        // Each lazy UI part adds its version and hashed file names to the entry's part list, about 35 bytes gzip.
+        SharedTokenAssets.AssertRuntimeBudget(CanopyRuntime.Ui, 5 * 1024 + 128);
         var script = ReadableAssets.Script(CanopyRuntime.Ui);
         foreach (var marker in new[] { "createTreeGrid", "createDataGrid", "createFlow", "class TreeGrid", "class DataGrid" }) Assert.DoesNotContain(marker, script);
-        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "ui-toasts", "ui-lightbox", "ui-mask", "ui-signature", "ui-carousel", "ui-rating" },
+        Assert.Equal(new[] { "ui-overlays", "ui-menu", "ui-picker", "ui-navigation", "ui-tabs", "ui-stepper", "ui-accordion", "ui-toasts", "ui-lightbox", "ui-mask", "ui-signature", "ui-carousel", "ui-rating", "ui-select" },
             CanopyHtmlAssets.GetParts(CanopyRuntime.Ui).Select(part => part.Name));
     }
 

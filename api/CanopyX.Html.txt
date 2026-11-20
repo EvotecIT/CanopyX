@@ -414,6 +414,39 @@ CanopyX.Html.Ui.CanopyRatingOptions.System.Boolean Required { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.Int32 Max { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.Nullable<System.Int32> Value { get; set; }
 CanopyX.Html.Ui.CanopyRatingOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopySelect : sealed class
+CanopyX.Html.Ui.CanopySelect..ctor(System.String id, System.String name, System.String label, CanopyX.Html.Ui.CanopySelectOptions? options = null)
+CanopyX.Html.Ui.CanopySelect.CanopyX.Html.Ui.CanopySelectOptions Options { get; }
+CanopyX.Html.Ui.CanopySelect.System.Collections.Generic.IList<CanopyX.Html.Ui.CanopySelectOption> Items { get; }
+CanopyX.Html.Ui.CanopySelect.System.String Id { get; }
+CanopyX.Html.Ui.CanopySelect.System.String Label { get; }
+CanopyX.Html.Ui.CanopySelect.System.String Name { get; }
+CanopyX.Html.Ui.CanopySelect.System.String ToHtmlFragment()
+CanopyX.Html.Ui.CanopySelectOption : sealed class
+CanopyX.Html.Ui.CanopySelectOption..ctor(System.String value, System.String label)
+CanopyX.Html.Ui.CanopySelectOption.CanopyX.CanopyTone BadgeTone { get; set; }
+CanopyX.Html.Ui.CanopySelectOption.System.Boolean Disabled { get; set; }
+CanopyX.Html.Ui.CanopySelectOption.System.Boolean Selected { get; set; }
+CanopyX.Html.Ui.CanopySelectOption.System.String Label { get; }
+CanopyX.Html.Ui.CanopySelectOption.System.String Value { get; }
+CanopyX.Html.Ui.CanopySelectOption.System.String? Avatar { get; set; }
+CanopyX.Html.Ui.CanopySelectOption.System.String? Badge { get; set; }
+CanopyX.Html.Ui.CanopySelectOption.System.String? Description { get; set; }
+CanopyX.Html.Ui.CanopySelectOption.System.String? Flag { get; set; }
+CanopyX.Html.Ui.CanopySelectOption.System.String? Group { get; set; }
+CanopyX.Html.Ui.CanopySelectOption.System.String? Icon { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions : sealed class
+CanopyX.Html.Ui.CanopySelectOptions..ctor()
+CanopyX.Html.Ui.CanopySelectOptions.System.Boolean Disabled { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.Boolean Multiple { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.Boolean Required { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.Boolean Search { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.Boolean Tags { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.Nullable<System.Int32> Max { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.Nullable<System.Int32> MinLength { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.String? Placeholder { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.String? Source { get; set; }
+CanopyX.Html.Ui.CanopySelectOptions.System.String? Variant { get; set; }
 CanopyX.Html.Ui.CanopySignature : sealed class
 CanopyX.Html.Ui.CanopySignature..ctor(System.String id, System.String label, CanopyX.Html.Ui.CanopySignatureOptions? options = null)
 CanopyX.Html.Ui.CanopySignature.CanopyX.Html.Ui.CanopySignatureOptions Options { get; }

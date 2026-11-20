@@ -2985,6 +2985,10 @@ CanopyX.CanopyLabels.System.String SearchResultCountOfTotal { get; set; }
 CanopyX.CanopyLabels.System.String SearchResults { get; set; }
 CanopyX.CanopyLabels.System.String SearchTooShort { get; set; }
 CanopyX.CanopyLabels.System.String SearchWordTooShort { get; set; }
+CanopyX.CanopyLabels.System.String SelectCreate { get; set; }
+CanopyX.CanopyLabels.System.String SelectNoMatches { get; set; }
+CanopyX.CanopyLabels.System.String SelectRemove { get; set; }
+CanopyX.CanopyLabels.System.String SelectResults { get; set; }
 CanopyX.CanopyLabels.System.String ShowMore { get; set; }
 CanopyX.CanopyLabels.System.String ShowMoreUnknownTotal { get; set; }
 CanopyX.CanopyLabels.System.String SignatureClear { get; set; }

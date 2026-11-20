@@ -25,6 +25,8 @@ public sealed partial class CanopyLabels {
         [nameof(SignatureDraw)] = "Draw instead", [nameof(SignatureTyped)] = "Type your full name",
         [nameof(SignatureColour)] = "Pen colour", [nameof(SignatureDownloadPng)] = "Download PNG",
         [nameof(SignatureDownloadSvg)] = "Download SVG",
+        [nameof(SelectNoMatches)] = "No matches", [nameof(SelectResults)] = "Results: {count}",
+        [nameof(SelectCreate)] = "Add “{text}”", [nameof(SelectRemove)] = "Remove {label}",
         [nameof(TabsMore)] = "More", [nameof(TabsMoreSelected)] = "More: {label}",
         [nameof(TabsScrollPrevious)] = "Previous tabs", [nameof(TabsScrollNext)] = "Next tabs",
         [nameof(TabsSection)] = "Section", [nameof(TabsPosition)] = "{current} of {total}",

@@ -47,6 +47,7 @@ if (args.Contains("--ui-primitives")) {
     UiComponentsExample.Write(output);
     UiCarouselRatingExample.Write(output);
     UiInputsExample.Write(output);
+    UiSelectExample.Write(output);
     return;
 }
 var clock = Stopwatch.StartNew();
@@ -220,6 +221,7 @@ UiComponentsExample.Write(output);
 UiCarouselRatingExample.Write(output);
 UiInputsExample.Write(output);
 FlowInputsExample.Write(output);
+UiSelectExample.Write(output);
 WriteTemplate("index.html", Path.Combine(output, "index.html"), string.Empty);
 Report($"Examples written to {output} in {clock.Elapsed.TotalSeconds:N1} s");
 

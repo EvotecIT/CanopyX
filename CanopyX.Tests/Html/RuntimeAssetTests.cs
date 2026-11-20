@@ -220,7 +220,7 @@ public sealed class RuntimeAssetTests {
             // the link, highlight, layout mode and record panel parts, each with its stylesheet, plus the lazy UI parts
             // (one script and one stylesheet each).
             // Standalone font CSS, the two qualified faces and their two OFL notices travel with external pages.
-            Assert.Equal(47, Directory.GetFiles(directory).Length);
+            Assert.Equal(49, Directory.GetFiles(directory).Length);
         } finally {
             Directory.Delete(directory, recursive: true);
         }

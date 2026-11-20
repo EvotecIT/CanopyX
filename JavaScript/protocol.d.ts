@@ -286,6 +286,7 @@ export type LabelName =
   | "toastRegion" | "toastClose" | "toastQueued" | "toastInfo" | "toastSuccess" | "toastWarning" | "toastDanger" | "toastNeutral" | "lightboxTitle" | "lightboxPrevious" | "lightboxNext" | "lightboxZoomIn" | "lightboxZoomOut" | "lightboxZoomReset" | "lightboxError"
   | "signaturePad" | "signatureUndo" | "signatureClear" | "signatureType" | "signatureDraw" | "signatureTyped" | "signatureColour" | "signatureDownloadPng" | "signatureDownloadSvg"
   | "carouselRole" | "carouselSlideRole" | "carouselSlide" | "carouselPrevious" | "carouselNext" | "carouselPicker" | "carouselMotionDisabled" | "ratingValue"
+  | "selectNoMatches" | "selectResults" | "selectCreate" | "selectRemove"
   | "tabsMore" | "tabsMoreSelected" | "tabsScrollPrevious" | "tabsScrollNext" | "tabsSection" | "tabsPosition" | "tabsPause" | "tabsPlay" | "tabsMotionDisabled"
   | "stepperStepOf" | "stepperBack" | "stepperNext" | "stepperFinish" | "stepperSkip" | "stepperSaveDraft"
   | "stepperAllSteps" | "stepperOptional" | "stepperCompleted" | "stepperSkipped" | "stepperIssues" | "stepperIssue"

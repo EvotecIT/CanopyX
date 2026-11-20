@@ -35,6 +35,10 @@
   "CarouselPicker": ["Wybierz slajd", "Folie wählen", "Elegir una diapositiva", "Choisir une diapositive", "Scegli una diapositiva"],
   "CarouselMotionDisabled": ["Automatyczne slajdy są wyłączone przez ograniczenie ruchu", "Automatische Folien sind wegen reduzierter Bewegung deaktiviert", "Las diapositivas automáticas están desactivadas por la reducción de movimiento", "Les diapositives automatiques sont désactivées par la réduction des animations", "Le diapositive automatiche sono disattivate dalla riduzione del movimento"],
   "RatingValue": ["{value} z {max}", "{value} von {max}", "{value} de {max}", "{value} sur {max}", "{value} su {max}"],
+  "SelectNoMatches": ["Brak dopasowań", "Keine Treffer", "Sin coincidencias", "Aucun résultat", "Nessuna corrispondenza"],
+  "SelectResults": ["Wyniki: {count}", "Ergebnisse: {count}", "Resultados: {count}", "Résultats : {count}", "Risultati: {count}"],
+  "SelectCreate": ["Dodaj „{text}”", "„{text}“ hinzufügen", "Añadir «{text}»", "Ajouter « {text} »", "Aggiungi «{text}»"],
+  "SelectRemove": ["Usuń {label}", "{label} entfernen", "Quitar {label}", "Retirer {label}", "Rimuovi {label}"],
   "CalendarEditOccurrence": [
     "Edytuj to wystąpienie",
     "Dieses Vorkommen bearbeiten",

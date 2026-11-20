@@ -39,6 +39,10 @@ public sealed partial class CanopyLabels {
         labels.SignatureColour = "Colore della penna";
         labels.SignatureDownloadPng = "Scarica PNG";
         labels.SignatureDownloadSvg = "Scarica SVG";
+        labels.SelectNoMatches = "Nessuna corrispondenza";
+        labels.SelectResults = "Risultati: {count}";
+        labels.SelectCreate = "Aggiungi «{text}»";
+        labels.SelectRemove = "Rimuovi {label}";
         labels.TabsMore = "Altro";
         labels.TabsMoreSelected = "Altro: {label}";
         labels.TabsScrollPrevious = "Schede precedenti";

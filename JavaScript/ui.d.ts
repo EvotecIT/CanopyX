@@ -403,6 +403,56 @@ export interface UiLightboxController extends UiController {
   zoom(level: number): UiResult<number>;
   getState(): UiResult<{ open: boolean; index: number; total: number; zoom: number }>;
 }
+/** A select option. Pictures are an icon name for renderIcon, an image address or a two-letter country code drawn as a flag. */
+export interface UiSelectOption {
+  value: string;
+  label?: string;
+  description?: string;
+  badge?: string;
+  tone?: string;
+  icon?: string;
+  avatar?: string;
+  flag?: string;
+  group?: string;
+  disabled?: boolean;
+}
+export interface UiSelectOptions {
+  /** Options to offer instead of the native select's. */
+  options?: readonly (UiSelectOption | string)[];
+  /** Answers matches for a query; each call cancels the one before it. */
+  load?: (query: string, signal: AbortSignal) => Promise<readonly (UiSelectOption | string)[]> | readonly (UiSelectOption | string)[];
+  /** An address answering `?q=` (or queryParameter) with a JSON list of options, or { options }. */
+  source?: string;
+  queryParameter?: string;
+  /** Milliseconds between typing and asking load or source. Defaults to 250. */
+  delay?: number;
+  /** The fewest characters before load or source is asked: 1 by default with them, 0 without. */
+  minLength?: number;
+  /** Defaults to true; false opens the list like a button. */
+  search?: boolean;
+  /** Typed text can become a new value. */
+  tags?: boolean;
+  /** The most values a multiple select takes. */
+  max?: number;
+  placeholder?: string;
+  /** The accessible name when the page has no label for the select. */
+  label?: string;
+  renderIcon?: (icon: string, option: UiSelectOption) => Node | string | null | void;
+  onChange?: (value: string | string[] | null) => void;
+  /** Also report changes made through select() and clear(). Defaults to false. */
+  notifyApi?: boolean;
+  labels?: UiLabels;
+}
+export interface UiSelectController extends UiController {
+  /** Chooses values (one for a single select); returns the values chosen. */
+  select(value: string | readonly string[] | null): UiResult<string[]>;
+  clear(): UiResult<boolean>;
+  open(): UiResult<boolean>;
+  close(): UiResult<boolean>;
+  /** Reads the native select's options again after the host changed them. */
+  refresh(): UiResult<void>;
+  getState(): UiResult<{ value: string | string[] | null; open: boolean; query: string }>;
+}
 
 export interface UiCarouselOptions {
   /** Slides shown at once, 1 to 6; narrow screens show one. */
@@ -515,6 +565,8 @@ export function signature(target: UiTarget, options?: UiSignatureOptions): UiSig
 export function carousel(target: UiTarget, options?: UiCarouselOptions): UiCarouselController;
 /** Stars over a native radio group, or a group it builds in an empty element. */
 export function rating(target: UiTarget, options?: UiRatingOptions): UiRatingController;
+/** A searchable combobox over an element holding a native <select>. */
+export function select(target: UiTarget, options?: UiSelectOptions): UiSelectController;
 export function dialog(target: UiTarget, options?: UiDialogOptions): UiDialogController;
 export function drawer(target: UiTarget, options?: UiDrawerOptions): UiDialogController;
 export function popover(target: UiTarget, options?: UiOverlayOptions): UiOverlayController;
@@ -535,6 +587,7 @@ export interface UiApi {
   signature: typeof signature;
   carousel: typeof carousel;
   rating: typeof rating;
+  select: typeof select;
   dialog: typeof dialog;
   drawer: typeof drawer;
   popover: typeof popover;
