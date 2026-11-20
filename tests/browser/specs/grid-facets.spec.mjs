@@ -218,7 +218,11 @@ test('editing a bounded facet preserves unseen values of '+(condition.operator),
    {filterGroup:{operator:'and',filters:[condition,{column:'amount',operator:'ge',values:[0]}],groups:[]}}:{filters:[condition]};await CanopyX.createDataGrid(host,{view}).ready;
  },{rows,condition});
  const ids=()=>page.evaluate(async()=>{const rows=[];for await(const row of document.querySelector('[data-canopyx-host]').canopyx.prepareExport({scope:'filtered'}).rows())rows.push(row.id);return rows;});
- const before=await ids(),pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(200);
+ // Taking a value out and putting it back may move the filters into one top-level group, but never nests them deeper,
+ // so repeated edits stay within the eight levels groups allow.
+ const depth=()=>page.evaluate(()=>{const level=group=>group?1+Math.max(0,...group.groups.map(level)):0;
+  return level(document.querySelector('[data-canopyx-host]').canopyx.getQuery().filterGroup);});
+ const start=Math.max(1,await depth()),before=await ids(),pop=await editor(page);await expect(pop.locator('.cx-val')).toHaveCount(200);
  const remove=condition.operator==='contains'?'item-200':'item-010';
  if(condition.operator==='contains')await pop.getByRole('searchbox',{name:'Search values',exact:true}).fill(remove);
  const choice=pop.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:new RegExp('^'+remove+'$')})}).locator('input');
@@ -228,10 +232,5 @@ test('editing a bounded facet preserves unseen values of '+(condition.operator),
  const reopened=await editor(page);await reopened.getByRole('searchbox',{name:'Search values',exact:true}).fill(remove);
  const restore=reopened.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:new RegExp('^'+remove+'$')})}).locator('input');
  await restore.check();await reopened.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before);
- if(condition.operator==='ne')for(let i=0;i<9;i++){
-  const current=await editor(page),check=current.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^item-010$/})}).locator('input');
-  await check.uncheck();await current.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before.filter(id=>id!=='v10'));
-  const again=await editor(page);await again.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^item-010$/})}).locator('input').check();
-  await again.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before);
- }
+ expect(await depth()).toBeLessThanOrEqual(start);
 });

@@ -77,8 +77,8 @@ test('tag chips show whole or join the count, and a short header keeps one line 
   // A single tag wider than its column ends with an ellipsis inside the cell.
   const wide=row.locator('[aria-colindex="4"] .p-tag');await expect(wide).toHaveCount(1);
   await expect(wide).toHaveCSS('text-overflow','ellipsis');
-  const wideCell=await row.locator('[aria-colindex="4"]').boundingBox(),wideBox=await wide.boundingBox();
-  expect(wideBox.x+wideBox.width).toBeLessThanOrEqual(wideCell.x+wideCell.width);
+  // Presenter cells are drawn again while the grid settles, so the tag and its cell are measured together in the page.
+  expect(await row.locator('[aria-colindex="4"]').evaluate(cell=>cell.querySelector('.p-tag').getBoundingClientRect().right<=cell.getBoundingClientRect().right)).toBe(true);
   // Resizing the column chooses the chips again: wider shows the three a tags cell previews, narrower counts them again.
   await page.evaluate(()=>grid.setColumnWidth('tags',420));
   await expect(tags.locator('.p-tag')).toHaveCount(3);await expect(tags.getByRole('button',{name:'Tags: show complete text'})).toHaveText('+2');
