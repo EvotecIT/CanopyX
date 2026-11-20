@@ -1247,7 +1247,7 @@
     {
       "name": "calendar-screen",
       "label": "calendar shared screens",
-      "version": "9a76ba4c0bd20dae",
+      "version": "24372cf1cf703ff1",
       "script": "canopyx-calendar-screen.js",
       "style": "canopyx-calendar-screen.css",
       "runtimes": [
