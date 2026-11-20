@@ -138,6 +138,8 @@ test("hosted totals use explicit page values and never cached partial records", 
 test("a phone toolbar shows Filters as a compact control in line with the other toolbar controls", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await mount(page, view({ footers }));
+  // ready settles before the grid's first resize pass, which is when a narrow host takes the phone layout.
+  await expect(page.locator("[data-canopyx-host]")).toHaveClass(/\bcx-phone\b/);
   const filters = page.locator(".cx-grid-filters > summary"), columns = page.locator(".cx-grid-columns > summary");
   await expect(filters).toHaveAccessibleName(/Filters/);
   const [own, other] = [await filters.boundingBox(), await columns.boundingBox()];
