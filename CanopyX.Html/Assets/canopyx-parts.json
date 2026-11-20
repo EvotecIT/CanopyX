@@ -298,7 +298,7 @@
     {
       "name": "office-export",
       "label": "Office export writers",
-      "version": "dafe8f09eb2093dc",
+      "version": "122b3646b9e59dc5",
       "script": "canopyx-office-export.js",
       "runtimes": [
         "tree",
