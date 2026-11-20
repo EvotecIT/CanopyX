@@ -47,9 +47,11 @@ test("the browser compares texts as C# does: the shared fixture's hunks", async 
 });
 
 test("word marks match the shared fixture, as del and ins inside the changed lines", async ({ page }) => {
+  // One page for every case: navigating the same routed page once per case has stalled on load on Windows Chromium.
+  await mount(page, "createDiff", envelope("diff", { id: "w", label: "W", before: "a\n", after: "b\n", layout: "inline" }));
   for (const entry of cases.words) {
-    await page.unrouteAll();
-    await mount(page, "createDiff", envelope("diff", { id: "w", label: "W", before: entry.before + "\n", after: entry.after + "\n", layout: "inline" }));
+    await page.evaluate(view => api.update(view), envelope("diff", { id: "w", label: "W", before: entry.before + "\n", after: entry.after + "\n", layout: "inline" }));
+    await nextFrames(page);
     const marks = await page.evaluate(() => ["del", "ins"].map(tag => [...document.querySelectorAll(".cx-diff-code " + tag)].map(mark => {
       const code = mark.closest(".cx-diff-code"), sr = code.querySelector(".cx-sr-only").textContent.length;
       let start = 0; for (const node of code.childNodes) { if (node === mark) break; start += node.textContent.length; }
