@@ -42,6 +42,7 @@ public sealed partial class CanopyCalendar {
         Require(columns, _tone, "tone", CanopyColumnKind.Text);
         Require(columns, _source, "source", CanopyColumnKind.Text);
         Require(columns, _location, "location", CanopyColumnKind.Text);
+        ValidateEventLooks(columns);
         ValidateScreens();
 
         Distinct(Views, "Calendar views", value => value >= CanopyCalendarView.Month && value <= CanopyCalendarView.Months);

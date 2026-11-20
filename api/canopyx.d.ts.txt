@@ -158,6 +158,11 @@ export interface GridCalendarDefinition<Row extends GridRow=GridRow>{
   months?:number;
   print?:boolean;
   location?:GridColumnId<Row>;
+  color?:GridColumnId<Row>;
+  backgroundColor?:GridColumnId<Row>;
+  textColor?:GridColumnId<Row>;
+  url?:GridColumnId<Row>;
+  urlTarget?:"self"|"blank";
   merge?:boolean|{tone?:string};
   fadePast?:number;
   dayNotes?:readonly{date:string;text:string;tone?:string}[];
@@ -181,6 +186,16 @@ export interface GridCalendarEvent{
   readonly source?:string|null;
   readonly external?:boolean;
   readonly owners?:readonly string[];
+  readonly url?:string|null;
+  readonly color?:string|null;
+  readonly backgroundColor?:string|null;
+  readonly textColor?:string|null;
+}
+export interface GridEventClick{
+  readonly event:GridCalendarEvent;
+  readonly url:string|null;
+  readonly keyboard:boolean;
+  readonly occurrence:string|null;
 }
 export type GridCalendarTemplate=(context:{readonly event:GridCalendarEvent;readonly row:GridRow;readonly element:HTMLElement;readonly kind:"bar"|"chip"|"block"|"item"|"lane";readonly labels:Readonly<Record<string,string>>;}) => boolean|void;
 export interface GridCalendarMenuContext{
@@ -227,6 +242,10 @@ export interface CalendarEventInput{
   exceptions?:string;
   source?:string;
   location?:string;
+  color?:string;
+  backgroundColor?:string;
+  textColor?:string;
+  url?:string;
 }
 export interface CalendarOptions{
   events?:readonly CalendarEventInput[];
@@ -252,6 +271,7 @@ export interface CalendarOptions{
   live?:boolean|GridLiveDefinition;
   facets?:readonly string[]|GridFacetPanelDefinition;
   links?:boolean;
+  urlTarget?:"self"|"blank";
   calendar?:Omit<Partial<GridCalendarDefinition>,"menu"|"occurrence">&Omit<GridCalendarOptions,"menu"|"occurrence">&{menu?:boolean|GridCalendarOptions["menu"];occurrence?:GridCalendarDefinition["occurrence"]|GridCalendarOptions["occurrence"]};
   [hostOption:string]:unknown;
 }
@@ -1439,7 +1459,7 @@ import type{
 }
 from "./facets.js";
 import type{
-  GridCalendarDefinition,GridCalendarOptions,GridCalendarApi,GridCalendarState,GridCalendarSavedState,GridOccurrenceChange,GridRangeSource,GridEventCreate,GridEventReceive,CalendarOptions
+  GridCalendarDefinition,GridCalendarOptions,GridCalendarApi,GridCalendarState,GridCalendarSavedState,GridOccurrenceChange,GridRangeSource,GridEventCreate,GridEventReceive,GridEventClick,CalendarOptions
 }
 from "./calendar.js";
 export * from "./facets.js";
@@ -2262,6 +2282,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery=GridQuery,Row extends Gri
   onFacetPanel?:(event:{open:boolean}) => void;
   calendar?:GridCalendarOptions;
   onCalendar?:(event:GridCalendarState) => void;
+  onEventClick?:(event:GridEventClick) => boolean|void;
   onOccurrenceChange?:(event:GridOccurrenceChange) => boolean|void;
   onCreate?:(event:GridEventCreate) => boolean|void;
   onReceive?:(event:GridEventReceive) => boolean|void;

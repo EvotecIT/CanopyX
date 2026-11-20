@@ -124,6 +124,7 @@ CanopyX.CanopyCalendar.System.Boolean Hover { get; set; }
 CanopyX.CanopyCalendar.System.Boolean Menu { get; set; }
 CanopyX.CanopyCalendar.System.Boolean NavLinks { get; set; }
 CanopyX.CanopyCalendar.System.Boolean NowIndicator { get; set; }
+CanopyX.CanopyCalendar.System.Boolean OpenUrlInNewWindow { get; set; }
 CanopyX.CanopyCalendar.System.Boolean OutsideDays { get; set; }
 CanopyX.CanopyCalendar.System.Boolean Print { get; set; }
 CanopyX.CanopyCalendar.System.Boolean Reset { get; set; }
@@ -159,6 +160,8 @@ CanopyX.CanopyCalendar.System.Nullable<System.TimeSpan> MinTime { get; set; }
 CanopyX.CanopyCalendar.System.Nullable<System.TimeSpan> ScrollTime { get; set; }
 CanopyX.CanopyCalendar.System.String Start { get; set; }
 CanopyX.CanopyCalendar.System.String? AllDay { get; set; }
+CanopyX.CanopyCalendar.System.String? BackgroundColor { get; set; }
+CanopyX.CanopyCalendar.System.String? Color { get; set; }
 CanopyX.CanopyCalendar.System.String? Description { get; set; }
 CanopyX.CanopyCalendar.System.String? Display { get; set; }
 CanopyX.CanopyCalendar.System.String? End { get; set; }
@@ -173,15 +176,19 @@ CanopyX.CanopyCalendar.System.String? SeriesEnd { get; set; }
 CanopyX.CanopyCalendar.System.String? Source { get; set; }
 CanopyX.CanopyCalendar.System.String? Status { get; set; }
 CanopyX.CanopyCalendar.System.String? Subtitle { get; set; }
+CanopyX.CanopyCalendar.System.String? TextColor { get; set; }
 CanopyX.CanopyCalendar.System.String? TimeZone { get; set; }
 CanopyX.CanopyCalendar.System.String? Title { get; set; }
 CanopyX.CanopyCalendar.System.String? Tone { get; set; }
+CanopyX.CanopyCalendar.System.String? Url { get; set; }
 CanopyX.CanopyCalendar.static CanopyX.CanopyCalendar From<T>(System.Collections.Generic.IEnumerable<T> items, System.Func<T, System.String> title, System.Func<T, System.DateTime> start, System.Func<T, System.Nullable<System.DateTime>>? end = null, System.Func<T, System.String?>? id = null, System.Func<T, System.Boolean>? allDay = null, CanopyX.CanopyCalendarPreset preset = Basic, System.Action<T, CanopyX.CanopyCalendarEvent>? configure = null)
 CanopyX.CanopyCalendar.static CanopyX.CanopyCalendar From<T>(System.Collections.Generic.IEnumerable<T> items, System.Func<T, System.String> title, System.Func<T, System.DateTimeOffset> start, System.Func<T, System.Nullable<System.DateTimeOffset>>? end = null, System.Func<T, System.String?>? id = null, System.Func<T, System.Boolean>? allDay = null, CanopyX.CanopyCalendarPreset preset = Basic, System.Action<T, CanopyX.CanopyCalendarEvent>? configure = null)
 CanopyX.CanopyCalendar<T> : sealed class
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar Definition { get; }
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> AllDay(System.Linq.Expressions.Expression<System.Func<T, System.Boolean>> member)
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> AllDay(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.Boolean>>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> BackgroundColor(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Color(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member)
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Description(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member)
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> End(System.Linq.Expressions.Expression<System.Func<T, System.DateTime>> member)
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> End(System.Linq.Expressions.Expression<System.Func<T, System.DateTimeOffset>> member)
@@ -205,8 +212,10 @@ CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Start(System.Linq.Expression
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Start(System.Linq.Expressions.Expression<System.Func<T, System.Nullable<System.DateTimeOffset>>> member)
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Status<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member)
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Subtitle<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> TextColor(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member)
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Title<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member)
 CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Tone(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member)
+CanopyX.CanopyCalendar<T>.CanopyX.CanopyCalendar<T> Url(System.Linq.Expressions.Expression<System.Func<T, System.String?>> member, System.Boolean newWindow = False)
 CanopyX.CanopyCalendarAgendaSpan : enum System.Int32
 CanopyX.CanopyCalendarAgendaSpan.const CanopyX.CanopyCalendarAgendaSpan Day = 0
 CanopyX.CanopyCalendarAgendaSpan.const CanopyX.CanopyCalendarAgendaSpan Month = 2
@@ -264,6 +273,8 @@ CanopyX.CanopyCalendarEvent.System.DateTime Start { get; set; }
 CanopyX.CanopyCalendarEvent.System.Nullable<System.DateTime> End { get; set; }
 CanopyX.CanopyCalendarEvent.System.Nullable<System.DateTime> RecurrenceId { get; set; }
 CanopyX.CanopyCalendarEvent.System.String Title { get; set; }
+CanopyX.CanopyCalendarEvent.System.String? BackgroundColor { get; set; }
+CanopyX.CanopyCalendarEvent.System.String? Color { get; set; }
 CanopyX.CanopyCalendarEvent.System.String? Description { get; set; }
 CanopyX.CanopyCalendarEvent.System.String? Exceptions { get; set; }
 CanopyX.CanopyCalendarEvent.System.String? Id { get; set; }
@@ -271,6 +282,8 @@ CanopyX.CanopyCalendarEvent.System.String? Location { get; set; }
 CanopyX.CanopyCalendarEvent.System.String? Resource { get; set; }
 CanopyX.CanopyCalendarEvent.System.String? Series { get; set; }
 CanopyX.CanopyCalendarEvent.System.String? Source { get; set; }
+CanopyX.CanopyCalendarEvent.System.String? TextColor { get; set; }
+CanopyX.CanopyCalendarEvent.System.String? Url { get; set; }
 CanopyX.CanopyCalendarEventStyle : enum System.Int32
 CanopyX.CanopyCalendarEventStyle.const CanopyX.CanopyCalendarEventStyle Quiet = 0
 CanopyX.CanopyCalendarEventStyle.const CanopyX.CanopyCalendarEventStyle Strong = 1

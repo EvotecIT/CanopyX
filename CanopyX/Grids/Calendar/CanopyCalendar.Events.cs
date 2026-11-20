@@ -9,7 +9,7 @@ public sealed partial class CanopyCalendar {
     /// <summary>The fixed column ids of a calendar built from events.</summary>
     private const string ColumnTitle = "title", ColumnStart = "start", ColumnEnd = "end", ColumnAllDay = "allDay", ColumnDescription = "description", ColumnTone = "tone",
         ColumnResource = "resource", ColumnResourceIds = "resourceIds", ColumnRecurrence = "recurrence", ColumnExceptions = "exceptions", ColumnSource = "source", ColumnLocation = "location",
-        ColumnSeries = "series", ColumnRecurrenceId = "recurrenceId";
+        ColumnSeries = "series", ColumnRecurrenceId = "recurrenceId", ColumnColor = "color", ColumnBackgroundColor = "backgroundColor", ColumnTextColor = "textColor", ColumnUrl = "url";
 
     /// <summary>The columns of a calendar built from events that editing changes, and so are editable while the calendar edits.</summary>
     private static readonly string[] EditedColumns = { ColumnTitle, ColumnStart, ColumnEnd, ColumnResource, ColumnResourceIds, ColumnAllDay, ColumnRecurrence, ColumnExceptions, ColumnSeries, ColumnRecurrenceId };
@@ -66,6 +66,10 @@ public sealed partial class CanopyCalendar {
             _recurrenceId = ColumnRecurrenceId;
         }
         if (list.Exists(item => item.Source != null)) _source = Optional(grid, ColumnSource, "Source", true);
+        if (list.Exists(item => item.Color != null)) _color = Optional(grid, ColumnColor, "Colour", true);
+        if (list.Exists(item => item.BackgroundColor != null)) _backgroundColor = Optional(grid, ColumnBackgroundColor, "Background", true);
+        if (list.Exists(item => item.TextColor != null)) _textColor = Optional(grid, ColumnTextColor, "Text colour", true);
+        if (list.Exists(item => item.Url != null)) _url = Optional(grid, ColumnUrl, "Address", true);
 
         var ids = new HashSet<string>(StringComparer.Ordinal);
         for (var index = 0; index < list.Count; index++) {
@@ -79,6 +83,10 @@ public sealed partial class CanopyCalendar {
             if (item.AllDay) row.Cells[ColumnAllDay] = true;
             if (item.Description != null) row.Cells[ColumnDescription] = item.Description;
             if (item.Location != null) row.Cells[ColumnLocation] = item.Location;
+            if (item.Color != null) row.Cells[ColumnColor] = item.Color;
+            if (item.BackgroundColor != null) row.Cells[ColumnBackgroundColor] = item.BackgroundColor;
+            if (item.TextColor != null) row.Cells[ColumnTextColor] = item.TextColor;
+            if (item.Url != null) row.Cells[ColumnUrl] = item.Url;
             if (item.Tone.Name != null) row.Cells[ColumnTone] = item.Tone.Name;
             if (item.Resource != null) row.Cells[ColumnResource] = item.Resource;
             if (item.ResourceIds.Count > 0) {

@@ -302,3 +302,14 @@ test.describe("calendar shared screens", () => {
     expect(fs.readFileSync(path.join(examples, "calendar-family.html"), "utf8")).toContain('type="application/x-canopyx-calendar-screen"');
   });
 });
+
+test("a finished event with its own fill and text colour shows both again on hover", async ({ page }) => {
+  const events = [timed("done", "Stand-up", "anna", "09:00", "10:00", { backgroundColor: "#000000", textColor: "#ffffff" })];
+  await open(page, "fade-ink.html", screenPage({ events, sources: PEOPLE, date: "2026-10-16", view: "week", firstDay: 1, fadePast: 0.6 }));
+  const done = page.locator('.cx-cal-ev[data-cx-record="done"]');
+  await expect(done).toHaveClass(/cx-cal-past/);
+  await done.hover();
+  await expect(done).toHaveCSS("background-color", /^(rgb\(0, 0, 0\)|color\(srgb 0 0 0\))$/);
+  await expect(done).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(done.locator(".cx-cal-ev-time").first()).toHaveCSS("color", "rgb(255, 255, 255)");
+});

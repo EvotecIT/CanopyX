@@ -655,8 +655,8 @@ A grid's optional `calendar` object presents its records as events ([calendar.md
 (`days`), agenda, year, mini month (`mini`), week and day lists (`weekList`, `dayList`) and stacked months (`months`) views, and a timeline. Only `start` is required; every other key is written only when it
 differs from its default. Column references are ids of the same grid: `start`, `end`, `recurrenceId` and `seriesEnd` name
 date-and-time columns; `allDay` (booleans), `resource`, `recurrence` (rule text), `exceptions` (ISO instants or `yyyy-MM-dd`
-dates), `series`, `display`, `description`, `tone` (tone names), `source` (source ids) and `editable.allowedResources` name text columns; `title`, `subtitle` and `status` may name any
-column. `series` and `recurrenceId` (an override record replacing one occurrence) go together.
+dates), `series`, `display`, `description`, `tone` (tone names), `source` (source ids), `color`, `backgroundColor` and `textColor` (colours), `url` (event addresses) and `editable.allowedResources` name text columns; `title`, `subtitle` and `status` may name any
+column. `series` and `recurrenceId` (an override record replacing one occurrence) go together. `urlTarget` (`self` or `blank`) says where event addresses open; activating an event raises the cancelable `canopyx:eventClick` first ([calendar.md](calendar.md#colours-addresses-and-clicks)).
 
 ```json
 "calendar": { "start": "starts", "end": "ends", "resource": "host", "recurrence": "rule", "seriesEnd": "seriesEnd",

@@ -144,6 +144,35 @@ public sealed class CanopyCalendar<T> {
     /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
     public CanopyCalendar<T> Location(Expression<Func<T, string?>> member) { Definition.Location = Bind(member, false); return this; }
 
+    /// <summary>Sets the member that holds each event's own colour; a new column for it is hidden.</summary>
+    /// <param name="member">The member.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
+    /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
+    public CanopyCalendar<T> Color(Expression<Func<T, string?>> member) { Definition.Color = Bind(member, true); return this; }
+
+    /// <summary>Sets the member that holds each event's background colour; a new column for it is hidden.</summary>
+    /// <param name="member">The member.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
+    /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
+    public CanopyCalendar<T> BackgroundColor(Expression<Func<T, string?>> member) { Definition.BackgroundColor = Bind(member, true); return this; }
+
+    /// <summary>Sets the member that holds each event's text colour; a new column for it is hidden.</summary>
+    /// <param name="member">The member.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
+    /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
+    public CanopyCalendar<T> TextColor(Expression<Func<T, string?>> member) { Definition.TextColor = Bind(member, true); return this; }
+
+    /// <summary>Sets the member that holds each event's address, which activating the event opens; a new column for it is hidden.</summary>
+    /// <param name="member">The member.</param>
+    /// <param name="newWindow">Whether the address opens in a new window rather than the page itself.</param>
+    /// <returns>This builder.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="member"/> is null.</exception>
+    /// <exception cref="ArgumentException">The expression is not a member chain.</exception>
+    public CanopyCalendar<T> Url(Expression<Func<T, string?>> member, bool newWindow = false) { Definition.Url = Bind(member, true); Definition.OpenUrlInNewWindow = newWindow; return this; }
+
     /// <summary>Sets the member that holds each event's tone name, which wins over the status tone; a new column for it is hidden.</summary>
     /// <param name="member">The member.</param>
     /// <returns>This builder.</returns>
