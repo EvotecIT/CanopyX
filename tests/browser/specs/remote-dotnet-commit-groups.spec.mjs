@@ -1,52 +1,25 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
-import fs from "node:fs";
-import net from "node:net";
-import os from "node:os";
-import path from "node:path";
-import { repo, nextFrames } from "./support.mjs";
+import { nextFrames } from "./support.mjs";
+import { startFleetSample } from "./fleet-sample.mjs";
 
 // End to end against the fleet sample's editable page (/edit: gridCommit through POST /commit, saved to SQLite) and its
 // two-level grouped page (/by-site-os: groupBy levels and nested gridSummary documents). The browser side of both comes
 // from the editing and grouping parts; a runtime without them skips the tests that need them. Set CANOPYX_REMOTE_SAMPLE
 // to a FleetInventory.dll to test another build.
-const candidates = [process.env.CANOPYX_REMOTE_SAMPLE,
-  ...["Release", "Debug"].map(configuration => path.join(repo, "samples/FleetInventory/bin", configuration, "net10.0/FleetInventory.dll"))].filter(Boolean);
-const sample = candidates.find(file => fs.existsSync(file));
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const rows = 5000;
-let server, base, folder, parts = { editing: false, grouping: false };
+let base, stop, parts = { editing: false, grouping: false };
 
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  test.skip(!sample, "The fleet sample is not built: " + candidates.join(", "));
-  const port = await new Promise((resolve, reject) => {
-    const probe = net.createServer().once("error", reject).listen(0, "127.0.0.1", () => { const { port } = probe.address(); probe.close(() => resolve(port)); });
-  });
-  folder = fs.mkdtempSync(path.join(os.tmpdir(), "canopyx-commit-groups-e2e-"));
-  base = "http://127.0.0.1:" + port;
-  server = spawn("dotnet", [sample, "--urls", base, "--database", path.join(folder, "fleet.db"), "--rows", String(rows)],
-    { cwd: path.dirname(sample), stdio: "ignore", env: { ...process.env, ASPNETCORE_ENVIRONMENT: "Production", DOTNET_NOLOGO: "1" } });
-  const deadline = Date.now() + 90000;
-  for (;;) {
-    try { if ((await fetch(base + "/api/machines-edit/view")).ok) break; } catch { }
-    if (Date.now() > deadline || server.exitCode !== null) throw new Error("The fleet sample did not start.");
-    await new Promise(resolve => setTimeout(resolve, 250));
-  }
+  ({ base, stop } = await startFleetSample({ rows, prefix: "canopyx-commit-groups-e2e-", readyPath: "/api/machines-edit/view" }));
   // Single-file pages carry the parts their grids need; a runtime without the editing or grouping part has none to carry.
   parts = { editing: (await (await fetch(base + "/edit")).text()).includes("application/x-canopyx-editing"),
     grouping: (await (await fetch(base + "/by-site-os")).text()).includes("application/x-canopyx-grouping") };
 });
 
-test.afterAll(async () => {
-  if (server && server.exitCode === null) {
-    const exited = new Promise(resolve => server.once("exit", resolve));
-    server.kill();
-    await exited;
-  }
-  if (folder) fs.rmSync(folder, { recursive: true, force: true, maxRetries: 5 });
-});
+test.afterAll(async () => { await stop?.(); });
 
 test.beforeEach(async ({ page }) => {
   page.pageErrors = [];
