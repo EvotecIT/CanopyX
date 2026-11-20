@@ -128,9 +128,12 @@ test("the first row page keeps the loading grid within its viewport", async ({ p
   release();
   await expect(page.locator(".cx-row[data-cx-id='r00000']")).toBeVisible();
   await expect(page.getByRole("grid")).toHaveAttribute("aria-rowcount", "1001");
-  const { minimums, height } = await page.evaluate(() => ({ minimums: window.loadingMinimums, height: innerHeight }));
+  const { minimums, height, finalMinimum } = await page.locator("[data-canopyx-host]").evaluate(host => ({
+    minimums: window.loadingMinimums, height: innerHeight, finalMinimum: parseFloat(getComputedStyle(host).minHeight)
+  }));
   expect(minimums.length).toBeGreaterThan(0);
   expect(Math.max(...minimums)).toBeLessThanOrEqual(height);
+  expect(finalMinimum).toBeLessThanOrEqual(height);
 });
 
 // A reporting grid that readers can group, but that totals and groups nothing yet, shows its first windows early too.
