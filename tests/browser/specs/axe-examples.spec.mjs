@@ -31,11 +31,18 @@ function pages() {
 // Each page is scanned in its own browser contexts, so the pages can run on any worker or shard.
 test.describe.configure({ mode: "parallel" });
 
+// Pages with 100,000 rows can take minutes to scan in some engines, so they are scale cases: they run with the explicit
+// benchmark selection (docs/testing.md). The same grid at 500 rows, as compressed row data in the page and in a bundle
+// (large/grid-compact.html, large/bundle-compact/), is scanned in every run; row objects are covered by the other grid pages.
+const SCALE_PAGES = new Set(["large/grid-100k.html", "large/grid-100k-objects.html", "large/bundle/index.html"]);
+
 const all = pages();
 for (const name of all) {
   const twin = name.endsWith("-dark.html") || all.includes(name.replace(/\.html$/, "-dark.html"));
   const schemes = twin ? [name.endsWith("-dark.html") ? "dark" : "light"] : ["light", "dark"];
-  test(`axe finds no serious or critical violations on ${name}`, async ({ browser }, testInfo) => {
+  test(`axe finds no serious or critical violations on ${name}`, SCALE_PAGES.has(name) ? { tag: "@benchmark" } : {}, async ({ browser }, testInfo) => {
+    // A scale page can take minutes per scan, and a test runs up to four scans (two widths, and both schemes without a twin).
+    if (SCALE_PAGES.has(name)) test.setTimeout(20 * 60000);
     const found = [];
     for (const [width, options] of Object.entries(VIEWPORTS)) {
       const context = await browser.newContext({ ...options, colorScheme: schemes[0] });
