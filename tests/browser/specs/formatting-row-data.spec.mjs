@@ -35,10 +35,12 @@ function compactView(transport, reporting = false) {
 async function openCompact(page, transport, reporting = false, editableDrawer = null) {
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   // Hold the real scheduling boundary between decoded chunks. The first query and drawer can paint a partial prefix.
+  // A slow slice also pauses inside a chunk, before its rows join; only pauses after the first chunk's rows are held.
   await page.addInitScript(() => {
     let release; const hold = new Promise(resolve => { release = resolve; });
     window.releaseDecode = release;
-    Object.defineProperty(globalThis, "scheduler", { configurable: true, value: { yield: () => hold } });
+    const decoded = () => document.querySelector("[data-canopyx-host]")?.canopyx?.view.rows.length >= 2;
+    Object.defineProperty(globalThis, "scheduler", { configurable: true, value: { yield: () => decoded() ? hold : Promise.resolve() } });
   });
   const view = compactView(transport, reporting);
   const setup = reporting || editableDrawer ? 'CanopyX.configure("compact-format",{editing:{' +
