@@ -39,7 +39,8 @@ export async function startFleetSample({ rows, prefix, readyPath }) {
   };
   const deadline = Date.now() + SAMPLE_START_MS;
   for (;;) {
-    try { if ((await fetch(base + readyPath)).ok) break; } catch { }
+    // Bound each request by what is left of the budget, so a server that never answers still reaches the stop below.
+    try { if ((await fetch(base + readyPath, { signal: AbortSignal.timeout(Math.max(1, deadline - Date.now())) })).ok) break; } catch { }
     if (Date.now() > deadline || server.exitCode !== null) { await stop(); throw new Error("The fleet sample did not start."); }
     await new Promise(resolve => setTimeout(resolve, 250));
   }
