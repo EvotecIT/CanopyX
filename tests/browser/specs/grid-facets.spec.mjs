@@ -228,10 +228,14 @@ test('editing a bounded facet preserves unseen values of '+(condition.operator),
  const reopened=await editor(page);await reopened.getByRole('searchbox',{name:'Search values',exact:true}).fill(remove);
  const restore=reopened.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:new RegExp('^'+remove+'$')})}).locator('input');
  await restore.check();await reopened.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before);
- if(condition.operator==='ne')for(let i=0;i<9;i++){
+ if(condition.operator==='ne'){
+  // Taking a value out and putting it back leaves the filter group exactly as it was, so repeated edits never nest it
+  // deeper (groups allow eight levels).
+  const group=()=>page.evaluate(()=>document.querySelector('[data-canopyx-host]').canopyx.getQuery().filterGroup),start=await group();
   const current=await editor(page),check=current.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^item-010$/})}).locator('input');
   await check.uncheck();await current.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before.filter(id=>id!=='v10'));
   const again=await editor(page);await again.locator('.cx-val').filter({has:page.locator('.cx-facet-value').filter({hasText:/^item-010$/})}).locator('input').check();
   await again.getByRole('button',{name:'Done',exact:true}).click();expect(await ids()).toEqual(before);
+  expect(await group()).toEqual(start);
  }
 });
