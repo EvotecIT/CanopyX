@@ -1,52 +1,22 @@
 import { test, expect } from "@playwright/test";
-import { spawn } from "node:child_process";
 import fs from "node:fs";
-import net from "node:net";
-import os from "node:os";
-import path from "node:path";
-import { repo, openGridControl, nextFrames } from "./support.mjs";
+import { openGridControl, nextFrames } from "./support.mjs";
+import { startFleetSample } from "./fleet-sample.mjs";
 
 // End to end against the real fleet sample: ASP.NET Core endpoints from CanopyX.AspNetCore over EF Core and SQLite.
 // The solution build produces the sample; set CANOPYX_REMOTE_SAMPLE to its FleetInventory.dll to use another build.
-const candidates = [process.env.CANOPYX_REMOTE_SAMPLE,
-  ...["Release", "Debug"].map(configuration => path.join(repo, "samples/FleetInventory/bin", configuration, "net10.0/FleetInventory.dll"))].filter(Boolean);
-const sample = candidates.find(file => fs.existsSync(file));
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const rows = 20000;
-// A cold start that seeds the rows may take most of this on a hosted Windows runner. The hook that waits for it gets the
-// same budget plus a margin for its own setup and for stopping a sample that never answered.
-const SAMPLE_START_MS = 90000, SAMPLE_HOOK_MARGIN_MS = 15000;
-let server, base, folder;
+let base, stop;
 
 // A cold Windows WebKit grid can spend almost a minute becoming ready before the real query assertions run.
 test.describe.configure({ mode: "serial", timeout: 90000 });
 
 test.beforeAll(async () => {
-  test.setTimeout(SAMPLE_START_MS + SAMPLE_HOOK_MARGIN_MS);
-  test.skip(!sample, "The fleet sample is not built: " + candidates.join(", "));
-  const port = await new Promise((resolve, reject) => {
-    const probe = net.createServer().once("error", reject).listen(0, "127.0.0.1", () => { const { port } = probe.address(); probe.close(() => resolve(port)); });
-  });
-  folder = fs.mkdtempSync(path.join(os.tmpdir(), "canopyx-remote-e2e-"));
-  base = "http://127.0.0.1:" + port;
-  server = spawn("dotnet", [sample, "--urls", base, "--database", path.join(folder, "fleet.db"), "--rows", String(rows)],
-    { cwd: path.dirname(sample), stdio: "ignore", env: { ...process.env, ASPNETCORE_ENVIRONMENT: "Production", DOTNET_NOLOGO: "1" } });
-  const deadline = Date.now() + SAMPLE_START_MS;
-  for (;;) {
-    try { if ((await fetch(base + "/api/machines/view")).ok) break; } catch { }
-    if (Date.now() > deadline || server.exitCode !== null) throw new Error("The fleet sample did not start.");
-    await new Promise(resolve => setTimeout(resolve, 250));
-  }
+  ({ base, stop } = await startFleetSample({ rows, prefix: "canopyx-remote-e2e-", readyPath: "/api/machines/view" }));
 });
 
-test.afterAll(async () => {
-  if (server && server.exitCode === null) {
-    const exited = new Promise(resolve => server.once("exit", resolve));
-    server.kill();
-    await exited;
-  }
-  if (folder) fs.rmSync(folder, { recursive: true, force: true, maxRetries: 5 });
-});
+test.afterAll(async () => { await stop?.(); });
 
 async function open(page, url = "/") {
   const queries = [];

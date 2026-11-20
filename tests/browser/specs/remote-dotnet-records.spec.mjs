@@ -1,50 +1,23 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { spawn } from "node:child_process";
-import fs from "node:fs";
-import net from "node:net";
-import os from "node:os";
 import path from "node:path";
-import { repo } from "./support.mjs";
+import { startFleetSample } from "./fleet-sample.mjs";
 
 // Record details end to end: the fleet sample's record route (CanopyX.AspNetCore over EF Core and SQLite) answers the record
 // panel's gridRecordQuery documents. The solution build produces the sample; CANOPYX_REMOTE_SAMPLE points at another build.
 // CANOPYX_RECORD_EVIDENCE names a folder for the drawer captures (light and dark, 1440 and 390); otherwise they go to the test output.
-const candidates = [process.env.CANOPYX_REMOTE_SAMPLE,
-  ...["Release", "Debug"].map(configuration => path.join(repo, "samples/FleetInventory/bin", configuration, "net10.0/FleetInventory.dll"))].filter(Boolean);
-const sample = candidates.find(file => fs.existsSync(file));
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const rows = 2000;
 const drawer = page => page.locator("dialog.cx-drawer");
-let server, base, folder;
+let base, stop;
 
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  test.skip(!sample, "The fleet sample is not built: " + candidates.join(", "));
-  const port = await new Promise((resolve, reject) => {
-    const probe = net.createServer().once("error", reject).listen(0, "127.0.0.1", () => { const { port } = probe.address(); probe.close(() => resolve(port)); });
-  });
-  folder = fs.mkdtempSync(path.join(os.tmpdir(), "canopyx-records-e2e-"));
-  base = "http://127.0.0.1:" + port;
-  server = spawn("dotnet", [sample, "--urls", base, "--database", path.join(folder, "fleet.db"), "--rows", String(rows)],
-    { cwd: path.dirname(sample), stdio: "ignore", env: { ...process.env, ASPNETCORE_ENVIRONMENT: "Production", DOTNET_NOLOGO: "1" } });
-  const deadline = Date.now() + 90000;
-  for (;;) {
-    try { if ((await fetch(base + "/api/machines/view")).ok) break; } catch { }
-    if (Date.now() > deadline || server.exitCode !== null) throw new Error("The fleet sample did not start.");
-    await new Promise(resolve => setTimeout(resolve, 250));
-  }
+  ({ base, stop } = await startFleetSample({ rows, prefix: "canopyx-records-e2e-", readyPath: "/api/machines/view" }));
 });
 
-test.afterAll(async () => {
-  if (server && server.exitCode === null) {
-    const exited = new Promise(resolve => server.once("exit", resolve));
-    server.kill();
-    await exited;
-  }
-  if (folder) fs.rmSync(folder, { recursive: true, force: true, maxRetries: 5 });
-});
+test.afterAll(async () => { await stop?.(); });
 
 /** Opens the machines page and records the record requests it sends. */
 async function open(page, url = "/") {
