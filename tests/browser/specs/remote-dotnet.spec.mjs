@@ -13,12 +13,16 @@ const candidates = [process.env.CANOPYX_REMOTE_SAMPLE,
 const sample = candidates.find(file => fs.existsSync(file));
 const api = "document.querySelector('[data-canopyx-host]').canopyx";
 const rows = 20000;
+// A cold start that seeds the rows may take most of this on a hosted Windows runner. The hook that waits for it gets the
+// same budget plus a margin for its own setup and for stopping a sample that never answered.
+const SAMPLE_START_MS = 90000, SAMPLE_HOOK_MARGIN_MS = 15000;
 let server, base, folder;
 
 // A cold Windows WebKit grid can spend almost a minute becoming ready before the real query assertions run.
 test.describe.configure({ mode: "serial", timeout: 90000 });
 
 test.beforeAll(async () => {
+  test.setTimeout(SAMPLE_START_MS + SAMPLE_HOOK_MARGIN_MS);
   test.skip(!sample, "The fleet sample is not built: " + candidates.join(", "));
   const port = await new Promise((resolve, reject) => {
     const probe = net.createServer().once("error", reject).listen(0, "127.0.0.1", () => { const { port } = probe.address(); probe.close(() => resolve(port)); });
@@ -27,7 +31,7 @@ test.beforeAll(async () => {
   base = "http://127.0.0.1:" + port;
   server = spawn("dotnet", [sample, "--urls", base, "--database", path.join(folder, "fleet.db"), "--rows", String(rows)],
     { cwd: path.dirname(sample), stdio: "ignore", env: { ...process.env, ASPNETCORE_ENVIRONMENT: "Production", DOTNET_NOLOGO: "1" } });
-  const deadline = Date.now() + 90000;
+  const deadline = Date.now() + SAMPLE_START_MS;
   for (;;) {
     try { if ((await fetch(base + "/api/machines/view")).ok) break; } catch { }
     if (Date.now() > deadline || server.exitCode !== null) throw new Error("The fleet sample did not start.");
