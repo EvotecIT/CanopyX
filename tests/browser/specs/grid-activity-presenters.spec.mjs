@@ -75,7 +75,9 @@ test('state pills, run slots and log previews keep text as the meaning',async({p
   const slots=row(page,'backup').locator('.p-slots');
   await expect(slots).toHaveAttribute('aria-label','Recent runs: 2 of 3 runs succeeded');
   await expect(slots.locator('i')).toHaveCount(4);await expect(slots.locator('i.empty')).toHaveAttribute('title','Tue: No data');
-  expect(await slots.locator('i.danger').evaluate(element=>element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(14);
+  // Presenter cells are drawn again while the grid settles; a replaced cell measures zero, so the slot is read until it is
+  // the one in the document.
+  await expect.poll(()=>slots.locator('i.danger').evaluate(element=>element.isConnected?element.getBoundingClientRect().height:0)).toBeGreaterThanOrEqual(14);
   // Fixed rows preview the first line and open the complete log in the text dialog.
   const preview=row(page,'backup').locator('.p-log-preview').first();
   await expect(preview.locator('.p-log-line')).toHaveCount(1);await expect(preview.locator('.p-log-time')).toHaveText('02:00:01');
@@ -94,13 +96,14 @@ test('logs in rows that size to content bound their lines, show all in place and
   const log=row(page,'backup').locator('.p-log').first();
   await expect(log.locator('.p-log-line')).toHaveCount(2);
   await expect(log.locator('.p-log-level').nth(1)).toHaveClass(/cx-tone-muted/);
-  const before=await row(page,'backup').evaluate(element=>element.offsetHeight);
+  // A row that was just replaced measures zero, which would make any later height look taller.
+  let before=0;await expect.poll(async()=>before=await row(page,'backup').evaluate(element=>element.isConnected?element.offsetHeight:0)).toBeGreaterThan(0);
   await log.getByRole('button',{name:'Show all 4'}).click();
   await expect(log.locator('.p-log-line')).toHaveCount(4);await expect(log.locator('.p-log-level').nth(3)).toHaveClass(/cx-tone-danger/);
   await expect(log.getByRole('button',{name:'Copy: Log'})).toBeFocused();
   await expect.poll(()=>row(page,'backup').evaluate(element=>element.offsetHeight)).toBeGreaterThan(before);
   // The message wraps within the column instead of widening the row.
-  expect(await log.evaluate(element=>element.scrollWidth<=element.closest('[role="gridcell"]').clientWidth)).toBe(true);
+  await expect.poll(()=>log.evaluate(element=>element.isConnected&&element.scrollWidth>0&&element.scrollWidth<=element.closest('[role="gridcell"]').clientWidth)).toBe(true);
   await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:text=>{window.copied=text;return Promise.resolve();}}}));
   await log.getByRole('button',{name:'Copy: Log'}).click();
   await expect.poll(()=>page.evaluate(()=>window.copied)).toBe(events.map(event=>event.time.slice(11,19)+' '+event.kind+' '+event.summary).join('\n'));
