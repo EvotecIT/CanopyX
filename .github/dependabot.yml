@@ -2,6 +2,13 @@ version: 2
 updates:
 - package-ecosystem: nuget
   directory: /
+  # Update HtmlTinkerX and the Node Playwright runner together.
+  ignore:
+  - dependency-name: "HtmlTinkerX"
+    update-types:
+    - version-update:semver-major
+    - version-update:semver-minor
+    - version-update:semver-patch
   schedule:
     interval: daily
   cooldown:
@@ -15,6 +22,13 @@ updates:
       - '*'
 - package-ecosystem: npm
   directory: /tests/browser
+  # Match the Playwright runtime installed by HtmlTinkerX.
+  ignore:
+  - dependency-name: "@playwright/test"
+    update-types:
+    - version-update:semver-major
+    - version-update:semver-minor
+    - version-update:semver-patch
   schedule:
     interval: daily
   cooldown:
