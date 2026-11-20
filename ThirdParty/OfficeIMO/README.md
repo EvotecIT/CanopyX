@@ -2,14 +2,14 @@
 
 These files are unmodified bundles from OfficeIMO.JavaScript (`@evotecit/officeimo`), published under the MIT license. `LICENSE` preserves its license and copyright notice.
 
-They come from [EvotecIT/OfficeIMO](https://github.com/EvotecIT/OfficeIMO) commit `2255c5d5b3c373fe899a40b9fa585338c4161300`, folder `OfficeIMO.JavaScript/bundles`. That commit has not been published to npm yet; it is the first one with the shared writer core and the thin CanopyX adapter.
+They come from [EvotecIT/OfficeIMO](https://github.com/EvotecIT/OfficeIMO) commit `a4f72e032efa0aec742887c30da865326f8efa96`, folder `OfficeIMO.JavaScript/bundles`. The adapter accepts visible-row scope in workbook metadata.
 
 | File | SHA-256 |
 | --- | --- |
 | `officeimo.js` | `005cc5998188f5b5b7e5820f63ef2e30ef1b8b31544214d52eba7400fce3c34c` |
 | `officeimo.min.js` | `9dc32eb32be5657cc0b9075fcc852cb87832a8ff2d9579053f412771e3af6713` |
-| `officeimo-canopyx-adapter.js` | `26fafde77c0961d0309ca1a74cd5ec347854efe2f63d549355eb5f10050464c1` |
-| `officeimo-canopyx-adapter.min.js` | `0c7c780747ccf7d1d239051dddc7af4a40f38c6056fb501a1d74130254a7d47e` |
+| `officeimo-canopyx-adapter.js` | `e3d807646402a6de19c96d066a425ff76891d4d7f816a21da64a7eb3a9e30883` |
+| `officeimo-canopyx-adapter.min.js` | `b951be9f6390fc668fc779505bb45809f959711e6ce8c070a305c06c0a67b429` |
 | `officeimo-csv.js` | `24fc01b72fe7c02a03447462c25d52f532a96e523eae795268e2c2bdb09a4eca` |
 | `officeimo-csv.min.js` | `24ab84682e9fe2fba65eef7b9d56e8ca9bf6ed0f900c3c66af1995b3efbfef90` |
 

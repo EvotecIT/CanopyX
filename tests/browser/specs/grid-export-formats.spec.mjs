@@ -369,16 +369,17 @@ test("an inline tree's Office exports outline its workbook rows and indent the t
   const painted = pdfRuns(files.pdf).map(run => run.text);
   for (const text of ["Alpha", "    Alpha one", "        Deep", "    Beta one"]) expect(painted).toContain(text);
 });
-test("a raw tree workbook led by a timestamp column keeps descendants' timestamps exact", async ({ page }) => {
+test("a visible-row tree workbook keeps timestamps exact and records its scope", async ({ page }) => {
   const view = tree({ columns: [{ id: "name", title: "Name", kind: "text" }, { id: "seen", title: "Seen", kind: "datetime" }], exportFormats: ["xlsx"],
     roots: [{ id: "a", label: "Alpha", expanded: true, cells: { seen: "2026-11-01T10:00:00Z" }, children: [
       { id: "a1", label: "Alpha one", cells: { seen: "2026-11-02T10:00:00Z" } }] }] });
   await open(page, view, "", "tree");
   await page.addScriptTag({ content: fs.readFileSync(path.join(repo, "CanopyX.Html/Assets/canopyx-office-export.js"), "utf8") });
   const file = await page.evaluate(async api => {
-    const result = await eval(api).exportAs("xlsx", { scope: "all", values: "raw", columns: ["seen", "name"], download: false });
+    const result = await eval(api).exportAs("xlsx", { scope: "visible", values: "raw", columns: ["seen", "name"], includeMetadata: true, download: false });
     return [...new Uint8Array(await result.blob.arrayBuffer())];
   }, api);
+  expect(zipEntry(file, "xl/worksheets/sheet2.xml")).toMatch(/<row[^>]*>(?:(?!<\/row>)[\s\S])*?>scope<\/t>(?:(?!<\/row>)[\s\S])*?>visible<\/t>/);
   const sheet = zipEntry(file, "xl/worksheets/sheet1.xml");
   expect(sheet).not.toContain("    2026");
   expect([...sheet.matchAll(/outlineLevel="(\d)"/g)].map(match => match[1])).toEqual(["1"]);
