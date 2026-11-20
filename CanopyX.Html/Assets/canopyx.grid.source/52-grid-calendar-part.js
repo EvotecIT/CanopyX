@@ -119,7 +119,7 @@
     const hostOptions = Object.fromEntries(Object.entries(options).filter(([name]) => !CAL_OWN.has(name)));
     if (options.links) hostOptions.linkEvents = true;
     // onEventClick is a grid hook; under calendar it reaches the grid unless the options give their own.
-    if (typeof hooks.onEventClick === "function") { if (hostOptions.onEventClick === undefined) hostOptions.onEventClick = hooks.onEventClick; delete hooks.onEventClick; }
+    if (typeof hooks.onEventClick === "function") { if (typeof hostOptions.onEventClick !== "function") hostOptions.onEventClick = hooks.onEventClick; delete hooks.onEventClick; }
     if (Object.keys(hooks).length) hostOptions.calendar = hooks;
     return createDataGrid(host, { ...hostOptions, view });
   }

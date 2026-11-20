@@ -68,6 +68,8 @@
     budget.bytes += bytes; budget.rows += rows;
   }
   /** Feed values are text/data only. Namespaced identities keep different sources and grid records independent. */
+  /** A feed event's colour as written, or null for anything but text: an unusable colour leaves the event's tone. */
+  function calFeedColor(value) { return typeof value === "string" && value.length <= 10000 ? value : null; }
   function calJsonRows(items, source) {
     if (!Array.isArray(items) || items.length > 5000) throw new Error("A JSON feed is an array of at most 5,000 events.");
     const ids = new Set(), identity = id => "json:" + JSON.stringify([source, id]);
@@ -78,13 +80,13 @@
       const id = item.id ?? String(index + 1);
       if (typeof id !== "string" || !CAL_ID.test(id) || ids.has(id)) throw new Error("JSON event ids must be unique identifiers.");
       ids.add(id);
-      for (const name of ["description", "location", "resource", "recurrence", "exceptions", "series", "recurrenceId", "color", "backgroundColor", "textColor", "url"]) if (item[name] != null && (typeof item[name] !== "string" || item[name].length > 10000)) throw new Error("Invalid JSON event " + name + ".");
+      for (const name of ["description", "location", "resource", "recurrence", "exceptions", "series", "recurrenceId", "url"]) if (item[name] != null && (typeof item[name] !== "string" || item[name].length > 10000)) throw new Error("Invalid JSON event " + name + ".");
       if (item.allDay !== undefined && typeof item.allDay !== "boolean") throw new Error("JSON allDay is a boolean.");
       const allDay = item.allDay ?? item.start.length === 10, normalize = value => value?.length === 10 ? value + "T00:00:00Z" : value;
       return { id: identity(id), external: source, cells: {}, fields: { title: item.title, start: normalize(item.start), end: normalize(item.end), allDay,
         description: item.description || "", location: item.location || "", resource: item.resource || null, resourceIds: calResourceIds(item.resourceIds), recurrence: item.recurrence,
         exceptions: item.exceptions, series: item.series ? identity(item.series) : null, recurrenceId: normalize(item.recurrenceId),
         // Colours and an address, checked like a record's when the event is read.
-        color: item.color ?? null, backgroundColor: item.backgroundColor ?? null, textColor: item.textColor ?? null, url: item.url ?? null } };
+        color: calFeedColor(item.color), backgroundColor: calFeedColor(item.backgroundColor), textColor: calFeedColor(item.textColor), url: item.url ?? null } };
     });
   }

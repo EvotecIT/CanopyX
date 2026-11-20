@@ -88,6 +88,16 @@ test("urlTarget blank opens the address in a new window without an opener", asyn
   expect(page.url()).toBe("http://canopyx.test/blank.html");
 });
 
+test("a calendar's own onEventClick hook still runs when the top-level option is not a function", async ({ page }) => {
+  await page.route("http://canopyx.test/tickets/42", route => route.fulfill({ contentType: "text/html", body: "<title>Ticket 42</title>" }));
+  const hooks = "{ onEventClick: null, calendar: { onEventClick: detail => { window.calls = (window.calls || 0) + 1; return false; } } }";
+  await openBuilt(page, "nested.html", calendarPage({ events: EVENTS, date: "2026-10-16", view: "week" }, "", hooks));
+  await event(page, "link").click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(page.url()).toBe("http://canopyx.test/nested.html");
+  expect(await page.evaluate(() => window.calls)).toBe(1);
+});
+
 test("a calendar written from C# takes its colours and addresses, and CanopyX.configure gives it an onEventClick hook", async ({ page, context }) => {
   const fs = await import("node:fs"), path = await import("node:path"), { examples } = await import("./support.mjs");
   // A HeadHtml script runs after the runtime and before the page mounts its views, as CanopyHtmlOptions.HeadHtml writes it.
@@ -158,11 +168,16 @@ test("a hook under calendar options cancels like the grid option, and hovering k
 
 test("events of a JSON feed carry their own colours and addresses", async ({ page }) => {
   await page.route(/http:\/\/canopyx\.test\/feed\.json.*/, route => route.fulfill({ contentType: "application/json", body: JSON.stringify([
-    { id: "f1", title: "Feed change", start: "2026-10-16T15:00:00Z", end: "2026-10-16T16:00:00Z", backgroundColor: "#bfdbfe", textColor: "#1e3a8a", url: "/tickets/7" }]) }));
+    { id: "f1", title: "Feed change", start: "2026-10-16T15:00:00Z", end: "2026-10-16T16:00:00Z", backgroundColor: "#bfdbfe", textColor: "#1e3a8a", url: "/tickets/7" },
+    // Colours that are not text are ignored like any other unusable colour; the event and the rest of the feed still show.
+    { id: "f2", title: "Odd colours", start: "2026-10-16T17:00:00Z", end: "2026-10-16T18:00:00Z", color: 7, backgroundColor: { r: 1 }, textColor: true }]) }));
   await page.route("http://canopyx.test/tickets/7", route => route.fulfill({ contentType: "text/html", body: "<title>Ticket 7</title>" }));
   await openBuilt(page, "feed.html", calendarPage({ events: [], date: "2026-10-16", view: "week", sources: [{ id: "feed", label: "Feed", url: "/feed.json" }] }));
   const feed = page.locator(".cx-cal-ev", { hasText: "Feed change" }).first();
   await expect(feed).toBeVisible();
+  const odd = page.locator(".cx-cal-ev", { hasText: "Odd colours" }).first();
+  await expect(odd).toBeVisible();
+  expect(await odd.evaluate(element => [element.getAttribute("style") || "", element.hasAttribute("data-cx-fill"), element.hasAttribute("data-cx-ink")])).toEqual([expect.not.stringMatching(/--cx-ev/), false, false]);
   expect(await feed.evaluate(element => [getComputedStyle(element).backgroundColor, getComputedStyle(element).color])).toEqual(["rgb(191, 219, 254)", "rgb(30, 58, 138)"]);
   await feed.click();
   await expect(page).toHaveURL("http://canopyx.test/tickets/7");
