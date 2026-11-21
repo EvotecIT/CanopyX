@@ -1,5 +1,6 @@
 using CanopyX.Html;
 using CanopyX.Html.Ui;
+using CanopyX.Tests.Changes;
 using CanopyX.Tests.Protocol;
 
 namespace CanopyX.Tests.Views;
@@ -47,5 +48,29 @@ public sealed class AuthoringConventionTests {
         grid.FormatRules[1].Style.Mark = null;
         grid.FormatRules[1].Style.Icon = Icon.Named("tabler:server");
         Assert.Throws<InvalidOperationException>(() => grid.ToJson());
+        // A mark shares the wire field with icon names, so one spelled like an icon would draw the icon, or nothing.
+        grid.FormatRules[1].Style.Icon = Icon.None;
+        foreach (var reserved in new[] { "up", "none", "auto" }) {
+            grid.FormatRules[1].Style.Mark = reserved;
+            Assert.Contains("name of a formatting icon", Assert.Throws<InvalidOperationException>(() => grid.ToJson()).Message);
+        }
+    }
+
+    [Fact]
+    public void ToneNamesTheProtocolCannotCarry_AreRefusedWhenADocumentIsRead() {
+        Assert.Equal("1st", Tone.Named("1st").Name);
+        var changes = ChangeViewTests.List().ToJson();
+        Assert.Contains("\"tone\":\"danger\"", changes);
+        Assert.Contains("invalid tone", Assert.Throws<InvalidOperationException>(() => CanopyChangeList.FromJson(changes.Replace("\"tone\":\"danger\"", "\"tone\":\"1st\""))).Message);
+
+        var matrix = new CanopyMatrix("checks", "Checks").State("bad", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross);
+        matrix.Rows.Item("r", "Server");
+        matrix.Columns.Item("dns", "DNS");
+        matrix.Set("r", "dns", "bad");
+        var json = matrix.ToJson();
+        Assert.Contains("\"tone\":\"danger\"", json);
+        Assert.Throws<InvalidOperationException>(() => CanopyMatrix.FromJson(json.Replace("\"tone\":\"danger\"", "\"tone\":\"1st\"")));
+        matrix.States[0].Tone = Tone.Named("1st");
+        Assert.Contains("The state 'bad' has an invalid tone", Assert.Throws<InvalidOperationException>(() => matrix.ToJson()).Message);
     }
 }

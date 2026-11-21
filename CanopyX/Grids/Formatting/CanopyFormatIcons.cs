@@ -68,6 +68,8 @@ public static class CanopyFormatIcons {
         var points = 0;
         foreach (var unit in mark) if (!char.IsLowSurrogate(unit)) points++;
         if (string.IsNullOrWhiteSpace(mark) || points > 4 || mark.IndexOfAny(new[] { '<', '>' }) >= 0) throw new InvalidOperationException("A mark is up to four characters.");
+        // A mark travels in the same field as an icon key, so a mark spelled like one would draw the icon (or nothing).
+        if (mark == "auto" || mark == "none" || Glyphs.ContainsKey(mark)) throw new InvalidOperationException("Mark '" + mark + "' is the name of a formatting icon; use that CanopyFormatIcons icon, or other characters.");
         foreach (var unit in mark) if (char.IsControl(unit)) throw new InvalidOperationException("A mark cannot contain control characters.");
     }
 }

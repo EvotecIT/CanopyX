@@ -202,7 +202,7 @@ public sealed partial class CanopyMatrix {
             CanopyMatrixState item;
             try {
                 item = new CanopyMatrixState(CanopyFlowContract.RequiredText(state, "id", what), CanopyFlowContract.RequiredText(state, "label", what),
-                    CanopyFlowContract.Text(state, "tone", what) is string tone ? Tone.Named(tone) : default, CanopyMatrixSymbol.Dot) {
+                    CanopyFlowContract.Text(state, "tone", what) is string tone ? ToneNames.FromWire(tone) : default, CanopyMatrixSymbol.Dot) {
                     Attention = CanopyFlowContract.Boolean(state, "attention", what) ?? false
                 };
             } catch (ArgumentException error) { throw new InvalidOperationException(error.Message, error); }

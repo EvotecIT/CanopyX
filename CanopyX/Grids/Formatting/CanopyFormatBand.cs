@@ -31,7 +31,7 @@ public sealed class CanopyFormatBand {
     /// <summary>Gets or sets the band's icon, one of <see cref="CanopyFormatIcons"/>; <see cref="CanopyX.Icon.None"/> with no <see cref="Mark"/> takes the style's.</summary>
     public Icon Icon { get; set; }
 
-    /// <summary>Gets or sets up to four characters the band draws in place of an <see cref="Icon"/>, or null.</summary>
+    /// <summary>Gets or sets up to four characters the band draws in place of an <see cref="Icon"/>, or null. A mark cannot spell a formatting icon's name.</summary>
     public string? Mark { get; set; }
 
     internal string? IconToken => CanopyFormatIcons.Token(Icon, Mark);

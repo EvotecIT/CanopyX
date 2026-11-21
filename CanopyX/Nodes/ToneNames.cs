@@ -20,6 +20,15 @@ internal static class ToneNames {
         return name;
     }
 
+    /// <summary>The tone a document names, refused when the protocol cannot carry the name, so a document that reads also writes.</summary>
+    /// <exception cref="InvalidOperationException">The name is not a CanopyX tone name.</exception>
+    internal static Tone FromWire(string name) {
+        Tone tone;
+        try { tone = Tone.Named(name); } catch (ArgumentException error) { throw new InvalidOperationException("Tone '" + name + "' is not a CanopyX tone name.", error); }
+        tone.WireName();
+        return tone;
+    }
+
     /// <summary>Whether a tone carries a name, as opposed to <see cref="Tone.None"/>.</summary>
     internal static bool IsSet(this Tone tone) => tone != Tone.None;
 

@@ -108,8 +108,9 @@ var inventory = new CanopyDataGridView("inventory", "Inventory")
     .Layout(layout => layout.Mode(CanopyLayoutMode.Auto));
 ```
 
-A collection property gets a method per item (`Column(...)`), one for several (`Columns(...)`) and one that configures a new
-item; a settings object gets one that configures it (`Layout(l => ...)`). CanopyX shares the `ThemeMode`, `Tone` and `Icon`
+A collection property gets a method per item (`Column(...)`) and one for several (`Columns(...)`); its items are built first,
+with their constructor arguments, as the columns above are. A settings object gets a method that configures it
+(`Layout(l => ...)`). CanopyX shares the `ThemeMode`, `Tone` and `Icon`
 types with ChartForgeX, ConsoleMonster and HtmlForgeX, so hosts pass them between the engines unchanged: `Tone.Danger` or
 `Tone.Named("severity-high")`, `ThemeMode.Dark`, and `Icon.Named("folder")` for a catalog key. Characters of a style's own
 (an emoji, `!`) are a `Mark`, not an icon.

@@ -79,7 +79,7 @@ defines (`--hfx-color-status-<name>-fg`). Tones follow the light, dark and print
 | Style | Draws |
 | --- | --- |
 | `tone` with `emphasis` | `fill` (default): a soft tint behind text in the tone's colour; `text`: the colour alone; `strong`: the fill in bold. On a row: a tint and an accent at its start. |
-| `icon` | A named icon (`up`, `down`, `check`, `cross`, `warning`, `info`, `dot`, `circle`, `triangle`, `square`, `diamond`, `flag`, `star`, `minus`, `plus`, `clock`) or up to four characters, in the tone's colour. In C#, `Icon` takes a `CanopyFormatIcons` icon and `Mark` the characters. |
+| `icon` | A named icon (`up`, `down`, `check`, `cross`, `warning`, `info`, `dot`, `circle`, `triangle`, `square`, `diamond`, `flag`, `star`, `minus`, `plus`, `clock`) or up to four characters, in the tone's colour. In C#, `Icon` takes a `CanopyFormatIcons` icon and `Mark` the characters, which cannot spell an icon's name. |
 | `badge` | A small pill after the value, in the tone. |
 | `cue` | Quiet text after the value, such as `stale`. |
 | `bar` | A data bar before the value: `{ minimum, maximum, tone, showValue }`. |

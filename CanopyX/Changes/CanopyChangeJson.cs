@@ -23,7 +23,7 @@ internal static class CanopyChangeJson {
     internal static Tone ToneOf(Dictionary<string, object?> map, string what) {
         var tone = CanopyFlowContract.Text(map, "tone", what);
         if (tone == null) return default;
-        try { return Tone.Named(tone); } catch (ArgumentException error) { throw new InvalidOperationException(what + " has an invalid tone.", error); }
+        try { return ToneNames.FromWire(tone); } catch (InvalidOperationException error) { throw new InvalidOperationException(what + " has an invalid tone.", error); }
     }
 
     /// <summary>An optional time: ISO 8601 with a zone (or UTC when it has none).</summary>
