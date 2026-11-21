@@ -49,7 +49,7 @@ internal static class UiOverlayHtml {
     }
 
     internal static string Finish(StringBuilder html, string tag, string kind, string id, string title,
-        string? description, string contentHtml, string? footerHtml, string? closeLabel) {
+        string? description, string contentHtml, string? footerHtml, string? closeLabel, string? footerElement = null) {
         html.Append("><header class=\"cx-").Append(kind).Append("-header\" data-cx-part=\"header\"><h2 data-cx-part=\"title\"");
         UiHtml.Attribute(html, "id", id + "-title");
         html.Append('>').Append(UiHtml.Encode(title)).Append("</h2>");
@@ -68,7 +68,7 @@ internal static class UiOverlayHtml {
             UiHtml.Attribute(html, "id", id + "-description");
             html.Append('>').Append(UiHtml.Encode(description)).Append("</p>");
         }
-        html.Append(contentHtml).Append("</div>");
+        html.Append(contentHtml).Append("</div>").Append(footerElement);
         if (footerHtml != null) html.Append("<footer class=\"cx-").Append(kind)
             .Append("-footer\" data-cx-part=\"footer\">").Append(footerHtml).Append("</footer>");
         return html.Append("</").Append(tag).Append('>').ToString();

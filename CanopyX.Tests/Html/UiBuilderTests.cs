@@ -375,6 +375,65 @@ public sealed class UiBuilderTests {
     }
 
     [Fact]
+    public void Confirm_RendersTypedActionsThatSubmitWithoutTheRuntime() {
+        var dialog = CanopyDialog.Confirm("restart", "Restart service", "Restart the <print> spooler?",
+            CanopyDialogAction.Submit("restart", "Restart & wait", CanopyTone.Danger, "/services/spooler?step=restart"));
+        dialog.Fields["__RequestVerificationToken"] = "a\"b<c";
+        var html = dialog.ToTriggerHtmlFragment("Restart spooler") + dialog.ToHtmlFragment();
+        Assert.Contains("<input type=\"hidden\" name=\"__RequestVerificationToken\" value=\"a&quot;b&lt;c\">", html);
+        // The hidden field is an HTML void element, which the XML reader cannot take.
+        html = Regex.Replace(html, "<input[^>]*>", string.Empty);
+        var overlay = Parse(html).Element("dialog")!;
+        Assert.Equal("alertdialog", Attr(overlay, "role"));
+        Assert.Equal("false", Attr(overlay, "data-dismissible"));
+        Assert.Equal("Restart the <print> spooler?", overlay.Descendants("p").Single().Value);
+        var form = overlay.Element("form")!;
+        Assert.Equal("footer", Attr(form, "data-cx-part"));
+        Assert.Equal("post", Attr(form, "method"));
+        var buttons = form.Elements("button").ToList();
+        // Cancel first, so an alert dialog focuses it; the answer submits its id to its target.
+        Assert.Equal("Cancel", buttons[0].Value);
+        Assert.NotNull(buttons[0].Attribute("data-cx-cancel"));
+        Assert.Equal("button", Attr(buttons[0], "type"));
+        Assert.Equal("Restart & wait", buttons[1].Value);
+        Assert.Equal("submit", Attr(buttons[1], "type"));
+        Assert.Equal("restart", Attr(buttons[1], "data-cx-action"));
+        Assert.Equal("action", Attr(buttons[1], "name"));
+        Assert.Equal("restart", Attr(buttons[1], "value"));
+        Assert.Equal("/services/spooler?step=restart", Attr(buttons[1], "formaction"));
+        Assert.Equal("post", Attr(buttons[1], "formmethod"));
+        Assert.Equal("danger", Attr(buttons[1], "data-variant"));
+        Assert.Equal("danger", Attr(buttons[1], "data-tone"));
+        AssertReferences(Parse(html));
+        AssertDeclarative(html);
+    }
+
+    [Fact]
+    public void DialogActions_WithoutATargetAreHostAnswers_AndContradictionsAreRefused() {
+        var dialog = new CanopyDialog("pick", "Pick");
+        dialog.Actions.Add(CanopyDialogAction.Cancel("Back"));
+        dialog.Actions.Add(new CanopyDialogAction("keep", "Keep") { Tone = CanopyTone.Success });
+        var footer = Parse(dialog.ToHtmlFragment()).Element("dialog")!.Element("footer")!;
+        var keep = footer.Elements("button").Last();
+        Assert.Equal("button", Attr(keep, "type"));
+        Assert.Equal("keep", Attr(keep, "data-cx-action"));
+        Assert.Equal("primary", Attr(keep, "data-variant"));
+        Assert.Null(keep.Attribute("formaction"));
+        dialog.Fields["token"] = "x";
+        Assert.Throws<InvalidOperationException>(() => dialog.ToHtmlFragment());
+        dialog.Fields.Clear();
+        dialog.FooterHtml = "<button>Other</button>";
+        Assert.Throws<InvalidOperationException>(() => dialog.ToHtmlFragment());
+        dialog.FooterHtml = null;
+        dialog.Actions.Add(new CanopyDialogAction("keep", "Again"));
+        Assert.Throws<InvalidOperationException>(() => dialog.ToHtmlFragment());
+        Assert.Throws<ArgumentException>(() => CanopyDialogAction.Submit("run", "Run", target: "javascript:alert(1)"));
+        Assert.Throws<ArgumentException>(() => CanopyDialogAction.Submit("run", "Run", target: "//elsewhere.test/run"));
+        Assert.Throws<InvalidOperationException>(() => CanopyDialogAction.Cancel().Target = "/run");
+        Assert.Throws<InvalidOperationException>(() => CanopyDialogAction.Cancel().Tone = CanopyTone.Danger);
+    }
+
+    [Fact]
     public void Drawer_RendersNativeDialogWithResponsiveModalityAndLogicalSide() {
         var drawer = new CanopyDrawer("record", "Record", new CanopyDrawerOptions { Side = CanopyDrawerSide.Start, Size = CanopyOverlaySize.Small });
         var html = drawer.ToTriggerHtmlFragment("Show record") + drawer.ToHtmlFragment();
