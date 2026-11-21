@@ -56,15 +56,15 @@ public sealed class GridColumnFitTests {
     [Fact]
     public void QuietTones_ApplyToEnumAndStatePresentersOnly() {
         var view = new CanopyDataGridView("targets", "Targets");
-        view.Columns.Add(new CanopyColumn("state", "State") { Presenter = CanopyGridPresenter.Enum().WithQuietTones(CanopyTone.Success, CanopyTone.Named("up")) });
+        view.Columns.Add(new CanopyColumn("state", "State") { Presenter = CanopyGridPresenter.Enum().WithQuietTones(Tone.Success, Tone.Named("up")) });
         var json = view.ToJson();
         ProtocolSchema.AssertValid(json, "quiet tones");
         Assert.Contains("\"quietTones\":[\"success\",\"up\"]", json);
-        Assert.Throws<InvalidOperationException>(() => CanopyGridPresenter.Link().WithQuietTones(CanopyTone.Success));
-        Assert.Throws<ArgumentException>(() => CanopyGridPresenter.State().WithQuietTones(CanopyTone.None));
+        Assert.Throws<InvalidOperationException>(() => CanopyGridPresenter.Link().WithQuietTones(Tone.Success));
+        Assert.Throws<ArgumentException>(() => CanopyGridPresenter.State().WithQuietTones(Tone.None));
 
         // Quiet values in the normal text colour.
-        view.Columns[0].Presenter = CanopyGridPresenter.Enum().WithQuietTones(CanopyTone.Neutral).WithQuietStyle(CanopyGridQuietStyle.Plain);
+        view.Columns[0].Presenter = CanopyGridPresenter.Enum().WithQuietTones(Tone.Neutral).WithQuietStyle(CanopyGridQuietStyle.Plain);
         json = view.ToJson();
         ProtocolSchema.AssertValid(json, "quiet style");
         Assert.Contains("\"quietStyle\":\"plain\"", json);

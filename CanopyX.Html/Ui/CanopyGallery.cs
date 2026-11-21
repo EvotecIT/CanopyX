@@ -7,6 +7,7 @@ namespace CanopyX.Html.Ui;
 /// <summary>Builds a thumbnail gallery whose items open in the lightbox viewer (docs/ui-lightbox.md).</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. Without the runtime each thumbnail is a link to its item,
 /// so a static report still opens every image. This builder emits no assets or executable code.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyGallery {
     /// <summary>Creates a gallery with a page-unique identity.</summary>
     public CanopyGallery(string id, CanopyGalleryOptions? options = null) {

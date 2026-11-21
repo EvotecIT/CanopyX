@@ -28,11 +28,11 @@ public sealed class CanopyCalendarDayNote {
     /// <exception cref="ArgumentException">The text is blank or longer than 64 characters.</exception>
     public string Text { get => _text; set => _text = CheckText(value, nameof(value)); }
 
-    /// <summary>Gets or sets the note's tone; <see cref="CanopyTone.None"/> (the default) draws it muted.</summary>
-    public CanopyTone Tone { get; set; }
+    /// <summary>Gets or sets the note's tone; <see cref="Tone.None"/> (the default) draws it muted.</summary>
+    public Tone Tone { get; set; }
 
     internal void WriteJson(CanopyJsonWriter writer) =>
-        writer.BeginObject().Property("date", CanopyCalendarValues.Date(_date)).Property("text", _text).OptionalProperty("tone", Tone.Name).EndObject();
+        writer.BeginObject().Property("date", CanopyCalendarValues.Date(_date)).Property("text", _text).OptionalProperty("tone", Tone.WireName()).EndObject();
 
     private static string CheckText(string text, string parameter) =>
         text != null && text.Trim().Length > 0 && text.Length <= 64 ? text.Trim() : throw new ArgumentException("A day note needs 1 to 64 visible characters.", parameter);

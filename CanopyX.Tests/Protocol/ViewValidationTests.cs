@@ -41,7 +41,7 @@ public sealed class ViewValidationTests {
                 node.Cells["missing"] = 1;
                 break;
             case "undeclared icon":
-                node.Icon = "ghost";
+                node.Icon = Icon.Named("ghost");
                 break;
             case "hidden tree column":
                 view.Columns[0].Hidden = true;

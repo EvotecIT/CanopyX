@@ -19,7 +19,7 @@ view.Rows.Add(new CanopyGridRow("shared") { Cells = { ["name"] = "Shared default
 view.Rows.Add(new CanopyGridRow("session") { Cells = { ["name"] = "Session configuration" } });
 view.Stack.Layers.Add(new CanopyStackLayer("baseline", "shared", "Provides the starting value."));
 view.Stack.Layers.Add(new CanopyStackLayer("effective", "session", "Selected by the host for this session.") {
-    Winner = true, Badges = { new CanopyBadge("Reviewed", CanopyTone.Info) }
+    Winner = true, Badges = { new CanopyBadge("Reviewed", Tone.Info) }
 });
 ```
 

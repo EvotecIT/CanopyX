@@ -46,7 +46,7 @@ public sealed class GridSummaryContractTests {
     [Fact]
     public void GroupDisplayCells_PreservePresenterMetadataAndRejectUndeclaredOrMistypedValues() {
         var view = View(); var result = Summary(view);
-        result.Groups[0].Cells["category"] = new CanopyCell("Failing") { Tone = CanopyTone.Danger, Text = "Needs attention" };
+        result.Groups[0].Cells["category"] = new CanopyCell("Failing") { Tone = Tone.Danger, Text = "Needs attention" };
         var json = result.ToJson(view); ProtocolSchema.AssertValid(json, "group display cells");
         using var document = JsonDocument.Parse(json);
         var cell = document.RootElement.GetProperty("groups")[0].GetProperty("cells").GetProperty("category");

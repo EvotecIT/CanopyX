@@ -18,7 +18,7 @@ namespace CanopyX.Rendering;
 /// var options = new CanopyStaticHtmlOptions { Theme = CanopyStaticTheme.Dark() };
 /// options.Theme.Surface = "#10141a";                        // the token of the card the outline sits on
 /// options.Theme.Accent = "#7aa2f7";
-/// options.ToneColors[CanopyTone.Named("critical")] = "#ff8a80";   // a tone of the host, for this theme
+/// options.ToneColors[Tone.Named("critical")] = "#ff8a80";   // a tone of the host, for this theme
 /// </code>
 /// <para>
 /// The colours of the host's own tones stay in <see cref="CanopyStaticHtmlOptions.ToneColors"/>; they are literals
@@ -85,28 +85,28 @@ public sealed class CanopyStaticTheme {
         set => _line = Require(value, nameof(value));
     }
 
-    /// <summary>Gets or sets the colour of <see cref="CanopyTone.Info"/>.</summary>
+    /// <summary>Gets or sets the colour of <see cref="Tone.Info"/>.</summary>
     /// <exception cref="ArgumentException">The value is not <c>#</c> followed by three or six hex digits.</exception>
     public string Info {
         get => _info;
         set => _info = Require(value, nameof(value));
     }
 
-    /// <summary>Gets or sets the colour of <see cref="CanopyTone.Success"/>.</summary>
+    /// <summary>Gets or sets the colour of <see cref="Tone.Success"/>.</summary>
     /// <exception cref="ArgumentException">The value is not <c>#</c> followed by three or six hex digits.</exception>
     public string Success {
         get => _success;
         set => _success = Require(value, nameof(value));
     }
 
-    /// <summary>Gets or sets the colour of <see cref="CanopyTone.Warning"/>.</summary>
+    /// <summary>Gets or sets the colour of <see cref="Tone.Warning"/>.</summary>
     /// <exception cref="ArgumentException">The value is not <c>#</c> followed by three or six hex digits.</exception>
     public string Warning {
         get => _warning;
         set => _warning = Require(value, nameof(value));
     }
 
-    /// <summary>Gets or sets the colour of <see cref="CanopyTone.Danger"/>.</summary>
+    /// <summary>Gets or sets the colour of <see cref="Tone.Danger"/>.</summary>
     /// <exception cref="ArgumentException">The value is not <c>#</c> followed by three or six hex digits.</exception>
     public string Danger {
         get => _danger;

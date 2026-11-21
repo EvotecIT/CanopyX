@@ -49,7 +49,7 @@ public sealed class CalendarEventsTests {
             new CanopyCalendarEvent("Holiday", new DateTime(2026, 12, 24, 15, 0, 0)) { AllDay = true },
             new CanopyCalendarEvent("Trip", new DateTime(2026, 12, 28)) { AllDay = true, End = new DateTime(2026, 12, 31) },
             new CanopyCalendarEvent("Sync", new DateTime(2026, 10, 19, 9, 0, 0, DateTimeKind.Utc)) {
-                Tone = CanopyTone.Warning, Resource = "room-1", Recurrence = CanopyRecurrence.Weekly(DayOfWeek.Monday).Times(4), Exceptions = "2026-10-26", Source = "work", Description = "Weekly"
+                Tone = Tone.Warning, Resource = "room-1", Recurrence = CanopyRecurrence.Weekly(DayOfWeek.Monday).Times(4), Exceptions = "2026-10-26", Source = "work", Description = "Weekly"
             }
         });
         var grid = calendar.Grid!;
@@ -109,7 +109,7 @@ public sealed class CalendarEventsTests {
         Assert.Equal(new[] { 3, 5 }, scheduler.Capacity!.Thresholds.Select(threshold => threshold.At));
         Assert.Contains("\"capacity\":{\"thresholds\":[{\"at\":3,\"tone\":\"warning\"},{\"at\":5,\"tone\":\"danger\"}]}", scheduler.Grid!.ToJson());
         // A capacity the host set is kept.
-        var custom = new CanopyCalendar(events, CanopyCalendarPreset.Scheduler) { Capacity = new CanopyCalendarCapacity().Add(2, CanopyTone.Danger) };
+        var custom = new CanopyCalendar(events, CanopyCalendarPreset.Scheduler) { Capacity = new CanopyCalendarCapacity().Add(2, Tone.Danger) };
         custom.Resources = new CanopyCalendarResources(tree);
         Assert.Single(custom.Capacity!.Thresholds);
     }

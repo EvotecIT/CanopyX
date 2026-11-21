@@ -30,6 +30,11 @@
     <Copyright>Copyright (c) Evotec</Copyright>
   </PropertyGroup>
 
+  <!-- Fluent methods for the [Fluent] models, generated at build time; the shared vocabulary comes from CanopyX. -->
+  <ItemGroup>
+    <PackageReference Include="PowerForge.Generators" Version="3.0.195" PrivateAssets="all" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
@@ -39,6 +44,7 @@
     <Compile Include="..\CanopyX\Bundles\PortableFolderNames.cs" Link="Shared\PortableFolderNames.cs" />
     <Compile Include="..\CanopyX\Bundles\BundlePaths.cs" Link="Shared\BundlePaths.cs" />
     <Compile Include="..\CanopyX\Bundles\BundleIdentity.cs" Link="Shared\BundleIdentity.cs" />
+    <Compile Include="..\CanopyX\Nodes\ToneNames.cs" Link="Shared\ToneNames.cs" />
   </ItemGroup>
 
   <ItemGroup>

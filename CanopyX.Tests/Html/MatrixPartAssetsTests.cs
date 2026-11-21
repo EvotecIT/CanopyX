@@ -46,7 +46,7 @@ public sealed class MatrixPartAssetsTests {
     [Fact]
     public void MatrixPage_EmbedsOnlyTheMatrixPayload() {
         var matrix = new CanopyMatrix("m", "M");
-        matrix.State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        matrix.State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         matrix.Rows.Item("a", "A"); matrix.Columns.Item("x", "X");
         matrix.Set("a", "x", "ok");
         var page = matrix.ToHtmlPage();

@@ -24,14 +24,14 @@ internal static class DataViewsExample {
         ask.Reporting.Aggregates.Add(new CanopyGridAggregate("units", "units", CanopyGridAggregateOperation.Sum, "Total units"));
         foreach (var column in Columns()) ask.Columns.Add(column);
         foreach (var row in after) ask.Rows.Add(row);
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var document = new CanopyHtmlDocument();
             var options = new CanopyHtmlOptions { Theme = theme, Document = document, Height = "440px" };
             var page = Template().Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.ReportingGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid))
-                .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light")
+                .Replace("{{theme}}", theme == ThemeMode.Dark ? "dark" : "light")
                 .Replace("{{compare}}", compare.ToHtmlFragment(options)).Replace("{{intent}}", ask.ToHtmlFragment(options));
-            File.WriteAllText(Path.Combine(output, "data-views" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), page, new UTF8Encoding(false));
+            File.WriteAllText(Path.Combine(output, "data-views" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page, new UTF8Encoding(false));
         }
         foreach (var dark in new[] { false, true }) {
             var staticHtml = CanopyStaticHtml.RenderComparison(compare,

@@ -44,7 +44,7 @@ internal static class ThemeProofExample {
         grid.Columns.Add(new CanopyColumn("team", "Team") { Sortable = true });
         grid.Columns.Add(new CanopyColumn("state", "Status") { Presenter = CanopyGridPresenter.Enum() });
         grid.Columns.Add(new CanopyColumn("count", "Items") { Kind = CanopyColumnKind.Number, Sortable = true });
-        var states = new[] { ("Ready", CanopyTone.Success), ("Needs review", CanopyTone.Warning), ("Failed", CanopyTone.Danger), ("In progress", CanopyTone.Info) };
+        var states = new[] { ("Ready", Tone.Success), ("Needs review", Tone.Warning), ("Failed", Tone.Danger), ("In progress", Tone.Info) };
         for (var index = 0; index < count; index++) {
             var state = states[index % states.Length];
             var row = new CanopyGridRow("record-" + index);

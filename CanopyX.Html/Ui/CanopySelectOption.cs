@@ -17,9 +17,9 @@ public sealed class CanopySelectOption {
     /// <summary>Gets or sets a short plain text badge at the end of the option.</summary>
     public string? Badge { get; set; }
     /// <summary>Gets or sets the badge's tone.</summary>
-    public CanopyTone BadgeTone { get; set; }
+    public Tone BadgeTone { get; set; }
     /// <summary>Gets or sets an icon name the host's renderIcon draws, never raw markup.</summary>
-    public string? Icon { get; set; }
+    public Icon Icon { get; set; }
     /// <summary>Gets or sets an avatar image address: a web, relative or image data address.</summary>
     public string? Avatar { get; set; }
     /// <summary>Gets or sets a two-letter country code, drawn as its flag emoji.</summary>

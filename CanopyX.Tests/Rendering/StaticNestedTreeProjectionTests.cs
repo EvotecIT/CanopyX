@@ -52,8 +52,8 @@ public sealed class StaticNestedTreeProjectionTests {
     [InlineData(false)]
     [InlineData(true)]
     public void NestedDetailProjection_PreservesCellTitleToneAndBadges(bool useTree) {
-        var cell = new CanopyCell(1234L) { Text = "Preferred <&>", Title = "Tooltip \"<&>\"", Tone = CanopyTone.Danger };
-        cell.Badges.Add(new CanopyBadge("Verified <&>", CanopyTone.Success) { Title = "Badge \"<&>\"" });
+        var cell = new CanopyCell(1234L) { Text = "Preferred <&>", Title = "Tooltip \"<&>\"", Tone = Tone.Danger };
+        cell.Badges.Add(new CanopyBadge("Verified <&>", Tone.Success) { Title = "Badge \"<&>\"" });
         CanopyDataGridView outer;
         if (useTree) {
             var tree = Tree(); tree.Columns[0].Kind = CanopyColumnKind.Number;
@@ -121,15 +121,15 @@ public sealed class StaticNestedTreeProjectionTests {
     public void NestedTree_NullIdentityKeepsNodeBadgesBeforeCellBadges(bool nullCellReference) {
         var tree = Tree(); tree.Columns.Add(new CanopyColumn("other", "Other"));
         var node = new CanopyNode("row", "Wrong null identity");
-        node.Badges.Add(new CanopyBadge("Node <&>", CanopyTone.Danger) { Title = "Node \"<&>\"" });
+        node.Badges.Add(new CanopyBadge("Node <&>", Tone.Danger) { Title = "Node \"<&>\"" });
         if (nullCellReference) {
             node.Cells["name"] = null!;
         } else {
-            var identity = new CanopyCell((string?)null) { Title = "Cell \"<&>\"", Tone = CanopyTone.Warning };
-            identity.Badges.Add(new CanopyBadge("Cell <&>", CanopyTone.Success) { Title = "Badge \"<&>\"" });
+            var identity = new CanopyCell((string?)null) { Title = "Cell \"<&>\"", Tone = Tone.Warning };
+            identity.Badges.Add(new CanopyBadge("Cell <&>", Tone.Success) { Title = "Badge \"<&>\"" });
             node.Cells["name"] = identity;
         }
-        node.Cells["other"] = new CanopyCell("Other text") { Badges = { new CanopyBadge("Other badge", CanopyTone.Muted) } };
+        node.Cells["other"] = new CanopyCell("Other text") { Badges = { new CanopyBadge("Other badge", Tone.Muted) } };
         tree.Roots.Add(node);
 
         var html = CanopyStaticHtml.RenderGrid(Outer(tree), options: new CanopyStaticHtmlOptions { UseThemeVariables = true });

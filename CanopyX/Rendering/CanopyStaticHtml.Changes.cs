@@ -41,8 +41,8 @@ public static partial class CanopyStaticHtml {
         html.Append("<thead><tr><th colspan=\"4\" scope=\"col\" style=\"").Append(styles.Header).Append("white-space:normal;\">");
         if (path != null) html.Append("<span style=\"").Append(CanopyStaticStyles.Mono).Append("font-weight:600;\">").Append(Encode(path)).Append("</span> ");
         if (diff.Content == CanopyDiffContent.Text) {
-            html.Append("<span style=\"").Append(styles.ToneText(CanopyTone.Success)).Append("\">+").Append(added.ToString("N0", settings.Culture)).Append("</span> <span style=\"")
-                .Append(styles.ToneText(CanopyTone.Danger)).Append("\">−").Append(removed.ToString("N0", settings.Culture)).Append("</span>");
+            html.Append("<span style=\"").Append(styles.ToneText(Tone.Success)).Append("\">+").Append(added.ToString("N0", settings.Culture)).Append("</span> <span style=\"")
+                .Append(styles.ToneText(Tone.Danger)).Append("\">−").Append(removed.ToString("N0", settings.Culture)).Append("</span>");
         }
 
         html.Append("</th></tr></thead><tbody>");
@@ -53,8 +53,8 @@ public static partial class CanopyStaticHtml {
             _ => rows.Count == 0 ? labels.ChangeIdentical : diff.Message
         };
         if (note != null) html.Append("<tr><td colspan=\"4\" style=\"").Append(styles.Note).Append("\">").Append(Encode(note)).Append("</td></tr>");
-        foreach (var item in diff.Notes) html.Append("<tr><td colspan=\"4\" style=\"").Append(styles.Note).Append(styles.ToneText(item.Tone.Name == null ? CanopyTone.Info : item.Tone)).Append("\">").Append(Encode(item.Text)).Append("</td></tr>");
-        if (diff.Truncated) html.Append("<tr><td colspan=\"4\" style=\"").Append(styles.Note).Append(styles.ToneText(CanopyTone.Warning)).Append("\">").Append(Encode(labels.ChangeTruncated)).Append("</td></tr>");
+        foreach (var item in diff.Notes) html.Append("<tr><td colspan=\"4\" style=\"").Append(styles.Note).Append(styles.ToneText(item.Tone.WireName() == null ? Tone.Info : item.Tone)).Append("\">").Append(Encode(item.Text)).Append("</td></tr>");
+        if (diff.Truncated) html.Append("<tr><td colspan=\"4\" style=\"").Append(styles.Note).Append(styles.ToneText(Tone.Warning)).Append("\">").Append(Encode(labels.ChangeTruncated)).Append("</td></tr>");
         var number = "padding:1px 6px;text-align:right;vertical-align:top;white-space:nowrap;font-size:11px;" + CanopyStaticStyles.Mono;
         var lines = 0;
         foreach (var row in rows) {
@@ -146,7 +146,7 @@ public static partial class CanopyStaticHtml {
 
     private static void AppendChangeRow(StringBuilder html, CanopyChangeItem item, CanopyChangeList list, CanopyStaticStyles styles, CanopyLabels labels, CanopyStaticHtmlOptions settings) {
         var cell = styles.Cell;
-        html.Append("<tr><td style=\"").Append(cell).Append("white-space:nowrap;\"><span style=\"").Append(styles.Badge(CanopyChangeFormat.Tone(item.Kind))).Append("margin-left:0;\">")
+        html.Append("<tr><td style=\"").Append(cell).Append("white-space:nowrap;\"><span style=\"").Append(styles.Badge(CanopyChangeFormat.ToneOf(item.Kind))).Append("margin-left:0;\">")
             .Append(Encode(CanopyChangeFormat.Kind(item, labels))).Append("</span></td>");
         var (folder, name) = CanopyChangeFormat.Split(item.Path);
         html.Append("<th scope=\"row\" style=\"").Append(cell).Append("text-align:left;font-weight:600;").Append(CanopyStaticStyles.Mono).Append("\">").Append(Encode(list.GroupByFolder ? name : item.Path));
@@ -159,7 +159,7 @@ public static partial class CanopyStaticHtml {
         foreach (var flag in item.Flags) {
             if (!first) html.Append("<br>");
             first = false;
-            html.Append("<span style=\"").Append(styles.Badge(flag.Tone.Name == null ? CanopyTone.Warning : flag.Tone)).Append("margin-left:0;font-weight:600;\">⚑ ").Append(Encode(flag.Label)).Append("</span> ")
+            html.Append("<span style=\"").Append(styles.Badge(flag.Tone.WireName() == null ? Tone.Warning : flag.Tone)).Append("margin-left:0;font-weight:600;\">⚑ ").Append(Encode(flag.Label)).Append("</span> ")
                 .Append(Encode(flag.Reason));
         }
 

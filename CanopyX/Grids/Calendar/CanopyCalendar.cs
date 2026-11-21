@@ -178,6 +178,7 @@ public sealed partial class CanopyCalendar {
     public CanopyCalendarZoom Zoom { get; set; } = CanopyCalendarZoom.Day;
 
     /// <summary>Gets the timeline zoom levels offered, in this order, each once; empty offers all five.</summary>
+    [PowerForge.Fluent.Child("OfferZoom")]
     public IList<CanopyCalendarZoom> Zooms { get; } = new List<CanopyCalendarZoom>();
 
     /// <summary>Gets or sets a concurrency lane under each resource group of the timeline; null for none.</summary>

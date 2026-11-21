@@ -33,7 +33,7 @@ public sealed class RecordTextBoundTests {
             record.Fields["parts"] = CanopyCell.Collection(list);
             record.Fields["events"] = CanopyCell.Timeline(new[] { new CanopyRecordEvent(new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc), Long) { Actor = Long, Kind = Long } });
             record.Fields["changes"] = CanopyCell.Diff(new[] { new CanopyFieldChange(Long, Long, new CanopyCell(Long) { Text = Long }) });
-            record.Cells["site"] = new CanopyCell(Long) { Tone = CanopyTone.Danger, SortKey = 3, Badges = { new CanopyBadge("ok") } };
+            record.Cells["site"] = new CanopyCell(Long) { Tone = Tone.Danger, SortKey = 3, Badges = { new CanopyBadge("ok") } };
             record.Row = new CanopyGridRow(request.Id);
             record.Row.Cells["name"] = Long;
             return record;
@@ -106,7 +106,7 @@ public sealed class RecordTextBoundTests {
     [Fact]
     public async Task HistoryLabels_AreClippedInFieldsDrawerValuesAndNestedCells() {
         CanopyCell History() => new CanopyCell(Long) {
-            Series = { new CanopyCellPeriod(Long, 3, Long, CanopyTone.Danger), new CanopyCellPeriod("short", 0) }
+            Series = { new CanopyCellPeriod(Long, 3, Long, Tone.Danger), new CanopyCellPeriod("short", 0) }
         };
         var handler = Handler(request => {
             var record = new CanopyGridRecord(request.Id);
@@ -150,7 +150,7 @@ public sealed class RecordTextBoundTests {
             var tree = new CanopyRecordList();
             tree.Columns.Add(new CanopyColumn("name", "Name"));
             var root = new CanopyNode(LongId, Long) { Kind = "host-kind", Flags = { "host-flag" }, Data = { ["host-key"] = LongId } };
-            root.Badges.Add(new CanopyBadge(Long, CanopyTone.Warning) { Title = Long });
+            root.Badges.Add(new CanopyBadge(Long, Tone.Warning) { Title = Long });
             root.Children.Add(new CanopyNode("child", Long) { Badges = { new CanopyBadge(Long) { Title = Long } } });
             tree.Roots.Add(root);
             record.Fields["notes"] = CanopyCell.Object(new[] { new CanopyCellField("tree", CanopyCell.Collection(tree)) });

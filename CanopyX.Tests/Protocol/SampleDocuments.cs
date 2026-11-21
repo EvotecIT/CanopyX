@@ -25,21 +25,21 @@ internal static class SampleDocuments {
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number, Sortable = true });
         view.Columns.Add(new CanopyColumn("modified", "Modified") { Kind = CanopyColumnKind.DateTime });
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Hidden = true });
-        view.Icons["folder"] = FolderIcon;
+        view.Icons[Icon.Named("folder")] = FolderIcon;
         view.Labels.Columns = "Kolumny";
         view.Labels.ShowMore = "Pokaż więcej ({loaded} z {total})";
         view.Filters.Add(new CanopyFilter("changed", "Only changed", "changed") { AncestorFlag = "changed-below", Count = 12 });
         view.Filters.Add(new CanopyFilter("changed-30d", "Changed in 30 days", "changed-30d") { Hidden = true });
 
-        var share = new CanopyNode("share", @"\\files\projects") { Kind = "share", Icon = "folder", Group = true, Expanded = true };
+        var share = new CanopyNode("share", @"\\files\projects") { Kind = "share", Icon = Icon.Named("folder"), Group = true, Expanded = true };
         share.Cells["size"] = 5_368_709_120L;
-        share.Cells["owner"] = new CanopyCell("eng") { Text = "Engineering", Title = "Owning team", Tone = CanopyTone.Info };
-        share.Badges.Add(new CanopyBadge("3 changed", CanopyTone.Warning) { Title = "Changed in the last 7 days" });
+        share.Cells["owner"] = new CanopyCell("eng") { Text = "Engineering", Title = "Owning team", Tone = Tone.Info };
+        share.Badges.Add(new CanopyBadge("3 changed", Tone.Warning) { Title = "Changed in the last 7 days" });
         share.Flags.Add("changed-below");
 
-        var plans = new CanopyNode("share/plans", "plans") { Icon = "folder", ClassName = "host-highlight" };
+        var plans = new CanopyNode("share/plans", "plans") { Icon = Icon.Named("folder"), ClassName = "host-highlight" };
         plans.Cells["modified"] = new DateTime(2026, 9, 27, 10, 15, 0, DateTimeKind.Utc);
-        plans.Cells["size"] = new CanopyCell(1_048_576L) { Badges = { new CanopyBadge("large", CanopyTone.Danger) } };
+        plans.Cells["size"] = new CanopyCell(1_048_576L) { Badges = { new CanopyBadge("large", Tone.Danger) } };
         plans.Flags.Add("changed");
         plans.Data["position"] = "0-42";
         plans.Data["level"] = "high";
@@ -52,7 +52,7 @@ internal static class SampleDocuments {
         var diff = new CanopyNode("share/plans/diff", "Changed settings") {
             Detail = new CanopyTableDetail("Revision 12").AddColumns("Setting", "Before", "After")
         };
-        ((CanopyTableDetail)diff.Detail).AddRow("Retention", new CanopyCell("30 days") { Tone = CanopyTone.Danger }, new CanopyCell("90 days") { Tone = CanopyTone.Success });
+        ((CanopyTableDetail)diff.Detail).AddRow("Retention", new CanopyCell("30 days") { Tone = Tone.Danger }, new CanopyCell("90 days") { Tone = Tone.Success });
         plans.Children.Add(diff);
 
         var props = new CanopyNode("share/props", "Properties") { Detail = new CanopyPropertiesDetail { Height = 3 }.Add("Owner", "Engineering").Add("Quota", 10_000) };

@@ -39,8 +39,8 @@ public sealed class CanopyCalendarSource {
         set => _label = CheckLabel(value, nameof(value));
     }
 
-    /// <summary>Gets or sets the tone of the source's events; <see cref="CanopyTone.None"/> (the default) keeps each event's own tone.</summary>
-    public CanopyTone Tone { get; set; }
+    /// <summary>Gets or sets the tone of the source's events; <see cref="Tone.None"/> (the default) keeps each event's own tone.</summary>
+    public Tone Tone { get; set; }
 
     /// <summary>
     /// Gets or sets the URL of an iCalendar file whose events join the calendar read-only, with this source's id; null for none.
@@ -87,9 +87,9 @@ public sealed class CanopyCalendarSource {
     /// <exception cref="ArgumentException">The value is blank or longer than 3 characters.</exception>
     public string? Initials { get => _initials; set => _initials = CanopyCalendarFace.CheckShort(value, 3, nameof(value)); }
 
-    /// <summary>Gets or sets an icon drawn in front of the source's events, 1 to 4 characters such as an emoji, when there is neither an avatar nor initials; null for none.</summary>
+    /// <summary>Gets or sets a mark drawn in front of the source's events, 1 to 4 characters such as an emoji, when there is neither an avatar nor initials; null for none.</summary>
     /// <exception cref="ArgumentException">The value is blank or longer than 4 characters.</exception>
-    public string? Icon { get => _icon; set => _icon = CanopyCalendarFace.CheckShort(value, 4, nameof(value)); }
+    public string? Mark { get => _icon; set => _icon = CanopyCalendarFace.CheckShort(value, 4, nameof(value)); }
 
     internal void Validate() {
         if (_ics != null && _url != null) throw new InvalidOperationException("A calendar source has one feed: url or ics.");
@@ -116,7 +116,7 @@ public sealed class CanopyCalendarSource {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         Validate();
-        writer.BeginObject().Property("id", _id).Property("label", _label).OptionalProperty("tone", Tone.Name).OptionalProperty("ics", _ics);
+        writer.BeginObject().Property("id", _id).Property("label", _label).OptionalProperty("tone", Tone.WireName()).OptionalProperty("ics", _ics);
         writer.OptionalProperty("url", _url).OptionalProperty("color", _color);
         CanopyCalendarFace.WriteFace(writer, _avatar, _initials, _icon);
         if (FetchParams.Count > 0) {

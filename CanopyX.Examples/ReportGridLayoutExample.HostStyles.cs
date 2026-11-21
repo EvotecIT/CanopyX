@@ -3,13 +3,13 @@ using CanopyX.Html;
 namespace CanopyX.Examples;
 
 internal static partial class ReportGridLayoutExample {
-    private static void WriteHostStyles(string output, CanopyTheme theme) {
+    private static void WriteHostStyles(string output, ThemeMode theme) {
         var grid = new CanopyDataGridView<ReviewRecord>("host-style", "Host-styled short enum values", row => row.Id);
         grid.View.Reporting = new CanopyGridReporting();
         grid.View.Selection = CanopySelectionMode.None;
         grid.Column(row => row.Name, "Record");
-        grid.Column(row => row.State, "State", column => column.Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> {
-            ["Up"] = CanopyTone.Info, ["Down"] = CanopyTone.Danger
+        grid.Column(row => row.State, "State", column => column.Presenter = CanopyGridPresenter.Enum(new Dictionary<string, Tone> {
+            ["Up"] = Tone.Info, ["Down"] = Tone.Danger
         }));
         grid.AddRows(new[] { new ReviewRecord("a", "Branch service", "", "Up", "", 0), new ReviewRecord("b", "Archive service", "", "Down", "", 0) });
         var html = grid.ToHtmlPage(new CanopyHtmlOptions { Theme = theme, Height = "360px", Title = "Host styles and overlays",
@@ -21,6 +21,6 @@ internal static partial class ReportGridLayoutExample {
                   host.canopyx=CanopyX.createDataGrid(host,{view,overlayClass:'report-style'});await host.canopyx.ready;
                 });</script></body>
                 """);
-        File.WriteAllText(Path.Combine(output, "report-grid-host-style" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), html);
+        File.WriteAllText(Path.Combine(output, "report-grid-host-style" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), html);
     }
 }

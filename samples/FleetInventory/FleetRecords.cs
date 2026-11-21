@@ -58,7 +58,7 @@ public static class FleetRecords {
             .PageSize(10))
         .Timeline("maintenance", machine => machine.Maintenance, events => events.Key(item => item.Id).Time(item => item.At)
             .Summary(item => item.Summary).Actor(item => item.Technician)
-            .Kind(item => item.Kind, kind => kind == "Failure" ? CanopyTone.Danger : kind == "Repair" ? CanopyTone.Warning : kind == "Upgrade" ? CanopyTone.Info : CanopyTone.Neutral)
+            .Kind(item => item.Kind, kind => kind == "Failure" ? Tone.Danger : kind == "Repair" ? Tone.Warning : kind == "Upgrade" ? Tone.Info : Tone.Neutral)
             .Limit(25))
         .Changes("changes", machine => machine.Changes, changes => changes.Key(item => item.Id).Name(item => item.Setting)
             .Before(item => item.Before).After(item => item.After).OrderBy(item => item.At, descending: true).Limit(20))

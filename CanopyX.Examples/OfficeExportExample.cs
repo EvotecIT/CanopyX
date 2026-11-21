@@ -6,9 +6,9 @@ namespace CanopyX.Examples;
 /// <summary>A grouped, formatted grid with optional offline document exports and default printing.</summary>
 internal static class OfficeExportExample {
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var view = Create();
-            view.SaveHtmlPage(Path.Combine(output, "office-export" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+            view.SaveHtmlPage(Path.Combine(output, "office-export" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Theme = theme, Title = "Resource costs and offline exports", Height = "680px" });
         }
     }
@@ -31,10 +31,10 @@ internal static class OfficeExportExample {
         view.Columns.Add(new CanopyColumn("usage", "Usage %") { Kind = CanopyColumnKind.Number, Sizing = CanopyColumnSizing.Preferred(120) });
         view.Reporting.GroupBy.Add(new CanopyGridGroupLevel("region"));
         view.Reporting.Aggregates.Add(new CanopyGridAggregate("cost-total", "cost", CanopyGridAggregateOperation.Sum, "Monthly cost"));
-        view.FormatRules.Add(CanopyFormatRule.ForCell("usage-bar", "usage", CanopyFormatStyle.DataBar(CanopyTone.Info, 0, 100)));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("usage-bar", "usage", CanopyFormatStyle.DataBar(Tone.Info, 0, 100)));
         view.FormatRules.Add(CanopyFormatRule.ForCell("cost-scale", "cost", CanopyFormatStyle.ColorScale(
-            CanopyFormatColorScale.ThreeColor(CanopyTone.Success, CanopyTone.Warning, CanopyTone.Danger))));
-        view.FormatRules.Add(new CanopyFormatRule("high-usage", CanopyFormatStyle.Highlight(CanopyTone.Warning)) {
+            CanopyFormatColorScale.ThreeColor(Tone.Success, Tone.Warning, Tone.Danger))));
+        view.FormatRules.Add(new CanopyFormatRule("high-usage", CanopyFormatStyle.Highlight(Tone.Warning)) {
             Target = CanopyFormatTarget.Row, When = CanopyFormatCondition.Where("usage", CanopyFormatOperator.GreaterThan, 90)
         });
         for (var index = 0; index < 60; index++) {

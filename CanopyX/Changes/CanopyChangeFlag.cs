@@ -11,7 +11,7 @@ public sealed class CanopyChangeFlag {
     /// <param name="tone">The tone; warning when none is given.</param>
     /// <exception cref="ArgumentException"><paramref name="id"/> is empty.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="label"/> or <paramref name="reason"/> is null.</exception>
-    public CanopyChangeFlag(string id, string label, string reason, CanopyTone tone = default) {
+    public CanopyChangeFlag(string id, string label, string reason, Tone tone = default) {
         CanopyIdentifiers.Require(id, nameof(id));
         Id = id;
         Label = label ?? throw new ArgumentNullException(nameof(label));
@@ -28,6 +28,6 @@ public sealed class CanopyChangeFlag {
     /// <summary>Gets why it is flagged.</summary>
     public string Reason { get; }
 
-    /// <summary>Gets the tone; <see cref="CanopyTone.None"/> shows as warning.</summary>
-    public CanopyTone Tone { get; }
+    /// <summary>Gets the tone; <see cref="Tone.None"/> shows as warning.</summary>
+    public Tone Tone { get; }
 }

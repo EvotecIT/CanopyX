@@ -50,7 +50,7 @@ public sealed class CalendarOptionsTests {
         foreach (var item in new[] { CanopyCalendarView.Mini, CanopyCalendarView.WeekList, CanopyCalendarView.DayList, CanopyCalendarView.Months, CanopyCalendarView.Timeline }) calendar.Views.Add(item);
         calendar.ToolbarItems.Add(CanopyCalendarToolbarItem.Search);
         calendar.ToolbarItems.Add(CanopyCalendarToolbarItem.More);
-        calendar.Sources.Add(new CanopyCalendarSource("work", "Work") { Tone = CanopyTone.Info });
+        calendar.Sources.Add(new CanopyCalendarSource("work", "Work") { Tone = Tone.Info });
         calendar.Sources.Add(new CanopyCalendarSource("holidays", "Holidays") { Ics = "feeds/holidays.ics", Hidden = true });
         calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 10, 19, 8, 0, 0), new DateTime(2026, 10, 19, 16, 0, 0), "Open") { Inverse = true, Resource = "host-1" });
         view.Calendar = calendar;

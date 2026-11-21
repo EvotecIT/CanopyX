@@ -31,11 +31,11 @@ public sealed class StaticGridResultTests {
         view.Columns.Add(new CanopyColumn("label", "Reference") { Presenter = CanopyGridPresenter.Link("url") });
         view.Columns.Add(new CanopyColumn("url", "URL") { Hidden = true });
         view.Rows.Add(new CanopyGridRow("a") {
-            Tone = toneSource == "row" ? CanopyTone.Danger : CanopyTone.None,
-            Cells = { ["label"] = new CanopyCell("Inspect evidence") { Tone = toneSource == "cell" ? CanopyTone.Danger : CanopyTone.None },
+            Tone = toneSource == "row" ? Tone.Danger : Tone.None,
+            Cells = { ["label"] = new CanopyCell("Inspect evidence") { Tone = toneSource == "cell" ? Tone.Danger : Tone.None },
                 ["url"] = "https://example.test/evidence" }
         });
-        if (toneSource == "format") view.FormatRules.Add(CanopyFormatRule.ForCell("ink", "label", CanopyFormatStyle.Highlight(CanopyTone.Danger)));
+        if (toneSource == "format") view.FormatRules.Add(CanopyFormatRule.ForCell("ink", "label", CanopyFormatStyle.Highlight(Tone.Danger)));
         if (toneSource.EndsWith("-css", StringComparison.Ordinal)) {
             var style = new CanopyFormatStyle(); style.Css["color"] = "#ad1234";
             view.FormatRules.Add(toneSource == "row-css" ? new CanopyFormatRule("ink", style) { Target = CanopyFormatTarget.Row } : CanopyFormatRule.ForCell("ink", "label", style));

@@ -17,14 +17,14 @@ internal static class SupportTicketsExample {
     private static readonly string[] Customers = { "Zoë Martín", "José Álvarez", "Łukasz Nowak", "Anaïs Dubois", "Sören Lindqvist", "Chloé Bernard", "Ana García", "Piotr Wiśniewski" };
     private static readonly string[] Agents = { "Maya Chen", "Noah Patel", "Lena Schmidt", "Omar Haddad", "Iris Rossi" };
     private static readonly string[] Channels = { "Email", "Portal", "Phone", "Chat" };
-    private static readonly (string Name, CanopyTone Tone)[] Statuses = { ("Open", CanopyTone.Info), ("Waiting", CanopyTone.Warning), ("Resolved", CanopyTone.Success), ("Escalated", CanopyTone.Danger) };
+    private static readonly (string Name, Tone Tone)[] Statuses = { ("Open", Tone.Info), ("Waiting", Tone.Warning), ("Resolved", Tone.Success), ("Escalated", Tone.Danger) };
     private static readonly string[] Priorities = { "Low", "Normal", "High", "Urgent" };
 
     internal static void Write(string output) {
         var grid = Tickets(240);
         var tree = KnowledgeBase();
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : "";
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : "";
             grid.SaveHtmlPage(Path.Combine(output, "support-tickets" + suffix + ".html"), new CanopyHtmlOptions { Title = "Support tickets", Theme = theme });
             tree.SaveHtmlPage(Path.Combine(output, "support-tickets-tree" + suffix + ".html"), new CanopyHtmlOptions { Title = "Support knowledge base", Theme = theme });
         }

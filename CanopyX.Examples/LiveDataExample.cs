@@ -20,7 +20,7 @@ internal static class LiveDataExample {
         using var css = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates.examples.css")!;
         using var cssReader = new StreamReader(css);
         var exampleStyle = cssReader.ReadToEnd();
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var document = new CanopyHtmlDocument();
             CanopyHtmlOptions Options(string height) => new() { Theme = theme, Height = height, Document = document };
             var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
@@ -28,7 +28,7 @@ internal static class LiveDataExample {
                 .Replace("{{example-style}}", exampleStyle)
                 .Replace("{{monitor}}", Monitor().ToHtmlFragment(Options("440px")))
                 .Replace("{{queue}}", Queue().ToHtmlFragment(Options("300px")));
-            File.WriteAllText(Path.Combine(output, "live-data" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"), page);
+            File.WriteAllText(Path.Combine(output, "live-data" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"), page);
         }
     }
 
@@ -43,7 +43,7 @@ internal static class LiveDataExample {
         grid.Columns.Add(new CanopyColumn("region", "Region") { Sortable = true, ResponsivePriority = 4, Sizing = CanopyColumnSizing.Preferred(100) });
         grid.Columns.Add(new CanopyColumn("status", "Status") {
             Sortable = true, ResponsivePriority = 2,
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Healthy"] = CanopyTone.Success, ["Degraded"] = CanopyTone.Warning, ["Down"] = CanopyTone.Danger })
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Healthy"] = Tone.Success, ["Degraded"] = Tone.Warning, ["Down"] = Tone.Danger })
         });
         grid.Columns.Add(new CanopyColumn("latency", "Latency (ms)") { Kind = CanopyColumnKind.Number, Sortable = true, ResponsivePriority = 1, Aggregatable = true });
         grid.Columns.Add(new CanopyColumn("errors", "Errors / min") { Kind = CanopyColumnKind.Number, Sortable = true, ResponsivePriority = 3 });
@@ -74,7 +74,7 @@ internal static class LiveDataExample {
         grid.Columns.Add(new CanopyColumn("job", "Job") { Sortable = true, RowHeader = true, Sizing = CanopyColumnSizing.Flex(1, 160, 480, preferredWidth: 220) });
         grid.Columns.Add(new CanopyColumn("state", "State") {
             Sortable = true,
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Running"] = CanopyTone.Info, ["Queued"] = CanopyTone.Neutral, ["Failed"] = CanopyTone.Danger, ["Done"] = CanopyTone.Success })
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Running"] = Tone.Info, ["Queued"] = Tone.Neutral, ["Failed"] = Tone.Danger, ["Done"] = Tone.Success })
         });
         grid.Columns.Add(new CanopyColumn("progress", "Progress (%)") { Kind = CanopyColumnKind.Number, Sortable = true });
         grid.Query = new CanopyGridQuery(grid.Id);

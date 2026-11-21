@@ -110,12 +110,12 @@ public sealed class UiBuilderTests {
     public void Tabs_EncodeTextAndAttributeValuesButPreserveExplicitlyTrustedContent() {
         const string hostile = "\"<&'";
         var tabs = new CanopyTabs("set" + hostile, "Sections " + hostile, new CanopyTabsOptions { Variant = "product." + hostile });
-        tabs.Tabs.Add(new CanopyTab("one" + hostile, "Label " + hostile) { Badge = hostile, Icon = hostile, ContentHtml = "<strong>Trusted body</strong>" });
+        tabs.Tabs.Add(new CanopyTab("one" + hostile, "Label " + hostile) { Badge = hostile, Icon = Icon.Named("tab-icon"), ContentHtml = "<strong>Trusted body</strong>" });
         var html = tabs.ToHtmlFragment();
         var root = Parse(html);
         var tab = Role(root, "tab").Single();
         Assert.Equal("set" + hostile + "-tab-one" + hostile, Attr(tab, "id"));
-        Assert.Equal(hostile, Attr(tab.Descendants("span").First(e => e.Attribute("data-icon") != null), "data-icon"));
+        Assert.Equal("tab-icon", Attr(tab.Descendants("span").First(e => e.Attribute("data-icon") != null), "data-icon"));
         Assert.Equal("Label " + hostile, tab.Elements("span").Single(e => Attr(e, "class") == "cx-tab-label").Value);
         Assert.Equal("product." + hostile, Attr(root.Element("div")!, "data-cx-variant"));
         Assert.Contains(WebUtility.HtmlEncode("Label " + hostile), html);
@@ -377,7 +377,7 @@ public sealed class UiBuilderTests {
     [Fact]
     public void Confirm_RendersTypedActionsThatSubmitWithoutTheRuntime() {
         var dialog = CanopyDialog.Confirm("restart", "Restart service", "Restart the <print> spooler?",
-            CanopyDialogAction.Submit("restart", "Restart & wait", CanopyTone.Danger, "/services/spooler?step=restart"));
+            CanopyDialogAction.Submit("restart", "Restart & wait", Tone.Danger, "/services/spooler?step=restart"));
         dialog.Fields["__RequestVerificationToken"] = "a\"b<c";
         var html = dialog.ToTriggerHtmlFragment("Restart spooler") + dialog.ToHtmlFragment();
         Assert.Contains("<input type=\"hidden\" name=\"__RequestVerificationToken\" value=\"a&quot;b&lt;c\">", html);
@@ -412,7 +412,7 @@ public sealed class UiBuilderTests {
     public void DialogActions_WithoutATargetAreHostAnswers_AndContradictionsAreRefused() {
         var dialog = new CanopyDialog("pick", "Pick");
         dialog.Actions.Add(CanopyDialogAction.Cancel("Back"));
-        dialog.Actions.Add(new CanopyDialogAction("keep", "Keep") { Tone = CanopyTone.Success });
+        dialog.Actions.Add(new CanopyDialogAction("keep", "Keep") { Tone = Tone.Success });
         var footer = Parse(dialog.ToHtmlFragment()).Element("dialog")!.Element("footer")!;
         var keep = footer.Elements("button").Last();
         Assert.Equal("button", Attr(keep, "type"));
@@ -430,7 +430,7 @@ public sealed class UiBuilderTests {
         Assert.Throws<ArgumentException>(() => CanopyDialogAction.Submit("run", "Run", target: "javascript:alert(1)"));
         Assert.Throws<ArgumentException>(() => CanopyDialogAction.Submit("run", "Run", target: "//elsewhere.test/run"));
         Assert.Throws<InvalidOperationException>(() => CanopyDialogAction.Cancel().Target = "/run");
-        Assert.Throws<InvalidOperationException>(() => CanopyDialogAction.Cancel().Tone = CanopyTone.Danger);
+        Assert.Throws<InvalidOperationException>(() => CanopyDialogAction.Cancel().Tone = Tone.Danger);
     }
 
     [Fact]
@@ -495,7 +495,7 @@ public sealed class UiBuilderTests {
     public void Menu_EncodesRichItemMetadataAndLinksSubmenusChecksAndDecorations() {
         var menu = new CanopyMenu("actions\"&");
         menu.Items.Add(new CanopyMenuItem("group", "Actions <group>", CanopyMenuItemKind.GroupLabel));
-        menu.Items.Add(new CanopyMenuItem("check", "Checked <item>") { Checked = true, Icon = "check\"<&", Shortcut = "Ctrl+<&" });
+        menu.Items.Add(new CanopyMenuItem("check", "Checked <item>") { Checked = true, Icon = Icon.Named("check"), Shortcut = "Ctrl+<&" });
         menu.Items.Add(new CanopyMenuItem("radio", "Choice", CanopyMenuItemKind.Radio) { Checked = false });
         menu.Items.Add(new CanopyMenuItem("separator", string.Empty, CanopyMenuItemKind.Separator));
         var parent = new CanopyMenuItem("more", "More");
@@ -512,7 +512,7 @@ public sealed class UiBuilderTests {
         Assert.Equal("true", Attr(check, "aria-checked"));
         Assert.Equal("selected", Attr(check, "data-state"));
         Assert.Equal("Ctrl+<&", check.Element("kbd")!.Value);
-        Assert.Equal("check\"<&", Attr(check.Elements("span").First(), "data-icon"));
+        Assert.Equal("check", Attr(check.Elements("span").First(), "data-icon"));
         Assert.Equal("false", Attr(Role(document, "menuitemradio").Single(), "aria-checked"));
         Assert.Single(Role(document, "separator"));
         Assert.Equal("Actions <group>", Role(document, "presentation").Single().Value);

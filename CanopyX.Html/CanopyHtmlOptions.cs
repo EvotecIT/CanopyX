@@ -6,6 +6,7 @@ namespace CanopyX.Html;
 /// <summary>
 /// Options for writing a CanopyX view as an HTML fragment or page.
 /// </summary>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyHtmlOptions {
     /// <summary>Gets or sets the HTML id of the element carrying the runtime API. Defaults to the view id; use a distinct id when embedding the same view more than once.</summary>
     public string? HostId { get; set; }
@@ -106,7 +107,7 @@ public sealed class CanopyHtmlOptions {
     public ISet<string> Parts { get; } = new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>Gets or sets the colour theme.</summary>
-    public CanopyTheme Theme { get; set; }
+    public ThemeMode Theme { get; set; }
 
     /// <summary>
     /// Gets or sets the Content Security Policy nonce of the response the markup is served in, or null (the default) for

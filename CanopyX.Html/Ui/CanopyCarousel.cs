@@ -7,6 +7,7 @@ namespace CanopyX.Html.Ui;
 /// <summary>Builds a carousel of slides with any content (docs/ui-carousel.md).</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. Without the runtime the slides read one after another
 /// under the carousel's name. This builder emits no assets or executable code.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyCarousel {
     /// <summary>Creates a carousel with a page-unique identity and a plain text name, such as "Release highlights".</summary>
     public CanopyCarousel(string id, string label, CanopyCarouselOptions? options = null) {

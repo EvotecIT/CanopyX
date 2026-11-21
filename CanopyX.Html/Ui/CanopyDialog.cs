@@ -7,6 +7,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds a declarative dialog with encoded accessibility references, typed actions and trusted content.</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. Render a trigger separately or wire an existing control to TriggerId and data-cx-open. No assets or executable code are emitted.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyDialog {
     /// <summary>Creates a dialog with a page-unique identity and a plain text title.</summary>
     public CanopyDialog(string id, string title, CanopyDialogOptions? options = null) {
@@ -105,9 +106,9 @@ public sealed class CanopyDialog {
             UiHtml.Attribute(html, "data-cx-part", "action");
             if (cancel) UiHtml.Attribute(html, "data-cx-cancel", string.Empty);
             else UiHtml.Attribute(html, "data-cx-action", action.Id);
-            UiHtml.Attribute(html, "data-variant", cancel ? null : action.Tone == CanopyTone.Danger ? "danger" : "primary");
-            if (action.Tone == CanopyTone.Danger) UiHtml.Attribute(html, "data-danger", string.Empty);
-            UiHtml.Attribute(html, "data-tone", action.Tone.Name);
+            UiHtml.Attribute(html, "data-variant", cancel ? null : action.Tone == Tone.Danger ? "danger" : "primary");
+            if (action.Tone == Tone.Danger) UiHtml.Attribute(html, "data-danger", string.Empty);
+            UiHtml.Attribute(html, "data-tone", action.Tone.WireName());
             if (action.Target != null) {
                 UiHtml.Attribute(html, "name", "action");
                 UiHtml.Attribute(html, "value", action.Id);

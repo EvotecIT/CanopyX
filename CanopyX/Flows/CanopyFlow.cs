@@ -22,6 +22,7 @@ namespace CanopyX;
 /// host's revision in <see cref="Baseline"/>.
 /// </para>
 /// </remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyFlow {
     /// <summary>The most steps a flow holds.</summary>
     public const int MaxSteps = 64;

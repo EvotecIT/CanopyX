@@ -29,7 +29,7 @@ public sealed class CanopyGridRow {
     public IDictionary<string, CanopyCell> Cells { get; } = new Dictionary<string, CanopyCell>(StringComparer.Ordinal);
 
     /// <summary>Gets or sets the row's default semantic or host-defined tone.</summary>
-    public CanopyTone Tone { get; set; }
+    public Tone Tone { get; set; }
     /// <summary>Gets or sets additional row CSS classes, at most 1,024 characters without controls.</summary>
     public string? ClassName { get; set; }
     /// <summary>Gets or sets the record's detail payload for a reporting grid with <see cref="CanopyGridReporting.Detail"/>: a table,
@@ -68,7 +68,7 @@ public sealed class CanopyGridRow {
             if (cell.Value == null) writer.Null();
             else cell.Value.WriteJson(writer);
         }
-        writer.EndObject().OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName);
+        writer.EndObject().OptionalProperty("tone", Tone.WireName()).OptionalProperty("className", ClassName);
         if (Detail != null) { writer.Name("detail"); Detail.WriteJson(writer); }
         if (HasFields) {
             writer.Name("fields").BeginObject();
@@ -82,8 +82,8 @@ public sealed class CanopyGridRow {
     internal void WriteCompactJson(CanopyJsonWriter writer, IReadOnlyList<string> columns) {
         Validate();
         writer.BeginArray();
-        if (Tone.Name == null && ClassName == null) writer.String(Id);
-        else writer.BeginObject().Property("id", Id).OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName).EndObject();
+        if (Tone.WireName() == null && ClassName == null) writer.String(Id);
+        else writer.BeginObject().Property("id", Id).OptionalProperty("tone", Tone.WireName()).OptionalProperty("className", ClassName).EndObject();
         var last = -1;
         for (var i = 0; i < columns.Count; i++) {
             if (Cells.TryGetValue(columns[i], out var cell) && cell != null) last = i;

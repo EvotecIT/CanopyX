@@ -233,7 +233,7 @@ public sealed class CanopyHtmlPart {
     private static bool UsesCalendarScreens(CanopyCalendar calendar) =>
         calendar.Merge != null || calendar.FadePast.HasValue || calendar.DayNotes.Count > 0 || calendar.Faces.Count > 0 || calendar.ListDays.HasValue ||
         calendar.DayWidth.HasValue || calendar.ListBelow.HasValue || calendar.Reset ||
-        calendar.Sources.Any(source => source != null && (source.Avatar != null || source.Initials != null || source.Icon != null));
+        calendar.Sources.Any(source => source != null && (source.Avatar != null || source.Initials != null || source.Mark != null));
 
     /// <summary>
     /// Whether a calendar uses the iCalendar part: an iCalendar source, or the Export menu (which offers iCalendar) in its

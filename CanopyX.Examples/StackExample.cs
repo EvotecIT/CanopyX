@@ -7,8 +7,8 @@ namespace CanopyX.Examples;
 /// <summary>A configuration-layer explanation whose order, winner and reasons are supplied entirely by the host.</summary>
 internal static class StackExample {
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            Create().SaveHtmlPage(Path.Combine(output, "stack" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            Create().SaveHtmlPage(Path.Combine(output, "stack" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Configuration layers", Theme = theme, Height = "820px" });
         }
         var html = CanopyStaticHtml.RenderGrid(Create());
@@ -31,11 +31,11 @@ internal static class StackExample {
         view.Rows.Add(Record("preview", "Preview configuration with a longer descriptive name", "Experimental", "Preview sessions"));
         view.Stack.Layers.Add(new CanopyStackLayer("defaults", "defaults", "Provides the starting value shown in this explanation.") { Label = "Shared baseline" });
         view.Stack.Layers.Add(new CanopyStackLayer("workspace", "workspace", "The host reports a workspace-specific value at this stage.") {
-            Label = "Workspace", Badges = { new CanopyBadge("Reviewed", CanopyTone.Info) }
+            Label = "Workspace", Badges = { new CanopyBadge("Reviewed", Tone.Info) }
         });
         view.Stack.Layers.Add(new CanopyStackLayer("environment", "environment", "Retained as an enforced layer by the host; it is not the selected result.") { Enforced = true });
         view.Stack.Layers.Add(new CanopyStackLayer("session", "session", "The host selected this layer as the effective configuration for this session.") {
-            Winner = true, Badges = { new CanopyBadge("Effective value: Compact", CanopyTone.Success) }
+            Winner = true, Badges = { new CanopyBadge("Effective value: Compact", Tone.Success) }
         });
         view.Stack.Layers.Add(new CanopyStackLayer("preview", "preview", "Excluded by the host because this session is outside the preview scope.") { Filtered = true });
         view.Stack.Layers.Add(new CanopyStackLayer("baseline-review", "defaults", "The same baseline record is referenced again for the host's final review context.") { Label = "Final context" });

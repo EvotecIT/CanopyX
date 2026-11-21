@@ -51,7 +51,7 @@ public sealed class CanopyNode {
     public string? Kind { get; set; }
 
     /// <summary>Gets or sets the key of an icon declared in <see cref="CanopyTreeView.Icons"/>.</summary>
-    public string? Icon { get; set; }
+    public Icon Icon { get; set; }
 
     /// <summary>Gets or sets whether the row is a group header, for example a department above its teams.</summary>
     public bool Group { get; set; }
@@ -297,7 +297,7 @@ public sealed class CanopyNode {
     private void WriteHead(CanopyJsonWriter writer) {
         writer.BeginObject().Property("id", Id).Property("label", _label);
         writer.OptionalProperty("kind", Kind);
-        writer.OptionalProperty("icon", Icon);
+        writer.OptionalProperty("icon", Icon.IsEmpty ? null : Icon.Key);
         if (Group) {
             writer.Property("group", true);
         }

@@ -23,7 +23,7 @@ var notices = new CanopyToasts("notices", new CanopyToastsOptions {
     Timeout = 6000                             // milliseconds; 0 keeps toasts until they are dismissed
 });
 notices.Items.Add(new CanopyToast("Collected 1,204 accounts from 3 domains.") {
-    Id = "collected", Title = "Report ready", Tone = CanopyTone.Success
+    Id = "collected", Title = "Report ready", Tone = Tone.Success
 });
 string fragment = notices.ToHtmlFragment();
 ```
@@ -31,8 +31,8 @@ string fragment = notices.ToHtmlFragment();
 The builder encodes every text. A toast written into the page shows through the queue when the runtime mounts it. Without
 the runtime the region reads as a plain list, so a report opened where scripts are blocked still says what happened.
 
-Tones are the shared `CanopyTone` names: `neutral`, `info` (the default), `success`, `warning`, `danger` and `muted`. A host
-tone such as `CanopyTone.Named("high")` takes its colour from `--hfx-color-status-high-fg`, as tones in cells and badges do.
+Tones are the shared `Tone` names: `neutral`, `info` (the default), `success`, `warning`, `danger` and `muted`. A host
+tone such as `Tone.Named("high")` takes its colour from `--hfx-color-status-high-fg`, as tones in cells and badges do.
 
 ## Show toasts from JavaScript
 

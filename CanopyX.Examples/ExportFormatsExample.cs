@@ -58,7 +58,7 @@ document.getElementById("export-tree-download").addEventListener("click", () =>
         for (var i = 0; i < 250; i++) {
             var row = new CanopyGridRow("service-" + i.ToString("D3", CultureInfo.InvariantCulture));
             row.Cells["name"] = "Service " + i.ToString(CultureInfo.InvariantCulture);
-            row.Cells["state"] = new CanopyCell(states[i % states.Length]) { Tone = i % 4 == 3 ? CanopyTone.Danger : i % 4 == 2 ? CanopyTone.Warning : CanopyTone.Success };
+            row.Cells["state"] = new CanopyCell(states[i % states.Length]) { Tone = i % 4 == 3 ? Tone.Danger : i % 4 == 2 ? Tone.Warning : Tone.Success };
             row.Cells["latency"] = new CanopyCell(i * 3 % 97) { Text = (i * 3 % 97).ToString(CultureInfo.InvariantCulture) + " ms" };
             grid.Rows.Add(row);
         }
@@ -77,8 +77,8 @@ document.getElementById("export-tree-download").addEventListener("click", () =>
             tree.Roots.Add(folder);
         }
 
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : "";
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : "";
             var gridPage = grid.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX export formats", Theme = theme });
             File.WriteAllText(Path.Combine(output, "export-formats" + suffix + ".html"), gridPage.Replace("</body>", Writers + "</body>"));
             var treePage = tree.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX tree export", Theme = theme, Runtime = CanopyRuntime.InteractiveTreeGrid });

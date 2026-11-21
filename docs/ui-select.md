@@ -13,7 +13,7 @@ using CanopyX.Html.Ui;
 
 var country = new CanopySelect("country", "country", "Country", new CanopySelectOptions { Placeholder = "Choose a country" });
 country.Items.Add(new CanopySelectOption("pl", "Poland") { Flag = "PL", Description = "Warsaw", Group = "Europe", Selected = true });
-country.Items.Add(new CanopySelectOption("de", "Germany") { Flag = "DE", Badge = "EU", BadgeTone = CanopyTone.Info, Group = "Europe" });
+country.Items.Add(new CanopySelectOption("de", "Germany") { Flag = "DE", Badge = "EU", BadgeTone = Tone.Info, Group = "Europe" });
 string fragment = country.ToHtmlFragment();
 ```
 

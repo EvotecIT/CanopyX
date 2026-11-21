@@ -21,7 +21,7 @@ public sealed partial class CanopyColumn {
     public IList<string> ValueOrder { get; } = new List<string>();
 
     /// <summary>Gets semantic category tones keyed by exact raw text token.</summary>
-    public IDictionary<string, CanopyTone> ValueTones { get; } = new Dictionary<string, CanopyTone>(StringComparer.Ordinal);
+    public IDictionary<string, Tone> ValueTones { get; } = new Dictionary<string, Tone>(StringComparer.Ordinal);
 
     /// <summary>Gets ordered numeric text-tone rules. The first matching rule wins, including its tooltip and drawer label.</summary>
     public IList<CanopyNumericToneRule> NumericTones { get; } = new List<CanopyNumericToneRule>();
@@ -35,8 +35,8 @@ public sealed partial class CanopyColumn {
         return null;
     }
 
-    internal CanopyTone ValueTone(CanopyCell? cell) => NumericTone(cell)?.Tone ??
-        (cell?.Value is string token && ValueTones.TryGetValue(token, out var tone) ? tone : cell?.Tone ?? CanopyTone.None);
+    internal Tone ValueTone(CanopyCell? cell) => NumericTone(cell)?.Tone ??
+        (cell?.Value is string token && ValueTones.TryGetValue(token, out var tone) ? tone : cell?.Tone ?? Tone.None);
 
     private void WriteValuesJson(CanopyJsonWriter writer) {
         if (MaxLines != 2) writer.Property("maxLines", MaxLines);
@@ -63,8 +63,8 @@ public sealed partial class CanopyColumn {
         if (ValueTones.Count != 0) {
             writer.Name("valueTones").BeginObject();
             foreach (var pair in ValueTones) {
-                if (pair.Key.Length > 4096 || pair.Value == CanopyTone.None) throw new InvalidOperationException("Category tones need a bounded token and tone.");
-                writer.Property(pair.Key, pair.Value.Name!);
+                if (pair.Key.Length > 4096 || pair.Value == Tone.None) throw new InvalidOperationException("Category tones need a bounded token and tone.");
+                writer.Property(pair.Key, pair.Value.WireName()!);
             }
             writer.EndObject();
         }

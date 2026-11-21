@@ -5,6 +5,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds a labelled text input with a live mask (docs/ui-mask.md): separators appear as the reader types and other characters are dropped.</summary>
 /// <remarks>Without the runtime the input is an ordinary text field. This builder emits no assets or executable code.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyMaskedInput {
     private static readonly string[] Presets = { "ipv4", "mac", "guid", "date", "time", "time-seconds", "date-time", "postcode", "credit-card" };
 

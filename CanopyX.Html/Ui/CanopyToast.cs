@@ -13,8 +13,8 @@ public sealed class CanopyToast {
     public string? Id { get; set; }
     /// <summary>Gets or sets the plain text title shown above the message, at most 200 characters.</summary>
     public string? Title { get; set; }
-    /// <summary>Gets or sets the tone. <see cref="CanopyTone.None"/> shows an informational toast.</summary>
-    public CanopyTone Tone { get; set; }
+    /// <summary>Gets or sets the tone. <see cref="Tone.None"/> shows an informational toast.</summary>
+    public Tone Tone { get; set; }
     /// <summary>Gets or sets how long the toast stays, in milliseconds, 0 to 600000; 0 keeps it. Null uses the region's timeout.</summary>
     public int? Timeout { get; set; }
 }

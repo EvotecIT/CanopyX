@@ -14,7 +14,7 @@ internal static class LargeDataExample {
     private static readonly string[] Words = { "alpha", "bravo", "cedar", "delta", "ember", "fjord", "garnet", "harbor", "indigo", "juniper", "kestrel", "lumen",
         "meadow", "nectar", "onyx", "prairie", "quartz", "raven", "summit", "tundra", "umber", "violet", "willow", "xenon", "yarrow", "zephyr" };
     private static readonly string[] Categories = { "Hardware", "Software", "Service", "License", "Facility", "Vehicle", "Network", "Storage", "Printer", "Phone", "Furniture", "Other" };
-    private static readonly (string Text, CanopyTone Tone)[] Statuses = { ("Active", CanopyTone.Success), ("Pending", CanopyTone.Warning), ("Retired", CanopyTone.Muted), ("Faulty", CanopyTone.Danger) };
+    private static readonly (string Text, Tone Tone)[] Statuses = { ("Active", Tone.Success), ("Pending", Tone.Warning), ("Retired", Tone.Muted), ("Faulty", Tone.Danger) };
     private static readonly string[] Regions = { "North", "South", "East", "West", "Central", "Coastal", "Highlands", "Islands" };
 
     /// <summary>The section grids of the report: 24 grids, 30,750 rows in all.</summary>
@@ -113,7 +113,7 @@ internal static class LargeDataExample {
         string Fragment(int index) {
             var rows = ReportGrids[index];
             var view = Inventory("section-" + index.ToString(CultureInfo.InvariantCulture), "Section " + (index + 1).ToString(CultureInfo.InvariantCulture) + " assets", rows, 1000u + (uint)index);
-            return view.ToHtmlFragment(new CanopyHtmlOptions { Theme = CanopyTheme.Auto, Height = "420px", MountWhenVisible = true, Document = document,
+            return view.ToHtmlFragment(new CanopyHtmlOptions { Theme = ThemeMode.Auto, Height = "420px", MountWhenVisible = true, Document = document,
                 RowData = new CanopyRowDataOptions { ChunkSize = 1000, Format = rows >= 1000 ? CanopyRowFormat.Compact : CanopyRowFormat.Objects } });
         }
 

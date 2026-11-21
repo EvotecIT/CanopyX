@@ -41,12 +41,12 @@ public sealed class CanopyCalendarFace {
     /// <exception cref="ArgumentException">The value is blank or longer than 3 characters.</exception>
     public string? Initials { get => _initials; set => _initials = CheckShort(value, 3, nameof(value)); }
 
-    /// <summary>Gets or sets an icon, 1 to 4 characters such as an emoji, shown when there is neither an avatar nor initials; null for none.</summary>
+    /// <summary>Gets or sets a mark, 1 to 4 characters such as an emoji, shown when there is neither an avatar nor initials; null for none.</summary>
     /// <exception cref="ArgumentException">The value is blank or longer than 4 characters.</exception>
-    public string? Icon { get => _icon; set => _icon = CheckShort(value, 4, nameof(value)); }
+    public string? Mark { get => _icon; set => _icon = CheckShort(value, 4, nameof(value)); }
 
     internal void Validate() {
-        if (_avatar == null && _initials == null && _icon == null) throw new InvalidOperationException("A calendar face needs an avatar, initials or an icon.");
+        if (_avatar == null && _initials == null && _icon == null) throw new InvalidOperationException("A calendar face needs an avatar, initials or a mark.");
     }
 
     internal void WriteJson(CanopyJsonWriter writer) {

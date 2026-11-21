@@ -12,18 +12,18 @@ internal static class ColumnLayoutExample {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates.column-layout.html")!;
         using var reader = new StreamReader(stream);
         var template = reader.ReadToEnd();
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var options = new CanopyHtmlOptions { Theme = theme, Height = "420px" };
             var page = template.Replace("</head>", CanopyHtmlAssets.FontHead() + "</head>").Replace("{{style}}", CanopyHtmlAssets.GetStyle(CanopyRuntime.DataGrid))
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.DataGrid))
-                .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light")
+                .Replace("{{theme}}", theme == ThemeMode.Dark ? "dark" : "light")
                 .Replace("{{products}}", Products("products").ToHtmlFragment(options))
                 .Replace("{{rules}}", Rules().ToHtmlFragment(options))
                 .Replace("{{disclosure}}", Disclosure().ToHtmlFragment(options))
                 .Replace("{{wide}}", Wide().ToHtmlFragment(options))
                 .Replace("{{log}}", Log().ToHtmlFragment(options))
                 .Replace("{{phone}}", Products("phone-products").ToHtmlFragment(options));
-            File.WriteAllText(Path.Combine(output, "column-layout" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), page);
+            File.WriteAllText(Path.Combine(output, "column-layout" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page);
         }
     }
 
@@ -67,7 +67,7 @@ internal static class ColumnLayoutExample {
         view.Columns.Add(new CanopyColumn("failing", "Failing on") { Kind = CanopyColumnKind.Number });
         view.Columns.Add(new CanopyColumn("worst", "Worst") {
             ResponsivePriority = 0,
-            Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> { ["Severe"] = CanopyTone.Danger, ["Passed"] = CanopyTone.Success }).WithQuietTones(CanopyTone.Success)
+            Presenter = CanopyGridPresenter.Enum(new Dictionary<string, Tone> { ["Severe"] = Tone.Danger, ["Passed"] = Tone.Success }).WithQuietTones(Tone.Success)
         });
         view.Columns.Add(new CanopyColumn("weight", "Weight") { Kind = CanopyColumnKind.Number, ResponsivePriority = 10000 });
         for (var i = 0; i < 12; i++) {
@@ -87,7 +87,7 @@ internal static class ColumnLayoutExample {
         view.Columns.Add(new CanopyColumn("status", "Status") { Pinned = CanopyGridColumnPin.Right, Presenter = CanopyGridPresenter.State() });
         for (var i = 0; i < 40; i++) {
             var row = new CanopyGridRow("d" + i);
-            row.Cells["name"] = "device-" + i.ToString("000"); row.Cells["status"] = i % 7 == 0 ? new CanopyCell("Degraded") { Tone = CanopyTone.Warning } : new CanopyCell("Online") { Tone = CanopyTone.Success };
+            row.Cells["name"] = "device-" + i.ToString("000"); row.Cells["status"] = i % 7 == 0 ? new CanopyCell("Degraded") { Tone = Tone.Warning } : new CanopyCell("Online") { Tone = Tone.Success };
             for (var c = 1; c <= 28; c++) row.Cells["m" + c] = (i * 31 + c * 17) % 1000;
             view.Rows.Add(row);
         }
@@ -97,7 +97,7 @@ internal static class ColumnLayoutExample {
     private static CanopyDataGridView Log() {
         var view = new CanopyDataGridView("log", "Event log") { Noun = "events" };
         view.Columns.Add(new CanopyColumn("time", "Time") { Kind = CanopyColumnKind.DateTime, ResponsivePriority = 0 });
-        view.Columns.Add(new CanopyColumn("level", "Level") { Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> { ["Error"] = CanopyTone.Danger, ["Warning"] = CanopyTone.Warning }) });
+        view.Columns.Add(new CanopyColumn("level", "Level") { Presenter = CanopyGridPresenter.Enum(new Dictionary<string, Tone> { ["Error"] = Tone.Danger, ["Warning"] = Tone.Warning }) });
         view.Columns.Add(new CanopyColumn("source", "Source") { ResponsivePriority = 10000 });
         view.Columns.Add(new CanopyColumn("message", "Message") { RowHeader = true, Pinned = CanopyGridColumnPin.None, Sizing = CanopyColumnSizing.Content(maximum: 640) });
         for (var i = 0; i < 30; i++) {

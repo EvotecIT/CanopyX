@@ -58,16 +58,16 @@ internal static class OrdersByRegionExample {
             row.Cells["order"] = "SO-" + (24100 + i).ToString(CultureInfo.InvariantCulture);
             row.Cells["customer"] = Customers[(i * 7) % Customers.Length];
             row.Cells["region"] = Regions[(i * 11) % Regions.Length];
-            row.Cells["status"] = new CanopyCell(Statuses[(i * 5 + i / 7) % Statuses.Length]) { Tone = (i * 5 + i / 7) % Statuses.Length == 3 ? CanopyTone.Warning : CanopyTone.None };
+            row.Cells["status"] = new CanopyCell(Statuses[(i * 5 + i / 7) % Statuses.Length]) { Tone = (i * 5 + i / 7) % Statuses.Length == 3 ? Tone.Warning : Tone.None };
             row.Cells["placed"] = start.AddHours(i * 13);
             row.Cells["items"] = detail.Rows.Count;
             row.Cells["amount"] = amount;
             row.Detail = detail;
             view.Rows.Add(row);
         }
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX orders by region", Theme = theme });
-            File.WriteAllText(Path.Combine(output, "orders-by-region" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), page);
+            File.WriteAllText(Path.Combine(output, "orders-by-region" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page);
         }
     }
 }

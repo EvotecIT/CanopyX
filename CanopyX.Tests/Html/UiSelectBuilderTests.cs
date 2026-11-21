@@ -8,8 +8,8 @@ public sealed class UiSelectBuilderTests {
     public void Select_WritesALabelledNativeSelectWithOptionData() {
         var select = new CanopySelect("country", "country", "Country <of origin>", new CanopySelectOptions { Placeholder = "Choose…", Source = "/api/countries", MinLength = 2, Required = true });
         select.Items.Add(new CanopySelectOption("pl", "Poland") { Flag = "PL", Description = "Warsaw", Group = "Europe", Selected = true });
-        select.Items.Add(new CanopySelectOption("de", "Germany") { Badge = "EU", BadgeTone = CanopyTone.Info, Group = "Europe" });
-        select.Items.Add(new CanopySelectOption("us", "United \"States\"") { Icon = "flag", Disabled = true });
+        select.Items.Add(new CanopySelectOption("de", "Germany") { Badge = "EU", BadgeTone = Tone.Info, Group = "Europe" });
+        select.Items.Add(new CanopySelectOption("us", "United \"States\"") { Icon = Icon.Named("flag"), Disabled = true });
         Assert.Equal("<label for=\"country\">Country &lt;of origin&gt;</label><div id=\"country-select\" class=\"cx-select\" data-cx-select data-source=\"/api/countries\" data-min-length=\"2\" data-placeholder=\"Choose…\">" +
             "<select id=\"country\" name=\"country\" required><option value=\"\">Choose…</option><optgroup label=\"Europe\">" +
             "<option value=\"pl\" data-description=\"Warsaw\" data-flag=\"pl\" selected>Poland</option><option value=\"de\" data-badge=\"EU\" data-tone=\"info\">Germany</option></optgroup>" +

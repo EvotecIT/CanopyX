@@ -173,7 +173,7 @@ public sealed class ForestViewSchemaTests {
                 view.Path = new CanopyPath { TitleColumn = "title" };
                 var chain = new CanopyPathChain("review", "Configuration review");
                 chain.Hops.Add(new CanopyPathHop("baseline", "Starting context") {
-                    Flags = { CanopyPathFlag.Foreign }, Badges = { new CanopyBadge("Reviewed", CanopyTone.Info) }
+                    Flags = { CanopyPathFlag.Foreign }, Badges = { new CanopyBadge("Reviewed", Tone.Info) }
                 });
                 chain.Hops.Add(new CanopyPathHop("session"));
                 chain.Hops.Add(new CanopyPathHop("baseline", "Explicit return") { Flags = { CanopyPathFlag.Cycle, CanopyPathFlag.Disabled } });
@@ -183,7 +183,7 @@ public sealed class ForestViewSchemaTests {
                 view.Stack = new CanopyStack { TitleColumn = "title" };
                 view.Stack.Layers.Add(new CanopyStackLayer("first", "baseline", "Starting context") { Label = "Shared", Enforced = true });
                 view.Stack.Layers.Add(new CanopyStackLayer("effective", "session", "Selected by the host") {
-                    Winner = true, Badges = { new CanopyBadge("Reviewed", CanopyTone.Success) { Title = "Host review" } }
+                    Winner = true, Badges = { new CanopyBadge("Reviewed", Tone.Success) { Title = "Host review" } }
                 });
                 view.Stack.Layers.Add(new CanopyStackLayer("excluded", "baseline", "Excluded by the host") { Filtered = true });
                 break;

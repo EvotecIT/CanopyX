@@ -16,8 +16,8 @@ internal static class CalendarCertificatesExample {
     private static readonly string[] Domains = { "portal", "api", "mail", "vpn", "sso", "shop", "files", "status", "docs", "intranet", "crm", "pay" };
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             Certificates().SaveHtmlPage(Path.Combine(output, "calendar-certificates" + suffix + ".html"), new CanopyHtmlOptions { Title = "Certificate expiries", Theme = theme, Height = "760px" });
             Passwords().SaveHtmlPage(Path.Combine(output, "calendar-passwords" + suffix + ".html"), new CanopyHtmlOptions { Title = "Password expiries", Theme = theme, Height = "700px" });
         }
@@ -28,7 +28,7 @@ internal static class CalendarCertificatesExample {
         view.Columns.Add(new CanopyColumn("cn", "Common name") { Sortable = true, RowHeader = true, Presenter = CanopyGridPresenter.Identifier() });
         view.Columns.Add(new CanopyColumn("expires", "Expires") { Kind = CanopyColumnKind.DateTime, Sortable = true });
         view.Columns.Add(new CanopyColumn("status", "Status") {
-            Sortable = true, Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Expired"] = CanopyTone.Danger, ["Expiring"] = CanopyTone.Warning, ["Renewal ordered"] = CanopyTone.Info, ["Valid"] = CanopyTone.Neutral, ["Renewed"] = CanopyTone.Success })
+            Sortable = true, Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Expired"] = Tone.Danger, ["Expiring"] = Tone.Warning, ["Renewal ordered"] = Tone.Info, ["Valid"] = Tone.Neutral, ["Renewed"] = Tone.Success })
         });
         view.Columns.Add(new CanopyColumn("issuer", "Issuer") { Sortable = true });
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Sortable = true });
@@ -48,7 +48,7 @@ internal static class CalendarCertificatesExample {
         };
         foreach (var item in new[] { CanopyCalendarView.Month, CanopyCalendarView.Agenda, CanopyCalendarView.Year, CanopyCalendarView.Timeline }) calendar.Views.Add(item);
         calendar.Resources.Aggregates["count"] = CanopyCalendarAggregate.Count;
-        calendar.Capacity = new CanopyCalendarCapacity { Label = "Expiring at once" }.Add(40, CanopyTone.Warning).Add(80, CanopyTone.Danger);
+        calendar.Capacity = new CanopyCalendarCapacity { Label = "Expiring at once" }.Add(40, Tone.Warning).Add(80, Tone.Danger);
         view.FacetPanel = new CanopyFacetPanel().Add("issuer").Add("status").Add("environment").Add("owner");
         var random = new Random(5);
         for (var i = 0; i < count; i++) {
@@ -81,7 +81,7 @@ internal static class CalendarCertificatesExample {
         view.Columns.Add(new CanopyColumn("allDay", "All day") { Hidden = true, ShowInDrawer = false });
         view.Columns.Add(new CanopyColumn("department", "Department") { Sortable = true });
         view.Columns.Add(new CanopyColumn("state", "State") {
-            Sortable = true, Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Expired"] = CanopyTone.Danger, ["Expires soon"] = CanopyTone.Warning, ["Notified"] = CanopyTone.Info })
+            Sortable = true, Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Expired"] = Tone.Danger, ["Expires soon"] = Tone.Warning, ["Notified"] = Tone.Info })
         });
         var first = new[] { "Anna", "Bruno", "Chiara", "Dawid", "Elena", "Felix", "Greta", "Hugo", "Iga", "Jonas", "Klara", "Luca", "Marta", "Noah", "Olga", "Pablo" };
         var last = new[] { "Nowak", "Weber", "Rossi", "Garcia", "Dubois", "Kowalska", "Meyer", "Costa" };

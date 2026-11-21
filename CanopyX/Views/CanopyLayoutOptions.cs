@@ -19,6 +19,7 @@ public sealed class CanopyLayoutOptions {
     /// cards on a flat grid, with <see cref="CanopyLayoutMode.Auto"/> first when <see cref="Mode"/> is auto, and
     /// <see cref="CanopyLayoutMode.Fit"/> and <see cref="CanopyLayoutMode.Scroll"/> on a tree. Offering auto needs cards and
     /// <see cref="Wide"/> among them.</summary>
+    [PowerForge.Fluent.Child("OfferMode")]
     public IList<CanopyLayoutMode> Modes { get; } = new List<CanopyLayoutMode>();
 
     /// <summary>Gets or sets the density the view opens with. Null keeps the view's own density (a flat grid's

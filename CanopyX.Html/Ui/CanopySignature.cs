@@ -5,6 +5,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds a signature pad (docs/ui-signature.md): drawing or a typed name, with undo, clear, colours and downloads.</summary>
 /// <remarks>The pad needs the runtime. This builder emits no assets or executable code.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopySignature {
     /// <summary>Creates a pad with a page-unique identity and a plain text accessible name.</summary>
     public CanopySignature(string id, string label, CanopySignatureOptions? options = null) {

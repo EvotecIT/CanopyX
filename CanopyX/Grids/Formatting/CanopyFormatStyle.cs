@@ -14,13 +14,18 @@ namespace CanopyX;
 /// </remarks>
 public sealed class CanopyFormatStyle {
     /// <summary>Gets or sets the tone: a built-in one or a host tone the theme defines. None leaves the colours.</summary>
-    public CanopyTone Tone { get; set; }
+    public Tone Tone { get; set; }
 
     /// <summary>Gets or sets how the tone appears. Defaults to a fill.</summary>
     public CanopyFormatEmphasis Emphasis { get; set; }
 
-    /// <summary>Gets or sets the icon: a <see cref="CanopyFormatIcons"/> name or up to four characters. Null is automatic.</summary>
-    public string? Icon { get; set; }
+    /// <summary>Gets or sets the icon, one of <see cref="CanopyFormatIcons"/>. <see cref="CanopyX.Icon.None"/> with no <see cref="Mark"/> is automatic.</summary>
+    public Icon Icon { get; set; }
+
+    /// <summary>Gets or sets up to four characters the style draws in place of an <see cref="Icon"/>, or null.</summary>
+    public string? Mark { get; set; }
+
+    internal string? IconToken => CanopyFormatIcons.Token(Icon, Mark);
 
     /// <summary>Gets or sets a badge's text (at most 64 characters), drawn after the value in the tone.</summary>
     public string? Badge { get; set; }
@@ -47,14 +52,14 @@ public sealed class CanopyFormatStyle {
     /// <param name="tone">The tone.</param>
     /// <param name="icon">An icon, or null for the tone's own.</param>
     /// <returns>The style.</returns>
-    public static CanopyFormatStyle Highlight(CanopyTone tone, string? icon = null) => new CanopyFormatStyle { Tone = tone, Icon = icon };
+    public static CanopyFormatStyle Highlight(Tone tone, Icon icon = default) => new CanopyFormatStyle { Tone = tone, Icon = icon };
 
     /// <summary>Returns a data bar.</summary>
     /// <param name="tone">The bar's tone.</param>
     /// <param name="minimum">The value of an empty bar, or null for automatic.</param>
     /// <param name="maximum">The value of a full bar, or null for automatic.</param>
     /// <returns>The style.</returns>
-    public static CanopyFormatStyle DataBar(CanopyTone tone, double? minimum = null, double? maximum = null) =>
+    public static CanopyFormatStyle DataBar(Tone tone, double? minimum = null, double? maximum = null) =>
         new CanopyFormatStyle { Bar = new CanopyFormatDataBar { Tone = tone, Minimum = minimum, Maximum = maximum } };
 
     /// <summary>Returns a colour scale.</summary>
@@ -81,7 +86,7 @@ public sealed class CanopyFormatStyle {
 
     internal void Validate(bool rowTarget, bool hasColumn) {
         if (!Enum.IsDefined(typeof(CanopyFormatEmphasis), Emphasis)) throw new ArgumentOutOfRangeException(nameof(Emphasis));
-        CanopyFormatIcons.Validate(Icon);
+        CanopyFormatIcons.Validate(Icon, Mark);
         try { ValidateText(Badge, 64, nameof(Badge)); ValidateText(Cue, 64, nameof(Cue)); }
         catch (ArgumentException error) { throw new InvalidOperationException(error.Message, error); }
         if (ClassName != null) CanopyGridHighlightRule.ValidateClassName(ClassName);
@@ -97,11 +102,11 @@ public sealed class CanopyFormatStyle {
         if (Bands.Count > 16) throw new InvalidOperationException("Threshold bands are 1 to 16 bands.");
         for (var i = 0; i < Bands.Count; i++) {
             var band = Bands[i] ?? throw new InvalidOperationException("Threshold bands cannot contain a null band.");
-            CanopyFormatIcons.Validate(band.Icon);
+            CanopyFormatIcons.Validate(band.Icon, band.Mark);
             if (!band.UpperBound.HasValue && i != Bands.Count - 1 || i > 0 && band.UpperBound.HasValue && Bands[i - 1].UpperBound >= band.UpperBound)
                 throw new InvalidOperationException("Threshold bands rise, and only the last may be open.");
         }
-        if (Tone.Name == null && (Icon == null || Icon == CanopyFormatIcons.None) && Badge == null && Cue == null && ClassName == null && Css.Count == 0 && visuals == 0)
+        if (Tone.WireName() == null && (IconToken == null || IconToken == "none") && Badge == null && Cue == null && ClassName == null && Css.Count == 0 && visuals == 0)
             throw new InvalidOperationException("A formatting rule needs a style.");
     }
 
@@ -119,9 +124,9 @@ public sealed class CanopyFormatStyle {
     private static bool UnsafeCss(string value) => UnsafeValue.IsMatch(value);
 
     internal void WriteJson(CanopyJsonWriter writer) {
-        writer.BeginObject().OptionalProperty("tone", Tone.Name);
+        writer.BeginObject().OptionalProperty("tone", Tone.WireName());
         if (Emphasis != CanopyFormatEmphasis.Fill) writer.Property("emphasis", CanopyFormatNames.Wire(Emphasis));
-        writer.OptionalProperty("icon", Icon).OptionalProperty("badge", Badge).OptionalProperty("cue", Cue);
+        writer.OptionalProperty("icon", IconToken).OptionalProperty("badge", Badge).OptionalProperty("cue", Cue);
         if (Bar != null) { writer.Name("bar"); Bar.WriteJson(writer); }
         if (Scale != null) { writer.Name("scale"); Scale.WriteJson(writer); }
         if (Bands.Count > 0) {

@@ -23,8 +23,8 @@ internal static class ColumnBandsExample {
             row.Cells["host"] = "Resource " + index.ToString("D2"); row.Cells["served"] = "Valid";
             row.Cells["domain"] = "example.test"; row.Cells["issuer"] = "Example Issuer"; grid.Rows.Add(row);
         }
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) grid.SaveHtmlPage(
-            Path.Combine(output, "column-bands" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) grid.SaveHtmlPage(
+            Path.Combine(output, "column-bands" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
             new CanopyHtmlOptions { Title = "Responsive column bands", Theme = theme, Height = "480px" });
     }
 }

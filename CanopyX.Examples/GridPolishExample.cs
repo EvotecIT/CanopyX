@@ -6,8 +6,8 @@ namespace CanopyX.Examples;
 /// <summary>Page-scroll headers and literal card token slots authored through the grid definition.</summary>
 internal static class GridPolishExample {
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             var view = View();
             view.StickyHeader = true;
             const string pageStyle = "<style>html body.cx-page{height:auto;overflow:visible;color:CanvasText;background:Canvas}.cx-main{height:auto;display:block;padding:24px}body.cx-page>.cx-main>.cx-host{height:2600px}.polish-copy{max-width:60rem;margin:0 0 24px;line-height:1.6}</style>";
@@ -34,7 +34,7 @@ internal static class GridPolishExample {
         view.Columns.Insert(4, new CanopyColumn("priority", "Priority") { Sizing = CanopyColumnSizing.Preferred(120) });
         for (var index = 0; index < view.Rows.Count; index++) {
             var row = view.Rows[index];
-            row.Cells["status"] = new CanopyCell(index % 3 == 0 ? "Needs review" : "Scheduled") { Tone = index % 3 == 0 ? CanopyTone.Warning : CanopyTone.Info };
+            row.Cells["status"] = new CanopyCell(index % 3 == 0 ? "Needs review" : "Scheduled") { Tone = index % 3 == 0 ? Tone.Warning : Tone.Info };
             row.Cells["owner"] = new[] { "Alex Morgan", "Sam Rivera", "Jordan Lee", "Casey Taylor" }[index % 4];
             row.Cells["team"] = new[] { "Platform", "Customer success", "Operations" }[index % 3];
             row.Cells["priority"] = index % 4 == 0 ? "High" : "Normal";

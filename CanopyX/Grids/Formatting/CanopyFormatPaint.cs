@@ -4,7 +4,7 @@ namespace CanopyX;
 
 /// <summary>The resolved formatting of one target (a cell or a row) after the rules that matched it.</summary>
 internal sealed class CanopyFormatPaint {
-    internal CanopyTone Tone;
+    internal Tone Tone;
     internal CanopyFormatEmphasis? Emphasis;
     internal string? Icon;
     internal string? Badge;
@@ -12,10 +12,10 @@ internal sealed class CanopyFormatPaint {
     internal string? ClassName;
     internal IDictionary<string, string>? Css;
     internal double? Bar;
-    internal CanopyTone BarTone;
+    internal Tone BarTone;
     internal bool BarValue = true;
-    internal CanopyTone? ScaleFrom;
-    internal CanopyTone? ScaleTo;
+    internal Tone? ScaleFrom;
+    internal Tone? ScaleTo;
     internal double ScaleWeight;
     internal string? Band;
     internal string? Glyph;
@@ -25,7 +25,7 @@ internal sealed class CanopyFormatPaint {
 
     /// <summary>Takes each aspect this target does not have yet: the first rule that sets an aspect wins it.</summary>
     internal void Absorb(CanopyFormatPaint paint) {
-        if (Tone.Name == null && paint.Tone.Name != null) Tone = paint.Tone;
+        if (Tone.WireName() == null && paint.Tone.WireName() != null) Tone = paint.Tone;
         Emphasis ??= paint.Emphasis;
         Icon ??= paint.Icon;
         Badge ??= paint.Badge;
@@ -39,7 +39,7 @@ internal sealed class CanopyFormatPaint {
 
     /// <summary>A target that only colours gets its tone's icon, unless it asked for none.</summary>
     internal CanopyFormatPaint Finish() {
-        if (Icon == null && Tone.Name != null && Badge == null && Cue == null && !Bar.HasValue && ScaleFrom == null) Icon = CanopyFormatIcons.Automatic;
+        if (Icon == null && Tone.WireName() != null && Badge == null && Cue == null && !Bar.HasValue && ScaleFrom == null) Icon = "auto";
         Glyph = Icon == null ? null : CanopyFormatIcons.Glyph(Icon, Tone);
         return this;
     }

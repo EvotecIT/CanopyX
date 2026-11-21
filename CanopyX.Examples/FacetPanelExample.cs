@@ -17,8 +17,8 @@ internal static class FacetPanelExample {
         "New starter account", "Printer offline", "Mailbox full", "Password reset loop", "Dock not detected", "Slow file share", "Access to reports" };
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             Create(CanopyFacetPosition.Side).SaveHtmlPage(Path.Combine(output, "facets" + suffix + ".html"),
                 new CanopyHtmlOptions { Title = "Requests with a facet panel", Theme = theme, Height = "640px" });
             Create(CanopyFacetPosition.Top).SaveHtmlPage(Path.Combine(output, "facets-top" + suffix + ".html"),
@@ -37,7 +37,7 @@ internal static class FacetPanelExample {
         view.Columns.Add(new CanopyColumn("category", "Category") { Sortable = true, ResponsivePriority = 3 });
         view.Columns.Add(new CanopyColumn("priority", "Priority") {
             Sortable = true, ResponsivePriority = 1,
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Urgent"] = CanopyTone.Danger, ["High"] = CanopyTone.Warning, ["Normal"] = CanopyTone.Info })
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Urgent"] = Tone.Danger, ["High"] = Tone.Warning, ["Normal"] = Tone.Info })
         });
         view.Columns.Add(new CanopyColumn("team", "Team") { Sortable = true, ResponsivePriority = 4 });
         view.Columns.Add(new CanopyColumn("region", "Region") { Sortable = true, ResponsivePriority = 5 });

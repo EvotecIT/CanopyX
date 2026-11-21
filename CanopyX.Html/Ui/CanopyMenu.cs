@@ -6,6 +6,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds an encoded menu tree with actions, checks, submenus, separators and group labels.</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. Render the trigger separately or provide a labelled existing trigger matching TriggerId. Handle action identities through runtime events.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyMenu {
     /// <summary>Creates a menu with a page-unique identity.</summary>
     public CanopyMenu(string id, CanopyMenuOptions? options = null) {
@@ -45,7 +46,7 @@ public sealed class CanopyMenu {
             UiHtml.Unique(localIds, item.Id);
             UiHtml.Unique(domIds, ItemId(item));
             var decoration = item.Kind == CanopyMenuItemKind.Separator || item.Kind == CanopyMenuItemKind.GroupLabel;
-            if (decoration && (item.Children.Count > 0 || item.Checked.HasValue || item.Disabled || item.Danger || item.Icon != null || item.Shortcut != null || item.Badge != null || item.RadioGroup != null))
+            if (decoration && (item.Children.Count > 0 || item.Checked.HasValue || item.Disabled || item.Danger || !item.Icon.IsEmpty || item.Shortcut != null || item.Badge != null || item.RadioGroup != null))
                 throw new ArgumentException("Separators and group labels cannot carry action state.");
             if (item.RadioGroup != null && item.Kind != CanopyMenuItemKind.Radio)
                 throw new ArgumentException("Only radio items can declare a radio group.");
@@ -97,9 +98,9 @@ public sealed class CanopyMenu {
             UiHtml.Attribute(html, "aria-controls", SubmenuId(item));
         }
         html.Append('>');
-        if (item.Icon != null || checkable) {
+        if (!item.Icon.IsEmpty || checkable) {
             html.Append("<span class=\"cx-menu-icon\" aria-hidden=\"true\"");
-            UiHtml.Attribute(html, "data-icon", item.Icon);
+            UiHtml.Attribute(html, "data-icon", UiHtml.IconKey(item.Icon));
             html.Append('>');
             if (item.Checked == true) html.Append("✓");
             html.Append("</span>");

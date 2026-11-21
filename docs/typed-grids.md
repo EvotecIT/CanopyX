@@ -8,14 +8,14 @@ grid.Column(row => row.State, "Outcome", column => {
     column.ValueLabels.Add("needs-review", "Needs review");
     column.ValueOrder.Add("needs-review");
     column.ValueOrder.Add("verified");
-    column.ValueTones.Add("needs-review", CanopyTone.Warning);
+    column.ValueTones.Add("needs-review", Tone.Warning);
     column.Presenter = CanopyGridPresenter.Enum();
 });
 grid.Column(row => row.Days, "Days remaining", column => {
     column.NumericTones.Add(new CanopyNumericToneRule(
-        CanopyNumericToneOperator.Below, 0, CanopyTone.Danger, "Overdue"));
+        CanopyNumericToneOperator.Below, 0, Tone.Danger, "Overdue"));
     column.NumericTones.Add(new CanopyNumericToneRule(
-        CanopyNumericToneOperator.AtMost, 14, CanopyTone.Warning, "Review soon"));
+        CanopyNumericToneOperator.AtMost, 14, Tone.Warning, "Review soon"));
 });
 grid.Column(row => row.Notes, "Observation", column => {
     column.Wrap = true;

@@ -522,7 +522,7 @@ CanopyX.Data.CanopyRecordSchema.System.String ViewId { get; }
 CanopyX.Data.CanopyRecordTimelineMap<TChild> : sealed class
 CanopyX.Data.CanopyRecordTimelineMap<TChild>.CanopyX.Data.CanopyRecordTimelineMap<TChild> Actor(System.Linq.Expressions.Expression<System.Func<TChild, System.String?>> actor)
 CanopyX.Data.CanopyRecordTimelineMap<TChild>.CanopyX.Data.CanopyRecordTimelineMap<TChild> Key<TKey>(System.Linq.Expressions.Expression<System.Func<TChild, TKey>> key)
-CanopyX.Data.CanopyRecordTimelineMap<TChild>.CanopyX.Data.CanopyRecordTimelineMap<TChild> Kind(System.Linq.Expressions.Expression<System.Func<TChild, System.String?>> kind, System.Func<System.String?, CanopyX.CanopyTone>? tone = null)
+CanopyX.Data.CanopyRecordTimelineMap<TChild>.CanopyX.Data.CanopyRecordTimelineMap<TChild> Kind(System.Linq.Expressions.Expression<System.Func<TChild, System.String?>> kind, System.Func<System.String?, CanopyX.Tone>? tone = null)
 CanopyX.Data.CanopyRecordTimelineMap<TChild>.CanopyX.Data.CanopyRecordTimelineMap<TChild> Limit(System.Int32 events)
 CanopyX.Data.CanopyRecordTimelineMap<TChild>.CanopyX.Data.CanopyRecordTimelineMap<TChild> OldestFirst()
 CanopyX.Data.CanopyRecordTimelineMap<TChild>.CanopyX.Data.CanopyRecordTimelineMap<TChild> Summary(System.Linq.Expressions.Expression<System.Func<TChild, System.String?>> summary)

@@ -13,11 +13,11 @@ public sealed class CalendarScreenTests {
             new CanopyCalendarEvent("Swimming", new DateTime(2026, 10, 16, 16, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 16, 17, 0, 0, DateTimeKind.Utc)) { Source = "tom", Location = "Pool" }
         };
         var calendar = new CanopyCalendar(events) {
-            Merge = new CanopyCalendarMerge { Tone = CanopyTone.Info }, FadePast = 0.4, ListDays = 3, DayWidth = 140, ListBelow = 3, Reset = true
+            Merge = new CanopyCalendarMerge { Tone = Tone.Info }, FadePast = 0.4, ListDays = 3, DayWidth = 140, ListBelow = 3, Reset = true
         };
         calendar.Sources.Add(new CanopyCalendarSource("anna", "Anna") { Color = "#2563eb", Initials = "AN", Avatar = "data:image/png;base64,iVBORw0KGgo=" });
-        calendar.Sources.Add(new CanopyCalendarSource("tom", "Tom") { Icon = "⚽" });
-        calendar.DayNotes.Add(new CanopyCalendarDayNote(new DateTime(2026, 10, 16, 15, 0, 0), " 18° sunny ") { Tone = CanopyTone.Warning });
+        calendar.Sources.Add(new CanopyCalendarSource("tom", "Tom") { Mark = "⚽" });
+        calendar.DayNotes.Add(new CanopyCalendarDayNote(new DateTime(2026, 10, 16, 15, 0, 0), " 18° sunny ") { Tone = Tone.Warning });
         calendar.Faces.Add(new CanopyCalendarFace("kitchen") { Initials = "K" });
 
         var written = JsonNode.Parse(calendar.Grid!.ToJson())!["calendar"]!.AsObject();
@@ -63,7 +63,7 @@ public sealed class CalendarScreenTests {
         Assert.Throws<ArgumentException>(() => new CanopyCalendarDayNote(DateTime.Today, new string('x', 65)));
         var source = new CanopyCalendarSource("a", "A");
         Assert.Throws<ArgumentException>(() => source.Initials = "ABCD");
-        Assert.Throws<ArgumentException>(() => source.Icon = " ");
+        Assert.Throws<ArgumentException>(() => source.Mark = " ");
         foreach (var avatar in new[] { "javascript:alert(1)", "//other.test/a.png", "data:text/html;base64,PGI+", "data:image/png,raw", "a b.png" })
             Assert.Throws<ArgumentException>(() => source.Avatar = avatar);
         source.Avatar = "/faces/a.png";
@@ -79,7 +79,7 @@ public sealed class CalendarScreenTests {
         view.Calendar = new CanopyCalendar("starts");
         view.Calendar.Faces.Add(new CanopyCalendarFace("kitchen"));
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
-        view.Calendar.Faces[0].Icon = "🍳";
+        view.Calendar.Faces[0].Mark = "🍳";
         view.Calendar.Faces.Add(new CanopyCalendarFace("kitchen") { Initials = "K" });
         Assert.Throws<InvalidOperationException>(() => view.ToJson());
         view.Calendar.Faces.RemoveAt(1);

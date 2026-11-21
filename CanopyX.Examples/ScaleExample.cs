@@ -98,7 +98,7 @@ internal static class ScaleExample {
             row.Cells["sam"] = sam;
             row.Cells["display"] = Upper(first) + " " + Upper(last);
             row.Cells["upn"] = sam + "@" + domain;
-            row.Cells["enabled"] = new CanopyCell(enabled ? "Enabled" : "Disabled") { Tone = enabled ? CanopyTone.Success : CanopyTone.Muted };
+            row.Cells["enabled"] = new CanopyCell(enabled ? "Enabled" : "Disabled") { Tone = enabled ? Tone.Success : Tone.Muted };
             row.Cells["domain"] = domain;
             row.Cells["ou"] = "OU=" + Units[random.Pick(Units.Length)] + ",OU=" + Departments[random.Pick(Departments.Length)] + ",DC=" + domain.Split('.')[0];
             row.Cells["department"] = Departments[random.Pick(Departments.Length)];
@@ -111,7 +111,7 @@ internal static class ScaleExample {
             row.Cells["groups"] = random.Pick(60);
             row.Cells["adminCount"] = random.Next() > 0.97 ? 1 : 0;
             var risk = random.Next();
-            row.Cells["risk"] = risk > 0.95 ? new CanopyCell("High") { Tone = CanopyTone.Danger } : risk > 0.85 ? new CanopyCell("Medium") { Tone = CanopyTone.Warning } : new CanopyCell("None") { Tone = CanopyTone.Muted };
+            row.Cells["risk"] = risk > 0.95 ? new CanopyCell("High") { Tone = Tone.Danger } : risk > 0.85 ? new CanopyCell("Medium") { Tone = Tone.Warning } : new CanopyCell("None") { Tone = Tone.Muted };
             row.Cells["neverExpires"] = random.Next() > 0.9 ? "Yes" : "No";
             row.Cells["delegation"] = random.Next() > 0.98 ? "Unconstrained" : random.Next() > 0.95 ? "Constrained" : "None";
             row.Cells["sid"] = "S-1-5-21-1000-2000-3000-" + (1100 + i).ToString(CultureInfo.InvariantCulture);
@@ -152,7 +152,7 @@ internal static class ScaleExample {
             var enabled = random.Next() > 0.08;
             row.Cells["name"] = name;
             row.Cells["dns"] = name.ToLowerInvariant() + ".ad" + random.Pick(4).ToString(CultureInfo.InvariantCulture) + ".example.test";
-            row.Cells["enabled"] = new CanopyCell(enabled ? "Enabled" : "Disabled") { Tone = enabled ? CanopyTone.Success : CanopyTone.Muted };
+            row.Cells["enabled"] = new CanopyCell(enabled ? "Enabled" : "Disabled") { Tone = enabled ? Tone.Success : Tone.Muted };
             row.Cells["os"] = Systems[random.Pick(Systems.Length)];
             row.Cells["version"] = "10.0." + (17763 + random.Pick(9000)).ToString(CultureInfo.InvariantCulture);
             row.Cells["ou"] = "OU=Computers,OU=" + Departments[random.Pick(Departments.Length)];
@@ -160,10 +160,10 @@ internal static class ScaleExample {
             row.Cells["lastLogon"] = random.Date(2024, 3);
             row.Cells["pwdLastSet"] = random.Date(2024, 3);
             row.Cells["created"] = random.Date(2012, 13);
-            row.Cells["laps"] = random.Next() > 0.3 ? "Yes" : new CanopyCell("No") { Tone = CanopyTone.Warning };
+            row.Cells["laps"] = random.Next() > 0.3 ? "Yes" : new CanopyCell("No") { Tone = Tone.Warning };
             row.Cells["bitlocker"] = random.Next() > 0.2 ? "On" : "Off";
             var stale = random.Next() > 0.85;
-            row.Cells["stale"] = stale ? new CanopyCell("Stale") { Tone = CanopyTone.Danger } : "Active";
+            row.Cells["stale"] = stale ? new CanopyCell("Stale") { Tone = Tone.Danger } : "Active";
             if (random.Next() > 0.5) row.Cells["description"] = random.Word() + " " + random.Word();
             view.Rows.Add(row);
         }
@@ -221,9 +221,9 @@ internal static class ScaleExample {
         matrix.Rows.Noun = "policies";
         matrix.Columns.Title = "Server";
         matrix.Columns.Noun = "servers";
-        matrix.State("ok", "In sync", CanopyTone.Success, CanopyMatrixSymbol.Check)
-            .State("drift", "Version drift", CanopyTone.Warning, CanopyMatrixSymbol.Warning, attention: true)
-            .State("missing", "Missing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true);
+        matrix.State("ok", "In sync", Tone.Success, CanopyMatrixSymbol.Check)
+            .State("drift", "Version drift", Tone.Warning, CanopyMatrixSymbol.Warning, attention: true)
+            .State("missing", "Missing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true);
         for (var p = 0; p < policies; p++) matrix.Rows.Items.Add(new CanopyMatrixItem("p" + p.ToString(CultureInfo.InvariantCulture), "Policy " + Words[p % Words.Length] + " " + p.ToString(CultureInfo.InvariantCulture)));
         for (var s = 0; s < servers; s++) matrix.Columns.Items.Add(new CanopyMatrixItem("s" + s.ToString(CultureInfo.InvariantCulture), "DC" + s.ToString("D3", CultureInfo.InvariantCulture)));
         var random = new Random32(31);
@@ -247,7 +247,7 @@ internal static class ScaleExample {
             var item = list.Add("x" + i.ToString(CultureInfo.InvariantCulture), kinds[random.Pick(kinds.Length)],
                 "Policies/" + Departments[random.Pick(Departments.Length)] + "/" + random.Word() + "/" + random.Word() + i.ToString(CultureInfo.InvariantCulture) + ".xml");
             item.After = new CanopyChangeVersion { Size = random.Pick(100_000), Time = random.Date(2026, 1) };
-            if (random.Next() > 0.9) item.Flag("risky", "Risky", "The change widens permissions.", CanopyTone.Danger);
+            if (random.Next() > 0.9) item.Flag("risky", "Risky", "The change widens permissions.", Tone.Danger);
         }
 
         return list;

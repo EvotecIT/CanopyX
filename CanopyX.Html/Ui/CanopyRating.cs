@@ -7,6 +7,7 @@ namespace CanopyX.Html.Ui;
 /// <summary>Builds a star rating input, and read-only rating text (docs/ui-rating.md).</summary>
 /// <remarks>The input is a native radio group, so it submits with a plain form, takes the arrow keys and reads well without the
 /// runtime. This builder emits no assets or executable code.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyRating {
     /// <summary>Creates a rating with a page-unique identity, a form field name and a plain text label.</summary>
     public CanopyRating(string id, string name, string label, CanopyRatingOptions? options = null) {

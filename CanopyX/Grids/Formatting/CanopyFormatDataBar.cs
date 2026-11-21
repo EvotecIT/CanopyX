@@ -19,7 +19,7 @@ public sealed class CanopyFormatDataBar {
     public double? Maximum { get => _maximum; set => _maximum = Finite(value); }
 
     /// <summary>Gets or sets the bar's tone. None uses the style's tone, or info.</summary>
-    public CanopyTone Tone { get; set; }
+    public Tone Tone { get; set; }
 
     /// <summary>Gets or sets whether the value stays visible beside the bar. Defaults to true; a hidden value stays readable by screen readers.</summary>
     public bool ShowValue { get; set; } = true;
@@ -35,7 +35,7 @@ public sealed class CanopyFormatDataBar {
         writer.BeginObject();
         if (Minimum.HasValue) writer.Name("minimum").Number(Minimum.Value);
         if (Maximum.HasValue) writer.Name("maximum").Number(Maximum.Value);
-        writer.OptionalProperty("tone", Tone.Name);
+        writer.OptionalProperty("tone", Tone.WireName());
         if (!ShowValue) writer.Property("showValue", false);
         writer.EndObject();
     }

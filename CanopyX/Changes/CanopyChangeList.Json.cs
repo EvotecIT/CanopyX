@@ -4,6 +4,7 @@ using CanopyX.Json;
 
 namespace CanopyX;
 
+[PowerForge.Fluent.Fluent]
 public sealed partial class CanopyChangeList {
     private static readonly string[] KindNames = { "added", "removed", "modified", "renamed" };
     private static readonly string[] IconNames = { "none", "copy", "diff", "check", "open", "download", "compare", "flag" };
@@ -46,13 +47,13 @@ public sealed partial class CanopyChangeList {
         WriteVersion(writer, "after", item.After);
         if (item.Facts.Count > 0) {
             writer.Name("facts").BeginArray();
-            foreach (var fact in item.Facts) writer.BeginObject().Property("label", fact.Label).OptionalProperty("before", fact.Before).OptionalProperty("after", fact.After).OptionalProperty("tone", fact.Tone.Name).OptionalProperty("note", fact.Note).EndObject();
+            foreach (var fact in item.Facts) writer.BeginObject().Property("label", fact.Label).OptionalProperty("before", fact.Before).OptionalProperty("after", fact.After).OptionalProperty("tone", fact.Tone.WireName()).OptionalProperty("note", fact.Note).EndObject();
             writer.EndArray();
         }
 
         if (item.Flags.Count > 0) {
             writer.Name("flags").BeginArray();
-            foreach (var flag in item.Flags) writer.BeginObject().Property("id", flag.Id).Property("label", flag.Label).Property("reason", flag.Reason).OptionalProperty("tone", flag.Tone.Name).EndObject();
+            foreach (var flag in item.Flags) writer.BeginObject().Property("id", flag.Id).Property("label", flag.Label).Property("reason", flag.Reason).OptionalProperty("tone", flag.Tone.WireName()).EndObject();
             writer.EndArray();
         }
 
@@ -144,7 +145,7 @@ public sealed partial class CanopyChangeList {
         foreach (var fact in CanopyFlowContract.Items(entry, "facts", what, 32)) {
             var map = CanopyFlowContract.Object(fact, what + " (fact)", "label", "before", "after", "tone", "note");
             item.Facts.Add(new CanopyChangeFact(CanopyFlowContract.RequiredText(map, "label", what)) {
-                Before = CanopyFlowContract.Text(map, "before", what), After = CanopyFlowContract.Text(map, "after", what), Tone = CanopyChangeJson.Tone(map, what),
+                Before = CanopyFlowContract.Text(map, "before", what), After = CanopyFlowContract.Text(map, "after", what), Tone = CanopyChangeJson.ToneOf(map, what),
                 Note = CanopyFlowContract.Text(map, "note", what)
             });
         }
@@ -152,7 +153,7 @@ public sealed partial class CanopyChangeList {
         foreach (var flag in CanopyFlowContract.Items(entry, "flags", what, 16)) {
             var map = CanopyFlowContract.Object(flag, what + " (flag)", "id", "label", "reason", "tone");
             item.Flags.Add(new CanopyChangeFlag(CanopyFlowContract.RequiredText(map, "id", what), CanopyFlowContract.RequiredText(map, "label", what),
-                CanopyFlowContract.RequiredText(map, "reason", what), CanopyChangeJson.Tone(map, what)));
+                CanopyFlowContract.RequiredText(map, "reason", what), CanopyChangeJson.ToneOf(map, what)));
         }
 
         if (entry.TryGetValue("diff", out var diff)) item.Diff = CanopyTextDiff.ReadBody(CanopyFlowContract.Object(diff, what + " (diff)", CanopyTextDiff.BodyNames), what);

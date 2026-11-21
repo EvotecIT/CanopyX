@@ -26,13 +26,13 @@ internal static class InventoryGridExample {
         view.Query = new CanopyGridQuery(view.Id) { Limit = view.PageSize };
         view.Query.Filters.Add(new CanopyGridFilter("category", CanopyGridFilterOperator.Equal, "Archive"));
         view.Query.Sort.Add(new CanopyGridSort("size", descending: true));
-        WritePage(view, output, "inventory-grid.html", CanopyTheme.Light);
-        WritePage(view, output, "inventory-grid-dark.html", CanopyTheme.Dark);
+        WritePage(view, output, "inventory-grid.html", ThemeMode.Light);
+        WritePage(view, output, "inventory-grid-dark.html", ThemeMode.Dark);
         view.Presentation = CanopyGridPresentation.Paged;
         view.PageLength = 50;
         view.StateKey = "file-inventory-paged";
-        WritePage(view, output, "inventory-grid-paged.html", CanopyTheme.Light);
-        WritePage(view, output, "inventory-grid-paged-dark.html", CanopyTheme.Dark);
+        WritePage(view, output, "inventory-grid-paged.html", ThemeMode.Light);
+        WritePage(view, output, "inventory-grid-paged-dark.html", ThemeMode.Dark);
         view.Presentation = CanopyGridPresentation.Continuous;
         view.StateKey = "file-inventory-query";
         view.SearchColumns.Add("name");
@@ -45,11 +45,11 @@ internal static class InventoryGridExample {
                 new CanopyGridFilter("name", CanopyGridFilterOperator.Equal, "Record 0002"))
         };
         view.Query.Sort.Add(new CanopyGridSort("size", descending: true));
-        WritePage(view, output, "inventory-grid-query.html", CanopyTheme.Light);
-        WritePage(view, output, "inventory-grid-query-dark.html", CanopyTheme.Dark);
+        WritePage(view, output, "inventory-grid-query.html", ThemeMode.Light);
+        WritePage(view, output, "inventory-grid-query-dark.html", ThemeMode.Dark);
     }
 
-    internal static void WritePage(CanopyDataGridView view, string output, string name, CanopyTheme theme) {
+    internal static void WritePage(CanopyDataGridView view, string output, string name, ThemeMode theme) {
         var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX " + view.Label, Theme = theme });
         const string details = """
 <dialog id="record-details" aria-labelledby="record-title" style="box-sizing:border-box;width:min(42rem,90vw);max-height:85vh;overflow:auto;padding:20px;border:1px solid var(--hfx-color-border,light-dark(#e2e4e7,#272a30));border-radius:8px;background:var(--hfx-color-surface,light-dark(#ffffff,#16181c));color:var(--hfx-color-text,light-dark(#16181c,#f2f3f5))">

@@ -17,7 +17,7 @@ public sealed class CanopyAccordionItem {
     /// <summary>Gets or sets trusted HTML beside the heading, for links and buttons, which a heading button cannot contain. Never pass untrusted input.</summary>
     public string? ActionsHtml { get; set; }
     /// <summary>Gets or sets an encoded icon name for the host's icon renderer, never raw icon markup.</summary>
-    public string? Icon { get; set; }
+    public Icon Icon { get; set; }
     /// <summary>Gets or sets an encoded badge label.</summary>
     public string? Badge { get; set; }
     /// <summary>Gets or sets whether the section starts open.</summary>

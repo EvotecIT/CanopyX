@@ -20,7 +20,7 @@ internal static class TestTrees {
                     var file = new CanopyNode(folder.Id + "/" + i, "file " + i + " " + names[i % names.Length] + ".txt");
                     file.Cells["size"] = 1000L + i;
                     if (i % 17 == 0) {
-                        file.Badges.Add(new CanopyBadge("stale", CanopyTone.Warning));
+                        file.Badges.Add(new CanopyBadge("stale", Tone.Warning));
                     }
 
                     folder.Children.Add(file);

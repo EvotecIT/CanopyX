@@ -196,7 +196,7 @@ internal sealed class SiteDocs {
     private static CanopyNode Endpoints(CanopyTreeView remote) {
         var source = JsonNode.Parse(remote.ToJson())!["source"]!;
         var app = new CanopyNode("app", "Your endpoints") { Kind = "folder", Expanded = true };
-        app.Badges.Add(new CanopyBadge("canopyx/2", CanopyTone.Success));
+        app.Badges.Add(new CanopyBadge("canopyx/2", Tone.Success));
         foreach (var name in new[] { "children", "search", "counts" }) {
             var template = source[name]?.GetValue<string>();
             if (template == null) continue;
@@ -221,8 +221,8 @@ internal sealed class SiteDocs {
         var plan = new CanopyNode("plan", "Project plan.docx");
         plan.Cells["size"] = new CanopyCell(48128L) { Text = "47 KiB" };
         var report = new CanopyNode("report", "Quarterly report.pdf");
-        report.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB", Tone = CanopyTone.Warning };
-        report.Badges.Add(new CanopyBadge("new", CanopyTone.Info));
+        report.Cells["size"] = new CanopyCell(2048L) { Text = "2 KiB", Tone = Tone.Warning };
+        report.Badges.Add(new CanopyBadge("new", Tone.Info));
         projects.Children.Add(plan);
         projects.Children.Add(report);
         view.Roots.Add(projects);
@@ -430,7 +430,7 @@ internal sealed class SiteDocs {
     }
 
     private static CanopyHtmlOptions LiveOptions(string title) =>
-        new() { AssetMode = CanopyAssetMode.External, AssetBaseUrl = "../assets/", Theme = CanopyTheme.Auto, Title = title };
+        new() { AssetMode = CanopyAssetMode.External, AssetBaseUrl = "../assets/", Theme = ThemeMode.Auto, Title = title };
 
     /// <summary>The JavaScript snippet running from the classic script: the same code after its two imports.</summary>
     private void WriteMountPage(string source) {

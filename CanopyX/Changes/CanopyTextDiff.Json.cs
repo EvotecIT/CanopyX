@@ -48,7 +48,7 @@ public sealed partial class CanopyTextDiff {
         if (Layout != CanopyDiffLayout.Auto) writer.Property("layout", Layout == CanopyDiffLayout.Inline ? "inline" : "split");
         if (Notes.Count > 0) {
             writer.Name("notes").BeginArray();
-            foreach (var note in Notes) writer.BeginObject().Property("text", note.Text).OptionalProperty("tone", note.Tone.Name).EndObject();
+            foreach (var note in Notes) writer.BeginObject().Property("text", note.Text).OptionalProperty("tone", note.Tone.WireName()).EndObject();
             writer.EndArray();
         }
 
@@ -105,7 +105,7 @@ public sealed partial class CanopyTextDiff {
         if (layout != null) diff.Layout = CanopyFlowContract.Choose(layout, what, "layout", ("inline", CanopyDiffLayout.Inline), ("split", CanopyDiffLayout.Split));
         foreach (var node in CanopyFlowContract.Items(map, "notes", what, 16)) {
             var note = CanopyFlowContract.Object(node, what + " (note)", "text", "tone");
-            diff.Notes.Add(new CanopyChangeNote(CanopyFlowContract.RequiredText(note, "text", what), CanopyChangeJson.Tone(note, what)));
+            diff.Notes.Add(new CanopyChangeNote(CanopyFlowContract.RequiredText(note, "text", what), CanopyChangeJson.ToneOf(note, what)));
         }
 
         diff.Truncated = CanopyFlowContract.Boolean(map, "truncated", what) ?? false;

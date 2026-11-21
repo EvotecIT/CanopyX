@@ -77,7 +77,7 @@ public sealed partial class CanopyMatrix {
         if (Diagonal == CanopyMatrixDiagonal.Data) writer.Property("diagonal", "data");
         writer.Name("states").BeginArray();
         foreach (var state in States) {
-            writer.BeginObject().Property("id", state.Id).Property("label", state.Label).OptionalProperty("tone", state.Tone.Name);
+            writer.BeginObject().Property("id", state.Id).Property("label", state.Label).OptionalProperty("tone", state.Tone.WireName());
             writer.Property("symbol", SymbolName(state.Symbol));
             if (state.Attention) writer.Property("attention", true);
             writer.EndObject();
@@ -202,7 +202,7 @@ public sealed partial class CanopyMatrix {
             CanopyMatrixState item;
             try {
                 item = new CanopyMatrixState(CanopyFlowContract.RequiredText(state, "id", what), CanopyFlowContract.RequiredText(state, "label", what),
-                    CanopyFlowContract.Text(state, "tone", what) is string tone ? CanopyTone.Named(tone) : default, CanopyMatrixSymbol.Dot) {
+                    CanopyFlowContract.Text(state, "tone", what) is string tone ? Tone.Named(tone) : default, CanopyMatrixSymbol.Dot) {
                     Attention = CanopyFlowContract.Boolean(state, "attention", what) ?? false
                 };
             } catch (ArgumentException error) { throw new InvalidOperationException(error.Message, error); }

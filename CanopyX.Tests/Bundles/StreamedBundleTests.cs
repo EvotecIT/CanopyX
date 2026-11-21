@@ -111,7 +111,7 @@ public sealed class StreamedBundleTests {
 
                 var bad = new CanopyNode(fault == "duplicate id" ? "r0/0" : "r0/bad", "Bad");
                 if (fault == "unknown column") bad.Cells["nope"] = 1;
-                if (fault == "unknown icon") bad.Icon = "nope";
+                if (fault == "unknown icon") bad.Icon = Icon.Named("nope");
                 if (fault == "empty flag") bad.Flags.Add(string.Empty);
                 if (fault == "detail with children") {
                     bad.Detail = new CanopyHtmlDetail("x");

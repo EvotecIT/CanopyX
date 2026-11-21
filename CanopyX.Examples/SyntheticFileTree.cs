@@ -66,25 +66,25 @@ internal sealed class SyntheticFileTree {
 
     private CanopyNode Node(string id, string label, string icon) {
         NodeCount++;
-        return new CanopyNode(id, label) { Kind = icon == "share" ? "share" : "folder", Icon = icon };
+        return new CanopyNode(id, label) { Kind = icon == "share" ? "share" : "folder", Icon = Icon.Named(icon) };
     }
 
     private CanopyNode File(string id, int index) {
         NodeCount++;
         var project = Projects[(int)(Next() * Projects.Length)];
-        var file = new CanopyNode(id, project + " " + (index + 1) + Extensions[index % Extensions.Length]) { Kind = "file", Icon = "file" };
+        var file = new CanopyNode(id, project + " " + (index + 1) + Extensions[index % Extensions.Length]) { Kind = "file", Icon = Icon.Named("file") };
         var size = (long)(Next() * 50_000_000);
         var modified = Now.AddMinutes(-(int)(Next() * 60 * 24 * 90));
         var owner = Next() < 0.12 ? null : Owners[(int)(Next() * Owners.Length)];
         file.Cells["size"] = new CanopyCell(size) { Text = FormatSize(size) };
         file.Cells["modified"] = modified;
-        file.Cells["owner"] = owner ?? new CanopyCell() { Text = "not collected", Tone = CanopyTone.Muted, Title = "The owner was not collected for this share." };
-        file.Cells["state"] = size > 40_000_000 ? new CanopyCell("large") { Text = "Large", Tone = CanopyTone.Warning }
-            : modified < Now.AddDays(-80) ? new CanopyCell("stale") { Text = "Stale", Tone = CanopyTone.Muted }
-            : new CanopyCell("ok") { Text = "OK", Tone = CanopyTone.Success };
+        file.Cells["owner"] = owner ?? new CanopyCell() { Text = "not collected", Tone = Tone.Muted, Title = "The owner was not collected for this share." };
+        file.Cells["state"] = size > 40_000_000 ? new CanopyCell("large") { Text = "Large", Tone = Tone.Warning }
+            : modified < Now.AddDays(-80) ? new CanopyCell("stale") { Text = "Stale", Tone = Tone.Muted }
+            : new CanopyCell("ok") { Text = "OK", Tone = Tone.Success };
         if (modified > Now.AddDays(-7)) {
             file.Flags.Add("changed");
-            file.Badges.Add(new CanopyBadge("changed", CanopyTone.Info) { Title = "Changed in the last 7 days" });
+            file.Badges.Add(new CanopyBadge("changed", Tone.Info) { Title = "Changed in the last 7 days" });
         }
 
         if (index % 9 == 0) {
@@ -96,7 +96,7 @@ internal sealed class SyntheticFileTree {
 
     private CanopyNode History(string fileId, DateTime modified) {
         NodeCount++;
-        var history = new CanopyNode(fileId + "/history", "History") { Kind = "group", Icon = "history" };
+        var history = new CanopyNode(fileId + "/history", "History") { Kind = "group", Icon = Icon.Named("history") };
         var versions = 2 + (int)(Next() * 4);
         for (var v = versions; v >= 1; v--) {
             NodeCount += 2;
@@ -107,9 +107,9 @@ internal sealed class SyntheticFileTree {
             detail.ColumnWidths.Add(2);
             detail.ColumnWidths.Add(3);
             detail.ColumnWidths.Add(3);
-            detail.AddRow("Size", FormatSize(1_000_000L * v), new CanopyCell(FormatSize(1_200_000L * v)) { Tone = CanopyTone.Success });
-            detail.AddRow("Retention", new CanopyCell("30 days") { Tone = CanopyTone.Danger }, new CanopyCell("90 days") { Tone = CanopyTone.Success });
-            detail.AddRow("Sharing", "Team", new CanopyCell("Everyone") { Tone = CanopyTone.Warning });
+            detail.AddRow("Size", FormatSize(1_000_000L * v), new CanopyCell(FormatSize(1_200_000L * v)) { Tone = Tone.Success });
+            detail.AddRow("Retention", new CanopyCell("30 days") { Tone = Tone.Danger }, new CanopyCell("90 days") { Tone = Tone.Success });
+            detail.AddRow("Sharing", "Team", new CanopyCell("Everyone") { Tone = Tone.Warning });
             // A backtick and ${ are the two sequences a bundle pack has to escape (see "Packs" in docs/data-protocol.md).
             detail.AddRow("Path template", "`share`/${team}", "`share`/${team}/${year}");
             version.Children.Add(new CanopyNode(version.Id + "/changes", "Changes") { Detail = detail });
@@ -137,7 +137,7 @@ internal sealed class SyntheticFileTree {
         folder.Cells["items"] = folder.Children.Count;
         if (changed > 0) {
             folder.Flags.Add("changed-below");
-            folder.Badges.Add(new CanopyBadge(changed + " changed", CanopyTone.Info) { Title = "Changed files below" });
+            folder.Badges.Add(new CanopyBadge(changed + " changed", Tone.Info) { Title = "Changed files below" });
         }
     }
 

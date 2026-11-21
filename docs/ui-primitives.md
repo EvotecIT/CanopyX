@@ -155,12 +155,12 @@ A dialog's typed actions replace hand-written footer markup. `CanopyDialog.Confi
 
 ```csharp
 var restart = CanopyDialog.Confirm("restart-spooler", "Restart service", "Restart the print spooler?",
-    CanopyDialogAction.Submit("restart", "Restart", CanopyTone.Danger, target: "/services/spooler/restart"));
+    CanopyDialogAction.Submit("restart", "Restart", Tone.Danger, target: "/services/spooler/restart"));
 restart.Fields["__RequestVerificationToken"] = antiforgeryToken;
 var html = restart.ToTriggerHtmlFragment("Restart spooler") + restart.ToHtmlFragment();
 ```
 
-Each `CanopyDialogAction` has a label, a tone and an optional target. `CanopyTone.Danger` draws a destructive button, and every tone is written as `data-tone` for host themes. Choosing an action fires the cancelable `cx-dialog:action` event with `detail.action`. A host that cancels it answers itself, for example with `fetch`, and closes the dialog through its controller. Otherwise an action with a target submits the footer form with `action=<id>` and the dialog's `Fields`, once, and an action without one closes the dialog with the reason `action`. With a target, the buttons submit even before the runtime loads.
+Each `CanopyDialogAction` has a label, a tone and an optional target. `Tone.Danger` draws a destructive button, and every tone is written as `data-tone` for host themes. Choosing an action fires the cancelable `cx-dialog:action` event with `detail.action`. A host that cancels it answers itself, for example with `fetch`, and closes the dialog through its controller. Otherwise an action with a target submits the footer form with `action=<id>` and the dialog's `Fields`, once, and an action without one closes the dialog with the reason `action`. With a target, the buttons submit even before the runtime loads.
 
 ### Show records in a drawer
 

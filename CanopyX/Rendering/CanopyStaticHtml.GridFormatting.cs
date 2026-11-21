@@ -9,7 +9,7 @@ public static partial class CanopyStaticHtml {
     /// <summary>The inline style a row's formatting adds to its <c>tr</c>: the row tint, then the escape-hatch CSS.</summary>
     private static string FormatRowStyle(CanopyFormatOutcome? outcome, CanopyStaticStyles styles) {
         if (!(outcome?.Row is CanopyFormatPaint row)) return string.Empty;
-        var style = new StringBuilder(row.Tone.Name != null ? styles.FormatRow(row.Tone) : string.Empty);
+        var style = new StringBuilder(row.Tone.WireName() != null ? styles.FormatRow(row.Tone) : string.Empty);
         if (row.Css != null) foreach (var entry in row.Css) style.Append(entry.Key).Append(':').Append(entry.Value).Append(';');
         return style.ToString();
     }
@@ -17,10 +17,10 @@ public static partial class CanopyStaticHtml {
     /// <summary>The inline style a cell's formatting adds: tone, scale or the row accent of the first cell, then the escape-hatch CSS.</summary>
     private static string FormatCellStyle(CanopyFormatPaint? paint, CanopyFormatPaint? row, bool first, CanopyStaticStyles styles) {
         var style = new StringBuilder();
-        if (first && row != null && row.Tone.Name != null) style.Append(styles.FormatAccent(row.Tone));
+        if (first && row != null && row.Tone.WireName() != null) style.Append(styles.FormatAccent(row.Tone));
         if (paint == null) return style.ToString();
-        if (paint.ScaleFrom is CanopyTone from && paint.ScaleTo is CanopyTone to) style.Append(styles.FormatScale(from, to, paint.ScaleWeight));
-        if (paint.Tone.Name != null)
+        if (paint.ScaleFrom is Tone from && paint.ScaleTo is Tone to) style.Append(styles.FormatScale(from, to, paint.ScaleWeight));
+        if (paint.Tone.WireName() != null)
             style.Append(styles.FormatTone(paint.Tone, paint.Bar.HasValue || paint.ScaleFrom != null ? CanopyFormatEmphasis.Text : paint.Emphasis ?? CanopyFormatEmphasis.Fill));
         if (paint.Css != null) foreach (var entry in paint.Css) style.Append(entry.Key).Append(':').Append(entry.Value).Append(';');
         return style.ToString();
@@ -53,7 +53,7 @@ public static partial class CanopyStaticHtml {
         foreach (var target in first ? new[] { row, paint } : new[] { paint }) {
             if (target == null) continue;
             if (target.Badge != null) {
-                html.Append("<span style=\"").Append(styles.Badge(target.Tone.Name == null ? CanopyTone.Neutral : target.Tone)).Append("\">");
+                html.Append("<span style=\"").Append(styles.Badge(target.Tone.WireName() == null ? Tone.Neutral : target.Tone)).Append("\">");
                 AppendVisibleText(html, target.Badge, text, true); html.Append("</span>");
             }
             if (target.Cue != null) {
@@ -77,11 +77,11 @@ public static partial class CanopyStaticHtml {
                     var band = rule.Style.Bands[i];
                     var name = band.Label ?? (band.UpperBound.HasValue ? view.Labels.FormatUpTo + " " + band.UpperBound.Value.ToString("#,##0.###", culture) :
                         view.Labels.FormatAbove + " " + (i > 0 ? rule.Style.Bands[i - 1].UpperBound ?? 0 : 0).ToString("#,##0.###", culture));
-                    items.Add(LegendItem(styles, band.Tone, CanopyFormatIcons.Glyph(band.Icon ?? rule.Style.Icon, band.Tone), rule.Label + ": " + name));
+                    items.Add(LegendItem(styles, band.Tone, CanopyFormatIcons.Glyph(band.IconToken ?? rule.Style.IconToken, band.Tone), rule.Label + ": " + name));
                 }
             } else {
-                var tone = rule.Style.Bar?.Tone.Name != null ? rule.Style.Bar.Tone : rule.Style.Scale != null ? rule.Style.Scale.Stops[rule.Style.Scale.Stops.Count - 1].Tone : rule.Style.Tone;
-                var glyph = rule.Style.DrawsValue ? "■" : CanopyFormatIcons.Glyph(rule.Style.Icon, rule.Style.Tone);
+                var tone = rule.Style.Bar?.Tone.WireName() != null ? rule.Style.Bar.Tone : rule.Style.Scale != null ? rule.Style.Scale.Stops[rule.Style.Scale.Stops.Count - 1].Tone : rule.Style.Tone;
+                var glyph = rule.Style.DrawsValue ? "■" : CanopyFormatIcons.Glyph(rule.Style.IconToken, rule.Style.Tone);
                 items.Add(LegendItem(styles, tone, glyph, rule.Label));
             }
         }
@@ -90,6 +90,6 @@ public static partial class CanopyStaticHtml {
             .Append(Encode(view.Labels.FormatLegend)).Append(": ").Append(string.Join(" &#183; ", items)).Append("</td></tr></tbody>");
     }
 
-    private static string LegendItem(CanopyStaticStyles styles, CanopyTone tone, string? glyph, string text) =>
+    private static string LegendItem(CanopyStaticStyles styles, Tone tone, string? glyph, string text) =>
         (glyph == null ? string.Empty : "<span style=\"" + styles.FormatIcon(tone) + "\">" + Encode(glyph) + "</span>") + Encode(text);
 }

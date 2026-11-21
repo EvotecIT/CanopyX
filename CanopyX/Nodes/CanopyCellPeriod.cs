@@ -10,7 +10,7 @@ public sealed class CanopyCellPeriod {
     /// <param name="value">Optional finite numeric sample; null means no numeric data.</param>
     /// <param name="state">Optional plain-text state; null means no state data.</param>
     /// <param name="tone">Optional semantic tone.</param>
-    public CanopyCellPeriod(string period, double? value = null, string? state = null, CanopyTone tone = default) {
+    public CanopyCellPeriod(string period, double? value = null, string? state = null, Tone tone = default) {
         if (string.IsNullOrWhiteSpace(period) || period.Length > 256) throw new ArgumentException("A period requires a bounded nonblank label.", nameof(period));
         if (value.HasValue && !CanopyGridPresenter.Safe(value.Value)) throw new ArgumentOutOfRangeException(nameof(value));
         if (state != null && state.Length > 4096) throw new ArgumentOutOfRangeException(nameof(state));
@@ -23,10 +23,10 @@ public sealed class CanopyCellPeriod {
     /// <summary>Gets the optional state label.</summary>
     public string? State { get; }
     /// <summary>Gets the semantic tone.</summary>
-    public CanopyTone Tone { get; }
+    public Tone Tone { get; }
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("period", Period);
         if (Value.HasValue) writer.Name("value").Number(Value.Value);
-        writer.OptionalProperty("state", State).OptionalProperty("tone", Tone.Name).EndObject();
+        writer.OptionalProperty("state", State).OptionalProperty("tone", Tone.WireName()).EndObject();
     }
 }

@@ -26,7 +26,7 @@ internal static class UiComponentsExample {
     private static void Notifications(StringBuilder body) {
         // The region opens with the notices a report wants the reader to see; script adds more as things happen.
         var region = new CanopyToasts("notices", new CanopyToastsOptions { Position = CanopyToastPosition.BottomEnd, Max = 3, Timeout = 6000 });
-        region.Items.Add(new CanopyToast("Collected 1,204 accounts from 3 domains.") { Id = "collected", Title = "Report ready", Tone = CanopyTone.Success });
+        region.Items.Add(new CanopyToast("Collected 1,204 accounts from 3 domains.") { Id = "collected", Title = "Report ready", Tone = Tone.Success });
         body.Append("<section class=\"card\" aria-labelledby=\"toasts-title\"><h2 id=\"toasts-title\">Toasts</h2>");
         body.Append("<p>Hover or focus a toast to pause its timeout. Errors and toasts with actions stay until dismissed; Escape dismisses the focused toast.</p>");
         body.Append("<div class=\"actions\"><button type=\"button\" data-toast=\"info\">Information</button><button type=\"button\" data-toast=\"success\">Success</button>");

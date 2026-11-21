@@ -16,7 +16,7 @@ internal static class SharedTokensExample {
         view.Columns.Add(new CanopyColumn("team", "Team") { Sortable = true });
         view.Columns.Add(new CanopyColumn("state", "Status") { Presenter = CanopyGridPresenter.Enum() });
         view.Columns.Add(new CanopyColumn("count", "Items") { Kind = CanopyColumnKind.Number, Sortable = true });
-        var states = new[] { ("Ready", CanopyTone.Success), ("Needs attention", CanopyTone.Warning), ("Unavailable", CanopyTone.Danger), ("In progress", CanopyTone.Info) };
+        var states = new[] { ("Ready", Tone.Success), ("Needs attention", Tone.Warning), ("Unavailable", Tone.Danger), ("In progress", Tone.Info) };
         var names = new[] { "Workspace overview", "Service capacity", "Monthly resource summary", "Shared documentation", "Regional activity", "Long record names remain available in the details view" };
         for (var index = 0; index < 24; index++) {
             var state = states[index % states.Length];

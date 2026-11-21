@@ -22,7 +22,7 @@ internal static class LinkedViewsExample {
         using var css = Assembly.GetExecutingAssembly().GetManifestResourceStream("CanopyX.Examples.Templates.examples.css")!;
         using var cssReader = new StreamReader(css);
         var exampleStyle = cssReader.ReadToEnd();
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var document = new CanopyHtmlDocument();
             CanopyHtmlOptions Options(string height) {
                 var options = new CanopyHtmlOptions { Theme = theme, Height = height, Document = document };
@@ -35,7 +35,7 @@ internal static class LinkedViewsExample {
                 .Replace("{{grid}}", Grid().ToHtmlFragment(Options("360px")))
                 .Replace("{{tree}}", Tree().ToHtmlFragment(Options("360px")))
                 .Replace("{{remote}}", Remote().ToHtmlFragment(Options("260px")));
-            File.WriteAllText(Path.Combine(output, "linked-views" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), page);
+            File.WriteAllText(Path.Combine(output, "linked-views" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page);
         }
     }
 
@@ -56,7 +56,7 @@ internal static class LinkedViewsExample {
             var row = new CanopyGridRow(Id(i));
             row.Cells["name"] = Name(i);
             row.Cells["site"] = Site(i);
-            row.Cells["status"] = new CanopyCell(Status(i)) { Tone = Status(i) == "Down" ? CanopyTone.Danger : Status(i) == "Degraded" ? CanopyTone.Warning : CanopyTone.Success };
+            row.Cells["status"] = new CanopyCell(Status(i)) { Tone = Status(i) == "Down" ? Tone.Danger : Status(i) == "Degraded" ? Tone.Warning : Tone.Success };
             row.Cells["latency"] = 20 + i * 37 % 180;
             row.Cells["team"] = Teams[i / 3 % Teams.Length];
             grid.Rows.Add(row);

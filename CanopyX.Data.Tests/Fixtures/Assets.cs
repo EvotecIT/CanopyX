@@ -160,7 +160,7 @@ public static class Assets {
         .Collection("peers", asset => asset.Group!.Members, list => list.Key(m => m.Id).OrderBy(m => m.Name)
             .Column(new CanopyColumn("name", "Name"), m => m.Name).Column(new CanopyColumn("site", "Site"), m => m.Site).Target("assets").PageSize(5))
         .Timeline("events", asset => asset.Events, events => events.Key(e => e.Id).Time(e => e.At).Summary(e => e.Summary).Actor(e => e.Actor)
-            .Kind(e => e.Kind, kind => kind == "Failure" ? CanopyTone.Danger : CanopyTone.None).Limit(20))
+            .Kind(e => e.Kind, kind => kind == "Failure" ? Tone.Danger : Tone.None).Limit(20))
         .Changes("changes", asset => asset.Changes, changes => changes.Key(c => c.Id).Name(c => c.Setting).Before(c => c.Before).After(c => c.After)
             .OrderBy(c => c.At, descending: true).Limit(15));
 
