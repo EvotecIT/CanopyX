@@ -5,7 +5,7 @@
   }
   .cx-gallery-list { display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cx-gallery-thumb),1fr));gap:var(--hfx-space-3);margin:0;padding:0;list-style:none; }
   .cx-gallery-item,.cx-gallery-item > figure { margin:0;min-inline-size:0; }
-  .cx-gallery-link { display:block;overflow:hidden;border-radius:var(--hfx-radius-md);background:var(--hfx-color-surface-sunken); }
+  .cx-gallery-link { display:block;overflow:hidden;border-radius:var(--hfx-radius-control);background:var(--hfx-color-surface-sunken); }
   .cx-gallery-link:focus-visible { outline:var(--hfx-focus-width) solid var(--hfx-color-focus-ring);outline-offset:var(--hfx-focus-offset); }
   .cx-gallery-link img { display:block;inline-size:100%;block-size:auto;aspect-ratio:4 / 3;object-fit:cover; }
   .cx-gallery-label { display:grid;place-items:center;aspect-ratio:4 / 3;padding:var(--hfx-space-3);color:var(--hfx-color-accent-text);font-weight:var(--hfx-weight-medium);text-align:center; }
