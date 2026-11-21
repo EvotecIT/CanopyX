@@ -47,7 +47,7 @@ public sealed partial class CanopyGridPresenter {
     /// <param name="levelTones">Optional exact level-to-tone mapping, copied into the descriptor.</param>
     /// <returns>The immutable descriptor.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The line count is outside 1 to 500.</exception>
-    public static CanopyGridPresenter Log(int lines = 10, bool split = false, IDictionary<string, CanopyTone>? levelTones = null) {
+    public static CanopyGridPresenter Log(int lines = 10, bool split = false, IDictionary<string, Tone>? levelTones = null) {
         if (lines < 1 || lines > 500) throw new ArgumentOutOfRangeException(nameof(lines));
         var presenter = WithTones(CanopyGridPresenterKind.Log, levelTones);
         presenter.Lines = lines; presenter.SplitLines = split;

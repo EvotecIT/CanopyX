@@ -103,15 +103,15 @@ internal sealed partial class CanopyStaticStyles {
     internal string Hidden { get; }
 
     /// <summary>The <c>color</c> declaration of a toned cell, or an empty string for a tone that keeps the normal colour.</summary>
-    internal string ToneColor(CanopyTone tone) {
-        if (tone.Name == null) {
+    internal string ToneColor(Tone tone) {
+        if (tone.WireName() == null) {
             return string.Empty;
         }
 
-        if (!_toneColors.TryGetValue(tone.Name, out var style)) {
-            if (tone == CanopyTone.Neutral) {
+        if (!_toneColors.TryGetValue(tone.WireName()!, out var style)) {
+            if (tone == Tone.Neutral) {
                 style = string.Empty;
-            } else if (tone.IsBuiltIn) {
+            } else if (tone.IsBuiltIn()) {
                 style = Declare("color", BuiltIn(tone));
             } else {
                 // A host tone takes the colour of the options and, with theme variables, the one the page defines; a
@@ -121,27 +121,27 @@ internal sealed partial class CanopyStaticStyles {
                     + (_variables ? "color:" + HostVariable(tone, literal ?? "inherit") + ";" : string.Empty);
             }
 
-            _toneColors[tone.Name] = style;
+            _toneColors[tone.WireName()!] = style;
         }
 
         return style;
     }
 
     /// <summary>The style of a badge: the tone's colour on the tint the runtime gives it, inside a line that keeps the pill visible where backgrounds are dropped.</summary>
-    internal string Badge(CanopyTone tone) {
-        var name = tone.Name ?? string.Empty;
+    internal string Badge(Tone tone) {
+        var name = tone.WireName() ?? string.Empty;
         if (!_badges.TryGetValue(name, out var style)) {
             Ink text;
             Ink background;
-            if (tone.Name == null || tone == CanopyTone.Neutral) {
+            if (tone.WireName() == null || tone == Tone.Neutral) {
                 text = _text;
                 background = _quiet;
-            } else if (tone == CanopyTone.Muted) {
+            } else if (tone == Tone.Muted) {
                 text = _muted;
                 background = _quiet;
-            } else if (tone.IsBuiltIn) {
+            } else if (tone.IsBuiltIn()) {
                 text = BuiltIn(tone);
-                var status = tone.Name == "success" ? "good" : tone.Name == "warning" ? "warn" : tone.Name == "danger" ? "bad" : "info";
+                var status = tone.WireName() == "success" ? "good" : tone.WireName() == "warning" ? "warn" : tone.WireName() == "danger" ? "bad" : "info";
                 background = Role("--hfx-color-status-" + status + "-bg", Mix(text, 12, _surface));
             } else {
                 var literal = HostColor(tone);
@@ -149,7 +149,7 @@ internal sealed partial class CanopyStaticStyles {
                 // The page can name the badge background of its tone; otherwise it is the tint of the tone's colour,
                 // or of the text colour for a tone nobody gave one, as in the runtime.
                 var tint = Mix(text, 12, _surface);
-                background = new Ink(tint.Literal, _variables ? "var(--hfx-color-status-" + tone.Name + "-bg," + tint.Css + ")" : null);
+                background = new Ink(tint.Literal, _variables ? "var(--hfx-color-status-" + tone.WireName() + "-bg," + tint.Css + ")" : null);
             }
 
             style = BadgeShape + Border("border", _line) + Declare("background", background) + Declare("color", text);
@@ -160,8 +160,8 @@ internal sealed partial class CanopyStaticStyles {
     }
 
     /// <summary>The colour of one of the five coloured tones CanopyX ships.</summary>
-    private Ink BuiltIn(CanopyTone tone) {
-        switch (tone.Name) {
+    private Ink BuiltIn(Tone tone) {
+        switch (tone.WireName()) {
             case "info":
                 return Base("--hfx-color-status-info-fg", _options.Theme.Info, LightTheme.Info, DarkTheme.Info);
             case "success":
@@ -177,21 +177,21 @@ internal sealed partial class CanopyStaticStyles {
 
     /// <summary>The colour the options give a host tone, or null.</summary>
     /// <exception cref="InvalidOperationException">The colour is not a hex colour.</exception>
-    private string? HostColor(CanopyTone tone) {
+    private string? HostColor(Tone tone) {
         if (!_options.ToneColors.TryGetValue(tone, out var color)) {
             return null;
         }
 
         // The value goes into an inline style.
         if (!CanopyStaticTheme.IsHexColor(color)) {
-            throw new InvalidOperationException("The colour of tone '" + tone.Name + "' must be # followed by three or six hex digits.");
+            throw new InvalidOperationException("The colour of tone '" + tone.WireName() + "' must be # followed by three or six hex digits.");
         }
 
         return color;
     }
 
     /// <summary>The theme's colour of a host tone, <c>--hfx-color-status-&lt;name&gt;-fg</c> as the runtime reads it. A tone name is safe in a style.</summary>
-    private static string HostVariable(CanopyTone tone, string fallback) => "var(--hfx-color-status-" + tone.Name + "-fg," + fallback + ")";
+    private static string HostVariable(Tone tone, string fallback) => "var(--hfx-color-status-" + tone.WireName() + "-fg," + fallback + ")";
 
     /// <summary>Reads a base role, using both standalone palettes only when the options select a complete preset.</summary>
     private Ink Base(string variable, string literal, string light, string dark) =>

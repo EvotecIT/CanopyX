@@ -8,15 +8,15 @@ internal sealed partial class CanopyStaticStyles {
     /// A state cell: a state that needs attention is a tint of its tone behind the tone's text, bold, as the browser fills it; any
     /// other state is its symbol in the tone's colour alone, so a healthy matrix stays quiet. Neutral and muted states stay muted.
     /// </summary>
-    internal string MatrixTone(CanopyTone tone, bool attention) {
-        if (tone.Name == null || tone == CanopyTone.Neutral || tone == CanopyTone.Muted) {
+    internal string MatrixTone(Tone tone, bool attention) {
+        if (tone.WireName() == null || tone == Tone.Neutral || tone == Tone.Muted) {
             return attention ? Declare("background", Mix(_text, 7, _surface)) + "font-weight:700;" : Declare("color", _muted);
         }
 
         var ink = FormatInk(tone);
         return attention
             ? Declare("background", Mix(ink, 14, _surface)) + Declare("color", Mix(ink, 85, _text)) + "font-weight:700;"
-            : Declare("color", tone == CanopyTone.Success ? Mix(ink, 70, _surface) : ink);
+            : Declare("color", tone == Tone.Success ? Mix(ink, 70, _surface) : ink);
     }
 
     /// <summary>A group heading row: the header's tint and weight, under a line, across the row.</summary>

@@ -62,7 +62,7 @@ internal static partial class CanopyHtmlWriter {
     private static string FragmentDocument(string json, string viewId, CanopyHtmlOptions options, string? content = null, string hostClass = "cx-host") {
         var builder = new StringBuilder(json.Length + (content?.Length ?? 0) + 160);
         builder.Append("<div class=\"").Append(hostClass).Append("\" data-canopyx-host");
-        if (options.Theme != CanopyTheme.Auto) builder.Append(" data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
+        if (options.Theme != ThemeMode.Auto) builder.Append(" data-cx-theme=\"").Append(ThemeName(options.Theme)).Append('"');
         builder.Append(" id=\"").Append(WebUtility.HtmlEncode(options.HostId ?? viewId)).Append('"');
         builder.Append(DirectionAttribute(options.Direction));
         if (options.Chrome == CanopyChrome.Embedded) builder.Append(" data-cx-chrome=\"embedded\"");
@@ -97,7 +97,7 @@ internal static partial class CanopyHtmlWriter {
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["dir"] = DirectionAttribute(options.Direction),
-            ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
+            ["colorScheme"] = options.Theme == ThemeMode.Light ? "light" : options.Theme == ThemeMode.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(RuntimeFor(view, options), options),
             ["body"] = Fragment(view, fragmentOptions)
@@ -142,7 +142,7 @@ internal static partial class CanopyHtmlWriter {
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["dir"] = DirectionAttribute(options.Direction),
-            ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
+            ["colorScheme"] = options.Theme == ThemeMode.Light ? "light" : options.Theme == ThemeMode.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? view.Label : options.Title),
             ["head"] = Head(CanopyHtmlAssets.GetRuntime(view), options),
             ["body"] = Fragment(view, PageFragmentOptions(options), bundled, bundleBase)
@@ -168,7 +168,7 @@ internal static partial class CanopyHtmlWriter {
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["dir"] = DirectionAttribute(options.Direction),
-            ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
+            ["colorScheme"] = options.Theme == ThemeMode.Light ? "light" : options.Theme == ThemeMode.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? flow.Title : options.Title),
             ["head"] = Head(CanopyHtmlAssets.GetRuntime(flow), options),
             ["body"] = Fragment(flow, fragmentOptions)
@@ -193,7 +193,7 @@ internal static partial class CanopyHtmlWriter {
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["dir"] = DirectionAttribute(options.Direction),
-            ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
+            ["colorScheme"] = options.Theme == ThemeMode.Light ? "light" : options.Theme == ThemeMode.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? matrix.Label : options.Title),
             ["head"] = Head(CanopyRuntime.DataGrid, options),
             ["body"] = Fragment(matrix, fragmentOptions)
@@ -222,9 +222,9 @@ internal static partial class CanopyHtmlWriter {
         _ => string.Empty
     };
 
-    private static string ThemeName(CanopyTheme theme) => theme switch {
-        CanopyTheme.Light => "light",
-        CanopyTheme.Dark => "dark",
+    private static string ThemeName(ThemeMode theme) => theme switch {
+        ThemeMode.Light => "light",
+        ThemeMode.Dark => "dark",
         _ => "auto"
     };
 

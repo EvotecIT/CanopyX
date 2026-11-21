@@ -24,10 +24,10 @@ internal static class ExampleViews {
         view.Columns.Add(new CanopyColumn("modified", "Modified") { Kind = CanopyColumnKind.DateTime, Sizing = CanopyColumnSizing.Preferred(170), Sortable = true });
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Sizing = CanopyColumnSizing.Preferred(150, 100, 500), Sortable = true });
         view.Columns.Add(new CanopyColumn("state", "State") { Sizing = CanopyColumnSizing.Preferred(100) });
-        view.Icons["share"] = ShareIcon;
-        view.Icons["folder"] = FolderIcon;
-        view.Icons["file"] = FileIcon;
-        view.Icons["history"] = HistoryIcon;
+        view.Icons[Icon.Named("share")] = ShareIcon;
+        view.Icons[Icon.Named("folder")] = FolderIcon;
+        view.Icons[Icon.Named("file")] = FileIcon;
+        view.Icons[Icon.Named("history")] = HistoryIcon;
         view.Filters.Add(new CanopyFilter("changed", "Only changed in the last 7 days", "changed") { AncestorFlag = "changed-below" });
         foreach (var root in roots) {
             view.Roots.Add(root);

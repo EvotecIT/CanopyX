@@ -6,6 +6,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds a searchable select (docs/ui-select.md): a label and a native select the runtime turns into a combobox.</summary>
 /// <remarks>Without the runtime the native select works as it is and submits the same values. This builder emits no assets or executable code.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopySelect {
     /// <summary>Creates a select with a page-unique identity, a form field name and a plain text label.</summary>
     public CanopySelect(string id, string name, string label, CanopySelectOptions? options = null) {
@@ -73,8 +74,8 @@ public sealed class CanopySelect {
             UiHtml.Attribute(html, "value", item.Value);
             UiHtml.Attribute(html, "data-description", item.Description);
             UiHtml.Attribute(html, "data-badge", item.Badge);
-            if (item.Badge != null) UiHtml.Attribute(html, "data-tone", item.BadgeTone.Name);
-            UiHtml.Attribute(html, "data-icon", item.Icon);
+            if (item.Badge != null) UiHtml.Attribute(html, "data-tone", item.BadgeTone.WireName());
+            UiHtml.Attribute(html, "data-icon", UiHtml.IconKey(item.Icon));
             UiHtml.Attribute(html, "data-avatar", item.Avatar);
             UiHtml.Attribute(html, "data-flag", item.Flag?.ToLowerInvariant());
             if (item.Selected) html.Append(" selected");

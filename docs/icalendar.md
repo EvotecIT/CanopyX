@@ -11,7 +11,7 @@ var result = CanopyICalendar.Parse(File.ReadAllText("holidays.ics"));
 foreach (var note in result.Notes) logger.LogInformation("{Note}", note);   // "Event 4: its time zone is unknown here, ..."
 
 var calendar = new CanopyCalendar(result.ToCalendarEvents(source: "holidays")) { TimeZone = result.TimeZone };
-calendar.Sources.Add(new CanopyCalendarSource("holidays", "Public holidays") { Tone = CanopyTone.Info });
+calendar.Sources.Add(new CanopyCalendarSource("holidays", "Public holidays") { Tone = Tone.Info });
 calendar.SaveHtmlPage("holidays.html");
 ```
 

@@ -54,10 +54,10 @@ public sealed class GridDesignPresenterTests {
         view.Columns.Add(new CanopyColumn("state", "History") { Presenter = CanopyGridPresenter.StatusStrip(), Section = "Status" });
         view.Columns.Add(new CanopyColumn("delta", "Delta") { Kind = CanopyColumnKind.Number, Hidden = true });
         view.Columns.Add(new CanopyColumn("value", "Value") { Kind = CanopyColumnKind.Number, Presenter = CanopyGridPresenter.Change("delta"), Aggregatable = true });
-        view.Columns.Add(new CanopyColumn("trend", "Trend") { Presenter = CanopyGridPresenter.SparklineLine(new[] { new CanopyGridThreshold(10, CanopyTone.Success) }, 0, 100) });
+        view.Columns.Add(new CanopyColumn("trend", "Trend") { Presenter = CanopyGridPresenter.SparklineLine(new[] { new CanopyGridThreshold(10, Tone.Success) }, 0, 100) });
         var row = new CanopyGridRow("r1"); row.Cells["id"] = new CanopyCell("alpha") { Secondary = "example.test" }; row.Cells["flag"] = true;
-        var history = new CanopyCell("Healthy"); history.Series.Add(new CanopyCellPeriod("Oct 1", state: "Healthy", tone: CanopyTone.Success));
-        history.Series.Add(new CanopyCellPeriod("Oct 2", state: "Failing", tone: CanopyTone.Danger)); row.Cells["state"] = history;
+        var history = new CanopyCell("Healthy"); history.Series.Add(new CanopyCellPeriod("Oct 1", state: "Healthy", tone: Tone.Success));
+        history.Series.Add(new CanopyCellPeriod("Oct 2", state: "Failing", tone: Tone.Danger)); row.Cells["state"] = history;
         row.Cells["delta"] = -6; row.Cells["value"] = 142;
         var trend = new CanopyCell("10"); trend.Series.Add(new CanopyCellPeriod("Oct 1", 10)); row.Cells["trend"] = trend; view.Rows.Add(row);
         var json = view.ToJson(); ProtocolSchema.AssertValid(json, "column presenters and visual metadata");
@@ -70,7 +70,7 @@ public sealed class GridDesignPresenterTests {
     [Fact]
     public void PresenterContracts_RejectInvalidScalesBindingsAndHistory() {
         Assert.Throws<ArgumentException>(() => CanopyGridPresenter.SparklineLine(minimum: 1));
-        Assert.Throws<ArgumentException>(() => CanopyGridPresenter.SparklineBars(new[] { new CanopyGridThreshold(20, CanopyTone.Warning), new CanopyGridThreshold(10, CanopyTone.Danger) }));
+        Assert.Throws<ArgumentException>(() => CanopyGridPresenter.SparklineBars(new[] { new CanopyGridThreshold(20, Tone.Warning), new CanopyGridThreshold(10, Tone.Danger) }));
         Assert.Throws<ArgumentOutOfRangeException>(() => new CanopyCellPeriod("Today", double.NaN));
         var view = new CanopyDataGridView("bad", "Bad"); view.Columns.Add(new CanopyColumn("name", "Name") { Presenter = CanopyGridPresenter.Change("missing") });
         Assert.Throws<InvalidOperationException>(() => view.ToJson());

@@ -25,8 +25,8 @@ public sealed class StaticHtmlTests {
     public void HostTones_AreWrittenByNameAndColouredFromTheOptions() {
         var view = SmallView();
         var node = view.Roots[0];
-        var high = CanopyTone.Named("severity-high");
-        node.Cells["size"] = new CanopyCell("value") { Tone = high, Badges = { new CanopyBadge("High", high), new CanopyBadge("Planned", CanopyTone.Named("maintenance")) } };
+        var high = Tone.Named("severity-high");
+        node.Cells["size"] = new CanopyCell("value") { Tone = high, Badges = { new CanopyBadge("High", high), new CanopyBadge("Planned", Tone.Named("maintenance")) } };
 
         var json = System.Text.Json.Nodes.JsonNode.Parse(view.ToJson())!["roots"]![0]!["cells"]!["size"]!;
         Assert.Equal("severity-high", json["tone"]!.GetValue<string>());
@@ -46,24 +46,34 @@ public sealed class StaticHtmlTests {
 
     [Theory]
     [InlineData("")]
-    [InlineData("High")]
-    [InlineData("1st")]
     [InlineData("two words")]
+    public void Named_NameThatIsNotAToneName_Throws(string name) {
+        Assert.Throws<ArgumentException>(() => Tone.Named(name));
+    }
+
+    [Theory]
+    [InlineData("1st")]
     [InlineData("a_b")]
+    [InlineData("a.b")]
     [InlineData("high-bg")]
     [InlineData("abcdefghijklmnopqrstuvwxyzabcdefg")]
-    public void Named_NameThatCouldNotBeACssClass_Throws(string name) {
-        Assert.Throws<ArgumentException>(() => CanopyTone.Named(name));
+    public void Write_ToneTheProtocolCannotCarry_Throws(string name) {
+        // The shared Tone accepts more names than a CSS class and the theme's -bg suffix allow, so writing checks them.
+        var view = new CanopyTreeView("tones", "Tones");
+        view.Columns.Add(new CanopyColumn("name", "Name"));
+        view.Roots.Add(new CanopyNode("a", "A") { Cells = { ["name"] = new CanopyCell("x") { Tone = Tone.Named(name) } } });
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
     }
 
     [Fact]
     public void Named_BuiltInName_IsTheWellKnownTone() {
-        Assert.Equal(CanopyTone.Danger, CanopyTone.Named("danger"));
-        Assert.True(CanopyTone.Named("danger").IsBuiltIn);
-        Assert.False(CanopyTone.Named("critical").IsBuiltIn);
-        Assert.Equal(CanopyTone.None, default(CanopyTone));
-        Assert.Null(new CanopyCell("x").Tone.Name);
-        Assert.Equal(CanopyTone.Neutral, new CanopyBadge("x").Tone);
+        Assert.Equal(Tone.Danger, Tone.Named("danger"));
+        Assert.Equal(Tone.Named("high"), Tone.Named("High"));
+        Assert.False(Tone.Named("danger").IsNamed);
+        Assert.True(Tone.Named("critical").IsNamed);
+        Assert.Equal(Tone.None, default(Tone));
+        Assert.Equal(Tone.None, new CanopyCell("x").Tone);
+        Assert.Equal(Tone.Neutral, new CanopyBadge("x").Tone);
     }
 
     [Fact]
@@ -104,7 +114,7 @@ public sealed class StaticHtmlTests {
     public void Render_DetailCells_PreserveTitlesAndBadges() {
         var view = SmallView();
         var cell = new CanopyCell("value") { Title = "A & B" };
-        cell.Badges.Add(new CanopyBadge("Changed", CanopyTone.Warning));
+        cell.Badges.Add(new CanopyBadge("Changed", Tone.Warning));
         view.Roots.Add(new CanopyNode("props", "Properties") { Detail = new CanopyPropertiesDetail().Add("Status", cell) });
         var html = CanopyStaticHtml.Render(view);
         Assert.Contains("title=\"A &amp; B\"", html);
@@ -189,12 +199,12 @@ public sealed class StaticHtmlTests {
         view.Columns.Add(new CanopyColumn("size", "Size") { Kind = CanopyColumnKind.Number });
         view.Columns.Add(new CanopyColumn("owner", "Owner") { Hidden = true });
         var share = new CanopyNode("s", "Finance") { Expanded = true, Group = true };
-        share.Badges.Add(new CanopyBadge("2 changed", CanopyTone.Warning));
+        share.Badges.Add(new CanopyBadge("2 changed", Tone.Warning));
         var plans = new CanopyNode("s/plans", "Plans");
-        plans.Cells["size"] = new CanopyCell(4096L) { Text = "4 KB", Tone = CanopyTone.Danger };
+        plans.Cells["size"] = new CanopyCell(4096L) { Text = "4 KB", Tone = Tone.Danger };
         plans.Children.Add(new CanopyNode("s/plans/q3", "Q3 budget"));
         plans.Children.Add(new CanopyNode("s/plans/diff", "Diff") {
-            Detail = new CanopyTableDetail("Changed settings").AddColumns("Setting", "Before", "After").AddRow("Retention", new CanopyCell("30 days") { Tone = CanopyTone.Danger }, "90 days")
+            Detail = new CanopyTableDetail("Changed settings").AddColumns("Setting", "Before", "After").AddRow("Retention", new CanopyCell("30 days") { Tone = Tone.Danger }, "90 days")
         });
         share.Children.Add(plans);
         share.Children.Add(new CanopyNode("s/reports", "Reports"));

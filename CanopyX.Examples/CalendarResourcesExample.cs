@@ -6,7 +6,7 @@ namespace CanopyX.Examples;
 internal static class CalendarResourcesExample {
     internal static void Write(string output) {
         var start = new DateTime(2026, 10, 16, 9, 0, 0, DateTimeKind.Utc);
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var events = new List<CanopyCalendarEvent>();
             for (var index = 1; index <= 48; index++) events.Add(new CanopyCalendarEvent("Room " + index + " planning", start.AddMinutes(index % 4 * 30)) {
                 Id = "meeting-" + index, End = start.AddHours(1).AddMinutes(index % 4 * 30), Resource = "room-" + index, Source = "planning"
@@ -28,7 +28,7 @@ internal static class CalendarResourcesExample {
             // Serve this generated folder over HTTP to enable the optional feed; ordinary file viewing keeps it hidden.
             var feed = new CanopyCalendarSource("visitors", "Visitors") { Url = "calendar-visitors.json", Color = "#b45309", Hidden = true };
             feed.FetchParams.Add("location", "studio"); calendar.Sources.Add(feed);
-            calendar.SaveHtmlPage(Path.Combine(output, "calendar-resource-window" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"),
+            calendar.SaveHtmlPage(Path.Combine(output, "calendar-resource-window" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"),
                 new CanopyHtmlOptions { Title = "Room schedule", Theme = theme, Height = "auto" });
         }
         File.WriteAllText(Path.Combine(output, "calendar-visitors.json"), "[{\"id\":\"welcome\",\"title\":\"Visitor briefing\",\"start\":\"2026-10-16T14:00:00Z\",\"end\":\"2026-10-16T15:00:00Z\",\"resourceIds\":[\"room-1\",\"room-2\"]}]");

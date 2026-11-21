@@ -72,7 +72,7 @@ public static partial class CanopyStaticHtml {
                 shown++;
                 var state = CanopyChangeFormat.State(witness.State, labels);
                 html.Append("<tr><th scope=\"row\" style=\"").Append(styles.Cell).Append("text-align:left;font-weight:600;\">").Append(Encode(witness.Label));
-                if (witness.Source) html.Append(" <span style=\"").Append(styles.Badge(CanopyTone.Neutral)).Append("\">").Append(Encode(labels.ChangeSource)).Append("</span>");
+                if (witness.Source) html.Append(" <span style=\"").Append(styles.Badge(Tone.Neutral)).Append("\">").Append(Encode(labels.ChangeSource)).Append("</span>");
                 if (witness.Secondary != null) html.Append("<br><span style=\"").Append(styles.MutedText).Append("\">").Append(Encode(witness.Secondary)).Append("</span>");
                 html.Append("</th><td style=\"").Append(styles.Cell).Append(StateStyle(witness.State, styles)).Append("white-space:nowrap;\">").Append(state.Symbol).Append(' ').Append(Encode(state.Label));
                 if (witness.Note != null) html.Append("<br><span style=\"").Append(styles.MutedText).Append("\">").Append(Encode(witness.Note)).Append("</span>");

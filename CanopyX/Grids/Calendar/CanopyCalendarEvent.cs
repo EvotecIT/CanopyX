@@ -83,8 +83,8 @@ public sealed class CanopyCalendarEvent {
     /// <summary>Gets or sets where the event takes place, shown in the details; merged copies of one event match on it. Null for none.</summary>
     public string? Location { get; set; }
 
-    /// <summary>Gets or sets the event's tone; <see cref="CanopyTone.None"/> (the default) uses the calendar's.</summary>
-    public CanopyTone Tone { get; set; }
+    /// <summary>Gets or sets the event's tone; <see cref="Tone.None"/> (the default) uses the calendar's.</summary>
+    public Tone Tone { get; set; }
 
     /// <summary>Gets or sets the event's own colour: a hex colour, an <c>rgb()</c>/<c>hsl()</c> colour or a CSS colour name; null for its tone's.</summary>
     /// <exception cref="ArgumentException">The value is not such a colour.</exception>

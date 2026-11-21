@@ -3,6 +3,7 @@ using CanopyX.Json;
 
 namespace CanopyX;
 
+[PowerForge.Fluent.Fluent]
 public sealed partial class CanopyPropagation {
     private static readonly string[] StateNames = { "converged", "propagating", "fault", "unknown" };
 

@@ -44,16 +44,16 @@ internal static class GroupedGridExample {
             var row = new CanopyGridRow("record-" + i.ToString("D3", CultureInfo.InvariantCulture));
             row.Cells["name"] = "Record " + i.ToString(CultureInfo.InvariantCulture);
             row.Cells["category"] = categories[i % categories.Length];
-            row.Cells["state"] = new CanopyCell(i % 13 == 0 ? "Failed" : "Healthy") { Tone = i % 13 == 0 ? CanopyTone.Danger : CanopyTone.Success };
+            row.Cells["state"] = new CanopyCell(i % 13 == 0 ? "Failed" : "Healthy") { Tone = i % 13 == 0 ? Tone.Danger : Tone.Success };
             row.Cells["updated"] = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc).AddDays(i);
             row.Cells["amount"] = i % 11 == 0 ? new CanopyCell() : new CanopyCell(i / 10d);
             view.Rows.Add(row);
         }
         foreach (var presentation in new[] { CanopyGridPresentation.Paged, CanopyGridPresentation.Continuous }) {
             view.Presentation = presentation;
-            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+            foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
                 var name = "grouped-grid" + (presentation == CanopyGridPresentation.Continuous ? "-continuous" : "") +
-                    (theme == CanopyTheme.Dark ? "-dark" : "") + ".html";
+                    (theme == ThemeMode.Dark ? "-dark" : "") + ".html";
                 InventoryGridExample.WritePage(view, output, name, theme);
             }
         }

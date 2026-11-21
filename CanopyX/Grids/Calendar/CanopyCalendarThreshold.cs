@@ -7,12 +7,12 @@ namespace CanopyX;
 public sealed class CanopyCalendarThreshold {
     /// <summary>Creates a threshold.</summary>
     /// <param name="at">The number of events at once from which the tone applies, at least 1.</param>
-    /// <param name="tone">The tone; not <see cref="CanopyTone.None"/>.</param>
+    /// <param name="tone">The tone; not <see cref="Tone.None"/>.</param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="at"/> is less than 1.</exception>
-    /// <exception cref="ArgumentException"><paramref name="tone"/> is <see cref="CanopyTone.None"/>.</exception>
-    public CanopyCalendarThreshold(int at, CanopyTone tone) {
+    /// <exception cref="ArgumentException"><paramref name="tone"/> is <see cref="Tone.None"/>.</exception>
+    public CanopyCalendarThreshold(int at, Tone tone) {
         if (at < 1) throw new ArgumentOutOfRangeException(nameof(at), at, "A threshold starts at 1 or more events.");
-        if (tone == CanopyTone.None) throw new ArgumentException("A threshold needs a tone.", nameof(tone));
+        if (tone == Tone.None) throw new ArgumentException("A threshold needs a tone.", nameof(tone));
         At = at;
         Tone = tone;
     }
@@ -21,7 +21,7 @@ public sealed class CanopyCalendarThreshold {
     public int At { get; }
 
     /// <summary>Gets the tone.</summary>
-    public CanopyTone Tone { get; }
+    public Tone Tone { get; }
 
-    internal void WriteJson(CanopyJsonWriter writer) => writer.BeginObject().Property("at", At).Property("tone", Tone.Name).EndObject();
+    internal void WriteJson(CanopyJsonWriter writer) => writer.BeginObject().Property("at", At).Property("tone", Tone.WireName()).EndObject();
 }

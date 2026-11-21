@@ -45,7 +45,7 @@ public sealed class HistoryColumnTests {
     }
 
     private static List<CanopyCellPeriod> Hours(params string[] states) =>
-        states.Select((state, index) => new CanopyCellPeriod("h" + index, state: state, tone: state == "Down" ? CanopyTone.Danger : CanopyTone.Success)).ToList();
+        states.Select((state, index) => new CanopyCellPeriod("h" + index, state: state, tone: state == "Down" ? Tone.Danger : Tone.Success)).ToList();
 
     [Fact]
     public void StatusHistory_TakesTheLatestStateAsItsRawValue() {

@@ -20,6 +20,7 @@ namespace CanopyX;
 /// </para>
 /// <para>The document is checked when it is written (<see cref="Validate"/>, <see cref="ToJson"/> and the writers); <see cref="FromJson"/> reads one back.</para>
 /// </remarks>
+[PowerForge.Fluent.Fluent]
 public sealed partial class CanopyTextDiff {
     /// <summary>The most lines the hunks of one diff hold.</summary>
     public const int MaxLines = 200000;

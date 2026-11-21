@@ -32,17 +32,17 @@ internal static class FlowExamplePage {
     internal static void Write(string output, string name, CanopyFlow flow, string title, string? script = null, int width = 960,
         CanopyLabels? labels = null, string language = "en", CanopyTextDirection direction = CanopyTextDirection.Auto, bool dark = true, IEnumerable<string>? parts = null) {
         if (labels != null) flow.Labels = labels;
-        foreach (var theme in dark ? new[] { CanopyTheme.Light, CanopyTheme.Dark } : new[] { CanopyTheme.Light }) {
+        foreach (var theme in dark ? new[] { ThemeMode.Light, ThemeMode.Dark } : new[] { ThemeMode.Light }) {
             var options = new CanopyHtmlOptions { Title = title, Theme = theme, Language = language, Direction = direction };
             foreach (var part in parts ?? Enumerable.Empty<string>()) options.Parts.Add(part);
             var page = flow.ToHtmlPage(options);
-            File.WriteAllText(Path.Combine(output, name + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), Inject(page, theme, width, script));
+            File.WriteAllText(Path.Combine(output, name + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), Inject(page, theme, width, script));
         }
     }
 
     // The page around the flow: a quiet background, the flow centred at a readable width, and the received proposal below it.
-    private static string Inject(string page, CanopyTheme theme, int width, string? script) {
-        var dark = theme == CanopyTheme.Dark;
+    private static string Inject(string page, ThemeMode theme, int width, string? script) {
+        var dark = theme == ThemeMode.Dark;
         var style = "<style>\nbody.cx-page{margin:0;background:" + (dark ? "#0e1013" : "#f3f4f6") + ";color:" + (dark ? "#f2f3f5" : "#16181c") + ";font:14px/1.45 Archivo,'Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif}\n" +
             ".cx-main{box-sizing:border-box;max-width:" + width.ToString(CultureInfo.InvariantCulture) + "px;margin:0 auto;padding:32px 16px 48px}\n" +
             ".flow-received{margin-top:24px}.flow-received h2{margin:0 0 8px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.7}\n" +

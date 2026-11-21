@@ -23,14 +23,14 @@ public sealed class CanopyFormatColorScale {
     /// <param name="low">The tone of the lowest value.</param>
     /// <param name="high">The tone of the highest value.</param>
     /// <returns>The scale.</returns>
-    public static CanopyFormatColorScale TwoColor(CanopyTone low, CanopyTone high) => new CanopyFormatColorScale(CanopyFormatScaleStop.Minimum(low), CanopyFormatScaleStop.Maximum(high));
+    public static CanopyFormatColorScale TwoColor(Tone low, Tone high) => new CanopyFormatColorScale(CanopyFormatScaleStop.Minimum(low), CanopyFormatScaleStop.Maximum(high));
 
     /// <summary>Returns a scale through a midpoint tone halfway between the lowest and highest values.</summary>
     /// <param name="low">The tone of the lowest value.</param>
     /// <param name="middle">The tone of the midpoint.</param>
     /// <param name="high">The tone of the highest value.</param>
     /// <returns>The scale.</returns>
-    public static CanopyFormatColorScale ThreeColor(CanopyTone low, CanopyTone middle, CanopyTone high) =>
+    public static CanopyFormatColorScale ThreeColor(Tone low, Tone middle, Tone high) =>
         new CanopyFormatColorScale(CanopyFormatScaleStop.Minimum(low), CanopyFormatScaleStop.Percent(50, middle), CanopyFormatScaleStop.Maximum(high));
 
     internal void Validate() {

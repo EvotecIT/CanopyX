@@ -15,8 +15,8 @@ internal static class CalendarFamilyExample {
     private static readonly DateTime Monday = new(2026, 9, 7);
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             var document = new CanopyHtmlDocument();
             CanopyHtmlOptions Options(string height) => new() { Theme = theme, Height = height, Document = document };
             var page = Template("calendar-family.html")
@@ -55,11 +55,11 @@ internal static class CalendarFamilyExample {
         calendar.Sources.Add(new CanopyCalendarSource("tom", "Tom") { Color = "#059669", Initials = "T", Avatar = Avatar("#059669", "#a7f3d0") });
         calendar.Sources.Add(new CanopyCalendarSource("mia", "Mia") { Color = "#db2777", Initials = "MI" });
         calendar.Sources.Add(new CanopyCalendarSource("leo", "Leo") { Color = "#d97706", Initials = "LE" });
-        calendar.Sources.Add(new CanopyCalendarSource("home", "Home") { Color = "#7c3aed", Icon = "🏠" });
+        calendar.Sources.Add(new CanopyCalendarSource("home", "Home") { Color = "#7c3aed", Mark = "🏠" });
         // Bin day every Monday and a few dated notes, for the weeks around the routines' start.
-        for (var week = Monday; week < Monday.AddDays(7 * 70); week = week.AddDays(7)) calendar.DayNotes.Add(new CanopyCalendarDayNote(week, "♻ Bin day") { Tone = CanopyTone.Success });
-        calendar.DayNotes.Add(new CanopyCalendarDayNote(new DateTime(2026, 11, 11), "Holiday") { Tone = CanopyTone.Info });
-        calendar.DayNotes.Add(new CanopyCalendarDayNote(new DateTime(2026, 12, 24), "🎄 Christmas Eve") { Tone = CanopyTone.Danger });
+        for (var week = Monday; week < Monday.AddDays(7 * 70); week = week.AddDays(7)) calendar.DayNotes.Add(new CanopyCalendarDayNote(week, "♻ Bin day") { Tone = Tone.Success });
+        calendar.DayNotes.Add(new CanopyCalendarDayNote(new DateTime(2026, 11, 11), "Holiday") { Tone = Tone.Info });
+        calendar.DayNotes.Add(new CanopyCalendarDayNote(new DateTime(2026, 12, 24), "🎄 Christmas Eve") { Tone = Tone.Danger });
         return calendar;
     }
 

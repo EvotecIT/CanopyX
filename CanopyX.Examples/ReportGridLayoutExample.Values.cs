@@ -3,7 +3,7 @@ using CanopyX.Html;
 namespace CanopyX.Examples;
 
 internal static partial class ReportGridLayoutExample {
-    private static void WriteValuePolicies(string output, CanopyTheme theme) {
+    private static void WriteValuePolicies(string output, ThemeMode theme) {
         var view = new CanopyDataGridView("review-values", "Review observations") {
             AutoRowHeight = true, Selection = CanopySelectionMode.None, Reporting = new CanopyGridReporting()
         };
@@ -11,12 +11,12 @@ internal static partial class ReportGridLayoutExample {
         var state = new CanopyColumn("state", "Outcome") { Sortable = true, Presenter = CanopyGridPresenter.Enum() };
         state.ValueLabels.Add("needs-review", "Needs review"); state.ValueLabels.Add("verified", "Verified");
         state.ValueOrder.Add("needs-review"); state.ValueOrder.Add("verified");
-        state.ValueTones.Add("needs-review", CanopyTone.Warning); state.ValueTones.Add("verified", CanopyTone.Success);
+        state.ValueTones.Add("needs-review", Tone.Warning); state.ValueTones.Add("verified", Tone.Success);
         view.Columns.Add(state);
         var days = new CanopyColumn("days", "Days remaining") { Kind = CanopyColumnKind.Number, Sortable = true };
-        days.NumericTones.Add(new(CanopyNumericToneOperator.Below, 0, CanopyTone.Danger, "Overdue"));
-        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, CanopyTone.Warning, "Review soon"));
-        days.NumericTones.Add(new(CanopyNumericToneOperator.AtLeast, 30, CanopyTone.Success, "Time available"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.Below, 0, Tone.Danger, "Overdue"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, Tone.Warning, "Review soon"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtLeast, 30, Tone.Success, "Time available"));
         view.Columns.Add(days);
         view.Columns.Add(new CanopyColumn("notes", "Observation") { Wrap = true, MaxLines = 3, Tooltip = CanopyColumn.AutoTooltip,
             Sizing = CanopyColumnSizing.Preferred(240, 100, 300) });
@@ -25,7 +25,7 @@ internal static partial class ReportGridLayoutExample {
             ["days"] = i == 0 ? -1 : i * 7,
             ["notes"] = i % 2 == 0 ? "A short observation." : "This observation includes the reason for the review and the evidence that supports the next step. Its complete text stays available in the record drawer."
         } });
-        var suffix = theme == CanopyTheme.Dark ? "-dark" : "";
+        var suffix = theme == ThemeMode.Dark ? "-dark" : "";
         view.SaveHtmlPage(Path.Combine(output, "report-grid-value-policies" + suffix + ".html"),
             new CanopyHtmlOptions { Theme = theme, Height = "720px", Title = "Column labels, ordered categories and numeric text tones" });
         view.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Cards };

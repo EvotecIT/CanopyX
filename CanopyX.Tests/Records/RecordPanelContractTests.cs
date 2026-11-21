@@ -45,7 +45,7 @@ public sealed class RecordPanelContractTests {
     internal static CanopyGridRow Row(string id) {
         var row = new CanopyGridRow(id);
         row.Cells["cn"] = "app.example.com";
-        row.Cells["status"] = new CanopyCell("Valid") { Tone = CanopyTone.Success };
+        row.Cells["status"] = new CanopyCell("Valid") { Tone = Tone.Success };
         row.Cells["names"] = CanopyCell.List("app.example.com", "www.app.example.com");
         row.Fields["thumbprint"] = new CanopyCell("AB12") { Ref = new CanopyRecordRef("c2") };
         row.Fields["issued"] = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
@@ -98,7 +98,7 @@ public sealed class RecordPanelContractTests {
         row.Cells["name"] = "One";
         row.Fields["policy"] = CanopyCell.Object(new CanopyCellField("Profile", "Web"), new CanopyCellField("Size", 2048) { Kind = CanopyColumnKind.Number },
             new CanopyCellField("Names", CanopyCell.List("a", "b")));
-        var issued = new CanopyRecordEvent(new DateTime(2026, 5, 6, 7, 8, 9, 10, DateTimeKind.Utc), "Issued") { Actor = "CA", Kind = "Issue", Tone = CanopyTone.Success, Ref = new CanopyRecordRef("r2") };
+        var issued = new CanopyRecordEvent(new DateTime(2026, 5, 6, 7, 8, 9, 10, DateTimeKind.Utc), "Issued") { Actor = "CA", Kind = "Issue", Tone = Tone.Success, Ref = new CanopyRecordRef("r2") };
         issued.Changes.Add(new CanopyFieldChange("Owner", "A", "B"));
         row.Fields["history"] = CanopyCell.Timeline(new[] { issued, new CanopyRecordEvent(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), "Requested") });
         row.Fields["changes"] = CanopyCell.Diff(new[] { new CanopyFieldChange("Recipients", CanopyCell.List("a"), CanopyCell.List("a", "b")), new CanopyFieldChange("Size", null, 4096) { Kind = CanopyColumnKind.Number } });

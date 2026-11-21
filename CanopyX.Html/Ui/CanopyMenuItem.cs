@@ -19,7 +19,7 @@ public sealed class CanopyMenuItem {
     /// <summary>Gets the semantic entry kind.</summary>
     public CanopyMenuItemKind Kind { get; }
     /// <summary>Gets or sets an encoded icon name, never raw icon markup.</summary>
-    public string? Icon { get; set; }
+    public Icon Icon { get; set; }
     /// <summary>Gets or sets an encoded shortcut hint; the host owns actual shortcut registration.</summary>
     public string? Shortcut { get; set; }
     /// <summary>Gets or sets an encoded count or status badge, preserved by the runtime's menu layout.</summary>

@@ -88,9 +88,9 @@ public sealed class StaticFormattingParityRegressionTests {
         view.Rows[1].Cells["value"] = new CanopyCell((string?)null);
         view.Rows[2].Cells["value"] = "Non-numeric";
         view.Rows[3].Cells["value"] = "25";
-        var style = kind == "bar" ? CanopyFormatStyle.DataBar(CanopyTone.Info, 0, 100)
-            : kind == "scale" ? CanopyFormatStyle.ColorScale(CanopyFormatColorScale.TwoColor(CanopyTone.Success, CanopyTone.Danger))
-            : CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(50, CanopyTone.Success, "Low"), new CanopyFormatBand(null, CanopyTone.Danger, "High"));
+        var style = kind == "bar" ? CanopyFormatStyle.DataBar(Tone.Info, 0, 100)
+            : kind == "scale" ? CanopyFormatStyle.ColorScale(CanopyFormatColorScale.TwoColor(Tone.Success, Tone.Danger))
+            : CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(50, Tone.Success, "Low"), new CanopyFormatBand(null, Tone.Danger, "High"));
         view.FormatRules.Add(CanopyFormatRule.ForCell("before", "name", new CanopyFormatStyle { Badge = "Before" }));
         var rule = CanopyFormatRule.ForCell("stop", "value", style, CanopyFormatCondition.Where("name", CanopyFormatOperator.Equal, "Matched"));
         rule.StopIfTrue = stop; rule.Label = "Numeric source"; view.FormatRules.Add(rule);
@@ -114,7 +114,7 @@ public sealed class StaticFormattingParityRegressionTests {
         var view = Grid();
         view.Rows.Add(new CanopyGridRow("row") { Cells = { ["name"] = "Record", ["value"] = "150" } });
         var rule = CanopyFormatRule.ForCell("finite-bands", "value",
-            CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(50, CanopyTone.Success, "Low")));
+            CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(50, Tone.Success, "Low")));
         rule.StopIfTrue = true; view.FormatRules.Add(rule);
         view.FormatRules.Add(CanopyFormatRule.ForCell("after", "name", new CanopyFormatStyle { Cue = "After" }));
 

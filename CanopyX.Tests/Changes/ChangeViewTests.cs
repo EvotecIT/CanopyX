@@ -16,7 +16,7 @@ public sealed class ChangeViewTests {
         list.Action("copy", "Copy path", CanopyChangeActionIcon.Copy, copy: "unc").Action("ack", "Acknowledge", CanopyChangeActionIcon.Check);
         var exe = list.Add("exe", CanopyChangeKind.Added, "Machine/Scripts/run.exe");
         exe.After = new CanopyChangeVersion { Size = 2048, Hash = "0123456789abcdef0123", Time = At };
-        exe.Flag("unsigned", "Unsigned", "No embedded signature.", CanopyTone.Danger).Fact("Signer", null, "Not signed", CanopyTone.Danger);
+        exe.Flag("unsigned", "Unsigned", "No embedded signature.", Tone.Danger).Fact("Signer", null, "Not signed", Tone.Danger);
         exe.Values["unc"] = "\\\\dc01\\share\\run.exe";
         var script = list.Add("ps1", CanopyChangeKind.Modified, "Machine/Scripts/logon.ps1");
         script.Before = new CanopyChangeVersion { Size = 100, Hash = "aaaaaaaaaaaa" };

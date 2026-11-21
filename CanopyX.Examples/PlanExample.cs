@@ -6,8 +6,8 @@ namespace CanopyX.Examples;
 /// <summary>A migration plan with parallel tasks, a baseline, a release milestone and one visible dependency conflict.</summary>
 internal static class PlanExample {
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             Create().SaveHtmlPage(Path.Combine(output, "plan" + suffix + ".html"), new CanopyHtmlOptions { Title = "Migration plan", Theme = theme, Height = "1000px" });
         }
         File.WriteAllText(Path.Combine(output, "plan-static.html"), "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +

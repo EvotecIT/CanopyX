@@ -2,6 +2,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds a declarative popover with encoded accessibility references and trusted content.</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. Render a trigger separately or wire an existing control to TriggerId and data-cx-open. No assets or executable code are emitted.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyPopover {
     /// <summary>Creates a popover with a page-unique identity and a plain text title.</summary>
     public CanopyPopover(string id, string title, CanopyPopoverOptions? options = null) {

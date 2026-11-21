@@ -98,7 +98,7 @@ public sealed class StaticThemeTests {
     [Fact]
     public void Render_MutedTone_IsTheMixedMutedColourOnTheQuietBackground() {
         var view = View();
-        view.Roots[0].Cells["state"] = new CanopyCell("none") { Tone = CanopyTone.Muted, Badges = { new CanopyBadge("n/a", CanopyTone.Muted), new CanopyBadge("3") } };
+        view.Roots[0].Cells["state"] = new CanopyCell("none") { Tone = Tone.Muted, Badges = { new CanopyBadge("n/a", Tone.Muted), new CanopyBadge("3") } };
         var html = CanopyStaticHtml.Render(view);
 
         Assert.Contains("vertical-align:top;color:#656769;\">none", html);
@@ -108,13 +108,13 @@ public sealed class StaticThemeTests {
 
     [Fact]
     public void Render_ThemeVariables_FollowEveryLiteralWithTheRuntimeProperty() {
-        var high = CanopyTone.Named("severity-high");
+        var high = Tone.Named("severity-high");
         var options = new CanopyStaticHtmlOptions { UseThemeVariables = true };
         options.ToneColors[high] = "#9a3412";
         var view = View();
-        view.Roots[0].Badges.Add(new CanopyBadge("Not evaluated", CanopyTone.Muted));
-        view.Roots[0].Cells["state"] = new CanopyCell("late") { Tone = high, Badges = { new CanopyBadge("High", high), new CanopyBadge("Planned", CanopyTone.Named("maintenance")) } };
-        view.Roots[1].Cells["state"] = new CanopyCell("soon") { Tone = CanopyTone.Named("maintenance") };
+        view.Roots[0].Badges.Add(new CanopyBadge("Not evaluated", Tone.Muted));
+        view.Roots[0].Cells["state"] = new CanopyCell("late") { Tone = high, Badges = { new CanopyBadge("High", high), new CanopyBadge("Planned", Tone.Named("maintenance")) } };
+        view.Roots[1].Cells["state"] = new CanopyCell("soon") { Tone = Tone.Named("maintenance") };
         var html = CanopyStaticHtml.Render(view, options);
 
         // The literal comes first: a client that does not know var() drops the second declaration and keeps it.
@@ -157,7 +157,7 @@ public sealed class StaticThemeTests {
         var light = CanopyStaticTheme.Light();
         var dark = CanopyStaticTheme.Dark();
         var view = View();
-        foreach (var tone in new[] { CanopyTone.Info, CanopyTone.Success, CanopyTone.Warning, CanopyTone.Muted }) {
+        foreach (var tone in new[] { Tone.Info, Tone.Success, Tone.Warning, Tone.Muted }) {
             view.Roots[0].Badges.Add(new CanopyBadge(tone.Name!, tone));
         }
         var html = CanopyStaticHtml.Render(view, new CanopyStaticHtmlOptions {
@@ -193,7 +193,7 @@ public sealed class StaticThemeTests {
         // Changing only one role still makes this a custom palette: its unchanged colours must remain coherent.
         theme.Accent = "#123456";
         var options = new CanopyStaticHtmlOptions { Theme = theme, UseThemeVariables = true, MaxRows = 2, FullReportUrl = "full.html" };
-        var high = CanopyTone.Named("severity-high");
+        var high = Tone.Named("severity-high");
         options.ToneColors[high] = "#a20";
         var view = View();
         view.Roots[0].Badges.Add(new CanopyBadge("High", high));
@@ -222,11 +222,11 @@ public sealed class StaticThemeTests {
             options.Theme.Text = "#fff";
             options.Theme.Danger = "#f00";
         }
-        var high = CanopyTone.Named("severity-high");
+        var high = Tone.Named("severity-high");
         options.ToneColors[high] = "#a20";
         var view = View();
         view.Roots[0].Badges.Add(new CanopyBadge("High", high));
-        view.Roots[0].Badges.Add(new CanopyBadge("Unknown", CanopyTone.Named("maintenance")));
+        view.Roots[0].Badges.Add(new CanopyBadge("Unknown", Tone.Named("maintenance")));
         var html = CanopyStaticHtml.Render(view, options);
         // Simulate email/Word discarding declarations that contain unsupported CSS functions.
         var legacyHtml = Regex.Replace(html, "style=\"([^\"]*)\"", match => "style=\"" + string.Concat(
@@ -243,8 +243,8 @@ public sealed class StaticThemeTests {
         view.Columns.Add(new CanopyColumn("name", "Name"));
         view.Columns.Add(new CanopyColumn("state", "State"));
         var first = new CanopyNode("a", "First") { Expanded = true };
-        first.Badges.Add(new CanopyBadge("failed", CanopyTone.Danger));
-        first.Children.Add(new CanopyNode("a/1", "Child") { Cells = { ["state"] = new CanopyCell("bad") { Tone = CanopyTone.Danger } } });
+        first.Badges.Add(new CanopyBadge("failed", Tone.Danger));
+        first.Children.Add(new CanopyNode("a/1", "Child") { Cells = { ["state"] = new CanopyCell("bad") { Tone = Tone.Danger } } });
         first.Children.Add(new CanopyNode("a/2", "Other"));
         view.Roots.Add(first);
         view.Roots.Add(new CanopyNode("b", "Second"));

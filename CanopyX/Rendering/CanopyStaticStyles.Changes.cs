@@ -21,11 +21,11 @@ internal sealed partial class CanopyStaticStyles {
     internal string DiffGap => Declare("background", Mix(_text, 3.5, _surface)) + Declare("color", _muted) + "font-style:italic;";
 
     /// <summary>A tone's text colour, as the formatting part reads it.</summary>
-    internal string ToneText(CanopyTone tone) => Declare("color", FormatInk(tone));
+    internal string ToneText(Tone tone) => Declare("color", FormatInk(tone));
 
     /// <summary>A state with its word: as a matrix cell where it needs attention, else the word in a readable shade of the tone.</summary>
-    internal string StateText(CanopyTone tone, bool attention) =>
-        attention || tone.Name == null || tone == CanopyTone.Neutral || tone == CanopyTone.Muted ? MatrixTone(tone, attention) : Declare("color", Mix(FormatInk(tone), 85, _text));
+    internal string StateText(Tone tone, bool attention) =>
+        attention || tone.WireName() == null || tone == Tone.Neutral || tone == Tone.Muted ? MatrixTone(tone, attention) : Declare("color", Mix(FormatInk(tone), 85, _text));
 
-    private Ink DiffInk(CanopyDiffLineKind kind) => BuiltIn(kind == CanopyDiffLineKind.Removed ? CanopyTone.Danger : CanopyTone.Success);
+    private Ink DiffInk(CanopyDiffLineKind kind) => BuiltIn(kind == CanopyDiffLineKind.Removed ? Tone.Danger : Tone.Success);
 }

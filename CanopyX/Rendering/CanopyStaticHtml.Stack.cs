@@ -55,9 +55,9 @@ public static partial class CanopyStaticHtml {
         var order = (index + 1).ToString(settings.Culture);
         var states = new List<string>();
         var stateBadges = new List<CanopyBadge>();
-        if (layer.Winner) { states.Add(view.Labels.StackWinner); stateBadges.Add(new CanopyBadge(view.Labels.StackWinner, CanopyTone.Success)); }
-        if (layer.Enforced) { states.Add(view.Labels.StackEnforced); stateBadges.Add(new CanopyBadge(view.Labels.StackEnforced, CanopyTone.Info)); }
-        if (layer.Filtered) { states.Add(view.Labels.StackFiltered); stateBadges.Add(new CanopyBadge(view.Labels.StackFiltered, CanopyTone.Neutral)); }
+        if (layer.Winner) { states.Add(view.Labels.StackWinner); stateBadges.Add(new CanopyBadge(view.Labels.StackWinner, Tone.Success)); }
+        if (layer.Enforced) { states.Add(view.Labels.StackEnforced); stateBadges.Add(new CanopyBadge(view.Labels.StackEnforced, Tone.Info)); }
+        if (layer.Filtered) { states.Add(view.Labels.StackFiltered); stateBadges.Add(new CanopyBadge(view.Labels.StackFiltered, Tone.Neutral)); }
         html.Append("<li value=\"").Append(index + 1).Append("\" style=\"margin:0 0 10px;padding:8px;border:1px solid ")
             .Append(settings.Theme.Line).Append(";break-inside:avoid;\"><strong>").Append(Encode(title)).Append("</strong>");
         AppendBadges(html, stateBadges, styles);

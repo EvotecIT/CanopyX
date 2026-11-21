@@ -40,7 +40,7 @@ internal static partial class ViewSnippets {
         finance.Children.Add(
             Document("invoices", "Invoices Q3.pdf", 2_310_144, "ben.okafor", 9));
         var payroll = Document("payroll", "Payroll export.csv", 96_256, "chen.wei", 2);
-        payroll.Badges.Add(new CanopyBadge("Shared externally", CanopyTone.Warning));
+        payroll.Badges.Add(new CanopyBadge("Shared externally", Tone.Warning));
         finance.Children.Add(payroll);
 
         var people = new CanopyNode("people", @"\\fs01\people") {
@@ -114,7 +114,7 @@ internal static partial class ViewSnippets {
             row.Cells["os"] = os;
             row.Cells["patch"] = new CanopyCell(patch) {
                 Text = $"{patch}%",
-                Tone = patch < 70 ? CanopyTone.Danger : CanopyTone.None
+                Tone = patch < 70 ? Tone.Danger : Tone.None
             };
             row.Cells["encrypted"] = encrypted;
             devices.Rows.Add(row);
@@ -141,7 +141,7 @@ internal static partial class ViewSnippets {
             },
             cell: patch => new CanopyCell(patch) {
                 Text = $"{patch}%",
-                Tone = patch < 70 ? CanopyTone.Danger : CanopyTone.None
+                Tone = patch < 70 ? Tone.Danger : Tone.None
             });
         grid.Column(x => x.Encrypted,
             configure: c => c.Presenter = CanopyGridPresenter.Boolean());
@@ -177,7 +177,7 @@ internal static partial class ViewSnippets {
         var calendar = new CanopyCalendar("operations", "Operations calendar", new[] {
             new CanopyCalendarEvent("Core switch firmware upgrade", At(14, 22)) {
                 End = At(15, 3),
-                Tone = CanopyTone.Info
+                Tone = Tone.Info
             },
             new CanopyCalendarEvent("Database failover test", At(16, 9)) {
                 End = At(16, 11),
@@ -185,11 +185,11 @@ internal static partial class ViewSnippets {
             },
             new CanopyCalendarEvent("Disk latency on fs-01", At(16, 10, 15)) {
                 End = At(16, 12),
-                Tone = CanopyTone.Danger
+                Tone = Tone.Danger
             },
             new CanopyCalendarEvent(
                 "Certificate expires: portal.example.com", At(21, 13, 45)) {
-                Tone = CanopyTone.Warning
+                Tone = Tone.Warning
             },
             new CanopyCalendarEvent("Data centre power test", At(24, 6)) {
                 End = At(24, 18)
@@ -216,11 +216,11 @@ internal static partial class ViewSnippets {
             "operations", "Operations calendar", x => x.Id);
         grid.Column(x => x.Title, configure: c => c.RowHeader = true);
         grid.Column(x => x.Status, configure: c => c.Presenter = CanopyGridPresenter.State(
-            new Dictionary<string, CanopyTone> {
-                ["Incident"] = CanopyTone.Danger,
-                ["Running"] = CanopyTone.Info,
-                ["Planned"] = CanopyTone.Neutral,
-                ["Done"] = CanopyTone.Success
+            new Dictionary<string, Tone> {
+                ["Incident"] = Tone.Danger,
+                ["Running"] = Tone.Info,
+                ["Planned"] = Tone.Neutral,
+                ["Done"] = Tone.Success
             }));
         grid.Column(x => x.Owner);
 
@@ -281,10 +281,10 @@ internal static partial class ViewSnippets {
         };
         events.Columns.Add(new CanopyColumn("title", "Event") { RowHeader = true });
         events.Columns.Add(new CanopyColumn("kind", "Kind") {
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> {
-                ["Outage"] = CanopyTone.Danger,
-                ["Incident"] = CanopyTone.Warning,
-                ["Maintenance"] = CanopyTone.Info
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> {
+                ["Outage"] = Tone.Danger,
+                ["Incident"] = Tone.Warning,
+                ["Maintenance"] = Tone.Info
             })
         });
         events.Columns.Add(new CanopyColumn("starts", "Starts") {
@@ -340,9 +340,9 @@ internal static partial class ViewSnippets {
             "host-events", "Incidents by host", x => x.Id);
         grid.Column(x => x.Title, "Event", c => c.RowHeader = true);
         grid.Column(x => x.Kind, configure: c => c.Presenter = CanopyGridPresenter.State(
-            new Dictionary<string, CanopyTone> {
-                ["Incident"] = CanopyTone.Warning,
-                ["Maintenance"] = CanopyTone.Info
+            new Dictionary<string, Tone> {
+                ["Incident"] = Tone.Warning,
+                ["Maintenance"] = Tone.Info
             }));
 
         var timeline = grid.Calendar()
@@ -377,12 +377,12 @@ internal static partial class ViewSnippets {
         // view:begin matrix-cs
         var matrix = new CanopyMatrix("services", "Services by server");
         matrix
-            .State("critical", "Critical", CanopyTone.Danger, CanopyMatrixSymbol.Cross,
+            .State("critical", "Critical", Tone.Danger, CanopyMatrixSymbol.Cross,
                 attention: true)
-            .State("warning", "Warning", CanopyTone.Warning, CanopyMatrixSymbol.Warning,
+            .State("warning", "Warning", Tone.Warning, CanopyMatrixSymbol.Warning,
                 attention: true)
-            .State("ok", "Running", CanopyTone.Success, CanopyMatrixSymbol.Check)
-            .State("absent", "Not installed", CanopyTone.Muted, CanopyMatrixSymbol.Dash);
+            .State("ok", "Running", Tone.Success, CanopyMatrixSymbol.Check)
+            .State("absent", "Not installed", Tone.Muted, CanopyMatrixSymbol.Dash);
         matrix.Rows.Title = "Server";
         matrix.Rows.Attribute("site", "Site", facet: true);
         matrix.Rows.GroupBy = "site";
@@ -429,7 +429,7 @@ internal static partial class ViewSnippets {
             Time = seen
         };
         payload.Flag("unsigned", "Unsigned", "The file has no embedded signature.",
-            CanopyTone.Danger);
+            Tone.Danger);
         payload.Values["unc"] = @"\\fs01\deploy\Scripts\Logon\agent.exe";
 
         var settings = list.Add(
@@ -518,7 +518,7 @@ internal static partial class ViewSnippets {
                 var share = new CanopyNode(server + "-" + name, name);
                 share.Cells["used"] = new CanopyCell(gb) {
                     Text = $"{gb} GB",
-                    Tone = gb > 1_000 ? CanopyTone.Danger : CanopyTone.Warning
+                    Tone = gb > 1_000 ? Tone.Danger : Tone.Warning
                 };
                 share.Cells["owner"] = owner;
                 node.Children.Add(share);

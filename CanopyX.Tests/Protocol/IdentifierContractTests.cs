@@ -22,7 +22,7 @@ public sealed class IdentifierContractTests {
     [InlineData("<SVG viewBox=\"0 0 16 16\"></SVG>", true)]
     [InlineData("\t<svg/>", true)]
     public void IconMarkupRequiresTheSvgTagName(string icon, bool valid) {
-        var view = View(); view.Icons["test"] = icon;
+        var view = View(); view.Icons[Icon.Named("test")] = icon;
         if (valid) ProtocolSchema.AssertValid(view.ToJson(), "SVG tag");
         else {
             Assert.Throws<InvalidOperationException>(() => view.ToJson());

@@ -18,9 +18,9 @@ internal static class CertificateRecords {
     internal static string Name(int index, int count) => "app" + (index % Math.Max(1, count / 2)).ToString(CultureInfo.InvariantCulture) + ".example.com";
     internal static int DaysLeft(int index) => index % 9 == 4 ? -(index % 13) - 1 : 6 + index * 37 % 380;
 
-    internal static (string Text, CanopyTone Tone) Status(int index) {
+    internal static (string Text, Tone Tone) Status(int index) {
         var days = DaysLeft(index);
-        return days < 0 ? ("Expired", CanopyTone.Danger) : days <= 30 ? ("Expiring", CanopyTone.Warning) : ("Valid", CanopyTone.Success);
+        return days < 0 ? ("Expired", Tone.Danger) : days <= 30 ? ("Expiring", Tone.Warning) : ("Valid", Tone.Success);
     }
 
     internal static CanopyGridRow Row(int index, int count, bool withFields) {
@@ -30,7 +30,7 @@ internal static class CertificateRecords {
         var days = DaysLeft(index);
         row.Cells["cn"] = new CanopyCell(name) { Secondary = "Serial " + Serial(index) };
         row.Cells["status"] = new CanopyCell(status) { Tone = tone };
-        row.Cells["days"] = new CanopyCell(days) { Tone = days < 0 ? CanopyTone.Danger : days <= 30 ? CanopyTone.Warning : CanopyTone.None };
+        row.Cells["days"] = new CanopyCell(days) { Tone = days < 0 ? Tone.Danger : days <= 30 ? Tone.Warning : Tone.None };
         row.Cells["expires"] = Today.AddDays(days);
         row.Cells["issuer"] = Issuers[index % Issuers.Length];
         row.Cells["owner"] = People[index % People.Length];
@@ -74,7 +74,7 @@ internal static class CertificateRecords {
             ["validityDays"] = 398,
             ["renewBy"] = expires.AddDays(-30),
             ["autoRenew"] = index % 3 != 1,
-            ["renewalStatus"] = days < 0 ? new CanopyCell("Overdue") { Tone = CanopyTone.Danger } : days <= 30 ? new CanopyCell("Due") { Tone = CanopyTone.Warning } : new CanopyCell("Not due") { Tone = CanopyTone.Success },
+            ["renewalStatus"] = days < 0 ? new CanopyCell("Overdue") { Tone = Tone.Danger } : days <= 30 ? new CanopyCell("Due") { Tone = Tone.Warning } : new CanopyCell("Not due") { Tone = Tone.Success },
             ["wildcard"] = index % 7 == 0,
             ["sanCount"] = Sans(index, name).Count(),
             ["team"] = Teams[index % Teams.Length],
@@ -91,10 +91,10 @@ internal static class CertificateRecords {
             ["approvedBy"] = index % 2 == 0 ? new CanopyCell(People[(index + 3) % People.Length]) : null,
             ["issuedAt"] = issued,
             ["validation"] = index % 2 == 0 ? "DNS" : "HTTP",
-            ["validationStatus"] = new CanopyCell(index % 11 == 3 ? "Failed" : "Validated") { Tone = index % 11 == 3 ? CanopyTone.Danger : CanopyTone.Success },
+            ["validationStatus"] = new CanopyCell(index % 11 == 3 ? "Failed" : "Validated") { Tone = index % 11 == 3 ? Tone.Danger : Tone.Success },
             ["keyUsage"] = CanopyCell.List("Digital signature", "Key encipherment"),
             ["extendedKeyUsage"] = CanopyCell.List("Server authentication", "Client authentication"),
-            ["policies"] = CanopyCell.Object(new CanopyCellField("Policy", "2.23.140.1.2.2"), new CanopyCellField("Validation", new CanopyCell(index % 2 == 0 ? "Organization" : "Domain") { Tone = CanopyTone.Info }),
+            ["policies"] = CanopyCell.Object(new CanopyCellField("Policy", "2.23.140.1.2.2"), new CanopyCellField("Validation", new CanopyCell(index % 2 == 0 ? "Organization" : "Domain") { Tone = Tone.Info }),
                 new CanopyCellField("Transparency", CanopyCell.List("Log A", "Log B"))),
             ["endpoints"] = CanopyCell.Collection(Endpoints(index, name)),
             ["ctLogged"] = true,
@@ -190,12 +190,12 @@ internal static class CertificateRecords {
     }
 
     private static IEnumerable<CanopyRecordEvent> Timeline(int index, string person, DateTime issued) {
-        yield return new CanopyRecordEvent(Today.AddDays(-3).AddHours(9), "Reminder sent to " + Email(person)) { Kind = "Reminder", Tone = CanopyTone.Info, Actor = "Reminder service" };
-        var change = new CanopyRecordEvent(Today.AddDays(-12).AddHours(14), "Owner changed") { Kind = "Change", Tone = CanopyTone.Warning, Actor = People[(index + 2) % People.Length] };
+        yield return new CanopyRecordEvent(Today.AddDays(-3).AddHours(9), "Reminder sent to " + Email(person)) { Kind = "Reminder", Tone = Tone.Info, Actor = "Reminder service" };
+        var change = new CanopyRecordEvent(Today.AddDays(-12).AddHours(14), "Owner changed") { Kind = "Change", Tone = Tone.Warning, Actor = People[(index + 2) % People.Length] };
         change.Changes.Add(new CanopyFieldChange("Owner", People[(index + 4) % People.Length], person));
         yield return change;
-        if (index % 11 == 3) yield return new CanopyRecordEvent(Today.AddDays(-20), "Domain validation failed") { Kind = "Validation", Tone = CanopyTone.Danger, Actor = "Example Public CA" };
-        yield return new CanopyRecordEvent(issued.AddHours(10), "Certificate issued") { Kind = "Issued", Tone = CanopyTone.Success, Actor = "Example Public CA" };
+        if (index % 11 == 3) yield return new CanopyRecordEvent(Today.AddDays(-20), "Domain validation failed") { Kind = "Validation", Tone = Tone.Danger, Actor = "Example Public CA" };
+        yield return new CanopyRecordEvent(issued.AddHours(10), "Certificate issued") { Kind = "Issued", Tone = Tone.Success, Actor = "Example Public CA" };
         yield return new CanopyRecordEvent(issued.AddDays(-2).AddHours(11), "Certificate requested") { Kind = "Request", Actor = People[(index + 2) % People.Length] };
     }
 }

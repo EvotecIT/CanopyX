@@ -702,7 +702,7 @@ var records = new CanopyRecordMap<Machine>(map)
         .Column(new CanopyColumn("installed", "Installed") { Kind = CanopyColumnKind.DateTime }, s => s.InstalledOn)
         .PageSize(10))
     .Timeline("maintenance", m => m.Maintenance, events => events.Key(e => e.Id).Time(e => e.At)
-        .Summary(e => e.Summary).Actor(e => e.Technician).Kind(e => e.Kind, kind => kind == "Failure" ? CanopyTone.Danger : CanopyTone.Neutral))
+        .Summary(e => e.Summary).Actor(e => e.Technician).Kind(e => e.Kind, kind => kind == "Failure" ? Tone.Danger : Tone.Neutral))
     .Changes("changes", m => m.Changes, changes => changes.Key(c => c.Id).Name(c => c.Setting)
         .Before(c => c.Before).After(c => c.After).OrderBy(c => c.At, descending: true))
     // Machines of this grid: by default only those the caller's query reads are shown (and counted).

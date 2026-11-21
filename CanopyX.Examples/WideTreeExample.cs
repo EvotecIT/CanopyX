@@ -15,8 +15,8 @@ internal static class WideTreeExample {
     private static readonly string[] States = { "Published", "Draft", "In review", "Archived" };
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark })
-            Create().SaveHtmlPage(Path.Combine(output, "wide-tree" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
+            Create().SaveHtmlPage(Path.Combine(output, "wide-tree" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Document library", Theme = theme });
     }
 

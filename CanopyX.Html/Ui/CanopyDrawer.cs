@@ -2,6 +2,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds a declarative drawer with encoded accessibility references and trusted content.</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. Render a trigger separately or wire an existing control to TriggerId and data-cx-open. No assets or executable code are emitted.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyDrawer {
     /// <summary>Creates a drawer with a page-unique identity and a plain text title.</summary>
     public CanopyDrawer(string id, string title, CanopyDrawerOptions? options = null) {

@@ -28,16 +28,16 @@ fileRoots[0].Children[0].Expanded = true;
 fileRoots[0].Children[0].Children[0].Expanded = true;
 var files = ExampleViews.FileShares("files", fileRoots);
 var bundle = files.SaveHtmlBundle(Path.Combine(demos, "files"),
-    new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "CanopyX file explorer", Theme = CanopyTheme.Auto });
+    new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, Title = "CanopyX file explorer", Theme = ThemeMode.Auto });
 
 // Device inventory: a reporting grid with grouping, aggregates, facets and visual history presenters.
 var inventory = DeviceInventory.Create(1_200);
 File.WriteAllText(Path.Combine(demos, "inventory.html"),
-    inventory.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX device inventory", Theme = CanopyTheme.Auto }), utf8);
+    inventory.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX device inventory", Theme = ThemeMode.Auto }), utf8);
 
 // Change review: a change list with flags and diffs, how the change reached six servers, and one script's diff, on one page.
 var changeDocument = new CanopyHtmlDocument();
-CanopyHtmlOptions ChangeOptions() => new CanopyHtmlOptions { Theme = CanopyTheme.Auto, Document = changeDocument };
+CanopyHtmlOptions ChangeOptions() => new CanopyHtmlOptions { Theme = ThemeMode.Auto, Document = changeDocument };
 File.WriteAllText(Path.Combine(demos, "changes.html"),
     "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>CanopyX change review</title><style>" +
     // Canvas follows the root's color-scheme, which the site sets on the frame along with the grids' theme.
@@ -159,7 +159,7 @@ internal static class DeviceInventory {
             row.Cells["signins"] = SignIns(random, server);
             row.Cells["encrypted"] = random.Next() > 0.08;
             row.Cells["seen"] = Now.AddMinutes(-(int)(random.Next() * 60 * 24 * 21));
-            row.Cells["owner"] = server ? new CanopyCell() { Text = "service", Tone = CanopyTone.Muted } : new CanopyCell(Owners[(int)(random.Next() * Owners.Length)]);
+            row.Cells["owner"] = server ? new CanopyCell() { Text = "service", Tone = Tone.Muted } : new CanopyCell(Owners[(int)(random.Next() * Owners.Length)]);
             view.Rows.Add(row);
         }
 
@@ -171,10 +171,10 @@ internal static class DeviceInventory {
         var warning = patch < 80 ? 0.2 : 0.05;
         var periods = new List<CanopyCellPeriod>();
         var current = "Healthy";
-        var currentTone = CanopyTone.Success;
+        var currentTone = Tone.Success;
         for (var day = 13; day >= 0; day--) {
             var roll = random.Next();
-            (current, currentTone) = roll < failing ? ("Failing", CanopyTone.Danger) : roll < failing + warning ? ("Warning", CanopyTone.Warning) : ("Healthy", CanopyTone.Success);
+            (current, currentTone) = roll < failing ? ("Failing", Tone.Danger) : roll < failing + warning ? ("Warning", Tone.Warning) : ("Healthy", Tone.Success);
             periods.Add(new CanopyCellPeriod(Now.AddDays(-day).ToString("MMM d", CultureInfo.InvariantCulture), state: current, tone: currentTone));
         }
 

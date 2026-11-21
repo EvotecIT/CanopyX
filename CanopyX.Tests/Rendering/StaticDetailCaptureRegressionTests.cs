@@ -159,7 +159,7 @@ public sealed class StaticDetailCaptureRegressionTests {
         rows[0].Cells[column.Id] = new CanopyCell(true) { Badges = { new CanopyBadge("Cell badge") } };
         target.Formatting = new CanopyFormatOptions { Legend = true };
         var rule = CanopyFormatRule.ForCell("status", column.Id,
-            new CanopyFormatStyle { Tone = CanopyTone.Warning, Icon = "!", Badge = "Rule badge", Cue = "Rule cue" });
+            new CanopyFormatStyle { Tone = Tone.Warning, Mark = "!", Badge = "Rule badge", Cue = "Rule cue" });
         rule.Label = "Legend excluded"; target.FormatRules.Add(rule);
 
         var result = CanopyStaticHtml.RenderGridWithResult(view);

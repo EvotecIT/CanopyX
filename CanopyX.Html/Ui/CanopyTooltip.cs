@@ -6,6 +6,7 @@ namespace CanopyX.Html.Ui;
 
 /// <summary>Builds a non-interactive plain text tooltip and a separately rendered, independently labelled trigger.</summary>
 /// <remarks>Hosts load the CanopyX UI stylesheet and runtime once per page. Existing triggers need aria-describedby referencing Id and an identity matching TriggerId.</remarks>
+[PowerForge.Fluent.Fluent]
 public sealed class CanopyTooltip {
     /// <summary>Creates a tooltip with a page-unique identity and plain text content.</summary>
     public CanopyTooltip(string id, string text, CanopyTooltipOptions? options = null) {

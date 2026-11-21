@@ -11,19 +11,19 @@ public sealed class CanopyGridHighlightRule {
     /// <param name="tone">An existing semantic or host-defined tone; None leaves the current tone.</param>
     /// <param name="className">Optional additional CSS classes, at most 1,024 characters without controls.</param>
     /// <param name="target">The row, or the condition column's cell.</param>
-    public CanopyGridHighlightRule(CanopyGridFilter condition, CanopyTone tone = default, string? className = null,
+    public CanopyGridHighlightRule(CanopyGridFilter condition, Tone tone = default, string? className = null,
         CanopyGridHighlightTarget target = CanopyGridHighlightTarget.Row) {
         Condition = condition ?? throw new ArgumentNullException(nameof(condition));
         if (condition.Operator == CanopyGridFilterOperator.Custom) throw new ArgumentException("Highlight conditions use built-in operators; named hooks apply only to queries.", nameof(condition));
         if (!Enum.IsDefined(typeof(CanopyGridHighlightTarget), target)) throw new ArgumentOutOfRangeException(nameof(target));
         ValidateClassName(className);
-        if (tone == CanopyTone.None && className == null) throw new ArgumentException("A highlight requires a tone or CSS classes.");
+        if (tone == Tone.None && className == null) throw new ArgumentException("A highlight requires a tone or CSS classes.");
         Tone = tone; ClassName = className; Target = target;
     }
     /// <summary>Gets the typed raw-value condition.</summary>
     public CanopyGridFilter Condition { get; }
     /// <summary>Gets the tone, or None to retain the current tone.</summary>
-    public CanopyTone Tone { get; }
+    public Tone Tone { get; }
     /// <summary>Gets additional CSS classes.</summary>
     public string? ClassName { get; }
     /// <summary>Gets the row or condition cell target.</summary>
@@ -37,6 +37,6 @@ public sealed class CanopyGridHighlightRule {
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject(); Condition.WriteFields(writer);
         if (Target == CanopyGridHighlightTarget.Cell) writer.Property("target", "cell");
-        writer.OptionalProperty("tone", Tone.Name).OptionalProperty("className", ClassName).EndObject();
+        writer.OptionalProperty("tone", Tone.WireName()).OptionalProperty("className", ClassName).EndObject();
     }
 }

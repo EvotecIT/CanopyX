@@ -44,7 +44,7 @@ public sealed class HtmlWriterTests {
     public void ToHtmlFragment_CarriesTheViewDocumentWithoutAssets() {
         var view = SampleDocuments.FullView();
 
-        var html = view.ToHtmlFragment(new CanopyHtmlOptions { Theme = CanopyTheme.Dark, Height = "70vh" });
+        var html = view.ToHtmlFragment(new CanopyHtmlOptions { Theme = ThemeMode.Dark, Height = "70vh" });
 
         Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"dark\" id=\"" + view.Id + "\" data-cx-height=\"70vh\">", html);
         Assert.Equal(view.ToJson(), ConfigOf(html));

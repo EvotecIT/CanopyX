@@ -20,8 +20,8 @@ using CanopyX.Html;
 
 CanopyMatrix Capture(string state) {
     var view = new CanopyMatrix("services", "Service health");
-    view.State("waiting", "Waiting", CanopyTone.Warning, CanopyMatrixSymbol.Clock, attention: true)
-        .State("ready", "Ready", CanopyTone.Success, CanopyMatrixSymbol.Check);
+    view.State("waiting", "Waiting", Tone.Warning, CanopyMatrixSymbol.Clock, attention: true)
+        .State("ready", "Ready", Tone.Success, CanopyMatrixSymbol.Check);
     view.Rows.Item("search", "Search");
     view.Columns.Item("east", "East");
     view.Set("search", "east", state);

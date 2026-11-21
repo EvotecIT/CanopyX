@@ -13,13 +13,13 @@ namespace SiteDemos;
 internal static class ViewDemos {
     /// <summary>Writes the pages and returns a one-line summary of each, keyed by the view id the site uses.</summary>
     internal static Dictionary<string, string> Write(string demos) {
-        CanopyHtmlOptions Options(string title) => new CanopyHtmlOptions { Title = "CanopyX " + title, Theme = CanopyTheme.Auto, Height = "100vh" };
+        CanopyHtmlOptions Options(string title) => new CanopyHtmlOptions { Title = "CanopyX " + title, Theme = ThemeMode.Auto, Height = "100vh" };
         var calendar = CalendarExample.Create().View;
         calendar.SaveHtmlPage(Path.Combine(demos, "calendar.html"), Options("operations calendar"));
         var timeline = CalendarTimelineExample.Create();
         timeline.SaveHtmlPage(Path.Combine(demos, "timeline.html"), Options("resource timeline"));
         var matrix = MatrixExamples.Services();
-        matrix.SaveHtmlPage(Path.Combine(demos, "matrix.html"), new CanopyHtmlOptions { Title = "CanopyX services by server", Theme = CanopyTheme.Auto });
+        matrix.SaveHtmlPage(Path.Combine(demos, "matrix.html"), new CanopyHtmlOptions { Title = "CanopyX services by server", Theme = ThemeMode.Auto });
         var board = BoardExample.Create();
         board.SaveHtmlPage(Path.Combine(demos, "board.html"), Options("migration board"));
         var plan = PlanExample.Create();

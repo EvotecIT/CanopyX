@@ -187,9 +187,9 @@ internal static partial class ViewSnippets {
 
         static CanopyMatrix Health(int step) {
             var matrix = new CanopyMatrix("rollout", "Service health over time");
-            matrix.State("waiting", "Waiting", CanopyTone.Warning,
+            matrix.State("waiting", "Waiting", Tone.Warning,
                     CanopyMatrixSymbol.Clock, attention: true)
-                .State("ready", "Ready", CanopyTone.Success, CanopyMatrixSymbol.Check);
+                .State("ready", "Ready", Tone.Success, CanopyMatrixSymbol.Check);
             matrix.Columns.Item("east", "East").Item("west", "West");
             var services = new[] { "API", "Search", "Cache" };
             for (var i = 0; i < services.Length; i++) {
@@ -224,7 +224,7 @@ internal static partial class ViewSnippets {
         var route = new CanopyPathChain("standard", "Standard approval");
         route.Hops.Add(new CanopyPathHop("request", "Request prepared"));
         route.Hops.Add(new CanopyPathHop("review", "Two reviewers") {
-            Badges = { new CanopyBadge("Required", CanopyTone.Info) }
+            Badges = { new CanopyBadge("Required", Tone.Info) }
         });
         route.Hops.Add(new CanopyPathHop("approve", "Approval recorded"));
         steps.Path.Chains.Add(route);

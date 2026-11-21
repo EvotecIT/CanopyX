@@ -114,7 +114,7 @@ internal sealed class CanopyFormatEvaluator {
     private CanopyFormatPaint? Resolve(CanopyFormatRule rule, CanopyGridRow row) {
         var style = rule.Style;
         var paint = new CanopyFormatPaint { Tone = style.Tone, Emphasis = style.Emphasis == CanopyFormatEmphasis.Fill ? (CanopyFormatEmphasis?)null : style.Emphasis,
-            Icon = style.Icon, Badge = style.Badge, Cue = style.Cue, ClassName = style.ClassName, Css = style.Css.Count > 0 ? style.Css : null };
+            Icon = style.IconToken, Badge = style.Badge, Cue = style.Cue, ClassName = style.ClassName, Css = style.Css.Count > 0 ? style.Css : null };
         if (!style.DrawsValue) return paint;
         if (!(Number(row, rule.Column!) is double value)) return null;
         _stats.TryGetValue(rule.Column!, out var range);
@@ -122,10 +122,10 @@ internal sealed class CanopyFormatEvaluator {
             var low = style.Bar.Minimum ?? Math.Min(0, range?.Min ?? 0);
             var high = style.Bar.Maximum ?? range?.Max ?? low + 1;
             paint.Bar = high > low ? Math.Max(0, Math.Min(1, (value - low) / (high - low))) : 0;
-            paint.BarTone = style.Bar.Tone.Name != null ? style.Bar.Tone : style.Tone.Name != null ? style.Tone : CanopyTone.Info;
+            paint.BarTone = style.Bar.Tone.WireName() != null ? style.Bar.Tone : style.Tone.WireName() != null ? style.Tone : Tone.Info;
             paint.BarValue = style.Bar.ShowValue; paint.Tone = default;
         } else if (style.Scale != null) {
-            var stops = new List<(double At, CanopyTone Tone)>();
+            var stops = new List<(double At, Tone Tone)>();
             foreach (var stop in style.Scale.Stops) {
                 double? at = stop.Type == CanopyFormatScaleStopType.Number ? stop.Value : range == null ? null : stop.Type == CanopyFormatScaleStopType.Minimum ? range.Value.Min :
                     stop.Type == CanopyFormatScaleStopType.Maximum ? range.Value.Max : range.Value.Min + (range.Value.Max - range.Value.Min) * stop.Value!.Value / 100;
@@ -143,7 +143,7 @@ internal sealed class CanopyFormatEvaluator {
             CanopyFormatBand? band = null;
             foreach (var item in style.Bands) if (!item.UpperBound.HasValue || value <= item.UpperBound.Value) { band = item; break; }
             if (band == null) return null;
-            paint.Tone = band.Tone; paint.Icon = band.Icon ?? style.Icon; paint.Band = band.Label;
+            paint.Tone = band.Tone; paint.Icon = band.IconToken ?? style.IconToken; paint.Band = band.Label;
         }
         return paint;
     }

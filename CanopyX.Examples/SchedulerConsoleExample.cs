@@ -15,12 +15,12 @@ namespace CanopyX.Examples;
 /// filters the jobs grid through the linked-views API. Every action is a proposal the page's mock scheduler answers.
 /// </summary>
 internal static class SchedulerConsoleExample {
-    private static readonly IReadOnlyDictionary<string, CanopyTone> JobTones = new Dictionary<string, CanopyTone> {
-        ["Scheduled"] = CanopyTone.Success, ["Running"] = CanopyTone.Info, ["Paused"] = CanopyTone.Warning,
-        ["Error"] = CanopyTone.Danger, ["Read-only"] = CanopyTone.Neutral
+    private static readonly IReadOnlyDictionary<string, Tone> JobTones = new Dictionary<string, Tone> {
+        ["Scheduled"] = Tone.Success, ["Running"] = Tone.Info, ["Paused"] = Tone.Warning,
+        ["Error"] = Tone.Danger, ["Read-only"] = Tone.Neutral
     };
-    private static readonly IReadOnlyDictionary<string, CanopyTone> RunTones = new Dictionary<string, CanopyTone> {
-        ["Succeeded"] = CanopyTone.Success, ["Failed"] = CanopyTone.Danger, ["Running"] = CanopyTone.Info
+    private static readonly IReadOnlyDictionary<string, Tone> RunTones = new Dictionary<string, Tone> {
+        ["Succeeded"] = Tone.Success, ["Failed"] = Tone.Danger, ["Running"] = Tone.Info
     };
     private static readonly CanopyGridNumberFormat Seconds = new(1, 1, suffix: " s");
 
@@ -29,7 +29,7 @@ internal static class SchedulerConsoleExample {
         now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
         var data = new SchedulerConsoleData(now);
         var template = Resource("CanopyX.Examples.Templates.scheduler-console.html");
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var document = new CanopyHtmlDocument();
             CanopyHtmlOptions Options(string? height, params string[] parts) {
                 var options = new CanopyHtmlOptions { Theme = theme, Height = height, Document = document };
@@ -48,12 +48,12 @@ internal static class SchedulerConsoleExample {
                 .Replace("{{script}}", CanopyHtmlAssets.GetScript(CanopyRuntime.ReportingGrid))
                 .Replace("{{ui-parts}}", string.Concat(CanopyHtmlAssets.GetParts(CanopyRuntime.ReportingGrid)
                     .Where(part => part.Name.StartsWith("ui-", StringComparison.Ordinal)).Select(part => part.Markup)))
-                .Replace("{{theme}}", theme == CanopyTheme.Dark ? "dark" : "light")
+                .Replace("{{theme}}", theme == ThemeMode.Dark ? "dark" : "light")
                 .Replace("{{cards}}", Cards(data))
                 .Replace("{{flow}}", NewJob().ToHtmlFragment(Options(null)))
                 .Replace("{{tabs}}", tabs.ToHtmlFragment())
                 .Replace("{{host-data}}", HostData(data));
-            File.WriteAllText(Path.Combine(output, "scheduler-console" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"), ApplyTokenFallbacks(page));
+            File.WriteAllText(Path.Combine(output, "scheduler-console" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"), ApplyTokenFallbacks(page));
         }
     }
 

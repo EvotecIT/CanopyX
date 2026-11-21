@@ -11,9 +11,9 @@ public sealed class MatrixTests {
 
     private static CanopyMatrix Small() {
         var matrix = new CanopyMatrix("small", "Small matrix");
-        matrix.State("bad", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true)
-            .State("slow", "Slow", CanopyTone.Warning, CanopyMatrixSymbol.Clock, attention: true)
-            .State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        matrix.State("bad", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true)
+            .State("slow", "Slow", Tone.Warning, CanopyMatrixSymbol.Clock, attention: true)
+            .State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         matrix.Rows.Title = "Server";
         matrix.Rows.Attribute("site", "Site", facet: true);
         foreach (var id in new[] { "a", "b", "c", "d", "e", "f" }) matrix.Rows.Item(id, "Row " + id.ToUpperInvariant(), item => item.Value("site", string.CompareOrdinal(id, "d") < 0 ? "North" : "South"));
@@ -70,7 +70,7 @@ public sealed class MatrixTests {
     [Fact]
     public void Square_WritesOneAxisAColumnTitleAndNoSelfCells() {
         var matrix = new CanopyMatrix("square", "Replication") { Square = true };
-        matrix.State("bad", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true);
+        matrix.State("bad", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true);
         matrix.Rows.Title = "Destination";
         matrix.Columns.Title = "Source";
         matrix.Rows.Item("a", "A").Item("b", "B");
@@ -136,7 +136,7 @@ public sealed class MatrixTests {
         Fails(m => m.Rows.GroupBy = "missing", "groups by the undeclared attribute");
         Fails(m => m.Rows.SortBy = "missing", "neither #label, #total nor an attribute");
         Fails(m => m.Rows.Items[0].Values["site"] = 5, "does not fit its kind");
-        Fails(m => m.Rows.Items[0].Values["site"] = new CanopyCell("North") { Tone = CanopyTone.Danger }, "more than a value and its text");
+        Fails(m => m.Rows.Items[0].Values["site"] = new CanopyCell("North") { Tone = Tone.Danger }, "more than a value and its text");
         Fails(m => m.Rows.Items[0].Values["site"] = CanopyCell.StatusHistory(new[] { new CanopyCellPeriod("p", state: "Up") }), "more than a value and its text");
         Fails(m => m.Rows.Items[0].Label = "\ufeff", "visible text");
         Fails(m => m.Rows.Items[0].Href = "javascript:alert(1)", "not an http, https, mailto or relative address");
@@ -145,7 +145,7 @@ public sealed class MatrixTests {
         Fails(m => m.Diagonal = CanopyMatrixDiagonal.Data, "Only a square matrix has a diagonal");
         Fails(m => m.Cells[0].Text = new string('x', 65), "at most 64 characters");
         Fails(m => m.TotalStates.Add("nope"), "undeclared state");
-        Fails(m => { for (var i = 0; i < 34; i++) m.State("s" + i, "S" + i, CanopyTone.Info, CanopyMatrixSymbol.Dot); }, "1 to 36 states");
+        Fails(m => { for (var i = 0; i < 34; i++) m.State("s" + i, "S" + i, Tone.Info, CanopyMatrixSymbol.Dot); }, "1 to 36 states");
         Fails(m => { m.Square = true; }, "set only Columns.Title");
         Assert.Equal("#label", CanopyMatrix.SortByLabel);
     }
@@ -166,7 +166,7 @@ public sealed class MatrixTests {
     [Fact]
     public void AddCells_WritesACellPerRecord() {
         var matrix = new CanopyMatrix("m", "M");
-        matrix.State("up", "Up", CanopyTone.Success, CanopyMatrixSymbol.Check).State("down", "Down", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true);
+        matrix.State("up", "Up", Tone.Success, CanopyMatrixSymbol.Check).State("down", "Down", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true);
         matrix.Rows.Item("s1", "S1"); matrix.Columns.Item("dns", "DNS").Item("ntp", "NTP");
         matrix.AddCells(new[] { ("s1", "dns", true, 2), ("s1", "ntp", false, 0) }, x => x.Item1, x => x.Item2, x => x.Item3 ? "down" : "up", (x, cell) => cell.Value = x.Item4);
         Assert.Contains("\"cells\":[\"10\"]", matrix.ToJson());
@@ -182,7 +182,7 @@ public sealed class MatrixTests {
         Assert.Contains(">Total</th>", html);
         Assert.DoesNotContain("<script", html);
         var large = new CanopyMatrix("large", "Large");
-        large.State("bad", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true).State("ok", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+        large.State("bad", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true).State("ok", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
         for (var i = 0; i < 60; i++) { large.Rows.Item("r" + i, "Row " + i); large.Columns.Item("c" + i, "Col " + i); }
         for (var i = 0; i < 60; i++) large.Set("r" + i, "c" + i, i == 7 ? "bad" : "ok");
         var list = CanopyStaticHtml.RenderMatrix(large);

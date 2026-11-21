@@ -61,12 +61,12 @@ public sealed class ColumnValueContractTests {
     [Fact]
     public void StaticTree_UsesColumnTonesAndFirstNumericExplanationWithoutChangingValues() {
         var state = new CanopyColumn("state", "State");
-        state.ValueLabels.Add("z", "First"); state.ValueTones.Add("z", CanopyTone.Warning);
+        state.ValueLabels.Add("z", "First"); state.ValueTones.Add("z", Tone.Warning);
         var days = new CanopyColumn("days", "Days") { Kind = CanopyColumnKind.Number };
-        days.NumericTones.Add(new(CanopyNumericToneOperator.Below, 0, CanopyTone.Danger, "Overdue"));
-        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, CanopyTone.Warning, "Review soon"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.Below, 0, Tone.Danger, "Overdue"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, Tone.Warning, "Review soon"));
         var view = new CanopyTreeView("tones", "Tones") { Columns = { new CanopyColumn("name", "Name"), state, days } };
-        var row = new CanopyNode("a", "Record") { Cells = { ["state"] = new CanopyCell("z") { Tone = CanopyTone.Info }, ["days"] = -1 } };
+        var row = new CanopyNode("a", "Record") { Cells = { ["state"] = new CanopyCell("z") { Tone = Tone.Info }, ["days"] = -1 } };
         view.Roots.Add(row);
         var result = CanopyStaticHtml.RenderWithResult(view, new CanopyStaticHtmlOptions {
             Theme = new CanopyStaticTheme { Warning = "#123456", Danger = "#654321" }
@@ -80,8 +80,8 @@ public sealed class ColumnValueContractTests {
     [Fact]
     public void NumericRules_IgnoreTextBooleanAndNonfiniteTreeCells() {
         var days = new CanopyColumn("days", "Days") { Kind = CanopyColumnKind.Number };
-        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, CanopyTone.Warning, "Review soon"));
-        days.NumericTones.Add(new(CanopyNumericToneOperator.AtLeast, 14, CanopyTone.Danger, "Long interval"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, Tone.Warning, "Review soon"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtLeast, 14, Tone.Danger, "Long interval"));
         var view = new CanopyTreeView("mixed", "Mixed values") { Columns = { new CanopyColumn("name", "Name"), days } };
         var cells = new CanopyCell[] { new("12"), new("text"), new(true), new(double.NaN), new(double.PositiveInfinity), new(double.NegativeInfinity) };
         for (var i = 0; i < cells.Length; i++) view.Roots.Add(new CanopyNode("row-" + i, "Record") { Cells = { ["days"] = cells[i] } });
@@ -104,7 +104,7 @@ public sealed class ColumnValueContractTests {
     [Fact]
     public void CategoryMetadataTargetsStringTokensWithoutCapturingBooleans() {
         var column = new CanopyColumn("state", "State") { Sortable = true };
-        column.ValueLabels.Add("true", "String true"); column.ValueTones.Add("true", CanopyTone.Danger);
+        column.ValueLabels.Add("true", "String true"); column.ValueTones.Add("true", Tone.Danger);
         column.ValueOrder.Add("true"); column.ValueOrder.Add("false");
         var view = new CanopyDataGridView("typed", "Typed categories") { Columns = { column } };
         view.Rows.Add(new CanopyGridRow("boolean") { Cells = { ["state"] = true } });
@@ -120,10 +120,10 @@ public sealed class ColumnValueContractTests {
         var state = new CanopyColumn("state", "State") { Sortable = true, Wrap = true, MaxLines = 3 };
         state.ValueLabels.Add("fail", "Needs review");
         state.ValueOrder.Add("fail"); state.ValueOrder.Add("pass");
-        state.ValueTones.Add("fail", CanopyTone.Warning);
+        state.ValueTones.Add("fail", Tone.Warning);
         var days = new CanopyColumn("days", "Days") { Kind = CanopyColumnKind.Number };
-        days.NumericTones.Add(new(CanopyNumericToneOperator.Below, 0, CanopyTone.Danger, "Overdue"));
-        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, CanopyTone.Warning, "Review soon"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.Below, 0, Tone.Danger, "Overdue"));
+        days.NumericTones.Add(new(CanopyNumericToneOperator.AtMost, 14, Tone.Warning, "Review soon"));
         var view = new CanopyDataGridView("values", "Review queue") { Columns = { state, days } };
         view.Rows.Add(new CanopyGridRow("a") { Cells = { ["state"] = new CanopyCell("fail"), ["days"] = new CanopyCell(-1) } });
         var json = view.ToJson(); ProtocolSchema.AssertValid(json, "Column labels, order, numeric tones and wrapping");
@@ -158,7 +158,7 @@ public sealed class ColumnValueContractTests {
     [InlineData(CanopyNumericToneOperator.Above, 14, false)]
     [InlineData(CanopyNumericToneOperator.Above, 15, true)]
     public void NumericComparisonsKeepInclusiveAndExclusiveBoundaries(CanopyNumericToneOperator op, double value, bool matches) {
-        var rule = new CanopyNumericToneRule(op, 14, CanopyTone.Warning, "Threshold");
+        var rule = new CanopyNumericToneRule(op, 14, Tone.Warning, "Threshold");
         Assert.Equal(matches, rule.Matches(value)); Assert.False(rule.Matches(double.NaN));
     }
 

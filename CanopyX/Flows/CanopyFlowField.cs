@@ -90,6 +90,7 @@ public sealed partial class CanopyFlowField {
     public CanopyCellValidation Validation { get; } = new CanopyCellValidation();
 
     /// <summary>Gets the options of a select, choice, multiple-choice or lookup field (at most 1,000).</summary>
+    [PowerForge.Fluent.NoFluent]
     public IList<CanopyFlowOption> Options { get; } = new List<CanopyFlowOption>();
 
     /// <summary>Gets or sets how a choice field draws its options.</summary>

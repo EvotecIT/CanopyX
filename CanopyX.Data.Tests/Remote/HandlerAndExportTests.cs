@@ -183,7 +183,7 @@ public sealed class HandlerAndExportTests {
         var view = Fleet.View();
         var map = new CanopyColumnMap<Host>(view).Key(x => x.Id)
             .Column("name", x => x.Name)
-            .Column("memory", x => x.Memory, c => c.Cell(value => new CanopyCell(value) { Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture) + " GB", Tone = value < 1 ? CanopyTone.Warning : default }))
+            .Column("memory", x => x.Memory, c => c.Cell(value => new CanopyCell(value) { Text = value.ToString(System.Globalization.CultureInfo.InvariantCulture) + " GB", Tone = value < 1 ? Tone.Warning : default }))
             .Column("cores", x => x.Cores).Column("site", x => x.Site).Column("os", x => x.Os).Column("online", x => x.Online)
             .Column("lastSeen", x => x.LastSeen).Column("owner", x => x.Owner!.Name)
             .DecorateRows(row => row.ClassName = "fleet-row");

@@ -18,7 +18,7 @@ public sealed class GridFormattingTests {
     [InlineData("\\-")]
     public void UnsafePatterns_AreRejectedBeforeWritingTheView(string pattern) {
         var view = View();
-        view.FormatRules.Add(CanopyFormatRule.ForCell("pattern", "name", CanopyFormatStyle.Highlight(CanopyTone.Info),
+        view.FormatRules.Add(CanopyFormatRule.ForCell("pattern", "name", CanopyFormatStyle.Highlight(Tone.Info),
             CanopyFormatCondition.All(new CanopyFormatPredicate("name", CanopyFormatOperator.Matches, pattern))));
         Assert.Throws<InvalidOperationException>(() => view.Validate());
     }
@@ -36,20 +36,20 @@ public sealed class GridFormattingTests {
     public void TypedRules_WriteTheSchemaTheBrowserReads() {
         var view = View();
         view.Formatting = new CanopyFormatOptions { Legend = true, Editor = true };
-        var down = new CanopyFormatRule("down", CanopyFormatStyle.Highlight(CanopyTone.Danger)) {
+        var down = new CanopyFormatRule("down", CanopyFormatStyle.Highlight(Tone.Danger)) {
             Label = "Server down", Description = "The server is down", Target = CanopyFormatTarget.Row, StopIfTrue = true,
             When = CanopyFormatCondition.Any(new CanopyFormatPredicate("status", CanopyFormatOperator.Equal, "Down"), new CanopyFormatPredicate("status", CanopyFormatOperator.Like, "off*") { CaseSensitive = true })
         };
         down.When.Groups.Add(CanopyFormatCondition.None(new CanopyFormatPredicate("cpu", CanopyFormatOperator.Between, 0, 10) { ValueType = CanopyFormatValueType.Number, Culture = "de-DE" }));
         view.FormatRules.Add(down);
-        view.FormatRules.Add(CanopyFormatRule.ForCell("cpu", "cpu", CanopyFormatStyle.DataBar(CanopyTone.Info, 0, 100)));
-        var scale = CanopyFormatRule.ForCell("scale", "cpu", CanopyFormatStyle.ColorScale(CanopyFormatColorScale.ThreeColor(CanopyTone.Success, CanopyTone.Warning, CanopyTone.Danger)));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("cpu", "cpu", CanopyFormatStyle.DataBar(Tone.Info, 0, 100)));
+        var scale = CanopyFormatRule.ForCell("scale", "cpu", CanopyFormatStyle.ColorScale(CanopyFormatColorScale.ThreeColor(Tone.Success, Tone.Warning, Tone.Danger)));
         scale.Details = false; scale.Enabled = false;
         view.FormatRules.Add(scale);
-        var bands = new CanopyFormatRule("bands", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(50, CanopyTone.Success, "Fine"), new CanopyFormatBand(null, CanopyTone.Named("critical")) { Icon = "!" })) {
+        var bands = new CanopyFormatRule("bands", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(50, Tone.Success, "Fine"), new CanopyFormatBand(null, Tone.Named("critical")) { Mark = "!" })) {
             Column = "cpu", Target = CanopyFormatTarget.Columns, Columns = { "name", "cpu" } };
         view.FormatRules.Add(bands);
-        var css = CanopyFormatRule.ForCell("css", "seen", new CanopyFormatStyle { Emphasis = CanopyFormatEmphasis.Strong, Tone = CanopyTone.Muted, Icon = CanopyFormatIcons.Clock, Badge = "old", Cue = "stale", ClassName = "stale" },
+        var css = CanopyFormatRule.ForCell("css", "seen", new CanopyFormatStyle { Emphasis = CanopyFormatEmphasis.Strong, Tone = Tone.Muted, Icon = CanopyFormatIcons.Clock, Badge = "old", Cue = "stale", ClassName = "stale" },
             new CanopyFormatCondition(CanopyFormatJunction.All, CanopyFormatPredicate.CompareColumns("cpu", CanopyFormatOperator.GreaterThan, "cpu")) {
                 Predicates = { new CanopyFormatPredicate("seen", CanopyFormatOperator.OlderThanDays, 7) } });
         css.Style.Css["font-style"] = "italic";
@@ -87,35 +87,35 @@ public sealed class GridFormattingTests {
             var view = View(); arrange(view);
             Assert.ThrowsAny<Exception>(() => view.ToJson());
         }
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "missing", CanopyFormatStyle.Highlight(CanopyTone.Danger))));
-        Rejects(view => { view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Danger))); view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Info))); });
-        Rejects(view => view.FormatRules.Add(new CanopyFormatRule("row", CanopyFormatStyle.DataBar(CanopyTone.Info)) { Target = CanopyFormatTarget.Row, When = CanopyFormatCondition.Where("cpu", CanopyFormatOperator.IsNotNull) }));
-        Rejects(view => view.FormatRules.Add(new CanopyFormatRule("cell", new CanopyFormatStyle { Tone = CanopyTone.Info })));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "missing", CanopyFormatStyle.Highlight(Tone.Danger))));
+        Rejects(view => { view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Danger))); view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info))); });
+        Rejects(view => view.FormatRules.Add(new CanopyFormatRule("row", CanopyFormatStyle.DataBar(Tone.Info)) { Target = CanopyFormatTarget.Row, When = CanopyFormatCondition.Where("cpu", CanopyFormatOperator.IsNotNull) }));
+        Rejects(view => view.FormatRules.Add(new CanopyFormatRule("cell", new CanopyFormatStyle { Tone = Tone.Info })));
         Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle())));
         Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle { Icon = CanopyFormatIcons.None })));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle { Icon = "too long" })));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Info), CanopyFormatCondition.Where("cpu", CanopyFormatOperator.Equal, "many"))));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Info), CanopyFormatCondition.Where("cpu", CanopyFormatOperator.Between, 9, 1))));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "name", CanopyFormatStyle.Highlight(CanopyTone.Info), CanopyFormatCondition.Where("name", CanopyFormatOperator.Matches, "(unclosed"))));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "name", CanopyFormatStyle.Highlight(CanopyTone.Info),
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle { Mark = "too long" })));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info), CanopyFormatCondition.Where("cpu", CanopyFormatOperator.Equal, "many"))));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info), CanopyFormatCondition.Where("cpu", CanopyFormatOperator.Between, 9, 1))));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "name", CanopyFormatStyle.Highlight(Tone.Info), CanopyFormatCondition.Where("name", CanopyFormatOperator.Matches, "(unclosed"))));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "name", CanopyFormatStyle.Highlight(Tone.Info),
             new CanopyFormatCondition(CanopyFormatJunction.All, new CanopyFormatPredicate("name", CanopyFormatOperator.Equal, "x") { Culture = "not a culture!" }))));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "seen", CanopyFormatStyle.Highlight(CanopyTone.Info), CanopyFormatCondition.Where("seen", CanopyFormatOperator.WithinLastDays, 40000))));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(null, CanopyTone.Info), new CanopyFormatBand(5, CanopyTone.Danger)))));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(9, CanopyTone.Info), new CanopyFormatBand(5, CanopyTone.Danger)))));
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle { Scale = new CanopyFormatColorScale(CanopyFormatScaleStop.Minimum(CanopyTone.Info)) })));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "seen", CanopyFormatStyle.Highlight(Tone.Info), CanopyFormatCondition.Where("seen", CanopyFormatOperator.WithinLastDays, 40000))));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(null, Tone.Info), new CanopyFormatBand(5, Tone.Danger)))));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(9, Tone.Info), new CanopyFormatBand(5, Tone.Danger)))));
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle { Scale = new CanopyFormatColorScale(CanopyFormatScaleStop.Minimum(Tone.Info)) })));
         Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "cpu", new CanopyFormatStyle { Bar = new CanopyFormatDataBar { Minimum = 5, Maximum = 5 } })));
-        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Info)); rule.Style.Css["background"] = "url(x)"; view.FormatRules.Add(rule); });
-        Rejects(view => view.FormatRules.Add(new CanopyFormatRule("a", CanopyFormatStyle.Highlight(CanopyTone.Info)) { Target = CanopyFormatTarget.Columns }));
-        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Info)); rule.Style.Css["color"] = "red\" onmouseover=\"x"; view.FormatRules.Add(rule); });
-        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Info)); rule.Style.Css["background"] = "image-set(x 1x)"; view.FormatRules.Add(rule); });
-        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "name", CanopyFormatStyle.Highlight(CanopyTone.Info), CanopyFormatCondition.Where("name", CanopyFormatOperator.Matches, "(?i)web"))));
+        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info)); rule.Style.Css["background"] = "url(x)"; view.FormatRules.Add(rule); });
+        Rejects(view => view.FormatRules.Add(new CanopyFormatRule("a", CanopyFormatStyle.Highlight(Tone.Info)) { Target = CanopyFormatTarget.Columns }));
+        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info)); rule.Style.Css["color"] = "red\" onmouseover=\"x"; view.FormatRules.Add(rule); });
+        Rejects(view => { var rule = CanopyFormatRule.ForCell("a", "cpu", CanopyFormatStyle.Highlight(Tone.Info)); rule.Style.Css["background"] = "image-set(x 1x)"; view.FormatRules.Add(rule); });
+        Rejects(view => view.FormatRules.Add(CanopyFormatRule.ForCell("a", "name", CanopyFormatStyle.Highlight(Tone.Info), CanopyFormatCondition.Where("name", CanopyFormatOperator.Matches, "(?i)web"))));
         Assert.Throws<ArgumentException>(() => CanopyFormatPredicate.CompareColumns("name", CanopyFormatOperator.Like, "status"));
-        Assert.Throws<ArgumentException>(() => new CanopyFormatRule("-bad", CanopyFormatStyle.Highlight(CanopyTone.Info)));
+        Assert.Throws<ArgumentException>(() => new CanopyFormatRule("-bad", CanopyFormatStyle.Highlight(Tone.Info)));
         Assert.Throws<ArgumentException>(() => new CanopyFormatPredicate("cpu", CanopyFormatOperator.Between, 1));
         Assert.Throws<ArgumentException>(() => CanopyFormatPredicate.CompareColumns("cpu", CanopyFormatOperator.In, "cpu"));
-        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyFormatScaleStop.Percent(120, CanopyTone.Info));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CanopyFormatScaleStop.Percent(120, Tone.Info));
         var many = View();
-        for (var i = 0; i < 65; i++) many.FormatRules.Add(CanopyFormatRule.ForCell("r" + i, "cpu", CanopyFormatStyle.Highlight(CanopyTone.Info)));
+        for (var i = 0; i < 65; i++) many.FormatRules.Add(CanopyFormatRule.ForCell("r" + i, "cpu", CanopyFormatStyle.Highlight(Tone.Info)));
         Assert.Throws<InvalidOperationException>(() => many.Validate());
     }
 
@@ -124,7 +124,7 @@ public sealed class GridFormattingTests {
         var plain = View();
         Assert.DoesNotContain("formatting", CanopyHtmlAssets.GetRequiredParts(plain).Select(part => part.Name));
         var formatted = View();
-        formatted.FormatRules.Add(CanopyFormatRule.ForCell("hot", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Danger)));
+        formatted.FormatRules.Add(CanopyFormatRule.ForCell("hot", "cpu", CanopyFormatStyle.Highlight(Tone.Danger)));
         Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "csv-export", "formatting" }, CanopyHtmlAssets.GetRequiredParts(formatted).Select(part => part.Name));
         formatted.Formatting = new CanopyFormatOptions { Editor = true };
         Assert.Equal(new[] { "ui-overlays", "ui-menu", "presenters", "filter-editor", "export", "csv-export", "formatting", "format-editor" }, CanopyHtmlAssets.GetRequiredParts(formatted).Select(part => part.Name));
@@ -142,7 +142,7 @@ public sealed class GridFormattingTests {
     [Fact]
     public void FormatLabels_TravelWithGridsAndStayOutOfTrees() {
         var grid = View(); grid.Labels = CanopyLabels.Polish();
-        grid.FormatRules.Add(CanopyFormatRule.ForCell("hot", "cpu", CanopyFormatStyle.Highlight(CanopyTone.Danger)));
+        grid.FormatRules.Add(CanopyFormatRule.ForCell("hot", "cpu", CanopyFormatStyle.Highlight(Tone.Danger)));
         using var gridJson = JsonDocument.Parse(grid.ToJson());
         Assert.Equal("Formatowanie warunkowe", gridJson.RootElement.GetProperty("labels").GetProperty("formatRules").GetString());
         var tree = new CanopyTreeView("tree", "Drzewo") { Labels = CanopyLabels.Polish() };

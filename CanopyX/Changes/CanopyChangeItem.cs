@@ -66,7 +66,7 @@ public sealed class CanopyChangeItem {
     /// <param name="reason">Why it is flagged.</param>
     /// <param name="tone">The tone; warning when none is given.</param>
     /// <returns>The item.</returns>
-    public CanopyChangeItem Flag(string id, string label, string reason, CanopyTone tone = default) {
+    public CanopyChangeItem Flag(string id, string label, string reason, Tone tone = default) {
         Flags.Add(new CanopyChangeFlag(id, label, reason, tone));
         return this;
     }
@@ -78,7 +78,7 @@ public sealed class CanopyChangeItem {
     /// <param name="tone">The tone of the value.</param>
     /// <param name="note">Quiet text under the values, or null.</param>
     /// <returns>The item.</returns>
-    public CanopyChangeItem Fact(string label, string? before, string? after, CanopyTone tone = default, string? note = null) {
+    public CanopyChangeItem Fact(string label, string? before, string? after, Tone tone = default, string? note = null) {
         Facts.Add(new CanopyChangeFact(label) { Before = before, After = after, Tone = tone, Note = note });
         return this;
     }

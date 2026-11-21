@@ -79,7 +79,7 @@ defines (`--hfx-color-status-<name>-fg`). Tones follow the light, dark and print
 | Style | Draws |
 | --- | --- |
 | `tone` with `emphasis` | `fill` (default): a soft tint behind text in the tone's colour; `text`: the colour alone; `strong`: the fill in bold. On a row: a tint and an accent at its start. |
-| `icon` | A named icon (`up`, `down`, `check`, `cross`, `warning`, `info`, `dot`, `circle`, `triangle`, `square`, `diamond`, `flag`, `star`, `minus`, `plus`, `clock`) or up to four characters, in the tone's colour. |
+| `icon` | A named icon (`up`, `down`, `check`, `cross`, `warning`, `info`, `dot`, `circle`, `triangle`, `square`, `diamond`, `flag`, `star`, `minus`, `plus`, `clock`) or up to four characters, in the tone's colour. In C#, `Icon` takes a `CanopyFormatIcons` icon and `Mark` the characters. |
 | `badge` | A small pill after the value, in the tone. |
 | `cue` | Quiet text after the value, such as `stale`. |
 | `bar` | A data bar before the value: `{ minimum, maximum, tone, showValue }`. |
@@ -167,14 +167,14 @@ shows; automatic bounds are one pass over the rows when the rules change. The br
 ```csharp
 var view = new CanopyDataGridView("server-health", "Server health") { Formatting = new CanopyFormatOptions { Legend = true, Editor = true } };
 // columns and rows ...
-view.FormatRules.Add(CanopyFormatRule.ForRow("down", CanopyFormatStyle.Highlight(CanopyTone.Danger),
+view.FormatRules.Add(CanopyFormatRule.ForRow("down", CanopyFormatStyle.Highlight(Tone.Danger),
     CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Down")));
 view.FormatRules[0].Label = "Server down";
-view.FormatRules.Add(CanopyFormatRule.ForCell("cpu", "cpu", CanopyFormatStyle.DataBar(CanopyTone.Info, 0, 100)));
+view.FormatRules.Add(CanopyFormatRule.ForCell("cpu", "cpu", CanopyFormatStyle.DataBar(Tone.Info, 0, 100)));
 view.FormatRules.Add(CanopyFormatRule.ForCell("latency", "latency",
-    CanopyFormatStyle.ColorScale(CanopyFormatColorScale.ThreeColor(CanopyTone.Success, CanopyTone.Warning, CanopyTone.Danger))));
+    CanopyFormatStyle.ColorScale(CanopyFormatColorScale.ThreeColor(Tone.Success, Tone.Warning, Tone.Danger))));
 view.FormatRules.Add(CanopyFormatRule.ForCell("disk", "disk",
-    CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(10, CanopyTone.Danger, "Critical"), new CanopyFormatBand(null, CanopyTone.Warning, "Low")),
+    CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(10, Tone.Danger, "Critical"), new CanopyFormatBand(null, Tone.Warning, "Low")),
     CanopyFormatCondition.Where("disk", CanopyFormatOperator.LessThanOrEqual, 20)));
 ```
 

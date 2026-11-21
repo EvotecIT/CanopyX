@@ -19,7 +19,7 @@ public static class FleetGrid {
         view.Columns.Add(new CanopyColumn("site", "Site") { Sortable = true, Sizing = CanopyColumnSizing.Preferred(130, 100, 200) });
         view.Columns.Add(new CanopyColumn("os", "Operating system") {
             Sortable = true, Sizing = CanopyColumnSizing.Preferred(150, 120, 200),
-            Presenter = CanopyGridPresenter.Enum(new Dictionary<string, CanopyTone> { ["Windows"] = CanopyTone.Info, ["Linux"] = CanopyTone.Success, ["macOS"] = CanopyTone.Neutral, ["FreeBSD"] = CanopyTone.Warning })
+            Presenter = CanopyGridPresenter.Enum(new Dictionary<string, Tone> { ["Windows"] = Tone.Info, ["Linux"] = Tone.Success, ["macOS"] = Tone.Neutral, ["FreeBSD"] = Tone.Warning })
         });
         view.Columns.Add(new CanopyColumn("model", "Model") { Sortable = true, Sizing = CanopyColumnSizing.Preferred(140, 110, 220) });
         view.Columns.Add(new CanopyColumn("cores", "Cores") { Kind = CanopyColumnKind.Number, Sortable = true, Aggregatable = true, Sizing = CanopyColumnSizing.Preferred(90, 80, 120) });
@@ -81,7 +81,7 @@ public static class FleetGrid {
         .Column("team", machine => machine.Team!.Name);
 
     /// <summary>A complete page: the grid with the reporting runtime inline, plus the script that connects it to its endpoints.</summary>
-    public static string Page(CanopyDataGridView view, CanopyDataSchema schema, string endpoint, CanopyTheme theme, string? note = null, CanopyRecordSchema? records = null) {
+    public static string Page(CanopyDataGridView view, CanopyDataSchema schema, string endpoint, ThemeMode theme, string? note = null, CanopyRecordSchema? records = null) {
         // A grid with a record schema loads each machine's details from the record route when its drawer opens.
         var format = ("csv", "CSV from server (all matching rows)");
         var script = records != null ? CanopyRemoteScript.Element(records, endpoint, format) : CanopyRemoteScript.Element(schema, endpoint, format);

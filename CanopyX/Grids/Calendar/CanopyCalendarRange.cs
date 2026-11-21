@@ -43,8 +43,8 @@ public sealed class CanopyCalendarRange {
         set => _label = CheckLabel(value);
     }
 
-    /// <summary>Gets or sets the range's tone; <see cref="CanopyTone.None"/> (the default) shades a background range with the info tone and an unavailable range with neutral hatching.</summary>
-    public CanopyTone Tone { get; set; }
+    /// <summary>Gets or sets the range's tone; <see cref="Tone.None"/> (the default) shades a background range with the info tone and an unavailable range with neutral hatching.</summary>
+    public Tone Tone { get; set; }
 
     /// <summary>Gets or sets the resource id (a node id of the resource tree) the range belongs to; null for every resource and the calendar views.</summary>
     /// <exception cref="ArgumentException">The id is empty.</exception>
@@ -75,7 +75,7 @@ public sealed class CanopyCalendarRange {
 
     internal void WriteJson(CanopyJsonWriter writer) {
         writer.BeginObject().Property("start", CanopyCalendarValues.Iso(_start)).Property("end", CanopyCalendarValues.Iso(_end)).Property("label", _label)
-            .OptionalProperty("tone", Tone.Name).OptionalProperty("resource", _resource);
+            .OptionalProperty("tone", Tone.WireName()).OptionalProperty("resource", _resource);
         if (Kind == CanopyCalendarRangeKind.Unavailable) writer.Property("kind", "unavailable");
         writer.OptionalProperty("recurrence", Recurrence?.ToString());
         if (Inverse) writer.Property("inverse", true);

@@ -7,8 +7,8 @@ namespace CanopyX.Examples;
 /// <summary>A migration and remediation board using the grid's public columns, records, facets and edit proposals.</summary>
 internal static class BoardExample {
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            Create().SaveHtmlPage(Path.Combine(output, "board" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            Create().SaveHtmlPage(Path.Combine(output, "board" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Migration and remediation board", Theme = theme, Height = "820px" });
         }
         var html = Create().ToBoardStaticHtml(options: new CanopyStaticHtmlOptions { Caption = "Migration and remediation board" });
@@ -60,7 +60,7 @@ internal static class BoardExample {
                 Cells = {
                     ["title"] = titles[index], ["status"] = statuses[index], ["team"] = teams[index % teams.Length],
                     ["assignee"] = assignees[index % assignees.Length],
-                    ["priority"] = new CanopyCell(index % 4 == 0 ? "High" : "Normal") { Tone = index % 4 == 0 ? CanopyTone.Warning : CanopyTone.None },
+                    ["priority"] = new CanopyCell(index % 4 == 0 ? "High" : "Normal") { Tone = index % 4 == 0 ? Tone.Warning : Tone.None },
                     ["due"] = new DateTime(2026, 11, 2 + index, 0, 0, 0, DateTimeKind.Utc)
                 }
             });

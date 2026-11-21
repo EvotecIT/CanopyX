@@ -23,9 +23,9 @@ holds a state (a tone and a symbol, never colour alone), and optionally a value,
 
 ```csharp
 var matrix = new CanopyMatrix("replication", "Inbound replication") { Square = true };
-matrix.State("failing", "Failing", CanopyTone.Danger, CanopyMatrixSymbol.Cross, attention: true)
-    .State("delayed", "Delayed", CanopyTone.Warning, CanopyMatrixSymbol.Clock, attention: true)
-    .State("healthy", "Healthy", CanopyTone.Success, CanopyMatrixSymbol.Check);
+matrix.State("failing", "Failing", Tone.Danger, CanopyMatrixSymbol.Cross, attention: true)
+    .State("delayed", "Delayed", Tone.Warning, CanopyMatrixSymbol.Clock, attention: true)
+    .State("healthy", "Healthy", Tone.Success, CanopyMatrixSymbol.Check);
 matrix.Rows.Title = "Destination";
 matrix.Columns.Title = "Source";                       // a square matrix takes only a title for its columns
 matrix.Rows.Attribute("site", "Site", facet: true);

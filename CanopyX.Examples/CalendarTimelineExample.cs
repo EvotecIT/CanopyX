@@ -16,8 +16,8 @@ internal static class CalendarTimelineExample {
     private static readonly string[] Kinds = { "Incident", "Outage", "Maintenance", "Change" };
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-            var suffix = theme == CanopyTheme.Dark ? "-dark" : string.Empty;
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+            var suffix = theme == ThemeMode.Dark ? "-dark" : string.Empty;
             Create().SaveHtmlPage(Path.Combine(output, "calendar-timeline" + suffix + ".html"), new CanopyHtmlOptions { Title = "Incidents by host", Theme = theme, Height = "760px" });
             Resources().SaveHtmlPage(Path.Combine(output, "calendar-resources" + suffix + ".html"), new CanopyHtmlOptions { Title = "Engineers' day", Theme = theme, Height = "760px" });
         }
@@ -31,7 +31,7 @@ internal static class CalendarTimelineExample {
         view.Columns.Add(new CanopyColumn("title", "Event") { Sortable = true, RowHeader = true });
         view.Columns.Add(new CanopyColumn("kind", "Kind") {
             Sortable = true,
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Outage"] = CanopyTone.Danger, ["Incident"] = CanopyTone.Warning, ["Maintenance"] = CanopyTone.Info, ["Change"] = CanopyTone.Neutral })
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Outage"] = Tone.Danger, ["Incident"] = Tone.Warning, ["Maintenance"] = Tone.Info, ["Change"] = Tone.Neutral })
         });
         view.Columns.Add(new CanopyColumn("starts", "Starts") { Kind = CanopyColumnKind.DateTime, Sortable = true, Editable = true });
         view.Columns.Add(new CanopyColumn("ends", "Ends") { Kind = CanopyColumnKind.DateTime, Sortable = true, Editable = true });
@@ -63,14 +63,14 @@ internal static class CalendarTimelineExample {
         var calendar = view.Calendar = new CanopyCalendar("starts") {
             End = "ends", Title = "title", Status = "kind", Resource = "host", Recurrence = "rule", View = CanopyCalendarView.Timeline, Zoom = CanopyCalendarZoom.Day,
             Date = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc), FirstDay = DayOfWeek.Monday, Resources = new CanopyCalendarResources(tree) { Label = "Hosts", Width = 392 },
-            Capacity = new CanopyCalendarCapacity().Add(4, CanopyTone.Warning).Add(7, CanopyTone.Danger),
+            Capacity = new CanopyCalendarCapacity().Add(4, Tone.Warning).Add(7, Tone.Danger),
             Editing = new CanopyCalendarEditing { Overlap = false, AllowedResources = "allowed", SnapMinutes = 15 }
         };
         foreach (var item in new[] { CanopyCalendarView.Timeline, CanopyCalendarView.Month, CanopyCalendarView.Week, CanopyCalendarView.Agenda }) calendar.Views.Add(item);
         calendar.Resources.Aggregates["events"] = CanopyCalendarAggregate.Count;
         calendar.Resources.Aggregates["busy"] = CanopyCalendarAggregate.Busy;
         calendar.Resources.Aggregates["overlap"] = CanopyCalendarAggregate.Overlap;
-        calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 10, 26, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 31, 0, 0, 0, DateTimeKind.Utc), "Change freeze") { Tone = CanopyTone.Info });
+        calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 10, 26, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 31, 0, 0, 0, DateTimeKind.Utc), "Change freeze") { Tone = Tone.Info });
         calendar.Ranges.Add(new CanopyCalendarRange(new DateTime(2026, 10, 15, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 18, 0, 0, 0, DateTimeKind.Utc), "Hardware swap") { Resource = HostId(0, 0, 2), Kind = CanopyCalendarRangeKind.Unavailable });
         calendar.Availability.Add(new CanopyCalendarAvailability(TimeSpan.FromHours(6), TimeSpan.FromHours(22)));
 
@@ -110,7 +110,7 @@ internal static class CalendarTimelineExample {
         view.Columns.Add(new CanopyColumn("title", "Task") { Sortable = true, RowHeader = true });
         view.Columns.Add(new CanopyColumn("status", "Status") {
             Sortable = true,
-            Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["Urgent"] = CanopyTone.Danger, ["Scheduled"] = CanopyTone.Info, ["Done"] = CanopyTone.Success })
+            Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["Urgent"] = Tone.Danger, ["Scheduled"] = Tone.Info, ["Done"] = Tone.Success })
         });
         view.Columns.Add(new CanopyColumn("starts", "Starts") { Kind = CanopyColumnKind.DateTime, Sortable = true, Editable = true });
         view.Columns.Add(new CanopyColumn("ends", "Ends") { Kind = CanopyColumnKind.DateTime, Sortable = true, Editable = true });

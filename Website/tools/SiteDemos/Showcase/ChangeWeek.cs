@@ -78,7 +78,7 @@ internal static class ChangeWeek {
         grid.Column(x => x.Site, configure: column => column.Sortable = true);
         grid.Column(x => x.Risk, configure: column => {
             column.Sortable = true;
-            column.Presenter = CanopyGridPresenter.State(new Dictionary<string, CanopyTone> { ["High"] = CanopyTone.Danger, ["Medium"] = CanopyTone.Warning, ["Low"] = CanopyTone.Neutral });
+            column.Presenter = CanopyGridPresenter.State(new Dictionary<string, Tone> { ["High"] = Tone.Danger, ["Medium"] = Tone.Warning, ["Low"] = Tone.Neutral });
         });
         grid.Column(x => x.Owner, configure: column => column.Sortable = true);
         grid.Column(x => x.Starts, configure: column => { column.Sortable = true; column.Sizing = CanopyColumnSizing.Preferred(190); });
@@ -143,7 +143,7 @@ internal static class ChangeWeek {
     internal static string Write(string demos) {
         var folder = Path.Combine(demos, "oneview");
         Directory.CreateDirectory(folder);
-        CanopyHtmlOptions Options(string title) => new() { Title = "CanopyX " + title, Theme = CanopyTheme.Auto, Height = "100vh" };
+        CanopyHtmlOptions Options(string title) => new() { Title = "CanopyX " + title, Theme = ThemeMode.Auto, Height = "100vh" };
         Grid("one-grid", "Change records").View.SaveHtmlPage(Path.Combine(folder, "grid.html"), Options("change records"));
         Board().SaveHtmlPage(Path.Combine(folder, "board.html"), Options("changes by status"));
         Calendar("one-calendar", "Change calendar").View.SaveHtmlPage(Path.Combine(folder, "calendar.html"), Options("change calendar"));
@@ -160,7 +160,7 @@ internal static class ChangeWeek {
     private static string Report(bool dark) {
         var document = new CanopyHtmlDocument();
         CanopyHtmlOptions Options(string height) {
-            var options = new CanopyHtmlOptions { Theme = dark ? CanopyTheme.Dark : CanopyTheme.Light, Height = height, Document = document };
+            var options = new CanopyHtmlOptions { Theme = dark ? ThemeMode.Dark : ThemeMode.Light, Height = height, Document = document };
             options.Parts.Add("link");
             return options;
         }

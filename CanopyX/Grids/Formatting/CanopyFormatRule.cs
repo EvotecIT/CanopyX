@@ -57,6 +57,7 @@ public sealed class CanopyFormatRule {
     public CanopyFormatTarget Target { get; set; }
 
     /// <summary>Gets the columns a <see cref="CanopyFormatTarget.Columns"/> rule paints.</summary>
+    [PowerForge.Fluent.Child("PaintColumn")]
     public IList<string> Columns { get; } = new List<string>();
 
     /// <summary>Gets or sets whether the formatting follows the column into the record drawer and the phone's hidden fields. Defaults to true.</summary>

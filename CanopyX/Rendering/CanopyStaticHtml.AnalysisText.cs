@@ -11,7 +11,7 @@ public static partial class CanopyStaticHtml {
         var errors = new HashSet<string>(StringComparer.Ordinal);
         foreach (var row in rows) foreach (var column in columns) {
             if (column.Calculation == null || !row.Cells.TryGetValue(column.Id, out var cell) || cell == null ||
-                cell.Tone != CanopyTone.Danger || cell.Title == null || !(cell.Text is string marker) || !marker.StartsWith("#", StringComparison.Ordinal)) continue;
+                cell.Tone != Tone.Danger || cell.Title == null || !(cell.Text is string marker) || !marker.StartsWith("#", StringComparison.Ordinal)) continue;
             errors.Add(marker + ": " + cell.Title);
         }
         if (errors.Count == 0) return;

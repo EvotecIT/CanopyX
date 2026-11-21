@@ -53,7 +53,7 @@ internal static class FileLayout {
             var rest = files.Skip(maxFiles).ToList();
             var more = new CanopyNode("m:" + path, string.Format(CultureInfo.InvariantCulture, "{0:N0} more files", rest.Count)) { Kind = "more" };
             more.Cells["size"] = Size(rest.Sum(item => item.Length));
-            more.Cells["holds"] = new CanopyCell("Same kind as the files above") { Tone = CanopyTone.Muted };
+            more.Cells["holds"] = new CanopyCell("Same kind as the files above") { Tone = Tone.Muted };
             node.Children.Add(more);
         }
 
@@ -63,7 +63,7 @@ internal static class FileLayout {
         node.Data["files"] = count.ToString(CultureInfo.InvariantCulture);
         var folderRole = Describe(path, folder.Name);
         if (path.Length == 0) {
-            node.Badges.Add(new CanopyBadge(string.Format(CultureInfo.InvariantCulture, count == 1 ? "{0:N0} file" : "{0:N0} files", count), CanopyTone.Info));
+            node.Badges.Add(new CanopyBadge(string.Format(CultureInfo.InvariantCulture, count == 1 ? "{0:N0} file" : "{0:N0} files", count), Tone.Info));
         } else if (folderRole != null) {
             node.Cells["holds"] = folderRole;
         }

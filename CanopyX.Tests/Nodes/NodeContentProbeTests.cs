@@ -58,17 +58,17 @@ public sealed class NodeContentProbeTests {
         // A directory report of 500,000 rows by 20 columns holds ten million cells; most carry a value and nothing else.
         var cells = new CanopyCell[100_000];
         var text = "value";
-        cells[0] = new CanopyCell(text) { Tone = CanopyTone.None, Text = null, SortKey = null };
+        cells[0] = new CanopyCell(text) { Tone = Tone.None, Text = null, SortKey = null };
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < cells.Length; index++) {
-            cells[index] = new CanopyCell(text) { Tone = CanopyTone.None, Text = null, SortKey = null };
+            cells[index] = new CanopyCell(text) { Tone = Tone.None, Text = null, SortKey = null };
         }
 
         var perCell = (GC.GetAllocatedBytesForCurrentThread() - before) / (double)cells.Length;
         // The optional members (text, tooltip, tone, badges, sort key, structured values) take room only once set.
         Assert.True(perCell <= 40, "A plain cell takes " + perCell + " bytes.");
-        var toned = new CanopyCell(text) { Tone = CanopyTone.Danger, Title = "Why" };
-        Assert.Equal(CanopyTone.Danger, toned.Tone);
+        var toned = new CanopyCell(text) { Tone = Tone.Danger, Title = "Why" };
+        Assert.Equal(Tone.Danger, toned.Tone);
         Assert.Equal("Why", toned.Title);
         Assert.Null(cells[0].Text);
     }

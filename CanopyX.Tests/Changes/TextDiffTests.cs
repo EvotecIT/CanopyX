@@ -88,7 +88,7 @@ public sealed class TextDiffTests {
         diff.Path = "Scripts/map-drives.ps1";
         diff.BeforeTitle = "FS01";
         diff.Layout = CanopyDiffLayout.Inline;
-        diff.Notes.Add(new CanopyChangeNote("Line endings changed.", CanopyTone.Warning));
+        diff.Notes.Add(new CanopyChangeNote("Line endings changed.", Tone.Warning));
         diff.Labels = CanopyLabels.Polish();
         var json = diff.ToJson();
         ProtocolSchema.AssertValid(json, "Diff writer");

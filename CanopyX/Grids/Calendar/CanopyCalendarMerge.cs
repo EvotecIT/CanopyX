@@ -9,11 +9,11 @@ namespace CanopyX;
 /// instance keeps the first owner's colour and writes <c>"merge": true</c>.
 /// </summary>
 public sealed class CanopyCalendarMerge {
-    /// <summary>Gets or sets the tone of merged events, a "shared" colour of their own; <see cref="CanopyTone.None"/> (the default) keeps the first owner's.</summary>
-    public CanopyTone Tone { get; set; }
+    /// <summary>Gets or sets the tone of merged events, a "shared" colour of their own; <see cref="Tone.None"/> (the default) keeps the first owner's.</summary>
+    public Tone Tone { get; set; }
 
     internal void WriteJson(CanopyJsonWriter writer) {
-        if (Tone.Name == null) { writer.Boolean(true); return; }
-        writer.BeginObject().Property("tone", Tone.Name).EndObject();
+        if (Tone.WireName() == null) { writer.Boolean(true); return; }
+        writer.BeginObject().Property("tone", Tone.WireName()).EndObject();
     }
 }

@@ -35,7 +35,7 @@ revision.Ensure();
 var machines = FleetGrid.View("machines", "Machines", grouped: false);
 FleetRecords.Panel(machines);
 var grids = new[] {
-    (Path: "/", Endpoint: "/api/machines", View: machines, Note: (Func<CanopyTheme, string>?)null),
+    (Path: "/", Endpoint: "/api/machines", View: machines, Note: (Func<ThemeMode, string>?)null),
     (Path: "/by-site", Endpoint: "/api/machines-by-site", View: FleetGrid.View("machines-by-site", "Machines by site", grouped: true), Note: null),
     (Path: "/edit", Endpoint: "/api/machines-edit", View: FleetGrid.EditableView(), Note: FleetDemo.EditNote),
     (Path: "/by-site-os", Endpoint: "/api/machines-by-site-os", View: FleetGrid.GroupedView(), Note: FleetDemo.GroupNote)
@@ -71,8 +71,8 @@ foreach (var grid in grids) {
         // Real hosts name the policy that may write (options.WriteAuthorizationPolicy = "Inventory.Write"); the sample has no sign-in.
         options.AllowAnonymousWrites = true;
     }
-    var light = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, CanopyTheme.Light, grid.Note?.Invoke(CanopyTheme.Light), records?.Schema);
-    var dark = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, CanopyTheme.Dark, grid.Note?.Invoke(CanopyTheme.Dark), records?.Schema);
+    var light = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, ThemeMode.Light, grid.Note?.Invoke(ThemeMode.Light), records?.Schema);
+    var dark = FleetGrid.Page(grid.View, map.Schema, grid.Endpoint, ThemeMode.Dark, grid.Note?.Invoke(ThemeMode.Dark), records?.Schema);
     app.MapGet(grid.Path, (HttpContext http) => Results.Content(http.Request.Query["theme"] == "dark" ? dark : light, "text/html; charset=utf-8"));
 }
 

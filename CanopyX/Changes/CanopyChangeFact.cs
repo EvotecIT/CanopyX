@@ -22,7 +22,7 @@ public sealed class CanopyChangeFact {
     public string? After { get; set; }
 
     /// <summary>Gets or sets the tone of the value, such as warning for "Not signed".</summary>
-    public CanopyTone Tone { get; set; }
+    public Tone Tone { get; set; }
 
     /// <summary>Gets or sets quiet text under the values, such as the security identifiers behind account names; at most 500 characters.</summary>
     public string? Note { get; set; }

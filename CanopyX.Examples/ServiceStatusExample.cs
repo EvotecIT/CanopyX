@@ -10,21 +10,21 @@ internal static class ServiceStatusExample {
     private static readonly string[] States = { "up", "down", "degraded", "planned", "maintenance", "verified", "retired", "up" };
 
     internal static void Write(string output) {
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark })
-            Create().SaveHtmlPage(Path.Combine(output, "service-status" + (theme == CanopyTheme.Dark ? "-dark" : string.Empty) + ".html"),
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark })
+            Create().SaveHtmlPage(Path.Combine(output, "service-status" + (theme == ThemeMode.Dark ? "-dark" : string.Empty) + ".html"),
                 new CanopyHtmlOptions { Title = "Service status", Theme = theme });
     }
 
     internal static CanopyDataGridView Create() {
         var view = new CanopyDataGridView("service-status", "Service status") { RowAction = CanopyGridRowAction.Link, Selection = CanopySelectionMode.Single };
         view.Columns.Add(new CanopyColumn("name", "Service") { Presenter = CanopyGridPresenter.Link("address") });
-        var tones = new Dictionary<string, CanopyTone> {
-            ["up"] = CanopyTone.Success, ["down"] = CanopyTone.Danger, ["degraded"] = CanopyTone.Warning, ["verified"] = CanopyTone.Info,
-            ["maintenance"] = CanopyTone.Named("maintenance")
+        var tones = new Dictionary<string, Tone> {
+            ["up"] = Tone.Success, ["down"] = Tone.Danger, ["degraded"] = Tone.Warning, ["verified"] = Tone.Info,
+            ["maintenance"] = Tone.Named("maintenance")
         };
         // Values without a tone ("planned", "retired") are ordinary states: plain text in the normal colour, aligned with the pills.
         view.Columns.Add(new CanopyColumn("state", "State") {
-            Presenter = CanopyGridPresenter.Enum(tones).WithQuietTones(CanopyTone.Neutral).WithQuietStyle(CanopyGridQuietStyle.Plain)
+            Presenter = CanopyGridPresenter.Enum(tones).WithQuietTones(Tone.Neutral).WithQuietStyle(CanopyGridQuietStyle.Plain)
         });
         view.Columns.Add(new CanopyColumn("owner", "Owner"));
         view.Columns.Add(new CanopyColumn("address", "Address") { Hidden = true });

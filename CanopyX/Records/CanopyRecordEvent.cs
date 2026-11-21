@@ -38,7 +38,7 @@ public sealed class CanopyRecordEvent {
     public string? Kind { get; set; }
 
     /// <summary>Gets or sets the tone of the event's marker and kind chip.</summary>
-    public CanopyTone Tone { get; set; }
+    public Tone Tone { get; set; }
 
     /// <summary>Gets or sets a record the event links to; its summary then opens that record.</summary>
     public CanopyRecordRef? Ref { get; set; }
@@ -53,7 +53,7 @@ public sealed class CanopyRecordEvent {
         if ((Actor?.Length ?? 0) > 4096 || (Kind?.Length ?? 0) > 256 || Changes.Count > 512) throw new InvalidOperationException("An event's actor, kind and changes must fit their bounds.");
         writer.BeginObject();
         if (Time.HasValue) writer.Property("time", DateTime.SpecifyKind(Time.Value, DateTimeKind.Utc).ToString(Time.Value.Millisecond == 0 ? "yyyy-MM-dd'T'HH:mm:ss'Z'" : "yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture));
-        writer.Property("summary", _summary).OptionalProperty("actor", Actor).OptionalProperty("kind", Kind).OptionalProperty("tone", Tone.Name);
+        writer.Property("summary", _summary).OptionalProperty("actor", Actor).OptionalProperty("kind", Kind).OptionalProperty("tone", Tone.WireName());
         if (Ref != null) { writer.Name("ref"); Ref.WriteJson(writer); }
         if (Changes.Count > 0) {
             writer.Name("changes").BeginArray();

@@ -41,10 +41,10 @@ public sealed class GridFormattingEvaluationTests {
     [Fact]
     public void RowAndCellRules_PaintTintsAccentsIconsAndDescriptions() {
         var view = Health();
-        view.FormatRules.Add(new CanopyFormatRule("down", CanopyFormatStyle.Highlight(CanopyTone.Danger)) {
+        view.FormatRules.Add(new CanopyFormatRule("down", CanopyFormatStyle.Highlight(Tone.Danger)) {
             Label = "Server down", Target = CanopyFormatTarget.Row, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "down")
         });
-        view.FormatRules.Add(CanopyFormatRule.ForCell("degraded", "status", new CanopyFormatStyle { Tone = CanopyTone.Warning, Badge = "check" },
+        view.FormatRules.Add(CanopyFormatRule.ForCell("degraded", "status", new CanopyFormatStyle { Tone = Tone.Warning, Badge = "check" },
             CanopyFormatCondition.Where("status", CanopyFormatOperator.In, "Degraded", "Maintenance")));
         var html = CanopyStaticHtml.RenderGrid(view);
         var down = Row(html, 1);
@@ -62,9 +62,9 @@ public sealed class GridFormattingEvaluationTests {
     [Fact]
     public void BarsScalesAndBands_ReadTheRuleColumnWithAutomaticBounds() {
         var view = Health();
-        view.FormatRules.Add(CanopyFormatRule.ForCell("cpu", "cpu", CanopyFormatStyle.DataBar(CanopyTone.Info)));
-        view.FormatRules.Add(CanopyFormatRule.ForCell("latency", "latency", CanopyFormatStyle.ColorScale(CanopyFormatColorScale.TwoColor(CanopyTone.Success, CanopyTone.Danger))));
-        var bands = CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(30, CanopyTone.Success, "Low"), new CanopyFormatBand(60, CanopyTone.Warning, "Busy"), new CanopyFormatBand(null, CanopyTone.Danger, "Hot"));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("cpu", "cpu", CanopyFormatStyle.DataBar(Tone.Info)));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("latency", "latency", CanopyFormatStyle.ColorScale(CanopyFormatColorScale.TwoColor(Tone.Success, Tone.Danger))));
+        var bands = CanopyFormatStyle.ThresholdBands(new CanopyFormatBand(30, Tone.Success, "Low"), new CanopyFormatBand(60, Tone.Warning, "Busy"), new CanopyFormatBand(null, Tone.Danger, "Hot"));
         view.FormatRules.Add(new CanopyFormatRule("bands", bands) { Column = "cpu", Target = CanopyFormatTarget.Columns, Columns = { "name" } });
         var html = CanopyStaticHtml.RenderGrid(view);
         Assert.Contains("width:0%;", Row(html, 0));
@@ -109,8 +109,8 @@ public sealed class GridFormattingEvaluationTests {
     [Fact]
     public void Merge_TakesEachAspectFromTheFirstRule_AndStopIfTrueEndsTheRow() {
         var view = Health();
-        view.FormatRules.Add(CanopyFormatRule.ForCell("first", "status", new CanopyFormatStyle { Tone = CanopyTone.Danger, Icon = CanopyFormatIcons.Flag }));
-        view.FormatRules.Add(CanopyFormatRule.ForCell("second", "status", new CanopyFormatStyle { Tone = CanopyTone.Success, Cue = "later" }));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("first", "status", new CanopyFormatStyle { Tone = Tone.Danger, Icon = CanopyFormatIcons.Flag }));
+        view.FormatRules.Add(CanopyFormatRule.ForCell("second", "status", new CanopyFormatStyle { Tone = Tone.Success, Cue = "later" }));
         view.FormatRules.Add(new CanopyFormatRule("stop", new CanopyFormatStyle { Cue = "stop" }) { Column = "name", StopIfTrue = true, When = CanopyFormatCondition.Where("status", CanopyFormatOperator.Equal, "Down") });
         view.FormatRules.Add(CanopyFormatRule.ForCell("after", "name", new CanopyFormatStyle { Badge = "after" }));
         view.FormatRules.Add(new CanopyFormatRule("off", new CanopyFormatStyle { Badge = "off" }) { Column = "name", Enabled = false });

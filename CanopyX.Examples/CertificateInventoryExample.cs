@@ -114,17 +114,17 @@ internal static class CertificateInventoryExample {
     internal static void Write(string output) {
         var view = View();
         for (var i = 0; i < Count; i++) view.Rows.Add(CertificateRecords.Row(i, Count, withFields: true));
-        foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
+        foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
             var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX certificate inventory", Theme = theme });
-            File.WriteAllText(Path.Combine(output, "certificate-inventory" + (theme == CanopyTheme.Dark ? "-dark" : "") + ".html"), page.Replace("</body>", Plugin + "</body>"));
+            File.WriteAllText(Path.Combine(output, "certificate-inventory" + (theme == ThemeMode.Dark ? "-dark" : "") + ".html"), page.Replace("</body>", Plugin + "</body>"));
         }
 
         // Continuous records make the pinned section navigation and single-scroller drawer easy to explore.
         view.Record!.Tabs.Clear();
         foreach (var modal in new[] { false, true }) {
             view.RecordDrawerModal = modal;
-            foreach (var theme in new[] { CanopyTheme.Light, CanopyTheme.Dark }) {
-                var name = "certificate-drawer" + (modal ? "-modal" : "") + (theme == CanopyTheme.Dark ? "-dark" : "");
+            foreach (var theme in new[] { ThemeMode.Light, ThemeMode.Dark }) {
+                var name = "certificate-drawer" + (modal ? "-modal" : "") + (theme == ThemeMode.Dark ? "-dark" : "");
                 var page = view.ToHtmlPage(new CanopyHtmlOptions { Title = "CanopyX certificate drawer", Theme = theme });
                 File.WriteAllText(Path.Combine(output, name + ".html"), page.Replace("</body>", Plugin + "</body>"));
             }

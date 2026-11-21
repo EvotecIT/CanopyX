@@ -24,7 +24,7 @@ internal static partial class CanopyHtmlWriter {
         var values = new Dictionary<string, string>(StringComparer.Ordinal) {
             ["lang"] = WebUtility.HtmlEncode(options.Language),
             ["dir"] = DirectionAttribute(options.Direction),
-            ["colorScheme"] = options.Theme == CanopyTheme.Light ? "light" : options.Theme == CanopyTheme.Dark ? "dark" : "light dark",
+            ["colorScheme"] = options.Theme == ThemeMode.Light ? "light" : options.Theme == ThemeMode.Dark ? "dark" : "light dark",
             ["title"] = WebUtility.HtmlEncode(string.IsNullOrEmpty(options.Title) ? label : options.Title),
             ["head"] = Head(CanopyRuntime.DataGrid, options),
             ["body"] = ChangeFragment(json, viewId, fragmentOptions, requiredParts)

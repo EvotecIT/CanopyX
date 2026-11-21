@@ -19,7 +19,7 @@ var route = new CanopyPathChain("standard", "Standard approval");
 route.Hops.Add(new CanopyPathHop("request"));
 route.Hops.Add(new CanopyPathHop("review", "Receiving team review") {
     Flags = { CanopyPathFlag.Foreign },
-    Badges = { new CanopyBadge("Two reviewers", CanopyTone.Info) }
+    Badges = { new CanopyBadge("Two reviewers", Tone.Info) }
 });
 view.Path.Chains.Add(route);
 ```

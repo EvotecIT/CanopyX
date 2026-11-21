@@ -129,7 +129,7 @@ public sealed class GridOptionsContractTests {
     [Fact]
     public void NamedFilterHighlight_IsRejectedBecauseStaticAndBrowserHighlightsHaveNoPluginContext() {
         var filter = new CanopyGridFilter("amount", "isEven", new CanopyCell(2));
-        Assert.Throws<ArgumentException>(() => new CanopyGridHighlightRule(filter, CanopyTone.Danger));
+        Assert.Throws<ArgumentException>(() => new CanopyGridHighlightRule(filter, Tone.Danger));
     }
 
     [Fact]

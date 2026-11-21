@@ -9,7 +9,7 @@ public sealed class StaticPathTests {
         var chain = new CanopyPathChain("approval", "Route <&>");
         chain.Hops.Add(new CanopyPathHop("b", "Review <script>") {
             Flags = { CanopyPathFlag.Foreign, CanopyPathFlag.Disabled },
-            Badges = { new CanopyBadge("Two <&>", CanopyTone.Info) { Title = "Explain \"review\"" } }
+            Badges = { new CanopyBadge("Two <&>", Tone.Info) { Title = "Explain \"review\"" } }
         });
         chain.Hops.Add(new CanopyPathHop("a"));
         chain.Hops.Add(new CanopyPathHop("b") { Flags = { CanopyPathFlag.Cycle } });

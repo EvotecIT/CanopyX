@@ -34,19 +34,19 @@ public static partial class CanopyStaticHtml {
         CanopyColumn[] columns, CanopyStaticStyles styles, CanopyFormatOutcome? outcome, bool inner) {
         var printedCells = new List<string>(columns.Length);
         var rowRule = CanopyGridHighlights.Find(view, row, null);
-        var rowTone = rowRule != null && rowRule.Tone != CanopyTone.None ? rowRule.Tone : row.Tone;
+        var rowTone = rowRule != null && rowRule.Tone != Tone.None ? rowRule.Tone : row.Tone;
         var rowClasses = string.Join(" ", new[] { row.ClassName, rowRule?.ClassName, outcome?.Row?.ClassName }.Where(value => !string.IsNullOrEmpty(value)));
         html.Append("<tr");
         if (rowClasses.Length != 0) html.Append(" class=\"").Append(Encode(rowClasses)).Append('"');
         var rowFormat = FormatRowStyle(outcome, styles);
-        if (rowTone != CanopyTone.None || rowFormat.Length != 0) html.Append(" style=\"").Append(styles.ToneColor(rowTone)).Append(Encode(rowFormat)).Append('"');
+        if (rowTone != Tone.None || rowFormat.Length != 0) html.Append(" style=\"").Append(styles.ToneColor(rowTone)).Append(Encode(rowFormat)).Append('"');
         html.Append('>');
         var first = true;
         foreach (var column in columns) {
             var paint = outcome?.Cell(column.Id);
             row.Cells.TryGetValue(column.Id, out var cell);
             var rule = CanopyGridHighlights.Find(view, row, column.Id);
-            var tone = rule != null && rule.Tone != CanopyTone.None ? rule.Tone : column.ValueTone(cell);
+            var tone = rule != null && rule.Tone != Tone.None ? rule.Tone : column.ValueTone(cell);
             html.Append("<td style=\"").Append((inner ? styles.InnerCell : styles.Cell)).Append(Align(column)).Append(styles.ToneColor(tone)).Append(Encode(FormatCellStyle(paint, outcome?.Row, first, styles)));
             if (column.Wrap) html.Append("white-space:pre-wrap;overflow-wrap:anywhere;");
             html.Append('"');
@@ -71,7 +71,7 @@ public static partial class CanopyStaticHtml {
                 html.Append("<a href=\"").Append(Encode(url!)).Append('"');
                 if (presenter!.NewWindow) html.Append(" target=\"_blank\" rel=\"noopener noreferrer\"");
                 var inheritsColor = styles.ToneColor(tone).Length != 0 || styles.ToneColor(rowTone).Length != 0
-                    || paint?.Tone.Name != null || paint?.Css?.ContainsKey("color") == true || outcome?.Row?.Css?.ContainsKey("color") == true;
+                    || paint?.Tone.WireName() != null || paint?.Css?.ContainsKey("color") == true || outcome?.Row?.Css?.ContainsKey("color") == true;
                 html.Append(" style=\"").Append(inheritsColor ? "color:inherit;" : styles.Link).Append("\">");
             }
             if (template != null || !AppendComparisonCell(html, text, view, row, column, cell) && !AppendPresenterBlock(html, column, cell, displayed, text))
