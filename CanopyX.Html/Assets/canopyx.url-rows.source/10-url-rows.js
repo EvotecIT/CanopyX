@@ -3,23 +3,30 @@
   // with same-origin credentials, and every query after that works on those rows in the browser. A failed read fails the query,
   // and its retry reads again. source.refreshSeconds reads the rows again while the page is visible and no query is pending,
   // and runs the reader's query again over them.
-  function urlRowsSource(grid, outer) {
-    const view = grid.view, address = gridRowsAddress(view.source.url);
-    let inner = null, loading = null, timer = 0;
-    // A read has the grid's request deadline, so a Retry after a timeout starts a new request. The deadline rejects the read
-    // itself, whether or not the browser settles the aborted request.
-    const read = () => new Promise((resolve, reject) => {
-      const controller = new AbortController(), stop = () => controller.abort(), lifetime = grid.lifetime?.signal;
+  /**
+   * Reads and validates the rows at an address. The deadline rejects the read itself, whether or not the browser settles the
+   * aborted request, so a Retry after a timeout starts a new request. Shared datasets read their address with it too.
+   */
+  function readRowsAt(url, columns, timeoutMs, lifetime) {
+    const address = gridRowsAddress(url);
+    return new Promise((resolve, reject) => {
+      const controller = new AbortController(), stop = () => controller.abort();
       lifetime?.addEventListener("abort", stop, { once: true });
-      const timer = setTimeout(() => { stop(); reject(new Error("CanopyX: the rows at " + view.source.url + " did not arrive within " + grid.requestTimeoutMs + " ms.")); }, grid.requestTimeoutMs);
+      const timer = setTimeout(() => { stop(); reject(new Error("CanopyX: the rows at " + url + " did not arrive within " + timeoutMs + " ms.")); }, timeoutMs);
       (async () => {
         const response = await fetch(address, { credentials: "same-origin", headers: { Accept: "application/json" }, signal: controller.signal });
-        if (!response.ok) throw new Error("CanopyX: the rows at " + view.source.url + " could not be read (HTTP " + response.status + ").");
+        if (!response.ok) throw new Error("CanopyX: the rows at " + url + " could not be read (HTTP " + response.status + ").");
         const data = await response.json(), rows = Array.isArray(data) ? data : data && typeof data === "object" && Array.isArray(data.rows) ? data.rows : null;
-        if (!rows) throw new Error("CanopyX: the rows at " + view.source.url + " are not an array of rows.");
-        return validateGridRows(rows, view.columns, undefined, repairGridCell);
+        if (!rows) throw new Error("CanopyX: the rows at " + url + " are not an array of rows.");
+        return validateGridRows(rows, columns, undefined, repairGridCell);
       })().then(resolve, reject).finally(() => { clearTimeout(timer); lifetime?.removeEventListener("abort", stop); });
     });
+  }
+
+  function urlRowsSource(grid, outer) {
+    const view = grid.view;
+    let inner = null, loading = null, timer = 0;
+    const read = () => readRowsAt(view.source.url, view.columns, grid.requestTimeoutMs, grid.lifetime?.signal);
     // Every read is a new revision of the dataset, so selections and summaries of the previous rows never carry over.
     let generation = 0, base = null;
     const accept = rows => {

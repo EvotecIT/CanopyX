@@ -13,7 +13,7 @@ export * from "./plan.js";
 import type { GridViewIntentApi } from "./view-intents.js";
 export type { GridViewIntent, GridViewIntentPreview, GridViewIntentApi } from "./view-intents.js";
 import type { TreeGrid } from "./index.js";
-import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone, SearchHighlightOptions, LayoutOptions, LayoutState, ViewModeMethods } from "./protocol.js";
+import type { CanopyColumn, CanopyLabels, Cell, CellValue, SortDirection, TimeZone, SearchHighlightOptions, LayoutOptions, LayoutState, LayoutChange, ViewModeMethods } from "./protocol.js";
 import type { HostOptions, ExportFormat, ExportFormatOptions, ExportFormatResult, ExportMenuOptions, LinkedView } from "./hosts.js";
 import type { CanopyPlugin } from "./plugins.js";
 import type { GridEditorDefinition, GridValidation, GridEditingSettings, GridEditingOptions, GridEditingApi, GridCellValueChange,
@@ -536,13 +536,48 @@ export interface GridRowData {
 /** An inline grid whose rows the data part decodes from compact row data, chunk by chunk, after the first paint. */
 export interface CompactGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { source: { kind: "inline"; navigation?: "offset" }; rowData: GridRowData; rows?: never; }
 export interface HostGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> { calculatedColumnsEditable?: false; source: { kind: "host"; navigation?: "offset" }; rows?: never; }
+/**
+ * A grid that reads a shared dataset (docs/datasets.md): the rows of an inline or address dataset, read once for every view
+ * that names it, or a hosted dataset's shared source. It carries no rows; an inline one has no calculated or editable columns.
+ */
+export interface DatasetGridView<Row extends GridRow = GridRow> extends GridDefinition<GridQuery, Row> {
+  calculatedColumnsEditable?: false;
+  source: { kind: "inline" | "host"; navigation?: "offset"; dataset: string };
+  rows?: readonly never[];
+  rowData?: never;
+}
+/** A dataset column: the cell id and kind every view that shows it declares the same. */
+export interface DatasetColumn { id: string; kind: "text" | "number" | "datetime"; }
+/** A dataset the page's script defines: its rows, the address it reads them from, or a hosted dataset's shared source. */
+export type DatasetDefinition<Row extends GridRow = GridRow> =
+  | { id: string; kind?: "inline"; columns: readonly DatasetColumn[]; rows: readonly Row[] }
+  | { id: string; kind?: "inline"; columns: readonly DatasetColumn[]; url: string; refreshSeconds?: number }
+  | { id: string; kind: "host"; columns?: readonly DatasetColumn[]; source: GridSource<Row> };
+/** A shared dataset on the page. Views read its rows and never change them; changes go through it and every view follows. */
+export interface Dataset<Row extends GridRow = GridRow> {
+  readonly id: string;
+  /** Resolves once the rows are read, decoded and validated (at once for a hosted dataset); rejects for an unknown or invalid dataset. */
+  ready(): Promise<void>;
+  /** The rows once read, shared by every view: read them, never change them. Null before then and for a hosted dataset. */
+  getRows(): readonly Row[] | null;
+  /** The mounted views that read the dataset. */
+  views(): DataGrid<GridQuery, Row>[];
+  /** Replaces the rows of an inline or address dataset; every view runs its query again over them, at its place. */
+  setRows(rows: readonly Row[]): Promise<void>;
+  /** Reads an address dataset again, or reloads every view of a hosted dataset. */
+  refresh(): Promise<void>;
+}
+/** The dataset with an id: one the page declares (CanopyDataset.ToHtmlFragment) or one defineDataset defined. */
+export function dataset<Row extends GridRow = GridRow>(id: string): Dataset<Row>;
+/** Defines a dataset before its views mount, or gives a hosted dataset the page declares its source. */
+export function defineDataset<Row extends GridRow = GridRow>(definition: DatasetDefinition<Row>): Dataset<Row>;
 export interface CursorGridView<Row extends GridRow = GridRow> extends GridDefinition<GridCursorQuery, Row> {
   calculatedColumnsEditable?: false;
   source: { kind: "host"; navigation: "cursor" };
   presentation: "paged";
   rows?: never;
 }
-export type GridView<Row extends GridRow = GridRow> = InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> | HostGridView<Row> | CursorGridView<Row>;
+export type GridView<Row extends GridRow = GridRow> = InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> | HostGridView<Row> | CursorGridView<Row> | DatasetGridView<Row>;
 
 /** A complete requested window from one dataset revision, with full and matching counts. */
 export interface GridPage<Row extends GridRow = GridRow> {
@@ -900,7 +935,7 @@ interface GridHostBehavior<Q extends AcceptedGridQuery = GridQuery, Row extends 
     /** Reporting runtime only. Monotonic record counts and phases; late calls after cancellation are ignored. */
     reportProgress?: (phase: GridExportProgress["phase"], completed: number) => void }) => void | PromiseLike<void>;
   /** After a layout or density switch; the canopyx:layout event carries the same detail. */
-  onLayout?: (detail: LayoutState) => void | boolean;
+  onLayout?: (detail: LayoutChange) => void | boolean;
   /** After each finished match count and each move between matches; the canopyx:matches event carries the same detail. */
   onMatches?: (detail: { total: number; current: number; complete: boolean }) => void | boolean;
   /** Overrides the script-free print renderer. layout is stacked for cards and table otherwise; honor cancellation before delivery. */
@@ -992,7 +1027,7 @@ export type GridHostOptions<Q extends AcceptedGridQuery = GridQuery, Row extends
   }
 );
 /** A flat grid's options; Row types the rows, columns, facets, events and live API (createDataGrid<Row>). */
-export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQuery, Row> & ({ view: InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> } | { view: HostGridView<Row>; source: GridSource<Row> });
+export type GridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridQuery, Row> & ({ view: InlineGridView<Row> | AddressGridView<Row> | CompactGridView<Row> | DatasetGridView<Row> } | { view: HostGridView<Row>; source: GridSource<Row> });
 export type CursorGridOptions<Row extends GridRow = GridRow> = GridHostOptions<GridCursorQuery, Row> & { view: CursorGridView<Row>; source: GridCursorSource<Row> };
 
 /** Presentation controller. Selection uses stable IDs independently of cached or visible rows. Row (default GridRow) types its view, column methods and live API. */

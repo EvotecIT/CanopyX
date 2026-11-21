@@ -280,7 +280,9 @@ Optional `searchHighlight` (`true` or `{ enabled, search, filters, matchCase, ig
 search and filter hits in cells and the record drawer, with a match count and next/previous navigation
 ([search highlighting](search-highlight.md)). Optional `layout` (`{ mode, modes, density }`, modes `fit`, `scroll` and
 `cards`, densities `compact`, `default` and `comfortable`) adds the Layout menu ([layout modes](layout-modes.md)); a
-grid's `layout.density` takes the place of its `density`. Toolbar switches `matches` and `layout` leave their controls out.
+grid's `layout.density` takes the place of its `density`. A flat grid can also choose `auto`, which applies cards while the
+host is narrower than `layout.cardsBelow` (default 640 pixels) and `layout.wide` (`fit`, the default, or `scroll`) otherwise;
+offering it needs cards and the wide mode among `modes`. Toolbar switches `matches` and `layout` leave their controls out.
 Grid state carries the reader's choices as optional `layout: { mode, density }` and `highlight` (a boolean); a saved mode
 the view no longer offers falls back to the declared one, and state from a view without the option ignores them. Tree
 documents take the same two fields, with the fit and scroll modes, and tree state the same two choices. A flat grid's
@@ -577,6 +579,16 @@ properties or html payload (nested rows become a table of the nested view's visi
 ### Rows from an address
 
 An inline grid may read its rows from a JSON address instead of carrying them: `source: { kind: "inline", url, refreshSeconds? }` with an empty or absent `rows` (`CanopyGridSource.FromUrl(url, refresh)` in C#). It suits static pages that cannot host the [remote protocol](remote-dotnet.md). The address is `http:`, `https:` or relative to the page, at most 2,048 characters, without control characters, backslashes or a `//host` form; the browser reads it with same-origin credentials and `Accept: application/json`. It answers an array of rows, or an object with a `rows` array, in the view's [row format](#cell); the rows are checked and repaired like inline rows, and every query then runs on them in the browser. A failed read (an HTTP error, invalid JSON or invalid rows) fails the first query with a Retry, which reads again. `refreshSeconds` (5 to 86,400) reads the rows again while the page is visible and no query is pending, then runs the reader's query again over them. Files opened from disk cannot fetch: serve the page over HTTP. Calculated columns are not supported on such a grid yet; the writer and the browser refuse the combination. The `url-rows` part (`canopyx-url-rows.js`) carries the reader; single-file pages written by `CanopyX.Html` embed it with the `rich-cells` part, since the rows may hold markup.
+
+### Shared datasets
+
+A `dataset` document holds rows that several flat grids read by reference ([shared datasets](datasets.md)). It sits in a
+hidden `div.cx-dataset` element whose `data-cx-dataset` is its id, in a `script.cx-config`, with compact chunks in
+`application/x-canopyx-rows` scripts after it. It declares `columns` (`{ id, kind }`) and exactly one of `rows`, `rowData`
+(as below, without `base`) or `url` (with optional `refreshSeconds`); `kind: "host"` declares a hosted dataset with none of
+them. A grid names it with `source.dataset`, carries no rows, `rowData` or `url`, and an inline one has no calculated or
+editable columns. Each of the grid's columns must be a dataset column of the same kind. Its pages carry the revision
+`dataset-<n>`, which changes whenever the dataset's rows are replaced. The field is additive: older readers ignore it.
 
 ### Row data
 

@@ -85,6 +85,14 @@
     if (view.source.url !== undefined && (view.source.kind !== "inline" || view.rowData !== undefined || view.rows?.length || !gridRowsAddress(view.source.url)) ||
         view.source.refreshSeconds !== undefined && (view.source.url === undefined || !Number.isInteger(view.source.refreshSeconds) || view.source.refreshSeconds < 5 || view.source.refreshSeconds > 86400))
       throw new Error("CanopyX: invalid grid source address or refresh.");
+    // A grid over a shared dataset (52-grid-datasets.js) carries no rows and never writes into the rows other views read.
+    if (view.source.dataset !== undefined) {
+      requireIdentifier(view.source.dataset, "dataset ID");
+      const inline = view.source.kind === "inline";
+      if (view.source.url !== undefined || view.rowData !== undefined || view.rows?.length ||
+          inline && (view.calculatedColumnsEditable || view.editing !== undefined || view.columns.some(column => column?.calculation !== undefined || column?.editable)))
+        throw new Error("CanopyX: a grid over a shared dataset carries no rows, calculated columns or editing.");
+    }
     // Calculated columns rebuild the inline source over its rows; rows read from an address do not support them yet.
     if (view.source.url !== undefined && (view.calculatedColumnsEditable || view.columns.some(column => column?.calculation !== undefined)))
       throw new Error("CanopyX: a grid that reads its rows from an address cannot have calculated columns.");
@@ -97,7 +105,8 @@
     if (view.rowData !== undefined) {
       if (view.source.kind !== "inline" || view.rows !== undefined || !validStructuralCount(view.rowData?.count)) throw new Error("CanopyX: invalid grid rowData.");
     }
-    const rows = view.rowData === undefined && view.source.kind === "inline" ? validateGridRows(view.source.url !== undefined ? view.rows || [] : view.rows, view.columns, undefined, repairGridCell) : view.rows;
+    const shared = view.source.url !== undefined || view.source.dataset !== undefined;
+    const rows = view.rowData === undefined && view.source.kind === "inline" ? validateGridRows(shared ? view.rows || [] : view.rows, view.columns, undefined, repairGridCell) : view.rows;
     if (view.source.kind !== "inline" && view.rows !== undefined) throw new Error("CanopyX: host grids cannot discard inline rows.");
     if (view.query !== undefined) gridQuery(view, view.query);
     return { ...view, ...(rows === undefined ? {} : { rows }), rowHeight: view.rowHeight ?? (view.density === "compact" ? 32 : 40) };

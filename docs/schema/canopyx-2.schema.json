@@ -6,6 +6,7 @@
   "oneOf": [
     { "$ref": "#/$defs/view" },
     { "$ref": "#/$defs/grid" },
+    { "$ref": "#/$defs/dataset" },
     { "$ref": "#/$defs/matrix" },
     { "$ref": "#/$defs/diff" },
     { "$ref": "#/$defs/changes" },
@@ -590,6 +591,23 @@
         } }
       ]
     },
+    "dataset": {
+      "description": "A shared dataset (docs/datasets.md): rows several grids, pivots and record panels read by reference, written once in a hidden div.cx-dataset[data-cx-dataset] element with this document in its script.cx-config and compact chunks in application/x-canopyx-rows scripts. Exactly one of rows, rowData and url for an inline dataset; none for a hosted one, whose source the page's script gives with CanopyX.defineDataset.",
+      "type": "object", "required": ["protocol", "type", "id"], "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" }, "type": { "const": "dataset" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["inline", "host"], "description": "Default inline." },
+        "columns": { "type": "array", "items": { "type": "object", "required": ["id", "kind"], "additionalProperties": false,
+          "properties": { "id": { "$ref": "#/$defs/identifier" }, "kind": { "enum": ["text", "number", "datetime"] } } },
+          "description": "Each cell's id and kind; the rows are validated against them once. A view's columns are dataset columns of the same kind." },
+        "rows": { "type": "array", "items": { "$ref": "#/$defs/gridRow" } },
+        "rowData": { "$ref": "#/$defs/gridRowData" },
+        "url": { "type": "string", "minLength": 1, "maxLength": 2048, "description": "An http(s) or relative JSON address the rows are read from." },
+        "refreshSeconds": { "type": "integer", "minimum": 5, "maximum": 86400 }
+      },
+      "dependentRequired": { "refreshSeconds": ["url"] }
+    },
     "gridRowData": {
       "description": "Compact rows of an inline grid in place of rows: each row an array of its id (or { id, tone, className }) and its cells in the order of columns, without trailing empty cells, in chunks the runtime decodes one at a time. chunks is the number of application/x-canopyx-rows scripts inside the host element (or of sidecar files rows/<n>.js under base), or the chunks themselves: arrays of rows, or with encoding gzip base64 text of the gzip-compressed JSON of each chunk. ordered declares ordinal string order, preserving version-1 reader compatibility. The current runtime answers early windows only when this order also matches display identity order.",
       "type": "object", "required": ["version", "columns", "count", "chunks"], "additionalProperties": false,
@@ -708,9 +726,11 @@
       "description": "A Layout menu with the layout modes and densities the reader can choose; the choice is saved in state.",
       "type": "object", "additionalProperties": false,
       "properties": {
-        "mode": { "enum": ["fit", "scroll", "cards"], "description": "The starting layout; one of modes. Default fit, or the first of modes." },
-        "modes": { "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": { "enum": ["fit", "scroll", "cards"] }, "description": "The layouts offered, in menu order. Default every layout the view supports." },
-        "density": { "enum": ["compact", "default", "comfortable"], "description": "The starting density. Default the view's own density." }
+        "mode": { "enum": ["fit", "scroll", "cards", "auto"], "description": "The starting layout; one of modes. Default fit, or the first of modes. auto applies cards while the host is narrower than cardsBelow and wide otherwise." },
+        "modes": { "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": { "enum": ["fit", "scroll", "cards", "auto"] }, "description": "The layouts offered, in menu order. Default every layout the view supports, with auto first when mode is auto. auto needs cards and the wide layout among them." },
+        "density": { "enum": ["compact", "default", "comfortable"], "description": "The starting density. Default the view's own density." },
+        "cardsBelow": { "type": "integer", "minimum": 240, "maximum": 4096, "description": "The host width in pixels below which auto applies cards. Default 640." },
+        "wide": { "enum": ["fit", "scroll"], "description": "The layout auto applies at cardsBelow and wider. Default fit." }
       }
     },
     "treeLayoutOptions": {
@@ -911,8 +931,9 @@
         },
         "source": { "type": "object", "required": ["kind"], "additionalProperties": false, "properties": { "kind": { "enum": ["inline", "host"] }, "navigation": { "enum": ["offset", "cursor"], "description": "Known-count offset access or paged host cursor traversal. Absent preserves offset access." },
           "url": { "type": "string", "minLength": 1, "maxLength": 2048, "description": "An inline grid reads its rows from this http(s) or relative JSON address." },
-          "refreshSeconds": { "type": "integer", "minimum": 5, "maximum": 86400, "description": "How often the rows at url are read again." } },
-          "dependentRequired": { "refreshSeconds": ["url"] }, "if": { "required": ["url"] }, "then": { "properties": { "kind": { "const": "inline" } } } },
+          "refreshSeconds": { "type": "integer", "minimum": 5, "maximum": 86400, "description": "How often the rows at url are read again." },
+          "dataset": { "$ref": "#/$defs/identifier", "description": "The shared dataset the grid reads (docs/datasets.md): its rows, read once for every view, or a hosted dataset's source. The grid carries no rows or url." } },
+          "dependentRequired": { "refreshSeconds": ["url"] }, "if": { "required": ["url"] }, "then": { "properties": { "kind": { "const": "inline" } }, "not": { "required": ["dataset"] } } },
         "stateKey": { "type": "string" },
         "timeZone": { "enum": ["utc", "local"] },
         "labels": { "$ref": "#/$defs/view/properties/labels" },
@@ -922,7 +943,7 @@
       },
       "if": { "properties": {
  "source": { "properties": { "kind": { "const": "inline" } } } } },
-      "then": { "if": { "properties": { "source": { "required": ["url"] } } },
+      "then": { "if": { "properties": { "source": { "anyOf": [{ "required": ["url"] }, { "required": ["dataset"] }] } } },
         "then": { "not": { "required": ["rowData"] }, "properties": { "rows": { "maxItems": 0 } } },
         "else": { "oneOf": [{ "required": ["rows"], "not": { "required": ["rowData"] } }, { "required": ["rowData"], "not": { "required": ["rows"] } }] } },
       "else": { "not": { "anyOf": [{ "required": ["rows"] }, { "required": ["rowData"] }] } },
@@ -1042,7 +1063,7 @@
         "timeZone": { "enum": ["utc", "local"] },
         "selection": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/identifier" } },
         "scrollTop": { "type": "number", "minimum": 0, "maximum": 137438953408 },
-        "layout": { "type": "object", "required": ["mode", "density"], "additionalProperties": false, "properties": { "mode": { "enum": ["fit", "scroll", "cards"] }, "density": { "enum": ["compact", "default", "comfortable"] } } },
+        "layout": { "type": "object", "required": ["mode", "density"], "additionalProperties": false, "properties": { "mode": { "enum": ["fit", "scroll", "cards", "auto"] }, "density": { "enum": ["compact", "default", "comfortable"] } } },
         "highlight": { "type": "boolean", "description": "The reader's Highlight matches switch." },
         "facets": { "type": "object", "required": ["open"], "additionalProperties": false, "properties": { "open": { "type": "boolean" } }, "description": "Whether the reader left the facet panel open." },
         "collapsedGroups": { "type": "array", "maxItems": 10000, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 4096 } },
@@ -2839,6 +2860,7 @@
         "layoutFit": { "type": "string" },
         "layoutScroll": { "type": "string" },
         "layoutCards": { "type": "string" },
+        "layoutAuto": { "type": "string" },
         "layoutDensity": { "type": "string" },
         "layoutCompact": { "type": "string" },
         "layoutNormal": { "type": "string" },

@@ -14,7 +14,8 @@
       this.selectOnClick = this.view.selectOnClick === true;
       this.host = host; this.opts = options; do { this.id = "cx" + ++instanceSeq; } while (document.getElementById(this.id));
       this.lifetime = new AbortController(); this.dataLifetime = new AbortController();
-      this.source = options.source || (this.view.source.kind === "inline" ? this.view.source.url ? gridUrlRows(this) : this.view.rowData ? rowDataSource(this) : inlineGridSource(this.view) : null);
+      this.source = options.source || (this.view.source.dataset !== undefined ? gridDatasetSource(this) : this.view.source.kind === "inline" ?
+        this.view.source.url ? gridUrlRows(this) : this.view.rowData ? rowDataSource(this) : inlineGridSource(this.view) : null);
       if (!this.source || typeof this.source.query !== "function") throw new Error("CanopyX: host grids need a query source.");
       this.cursor = this.view.source.navigation === "cursor";
       if (this.source.navigation !== undefined && this.source.navigation !== (this.cursor ? "cursor" : "offset"))
@@ -31,7 +32,7 @@
         throw new Error("CanopyX: search delay must be an integer from 0 to 5000 milliseconds.");
       this.cachePageLimit = options.cachePageLimit === undefined ? 40 : options.cachePageLimit;
       // Decoding row data is local work, which no request deadline bounds unless the host sets one.
-      this.requestTimeoutMs = options.requestTimeoutMs === undefined ? rowData && !options.source ? 2147483647 : 30000 : options.requestTimeoutMs;
+      this.requestTimeoutMs = options.requestTimeoutMs === undefined ? (rowData || this.view.source.dataset !== undefined && this.view.source.kind === "inline") && !options.source ? 2147483647 : 30000 : options.requestTimeoutMs;
       if (!Number.isInteger(this.cachePageLimit) || this.cachePageLimit < 2 || this.cachePageLimit > 1000 ||
           !Number.isInteger(this.requestTimeoutMs) || this.requestTimeoutMs < 1 || this.requestTimeoutMs > 2147483647)
         throw new Error("CanopyX: invalid grid cache or request timeout.");

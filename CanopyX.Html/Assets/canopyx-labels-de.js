@@ -35,6 +35,7 @@ const labels = Object.freeze({
   layoutFit: "An Breite anpassen",
   layoutScroll: "Alle Spalten, seitlich scrollen",
   layoutCards: "Karten",
+  layoutAuto: "Automatisch",
   layoutDensity: "Dichte",
   layoutCompact: "Kompakt",
   layoutNormal: "Normal",

@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "02fbfd950fb61fc8",
+      "version": "386e5aca3dfabaed",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -137,7 +137,7 @@
     {
       "name": "ui-lightbox",
       "label": "UI lightbox",
-      "version": "9f0a99166f6e0872",
+      "version": "7802ba6bd1055e59",
       "script": "canopyx-ui-lightbox.js",
       "style": "canopyx-ui-lightbox.css",
       "runtimes": [
@@ -200,7 +200,7 @@
     {
       "name": "ui-rating",
       "label": "UI rating",
-      "version": "c149235f3e3f9768",
+      "version": "dcd2cc2938ee0e4d",
       "script": "canopyx-ui-rating.js",
       "style": "canopyx-ui-rating.css",
       "runtimes": [
@@ -216,7 +216,7 @@
     {
       "name": "ui-select",
       "label": "UI select",
-      "version": "d0fec7ec3e3b90e6",
+      "version": "66eba5cc02e48cbc",
       "script": "canopyx-ui-select.js",
       "style": "canopyx-ui-select.css",
       "runtimes": [
@@ -389,7 +389,7 @@
     {
       "name": "data",
       "label": "row data",
-      "version": "2f82c247c8686f42",
+      "version": "262ee22efa5ea012",
       "script": "canopyx-data.js",
       "runtimes": [
         "grid"
@@ -417,7 +417,7 @@
     {
       "name": "url-rows",
       "label": "rows from an address",
-      "version": "0524287da837c03e",
+      "version": "aeaf07fd1db60663",
       "script": "canopyx-url-rows.js",
       "runtimes": [
         "grid"
@@ -427,6 +427,21 @@
       ],
       "features": [
         "urlRows"
+      ]
+    },
+    {
+      "name": "datasets",
+      "label": "shared datasets",
+      "version": "ecbfec46ee2ae946",
+      "script": "canopyx-datasets.js",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "datasets"
       ]
     },
     {
@@ -772,7 +787,7 @@
     {
       "name": "matrix",
       "label": "matrix view",
-      "version": "aa72655ea53398fc",
+      "version": "41e1b03d23aa5909",
       "script": "canopyx-matrix.js",
       "style": "canopyx-matrix.css",
       "runtimes": [
@@ -795,7 +810,7 @@
     {
       "name": "changes",
       "label": "change views",
-      "version": "95d34415f59f021e",
+      "version": "efc65c5f579c4cc8",
       "script": "canopyx-changes.js",
       "style": "canopyx-changes.css",
       "runtimes": [
@@ -1100,7 +1115,7 @@
     {
       "name": "highlight",
       "label": "search highlighting",
-      "version": "6ed7632458745b10",
+      "version": "bb4b6482e468ce43",
       "script": "canopyx-highlight.js",
       "style": "canopyx-highlight.css",
       "runtimes": [
@@ -1118,7 +1133,7 @@
     {
       "name": "layouts",
       "label": "layout modes",
-      "version": "03d511fe8a01830e",
+      "version": "0dae1581f46020b0",
       "script": "canopyx-layouts.js",
       "style": "canopyx-layouts.css",
       "runtimes": [
@@ -1152,7 +1167,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "f61aa7e0856d0e57",
+      "version": "ac5f5d28cee14bef",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

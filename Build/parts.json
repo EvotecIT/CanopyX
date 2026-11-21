@@ -881,7 +881,7 @@
         "gridIdOrder",
         "gridInlineRevision"
       ],
-      "end": "GRID_DATA_IMPL.source = rowDataSource;",
+      "end": "Object.assign(GRID_DATA_IMPL, { source: rowDataSource, checkRowData, compactExpander, inflateRows });",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.data.source/10-row-data.js"
       ]
@@ -929,9 +929,42 @@
         "inlineGridSource",
         "gridRowsAddress"
       ],
-      "end": "GRID_URL_IMPL.source = urlRowsSource;",
+      "end": "GRID_URL_IMPL.source = urlRowsSource; GRID_URL_IMPL.read = readRowsAt;",
       "scripts": [
         "CanopyX.Html/Assets/canopyx.url-rows.source/10-url-rows.js"
+      ]
+    },
+    {
+      "name": "datasets",
+      "label": "shared datasets",
+      "runtimes": [
+        "grid"
+      ],
+      "views": [
+        "grid"
+      ],
+      "features": [
+        "datasets"
+      ],
+      "key": "GRID_DATASETS_IMPL",
+      "context": [
+        "GRID_DATASETS_IMPL",
+        "GRID_DATASET_DEFS",
+        "PROTOCOL",
+        "requireIdentifier",
+        "validateGridRows",
+        "repairGridCell",
+        "inlineGridSource",
+        "gridRowsAddress",
+        "gridYield",
+        "loadPart",
+        "GRID_DATA",
+        "GRID_DATA_IMPL",
+        "GRID_URL_ROWS",
+        "GRID_URL_IMPL"
+      ],
+      "scripts": [
+        "CanopyX.Html/Assets/canopyx.datasets.source/10-datasets.js"
       ]
     },
     {
@@ -2297,6 +2330,7 @@
         "toneOf",
         "watchFlyout",
         "densityRowHeight",
+        "layoutFor",
         "layoutAnchor",
         "layoutRows",
         "layoutApplyTree",
@@ -2342,6 +2376,7 @@
         "toneOf",
         "watchFlyout",
         "densityRowHeight",
+        "layoutFor",
         "layoutAnchor",
         "layoutRows",
         "layoutApplyTree",
