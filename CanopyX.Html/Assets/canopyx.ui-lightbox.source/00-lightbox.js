@@ -41,7 +41,7 @@ UI_IMPL.lightbox = (root, options = {}, signal) => {
   const dialog = h('dialog', 'cx-dialog cx-lightbox'), header = h('header', 'cx-lightbox-header'), title = h('h2', 'cx-lightbox-title');
   const position = h('span', 'cx-lightbox-position'), tools = h('div', 'cx-lightbox-tools'), level = h('span', 'cx-lightbox-zoom');
   const stage = h('div', 'cx-lightbox-stage'), caption = h('p', 'cx-lightbox-caption'), status = h('p', 'cx-lightbox-status');
-  const id = (root.id || 'cx-lightbox-' + Math.random().toString(36).slice(2)) + '-viewer';
+  const id = UI_TOOLS.id(root, 'cx-lightbox') + '-viewer';
   const button = (label, part, run) => {
     const element = h('button', 'cx-lightbox-button'); element.type = 'button'; element.dataset.cxPart = part;
     element.setAttribute('aria-label', label); element.title = label; element.addEventListener('click', run); return element;

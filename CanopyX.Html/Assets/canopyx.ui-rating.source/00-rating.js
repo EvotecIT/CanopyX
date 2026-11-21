@@ -10,7 +10,7 @@ UI_IMPL.rating = (root, options = {}, signal) => {
   let built = null, legend = null, inputs = [...root.querySelectorAll('input[type="radio"]')];
   // An empty element gets its group: a legend from options.label and one radio per step, named for form submission.
   if (!inputs.length) {
-    const name = options.name || (root.id || 'cx-rating-' + Math.random().toString(36).slice(2)) + '-value';
+    const name = options.name || UI_TOOLS.id(root, 'cx-rating') + '-value';
     built = h('span', 'cx-rating-options');
     if (root.localName !== 'fieldset') { root.setAttribute('role', 'radiogroup'); if (options.label) root.setAttribute('aria-label', options.label); }
     else if (options.label && !root.querySelector(':scope > legend')) { legend = h('legend'); setText(legend, options.label); root.prepend(legend); }

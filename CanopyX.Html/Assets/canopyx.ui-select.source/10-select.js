@@ -8,7 +8,7 @@ UI_IMPL.select = (root, options = {}, signal) => {
   if (!native) throw new Error('CanopyX: a select needs a <select> element.');
   const multiple = native.multiple, tags = options.tags ?? data.tags === 'true', search = tags || (options.search ?? data.search !== 'false');
   const max = Number(options.max ?? data.max ?? 0) || Infinity, minLength = Number(options.minLength ?? data.minLength ?? (search && (options.load || data.source || options.source) ? 1 : 0));
-  const renderIcon = options.renderIcon, loader = selectLoader(options, root), id = (native.id || 'cx-select-' + Math.random().toString(36).slice(2)) + '-combo';
+  const renderIcon = options.renderIcon, loader = selectLoader(options, root), id = UI_TOOLS.id(native, 'cx-select') + '-combo';
   let all = options.options ? options.options.map(selectOption) : selectReadNative(native), shown = [], active = -1, open = false, timer = 0, query = '';
   // The native select's selected values, matched by value so options.options may differ in order; a value they lack is kept.
   const written = () => new Map([...native.selectedOptions].filter(item => multiple || item.value !== '').map(item => {

@@ -1,6 +1,13 @@
   const uiFocusSelector = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
   Object.assign(UI_TOOLS, {
     labels: values => Object.assign({}, UI_LABELS, values),
+    /** The element's id, giving it the first free prefix-N when it has none; numbering follows page order, never chance. */
+    id(element, prefix) {
+      if (element.id) return element.id;
+      let next = 0, id;
+      do { id = prefix + "-" + ++next; } while (document.getElementById(id));
+      return (element.id = id);
+    },
     content: (element, value) => { if (value?.nodeType) element.replaceChildren(value); else hostHtml(element, value, null, "detail"); },
     emit: (root, prefix, name, detail, cancelable = false) => root.dispatchEvent(new CustomEvent("cx-" + prefix + ":" + name, { detail, bubbles: true, cancelable })),
     focusables: root => [...root.querySelectorAll(uiFocusSelector)].filter(element => element.checkVisibility() && !element.closest("[inert]")),
