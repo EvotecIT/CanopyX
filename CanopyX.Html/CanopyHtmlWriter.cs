@@ -73,10 +73,9 @@ internal static partial class CanopyHtmlWriter {
         }
 
         var height = string.IsNullOrEmpty(options.Height) ? null : ValidateCssLength(options.Height!);
-        if (height != null && options.Nonce == null) {
-            builder.Append(" style=\"height:").Append(WebUtility.HtmlEncode(height)).Append('"');
-        } else if (height != null) {
-            // A strict policy blocks style attributes; a nonced rule matched by the attribute gives the host its height instead.
+        if (height != null) {
+            // Never a style attribute, which a strict policy blocks: the runtime applies the height through the CSSOM, and with a
+            // nonce a rule matched by the attribute sizes the host before the runtime runs.
             builder.Append(" data-cx-height=\"").Append(WebUtility.HtmlEncode(height)).Append('"');
         }
 
@@ -85,7 +84,7 @@ internal static partial class CanopyHtmlWriter {
         if (height != null && options.Nonce != null) {
             // Explicit sizing also overrides the full-page and nested main-host stylesheet defaults.
             builder.Append("<style").Append(CanopyContentSecurity.Attribute(options.Nonce)).Append(">body .cx-host[data-canopyx-host][data-cx-height=\"").Append(height)
-                .Append("\"]{height:").Append(height).Append("}</style>");
+                .Append("\"]{height:").Append(height).Append(";--cx-height-rule:1}</style>");
         }
 
         return builder.ToString();

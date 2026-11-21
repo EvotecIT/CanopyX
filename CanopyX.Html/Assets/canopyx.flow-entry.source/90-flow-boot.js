@@ -42,7 +42,10 @@
   function mount(root, automatic) {
     const scope = root || document, created = [], selector = "[data-canopyx-host]:not([data-canopyx-mounted])";
     (scope.matches?.(selector) ? [scope] : scope.querySelectorAll(selector)).forEach(host => {
-      const config = host.querySelector("script.cx-config"), mode = host.getAttribute("data-cx-mount");
+      const config = host.querySelector("script.cx-config"), mode = host.getAttribute("data-cx-mount"), height = host.getAttribute("data-cx-height");
+      // The writer carries a fragment's height as data-cx-height, never a style attribute; without its nonced rule
+      // (--cx-height-rule) the height is set through the CSSOM, which a strict policy allows.
+      if (height && !host.style.height && !getComputedStyle(host).getPropertyValue("--cx-height-rule")) host.style.height = height;
       if (!config || automatic === true && mode === "manual") return;
       if (mode === "visible" && host !== scope && global.IntersectionObserver) return mountWhenVisible(host);
       watcher?.unobserve(host);

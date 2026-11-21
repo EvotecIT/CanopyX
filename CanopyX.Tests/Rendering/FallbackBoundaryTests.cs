@@ -150,8 +150,8 @@ public sealed class FallbackBoundaryTests {
         try {
             var view = View();
             var options = new CanopyHtmlOptions { AssetMode = CanopyAssetMode.External, AssetNaming = CanopyAssetNaming.Plain, AssetBaseUrl = assetUrl, Height = "100px" };
-            Assert.DoesNotContain("style=\"height:100px", view.ToHtmlPage(options));
-            Assert.Contains("style=\"height:100px", view.ToHtmlFragment(options));
+            Assert.DoesNotContain("data-cx-height=\"100px", view.ToHtmlPage(options));
+            Assert.Contains("data-cx-height=\"100px\"", view.ToHtmlFragment(options));
             view.SaveHtmlBundle(directory, options: options);
             Assert.True(File.Exists(Path.Combine(directory, assetUrl, "canopyx.js")));
         } finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }

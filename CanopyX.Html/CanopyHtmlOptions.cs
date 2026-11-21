@@ -114,7 +114,7 @@ public sealed class CanopyHtmlOptions {
     /// (<c>script-src 'self' 'nonce-…'; style-src 'self' 'nonce-…'</c>) would otherwise block carries it: the inline
     /// runtime script and stylesheet of a page, the script and stylesheet references of a page with external assets, the
     /// inert payloads of the optional parts, which the runtime inserts with the same nonce when it loads them, and the rule
-    /// that gives a fragment its <see cref="Height"/> in place of a <c>style</c> attribute. The view document is a JSON data
+    /// that gives a fragment its <see cref="Height"/> before the runtime runs. The view document is a JSON data
     /// block, which a policy does not restrict. A nonce must be new for every response, so write the markup per response,
     /// or put a placeholder here and replace it per response. See <c>docs/security.md</c>.
     /// </summary>
@@ -128,6 +128,8 @@ public sealed class CanopyHtmlOptions {
     /// Gets or sets the height of the view as a CSS length, for example <c>600px</c> or <c>70vh</c>. Fragments without
     /// a height use the stylesheet default (480px). Full pages fill the window and ignore fixed fragment heights.
     /// Use <c>auto</c> to let content determine the host height in either form, including short-range calendar pages.
+    /// The host carries it as <c>data-cx-height</c>, never as a <c>style</c> attribute, so a strict Content Security Policy
+    /// needs no <c>'unsafe-inline'</c>: the runtime applies it, and with a <see cref="Nonce"/> a rule applies it before then.
     /// </summary>
     public string? Height { get; set; }
 

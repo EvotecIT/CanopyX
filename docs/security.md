@@ -21,7 +21,7 @@ These elements need the nonce, because a policy checks them:
 | Element | Written by | How it gets the nonce |
 | --- | --- | --- |
 | The runtime `<script>` and `<style>` of a page with inline assets, or the `<script src>` and `<link rel="stylesheet">` of a page with external assets | `ToHtmlPage`, `SaveHtmlPage`, `SaveHtmlBundle` | `CanopyHtmlOptions.Nonce` |
-| The `<style>` rule that gives a fragment its `Height` | `ToHtmlFragment` | `CanopyHtmlOptions.Nonce` (without a nonce the fragment keeps its `style` attribute) |
+| The `<style>` rule that gives a fragment its `Height` before the runtime runs | `ToHtmlFragment` | `CanopyHtmlOptions.Nonce` (without a nonce the runtime applies the `data-cx-height` value through the style object; the writer never emits a `style` attribute) |
 | The remote grid's endpoint configuration script | `CanopyRemoteScript.ElementWithNonce` | Pass the response's nonce as its third argument |
 | The scripts and stylesheets of the optional parts (tree tools, export, filter editor, history, search, links), and a bundle's sidecar scripts | The runtime, when it loads them | The page nonce (below) |
 
