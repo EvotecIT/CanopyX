@@ -72,6 +72,23 @@ test("an address is read once for every view; refresh and setRows reach every vi
   await expect.poll(() => ids(page, "paged")).toEqual(["x"]);
 });
 
+test("rows given while an address is read again are not replaced by that read's answer", async ({ page }) => {
+  let hold = null;
+  await page.route(ORIGIN + "/data/orders.json", async route => {
+    if (hold) await hold;
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ rows: ROWS }) });
+  });
+  await open(page, html({ id: "orders", columns: COLUMNS, url: "data/orders.json" }, [grid("list")]));
+  await expect.poll(() => ids(page, "list")).toHaveLength(6);
+  let release; hold = new Promise(resolve => release = resolve);
+  await page.evaluate(() => { window.refreshed = CanopyX.dataset("orders").refresh(); });
+  await page.evaluate(() => CanopyX.dataset("orders").setRows([{ id: "x", cells: { region: "West", amount: 1 } }]));
+  release();
+  await page.evaluate(() => window.refreshed);
+  expect(await page.evaluate(() => CanopyX.dataset("orders").getRows().map(row => row.id))).toEqual(["x"]);
+  await expect.poll(() => ids(page, "list")).toEqual(["x"]);
+});
+
 test("views never write into the shared rows, and a column the dataset types otherwise is refused", async ({ page }) => {
   const retyped = grid("retyped", undefined, [{ id: "amount", title: "Amount", kind: "text" }]);
   await open(page, html({ id: "orders", columns: COLUMNS, rows: ROWS }, [grid("list"), retyped]));

@@ -76,7 +76,8 @@ orders.views();              // the mounted grids that read it
 ```
 
 `CanopyX.dataset(id)` returns the same object for a dataset the page declares. `defineDataset` copies the rows once;
-`setRows` validates and copies the new rows once, whatever the number of views.
+`setRows` validates and copies the new rows once, whatever the number of views. Rows given with `setRows` while an
+address is being read again win: that read's answer is dropped, and the next refresh reads the address again.
 
 ## What a view over a dataset can do
 

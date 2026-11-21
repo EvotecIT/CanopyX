@@ -101,12 +101,17 @@
     for (const grid of entry.grids) grid.source.datasetChanged?.();
   }
 
-  /** Reads an address again; a timed read skips a hidden page, a dataset no view reads, and a read still running. */
+  /**
+   * Reads an address again; a timed read skips a hidden page, a dataset no view reads, and a read still running. Rows that
+   * setRows gave while the read ran are newer than its answer, which is then dropped.
+   */
   async function datasetRead(entry, timed) {
     if (timed && (document.hidden || !entry.grids.size || entry.reading)) return;
     entry.reading = true;
-    try { entry.rows = await GRID_URL_IMPL.read(entry.definition.url, entry.columns, DATASET_TIMEOUT_MS, null); datasetChanged(entry); }
-    finally { entry.reading = false; }
+    try {
+      const generation = entry.generation, rows = await GRID_URL_IMPL.read(entry.definition.url, entry.columns, DATASET_TIMEOUT_MS, null);
+      if (entry.generation === generation) { entry.rows = rows; datasetChanged(entry); }
+    } finally { entry.reading = false; }
   }
 
   /** A view's columns must be dataset columns of the same kind: the rows were validated against the dataset's. */
