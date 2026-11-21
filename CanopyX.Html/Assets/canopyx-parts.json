@@ -432,7 +432,7 @@
     {
       "name": "datasets",
       "label": "shared datasets",
-      "version": "905b8d28539ff5c2",
+      "version": "1301a2670578dcd5",
       "script": "canopyx-datasets.js",
       "runtimes": [
         "grid"

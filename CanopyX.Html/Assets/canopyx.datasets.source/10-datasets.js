@@ -28,7 +28,7 @@
       throw new Error("CanopyX: invalid dataset address or refresh.");
     if (raw.rows !== undefined && !Array.isArray(raw.rows)) throw new Error("CanopyX: dataset rows must be an array.");
     return { id: raw.id, kind, columns: columns.map(column => ({ id: column.id, kind: column.kind })), definition: raw, element,
-      source: raw.source || null, rows: null, generation: 0, loading: null, grids: new Set() };
+      source: raw.source || null, rows: null, generation: 0, change: 0, reading: 0, loading: null, grids: new Set() };
   }
 
   /** The dataset with an id, read on first use: the page's element (with a source the page's script gave it) or a definition. */
@@ -102,16 +102,18 @@
   }
 
   /**
-   * Reads an address again; a timed read skips a hidden page, a dataset no view reads, and a read still running. Rows that
-   * setRows gave while the read ran are newer than its answer, which is then dropped.
+   * Reads an address again; a timed read skips a hidden page, a dataset no view reads, and a read still running. Every read
+   * and every setRows takes the next change number, and a read's answer is kept only while its number is still the newest:
+   * an answer that finishes after a later read started, or after setRows, is older than those rows and is dropped.
    */
   async function datasetRead(entry, timed) {
     if (timed && (document.hidden || !entry.grids.size || entry.reading)) return;
-    entry.reading = true;
+    const change = ++entry.change;
+    entry.reading++;
     try {
-      const generation = entry.generation, rows = await GRID_URL_IMPL.read(entry.definition.url, entry.columns, DATASET_TIMEOUT_MS, null);
-      if (entry.generation === generation) { entry.rows = rows; datasetChanged(entry); }
-    } finally { entry.reading = false; }
+      const rows = await GRID_URL_IMPL.read(entry.definition.url, entry.columns, DATASET_TIMEOUT_MS, null);
+      if (entry.change === change) { entry.rows = rows; datasetChanged(entry); }
+    } finally { entry.reading--; }
   }
 
   /** A view's columns must be dataset columns of the same kind: the rows were validated against the dataset's. */
@@ -176,6 +178,7 @@
       if (entry.kind === "host") throw new Error("CanopyX: a hosted dataset's rows change at its source; call refresh().");
       await datasetLoad(entry);
       entry.rows = validateGridRows(structuredClone(rows), entry.columns);
+      entry.change++;
       datasetChanged(entry);
     },
     async refresh(id) {

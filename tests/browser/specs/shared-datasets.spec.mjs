@@ -89,6 +89,27 @@ test("rows given while an address is read again are not replaced by that read's 
   await expect.poll(() => ids(page, "list")).toEqual(["x"]);
 });
 
+test("of two overlapping reads of an address, the later one's rows are kept whichever finishes first", async ({ page }) => {
+  const held = [];
+  await page.route(ORIGIN + "/data/orders.json", async route => {
+    const reply = held.shift();
+    const rows = reply ? await reply : ROWS;
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify({ rows }) });
+  });
+  await open(page, html({ id: "orders", columns: COLUMNS, url: "data/orders.json" }, [grid("list")]));
+  await expect.poll(() => ids(page, "list")).toHaveLength(6);
+  let first, second;
+  held.push(new Promise(resolve => first = resolve), new Promise(resolve => second = resolve));
+  await page.evaluate(() => { window.earlier = CanopyX.dataset("orders").refresh(); window.later = CanopyX.dataset("orders").refresh(); });
+  await expect.poll(() => held.length).toBe(0);
+  first([{ id: "old", cells: { region: "West", amount: 1 } }]);
+  await page.evaluate(() => window.earlier);
+  second([{ id: "new", cells: { region: "East", amount: 2 } }]);
+  await page.evaluate(() => window.later);
+  expect(await page.evaluate(() => CanopyX.dataset("orders").getRows().map(row => row.id))).toEqual(["new"]);
+  await expect.poll(() => ids(page, "list")).toEqual(["new"]);
+});
+
 test("views never write into the shared rows, and a column the dataset types otherwise is refused", async ({ page }) => {
   const retyped = grid("retyped", undefined, [{ id: "amount", title: "Amount", kind: "text" }]);
   await open(page, html({ id: "orders", columns: COLUMNS, rows: ROWS }, [grid("list"), retyped]));
