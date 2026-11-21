@@ -81,6 +81,13 @@ test("views never write into the shared rows, and a column the dataset types oth
   // A per-view loader would replace the shared rows as well.
   const polled = await page.evaluate(`${api("list")}.poll({ intervalMs: 1000, load: async () => [] }).then(() => "polling", error => error.message)`);
   expect(polled).toContain("shared dataset orders");
+  // A loader in the grid's own live options is refused when live updates start, and no poll runs it.
+  const started = await page.evaluate(view => new Promise(resolve => {
+    const host = Object.assign(document.createElement("div"), { style: "height:200px" }); document.body.append(host);
+    const api = CanopyX.createDataGrid(host, { view, live: { pollMs: 250, load: async () => [] },
+      onError: detail => resolve({ message: detail.error.message, polling: api.getLiveState().polling }) });
+  }), grid("polled"));
+  expect(started).toEqual({ message: expect.stringContaining("shared dataset orders"), polling: false });
   await expect(page.locator("#retyped")).toContainText("has another kind than in dataset orders");
   expect(await page.evaluate(() => CanopyX.dataset("orders").getRows().length)).toBe(6);
 });
@@ -96,4 +103,19 @@ test("a hosted dataset's one source answers every view's own queries", async ({ 
   await expect.poll(() => ids(page, "b")).toHaveLength(6);
   expect([...new Set(await page.evaluate(() => window.asked))].sort()).toEqual(["a", "b"]);
   expect(await page.evaluate(() => CanopyX.dataset("machines").ready().then(() => CanopyX.dataset("machines").views().length))).toBe(2);
+});
+
+test("a hosted grid destroyed before the part attaches it is not one of the dataset's views", async ({ page }) => {
+  const script = `CanopyX.defineDataset({ id: "machines", kind: "host", source: { query: async query =>
+    ({ protocol: "canopyx/2", type: "gridPage", view: query.view, revision: "r1", offset: 0, total: 0, matched: 0, items: [] }) } });`;
+  await open(page, html(null, [], { script }));
+  const views = await page.evaluate(async view => {
+    const host = Object.assign(document.createElement("div"), { style: "height:200px" }); document.body.append(host);
+    CanopyX.createDataGrid(host, { view }).destroy();
+    CanopyX.createDataGrid(host, { view });
+    const dataset = CanopyX.dataset("machines");
+    await dataset.ready();
+    return dataset.views().length;
+  }, grid("a", { kind: "host", dataset: "machines" }));
+  expect(views).toBe(1);
 });

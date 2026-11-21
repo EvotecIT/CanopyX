@@ -72,8 +72,8 @@
     "output": "49ca3caea305ff11"
   },
   "CanopyX.Html/Assets/canopyx-datasets.js": {
-    "input": "652ec490e12b7768",
-    "output": "84e25a2ac45455a5"
+    "input": "db90de4118b40840",
+    "output": "a20cb55b7fdd3ee8"
   },
   "CanopyX.Html/Assets/canopyx-detail-rows.js": {
     "input": "9f0a52ed241bc690",
@@ -184,16 +184,16 @@
     "output": "98ab7f3c776c3848"
   },
   "CanopyX.Html/Assets/canopyx-grid-module.mjs": {
-    "input": "7f42eb18c0807bcd",
-    "output": "680cb61064d02b6f"
+    "input": "1050091cee6eb970",
+    "output": "c2f33c8dbd50116e"
   },
   "CanopyX.Html/Assets/canopyx-grid-options.js": {
     "input": "0939d01d2c2a0247",
     "output": "ba04aacaa8e27768"
   },
   "CanopyX.Html/Assets/canopyx-grid.js": {
-    "input": "857e09e814643675",
-    "output": "d2b4347a4b12defa"
+    "input": "55001dbddb0711ba",
+    "output": "79e0401b73418fcb"
   },
   "CanopyX.Html/Assets/canopyx-grouping.js": {
     "input": "f99736049f32db7e",
@@ -224,8 +224,8 @@
     "output": "57f3752fee880303"
   },
   "CanopyX.Html/Assets/canopyx-live.js": {
-    "input": "74670a7605b9a4d6",
-    "output": "b25352cc51017046"
+    "input": "e76af2011a054112",
+    "output": "527a42c5bfcc7a44"
   },
   "CanopyX.Html/Assets/canopyx-matrix-table.js": {
     "input": "446348827a78daa0",
@@ -268,12 +268,12 @@
     "output": "a6c0ad3ed6883aaa"
   },
   "CanopyX.Html/Assets/canopyx-reporting-module.mjs": {
-    "input": "d30c7b53e5b95552",
-    "output": "e0fbe84b681b121a"
+    "input": "af738c6917288702",
+    "output": "70c67179618f7635"
   },
   "CanopyX.Html/Assets/canopyx-reporting.js": {
-    "input": "d8cb07d6cff0e9dc",
-    "output": "7d9081d855d1cd28"
+    "input": "023bea67704873e7",
+    "output": "71d30948eb0b8f3e"
   },
   "CanopyX.Html/Assets/canopyx-rich-cells.js": {
     "input": "6bd79e413bb1ebe0",

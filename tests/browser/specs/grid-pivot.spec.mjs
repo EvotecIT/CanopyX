@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { repo } from "./support.mjs";
+import { repo, settleOverlayMotion } from "./support.mjs";
 import { definition, open, api } from "./grid-grouping-fixtures.mjs";
 import { capture } from "./calendar-support.mjs";
 
@@ -52,6 +52,8 @@ test("an open pivot editor follows host width across both responsive boundaries"
   await host.evaluate(host => host.style.width = "500px");
   await expect(page.locator(".cx-pivot")).toHaveAttribute("data-phone", "true");
   await expect(editorExit).toBeVisible();
+  // Back below the boundary the editor enters again as a sheet; a tap lands on it once it has stopped moving.
+  await settleOverlayMotion(page.getByRole("dialog"));
   await editorExit.click();
   await expect(page.locator(".cx-grid")).toBeVisible();
   await expect(page.locator(".cx-pivot-table")).toBeHidden();

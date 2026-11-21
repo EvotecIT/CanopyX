@@ -432,7 +432,7 @@
     {
       "name": "datasets",
       "label": "shared datasets",
-      "version": "b9ca1c54e217a1a7",
+      "version": "a4957e175faabb1a",
       "script": "canopyx-datasets.js",
       "runtimes": [
         "grid"
@@ -1167,7 +1167,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "04f99f9c9391db82",
+      "version": "d01cf10d48b7210e",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

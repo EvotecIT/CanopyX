@@ -118,7 +118,8 @@
       if (!kinds.has(column.id)) throw new Error("CanopyX: column " + column.id + " of grid " + view.id + " is not in dataset " + entry.id + ".");
       if (kinds.get(column.id) !== column.kind) throw new Error("CanopyX: column " + column.id + " of grid " + view.id + " has another kind than in dataset " + entry.id + ".");
     }
-    if (!entry.grids.has(grid)) { entry.grids.add(grid); grid.lifetime.signal.addEventListener("abort", () => entry.grids.delete(grid), { once: true }); }
+    // A grid destroyed while the part loaded is not attached: its abort has already fired and would never remove it.
+    if (!grid.lifetime.signal.aborted && !entry.grids.has(grid)) { entry.grids.add(grid); grid.lifetime.signal.addEventListener("abort", () => entry.grids.delete(grid), { once: true }); }
     return entry;
   }
 

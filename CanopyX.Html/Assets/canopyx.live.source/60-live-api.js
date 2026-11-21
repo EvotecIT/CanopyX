@@ -8,7 +8,10 @@
       if (this.view.rowIdentity === "ordinal") throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (this.liveOpts) return;
-      this.liveOpts = liveOptions(this.view, this.opts);
+      // A per-view loader over a shared dataset is refused before anything starts, so no poll runs for it.
+      const options = liveOptions(this.view, this.opts);
+      if (options.load) this.liveSharedRows();
+      this.liveOpts = options;
       this.liveQueue = new Map(); this.liveWaiters = []; this.liveScheduled = new Set(); this.liveProjection = null;
       if (this.liveOpts.flashMs) this.host.style.setProperty("--cx-live-flash-ms", this.liveOpts.flashMs + "ms");
       // A new accepted query (another sort, search or filters, a reload) starts from a freshly sorted order.
