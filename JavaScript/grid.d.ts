@@ -570,7 +570,7 @@ export interface Dataset<Row extends GridRow = GridRow> {
 /** The dataset with an id: one the page declares (CanopyDataset.ToHtmlFragment) or one defineDataset defined. */
 export function dataset<Row extends GridRow = GridRow>(id: string): Dataset<Row>;
 /** Defines a dataset before its views mount, or gives a hosted dataset the page declares its source. */
-export function defineDataset<Row extends GridRow = GridRow>(definition: DatasetDefinition<Row>): Dataset<Row>;
+export function defineDataset<Row extends GridRow = GridRow>(definition: DatasetDefinition<GridNamedRow<Row>>): Dataset<Row>;
 export interface CursorGridView<Row extends GridRow = GridRow> extends GridDefinition<GridCursorQuery, Row> {
   calculatedColumnsEditable?: false;
   source: { kind: "host"; navigation: "cursor" };
@@ -1198,7 +1198,7 @@ export type { MatrixDocument, MatrixAxis, MatrixItem, MatrixAttribute, MatrixSta
 import type { createDiff, createChangeList, createPropagation, DiffOptions, DiffApi, ChangeListOptions, ChangeListApi, PropagationOptions, PropagationApi } from "./changes.js";
 export { createDiff, createChangeList, createPropagation } from "./changes.js";
 export type { ChangeNote, DiffHunk, DiffBody, DiffDocument, DiffOptions, DiffApi, ChangeVersion, ChangeItem, ChangeAction, ChangeListDocument, ChangeListState, ChangeActionDetail, ChangeExportDetail, ChangeListOptions, ChangeListApi, PropagationState, PropagationDocument, PropagationOptions, PropagationApi } from "./changes.js";
-declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; createDiff: typeof createDiff; createChangeList: typeof createChangeList; createPropagation: typeof createPropagation; enhance: typeof enhance; grid: typeof grid; matrix: typeof matrix; configure: typeof configure; mount: typeof mount };
+declare const gridRuntime: Omit<typeof CanopyX, "configure" | "mount"> & { createDataGrid: typeof createDataGrid; createCalendar: typeof createCalendar; createFlow: typeof createFlow; createMatrix: typeof createMatrix; createDiff: typeof createDiff; createChangeList: typeof createChangeList; createPropagation: typeof createPropagation; enhance: typeof enhance; grid: typeof grid; matrix: typeof matrix; dataset: typeof dataset; defineDataset: typeof defineDataset; configure: typeof configure; mount: typeof mount };
 export default gridRuntime;
 
 /** Chart analysis reads accepted data through the normal grid capture contracts. */

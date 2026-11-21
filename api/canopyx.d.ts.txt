@@ -1956,7 +1956,7 @@ export interface Dataset<Row extends GridRow=GridRow>{
   refresh():Promise<void>;
 }
 export function dataset<Row extends GridRow=GridRow>(id:string):Dataset<Row>;
-export function defineDataset<Row extends GridRow=GridRow>(definition:DatasetDefinition<Row>):Dataset<Row>;
+export function defineDataset<Row extends GridRow=GridRow>(definition:DatasetDefinition<GridNamedRow<Row>>):Dataset<Row>;
 export interface CursorGridView<Row extends GridRow=GridRow>extends GridDefinition<GridCursorQuery,Row>{
   calculatedColumnsEditable?:false;
   source:{kind:"host";navigation:"cursor"};
@@ -2479,6 +2479,8 @@ declare const gridRuntime:Omit<typeof CanopyX,"configure"|"mount">&{
   enhance:typeof enhance;
   grid:typeof grid;
   matrix:typeof matrix;
+  dataset:typeof dataset;
+  defineDataset:typeof defineDataset;
   configure:typeof configure;
   mount:typeof mount
 }
