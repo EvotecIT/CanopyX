@@ -3,7 +3,7 @@
     {
       "name": "ui-overlays",
       "label": "UI overlays",
-      "version": "386e5aca3dfabaed",
+      "version": "8cb40e3bf59426b5",
       "script": "canopyx-ui-overlays.js",
       "style": "canopyx-ui-overlays.css",
       "runtimes": [
@@ -432,7 +432,7 @@
     {
       "name": "datasets",
       "label": "shared datasets",
-      "version": "ecbfec46ee2ae946",
+      "version": "b9ca1c54e217a1a7",
       "script": "canopyx-datasets.js",
       "runtimes": [
         "grid"
@@ -1167,7 +1167,7 @@
     {
       "name": "live",
       "label": "live data",
-      "version": "ac5f5d28cee14bef",
+      "version": "04f99f9c9391db82",
       "script": "canopyx-live.js",
       "style": "canopyx-live.css",
       "runtimes": [

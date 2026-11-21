@@ -40,6 +40,7 @@ public sealed class CanopyGridRowData {
     public CanopyGridRowData(CanopyDataGridView view, CanopyRowDataOptions? options = null) {
         View = view ?? throw new ArgumentNullException(nameof(view));
         if (view.Source.Kind != CanopyGridSourceKind.Inline) throw new InvalidOperationException("Row data holds the rows of an inline grid.");
+        if (view.Source.Dataset != null) throw new InvalidOperationException("A grid that reads a shared dataset has no rows of its own; write the dataset's row data with CanopyDataset.ToRowData.");
         view.Validate();
         var settings = options ?? new CanopyRowDataOptions();
         if (settings.Format == CanopyRowFormat.Objects) throw new ArgumentException("Row data is compact; CanopyRowFormat.Objects writes row objects instead.", nameof(options));
@@ -64,7 +65,7 @@ public sealed class CanopyGridRowData {
     /// <summary>
     /// Whether a page writes the rows of an inline grid as compact row data with these options: always for
     /// <see cref="CanopyRowFormat.Compact"/> and <see cref="CanopyRowFormat.CompactGzip"/>, never for
-    /// <see cref="CanopyRowFormat.Objects"/> or a hosted grid, and for <see cref="CanopyRowFormat.Auto"/> (the default) when
+    /// <see cref="CanopyRowFormat.Objects"/>, a hosted grid or a grid over a shared dataset, and for <see cref="CanopyRowFormat.Auto"/> (the default) when
     /// the grid has more than <see cref="CanopyRowDataOptions.CompactAboveRows"/> rows and none of them carries record fields or
     /// a detail payload. CanopyX.Html asks this for every fragment and page it writes.
     /// </summary>
@@ -74,7 +75,7 @@ public sealed class CanopyGridRowData {
     /// <exception cref="ArgumentNullException"><paramref name="view"/> is null.</exception>
     public static bool ShouldWrite(CanopyDataGridView view, CanopyRowDataOptions? options = null) {
         if (view == null) throw new ArgumentNullException(nameof(view));
-        if (view.Source.Kind != CanopyGridSourceKind.Inline || view.Source.Url != null) return false;
+        if (view.Source.Kind != CanopyGridSourceKind.Inline || view.Source.Url != null || view.Source.Dataset != null) return false;
         return (options?.Format ?? CanopyRowFormat.Auto) switch {
             CanopyRowFormat.Objects => false,
             CanopyRowFormat.Auto => view.Rows.Count > CanopyRowDataOptions.CompactAboveRows && !view.Rows.Any(row => row.Detail != null || row.HasFields),

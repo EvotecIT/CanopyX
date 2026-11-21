@@ -132,10 +132,18 @@
       if (grid.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (!base) accept(entry);
     }, error => { loading = null; throw error; });
-    const stamp = async page => ({ ...await page, revision });
+    // An answer belongs to the rows it was computed from: when the rows change while it runs (also before the first query
+    // is accepted), it is computed again over the new rows, so an old answer never carries the new revision.
+    const answer = async run => {
+      await ready();
+      for (;;) {
+        const rows = base, page = await run(rows);
+        if (rows === base) return { ...page, revision };
+      }
+    };
     return {
-      query: (query, options) => ready().then(() => stamp(base.query(query, options))),
-      facet: (request, options) => ready().then(() => stamp(base.facet(request, options))),
+      query: (query, options) => answer(rows => rows.query(query, options)),
+      facet: (request, options) => answer(rows => rows.facet(request, options)),
       position: (query, row) => base ? base.position(query, row) : -1, row: row => base ? base.row(row) : null,
       invalidate: () => { if (base) base = inlineGridSource(view); },
       changed() {

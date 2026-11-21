@@ -46,15 +46,19 @@
     trigger?.addEventListener("click", () => open(), { signal });
     root.addEventListener("click", event => { if (event.target.closest("[data-cx-close],[data-cx-cancel]")) overlay.close("cancel"); }, { signal });
     // Typed actions (CanopyDialogAction) raise a cancelable action event; a host that cancels it answers itself. Otherwise an
-    // action with a target submits the footer form natively, once, and one without closes the overlay.
+    // action with a target submits the footer form natively, once, and one without closes the overlay. A nested overlay's
+    // actions are its own. The submit event comes only after the form validates, so a refused submission can be tried again.
     let submitted = false;
     root.addEventListener("cx-" + kind + ":open", event => { if (event.target === root) submitted = false; }, { signal });
     root.addEventListener("click", event => {
       const button = event.target.closest("[data-cx-action]");
-      if (!button || !root.contains(button) || button.disabled) return;
+      if (!button || button.closest("[data-cx-dialog],[data-cx-drawer]") !== root || button.disabled) return;
       if (!UI_TOOLS.emit(root, kind, "action", { action: button.dataset.cxAction, button }, true)) { event.preventDefault(); return; }
-      if (button.type === "submit" && button.form) { if (submitted) event.preventDefault(); submitted = true; return; }
-      overlay.close("action");
+      if (button.type !== "submit" || !button.form) overlay.close("action");
+    }, { signal });
+    root.addEventListener("submit", event => {
+      if (!event.submitter?.matches("[data-cx-action]") || event.submitter.closest("[data-cx-dialog],[data-cx-drawer]") !== root) return;
+      if (submitted) event.preventDefault(); else submitted = true;
     }, { signal });
     const scroller = root.querySelector('[data-cx-part="body"]');
     scroller?.addEventListener("scroll", () => { root.dataset.scrolled = String(scroller.scrollTop > 0); }, { signal });

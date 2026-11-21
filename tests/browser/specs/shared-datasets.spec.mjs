@@ -78,6 +78,9 @@ test("views never write into the shared rows, and a column the dataset types oth
   await expect.poll(() => ids(page, "list")).toHaveLength(6);
   const refused = await page.evaluate(`${api("list")}.addRows([{ id: "new", cells: { region: "West", amount: 1 } }]).then(() => "added", error => error.message)`);
   expect(refused).toContain("shared dataset orders");
+  // A per-view loader would replace the shared rows as well.
+  const polled = await page.evaluate(`${api("list")}.poll({ intervalMs: 1000, load: async () => [] }).then(() => "polling", error => error.message)`);
+  expect(polled).toContain("shared dataset orders");
   await expect(page.locator("#retyped")).toContainText("has another kind than in dataset orders");
   expect(await page.evaluate(() => CanopyX.dataset("orders").getRows().length)).toBe(6);
 });

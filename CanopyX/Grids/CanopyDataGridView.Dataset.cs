@@ -12,5 +12,7 @@ public sealed partial class CanopyDataGridView {
             throw new InvalidOperationException("A grid that reads a shared dataset cannot have calculated columns, which would write into the shared rows.");
         if (Columns.Any(column => column.Editable))
             throw new InvalidOperationException("A grid that reads a shared dataset cannot edit cells; change the rows through the dataset.");
+        if (!Editing.IsDefault)
+            throw new InvalidOperationException("A grid that reads a shared dataset carries no editing settings; change the rows through the dataset.");
     }
 }

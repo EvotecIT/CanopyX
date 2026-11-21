@@ -47,3 +47,16 @@ test('a host that cancels the action answers itself, and an action without a tar
   expect(await page.evaluate(() => [window.answers, window.closes])).toEqual([['restart', 'later'], ['action']]);
   await expect(page.getByRole('button', { name: 'Restart spooler' })).toBeFocused();
 });
+
+test('a submission the form refuses can be tried again once it validates', async ({ page }) => {
+  const posted = [];
+  await page.route('http://canopyx.test/restart', route => { posted.push(route.request().postData()); return route.fulfill({ contentType: 'text/html', body: '<p>Restarted</p>' }); });
+  await openUi(page, confirm.replace('<input type="hidden" name="token" value="t-1">', '<input type="hidden" name="token" value="t-1"><input name="reason" aria-label="Reason" required>'));
+  await page.getByRole('button', { name: 'Restart spooler' }).click();
+  await page.getByRole('button', { name: 'Restart', exact: true }).click();
+  await expect(dialog(page)).toBeVisible();
+  expect(posted).toEqual([]);
+  await page.getByRole('textbox', { name: 'Reason' }).fill('Stuck jobs');
+  await Promise.all([page.waitForURL('http://canopyx.test/restart'), page.getByRole('button', { name: 'Restart', exact: true }).click()]);
+  expect(posted).toEqual(['token=t-1&reason=Stuck+jobs&action=restart']);
+});

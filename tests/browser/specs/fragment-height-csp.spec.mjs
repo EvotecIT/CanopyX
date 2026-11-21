@@ -15,7 +15,11 @@ test("a fixed and an automatic height apply under a strict policy without a styl
     `<body>${host("fixed", "300px")}${host("content", "auto")}${host("later", "260px", ' data-cx-mount="manual"')}</body></html>`;
   await page.route("http://canopyx.test/height", route => route.fulfill({ contentType: "text/html", body,
     headers: { "content-security-policy": `default-src 'none'; script-src 'nonce-${NONCE}'; style-src 'nonce-${NONCE}'; img-src data:` } }));
-  await page.addInitScript(() => { window.violations = []; document.addEventListener("securitypolicyviolation", event => window.violations.push(event.violatedDirective)); });
+  // Only the script and style directives are this test's subject; a browser's own requests (Firefox asks for a favicon)
+  // may trip other directives of the deliberately bare policy.
+  await page.addInitScript(() => { window.violations = []; document.addEventListener("securitypolicyviolation", event => {
+    if (/^(script|style)-src/.test(event.effectiveDirective)) window.violations.push(event.effectiveDirective);
+  }); });
   await page.goto("http://canopyx.test/height");
   await page.waitForSelector("#fixed[data-cx-ready]");
   expect(await page.locator("#fixed").evaluate(element => element.getBoundingClientRect().height)).toBe(300);

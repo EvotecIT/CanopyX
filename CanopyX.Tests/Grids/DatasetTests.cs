@@ -63,6 +63,13 @@ public sealed class DatasetTests {
         Assert.Throws<InvalidOperationException>(() => calculated.ToJson());
         var editable = View(Orders()); editable.Columns[0].Editable = true;
         Assert.Throws<InvalidOperationException>(() => editable.ToJson());
+        var settings = View(Orders()); settings.Editing.ReadOnly = true;
+        Assert.Throws<InvalidOperationException>(() => settings.ToJson());
+        // Compact rows belong to the dataset, never to a view that reads it, whatever format the page asks for.
+        var compact = new CanopyRowDataOptions { Format = CanopyRowFormat.Compact };
+        Assert.False(CanopyGridRowData.ShouldWrite(View(Orders()), compact));
+        Assert.Throws<InvalidOperationException>(() => new CanopyGridRowData(View(Orders()), compact));
+        Assert.DoesNotContain("rowData", View(Orders()).ToHtmlFragment(new CanopyHtmlOptions { RowData = compact, AssetMode = CanopyAssetMode.External }));
         // A hosted view writes nothing into shared rows: its host source owns them.
         var hosted = View(CanopyDataset.Hosted("machines")); hosted.Columns[0].Editable = true;
         ProtocolSchema.AssertValid(hosted.ToJson(), "hosted grid over a dataset");

@@ -72,8 +72,8 @@
     "output": "49ca3caea305ff11"
   },
   "CanopyX.Html/Assets/canopyx-datasets.js": {
-    "input": "58b7a9e911f91eb1",
-    "output": "2ea35c3effc8d1ab"
+    "input": "652ec490e12b7768",
+    "output": "84e25a2ac45455a5"
   },
   "CanopyX.Html/Assets/canopyx-detail-rows.js": {
     "input": "9f0a52ed241bc690",
@@ -184,16 +184,16 @@
     "output": "98ab7f3c776c3848"
   },
   "CanopyX.Html/Assets/canopyx-grid-module.mjs": {
-    "input": "98d5a3fcbf9b93a3",
-    "output": "fc670ddf9eac70bd"
+    "input": "7f42eb18c0807bcd",
+    "output": "680cb61064d02b6f"
   },
   "CanopyX.Html/Assets/canopyx-grid-options.js": {
     "input": "0939d01d2c2a0247",
     "output": "ba04aacaa8e27768"
   },
   "CanopyX.Html/Assets/canopyx-grid.js": {
-    "input": "4028259635a90029",
-    "output": "dd28d2557df738c2"
+    "input": "857e09e814643675",
+    "output": "d2b4347a4b12defa"
   },
   "CanopyX.Html/Assets/canopyx-grouping.js": {
     "input": "f99736049f32db7e",
@@ -208,8 +208,8 @@
     "output": "abcbce36dd87b5a5"
   },
   "CanopyX.Html/Assets/canopyx-interactive.js": {
-    "input": "41485e016d42097e",
-    "output": "3451897bf52f1264"
+    "input": "313aa83d6034dece",
+    "output": "e55d6ce4e86da92c"
   },
   "CanopyX.Html/Assets/canopyx-layouts.js": {
     "input": "ec2cec503e829e1c",
@@ -224,8 +224,8 @@
     "output": "57f3752fee880303"
   },
   "CanopyX.Html/Assets/canopyx-live.js": {
-    "input": "ff46201bfa5de0ae",
-    "output": "dea025543f3775d6"
+    "input": "74670a7605b9a4d6",
+    "output": "b25352cc51017046"
   },
   "CanopyX.Html/Assets/canopyx-matrix-table.js": {
     "input": "446348827a78daa0",
@@ -236,8 +236,8 @@
     "output": "2b57957eaa8a4369"
   },
   "CanopyX.Html/Assets/canopyx-module.mjs": {
-    "input": "363fc5918bffb4f9",
-    "output": "c52646a19ad3579f"
+    "input": "1e2ceee9239187bf",
+    "output": "1364d345db2104cf"
   },
   "CanopyX.Html/Assets/canopyx-office-export.js": {
     "input": "4db3b3a9ada9cc1a",
@@ -268,12 +268,12 @@
     "output": "a6c0ad3ed6883aaa"
   },
   "CanopyX.Html/Assets/canopyx-reporting-module.mjs": {
-    "input": "7a9c009e14878893",
-    "output": "45e9490d6403bb1e"
+    "input": "d30c7b53e5b95552",
+    "output": "e0fbe84b681b121a"
   },
   "CanopyX.Html/Assets/canopyx-reporting.js": {
-    "input": "d0d8c3d0832ab372",
-    "output": "38fab57926a75043"
+    "input": "d8cb07d6cff0e9dc",
+    "output": "7d9081d855d1cd28"
   },
   "CanopyX.Html/Assets/canopyx-rich-cells.js": {
     "input": "6bd79e413bb1ebe0",
@@ -324,16 +324,16 @@
     "output": "09104833b679e35f"
   },
   "CanopyX.Html/Assets/canopyx-ui-module.mjs": {
-    "input": "3030713f17404f27",
-    "output": "66e611e2c18ba6d1"
+    "input": "518c7a64c100d115",
+    "output": "19b33f955a5deec8"
   },
   "CanopyX.Html/Assets/canopyx-ui-navigation.js": {
     "input": "8bfe2df6b3788d38",
     "output": "76a513fd96a90376"
   },
   "CanopyX.Html/Assets/canopyx-ui-overlays.js": {
-    "input": "9610035b90fdc37c",
-    "output": "a40fb096191ba8a8"
+    "input": "48996947eb6a0817",
+    "output": "ea148c78dc01c4e5"
   },
   "CanopyX.Html/Assets/canopyx-ui-picker.js": {
     "input": "6f66c9bde660d674",
@@ -364,8 +364,8 @@
     "output": "381bb4232007a5b3"
   },
   "CanopyX.Html/Assets/canopyx-ui.js": {
-    "input": "dea8f2b2777bbebf",
-    "output": "b72c806dbaa7ea50"
+    "input": "97b804ccc19c6c30",
+    "output": "105c6057097b04d8"
   },
   "CanopyX.Html/Assets/canopyx-url-rows.js": {
     "input": "0aa874553442089b",
@@ -380,7 +380,7 @@
     "output": "a0a3bd613690b6b5"
   },
   "CanopyX.Html/Assets/canopyx.js": {
-    "input": "d86cbfbe3f39d515",
-    "output": "49850817c3bf3894"
+    "input": "58081b9c597c8f09",
+    "output": "01cde94f15c3f933"
   }
 }
