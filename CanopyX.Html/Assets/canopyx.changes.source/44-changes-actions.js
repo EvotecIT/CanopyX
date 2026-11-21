@@ -144,7 +144,7 @@
         const buttons = h("div", "cx-chg-askbtns"); buttons.append(copy, cancel); box.append(text, buttons);
         return box;
       }
-      const id = (this.host.id || "cx-changes") + "-reason-" + this.uid(), field = h("textarea", "cx-textarea cx-chg-reasonbox"), label = h("label", "cx-chg-asklabel"), hint = h("div", "cx-chg-hint");
+      const id = this.idBase + "-reason-" + this.uid(), field = h("textarea", "cx-textarea cx-chg-reasonbox"), label = h("label", "cx-chg-asklabel"), hint = h("div", "cx-chg-hint");
       field.id = id; field.rows = 2; field.maxLength = 1000; field.value = pending.text; field.setAttribute("aria-describedby", id + "-hint");
       label.htmlFor = id; setText(label, labels.changeReason); hint.id = id + "-hint"; setText(hint, fill(labels.changeReasonHint, { action: pending.action.label }));
       const error = h("div", "cx-chg-askerror"); error.setAttribute("role", "alert"); setText(error, pending.error ? labels.changeReasonRequired : "");

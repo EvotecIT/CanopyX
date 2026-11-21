@@ -45,7 +45,7 @@ public sealed class FlowHtmlTests {
     public void Fragment_HasAHeightOnlyWhenAsked() {
         var flow = FlowSamples.MailServer();
         var html = flow.ToHtmlFragment(new CanopyHtmlOptions { Height = "480px", AutoMount = false });
-        Assert.StartsWith("<div class=\"cx-host cx-flow-host\" data-canopyx-host id=\"" + flow.Id + "\" data-cx-mount=\"manual\" style=\"height:480px\">", html);
+        Assert.StartsWith("<div class=\"cx-host cx-flow-host\" data-canopyx-host id=\"" + flow.Id + "\" data-cx-mount=\"manual\" data-cx-height=\"480px\">", html);
     }
 
     [Fact]

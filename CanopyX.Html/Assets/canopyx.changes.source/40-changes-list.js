@@ -2,9 +2,12 @@
   // A bar of kind filters (each kind that occurs, with its count) and a "Flagged only" switch sit above the items, grouped under
   // their folders. The state is plain data, raised as canopyx:changesState and accepted back by setState. CanopyX never acts on an
   // item: an action raises canopyx:changeAction for the host, and a copy action writes one of the item's values to the clipboard.
+  // Lists without a host id number their element ids in creation order, so two of them never share an id.
+  let changeListSeq = 0;
   class ChangeListView {
     constructor(host, options) {
       this.host = host; this.options = options; this.lifetime = new AbortController();
+      this.idBase = host.id || "cx-changes-" + ++changeListSeq;
       this.doc = changesDocument(options.view);
       this.labels = changeLabels(this.doc.labels, options.labels);
       this.lang = host.closest("[lang]")?.getAttribute("lang") || document.documentElement.lang || "en";

@@ -16,7 +16,7 @@
     }
     return group;
   }
-  function layoutModeText(view, mode) { return view.labels[mode === "fit" ? "layoutFit" : mode === "scroll" ? "layoutScroll" : "layoutCards"]; }
+  function layoutModeText(view, mode) { return view.labels[mode === "fit" ? "layoutFit" : mode === "scroll" ? "layoutScroll" : mode === "auto" ? "layoutAuto" : "layoutCards"]; }
   function layoutDensityText(view, density) { return view.labels[density === "compact" ? "layoutCompact" : density === "comfortable" ? "layoutComfortable" : "layoutNormal"]; }
   function layoutMenu(view) {
     if (view.tools.layout === false || typeof view.controlPanel !== "function") return;
@@ -28,11 +28,11 @@
     const render = () => {
       const options = view.layoutOptions;
       if (panel.firstChild) {
-        for (const input of panel.querySelectorAll("input")) input.checked = input.value === view.layoutMode || input.value === view.density;
+        for (const input of panel.querySelectorAll("input")) input.checked = input.value === view.layoutChoice || input.value === view.density;
         return;
       }
       panel.replaceChildren(...[options.modes.length > 1 && layoutGroup(view, view.labels.layoutMenu, id + "-mode",
-        options.modes.map(mode => [mode, layoutModeText(view, mode)]), view.layoutMode, mode => choose({ mode })),
+        options.modes.map(mode => [mode, layoutModeText(view, mode)]), view.layoutChoice, mode => choose({ mode })),
       layoutGroup(view, view.labels.layoutDensity, id + "-density", LAYOUT_DENSITIES.map(density => [density, layoutDensityText(view, density)]),
         view.density, density => choose({ density }))].filter(Boolean));
     };
@@ -57,6 +57,7 @@
       for (const name of ["cols", "span", "pad", "field", "gap", "title", "width", "height"]) view.host.style.removeProperty("--cx-card-" + name);
     }, { once: true });
     view.host.setAttribute("data-cx-density", view.density);
+    if (view.layoutOptions?.modes.includes("auto")) layoutAutoWatch(view);
     if (view.layoutMode !== "fit" || view.kind === "grid" && view.density !== view.declaredDensity) layoutApply(view, view.layoutMode, view.density);
   };
   VIEW_MODES.refreshCardDensity = view => {
@@ -69,13 +70,14 @@
         change.mode !== undefined && !view.layoutOptions.modes.includes(change.mode) || change.density !== undefined && !LAYOUT_DENSITIES.includes(change.density))
       throw new Error("CanopyX: setLayout takes a mode the view allows and a density.");
     if (!view.layoutStarted) VIEW_MODES.layoutsStart(view);
-    const mode = change.mode ?? view.layoutMode, density = change.density ?? view.density;
-    if (mode !== view.layoutMode || density !== view.density) {
-      layoutApply(view, mode, density);
+    const choice = change.mode ?? view.layoutChoice, density = change.density ?? view.density, mode = layoutFor(view, choice);
+    if (choice !== view.layoutChoice || density !== view.density) {
+      view.layoutChoice = choice;
+      if (mode !== view.layoutMode || density !== view.density) layoutApply(view, mode, density);
       view.layoutMenu?.render(); view.sortMenu?.sync();
-      if (view.live) { setText(view.live, ""); setText(view.live, fill(view.labels.layoutChanged, { mode: layoutModeText(view, mode), density: layoutDensityText(view, density) })); }
+      if (view.live) { setText(view.live, ""); setText(view.live, fill(view.labels.layoutChanged, { mode: layoutModeText(view, choice), density: layoutDensityText(view, density) })); }
       view.stateChanged();
-      view.emit("layout", { mode, density });
+      view.emit("layout", { mode: choice, active: mode, density });
     }
     return Promise.resolve(view.getLayout());
   };

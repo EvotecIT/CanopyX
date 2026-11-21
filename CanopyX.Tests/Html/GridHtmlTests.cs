@@ -17,11 +17,13 @@ public sealed class GridHtmlTests {
             if (height != "auto") {
                 Assert.DoesNotContain("style=\"height:" + height + "\"", page);
                 Assert.DoesNotContain("data-cx-height=\"" + height + "\"", page);
-            } else if (nonce == null) Assert.Contains("style=\"height:" + height + "\"", page);
-            else {
+            } else if (nonce == null) {
+                Assert.Contains("data-cx-height=\"auto\"", page);
+                Assert.DoesNotContain("style=\"height", page);
+            } else {
                 Assert.Contains("data-cx-height=\"" + height + "\"", page);
                 Assert.Contains("<style nonce=\"" + nonce + "\">", page);
-                Assert.Contains("[data-cx-height=\"" + height + "\"]{height:" + height + "}", page);
+                Assert.Contains("[data-cx-height=\"" + height + "\"]{height:" + height + ";--cx-height-rule:1}", page);
             }
         }
     }
@@ -37,7 +39,7 @@ public sealed class GridHtmlTests {
         Assert.DoesNotContain("</script><b>unsafe</b>", page);
         Assert.Contains("\\u003c/script\\u003e", page);
         var fragment = view.ToHtmlFragment(new CanopyHtmlOptions { Height = "560px", AutoMount = false });
-        Assert.Contains("height:560px", fragment);
+        Assert.Contains("data-cx-height=\"560px\"", fragment);
         Assert.Contains("data-cx-mount=\"manual\"", fragment);
         Assert.DoesNotContain("<script src=", fragment);
         var tree = new CanopyTreeView("tree", "Tree") { Checkboxes = CanopyCheckboxMode.Independent };

@@ -3,6 +3,13 @@
   // Click or Enter raises canopyx:matrixCell (cancelable); unless the host handles it, or the matrix says details "host",
   // a dialog lists the same and returns focus to the cell when it closes, or the cell's link is followed. CanopyX never acts on
   // the cell itself.
+  /** The details title's id: from the host's id, or the first free one in page order, so output is the same on every run. */
+  function matrixDetailsId(host) {
+    if (host.id) return host.id + "-details-title";
+    let next = 0, id;
+    do { id = "cx-matrix-" + ++next + "-details-title"; } while (document.getElementById(id));
+    return id;
+  }
   Object.assign(MatrixView.prototype, {
     cellInfo(cell) {
       const row = this.model.rows[cell._r], column = this.model.columns[cell._c];
@@ -84,7 +91,7 @@
     buildDialog() {
       const dialog = h("dialog", "cx-mx-dialog"), head = h("div", "cx-mx-dialoghead"), title = h("h2", "cx-mx-dialogtitle"), state = h("span", "cx-mx-swatch"), list = h("dl", "cx-mx-details");
       const close = h("button", "cx-btn cx-mx-button"), signal = this.lifetime.signal;
-      title.id = (this.host.id || "cx-matrix") + "-" + Math.random().toString(36).slice(2) + "-title";
+      title.id = matrixDetailsId(this.host);
       dialog.setAttribute("aria-labelledby", title.id); close.type = "button";
       close.addEventListener("click", () => dialog.close ? dialog.close() : dialog.removeAttribute("open"), { signal });
       dialog.addEventListener("close", () => { if (!this.destroyed) this.moveTo(this.focus.row, this.focus.column, true, false); }, { signal });

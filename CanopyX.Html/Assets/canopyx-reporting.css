@@ -408,6 +408,7 @@ color-scheme:light !important;height:auto !important;color:#16181c !important;ba
 }
 body.cx-page{margin:0;font-family:var(--hfx-font-sans,Archivo,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif);}
 body.cx-page > .cx-host,body.cx-page > .cx-main > .cx-host{height:100vh;padding:var(--hfx-space-3,0.75rem) var(--hfx-space-4,1rem);}
+body .cx-host[data-canopyx-host][data-cx-height="auto"]{height:auto;}
 .cx-resize:focus{outline:var(--hfx-focus-width,2px) solid var(--hfx-color-focus-ring,light-dark(#02726a,#37c9b8));outline-offset:calc(-1 * var(--hfx-focus-width,2px));}
 @media (forced-colors:active){
 :is(.cx-row,.cx-result)[aria-selected="true"]{forced-color-adjust:none;background:Highlight;color:HighlightText;border:var(--hfx-border-width,1px) solid Highlight;}

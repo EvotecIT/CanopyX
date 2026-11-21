@@ -125,6 +125,7 @@ More detail, with measured numbers, is in [delivery modes](https://canopyx.dev/d
 | Serve a grid from my database | [Server-side data for .NET](docs/remote-dotnet.md), [paging](docs/paging.md) |
 | Open one record with all its details | [Record panel](docs/record-panel.md) |
 | Filter one view from another | [Linked views](docs/linked-views.md) |
+| Show one dataset in several grids and pivots | [Shared datasets](docs/datasets.md) |
 | Compare two snapshots | [Dataset comparison](docs/dataset-compare.md) |
 | Build a setup or edit wizard | [Guided flows](docs/flow.md) |
 | Translate the controls | [Label packs](docs/labels.md): Polish, German, Spanish, French and Italian are included |

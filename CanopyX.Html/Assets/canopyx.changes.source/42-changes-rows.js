@@ -7,7 +7,7 @@
       const labels = this.labels, doc = this.doc, open = this.open.has(item.id), [folder, name] = changePath(item.path);
       const li = h("li", "cx-chg-item" + (item.flags.length ? " cx-chg-flagged" : "")), row = h("div", "cx-chg-row");
       li.setAttribute("data-cx-item", item.id);
-      const toggle = h("button", "cx-chg-toggle"), detailId = (this.host.id || "cx-changes") + "-" + this.uid() + "-detail";
+      const toggle = h("button", "cx-chg-toggle"), detailId = this.idBase + "-" + this.uid() + "-detail";
       toggle.type = "button"; toggle.setAttribute("aria-expanded", String(open)); toggle.setAttribute("aria-label", fill(labels.changeDetails, { name: doc.groupByFolder ? name : item.path }));
       toggle.appendChild(changeIcon("chevron"));
       const badge = h("span");

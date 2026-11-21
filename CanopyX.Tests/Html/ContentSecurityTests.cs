@@ -64,7 +64,7 @@ public sealed class ContentSecurityTests {
     }
 
     [Fact]
-    public void FragmentHeight_UsesANoncedRule_InPlaceOfAStyleAttribute() {
+    public void FragmentHeight_NeverUsesAStyleAttribute() {
         var view = SampleDocuments.FullView();
 
         var strict = view.ToHtmlFragment(new CanopyHtmlOptions { Nonce = Nonce, Height = "calc(70vh - 2rem)" });
@@ -72,9 +72,10 @@ public sealed class ContentSecurityTests {
 
         AssertStrict(strict);
         Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host id=\"" + view.Id + "\" data-cx-height=\"calc(70vh - 2rem)\">", strict);
-        Assert.Contains("<style nonce=\"" + Nonce + "\">body .cx-host[data-canopyx-host][data-cx-height=\"calc(70vh - 2rem)\"]{height:calc(70vh - 2rem)}</style>", strict);
-        // Without a nonce the fragment keeps its style attribute, as before.
-        Assert.Contains("style=\"height:70vh\"", plain);
+        Assert.Contains("<style nonce=\"" + Nonce + "\">body .cx-host[data-canopyx-host][data-cx-height=\"calc(70vh - 2rem)\"]{height:calc(70vh - 2rem);--cx-height-rule:1}</style>", strict);
+        // Without a nonce the runtime applies the height through the CSSOM, which a strict policy allows.
+        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host id=\"" + view.Id + "\" data-cx-height=\"70vh\">", plain);
+        Assert.DoesNotContain("style=\"height", plain);
         Assert.Throws<ArgumentException>(() => view.ToHtmlFragment(new CanopyHtmlOptions { Nonce = Nonce, Height = "1px\\\"]{x:y" }));
     }
 

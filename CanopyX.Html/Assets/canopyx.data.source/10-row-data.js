@@ -17,23 +17,21 @@
     return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
   }
 
-  // outer is the grid's source (52-grid-row-data.js): reset() makes its next query, a retry, start a new decoding.
-  function rowDataSource(grid, outer) {
-    const view = grid.view, data = view.rowData, rows = view.rows, ids = new Set(), declared = new Set(view.columns.map(column => column.id));
-    const columns = data.columns, chunks = data.chunks, sidecar = data.base !== undefined;
-    if (data.version !== 1 || !Array.isArray(columns) || !columns.length || new Set(columns).size !== columns.length || columns.some(id => !declared.has(id)) ||
+  /** Checks a rowData descriptor against the declared column ids; sidecar files are for a grid's own rows only. */
+  function checkRowData(data, declared, sidecarAllowed) {
+    const columns = data?.columns, chunks = data?.chunks, sidecar = data?.base !== undefined;
+    if (!data || data.version !== 1 || !Array.isArray(columns) || !columns.length || new Set(columns).size !== columns.length || columns.some(id => !declared.has(id)) ||
         ![undefined, "gzip"].includes(data.encoding) || ![undefined, true, false].includes(data.ordered) ||
-        sidecar && typeof data.base !== "string" ||
+        sidecar && (!sidecarAllowed || typeof data.base !== "string") ||
         !(Array.isArray(chunks) ? !sidecar : Number.isInteger(chunks) && chunks >= 0))
       throw new Error("CanopyX: invalid grid rowData.");
-    const scripts = !sidecar && !Array.isArray(chunks) ? grid.host.querySelectorAll(ROW_SCRIPTS) : null;
-    const total = Array.isArray(chunks) ? chunks.length : chunks;
-    if (scripts && scripts.length !== total) throw new Error("CanopyX: the grid has " + scripts.length + " row data scripts, not " + total + ".");
-    const files = [];
-    rows.length = 0;
-    const read = index => Array.isArray(chunks) ? chunks[index] : sidecar ? files[index] ||= loadSidecar(data.base, view.id, "rows/" + index) : scripts[index].textContent;
-    // Repeated short texts (a domain, a department, a state) share one string instead of one copy per row. A column shares
-    // while it has few distinct texts and stops at the limit, so columns of unique values (names, ids) cost no lookups.
+  }
+
+  // Repeated short texts (a domain, a department, a state) share one string instead of one copy per row. A column shares
+  // while it has few distinct texts and stops at the limit, so columns of unique values (names, ids) cost no lookups.
+  // A compact row is [id, cell, ...] in the order of rowData.columns, or [{ id, tone?, className? }, cell, ...]; trailing
+  // empty cells may be left out, and null is an empty cell as in the object form. release() drops the shared texts' index.
+  function compactExpander(columns) {
     const shared = columns.map(() => new Map()), share = (value, c) => {
       const seen = shared[c];
       if (!seen || typeof value !== "string" || value.length > 64) return value;
@@ -42,8 +40,6 @@
       if (seen.size < 1024) seen.set(value, value); else shared[c] = null;
       return value;
     };
-    // A compact row is [id, cell, ...] in the order of rowData.columns, or [{ id, tone?, className? }, cell, ...]; trailing
-    // empty cells may be left out, and null is an empty cell as in the object form.
     const expand = row => {
       if (!Array.isArray(row) || row.length > columns.length + 1) throw new Error("CanopyX: invalid compact grid row.");
       const key = row[0], cells = {};
@@ -58,6 +54,22 @@
       if (key.className !== undefined) record.className = key.className;
       return record;
     };
+    expand.release = () => shared.fill(null);
+    return expand;
+  }
+
+  // outer is the grid's source (52-grid-row-data.js): reset() makes its next query, a retry, start a new decoding.
+  function rowDataSource(grid, outer) {
+    const view = grid.view, data = view.rowData, rows = view.rows, ids = new Set();
+    checkRowData(data, new Set(view.columns.map(column => column.id)), true);
+    const columns = data.columns, chunks = data.chunks, sidecar = data.base !== undefined;
+    const scripts = !sidecar && !Array.isArray(chunks) ? grid.host.querySelectorAll(ROW_SCRIPTS) : null;
+    const total = Array.isArray(chunks) ? chunks.length : chunks;
+    if (scripts && scripts.length !== total) throw new Error("CanopyX: the grid has " + scripts.length + " row data scripts, not " + total + ".");
+    const files = [];
+    rows.length = 0;
+    const read = index => Array.isArray(chunks) ? chunks[index] : sidecar ? files[index] ||= loadSidecar(data.base, view.id, "rows/" + index) : scripts[index].textContent;
+    const expand = compactExpander(columns);
     let previous = null, finished = false, ordered = data.ordered === true, legacyOrder = false, advance, progress;
     const retirePrefix = () => {
       // Wire positions are invalid even if a replacement request later times out. Retire them before that request.
@@ -113,7 +125,7 @@
       active();
       if (rows.length !== data.count) throw new Error("CanopyX: row data holds " + rows.length + " rows, not " + data.count + ".");
       // The grid's copies of chunks given in the document are released once all rows are decoded.
-      finished = true; ids.clear(); shared.fill(null);
+      finished = true; ids.clear(); expand.release();
       // A pending query may have expired while the final sidecar loaded. Retry the accepted query with the complete source,
       // dropping error pages too, while preserving a newer user query if one is still pending.
       if (legacyOrder) retirePrefix();

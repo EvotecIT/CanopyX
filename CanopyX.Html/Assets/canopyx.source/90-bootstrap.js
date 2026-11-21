@@ -162,6 +162,14 @@
    * script. The automatic mount when the page has loaded leaves fragments marked data-cx-mount="manual" to a later call by
    * the host; fragments marked data-cx-mount="visible" wait until they are near the viewport, unless root is the host.
    */
+  // A fragment's height travels as data-cx-height: the writer never emits a style attribute, which a strict policy blocks.
+  // A nonced rule from the writer sizes the host and marks it with --cx-height-rule; without that rule (no nonce, or a policy
+  // that refused it) the height is set through the CSSOM, which needs no 'unsafe-inline', before a deferred mount.
+  function hostHeight(host) {
+    const height = host.getAttribute("data-cx-height");
+    if (height && !host.style.height && !getComputedStyle(host).getPropertyValue("--cx-height-rule")) host.style.height = height;
+  }
+
   function mount(root, automatic) {
     const scope = root || document;
     const created = [];
@@ -189,6 +197,7 @@
     const selector = "[data-canopyx-host]:not([data-canopyx-mounted])";
     (scope.matches?.(selector) ? [scope] : scope.querySelectorAll(selector)).forEach((host) => {
       const config = host.querySelector("script.cx-config"), mode = host.getAttribute("data-cx-mount");
+      hostHeight(host);
       if (!config || (automatic === true && mode === "manual")) {
         return;
       }

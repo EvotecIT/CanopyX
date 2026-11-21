@@ -44,6 +44,7 @@ public sealed partial class CanopyLabels {
         [nameof(LayoutFit)] = "Fit to width",
         [nameof(LayoutScroll)] = "All columns, scroll sideways",
         [nameof(LayoutCards)] = "Cards",
+        [nameof(LayoutAuto)] = "Automatic",
         [nameof(LayoutDensity)] = "Density",
         [nameof(LayoutCompact)] = "Compact",
         [nameof(LayoutNormal)] = "Normal",

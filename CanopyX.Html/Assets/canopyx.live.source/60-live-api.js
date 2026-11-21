@@ -8,7 +8,10 @@
       if (this.view.rowIdentity === "ordinal") throw new Error("CanopyX: ordinal row identity is snapshot-local; keyed live updates require stable row keys.");
       if (this.destroyed) throw new DOMException("Grid was destroyed.", "AbortError");
       if (this.liveOpts) return;
-      this.liveOpts = liveOptions(this.view, this.opts);
+      // A per-view loader over a shared dataset is refused before anything starts, so no poll runs for it.
+      const options = liveOptions(this.view, this.opts);
+      if (options.load) this.liveSharedRows();
+      this.liveOpts = options;
       this.liveQueue = new Map(); this.liveWaiters = []; this.liveScheduled = new Set(); this.liveProjection = null;
       if (this.liveOpts.flashMs) this.host.style.setProperty("--cx-live-flash-ms", this.liveOpts.flashMs + "ms");
       // A new accepted query (another sort, search or filters, a reload) starts from a freshly sorted order.
@@ -48,9 +51,15 @@
       const owned = liveCopy(rows);
       return this.liveQueueChange(null, "api", owned);
     },
+    /** A grid over a shared inline dataset reads rows other views read: neither a transaction nor a loader may replace them. */
+    liveSharedRows() {
+      if (this.view.source.kind === "inline" && this.view.source.dataset !== undefined && !this.opts.source)
+        throw new Error("CanopyX: this grid reads the shared dataset " + this.view.source.dataset + "; change its rows through CanopyX.dataset(id).setRows, and every view follows.");
+    },
     liveQueueChange(change, source, replacement) {
       if (this.destroyed) return Promise.reject(new DOMException("Grid was destroyed.", "AbortError"));
       try { this.startLive(); } catch (error) { return Promise.reject(error); }
+      try { this.liveSharedRows(); } catch (error) { return Promise.reject(error); }
       if (this.view.source.kind === "inline" && this.opts.source)
         return Promise.reject(new Error("CanopyX: this grid's rows belong to its own source; change them through it (an enhanced grid's setData, addRows and removeRows)."));
       if (!this.liveInline() && (change.add.length || change.remove.length))
@@ -173,6 +182,7 @@
       return this.liveRun(async () => {
         if (this.liveInline()) {
           if (!this.liveOpts.load) return this.liveProjection ? this.liveFlush() : liveResult();
+          this.liveSharedRows();
           await this.liveFlush().catch(() => {});
         }
         const dataSignal = this.dataLifetime.signal, controller = new AbortController();
@@ -235,6 +245,7 @@
       if (!Number.isInteger(interval) || interval < 250 || interval > 86400000 || typeof hidden !== "boolean" || options.load !== undefined && typeof options.load !== "function")
         throw new Error("CanopyX: poll needs intervalMs from 250 to 86400000.");
       if (options.onRefresh !== undefined && typeof options.onRefresh !== "function") throw new Error("CanopyX: poll onRefresh must be a function.");
+      if (options.load) this.liveSharedRows();
       if (options.load) this.liveOpts.load = options.load;
       if (this.liveInline() && !this.liveOpts.load) throw new Error("CanopyX: an inline grid polls a load function (live.load or poll({ load })).");
       this.livePoller?.stop();

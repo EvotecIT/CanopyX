@@ -167,7 +167,16 @@ const tickets = createDataGrid(document.createElement("div"), { view: ticketsVie
   recordHeading: record => ({ title: "Change " + record.id, subtitle: String(record.cells?.when || "") }),
   onPrint: ({ layout }) => { const stacked: boolean = layout === "stacked"; } });
 const layout = await tickets.setLayout({ mode: "scroll", density: "comfortable" });
-const layoutModes: readonly ("fit" | "scroll" | "cards")[] = layout.modes;
+const layoutModes: readonly ("fit" | "scroll" | "cards" | "auto")[] = layout.modes;
+// The automatic layout reports its choice as mode and the layout it applies as active.
+const appliedLayout: "fit" | "scroll" | "cards" = layout.active;
+const autoView: InlineGridView = { ...ticketsView, id: "tickets-auto", layout: { mode: "auto", cardsBelow: 720, wide: "scroll" } };
+// A shared dataset: the views name it, and the page replaces its rows once for all of them.
+const datasetView: import("@evotecit/canopyx/grid").DatasetGridView = { protocol: "canopyx/2", type: "grid", id: "orders-list", label: "Orders", rowHeight: 32,
+  pageSize: 50, selection: "none", search: true, source: { kind: "inline", dataset: "orders" }, columns: [{ id: "name", title: "Name", kind: "text" }] };
+createDataGrid(document.createElement("div"), { view: datasetView });
+const orders = GridRuntime.defineDataset({ id: "orders", columns: [{ id: "name", kind: "text" }], rows: [] });
+await orders.setRows([{ id: "o1", cells: { name: "First" } }]);
 const matchCount: number = tickets.getMatches().total;
 const moved: boolean = await tickets.nextMatch({ focus: false });
 await tickets.setSearchHighlight(false);

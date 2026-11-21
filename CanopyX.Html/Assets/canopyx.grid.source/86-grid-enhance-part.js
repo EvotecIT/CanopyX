@@ -7,4 +7,4 @@
   const gridEnhancer = table => (target, options) => loadPart(GRID_ENHANCE).then(() => GRID_ENHANCE_IMPL.create(target, options, table));
   // A table marked data-view="matrix" becomes a matrix instead (53-matrix-shell.js).
   const GRID_API = { createDataGrid, createCalendar, enhance: (target, options) => matrixTable(target) ? enhanceMatrix(target, options) : gridEnhancer(true)(target, options),
-    grid: gridEnhancer(false) };
+    grid: gridEnhancer(false), dataset: gridDataset, defineDataset: gridDefineDataset };

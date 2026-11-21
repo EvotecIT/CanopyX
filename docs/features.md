@@ -33,6 +33,7 @@ but not built yet, see [planned work](../TODO.md). For short how-tos, see the [r
 | Reload with the current query | Grid, Tree | `reload()`; `refresh()` repaints; `refreshRows()` updates rows in place | [Flat data grid](authoring.md#flat-data-grid) |
 | Enhance an existing `<table>`, or build a grid from records or a URL in one call | Grid | `CanopyX.enhance(table, options)`, `CanopyX.grid(element, options)` | [enhance.md](enhance.md) |
 | Compact row data, views that mount when visible, and grid bundles for large reports | Grid | `rowData`, `MountWhenVisible`, `SaveHtmlBundle` | [large-data.md](large-data.md) |
+| One dataset read by several grids, pivots and record panels, carried and decoded once | Grid | `CanopyDataset`, `source.dataset`, `CanopyX.dataset()` | [datasets.md](datasets.md) |
 | Server-side data for .NET over `IQueryable<T>` or a provider, with saving edits | Grid | `CanopyX.Data`, `MapCanopyRemote` | [remote-dotnet.md](remote-dotnet.md) |
 | Rows added, changed and removed in place with a stable order, flashing cells, batching and polling | Grid | `applyTransaction`, `addRows`, `updateRows`, `removeRows`, `setRows`, `poll`, `live`; C# `CanopyGridLive`, `CanopyGridTransaction` | [live-data.md](live-data.md) |
 | Revision-aware refresh of hosted grids | Grid | `refreshRows()`, `live.pollMs` | [live-data.md](live-data.md#hosted-grids) |

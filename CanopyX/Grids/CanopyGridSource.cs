@@ -21,6 +21,22 @@ public sealed class CanopyGridSource {
     /// <summary>Gets how often the rows at <see cref="Url"/> are read again, or null to read them once.</summary>
     public TimeSpan? Refresh { get; private set; }
 
+    /// <summary>Gets the id of the shared <see cref="CanopyDataset"/> the grid reads, or null when the grid has its own rows or source.</summary>
+    public string? Dataset { get; private set; }
+
+    /// <summary>
+    /// Declares a grid that reads a dataset it shares with other views on the page: its rows (an inline or address dataset),
+    /// read and decoded once and kept once however many grids, pivots and record panels read them, or its host source (a hosted
+    /// dataset). The grid carries no rows of its own; write the dataset once with <c>ToHtmlFragment</c> beside the views.
+    /// </summary>
+    /// <param name="dataset">The dataset. Its kind decides whether the grid is inline or hosted.</param>
+    /// <returns>A source naming the dataset.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="dataset"/> is null.</exception>
+    public static CanopyGridSource FromDataset(CanopyDataset dataset) {
+        if (dataset == null) throw new ArgumentNullException(nameof(dataset));
+        return new CanopyGridSource(dataset.Kind, CanopyGridNavigation.Offset) { Dataset = dataset.Id };
+    }
+
     /// <summary>Declares a complete inline dataset with local filtering and ordering.</summary>
     /// <returns>An inline source; the view supplies its rows.</returns>
     public static CanopyGridSource Inline() => new CanopyGridSource(CanopyGridSourceKind.Inline, CanopyGridNavigation.Offset);

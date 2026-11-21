@@ -46,7 +46,7 @@ public sealed class HtmlWriterTests {
 
         var html = view.ToHtmlFragment(new CanopyHtmlOptions { Theme = CanopyTheme.Dark, Height = "70vh" });
 
-        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"dark\" id=\"" + view.Id + "\" style=\"height:70vh\">", html);
+        Assert.StartsWith("<div class=\"cx-host\" data-canopyx-host data-cx-theme=\"dark\" id=\"" + view.Id + "\" data-cx-height=\"70vh\">", html);
         Assert.Equal(view.ToJson(), ConfigOf(html));
         Assert.DoesNotContain("<style", html);
         // FullView has deep links but no context actions, drag/drop or editable columns: the configuration, overlays and

@@ -773,6 +773,21 @@ CanopyX.CanopyDataGridView<T>.CanopyX.CanopyGridRow Row(T record)
 CanopyX.CanopyDataGridView<T>.System.String ColumnId<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>> member)
 CanopyX.CanopyDataGridView<T>.System.String ToJson()
 CanopyX.CanopyDataGridView<T>.static CanopyX.CanopyDataGridView op_Implicit(CanopyX.CanopyDataGridView<T> grid)
+CanopyX.CanopyDataset : sealed class
+CanopyX.CanopyDataset.CanopyX.CanopyGridRowData ToRowData(CanopyX.CanopyRowDataOptions? options = null)
+CanopyX.CanopyDataset.CanopyX.CanopyGridSourceKind Kind { get; }
+CanopyX.CanopyDataset.System.Collections.Generic.IList<CanopyX.CanopyColumn> Columns { get; }
+CanopyX.CanopyDataset.System.Collections.Generic.IList<CanopyX.CanopyGridRow> Rows { get; }
+CanopyX.CanopyDataset.System.Nullable<System.TimeSpan> Refresh { get; }
+CanopyX.CanopyDataset.System.String Id { get; }
+CanopyX.CanopyDataset.System.String ToJson()
+CanopyX.CanopyDataset.System.String ToJson(CanopyX.CanopyGridRowData rowData)
+CanopyX.CanopyDataset.System.String? Url { get; }
+CanopyX.CanopyDataset.System.Void Validate()
+CanopyX.CanopyDataset.System.Void ValidateView(CanopyX.CanopyDataGridView view)
+CanopyX.CanopyDataset.static CanopyX.CanopyDataset FromUrl(System.String id, System.String url, System.Nullable<System.TimeSpan> refresh = null)
+CanopyX.CanopyDataset.static CanopyX.CanopyDataset Hosted(System.String id)
+CanopyX.CanopyDataset.static CanopyX.CanopyDataset Inline(System.String id)
 CanopyX.CanopyDatasetCompareCounts : sealed class
 CanopyX.CanopyDatasetCompareCounts..ctor(System.Int32 added, System.Int32 removed, System.Int32 changed, System.Int32 unchanged)
 CanopyX.CanopyDatasetCompareCounts.System.Int32 Added { get; }
@@ -1905,7 +1920,9 @@ CanopyX.CanopyGridSource : sealed class
 CanopyX.CanopyGridSource.CanopyX.CanopyGridNavigation Navigation { get; }
 CanopyX.CanopyGridSource.CanopyX.CanopyGridSourceKind Kind { get; }
 CanopyX.CanopyGridSource.System.Nullable<System.TimeSpan> Refresh { get; }
+CanopyX.CanopyGridSource.System.String? Dataset { get; }
 CanopyX.CanopyGridSource.System.String? Url { get; }
+CanopyX.CanopyGridSource.static CanopyX.CanopyGridSource FromDataset(CanopyX.CanopyDataset dataset)
 CanopyX.CanopyGridSource.static CanopyX.CanopyGridSource FromUrl(System.String url, System.Nullable<System.TimeSpan> refresh = null)
 CanopyX.CanopyGridSource.static CanopyX.CanopyGridSource HostedCursor()
 CanopyX.CanopyGridSource.static CanopyX.CanopyGridSource HostedOffset()
@@ -2829,6 +2846,7 @@ CanopyX.CanopyLabels.System.String InteractionPending { get; set; }
 CanopyX.CanopyLabels.System.String InteractionRejected { get; set; }
 CanopyX.CanopyLabels.System.String InvalidEdit { get; set; }
 CanopyX.CanopyLabels.System.String ItemsLoaded { get; set; }
+CanopyX.CanopyLabels.System.String LayoutAuto { get; set; }
 CanopyX.CanopyLabels.System.String LayoutCards { get; set; }
 CanopyX.CanopyLabels.System.String LayoutChanged { get; set; }
 CanopyX.CanopyLabels.System.String LayoutComfortable { get; set; }
@@ -3082,13 +3100,16 @@ CanopyX.CanopyLabels.static CanopyX.CanopyLabels Italian()
 CanopyX.CanopyLabels.static CanopyX.CanopyLabels Polish()
 CanopyX.CanopyLabels.static CanopyX.CanopyLabels Spanish()
 CanopyX.CanopyLayoutMode : enum System.Int32
+CanopyX.CanopyLayoutMode.const CanopyX.CanopyLayoutMode Auto = 3
 CanopyX.CanopyLayoutMode.const CanopyX.CanopyLayoutMode Cards = 2
 CanopyX.CanopyLayoutMode.const CanopyX.CanopyLayoutMode Fit = 0
 CanopyX.CanopyLayoutMode.const CanopyX.CanopyLayoutMode Scroll = 1
 CanopyX.CanopyLayoutOptions : sealed class
 CanopyX.CanopyLayoutOptions..ctor()
 CanopyX.CanopyLayoutOptions.CanopyX.CanopyLayoutMode Mode { get; set; }
+CanopyX.CanopyLayoutOptions.CanopyX.CanopyLayoutMode Wide { get; set; }
 CanopyX.CanopyLayoutOptions.System.Collections.Generic.IList<CanopyX.CanopyLayoutMode> Modes { get; }
+CanopyX.CanopyLayoutOptions.System.Int32 CardsBelow { get; set; }
 CanopyX.CanopyLayoutOptions.System.Nullable<CanopyX.CanopyGridDensity> Density { get; set; }
 CanopyX.CanopyMatrix : sealed class
 CanopyX.CanopyMatrix..ctor(System.String id, System.String label)

@@ -61,6 +61,33 @@ public sealed class ViewModesTests {
     }
 
     [Fact]
+    public void AutoLayout_WritesItsBreakpointAndWideMode_AndNeedsCardsAndTheWideModeOffered() {
+        var view = Grid();
+        view.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Auto };
+        Assert.Contains("\"layout\":{\"mode\":\"auto\"}", view.ToJson());
+        view.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Auto, Wide = CanopyLayoutMode.Scroll, CardsBelow = 720 };
+        var json = view.ToJson();
+        Assert.Contains("\"layout\":{\"mode\":\"auto\",\"cardsBelow\":720,\"wide\":\"scroll\"}", json);
+        ProtocolSchema.AssertValid(json, "grid with the automatic layout");
+        // Offering auto without cards, or without its wide layout, leaves it nothing to switch between.
+        view.Layout.Modes.Add(CanopyLayoutMode.Auto);
+        view.Layout.Modes.Add(CanopyLayoutMode.Cards);
+        view.Layout.Modes.Add(CanopyLayoutMode.Fit);
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        view.Layout.Modes.Add(CanopyLayoutMode.Scroll);
+        ProtocolSchema.AssertValid(view.ToJson(), "grid offering four layouts");
+        view.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Auto, Wide = CanopyLayoutMode.Cards };
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        view.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Auto, CardsBelow = 100 };
+        Assert.Throws<InvalidOperationException>(() => view.ToJson());
+        var tree = Tree();
+        tree.Layout = new CanopyLayoutOptions { Mode = CanopyLayoutMode.Auto };
+        Assert.Throws<InvalidOperationException>(() => tree.ToJson());
+        tree.Layout = new CanopyLayoutOptions { CardsBelow = 720 };
+        Assert.Throws<InvalidOperationException>(() => tree.ToJson());
+    }
+
+    [Fact]
     public void Tree_WritesHighlightAndLayout_AndRefusesCards() {
         var view = Tree();
         view.SearchHighlight = new CanopySearchHighlight { IgnoreAccents = true };

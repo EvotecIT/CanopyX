@@ -149,6 +149,19 @@ Use `CanopyX.dialog`, `drawer`, `popover`, `tooltip` and `menu` with their decla
 
 Dialogs use the native modal dialog. Drawers are non-modal on desktop and become full-height modal sheets when their container narrows below 640 px. `modal: true` also makes a desktop drawer modal. The shared overlay manager handles nested Escape order, modal focus trapping, scroll locking, dismissal and focus return. Anchored overlays flip and shift within the viewport.
 
+### Confirm and submit
+
+A dialog's typed actions replace hand-written footer markup. `CanopyDialog.Confirm` builds the common case: an alert dialog with a plain text question, a Cancel button it focuses first, and one answer.
+
+```csharp
+var restart = CanopyDialog.Confirm("restart-spooler", "Restart service", "Restart the print spooler?",
+    CanopyDialogAction.Submit("restart", "Restart", CanopyTone.Danger, target: "/services/spooler/restart"));
+restart.Fields["__RequestVerificationToken"] = antiforgeryToken;
+var html = restart.ToTriggerHtmlFragment("Restart spooler") + restart.ToHtmlFragment();
+```
+
+Each `CanopyDialogAction` has a label, a tone and an optional target. `CanopyTone.Danger` draws a destructive button, and every tone is written as `data-tone` for host themes. Choosing an action fires the cancelable `cx-dialog:action` event with `detail.action`. A host that cancels it answers itself, for example with `fetch`, and closes the dialog through its controller. Otherwise an action with a target submits the footer form with `action=<id>` and the dialog's `Fields`, once, and an action without one closes the dialog with the reason `action`. With a target, the buttons submit even before the runtime loads.
+
 ### Show records in a drawer
 
 A dialog or drawer's `open(options)` takes what it shows. Calling `open` on one that is already open keeps it open: it swaps the content and moves the focus return to the new record, with no close and reopen.

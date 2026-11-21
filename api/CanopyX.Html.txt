@@ -97,6 +97,7 @@ CanopyX.Html.CanopyHtmlExtensions.static System.String ToBoardStaticHtml(CanopyX
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyCalendar calendar, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyChangeList list, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyDataGridView view, CanopyX.Html.CanopyHtmlOptions? options = null)
+CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyDataset dataset, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyFlow flow, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyMatrix matrix, CanopyX.Html.CanopyHtmlOptions? options = null)
 CanopyX.Html.CanopyHtmlExtensions.static System.String ToHtmlFragment(CanopyX.CanopyPropagation view, CanopyX.Html.CanopyHtmlOptions? options = null)
@@ -259,6 +260,8 @@ CanopyX.Html.Ui.CanopyCarouselTransition.const CanopyX.Html.Ui.CanopyCarouselTra
 CanopyX.Html.Ui.CanopyDialog : sealed class
 CanopyX.Html.Ui.CanopyDialog..ctor(System.String id, System.String title, CanopyX.Html.Ui.CanopyDialogOptions? options = null)
 CanopyX.Html.Ui.CanopyDialog.CanopyX.Html.Ui.CanopyDialogOptions Options { get; }
+CanopyX.Html.Ui.CanopyDialog.System.Collections.Generic.IDictionary<System.String, System.String> Fields { get; }
+CanopyX.Html.Ui.CanopyDialog.System.Collections.Generic.IList<CanopyX.Html.Ui.CanopyDialogAction> Actions { get; }
 CanopyX.Html.Ui.CanopyDialog.System.String ContentHtml { get; set; }
 CanopyX.Html.Ui.CanopyDialog.System.String Id { get; }
 CanopyX.Html.Ui.CanopyDialog.System.String Title { get; }
@@ -267,6 +270,20 @@ CanopyX.Html.Ui.CanopyDialog.System.String ToTriggerHtmlFragment(System.String l
 CanopyX.Html.Ui.CanopyDialog.System.String TriggerId { get; }
 CanopyX.Html.Ui.CanopyDialog.System.String? Description { get; set; }
 CanopyX.Html.Ui.CanopyDialog.System.String? FooterHtml { get; set; }
+CanopyX.Html.Ui.CanopyDialog.static CanopyX.Html.Ui.CanopyDialog Confirm(System.String id, System.String title, System.String question, CanopyX.Html.Ui.CanopyDialogAction confirm, System.String cancelLabel = "Cancel")
+CanopyX.Html.Ui.CanopyDialogAction : sealed class
+CanopyX.Html.Ui.CanopyDialogAction..ctor(System.String id, System.String label, CanopyX.Html.Ui.CanopyDialogActionKind kind = Submit)
+CanopyX.Html.Ui.CanopyDialogAction.CanopyX.CanopyTone Tone { get; set; }
+CanopyX.Html.Ui.CanopyDialogAction.CanopyX.Html.Ui.CanopyDialogActionKind Kind { get; }
+CanopyX.Html.Ui.CanopyDialogAction.CanopyX.Html.Ui.CanopyDialogSubmitMethod Method { get; set; }
+CanopyX.Html.Ui.CanopyDialogAction.System.String Id { get; }
+CanopyX.Html.Ui.CanopyDialogAction.System.String Label { get; }
+CanopyX.Html.Ui.CanopyDialogAction.System.String? Target { get; set; }
+CanopyX.Html.Ui.CanopyDialogAction.static CanopyX.Html.Ui.CanopyDialogAction Cancel(System.String label = "Cancel")
+CanopyX.Html.Ui.CanopyDialogAction.static CanopyX.Html.Ui.CanopyDialogAction Submit(System.String id, System.String label, CanopyX.CanopyTone tone = null, System.String? target = null)
+CanopyX.Html.Ui.CanopyDialogActionKind : enum System.Int32
+CanopyX.Html.Ui.CanopyDialogActionKind.const CanopyX.Html.Ui.CanopyDialogActionKind Cancel = 1
+CanopyX.Html.Ui.CanopyDialogActionKind.const CanopyX.Html.Ui.CanopyDialogActionKind Submit = 0
 CanopyX.Html.Ui.CanopyDialogOptions : sealed class
 CanopyX.Html.Ui.CanopyDialogOptions..ctor()
 CanopyX.Html.Ui.CanopyDialogOptions.CanopyX.Html.Ui.CanopyOverlaySize Size { get; set; }
@@ -275,6 +292,9 @@ CanopyX.Html.Ui.CanopyDialogOptions.System.Nullable<System.Boolean> Dismissible 
 CanopyX.Html.Ui.CanopyDialogOptions.System.String CloseLabel { get; set; }
 CanopyX.Html.Ui.CanopyDialogOptions.System.String? TriggerId { get; set; }
 CanopyX.Html.Ui.CanopyDialogOptions.System.String? Variant { get; set; }
+CanopyX.Html.Ui.CanopyDialogSubmitMethod : enum System.Int32
+CanopyX.Html.Ui.CanopyDialogSubmitMethod.const CanopyX.Html.Ui.CanopyDialogSubmitMethod Get = 1
+CanopyX.Html.Ui.CanopyDialogSubmitMethod.const CanopyX.Html.Ui.CanopyDialogSubmitMethod Post = 0
 CanopyX.Html.Ui.CanopyDrawer : sealed class
 CanopyX.Html.Ui.CanopyDrawer..ctor(System.String id, System.String title, CanopyX.Html.Ui.CanopyDrawerOptions? options = null)
 CanopyX.Html.Ui.CanopyDrawer.CanopyX.Html.Ui.CanopyDrawerOptions Options { get; }
